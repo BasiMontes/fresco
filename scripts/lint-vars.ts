@@ -1,0 +1,665 @@
+#!/usr/bin/env bun
+/**
+ * lint-vars.ts — validates the agentic variable system in this repo.
+ *
+ * Four variable syntaxes coexist:
+ *   1. {{VAR_NAME}}   (UPPER_SNAKE_CASE) — project variable; MUST be declared in
+ *                      `.agents/project.yaml`. Resolution rules:
+ *                      - Flat key (e.g. PROJECT_NAME -> `project.project_name`):
+ *                        the bare reference resolves to the flat YAML leaf.
+ *                      - Env-scoped key (e.g. WEB_URL -> `environments[active_env].web_url`):
+ *                        the bare reference resolves against the active environment
+ *                        at AI runtime (session override > `testing.default_env`).
+ *                        From the linter's perspective, "declared as env-scoped"
+ *                        means the snake_case name appears under at least one
+ *                        environment in `environments:`.
+ *   2. {{environments.<env>.<var>}} — explicit env-scoped reference. Resolves
+ *                      directly to `environments.<env>.<var>` regardless of
+ *                      active env. The linter validates that <env> is a real
+ *                      environment in the YAML AND that <var> exists under it.
+ *   3. <<VAR_NAME>>   — session variable; computed at runtime, never declared.
+ *                      We only count and info-log these.
+ *   4. {{jira.<slug>}} (lowercase dot-notation) — Jira custom field reference.
+ *                      MUST resolve to a slug declared in `.agents/jira-required.yaml`
+ *                      under either `required:` or `optional:`. The manifest is the
+ *                      canonical declaration of slugs the methodology consumes.
+ *                      Validating that those declared slugs actually exist in
+ *                      the user's Jira (`.agents/jira-fields.json`) is owned by
+ *                      `bun run jira:check`.
+ *   4a. {{jira.statuses.<slug>}} — default-status pointer reference. MUST
+ *                      resolve to a key under `statuses:` in `.agents/jira-required.yaml`.
+ *   4b. {{jira.link_types.<slug>}} and {{jira.link_types.<slug>.<sub>}} —
+ *                      link-type reference. <slug> must resolve to a key under
+ *                      `link_types.required:` or `link_types.optional:`. The
+ *                      <sub> segment (outward / inward / fallback) is implicit;
+ *                      any of those are valid for link types.
+ *
+ * Exit code: 0 if no ERRORs, 1 otherwise. WARNs do not affect exit code.
+ */
+
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { parse as parseYaml } from 'yaml';
+
+// -----------------------------------------------------------------------------
+// Configuration
+// -----------------------------------------------------------------------------
+
+const REPO_ROOT = join(import.meta.dir, '..');
+const PROJECT_YAML = join(REPO_ROOT, '.agents', 'project.yaml');
+const JIRA_REQUIRED_YAML = join(REPO_ROOT, '.agents', 'jira-required.yaml');
+
+// Directories to scan recursively. AI-facing content only.
+const SCAN_ROOTS = [
+  '.context',
+  '.claude/skills',
+  '.claude/commands',
+];
+
+// Single root-level file to also scan.
+const SCAN_FILES = [
+  'CLAUDE.md',
+];
+
+// Directories to skip outright while walking.
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'worktrees', // git worktrees under .claude/ are another branch's checkout — not this tree
+  'PBI', // [SYNC] files owned by sync-jira-issues.ts — Jira data cache, never contain {{VAR}} / <<VAR>> / {{jira.*}} syntax. Skipping avoids walking thousands of synced .md files in mature projects.
+  '.scratch',
+  'tests',
+  'api',
+  'cli',
+  'scripts',
+  'config',
+  'dist',
+  'coverage',
+  '.agents', // never lint our own source-of-truth
+]);
+
+// Allowlist: identifiers that look like variables but are documentation strings
+// describing the syntax itself. Each entry is [variableName, fileSubstring] —
+// the linter ignores matches where both conditions hold.
+const DOC_META_ALLOWLIST: Array<[string, string]> = [
+  // §Critical Rules: "Use [TAG_TOOL] pseudocode and {{VARIABLES}} for dynamic content"
+  ['VARIABLES', 'CLAUDE.md'],
+  // §Project Variables: meta-marker {{VAR_NAME}} in the syntax-explanation table
+  ['VAR_NAME', 'CLAUDE.md'],
+  // §Quick Start / §Project Variables: meta-marker {{VAR}} describing the syntax itself
+  ['VAR', 'CLAUDE.md'],
+  // §Critical Reminders / §Pseudocode Syntax: {{VARIABLE}} as a literal placeholder example
+  ['VARIABLE', 'CLAUDE.md'],
+  // §Pseudocode Syntax: {{PROJECT_VARIABLE}} in the example block
+  ['PROJECT_VARIABLE', 'CLAUDE.md'],
+  // tms-workflow.md value-types table documents {{VARIABLE}} as a literal example
+  ['VARIABLE', 'tms-workflow.md'],
+  // agentic-dev-core SKILL.md: documents {{VAR}} as the resolution syntax itself
+  ['VAR', 'agentic-dev-core/SKILL.md'],
+  // project-foundation SKILL.md: references {{VAR}} as the syntax (lint check phrasing)
+  ['VAR', 'project-foundation/SKILL.md'],
+  // .claude/skills/REGISTRY.md is auto-generated by build-skill-registry.ts
+  // and copies SKILL.md bullets verbatim. Documentation-literal {{VAR}} /
+  // {{VARIABLE}} occurrences flow through unchanged.
+  ['VAR', 'REGISTRY.md'],
+  ['VARIABLE', 'REGISTRY.md'],
+  ['VARIABLES', 'REGISTRY.md'],
+  ['VAR_NAME', 'REGISTRY.md'],
+  ['PROJECT_VARIABLE', 'REGISTRY.md'],
+  // CLAUDE.md §Pseudocode value types: documents {{PROJECT_VAR}} as syntax meta-marker
+  ['PROJECT_VAR', 'CLAUDE.md'],
+  // testability-guide credentials-content-template.md: documents {{VAR_NAME}} / {{environments.<env>.<var>}} syntax for publishers
+  ['VAR_NAME', 'credentials-content-template.md'],
+  // resend-cli (vendored community skill) reference docs use Resend's own
+  // Handlebars-style triple-mustache {{{VAR_NAME}}} email-template placeholders —
+  // third-party syntax unrelated to this repo's {{VAR}} project convention.
+  // PROJECT_RE matches the inner {{VAR_NAME}} substring of {{{VAR_NAME}}}.
+  // Only bites when `bunx skills add` copies the skill into .claude/skills/
+  // (symlink installs are skipped by the walker).
+  ['VAR_NAME', 'resend-cli/references/templates.md'],
+  ['NAME', 'resend-cli/references/workflows.md'],
+  ['PLAN', 'resend-cli/references/workflows.md'],
+];
+
+// -----------------------------------------------------------------------------
+// Step 1 — load declared project variables from .agents/project.yaml
+// -----------------------------------------------------------------------------
+
+interface DeclaredVars {
+  /** Flat keys (top-level sections, NOT under `environments:`), upper-cased. */
+  flat: Set<string>
+  /** Env-scoped key names (union across all envs), upper-cased. */
+  envScoped: Set<string>
+  /** Environment names declared under `environments:` (lower-case as in YAML). */
+  envNames: Set<string>
+  /** Per-env catalog: { local: Set<"web_url","api_url",...>, staging: ... } (snake_case). */
+  envCatalog: Map<string, Set<string>>
+}
+
+function loadDeclaredVariables(yamlPath: string): DeclaredVars {
+  if (!existsSync(yamlPath)) {
+    console.error(`FATAL: ${yamlPath} does not exist. Run Session 1 first.`);
+    process.exit(1);
+  }
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(readFileSync(yamlPath, 'utf8'));
+  }
+  catch (err) {
+    console.error(`FATAL: cannot parse ${yamlPath}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`FATAL: ${yamlPath} must be a YAML mapping at the top level.`);
+    process.exit(1);
+  }
+  const root = parsed as Record<string, unknown>;
+
+  const flat = new Set<string>();
+  const envScoped = new Set<string>();
+  const envNames = new Set<string>();
+  const envCatalog = new Map<string, Set<string>>();
+
+  for (const [sectionName, sectionVal] of Object.entries(root)) {
+    // `git_strategy` is read DIRECTLY by the git-flow-master skill — its leaves are NOT
+    // {{VAR}} template variables, so they must not be harvested as declared vars.
+    if (sectionName === 'git_strategy') { continue; }
+    if (sectionName === 'environments') {
+      // Nested: each child is an environment whose leaves are env-scoped vars.
+      if (!sectionVal || typeof sectionVal !== 'object' || Array.isArray(sectionVal)) {
+        console.error(`FATAL: ${yamlPath}: \`environments:\` must be a mapping.`);
+        process.exit(1);
+      }
+      for (const [envName, envVal] of Object.entries(sectionVal as Record<string, unknown>)) {
+        envNames.add(envName);
+        const perEnv = new Set<string>();
+        if (envVal && typeof envVal === 'object' && !Array.isArray(envVal)) {
+          for (const leafKey of Object.keys(envVal as Record<string, unknown>)) {
+            envScoped.add(leafKey.toUpperCase());
+            perEnv.add(leafKey);
+          }
+        }
+        envCatalog.set(envName, perEnv);
+      }
+      continue;
+    }
+    // Flat section: each child is a flat leaf.
+    if (sectionVal && typeof sectionVal === 'object' && !Array.isArray(sectionVal)) {
+      for (const leafKey of Object.keys(sectionVal as Record<string, unknown>)) {
+        flat.add(leafKey.toUpperCase());
+      }
+    }
+  }
+
+  return { flat, envScoped, envNames, envCatalog };
+}
+
+/**
+ * Load the set of declared Jira slugs from `.agents/jira-required.yaml`.
+ * Both `required:` and `optional:` slugs are accepted — `unmapped:` is NOT
+ * (those have no matching `{{jira.<slug>}}` syntax; prompts reference them as
+ * literal `customfield_*` markers).
+ *
+ * Also extracts the `statuses:` slugs and `link_types.required.*` /
+ * `link_types.optional.*` slugs so K5 can validate multi-segment refs like
+ * `{{jira.statuses.<slug>}}` and `{{jira.link_types.<slug>}}`.
+ */
+function loadManifestSlugs(yamlPath: string): {
+  all: Set<string>
+  required: number
+  optional: number
+  statuses: Set<string>
+  linkTypes: Set<string>
+} {
+  if (!existsSync(yamlPath)) {
+    console.error(`FATAL: ${yamlPath} does not exist. Required for Jira slug validation.`);
+    process.exit(1);
+  }
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(readFileSync(yamlPath, 'utf8'));
+  }
+  catch (err) {
+    console.error(`FATAL: cannot parse ${yamlPath}: ${(err as Error).message}`);
+    process.exit(1);
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`FATAL: ${yamlPath} must be a YAML mapping at the top level.`);
+    process.exit(1);
+  }
+  const root = parsed as Record<string, unknown>;
+  const required = (root.required ?? {}) as Record<string, unknown>;
+  const optional = (root.optional ?? {}) as Record<string, unknown>;
+  const all = new Set<string>([...Object.keys(required), ...Object.keys(optional)]);
+
+  const statusesRaw = (root.statuses ?? {}) as Record<string, unknown>;
+  const statuses = new Set<string>(Object.keys(statusesRaw));
+
+  const linkTypesRaw = (root.link_types ?? {}) as Record<string, unknown>;
+  const ltReq = (linkTypesRaw.required ?? {}) as Record<string, unknown>;
+  const ltOpt = (linkTypesRaw.optional ?? {}) as Record<string, unknown>;
+  const linkTypes = new Set<string>([...Object.keys(ltReq), ...Object.keys(ltOpt)]);
+
+  return {
+    all,
+    required: Object.keys(required).length,
+    optional: Object.keys(optional).length,
+    statuses,
+    linkTypes,
+  };
+}
+
+/**
+ * Load the `external_consumers:` allowlist from project.yaml.
+ * Each entry MUST have an inline `# ...` comment on its source line
+ * explaining where the variable is consumed. Entries without a comment
+ * are reported as undocumented errors so the allowlist cannot rot silently.
+ *
+ * Returns the set of UPPER_SNAKE_CASE names that should be skipped from
+ * DECLARED_BUT_UNUSED, plus the list of undocumented entries.
+ */
+function loadExternalConsumers(yamlPath: string): {
+  allowlist: Set<string>
+  undocumented: Array<{ name: string, line: number }>
+} {
+  const rawText = readFileSync(yamlPath, 'utf-8');
+  const parsed = parseYaml(rawText);
+  const allowlist = new Set<string>();
+  const undocumented: Array<{ name: string, line: number }> = [];
+
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    const externalRaw = (parsed as Record<string, unknown>).external_consumers;
+    if (Array.isArray(externalRaw)) {
+      // Find the start of `external_consumers:` in raw text to scan per-entry comments.
+      const lines = rawText.split('\n');
+      let inBlock = false;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^external_consumers:\s*$/.test(line)) { inBlock = true; continue; }
+        if (inBlock) {
+          // Stop when we hit a non-indented non-comment non-empty line.
+          if (line.length > 0 && !line.startsWith(' ') && !line.startsWith('#') && !line.startsWith('-')) {
+            inBlock = false;
+            continue;
+          }
+          // List entry: `  - <name>` optionally followed by `# comment`.
+          const entryMatch = line.match(/^\s*-\s+([a-z_]\w*)\s*(#.*)?$/i);
+          if (entryMatch) {
+            const name = entryMatch[1];
+            const hasComment = Boolean(entryMatch[2]) && entryMatch[2].trim().length > 1; // `#` + at least one char
+            allowlist.add(name.toUpperCase());
+            if (!hasComment) {
+              undocumented.push({ name, line: i + 1 });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return { allowlist, undocumented };
+}
+
+// -----------------------------------------------------------------------------
+// Step 2 — recursive directory walk that respects skip-dirs and symlinks
+// -----------------------------------------------------------------------------
+
+function walkMarkdown(root: string, files: string[]): void {
+  if (!existsSync(root)) { return; }
+
+  let entries: string[];
+  try {
+    entries = readdirSync(root);
+  }
+  catch {
+    return;
+  }
+
+  for (const name of entries) {
+    const full = join(root, name);
+
+    // lstat — do not follow symlinks (defensive: prevents double-counting
+    // if a downstream consumer re-introduces a symlink layout).
+    let stat;
+    try {
+      stat = lstatSync(full);
+    }
+    catch {
+      continue;
+    }
+    if (stat.isSymbolicLink()) { continue; }
+
+    if (stat.isDirectory()) {
+      if (SKIP_DIRS.has(name)) { continue; }
+      walkMarkdown(full, files);
+    }
+    else if (stat.isFile() && name.endsWith('.md')) {
+      files.push(full);
+    }
+  }
+}
+
+function collectFiles(): string[] {
+  const out: string[] = [];
+  for (const r of SCAN_ROOTS) {
+    walkMarkdown(join(REPO_ROOT, r), out);
+  }
+  for (const f of SCAN_FILES) {
+    const full = join(REPO_ROOT, f);
+    if (existsSync(full)) {
+      const stat = lstatSync(full);
+      if (!stat.isSymbolicLink()) { out.push(full); }
+    }
+  }
+  return out;
+}
+
+// -----------------------------------------------------------------------------
+// Step 3 — scan each file for variable occurrences
+// -----------------------------------------------------------------------------
+
+interface ProjectVarHit {
+  name: string // upper-case
+  file: string
+  line: number
+}
+
+interface ExplicitEnvHit {
+  env: string // lowercase env name
+  varName: string // lowercase snake_case
+  file: string
+  line: number
+}
+
+interface JiraSlugHit {
+  /** Raw reference text (without `{{`/`}}`), e.g. `jira.statuses.epic_default`. */
+  raw: string
+  /** Kind of reference: `field` (single-segment), `status`, or `link_type`. */
+  kind: 'field' | 'status' | 'link_type'
+  /** Resolved slug to validate against the manifest. */
+  slug: string
+  /** Sub-field for link_type refs (outward / inward / fallback); undefined otherwise. */
+  sub?: string
+  file: string
+  line: number
+}
+
+interface ScanResult {
+  projectVarHits: ProjectVarHit[]
+  explicitEnvHits: ExplicitEnvHit[]
+  sessionVarNames: Set<string>
+  sessionVarOccurrences: number
+  jiraSlugHits: JiraSlugHit[]
+  metaSkippedCount: number
+}
+
+// IMPORTANT: matchers must be ordered so explicit env refs do NOT also match
+// the bare-form regex. We scan EXPLICIT_ENV_RE first per line, mark covered
+// columns, then scan PROJECT_RE while skipping covered ranges.
+const PROJECT_RE = /\{\{([A-Z_][A-Z0-9_]*)\}\}/g;
+const EXPLICIT_ENV_RE = /\{\{environments\.([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\}\}/g;
+// Matches any of:
+//   {{jira.<slug>}}                       -> field
+//   {{jira.statuses.<slug>}}              -> status
+//   {{jira.link_types.<slug>}}            -> link_type (bare)
+//   {{jira.link_types.<slug>.<sub>}}      -> link_type with sub-field
+// First capture group is the inner dot-path (e.g. `link_types.dependencies.outward`).
+const JIRA_RE = /\{\{jira\.([a-z_][a-z0-9_.]*)\}\}/g;
+// Valid sub-fields when a {{jira.link_types.<slug>.<sub>}} reference is used.
+// `name` is the workspace label resolved against `.agents/jira-link-types.json`;
+// `outward`/`inward` are the directional phrasings; `fallback` is the slug to
+// degrade to when the workspace lacks the link type. All four are declared per
+// link-type entry in `.agents/jira-required.yaml`.
+const LINK_TYPE_SUBFIELDS = new Set(['name', 'outward', 'inward', 'fallback']);
+const SESSION_RE = /<<([A-Z_][A-Z0-9_]*)>>/g;
+
+function isAllowlisted(varName: string, filePath: string): boolean {
+  return DOC_META_ALLOWLIST.some(
+    ([allowedName, fileSub]) => allowedName === varName && filePath.includes(fileSub),
+  );
+}
+
+function scanFiles(files: string[]): ScanResult {
+  const projectVarHits: ProjectVarHit[] = [];
+  const explicitEnvHits: ExplicitEnvHit[] = [];
+  const sessionVarNames = new Set<string>();
+  let sessionVarOccurrences = 0;
+  const jiraSlugHits: JiraSlugHit[] = [];
+  let metaSkippedCount = 0;
+
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8');
+    const lines = text.split(/\r?\n/);
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // --- explicit env refs first; remember their spans so PROJECT_RE skips them.
+      // (PROJECT_RE matches UPPER_SNAKE only — explicit env refs are lowercase, so
+      //  they cannot collide. Same for JIRA_RE. We still tracked spans defensively.)
+      EXPLICIT_ENV_RE.lastIndex = 0;
+      for (;;) {
+        const m = EXPLICIT_ENV_RE.exec(line);
+        if (m === null) { break; }
+        explicitEnvHits.push({ env: m[1], varName: m[2], file, line: i + 1 });
+      }
+
+      // --- bare project vars {{UPPER}}
+      PROJECT_RE.lastIndex = 0;
+      for (;;) {
+        const m = PROJECT_RE.exec(line);
+        if (m === null) { break; }
+        const name = m[1];
+        if (isAllowlisted(name, file)) {
+          metaSkippedCount++;
+          continue;
+        }
+        projectVarHits.push({ name, file, line: i + 1 });
+      }
+
+      // --- jira refs (single + multi-segment)
+      //
+      // Three reference shapes are validated against `.agents/jira-required.yaml`:
+      //   1. {{jira.<slug>}}                       → manifest required:/optional:
+      //   2. {{jira.statuses.<slug>}}              → manifest statuses:
+      //   3. {{jira.link_types.<slug>[.<sub>]}}    → manifest link_types.required:/optional:
+      //
+      // Any other dot-notation under `jira.` (e.g. `jira.status.X`, `jira.transition.X`
+      // used in other skills) is OUT OF SCOPE for this linter — silently skipped so
+      // we never invalidate unrelated namespaces. Owners of those namespaces are
+      // responsible for their own validation.
+      JIRA_RE.lastIndex = 0;
+      for (;;) {
+        const m = JIRA_RE.exec(line);
+        if (m === null) { break; }
+        const raw = `jira.${m[1]}`;
+        const segments = m[1].split('.');
+        if (segments.length === 1) {
+          jiraSlugHits.push({ raw, kind: 'field', slug: segments[0], file, line: i + 1 });
+        }
+        else if (segments[0] === 'statuses' && segments.length === 2) {
+          jiraSlugHits.push({ raw, kind: 'status', slug: segments[1], file, line: i + 1 });
+        }
+        else if (segments[0] === 'link_types' && (segments.length === 2 || segments.length === 3)) {
+          jiraSlugHits.push({
+            raw,
+            kind: 'link_type',
+            slug: segments[1],
+            sub: segments[2],
+            file,
+            line: i + 1,
+          });
+        }
+        // else: unknown jira.* shape — silently skip (owned by other namespaces).
+      }
+
+      // --- session vars
+      SESSION_RE.lastIndex = 0;
+      for (;;) {
+        const m = SESSION_RE.exec(line);
+        if (m === null) { break; }
+        sessionVarNames.add(m[1]);
+        sessionVarOccurrences++;
+      }
+    }
+  }
+
+  return {
+    projectVarHits,
+    explicitEnvHits,
+    sessionVarNames,
+    sessionVarOccurrences,
+    jiraSlugHits,
+    metaSkippedCount,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Step 4 — produce report
+// -----------------------------------------------------------------------------
+
+function main(): void {
+  const declared = loadDeclaredVariables(PROJECT_YAML);
+  const manifest = loadManifestSlugs(JIRA_REQUIRED_YAML);
+  const external = loadExternalConsumers(PROJECT_YAML);
+  const files = collectFiles();
+  const result = scanFiles(files);
+
+  // Bare {{VAR}} validation: must be declared either as flat or env-scoped.
+  const undeclared: ProjectVarHit[] = [];
+  const usedNames = new Set<string>();
+  for (const hit of result.projectVarHits) {
+    usedNames.add(hit.name);
+    if (declared.flat.has(hit.name)) { continue; }
+    if (declared.envScoped.has(hit.name)) { continue; }
+    undeclared.push(hit);
+  }
+
+  // Explicit env reference validation: env must exist; var must exist under it.
+  const invalidExplicitEnv: ExplicitEnvHit[] = [];
+  for (const hit of result.explicitEnvHits) {
+    if (!declared.envNames.has(hit.env)) {
+      invalidExplicitEnv.push(hit);
+      continue;
+    }
+    const perEnv = declared.envCatalog.get(hit.env);
+    if (!perEnv || !perEnv.has(hit.varName)) {
+      invalidExplicitEnv.push(hit);
+    }
+  }
+
+  // Declared-but-unused: a flat or env-scoped name that no prompt references.
+  // Note: explicit env refs (e.g. {{environments.local.web_url}}) DO count as
+  //       a use of the env-scoped key (web_url -> WEB_URL).
+  const explicitlyUsedEnvScoped = new Set<string>(
+    result.explicitEnvHits.map(h => h.varName.toUpperCase()),
+  );
+  const allDeclared = new Set<string>([...declared.flat, ...declared.envScoped]);
+  const declaredButUnused = [...allDeclared]
+    .filter(d => !usedNames.has(d) && !explicitlyUsedEnvScoped.has(d) && !external.allowlist.has(d))
+    .sort();
+  const externalSkippedCount = [...allDeclared].filter(d => external.allowlist.has(d)).length;
+
+  // Jira slug validation: every {{jira.*}} reference must resolve.
+  //   - kind=field      → slug ∈ manifest.all (required | optional)
+  //   - kind=status     → slug ∈ manifest.statuses
+  //   - kind=link_type  → slug ∈ manifest.linkTypes (required | optional);
+  //                       sub-field (outward/inward/fallback) must be in the allowed set
+  const invalidJiraHits = result.jiraSlugHits.filter((h) => {
+    if (h.kind === 'field') { return !manifest.all.has(h.slug); }
+    if (h.kind === 'status') { return !manifest.statuses.has(h.slug); }
+    if (h.kind === 'link_type') {
+      if (!manifest.linkTypes.has(h.slug)) { return true; }
+      if (h.sub !== undefined && !LINK_TYPE_SUBFIELDS.has(h.sub)) { return true; }
+      return false;
+    }
+    return true;
+  });
+  const validJiraCount = result.jiraSlugHits.length - invalidJiraHits.length;
+
+  const filesWithProjectHits = new Set(result.projectVarHits.map(h => h.file)).size;
+
+  const totalErrors = undeclared.length + invalidExplicitEnv.length + invalidJiraHits.length + external.undocumented.length;
+
+  // ----- output -----
+  const envList = [...declared.envNames].sort().join(', ') || '(none)';
+  const declaredTotal = declared.flat.size + declared.envScoped.size;
+
+  console.log('Agents Lint Report');
+  console.log('==================');
+  console.log(`Scanned: ${files.length} files`);
+  console.log(
+    `Declared in project.yaml:        ${declared.flat.size} flat + ${declared.envScoped.size} env-scoped `
+    + `(across ${declared.envNames.size} envs: ${envList}) = ${declaredTotal} variables`,
+  );
+  console.log(
+    `Declared in jira-required.yaml:  ${manifest.all.size} field slugs `
+    + `(${manifest.required} required + ${manifest.optional} optional) `
+    + `+ ${manifest.statuses.size} statuses + ${manifest.linkTypes.size} link_types`,
+  );
+  console.log('');
+
+  console.log(`ERRORS (${totalErrors}):`);
+  if (totalErrors === 0) {
+    console.log('  <none>');
+  }
+  else {
+    for (const hit of undeclared) {
+      const rel = relative(REPO_ROOT, hit.file);
+      console.log(`  - UNDECLARED: {{${hit.name}}} at ${rel}:${hit.line}`);
+    }
+    for (const hit of invalidExplicitEnv) {
+      const rel = relative(REPO_ROOT, hit.file);
+      const reason = !declared.envNames.has(hit.env)
+        ? `unknown env '${hit.env}' (known: ${envList})`
+        : `var '${hit.varName}' not present under environments.${hit.env}`;
+      console.log(`  - UNDECLARED env reference: {{environments.${hit.env}.${hit.varName}}} at ${rel}:${hit.line}  (${reason})`);
+    }
+    for (const hit of invalidJiraHits) {
+      const rel = relative(REPO_ROOT, hit.file);
+      let reason = '';
+      if (hit.kind === 'status') {
+        reason = `unknown status slug '${hit.slug}' (not declared under .agents/jira-required.yaml: statuses:)`;
+      }
+      else if (hit.kind === 'link_type') {
+        if (!manifest.linkTypes.has(hit.slug)) {
+          reason = `unknown link-type slug '${hit.slug}' (not under link_types.required: / link_types.optional:)`;
+        }
+        else {
+          reason = `unknown link-type sub-field '${hit.sub}' (allowed: outward, inward, fallback)`;
+        }
+      }
+      else {
+        reason = 'not declared under required: / optional:';
+      }
+      console.log(`  - UNDECLARED: {{${hit.raw}}} at ${rel}:${hit.line}  (${reason})`);
+    }
+    for (const entry of external.undocumented) {
+      console.log(`  - EXTERNAL_CONSUMER_UNDOCUMENTED: ${entry.name} at .agents/project.yaml:${entry.line}  (missing inline '# ...' comment explaining where it's consumed)`);
+    }
+  }
+  console.log('');
+
+  console.log(`WARNINGS (${declaredButUnused.length}):`);
+  if (declaredButUnused.length === 0) {
+    console.log('  <none>');
+  }
+  else {
+    for (const name of declaredButUnused) {
+      console.log(`  - DECLARED_BUT_UNUSED: ${name}  (no occurrences in scanned files)`);
+    }
+  }
+  console.log('');
+
+  console.log('INFO:');
+  console.log(`  - ${result.projectVarHits.length} bare {{VAR}} occurrences across ${filesWithProjectHits} files`);
+  console.log(`  - ${result.explicitEnvHits.length} explicit {{environments.<env>.<var>}} occurrences (${invalidExplicitEnv.length} invalid)`);
+  console.log(`  - ${result.sessionVarNames.size} distinct <<VAR>> session variables (${result.sessionVarOccurrences} occurrences)`);
+  console.log(`  - ${validJiraCount} valid {{jira.*}} references; ${invalidJiraHits.length} invalid (errors above)`);
+  console.log(`  - ${result.metaSkippedCount} documentation meta-references skipped (allowlisted)`);
+  console.log(`  - ${externalSkippedCount} external_consumers entries skipped (declared in .agents/project.yaml allowlist)`);
+
+  process.exit(totalErrors > 0 ? 1 : 0);
+}
+
+main();

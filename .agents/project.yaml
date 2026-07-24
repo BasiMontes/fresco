@@ -1,0 +1,93 @@
+# Project configuration consumed by AI agents (Claude, Cursor, Gemini, Codex, etc.)
+# when they encounter {{VAR_NAME}} references in prompts and docs.
+# Variable names are snake_case; the AI maps {{PROJECT_NAME}} -> project.project_name lexically.
+# Edit values manually.
+# Every unfilled field is `null` plus a TODO comment with a concrete example.
+#
+# NOTE: This is the project-starter TEMPLATE. All values are intentionally `null`.
+# Each downstream project that uses this starter must fill in the real values.
+
+project:
+  project_name: null # TODO: fill per project — Project name (e.g. MyProject)
+  project_key: null # TODO: fill per project — Project key in issue tracker (e.g. PROJ, OB, UPEX)
+  webapp_domain: null # TODO: fill per project — Domain of the web application under test (e.g. myproject.com)
+
+backend:
+  backend_repo: null # TODO: fill per project — Relative path to backend repository (e.g. ../my-backend)
+  backend_stack: null # TODO: fill per project — Backend technology stack (e.g. Node.js + Express)
+  backend_entry: null # TODO: fill per project — Backend source entry point (e.g. src/)
+
+frontend:
+  frontend_repo: null # TODO: fill per project — Relative path to frontend repository (e.g. ../my-frontend)
+  frontend_stack: null # TODO: fill per project — Frontend technology stack (e.g. React + TypeScript)
+  frontend_entry: null # TODO: fill per project — Frontend source entry point (e.g. src/)
+  design_md_path: null # OPTIONAL — path to DESIGN.md produced by /design-system. Defaults to ./DESIGN.md when null. Override only for atypical layouts (e.g. .context/DESIGN.md).
+
+database:
+  db_type: null # TODO: fill per project — Database engine (e.g. PostgreSQL)
+
+issue_tracker:
+  issue_tracker: null # TODO: fill per project — Issue tracking tool (e.g. Jira)
+  issue_tracker_cli: null # TODO: fill per project — CLI command to query tickets (e.g. acli (Jira) / gh issue (GitHub))
+  atlassian_url: null # TODO: fill per project — Atlassian instance base URL (e.g. https://company.atlassian.net). The acli `--site` slug is derived from this (strip `https://`); no separate ATLASSIAN_SITE variable.
+
+testing:
+  default_env: null # TODO: fill per project — Default working environment — must match a key under `environments:` (e.g. staging)
+
+# Git workflow for THIS project — the SOURCE OF TRUTH read by the git-flow-master skill
+# before any git/gh operation. Ships `null` (template): on the first git intent git-flow-master
+# OFFERS "Strategy Setup" and fills these fields (it never auto-picks). Tracked + frozen by the
+# updater (bootstrapOnly), so each project keeps its own. Filled by git-flow-master, NOT by
+# `agents:setup`. These leaves are read directly (not {{VAR}} template vars) → skipped by vars:check.
+git_strategy:
+  strategy: solo-main # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow
+  description: >
+    Single long-lived branch (main); single maintainer (this repo is the boilerplate
+    template itself). Work is committed and pushed directly to main (PRs optional).
+    Every push to main is effectively a release of the template. No integration branch,
+    no promotion path, no hotfix ceremony.
+  branches:
+    production: main # release / default branch
+    integration: null # long-lived integration branch name (e.g. staging), or null
+    ephemeral_pattern: null # on-demand trunk pattern, or null
+  protected: [main] # branches requiring explicit confirm before a direct push
+  decisions: # captured by the Strategy Setup questionnaire (Q1/Q2/Q3)
+    promote_method: n/a # ff-only | merge-commit | squash | n/a
+    feature_merge: n/a # merge-commit | squash | rebase-merge | n/a
+    hotfix_policy: n/a # branch-off-prod-backmerge | via-integration | none | n/a
+  policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
+    direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
+    admin_bypass: true # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
+    require_pr_reviews: 0 # null | 0 | N — min approvals before merge to a protected branch (informational)
+  branch_prefixes:
+    precedence: [feat, fix, refactor, test, docs, chore]
+    naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
+    naming_without_key: '{prefix}/{kebab-slug}'
+  meta:
+    setup_version: 1
+    created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
+
+# Variables declared above that are consumed OUTSIDE the {{TEMPLATE}} system
+# (env vars in scripts/, shell `yq` reads embedded in skill docs, etc.).
+# `bun run vars:check` skips DECLARED_BUT_UNUSED warnings for these.
+# Each entry MUST include an inline `#` comment explaining WHERE the variable
+# is consumed — if the comment is missing, the linter fails with
+# EXTERNAL_CONSUMER_UNDOCUMENTED so the allowlist cannot rot silently.
+external_consumers:
+  - default_env # consumed implicitly by the AI variable resolver (sets active env for {{WEB_URL}} / {{API_URL}} / ...) AND by scripts/agents-setup.ts via process.env.DEFAULT_ENV in --non-interactive mode
+  - design_md_path # read by `yq '.design_md_path'` inside bash code fences of .claude/skills/{design-system/references/getdesign-matcher.md, project-bootstrap/references/frontend-setup.md}
+
+# Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
+# Each environment must define ALL three keys: web_url, api_url, db_project_ref.
+# Prompts referencing {{WEB_URL}} / {{API_URL}} / {{DB_PROJECT_REF}} resolve to the
+# active environment (`testing.default_env` above, or a session override).
+# For explicit cross-env references use {{environments.<env>.<var>}} (e.g. {{environments.local.web_url}}).
+environments:
+  local:
+    web_url: null # TODO: fill per project — Frontend URL for local env (e.g. http://localhost:3000)
+    api_url: null # TODO: fill per project — API base URL for local env (e.g. http://localhost:3000/api)
+    db_project_ref: null # TODO: fill per project — Supabase project ref for local (e.g. czuusjchqpgvanvbdrnz — visible in your Supabase dashboard URL)
+  staging:
+    web_url: null # TODO: fill per project — Frontend URL for staging env (e.g. https://staging.myproject.com)
+    api_url: null # TODO: fill per project — API base URL for staging env (e.g. https://api-staging.myproject.com)
+    db_project_ref: null # TODO: fill per project — Supabase project ref for staging (e.g. czuusjchqpgvanvbdrnz — visible in your Supabase dashboard URL)
