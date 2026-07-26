@@ -366,6 +366,15 @@ function loadRegistry(): Registry {
   return REGISTRY_CACHE;
 }
 
+/**
+ * Resolves this workspace's actual Story issue-type name (`work_types.story.jira_issue_type`
+ * in `.agents/jira-required.yaml` — e.g. `Historia` on a Spanish-language Jira site), so JQL
+ * and type comparisons never hardcode the English literal `Story`.
+ */
+function storyIssueTypeName(): string {
+  return loadRegistry().bySlug.get('story')?.jiraIssueType ?? 'Story';
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -949,7 +958,7 @@ function generateTraceabilitySection(
   const lines: string[] = [];
 
   // Define preferred order for issue types
-  const typeOrder = ['Test', 'Test Execution', 'Defect', 'Bug', 'Story', 'Improvement', 'Task', 'Epic'];
+  const typeOrder = ['Test', 'Test Execution', 'Defect', 'Bug', storyIssueTypeName(), 'Improvement', 'Task', 'Epic'];
 
   // Sort types by preferred order, then alphabetically for unknown types
   const sortedTypes = Object.keys(grouped).sort((a, b) => {
@@ -2155,7 +2164,7 @@ async function syncEpic(
   // Fetch stories for this epic (only Stories, not Bugs/Tests/etc.)
   const stories = await searchIssues(
     config,
-    `project = ${config.project} AND parent = ${epicKey} AND issuetype = Story${sprintAndClause(options)} ORDER BY key ASC`,
+    `project = ${config.project} AND parent = ${epicKey} AND issuetype = "${storyIssueTypeName()}"${sprintAndClause(options)} ORDER BY key ASC`,
     STORY_FIELDS,
   );
 
@@ -2309,7 +2318,7 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
       // Also find orphan stories (stories without parent epic)
       const orphanStories = await searchIssues(
         config,
-        `project = ${config.project} AND issuetype = Story AND parent is EMPTY${sprintAndClause(options)} ORDER BY key ASC`,
+        `project = ${config.project} AND issuetype = "${storyIssueTypeName()}" AND parent is EMPTY${sprintAndClause(options)} ORDER BY key ASC`,
         STORY_FIELDS,
       );
 
@@ -2409,14 +2418,14 @@ function findLinkedStory(defect: JiraIssue): { key: string, summary: string } | 
 
   for (const link of links) {
     // Check inward issues (e.g., "is caused by" Story)
-    if (link.inwardIssue?.fields.issuetype?.name === 'Story') {
+    if (link.inwardIssue?.fields.issuetype?.name === storyIssueTypeName()) {
       return {
         key: link.inwardIssue.key,
         summary: link.inwardIssue.fields.summary,
       };
     }
     // Check outward issues (e.g., "causes" Story)
-    if (link.outwardIssue?.fields.issuetype?.name === 'Story') {
+    if (link.outwardIssue?.fields.issuetype?.name === storyIssueTypeName()) {
       return {
         key: link.outwardIssue.key,
         summary: link.outwardIssue.fields.summary,
@@ -2848,7 +2857,7 @@ async function routeIssueByKey(
   if (type === 'Epic') {
     await syncEpic(config, key, options, result);
   }
-  else if (type === 'Story') {
+  else if (type === storyIssueTypeName()) {
     await syncSingleStory(config, key, options, result);
   }
   else {
