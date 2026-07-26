@@ -43,6 +43,13 @@ export default antfu({
     // MCP reference templates — syntax-sensitive opt-in configs. Linting them
     // (e.g. toml/array-bracket-newline) corrupts the layout users copy from.
     'docs/mcp/**',
+    // Supabase Edge Functions run on Deno, a separate runtime from this
+    // project's Bun/Node TypeScript project (tsconfig.json excludes this
+    // directory for the same reason — `npm:`-specifier imports and Deno
+    // globals like `Deno.serve`/`Deno.env` aren't resolvable by this
+    // project's typescript-eslint project service). Lint these with `deno
+    // lint` / `deno fmt` instead, not this project's ESLint config.
+    'supabase/functions/**',
   ],
 
   // Custom rules
