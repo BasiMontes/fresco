@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — copied verbatim from DESIGN.md's frontmatter `colors` block.
+ * DESIGN.md is the single source of truth; if a value changes there, update it
+ * here too (see tailwind.config.ts for how these are consumed as utilities).
+ */
+:root {
+  --color-primary: #0f4e0e;
+  --color-secondary: #df8c26;
+  --color-tertiary: #847456;
+  --color-neutral: #a39372;
+  --color-background: #faf3e3;
+  --color-surface: #f1e3c6;
+  --color-text: #201e1d;
+  --color-border: color-mix(in srgb, #201e1d 16%, transparent);
+  --color-success: #0f4e0e;
+  --color-warning: #df8c26;
+  --color-error: #b8422e;
+
+  --color-accent-100: #e1e8e0;
+  --color-accent-200: #bfcfbd;
+  --color-accent-300: #8fab8d;
+  --color-accent-400: #547d51;
+  --color-accent-500: #0f4e0e;
+  --color-accent-600: #0a3e09;
+  --color-accent-700: #052d05;
+  --color-accent-800: #031f03;
+  --color-accent-900: #011101;
+
+  --color-accent-2-100: #fcf1e8;
+  --color-accent-2-200: #f9e2cc;
+  --color-accent-2-300: #f3cba5;
+  --color-accent-2-400: #eaad70;
+  --color-accent-2-500: #df8c26;
+  --color-accent-2-600: #b6721d;
+  --color-accent-2-700: #8a5513;
+  --color-accent-2-800: #653d0b;
+  --color-accent-2-900: #422605;
+
+  --color-neutral-100: #fbf6ec;
+  --color-neutral-200: #f0e8d8;
+  --color-neutral-300: #ded2b8;
+  --color-neutral-400: #c2b393;
+  --color-neutral-500: #a39372;
+  --color-neutral-600: #847456;
+  --color-neutral-700: #66593f;
+  --color-neutral-800: #493f2c;
+  --color-neutral-900: #2f281c;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text;
+    font-family:
+      var(--font-body),
+      Figtree,
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading), Caprasimo, 'Baloo 2', cursive;
+    font-weight: 400;
+  }
+}
