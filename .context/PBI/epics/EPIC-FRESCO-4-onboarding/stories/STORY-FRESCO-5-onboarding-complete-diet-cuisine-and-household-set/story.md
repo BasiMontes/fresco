@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5)
 **Epic:** [FRESCO-4](https://basiliomontescastano.atlassian.net/browse/FRESCO-4) (Onboarding)
 **Type:** Historia
-**Status:** Listo
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
@@ -39,6 +39,7 @@ Como Laura, la planificadora agotada, quiero completar un onboarding breve que c
 - **Updated:** 7/26/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
+- **Labels:** implementation-plan-ready
 
 ---
 
