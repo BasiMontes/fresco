@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9)
 **Epic:** [FRESCO-8](https://basiliomontescastano.atlassian.net/browse/FRESCO-8) (Garantía de Seguridad Alimentaria)
 **Type:** Historia
-**Status:** Listo
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
@@ -38,6 +38,7 @@ Como Laura, la planificadora agotada (o cualquier usuaria con una alergia o rest
 - **Updated:** 7/26/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
+- **Labels:** implementation-plan-ready
 
 ---
 
