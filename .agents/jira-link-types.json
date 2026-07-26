@@ -1,9 +1,16 @@
 {
-  "blocking": {
-    "id": "10008",
-    "name": "Blocking",
-    "outward": "blocks",
-    "inward": "is blocked by",
+  "agiletest": {
+    "id": "10006",
+    "name": "AgileTest",
+    "outward": "tests",
+    "inward": "is tested by",
+    "exists_in_workspace": true
+  },
+  "agiletest_defect": {
+    "id": "10007",
+    "name": "AgileTest Defect",
+    "outward": "causes",
+    "inward": "is caused by",
     "exists_in_workspace": true
   },
   "blocks": {
@@ -14,11 +21,11 @@
     "exists_in_workspace": true
   },
   "causes": {
-    "id": "10013",
-    "name": "Problem/Incident",
+    "id": "",
+    "name": "",
     "outward": "causes",
     "inward": "is caused by",
-    "exists_in_workspace": true
+    "exists_in_workspace": false
   },
   "cloners": {
     "id": "10001",
@@ -27,32 +34,18 @@
     "inward": "is cloned by",
     "exists_in_workspace": true
   },
-  "defect": {
-    "id": "10007",
-    "name": "Defect",
-    "outward": "created",
-    "inward": "created by",
-    "exists_in_workspace": true
-  },
   "dependencies": {
-    "id": "10014",
-    "name": "Dependencies",
+    "id": "",
+    "name": "",
     "outward": "depends on",
     "inward": "is dependency for",
-    "exists_in_workspace": true
+    "exists_in_workspace": false
   },
   "duplicate": {
     "id": "10002",
     "name": "Duplicate",
     "outward": "duplicates",
     "inward": "is duplicated by",
-    "exists_in_workspace": true
-  },
-  "problem_incident": {
-    "id": "10013",
-    "name": "Problem/Incident",
-    "outward": "causes",
-    "inward": "is caused by",
     "exists_in_workspace": true
   },
   "relates": {
@@ -62,46 +55,11 @@
     "inward": "relates to",
     "exists_in_workspace": true
   },
-  "test": {
-    "id": "10006",
-    "name": "Test",
-    "outward": "tests",
-    "inward": "is tested by",
-    "exists_in_workspace": true
-  },
-  "test_automation": {
-    "id": "10011",
-    "name": "Test Automation",
-    "outward": "automation test for",
-    "inward": "is automated by",
-    "exists_in_workspace": true
-  },
-  "test_design": {
-    "id": "10010",
-    "name": "Test Design",
-    "outward": "designs",
-    "inward": "is designed by",
-    "exists_in_workspace": true
-  },
-  "test_execute": {
-    "id": "10009",
-    "name": "Test Execute",
-    "outward": "executes",
-    "inward": "is executed by",
-    "exists_in_workspace": true
-  },
   "tested_by": {
     "id": "",
     "name": "",
     "outward": "tested by",
     "inward": "tests",
     "exists_in_workspace": false
-  },
-  "xray_defect": {
-    "id": "10012",
-    "name": "Xray Defect",
-    "outward": "created",
-    "inward": "created by",
-    "exists_in_workspace": true
   }
 }
