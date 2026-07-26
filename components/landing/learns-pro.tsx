@@ -43,7 +43,7 @@ export function LearnsPro() {
           {TIMELINE.map(item => (
             <Card
               key={item.week}
-              className={cn(item.highlighted && 'border-2 border-primary bg-accent-100')}
+              className={cn(item.highlighted ? 'border-2 border-primary bg-accent-100' : 'bg-background')}
             >
               <CardHeader>
                 <span

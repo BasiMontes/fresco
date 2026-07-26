@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -62,11 +63,11 @@ function WeeklyMenuPreview() {
             </div>
             <span
               className={cn(
-                'grid size-5 shrink-0 place-items-center rounded-full border border-border text-caption',
-                meal.done && 'border-primary bg-accent-100 font-bold text-primary',
+                'grid size-5 shrink-0 place-items-center rounded-full border border-border',
+                meal.done && 'border-primary bg-accent-100 text-primary',
               )}
             >
-              {meal.done ? '✓' : ''}
+              {meal.done && <Check className="size-3" strokeWidth={3} />}
             </span>
           </div>
         ))}
