@@ -66,3 +66,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió comitear todo y subir; "verificar deploy" no era retórico — estaba roto de verdad, no solo confirmar que "Ready" en el dashboard.
 
 **Siguiente**: nada bloqueante. Proyecto Vercel correcto = "fresco" (`fresco-pro.vercel.app` = producción). Ignorar `frescoapp` y `fresco-app` en cualquier operación Vercel futura.
+
+---
+
+## 2026-07-26 — Merge landing mockup + fix visual bugs + gotcha env local
+
+**Qué**:
+- User pasó HTML standalone (`fresco_landing.html`, landing ya aprobada en contenido) — mockup con fuente/colores DE OTRO draft (Satoshi, gris azulado), no el DESIGN.md real (Caprasimo/Figtree, verde/naranja exacto sí coincide). Reconstruido como 10 componentes en `components/landing/` usando tokens/Button/Card reales, no el CSS del HTML. `app/page.tsx` reescrito componiendo todo, rutas reales a `/onboarding` y `/signup` preservadas.
+- User reportó 2 bugs reales tras revisar deploy: (1) checkmark del menú se veía azul/desalineado — causa: el glifo Unicode "✓" texto plano, algunos browsers lo renderizan con color propio de emoji ignorando el CSS — cambiado a ícono `lucide-react` `Check`, inmune a eso. (2) tarjetas "Solo en Pro" (Semana 1/2/4) invisibles contra su fondo — causa: sección y tarjetas compartían el MISMO token `bg-surface` — corregido a `bg-background` en las no-destacadas.
+- **Gotcha real de este dev local**: `bun run dev` tiraba 500 (`NEXT_PUBLIC_SUPABASE_URL` inválida) incluso con `.env` perfecto (verificado byte a byte, sin CRLF/BOM). Causa real: el perfil de shell del user (`.zshrc` o similar) exporta `NEXT_PUBLIC_SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_JWT_SECRET`/`SUPABASE_SECRET_KEY` vacías GLOBALMENTE — Next.js/dotenv no pisa vars ya existentes en el proceso, así que la shell gana sobre `.env` aunque el archivo esté perfecto. Fix por sesión: `unset` esas vars ANTES de `bun run dev`, en el mismo comando (una shell nueva las re-trae). Fix permanente: user tiene que sacar esos `export` de su perfil de shell — no es algo que se arregle desde el repo.
+- Deploy verificado con Playwright real (no solo curl) en `fresco-pro.vercel.app` — captura completa, todas las secciones ok, un solo botón naranja (regla DESIGN.md respetada).
+
+**Por qué**: user quería fusionar dos landings que le gustaban, y feedback visual real sobre el resultado deployado.
+
+**Siguiente**: nada bloqueante. Si vuelve el 500 en dev local sin razón aparente y `.env` se ve bien, sospechar primero del perfil de shell (`env | rg -i supabase` para confirmar), no del archivo del proyecto.
