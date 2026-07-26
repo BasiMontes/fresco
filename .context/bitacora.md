@@ -53,3 +53,16 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: advisor de seguridad post-migración lo marcó, user confirmó "arréglalo".
 
 **Siguiente**: si algún día se necesita panel admin con write autenticado, diseñar chequeo real de rol ahí — nunca reponer `USING(true)`.
+
+---
+
+## 2026-07-26 — Push a GitHub + fix deploy Vercel
+
+**Qué**:
+- 10 commits atómicos hechos (nada estaba comiteado desde el día 1, ni siquiera foundation/design/bootstrap). Hook pre-commit falló una vez por terminología "wave" residual en `master-implementation-plan.md` (no tocado en ese commit, chequeo global) — corregido antes de comitear, sin `--no-verify`.
+- Remote `github.com/BasiMontes/fresco` tenía historia no relacionada (1 commit propio, "Initial commit", 23 jul, mismo boilerplate base pero snapshot distinto). Confirmado con user: force-push, remote no tenía nada que local no tuviera ya. Hook pre-push falló una vez (`REGISTRY.md` de skills desactualizado) — regenerado, comiteado, reintentado.
+- **Deploy Vercel real estaba roto**, aunque mostraba "Ready": proyecto "fresco" (de 3 candidatos con nombre parecido — user confirmó este es el correcto, `frescoapp`/`fresco-app` son restos viejos, ignorar) tenía Framework Preset en "Other" (creado 24 jul, antes de existir código Next.js, nunca se re-detectó) → sitio daba 404 real. Corregido: `vercel project update --framework nextjs`. Redeploy → ahora 500 (env vars `NEXT_PUBLIC_SUPABASE_*` nunca pusheadas a Vercel). Agregadas a Production+Preview vía Supabase MCP (`get_project_url`/`get_publishable_keys`, sin tocar `.env` local). Redeploy final → 200 real, HTML servido, logs limpios.
+
+**Por qué**: user pidió comitear todo y subir; "verificar deploy" no era retórico — estaba roto de verdad, no solo confirmar que "Ready" en el dashboard.
+
+**Siguiente**: nada bloqueante. Proyecto Vercel correcto = "fresco" (`fresco-pro.vercel.app` = producción). Ignorar `frescoapp` y `fresco-app` en cualquier operación Vercel futura.
