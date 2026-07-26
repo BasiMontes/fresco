@@ -1,6 +1,7 @@
 'use client';
 
-import type { DietaBase } from '@/lib/store/onboarding-store';
+import type { TipoCocina } from '@schemas';
+import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { useRouter } from 'next/navigation';
 
 import { useState } from 'react';
@@ -9,34 +10,136 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { generateMealPlan } from '@/lib/api/edge-functions';
+import { upsertUserProfile } from '@/lib/api/user-profile';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
+import { createClient } from '@/lib/supabase/client';
+import { validateHousehold } from '@/lib/validation/onboarding';
 
 /**
  * `/onboarding` — EPIC-FRESCO-1 (US 1.1/1.2: 3-step onboarding, kept short
  * so a guest doesn't abandon before reaching any value — user-journeys.md
  * Journey 1, Step 2). Single route driving all 3 steps internally (judgment
  * call, see report) rather than 3 separate routes.
+ *
+ * FRESCO-5 extends this scaffold with the full FR-1.1 profile (diet,
+ * allergens, disliked ingredients, favorite cuisines, household size) and
+ * persists it to `user_profiles` before continuing on to menu generation.
  */
 
-const DIETA_OPTIONS: { value: DietaBase, label: string }[] = [
-  { value: 'omnivoro', label: 'Omnívoro' },
-  { value: 'vegetariano', label: 'Vegetariano' },
-  { value: 'vegano', label: 'Vegano' },
-  { value: 'sin_gluten', label: 'Sin gluten' },
-  { value: 'sin_lactosa', label: 'Sin lactosa' },
+const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
+  { value: 'dietaVegetariano', label: 'Vegetariano' },
+  { value: 'dietaVegano', label: 'Vegano' },
+  { value: 'dietaSinGluten', label: 'Sin gluten' },
+  { value: 'dietaSinLactosa', label: 'Sin lactosa' },
+  { value: 'dietaSinHuevo', label: 'Sin huevo' },
+  { value: 'dietaKeto', label: 'Keto' },
+  { value: 'dietaHalal', label: 'Halal' },
 ];
 
-const COCINA_OPTIONS = ['Mediterránea', 'Italiana', 'Mexicana', 'Asiática', 'Española', 'India'];
+// Sourced from the seeded `recipes.alergenos` vocabulary (spot-checked
+// directly against the DB, per the implementation plan's Risk 1 mitigation)
+// so a declared allergen actually matches what `get_filtered_recipes` filters
+// on — not invented labels that would silently fail to protect Laura.
+const ALERGENO_OPTIONS: { value: string, label: string }[] = [
+  { value: 'gluten', label: 'Gluten' },
+  { value: 'huevo', label: 'Huevo' },
+  { value: 'pescado', label: 'Pescado' },
+  { value: 'frutos_de_cascara', label: 'Frutos de cáscara' },
+  { value: 'apio', label: 'Apio' },
+  { value: 'sulfitos', label: 'Sulfitos' },
+];
+
+// Curated subset of the seeded `recipes.ingredientes_que_puede_desagradar`
+// vocabulary — same rationale as allergens above (Decision 1 in the
+// implementation plan): a short curated list, not free text.
+const INGREDIENTE_ODIADO_OPTIONS: { value: string, label: string }[] = [
+  { value: 'cebolla', label: 'Cebolla' },
+  { value: 'champiñones', label: 'Champiñones' },
+  { value: 'setas', label: 'Setas' },
+  { value: 'cilantro', label: 'Cilantro' },
+  { value: 'apio', label: 'Apio' },
+  { value: 'comino', label: 'Comino' },
+  { value: 'guisantes', label: 'Guisantes' },
+  { value: 'judias verdes', label: 'Judías verdes' },
+  { value: 'pimiento rojo', label: 'Pimiento rojo' },
+  { value: 'pimiento verde', label: 'Pimiento verde' },
+  { value: 'chorizo', label: 'Chorizo' },
+  { value: 'panceta', label: 'Panceta' },
+  { value: 'tocino', label: 'Tocino' },
+  { value: 'morcilla', label: 'Morcilla' },
+];
+
+const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
+  { value: 'española', label: 'Española' },
+  { value: 'italiana', label: 'Italiana' },
+  { value: 'mexicana', label: 'Mexicana' },
+  { value: 'asiática', label: 'Asiática' },
+  { value: 'mediterránea', label: 'Mediterránea' },
+  { value: 'latina', label: 'Latina' },
+  { value: 'internacional', label: 'Internacional' },
+];
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
-  const { step, dieta, cocinasFavoritas, numPersonas, setStep, toggleDieta, toggleCocina, setNumPersonas }
-    = useOnboardingStore();
+  const {
+    step,
+    dietaVegetariano,
+    dietaVegano,
+    dietaSinGluten,
+    dietaSinLactosa,
+    dietaSinHuevo,
+    dietaKeto,
+    dietaHalal,
+    alergenos,
+    ingredientesOdiados,
+    cocinasFavoritas,
+    adultos,
+    ninos,
+    setStep,
+    toggleDieta,
+    toggleAlergeno,
+    toggleIngredienteOdiado,
+    toggleCocina,
+    setAdultos,
+    setNinos,
+  } = useOnboardingStore();
+
+  const dietaState: Record<DietaFlag, boolean> = {
+    dietaVegetariano,
+    dietaVegano,
+    dietaSinGluten,
+    dietaSinLactosa,
+    dietaSinHuevo,
+    dietaKeto,
+    dietaHalal,
+  };
+
+  const household = validateHousehold({ adultos, ninos });
 
   async function handleGenerate() {
     setIsGenerating(true);
     try {
+      const client = createClient();
+      // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
+      // Assumes an authenticated session already exists — guest-mode
+      // onboarding is explicitly out of scope for this story.
+      await upsertUserProfile(client, {
+        num_personas: adultos + ninos,
+        adultos,
+        ninos,
+        dieta_vegetariano: dietaVegetariano,
+        dieta_vegano: dietaVegano,
+        dieta_sin_gluten: dietaSinGluten,
+        dieta_sin_lactosa: dietaSinLactosa,
+        dieta_sin_huevo: dietaSinHuevo,
+        dieta_keto: dietaKeto,
+        dieta_halal: dietaHalal,
+        alergenos,
+        ingredientes_odiados: ingredientesOdiados,
+        cocinas_favoritas: cocinasFavoritas,
+      });
+
       const fechaInicio = new Date().toISOString().slice(0, 10);
       // TODO: guest-mode auth unresolved, see business-api-map.md
       // A guest at this point in the journey has no Supabase session yet
@@ -52,9 +155,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
-      <p className="text-caption uppercase text-tertiary">
+    <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
+      <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
         Paso
+        {' '}
         {step}
         {' '}
         de 3
@@ -68,12 +172,56 @@ export default function OnboardingPage() {
       <Card className="mt-6">
         {step === 1 && (
           <>
-            <h1 className="text-h3">¿Qué dieta sigue tu hogar?</h1>
+            <h1 className="text-h3">¿Qué dieta y restricciones sigue tu hogar?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {DIETA_OPTIONS.map(option => (
-                <button key={option.value} type="button" onClick={() => toggleDieta(option.value)}>
-                  <Tag variant={dieta.includes(option.value) ? 'selected' : 'outline'}>
+              {DIETA_OPTIONS.map((option) => {
+                // AC-2: "vegana" always implies "vegetariana" — the
+                // vegetariano chip stays visually locked selected whenever
+                // vegano is active, and cannot be toggled off from here.
+                const isLocked = option.value === 'dietaVegetariano' && dietaVegano;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    data-testid="dieta_option"
+                    disabled={isLocked}
+                    onClick={() => toggleDieta(option.value)}
+                  >
+                    <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
+                      {option.label}
+                    </Tag>
+                  </button>
+                );
+              })}
+            </div>
+
+            <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {ALERGENO_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid="alergeno_option"
+                  onClick={() => toggleAlergeno(option.value)}
+                >
+                  <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
+                    {option.label}
+                  </Tag>
+                </button>
+              ))}
+            </div>
+
+            <h2 className="mt-6 text-h5">¿Algún ingrediente que no te guste?</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {INGREDIENTE_ODIADO_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid="ingrediente_odiado_option"
+                  onClick={() => toggleIngredienteOdiado(option.value)}
+                >
+                  <Tag variant={ingredientesOdiados.includes(option.value) ? 'selected' : 'outline'}>
                     {option.label}
                   </Tag>
                 </button>
@@ -87,10 +235,15 @@ export default function OnboardingPage() {
             <h1 className="text-h3">¿Cuáles son tus cocinas favoritas?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {COCINA_OPTIONS.map(cocina => (
-                <button key={cocina} type="button" onClick={() => toggleCocina(cocina)}>
-                  <Tag variant={cocinasFavoritas.includes(cocina) ? 'selected' : 'outline'}>
-                    {cocina}
+              {COCINA_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid="cocina_option"
+                  onClick={() => toggleCocina(option.value)}
+                >
+                  <Tag variant={cocinasFavoritas.includes(option.value) ? 'selected' : 'outline'}>
+                    {option.label}
                   </Tag>
                 </button>
               ))}
@@ -100,21 +253,45 @@ export default function OnboardingPage() {
 
         {step === 3 && (
           <>
-            <h1 className="text-h3">¿Cuántas personas cocináis en casa?</h1>
+            <h1 className="text-h3">¿Quiénes cocináis en casa?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={numPersonas}
-              onChange={e => setNumPersonas(Number(e.target.value))}
-              className="mt-4 max-w-24"
-            />
+            <div className="mt-4 flex gap-4">
+              <label className="flex flex-col gap-1">
+                <span className="text-body-sm text-tertiary">Adultos</span>
+                <Input
+                  data-testid="adultos_input"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={adultos}
+                  onChange={e => setAdultos(Number(e.target.value))}
+                  className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-body-sm text-tertiary">Niños</span>
+                <Input
+                  data-testid="ninos_input"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={ninos}
+                  onChange={e => setNinos(Number(e.target.value))}
+                  className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
+                />
+              </label>
+            </div>
+            {!household.valid && (
+              <p data-testid="household_validation_message" className="mt-2 text-body-sm text-error">
+                {household.message}
+              </p>
+            )}
           </>
         )}
 
         <div className="mt-6 flex justify-between">
           <Button
+            data-testid="back_button"
             variant="secondary"
             onClick={() => setStep((step > 1 ? step - 1 : 1) as 1 | 2 | 3)}
             disabled={step === 1}
@@ -123,15 +300,18 @@ export default function OnboardingPage() {
           </Button>
           {step < 3
             ? (
-                <Button onClick={() => setStep((step + 1) as 1 | 2 | 3)}>Siguiente</Button>
+                <Button data-testid="next_button" onClick={() => setStep((step + 1) as 1 | 2 | 3)}>
+                  Siguiente
+                </Button>
               )
             : (
                 <Button
+                  data-testid="generate_menu_button"
                   variant="action"
                   onClick={() => {
                     void handleGenerate();
                   }}
-                  disabled={isGenerating}
+                  disabled={isGenerating || !household.valid}
                 >
                   {isGenerating ? 'Generando menú…' : 'Generar mi menú'}
                 </Button>
