@@ -21,6 +21,7 @@ This directory is what makes a fresh AI session productive on day one. Every fil
 │
 ├── master-implementation-plan.md  High-level dependency-cascaded roadmap — EPIC/strategy (/master-implementation-plan)
 ├── dev-roadmap.md                 Ticket-level dependency execution roadmap — TICKET/sequence (/dev-roadmap; subsumes PBI/sprint-sequence.md)
+├── bitacora.md                    Append-only iteration log — what/why/next per session, read first on a cold start
 │
 ├── PRD/                           Output of /project-foundation Phase 2 — Product Requirements
 │   └── README.md                  Phase placeholder (see file)
@@ -52,6 +53,7 @@ Every file in `.context/` has an owner. Do not edit auto-generated files by hand
 | `business/domain-glossary.md`                       | `/project-foundation` (Phase 4 Step 6); updated when new terms surface (via `/product-management` flag) | Hand-maintained, append-only, never regenerated        |
 | `master-implementation-plan.md`                     | `/master-implementation-plan` command   | Invoked by `/project-foundation` Phase 4 Step 5. EPIC/strategy layer. |
 | `dev-roadmap.md`                                    | `/dev-roadmap` command                  | TICKET/sequence layer. Surgical UPDATE (regenerates §4 Kahn sort, preserves hand-authored §2/§3/§5/§6). Subsumes `PBI/sprint-sequence.md`. Cascaded from `/master-implementation-plan` + `/product-management`; bootstrapped by `/sprint-development` Phase 0. |
+| `bitacora.md`                                       | AI, appended every relevant iteration   | Append-only, never rewritten. Plain what/why/next per entry — read this first on a cold session start. |
 | `PRD/*.md`                                          | `/project-foundation` (Phase 2)         | Executive summary, personas, MVP scope, user journeys  |
 | `SRS/*.md`                                          | `/project-foundation` (Phase 2)         | Functional / non-functional / architecture / API specs |
 | `ADR/ADR-NNNN-<slug>.md`                            | Human architect, or `/project-foundation` (SRS) / `/sprint-development` (Stage 1) — AI drafts for human approval | **Exception: append-only, never regenerated.** Superseded by a newer ADR, never overwritten or hand-re-run. See `ADR/README.md`. |
