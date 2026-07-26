@@ -1,0 +1,46 @@
+# Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos
+
+**Jira Key:** [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7)
+**Epic:** [FRESCO-6](https://basiliomontescastano.atlassian.net/browse/FRESCO-6) (Generación de Menú Semanal con IA)
+**Type:** Historia
+**Status:** Listo
+**Priority:** Medium
+**Story Points:** -
+
+---
+
+## Overview
+
+***Source spec******:*** FR-2.1
+
+## User story
+
+Como Laura, la planificadora agotada, quiero una semana completa de comidas generada automáticamente a partir de mi perfil, para no tener que gastar energía mental planificando cada comida yo misma.
+
+## Definition of done
+
+- Se produce un menú completo y válido de 21 comidas en menos de 30 segundos, o la usuaria ve un mensaje claro — nunca un menú parcial o roto
+- El menú respeta el presupuesto semanal declarado por el hogar
+- Cualquier compromiso necesario para construir el menú se explica a la usuaria, nunca se aplica en silencio
+
+---
+
+## Traceability
+
+### Historias (2)
+
+- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(Listo)_
+- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Listo)_
+
+---
+
+## Metadata
+
+- **Created:** 7/26/2026
+- **Updated:** 7/26/2026
+- **Reporter:** Basi Montes
+- **Assignee:** Basi Montes
+
+---
+
+_Synced from Jira by sync-jira-issues_
