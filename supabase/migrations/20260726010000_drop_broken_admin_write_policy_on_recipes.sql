@@ -1,0 +1,22 @@
+-- Security fix: "Solo administradores pueden escribir" claimed admin-only
+-- write access to `recipes`, but its actual expression was
+-- `WITH CHECK (true)` for ALL commands on the `authenticated` role — i.e.
+-- every signed-up user, not just admins, could insert/update/delete any
+-- recipe in the shared catalog. Flagged by get_advisors(security) as
+-- rls_policy_always_true.
+--
+-- No admin/role concept exists anywhere in this schema (no `role` column on
+-- user_profiles, no admin table, no is_admin() function) — inventing one now
+-- would be a new feature, not a fix. The correct minimal fix is to remove
+-- the bogus policy: with RLS enabled and no permissive write policy left,
+-- authenticated users get zero write access, which matches what the policy
+-- name always claimed. The `recipes` catalog is written via service_role
+-- (seed scripts / admin tooling), which bypasses RLS entirely and is
+-- unaffected by this change. `Recetas públicas para lectura` (anon SELECT)
+-- is untouched.
+--
+-- If an actual admin panel needs authenticated-role write access later,
+-- design a real admin check then (e.g. a role column + policy using it) —
+-- do not re-add a `true` check.
+
+drop policy "Solo administradores pueden escribir" on public.recipes;
