@@ -80,3 +80,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user quería fusionar dos landings que le gustaban, y feedback visual real sobre el resultado deployado.
 
 **Siguiente**: nada bloqueante. Si vuelve el 500 en dev local sin razón aparente y `.env` se ve bien, sospechar primero del perfil de shell (`env | rg -i supabase` para confirmar), no del archivo del proyecto.
+
+---
+
+## 2026-07-26 — Seed backlog Jira: Master Sprint 0 (EPIC-1/2/8)
+
+**Qué**:
+- `/product-management` corrido, scope Master Sprint 0 nomás (Onboarding, Generación Menú IA, Seguridad Alimentaria) — EPIC-3/4/5/6/7 quedan para después, a propósito.
+- 3 épicos + 3 historias creadas en Jira (FRESCO-4 a FRESCO-9), 1 historia por épico (no 1 por US — se pisarían en scope). AC en Gherkin, scope, out-of-scope, business rules — documentado a fondo por pedido explícito del user.
+- **Bug real encontrado y arreglado**: `scripts/sync-jira-issues.ts` hardcodeaba el literal `Story` en 5 lugares (2 JQL, 3 comparaciones) en vez de leer `work_types.story.jira_issue_type` (`Historia` en este workspace en español) desde `.agents/jira-required.yaml` — el dato correcto YA estaba en config, el script no lo usaba. Por eso `pull --epic` traía "Stories synced: 0" siempre. Agregado helper `storyIssueTypeName()`, reemplazados los 5 sitios. Verificado: ahora sincroniza bien. Bug de alcance repo (afecta cualquier proyecto con Jira no-inglés), no solo esta sesión.
+- **Gap real de config**: `.agents/jira-link-types.json` decía que el tipo "Dependencies" existía (id 10014) — no existe en este workspace, solo "Blocks" (ya documentado como sinónimo equivalente en `jira-required.yaml`, no fue degradación). Refrescado el catálogo con `bun run jira:sync-link-types`. Ojo con la dirección: `blocks.outward` = "blocks" (sujeto termina primero), lo opuesto a `dependencies.outward` = "depends on" — el subagente erró la dirección al primer intento, la detectó vía verificación real (no confiar en el eco de acli) y la corrigió.
+- **Cambio de idioma pedido por user**: las 6 tarjetas se escribieron primero en inglés (regla CLAUDE.md #12, "artefactos de repo siempre inglés" incluye Jira). User pidió anular esa regla PARA JIRA específicamente, de forma permanente — no solo esta vez. Actualizado CLAUDE.md #12 con override de proyecto. Las 6 tarjetas reescritas en español in-place (mismos IDs de comment, no duplicados).
+- `.context/dev-roadmap.md` poblado por primera vez: Execution Sprint 1 = Onboarding + Food Safety (en paralelo), Sprint 2 = Menu Generation (bloqueado por los dos). Cero ciclos.
+
+**Por qué**: user pidió seguir con "lo que sigue del roadmap" — sin backlog en Jira, `/sprint-development` no tiene de dónde arrancar.
+
+**Siguiente**: implementar FRESCO-5 (Onboarding) y FRESCO-9 (Food Safety) en paralelo vía `/sprint-development` (desbloqueadas ya), FRESCO-7 (Menu Generation) después de esas dos. Recordar: proyecto habla español en Jira de acá en adelante, inglés en todo lo demás (código/commits/PRs).
