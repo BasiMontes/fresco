@@ -1,0 +1,2196 @@
+{
+  "story": {
+    "jira_issue_type": {
+      "id": "10009",
+      "name": "Historia"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "backlog": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "shift_left_qa": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "estimation": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "ready_for_dev": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "ready_for_qa": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "in_test": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "qa_approved": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "ready_for_release": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "deployed_to_production": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "analyze": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "ready_to_estimate": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "estimate": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "estimated_and_ready_to_work": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_working": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "pull_request": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "pushed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "deployed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "start_testing": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "qa_sign_off": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "include_in_release": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "released": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "defect_reported": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "fix_defect": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "back_from_blocked": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "back_from_in_test": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "back_from_qa_approved": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "back_from_in_progress": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back_from_estimation": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back_from_shift_left_qa": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "aborted": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "recover": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      }
+    }
+  },
+  "bug": {
+    "jira_issue_type": {
+      "id": "10011",
+      "name": "Error"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "open": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "ready_for_qa": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "closed": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "deferred": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "cannot_reproduce": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "duplicated": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "rejected": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "enhancement": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_fixing": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "is_cnr": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "defer": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "is_duplicated": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "is_wad": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "is_not_a_bug": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "pull_request": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "hard_pushed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "fixed_and_deployed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "retest_passed": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "re_open": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "resume_fix": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "aborted": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      }
+    }
+  },
+  "test_case": {
+    "jira_issue_type": {
+      "id": "10008",
+      "name": "Tarea"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "draft": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_design": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "ready": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "candidate": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_automation": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "pull_request": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "automated": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "manual": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "deprecated": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_design": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "ready_to_run": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "automation_review_from_ready": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "automation_review_from_draft": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "automation_review_from_manual": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "approve_to_automate": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_automation": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "create_pr": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "automated_from_manual": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "for_manual": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "manual_execution_from_candidate": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "manual_execution_from_automated": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "for_automation": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "fix": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "back_from_in_design": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back_from_ready": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "back_from_in_review": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back_from_candidate": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "back_from_in_automation": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back_from_pull_request": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "deprecated": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "recover": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      }
+    }
+  },
+  "epic": {
+    "jira_issue_type": {
+      "id": "10006",
+      "name": "Epic"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "backlog": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "planning": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "done": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "plan": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "ready_to_work": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "complete": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "aborted": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      }
+    }
+  },
+  "defect": {
+    "jira_issue_type": {
+      "id": "10011",
+      "name": "Error"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "open": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "ready_for_qa": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "closed": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "deferred": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "cannot_reproduce": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "duplicated": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "rejected": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "enhancement": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_fixing": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "is_cnr": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "defer": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "is_duplicated": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "is_wad": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "is_not_a_bug": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "pull_request": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "hard_pushed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "fixed_and_deployed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "retest_passed": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "re_open": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "resume_fix": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "aborted": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      }
+    }
+  },
+  "improvement": {
+    "jira_issue_type": {
+      "id": "10010",
+      "name": "Función"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "open": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "ready_for_qa": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "closed": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "deferred": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "cannot_reproduce": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "duplicated": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "rejected": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "enhancement": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_fixing": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "is_cnr": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "defer": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "is_duplicated": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "is_wad": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "is_not_a_bug": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "pull_request": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "hard_pushed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "fixed_and_deployed": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "retest_passed": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "re_open": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "back": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "resume_fix": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "aborted": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      }
+    }
+  },
+  "tech_story": {
+    "jira_issue_type": {
+      "id": "10008",
+      "name": "Tarea"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "to_do": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "fixed": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "completed": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "automated": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_working": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "fix": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "complete": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "test_finished": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "recover_from_blocked": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "renew": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "abort": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "recover_from_in_review": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "back_from_completed": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "back_from_fixed": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "back_from_automated": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "recovered": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      }
+    }
+  },
+  "tech_debt": {
+    "jira_issue_type": {
+      "id": "10008",
+      "name": "Tarea"
+    },
+    "workflow_scheme": null,
+    "workflow": {
+      "id": "12a11278-c821-4d13-b4ab-4687d7c93ddc",
+      "name": "Software workflow for project KAN"
+    },
+    "statuses": {
+      "listo": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "blocked": {
+        "id": "10041",
+        "name": "Blocked",
+        "category": "new"
+      },
+      "merged": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "wip": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "finalizada": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "rechazos": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      },
+      "control_de_calidad": {
+        "id": "10006",
+        "name": "Control de calidad",
+        "category": "indeterminate"
+      },
+      "to_do": {
+        "id": "10004",
+        "name": "Listo",
+        "category": "new"
+      },
+      "in_progress": {
+        "id": "10005",
+        "name": "WIP",
+        "category": "indeterminate"
+      },
+      "in_review": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "fixed": {
+        "id": "10007",
+        "name": "Merged",
+        "category": "indeterminate"
+      },
+      "completed": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "automated": {
+        "id": "10008",
+        "name": "Finalizada",
+        "category": "done"
+      },
+      "aborted": {
+        "id": "10042",
+        "name": "Rechazos",
+        "category": "new"
+      }
+    },
+    "transitions": {
+      "ready": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "wip": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "qa": {
+        "id": "31",
+        "name": "QA",
+        "from_status_id": null,
+        "to_status_id": "10006",
+        "from_canonical": null,
+        "to_canonical": "control_de_calidad"
+      },
+      "merged": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "done": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "blocked": {
+        "id": "2",
+        "name": "Blocked",
+        "from_status_id": null,
+        "to_status_id": "10041",
+        "from_canonical": null,
+        "to_canonical": "blocked"
+      },
+      "rechazos": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "create": {
+        "id": "1",
+        "name": "Create",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "start_working": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "fix": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "complete": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "test_finished": {
+        "id": "51",
+        "name": "Done",
+        "from_status_id": null,
+        "to_status_id": "10008",
+        "from_canonical": null,
+        "to_canonical": "finalizada"
+      },
+      "recover_from_blocked": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "renew": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      },
+      "abort": {
+        "id": "3",
+        "name": "Rechazos",
+        "from_status_id": null,
+        "to_status_id": "10042",
+        "from_canonical": null,
+        "to_canonical": "rechazos"
+      },
+      "recover_from_in_review": {
+        "id": "21",
+        "name": "WIP",
+        "from_status_id": null,
+        "to_status_id": "10005",
+        "from_canonical": null,
+        "to_canonical": "wip"
+      },
+      "back_from_completed": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "back_from_fixed": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "back_from_automated": {
+        "id": "41",
+        "name": "Merged",
+        "from_status_id": null,
+        "to_status_id": "10007",
+        "from_canonical": null,
+        "to_canonical": "merged"
+      },
+      "recovered": {
+        "id": "11",
+        "name": "Ready",
+        "from_status_id": null,
+        "to_status_id": "10004",
+        "from_canonical": null,
+        "to_canonical": "listo"
+      }
+    }
+  }
+}

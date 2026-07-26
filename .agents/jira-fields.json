@@ -1,0 +1,155 @@
+{
+  "acceptance_criteria": {
+    "id": "customfield_10176",
+    "type": "string",
+    "name": "✅ Acceptance Criteria (Gherkin)"
+  },
+  "acceptance_test_plan": {
+    "id": "customfield_10191",
+    "type": "string",
+    "name": "🧪 Acceptance Test Plan (ATP)"
+  },
+  "acceptance_test_results": {
+    "id": "customfield_10177",
+    "type": "string",
+    "name": "🧪 Acceptance Test Results (ATR)"
+  },
+  "actual_result": {
+    "id": "customfield_10187",
+    "type": "string",
+    "name": "Actual Result (Comportamiento)"
+  },
+  "business_rules_specification": {
+    "id": "customfield_10178",
+    "type": "string",
+    "name": "🚩Business Rules Specification"
+  },
+  "clasificacion": {
+    "id": "customfield_10019",
+    "type": "any",
+    "name": "Clasificación",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "color_de_la_incidencia": {
+    "id": "customfield_10017",
+    "type": "string",
+    "name": "Color de la incidencia",
+    "system": true,
+    "provider": "com.pyxis.greenhopper.jira"
+  },
+  "error_type": {
+    "id": "customfield_10193",
+    "type": "option",
+    "name": "Error Type",
+    "options": {}
+  },
+  "evidence": {
+    "id": "customfield_10190",
+    "type": "string",
+    "name": "🧫EVIDENCE"
+  },
+  "expected_result": {
+    "id": "customfield_10188",
+    "type": "string",
+    "name": "✅ Expected Result (Output)"
+  },
+  "feature_implementation_plan": {
+    "id": "customfield_10184",
+    "type": "string",
+    "name": "Feature Implementation Plan (Dev)🛠️"
+  },
+  "feature_test_plan": {
+    "id": "customfield_10185",
+    "type": "string",
+    "name": "🧪 Feature Test Plan (QA)"
+  },
+  "fecha_de_inicio": {
+    "id": "customfield_10015",
+    "type": "date",
+    "name": "Fecha de inicio"
+  },
+  "fix": {
+    "id": "customfield_10197",
+    "type": "option",
+    "name": "Fix",
+    "options": {}
+  },
+  "flagged": {
+    "id": "customfield_10021",
+    "type": "array",
+    "name": "Flagged",
+    "options": {
+      "impediment": "10019"
+    }
+  },
+  "mockup": {
+    "id": "customfield_10181",
+    "type": "string",
+    "name": "Mockup 🎴"
+  },
+  "out_of_scope": {
+    "id": "customfield_10180",
+    "type": "string",
+    "name": "🏴 Out Of Scope"
+  },
+  "root_cause": {
+    "id": "customfield_10196",
+    "type": "option",
+    "name": "Root Cause🐞",
+    "options": {}
+  },
+  "scope": {
+    "id": "customfield_10179",
+    "type": "string",
+    "name": "Scope"
+  },
+  "severity": {
+    "id": "customfield_10194",
+    "type": "option",
+    "name": "Severity 🚩",
+    "options": {}
+  },
+  "spec_implementation_plan": {
+    "id": "customfield_10186",
+    "type": "string",
+    "name": "Spec Implementation Plan (Dev)🛠️"
+  },
+  "story_points": {
+    "id": "customfield_10192",
+    "type": "number",
+    "name": "Story Points"
+  },
+  "team": {
+    "id": "customfield_10001",
+    "type": "team",
+    "name": "Team"
+  },
+  "test_environment": {
+    "id": "customfield_10195",
+    "type": "option",
+    "name": "Test Environment 📦️",
+    "options": {}
+  },
+  "test_status": {
+    "id": "customfield_10198",
+    "type": "option",
+    "name": "Test Status🧪",
+    "options": {}
+  },
+  "weblink": {
+    "id": "customfield_10183",
+    "type": "string",
+    "name": "Weblink (URL)"
+  },
+  "workaround": {
+    "id": "customfield_10189",
+    "type": "string",
+    "name": "Workaround"
+  },
+  "workflow": {
+    "id": "customfield_10182",
+    "type": "string",
+    "name": "WORKFLOW"
+  }
+}

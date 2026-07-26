@@ -419,7 +419,7 @@ link_types:
 # discovered by the sync.
 work_types:
   story:
-    jira_issue_type: Story
+    jira_issue_type: Historia
     description: User story / feature work item
     # ---- Sync routing (consumed by scripts/sync-jira-issues.ts work-type registry) ----
     sync: default
@@ -527,7 +527,7 @@ work_types:
       - project-discovery)
 
   bug:
-    jira_issue_type: Bug
+    jira_issue_type: Error
     description: Defect / bug work item
     # ---- Sync routing (consumed by scripts/sync-jira-issues.ts work-type registry) ----
     sync: default
@@ -587,7 +587,7 @@ work_types:
     used_by: [acli, sprint-development, agentic-qa-boilerplate (sprint-testing)]
 
   test_case:
-    jira_issue_type: Test
+    jira_issue_type: Tarea
     description: Test case (TC) work item (QA-side; included so a single Jira workspace serves both repos)
     # ---- Sync routing (consumed by scripts/sync-jira-issues.ts work-type registry) ----
     sync: optional
@@ -691,7 +691,7 @@ work_types:
     used_by: [product-management/epic-creation, sprint-development]
 
   defect:
-    jira_issue_type: Defect
+    jira_issue_type: Error
     description: Defect work item (UPEX Bug/Defect lifecycle — identical workflow to `bug`)
     # ---- Sync routing (consumed by scripts/sync-jira-issues.ts work-type registry) ----
     sync: discovery
@@ -747,7 +747,7 @@ work_types:
     used_by: [acli, sprint-development]
 
   improvement:
-    jira_issue_type: Improvement
+    jira_issue_type: Función
     description: Improvement / enhancement work item (UPEX Bug/Defect lifecycle — identical workflow to `bug`)
     # ---- Sync routing (consumed by scripts/sync-jira-issues.ts work-type registry) ----
     sync: optional
@@ -806,7 +806,7 @@ work_types:
     used_by: [acli, sprint-development, product-management]
 
   tech_story:
-    jira_issue_type: Tech Story
+    jira_issue_type: Tarea
     description: |
       Technical story (UPEX Tech Task/Debt workflow — identical to `tech_debt`).
       NOTE: the `🚀` status (id 10021) and the `✅` / `Auto-Deploy` transitions
@@ -850,7 +850,7 @@ work_types:
     used_by: [sprint-development]
 
   tech_debt:
-    jira_issue_type: Tech Debt
+    jira_issue_type: Tarea
     description: |
       Technical debt (UPEX Tech Task/Debt workflow — identical to `tech_story`).
       NOTE: the `🚀` status (id 10021) and the `✅` / `Auto-Deploy` transitions
