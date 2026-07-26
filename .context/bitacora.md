@@ -96,3 +96,20 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió seguir con "lo que sigue del roadmap" — sin backlog en Jira, `/sprint-development` no tiene de dónde arrancar.
 
 **Siguiente**: implementar FRESCO-5 (Onboarding) y FRESCO-9 (Food Safety) en paralelo vía `/sprint-development` (desbloqueadas ya), FRESCO-7 (Menu Generation) después de esas dos. Recordar: proyecto habla español en Jira de acá en adelante, inglés en todo lo demás (código/commits/PRs).
+
+---
+
+## 2026-07-26 — Sprint-dev kickoff: FRESCO-5 + FRESCO-9 Stage 1+2 en paralelo
+
+**Qué**:
+- `/sprint-development` arrancado en paralelo para FRESCO-5 (Onboarding) y FRESCO-9 (Food Safety) — Fase 0/0b confirmaron ambas desbloqueadas en `dev-roadmap.md`, sin ciclos.
+- FRESCO-9 Stage 1: plan cubre 2 layers defense-in-depth (ADR-0001) — Layer 1 SQL pre-filter `get_filtered_recipes()` ya existía, Layer 2 system prompt Gemini era stub. Decisión user: completar las 5 categorías de reglas del prompt de una (no solo las 2 de food-safety), para no reabrir `prompt.ts` en FRESCO-7 después.
+- FRESCO-9 Stage 2: `prompt.ts` reescrito completo (alérgenos/ingredientes odiados = exclusión dura, historial Pro/presupuesto/variedad = reglas soft best-effort), `components/ui/alert-banner.tsx` nuevo (`AlertBanner`, role="alert", token `warning`, no dismissible). Lint/types verdes.
+- **Bloqueo real cross-ticket**: subagente de FRESCO-9 no pudo comitear en su primer intento — `.husky/pre-commit` corre `types:check` de TODO el repo, y en ese momento fallaba por errores de tipos de FRESCO-5 (en progreso en paralelo, archivos que a este agente le prohibí tocar). Correctamente NO bypaseó el hook, dejó diff limpio sin comitear, reportó bloqueo.
+- FRESCO-5 Stage 2 terminó después (3 commits atómicos: store reestructurado con locks vegano→vegetariano, validación pura `validateHousehold`, pasos 1-3 onboarding + `upsertUserProfile`). `bun test` 10/10, lint/types/build verdes. Vocabularios de alérgenos/ingredientes sacados en vivo de Supabase (columnas reales `recipes`), no inventados.
+- **Gap real encontrado (no tapado)**: AC-4 (escritura real en DB tras onboarding) no se pudo caminar en browser real — no existe página de login todavía (`/signup` es shell), y un intento de signup vía API chocó con `over_email_send_rate_limit` (429). Cubierto solo con unit tests (client mockeado). Queda pendiente validar en vivo cuando exista login real.
+- Con FRESCO-5 comiteado y `types:check` repo-wide verde, reintenté comit de FRESCO-9 — ya estaba comiteado (el subagente lo reintentó y logró solo, commit `34310b2`, apenas destrabado el repo).
+
+**Por qué**: user pidió arrancar FRESCO-5 y FRESCO-9 en paralelo, FRESCO-7 después.
+
+**Siguiente**: Stage 3 (code review) para ambos tickets — estrategia es `solo-main` (PR opcional, push directo a main permitido). Falta: (a) decidir si review pasa por PR o inline+push directo; (b) validar AC-4 de FRESCO-5 en vivo apenas exista login; (c) FRESCO-7 (Menu Generation) queda para después, ya puede consumir `prompt.ts` tal cual (nota dejada en el archivo).
