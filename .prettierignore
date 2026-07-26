@@ -92,6 +92,9 @@ docs/mcp/
 # but Prettier honors only .prettierignore (not .gitignore), so without this glob
 # format:check fails on dozens of machine-generated .yml files.
 .playwright-mcp/
+# Same issue, different tool: playwright-cli (the CLI-driven skill) writes its
+# own transient snapshots/screenshots/logs here instead of .playwright-mcp/.
+.playwright-cli/
 
 # ===========================================
 # Backup artifacts - generated, gitignored

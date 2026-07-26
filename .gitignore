@@ -78,6 +78,7 @@ Thumbs.db
 # ScheduleWakeup / scheduled tasks. Per-session, never committed.
 .claude/scheduled_tasks.lock
 .playwright-mcp
+.playwright-cli
 .backups/
 
 # ===== MCP Configuration =====
