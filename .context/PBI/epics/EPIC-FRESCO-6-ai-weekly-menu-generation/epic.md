@@ -17,7 +17,7 @@ Cubre la generación del menú semanal completo (21 comidas: 7 días × desayuno
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7) | Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos | - | Medium | Listo |
+| [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7) | Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos | - | Medium | WIP |
 
 ---
 

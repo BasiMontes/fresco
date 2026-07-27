@@ -17,7 +17,7 @@ Una garantía transversal y no negociable, no una función que el usuario active
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9) | Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú | - | Medium | Listo |
+| [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9) | Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú | - | Medium | WIP |
 
 ---
 

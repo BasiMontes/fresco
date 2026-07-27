@@ -145,3 +145,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió formalizar la regla de bitácora explícitamente ("créala en los 3... ahora 4 sitios") y continuar FRESCO-7 de punta a punta (Stage 1 a Stage 3), avisando en el medio que andaba corto de tokens — se ajustó el proceso (se saltó la ceremonia completa de 4 lentes en el batch 2 de implementación, review self-hecho más liviano) pero se retomó completo para el Stage 3 final.
 
 **Siguiente**: FRESCO-7 dev-done, pusheado (`1049263..5546e39`). Sin más tickets hard-blocked de Master Sprint 0 Execution Sprint 1/2 según `dev-roadmap.md` al momento de escribir esto — recomendable re-consultar `dev-roadmap.md` pa'confirmar qué sigue.
+
+---
+
+## 2026-07-27 — Master Sprint 1 sembrado en Jira + gap de status Jira encontrado
+
+**Qué**:
+- `/product-management` corrido (Workflow B, 3x Phase 2B) — 3 épicas + 1 historia cada una: **FRESCO-10** (Calendario Editable) → **FRESCO-11** (reordenar menú arrastrando), **FRESCO-12** (Lista de la Compra) → **FRESCO-13** (generar + marcar comprado), **FRESCO-14** (Aprendizaje Cocinado/Descartado) → **FRESCO-15** (marcar plato cocinado/descartado). Mismo patrón que Master Sprint 0: AC/Scope/OOS/Business Rules vía comment fallback en español, `Blocks` contra FRESCO-7 (las 3 nuevas historias dependen de que exista un `meal_plan_recipes` persistido). Sin overlap de scope entre las 3.
+- **Gotcha real de `acli` reproducido**: primer intento de link `FRESCO-11 Blocks FRESCO-7` salió en dirección invertida (el gotcha documentado de `--out`/`--in` para `Blocks` en este workspace específico) — detectado por verificación post-link (no confiar en el eco del comando), corregido, repetido para los otros 2.
+- `.context/dev-roadmap.md` regenerado vía `/dev-roadmap`: nueva **Execution Sprint 3** (FRESCO-11/13/15, bloqueada solo por FRESCO-7, paralela entre sí). `epic-tree.md` refrescado.
+- **Gap real encontrado de paso**: FRESCO-5, FRESCO-7, FRESCO-9 seguían con status Jira `WIP` a pesar de estar dev-done, revisados y pusheados hace rato — nadie los transicionó nunca (Stage 4 de `/sprint-development` asume merge-to-staging dispara la transición automática, pero acá es `solo-main` sin rama de integración, así que la transición automática nunca tuvo gatillo). Corregido: transicionados a `Control de calidad` (status real detrás del slug `ready_for_qa` en este workspace — coincide por casualidad con el mismo status que `story_default`/shift-left-QA usa, un solo status cubre ambos significados acá).
+- **No resuelto, de baja prioridad**: intenté desasignar esas 3 historias de Basi Montes (regla del skill: no dejar asignado al dev en Ready-For-QA, dejar sin asignar si no hay QA persona distinta — proyecto es solo yo) — `acli workitem edit --assignee ""` reportó éxito pero el assignee no cambió (mismo tipo de gotcha silencioso que el skill ya documenta para edición de assignee vía acli, aunque en la dirección opuesta: acá no desasignó en vez de desasignar-quien-no-debía). No insistí más, es cosmético, no bloquea nada.
+
+**Por qué**: user pidió sembrar Master Sprint 1 ("hay una ruta, lo vamos a conseguir") apenas Master Sprint 0 quedó completo.
+
+**Siguiente**: FRESCO-11/13/15 bloqueadas hasta que FRESCO-7 se marque Done en Jira (ya está dev-done en los hechos, status Jira dice `Control de calidad`). Nada más es dev-ready todavía — hay que esperar a que FRESCO-7 cierre el ciclo QA/Done antes de arrancar Execution Sprint 3.

@@ -28,7 +28,7 @@ Como Laura, la planificadora agotada (o cualquier usuaria con una alergia o rest
 
 ### Historia (1)
 
-- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Listo)_
+- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(WIP)_
 
 ---
 
