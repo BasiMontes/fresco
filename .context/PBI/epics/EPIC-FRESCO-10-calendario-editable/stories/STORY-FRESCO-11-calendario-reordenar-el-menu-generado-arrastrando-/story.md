@@ -19,7 +19,7 @@ Como Laura, quiero arrastrar cualquier plato de mi menú semanal generado a otro
 
 ### Historia (1)
 
-- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(WIP)_
+- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Finalizada)_
 
 ---
 

@@ -62,6 +62,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | ADR | Title | Status | Supersedes | Superseded by |
 | --- | ----- | ------ | ---------- | ------------- |
 | [ADR-0001](./ADR-0001-behavioral-learning-moat.md) | Behavioral-learning moat as the Free/Pro pricing boundary | Proposed | — | — |
+| [ADR-0002](./ADR-0002-position-swaps-bypass-learning-trigger.md) | Slot-position swaps must bypass `recipe_learning_trigger` | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
