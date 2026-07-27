@@ -46,8 +46,8 @@ export const AlertBanner = React.forwardRef<HTMLDivElement, AlertBannerProps>(
           <span className="text-label font-sans">Antes de continuar</span>
         </div>
         <ul className="flex flex-col gap-1 pl-7 text-body-sm">
-          {advertencias.map((advertencia, index) => (
-            <li key={index}>{advertencia}</li>
+          {advertencias.map(advertencia => (
+            <li key={advertencia}>{advertencia}</li>
           ))}
         </ul>
       </div>
