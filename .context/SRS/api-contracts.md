@@ -44,7 +44,7 @@ interface GenerateResponse {
 | `404` | `user_profiles` row not found |
 | `409` | a plan for this `semana_iso` already exists for this user (no silent overwrite) |
 | `422` | fewer than 21 recipes survive the allergen/diet SQL pre-filter — catalog too small for this profile |
-| `502` | the model failed to produce a valid menu after `MAX_RETRIES = 2` attempts |
+| `422` | the model failed to produce a valid menu after `MAX_RETRIES = 2` attempts (AC-4, distinct from a genuine `502` upstream failure) |
 | `500` | unexpected internal error |
 
 ### 1a. Nested contract — the menu-selection prompt
@@ -79,7 +79,7 @@ interface GenerateResponse {
 
 `advertencias` is populated when: a slot had no suitable recipe (and what was substituted), the budget forced a variety trade-off, a mandatory filter could not be honored at all (P0, safety-critical — FR-8.2), or (Pro-only, real history) a learning explanation. Server-side model config: `temperature: 0.7` (variety without losing filter coherence), `responseMimeType: 'application/json'`, `maxOutputTokens: 1024`.
 
-**Server-side output validation** (the contract the backend enforces on the model's response before it is trusted — FR-2.9): valid JSON; `semana` matches the request; all 7×3 slots present; every `recipe_id` exists in the filtered catalog; no lunch/dinner repeat; breakfast repeats ≤ 3. Failing any check triggers a retry (max 2); exhausting retries returns `502` to the caller — an invalid menu is never persisted.
+**Server-side output validation** (the contract the backend enforces on the model's response before it is trusted — FR-2.9): valid JSON; `semana` matches the request; all 7×3 slots present; every `recipe_id` exists in the filtered catalog; no lunch/dinner repeat; breakfast repeats ≤ 3. Failing any check triggers a retry (max 2); exhausting retries returns `422` to the caller (AC-4 — a distinct condition from a genuine `502` upstream Gemini failure) — an invalid menu is never persisted.
 
 ## 2. `POST /generate-shopping-list`
 

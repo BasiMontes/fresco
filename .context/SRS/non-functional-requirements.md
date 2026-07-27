@@ -49,7 +49,7 @@ Deliberately scoped to the MVP's real, current scale — a solo, part-time found
 ## 4. Reliability
 
 **NFR-REL-1 — Both Gemini-calling Edge Functions retry on invalid or malformed model output, bounded at `MAX_RETRIES = 2`.**
-- Applies to `generate-meal-plan` (JSON-parse failure or validator failure) and `generate-shopping-list` (JSON-parse failure, missing `pasillos` field, or < 90% ingredient-count retention). A menu or list that still fails after all retries surfaces as an explicit `502` error to the caller, never a partial or silently-invalid result (source: both Edge Function drafts).
+- Applies to `generate-meal-plan` (JSON-parse failure or validator failure) and `generate-shopping-list` (JSON-parse failure, missing `pasillos` field, or < 90% ingredient-count retention). A menu or list that still fails after all retries never persists a partial or silently-invalid result: `generate-meal-plan` surfaces this as an explicit `422` (AC-4, distinct from a genuine upstream `502`); `generate-shopping-list` surfaces it as `502` (source: both Edge Function drafts).
 
 **NFR-REL-2 — Known gap: `generate-meal-plan` has no atomic multi-table write.**
 - The founder's own draft persists `meal_plans` first, then `meal_plan_recipes`; if the second insert fails, it performs a manual compensating delete of the orphaned `meal_plans` row rather than relying on a real transaction, because "Supabase no tiene transacciones nativas en Edge Functions" (`fresco-edge-function-generate.md` — Notas de implementación). This is documented here as a known reliability gap and a candidate for a future single-transaction Postgres RPC, not silently resolved or hidden.
