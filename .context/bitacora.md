@@ -160,3 +160,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió sembrar Master Sprint 1 ("hay una ruta, lo vamos a conseguir") apenas Master Sprint 0 quedó completo.
 
 **Siguiente**: FRESCO-11/13/15 bloqueadas hasta que FRESCO-7 se marque Done en Jira (ya está dev-done en los hechos, status Jira dice `Control de calidad`). Nada más es dev-ready todavía — hay que esperar a que FRESCO-7 cierre el ciclo QA/Done antes de arrancar Execution Sprint 3.
+
+---
+
+## 2026-07-27 — FRESCO-7 marcado Done manualmente (sin QA humana real posible todavía)
+
+**Qué**:
+- User preguntó si estábamos bloqueados hasta "probar" FRESCO-7. Respuesta honesta: el código ya está dev-done, revisado (4 lentes), tests automáticos verdes — lo único que falta es una caminata E2E real en navegador, imposible hoy porque **no existe login en toda la app** (Guest Mode/Progressive Signup ni sembrado, Master Sprint 2). No es un problema específico de FRESCO-7, es un gap más grande y anterior.
+- Proyecto es solo user + IA, no hay QA persona distinta. User confirmó: transicionar FRESCO-7 a `Finalizada` (Done) a mano pa'desbloquear Execution Sprint 3, en vez de dejarlo colgado esperando un paso de QA que nadie va a hacer hasta que exista login.
+- Transicionado vía `acli` (`Control de calidad` → `Finalizada`, status literal correcto en este workspace — "Done" a secas no existía como transición válida). Sincronizado.
+- `.context/dev-roadmap.md` §1: la línea de "decision rule" tenía un ejemplo point-in-time ("FRESCO-7 is already WIP") que ya había quedado obsoleto el mismo día que se escribió — reescrita para no congelar estado nunca más, más una nota explícita de "proyecto solo" justificando este tipo de decisión manual.
+
+**Por qué**: evitar que el roadmap quede permanentemente trabado detrás de un paso de QA que estructuralmente no puede ejecutarse todavía (sin auth), en un proyecto de una sola persona.
+
+**Siguiente**: Execution Sprint 3 (FRESCO-11/13/15) dev-ready ahora. Recordar: la deuda de "caminar E2E de verdad" (FRESCO-5→7→11/13/15 completo) sigue pendiente y se paga cuando exista Guest Mode/login real (Master Sprint 2, todavía no sembrado).

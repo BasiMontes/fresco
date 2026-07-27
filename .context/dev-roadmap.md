@@ -138,7 +138,9 @@ Then read `.context/PBI/epic-tree.md` and the per-story `story.md` files under `
 acli jira workitem search --jql "project = FRESCO AND issuetype in (Epic, Historia) ORDER BY Rank ASC" --paginate --json
 ```
 
-**Decision rule for "what to work next"**: the highest-ranked story whose §3 blocker(s) are Done in the tracker AND whose §5 mockup gate (if any) is cleared AND whose §6 pre-dev blockers below are resolved. Right now that is **FRESCO-5 or FRESCO-9** (both unblocked, Execution Sprint 1) — pick either; they do not depend on each other. FRESCO-7 is already `WIP` (in progress). FRESCO-11/FRESCO-13/FRESCO-15 are not yet workable — all three are blocked on FRESCO-7.
+**Decision rule for "what to work next"**: the highest-ranked story whose §3 blocker(s) are Done in the tracker AND whose §5 mockup gate (if any) is cleared AND whose §6 pre-dev blockers below are resolved. Query live status via `[ISSUE_TRACKER_TOOL]` rather than trusting a point-in-time claim here — this line intentionally does not freeze "what's unblocked right now" (see §1 authority split above; a prior version of this line went stale within the same day it was written).
+
+**Solo-project note**: this repo has no separate QA actor — the developer and the product owner are the same person. A story reaching a code-reviewed, automated-tested state with no live end-to-end walk possible (e.g. blocked on the still-unseeded Guest Mode / Progressive Signup epics, Master Sprint 2) is a legitimate reason to transition it to Done manually rather than leaving Execution Sprints permanently stalled behind a QA step nobody distinct is performing. Record that decision in `bitacora.md`, not silently.
 
 **Per-story pre-dev blockers** (local knowledge, not a tracker field):
 

@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7)
 **Epic:** [FRESCO-6](https://basiliomontescastano.atlassian.net/browse/FRESCO-6) (Generación de Menú Semanal con IA)
 **Type:** Historia
-**Status:** WIP
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -29,8 +29,8 @@ Como Laura, la planificadora agotada, quiero una semana completa de comidas gene
 
 ### Historias (5)
 
-- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(WIP)_
-- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(WIP)_
+- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(Control de calidad)_
+- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Control de calidad)_
 - [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11): Calendario | Reordenar el menú generado arrastrando platos entre espacios _(Control de calidad)_
 - [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13): Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal _(Control de calidad)_
 - [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15): Aprendizaje | Marcar un plato del menú como cocinado o descartado _(Control de calidad)_
