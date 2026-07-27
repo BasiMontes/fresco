@@ -4,13 +4,16 @@
  * scaffolded in parallel by the backend-setup agent — these calls are stubs
  * (they hit a real fetch, but there is nothing live to respond yet). Swap the
  * `mock` fallback for a real network round-trip once the functions are
- * deployed; the request/response types in `./types` are already final.
+ * deployed; the request/response types are already final.
  */
 
 import type {
-  EdgeFunctionErrorResponse,
   GenerateMealPlanRequest,
   GenerateMealPlanResponse,
+} from '@schemas';
+
+import type {
+  EdgeFunctionErrorResponse,
   GenerateShoppingListRequest,
   GenerateShoppingListResponse,
   UpdateRecipeStatusRequest,

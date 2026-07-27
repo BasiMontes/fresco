@@ -51,18 +51,17 @@ export interface Recipe {
 }
 
 // --- 1. POST /generate-meal-plan (api-contracts.md §1) ---------------------
-
-export interface GenerateMealPlanRequest {
-  semana_iso: string // 'YYYY-WXX'
-  fecha_inicio: string // 'YYYY-MM-DD', the Monday of that week
-}
-
-export interface GenerateMealPlanResponse {
-  meal_plan_id: string // uuid
-  semana_iso: string
-  menu: Record<DiaSemana, Record<TipoPlato, Recipe>>
-  advertencias: string[] // MUST be surfaced to the user when non-empty (FR-2.10 / FR-8.2)
-}
+//
+// `GenerateMealPlanRequest`/`GenerateMealPlanResponse` used to be
+// hand-duplicated here, diverged from the canonical `@schemas` facade (this
+// file's `Recipe` below is a flat shape; the live Edge Function actually
+// returns the nested `clasificacion`/`meta`/`dieta` shape from
+// `api/schemas/recipe.types.ts`), and `lib/api/edge-functions.ts` now imports
+// both directly from `@schemas` instead. Removed here rather than
+// re-exported, since `Recipe` below still can't be re-pointed to `@schemas`
+// without breaking `components/recipe/recipe-card.tsx` and
+// `lib/mock/recipes.ts`, which still consume this flat shape (out of scope
+// for this story — batch 2/3 wiring work).
 
 // --- 2. POST /generate-shopping-list (api-contracts.md §2) -----------------
 
