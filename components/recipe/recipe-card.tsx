@@ -1,4 +1,4 @@
-import type { Recipe } from '@/lib/api/types';
+import type { Recipe, RecipeDieta } from '@schemas';
 
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,13 @@ import { cn } from '@/lib/utils';
  * the MVP per mvp-scope.md's "Deferred to P1" list), a top-right circular
  * favorite button, an `h6` kicker, a heading-font title, one tag, and a meta
  * line ("50 min · fácil · 2,80€/persona").
+ *
+ * Consumes the real, nested `@schemas` `Recipe` shape (`clasificacion`/
+ * `meta`/`dieta` objects, the live DB/Edge Function contract) — not a flat
+ * hand-duplicated shape. `meta`/`clasificacion`/`dieta` may be `null` (jsonb
+ * columns the seeding pipeline populated only partially, per that type's own
+ * doc comment), so every field read below is optional-chained with a
+ * fallback rather than assumed present.
  */
 export interface RecipeCardProps {
   recipe: Recipe
@@ -19,7 +26,29 @@ export interface RecipeCardProps {
   className?: string
 }
 
+const DIETA_LABELS: Partial<Record<keyof RecipeDieta, string>> = {
+  vegetariano: 'vegetariano',
+  vegano: 'vegano',
+  sin_gluten: 'sin gluten',
+  sin_lactosa: 'sin lactosa',
+  sin_huevo: 'sin huevo',
+  bajo_fodmap: 'bajo FODMAP',
+  keto: 'keto',
+  paleo: 'paleo',
+  halal: 'halal',
+  kosher: 'kosher',
+};
+
+/** First active diet flag on `dieta`, as a display label, or `null` if none/unknown. */
+function firstActiveDietaLabel(dieta: RecipeDieta | null): string | null {
+  if (!dieta) { return null; }
+  const active = (Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[]).find(flag => dieta[flag]);
+  return active ? (DIETA_LABELS[active] ?? null) : null;
+}
+
 export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: RecipeCardProps) {
+  const dietaLabel = firstActiveDietaLabel(recipe.dieta);
+
   return (
     <div className={cn('rounded-card bg-surface p-3 shadow-sm', className)}>
       <div className="relative mb-2 aspect-[4/3] w-full overflow-hidden rounded-lg bg-neutral-200">
@@ -33,18 +62,18 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
           <Heart className={cn('size-4', isFavorite && 'fill-primary')} />
         </Button>
       </div>
-      <p className="text-h6 uppercase text-tertiary">{recipe.categoria}</p>
+      <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
       <h3 className="text-h5">{recipe.nombre}</h3>
       <div className="mt-1">
-        <Tag variant={recipe.dieta.length > 0 ? 'accent' : 'neutral'}>
-          {recipe.dieta[0] ?? recipe.cocina}
+        <Tag variant={dietaLabel ? 'accent' : 'neutral'}>
+          {dietaLabel ?? recipe.clasificacion?.cocina ?? '—'}
         </Tag>
       </div>
       <p className="mt-2 text-body-sm text-tertiary">
-        {recipe.minutos}
+        {recipe.meta?.tiempo_total_min ?? '—'}
         {' '}
         min ·
-        {recipe.coste_bucket}
+        {recipe.meta?.coste_estimado ?? '—'}
       </p>
     </div>
   );

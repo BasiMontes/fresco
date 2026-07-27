@@ -2,14 +2,10 @@
  * Types for the 3 Supabase Edge Functions documented in
  * `.context/SRS/api-contracts.md`. Request/response shapes for
  * `generate-meal-plan`, `generate-shopping-list`, and `update-recipe-status`
- * are copied verbatim from that document (§1, §2, §4). `Recipe` is not given
- * as a single interface there — it is reconstructed from the field
- * vocabulary named across §1a ("serialized compactly: id, name, type,
- * category, cuisine, minutes, cost bucket, seasons, richness/lightness
- * flags, tupper-suitability, and the learning fields") and §5 (the
- * `recipes` write shape). Field names stay in Spanish where the source
- * document uses Spanish domain vocabulary — do not translate them, the
- * backend's Supabase schema is expected to match this vocabulary 1:1.
+ * are copied verbatim from that document (§1, §2, §4). Field names stay in
+ * Spanish where the source document uses Spanish domain vocabulary — do not
+ * translate them, the backend's Supabase schema is expected to match this
+ * vocabulary 1:1.
  */
 
 export type DiaSemana
@@ -25,43 +21,22 @@ export type TipoPlato = 'desayuno' | 'comida' | 'cena';
 
 export type EstadoRecetaSlot = 'pendiente' | 'cocinada' | 'descartada' | 'sustituida';
 
-/** A single recipe as embedded in a generated menu slot (api-contracts.md §1, §1a, §5). */
-export interface Recipe {
-  id: string
-  nombre: string
-  slug: string
-  tipo: TipoPlato
-  categoria: string
-  cocina: string
-  minutos: number
-  coste_bucket: string
-  temporada: string[]
-  apto_tupper: boolean
-  dieta: string[]
-  alergenos: string[]
-  ingredientes_principales: string[]
-  ingredientes_que_puede_desagradar: string[]
-  descripcion_corta: string // <= 120 chars per api-contracts.md §5
-  pasos_resumen: string[] // <= 5 steps per api-contracts.md §5
-  /** Learning fields — populated by `recipe_learning_trigger`, read-only from the frontend. */
-  veces_cocinada: number
-  veces_descartada: number
-  rating_promedio: number | null
-  ultima_vez_en_menu: string | null // ISO date
-}
+/**
+ * `Recipe` used to be hand-duplicated here as a flat shape (`tipo`,
+ * `categoria`, `cocina`, `coste_bucket` as scalar strings), diverged from the
+ * canonical `@schemas` facade (the live Edge Function/DB shape nests these
+ * under `clasificacion`/`meta`/`dieta` objects — `api/schemas/recipe.types.ts`).
+ * Re-exported from `@schemas` instead of redeclared, so the two can never
+ * diverge again (STORY-FRESCO-7 batch 2) — `components/recipe/recipe-card.tsx`
+ * and `lib/mock/recipes.ts` now consume the real nested shape.
+ */
+export type { Recipe } from '@schemas';
 
 // --- 1. POST /generate-meal-plan (api-contracts.md §1) ---------------------
 //
-// `GenerateMealPlanRequest`/`GenerateMealPlanResponse` used to be
-// hand-duplicated here, diverged from the canonical `@schemas` facade (this
-// file's `Recipe` below is a flat shape; the live Edge Function actually
-// returns the nested `clasificacion`/`meta`/`dieta` shape from
-// `api/schemas/recipe.types.ts`), and `lib/api/edge-functions.ts` now imports
-// both directly from `@schemas` instead. Removed here rather than
-// re-exported, since `Recipe` below still can't be re-pointed to `@schemas`
-// without breaking `components/recipe/recipe-card.tsx` and
-// `lib/mock/recipes.ts`, which still consume this flat shape (out of scope
-// for this story — batch 2/3 wiring work).
+// `GenerateMealPlanRequest`/`GenerateMealPlanResponse` are imported directly
+// from `@schemas` at their one call site (`lib/api/edge-functions.ts`), not
+// re-exported here — nothing in this file needs them.
 
 // --- 2. POST /generate-shopping-list (api-contracts.md §2) -----------------
 
