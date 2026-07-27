@@ -80,4 +80,18 @@ describe('upsertUserProfile', () => {
 
     await expectRejection(upsertUserProfile(client, SAMPLE_PAYLOAD));
   });
+
+  test('throws UserProfileError for an allergen outside the curated allow-list, without calling upsert', async () => {
+    const { client, upsertCalls } = createMockClient({ userId: 'user-123' });
+
+    await expectRejection(upsertUserProfile(client, { ...SAMPLE_PAYLOAD, alergenos: ['not-a-real-allergen'] }));
+    expect(upsertCalls).toHaveLength(0);
+  });
+
+  test('throws UserProfileError for a disliked ingredient outside the curated allow-list, without calling upsert', async () => {
+    const { client, upsertCalls } = createMockClient({ userId: 'user-123' });
+
+    await expectRejection(upsertUserProfile(client, { ...SAMPLE_PAYLOAD, ingredientes_odiados: ['not-a-real-ingredient'] }));
+    expect(upsertCalls).toHaveLength(0);
+  });
 });

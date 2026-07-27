@@ -1,6 +1,7 @@
 import type { UserProfile } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/dietary-options';
 
 /**
  * Onboarding-owned subset of `user_profiles` columns (FR-1.1). Fields the DB
@@ -41,11 +42,24 @@ export class UserProfileError extends Error {
  * exists (guest-mode onboarding is explicitly out of scope for FRESCO-5); if
  * none is found, this is a pre-existing gap shared with the untouched
  * guest-mode TODO in `app/onboarding/page.tsx`, not introduced by this story.
+ *
+ * `alergenos`/`ingredientes_odiados` are validated against the curated
+ * option lists (not free text) before persisting — the DB columns are
+ * unconstrained `text[]`, and a value outside the catalog's vocabulary would
+ * silently fail to filter anything in `get_filtered_recipes()`, defeating
+ * the food-safety guardrail without the user ever knowing.
  */
 export async function upsertUserProfile(
   client: SupabaseClient<Database>,
   profile: OnboardingProfilePayload,
 ): Promise<void> {
+  const invalidAlergenos = profile.alergenos.filter(value => !ALERGENO_VALUES.has(value));
+  const invalidIngredientes = profile.ingredientes_odiados.filter(value => !INGREDIENTE_ODIADO_VALUES.has(value));
+
+  if (invalidAlergenos.length > 0 || invalidIngredientes.length > 0) {
+    throw new UserProfileError('Alérgeno o ingrediente no reconocido; usa las opciones disponibles.');
+  }
+
   const { data: { user }, error: userError } = await client.auth.getUser();
 
   if (userError || !user) {

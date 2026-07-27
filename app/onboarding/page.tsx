@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { generateMealPlan } from '@/lib/api/edge-functions';
 import { upsertUserProfile } from '@/lib/api/user-profile';
+import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
@@ -34,39 +35,6 @@ const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
   { value: 'dietaSinHuevo', label: 'Sin huevo' },
   { value: 'dietaKeto', label: 'Keto' },
   { value: 'dietaHalal', label: 'Halal' },
-];
-
-// Sourced from the seeded `recipes.alergenos` vocabulary (spot-checked
-// directly against the DB, per the implementation plan's Risk 1 mitigation)
-// so a declared allergen actually matches what `get_filtered_recipes` filters
-// on — not invented labels that would silently fail to protect Laura.
-const ALERGENO_OPTIONS: { value: string, label: string }[] = [
-  { value: 'gluten', label: 'Gluten' },
-  { value: 'huevo', label: 'Huevo' },
-  { value: 'pescado', label: 'Pescado' },
-  { value: 'frutos_de_cascara', label: 'Frutos de cáscara' },
-  { value: 'apio', label: 'Apio' },
-  { value: 'sulfitos', label: 'Sulfitos' },
-];
-
-// Curated subset of the seeded `recipes.ingredientes_que_puede_desagradar`
-// vocabulary — same rationale as allergens above (Decision 1 in the
-// implementation plan): a short curated list, not free text.
-const INGREDIENTE_ODIADO_OPTIONS: { value: string, label: string }[] = [
-  { value: 'cebolla', label: 'Cebolla' },
-  { value: 'champiñones', label: 'Champiñones' },
-  { value: 'setas', label: 'Setas' },
-  { value: 'cilantro', label: 'Cilantro' },
-  { value: 'apio', label: 'Apio' },
-  { value: 'comino', label: 'Comino' },
-  { value: 'guisantes', label: 'Guisantes' },
-  { value: 'judias verdes', label: 'Judías verdes' },
-  { value: 'pimiento rojo', label: 'Pimiento rojo' },
-  { value: 'pimiento verde', label: 'Pimiento verde' },
-  { value: 'chorizo', label: 'Chorizo' },
-  { value: 'panceta', label: 'Panceta' },
-  { value: 'tocino', label: 'Tocino' },
-  { value: 'morcilla', label: 'Morcilla' },
 ];
 
 const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
