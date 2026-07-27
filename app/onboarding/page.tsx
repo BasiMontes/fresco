@@ -12,6 +12,7 @@ import { Tag } from '@/components/ui/tag';
 import { generateMealPlan } from '@/lib/api/edge-functions';
 import { upsertUserProfile } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
+import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
@@ -110,13 +111,15 @@ export default function OnboardingPage() {
         cocinas_favoritas: cocinasFavoritas,
       });
 
-      const fechaInicio = new Date().toISOString().slice(0, 10);
+      const now = new Date();
+      const semanaIso = getIsoWeek(now);
+      const fechaInicio = getIsoWeekMonday(now);
       // TODO: guest-mode auth unresolved, see business-api-map.md
       // A guest at this point in the journey has no Supabase session yet
       // (user-journeys.md Journey 1: signup happens AFTER seeing the menu,
       // not before). Passing `null` here will 401 against a real deployment
       // until the guest-auth mechanism is decided.
-      await generateMealPlan({ semana_iso: fechaInicio, fecha_inicio: fechaInicio }, null);
+      await generateMealPlan({ semana_iso: semanaIso, fecha_inicio: fechaInicio }, null);
       router.push('/menu');
     }
     catch {
