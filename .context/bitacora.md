@@ -174,3 +174,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: evitar que el roadmap quede permanentemente trabado detrás de un paso de QA que estructuralmente no puede ejecutarse todavía (sin auth), en un proyecto de una sola persona.
 
 **Siguiente**: Execution Sprint 3 (FRESCO-11/13/15) dev-ready ahora. Recordar: la deuda de "caminar E2E de verdad" (FRESCO-5→7→11/13/15 completo) sigue pendiente y se paga cuando exista Guest Mode/login real (Master Sprint 2, todavía no sembrado).
+
+---
+
+## 2026-07-27 — FRESCO-11 Stage 1 + Stage 2 batch 1 (fundación del swap)
+
+**Qué**:
+- Stage 1: plan armado y pusheado a Jira, sincronizado. Encontró que un swap ingenuo de posición (drag & drop) podía corromper los contadores de aprendizaje de FRESCO-9/ADR-0001 (`veces_cocinada`/`veces_descartada`/`rating_promedio`, la data que fija precio Pro) si el trigger dispara mal — cualquiera de las dos formas obvias de hacer el swap (solo `recipe_id`, o el bundle completo con el trigger prendido) rompe algo. Promovido a **ADR-0002** (aprobada por el user).
+- Stage 2 batch 1 (de 3): migración SQL nueva — función `swap_meal_plan_slots()` `security definer` que desactiva/reactiva el trigger de aprendizaje dentro de la misma transacción (nunca queda apagado si algo falla a mitad de camino, `ALTER TABLE ... TRIGGER` es DDL transaccional en Postgres). Extensión aditiva de `lib/api/meal-plan.ts` (`slotIds` + wrapper `swapMealPlanSlots()`).
+- Review de seguridad (dispatchado con lente de riesgo dedicado, no el genérico que la lifecycle nativa hubiera elegido — el diff tocaba una función `security definer` nueva): chequeo de ownership cubre ambos slots antes de cualquier mutación, `search_path` pineado, GRANT/REVOKE ausente pero mismo gap ya aceptado/documentado para otras funciones (bitácora 26 jul), disable/enable del trigger confirmado transaccional de verdad (rollback completo si algo falla a mitad de camino). **1 finding no crítico**: `ALTER TABLE ... DISABLE/ENABLE TRIGGER` toma lock a nivel de tabla completa mientras corre el swap — otros usuarios escribiendo en `meal_plan_recipes` (aunque sea otro plan) esperan hasta que termine. Bajo impacto a esta escala (app hogareña, transacciones cortas). No arreglado — ADR-0002 ya rechazó la alternativa (GUC de sesión) por otras razones, cambiar el mecanismo ahora contradiría la ADR aceptada. Documentado como seguimiento, no bloqueante.
+- Migración **no aplicada** — no hay Supabase local corriendo en esta máquina (Docker no disponible). Queda para revisión/aplicación manual del user antes de que el RPC funcione de verdad contra la DB real.
+
+**Por qué**: user pidió arrancar Execution Sprint 3, empezando por FRESCO-11 (Calendario).
+
+**Siguiente**: batch 2 (drag-and-drop UI real — `@dnd-kit/core`, componente `CalendarGrid`) y batch 3 (wiring final) quedan pendientes. **Antes de eso**: aplicar la migración `20260727000000_add_swap_meal_plan_slots_function.sql` contra Supabase real (local o remoto) — sin eso el RPC no existe todavía del lado servidor. User se va unas horas, retomamos después.
