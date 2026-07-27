@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
-import { generateMealPlan } from '@/lib/api/edge-functions';
+import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
 import { upsertUserProfile } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
@@ -122,8 +122,19 @@ export default function OnboardingPage() {
       await generateMealPlan({ semana_iso: semanaIso, fecha_inicio: fechaInicio }, null);
       router.push('/menu');
     }
-    catch {
-      setGenerateError('No pudimos guardar tu perfil o generar tu menú. Intenta de nuevo.');
+    catch (error) {
+      // AC-4 ("La generación no puede producir un menú válido"): index.ts
+      // throws a 502 only when no valid 21-slot menu could be assembled
+      // after retries — a distinct, expected case from a generic backend
+      // failure, so it gets its own clear message instead of the fallback.
+      if (error instanceof EdgeFunctionError && error.status === 502) {
+        setGenerateError(
+          'No pudimos generar un menú válido con tus restricciones actuales. Prueba a ampliar tus preferencias o inténtalo de nuevo más tarde.',
+        );
+      }
+      else {
+        setGenerateError('No pudimos guardar tu perfil o generar tu menú. Intenta de nuevo.');
+      }
     }
     finally {
       setIsGenerating(false);
