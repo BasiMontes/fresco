@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7)
 **Epic:** [FRESCO-6](https://basiliomontescastano.atlassian.net/browse/FRESCO-6) (Generación de Menú Semanal con IA)
 **Type:** Historia
-**Status:** Listo
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
@@ -29,17 +29,18 @@ Como Laura, la planificadora agotada, quiero una semana completa de comidas gene
 
 ### Historias (2)
 
-- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(Listo)_
-- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Listo)_
+- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(WIP)_
+- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(WIP)_
 
 ---
 
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/26/2026
+- **Updated:** 7/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
+- **Labels:** implementation-plan-ready
 
 ---
 
