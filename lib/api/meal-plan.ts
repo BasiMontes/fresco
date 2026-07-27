@@ -7,6 +7,9 @@ import { getIsoWeek } from '@/lib/date/iso-week';
 /** Raw `public.recipes` row shape — jsonb columns typed as `Json`, per `lib/supabase/types.ts`. */
 type RecipeRow = Database['public']['Tables']['recipes']['Row'];
 
+const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+const TIPOS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
+
 /** One `meal_plans` row joined to its 21 `meal_plan_recipes` rows and their `recipes`. */
 interface MealPlanJoinRow {
   semana_iso: string
@@ -61,6 +64,16 @@ function toRecipe(row: RecipeRow): Recipe {
  * weekly plan never contains (business rule: exactly 21 slots = 7 days x
  * desayuno/comida/cena) — narrowed to `TipoPlato` here rather than widening
  * the page-facing return type for a slot that can't occur.
+ *
+ * Validates all 21 slots are present before returning: `generate-meal-plan`'s
+ * `index.ts` documents a known non-transactional-write gap (NFR-REL-2, no
+ * native multi-table transaction across the `meal_plans` + `meal_plan_recipes`
+ * inserts) that can leave a plan header with an incomplete set of children.
+ * Every page consuming this grid indexes it unconditionally
+ * (`plan.menu[dia][tipo]`) with no undefined guard, so a silent partial grid
+ * would crash the page render instead of falling back to the pages' existing
+ * "no plan yet" empty state — fail fast here instead, exactly like the
+ * missing-recipe check below, so callers' existing catch blocks handle it.
  */
 function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): Record<DiaSemana, Record<TipoPlato, Recipe>> {
   const menu = {} as Record<DiaSemana, Record<TipoPlato, Recipe>>;
@@ -71,6 +84,14 @@ function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): Record<DiaSema
     }
     menu[row.dia] ??= {} as Record<TipoPlato, Recipe>;
     menu[row.dia][row.tipo_plato as TipoPlato] = toRecipe(row.recipes);
+  }
+
+  for (const dia of DIAS) {
+    for (const tipo of TIPOS) {
+      if (!menu[dia]?.[tipo]) {
+        throw new MealPlanError(`El menú persistido está incompleto: falta el hueco ${dia}/${tipo}.`);
+      }
+    }
   }
 
   return menu;

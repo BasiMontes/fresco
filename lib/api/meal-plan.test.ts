@@ -26,9 +26,34 @@ const SAMPLE_RECIPE_ROW = {
   ultima_vez_en_menu: '2026-07-14',
 };
 
+const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
+const TIPOS = ['desayuno', 'comida', 'cena'] as const;
+
+/** Builds all 21 (7x7) join rows a real persisted plan always has. */
+function buildCompleteJoinRows() {
+  return DIAS.flatMap(dia =>
+    TIPOS.map(tipo_plato => ({
+      dia,
+      tipo_plato,
+      recipes: dia === 'lunes' && tipo_plato === 'desayuno'
+        ? SAMPLE_RECIPE_ROW
+        : dia === 'lunes' && tipo_plato === 'comida'
+          ? { ...SAMPLE_RECIPE_ROW, id: 'recipe-2', nombre: 'Curry de garbanzos' }
+          : { ...SAMPLE_RECIPE_ROW, id: `recipe-${dia}-${tipo_plato}` },
+    })),
+  );
+}
+
 const SAMPLE_JOIN_ROW = {
   semana_iso: SEMANA_ISO,
   advertencias: ['El menú supera tu presupuesto semanal en aproximadamente 5€'],
+  meal_plan_recipes: buildCompleteJoinRows(),
+};
+
+/** Truncated fixture — only 2 of 21 slots — for the incomplete-plan gap test. */
+const INCOMPLETE_JOIN_ROW = {
+  semana_iso: SEMANA_ISO,
+  advertencias: [],
   meal_plan_recipes: [
     { dia: 'lunes', tipo_plato: 'desayuno', recipes: SAMPLE_RECIPE_ROW },
     { dia: 'lunes', tipo_plato: 'comida', recipes: { ...SAMPLE_RECIPE_ROW, id: 'recipe-2', nombre: 'Curry de garbanzos' } },
@@ -112,6 +137,12 @@ describe('getMealPlanForWeek', () => {
 
   test('throws MealPlanError when there is no authenticated session', async () => {
     const { client } = createMockClient({});
+
+    await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
+  });
+
+  test('throws MealPlanError when the persisted plan is missing slots (NFR-REL-2 partial-write gap)', async () => {
+    const { client } = createMockClient({ userId: 'user-123', planRow: INCOMPLETE_JOIN_ROW });
 
     await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
   });
