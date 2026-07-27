@@ -6,11 +6,23 @@
 // triggers a retry in index.ts (MAX_RETRIES = 2); exhausting retries returns
 // 502 — an invalid menu is never persisted.
 
-import type { DiaSemana, TipoPlatoSlot } from './types.ts'
+import type { DiaSemana, Recipe, TipoPlatoSlot } from './types.ts'
+import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 const MAX_BREAKFAST_REPEATS = 3
+
+// FR-2.2/AC Scenario 2: no numeric per-recipe price exists in the schema
+// (`recipe.meta.coste_estimado` is a 4-value categorical enum) — these are
+// approximate per-recipe euro midpoints per bucket, confirmed against real
+// Spanish grocery pricing. Structural budget check, not a precise total.
+const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
+  muy_bajo: 1.5,
+  bajo: 3,
+  medio: 5,
+  alto: 8,
+}
 
 export interface ValidationResult {
   valid: boolean
@@ -22,6 +34,8 @@ export interface ValidateMenuOutputParams {
   raw: unknown
   validRecipeIds: Set<string>
   semanaIso: string
+  recipeById: Map<string, Recipe>
+  presupuestoSemanaEuros: number | null
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
@@ -29,6 +43,8 @@ export function validateMenuOutput({
   raw,
   validRecipeIds,
   semanaIso,
+  recipeById,
+  presupuestoSemanaEuros,
 }: ValidateMenuOutputParams): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -50,6 +66,7 @@ export function validateMenuOutput({
   const menuDias = menu.menu as Record<string, unknown>
   const usedIds = new Set<string>() // detects lunch/dinner duplicates
   const desayunoIds: string[] = []
+  const allRecipeIds: string[] = [] // every valid slot, for the budget check below
 
   for (const dia of DIAS) {
     if (!menuDias[dia] || typeof menuDias[dia] !== 'object') {
@@ -72,6 +89,8 @@ export function validateMenuOutput({
         continue
       }
 
+      allRecipeIds.push(recipeId)
+
       if (tipo === 'desayuno') {
         desayunoIds.push(recipeId)
         continue
@@ -91,6 +110,22 @@ export function validateMenuOutput({
   for (const [id, count] of desayunoCount) {
     if (count > MAX_BREAKFAST_REPEATS) {
       warnings.push(`Desayuno con ID ${id} aparece ${count} veces (máximo recomendado: ${MAX_BREAKFAST_REPEATS})`)
+    }
+  }
+
+  // AC Scenario 2/5: structural budget check, soft-warn only (Decision 1 —
+  // never a hard-fail/retry gate). Skipped entirely when the household never
+  // declared a weekly budget.
+  if (presupuestoSemanaEuros != null) {
+    let totalEuros = 0
+    for (const id of allRecipeIds) {
+      const coste = recipeById.get(id)?.meta?.coste_estimado
+      if (coste) totalEuros += BUCKET_MIDPOINT_EUROS[coste]
+    }
+
+    if (totalEuros > presupuestoSemanaEuros) {
+      const overage = totalEuros - presupuestoSemanaEuros
+      warnings.push(`El menú supera tu presupuesto semanal en aproximadamente ${overage.toFixed(2)}€`)
     }
   }
 

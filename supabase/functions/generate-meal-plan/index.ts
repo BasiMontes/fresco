@@ -109,6 +109,7 @@ Deno.serve(async (req: Request) => {
     // this loop will fail fast until /sprint-development fills them in. The
     // retry/validation shape itself is real.
     const validRecipeIds = new Set<string>(recipes.map(r => r.id))
+    const recipeMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]))
     let menuData: MenuSemanal | null = null
     let lastErrors: string[] = []
 
@@ -143,7 +144,13 @@ Deno.serve(async (req: Request) => {
         continue
       }
 
-      const validation = validateMenuOutput({ raw: parsed, validRecipeIds, semanaIso: semana_iso })
+      const validation = validateMenuOutput({
+        raw: parsed,
+        validRecipeIds,
+        semanaIso: semana_iso,
+        recipeById: recipeMap,
+        presupuestoSemanaEuros: profile.presupuesto_semana_euros,
+      })
 
       if (validation.valid) {
         menuData = parsed as MenuSemanal
@@ -202,7 +209,8 @@ Deno.serve(async (req: Request) => {
     }
 
     // 10. Enrich response with full recipe objects, not bare ids
-    const recipeMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]))
+    // (`recipeMap` built earlier, before the retry loop — step 7 reuses it
+    // for the budget check.)
     const menuEnriquecido = Object.fromEntries(
       DIAS.map(dia => [
         dia,
