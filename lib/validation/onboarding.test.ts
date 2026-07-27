@@ -23,4 +23,18 @@ describe('validateHousehold', () => {
     expect(result.valid).toBe(true);
     expect(result.message).toBeNull();
   });
+
+  test('NaN adults (cleared number input) is invalid, not silently valid', () => {
+    const result = validateHousehold({ adultos: Number.NaN, ninos: 2 });
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toBe('Indica al menos un adulto en el hogar.');
+  });
+
+  test('NaN children (cleared number input) is invalid, not silently valid', () => {
+    const result = validateHousehold({ adultos: 2, ninos: Number.NaN });
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toBe('El número de niños no puede ser negativo.');
+  });
 });

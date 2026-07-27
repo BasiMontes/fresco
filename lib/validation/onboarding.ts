@@ -21,11 +21,11 @@ export interface HouseholdValidationResult {
 }
 
 export function validateHousehold({ adultos, ninos }: HouseholdInput): HouseholdValidationResult {
-  if (adultos <= 0) {
+  if (Number.isNaN(adultos) || adultos <= 0) {
     return { valid: false, message: 'Indica al menos un adulto en el hogar.' };
   }
 
-  if (ninos < 0) {
+  if (Number.isNaN(ninos) || ninos < 0) {
     return { valid: false, message: 'El número de niños no puede ser negativo.' };
   }
 
