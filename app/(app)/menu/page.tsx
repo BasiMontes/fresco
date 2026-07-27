@@ -1,12 +1,12 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
-import { UtensilsCrossed, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 import Link from 'next/link';
+import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { EmptyState } from '@/components/ui/empty-state';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { createClient } from '@/lib/supabase/server';
 
@@ -34,7 +34,7 @@ export default async function MenuPage() {
   try {
     plan = await getMealPlanForWeek(supabase);
   }
-  catch {
+  catch (error) {
     // `getMealPlanForWeek` fails fast (throws) on a real read error,
     // including "no authenticated session" — correct for the function
     // itself, but guest/auth flow is unresolved everywhere else in this repo
@@ -43,25 +43,17 @@ export default async function MenuPage() {
     // (network/auth, distinct from "no plan yet") is real UI/UX-design scope
     // this story named but no AC scenario requires yet — tracked as a gap,
     // not silently dropped: for now this falls back to the same empty state
-    // rather than crashing the page.
+    // rather than crashing the page. Logged so a real DB/network outage is
+    // still visible in server logs instead of looking identical to a benign
+    // "haven't generated a menu yet" state.
+    console.error('[/menu] getMealPlanForWeek failed, falling back to empty state', error);
     plan = null;
   }
 
   if (!plan) {
     return (
       <div className="mx-auto max-w-3xl">
-        <EmptyState
-          data-testid="menu_empty_state"
-          icon={<UtensilsCrossed className="size-8 text-tertiary" aria-hidden="true" />}
-          title="Todavía no tienes un menú para esta semana"
-          description="Completa tu perfil y genera tu primer menú semanal en unos segundos."
-          action={(
-            <Link href="/onboarding" className={buttonVariants({ variant: 'action', size: 'lg' })}>
-              <Zap className="size-[18px]" strokeWidth={2} />
-              Generar mi menú
-            </Link>
-          )}
-        />
+        <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
   }

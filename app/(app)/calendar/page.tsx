@@ -1,11 +1,9 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import type { DiaSemana } from '@/lib/api/types';
 
-import { GripVertical, UtensilsCrossed, Zap } from 'lucide-react';
-import Link from 'next/link';
+import { GripVertical } from 'lucide-react';
+import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
-import { buttonVariants } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { createClient } from '@/lib/supabase/server';
 
@@ -42,7 +40,7 @@ export default async function CalendarPage() {
   try {
     plan = await getMealPlanForWeek(supabase);
   }
-  catch {
+  catch (error) {
     // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
     // `getMealPlanForWeek` fails fast (throws) on a real read error,
     // including "no authenticated session" — correct for the function
@@ -50,24 +48,15 @@ export default async function CalendarPage() {
     // today, so an unauthenticated visit is currently the only reachable
     // state. Falls back to the same empty state rather than crashing the
     // page; a dedicated read-error UI is a tracked gap, not this story's job.
+    // Logged so a real DB/network outage stays visible in server logs.
+    console.error('[/calendar] getMealPlanForWeek failed, falling back to empty state', error);
     plan = null;
   }
 
   if (!plan) {
     return (
       <div className="mx-auto max-w-5xl">
-        <EmptyState
-          data-testid="calendar_empty_state"
-          icon={<UtensilsCrossed className="size-8 text-tertiary" aria-hidden="true" />}
-          title="Todavía no tienes un menú para esta semana"
-          description="Completa tu perfil y genera tu primer menú semanal en unos segundos."
-          action={(
-            <Link href="/onboarding" className={buttonVariants({ variant: 'action', size: 'lg' })}>
-              <Zap className="size-[18px]" strokeWidth={2} />
-              Generar mi menú
-            </Link>
-          )}
-        />
+        <NoMenuEmptyState data-testid="calendar_empty_state" />
       </div>
     );
   }
