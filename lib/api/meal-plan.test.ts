@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getMealPlanForWeek, MealPlanError } from './meal-plan';
+import { getMealPlanForWeek, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
 
@@ -33,6 +33,7 @@ const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 function buildCompleteJoinRows() {
   return DIAS.flatMap(dia =>
     TIPOS.map(tipo_plato => ({
+      id: `slot-${dia}-${tipo_plato}`,
       dia,
       tipo_plato,
       recipes: dia === 'lunes' && tipo_plato === 'desayuno'
@@ -55,8 +56,8 @@ const INCOMPLETE_JOIN_ROW = {
   semana_iso: SEMANA_ISO,
   advertencias: [],
   meal_plan_recipes: [
-    { dia: 'lunes', tipo_plato: 'desayuno', recipes: SAMPLE_RECIPE_ROW },
-    { dia: 'lunes', tipo_plato: 'comida', recipes: { ...SAMPLE_RECIPE_ROW, id: 'recipe-2', nombre: 'Curry de garbanzos' } },
+    { id: 'slot-lunes-desayuno', dia: 'lunes', tipo_plato: 'desayuno', recipes: SAMPLE_RECIPE_ROW },
+    { id: 'slot-lunes-comida', dia: 'lunes', tipo_plato: 'comida', recipes: { ...SAMPLE_RECIPE_ROW, id: 'recipe-2', nombre: 'Curry de garbanzos' } },
   ],
 };
 
@@ -119,6 +120,16 @@ describe('getMealPlanForWeek', () => {
     expect(result?.menu.lunes.desayuno.nombre).toBe('Lentejas estofadas');
     expect(result?.menu.lunes.comida.nombre).toBe('Curry de garbanzos');
     expect(result?.menu.lunes.desayuno.meta?.coste_estimado).toBe('bajo');
+
+    // STORY-FRESCO-11: slotIds populated in parallel with menu, one id per slot.
+    expect(result?.slotIds.lunes.desayuno).toBe('slot-lunes-desayuno');
+    expect(result?.slotIds.lunes.comida).toBe('slot-lunes-comida');
+    expect(result?.slotIds.domingo.cena).toBe('slot-domingo-cena');
+    for (const dia of DIAS) {
+      for (const tipo of TIPOS) {
+        expect(result?.slotIds[dia]?.[tipo]).toBe(`slot-${dia}-${tipo}`);
+      }
+    }
   });
 
   test('returns null when no plan exists yet for that week', async () => {
@@ -145,5 +156,34 @@ describe('getMealPlanForWeek', () => {
     const { client } = createMockClient({ userId: 'user-123', planRow: INCOMPLETE_JOIN_ROW });
 
     await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
+  });
+});
+
+/** Minimal mock client exposing only `.rpc()` — all `swapMealPlanSlots()` calls. */
+function createRpcMockClient(options: { errorMessage?: string } = {}) {
+  const rpc = async (_fn: string, _args: Record<string, unknown>) => ({
+    data: null,
+    error: options.errorMessage ? { message: options.errorMessage } : null,
+  });
+
+  return {
+    client: { rpc } as unknown as SupabaseClient<Database>,
+    rpc,
+  };
+}
+
+describe('swapMealPlanSlots', () => {
+  test('resolves without throwing when the RPC succeeds', async () => {
+    const { client } = createRpcMockClient();
+
+    const result = await swapMealPlanSlots(client, 'slot-a-id', 'slot-b-id');
+
+    expect(result).toBeUndefined();
+  });
+
+  test('throws MealPlanError with the underlying message when the RPC fails', async () => {
+    const { client } = createRpcMockClient({ errorMessage: 'foreign key violation' });
+
+    await expectRejection(swapMealPlanSlots(client, 'slot-a-id', 'slot-b-id'));
   });
 });
