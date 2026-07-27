@@ -124,10 +124,11 @@ export default function OnboardingPage() {
     }
     catch (error) {
       // AC-4 ("La generación no puede producir un menú válido"): index.ts
-      // throws a 502 only when no valid 21-slot menu could be assembled
-      // after retries — a distinct, expected case from a generic backend
-      // failure, so it gets its own clear message instead of the fallback.
-      if (error instanceof EdgeFunctionError && error.status === 502) {
+      // throws a 422 only when no valid 21-slot menu could be assembled
+      // after retries — a distinct, expected case from a genuine upstream
+      // failure (Gemini call error, thrown as 502), so it gets its own clear
+      // message instead of being conflated with the generic fallback.
+      if (error instanceof EdgeFunctionError && error.status === 422) {
         setGenerateError(
           'No pudimos generar un menú válido con tus restricciones actuales. Prueba a ampliar tus preferencias o inténtalo de nuevo más tarde.',
         );

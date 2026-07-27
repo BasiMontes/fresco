@@ -166,9 +166,17 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!menuData) {
+      // AC-4: distinct from a genuine upstream failure (Gemini call error,
+      // thrown as 502 above) — this is "we could not assemble a valid
+      // 21-slot menu given this user's constraints", the same class of
+      // "understood the request, can't fulfill it" case as the 422 thrown
+      // for an insufficient catalog above. Frontend narrows on this status
+      // to show AC-4-specific copy; conflating it with 502 would mislead a
+      // user experiencing a transient Gemini outage into thinking their
+      // dietary restrictions are the problem.
       throw new HttpError(
         `La IA no generó un menú válido tras ${MAX_RETRIES + 1} intentos: ${lastErrors.join('; ')}`,
-        502
+        422
       )
     }
 

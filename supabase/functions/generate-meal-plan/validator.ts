@@ -4,7 +4,8 @@
 // matches; all 7x3 slots present; every recipe_id exists in the filtered
 // catalog; no lunch/dinner repeat; breakfast repeats <= 3. Failing any check
 // triggers a retry in index.ts (MAX_RETRIES = 2); exhausting retries returns
-// 502 — an invalid menu is never persisted.
+// 422 (AC-4, distinct from a genuine upstream 502) — an invalid menu is
+// never persisted.
 
 import type { DiaSemana, Recipe, TipoPlatoSlot } from './types.ts'
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
