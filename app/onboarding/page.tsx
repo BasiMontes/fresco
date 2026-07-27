@@ -50,6 +50,7 @@ const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
 export default function OnboardingPage() {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const {
     step,
     dietaVegetariano,
@@ -87,6 +88,7 @@ export default function OnboardingPage() {
 
   async function handleGenerate() {
     setIsGenerating(true);
+    setGenerateError(null);
     try {
       const client = createClient();
       // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
@@ -116,6 +118,9 @@ export default function OnboardingPage() {
       // until the guest-auth mechanism is decided.
       await generateMealPlan({ semana_iso: fechaInicio, fecha_inicio: fechaInicio }, null);
       router.push('/menu');
+    }
+    catch {
+      setGenerateError('No pudimos guardar tu perfil o generar tu menú. Intenta de nuevo.');
     }
     finally {
       setIsGenerating(false);
@@ -255,6 +260,12 @@ export default function OnboardingPage() {
               </p>
             )}
           </>
+        )}
+
+        {generateError && (
+          <p data-testid="generate_error_message" className="mt-4 text-body-sm text-error">
+            {generateError}
+          </p>
         )}
 
         <div className="mt-6 flex justify-between">
