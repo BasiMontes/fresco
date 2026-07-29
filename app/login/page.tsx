@@ -12,30 +12,27 @@ import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 
 /**
- * `/signup` — EPIC-FRESCO-7 (Progressive Signup, US 7.1): a guest is asked
- * to sign up only AFTER seeing a generated menu (user-journeys.md Journey 1,
- * Step 5 — "keep what you just saw", not a paywall).
+ * `/login` — sign-in counterpart to `/signup` for an existing account.
  */
-export default function SignupPage() {
+export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [signupError, setSignupError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
-    setSignupError(null);
+    setLoginError(null);
     try {
       const client = createClient();
-      const { error } = await client.auth.signUp({ email, password });
+      const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) {
-        setSignupError(error.message);
+        setLoginError(error.message);
         return;
       }
-      // New users always go through onboarding next — see FRESCO-1.
-      router.push('/onboarding');
+      router.push('/menu');
     }
     finally {
       setIsSubmitting(false);
@@ -47,9 +44,9 @@ export default function SignupPage() {
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={32} className="mx-auto mb-8" />
 
       <Card>
-        <h1 className="text-h3">Guarda tu menú</h1>
+        <h1 className="text-h3">Inicia sesión</h1>
         <p className="mt-1 text-body-sm text-tertiary">
-          Crea una cuenta para no perder el menú que acabamos de generar.
+          Accede a tu cuenta para ver tu menú.
         </p>
 
         <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
@@ -67,26 +64,26 @@ export default function SignupPage() {
             type="password"
             placeholder="Contraseña"
             required
-            autoComplete="new-password"
+            autoComplete="current-password"
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
-          <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
-            {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
+          <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+            {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
           </Button>
         </form>
 
-        {signupError && (
-          <p data-testid="signup_error_message" className="mt-4 text-body-sm text-error">
-            {signupError}
+        {loginError && (
+          <p data-testid="login_error_message" className="mt-4 text-body-sm text-error">
+            {loginError}
           </p>
         )}
 
         <p className="mt-4 text-center text-body-sm text-tertiary">
-          ¿Ya tienes cuenta?
+          ¿No tienes cuenta?
           {' '}
-          <Link href="/login" className="text-primary">
-            Inicia sesión
+          <Link href="/signup" className="text-primary">
+            Crea una
           </Link>
         </p>
       </Card>
