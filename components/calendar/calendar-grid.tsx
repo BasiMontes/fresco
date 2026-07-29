@@ -125,7 +125,7 @@ export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
 
   return (
     <div>
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext id="calendar-grid" sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto">
           <div className="grid min-w-[840px] grid-cols-7 gap-3">
             {DIAS.map(dia => (
