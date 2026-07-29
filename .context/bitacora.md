@@ -217,3 +217,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió seguir con batch 3 de FRESCO-11.
 
 **Siguiente**: FRESCO-11 dev-done (falta aplicar migración + marcar Done en Jira, mismo patrón que FRESCO-7). Sigue FRESCO-13 (Lista de la Compra) y FRESCO-15 (Aprendizaje) de Execution Sprint 3. Ofrecido al user: aplicar migraciones + crear usuario de prueba para desbloquear testeo manual ya, antes de Guest Mode.
+
+---
+
+## 2026-07-29 — Login mínimo cableado + bug real de GRANTs encontrado en vivo
+
+**Qué**:
+- User quería empezar a probar la app, se atascó tratando de loguear (otra sesión había prometido un usuario de prueba y no llegó a crearlo). Diagnóstico: 2 migraciones nunca aplicadas contra la DB real (`create_recipe_learning_trigger`, `add_swap_meal_plan_slots_function` — `list_migrations` vía MCP mostraba solo 4 de las 6 que existen en el repo) y 0 filas en `auth.users`.
+- Aplicadas ambas migraciones pendientes. Usuario de prueba creado directo por SQL (`auth.users` + `auth.identities`, password hasheado con `pgcrypto`, `email_confirmed_at` seteado a mano) porque el signup vía API REST rebotó `email_address_invalid` en dominios `.test`/`example.com` y luego `over_email_send_rate_limit` en un dominio real — bypassear el envío de mail fue más simple que pelear el rate limit. Verificado con `POST /auth/v1/token?grant_type=password`: login real, 200, token devuelto.
+- Encontrado que `/signup` era shell puro (form sin `onSubmit`) y `/login` no existía en absoluto — ninguna ruta de auth funcional en toda la app, sin middleware. User eligió (vía pregunta con 3 opciones) el parche mínimo en vez de la historia formal de Guest Mode (Master Sprint 2): cableado real `signUp()`/`signInWithPassword()` en `/signup` y `/login` nuevo (subagente `general-purpose`, siguiendo el patrón de `onboarding/page.tsx`), `types:check` limpio.
+- **Bug real crítico encontrado al probar en vivo con Playwright**: login OK, redirect a `/menu` OK, pero `getMealPlanForWeek` tiraba `permission denied for table meal_plans`. Causa: las políticas RLS en `user_profiles`/`meal_plans`/`meal_plan_recipes`/`shopping_lists` estaban bien diseñadas (1:1 con los patrones de acceso de la app, confirmado vía `pg_policies`), pero **ninguna migración corrió nunca el `GRANT` de tabla para el rol `authenticated`** — solo `recipes` lo tenía (su SELECT público de catálogo). Sin el GRANT de base, RLS es irrelevante: cualquier usuario autenticado real chocaba con permission denied en las 4 tablas centrales de la app, sin importar ownership. Corregido con migración nueva (`20260729120000_grant_authenticated_table_privileges.sql`), aplicada y verificada — recarga de `/menu` quedó en 0 errores de consola.
+- Commiteado y pusheado a `main` (`f3edcfb`): `app/login/page.tsx` (nuevo), `app/signup/page.tsx` (wireado), la migración de grants.
+
+**Por qué**: desbloquear testeo manual real del user (login→onboarding→menú→calendario) sin esperar a Guest Mode/Master Sprint 2, que sigue sin sembrar. El bug de GRANTs era estructural y bloqueaba absolutamente cualquier cuenta real, no solo la de prueba — valía arreglarlo ya, no documentarlo como deuda.
+
+**Siguiente**: usuario de prueba activo (`qa.fresco@local.test`, credenciales ya en `.env` del user como `LOCAL_USER_EMAIL`/`LOCAL_USER_PASSWORD`). Falta: caminar onboarding→menú→calendario completo con el user en vivo (todavía no verificado post-fix), y el mismo fix de GRANTs sirve también para cuando exista Guest Mode. Recordar que `fresco-pro.vercel.app` no tenía este código hasta este push — redeploy de Vercel lo recoge solo si el pipeline no requiere acción manual.
