@@ -1,7 +1,6 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
-import type { DiaSemana } from '@/lib/api/types';
 
-import { GripVertical } from 'lucide-react';
+import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
@@ -9,30 +8,20 @@ import { createClient } from '@/lib/supabase/server';
 
 /**
  * `/calendar` — EPIC-FRESCO-3 (Editable Calendar, US 3.1/3.2). Full 7x3
- * weekly grid. Structural shell only: drag & drop reordering is deferred to
- * `/sprint-development` story work (needs a real drag library + persisted
- * state), the 6-dot handle icon from DESIGN.md's icon set is shown as a
- * static affordance for now.
+ * weekly grid. Drag & drop reordering (STORY-FRESCO-11) is now live via
+ * `CalendarGrid`, a `'use client'` island wrapping `@dnd-kit/core`: any slot
+ * can be picked up and dropped onto any other, with an optimistic local swap
+ * plus a background `swapMealPlanSlots()` persist and revert-on-failure.
  *
  * Reads the real, persisted current-week menu (STORY-FRESCO-7) via
  * `getMealPlanForWeek()` instead of `buildMockWeeklyMenu()` — an `async`
  * Server Component, same three-state pattern already established by
  * `/menu`'s page (empty / plan-with-`advertencias` / happy path), reusing
  * the exact same read function so both pages stay in sync with the same
- * persisted week.
+ * persisted week. `plan.menu` and `plan.slotIds` are passed straight through
+ * to `CalendarGrid` — their shapes already match its `MenuGrid` and
+ * `slotIds` props exactly, so no reshaping is needed here.
  */
-
-const DIA_LABELS: Record<DiaSemana, string> = {
-  lunes: 'Lunes',
-  martes: 'Martes',
-  miercoles: 'Miércoles',
-  jueves: 'Jueves',
-  viernes: 'Viernes',
-  sabado: 'Sábado',
-  domingo: 'Domingo',
-};
-
-const SLOTS = ['desayuno', 'comida', 'cena'] as const;
 
 export default async function CalendarPage() {
   const supabase = await createClient();
@@ -72,29 +61,8 @@ export default async function CalendarPage() {
         className="mt-4"
       />
 
-      <div className="mt-6 overflow-x-auto">
-        <div className="grid min-w-[840px] grid-cols-7 gap-3">
-          {(Object.keys(DIA_LABELS) as DiaSemana[]).map(dia => (
-            <div key={dia} className="flex flex-col gap-3">
-              <p className="text-label">{DIA_LABELS[dia]}</p>
-              {SLOTS.map((slot) => {
-                const recipe = plan.menu[dia][slot];
-                return (
-                  <div
-                    key={slot}
-                    className="flex items-start gap-2 rounded-card bg-surface p-3 shadow-sm"
-                  >
-                    <GripVertical className="mt-0.5 size-4 shrink-0 text-tertiary" />
-                    <div>
-                      <p className="text-caption uppercase text-tertiary">{slot}</p>
-                      <p className="text-body-sm">{recipe.nombre}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+      <div className="mt-6">
+        <CalendarGrid initialMenu={plan.menu} slotIds={plan.slotIds} />
       </div>
     </div>
   );
