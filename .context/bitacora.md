@@ -264,3 +264,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió seguir probando la app real después de confirmar que el menú generaba bien — siguiente paso lógico del roadmap de Execution Sprint 3 (FRESCO-11 ya dev-done, FRESCO-13 pendiente).
 
 **Siguiente**: FRESCO-11 (calendario) queda confirmado funcionando end-to-end en real, no solo en tests automáticos — candidato a marcar Done en Jira si no quedan otros gaps. FRESCO-13 (Lista de la Compra) sigue siendo el próximo trabajo real de implementación: falta tanto el prompt de Gemini (`buildShoppingSystemPrompt`/`buildShoppingUserPrompt`) como el wiring del frontend (`/shopping-list` page + `comprado` toggle vía RPC `security definer`, ambos documentados como TODO en el propio código).
+
+---
+
+## 2026-07-29 — Nuevo artefacto: `.context/qa/regression.feature`, registro único de escenarios de prueba
+
+**Qué**:
+- User propuso alojar todas las pruebas manuales (y futuras automatizadas con Playwright) en un solo documento Gherkin, en vez de quedar sueltas en el chat de cada sesión. Feedback dado antes de construir: las AC de cada historia YA son Gherkin (viven en `comments.md` de cada story vía fallback de Jira, no en un `acceptance-criteria.md` dedicado como sugería la documentación de §9 — corregido ahí mismo tras verificar el repo real), así que el nuevo fichero debía ser complementario (recorrido cruzando historias), no una segunda copia de las AC por tarjeta.
+- Creado `.context/qa/regression.feature`: una sola `Característica`, escenarios agrupados por área (login/registro, onboarding+generación, calendario, lista de compra) con tags (`@verificado-manual-2026-07-29`, `@pendiente`, `@no-implementado`, `@edge-case`). Todo en español de España, con directiva `# language: es` de Gherkin (soporta `Dado/Cuando/Entonces/Y` nativos, no solo `Given/When/Then` traducidos a mano).
+- Sembrado con todo lo verificado en vivo hoy (login, onboarding→generación con sus causísticas de catálogo insuficiente/422/409/404, calendario con el swap real y la regresión de RLS ya arreglada) más una sección final de "Notas de infraestructura" (comentario plano, no Gherkin ejecutable) con el checklist de causísticas reales encontradas hoy: migración sin aplicar, función sin deployar, GRANT sin policy de rol correcto, modelo de Gemini deprecado sin aviso.
+- Documentado el artefacto en 2 sitios más, siguiendo el patrón ya existente en el repo (`.context/reports/README.md`, `.context/business/README.md`): `.context/qa/README.md` (propósito, convención de tags, ciclo de vida, cómo consumirlo) y un puntero nuevo en `CLAUDE.md` §4 "Key paths".
+- Commiteado y pusheado a `main` (`e647e35`).
+
+**Por qué**: user quería trazabilidad end-to-end del producto en un solo sitio, más allá de las AC sueltas por tarjeta de Jira, con vista a automatizar con Playwright (`playwright-bdd`/`cucumber-js`) sin tener que traducir la documentación a un formato nuevo cuando llegue ese momento — el Gherkin ya escrito hoy sería directamente el spec ejecutable.
+
+**Siguiente**: mantener el fichero vivo — cada sesión de testeo en vivo nueva debería sumar escenario o mover un tag (`@pendiente`→`@verificado-manual-FECHA`, o `@no-implementado`→verificado cuando FRESCO-13 se construya). Cuando se decida automatizar de verdad, evaluar `playwright-bdd` vs `cucumber-js` como capa de step-definitions (ninguno instalado todavía, decisión pendiente para ese momento).
