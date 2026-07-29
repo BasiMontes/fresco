@@ -10,11 +10,12 @@ import { defineBddConfig } from 'playwright-bdd';
 const testDir = defineBddConfig({
   features: '.context/qa/regression.feature',
   steps: 'tests/steps/*.ts',
-  // Scoped to the one scenario this suite currently automates. `@login` also
-  // tags a second, `@edge-case`/`@pendiente` scenario in the same feature
-  // file that has no step definitions yet — excluding it keeps bddgen from
-  // failing on "missing step definitions" for scenarios not yet automated.
-  tags: '@login and not @edge-case',
+  // Scoped to the scenarios this suite currently automates (@login,
+  // @registro). Both tags also cover an `@edge-case`/`@pendiente` sibling
+  // scenario in the same feature file that has no step definitions yet —
+  // excluding it keeps bddgen from failing on "missing step definitions"
+  // for scenarios not yet automated.
+  tags: '(@login or @registro) and not @edge-case',
 });
 
 export default defineConfig({

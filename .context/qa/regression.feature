@@ -39,7 +39,8 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un mensaje de error claro
     Y permanece en /login sin sesión activa
 
-  @registro @verificado-manual-2026-07-29
+  @registro @verificado-manual-2026-07-29 @automatizado
+  # Automatizado: tests/steps/signup.steps.ts (playwright-bdd, mock de red — ver comentario en el step file)
   Escenario: Alta de nuevo usuario desde /signup
     Dado que un visitante sin cuenta rellena email y contraseña en /signup
     Cuando confirma el formulario
