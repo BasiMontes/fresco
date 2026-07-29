@@ -128,7 +128,14 @@ Deno.serve(async (req: Request) => {
         userPrompt,
         config: {
           temperature: 0.7, // some variety without losing filter coherence
-          maxOutputTokens: 1024,
+          // 1024 was tuned against gemini-1.5-flash, a non-thinking model.
+          // Its replacement (gemini-3.6-flash, see _shared/gemini.ts) spends
+          // hundreds of tokens on internal reasoning before any visible
+          // output — confirmed live: a 3-word toy prompt alone used 241-283
+          // thoughtsTokenCount. Against the real 21-slot-menu task, 1024
+          // starved the actual JSON entirely (retries exhausted, invalid
+          // JSON every time). 8192 leaves headroom for both.
+          maxOutputTokens: 8192,
         },
       })
 

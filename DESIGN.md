@@ -169,7 +169,8 @@ components:
   tag:
     typography: '{typography.caption}'
     rounded: '{rounded.full}'
-    padding: '{spacing.1}'
+    paddingX: '{spacing.2}'
+    paddingY: '{spacing.1}'
   tag-selected:
     backgroundColor: '{colors.primary}'
     textColor: '{colors.background}'

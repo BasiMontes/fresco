@@ -114,12 +114,14 @@ export default function OnboardingPage() {
       const now = new Date();
       const semanaIso = getIsoWeek(now);
       const fechaInicio = getIsoWeekMonday(now);
-      // TODO: guest-mode auth unresolved, see business-api-map.md
-      // A guest at this point in the journey has no Supabase session yet
-      // (user-journeys.md Journey 1: signup happens AFTER seeing the menu,
-      // not before). Passing `null` here will 401 against a real deployment
-      // until the guest-auth mechanism is decided.
-      await generateMealPlan({ semana_iso: semanaIso, fecha_inicio: fechaInicio }, null);
+      // Guest-mode auth (a visitor with no account yet) is still unresolved —
+      // see business-api-map.md — but a signed-in user's real session token
+      // was never read here even when one exists, which 401'd unconditionally.
+      const { data: { session } } = await client.auth.getSession();
+      await generateMealPlan(
+        { semana_iso: semanaIso, fecha_inicio: fechaInicio },
+        session?.access_token ?? null,
+      );
       router.push('/menu');
     }
     catch (error) {

@@ -70,6 +70,9 @@ Thumbs.db
 # ===== Vercel =====
 .vercel
 
+# ===== Supabase CLI =====
+supabase/.temp
+
 # ===== AI CLI Tools & Configs =====
 .serena
 .gemini/

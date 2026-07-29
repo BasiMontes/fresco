@@ -8,8 +8,16 @@
 // versioning risk (Google may deprecate/change it silently) — pinned as-is
 // per the founder's explicit choice, not revisited here.
 
+// gemini-1.5-flash (originally pinned per architecture.md §2) was fully
+// removed by Google (confirmed via ListModels, 2026-07-29: 404 NOT_FOUND) —
+// the versioning risk that doc flagged materialized. gemini-2.5-flash was
+// also tried and rejected live ("no longer available to new users" — this
+// project's API key is new). gemini-3.6-flash (version 3.6-flash-07-2026,
+// verified via a real generateContent call) is the current GA flash tier
+// this key can actually use — still pinned explicitly, not an alias like
+// gemini-flash-latest, which would silently reintroduce the same risk.
 const GEMINI_API_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent'
 
 export interface GeminiGenerationConfig {
   temperature: number

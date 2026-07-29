@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 /** Tag/pill variants mirror DESIGN.md's `components.tag*` tokens exactly. */
 const tagVariants = cva(
-  'inline-flex items-center rounded-full px-1 text-caption font-sans',
+  'inline-flex items-center rounded-full px-2 py-1 text-caption font-sans',
   {
     variants: {
       variant: {
