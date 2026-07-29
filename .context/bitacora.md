@@ -250,3 +250,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user quería empezar a usar la app de verdad, no solo tests automáticos — cada bug de esta lista era invisible en review de código porque ninguno se había ejecutado nunca contra Supabase/Gemini reales (migraciones sin aplicar, funciones sin deployar, modelo sin probar en vivo, RLS sin probar con sesión real). El patrón se repite: código correcto en el repo, infraestructura real nunca verificada contra él.
 
 **Siguiente**: camino E2E real (login→onboarding→menú) queda desbloqueado y confirmado funcionando. Falta: `generate-shopping-list` sigue con `prompt.ts` en TODO deliberado (out of scope, es tarea de `/sprint-development`) — deployada pero fallará 502 si se invoca hasta que se implemente. Recomendable, próxima sesión: probar calendario (drag-and-drop, FRESCO-11) y lista de compra en vivo con este mismo usuario de prueba, y considerar si vale la pena documentar el gotcha del bundler de `deploy_edge_function` (rutas `../../../`) en algún lado más visible para no repetirlo.
+
+---
+
+## 2026-07-29 — Calendario probado en vivo (real), lista de compra confirmada sin construir
+
+**Qué**:
+- Con el usuario de prueba ya logueado y un plan real generado, se probó `/calendar` con Playwright: drag-and-drop real (lunes↔martes desayuno), swap verificado persistido en DB vía `swap_meal_plan_slots` (no solo optimistic UI) — reload posterior confirma el cambio server-side.
+- **Bug real encontrado al recargar la página**: mismatch de hidratación de React en cada carga de `/calendar` — `aria-describedby="DndDescribedBy-N"` de `@dnd-kit/core` distinto entre servidor y cliente. Causa: `DndContext` genera ese id con un contador interno de módulo (no `React.useId()`, que sí sería SSR-safe), así que servidor (contador fresco por request) y cliente (contador que persiste entre navegaciones/HMR) pueden desincronizarse. Gotcha documentado del propio `@dnd-kit`, con fix soportado: pasar un `id` explícito y estable al `DndContext`. Aplicado (`id="calendar-grid"`), verificado con 2 reloads seguidos sin error.
+- `/shopping-list` inspeccionado: confirmado que sigue siendo 100% mock (`MOCK_SHOPPING_LIST` hardcodeado en el propio archivo, ver comentario de header ya existente) — nunca se conectó ni al RPC real ni a `generateShoppingList()`. No es un bug encontrado, es la historia FRESCO-13 sin empezar todavía; coincide con que `generate-shopping-list/prompt.ts` sigue siendo TODO deliberado.
+- Commiteado y pusheado a `main` (`b88855c`).
+
+**Por qué**: user pidió seguir probando la app real después de confirmar que el menú generaba bien — siguiente paso lógico del roadmap de Execution Sprint 3 (FRESCO-11 ya dev-done, FRESCO-13 pendiente).
+
+**Siguiente**: FRESCO-11 (calendario) queda confirmado funcionando end-to-end en real, no solo en tests automáticos — candidato a marcar Done en Jira si no quedan otros gaps. FRESCO-13 (Lista de la Compra) sigue siendo el próximo trabajo real de implementación: falta tanto el prompt de Gemini (`buildShoppingSystemPrompt`/`buildShoppingUserPrompt`) como el wiring del frontend (`/shopping-list` page + `comprado` toggle vía RPC `security definer`, ambos documentados como TODO en el propio código).
