@@ -66,6 +66,15 @@ export interface CalendarGridProps {
 export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
   const [menu, setMenu] = React.useState<MenuGrid>(initialMenu);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  // Slots with an in-flight swapMealPlanSlots() call, keyed by dnd-kit id
+  // (`slotId()`). Blocks both ends of a swap from being re-dragged until
+  // the RPC settles — without this, a second drag overlapping an unresolved
+  // first swap composes on top of the still-optimistic state, and the first
+  // swap's revert-on-failure (below) re-applies against the WRONG state,
+  // corrupting the grid in a way nothing re-syncs from afterward. Found in
+  // Stage 3 review; fixed by making overlapping drags impossible rather than
+  // reconciling them after the fact.
+  const [pendingSlots, setPendingSlots] = React.useState<ReadonlySet<string>>(new Set());
   const supabase = React.useMemo(() => createClient(), []);
 
   const sensors = useSensors(
@@ -85,16 +94,33 @@ export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
       return;
     }
 
+    const fromId = slotId(from);
+    const toId = slotId(to);
+    if (pendingSlots.has(fromId) || pendingSlots.has(toId)) {
+      return;
+    }
+
     setMenu(current => applySlotSwap(current, from, to));
     setErrorMessage(null);
+    setPendingSlots(current => new Set(current).add(fromId).add(toId));
 
     const slotAId = slotIds[from.dia][from.tipo];
     const slotBId = slotIds[to.dia][to.tipo];
 
-    void swapMealPlanSlots(supabase, slotAId, slotBId).catch(() => {
-      setMenu(current => applySlotSwap(current, from, to));
-      setErrorMessage('No se pudo guardar el nuevo orden. Vuelve a intentarlo.');
-    });
+    void swapMealPlanSlots(supabase, slotAId, slotBId)
+      .catch((error) => {
+        console.error('[CalendarGrid] swapMealPlanSlots failed, reverting', error);
+        setMenu(current => applySlotSwap(current, from, to));
+        setErrorMessage('No se pudo guardar el nuevo orden. Vuelve a intentarlo.');
+      })
+      .finally(() => {
+        setPendingSlots((current) => {
+          const next = new Set(current);
+          next.delete(fromId);
+          next.delete(toId);
+          return next;
+        });
+      });
   }
 
   return (
@@ -111,6 +137,7 @@ export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
                     dia={dia}
                     tipo={tipo}
                     recipe={menu[dia][tipo]}
+                    pending={pendingSlots.has(slotId({ dia, tipo }))}
                   />
                 ))}
               </div>
@@ -145,6 +172,8 @@ interface SlotCellProps {
   dia: DiaSemana
   tipo: TipoPlato
   recipe: Recipe
+  /** True while this slot is part of an in-flight swap — blocks re-dragging it. */
+  pending: boolean
 }
 
 /**
@@ -154,7 +183,7 @@ interface SlotCellProps {
  * node via `setRefs` below (dnd-kit tracks draggable/droppable ids in
  * separate registries, so reusing the same composite id for both is safe).
  */
-function SlotCell({ dia, tipo, recipe }: SlotCellProps) {
+function SlotCell({ dia, tipo, recipe, pending }: SlotCellProps) {
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
 
@@ -164,9 +193,9 @@ function SlotCell({ dia, tipo, recipe }: SlotCellProps) {
     setNodeRef: setDragRef,
     transform,
     isDragging,
-  } = useDraggable({ id, data: slotKey });
+  } = useDraggable({ id, data: slotKey, disabled: pending });
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey, disabled: pending });
 
   const setRefs = React.useCallback(
     (node: HTMLElement | null) => {
@@ -187,6 +216,7 @@ function SlotCell({ dia, tipo, recipe }: SlotCellProps) {
         'flex items-start gap-2 rounded-card bg-surface p-3 shadow-sm',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
+        pending && 'cursor-wait opacity-70',
       )}
     >
       <GripVertical className="mt-0.5 size-4 shrink-0 text-tertiary" />
