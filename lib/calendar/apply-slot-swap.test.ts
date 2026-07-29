@@ -116,4 +116,27 @@ describe('applySlotSwap', () => {
       }
     }
   });
+
+  test('swapping a slot with itself is a documented no-op (same value, new object)', () => {
+    const menu = buildFullGrid();
+    const slot = { dia: 'jueves', tipo: 'comida' } as const;
+
+    const result = applySlotSwap(menu, slot, slot);
+
+    expect(result.jueves.comida.id).toBe('recipe-jueves-comida');
+    expect(result).not.toBe(menu);
+  });
+
+  test('an untouched day keeps its original object reference (only swapped days are copied)', () => {
+    const menu = buildFullGrid();
+    const originalDomingo = menu.domingo;
+
+    const result = applySlotSwap(
+      menu,
+      { dia: 'lunes', tipo: 'cena' },
+      { dia: 'martes', tipo: 'comida' },
+    );
+
+    expect(result.domingo).toBe(originalDomingo);
+  });
 });
