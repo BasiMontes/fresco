@@ -202,3 +202,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió seguir con batch 2 de FRESCO-11.
 
 **Siguiente**: batch 3 (final) — wirear `CalendarGrid` a `/calendar/page.tsx` real, pase de live-UI con Playwright (empty/happy/error), y aplicar la migración pendiente antes de que el RPC funcione contra una DB real.
+
+---
+
+## 2026-07-29 — FRESCO-11 batch 3: wireado a `/calendar` real — Stage 2 completo
+
+**Qué**:
+- `/calendar/page.tsx` ahora usa `CalendarGrid` real en vez de la grilla estática — markup muerto (`DIA_LABELS`, `SLOTS`, el `.map()` manual, el ícono `GripVertical` suelto) eliminado. Empty state y banner de `advertencias` intactos.
+- Review (reliability, sin findings): contrato de tipos entre `plan.menu`/`plan.slotIds` y `CalendarGridProps` confirmado sin cast, sin código muerto, sin regresión.
+- Live-UI: empty state de `/calendar` verificado con Playwright. Drag-and-drop real y banner de advertencias NO verificables — sigue sin existir login en la app (deuda ya conocida, "camino E2E de verdad").
+- **FRESCO-11 Stage 2 completo** — los 6 pasos del plan, en 3 batches. Queda: aplicar la migración a una DB real (bloqueado, sin Supabase local) y el camino E2E completo cuando exista login.
+- User preguntó cuándo puede empezar a probar cosas manualmente — le ofrecí camino rápido (aparte de Guest Mode/Master Sprint 2): aplicar migraciones a Supabase real + crear usuario de prueba directo (saltando `/signup`, que sigue siendo shell vacío), para poder loguearse manual y probar onboarding→menú→calendario end-to-end ya. Pendiente de confirmación del user.
+
+**Por qué**: user pidió seguir con batch 3 de FRESCO-11.
+
+**Siguiente**: FRESCO-11 dev-done (falta aplicar migración + marcar Done en Jira, mismo patrón que FRESCO-7). Sigue FRESCO-13 (Lista de la Compra) y FRESCO-15 (Aprendizaje) de Execution Sprint 3. Ofrecido al user: aplicar migraciones + crear usuario de prueba para desbloquear testeo manual ya, antes de Guest Mode.
