@@ -24,7 +24,8 @@ Característica: Flujo completo de usuario en Fresco
   # Autenticación
   # ==========================================================================
 
-  @login @verificado-manual-2026-07-29
+  @login @verificado-manual-2026-07-29 @automatizado
+  # Automatizado: tests/steps/login.steps.ts (playwright-bdd)
   Escenario: Inicio de sesión correcto con credenciales válidas
     Dado que existe un usuario registrado con email y contraseña válidos
     Cuando introduce esas credenciales en /login y confirma el formulario
@@ -68,19 +69,16 @@ Característica: Flujo completo de usuario en Fresco
 
   @generacion-menu @edge-case @verificado-manual-2026-07-29
   Escenario: El catálogo filtrado no tiene recetas específicas para todos los huecos
-    Dado que las restricciones del usuario dejan un catálogo con recetas insuficientes
-      para desayuno o cena
+    Dado que las restricciones del usuario dejan un catálogo con recetas insuficientes para desayuno o cena
     Cuando se genera el menú
     Entonces la IA rellena esos huecos con recetas de tipo "comida" como sustituto
-    Y el sistema muestra un aviso explícito ("Antes de continuar…") explicando
-      qué se sustituyó y por qué
+    Y el sistema muestra un aviso explícito ("Antes de continuar…") explicando qué se sustituyó y por qué
 
   @generacion-menu @edge-case @pendiente
   Escenario: La generación falla porque la IA no devuelve un menú válido tras los reintentos
     Dado que el modelo no logra producir un JSON válido o completo tras 3 intentos
     Cuando se agotan los reintentos
-    Entonces el sistema responde 422 con un mensaje claro de que no pudo generar
-      un menú válido
+    Entonces el sistema responde 422 con un mensaje claro de que no pudo generar un menú válido
     Y el frontend distingue este caso del error genérico de IA (502)
 
   @generacion-menu @edge-case @pendiente

@@ -27,6 +27,9 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+# playwright-bdd generates real spec files from .feature files here at
+# config-load time — build output, not source.
+/.features-gen/
 
 # ===== Auth Storage (Session State) =====
 /.auth/
