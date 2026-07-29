@@ -188,3 +188,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: user pidió arrancar Execution Sprint 3, empezando por FRESCO-11 (Calendario).
 
 **Siguiente**: batch 2 (drag-and-drop UI real — `@dnd-kit/core`, componente `CalendarGrid`) y batch 3 (wiring final) quedan pendientes. **Antes de eso**: aplicar la migración `20260727000000_add_swap_meal_plan_slots_function.sql` contra Supabase real (local o remoto) — sin eso el RPC no existe todavía del lado servidor. User se va unas horas, retomamos después.
+
+---
+
+## 2026-07-29 — FRESCO-11 batch 2: drag-and-drop real + bug crítico encontrado y arreglado
+
+**Qué**:
+- `@dnd-kit/core` instalado (v6.3.1), compatibilidad con React 19/Next 16 verificada antes de instalar. Helper puro `applySlotSwap()` (swap de grilla, auto-inverso) + componente `CalendarGrid` (drag-and-drop real, todavía standalone, sin wirear a ninguna página).
+- **Bug real CRÍTICO encontrado en review Stage 3**, confirmado por 2 lentes independientes (resilience + reliability): sin guard contra drags superpuestos — un segundo drag reusando un slot de un swap anterior sin resolver corrompía la grilla (el revert del primero pisaba mal el estado del segundo), sin nada que resincronizara después. Todavía no alcanzable en vivo (componente sin wirear), pero bug real latente. Arreglado: set `pendingSlots` deshabilita ambos extremos de un swap en vuelo hasta que resuelve — la carrera queda estructuralmente imposible, no solo mitigada.
+- También arreglado: logging silencioso en fallo de RPC (agregado `console.error`, mismo patrón que `/menu`/`/calendar`), 2 tests que faltaban (self-swap no-op, referencia intacta de día no tocado).
+- Declinado: pulido UX de drag por teclado (sin AC que lo exija), nit de nombres cosmético.
+
+**Por qué**: user pidió seguir con batch 2 de FRESCO-11.
+
+**Siguiente**: batch 3 (final) — wirear `CalendarGrid` a `/calendar/page.tsx` real, pase de live-UI con Playwright (empty/happy/error), y aplicar la migración pendiente antes de que el RPC funcione contra una DB real.
