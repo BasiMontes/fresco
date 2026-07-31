@@ -195,6 +195,51 @@ export async function getMealPlanForWeek(
 }
 
 /**
+ * Reads every DISTINCT recipe that has ever appeared in the current user's
+ * own meal plans, across all weeks — the real data behind `/recipes`
+ * ("Las recetas que Fresco ha usado en tus menús"). Not the global catalog:
+ * a household should see recipes THEY were served, not all ~35 seeded rows.
+ *
+ * A slot with `recipe_id: null` (FR-8.2 / AC Scenario 4, FRESCO-23 — no
+ * safe recipe existed for that slot) has no `recipes` row to embed and is
+ * skipped, same as `reshapeMenu()`'s own null handling above.
+ *
+ * Public method — fails fast (throws `MealPlanError`) on a real read error,
+ * same convention as `getMealPlanForWeek()`. Returns `[]` (not a throw) for
+ * a user who has never generated a menu — an empty history is a normal,
+ * expected state, not a failure.
+ */
+export async function getUserRecipes(client: SupabaseClient<Database>): Promise<Recipe[]> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new MealPlanError('No hay una sesión autenticada para leer las recetas.');
+  }
+
+  const { data, error } = await client
+    .from('meal_plans')
+    .select('meal_plan_recipes(recipes(*))')
+    .eq('user_id', user.id);
+
+  if (error) {
+    throw new MealPlanError(`No se pudieron leer las recetas: ${error.message}`);
+  }
+
+  const rows = data as unknown as { meal_plan_recipes: { recipes: RecipeRow | null }[] }[];
+  const byId = new Map<string, Recipe>();
+
+  for (const plan of rows) {
+    for (const slot of plan.meal_plan_recipes) {
+      if (slot.recipes && !byId.has(slot.recipes.id)) {
+        byId.set(slot.recipes.id, toRecipe(slot.recipes));
+      }
+    }
+  }
+
+  return [...byId.values()];
+}
+
+/**
  * Swaps two `meal_plan_recipes` slots' recipe assignments (STORY-FRESCO-11
  * drag-and-drop calendar reorder) via the `swap_meal_plan_slots` RPC
  * (`security definer`, see ADR-0002) — the single atomic write path for a
