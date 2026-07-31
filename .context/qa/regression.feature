@@ -106,6 +106,67 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema responde 404 "Perfil de usuario no encontrado"
 
   # ==========================================================================
+  # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
+  # ==========================================================================
+
+  @invitado @verificado-manual-2026-07-31
+  Escenario: Una visitante nueva genera un menú sin crear cuenta
+    Dado que una visitante sin cuenta ni sesión visita la landing
+    Cuando completa el onboarding de 3 pasos y genera su menú
+    Entonces se crea una sesión anónima real (ADR-0003) sin que ella lo note
+    Y ve su menú completo de 21 comidas en /menu, sin ningún prompt de registro
+    # Confirmado en vivo: JWT decodificado con is_anonymous: true.
+
+  @registro-progresivo @verificado-manual-2026-07-31
+  Escenario: La invitada ve una invitación a guardar su menú
+    Dado que una invitada con sesión anónima tiene un menú ya generado
+    Cuando visita /menu
+    Entonces ve un banner "Crea una cuenta para no perder este menú"
+    Y un enlace a /signup
+
+  @registro-progresivo @pendiente
+  Escenario: La invitada convierte su sesión anónima en una cuenta real
+    Dado que una invitada con sesión anónima rellena email y contraseña en /signup
+    Cuando el email no pertenece a ninguna cuenta existente
+    Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
+    Y conserva el menú que ya había generado como invitada
+    # Nunca disparado en vivo a propósito — el branch feliz de signUp/
+    # updateUser dispara un envío de email real (mismo criterio de "no
+    # quemar signups reales" aplicado toda la sesión). El branch de
+    # conflicto (abajo) SÍ se verificó en vivo, que ejercita el mismo
+    # updateUser() hasta el punto de fallo.
+
+  @registro-progresivo @edge-case @verificado-manual-2026-07-31
+  Escenario: El email de conversión ya pertenece a una cuenta real distinta
+    Dado que una invitada intenta convertir su sesión con un email ya registrado
+    Cuando confirma el formulario de /signup
+    Entonces ve un mensaje claro explicando el conflicto
+    Y se le ofrece continuar con la cuenta existente ingresando su contraseña
+    # Disparado en vivo contra el email real ya registrado del usuario de
+    # test — 422 email_exists real, mensaje correcto.
+
+  @registro-progresivo @edge-case @verificado-manual-2026-07-31
+  Escenario: La invitada resuelve el conflicto con la contraseña correcta de la cuenta existente
+    Dado que la invitada ve el conflicto de email y conoce la contraseña de esa cuenta
+    Cuando la ingresa y confirma
+    Entonces sus datos de invitada (menú, perfil) se reasignan a la cuenta real
+    Y su sesión anónima y perfil huérfano se eliminan
+    Y la cuenta real conserva exactamente su plan original, sin duplicarse
+    Y es redirigida a /menu como la cuenta real
+    # Verificado de punta a punta con casos reales: forzado el conflicto a
+    # propósito (misma semana que la cuenta real ya tenía un plan),
+    # confirmado por SQL directo (perfil/usuario anónimo borrados, plan
+    # conflictivo descartado, cuenta real intacta). También clickeado en
+    # navegador real en una pasada posterior.
+
+  @registro-progresivo @edge-case @verificado-manual-2026-07-31
+  Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
+    Dado que la invitada ve el conflicto de email
+    Cuando ingresa una contraseña incorrecta para esa cuenta
+    Entonces ve un error claro
+    Y no se mueve ni se modifica ningún dato
+
+  # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================
 
