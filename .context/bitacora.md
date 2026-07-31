@@ -758,3 +758,13 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: pedido explícito del user de escalar el catálogo a 150 recetas con cobertura real de las tres franjas y de las combinaciones de dietas/alérgenos — profundizando el mismo trabajo de TECHDEBT-FRESCO-24 de la entrada anterior, a mayor escala.
 
 **Siguiente**: sin pendientes de ingeniería. El catálogo ya no es el cuello de botella de calidad percibida del menú semanal.
+
+---
+
+## 2026-08-01 — Verificado flujo completo en PRE tras la ampliación a 150 recetas
+
+**Qué**: user pidió repetir el flujo completo en `fresco-pre.vercel.app` para confirmar el catálogo de 150 recetas en producción real. Cuenta de test fresca, recorrido completo: login → onboarding (3 pasos) → generación real (~20s) → calendario (drag/swap real verificado) → lista de la compra (generación real) → recetas (datos reales) → perfil (datos reales). Cero errores de consola en cada paso; único warning fue el puntual y esperado ("un plato de comida tardó 35 min, no quedaban opciones ≤30 min") — no el aviso sistémico de catálogo vacío de antes. Cuenta de test borrada al terminar.
+
+**Por qué**: cerrar el ciclo de verificación de la ampliación de catálogo contra el entorno real, no solo contra la base de datos.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
