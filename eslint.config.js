@@ -26,10 +26,14 @@ export default antfu({
     '.github/**',
     // Generated files (auto-generated, not manually edited)
     'api/openapi-types.ts',
-    // Supabase Database types written by `supabase gen types typescript`
-    // (project-bootstrap). Large machine-generated snake_case file — linting it
-    // produces noise and `eslint --fix` would diverge it from the generator.
-    'src/types/supabase.ts',
+    // Supabase Database types written by `bun run db:types` (`supabase gen
+    // types typescript`, per package.json). Large machine-generated
+    // snake_case file — linting it produces noise and `eslint --fix` would
+    // diverge it from the generator. Found live 2026-07-31: this entry
+    // previously pointed at a stale `src/types/supabase.ts` path that
+    // doesn't exist in this project — `db:types` had never been run before,
+    // so the mismatch stayed latent until the first real regeneration.
+    'lib/supabase/types.ts',
     // Git worktrees placed under .claude/worktrees/ are another branch's full
     // checkout — never lint another tree from this one.
     '.claude/worktrees/**',

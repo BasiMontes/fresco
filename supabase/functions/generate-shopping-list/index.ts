@@ -2,10 +2,8 @@
 //
 // Orchestrates FR-4.1-FR-4.4, api-contracts.md §2. Auth, DB reads/writes,
 // ownership checks, ingredient consolidation (deterministic, api-contracts.md
-// §2a), and the retry/validation control flow are real, working code. The
-// actual Gemini prompt-building (aisle classification wording) is deferred —
-// see prompt.ts's TODOs — this is implementation/model-tuning detail for
-// /sprint-development, not this bootstrap pass.
+// §2a), the Gemini prompt (aisle classification, prompt.ts), and the
+// retry/validation control flow are all real, working code (STORY-FRESCO-13).
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
@@ -110,9 +108,6 @@ Deno.serve(async (req: Request) => {
     }
 
     // 9. Classify + normalize via Gemini, with bounded retries (NFR-REL-1).
-    // buildShoppingSystemPrompt/buildShoppingUserPrompt are TODO stubs — see
-    // prompt.ts — so this loop will fail fast until /sprint-development fills
-    // them in. The retry/validation shape itself is real.
     let listaData: ShoppingListModelOutput | null = null
     let lastError = ''
 
@@ -130,7 +125,13 @@ Deno.serve(async (req: Request) => {
         userPrompt,
         config: {
           temperature: 0.2, // classification task — consistency over variety
-          maxOutputTokens: 2048,
+          // 2048 was the api-contracts.md §2b spec value, tuned for
+          // gemini-1.5-flash. Its replacement (gemini-3.6-flash, see
+          // _shared/gemini.ts) spends hundreds of tokens on internal
+          // reasoning before any visible output — confirmed live on
+          // generate-meal-plan (same starvation bug, same fix). Bumped
+          // pre-emptively instead of waiting to rediscover it here.
+          maxOutputTokens: 8192,
         },
       })
 
@@ -169,7 +170,13 @@ Deno.serve(async (req: Request) => {
     // 10. Persist
     const { data: savedList, error: saveError } = await supabase
       .from('shopping_lists')
-      .insert({ meal_plan_id, user_id: user.id, items: listaData.pasillos })
+      .insert({
+        meal_plan_id,
+        user_id: user.id,
+        items: listaData.pasillos,
+        coste_estimado_min: listaData.resumen.coste_estimado_min,
+        coste_estimado_max: listaData.resumen.coste_estimado_max,
+      })
       .select('id')
       .single()
 
