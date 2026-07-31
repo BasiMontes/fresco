@@ -29,7 +29,7 @@ export function Sidebar() {
   return (
     <aside className="hidden w-64 shrink-0 flex-col bg-accent-900 px-4 py-6 text-background md:flex">
       <Link href="/menu" className="mb-8 flex items-center px-2">
-        <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={32} priority />
+        <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} priority />
       </Link>
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {

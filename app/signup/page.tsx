@@ -129,7 +129,7 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
-      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={32} className="mx-auto mb-8" />
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
       <Card>
         <h1 className="text-h3">Guarda tu menú</h1>
