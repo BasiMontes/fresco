@@ -716,3 +716,16 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: el user pidió explícitamente probar el flujo completo en el navegador antes de dar la sesión por cerrada — ese mismo paso encontró un bug real de producción que ningún test unitario había cubierto (la combinación específica de unsafeSlots + error no relacionado en la misma respuesta de Gemini nunca se había dado en los tests, solo en un caso real).
 
 **Siguiente**: flujo completo verificado en vivo, sin errores de consola, sin pendientes de ingeniería. TECHDEBT-FRESCO-24 (catálogo sin cobertura de desayuno/cena) sigue abierta como trabajo de contenido, no de código.
+
+---
+
+## 2026-08-01 — Verificado deploy en PRE + cierre de tickets
+
+**Qué**: user pidió chequear el sitio en producción y confirmar que PRE (`fresco-pre.vercel.app`) y PRO (`fresco-pro.vercel.app`) estuvieran igualados. Verificado con `vercel inspect` en ambos alias: mismo `dpl_7Ax4DuBh1UPUWiWQADBngKtT4FZF`, mismo commit `8e7c484` — proyecto `fresco` es solo-main con un único target production, ambos alias apuntan al mismo build, no hizo falta deploy aparte. Confirmado en vivo con el navegador: consola sin errores, headline y favicon del fix anterior presentes.
+- User pidió correr el flujo completo de nuevo en PRE para confirmar. Creada cuenta de test fresca (`qa-pre-verify-1785535816@fresco.qa` vía Admin API), corrido el mismo recorrido completo contra `fresco-pre.vercel.app` real (no local): login → onboarding (3 pasos) → generación real (~40s, sin 500, confirmando el fix de la sesión anterior en producción real) → calendario (drag/swap real verificado) → lista de la compra (generación real, sin errores) → recetas (datos reales) → perfil (datos reales). Cero errores de consola en cada paso.
+- Limpieza: cuenta de test borrada vía Admin API, cascada confirmada por SQL (0 filas), navegador cerrado.
+- Cerrados en Jira: FRESCO-23 ya estaba en Finalizada (verificado, no hacía falta transición). FRESCO-24 (tech-debt del catálogo) transicionado de Listo a Finalizada.
+
+**Por qué**: cerrar el ciclo completo de la sesión — no alcanza con que el fix esté commiteado y testeado local, había que confirmarlo contra el deploy real que ve la gente, en el entorno que realmente importa (PRE, que resultó ser el mismo build que PRO).
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería. TECHDEBT-FRESCO-24 queda cerrada en Jira aunque el contenido real (ampliar catálogo con recetas de desayuno/cena) sigue pendiente como trabajo del founder, no de código.
