@@ -635,3 +635,20 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: dejar el registro de pruebas reflejando la cobertura real del sistema, no solo lo último que se tocó — sin inflar el estado de verificación de lo que de verdad nunca se clickeó.
 
 **Siguiente**: quedan 4 escenarios `@pendiente` reales en todo el archivo (conversión feliz de invitada, render de franja sin receta, tarjeta de aprendizaje visual, generación agotando reintentos) — todos con razón documentada de por qué no se forzaron en vivo. Sin pendientes de ingeniería.
+
+---
+
+## 2026-07-31 — Automatizado 1 escenario nuevo con Playwright, encontrados y arreglados 3 bugs reales del propio harness de test
+
+**Qué**: user pidió automatizar los `@pendiente` que se pudieran con Playwright. De los 4 reales, solo 1 era automatizable sin riesgo (conversión feliz de invitada — mismo criterio de mockear la llamada real que ya usaba `@registro`); los otros 2 (render de franja sin receta, tarjeta de aprendizaje Pro) necesitarían pisar el único fixture de test compartido que `@aprendizaje` ya usa, y el de reintentos agotados no tiene forma de mockearse (llamada server-to-server a Gemini). Antes de escribir nada nuevo, corrí la suite existente como baseline — encontró 3 bugs reales, ninguno inventado:
+1. **El fix de signup de esta sesión rompió el mock existente de `@registro`**: el mock simulaba un signup exitoso con `identities: []`, que es exactamente la forma que mi propio fix de "email duplicado" (de más temprano hoy) ahora lee como "ya existe". Arreglado el mock con una identity real.
+2. **Fixture de `@aprendizaje` agotado**: las 21 franjas de la semana actual del usuario de test real ya estaban todas marcadas (cocinada/descartada) por corridas anteriores de la suite en sesiones previas — regenerado un menú real fresco para reponerlo.
+3. **Bug real en `playwright.config.ts`**: el filtro de tags barría épicas enteras (`@aprendizaje`, etc.) asumiendo que todo escenario con ese tag tenía step definitions — rompió apenas agregué los 2 escenarios nuevos de FRESCO-22 con el mismo tag pero sin steps. Cambiado a filtrar solo por `@automatizado` (la convención que el propio header del feature file ya pedía usar) — autocontenido, no puede volver a desincronizarse.
+- Escrito `tests/steps/registro-progresivo.steps.ts`: sesión anónima real + generación real (Gemini real) + solo la llamada final `updateUser()` mockeada. Encontrado en el camino un race condition real: el script clickea los 3 pasos del onboarding más rápido que el efecto de sesión anónima de FRESCO-17 (descartado en su momento como "riesgo teórico, un humano tarda más") — agregado un `expect.poll` esperando la cookie de sesión real antes de avanzar. También ajustados los timeouts (hasta 240s) tras observar que la generación real puede tardar bastante más que los ~30s típicos cuando hay reintentos.
+- Suite completa corrida al final: 9/9 verde. `types:check`, `lint:check`, `bun test` (54/54), `build` — todos limpios.
+- `regression.feature`: el escenario recién automatizado pasa de `@pendiente` a `@verificado-manual-2026-07-31 @automatizado`. Los otros 2 no-automatizables quedan con nota explícita de por qué (colisión real de fixture, no hipotética — confirmada en el punto 2 de arriba).
+- Commiteado y pusheado a `main` (`07332ef`).
+
+**Por qué**: cerrar deuda de automatización real donde era seguro hacerlo, sin fingir cobertura donde automatizar hubiera roto otros tests — y sin dejar pasar un bug real (el mock roto) que mi propio trabajo de esta sesión había introducido.
+
+**Siguiente**: quedan 3 escenarios `@pendiente` (2 necesitan una segunda cuenta de test dedicada para automatizarse sin riesgo de colisión; 1 no tiene seam de mockeo posible). Sin pendientes de ingeniería más allá de eso.
