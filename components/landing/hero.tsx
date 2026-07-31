@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { Check, Clock, Leaf } from 'lucide-react';
 import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -123,21 +123,25 @@ export function Hero() {
           </a>
         </div>
 
-        <div className="mt-7 flex items-center gap-3 border-t border-border pt-7">
-          <div className="flex">
-            {['L', 'M', 'S', 'A'].map(initial => (
-              <span
-                key={initial}
-                className="-mr-2 grid size-8 place-items-center rounded-full border-2 border-background bg-accent-100 text-caption font-bold text-primary"
-              >
-                {initial}
-              </span>
-            ))}
+        <div className="mt-7 flex flex-col gap-3 border-t border-border pt-7 sm:flex-row sm:gap-6">
+          <div className="flex items-center gap-2">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
+              <Clock className="size-4" strokeWidth={2} />
+            </span>
+            <p className="text-caption text-neutral-500">
+              <strong className="block text-body-sm font-bold text-text">30 min ahorrados</strong>
+              cada domingo
+            </p>
           </div>
-          <p className="text-caption text-neutral-500">
-            <strong className="block text-body-sm font-bold text-text">+200 familias ya planifican con Fresco</strong>
-            30 min ahorrados cada domingo
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
+              <Leaf className="size-4" strokeWidth={2} />
+            </span>
+            <p className="text-caption text-neutral-500">
+              <strong className="block text-body-sm font-bold text-text">Menos comida tirada</strong>
+              compras justo lo que necesitas
+            </p>
+          </div>
         </div>
       </div>
 
