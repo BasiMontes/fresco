@@ -32,7 +32,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema le redirige a /menu
     Y la sesión queda activa
 
-  @login @edge-case @pendiente
+  @login @edge-case @verificado-manual-2026-07-31
   Escenario: Inicio de sesión falla con credenciales incorrectas
     Dado que un usuario introduce un email o contraseña incorrectos
     Cuando confirma el formulario de /login
@@ -47,12 +47,18 @@ Característica: Flujo completo de usuario en Fresco
     Entonces se crea la cuenta en Supabase Auth
     Y el sistema le redirige a /onboarding
 
-  @registro @edge-case @pendiente
+  @registro @edge-case @verificado-manual-2026-07-31
   Escenario: Alta falla porque el email ya está registrado
     Dado que un visitante intenta darse de alta con un email ya existente
     Cuando confirma el formulario de /signup
     Entonces ve el mensaje de error que devuelve Supabase Auth
     Y no se crea una cuenta duplicada
+    # Bug real encontrado y corregido en esta pasada: Supabase's signUp()
+    # devuelve 200 sin error para un email ya registrado (comportamiento
+    # anti-enumeración, `identities: []`) — el código lo trataba como éxito
+    # y mandaba a /onboarding SIN sesión (dead-end silencioso, 401 después).
+    # Fix: app/signup/page.tsx ahora detecta `identities.length === 0` y
+    # muestra el error real.
 
   # ==========================================================================
   # Onboarding y generación de menú (EPIC-FRESCO-4 / EPIC-FRESCO-6)
@@ -81,14 +87,19 @@ Característica: Flujo completo de usuario en Fresco
     Cuando se agotan los reintentos
     Entonces el sistema responde 422 con un mensaje claro de que no pudo generar un menú válido
     Y el frontend distingue este caso del error genérico de IA (502)
+    # No forzable en vivo de forma determinística — depende de que Gemini
+    # falle estructuralmente 3 veces seguidas, y no hay seam para mockear
+    # esa llamada server-to-server desde fuera. Verificado solo por código
+    # (index.ts:196-209, distinto del 502 de fallo de Gemini; onboarding/
+    # page.tsx ya distingue 422 con mensaje amigable), no en vivo.
 
-  @generacion-menu @edge-case @pendiente
+  @generacion-menu @edge-case @verificado-manual-2026-07-31
   Escenario: Ya existe un plan para la semana solicitada
     Dado que el usuario ya generó un menú para la semana actual
     Cuando intenta generar de nuevo sin eliminar el plan existente
     Entonces el sistema responde 409 y no crea un plan duplicado
 
-  @generacion-menu @edge-case @pendiente
+  @generacion-menu @edge-case @verificado-manual-2026-07-31
   Escenario: El perfil de usuario no existe todavía
     Dado que un usuario autenticado nunca completó el onboarding
     Cuando se intenta generar un menú para él
@@ -111,7 +122,7 @@ Característica: Flujo completo de usuario en Fresco
     Cuando recarga /calendar
     Entonces ve el menú en el orden que dejó, no el orden original generado
 
-  @calendario @edge-case @pendiente
+  @calendario @edge-case @verificado-manual-2026-07-31
   Escenario: El intercambio falla por error de red o de base de datos
     Dado que el usuario arrastra un plato a otro hueco
     Cuando el guardado del nuevo orden falla
@@ -126,13 +137,14 @@ Característica: Flujo completo de usuario en Fresco
     # Regresión real: la policy RLS de "recipes" solo permitía rol anon;
     # corregida 2026-07-29 (migración allow_authenticated_read_recipes).
 
-  @calendario @edge-case @pendiente
+  @calendario @edge-case @verificado-manual-2026-07-31
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
     Dado que un primer intercambio todavía no ha terminado de guardarse
     Cuando el usuario arrastra de nuevo uno de esos dos huecos
     Entonces el segundo arrastre se bloquea hasta que el primero resuelve
-    # Cubierto por lógica (pendingSlots) desde FRESCO-11 Stage 2; sin
-    # verificación manual explícita del bloqueo visual todavía.
+    # Verificado con RPC mockeada con delay artificial + dos arrastres
+    # solapados: solo 1 llamada de red disparada, el segundo arrastre nunca
+    # llegó a la red (bloqueado por pendingSlots antes del fetch).
 
   # ==========================================================================
   # Aprendizaje Cocinado/Descartado (EPIC-FRESCO-14 / STORY-FRESCO-15)
@@ -194,17 +206,16 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el producto se muestra visualmente como comprado
     Y el estado se conserva la próxima vez que abre la lista
 
-  @lista-compra @edge-case @pendiente
+  @lista-compra @edge-case @verificado-manual-2026-07-31
   Escenario: Ya existe una lista de la compra para ese menú
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
     Cuando intenta generar la lista de nuevo
     Entonces ve la lista ya existente en lugar de una segunda lista duplicada
     # El propio flujo de /shopping-list ya previene esto en la práctica (solo
-    # ofrece "Generar" cuando no hay lista todavía) — el 409 del backend es
-    # un backstop de condición de carrera, sin verificación manual explícita
-    # de ese camino de error todavía.
+    # ofrece "Generar" cuando no hay lista todavía) — verificado el backstop
+    # de backend directamente por API: segunda llamada → 409.
 
-  @lista-compra @edge-case @pendiente
+  @lista-compra @edge-case @verificado-manual-2026-07-31
   Escenario: La consolidación de ingredientes no produce ningún resultado
     Dado que el menú semanal del usuario no tiene ingredientes que se puedan consolidar
     Cuando solicita la lista de la compra
