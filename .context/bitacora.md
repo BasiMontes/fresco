@@ -606,3 +606,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar formalmente en Jira lo que el código ya refleja hace rato — las 8 épicas del PRD completas.
 
 **Siguiente**: Jira 100% alineado con el estado real del roadmap MVP. Sin pendientes de ingeniería. Lo único abierto es FRESCO-24 (contenido, no código) esperando al founder.
+
+---
+
+## 2026-07-31 — Verificados 8 de 9 escenarios pendientes de `regression.feature`, bug real de signup encontrado y arreglado
+
+**Qué**:
+- User pidió avanzar los 9 escenarios `@pendiente` del regression file. Verificación en vivo, uno por uno (login, generación, calendario, lista de compra), usando usuarios de test confirmados vía Admin API + fixtures SQL reales, con limpieza inmediata después de cada uno.
+- **Bug real encontrado**: `/signup` con un email ya registrado — Supabase's `signUp()` devuelve `200` sin error (comportamiento anti-enumeración documentado, `identities: []`), pero el código lo trataba como éxito y mandaba a `/onboarding` **sin sesión real** (dead-end silencioso, confirmado por `GET /auth/v1/user` → 401 después). No creaba cuenta duplicada (esa parte del AC sí se cumplía), pero no mostraba ningún error. Presentado al user antes de arreglar; confirmó arreglar ya. Fix: detecta `data.user.identities.length === 0` tras un `signUp()` sin error y muestra mensaje real. Verificado en vivo contra el deploy ya corregido — mensaje claro, sin dead-end.
+- **8 escenarios confirmados en vivo**: login con credenciales incorrectas (dos casos: email inexistente y password incorrecto), signup con email duplicado (tras el fix), plan duplicado (409), perfil inexistente (404), fallo de red en drag-and-drop del calendario con revert visual, dos arrastres simultáneos bloqueados (probado con RPC mockeada con delay artificial — confirmado por conteo de requests: solo 1 llamada de red pese a 2 arrastres), lista de compra duplicada (409), consolidación de ingredientes vacía (422, con receta de test sin ingredientes creada y borrada ad-hoc).
+- **1 escenario no forzable en vivo**: "IA no devuelve menú válido tras 3 reintentos" — depende de que Gemini falle estructuralmente 3 veces seguidas; no hay seam para mockear esa llamada server-to-server desde fuera del Edge Function. Queda `@pendiente` con nota explicando por qué, verificado solo por lectura de código.
+- `regression.feature` actualizado con los 8 tags `@verificado-manual-2026-07-31` + notas de evidencia. Fix de signup commiteado y desplegado (`1e1f96f`), verificaciones documentadas y pusheadas (`8701c99`).
+
+**Por qué**: cerrar deuda de QA real (9 escenarios escritos pero nunca verificados) en vez de dejarlos como promesa sin cumplir — encontró un bug de producción real en el camino, justificando el enfoque.
+
+**Siguiente**: sin pendientes de esta sesión. Épicas enteras (Modo Invitado, Registro Progresivo, aprendizaje Pro, entrega parcial de menú) siguen sin ningún escenario en `regression.feature` — gap ya señalado, no abordado todavía por decisión explícita del user de priorizar los 9 pendientes primero.
