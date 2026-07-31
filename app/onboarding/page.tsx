@@ -2,6 +2,7 @@
 
 import type { TipoCocina } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useEffect, useState } from 'react';
@@ -311,6 +312,16 @@ export default function OnboardingPage() {
           </p>
         )}
 
+        {isGenerating && (
+          // The real call can take anywhere from ~20s to ~110s (observed
+          // live, Gemini's thinking-model latency varies a lot) — a static
+          // disabled button with no spinner reads as frozen well before that
+          // window closes, so this sets the real expectation instead.
+          <p data-testid="generating_hint" className="mt-4 text-body-sm text-tertiary">
+            Puede tardar hasta un minuto — estamos preparando tu menú con IA.
+          </p>
+        )}
+
         <div className="mt-6 flex justify-between">
           <Button
             data-testid="back_button"
@@ -335,7 +346,16 @@ export default function OnboardingPage() {
                   }}
                   disabled={isGenerating || !household.valid}
                 >
-                  {isGenerating ? 'Generando menú…' : 'Generar mi menú'}
+                  {isGenerating
+                    ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                          Generando menú…
+                        </>
+                      )
+                    : (
+                        'Generar mi menú'
+                      )}
                 </Button>
               )}
         </div>

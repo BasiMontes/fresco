@@ -1,6 +1,6 @@
 'use client';
 
-import { ShoppingCart } from 'lucide-react';
+import { Loader2, ShoppingCart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
@@ -77,7 +77,16 @@ export function ShoppingListGenerator({ mealPlanId }: ShoppingListGeneratorProps
             disabled={isGenerating}
             onClick={() => void handleGenerate()}
           >
-            {isGenerating ? 'Generando lista…' : 'Generar lista de la compra'}
+            {isGenerating
+              ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    Generando lista…
+                  </>
+                )
+              : (
+                  'Generar lista de la compra'
+                )}
           </Button>
           {errorMessage && (
             <p data-testid="shopping_list_generate_error_message" className="text-body-sm text-error">
