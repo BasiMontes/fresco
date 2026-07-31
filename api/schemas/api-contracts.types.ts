@@ -25,6 +25,19 @@ export interface GenerateMealPlanResponse {
   explicacion_aprendizaje: string | null
 }
 
+// POST /reassign-guest-data — ADR-0004 (FRESCO-20). Caller must hold an
+// active anonymous session; `email`/`password` identify the real, existing
+// account the guest's data should move to (verified server-side, never
+// trusted as-is).
+export interface ReassignGuestDataRequest {
+  email: string
+  password: string
+}
+
+export interface ReassignGuestDataResponse {
+  reassigned: boolean
+}
+
 // POST /generate-shopping-list — api-contracts.md §2
 export interface GenerateShoppingListRequest {
   meal_plan_id: string

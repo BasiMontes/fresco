@@ -1,15 +1,18 @@
 /**
- * Thin, typed client for the 3 Supabase Edge Functions documented in
- * `.context/SRS/api-contracts.md` §0-§4. The real Edge Functions are being
- * scaffolded in parallel by the backend-setup agent — these calls are stubs
- * (they hit a real fetch, but there is nothing live to respond yet). Swap the
- * `mock` fallback for a real network round-trip once the functions are
- * deployed; the request/response types are already final.
+ * Thin, typed client for this project's Supabase Edge Functions
+ * (`.context/SRS/api-contracts.md` §0-§4 plus `reassign-guest-data`,
+ * ADR-0004). The real Edge Functions are being scaffolded in parallel by the
+ * backend-setup agent — these calls are stubs (they hit a real fetch, but
+ * there is nothing live to respond yet). Swap the `mock` fallback for a real
+ * network round-trip once the functions are deployed; the request/response
+ * types are already final.
  */
 
 import type {
   GenerateMealPlanRequest,
   GenerateMealPlanResponse,
+  ReassignGuestDataRequest,
+  ReassignGuestDataResponse,
 } from '@schemas';
 
 import type {
@@ -101,6 +104,18 @@ export async function updateRecipeStatus(
     request,
     accessToken,
   );
+}
+
+/**
+ * POST /reassign-guest-data — ADR-0004 (FRESCO-20). Called with the guest's
+ * own (still-anonymous) access token; the request body's email/password
+ * identify the real account to reassign her generated data to.
+ */
+export async function reassignGuestData(
+  request: ReassignGuestDataRequest,
+  accessToken: string,
+): Promise<ReassignGuestDataResponse> {
+  return callEdgeFunction<ReassignGuestDataResponse>('reassign-guest-data', request, accessToken);
 }
 
 export { EdgeFunctionError };

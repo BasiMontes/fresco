@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -23,6 +24,47 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [emailConflict, setEmailConflict] = useState(false);
+  const [conflictPassword, setConflictPassword] = useState('');
+  const [isReassigning, setIsReassigning] = useState(false);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+
+  /**
+   * ADR-0004 (FRESCO-20): the guest proves she owns the conflicting account
+   * by its real password (verified server-side, never trusted client-side),
+   * then her generated data moves to it. Runs on the STILL-anonymous
+   * session's access token — that identity is what gets reassigned away.
+   */
+  async function handleReassign() {
+    setIsReassigning(true);
+    setReassignError(null);
+    try {
+      const client = createClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        setReassignError('Tu sesión de invitada expiró. Recarga la página e inténtalo de nuevo.');
+        return;
+      }
+
+      await reassignGuestData({ email, password: conflictPassword }, session.access_token);
+
+      const { error } = await client.auth.signInWithPassword({ email, password: conflictPassword });
+      if (error) {
+        setReassignError(error.message);
+        return;
+      }
+      router.push('/menu');
+    }
+    catch (err) {
+      setReassignError(
+        err instanceof EdgeFunctionError
+          ? err.message
+          : 'No pudimos verificar esa cuenta. Inténtalo de nuevo.',
+      );
+    }
+    finally {
+      setIsReassigning(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,15 +155,40 @@ export default function SignupPage() {
         )}
 
         {emailConflict && (
-          <p data-testid="signup_email_conflict_message" className="mt-4 text-body-sm text-error">
-            Ya existe una cuenta con ese email.
-            {' '}
-            <Link href="/login" className="text-primary">
-              Inicia sesión
-            </Link>
-            {' '}
-            para continuar.
-          </p>
+          <div className="mt-4 flex flex-col gap-3">
+            <p data-testid="signup_email_conflict_message" className="text-body-sm text-error">
+              Ya existe una cuenta con ese email. Ingresa su contraseña para continuar con ella y
+              conservar el menú que acabas de generar.
+            </p>
+            <Input
+              data-testid="conflict_password_input"
+              type="password"
+              placeholder="Contraseña de esa cuenta"
+              autoComplete="current-password"
+              value={conflictPassword}
+              onChange={e => setConflictPassword(e.target.value)}
+            />
+            <Button
+              data-testid="signup_reassign_button"
+              variant="secondary"
+              disabled={isReassigning || !conflictPassword}
+              onClick={() => void handleReassign()}
+            >
+              {isReassigning ? 'Verificando…' : 'Continuar con esta cuenta'}
+            </Button>
+            {reassignError && (
+              <p data-testid="signup_reassign_error_message" className="text-body-sm text-error">
+                {reassignError}
+              </p>
+            )}
+            <p className="text-center text-body-sm text-tertiary">
+              o
+              {' '}
+              <Link href="/login" className="text-primary">
+                inicia sesión manualmente
+              </Link>
+            </p>
+          </div>
         )}
 
         <p className="mt-4 text-center text-body-sm text-tertiary">
