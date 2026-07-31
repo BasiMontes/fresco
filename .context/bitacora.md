@@ -487,3 +487,21 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el hallazgo del bug de FRESCO-21 con una historia real, sin inventar trabajo donde el código ya estaba hecho.
 
 **Siguiente**: `/sprint-development FRESCO-22` cuando se retome — la decisión técnica de separar `advertencias` (seguridad) de la explicación de aprendizaje en schema/prompt queda para el Stage 1 de esa implementación, no resuelta aquí. Vale la pena reportar el bug de `pull --epic` a quien mantenga `scripts/sync-jira-issues.ts` (no es parte de este repo de producto, es del boilerplate).
+
+---
+
+## 2026-07-31 — FRESCO-22 implementado: Master Sprint EPIC-5 cierra la explicación real de aprendizaje
+
+**Qué**:
+- `/sprint-development FRESCO-22` en modo Solo. Bloqueador (FRESCO-15) confirmado dev-done en código (toggle + Edge Function existen, aunque Jira seguía en "Control de calidad" — este repo no tiene QA separado).
+- Migración real aplicada al proyecto: `meal_plans.explicacion_aprendizaje` (text, nullable) — columna nueva, separada de `advertencias`.
+- Edge Function `generate-meal-plan` actualizado: nueva sección de prompt `EXPLICACIÓN DE APRENDIZAJE` (antes mezclada dentro de ADVERTENCIAS), normalización de string vacío a `null` en `index.ts` (no en `validator.ts` — no es safety-critical), persistencia + respuesta. Desplegado vía MCP (versión 6) — mismo patrón de bundle `source/` + `_shared/` de despliegues previos.
+- `api-contracts.types.ts`, `lib/api/meal-plan.ts` (tipo `MenuSemanalPersistido` + select + mapping), `lib/supabase/types.ts` regenerado.
+- `/menu` ahora renderiza el `Card variant="insight"` real (uso legítimo del token reservado por DESIGN.md esta vez — dato Pro real, no el mockup que FRESCO-21 sacó) cuando `explicacionAprendizaje` no es null.
+- Verificado en vivo de punta a punta, sin gastar una generación real innecesaria: flippeado temporalmente el usuario de test real a `plan='pro'`, usando su historial real ya existente de la semana pasada (cocinado/descartado de sesiones previas) para disparar `get_recent_recipe_ids()`. Llamada directa al Edge Function para la semana siguiente (evita el conflicto 409 con el plan real de esta semana) → `explicacion_aprendizaje` real, cálido, en primera persona plural, separado limpiamente de `advertencias`. Confirmado persistido + confirmado que el `select()` exacto que usa el cliente lo devuelve bien. Limpieza inmediata: plan revertido a `free`, fila de prueba borrada.
+- No se verificó visualmente la tarjeta en el navegador real (requeriría falsear la fecha del sistema para caer en la semana futura de prueba) — gap declarado en `compliance-matrix.md`, mismo patrón que el gap de FRESCO-19.
+- Commiteado y pusheado a `main` (`c0210ab`). Jira FRESCO-22: `Control de calidad` → `WIP` → `Finalizada`.
+
+**Por qué**: cerrar el hallazgo completo de FRESCO-21 con la implementación real, no solo el fix mínimo de esconder el mockup.
+
+**Siguiente**: Master Sprint EPIC-5 (Aprendizaje) queda con FR-5.4/5.5/5.6 todos resueltos de verdad. Pendiente suelto: `FRESCO-20` (reasignación de datos del conflicto de email en Registro Progresivo) sigue sin diseñar. Reportar aparte el bug de `pull --epic` en `scripts/sync-jira-issues.ts`.

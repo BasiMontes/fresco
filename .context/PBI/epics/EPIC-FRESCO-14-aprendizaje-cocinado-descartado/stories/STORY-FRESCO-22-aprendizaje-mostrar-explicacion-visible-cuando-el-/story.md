@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22)
 **Epic:** [FRESCO-14](https://basiliomontescastano.atlassian.net/browse/FRESCO-14) (Aprendizaje Cocinado/Descartado)
 **Type:** Historia
-**Status:** WIP
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
