@@ -417,3 +417,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: el user quería desbloquear el login real de la app — el valor concreto vive en Modo Invitado (dejar entrar a una visitante sin cuenta), Registro Progresivo es su contraparte de conversión. Sembrar ambas épicas ahora deja el backlog listo para `/sprint-development` sin re-litigar el mecanismo de auth (ya resuelto en ADR-0003) ni la secuencia (ya fijada por el link).
 
 **Siguiente**: `/sprint-development FRESCO-17` para implementar Modo Invitado primero (es el prerequisito real, tanto por Jira link como por lógica de producto). Al planificar FRESCO-19 (Stage 1), recordar el riesgo de fricción de verificación de email ya señalado en ADR-0003 — no asumir que `updateUser()` "simplemente funciona" en producción.
+
+---
+
+## 2026-07-31 — FRESCO-17 implementado: Modo Invitado desbloqueado de verdad
+
+**Qué**:
+- `/sprint-development FRESCO-17` corrido en modo Solo (elegido por el user, mismo patrón que FRESCO-11/13/15).
+- Causa raíz real (no asumida): `handleGenerate()` en `app/onboarding/page.tsx` ya leía la sesión existente y la reenviaba al Edge Function — pero una visitante nueva no tenía ninguna sesión, así que la llamada salía sin token y el Edge Function devolvía 401. La landing (`/`) ya enrutaba a invitadas directo a `/onboarding` sin ninguna barrera (construido en FRESCO-6 original, antes de esta reestructuración de backlog) — la única pieza que faltaba de verdad era crear la sesión.
+- Cambio: efecto al montar `/onboarding` que llama `signInAnonymously()` (ADR-0003) solo si no existe ya una sesión — así una usuaria recién registrada vía `/signup` (que ya tiene sesión real) no pisa una sesión de invitado por error. Sin cambios de Edge Function ni RLS.
+- `types:check` y `lint:check` verdes. Validación en vivo con Playwright-cli (navegador limpio, sin cookies): onboarding completo de 3 pasos → generación real con Gemini → `/menu` con menú real de 21 comidas, sin ningún prompt de registro en todo el flujo. Cookie de sesión decodificada confirmó `is_anonymous: true` con JWT real.
+- Auto-review (Solo): 2 hallazgos, ninguno bloqueante. (1) ventana de carrera teórica entre el efecto de montaje y la lectura de sesión en `handleGenerate` — descartada, el formulario de 3 pasos tarda mucho más que el round-trip de auth. (2) hallazgo ajeno al alcance: `/menu` mostró una tarjeta "Fresco aprendió" (aprendizaje Pro) para una invitada nueva sin historial — posible bug de EPIC-FRESCO-5, no tocado aquí, señalado al user.
+- Commiteado y pusheado a `main` (`17d9977`). Jira FRESCO-17: `Control de calidad` → `WIP` (Stage 1) → `Finalizada` (terminal — este repo no tiene QA separado, per la nota de `dev-roadmap.md`, y la validación en vivo la hice yo mismo).
+
+**Por qué**: era el pedido explícito del user ("Dale con /sprint-development FRESCO-17") y el prerequisito real de FRESCO-19 (Registro Progresivo) por el link `Blocks` ya creado.
+
+**Siguiente**: `/sprint-development FRESCO-19` para Registro Progresivo — recordar el riesgo de verificación de email de ADR-0003 al planificarlo. Revisar por separado la tarjeta "Fresco aprendió" sospechosa en `/menu` (posible bug de EPIC-FRESCO-5, fuera del alcance de esta historia). `.context/dev-roadmap.md` sigue sin reflejar Master Sprint 2 — recomendable correr `/dev-roadmap` antes de seguir con más historias de esta épica.
