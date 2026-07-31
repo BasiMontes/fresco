@@ -469,3 +469,21 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: pedido explícito del user tras haber señalado el hallazgo dos veces sin actuar sobre él.
 
 **Siguiente**: seedear vía `/product-management` la historia US 5.2/5.3 bajo EPIC-FRESCO-5 (FRESCO-14) cuando se retome esa épica — separar `advertencias` de seguridad vs explicación de aprendizaje en el Edge Function, gatear por `isPro`, implementar el upsell Free-tier (FR-5.6). Sigue pendiente correr `/dev-roadmap` (Master Sprint 2 aún no reflejado ahí). También noté que `epic-tree.md` local parece sobrescribirse en cada `pull --epic <KEY>` en vez de hacer upsert por épica (solo queda la última épica sincronizada) — vale la pena revisar `scripts/sync-jira-issues.ts` en algún momento, no es blocker hoy.
+
+---
+
+## 2026-07-31 — Sembrada FRESCO-22 (US 5.3), corregidas 2 suposiciones propias sobre el gap
+
+**Qué**:
+- `/product-management` (Workflow B, Level 1) para FRESCO-14, US 5.2/5.3 — pedido explícito tras el fix de FRESCO-21.
+- Antes de sembrar nada, verifiqué el código en vez de asumir la spec, y encontré que había dicho 2 cosas mal en el mensaje anterior:
+  1. **US 5.2 (FR-5.4, generación pesa historial Pro) ya está 100% implementada** — `generate-meal-plan/index.ts` deriva `isPro` server-side desde `user_profiles.plan` (no confía en el cliente), llama `get_recent_recipe_ids()` (RPC real), y el prompt pesa `veces_descartada`/`rating_promedio` con tests reales. Sin gap.
+  2. **FR-5.6 (upsell Free-tier) también ya existe** — no en `/menu` sino en `/calendar` (`components/calendar/calendar-grid.tsx`, `learning_free_tier_notice`, construido en FRESCO-15). Dije que faltaba; estaba mal, se lo corregí al user.
+- Presentado el hallazgo corregido al user antes de sembrar — confirmó sembrar solo el gap real: **FRESCO-22** ("Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro", FR-5.5). El gap real y único: el texto de explicación de Gemini ya se genera bien, pero cae mezclado sin discriminador en el mismo array `advertencias` que las advertencias de seguridad (FR-2.10/FR-8.2) — sin campo propio en el schema (`meal-plan.types.ts` solo tiene `advertencias: string[]`).
+- AC/Scope/OOS/Business Rules vía comment fallback (mismo patrón que toda la sesión). Link `Blocks` FRESCO-15 → FRESCO-22 (necesita el historial real del toggle para tener algo que explicar) — confirmado explícitamente por el user antes de crearlo (I18), dirección verificada.
+- Encontrado y corregido de paso un bug real del script de sync: `pull --epic <KEY>` sobrescribe TODO `epic-tree.md` en vez de hacer upsert por épica — quedaba mostrando solo la última épica sincronizada. Corrido `pull` sin scope para restaurar la cobertura completa (8 épicas, 9 historias, 1 defecto).
+- Commiteado y pusheado a `main` (`75112fb`).
+
+**Por qué**: cerrar el hallazgo del bug de FRESCO-21 con una historia real, sin inventar trabajo donde el código ya estaba hecho.
+
+**Siguiente**: `/sprint-development FRESCO-22` cuando se retome — la decisión técnica de separar `advertencias` (seguridad) de la explicación de aprendizaje en schema/prompt queda para el Stage 1 de esa implementación, no resuelta aquí. Vale la pena reportar el bug de `pull --epic` a quien mantenga `scripts/sync-jira-issues.ts` (no es parte de este repo de producto, es del boilerplate).
