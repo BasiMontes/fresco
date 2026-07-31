@@ -580,3 +580,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar la duda real del user sobre estado de producción y validar en vivo en vez de responder solo desde el código — la sesión ya había encontrado un gap real (email rate limit) al hacerlo, así que valía la pena aplicar el mismo rigor al reporte de "bug".
 
 **Siguiente**: nada pendiente de esta sesión. Rate limit de email de Supabase queda como está (válido para escala concierge actual) hasta que haya dominio propio para Resend. Sin pendientes nuevos más allá de los ya notados en la entrada de FRESCO-23.
+
+---
+
+## 2026-07-31 — Housekeeping: 3 de los 5 sueltos cerrados, catálogo trackeado como tarea real
+
+**Qué**:
+- User confirmó "vamos a por todas" sobre la lista de sueltos, salvo Resend (se queda con el dominio de Vercel, aceptado como decisión final — no hay nada más que hacer ahí, ya documentado en memoria).
+- **Nit accesibilidad `/signup`**: el input de contraseña de reasignación y su botón vivían fuera de cualquier `<form>` — Enter-to-submit no funcionaba. Envuelto en su propio `<form onSubmit>`, botón con `type="submit"` explícito.
+- **`MealPlanRecipe.recipe_id: string`** en `meal-plan.types.ts` corregido a `string | null` (desactualizado desde la migración de FRESCO-23; el tipo no se usa en ningún lado, era solo drift de documentación).
+- **Bug `pull --epic` en `scripts/sync-jira-issues.ts`**: confirmada la causa raíz — la función regeneraba `epic-tree.md` completo usando SOLO los datos de la épica recién sincronizada, borrando las otras 7. Fix real: nueva función `upsertEpicTreeMarkdown()` que lee el archivo existente, reemplaza únicamente el bloque `## [KEY]` de la épica tocada y preserva el resto. Probado en vivo: `pull --epic FRESCO-4` antes/después → `epic-tree.md` byte-idéntico (las 8 épicas siguen ahí). Antes de este fix, ese mismo comando lo hubiera reducido a 1 sola épica.
+- **Catálogo sin desayuno/cena**: no es código, es contenido — pasa por revisión manual de seguridad alimentaria del founder (EPIC-8), no algo que yo deba fabricar. Creado **FRESCO-24** (Tarea) documentando el gap con evidencia real de la sesión anterior (advertencia real de Gemini sustituyendo `comida` en esas franjas). Queda en "Listo" — es trabajo de contenido para el founder, no de ingeniería.
+- Verificación: `bun run types:check`, `lint:check`, `build`, `bun test` (54/54) todos limpios tras los 3 fixes de código. Commiteado y pusheado a `main` (`f143ec4`).
+
+**Por qué**: cerrar deuda técnica real que ya estaba identificada y no requería más investigación — solo ejecución.
+
+**Siguiente**: sin pendientes de esta sesión. Quedan sueltos de larga data, sin urgencia: reportar el fix de `pull --epic` al mantenedor del boilerplate upstream (este repo solo tiene la copia local, ya arreglada acá; no hay visibilidad del repo boilerplate original desde esta sesión). FRESCO-24 queda esperando al próximo batch de contenido del founder.
