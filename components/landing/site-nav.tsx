@@ -46,7 +46,7 @@ export function SiteNav() {
           </Link>
           <Link
             href="/onboarding"
-            className={cn('hidden', buttonVariants({ size: 'sm' }), 'sm:inline-flex')}
+            className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
           >
             Empezar gratis
           </Link>
