@@ -178,14 +178,16 @@ Característica: Flujo completo de usuario en Fresco
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
   # ==========================================================================
 
-  @lista-compra @verificado-manual-2026-07-31
+  @lista-compra @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
   Escenario: Generar la lista de la compra a partir de un menú
     Dado que el usuario tiene un menú semanal generado
     Cuando solicita generar la lista de la compra
     Entonces el sistema consolida los ingredientes y los clasifica por pasillo
     Y ve un resumen con el total de productos y el coste estimado
 
-  @lista-compra @verificado-manual-2026-07-31
+  @lista-compra @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
   Escenario: Marcar un producto de la lista como comprado
     Dado que el usuario tiene una lista de la compra generada
     Cuando marca un producto como comprado

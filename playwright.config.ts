@@ -15,12 +15,13 @@ const testDir = defineBddConfig({
   // tests/fixtures.ts's header for why a shared instance is needed at all.
   steps: ['tests/fixtures.ts', 'tests/steps/*.ts'],
   // Scoped to the scenarios this suite currently automates (@login,
-  // @registro, @aprendizaje). @login/@registro each have an untouched
-  // `@edge-case` sibling scenario with no step definitions yet, so those two
-  // tags stay `and not @edge-case`; @aprendizaje's own edge-case scenarios
-  // (terminal-lock-on-reload, Free-tier notice) DO have steps (see
-  // tests/steps/aprendizaje.steps.ts) so they're included unconditionally.
-  tags: '((@login or @registro) and not @edge-case) or @aprendizaje',
+  // @registro, @aprendizaje, @lista-compra). @login/@registro/@lista-compra
+  // each have an untouched `@edge-case` sibling scenario with no step
+  // definitions yet, so those tags stay `and not @edge-case`; @aprendizaje's
+  // own edge-case scenarios (terminal-lock-on-reload, Free-tier notice) DO
+  // have steps (see tests/steps/aprendizaje.steps.ts) so they're included
+  // unconditionally.
+  tags: '((@login or @registro or @lista-compra) and not @edge-case) or @aprendizaje',
 });
 
 export default defineConfig({
@@ -34,6 +35,11 @@ export default defineConfig({
   // is small enough that it doesn't matter yet.
   fullyParallel: false,
   workers: 1,
+  // Playwright's own per-test timeout (default 30s) cuts a test short
+  // before a longer `expect(...).toBeVisible({ timeout })` override even
+  // gets to finish waiting — found live: @lista-compra's real Gemini
+  // generation (~10-30s observed) needs headroom past the default.
+  timeout: 90_000,
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:3000',
