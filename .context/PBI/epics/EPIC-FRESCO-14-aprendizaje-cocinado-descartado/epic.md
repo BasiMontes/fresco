@@ -22,13 +22,14 @@ Valor de negocio: es el primer paso operativo del moat de aprendizaje que sostie
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
 | [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15) | Aprendizaje | Marcar un plato del menú como cocinado o descartado | - | Medium | Control de calidad |
+| [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22) | Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro | - | Medium | Control de calidad |
 
 ---
 
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

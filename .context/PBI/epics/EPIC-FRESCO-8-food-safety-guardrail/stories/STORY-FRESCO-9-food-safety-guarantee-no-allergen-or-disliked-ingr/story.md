@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9)
 **Epic:** [FRESCO-8](https://basiliomontescastano.atlassian.net/browse/FRESCO-8) (Garantía de Seguridad Alimentaria)
 **Type:** Historia
-**Status:** WIP
+**Status:** Control de calidad
 **Priority:** Medium
 **Story Points:** -
 
@@ -28,14 +28,14 @@ Como Laura, la planificadora agotada (o cualquier usuaria con una alergia o rest
 
 ### Historia (1)
 
-- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(WIP)_
+- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Finalizada)_
 
 ---
 
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/26/2026
+- **Updated:** 7/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** implementation-plan-ready

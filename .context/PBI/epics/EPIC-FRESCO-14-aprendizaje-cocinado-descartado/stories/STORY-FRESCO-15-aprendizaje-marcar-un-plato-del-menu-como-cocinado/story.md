@@ -17,16 +17,17 @@ Como Laura, quiero marcar cada plato de mi menú semanal como cocinado o descart
 
 ## Traceability
 
-### Historia (1)
+### Historias (2)
 
-- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(WIP)_
+- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Finalizada)_
+- [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22): Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro _(Control de calidad)_
 
 ---
 
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

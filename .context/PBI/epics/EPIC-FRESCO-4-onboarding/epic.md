@@ -17,7 +17,7 @@ Cubre el flujo de captura de perfil en 3 pasos (dieta y restricciones, cocinas f
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5) | Onboarding | Completar dieta, cocinas y hogar en 3 pasos | - | Medium | WIP |
+| [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5) | Onboarding | Completar dieta, cocinas y hogar en 3 pasos | - | Medium | Control de calidad |
 
 ---
 

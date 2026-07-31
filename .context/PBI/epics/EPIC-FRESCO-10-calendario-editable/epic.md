@@ -21,7 +21,7 @@ Valor de negocio: permite a Laura adaptar el plan generado a lo que realmente en
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11) | Calendario | Reordenar el menú generado arrastrando platos entre espacios | - | Medium | Control de calidad |
+| [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11) | Calendario | Reordenar el menú generado arrastrando platos entre espacios | - | Medium | WIP |
 
 ---
 

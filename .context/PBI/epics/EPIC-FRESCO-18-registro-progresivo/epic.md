@@ -23,7 +23,7 @@ Técnicamente, esta épica se apoya en la conversión de sesión que Supabase An
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19) | Registro Progresivo | Solicitar registro tras ver el menú generado | - | Medium | Control de calidad |
+| [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19) | Registro Progresivo | Solicitar registro tras ver el menú generado | - | Medium | Finalizada |
 
 ---
 

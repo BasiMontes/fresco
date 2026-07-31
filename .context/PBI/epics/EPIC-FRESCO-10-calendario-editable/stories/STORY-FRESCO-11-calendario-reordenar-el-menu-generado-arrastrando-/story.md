@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11)
 **Epic:** [FRESCO-10](https://basiliomontescastano.atlassian.net/browse/FRESCO-10) (Calendario Editable)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 

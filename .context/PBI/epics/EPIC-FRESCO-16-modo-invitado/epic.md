@@ -23,7 +23,7 @@ La solución adoptada es Supabase Anonymous Sign-In (ver ADR-0003, Accepted): la
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-17](https://basiliomontescastano.atlassian.net/browse/FRESCO-17) | Modo Invitado | Generar un menú sin crear cuenta | - | Medium | Control de calidad |
+| [FRESCO-17](https://basiliomontescastano.atlassian.net/browse/FRESCO-17) | Modo Invitado | Generar un menú sin crear cuenta | - | Medium | Finalizada |
 
 ---
 

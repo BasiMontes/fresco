@@ -23,7 +23,7 @@ Como Laura, en su primera visita a Fresco y sin haber creado ninguna cuenta, qui
 
 ### Historia (1)
 
-- [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19): Registro Progresivo | Solicitar registro tras ver el menú generado _(Control de calidad)_
+- [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19): Registro Progresivo | Solicitar registro tras ver el menú generado _(Finalizada)_
 
 ---
 
