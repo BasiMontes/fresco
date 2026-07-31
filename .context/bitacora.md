@@ -700,3 +700,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: el objetivo cambió de "no tocar código, validar primero" a "dejarlo lo más fino posible para la entrega del curso" — pedido explícito del user con el contexto correcto.
 
 **Siguiente**: sin pendientes de esta sesión. Nav completo (Menú/Calendario/Recetas/Perfil) ahora 100% real, sin ninguna pantalla mock.
+
+---
+
+## 2026-08-01 — Bug real de producción encontrado y arreglado en vivo: 500 en generación cuando había advertencias + un id malformado a la vez
+
+**Qué**: siguiendo el pedido del user de probar el flujo completo en el navegador (landing → login → onboarding → menú → calendario → lista de compra → recetas → perfil), la generación real falló con un **500 real** para una cuenta de test recién creada, tras ~24s de espera real. Diagnosticado con `mcp__supabase__get_logs` cruzando 3 servicios (`edge-function` para el status HTTP, `edge-function-runtime` para los logs propios de la función, `postgres` para el error real de la base): Gemini devolvió una respuesta con 14 franjas `NO_SAFE_RECIPE_SENTINEL` genuinas **y** un `recipe_id` truncado/inválido (`"01b7907a"`, no un uuid real) en una franja no relacionada, en la misma respuesta. El código de FRESCO-23 de esta misma semana solo chequeaba `validation.unsafeSlots.length > 0` antes de aceptar la respuesta como entrega parcial válida — sin exigir también `validation.errors.length === 0` — así que el id malformado pasó directo al insert y Postgres lo rechazó con un 500 real, no el 422 que la ticket promete.
+- Arreglado en `supabase/functions/generate-meal-plan/index.ts`: la condición ahora es `validation.errors.length === 0 && validation.unsafeSlots.length > 0`, con comentario explicando el hallazgo. De paso, arreglado un gap de observabilidad real: el log de `slotsError` no incluía `slotsError.message` — sin este fix el error real (el uuid inválido) era invisible salvo mirando los logs crudos de Postgres.
+- Agregado un test de regresión en `validator.test.ts` probando exactamente esa combinación (unsafeSlots y errors no son mutuamente excluyentes).
+- `bun test` (55/55, antes 54), `types:check`, `lint:check` — todos limpios. Commiteado y pusheado a `main` (`0ec383f`).
+- Redeployada la Edge Function (versión 8) vía `mcp__supabase__deploy_edge_function`, bundle completo (`index.ts` + `prompt.ts` + `types.ts` + `validator.ts` + `_shared/*` + `api/schemas/*`).
+- Reintentado el mismo flujo real en vivo: generación exitosa esta vez (~110s), menú de 21 franjas con advertencias reales bien mostradas (catálogo sin recetas específicas de desayuno/cena — deuda ya registrada en TECHDEBT-FRESCO-24). Seguido el resto del flujo completo sin errores: calendario (drag/drop de intercambio de franjas verificado con `swap_meal_plan_slots` real), lista de la compra (generación real, ~8s, sin errores), recetas (21 recetas reales del historial), perfil (email y plan Free reales).
+- Limpieza: cuenta de test `qa-full-flow-20260731@fresco.qa` borrada vía Admin API (cascada confirmada por SQL: 0 filas en `auth.users`/`user_profiles`/`meal_plans`), navegador y dev server cerrados.
+
+**Por qué**: el user pidió explícitamente probar el flujo completo en el navegador antes de dar la sesión por cerrada — ese mismo paso encontró un bug real de producción que ningún test unitario había cubierto (la combinación específica de unsafeSlots + error no relacionado en la misma respuesta de Gemini nunca se había dado en los tests, solo en un caso real).
+
+**Siguiente**: flujo completo verificado en vivo, sin errores de consola, sin pendientes de ingeniería. TECHDEBT-FRESCO-24 (catálogo sin cobertura de desayuno/cena) sigue abierta como trabajo de contenido, no de código.
