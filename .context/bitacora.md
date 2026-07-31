@@ -621,3 +621,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar deuda de QA real (9 escenarios escritos pero nunca verificados) en vez de dejarlos como promesa sin cumplir — encontró un bug de producción real en el camino, justificando el enfoque.
 
 **Siguiente**: sin pendientes de esta sesión. Épicas enteras (Modo Invitado, Registro Progresivo, aprendizaje Pro, entrega parcial de menú) siguen sin ningún escenario en `regression.feature` — gap ya señalado, no abordado todavía por decisión explícita del user de priorizar los 9 pendientes primero.
+
+---
+
+## 2026-07-31 — Cerrado el gap de cobertura de `regression.feature`: 10 escenarios nuevos para las 4 épicas que faltaban
+
+**Qué**: user pidió agregar los escenarios faltantes de Modo Invitado, Registro Progresivo, aprendizaje Pro (FRESCO-22) y entrega parcial de menú (FRESCO-23) — el gap señalado al cierre de la pasada anterior. Escritos citando evidencia real de sesiones previas (no inventados), tag por tag según lo que de verdad se verificó:
+- **Modo Invitado / Registro Progresivo** (6 escenarios): generar sin cuenta, banner de guardado, conflicto de email detectado, reasignación con contraseña correcta/incorrecta — todos `@verificado-manual` citando las sesiones de FRESCO-17/19/20. La conversión feliz (email nuevo, sin conflicto) queda `@pendiente` a propósito — nunca se disparó en vivo para no quemar un envío de email real, gap ya declarado en su momento.
+- **Entrega parcial de menú** (FRESCO-23, 2 escenarios): la persistencia con `recipe_id` null queda `@verificado-manual` — ocurrió dos veces, una fixture de DB explícita y una vez de forma **natural** durante la verificación del 409 de la sesión anterior (Gemini devolvió el sentinel sin pedírselo). El render en frontend ("Sin receta segura") queda `@pendiente` — nunca clickeado en navegador real.
+- **Aprendizaje Pro** (FRESCO-22, 2 escenarios): generación + persistencia de la explicación separada de advertencias queda `@verificado-manual` (verificado en su sesión original). La tarjeta visual en `/menu` queda `@pendiente` — mismo gap declarado en su momento (hubiera requerido falsear la fecha del sistema).
+- `regression.feature` pasó de 22 a 32 escenarios. Dos commits, ambos pusheados (`2acfa09`, `d52e14e`).
+
+**Por qué**: dejar el registro de pruebas reflejando la cobertura real del sistema, no solo lo último que se tocó — sin inflar el estado de verificación de lo que de verdad nunca se clickeó.
+
+**Siguiente**: quedan 4 escenarios `@pendiente` reales en todo el archivo (conversión feliz de invitada, render de franja sin receta, tarjeta de aprendizaje visual, generación agotando reintentos) — todos con razón documentada de por qué no se forzaron en vivo. Sin pendientes de ingeniería.
