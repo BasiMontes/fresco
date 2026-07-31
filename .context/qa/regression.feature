@@ -118,22 +118,15 @@ Característica: Flujo completo de usuario en Fresco
     # sesión) — el modelo devolvió el sentinel + advertencia sin que se le
     # pidiera a propósito.
 
-  @generacion-menu @edge-case @pendiente
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/entrega-parcial.steps.ts (playwright-bdd,
+  # cuenta de test dedicada PRO_TEST_USER_EMAIL — fixture sembrado por REST,
+  # sin mock; ver el archivo para por qué no usa la cuenta compartida)
   Escenario: El frontend muestra la franja sin receta segura
     Dado que un menú persistido tiene una franja con recipe_id null
     Cuando el usuario visita /menu o /calendar
     Entonces ve esa franja marcada como "Sin receta segura", sin crashear
     Y no puede arrastrarla ni marcarla como cocinada/descartada
-    # Nunca clickeado en un navegador real — la generación real que disparó
-    # el sentinel (arriba) no se dio en una sesión donde hubiera browser
-    # abierto en ese momento. Verificado solo por lectura de código +
-    # bun run build sin errores de tipos en ambos componentes.
-    # No automatizado a propósito: este suite solo tiene UNA cuenta de test
-    # (LOCAL_USER_EMAIL), y es la misma que usan @aprendizaje para su semana
-    # actual. Sembrar un fixture con recipe_id null ahí pisaría/consumiría
-    # esos slots pendiente — confirmado en vivo el riesgo (esta sesión tuvo
-    # que regenerar ese mismo fixture por agotamiento real). Automatizable
-    # con una segunda cuenta de test dedicada, que hoy no existe.
 
   # ==========================================================================
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
@@ -288,18 +281,14 @@ Característica: Flujo completo de usuario en Fresco
     # persona plural, separada limpiamente. Confirmado persistida y que el
     # select() del cliente la devuelve. Plan revertido a free después.
 
-  @aprendizaje @pendiente
+  @aprendizaje @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/aprendizaje-pro.steps.ts (playwright-bdd,
+  # cuenta de test dedicada PRO_TEST_USER_EMAIL, real Gemini call — sin mock)
   Escenario: El usuario Pro ve la tarjeta de explicación en /menu
     Dado que un usuario Pro tiene explicacion_aprendizaje no nula en su menú
     Cuando visita /menu
     Entonces ve una tarjeta "card-insight" con esa explicación
     Y nunca se mezcla visualmente con el banner de advertencias
-    # Nunca clickeado en un navegador real — requeriría falsear la fecha
-    # del sistema para caer en la semana futura de la prueba de arriba.
-    # Gap declarado igual en compliance-matrix.md de FRESCO-22.
-    # No automatizado a propósito, mismo motivo que la franja sin receta
-    # segura arriba: flippear plan='pro' + fabricar historial en la única
-    # cuenta de test compartida pisaría el fixture real de @aprendizaje.
 
   # ==========================================================================
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
