@@ -101,9 +101,22 @@ export default function SignupPage() {
         return;
       }
 
-      const { error } = await client.auth.signUp({ email, password });
+      const { data, error } = await client.auth.signUp({ email, password });
       if (error) {
         setSignupError(error.message);
+        return;
+      }
+      // Supabase's documented anti-enumeration behavior: signing up with an
+      // email that already belongs to a confirmed account returns 200 with
+      // no error — an obfuscated user object, empty `identities`, and no
+      // session — instead of a normal error. Without this check the visitor
+      // silently landed on /onboarding with no session at all, a dead end
+      // that only surfaced as a bare 401 later. Not the same UI as the
+      // guest-conversion email-conflict path below: this visitor has no
+      // anonymous session to reassign data from, just a plain "log in
+      // instead" pointer.
+      if (data.user?.identities?.length === 0) {
+        setSignupError('Ya existe una cuenta con ese email. Inicia sesión en su lugar.');
         return;
       }
       // New users always go through onboarding next — see FRESCO-1.
