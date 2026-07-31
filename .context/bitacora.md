@@ -533,3 +533,20 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el único gap declarado de FRESCO-20 con evidencia real, no dejarlo como supuesto.
 
 **Siguiente**: Master Sprint 2 sin gaps declarados pendientes. Queda suelto: (a) nit de accesibilidad del input de contraseña sin `<form>`; (b) el bug de `pull --epic` en `scripts/sync-jira-issues.ts` sigue sin reportar.
+
+---
+
+## 2026-07-31 — Housekeeping: cerradas formalmente FRESCO-5/9/11/13/15, todo el roadmap del MVP construido
+
+**Qué**:
+- User pidió ver con qué seguir. Revisado `master-implementation-plan.md`: las 3 Master Sprints (0, 1, 2) cubren las 8 épicas del PRD completas — no hay una Master Sprint 3 planeada, el roadmap estratégico original ya está 100% construido en código (FRESCO-4 al FRESCO-22).
+- Encontrado: 5 historias (FRESCO-5, 9, 11, 13, 15) dev-done y verificadas en vivo en sesiones anteriores de este mismo día, pero nunca transicionadas en Jira — quedaron en "Control de calidad"/WIP indefinidamente.
+- User eligió housekeeping: cerrar formalmente esas 5. Antes de transicionar, revisé los `review.md` históricos de FRESCO-5/9/11 para confirmar que no quedaban hallazgos bloqueantes sin resolver.
+- Encontrado un gap real al releer el review de FRESCO-9: la AC Scenario 4 (menú sin receta segura para una franja → entregar el resto con advertencia, nunca fallar completo) fue delegada explícitamente a FRESCO-7 en su momento, pero FRESCO-7 se cerró Finalizada sin implementarla nunca — el gap quedó sin dueño. Confirmado que sigue así hoy releyendo `validator.ts` (cualquier franja sin receta dispara reintento completo y, agotados, un 422 duro — nunca entrega parcial).
+- Creado **FRESCO-23** (Tarea) documentando ese gap con su origen completo, linkeado `Relates` a FRESCO-9 y FRESCO-7.
+- Transicionadas FRESCO-5, 9 (con comentario de cierre notando el gap trackeado aparte), 11, 13, 15 → `Finalizada`. Sync completo, `epic-tree.md` refrescado (las 8 épicas siguen en "Listo" a nivel contenedor — no transicionadas, fuera del pedido explícito de esta pasada).
+- Commiteado y pusheado a `main` (`e233c1a`).
+
+**Por qué**: dejar Jira reflejando la realidad del código — las 5 historias ya estaban hechas, solo faltaba el bookkeeping.
+
+**Siguiente**: el roadmap estratégico original (Master Sprint 0/1/2, 8 épicas del PRD) queda completo y reflejado correctamente en Jira. Quedan sueltos: (a) FRESCO-23 (el gap real de menú parcial vs fallo completo, sin implementar); (b) nit de accesibilidad del input de `/signup`; (c) bug de `pull --epic` en `scripts/sync-jira-issues.ts`; (d) las 8 épicas contenedoras siguen en "Listo", no transicionadas a Done — decisión pendiente si vale la pena. Próxima decisión real de negocio: validación concierge con usuarios reales (fuera del alcance de ingeniería) o seguir con trabajo post-MVP/P1.
