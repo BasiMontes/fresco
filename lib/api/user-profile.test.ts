@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { upsertUserProfile, UserProfileError } from './user-profile';
+import { getUserPlan, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
   num_personas: 3,
@@ -93,5 +93,60 @@ describe('upsertUserProfile', () => {
 
     await expectRejection(upsertUserProfile(client, { ...SAMPLE_PAYLOAD, ingredientes_odiados: ['not-a-real-ingredient'] }));
     expect(upsertCalls).toHaveLength(0);
+  });
+});
+
+/** Minimal mock client exposing `.select().eq().maybeSingle()` — all `getUserPlan()` calls. */
+function createPlanMockClient(options: { userId?: string, planRow?: { plan: string } | null, dbErrorMessage?: string } = {}) {
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: options.dbErrorMessage ? null : (options.planRow ?? null),
+            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+          }),
+        }),
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database> };
+}
+
+describe('getUserPlan', () => {
+  test('returns the profile\'s plan when a row exists', async () => {
+    const { client } = createPlanMockClient({ userId: 'user-123', planRow: { plan: 'pro' } });
+
+    const result = await getUserPlan(client);
+
+    expect(result).toBe('pro');
+  });
+
+  test('defaults to \'free\' when no profile row exists yet', async () => {
+    const { client } = createPlanMockClient({ userId: 'user-123', planRow: null });
+
+    const result = await getUserPlan(client);
+
+    expect(result).toBe('free');
+  });
+
+  test('throws UserProfileError on a real database error', async () => {
+    const { client } = createPlanMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(getUserPlan(client));
+  });
+
+  test('throws UserProfileError when there is no authenticated session', async () => {
+    const { client } = createPlanMockClient({});
+
+    await expectRejection(getUserPlan(client));
   });
 });

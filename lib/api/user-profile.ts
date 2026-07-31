@@ -74,3 +74,32 @@ export async function upsertUserProfile(
     throw new UserProfileError(`No se pudo guardar el perfil: ${error.message}`);
   }
 }
+
+/**
+ * Reads the CURRENTLY authenticated user's plan tier (FRESCO-15 — gates the
+ * "esto es una función Pro" notice shown to Free users). Defaults to
+ * `'free'` when no profile row exists yet (onboarding not completed) rather
+ * than throwing — a missing profile isn't an error for this read, callers
+ * that need the profile itself already fail fast via other paths.
+ */
+export async function getUserPlan(
+  client: SupabaseClient<Database>,
+): Promise<UserProfile['plan']> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil: ${error.message}`);
+  }
+
+  return data?.plan ?? 'free';
+}

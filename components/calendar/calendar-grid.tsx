@@ -2,7 +2,7 @@
 
 import type { DragEndEvent } from '@dnd-kit/core';
 import type { Recipe } from '@schemas';
-import type { DiaSemana, TipoPlato } from '@/lib/api/types';
+import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid, SlotKey } from '@/lib/calendar/apply-slot-swap';
 import {
   DndContext,
@@ -14,9 +14,10 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { Check, GripVertical, X } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { updateRecipeStatus } from '@/lib/api/edge-functions';
 import { swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
 import { createClient } from '@/lib/supabase/client';
@@ -40,9 +41,15 @@ function slotId(slot: SlotKey): string {
   return `${slot.dia}:${slot.tipo}`;
 }
 
+type EstadosGrid = Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
+
 export interface CalendarGridProps {
   initialMenu: MenuGrid
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
+  /** STORY-FRESCO-15 — per-slot cocinado/descartado state, keyed the same as `initialMenu`. */
+  initialEstados: EstadosGrid
+  /** STORY-FRESCO-15 — gates the Free-tier "esto es una función Pro" notice. */
+  userPlan: 'free' | 'pro' | 'family'
 }
 
 /**
@@ -63,8 +70,9 @@ export interface CalendarGridProps {
  * reusing the `text-error` token precedent from `app/onboarding/page.tsx`'s
  * `generateError` surface.
  */
-export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
+export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }: CalendarGridProps) {
   const [menu, setMenu] = React.useState<MenuGrid>(initialMenu);
+  const [estados, setEstados] = React.useState<EstadosGrid>(initialEstados);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   // Slots with an in-flight swapMealPlanSlots() call, keyed by dnd-kit id
   // (`slotId()`). Blocks both ends of a swap from being re-dragged until
@@ -123,8 +131,54 @@ export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
       });
   }
 
+  /**
+   * STORY-FRESCO-15: marks a pending slot as cocinada/descartada — a
+   * terminal, one-way state (Business Rules: "queda fijado — no puede volver
+   * a cambiarse"), so unlike the swap above there is no optimistic-then-
+   * revert dance: the button only re-enables on a real failure, never
+   * flips back to a state the user already committed successfully.
+   */
+  async function handleMarkEstado(dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada') {
+    const id = slotId({ dia, tipo });
+    if (pendingSlots.has(id)) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setPendingSlots(current => new Set(current).add(id));
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      await updateRecipeStatus(
+        { meal_plan_recipe_id: slotIds[dia][tipo], estado },
+        session?.access_token ?? null,
+      );
+      setEstados(current => ({ ...current, [dia]: { ...current[dia], [tipo]: estado } }));
+    }
+    catch (error) {
+      console.error('[CalendarGrid] updateRecipeStatus failed', error);
+      setErrorMessage('No se pudo guardar el estado del plato. Vuelve a intentarlo.');
+    }
+    finally {
+      setPendingSlots((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
   return (
     <div>
+      {userPlan === 'free' && (
+        <p
+          data-testid="learning_free_tier_notice"
+          className="mb-4 rounded-md bg-surface p-3 text-body-sm text-tertiary"
+        >
+          Marcar un plato como cocinado o descartado es una función de nivel Pro — tu menú actual no se ve afectado.
+        </p>
+      )}
+
       <DndContext id="calendar-grid" sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto">
           <div className="grid min-w-[840px] grid-cols-7 gap-3">
@@ -137,7 +191,9 @@ export function CalendarGrid({ initialMenu, slotIds }: CalendarGridProps) {
                     dia={dia}
                     tipo={tipo}
                     recipe={menu[dia][tipo]}
+                    estado={estados[dia][tipo]}
                     pending={pendingSlots.has(slotId({ dia, tipo }))}
+                    onMark={estado => void handleMarkEstado(dia, tipo, estado)}
                   />
                 ))}
               </div>
@@ -172,8 +228,12 @@ interface SlotCellProps {
   dia: DiaSemana
   tipo: TipoPlato
   recipe: Recipe
-  /** True while this slot is part of an in-flight swap — blocks re-dragging it. */
+  /** STORY-FRESCO-15 — current terminal state; gates the mark buttons vs a status badge. */
+  estado: EstadoRecetaSlot
+  /** True while this slot is part of an in-flight swap or mark-status call — blocks both. */
   pending: boolean
+  /** STORY-FRESCO-15 — marks this slot cocinada/descartada; no-ops if not pendiente. */
+  onMark: (estado: 'cocinada' | 'descartada') => void
 }
 
 /**
@@ -183,7 +243,7 @@ interface SlotCellProps {
  * node via `setRefs` below (dnd-kit tracks draggable/droppable ids in
  * separate registries, so reusing the same composite id for both is safe).
  */
-function SlotCell({ dia, tipo, recipe, pending }: SlotCellProps) {
+function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps) {
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
 
@@ -208,22 +268,85 @@ function SlotCell({ dia, tipo, recipe, pending }: SlotCellProps) {
   return (
     <div
       ref={setRefs}
-      {...listeners}
-      {...attributes}
       data-testid={`calendar_slot_${dia}_${tipo}`}
       style={{ transform: CSS.Translate.toString(transform) }}
       className={cn(
-        'flex items-start gap-2 rounded-card bg-surface p-3 shadow-sm',
+        'flex flex-col gap-2 rounded-card bg-surface p-3 shadow-sm',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
         pending && 'cursor-wait opacity-70',
+        estado === 'descartada' && 'opacity-60',
       )}
     >
-      <GripVertical className="mt-0.5 size-4 shrink-0 text-tertiary" />
-      <div>
-        <p className="text-caption uppercase text-tertiary">{tipo}</p>
-        <p className="text-body-sm">{recipe.nombre}</p>
+      <div className="flex items-start gap-2">
+        {/*
+          Drag activation listeners live ONLY on this handle, not the whole
+          cell (dnd-kit's documented "drag handle" pattern) — spreading them
+          on the outer div, as before FRESCO-15, made the entire cell a drag
+          source, so the PointerSensor captured every pointerdown on the mark
+          buttons below and the drag gesture fired instead of their onClick.
+          Found live: the buttons never worked, dnd-kit's own screen-reader
+          announcer confirmed a self-drop was registered on every click.
+        */}
+        <button
+          type="button"
+          {...listeners}
+          {...attributes}
+          aria-label="Arrastrar para reordenar"
+          className="-m-1 shrink-0 cursor-grab touch-none p-1 disabled:cursor-not-allowed"
+          disabled={pending}
+        >
+          <GripVertical className="size-4 text-tertiary" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="text-caption uppercase text-tertiary">{tipo}</p>
+          <p className={cn('text-body-sm', estado === 'descartada' && 'line-through')}>{recipe.nombre}</p>
+        </div>
       </div>
+
+      {/*
+        Stacked BELOW the recipe row (not beside it) — found live: at this
+        grid's real column width (~120px, 7 columns), a badge/buttons row
+        competing for horizontal space with the recipe name collapsed the
+        name's flex-1 wrapper to 0 width, rendering its text on top of the
+        badge instead of beside it. Vertical stacking has no such conflict.
+      */}
+      {estado === 'pendiente' && (
+        <div className="flex justify-end gap-1">
+          <button
+            type="button"
+            data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
+            aria-label="Marcar como cocinado"
+            disabled={pending}
+            onClick={() => onMark('cocinada')}
+            className="rounded-full p-1 text-tertiary hover:bg-primary hover:text-background disabled:pointer-events-none"
+          >
+            <Check className="size-4" />
+          </button>
+          <button
+            type="button"
+            data-testid={`calendar_slot_${dia}_${tipo}_mark_descartada`}
+            aria-label="Marcar como descartado"
+            disabled={pending}
+            onClick={() => onMark('descartada')}
+            className="rounded-full p-1 text-tertiary hover:bg-error hover:text-background disabled:pointer-events-none"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
+      {estado !== 'pendiente' && (
+        <p
+          data-testid={`calendar_slot_${dia}_${tipo}_estado_badge`}
+          className={cn(
+            'text-right text-caption uppercase',
+            estado === 'cocinada' ? 'text-primary' : 'text-tertiary',
+          )}
+        >
+          {estado === 'cocinada' ? 'Cocinado' : 'Descartado'}
+        </p>
+      )}
     </div>
   );
 }

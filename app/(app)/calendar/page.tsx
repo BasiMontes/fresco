@@ -4,6 +4,7 @@ import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
+import { getUserPlan } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -50,6 +51,17 @@ export default async function CalendarPage() {
     );
   }
 
+  // Gates the Free-tier "esto es una función Pro" notice (STORY-FRESCO-15,
+  // Business Rules) — a read failure here is not worth crashing the page
+  // over, defaults to the more conservative 'free' (shows the notice).
+  let userPlan: 'free' | 'pro' | 'family' = 'free';
+  try {
+    userPlan = await getUserPlan(supabase);
+  }
+  catch (error) {
+    console.error('[/calendar] getUserPlan failed, defaulting to free', error);
+  }
+
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-h2">Calendario semanal</h1>
@@ -62,7 +74,12 @@ export default async function CalendarPage() {
       />
 
       <div className="mt-6">
-        <CalendarGrid initialMenu={plan.menu} slotIds={plan.slotIds} />
+        <CalendarGrid
+          initialMenu={plan.menu}
+          slotIds={plan.slotIds}
+          initialEstados={plan.estados}
+          userPlan={userPlan}
+        />
       </div>
     </div>
   );

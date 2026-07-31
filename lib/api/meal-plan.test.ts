@@ -36,6 +36,9 @@ function buildCompleteJoinRows() {
       id: `slot-${dia}-${tipo_plato}`,
       dia,
       tipo_plato,
+      // lunes/desayuno set to 'cocinada' (not the default) to exercise
+      // estados' pass-through of a real, non-pendiente value (STORY-FRESCO-15).
+      estado: dia === 'lunes' && tipo_plato === 'desayuno' ? 'cocinada' as const : 'pendiente' as const,
       recipes: dia === 'lunes' && tipo_plato === 'desayuno'
         ? SAMPLE_RECIPE_ROW
         : dia === 'lunes' && tipo_plato === 'comida'
@@ -56,8 +59,8 @@ const INCOMPLETE_JOIN_ROW = {
   semana_iso: SEMANA_ISO,
   advertencias: [],
   meal_plan_recipes: [
-    { id: 'slot-lunes-desayuno', dia: 'lunes', tipo_plato: 'desayuno', recipes: SAMPLE_RECIPE_ROW },
-    { id: 'slot-lunes-comida', dia: 'lunes', tipo_plato: 'comida', recipes: { ...SAMPLE_RECIPE_ROW, id: 'recipe-2', nombre: 'Curry de garbanzos' } },
+    { id: 'slot-lunes-desayuno', dia: 'lunes', tipo_plato: 'desayuno', estado: 'pendiente', recipes: SAMPLE_RECIPE_ROW },
+    { id: 'slot-lunes-comida', dia: 'lunes', tipo_plato: 'comida', estado: 'pendiente', recipes: { ...SAMPLE_RECIPE_ROW, id: 'recipe-2', nombre: 'Curry de garbanzos' } },
   ],
 };
 
@@ -130,6 +133,12 @@ describe('getMealPlanForWeek', () => {
         expect(result?.slotIds[dia]?.[tipo]).toBe(`slot-${dia}-${tipo}`);
       }
     }
+
+    // STORY-FRESCO-15: estados populated in parallel with menu/slotIds —
+    // real value (lunes/desayuno) and the default pass through correctly.
+    expect(result?.estados.lunes.desayuno).toBe('cocinada');
+    expect(result?.estados.lunes.comida).toBe('pendiente');
+    expect(result?.estados.domingo.cena).toBe('pendiente');
   });
 
   test('returns null when no plan exists yet for that week', async () => {

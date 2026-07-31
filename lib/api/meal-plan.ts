@@ -1,6 +1,6 @@
 import type { Recipe } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { DiaSemana, TipoPlato } from '@/lib/api/types';
+import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
 import { getIsoWeek } from '@/lib/date/iso-week';
 
@@ -18,6 +18,7 @@ interface MealPlanJoinRow {
     id: string
     dia: DiaSemana
     tipo_plato: Database['public']['Enums']['tipo_plato']
+    estado: EstadoRecetaSlot
     recipes: RecipeRow | null
   }[]
 }
@@ -31,6 +32,12 @@ export interface MenuSemanalPersistido {
    * `menu`'s existing shape. Additive: `/menu/page.tsx` ignores this field.
    */
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
+  /**
+   * Per-slot `estado` (STORY-FRESCO-15) — lets a caller show/gate the
+   * cocinado/descartado toggle without changing `menu`'s existing shape.
+   * Additive, same pattern as `slotIds`: `/menu/page.tsx` ignores this field.
+   */
+  estados: Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>
   advertencias: string[]
 }
 
@@ -61,10 +68,11 @@ function toRecipe(row: RecipeRow): Recipe {
   };
 }
 
-/** Return shape of `reshapeMenu()` — the recipe grid plus its parallel slot-id grid. */
+/** Return shape of `reshapeMenu()` — the recipe grid plus its parallel slot-id and estado grids. */
 interface ReshapedMenu {
   menu: Record<DiaSemana, Record<TipoPlato, Recipe>>
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
+  estados: Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>
 }
 
 /**
@@ -94,6 +102,7 @@ interface ReshapedMenu {
 function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
   const menu = {} as Record<DiaSemana, Record<TipoPlato, Recipe>>;
   const slotIds = {} as Record<DiaSemana, Record<TipoPlato, string>>;
+  const estados = {} as Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
 
   for (const row of rows) {
     if (!row.recipes) {
@@ -103,6 +112,8 @@ function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
     menu[row.dia][row.tipo_plato as TipoPlato] = toRecipe(row.recipes);
     slotIds[row.dia] ??= {} as Record<TipoPlato, string>;
     slotIds[row.dia][row.tipo_plato as TipoPlato] = row.id;
+    estados[row.dia] ??= {} as Record<TipoPlato, EstadoRecetaSlot>;
+    estados[row.dia][row.tipo_plato as TipoPlato] = row.estado;
   }
 
   for (const dia of DIAS) {
@@ -113,7 +124,7 @@ function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
     }
   }
 
-  return { menu, slotIds };
+  return { menu, slotIds, estados };
 }
 
 /**
@@ -142,7 +153,7 @@ export async function getMealPlanForWeek(
 
   const { data, error } = await client
     .from('meal_plans')
-    .select('semana_iso, advertencias, meal_plan_recipes(id, dia, tipo_plato, recipes(*))')
+    .select('semana_iso, advertencias, meal_plan_recipes(id, dia, tipo_plato, estado, recipes(*))')
     .eq('user_id', user.id)
     .eq('semana_iso', semanaIso)
     .maybeSingle();
@@ -156,12 +167,13 @@ export async function getMealPlanForWeek(
   }
 
   const row = data as unknown as MealPlanJoinRow;
-  const { menu, slotIds } = reshapeMenu(row.meal_plan_recipes);
+  const { menu, slotIds, estados } = reshapeMenu(row.meal_plan_recipes);
 
   return {
     semanaIso: row.semana_iso,
     menu,
     slotIds,
+    estados,
     advertencias: row.advertencias,
   };
 }
