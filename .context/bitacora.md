@@ -505,3 +505,21 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el hallazgo completo de FRESCO-21 con la implementación real, no solo el fix mínimo de esconder el mockup.
 
 **Siguiente**: Master Sprint EPIC-5 (Aprendizaje) queda con FR-5.4/5.5/5.6 todos resueltos de verdad. Pendiente suelto: `FRESCO-20` (reasignación de datos del conflicto de email en Registro Progresivo) sigue sin diseñar. Reportar aparte el bug de `pull --epic` en `scripts/sync-jira-issues.ts`.
+
+---
+
+## 2026-07-31 — FRESCO-20 implementado: primer uso de service role del proyecto, con luz verde explícita
+
+**Qué**:
+- `/sprint-development FRESCO-20` en modo Solo. Antes de codear, diseño completo presentado al user (mecanismo + por qué) porque esto cruza un límite nuevo: primer código del repo que usa service role + Auth Admin API para mover datos entre usuarios reales. User confirmó explícitamente antes de tocar nada.
+- Redactada **ADR-0004** (Accepted) documentando la decisión: verificación de contraseña real de la cuenta destino (server-side, nunca confiando en el cliente) antes de cualquier movimiento, RPC `reassign_guest_data()` con `EXECUTE` revocado a `public/anon/authenticated` y otorgado solo a `service_role` — así ningún usuario normal puede invocarlo directo con ids arbitrarios y robar datos de otra cuenta real.
+- Migración real aplicada: `reassign_guest_data(from_id, to_id)` — reasigna `meal_plans` salvo que la cuenta destino ya tenga plan para esa semana (`unique_user_semana` existente, gana el de la cuenta real), espeja en `shopping_lists`, borra el `user_profiles` huérfano (cascada limpia lo que quedó del conflicto).
+- Nuevo Edge Function `reassign-guest-data` (4to del proyecto) + helper compartido `_shared/service-role-client.ts` (primero de su tipo). `/signup` ahora pide la contraseña de la cuenta existente inline en vez de solo linkear a `/login`.
+- Verificado en vivo de punta a punta con casos reales, no solo el camino feliz: invitada nueva generó un menú real para la MISMA semana que ya tenía la cuenta de test real (para forzar el conflicto a propósito) → contraseña incorrecta → 401, nada cambia; contraseña correcta → 200, confirmado por SQL directo: perfil y usuario anónimo del invitado borrados, su plan conflictivo descartado (no sobrescribió el de la cuenta real), la cuenta real conserva exactamente su plan original. Confirmado también a nivel de permisos de Postgres que `EXECUTE` del RPC solo lo tiene `service_role`.
+- 1 gap declarado: la UI nueva de `/signup` (campo de contraseña inline) no se probó clickeando en un navegador real — el chequeo de fondo (la parte de seguridad) sí se hizo exhaustivo con HTTP real.
+- El primer intento de deploy del Edge Function falló genérico sin detalle; reintentado idéntico, funcionó (tratado como transitorio, no de código).
+- Commiteado y pusheado a `main` (`c97dc45`). Jira FRESCO-20: `Listo` → `WIP` → `Finalizada`.
+
+**Por qué**: cerraba el último gap nombrado desde ADR-0003 ("not treat the happy path as only path"), y el user quería la reasignación real, no solo el fallback seguro que ya tenía FRESCO-19.
+
+**Siguiente**: Master Sprint 2 completo de punta a punta (FRESCO-16 a FRESCO-22, todo Finalizado). Sin pendientes sueltos de este sprint salvo: (a) probar la UI de `/signup` clickeando en vivo si se quiere cerrar ese gap declarado; (b) el bug de `pull --epic` en `scripts/sync-jira-issues.ts` sigue sin reportar.

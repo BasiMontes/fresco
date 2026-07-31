@@ -1,7 +1,7 @@
 # Tarea: Reasignar datos de invitada a cuenta existente en conflicto de email (FRESCO-19)
 
 **Jira Key:** [FRESCO-20](https://basiliomontescastano.atlassian.net/browse/FRESCO-20)
-**Status:** Listo
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
