@@ -450,3 +450,22 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerraba Master Sprint 2 completo (Guest Mode + Progressive Signup), el objetivo explícito del user desde el pedido original de "desbloquear el login".
 
 **Siguiente**: Master Sprint 2 completo (FRESCO-16/17/18/19 Finalizadas, FRESCO-20 pendiente como tech-debt). Pendientes sueltos: (a) FRESCO-20 — diseñar la reasignación de datos cross-usuario antes de implementarla; (b) la tarjeta "Fresco aprendió" hardcodeada en `/menu` — posible bug de EPIC-FRESCO-5, señalado dos veces ya, no tocado; (c) correr `/dev-roadmap` para que refleje Master Sprint 2 (sigue diciendo "no sembrado en Jira").
+
+---
+
+## 2026-07-31 — Investigado y parcheado el bug de "Fresco aprendió"
+
+**Qué**:
+- User pidió revisar el bug de la tarjeta "Fresco aprendió" señalado dos veces antes. Investigación real, no asumida:
+  - Confirmado: JSX 100% hardcodeado en `app/(app)/menu/page.tsx`, sin ninguna condición — se mostraba a cualquier usuaria (Free, Pro, invitada anónima con cero historial posible).
+  - Causa raíz completa vía `FR-5.5`/`FR-5.6` (`functional-requirements.md`): la explicación real de aprendizaje SÍ se genera correctamente en `supabase/functions/generate-meal-plan/prompt.ts` (Pro + historial real, testeado) — pero cae en el array genérico `advertencias`, compartido sin discriminador con las advertencias de seguridad alimentaria (FR-2.10/FR-8.2), y solo se muestra vía `AlertBanner`. La tarjeta `card-insight` dedicada (pensada para esto en DESIGN.md) se quedó como mockup del scaffold inicial de `/project-bootstrap`, nunca conectada cuando FRESCO-7 wireó el resto de la página a datos reales.
+  - Confirmado además: `EPIC-FRESCO-5` (FRESCO-14) sigue "Listo" — solo tiene sembrada su historia fundacional (FRESCO-15, US 5.1, el toggle). Las historias para US 5.2/5.3 (generación con historial + esta explicación) nunca se sembraron.
+- Presentado el hallazgo completo al user antes de tocar código, con 3 opciones (fix mínimo + bug en Jira / solo reportar / construir la versión real ahora). Eligió fix mínimo + bug en Jira.
+- Eliminada la tarjeta hardcodeada de `/menu` (con comentario explicando por qué, para que nadie la vuelva a poner como placeholder). Verificado en vivo (login con usuario de test real): `/menu` renderiza limpio, sin la tarjeta falsa, sin errores.
+- Creado **FRESCO-21** (Error/Bug) documentando actual/expected/root cause completos, linkeado `Relates` a FRESCO-14. Transicionado a `Finalizada` (el síntoma agudo — contenido fabricado — está resuelto; el gap de feature completo queda documentado en el propio ticket para una futura historia).
+- Commiteado y pusheado a `main` (`7eb27aa`).
+- Feedback de sesión: el user rechazó una confirmación de commit+push a mitad de FRESCO-19 y pidió "Comit+push+bitacora" directo — guardado en memoria persistente: no volver a preguntar por cada commit una vez establecida la cadencia en la sesión.
+
+**Por qué**: pedido explícito del user tras haber señalado el hallazgo dos veces sin actuar sobre él.
+
+**Siguiente**: seedear vía `/product-management` la historia US 5.2/5.3 bajo EPIC-FRESCO-5 (FRESCO-14) cuando se retome esa épica — separar `advertencias` de seguridad vs explicación de aprendizaje en el Edge Function, gatear por `isPro`, implementar el upsell Free-tier (FR-5.6). Sigue pendiente correr `/dev-roadmap` (Master Sprint 2 aún no reflejado ahí). También noté que `epic-tree.md` local parece sobrescribirse en cada `pull --epic <KEY>` en vez de hacer upsert por épica (solo queda la última épica sincronizada) — vale la pena revisar `scripts/sync-jira-issues.ts` en algún momento, no es blocker hoy.
