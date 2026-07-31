@@ -105,6 +105,30 @@ Característica: Flujo completo de usuario en Fresco
     Cuando se intenta generar un menú para él
     Entonces el sistema responde 404 "Perfil de usuario no encontrado"
 
+  @generacion-menu @edge-case @verificado-manual-2026-07-31
+  Escenario: Ninguna receta del catálogo es segura para una franja concreta (AC-4, FR-8.2)
+    Dado que ningún ítem del catálogo filtrado cumple una regla absoluta para un día/tipo concreto
+    Cuando se genera el menú
+    Entonces esa franja se persiste sin receta (recipe_id null), nunca inventada ni forzada
+    Y el resto de las 20 franjas se entrega con normalidad
+    Y el sistema NUNCA falla la generación completa por esta causa
+    # Verificado dos veces: (1) fixture real de DB con recipe_id null + join
+    # exacto que usa el frontend; (2) ocurrió naturalmente en una generación
+    # real con Gemini durante la verificación del escenario 409 (misma
+    # sesión) — el modelo devolvió el sentinel + advertencia sin que se le
+    # pidiera a propósito.
+
+  @generacion-menu @edge-case @pendiente
+  Escenario: El frontend muestra la franja sin receta segura
+    Dado que un menú persistido tiene una franja con recipe_id null
+    Cuando el usuario visita /menu o /calendar
+    Entonces ve esa franja marcada como "Sin receta segura", sin crashear
+    Y no puede arrastrarla ni marcarla como cocinada/descartada
+    # Nunca clickeado en un navegador real — la generación real que disparó
+    # el sentinel (arriba) no se dio en una sesión donde hubiera browser
+    # abierto en ese momento. Verificado solo por lectura de código +
+    # bun run build sin errores de tipos en ambos componentes.
+
   # ==========================================================================
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
   # ==========================================================================
@@ -246,6 +270,29 @@ Característica: Flujo completo de usuario en Fresco
     # estático cumple la intención de comunicación; la aplicación real del
     # historial a generación futura es capacidad separada, gateada en el
     # tiempo (Fuera de Alcance de FRESCO-15).
+
+  @aprendizaje @verificado-manual-2026-07-31
+  Escenario: La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
+    Dado que un usuario Pro tiene al menos 2 semanas de historial cocinado/descartado real
+    Cuando se genera su menú de la semana siguiente
+    Entonces la IA evita repetir recetas descartadas y prioriza las bien valoradas
+    Y genera una explicación cálida en "explicacion_aprendizaje", separada de "advertencias"
+    Y queda persistida en su propio campo, no mezclada con las advertencias de seguridad
+    # Verificado en vivo: usuario de test flippeado temporalmente a plan
+    # 'pro', historial real ya existente, llamada directa al Edge Function
+    # para la semana siguiente → explicación real, cálida, en primera
+    # persona plural, separada limpiamente. Confirmado persistida y que el
+    # select() del cliente la devuelve. Plan revertido a free después.
+
+  @aprendizaje @pendiente
+  Escenario: El usuario Pro ve la tarjeta de explicación en /menu
+    Dado que un usuario Pro tiene explicacion_aprendizaje no nula en su menú
+    Cuando visita /menu
+    Entonces ve una tarjeta "card-insight" con esa explicación
+    Y nunca se mezcla visualmente con el banner de advertencias
+    # Nunca clickeado en un navegador real — requeriría falsear la fecha
+    # del sistema para caer en la semana futura de la prueba de arriba.
+    # Gap declarado igual en compliance-matrix.md de FRESCO-22.
 
   # ==========================================================================
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
