@@ -596,3 +596,13 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar deuda técnica real que ya estaba identificada y no requería más investigación — solo ejecución.
 
 **Siguiente**: sin pendientes de esta sesión. Quedan sueltos de larga data, sin urgencia: reportar el fix de `pull --epic` al mantenedor del boilerplate upstream (este repo solo tiene la copia local, ya arreglada acá; no hay visibilidad del repo boilerplate original desde esta sesión). FRESCO-24 queda esperando al próximo batch de contenido del founder.
+
+---
+
+## 2026-07-31 — Las 8 épicas contenedoras transicionadas (roadmap MVP 100% cerrado en Jira)
+
+**Qué**: user pidió mover las 8 épicas de "Listo" a "Done". No existe estado "Done" en el workflow de este proyecto — el intento directo falló (`No allowed transitions found`); confirmado vía transitions reales de la API que el único destino válido desde "Listo" es "Finalizada" (mismo terminal que usan las Historias/Tareas/Errores). Transicionadas las 8: FRESCO-4, 6, 8, 10, 12, 14, 16, 18. Sync completo, `epic-tree.md` y los `epic.md`/`story.md` afectados actualizados (incluye el refresh de status de FRESCO-23 dentro del story.md de FRESCO-7, ya estaba Finalizada, solo texto). Commiteado y pusheado a `main` (`ce4421e`).
+
+**Por qué**: cerrar formalmente en Jira lo que el código ya refleja hace rato — las 8 épicas del PRD completas.
+
+**Siguiente**: Jira 100% alineado con el estado real del roadmap MVP. Sin pendientes de ingeniería. Lo único abierto es FRESCO-24 (contenido, no código) esperando al founder.
