@@ -768,3 +768,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el ciclo de verificación de la ampliación de catálogo contra el entorno real, no solo contra la base de datos.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Pulido cosmético: loading states + bug real de nav mobile
+
+**Qué**: user pidió seguir el pulido cosmético, primero loading states, después chequeo mobile.
+- **Loading states**: `/onboarding` y `/shopping-list` solo cambiaban el texto del botón mientras esperaban la generación real (hasta ~110s en onboarding) — sin spinner, sin indicación de cuánto podía tardar. Agregado icono `Loader2` girando en ambos botones, más un texto "Puede tardar hasta un minuto — estamos preparando tu menú con IA." en onboarding (el de shopping-list es mucho más corto, ~8s, no necesitaba el aviso). Verificado con screenshot en vivo durante la espera real: spinner girando, botón deshabilitado, sin errores de consola. Commit `43a77d0`, deploy verificado READY.
+- **Chequeo mobile** (emulación iPhone 15, 393px): recorridas landing, login, onboarding (los 3 pasos, incluyendo el más denso con ~25 chips), menú, calendario, recetas y perfil. Encontrado **un bug real**: el CTA "Empezar gratis" del nav nunca colapsaba a hamburger en mobile — se veía siempre, apretujado junto a "Ya tengo cuenta" y el ícono de menú. Causa: `cn('hidden', buttonVariants({ size: 'sm' }), 'sm:inline-flex')` — `buttonVariants()` ya trae `inline-flex` sin prefijo en sus clases base, y como aparece DESPUÉS de `'hidden'` en el merge de `tailwind-merge`, gana el mismo grupo de conflicto ("display") y `hidden` se descarta silenciosamente del HTML final. Arreglado reordenando a `cn(buttonVariants(...), 'hidden sm:inline-flex')`. Verificado en 393px (ahora oculto, confirmado por bounding box y computed style), 700px y 1280px (visible, sin regresión), y el propio hamburger (abre/cierra bien). Commit `b5a3323`, deploy verificado READY, confirmado con screenshot contra `fresco-pre.vercel.app` real.
+- Resto de pantallas mobile revisadas sin overflow ni roturas — solo un falso positivo descartado (el ícono flotante "N" que tapaba parte del bottom-nav en las capturas es el propio overlay de playwright-cli, no la app; confirmado por bounding box del elemento real).
+- 2 cuentas de test creadas y borradas durante las verificaciones.
+
+**Por qué**: pedido explícito del user, en el orden que pidió (loading primero, mobile después). El bug de nav mobile no estaba en la lista — salió de mirar de verdad las capturas en vez de asumir que "no hay overflow" significaba "está bien".
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
