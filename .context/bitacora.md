@@ -367,3 +367,20 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: mismo patrón de toda la sesión — plan corto, construir de verdad, verificar en vivo contra Gemini y la DB real, no solo contra tests. "Mucho amor" se tradujo en cerrar el gap real del coste estimado (no solo lo mínimo pedido) y en dejar los types de Supabase regenerados de verdad en vez de seguir arrastrando un cast de escape.
 
 **Siguiente**: Execution Sprint 3 completo (FRESCO-11, FRESCO-13, FRESCO-15 los tres dev-done). Quedan pendientes en el `.feature`: los 2 casos de error de Lista de la Compra recién sumados, los edge-cases de login/signup, y automatizar lo que se construyó hoy si el user lo pide (no se pidió explícitamente esta vez, a diferencia de FRESCO-15).
+
+---
+
+## 2026-07-31 — Escenarios de FRESCO-13 automatizados: sin mock, backend real
+
+**Qué**:
+- User pidió automatizar los 2 escenarios de Lista de la Compra. Decisión de diseño distinta a signup/aprendizaje: acá NO se puede mockear la llamada de red, porque `ShoppingListGenerator` hace `router.refresh()` al generar (relee la DB real como fuente de verdad en vez de confiar en el payload del cliente) — un mock nunca hubiera dejado nada real para que ese refresh encontrara. Los 2 escenarios pegan al backend real (Gemini real, DB real).
+- Reset de fixture: cada escenario borra la lista real existente del usuario de prueba vía `DELETE` directo a la REST API de Supabase antes de generar — la policy RLS (`shopping_delete_own`) ya permite al dueño borrar su propia fila, la app simplemente nunca expone un botón para eso. Así ningún escenario depende del efecto lateral del otro, ambos repetibles contra el único plan real que existe.
+- **2 bugs reales encontrados llegando a verde**:
+  1. PostgREST rechaza un `DELETE` sin filtro ("DELETE requires a WHERE clause") aunque RLS ya scope a las filas del que llama — encontrado corriendo el `curl` manual antes de asumir que el reset funcionaba. Arreglado con un filtro siempre-verdadero (`id=not.is.null`).
+  2. La generación real de Gemini tardó hasta ~40 segundos en la práctica (más que los ~10-12s que había visto manualmente antes) — el timeout POR TEST de Playwright (30s default) cortaba el test antes de que mi propio `expect(...).toBeVisible({timeout: 60000})` llegara a resolver. Encontrado debuggeando en vivo con Playwright CLI en vez de seguir gastando corridas de Gemini a ciegas. Arreglado subiendo el timeout de proyecto a 90s.
+- Verificado: 8/8 tests E2E pasan (los 6 de antes + los 2 nuevos), `bun test` 49/49, types/lint limpios. Escenarios tageados `@automatizado` con puntero a `tests/steps/shopping-list.steps.ts`.
+- Commiteado y pusheado a `main` (`0b2716a`).
+
+**Por qué**: cerrar el ciclo de automatización de Execution Sprint 3 completo. La decisión de "sin mock" no fue arbitraria — se derivó de leer cómo `ShoppingListGenerator` está armado (refresh-desde-servidor, no confiar en el payload), mismo nivel de cuidado que las decisiones de mock/no-mock anteriores.
+
+**Siguiente**: los 6 escenarios automatizados de esta sesión (login, signup, cocinado, descartado, terminal-lock, aviso Pro) + los 2 de hoy (generar lista, marcar comprado) — 8 en total, todos verdes. Quedan `@pendiente` en el `.feature`: edge-cases de login/signup, onboarding→generación de menú, calendario con fallo de red, y los 2 casos de error de Lista de la Compra (409 duplicado, 422 consolidación vacía) recién sumados.
