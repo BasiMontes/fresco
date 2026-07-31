@@ -384,3 +384,21 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el ciclo de automatización de Execution Sprint 3 completo. La decisión de "sin mock" no fue arbitraria — se derivó de leer cómo `ShoppingListGenerator` está armado (refresh-desde-servidor, no confiar en el payload), mismo nivel de cuidado que las decisiones de mock/no-mock anteriores.
 
 **Siguiente**: los 6 escenarios automatizados de esta sesión (login, signup, cocinado, descartado, terminal-lock, aviso Pro) + los 2 de hoy (generar lista, marcar comprado) — 8 en total, todos verdes. Quedan `@pendiente` en el `.feature`: edge-cases de login/signup, onboarding→generación de menú, calendario con fallo de red, y los 2 casos de error de Lista de la Compra (409 duplicado, 422 consolidación vacía) recién sumados.
+
+---
+
+## 2026-07-31 — Verificado deploy de Vercel + desbloqueada la decisión de guest-auth (ADR-0003)
+
+**Qué**:
+- User pidió chequear que Vercel levantó los últimos pushes. `/vercel-cli` auto-cargado. Confirmado vía `vercel ls -m githubCommitSha=<HEAD>` + `vercel inspect --wait`: deploy `READY` en producción, alias `fresco-pro.vercel.app`, mismo commit que el HEAD real de `main`. Smoke-check en vivo de `/shopping-list` real en producción: mismos 51 productos, mismo "ajo" marcado comprado (misma DB que local, confirmado), sin mock, funcionando igual que en dev.
+- User preguntó por la siguiente tarea. Repasado `master-implementation-plan.md`: Execution Sprint 3 completo, sigue **Master Sprint 2** (EPIC-6 Guest Mode + EPIC-7 Progressive Signup), bloqueado explícitamente por una decisión técnica no resuelta (no una historia de código) — ningún Edge Function acepta llamadas sin JWT de Supabase Auth, y ningún doc fuente especifica cómo un guest sin cuenta las haría.
+- Recomendé **Supabase Anonymous Sign-in** como mecanismo. User confirmó ("Dale con Supabase Anonymous Sign-in").
+- Investigado vía Context7 (docs reales, no memoria): `signInAnonymously()` da una sesión real con JWT real; `updateUser({email, password})` sube la cuenta anónima a permanente **preservando el mismo `user_id`** (dato de guest sobrevive el upgrade sin reasignación). Encontrado de paso un riesgo real: ese upgrade exige verificación de email — la misma fricción de rate-limit/validación de dominio que ya pisamos con signup normal esta sesión.
+- Verificado en vivo contra el proyecto real: `external_anonymous_users_enabled` estaba en `false`. Habilitado vía la Management API de Supabase (`SUPABASE_ACCESS_TOKEN` ya vivía en `.env`, sin necesidad de tocar el dashboard) — confirmado con una llamada real de signup vacío: usuario anónimo real, `is_anonymous: true`, JWT real devuelto. Ese JWT es indistinguible de uno normal para `requireAuthenticatedUser()` — **cero cambios de código necesarios en los Edge Functions o RLS** para aceptar guests, todo ya funciona tal cual está escrito.
+- Redactada **ADR-0003** (Accepted — aprobación explícita del user en el mismo intercambio), resolviendo el Discovery Gap #1 de `business-api-map.md` (el de mayor prioridad del mapa) y actualizando esa sección + §7 para apuntar a la resolución en vez de repetir el gap.
+- Limpieza: borrado el usuario anónimo de prueba creado durante la verificación (no es fixture reutilizable como `qa.fresco@local.test`, era solo scaffolding de un solo uso).
+- Commiteado y pusheado a `main` (`e8f98b3`).
+
+**Por qué**: Master Sprint 2 llevaba bloqueado desde `/project-foundation` (26 de julio) por esta decisión exacta. Resolverla con verificación real contra la instancia de Supabase real (no solo leer docs) evita que la próxima sesión de `/sprint-development` para FRESCO-6/7 descubra a mitad de implementación que el mecanismo elegido no está habilitado o no funciona como se asume.
+
+**Siguiente**: Master Sprint 2 ya se puede scopear en historias reales — próximo paso natural es `/product-management` o `/sprint-development` directo para FRESCO-6 (Guest Mode) y FRESCO-7 (Progressive Signup), citando ADR-0003. Recordar el riesgo de email al planificar FRESCO-7 (Stage 1) explícitamente, no asumir que el upgrade "simplemente funciona". `business-api-map.md` recomienda además re-trazar la Journey 1 (Guest Happy Path) como una 5ª journey real la próxima vez que se regenere ese mapa.
