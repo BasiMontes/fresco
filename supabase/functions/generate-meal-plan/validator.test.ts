@@ -1,5 +1,6 @@
 import type { Recipe } from './types.ts'
 import { describe, expect, test } from 'bun:test'
+import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
 import { validateMenuOutput } from './validator.ts'
 
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const
@@ -54,7 +55,7 @@ function buildMenu(bucket: 'muy_bajo' | 'bajo' | 'medio' | 'alto') {
   }
 
   return {
-    raw: { semana: SEMANA_ISO, menu, advertencias: [] },
+    raw: { semana: SEMANA_ISO, menu, advertencias: [] as string[] },
     recipeById,
     validRecipeIds,
   }
@@ -105,6 +106,78 @@ describe('validateMenuOutput — budget check (AC Scenario 2/5, Decision 1: soft
     })
 
     expect(result.valid).toBe(true)
+    expect(result.warnings.some(w => w.includes('supera tu presupuesto'))).toBe(false)
+  })
+})
+
+describe('validateMenuOutput — NO_SAFE_RECIPE_SENTINEL (FR-8.2 / AC Scenario 4, FRESCO-23)', () => {
+  test('a sentinel slot paired with a real advertencia is recorded as unsafeSlots, not a generic error', () => {
+    const { raw, recipeById, validRecipeIds } = buildMenu('bajo')
+    raw.menu.lunes.desayuno = NO_SAFE_RECIPE_SENTINEL
+    raw.advertencias = ['No hay ninguna receta segura para el desayuno del lunes con tus restricciones declaradas.']
+
+    const result = validateMenuOutput({
+      raw,
+      validRecipeIds,
+      semanaIso: SEMANA_ISO,
+      recipeById,
+      presupuestoSemanaEuros: null,
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.unsafeSlots).toEqual(['lunes.desayuno'])
+    expect(result.errors).toEqual([])
+  })
+
+  test('a sentinel slot with NO advertencia is treated as a non-compliant, generically-retried error, not a clean unsafeSlot', () => {
+    const { raw, recipeById, validRecipeIds } = buildMenu('bajo')
+    raw.menu.martes.cena = NO_SAFE_RECIPE_SENTINEL
+    raw.advertencias = []
+
+    const result = validateMenuOutput({
+      raw,
+      validRecipeIds,
+      semanaIso: SEMANA_ISO,
+      recipeById,
+      presupuestoSemanaEuros: null,
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.unsafeSlots).toEqual([])
+    expect(result.errors.some(e => e.includes('sin receta segura') && e.includes('advertencia'))).toBe(true)
+  })
+
+  test('multiple sentinel slots are all recorded, in order', () => {
+    const { raw, recipeById, validRecipeIds } = buildMenu('bajo')
+    raw.menu.lunes.desayuno = NO_SAFE_RECIPE_SENTINEL
+    raw.menu.viernes.comida = NO_SAFE_RECIPE_SENTINEL
+    raw.advertencias = ['Sin receta segura para desayuno del lunes.', 'Sin receta segura para comida del viernes.']
+
+    const result = validateMenuOutput({
+      raw,
+      validRecipeIds,
+      semanaIso: SEMANA_ISO,
+      recipeById,
+      presupuestoSemanaEuros: null,
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.unsafeSlots).toEqual(['lunes.desayuno', 'viernes.comida'])
+  })
+
+  test('a sentinel slot is never counted toward the weekly budget check', () => {
+    const { raw, recipeById, validRecipeIds } = buildMenu('alto')
+    raw.menu.lunes.desayuno = NO_SAFE_RECIPE_SENTINEL
+    raw.advertencias = ['Sin receta segura para desayuno del lunes.']
+
+    const result = validateMenuOutput({
+      raw,
+      validRecipeIds,
+      semanaIso: SEMANA_ISO,
+      recipeById,
+      presupuestoSemanaEuros: 1000, // high enough that 20x8€=160€ never overflows
+    })
+
     expect(result.warnings.some(w => w.includes('supera tu presupuesto'))).toBe(false)
   })
 })

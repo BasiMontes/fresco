@@ -55,6 +55,21 @@ const SAMPLE_JOIN_ROW = {
   meal_plan_recipes: buildCompleteJoinRows(),
 };
 
+/**
+ * All 21 rows present, but `lunes.desayuno`'s `recipe_id` is null — FR-8.2 /
+ * AC Scenario 4 (FRESCO-23): the model correctly reported no safe recipe for
+ * that slot. Distinct from `INCOMPLETE_JOIN_ROW` below, where the row is
+ * missing entirely (the real NFR-REL-2 partial-write bug).
+ */
+const UNSAFE_SLOT_JOIN_ROW = {
+  id: 'plan-2',
+  semana_iso: SEMANA_ISO,
+  advertencias: ['No hay ninguna receta segura para el desayuno del lunes con tus restricciones declaradas.'],
+  meal_plan_recipes: buildCompleteJoinRows().map(row =>
+    row.dia === 'lunes' && row.tipo_plato === 'desayuno' ? { ...row, recipes: null } : row,
+  ),
+};
+
 /** Truncated fixture — only 2 of 21 slots — for the incomplete-plan gap test. */
 const INCOMPLETE_JOIN_ROW = {
   semana_iso: SEMANA_ISO,
@@ -122,9 +137,9 @@ describe('getMealPlanForWeek', () => {
     expect(result?.mealPlanId).toBe('plan-1');
     expect(result?.semanaIso).toBe(SEMANA_ISO);
     expect(result?.advertencias).toEqual(SAMPLE_JOIN_ROW.advertencias);
-    expect(result?.menu.lunes.desayuno.nombre).toBe('Lentejas estofadas');
-    expect(result?.menu.lunes.comida.nombre).toBe('Curry de garbanzos');
-    expect(result?.menu.lunes.desayuno.meta?.coste_estimado).toBe('bajo');
+    expect(result?.menu.lunes.desayuno?.nombre).toBe('Lentejas estofadas');
+    expect(result?.menu.lunes.comida?.nombre).toBe('Curry de garbanzos');
+    expect(result?.menu.lunes.desayuno?.meta?.coste_estimado).toBe('bajo');
 
     // STORY-FRESCO-11: slotIds populated in parallel with menu, one id per slot.
     expect(result?.slotIds.lunes.desayuno).toBe('slot-lunes-desayuno');
@@ -167,6 +182,22 @@ describe('getMealPlanForWeek', () => {
     const { client } = createMockClient({ userId: 'user-123', planRow: INCOMPLETE_JOIN_ROW });
 
     await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
+  });
+
+  test('surfaces a slot with a null recipe as null, not a thrown error (FR-8.2 / AC Scenario 4, FRESCO-23)', async () => {
+    const { client } = createMockClient({ userId: 'user-123', planRow: UNSAFE_SLOT_JOIN_ROW });
+
+    const result = await getMealPlanForWeek(client, SEMANA_ISO);
+
+    expect(result).not.toBeNull();
+    expect(result?.menu.lunes.desayuno).toBeNull();
+    expect(result?.menu.lunes.comida?.nombre).toBe('Curry de garbanzos');
+    // the row still exists (unlike the truncated fixture above) — its
+    // slotId/estado must still reach the caller for the empty-slot cell.
+    // (`buildCompleteJoinRows()` sets lunes/desayuno's estado to 'cocinada'
+    // regardless of this fixture's recipe override — see its own comment.)
+    expect(result?.slotIds.lunes.desayuno).toBe('slot-lunes-desayuno');
+    expect(result?.estados.lunes.desayuno).toBe('cocinada');
   });
 });
 

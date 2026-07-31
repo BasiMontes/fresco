@@ -227,7 +227,8 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
 interface SlotCellProps {
   dia: DiaSemana
   tipo: TipoPlato
-  recipe: Recipe
+  /** `null` — FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for this slot. */
+  recipe: Recipe | null
   /** STORY-FRESCO-15 — current terminal state; gates the mark buttons vs a status badge. */
   estado: EstadoRecetaSlot
   /** True while this slot is part of an in-flight swap or mark-status call — blocks both. */
@@ -247,15 +248,21 @@ function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps)
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
 
+  // FR-8.2 / AC Scenario 4 (FRESCO-23): a slot with no safe recipe can't be
+  // dragged (nothing to move) or dropped onto (nothing to swap into) — out
+  // of scope per the tech-debt's own plan, kept simple rather than teaching
+  // `applySlotSwap()` a null-aware swap it has no real use case for yet.
+  const disabled = pending || recipe === null;
+
   const {
     attributes,
     listeners,
     setNodeRef: setDragRef,
     transform,
     isDragging,
-  } = useDraggable({ id, data: slotKey, disabled: pending });
+  } = useDraggable({ id, data: slotKey, disabled });
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey, disabled: pending });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey, disabled });
 
   const setRefs = React.useCallback(
     (node: HTMLElement | null) => {
@@ -294,13 +301,21 @@ function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps)
           {...attributes}
           aria-label="Arrastrar para reordenar"
           className="-m-1 shrink-0 cursor-grab touch-none p-1 disabled:cursor-not-allowed"
-          disabled={pending}
+          disabled={disabled}
         >
           <GripVertical className="size-4 text-tertiary" />
         </button>
         <div className="min-w-0 flex-1">
           <p className="text-caption uppercase text-tertiary">{tipo}</p>
-          <p className={cn('text-body-sm', estado === 'descartada' && 'line-through')}>{recipe.nombre}</p>
+          {recipe
+            ? (
+                <p className={cn('text-body-sm', estado === 'descartada' && 'line-through')}>{recipe.nombre}</p>
+              )
+            : (
+                <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
+                  Sin receta segura
+                </p>
+              )}
         </div>
       </div>
 
@@ -311,7 +326,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps)
         name's flex-1 wrapper to 0 width, rendering its text on top of the
         badge instead of beside it. Vertical stacking has no such conflict.
       */}
-      {estado === 'pendiente' && (
+      {recipe && estado === 'pendiente' && (
         <div className="flex justify-end gap-1">
           <button
             type="button"

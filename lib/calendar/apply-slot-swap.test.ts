@@ -53,13 +53,13 @@ describe('applySlotSwap', () => {
       { dia: 'martes', tipo: 'comida' },
     );
 
-    expect(result.lunes.cena.id).toBe('recipe-martes-comida');
-    expect(result.martes.comida.id).toBe('recipe-lunes-cena');
+    expect(result.lunes.cena?.id).toBe('recipe-martes-comida');
+    expect(result.martes.comida?.id).toBe('recipe-lunes-cena');
 
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
         if ((dia === 'lunes' && tipo === 'cena') || (dia === 'martes' && tipo === 'comida')) { continue; }
-        expect(result[dia][tipo].id).toBe(`recipe-${dia}-${tipo}`);
+        expect(result[dia][tipo]?.id).toBe(`recipe-${dia}-${tipo}`);
       }
     }
   });
@@ -73,10 +73,10 @@ describe('applySlotSwap', () => {
       { dia: 'miercoles', tipo: 'cena' },
     );
 
-    expect(result.miercoles.desayuno.id).toBe('recipe-miercoles-cena');
-    expect(result.miercoles.cena.id).toBe('recipe-miercoles-desayuno');
+    expect(result.miercoles.desayuno?.id).toBe('recipe-miercoles-cena');
+    expect(result.miercoles.cena?.id).toBe('recipe-miercoles-desayuno');
     // Sibling slot on the same day, untouched by the swap.
-    expect(result.miercoles.comida.id).toBe('recipe-miercoles-comida');
+    expect(result.miercoles.comida?.id).toBe('recipe-miercoles-comida');
   });
 
   test('does not mutate its input and returns a new grid object', () => {
@@ -93,8 +93,8 @@ describe('applySlotSwap', () => {
     // The input grid, and its day objects, are unchanged.
     expect(menu.lunes.cena).toBe(originalLunesCena);
     expect(menu.martes.comida).toBe(originalMartesComida);
-    expect(menu.lunes.cena.id).toBe('recipe-lunes-cena');
-    expect(menu.martes.comida.id).toBe('recipe-martes-comida');
+    expect(menu.lunes.cena?.id).toBe('recipe-lunes-cena');
+    expect(menu.martes.comida?.id).toBe('recipe-martes-comida');
 
     // The output is a distinct object from the input at every touched level.
     expect(result).not.toBe(menu);
@@ -112,7 +112,7 @@ describe('applySlotSwap', () => {
 
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
-        expect(reverted[dia][tipo].id).toBe(menu[dia][tipo].id);
+        expect(reverted[dia][tipo]?.id).toBe(menu[dia][tipo]?.id);
       }
     }
   });
@@ -123,7 +123,7 @@ describe('applySlotSwap', () => {
 
     const result = applySlotSwap(menu, slot, slot);
 
-    expect(result.jueves.comida.id).toBe('recipe-jueves-comida');
+    expect(result.jueves.comida?.id).toBe('recipe-jueves-comida');
     expect(result).not.toBe(menu);
   });
 

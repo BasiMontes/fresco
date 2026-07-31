@@ -17,6 +17,7 @@ import { callGemini } from '../_shared/gemini.ts'
 import { logger } from '../_shared/logger.ts'
 import { buildSystemPrompt, buildUserPrompt } from './prompt.ts'
 import { validateMenuOutput } from './validator.ts'
+import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
 import type {
   DiaSemana,
   GenerateMealPlanRequest,
@@ -168,6 +169,26 @@ Deno.serve(async (req: Request) => {
         break
       }
 
+      if (validation.unsafeSlots.length > 0) {
+        // FR-8.2 / AC Scenario 4 (FRESCO-23): the model correctly reported
+        // there's no safe recipe for these slots, with a real advertencia —
+        // this is a valid, deliverable outcome (20/21, 19/21, ... slots),
+        // never a full failure. Retrying would feed the identical catalog
+        // and profile and reproduce the same result, so accept it as-is
+        // instead of burning the remaining attempts on a foregone
+        // conclusion.
+        menuData = parsed as MenuSemanal
+        if (validation.warnings.length > 0) {
+          menuData.advertencias = [...(menuData.advertencias ?? []), ...validation.warnings]
+        }
+        logger.warn('Menu generation delivered with unsafe slots flagged', {
+          fn: FN_NAME,
+          attempt,
+          unsafeSlots: validation.unsafeSlots,
+        })
+        break
+      }
+
       lastErrors = validation.errors
       logger.warn('Menu validation failed', { fn: FN_NAME, attempt, errors: validation.errors })
     }
@@ -213,13 +234,19 @@ Deno.serve(async (req: Request) => {
     // manual compensating delete of the orphaned meal_plans row — documented
     // as a known reliability gap, not silently hidden.
     const slots = DIAS.flatMap(dia =>
-      TIPOS.map(tipo => ({
-        meal_plan_id: mealPlan.id,
-        recipe_id: menuData!.menu[dia][tipo],
-        dia,
-        tipo_plato: tipo,
-        estado: 'pendiente' as const,
-      }))
+      TIPOS.map(tipo => {
+        const recipeId = menuData!.menu[dia][tipo]
+        return {
+          meal_plan_id: mealPlan.id,
+          // FR-8.2 / AC Scenario 4 (FRESCO-23): the sentinel is never a real
+          // recipe id — persisted as `null` (nullable since the migration
+          // that shipped alongside this change), not the literal string.
+          recipe_id: recipeId === NO_SAFE_RECIPE_SENTINEL ? null : recipeId,
+          dia,
+          tipo_plato: tipo,
+          estado: 'pendiente' as const,
+        }
+      })
     )
 
     const { error: slotsError } = await supabase.from('meal_plan_recipes').insert(slots)
@@ -236,7 +263,10 @@ Deno.serve(async (req: Request) => {
     const menuEnriquecido = Object.fromEntries(
       DIAS.map(dia => [
         dia,
-        Object.fromEntries(TIPOS.map(tipo => [tipo, recipeMap.get(menuData!.menu[dia][tipo])])),
+        Object.fromEntries(TIPOS.map(tipo => {
+          const recipeId = menuData!.menu[dia][tipo]
+          return [tipo, recipeId === NO_SAFE_RECIPE_SENTINEL ? null : recipeMap.get(recipeId) ?? null]
+        })),
       ])
     )
 

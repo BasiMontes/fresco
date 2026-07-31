@@ -18,7 +18,12 @@ export interface GenerateMealPlanRequest {
 export interface GenerateMealPlanResponse {
   meal_plan_id: string
   semana_iso: string
-  menu: Record<DiaSemana, Record<TipoPlatoSlot, Recipe>>
+  /**
+   * A slot is `null` when the model correctly reported no safe recipe exists
+   * for it (FR-8.2 / AC Scenario 4, FRESCO-23) — paired with an explanatory
+   * entry in `advertencias`, never silent.
+   */
+  menu: Record<DiaSemana, Record<TipoPlatoSlot, Recipe | null>>
   /** MUST be surfaced to the user when non-empty — FR-2.10 / FR-8.2. */
   advertencias: string[]
   /** FR-5.5, Pro + real history only. `null` otherwise — kept separate from `advertencias`. */

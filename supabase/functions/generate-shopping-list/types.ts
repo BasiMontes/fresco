@@ -29,7 +29,8 @@ export interface ShoppingListModelOutput {
 
 /** Row shape of the `meal_plan_recipes -> recipes` join used in index.ts step 6. */
 export interface SlotWithRecipeRow {
-  recipe_id: string
+  /** `null` for an FR-8.2 / AC Scenario 4 (FRESCO-23) unsafe-slot row — the `!recipe` check below already skips it. */
+  recipe_id: string | null
   recipes: {
     id: string
     meta: { raciones?: number } | null

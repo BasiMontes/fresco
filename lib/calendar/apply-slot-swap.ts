@@ -7,7 +7,12 @@ export interface SlotKey {
   tipo: TipoPlato
 }
 
-export type MenuGrid = Record<DiaSemana, Record<TipoPlato, Recipe>>;
+/**
+ * `null` marks a slot the model correctly reported has no safe recipe for
+ * the user's restrictions (FR-8.2 / AC Scenario 4, FRESCO-23) — paired with
+ * an `advertencias` entry, never silent.
+ */
+export type MenuGrid = Record<DiaSemana, Record<TipoPlato, Recipe | null>>;
 
 /**
  * Pure helper (STORY-FRESCO-11) — returns a NEW grid with the recipes at

@@ -29,7 +29,12 @@ export interface MenuSemanalPersistido {
   /** `meal_plans.id` (STORY-FRESCO-13) — addresses this plan for `generateShoppingList()`. */
   mealPlanId: string
   semanaIso: string
-  menu: Record<DiaSemana, Record<TipoPlato, Recipe>>
+  /**
+   * A slot is `null` when the model correctly reported no safe recipe exists
+   * for it (FR-8.2 / AC Scenario 4, FRESCO-23) — paired with an
+   * `advertencias` entry, never silent.
+   */
+  menu: Record<DiaSemana, Record<TipoPlato, Recipe | null>>
   /**
    * `meal_plan_recipes.id` per slot (STORY-FRESCO-11) — lets a caller address
    * a specific slot's row (e.g. for `swapMealPlanSlots()`) without changing
@@ -76,7 +81,7 @@ function toRecipe(row: RecipeRow): Recipe {
 
 /** Return shape of `reshapeMenu()` — the recipe grid plus its parallel slot-id and estado grids. */
 interface ReshapedMenu {
-  menu: Record<DiaSemana, Record<TipoPlato, Recipe>>
+  menu: Record<DiaSemana, Record<TipoPlato, Recipe | null>>
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
   estados: Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>
 }
@@ -95,27 +100,30 @@ interface ReshapedMenu {
  * desayuno/comida/cena) — narrowed to `TipoPlato` here rather than widening
  * the page-facing return type for a slot that can't occur.
  *
- * Validates all 21 slots are present before returning: `generate-meal-plan`'s
+ * Validates all 21 ROWS are present before returning: `generate-meal-plan`'s
  * `index.ts` documents a known non-transactional-write gap (NFR-REL-2, no
  * native multi-table transaction across the `meal_plans` + `meal_plan_recipes`
  * inserts) that can leave a plan header with an incomplete set of children.
  * Every page consuming this grid indexes it unconditionally
  * (`plan.menu[dia][tipo]`) with no undefined guard, so a silent partial grid
  * would crash the page render instead of falling back to the pages' existing
- * "no plan yet" empty state — fail fast here instead, exactly like the
- * missing-recipe check below, so callers' existing catch blocks handle it.
+ * "no plan yet" empty state — fail fast here instead, so callers' existing
+ * catch blocks handle it. Presence is tracked by ROW, not by a truthy
+ * `recipes` join: a row can legitimately carry `recipes: null` (FR-8.2 / AC
+ * Scenario 4, FRESCO-23 — the model correctly reported no safe recipe for
+ * that slot), which must reach the page as `menu[dia][tipo] === null`, not
+ * be conflated with the row never having been written at all.
  */
 function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
-  const menu = {} as Record<DiaSemana, Record<TipoPlato, Recipe>>;
+  const menu = {} as Record<DiaSemana, Record<TipoPlato, Recipe | null>>;
   const slotIds = {} as Record<DiaSemana, Record<TipoPlato, string>>;
   const estados = {} as Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
+  const seenSlots = new Set<string>();
 
   for (const row of rows) {
-    if (!row.recipes) {
-      throw new MealPlanError(`Falta la receta para el hueco ${row.dia}/${row.tipo_plato} del menú.`);
-    }
-    menu[row.dia] ??= {} as Record<TipoPlato, Recipe>;
-    menu[row.dia][row.tipo_plato as TipoPlato] = toRecipe(row.recipes);
+    seenSlots.add(`${row.dia}.${row.tipo_plato}`);
+    menu[row.dia] ??= {} as Record<TipoPlato, Recipe | null>;
+    menu[row.dia][row.tipo_plato as TipoPlato] = row.recipes ? toRecipe(row.recipes) : null;
     slotIds[row.dia] ??= {} as Record<TipoPlato, string>;
     slotIds[row.dia][row.tipo_plato as TipoPlato] = row.id;
     estados[row.dia] ??= {} as Record<TipoPlato, EstadoRecetaSlot>;
@@ -124,7 +132,7 @@ function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
 
   for (const dia of DIAS) {
     for (const tipo of TIPOS) {
-      if (!menu[dia]?.[tipo]) {
+      if (!seenSlots.has(`${dia}.${tipo}`)) {
         throw new MealPlanError(`El menú persistido está incompleto: falta el hueco ${dia}/${tipo}.`);
       }
     }

@@ -21,6 +21,7 @@
 // conventions this implementation matches.
 
 import type { Recipe, UserProfile } from './types.ts'
+import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
 
 const DIETA_LABELS: Record<string, string> = {
   dieta_vegetariano: 'vegetariano',
@@ -111,7 +112,9 @@ export function buildSystemPrompt(): string {
 Rellena el array "advertencias" cuando:
 - Una franja se quede sin ninguna receta adecuada disponible (indica qué sustituiste y por qué).
 - El presupuesto sea demasiado ajustado para mantener variedad.
-- CASO CRÍTICO DE SEGURIDAD ALIMENTARIA: ninguna receta del catálogo cumple una regla absoluta (alérgeno, ingrediente no deseado, historial, presupuesto) para una franja concreta. En este caso NUNCA inventes ni fuerces una receta insegura para rellenar el hueco — dejar la advertencia explícita es obligatorio, un menú nunca debe entregarse como seguro en silencio.
+- CASO CRÍTICO DE SEGURIDAD ALIMENTARIA: ninguna receta del catálogo cumple una regla absoluta (alérgeno, ingrediente no deseado, historial, presupuesto) para una franja concreta. En este caso NUNCA inventes ni fuerces una receta insegura para rellenar el hueco. En su lugar:
+  1. Pon exactamente el valor "${NO_SAFE_RECIPE_SENTINEL}" como "recipe_id" de esa franja — nunca un id real del catálogo que no cumpla las reglas, y nunca dejes el campo vacío o ambiguo. Esta es la ÚNICA situación donde "recipe_id" puede no ser un id real.
+  2. Añade una advertencia nombrando exactamente el día y la comida afectados (ej. "No hay ninguna receta segura para el desayuno del lunes con tus restricciones declaradas."). Dejar la advertencia explícita es obligatorio — un menú nunca debe entregarse como seguro en silencio.
 
 ## EXPLICACIÓN DE APRENDIZAJE ("explicacion_aprendizaje") (FR-5.5)
 Este campo es independiente de "advertencias" — nunca mezcles su contenido con las advertencias de seguridad/calidad de arriba.
@@ -134,7 +137,7 @@ Responde EXCLUSIVAMENTE con este JSON, sin ningún texto adicional:
   "advertencias": [],
   "explicacion_aprendizaje": null
 }
-Cada "recipe_id" debe ser exactamente uno de los ids listados en el catálogo del mensaje de usuario.`
+Cada "recipe_id" debe ser exactamente uno de los ids listados en el catálogo del mensaje de usuario, salvo el caso "${NO_SAFE_RECIPE_SENTINEL}" descrito arriba.`
 }
 
 export interface BuildUserPromptParams {

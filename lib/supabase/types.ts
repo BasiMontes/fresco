@@ -22,7 +22,7 @@ export type Database = {
           id: string
           meal_plan_id: string
           rating: number | null
-          recipe_id: string
+          recipe_id: string | null
           tipo_plato: Database["public"]["Enums"]["tipo_plato"]
           updated_at: string
         }
@@ -33,7 +33,7 @@ export type Database = {
           id?: string
           meal_plan_id: string
           rating?: number | null
-          recipe_id: string
+          recipe_id?: string | null
           tipo_plato: Database["public"]["Enums"]["tipo_plato"]
           updated_at?: string
         }
@@ -44,7 +44,7 @@ export type Database = {
           id?: string
           meal_plan_id?: string
           rating?: number | null
-          recipe_id?: string
+          recipe_id?: string | null
           tipo_plato?: Database["public"]["Enums"]["tipo_plato"]
           updated_at?: string
         }
@@ -346,6 +346,10 @@ export type Database = {
           p_list_id: string
           p_pasillo_idx: number
         }
+        Returns: undefined
+      }
+      reassign_guest_data: {
+        Args: { p_from_user_id: string; p_to_user_id: string }
         Returns: undefined
       }
       show_limit: { Args: never; Returns: number }

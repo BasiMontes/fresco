@@ -9,6 +9,7 @@
 
 import type { DiaSemana, Recipe, TipoPlatoSlot } from './types.ts'
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
+import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
@@ -29,6 +30,16 @@ export interface ValidationResult {
   valid: boolean
   errors: string[]
   warnings: string[]
+  /**
+   * FR-8.2 / AC Scenario 4 (FRESCO-23): slots (`"dia.tipo"`) the model
+   * correctly flagged via `NO_SAFE_RECIPE_SENTINEL`, paired with a real
+   * `advertencias` entry — never populated for a malformed/ambiguous
+   * response (that stays a generic error, still retried normally). Retrying
+   * a genuinely reported unsafe slot is pointless — the same catalog and
+   * profile produce the same result — so `index.ts` stops immediately when
+   * this is non-empty instead of burning the remaining attempts.
+   */
+  unsafeSlots: string[]
 }
 
 export interface ValidateMenuOutputParams {
@@ -49,9 +60,10 @@ export function validateMenuOutput({
 }: ValidateMenuOutputParams): ValidationResult {
   const errors: string[] = []
   const warnings: string[] = []
+  const unsafeSlots: string[] = []
 
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { valid: false, errors: ['La respuesta de la IA no es un objeto JSON válido'], warnings }
+    return { valid: false, errors: ['La respuesta de la IA no es un objeto JSON válido'], warnings, unsafeSlots }
   }
 
   const menu = raw as Record<string, unknown>
@@ -61,7 +73,7 @@ export function validateMenuOutput({
   }
 
   if (!menu.menu || typeof menu.menu !== 'object') {
-    return { valid: false, errors: [...errors, 'Falta el campo "menu"'], warnings }
+    return { valid: false, errors: [...errors, 'Falta el campo "menu"'], warnings, unsafeSlots }
   }
 
   const menuDias = menu.menu as Record<string, unknown>
@@ -79,6 +91,15 @@ export function validateMenuOutput({
 
     for (const tipo of TIPOS) {
       const recipeId = diaObj[tipo]
+
+      if (recipeId === NO_SAFE_RECIPE_SENTINEL) {
+        // FR-8.2 / AC Scenario 4: correctly reported below, once we know
+        // whether a real advertencia accompanies it — recorded here,
+        // enforced after the loop. Never counted toward budget/repeat
+        // checks; it isn't a real recipe.
+        unsafeSlots.push(`${dia}.${tipo}`)
+        continue
+      }
 
       if (!recipeId || typeof recipeId !== 'string') {
         errors.push(`Slot vacío: ${dia}.${tipo}`)
@@ -101,6 +122,24 @@ export function validateMenuOutput({
         errors.push(`Receta repetida en ${dia}.${tipo}: ${recipeId}`)
       }
       usedIds.add(recipeId)
+    }
+  }
+
+  // FR-8.2's contract: a sentinel-flagged slot must come with a real,
+  // non-empty advertencia — "never silent". If the model used the sentinel
+  // without one, this is a non-compliant response, not a cleanly-reported
+  // one: treat it as a generic error (full retry, per the existing flow)
+  // instead of the fast-fail path below, which only applies to a response
+  // that actually honored the "never silent" rule.
+  if (unsafeSlots.length > 0) {
+    const hasAdvertencia = Array.isArray(menu.advertencias)
+      && menu.advertencias.some(adv => typeof adv === 'string' && adv.trim().length > 0)
+
+    if (!hasAdvertencia) {
+      errors.push(
+        `La IA marcó ${unsafeSlots.length} franja(s) sin receta segura (${unsafeSlots.join(', ')}) pero no incluyó ninguna advertencia explicativa`,
+      )
+      unsafeSlots.length = 0
     }
   }
 
@@ -137,5 +176,5 @@ export function validateMenuOutput({
     }
   }
 
-  return { valid: errors.length === 0, errors, warnings }
+  return { valid: errors.length === 0 && unsafeSlots.length === 0, errors, warnings, unsafeSlots }
 }
