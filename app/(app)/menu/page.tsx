@@ -30,6 +30,7 @@ import { createClient } from '@/lib/supabase/server';
  */
 export default async function MenuPage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   let plan: MenuSemanalPersistido | null;
   try {
     plan = await getMealPlanForWeek(supabase);
@@ -64,6 +65,17 @@ export default async function MenuPage() {
     <div className="mx-auto max-w-3xl">
       <h1 className="text-h2">Hoy</h1>
       <p className="mt-1 text-body-md text-tertiary">Tu menú de lunes, listo.</p>
+
+      {user?.is_anonymous && (
+        <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">
+          <CardContent className="flex flex-col items-start gap-3 text-body-sm sm:flex-row sm:items-center sm:justify-between">
+            <p>Crea una cuenta para no perder este menú.</p>
+            <Link href="/signup" className={buttonVariants({ variant: 'action' })}>
+              Guardar mi menú
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       <AlertBanner
         advertencias={plan.advertencias}

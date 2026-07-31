@@ -22,13 +22,43 @@ export default function SignupPage() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupError, setSignupError] = useState<string | null>(null);
+  const [emailConflict, setEmailConflict] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
     setSignupError(null);
+    setEmailConflict(false);
     try {
       const client = createClient();
+      const { data: { user } } = await client.auth.getUser();
+
+      // FRESCO-19 (Progressive Signup, US 7.1): a guest arrives here with an
+      // active anonymous session (ADR-0003) — converting it via `updateUser`
+      // preserves the same `user_id`, so the menu she already generated
+      // stays hers. `signUp` would create an unrelated new user instead.
+      if (user?.is_anonymous) {
+        const { error } = await client.auth.updateUser({ email, password });
+        if (error) {
+          if (error.code === 'email_exists') {
+            // AC (edge case): the email belongs to a different, existing
+            // account — this must not fail silently nor discard her guest
+            // session as if it worked. Real data reassignment to that
+            // account is tracked as a separate tech-story (ADR-0003 names
+            // this exact branch as a known open risk); for now she's told
+            // clearly and pointed at the account she already has.
+            setEmailConflict(true);
+          }
+          else {
+            setSignupError(error.message);
+          }
+          return;
+        }
+        // She already has a profile + generated menu — back to it, not onboarding.
+        router.push('/menu');
+        return;
+      }
+
       const { error } = await client.auth.signUp({ email, password });
       if (error) {
         setSignupError(error.message);
@@ -79,6 +109,18 @@ export default function SignupPage() {
         {signupError && (
           <p data-testid="signup_error_message" className="mt-4 text-body-sm text-error">
             {signupError}
+          </p>
+        )}
+
+        {emailConflict && (
+          <p data-testid="signup_email_conflict_message" className="mt-4 text-body-sm text-error">
+            Ya existe una cuenta con ese email.
+            {' '}
+            <Link href="/login" className="text-primary">
+              Inicia sesión
+            </Link>
+            {' '}
+            para continuar.
           </p>
         )}
 

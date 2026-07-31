@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19)
 **Epic:** [FRESCO-18](https://basiliomontescastano.atlassian.net/browse/FRESCO-18) (Registro Progresivo)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
@@ -23,7 +23,7 @@ Como Laura, una vez que ya he visto mi menú semanal generado como invitada, qui
 
 ### Historia (1)
 
-- [FRESCO-17](https://basiliomontescastano.atlassian.net/browse/FRESCO-17): Modo Invitado | Generar un menú sin crear cuenta _(Control de calidad)_
+- [FRESCO-17](https://basiliomontescastano.atlassian.net/browse/FRESCO-17): Modo Invitado | Generar un menú sin crear cuenta _(Finalizada)_
 
 ---
 
