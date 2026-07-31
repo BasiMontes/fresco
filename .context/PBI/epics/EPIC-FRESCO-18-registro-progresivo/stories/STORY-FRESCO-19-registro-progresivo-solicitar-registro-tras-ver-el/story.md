@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19)
 **Epic:** [FRESCO-18](https://basiliomontescastano.atlassian.net/browse/FRESCO-18) (Registro Progresivo)
 **Type:** Historia
-**Status:** WIP
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -24,6 +24,10 @@ Como Laura, una vez que ya he visto mi menú semanal generado como invitada, qui
 ### Historia (1)
 
 - [FRESCO-17](https://basiliomontescastano.atlassian.net/browse/FRESCO-17): Modo Invitado | Generar un menú sin crear cuenta _(Finalizada)_
+
+### Tarea (1)
+
+- [FRESCO-20](https://basiliomontescastano.atlassian.net/browse/FRESCO-20): Reasignar datos de invitada a cuenta existente en conflicto de email (FRESCO-19) _(Listo)_
 
 ---
 
