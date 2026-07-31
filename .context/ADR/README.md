@@ -63,6 +63,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | --- | ----- | ------ | ---------- | ------------- |
 | [ADR-0001](./ADR-0001-behavioral-learning-moat.md) | Behavioral-learning moat as the Free/Pro pricing boundary | Proposed | — | — |
 | [ADR-0002](./ADR-0002-position-swaps-bypass-learning-trigger.md) | Slot-position swaps must bypass `recipe_learning_trigger` | Accepted | — | — |
+| [ADR-0003](./ADR-0003-guest-auth-anonymous-sign-in.md) | Guest-mode authentication via Supabase Anonymous Sign-In | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
