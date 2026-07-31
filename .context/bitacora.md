@@ -668,3 +668,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar la automatización real que faltaba, ahora que existía la cuenta dedicada para hacerlo sin pisar el fixture compartido de `@aprendizaje`.
 
 **Siguiente**: `regression.feature` con cobertura automatizada casi completa (10 de 11 automatizados). Sin pendientes de ingeniería.
+
+---
+
+## 2026-07-31 — Automatizados los últimos 4 escenarios de invitado (banner + trío de reasignación)
+
+**Qué**: user pidió automatizar los 4 escenarios de `@registro-progresivo` que quedaban sin cubrir. Pedido inicial ambiguo ("cerrá FRESCO-24 con el resto de invitado, automatizá el que falta") — verificado antes de actuar: FRESCO-24 es un ticket de contenido sin relación real con tests (confirmado con el user, descartado), y quedaban 4 escenarios sin automatizar, no 1 (confirmado también).
+- `tests/steps/registro-progresivo-edge.steps.ts` (nuevo): banner "guardar mi menú" (generación real de invitada), detección de conflicto de email, reasignación con contraseña correcta (real `reassign-guest-data`, verificado por REST que la cuenta real conserva exactamente 1 plan sin duplicar), reasignación con contraseña incorrecta.
+- Reutiliza `PRO_TEST_USER_EMAIL` como la cuenta "ya existente" para el conflicto — seguro por diseño: `reassign_guest_data()` descarta el plan conflictivo de la invitada cuando el destino ya tiene uno para esa semana, nunca pisa los datos reales.
+- Encontrado y arreglado un bug propio antes de correr nada: dos archivos de step distintos (`aprendizaje-pro.steps.ts` y este nuevo) definían el mismo texto `Cuando visita /menu` con lógica distinta (uno hace login completo, el otro asume sesión de invitada ya activa) — colisión real de step definitions. Renombrado uno de los dos (`permanece en /menu`) para desambiguar.
+- Suite completa: 15/15 verde.
+- `regression.feature`: los 4 pasan a `@automatizado`. Ya no queda ningún escenario de `@registro-progresivo` sin cubrir — 14 de 15 escenarios del archivo completo están automatizados; solo queda el de reintentos agotados de IA (sin seam de mockeo posible).
+- Commiteado y pusheado a `main` (`62b8d66`).
+
+**Por qué**: cerrar la automatización completa de Modo Invitado/Registro Progresivo, verificando primero qué pedía realmente el user en vez de asumir un pedido confuso.
+
+**Siguiente**: cobertura de automatización prácticamente completa. Sin pendientes de ingeniería.
