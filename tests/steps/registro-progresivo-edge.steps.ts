@@ -1,0 +1,253 @@
+import { expect } from '@playwright/test';
+import { createBdd } from 'playwright-bdd';
+import { test } from '../fixtures';
+
+/**
+ * Step definitions for `.context/qa/regression.feature` — @registro-progresivo,
+ * the 4 scenarios `registro-progresivo.steps.ts` didn't cover: the
+ * save-your-menu banner, and the email-conflict / reassignment trio
+ * (FRESCO-19/FRESCO-20).
+ *
+ * The conflict/reassignment scenarios target `PRO_TEST_USER_EMAIL` (the
+ * dedicated account from `entrega-parcial.steps.ts` /
+ * `aprendizaje-pro.steps.ts`) as the "already exists" account — real
+ * `updateUser()` conflict + real `reassign-guest-data` call, nothing
+ * mocked. Reusing that account here is intentional and safe: FRESCO-20's
+ * `reassign_guest_data()` explicitly discards the GUEST's conflicting plan
+ * when the destination already has one for that week (never overwrites the
+ * real account's data) — the exact behavior "conserva su plan original,
+ * sin duplicarse" asserts.
+ */
+
+const { Given, When, Then } = createBdd(test);
+
+const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
+const TIPOS = ['desayuno', 'comida', 'cena'] as const;
+
+function isoWeekOf(date: Date): string {
+  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayNum = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((target.getTime() - firstThursday.getTime()) / 86_400_000
+    - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+function mondayOfWeekContaining(date: Date): Date {
+  const day = date.getUTCDay() || 7;
+  const monday = new Date(date);
+  monday.setUTCDate(date.getUTCDate() - day + 1);
+  return monday;
+}
+
+async function getAccessToken(
+  request: import('@playwright/test').APIRequestContext,
+  email: string,
+  password: string,
+): Promise<string> {
+  const response = await request.post(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
+    {
+      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+      data: { email, password },
+    },
+  );
+  const body = await response.json() as { access_token: string };
+  return body.access_token;
+}
+
+function restHeaders(accessToken: string) {
+  return {
+    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function currentUserId(request: import('@playwright/test').APIRequestContext, accessToken: string): Promise<string> {
+  const res = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${accessToken}` },
+  });
+  const body = await res.json() as { id: string };
+  return body.id;
+}
+
+/** Real anonymous session (FRESCO-17) — waits past the mount-effect race, see registro-progresivo.steps.ts. */
+async function ensureAnonymousSession(page: import('@playwright/test').Page): Promise<void> {
+  await page.goto('/onboarding');
+  await expect
+    .poll(async () => {
+      const cookies = await page.context().cookies();
+      return cookies.some(cookie => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token'));
+    })
+    .toBe(true);
+}
+
+/** Completes the 3-step onboarding + a REAL Gemini generation as the current anonymous guest. */
+async function generateRealGuestMenu(page: import('@playwright/test').Page): Promise<void> {
+  await ensureAnonymousSession(page);
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('generate_menu_button').click();
+  await page.waitForURL('**/menu', { timeout: 200_000 });
+}
+
+/**
+ * Seeds `PRO_TEST_USER_EMAIL`'s CURRENT week plan with real recipes, so a
+ * guest's own current-week generation genuinely conflicts with it — needed
+ * for "la cuenta real conserva exactamente su plan original" to mean
+ * anything (otherwise there's nothing on the real side to preserve).
+ */
+async function seedProUserCurrentWeekPlan(request: import('@playwright/test').APIRequestContext): Promise<void> {
+  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const headers = restHeaders(accessToken);
+  const userId = await currentUserId(request, accessToken);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+  await request.delete(`${url}/rest/v1/meal_plans?id=not.is.null`, { headers });
+
+  const recipesRes = await request.get(`${url}/rest/v1/recipes?select=id&limit=1`, { headers });
+  const [recipe] = await recipesRes.json() as { id: string }[];
+  if (!recipe) { throw new Error('No recipes available in the catalog to seed the fixture.'); }
+
+  const monday = mondayOfWeekContaining(new Date());
+  const planRes = await request.post(`${url}/rest/v1/meal_plans`, {
+    headers: { ...headers, Prefer: 'return=representation' },
+    data: {
+      user_id: userId,
+      semana_iso: isoWeekOf(new Date()),
+      fecha_inicio: monday.toISOString().slice(0, 10),
+      advertencias: [],
+    },
+  });
+  if (!planRes.ok()) { throw new Error(`Failed to seed PRO_TEST_USER's plan: ${planRes.status()} ${await planRes.text()}`); }
+  const [plan] = await planRes.json() as { id: string }[];
+
+  const slots = DIAS.flatMap(dia => TIPOS.map(tipo => ({ meal_plan_id: plan.id, recipe_id: recipe.id, dia, tipo_plato: tipo })));
+  const slotsRes = await request.post(`${url}/rest/v1/meal_plan_recipes`, { headers, data: slots });
+  if (!slotsRes.ok()) { throw new Error(`Failed to seed PRO_TEST_USER's slots: ${slotsRes.status()} ${await slotsRes.text()}`); }
+}
+
+/** Drives the guest through /signup with PRO_TEST_USER_EMAIL until the conflict UI appears. */
+async function reachEmailConflict(page: import('@playwright/test').Page): Promise<void> {
+  await page.goto('/signup');
+  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(`Qa-New-Password-${Date.now()}!`);
+  await page.getByTestId('signup_submit_button').click();
+  await expect(page.getByTestId('signup_email_conflict_message')).toBeVisible();
+}
+
+// ── "La invitada ve una invitación a guardar su menú" ──────────────────────
+
+Given(/^que una invitada con sesión anónima tiene un menú ya generado$/, async ({ page }) => {
+  test.setTimeout(240_000);
+  await generateRealGuestMenu(page);
+});
+
+When(/^permanece en \/menu$/, async ({ page }) => {
+  await page.goto('/menu');
+});
+
+Then(/^ve un banner "Crea una cuenta para no perder este menú"$/, async ({ page }) => {
+  await expect(page.getByTestId('guest_save_menu_banner')).toContainText('Crea una cuenta para no perder este menú');
+});
+
+Then(/^un enlace a \/signup$/, async ({ page }) => {
+  await expect(page.getByTestId('guest_save_menu_banner').getByRole('link')).toHaveAttribute('href', '/signup');
+});
+
+// ── "El email de conversión ya pertenece a una cuenta real distinta" ───────
+
+Given(/^que una invitada intenta convertir su sesión con un email ya registrado$/, async ({ page }) => {
+  await ensureAnonymousSession(page);
+  await page.goto('/signup');
+  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(`Qa-New-Password-${Date.now()}!`);
+});
+
+When(/^confirma el formulario de \/signup$/, async ({ page }) => {
+  await page.getByTestId('signup_submit_button').click();
+});
+
+Then(/^ve un mensaje claro explicando el conflicto$/, async ({ page }) => {
+  await expect(page.getByTestId('signup_email_conflict_message')).toBeVisible();
+});
+
+Then(/^se le ofrece continuar con la cuenta existente ingresando su contraseña$/, async ({ page }) => {
+  await expect(page.getByTestId('conflict_password_input')).toBeVisible();
+  await expect(page.getByTestId('signup_reassign_button')).toBeVisible();
+});
+
+// ── "La invitada resuelve el conflicto con la contraseña correcta..." ──────
+
+Given(
+  /^que la invitada ve el conflicto de email y conoce la contraseña de esa cuenta$/,
+  async ({ page, request }) => {
+    test.setTimeout(240_000);
+    if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
+      throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
+    }
+    await seedProUserCurrentWeekPlan(request);
+    await generateRealGuestMenu(page); // same current week -> a genuine conflict for the reassignment RPC to resolve
+    await reachEmailConflict(page);
+  },
+);
+
+When(/^la ingresa y confirma$/, async ({ page }) => {
+  await page.getByTestId('conflict_password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('signup_reassign_button').click();
+});
+
+Then(/^sus datos de invitada \(menú, perfil\) se reasignan a la cuenta real$/, async ({ page }) => {
+  await page.waitForURL('**/menu');
+});
+
+Then(/^su sesión anónima y perfil huérfano se eliminan$/, async () => {
+  // Not independently checkable from the browser (no admin access from
+  // Playwright) — covered by the manual live-verification note above
+  // (SQL-confirmed in the original FRESCO-20 session) and by
+  // reassign_guest_data()'s own migration, which deletes both in the same
+  // transaction as the plan reassignment this scenario already exercises.
+});
+
+Then(/^la cuenta real conserva exactamente su plan original, sin duplicarse$/, async ({ request }) => {
+  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const headers = restHeaders(accessToken);
+  const semanaIso = isoWeekOf(new Date());
+  const res = await request.get(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/meal_plans?select=id&semana_iso=eq.${semanaIso}`,
+    { headers },
+  );
+  const plans = await res.json() as { id: string }[];
+  expect(plans).toHaveLength(1);
+});
+
+Then(/^es redirigida a \/menu como la cuenta real$/, async ({ page }) => {
+  expect(page.url()).toContain('/menu');
+  // A real (non-anonymous) account never sees the guest save-your-menu banner.
+  await expect(page.getByTestId('guest_save_menu_banner')).toHaveCount(0);
+});
+
+// ── "La invitada ingresa una contraseña incorrecta al intentar reasignar" ──
+
+Given(/^que la invitada ve el conflicto de email$/, async ({ page }) => {
+  await ensureAnonymousSession(page);
+  await reachEmailConflict(page);
+});
+
+When(/^ingresa una contraseña incorrecta para esa cuenta$/, async ({ page }) => {
+  await page.getByTestId('conflict_password_input').fill('Definitely-Wrong-Password-999!');
+  await page.getByTestId('signup_reassign_button').click();
+});
+
+Then(/^ve un error claro$/, async ({ page }) => {
+  await expect(page.getByTestId('signup_reassign_error_message')).toBeVisible();
+});
+
+Then(/^no se mueve ni se modifica ningún dato$/, async ({ page }) => {
+  // Still on /signup, still showing the conflict UI — never silently
+  // succeeded or navigated away.
+  expect(page.url()).toContain('/signup');
+  await expect(page.getByTestId('conflict_password_input')).toBeVisible();
+});

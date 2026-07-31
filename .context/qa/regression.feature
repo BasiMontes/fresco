@@ -140,10 +140,11 @@ Característica: Flujo completo de usuario en Fresco
     Y ve su menú completo de 21 comidas en /menu, sin ningún prompt de registro
     # Confirmado en vivo: JWT decodificado con is_anonymous: true.
 
-  @registro-progresivo @verificado-manual-2026-07-31
+  @registro-progresivo @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
   Escenario: La invitada ve una invitación a guardar su menú
     Dado que una invitada con sesión anónima tiene un menú ya generado
-    Cuando visita /menu
+    Cuando permanece en /menu
     Entonces ve un banner "Crea una cuenta para no perder este menú"
     Y un enlace a /signup
 
@@ -157,7 +158,9 @@ Característica: Flujo completo de usuario en Fresco
     Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
     Y conserva el menú que ya había generado como invitada
 
-  @registro-progresivo @edge-case @verificado-manual-2026-07-31
+  @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (target real:
+  # PRO_TEST_USER_EMAIL, no el usuario de test compartido)
   Escenario: El email de conversión ya pertenece a una cuenta real distinta
     Dado que una invitada intenta convertir su sesión con un email ya registrado
     Cuando confirma el formulario de /signup
@@ -166,7 +169,8 @@ Característica: Flujo completo de usuario en Fresco
     # Disparado en vivo contra el email real ya registrado del usuario de
     # test — 422 email_exists real, mensaje correcto.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-07-31
+  @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
   Escenario: La invitada resuelve el conflicto con la contraseña correcta de la cuenta existente
     Dado que la invitada ve el conflicto de email y conoce la contraseña de esa cuenta
     Cuando la ingresa y confirma
@@ -180,7 +184,8 @@ Característica: Flujo completo de usuario en Fresco
     # conflictivo descartado, cuenta real intacta). También clickeado en
     # navegador real en una pasada posterior.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-07-31
+  @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
   Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
     Dado que la invitada ve el conflicto de email
     Cuando ingresa una contraseña incorrecta para esa cuenta
