@@ -6,7 +6,7 @@ import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { createClient } from '@/lib/supabase/server';
 
@@ -83,16 +83,16 @@ export default async function MenuPage() {
         className="mt-4"
       />
 
-      <Card variant="insight" className="mt-6">
-        <CardHeader>
-          <p className="text-h6 uppercase">Fresco aprendió</p>
-          <CardTitle>Menos pimentón picante esta semana</CardTitle>
-        </CardHeader>
-        <CardContent className="text-body-sm">
-          Descartaste el curry picante la semana pasada, así que hemos suavizado las especias en
-          tus platos con curry.
-        </CardContent>
-      </Card>
+      {/*
+       * The "Fresco aprendió" insight card (FR-5.5, Pro-only, real-history-
+       * gated) is removed here — it was hardcoded, static mock copy shown
+       * unconditionally to every user (Free, Pro, even anonymous guests),
+       * fabricating a learning event that never happened. No real per-user
+       * gate or content source exists yet (US 5.2/5.3 have no story seeded
+       * under EPIC-FRESCO-5 — only US 5.1's toggle, FRESCO-15, does). See
+       * the bug ticket + `review.md` for the full trace. Do not re-add a
+       * placeholder here; wire it to a real, gated data source instead.
+       */}
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(['desayuno', 'comida', 'cena'] as const).map(slot => (
