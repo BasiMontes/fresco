@@ -15,6 +15,7 @@ interface MealPlanJoinRow {
   id: string
   semana_iso: string
   advertencias: string[]
+  explicacion_aprendizaje: string | null
   meal_plan_recipes: {
     id: string
     dia: DiaSemana
@@ -42,6 +43,8 @@ export interface MenuSemanalPersistido {
    */
   estados: Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>
   advertencias: string[]
+  /** FR-5.5 (STORY-FRESCO-22) — Pro + real history only; `null` otherwise. */
+  explicacionAprendizaje: string | null
 }
 
 export class MealPlanError extends Error {
@@ -156,7 +159,7 @@ export async function getMealPlanForWeek(
 
   const { data, error } = await client
     .from('meal_plans')
-    .select('id, semana_iso, advertencias, meal_plan_recipes(id, dia, tipo_plato, estado, recipes(*))')
+    .select('id, semana_iso, advertencias, explicacion_aprendizaje, meal_plan_recipes(id, dia, tipo_plato, estado, recipes(*))')
     .eq('user_id', user.id)
     .eq('semana_iso', semanaIso)
     .maybeSingle();
@@ -179,6 +182,7 @@ export async function getMealPlanForWeek(
     slotIds,
     estados,
     advertencias: row.advertencias,
+    explicacionAprendizaje: row.explicacion_aprendizaje,
   };
 }
 

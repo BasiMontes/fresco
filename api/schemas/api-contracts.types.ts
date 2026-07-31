@@ -21,6 +21,8 @@ export interface GenerateMealPlanResponse {
   menu: Record<DiaSemana, Record<TipoPlatoSlot, Recipe>>
   /** MUST be surfaced to the user when non-empty — FR-2.10 / FR-8.2. */
   advertencias: string[]
+  /** FR-5.5, Pro + real history only. `null` otherwise — kept separate from `advertencias`. */
+  explicacion_aprendizaje: string | null
 }
 
 // POST /generate-shopping-list — api-contracts.md §2

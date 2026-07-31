@@ -112,7 +112,11 @@ Rellena el array "advertencias" cuando:
 - Una franja se quede sin ninguna receta adecuada disponible (indica qué sustituiste y por qué).
 - El presupuesto sea demasiado ajustado para mantener variedad.
 - CASO CRÍTICO DE SEGURIDAD ALIMENTARIA: ninguna receta del catálogo cumple una regla absoluta (alérgeno, ingrediente no deseado, historial, presupuesto) para una franja concreta. En este caso NUNCA inventes ni fuerces una receta insegura para rellenar el hueco — dejar la advertencia explícita es obligatorio, un menú nunca debe entregarse como seguro en silencio.
-- (Solo Pro, con historial real) 2-3 frases cálidas, específicas y en primera persona del plural explicando qué ajustaste y por qué. Si el usuario no tiene historial todavía, omite esta parte del array por completo — no añadas una frase vacía o genérica.
+
+## EXPLICACIÓN DE APRENDIZAJE ("explicacion_aprendizaje") (FR-5.5)
+Este campo es independiente de "advertencias" — nunca mezcles su contenido con las advertencias de seguridad/calidad de arriba.
+- Solo Pro, con historial real: 2-3 frases cálidas, específicas y en primera persona del plural explicando qué ajustaste en el menú y por qué (ej. "Vimos que descartaste las recetas con berenjena, así que las hemos evitado").
+- Si el usuario es Free, o es Pro pero todavía no tiene historial (primeras 2 semanas), este campo debe ser exactamente "null" — nunca una frase vacía, genérica o inventada para rellenar el hueco.
 
 ## FORMATO DE SALIDA
 Responde EXCLUSIVAMENTE con este JSON, sin ningún texto adicional:
@@ -127,7 +131,8 @@ Responde EXCLUSIVAMENTE con este JSON, sin ningún texto adicional:
     "sabado": { "desayuno": "recipe_id", "comida": "recipe_id", "cena": "recipe_id" },
     "domingo": { "desayuno": "recipe_id", "comida": "recipe_id", "cena": "recipe_id" }
   },
-  "advertencias": []
+  "advertencias": [],
+  "explicacion_aprendizaje": null
 }
 Cada "recipe_id" debe ser exactamente uno de los ids listados en el catálogo del mensaje de usuario.`
 }

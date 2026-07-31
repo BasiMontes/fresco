@@ -70,6 +70,7 @@ export type Database = {
           advertencias: string[]
           completado: boolean
           created_at: string
+          explicacion_aprendizaje: string | null
           fecha_inicio: string
           id: string
           semana_iso: string
@@ -80,6 +81,7 @@ export type Database = {
           advertencias?: string[]
           completado?: boolean
           created_at?: string
+          explicacion_aprendizaje?: string | null
           fecha_inicio: string
           id?: string
           semana_iso: string
@@ -90,6 +92,7 @@ export type Database = {
           advertencias?: string[]
           completado?: boolean
           created_at?: string
+          explicacion_aprendizaje?: string | null
           fecha_inicio?: string
           id?: string
           semana_iso?: string

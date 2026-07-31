@@ -14,4 +14,6 @@ export interface MenuSemanal {
   semana: string // 'YYYY-WXX'
   menu: Record<DiaSemana, Record<TipoPlatoSlot, string>> // recipe_id per slot
   advertencias: string[]
+  /** FR-5.5, Pro + real history only. `null` otherwise — never a placeholder string. */
+  explicacion_aprendizaje?: string | null
 }

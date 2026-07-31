@@ -26,7 +26,9 @@ import { createClient } from '@/lib/supabase/server';
  * Three states: no plan yet for this week (`EmptyState`, AC-4-adjacent but
  * distinct — a normal "haven't generated one" state, not a generation
  * failure), a plan with `advertencias` (AC Scenario 5 — `AlertBanner` above
- * the grid), and the plain happy path.
+ * the grid), and the plain happy path. `explicacionAprendizaje` (FR-5.5,
+ * STORY-FRESCO-22) is a separate, orthogonal signal — Pro + real history
+ * only — rendered in its own `card-insight`, never mixed with `advertencias`.
  */
 export default async function MenuPage() {
   const supabase = await createClient();
@@ -84,15 +86,19 @@ export default async function MenuPage() {
       />
 
       {/*
-       * The "Fresco aprendió" insight card (FR-5.5, Pro-only, real-history-
-       * gated) is removed here — it was hardcoded, static mock copy shown
-       * unconditionally to every user (Free, Pro, even anonymous guests),
-       * fabricating a learning event that never happened. No real per-user
-       * gate or content source exists yet (US 5.2/5.3 have no story seeded
-       * under EPIC-FRESCO-5 — only US 5.1's toggle, FRESCO-15, does). See
-       * the bug ticket + `review.md` for the full trace. Do not re-add a
-       * placeholder here; wire it to a real, gated data source instead.
+       * STORY-FRESCO-22 (FR-5.5): real data now, not the hardcoded mock
+       * FRESCO-21 removed. `explicacionAprendizaje` is populated server-side
+       * only for Pro users with real history (generate-meal-plan/index.ts) —
+       * its mere presence here is proof that gate already passed, so no
+       * client-side `isPro` re-check is needed.
        */}
+      {plan.explicacionAprendizaje && (
+        <Card variant="insight" className="mt-6" data-testid="learning_explanation_card">
+          <CardContent className="text-body-sm">
+            {plan.explicacionAprendizaje}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(['desayuno', 'comida', 'cena'] as const).map(slot => (

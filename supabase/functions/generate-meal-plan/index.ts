@@ -187,6 +187,12 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    // FR-5.5 (FRESCO-22): a stray empty/whitespace string from the model is
+    // treated as "no explanation," not retried — unlike `advertencias`, this
+    // field isn't safety-critical, so it's normalized here rather than in
+    // `validator.ts`'s retry-triggering checks.
+    const explicacionAprendizaje = menuData.explicacion_aprendizaje?.trim() || null
+
     // 8. Persist meal_plans
     const { data: mealPlan, error: planError } = await supabase
       .from('meal_plans')
@@ -195,6 +201,7 @@ Deno.serve(async (req: Request) => {
         semana_iso,
         fecha_inicio,
         advertencias: menuData.advertencias ?? [],
+        explicacion_aprendizaje: explicacionAprendizaje,
       })
       .select('id')
       .single()
@@ -238,6 +245,7 @@ Deno.serve(async (req: Request) => {
       semana_iso,
       menu: menuEnriquecido as GenerateMealPlanResponse['menu'],
       advertencias: menuData.advertencias ?? [],
+      explicacion_aprendizaje: explicacionAprendizaje,
     }
 
     return jsonResponse(response)
