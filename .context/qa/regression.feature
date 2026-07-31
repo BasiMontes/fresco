@@ -128,6 +128,12 @@ Característica: Flujo completo de usuario en Fresco
     # el sentinel (arriba) no se dio en una sesión donde hubiera browser
     # abierto en ese momento. Verificado solo por lectura de código +
     # bun run build sin errores de tipos en ambos componentes.
+    # No automatizado a propósito: este suite solo tiene UNA cuenta de test
+    # (LOCAL_USER_EMAIL), y es la misma que usan @aprendizaje para su semana
+    # actual. Sembrar un fixture con recipe_id null ahí pisaría/consumiría
+    # esos slots pendiente — confirmado en vivo el riesgo (esta sesión tuvo
+    # que regenerar ese mismo fixture por agotamiento real). Automatizable
+    # con una segunda cuenta de test dedicada, que hoy no existe.
 
   # ==========================================================================
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
@@ -148,17 +154,15 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un banner "Crea una cuenta para no perder este menú"
     Y un enlace a /signup
 
-  @registro-progresivo @pendiente
+  @registro-progresivo @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/registro-progresivo.steps.ts (playwright-bdd,
+  # sesión anónima + generación real; updateUser() mockeado — mismo criterio
+  # que @registro para no quemar un envío de email real)
   Escenario: La invitada convierte su sesión anónima en una cuenta real
-    Dado que una invitada con sesión anónima rellena email y contraseña en /signup
-    Cuando el email no pertenece a ninguna cuenta existente
+    Dado que una invitada con sesión anónima y un email nuevo rellena email y contraseña en /signup
+    Cuando confirma el formulario
     Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
     Y conserva el menú que ya había generado como invitada
-    # Nunca disparado en vivo a propósito — el branch feliz de signUp/
-    # updateUser dispara un envío de email real (mismo criterio de "no
-    # quemar signups reales" aplicado toda la sesión). El branch de
-    # conflicto (abajo) SÍ se verificó en vivo, que ejercita el mismo
-    # updateUser() hasta el punto de fallo.
 
   @registro-progresivo @edge-case @verificado-manual-2026-07-31
   Escenario: El email de conversión ya pertenece a una cuenta real distinta
@@ -293,6 +297,9 @@ Característica: Flujo completo de usuario en Fresco
     # Nunca clickeado en un navegador real — requeriría falsear la fecha
     # del sistema para caer en la semana futura de la prueba de arriba.
     # Gap declarado igual en compliance-matrix.md de FRESCO-22.
+    # No automatizado a propósito, mismo motivo que la franja sin receta
+    # segura arriba: flippear plan='pro' + fabricar historial en la única
+    # cuenta de test compartida pisaría el fixture real de @aprendizaje.
 
   # ==========================================================================
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)

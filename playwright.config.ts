@@ -14,14 +14,15 @@ const testDir = defineBddConfig({
   // `test` instance signup.steps.ts and aprendizaje.steps.ts both use — see
   // tests/fixtures.ts's header for why a shared instance is needed at all.
   steps: ['tests/fixtures.ts', 'tests/steps/*.ts'],
-  // Scoped to the scenarios this suite currently automates (@login,
-  // @registro, @aprendizaje, @lista-compra). @login/@registro/@lista-compra
-  // each have an untouched `@edge-case` sibling scenario with no step
-  // definitions yet, so those tags stay `and not @edge-case`; @aprendizaje's
-  // own edge-case scenarios (terminal-lock-on-reload, Free-tier notice) DO
-  // have steps (see tests/steps/aprendizaje.steps.ts) so they're included
-  // unconditionally.
-  tags: '((@login or @registro or @lista-compra) and not @edge-case) or @aprendizaje',
+  // Scoped to exactly the scenarios that have real step definitions — the
+  // `regression.feature` header's own convention is to add `@automatizado`
+  // whenever a scenario gets a step file, so that tag alone is the correct
+  // filter (self-maintaining: a new automated scenario just needs the tag,
+  // no edit here). An epic-slug-based filter (@login, @aprendizaje, ...)
+  // looked simpler at first but broke bddgen the moment a new scenario
+  // shared a slug with an already-automated one but had no steps yet — an
+  // unconditional epic tag doesn't imply "has steps".
+  tags: '@automatizado',
 });
 
 export default defineConfig({

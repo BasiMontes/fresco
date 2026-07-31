@@ -63,7 +63,22 @@ Given(/^que un visitante sin cuenta rellena email y contraseña en \/signup$/, a
           phone: '',
           app_metadata: { provider: 'email', providers: ['email'] },
           user_metadata: {},
-          identities: [],
+          // A non-empty identities array marks a genuinely NEW signup — an
+          // empty array is Supabase's real signal for "this email already
+          // belongs to a confirmed account" (FRESCO-24-adjacent fix in
+          // app/signup/page.tsx checks exactly this). Must stay non-empty
+          // here or this mocked "successful new signup" response gets
+          // misread as the duplicate-email case.
+          identities: [{
+            identity_id: 'fake-identity-id',
+            id: fakeUserId,
+            user_id: fakeUserId,
+            identity_data: { email: ctx.email, sub: fakeUserId },
+            provider: 'email',
+            last_sign_in_at: nowIso,
+            created_at: nowIso,
+            updated_at: nowIso,
+          }],
           created_at: nowIso,
           updated_at: nowIso,
         },
