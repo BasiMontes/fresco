@@ -523,3 +523,13 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerraba el último gap nombrado desde ADR-0003 ("not treat the happy path as only path"), y el user quería la reasignación real, no solo el fallback seguro que ya tenía FRESCO-19.
 
 **Siguiente**: Master Sprint 2 completo de punta a punta (FRESCO-16 a FRESCO-22, todo Finalizado). Sin pendientes sueltos de este sprint salvo: (a) probar la UI de `/signup` clickeando en vivo si se quiere cerrar ese gap declarado; (b) el bug de `pull --epic` en `scripts/sync-jira-issues.ts` sigue sin reportar.
+
+---
+
+## 2026-07-31 — Cerrado el gap declarado de FRESCO-20 (UI de /signup en vivo)
+
+**Qué**: pedido explícito del user de cerrar el único gap que quedó abierto. Flujo completo clickeado en navegador real: invitada nueva → onboarding real → generación real con Gemini (misma semana que la cuenta de test real, forzando el conflicto a propósito) → tarjeta de conflicto renderiza → campo de contraseña + botón que arranca deshabilitado y se habilita al escribir → click con la contraseña real → redirige a `/menu` como la cuenta real. Re-verificado en SQL después: la cuenta real sigue con exactamente 1 plan (el original), sin duplicación ni corrupción. Encontrado de paso un nit menor de accesibilidad (el input de contraseña del conflicto no está dentro de un `<form>`) — no bloqueante, no arreglado, documentado en `review.md`. Commiteado y pusheado a `main` (`7979ab0`).
+
+**Por qué**: cerrar el único gap declarado de FRESCO-20 con evidencia real, no dejarlo como supuesto.
+
+**Siguiente**: Master Sprint 2 sin gaps declarados pendientes. Queda suelto: (a) nit de accesibilidad del input de contraseña sin `<form>`; (b) el bug de `pull --epic` en `scripts/sync-jira-issues.ts` sigue sin reportar.
