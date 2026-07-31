@@ -180,4 +180,28 @@ describe('validateMenuOutput — NO_SAFE_RECIPE_SENTINEL (FR-8.2 / AC Scenario 4
 
     expect(result.warnings.some(w => w.includes('supera tu presupuesto'))).toBe(false)
   })
+
+  test('unsafeSlots and errors are NOT mutually exclusive — a genuine sentinel slot alongside an unrelated malformed id populates both', () => {
+    // Found live (2026-07-31): a real response flagged 14 genuine unsafe
+    // slots AND returned a truncated/invalid uuid for an unrelated slot in
+    // the same response. index.ts must never treat a non-empty unsafeSlots
+    // as "safe to accept" without also checking errors.length === 0 — this
+    // fixture is exactly that combination, to keep that guard honest.
+    const { raw, recipeById, validRecipeIds } = buildMenu('bajo')
+    raw.menu.lunes.desayuno = NO_SAFE_RECIPE_SENTINEL
+    raw.advertencias = ['Sin receta segura para desayuno del lunes.']
+    raw.menu.martes.comida = '01b7907a' // malformed/truncated id, not a real catalog uuid
+
+    const result = validateMenuOutput({
+      raw,
+      validRecipeIds,
+      semanaIso: SEMANA_ISO,
+      recipeById,
+      presupuestoSemanaEuros: null,
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.unsafeSlots).toEqual(['lunes.desayuno'])
+    expect(result.errors.some(e => e.includes('ID inválido') && e.includes('01b7907a'))).toBe(true)
+  })
 })

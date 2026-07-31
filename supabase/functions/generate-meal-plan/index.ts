@@ -169,7 +169,7 @@ Deno.serve(async (req: Request) => {
         break
       }
 
-      if (validation.unsafeSlots.length > 0) {
+      if (validation.errors.length === 0 && validation.unsafeSlots.length > 0) {
         // FR-8.2 / AC Scenario 4 (FRESCO-23): the model correctly reported
         // there's no safe recipe for these slots, with a real advertencia —
         // this is a valid, deliverable outcome (20/21, 19/21, ... slots),
@@ -177,6 +177,14 @@ Deno.serve(async (req: Request) => {
         // and profile and reproduce the same result, so accept it as-is
         // instead of burning the remaining attempts on a foregone
         // conclusion.
+        //
+        // The `errors.length === 0` guard is load-bearing, found live: a
+        // real response had 14 genuine unsafeSlots AND a malformed/
+        // truncated recipe_id in an unrelated slot (Gemini hallucination) —
+        // errors and unsafeSlots aren't mutually exclusive in validator.ts's
+        // output. Without this guard, the malformed id sailed through
+        // straight into the DB insert as an invalid uuid, which the insert
+        // then rejected — a real 500, not the AC-4 422 this ticket promises.
         menuData = parsed as MenuSemanal
         if (validation.warnings.length > 0) {
           menuData.advertencias = [...(menuData.advertencias ?? []), ...validation.warnings]
@@ -253,7 +261,15 @@ Deno.serve(async (req: Request) => {
 
     if (slotsError) {
       await supabase.from('meal_plans').delete().eq('id', mealPlan.id)
-      logger.error('Slot insert failed, rolled back meal_plan', { fn: FN_NAME, mealPlanId: mealPlan.id })
+      // `slotsError.message` is the whole reason this class of bug is
+      // diagnosable at all — found live that this log was dropping it
+      // entirely, so the real cause (a malformed uuid Gemini returned) was
+      // invisible anywhere except raw Postgres logs.
+      logger.error('Slot insert failed, rolled back meal_plan', {
+        fn: FN_NAME,
+        mealPlanId: mealPlan.id,
+        error: slotsError.message,
+      })
       throw new HttpError('Error guardando las recetas del plan', 500)
     }
 
