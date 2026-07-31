@@ -25,7 +25,8 @@ export interface MealPlanRecipe {
   created_at: string
   updated_at: string
   meal_plan_id: string
-  recipe_id: string
+  /** `null` when the model reported no safe recipe for this slot (FR-8.2 / AC Scenario 4, FRESCO-23). */
+  recipe_id: string | null
   dia: DiaSemana
   tipo_plato: TipoPlato
   estado: EstadoRecetaMenu

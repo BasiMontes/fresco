@@ -1903,6 +1903,35 @@ function generateXrayArtifactMarkdown(
   return lines.join('\n');
 }
 
+/** One epic's `## [KEY]...` section (heading + status line + story bullets), no trailing blank line. */
+function buildEpicTreeBlock(
+  epic: JiraIssue,
+  stories: JiraIssue[],
+  config: Config,
+): string {
+  const totalPoints = stories.reduce((sum, story) => {
+    const points = story.fields[CUSTOM_FIELDS.storyPoints];
+    return sum + (typeof points === 'number' ? points : 0);
+  }, 0);
+
+  const lines: string[] = [
+    `## [${epic.key}](${config.displayUrl}/browse/${epic.key}) - ${epic.fields.summary}`,
+    '',
+    `**Status:** ${epic.fields.status?.name} | **Stories:** ${stories.length} | **Points:** ${totalPoints}`,
+    '',
+  ];
+
+  if (stories.length > 0) {
+    for (const story of stories) {
+      const points = story.fields[CUSTOM_FIELDS.storyPoints] as number | undefined;
+      const status = String(story.fields.status?.name || 'Unknown');
+      lines.push(`- [${story.key}](${config.displayUrl}/browse/${story.key}) ${String(story.fields.summary)} _(${points ?? '-'} pts, ${status})_`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
 function generateEpicTreeMarkdown(
   epics: Array<{ epic: JiraIssue, stories: JiraIssue[] }>,
   config: Config,
@@ -1917,26 +1946,53 @@ function generateEpicTreeMarkdown(
   ];
 
   for (const { epic, stories } of epics) {
-    const totalPoints = stories.reduce((sum, story) => {
-      const points = story.fields[CUSTOM_FIELDS.storyPoints];
-      return sum + (typeof points === 'number' ? points : 0);
-    }, 0);
+    lines.push(buildEpicTreeBlock(epic, stories, config), '');
+  }
 
-    lines.push(
-      `## [${epic.key}](${config.displayUrl}/browse/${epic.key}) - ${epic.fields.summary}`,
-      '',
-      `**Status:** ${epic.fields.status?.name} | **Stories:** ${stories.length} | **Points:** ${totalPoints}`,
-      '',
-    );
+  lines.push('---', '', '_Synced from Jira by sync-jira-issues_', '');
 
-    if (stories.length > 0) {
-      for (const story of stories) {
-        const points = story.fields[CUSTOM_FIELDS.storyPoints] as number | undefined;
-        const status = String(story.fields.status?.name || 'Unknown');
-        lines.push(`- [${story.key}](${config.displayUrl}/browse/${story.key}) ${String(story.fields.summary)} _(${points ?? '-'} pts, ${status})_`);
-      }
-      lines.push('');
-    }
+  return lines.join('\n');
+}
+
+/**
+ * Upserts one or more epics' blocks into an already-materialized `epic-tree.md`
+ * instead of regenerating the whole file — a scoped `pull --epic <KEY>` run only
+ * knows about the ONE epic it fetched, so overwriting wholesale (the previous
+ * behavior) silently dropped every other epic's rows. Preserves every existing
+ * block this run didn't touch; sorts by the numeric suffix of the key so a
+ * newly-appended epic lands in the same ascending order as a full regenerate.
+ */
+function upsertEpicTreeMarkdown(
+  existingContent: string,
+  epicsToUpsert: Array<{ epic: JiraIssue, stories: JiraIssue[] }>,
+  config: Config,
+): string {
+  const blockRegex = /## \[([A-Z][A-Z0-9]*-\d+)\][\s\S]*?(?=\n## \[|\n---\n\n_Synced from Jira|$)/g;
+  const blocksByKey = new Map<string, string>();
+
+  for (const match of existingContent.matchAll(blockRegex)) {
+    blocksByKey.set(match[1], match[0].trimEnd());
+  }
+
+  for (const { epic, stories } of epicsToUpsert) {
+    blocksByKey.set(epic.key, buildEpicTreeBlock(epic, stories, config));
+  }
+
+  const orderedKeys = [...blocksByKey.keys()].sort(
+    (a, b) => Number(a.split('-').pop()) - Number(b.split('-').pop()),
+  );
+
+  const lines: string[] = [
+    '# Epic Tree',
+    '',
+    `_Project: ${config.project}_`,
+    '',
+    '---',
+    '',
+  ];
+
+  for (const key of orderedKeys) {
+    lines.push(blocksByKey.get(key)!, '');
   }
 
   lines.push('---', '', '_Synced from Jira by sync-jira-issues_', '');
@@ -2337,10 +2393,16 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
       }
     }
 
-    // Generate epic-tree.md if we synced multiple epics
+    // Generate/upsert epic-tree.md. A scoped `--epic <KEY>` run only has data
+    // for that one epic — upsert its block into the existing file instead of
+    // regenerating from scratch, or every other epic's rows get dropped.
     if (allEpicData.length > 0 && !options.storyKey) {
-      const treeContent = generateEpicTreeMarkdown(allEpicData, config);
       const treePath = join(config.outputDir, 'epic-tree.md');
+      const isScoped = Boolean(options.epicKey);
+      const existingTree = isScoped && existsSync(treePath) ? readFileSync(treePath, 'utf-8') : null;
+      const treeContent = existingTree
+        ? upsertEpicTreeMarkdown(existingTree, allEpicData, config)
+        : generateEpicTreeMarkdown(allEpicData, config);
       const treeResult = writeIndexFile(treePath, treeContent, options.dryRun);
 
       if (treeResult.status === 'created') { result.files.created++; }

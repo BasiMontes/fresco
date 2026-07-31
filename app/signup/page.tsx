@@ -160,22 +160,30 @@ export default function SignupPage() {
               Ya existe una cuenta con ese email. Ingresa su contraseña para continuar con ella y
               conservar el menú que acabas de generar.
             </p>
-            <Input
-              data-testid="conflict_password_input"
-              type="password"
-              placeholder="Contraseña de esa cuenta"
-              autoComplete="current-password"
-              value={conflictPassword}
-              onChange={e => setConflictPassword(e.target.value)}
-            />
-            <Button
-              data-testid="signup_reassign_button"
-              variant="secondary"
-              disabled={isReassigning || !conflictPassword}
-              onClick={() => void handleReassign()}
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleReassign();
+              }}
+              className="flex flex-col gap-3"
             >
-              {isReassigning ? 'Verificando…' : 'Continuar con esta cuenta'}
-            </Button>
+              <Input
+                data-testid="conflict_password_input"
+                type="password"
+                placeholder="Contraseña de esa cuenta"
+                autoComplete="current-password"
+                value={conflictPassword}
+                onChange={e => setConflictPassword(e.target.value)}
+              />
+              <Button
+                data-testid="signup_reassign_button"
+                type="submit"
+                variant="secondary"
+                disabled={isReassigning || !conflictPassword}
+              >
+                {isReassigning ? 'Verificando…' : 'Continuar con esta cuenta'}
+              </Button>
+            </form>
             {reassignError && (
               <p data-testid="signup_reassign_error_message" className="text-body-sm text-error">
                 {reassignError}
