@@ -23,7 +23,7 @@ Como Laura, usuaria Pro con al menos dos semanas de historial real de cocinado/d
 
 ### Historia (1)
 
-- [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15): Aprendizaje | Marcar un plato del menú como cocinado o descartado _(Control de calidad)_
+- [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15): Aprendizaje | Marcar un plato del menú como cocinado o descartado _(Finalizada)_
 
 ---
 

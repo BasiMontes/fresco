@@ -8,7 +8,7 @@ _Project: FRESCO_
 
 **Status:** Listo | **Stories:** 1 | **Points:** 0
 
-- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5) Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(- pts, Control de calidad)_
+- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5) Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(- pts, Finalizada)_
 
 ## [FRESCO-6](https://basiliomontescastano.atlassian.net/browse/FRESCO-6) - Generación de Menú Semanal con IA
 
@@ -20,26 +20,26 @@ _Project: FRESCO_
 
 **Status:** Listo | **Stories:** 1 | **Points:** 0
 
-- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9) Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(- pts, Control de calidad)_
+- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9) Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(- pts, Finalizada)_
 
 ## [FRESCO-10](https://basiliomontescastano.atlassian.net/browse/FRESCO-10) - Calendario Editable
 
 **Status:** Listo | **Stories:** 1 | **Points:** 0
 
-- [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11) Calendario | Reordenar el menú generado arrastrando platos entre espacios _(- pts, WIP)_
+- [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11) Calendario | Reordenar el menú generado arrastrando platos entre espacios _(- pts, Finalizada)_
 
 ## [FRESCO-12](https://basiliomontescastano.atlassian.net/browse/FRESCO-12) - Lista de la Compra
 
 **Status:** Listo | **Stories:** 1 | **Points:** 0
 
-- [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13) Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal _(- pts, Control de calidad)_
+- [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13) Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal _(- pts, Finalizada)_
 
 ## [FRESCO-14](https://basiliomontescastano.atlassian.net/browse/FRESCO-14) - Aprendizaje Cocinado/Descartado
 
 **Status:** Listo | **Stories:** 2 | **Points:** 0
 
-- [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15) Aprendizaje | Marcar un plato del menú como cocinado o descartado _(- pts, Control de calidad)_
-- [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22) Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro _(- pts, Control de calidad)_
+- [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15) Aprendizaje | Marcar un plato del menú como cocinado o descartado _(- pts, Finalizada)_
+- [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22) Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro _(- pts, Finalizada)_
 
 ## [FRESCO-16](https://basiliomontescastano.atlassian.net/browse/FRESCO-16) - Modo Invitado
 

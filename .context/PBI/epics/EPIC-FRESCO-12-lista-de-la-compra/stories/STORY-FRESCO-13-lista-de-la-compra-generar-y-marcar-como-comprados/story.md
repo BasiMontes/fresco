@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13)
 **Epic:** [FRESCO-12](https://basiliomontescastano.atlassian.net/browse/FRESCO-12) (Lista de la Compra)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -26,7 +26,7 @@ Como Laura, quiero generar automáticamente la lista de la compra de mi menú se
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

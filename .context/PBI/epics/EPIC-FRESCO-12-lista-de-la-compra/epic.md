@@ -21,7 +21,7 @@ Valor de negocio: convierte la semana planificada en una compra real sin traducc
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13) | Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal | - | Medium | Control de calidad |
+| [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13) | Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal | - | Medium | Finalizada |
 
 ---
 

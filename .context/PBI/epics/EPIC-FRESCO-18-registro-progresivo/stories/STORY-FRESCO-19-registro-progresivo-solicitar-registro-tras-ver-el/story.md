@@ -27,7 +27,7 @@ Como Laura, una vez que ya he visto mi menú semanal generado como invitada, qui
 
 ### Tarea (1)
 
-- [FRESCO-20](https://basiliomontescastano.atlassian.net/browse/FRESCO-20): Reasignar datos de invitada a cuenta existente en conflicto de email (FRESCO-19) _(Listo)_
+- [FRESCO-20](https://basiliomontescastano.atlassian.net/browse/FRESCO-20): Reasignar datos de invitada a cuenta existente en conflicto de email (FRESCO-19) _(Finalizada)_
 
 ---
 

@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15)
 **Epic:** [FRESCO-14](https://basiliomontescastano.atlassian.net/browse/FRESCO-14) (Aprendizaje Cocinado/Descartado)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -20,7 +20,7 @@ Como Laura, quiero marcar cada plato de mi menú semanal como cocinado o descart
 ### Historias (2)
 
 - [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Finalizada)_
-- [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22): Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro _(Control de calidad)_
+- [FRESCO-22](https://basiliomontescastano.atlassian.net/browse/FRESCO-22): Aprendizaje | Mostrar explicación visible cuando el menú se ajusta por historial Pro _(Finalizada)_
 
 ---
 

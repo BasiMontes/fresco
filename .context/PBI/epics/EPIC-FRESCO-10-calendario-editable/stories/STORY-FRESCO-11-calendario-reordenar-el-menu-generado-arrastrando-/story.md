@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11)
 **Epic:** [FRESCO-10](https://basiliomontescastano.atlassian.net/browse/FRESCO-10) (Calendario Editable)
 **Type:** Historia
-**Status:** WIP
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -26,7 +26,7 @@ Como Laura, quiero arrastrar cualquier plato de mi menú semanal generado a otro
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

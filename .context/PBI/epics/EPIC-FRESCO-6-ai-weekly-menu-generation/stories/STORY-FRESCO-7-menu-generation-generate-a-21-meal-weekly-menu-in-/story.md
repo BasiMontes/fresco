@@ -29,18 +29,22 @@ Como Laura, la planificadora agotada, quiero una semana completa de comidas gene
 
 ### Historias (5)
 
-- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(Control de calidad)_
-- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Control de calidad)_
-- [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11): Calendario | Reordenar el menú generado arrastrando platos entre espacios _(WIP)_
-- [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13): Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal _(Control de calidad)_
-- [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15): Aprendizaje | Marcar un plato del menú como cocinado o descartado _(Control de calidad)_
+- [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(Finalizada)_
+- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Finalizada)_
+- [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11): Calendario | Reordenar el menú generado arrastrando platos entre espacios _(Finalizada)_
+- [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13): Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal _(Finalizada)_
+- [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15): Aprendizaje | Marcar un plato del menú como cocinado o descartado _(Finalizada)_
+
+### Tarea (1)
+
+- [FRESCO-23](https://basiliomontescastano.atlassian.net/browse/FRESCO-23): Generación de menú falla completa en vez de entregar parcial con advertencia (AC-4, FR-8.2) _(Listo)_
 
 ---
 
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** implementation-plan-ready
