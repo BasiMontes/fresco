@@ -333,3 +333,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: mismo patrón de toda la sesión — construir y verificar en real, no solo contra tests. El proyecto es solo-main / un solo dev, así que la ceremonia completa de PR + Jira transitions del skill agregaba fricción sin valor real para esta historia chica.
 
 **Siguiente**: sumar los escenarios Gherkin de FRESCO-15 (marcar cocinado, marcar descartado, intentar re-marcar) a `.context/qa/regression.feature` — todavía no existen ahí — y automatizarlos con Playwright, tal como pidió el user a continuación.
+
+---
+
+## 2026-07-31 — 4 escenarios de FRESCO-15 sumados al `.feature` y automatizados
+
+**Qué**:
+- Sumados 4 escenarios nuevos a `.context/qa/regression.feature` bajo `@aprendizaje` (marcar cocinado, marcar descartado, terminal-lock tras reload, aviso Pro para Free) — no existían todavía, tomados de las AC reales de Jira (comments.md de FRESCO-15).
+- Automatizados los 4 en `tests/steps/aprendizaje.steps.ts`. Decisión de diseño distinta a signup: acá SÍ se pega al backend real (no se mockea) — marcar un estado es una escritura barata sin rate limit, y el escenario de "sobrevive al reload" necesita una escritura real persistida para probar algo de verdad. Como el estado es terminal por diseño (un hueco marcado nunca vuelve a pendiente), el step "dado un plato pendiente" no hardcodea un hueco fijo — toma el primero que todavía muestre sus botones de marcar, así las corridas repetidas se auto-adaptan en vez de romperse cuando ese hueco puntual ya se usó.
+- **2 bugs reales encontrados llegando a verde, ninguno obvio de entrada**:
+  1. `signup.steps.ts` y el nuevo `aprendizaje.steps.ts` cada uno definía su propio `base.extend()` para compartir estado entre steps — dos `test` custom independientes rompen la resolución de `bddgen` ("Found 2 test instances, but they should extending each other"). Arreglado moviendo ambos a un `tests/fixtures.ts` compartido, cada uno con su propio nombre de fixture (`signupCtx`, `aprendizajeCtx`) en vez de que cada archivo sea dueño de su `test`.
+  2. `fullyParallel: true` (default del proyecto) corrió 2 escenarios `@aprendizaje` en paralelo, ambos agarrando "el primer hueco pendiente" al mismo tiempo — un escenario marcó cocinado, otro marcó descartado sobre el MISMO hueco, y el propio chequeo post-reload de uno vio el resultado del otro. Real race condition, no flake — estos escenarios mutan el mismo plan de prueba real compartido, así que correrlos en paralelo es inherentemente inseguro. Arreglado con `workers: 1` para toda la suite (suite chica, no importa la velocidad todavía).
+- Verificado: 6/6 tests pasan (login + signup + los 4 nuevos), `bun test` 49/49, `types:check`/`lint:check` limpios. Commiteado y pusheado a `main` (`47dce99`).
+
+**Por qué**: user pidió automatizar después de construir FRESCO-15 — mismo patrón de cierre que login/signup, pero esta vez con una decisión de diseño distinta (backend real vs mock) justificada por lo barato/no-rate-limited que es esta escritura puntual, a diferencia de signup.
+
+**Siguiente**: la suite de Playwright ya cubre 6 escenarios reales (login, signup, y los 4 de aprendizaje). Quedan `@pendiente`/`@no-implementado` en el `.feature`: casos de error de login/signup, onboarding→generación de menú completo, calendario con fallo de red, y toda la Lista de la Compra (sigue sin construir, FRESCO-13). Recordar: cada corrida de los tests de `@aprendizaje` consume huecos reales del plan de la semana actual del usuario de prueba — se auto-resetea la semana que viene cuando se genere un plan nuevo, pero si se corre muchas veces en la misma semana puede quedarse sin huecos pendientes (falla visible y clara, no silenciosa).
