@@ -433,3 +433,20 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: era el pedido explícito del user ("Dale con /sprint-development FRESCO-17") y el prerequisito real de FRESCO-19 (Registro Progresivo) por el link `Blocks` ya creado.
 
 **Siguiente**: `/sprint-development FRESCO-19` para Registro Progresivo — recordar el riesgo de verificación de email de ADR-0003 al planificarlo. Revisar por separado la tarjeta "Fresco aprendió" sospechosa en `/menu` (posible bug de EPIC-FRESCO-5, fuera del alcance de esta historia). `.context/dev-roadmap.md` sigue sin reflejar Master Sprint 2 — recomendable correr `/dev-roadmap` antes de seguir con más historias de esta épica.
+
+---
+
+## 2026-07-31 — FRESCO-19 implementado: Registro Progresivo cierra Master Sprint 2
+
+**Qué**:
+- `/sprint-development FRESCO-19` en modo Solo. Bloqueador (FRESCO-17) ya Finalizada, sin impedimento real.
+- 3 gaps reales encontrados en Stage 1 (no asumidos): (1) `/menu` no tenía NINGÚN camino hacia `/signup` — cero CTA, aunque la copy de `/signup` ("Guarda tu menú") ya estaba escrita para este momento exacto. (2) `/signup` llamaba siempre `signUp()`, que para una invitada con sesión anónima activa es la llamada incorrecta — crearía un usuario nuevo sin relación, en vez de convertir la sesión existente preservando `user_id` (ADR-0003 exige `updateUser()`). (3) El caso límite de AC4 (email ya existente) implica mover filas entre `user_id` reales — sin primitiva nativa de "fusionar usuarios" en Supabase Auth, trabajo cross-cutting real, no una línea.
+- Antes de codear el punto (3), se lo planteé al user como decisión real (no lo resolví en silencio): ¿reasignación completa ahora, o fallback seguro + historia aparte? Eligió fallback seguro ahora.
+- Cambios: banner "Guardar mi menú" en `/menu` (solo para `is_anonymous`, sin tocar el card `insight` reservado para el moat de aprendizaje per DESIGN.md — usé borde manual en su lugar). `/signup` ahora detecta sesión anónima y llama `updateUser()`, con manejo explícito del código de error real `email_exists` (confirmado en `@supabase/auth-js`) mostrando mensaje claro + link a `/login`, nunca fallando en silencio.
+- Validado en vivo con Playwright-cli: flujo invitada completo hasta `/menu` con banner visible; conversión probada contra el email real ya registrado del usuario de test del proyecto (dominio inválido de prueba descartado, `email_address_invalid` no relacionado) → disparó el 422 `email_exists` real, mensaje correcto renderizado. El branch feliz (email nuevo válido → 200) no se disparó para no gastar un envío de email real — mismo criterio de "mockear en vez de quemar signups reales" ya establecido para `@registro` esta sesión; declarado como gap honesto en `compliance-matrix.md`, no ocultado.
+- Creado **FRESCO-20** (Tarea) trackeando la reasignación de datos real del caso límite, linkeado `Relates` a FRESCO-19.
+- Commiteado y pusheado a `main` (`48b866c`). Jira FRESCO-19: `Control de calidad` → `WIP` → `Finalizada`.
+
+**Por qué**: cerraba Master Sprint 2 completo (Guest Mode + Progressive Signup), el objetivo explícito del user desde el pedido original de "desbloquear el login".
+
+**Siguiente**: Master Sprint 2 completo (FRESCO-16/17/18/19 Finalizadas, FRESCO-20 pendiente como tech-debt). Pendientes sueltos: (a) FRESCO-20 — diseñar la reasignación de datos cross-usuario antes de implementarla; (b) la tarjeta "Fresco aprendió" hardcodeada en `/menu` — posible bug de EPIC-FRESCO-5, señalado dos veces ya, no tocado; (c) correr `/dev-roadmap` para que refleje Master Sprint 2 (sigue diciendo "no sembrado en Jira").
