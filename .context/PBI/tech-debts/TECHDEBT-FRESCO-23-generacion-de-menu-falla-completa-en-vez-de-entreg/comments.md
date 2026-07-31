@@ -65,5 +65,15 @@ Migración relaja `NOT NULL` — reversible, no destructiva. FK conserva `on del
 
 ---
 
+### Basi Montes - 7/31/2026, 6:03:25 PM
+
+## Cierre
+
+Implementado, testeado (54/54), deployado (versión 7 de `generate-meal-plan`, ACTIVE) y verificado en vivo (llamada real con el usuario de test — sin regresión en el camino normal; capa de DB confirmada con una fila real `recipe_id: null`). Commit `e33d3e0` en `main`.
+
+***Gap declarado***: no se forzó en vivo el caso exacto donde Gemini reporta una franja sin receta segura (el catálogo actual de recetas no lo dispara de forma natural, y fabricarlo con seguridad requeriría manipular datos del único proyecto real compartido). El manejo del sentinel está cubierto exhaustivamente por tests unitarios del validator + una fijación real a nivel de DB que prueba que la fila con `recipe_id: null` se persiste y se lee correctamente. Detalle completo en `review.md` / `compliance-matrix.md` del tech-debt.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

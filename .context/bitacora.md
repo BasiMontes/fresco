@@ -565,3 +565,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el tech-debt real (no el fix mínimo a medias que había quedado de la sesión cortada) — el AC pedía entrega parcial, no solo fallar rápido con mejor mensaje.
 
 **Siguiente**: sin pendientes sueltos de FRESCO-23. Notado de paso, sin arreglar (fuera de alcance): (a) el catálogo real casi no tiene recetas `desayuno`/`cena` — vale un tech-debt propio si el catálogo no crece; (b) `MealPlanRecipe.recipe_id: string` en `meal-plan.types.ts` quedó desactualizado (debería ser `string | null`) pero el tipo no se usa en ningún lado — no tocado. Siguen sueltos de sesiones previas: nit de accesibilidad de `/signup`, bug de `pull --epic` en `scripts/sync-jira-issues.ts`, decisión de transicionar las 8 épicas contenedoras a Done.
+
+---
+
+## 2026-07-31 — Verificación de estado general + login/signup en vivo (sin bugs nuevos, un blocker de infra real)
+
+**Qué**:
+- User preguntó si quedaba algo pendiente y si ya se podía crear cuenta/login normal. Verificado, no asumido: Jira — 20 items totales, todas las Historias/Tareas/Errores en `Finalizada` (solo las 8 Épicas contenedoras siguen en "Listo", cosmético). Vercel — proyecto real `fresco` (no los decoys `frescoapp`/`fresco-app`) en producción `Ready`, deployado hace minutos desde `main`, auto-deploy funcionando.
+- Confirmado por lectura de código que `/signup` y `/login` son reales (Supabase Auth genuino, no mockeado) y cubren tanto conversión de invitada como signup nuevo desde cero.
+- Live-testing en navegador (Playwright) contra producción real: `/login` funciona perfecto. `/signup` con 3 emails reales distintos choca con el **rate limit de emails default de Supabase** (confirmación de cuenta) — no es bug de código, es límite del mailer built-in. Bypaseado para seguir probando creando usuarios ya confirmados vía Supabase Admin API (service role), con limpieza inmediata después de cada prueba.
+- User pidió configurar SMTP con Resend para resolver el rate limit. Bloqueado por dos motivos reales: (1) el proyecto no tiene dominio propio — solo `*.vercel.app`, cuya zona DNS controla Vercel, no el user, así que no se puede verificar en Resend; (2) el `RESEND_API_KEY` de `.env` es send-only, no puede gestionar dominios. Guardado en memoria persistente para no re-sugerirlo hasta que haya dominio real.
+- User reportó ver "Todavía no tienes un menú" en una cuenta de test nueva y pidió revisarlo como posible bug. Investigado antes de tocar código: ese es el estado vacío correcto para una cuenta sin perfil/menú generado, no un defecto. Probado en vivo de punta a punta para confirmarlo con evidencia real, no solo argumento: usuario nuevo → login → `/menu` vacío → "Generar mi menú" → onboarding (3 pasos, defaults) → generación real con Gemini (200, ~30s) → `/menu` con 3 recetas reales + advertencias correctas (mismo gap de catálogo desayuno/cena ya conocido, no nuevo). Sin bug. Limpieza inmediata del usuario de test (cascada confirmada, cero residuo).
+
+**Por qué**: cerrar la duda real del user sobre estado de producción y validar en vivo en vez de responder solo desde el código — la sesión ya había encontrado un gap real (email rate limit) al hacerlo, así que valía la pena aplicar el mismo rigor al reporte de "bug".
+
+**Siguiente**: nada pendiente de esta sesión. Rate limit de email de Supabase queda como está (válido para escala concierge actual) hasta que haya dominio propio para Resend. Sin pendientes nuevos más allá de los ya notados en la entrada de FRESCO-23.

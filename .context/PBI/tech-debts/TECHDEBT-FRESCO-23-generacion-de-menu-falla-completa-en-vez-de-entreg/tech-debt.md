@@ -1,7 +1,7 @@
 # Tarea: Generación de menú falla completa en vez de entregar parcial con advertencia (AC-4, FR-8.2)
 
 **Jira Key:** [FRESCO-23](https://basiliomontescastano.atlassian.net/browse/FRESCO-23)
-**Status:** WIP
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -40,7 +40,7 @@ FRESCO-9 (Seguridad Alimentaria) delegó explícitamente esta AC a FRESCO-7 (Gen
 
 ### customfield_10000
 
-{repository={count=1, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":1,"lastUpdated":"2026-07-31T16:02:52.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":1,"name":"GitHub"},"GitHub":{"count":1,"name":"GitHub"}}}}},"isStale":true}}
+{repository={count=1, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":1,"lastUpdated":"2026-07-31T16:02:52.000+0200","dataType":"repository"},"byInstanceType":{"GitHub":{"count":1,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":1,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
