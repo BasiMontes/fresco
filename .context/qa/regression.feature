@@ -175,25 +175,38 @@ Característica: Flujo completo de usuario en Fresco
     # tiempo (Fuera de Alcance de FRESCO-15).
 
   # ==========================================================================
-  # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13) — SIN IMPLEMENTAR
+  # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
   # ==========================================================================
 
-  @lista-compra @no-implementado
+  @lista-compra @verificado-manual-2026-07-31
   Escenario: Generar la lista de la compra a partir de un menú
     Dado que el usuario tiene un menú semanal generado
     Cuando solicita generar la lista de la compra
-    Entonces el sistema debería consolidar ingredientes y clasificarlos por pasillo
-    # Estado real a 2026-07-29: NO implementado. /shopping-list es 100% mock
-    # (MOCK_SHOPPING_LIST hardcodeado en el propio archivo) y
-    # generate-shopping-list/prompt.ts lanza Error a propósito (TODO).
+    Entonces el sistema consolida los ingredientes y los clasifica por pasillo
+    Y ve un resumen con el total de productos y el coste estimado
 
-  @lista-compra @no-implementado
+  @lista-compra @verificado-manual-2026-07-31
   Escenario: Marcar un producto de la lista como comprado
     Dado que el usuario tiene una lista de la compra generada
     Cuando marca un producto como comprado
-    Entonces el estado debería persistir vía RPC security definer
-    # Estado real: el toggle actual en /shopping-list es solo estado local de
-    # React (useState), no llama a ningún RPC todavía.
+    Entonces el producto se muestra visualmente como comprado
+    Y el estado se conserva la próxima vez que abre la lista
+
+  @lista-compra @edge-case @pendiente
+  Escenario: Ya existe una lista de la compra para ese menú
+    Dado que el usuario ya generó una lista de la compra para su menú semanal actual
+    Cuando intenta generar la lista de nuevo
+    Entonces ve la lista ya existente en lugar de una segunda lista duplicada
+    # El propio flujo de /shopping-list ya previene esto en la práctica (solo
+    # ofrece "Generar" cuando no hay lista todavía) — el 409 del backend es
+    # un backstop de condición de carrera, sin verificación manual explícita
+    # de ese camino de error todavía.
+
+  @lista-compra @edge-case @pendiente
+  Escenario: La consolidación de ingredientes no produce ningún resultado
+    Dado que el menú semanal del usuario no tiene ingredientes que se puedan consolidar
+    Cuando solicita la lista de la compra
+    Entonces ve un mensaje claro de que la lista no se pudo generar, nunca una lista vacía presentada como válida
 
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
