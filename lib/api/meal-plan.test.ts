@@ -49,6 +49,7 @@ function buildCompleteJoinRows() {
 }
 
 const SAMPLE_JOIN_ROW = {
+  id: 'plan-1',
   semana_iso: SEMANA_ISO,
   advertencias: ['El menú supera tu presupuesto semanal en aproximadamente 5€'],
   meal_plan_recipes: buildCompleteJoinRows(),
@@ -118,6 +119,7 @@ describe('getMealPlanForWeek', () => {
     const result = await getMealPlanForWeek(client, SEMANA_ISO);
 
     expect(result).not.toBeNull();
+    expect(result?.mealPlanId).toBe('plan-1');
     expect(result?.semanaIso).toBe(SEMANA_ISO);
     expect(result?.advertencias).toEqual(SAMPLE_JOIN_ROW.advertencias);
     expect(result?.menu.lunes.desayuno.nombre).toBe('Lentejas estofadas');
