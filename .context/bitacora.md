@@ -313,3 +313,23 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: mismo patrón que el escenario anterior — automatizar de verdad, no solo documentar. Pero acá el camino feliz real (hit al backend real) no era seguro de automatizar sin gastar cuota de email o ensuciar la base — se optó por verificar el contrato cliente↔Supabase a nivel de red en vez de la integración real end-to-end, con la decisión hecha explícita al user en vez de asumida.
 
 **Siguiente**: mismo patrón para seguir automatizando escenarios `@pendiente`/`@verificado-manual` uno a uno. Cuando llegue el turno de onboarding→generación de menú, decidir si también conviene mockear Gemini (evitar gasto real de tokens/dinero en cada corrida de test) o aceptar el costo por ser información de negocio más crítica de verificar en real — decisión similar a la de hoy, no asumir sin preguntar.
+
+---
+
+## 2026-07-31 — FRESCO-15 (Aprendizaje): marcar plato cocinado/descartado, vía `/sprint-development` Solo
+
+**Qué**:
+- User pidió seguir con FRESCO-15 (backlog real, Execution Sprint 3, desbloqueada). Invocado `/sprint-development` — user eligió modo **Solo** (todo inline, sin subagentes, sin ceremonia de Jira/PR) cuando se le preguntó, coherente con la estrategia `solo-main` del repo y con ser el único dev.
+- Epic ya documentaba que el backend estaba completo (`update-recipe-status` deployado, trigger de aprendizaje en DB) — historia 100% frontend. Wireado en `/calendar` (no en `/menu` ni tarjeta de receta separada — matchea mejor el AC genérico "cualquier plato pendiente" sin duplicar pantalla).
+- `lib/api/meal-plan.ts`: `estados` agregado como grid paralelo aditivo (mismo patrón que `slotIds` de FRESCO-11) — `/menu` no se toca. `lib/api/user-profile.ts`: `getUserPlan()` nuevo, default `'free'` si no hay perfil (no lanza error, es de bajo riesgo mostrar el aviso de más).
+- `CalendarGrid`: cada slot pendiente gana 2 botones (✓/✕) que llaman `updateRecipeStatus()` con el token de sesión real; una vez marcado, terminal — badge en vez de botones, nunca vuelve a habilitarse. Banner Pro estático para usuarias Free.
+- **2 bugs reales encontrados en vivo, ninguno atrapado por tests/lint/types**:
+  1. Los botones nuevos, anidados dentro de la celda draggable completa, nunca disparaban `onClick` — el `PointerSensor` de `dnd-kit` capturaba el pointerdown como inicio de drag antes de que el click llegara (confirmado por el propio anunciador de accesibilidad de dnd-kit: "dropped over droppable area" en cada click). Arreglado con el patrón oficial de "drag handle": los listeners de arrastre ahora viven solo en el ícono de agarre, no en toda la celda.
+  2. Al ancho real de columna de esta grilla (~120px, 7 columnas), poner el badge de estado AL LADO del nombre de receta colapsaba el wrapper `flex-1` del nombre a 0px de ancho, superponiendo el texto en vez de mostrarlo al lado — visible recién al mirar la captura real, no en el código. Arreglado apilando controles/badge DEBAJO de la fila del nombre en vez de al lado.
+  3. Mientras verificaba el fix de drag-and-drop arrastré el mismo par de slots dos veces (antes y después del fix de hit-area) — se cancelaron entre sí (doble swap = identidad), lo cual casi me hizo pensar que el drag seguía roto. Verificado con SQL directo contra la DB real antes de concluir — no confiar solo en la captura de pantalla cuando hay ediciones intermedias.
+- Verificado en vivo con Playwright: marcar cocinado + descartado, terminal-lock confirmado (botones desaparecen, no reaparecen tras reload), drag-and-drop sigue funcionando después del refactor del handle, banner Pro visible para el test user (Free). Unit tests extendidos (`meal-plan.test.ts`, `user-profile.test.ts`), `bun test` 49/49, `types:check`/`lint:check` limpios.
+- Commiteado y pusheado directo a `main` (`556e84a`) — sin PR, sin transición de Jira (Solo mode).
+
+**Por qué**: mismo patrón de toda la sesión — construir y verificar en real, no solo contra tests. El proyecto es solo-main / un solo dev, así que la ceremonia completa de PR + Jira transitions del skill agregaba fricción sin valor real para esta historia chica.
+
+**Siguiente**: sumar los escenarios Gherkin de FRESCO-15 (marcar cocinado, marcar descartado, intentar re-marcar) a `.context/qa/regression.feature` — todavía no existen ahí — y automatizarlos con Playwright, tal como pidió el user a continuación.
