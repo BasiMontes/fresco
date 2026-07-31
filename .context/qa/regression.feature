@@ -135,6 +135,46 @@ Característica: Flujo completo de usuario en Fresco
     # verificación manual explícita del bloqueo visual todavía.
 
   # ==========================================================================
+  # Aprendizaje Cocinado/Descartado (EPIC-FRESCO-14 / STORY-FRESCO-15)
+  # ==========================================================================
+
+  @aprendizaje @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
+  Escenario: Marcar un plato como cocinado
+    Dado que el usuario tiene un menú semanal generado con un plato en estado pendiente
+    Cuando marca ese plato como cocinado
+    Entonces el plato se muestra como cocinado
+    Y no puede volver a cambiar el estado de ese mismo plato
+
+  @aprendizaje @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
+  Escenario: Marcar un plato como descartado
+    Dado que el usuario tiene un menú semanal generado con un plato en estado pendiente
+    Cuando marca ese plato como descartado
+    Entonces el plato se muestra como descartado
+    Y no puede volver a cambiar el estado de ese mismo plato
+
+  @aprendizaje @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
+  Escenario: Intentar cambiar el estado de un plato ya marcado
+    Dado que el usuario ya marcó un plato como cocinado o descartado
+    Cuando recarga la página y observa ese mismo plato
+    Entonces no ve ningún control para volver a marcarlo
+    Y el plato queda fijado en su estado actual
+
+  @aprendizaje @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
+  Escenario: Usuaria de nivel gratuito ve el aviso de función Pro
+    Dado que el usuario es de nivel gratuito (Free)
+    Cuando visita /calendar
+    Entonces ve un aviso claro de que marcar cocinado/descartado es una función de nivel Pro
+    Y ese aviso aclara que su menú actual no se ve afectado
+    # AC original menciona "recibe su menú de la semana siguiente" — este aviso
+    # estático cumple la intención de comunicación; la aplicación real del
+    # historial a generación futura es capacidad separada, gateada en el
+    # tiempo (Fuera de Alcance de FRESCO-15).
+
+  # ==========================================================================
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13) — SIN IMPLEMENTAR
   # ==========================================================================
 

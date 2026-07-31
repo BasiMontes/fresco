@@ -1,6 +1,6 @@
-import type { Request as PlaywrightRequest } from '@playwright/test';
 import { expect } from '@playwright/test';
-import { test as base, createBdd } from 'playwright-bdd';
+import { createBdd } from 'playwright-bdd';
+import { test } from '../fixtures';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @registro,
@@ -25,27 +25,14 @@ import { test as base, createBdd } from 'playwright-bdd';
  * repeatable. Do NOT "fix" this into a real `auth.signUp()` call without
  * first provisioning a service_role key and a dedicated, non-rate-limited
  * test project.
+ *
+ * `ctx` lives in the shared `signupCtx` fixture (see `tests/fixtures.ts`) —
+ * this file no longer defines its own custom `test` instance.
  */
-
-interface SignupCtx {
-  email: string
-  password: string
-  signupRequest: Promise<PlaywrightRequest>
-}
-
-export const test = base.extend<{ ctx: SignupCtx }>({
-  // Playwright's fixture parser requires a literal destructuring pattern here
-  // even when unused — `{}` is not a stray empty pattern, it's the contract.
-  // eslint-disable-next-line no-empty-pattern
-  ctx: async ({}, use) => {
-    const ctx = {} as SignupCtx;
-    await use(ctx);
-  },
-});
 
 const { Given, When, Then } = createBdd(test);
 
-Given(/^que un visitante sin cuenta rellena email y contraseña en \/signup$/, async ({ page, ctx }) => {
+Given(/^que un visitante sin cuenta rellena email y contraseña en \/signup$/, async ({ page, signupCtx: ctx }) => {
   await page.goto('/signup');
 
   ctx.email = `qa-signup-${Date.now()}@example.com`;
@@ -92,7 +79,7 @@ When(/^confirma el formulario$/, async ({ page }) => {
   await page.getByTestId('signup_submit_button').click();
 });
 
-Then(/^se crea la cuenta en Supabase Auth$/, async ({ ctx }) => {
+Then(/^se crea la cuenta en Supabase Auth$/, async ({ signupCtx: ctx }) => {
   // Proves the client asked Supabase Auth to create the account with the
   // exact data typed into the form — at the wire level, without a real
   // backend round-trip.
