@@ -4,7 +4,7 @@ import type { TipoCocina } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { useRouter } from 'next/navigation';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,28 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
+  // FRESCO-17 (Guest Mode, US 6.1): a first-time visitor reaches this page
+  // with no Supabase session at all. Ensure one exists before she can reach
+  // Step 3 — a just-registered user arriving from `/signup` already has a
+  // real session, so this only fires for an actual guest (ADR-0003).
+  useEffect(() => {
+    async function ensureGuestSession() {
+      const client = createClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (session) {
+        return;
+      }
+      const { error } = await client.auth.signInAnonymously();
+      if (error) {
+        // Real, previously-observed failure mode (ADR-0003: anonymous
+        // sign-ins are rate-limited), not a speculative one.
+        setSessionError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
+      }
+    }
+    void ensureGuestSession();
+  }, []);
   const {
     step,
     dietaVegetariano,
@@ -93,8 +115,8 @@ export default function OnboardingPage() {
     try {
       const client = createClient();
       // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
-      // Assumes an authenticated session already exists — guest-mode
-      // onboarding is explicitly out of scope for this story.
+      // A session (real or anonymous guest, FRESCO-17) is guaranteed by the
+      // mount effect above before this handler is reachable.
       await upsertUserProfile(client, {
         num_personas: adultos + ninos,
         adultos,
@@ -114,9 +136,8 @@ export default function OnboardingPage() {
       const now = new Date();
       const semanaIso = getIsoWeek(now);
       const fechaInicio = getIsoWeekMonday(now);
-      // Guest-mode auth (a visitor with no account yet) is still unresolved —
-      // see business-api-map.md — but a signed-in user's real session token
-      // was never read here even when one exists, which 401'd unconditionally.
+      // Guest or registered, a session now always exists (mount effect
+      // above) — this just reads whichever token it is.
       const { data: { session } } = await client.auth.getSession();
       await generateMealPlan(
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
@@ -146,6 +167,11 @@ export default function OnboardingPage() {
 
   return (
     <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
+      {sessionError && (
+        <p data-testid="session_error_message" className="mb-4 text-body-sm text-error">
+          {sessionError}
+        </p>
+      )}
       <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
         Paso
         {' '}

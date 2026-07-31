@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-17](https://basiliomontescastano.atlassian.net/browse/FRESCO-17)
 **Epic:** [FRESCO-16](https://basiliomontescastano.atlassian.net/browse/FRESCO-16) (Modo Invitado)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
