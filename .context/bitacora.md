@@ -652,3 +652,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar deuda de automatización real donde era seguro hacerlo, sin fingir cobertura donde automatizar hubiera roto otros tests — y sin dejar pasar un bug real (el mock roto) que mi propio trabajo de esta sesión había introducido.
 
 **Siguiente**: quedan 3 escenarios `@pendiente` (2 necesitan una segunda cuenta de test dedicada para automatizarse sin riesgo de colisión; 1 no tiene seam de mockeo posible). Sin pendientes de ingeniería más allá de eso.
+
+---
+
+## 2026-07-31 — Automatizados los últimos 2 escenarios reales, con cuenta de test dedicada
+
+**Qué**: user pidió cerrar los 2 escenarios que habían quedado sin automatizar por riesgo de colisión de fixture. Creada cuenta de test dedicada (`qa-pro-test@fresco.qa`, vía Admin API + perfil sembrado por SQL) — no pude escribir `.env` yo mismo (bloqueado por permisos de esta sesión), le pasé al user las 2 líneas exactas (`PRO_TEST_USER_EMAIL`/`PRO_TEST_USER_PASSWORD`) para que las agregue.
+- `tests/steps/entrega-parcial.steps.ts`: siembra un plan de 21 franjas con una `recipe_id` null vía REST (token propio de la cuenta dedicada, sin service role), verifica que `/menu` y `/calendar` rendericen "Sin receta segura" sin crashear y sin ofrecer arrastrar/marcar esa franja.
+- `tests/steps/aprendizaje-pro.steps.ts`: setea `plan='pro'`, siembra una semana pasada real de historial, dispara una generación real (Gemini real, rama `isPro` real), verifica la tarjeta `card-insight` con texto real, separada del banner de advertencias.
+- 2 bugs propios encontrados y arreglados en el camino (no del código de producto, del harness de test): ambos inserts a `meal_plans` vía REST me devolvían `403` — me faltaba mandar `user_id` explícito en el body (RLS `WITH CHECK (auth.uid() = user_id)` lo exige, no hay default/trigger que lo complete).
+- Suite completa: 11/11 verde (un flake transitorio de `@lista-compra` en una corrida, confirmado no relacionado — pasó limpio al reintentar, mismo patrón de variabilidad real de Gemini ya conocido).
+- `regression.feature`: ambos escenarios pasan de `@pendiente` a `@verificado-manual-2026-07-31 @automatizado`. Solo queda 1 `@pendiente` real en todo el archivo (reintentos agotados de IA, 422 — sin seam de mockeo posible, llamada server-to-server).
+- Commiteado y pusheado a `main` (`33e2f1a`).
+
+**Por qué**: cerrar la automatización real que faltaba, ahora que existía la cuenta dedicada para hacerlo sin pisar el fixture compartido de `@aprendizaje`.
+
+**Siguiente**: `regression.feature` con cobertura automatizada casi completa (10 de 11 automatizados). Sin pendientes de ingeniería.
