@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-8](https://basiliomontescastano.atlassian.net/browse/FRESCO-8)
 **Priority:** Highest
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -24,7 +24,7 @@ Una garantía transversal y no negociable, no una función que el usuario active
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/26/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** mvp, safety

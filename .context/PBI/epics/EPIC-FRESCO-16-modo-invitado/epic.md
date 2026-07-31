@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-16](https://basiliomontescastano.atlassian.net/browse/FRESCO-16)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---

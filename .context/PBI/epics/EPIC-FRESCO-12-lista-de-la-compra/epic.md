@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-12](https://basiliomontescastano.atlassian.net/browse/FRESCO-12)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -28,7 +28,7 @@ Valor de negocio: convierte la semana planificada en una compra real sin traducc
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-10](https://basiliomontescastano.atlassian.net/browse/FRESCO-10)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -28,7 +28,7 @@ Valor de negocio: permite a Laura adaptar el plan generado a lo que realmente en
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/27/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

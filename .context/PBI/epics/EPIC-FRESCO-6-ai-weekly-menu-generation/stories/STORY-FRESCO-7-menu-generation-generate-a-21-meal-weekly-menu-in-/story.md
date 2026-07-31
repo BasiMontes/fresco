@@ -37,7 +37,7 @@ Como Laura, la planificadora agotada, quiero una semana completa de comidas gene
 
 ### Tarea (1)
 
-- [FRESCO-23](https://basiliomontescastano.atlassian.net/browse/FRESCO-23): Generación de menú falla completa en vez de entregar parcial con advertencia (AC-4, FR-8.2) _(Listo)_
+- [FRESCO-23](https://basiliomontescastano.atlassian.net/browse/FRESCO-23): Generación de menú falla completa en vez de entregar parcial con advertencia (AC-4, FR-8.2) _(Finalizada)_
 
 ---
 

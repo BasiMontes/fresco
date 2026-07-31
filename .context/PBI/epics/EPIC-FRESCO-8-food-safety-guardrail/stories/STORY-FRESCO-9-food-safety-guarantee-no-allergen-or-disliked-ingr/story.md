@@ -32,7 +32,7 @@ Como Laura, la planificadora agotada (o cualquier usuaria con una alergia o rest
 
 ### Tarea (1)
 
-- [FRESCO-23](https://basiliomontescastano.atlassian.net/browse/FRESCO-23): Generación de menú falla completa en vez de entregar parcial con advertencia (AC-4, FR-8.2) _(Listo)_
+- [FRESCO-23](https://basiliomontescastano.atlassian.net/browse/FRESCO-23): Generación de menú falla completa en vez de entregar parcial con advertencia (AC-4, FR-8.2) _(Finalizada)_
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-4](https://basiliomontescastano.atlassian.net/browse/FRESCO-4)
 **Priority:** High
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -24,7 +24,7 @@ Cubre el flujo de captura de perfil en 3 pasos (dieta y restricciones, cocinas f
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/26/2026
+- **Updated:** 7/31/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** mvp
