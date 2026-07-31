@@ -729,3 +729,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar el ciclo completo de la sesión — no alcanza con que el fix esté commiteado y testeado local, había que confirmarlo contra el deploy real que ve la gente, en el entorno que realmente importa (PRE, que resultó ser el mismo build que PRO).
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería. TECHDEBT-FRESCO-24 queda cerrada en Jira aunque el contenido real (ampliar catálogo con recetas de desayuno/cena) sigue pendiente como trabajo del founder, no de código.
+
+---
+
+## 2026-08-01 — Catálogo real de desayuno/cena sembrado (TECHDEBT-FRESCO-24) + pulido de logo
+
+**Qué**: user pidió resolver el contenido real detrás de TECHDEBT-FRESCO-24 (cerrado en Jira pero sin hacer) y después un pulido cosmético.
+- **Catálogo**: sembradas 20 recetas nuevas (10 desayuno + 10 cena) directo en `public.recipes` vía SQL, matcheando las convenciones reales ya en uso en las 35 filas existentes (confirmadas por query antes de escribir nada: `temporada`/`cocina` sin tildes en la base real aunque el tipo TS sí las lleva — drift ya existente, no tocado, respetado tal cual está vivo). Variedad real de dietas (vegano, sin gluten, sin lactosa, keto) y alérgenos (huevo, gluten, lactosa, pescado, soja) para que el filtro SQL siga encontrando opciones para perfiles restringidos. Catálogo pasa de 35→55 recetas (35 comida / 10 desayuno / 10 cena).
+- Verificado en vivo contra `fresco-pre.vercel.app` con cuenta de test fresca: el warning "no hay recetas de desayuno/cena en el catálogo" desapareció — el menú generado mostró una receta real de desayuno (Tostada con tomate y jamón, 10 min) y una de cena (Gazpacho andaluz, 15 min) en sus franjas correspondientes. Queda el warning de "comida" (franja de mediodía) superando los 30 min preferidos — catálogo original de 35, fuera de alcance de este ticket.
+- Cuenta de test borrada al terminar.
+- **Pulido cosmético**: encontrado un bug real de proporción — las 5 instancias del logo en la app (`sidebar.tsx`, `login`, `signup`, `site-nav.tsx`, `site-footer.tsx`) declaraban `width`/`height` que no matcheaban el `viewBox="0 0 420 128"` real del SVG (ratio 3.28) — de ahí el warning de consola "Image has either width or height modified" visto en cada corrida de esta sesión, y el logo levemente estirado en cada pantalla. Corregidas las 5 proporciones; agregado `priority` a `login`/`signup` (el logo es el elemento LCP en esas pantallas y no lo tenía). Verificado local y en vivo en `fresco-pre.vercel.app`: cero warnings de consola.
+- Recetas insertadas directo en la base vía SQL (sin migración — mismo patrón que el batch original del founder, es contenido no esquema). `types:check`, `lint:check` limpios sobre el fix de logo, commiteado y pusheado (`43950a1`). Deploy verificado READY en producción tras el push.
+
+**Por qué**: TECHDEBT-FRESCO-24 se había cerrado en Jira sin resolver el contenido real; el user pidió terminarlo de verdad, no solo cerrar el ticket. El pulido de logo salió de un warning de consola real y repetido, visto en cada test en vivo de la sesión — no una mejora inventada.
+
+**Siguiente**: catálogo con cobertura real de las 3 franjas diarias. Sin pendientes de ingeniería. El warning de "comida >30min" (franjas de mediodía) queda como posible próximo tech-debt de contenido si se quiere seguir puliendo el catálogo.
