@@ -684,3 +684,19 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: cerrar la automatización completa de Modo Invitado/Registro Progresivo, verificando primero qué pedía realmente el user en vez de asumir un pedido confuso.
 
 **Siguiente**: cobertura de automatización prácticamente completa. Sin pendientes de ingeniería.
+
+---
+
+## 2026-07-31 — Landing puliida (favicon, headline, stat honesto) + `/recipes` y `/profile` conectados a datos reales
+
+**Qué**: user aclaró el contexto real de la sesión — este es el proyecto final de un curso, no un producto con gate de validación concierge. Pidió pulir para la presentación en vez de parar a validar. Varios pedidos concretos:
+- **Favicon**: agregado `app/icon.svg` (antes 404 real, sin favicon configurado en absoluto). Extraído el mark-only del wordmark (`public/brand/logo-base.svg`) para un ícono cuadrado legible.
+- **Título "¿Cuántas veces..." rompía a 2 líneas**: primer intento (sacar `max-w-2xl`) parecía andar pero el user mandó captura real mostrando que seguía rompiendo. Medí mal la primera vez (`getClientRects()` sobre un elemento block devuelve la caja completa, no el ancho real del texto) — con la técnica correcta (`Range` sobre el contenido) until confirmé que el ajuste anterior tenía **0.4px de margen real**, básicamente al borde. Fix real: `tracking-tight`, que da ~250px de margen, confirmado estable hasta 750px de ancho de viewport.
+- **"+200 familias ya planifican" era un dato inventado**: el user cuestionó si mostrar eso "mintiendo". Coincidí — a diferencia de la vista previa del menú (mockup obvio de producto), esa cifra se presenta como hecho real sin serlo. Reemplazado por dos value props honestas (ahorro de tiempo + menos comida tirada), sin número inventado.
+- **Favicon sin contraste**: user notó que el verde oscuro sobre transparente se pierde en tabs oscuras. De acuerdo — agregado fondo crema de marca (`#faf3e3`, el mismo `--color-background` de toda la app) en vez de blanco puro, con el mark escalado para no tocar las esquinas redondeadas.
+- **`/recipes` y `/profile` conectados a datos reales**: eran las únicas 2 pantallas del nav con datos mock (`MOCK_RECIPES` hardcodeado, usuario "Laura" hardcodeado). Nueva función `getUserRecipes()` en `lib/api/meal-plan.ts` — recetas distintas de los planes reales del usuario (no el catálogo global), con estado vacío real para quien nunca generó nada. `/profile` ahora lee email real + tier real (`getUserPlan()`, ya existente); el botón "Mejorar a Pro" (antes `href="#"` muerto) pasa a "Próximamente" deshabilitado — honesto, dado que el pago/self-serve está fuera de alcance del MVP. Borrado `lib/mock/recipes.ts` (quedó 100% sin uso).
+- Todo verificado en vivo con el usuario de test real antes de commitear. `types:check`, `lint:check`, `build`, `bun test` — todos limpios en cada paso. 4 commits, todos pusheados (`c2852af`, `ee83d95`, más el favicon-contraste y el de datos reales).
+
+**Por qué**: el objetivo cambió de "no tocar código, validar primero" a "dejarlo lo más fino posible para la entrega del curso" — pedido explícito del user con el contexto correcto.
+
+**Siguiente**: sin pendientes de esta sesión. Nav completo (Menú/Calendario/Recetas/Perfil) ahora 100% real, sin ninguna pantalla mock.
