@@ -744,3 +744,17 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: TECHDEBT-FRESCO-24 se había cerrado en Jira sin resolver el contenido real; el user pidió terminarlo de verdad, no solo cerrar el ticket. El pulido de logo salió de un warning de consola real y repetido, visto en cada test en vivo de la sesión — no una mejora inventada.
 
 **Siguiente**: catálogo con cobertura real de las 3 franjas diarias. Sin pendientes de ingeniería. El warning de "comida >30min" (franjas de mediodía) queda como posible próximo tech-debt de contenido si se quiere seguir puliendo el catálogo.
+
+---
+
+## 2026-08-01 — Catálogo ampliado a 150 recetas (50/50/50), variedad real de dietas y alérgenos
+
+**Qué**: user pidió igualar el catálogo a 150 recetas, 50 por franja (desayuno/comida/cena), variadas y cubriendo combinaciones de dietas/alérgenos. Partiendo de 55 (35/10/10), sembradas 95 recetas nuevas (40 desayuno, 15 comida, 40 cena).
+- Escrito un script generador (`seed-recipes.ts`, scratchpad, no versionado — contenido, no código de la app) con una tabla de ~90 ingredientes etiquetados (alérgenos reales, vegano/vegetariano, gluten/lactosa/huevo, apto keto, apto halal) y una función que **deriva** `dieta`/`alergenos` de cada receta a partir de sus `ingredientes_principales`, en vez de tipearlos a mano — evita el error humano en un campo food-safety-crítico (la SQL `get_filtered_recipes()` filtra en vivo por `alergenos`, `dieta.vegetariano/vegano/sin_gluten/sin_lactosa/sin_huevo/keto/halal`, confirmado leyendo la función antes de escribir nada).
+- Insertado vía PostgREST bulk-insert (no SQL directo pegado en el chat, para no inflar la conversación con 95 payloads JSON) — encontrado y arreglado en el camino: `service_role` no tenía `GRANT SELECT/INSERT` sobre `public.recipes` (nunca se había usado ese camino antes, el batch original y el de 20 recetas de la sesión anterior fueron por SQL directo). Otorgado el grant mínimo necesario, insertado en 4 lotes de 25, y **revocado el grant al terminar** — no dejar más superficie de la que había antes por una tarea puntual.
+- Catálogo final: 150 recetas (50/50/50 exacto). Cobertura real de restricciones verificada por query: 26 veganas, 70 vegetarianas, 104 sin gluten, 117 sin lactosa, 118 sin huevo, 40 keto, 123 halal, 38 sin ningún alérgeno declarado — suficiente variedad para que un perfil restrictivo real siga encontrando opciones.
+- Verificado en vivo contra `fresco-pre.vercel.app` con cuenta de test fresca: generación real sin errores de consola, menú variado (Tostada integral con tomates cherry y queso feta / Poke bowl de salmón / Gazpacho andaluz). El único warning restante ahora es puntual y específico ("un plato concreto tardó 35 min, no un aviso genérico de catálogo vacío") — señal de que el gap sistémico está cerrado. Cuenta de test borrada al terminar.
+
+**Por qué**: pedido explícito del user de escalar el catálogo a 150 recetas con cobertura real de las tres franjas y de las combinaciones de dietas/alérgenos — profundizando el mismo trabajo de TECHDEBT-FRESCO-24 de la entrada anterior, a mayor escala.
+
+**Siguiente**: sin pendientes de ingeniería. El catálogo ya no es el cuello de botella de calidad percibida del menú semanal.
