@@ -1223,3 +1223,17 @@ Implementado en `fetch-photos.ts` (scratchpad): cada búsqueda ahora manda `quer
 **Por qué**: pedido directo del user de verificar honestamente "¿ya quitamos todo Gemini?" (no, había 2 restos) y de continuar con la cobertura de `consolidator.ts` que se había dejado pendiente. El bug de precios no estaba pedido — apareció al verificar en vivo después del cambio, y se arregló en la misma pasada por ser un regreso directo causado por el propio trabajo de esta sesión.
 
 **Siguiente**: sesión cerrada en este frente. Quedan igual: fotos (954/1000, retomar más tarde), cargo de 5€ en GCP sin investigar (el user pidió olvidarlo por ahora).
+
+---
+
+## 2026-08-02 — FRESCO-33 cerrado (CORS acotado), FRESCO-32 bloqueado por plan de Supabase
+
+**Qué**: 2 tickets de seguridad de la auditoría anterior.
+
+**FRESCO-33 (cerrado)**: `Access-Control-Allow-Origin: *` reemplazado por allowlist real (`fresco-pro.vercel.app` + `localhost:3000`) en las 4 Edge Functions. `getCorsHeaders(req)` ahora es origin-aware — solo devuelve el header cuando el origen de la petición está en la lista, si no lo omite (el browser bloquea la respuesta). `jsonResponse`/`errorResponse`/`toErrorResponse` en `_shared/http.ts` pasaron a recibir `req` (siguiendo la convención del proyecto de 3+ params a objeto). Verificado en vivo: `localhost:3000` recibe el header, `evil.com` no. Deploy de las 4 funciones confirmado, sin error de bundling. Commit `d974c58`.
+
+**FRESCO-32 (bloqueado, sigue abierto)**: intentado activar `password_hibp_enabled` (protección contra contraseñas filtradas, HaveIBeenPwned) vía Management API. La API rechazó el cambio: "available on Pro Plans and up" — el proyecto está en plan gratis de Supabase, esta feature específica requiere plan Pro (25 USD/mes). No resoluble con código. Documentado en el ticket, queda como decisión de negocio del founder (upgradear o aceptar el riesgo).
+
+**Por qué**: continuación directa de los 7 tickets creados en la auditoría de seguridad/deuda técnica de la sesión anterior, empezando por los de seguridad marcados como rápidos.
+
+**Siguiente**: quedan FRESCO-34 a 38 (tests, dedupe, guest-mode) sin tocar.
