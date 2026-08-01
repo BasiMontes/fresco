@@ -1,0 +1,13 @@
+-- Supabase performance advisor (2026-08-01, unused_index) flagged 4 indexes.
+-- Investigated each against real query call sites, not just the advisor:
+-- idx_recipes_alergenos / idx_recipes_ingredientes back get_filtered_recipes()
+-- (every generation call) and idx_meal_plans_semana backs 2 real .eq('semana_iso', ...)
+-- lookups (meal-plan.ts, generate-meal-plan/index.ts) — kept, "unused" only
+-- because current table sizes (314 / 25 rows) make Postgres prefer a seq
+-- scan today; both will start paying off as data grows.
+--
+-- idx_mpr_estado has no real backing query anywhere: every `estado` read in
+-- the codebase is either UI-side (calendar-grid.tsx conditionals) or the
+-- recipe_learning_trigger reading OLD/NEW row values directly, neither of
+-- which benefits from an index. Dropped.
+drop index if exists public.idx_mpr_estado;
