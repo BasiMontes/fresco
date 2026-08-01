@@ -77,6 +77,8 @@ export interface Recipe {
   nombre: string
   slug: string
   descripcion_corta: string | null
+  /** Unsplash stock photo, matched by `nombre`/`descripcion_corta` — `null` until the recipe's backfill batch runs (FRESCO-31). */
+  foto_url: string | null
   meta: RecipeMeta | null
   clasificacion: RecipeClasificacion | null
   dieta: RecipeDieta | null

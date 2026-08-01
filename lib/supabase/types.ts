@@ -116,6 +116,7 @@ export type Database = {
           created_at: string
           descripcion_corta: string | null
           dieta: Json | null
+          foto_url: string | null
           id: string
           ingredientes_principales: Json | null
           ingredientes_que_puede_desagradar: Json | null
@@ -136,6 +137,7 @@ export type Database = {
           created_at?: string
           descripcion_corta?: string | null
           dieta?: Json | null
+          foto_url?: string | null
           id?: string
           ingredientes_principales?: Json | null
           ingredientes_que_puede_desagradar?: Json | null
@@ -156,6 +158,7 @@ export type Database = {
           created_at?: string
           descripcion_corta?: string | null
           dieta?: Json | null
+          foto_url?: string | null
           id?: string
           ingredientes_principales?: Json | null
           ingredientes_que_puede_desagradar?: Json | null
@@ -314,6 +317,7 @@ export type Database = {
           created_at: string
           descripcion_corta: string | null
           dieta: Json | null
+          foto_url: string | null
           id: string
           ingredientes_principales: Json | null
           ingredientes_que_puede_desagradar: Json | null
@@ -352,8 +356,6 @@ export type Database = {
         Args: { p_from_user_id: string; p_to_user_id: string }
         Returns: undefined
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       swap_meal_plan_slots: {
         Args: { p_slot_a_id: string; p_slot_b_id: string }
         Returns: undefined

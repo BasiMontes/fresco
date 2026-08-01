@@ -1,6 +1,7 @@
 import type { Recipe, RecipeDieta } from '@schemas';
 
 import { Heart } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
@@ -8,10 +9,11 @@ import { cn } from '@/lib/utils';
 
 /**
  * Mirrors DESIGN.md's `components.recipe-card`: base card treatment + a
- * dedicated image area (`rounded.lg`, washed placeholder with a per-category
- * icon — real photography stays deferred to P1 per mvp-scope.md, but a flat
- * gray box with zero information was worse than it needed to be for free),
- * a top-right circular favorite button, an `h6` kicker, a heading-font
+ * dedicated image area (`rounded.lg`, real photo when `recipe.foto_url` is
+ * set, washed placeholder with a per-category icon otherwise — the P1
+ * photography deferral from mvp-scope.md is being backfilled recipe by
+ * recipe (FRESCO-31), so both states are real, not just the fallback), a
+ * top-right circular favorite button, an `h6` kicker, a heading-font
  * title, one tag, and a meta line ("50 min · fácil · 2,80€/persona").
  *
  * Consumes the real, nested `@schemas` `Recipe` shape (`clasificacion`/
@@ -55,7 +57,19 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
   return (
     <div className={cn('rounded-card bg-surface p-3 shadow-sm', className)}>
       <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
-        <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
+        {recipe.foto_url
+          ? (
+              <Image
+                src={recipe.foto_url}
+                alt={recipe.nombre}
+                fill
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                className="object-cover"
+              />
+            )
+          : (
+              <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
+            )}
         <Button
           variant="icon"
           size="sm"

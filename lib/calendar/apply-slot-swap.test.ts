@@ -16,6 +16,7 @@ function buildRecipe(dia: DiaSemana, tipo: TipoPlato): Recipe {
     nombre: `${dia}-${tipo}`,
     slug: `${dia}-${tipo}`,
     descripcion_corta: null,
+    foto_url: null,
     meta: null,
     clasificacion: null,
     dieta: null,
