@@ -1284,3 +1284,25 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user de otra ronda de auditoría tras cerrar los 7 tickets anteriores — "vamos a por los 10" sin objeciones.
 
 **Siguiente**: quedan FRESCO-31 (fotos, sin validar el fix de colección) y FRESCO-32 (bloqueado por plan Pro) de rondas anteriores, más estos 10 nuevos — ninguno empezado a implementar todavía.
+
+---
+
+## 2026-08-02 — Los 7 tickets de accesibilidad cerrados, verificados en vivo
+
+**Qué**: implementados y cerrados FRESCO-39 a 45 (accesibilidad) de la ronda de auditoría anterior.
+
+- **39**: h2 sr-only agregado a /menu, /recipes, /profile (arregla salto h1→h3). /calendar excluido — verificado que CalendarGrid no renderiza ningún h3, el hallazgo original era impreciso ahí, no se inventó un fix.
+- **40**: `aria-current="page"` en sidebar y bottom-tab-bar.
+- **41**: `aria-label` en inputs de login/signup/conflict-password (diseño placeholder-only, sin `<label>` visible que asociar).
+- **42**: `aria-pressed` en los chips de dieta/alérgenos/ingredientes/cocina del onboarding.
+- **43**: `aria-expanded`/`aria-controls` en el acordeón de FAQ.
+- **44**: el foco salta al `<h1>` del paso al avanzar/retroceder en el wizard de onboarding — verificado en vivo con Playwright (`document.activeElement` cae en el h1 del paso nuevo tras click en "Siguiente").
+- **45**: `role="alert"`/`aria-live` en todos los mensajes de error (onboarding, login, signup) y `role="status"`/`aria-live="polite"` en el hint de "Generando menú...".
+
+**Bonus encontrado de paso**: un segundo comentario obsoleto idéntico al que se arregló en FRESCO-38 ("guest/auth flow is unresolved") seguía en `calendar/page.tsx` — no se había detectado antes porque el barrido de esa sesión no incluyó ese archivo. Corregido en el mismo commit.
+
+**Progreso real al cierre**: 83/83 tests, tipos limpios, build de producción limpio, verificación visual en vivo con Playwright (aria-pressed alternando bien, foco moviéndose correctamente). Commit `5c0fb8a`, pusheado.
+
+**Por qué**: pedido directo del user de empezar por accesibilidad tras la ronda de auditoría, "sin miedo, sírvete vos mismo" — ejecutado de punta a punta sin pausas intermedias de confirmación, dado el permiso explícito.
+
+**Siguiente**: quedan FRESCO-31 (fotos, sin validar fix de colección), FRESCO-32 (bloqueado, alternativa de Pwned Passwords documentada en el ticket para abordar después), y los 3 tickets de resiliencia UX (46/47/48) de la misma ronda de auditoría, sin empezar todavía.
