@@ -313,12 +313,14 @@ export default function OnboardingPage() {
         )}
 
         {isGenerating && (
-          // The real call can take anywhere from ~20s to ~110s (observed
-          // live, Gemini's thinking-model latency varies a lot) — a static
-          // disabled button with no spinner reads as frozen well before that
-          // window closes, so this sets the real expectation instead.
+          // ADR-0005: menu-slot selection is now a deterministic algorithm
+          // (~2-3s observed live), not a per-call Gemini generation — the
+          // old "puede tardar hasta un minuto" copy overstated the real
+          // wait once that shipped. Kept the spinner + hint pattern itself
+          // (still reassuring during any wait, however short), just
+          // corrected what it claims.
           <p data-testid="generating_hint" className="mt-4 text-body-sm text-tertiary">
-            Puede tardar hasta un minuto — estamos preparando tu menú con IA.
+            Preparando tu menú…
           </p>
         )}
 

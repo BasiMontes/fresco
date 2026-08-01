@@ -23,12 +23,13 @@ const { Given, Then } = createBdd(test);
 Given(
   /^que una invitada con sesión anónima y un email nuevo rellena email y contraseña en \/signup$/,
   async ({ page, signupCtx: ctx }) => {
-    // Real generate-meal-plan latency is highly variable (single calls up
-    // to ~64s observed live; MAX_RETRIES=2 means up to 3 sequential Gemini
-    // calls on a validation-failure streak) — past the config's default 90s
-    // test timeout with no room left for the rest of this scenario. Extend
-    // just this test generously rather than tune to one observed number.
-    test.setTimeout(240_000);
+    // Generation itself is fast post-ADR-0005 (~2-3s, deterministic slot
+    // selection, no Gemini call for a guest — the Pro learning explanation
+    // is the only Gemini call left, and guests are never Pro). The margin
+    // here covers the rest of the scenario (anonymous session bootstrap,
+    // the real /signup navigation, the mocked conversion call), not a long
+    // generation wait.
+    test.setTimeout(60_000);
 
     await page.goto('/onboarding');
     // FRESCO-17's anonymous sign-in fires from a mount effect, not before
@@ -45,9 +46,9 @@ Given(
     await page.getByTestId('next_button').click();
     await page.getByTestId('next_button').click();
     await page.getByTestId('generate_menu_button').click();
-    // Real Gemini generation timing varies (~10-30s typical, up to ~64s
-    // observed live with retries) — generous timeout, same as @lista-compra.
-    await page.waitForURL('**/menu', { timeout: 200_000 });
+    // ~2-3s observed live post-ADR-0005 — margin kept generous for CI
+    // variance, not tuned to the old thinking-model latency.
+    await page.waitForURL('**/menu', { timeout: 20_000 });
 
     await page.goto('/signup');
 
