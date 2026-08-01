@@ -1104,3 +1104,15 @@ En el camino, tercer hallazgo real: Unsplash tiene un **límite de ráfaga** sep
 **Por qué**: revisión honesta del user encontrando un problema real de calidad antes de escalar el mismo error a las 990 recetas restantes — dos rondas de ajuste en vivo hasta llegar a la versión simple y correcta.
 
 **Siguiente**: sesión cerrada. `fetch-photos.ts` (scratchpad, versión final: nombre→descripcion_corta→categoría, pausa 400ms) listo para tandas futuras. `FRESCO-31` tiene las 3 iteraciones documentadas en comentarios.
+
+---
+
+## 2026-08-01 — Otra tanda de fotos: el límite de ráfaga resultó más persistente de lo esperado
+
+**Qué**: corrida otra tanda. Los 400ms de pausa no alcanzaron — la mayoría de los requests con `nombre`/`descripcion_corta` siguieron rebotando en 403. Subida la pausa a 1.2s + cooldown de 4s extra tras cada 403 — mejoró pero no resolvió del todo: en la mayoría de las recetas de la tanda, el 3er intento (categoría genérica) fue el único que sobrevivió, no por ser mejor sino porque para entonces ya pasó suficiente tiempo acumulado desde el último 403. Aplicadas 9 fotos válidas (no incorrectas, pero mayormente cayeron en categoría genérica en vez del nombre específico).
+
+**Progreso real al cierre**: 19/1000. Cortado a propósito tras 3 rondas de ajuste sobre el mismo problema en la misma sesión — mejor parar y retomar en frío que seguir iterando a ciegas.
+
+**Por qué**: pedido directo del user de seguir con las tandas; encontrado en el camino que el arreglo anterior (pausa de 400ms) no era suficiente bajo carga real.
+
+**Siguiente**: sesión cerrada. Pendiente real, no resuelto: simplificar `fetch-photos.ts` a un solo intento por receta (solo `nombre`, sin cascada de fallback) para bajar el volumen de requests por receta de hasta 3 a 1, o probar una pausa fija más agresiva (2-3s). Detalle completo en los comentarios de `FRESCO-31`.
