@@ -940,3 +940,20 @@ Ninguna es bloqueante para el cohort concierge actual — quedan en backlog para
 **Por qué**: con el backlog en cero tras cerrar FRESCO-25, el user pidió seguir sembrando tareas reales en vez de dejar los hallazgos de hoy (billing + advisors de Supabase) solo documentados en bitácora sin trazabilidad en Jira.
 
 **Siguiente**: sesión cerrada. Backlog: FRESCO-26 a FRESCO-30 abiertas, ninguna urgente.
+
+---
+
+## 2026-08-01 — Backlog de hardening cerrado: 4 migraciones reales, un bug de seguridad de verdad encontrado
+
+**Qué**: resueltas las 5 tareas sembradas en la entrada anterior, cada una investigada contra el código real (no solo el texto del advisor de Supabase):
+- `FRESCO-26` — confirmado en la Consola GCP: el gasto es 100% Gemini API, acumulado de las sesiones de testing de julio. Agosto en EUR0.00, forecast EUR0.00 — no es gasto activo. Cerrada sin acción.
+- `FRESCO-27` — leídas las 7 funciones en migraciones + `pg_proc`. Encontrado un **bug de seguridad real**: `get_filtered_recipes` y `get_recent_recipe_ids` son `SECURITY DEFINER` (bypassa RLS) y no validaban `p_user_id` contra `auth.uid()` — a diferencia de `swap_meal_plan_slots`/`jsonb_set_comprado`, que sí lo hacen. Cualquier `authenticated` podía leer el perfil dietético o el historial de comidas de otro usuario real pasando su UUID, violando ADR-0001. Fix en `20260801010000_harden_security_definer_functions.sql`: agregado el chequeo a ambas + revocado el `EXECUTE` por defecto de `PUBLIC` en las 7, re-otorgado solo a `authenticated` en las 4 que la app usa de verdad.
+- `FRESCO-28` — las 14 policies de ownership (no solo las 12 que el advisor sampleó) reescritas para envolver `auth.uid()` en `(select ...)` — `20260801020000_optimize_rls_auth_function_calls.sql`.
+- `FRESCO-29` — `pg_trgm` movida a un schema `extensions` dedicado — `20260801030000_move_pg_trgm_out_of_public.sql`. De paso, encontrado un índice trigram (`idx_recipes_nombre_trgm`) que existe en la base real pero no está trackeado en ninguna migración — drift menor, documentado, no corregido en este ticket.
+- `FRESCO-30` — de los 4 índices "sin uso", 3 tienen queries reales detrás (`get_filtered_recipes`, 2 lookups por `semana_iso`) y solo parecen sin uso porque las tablas todavía son chicas — mantenidos. El cuarto (`idx_mpr_estado`) no tiene ninguna query real detrás — borrado en `20260801040000_drop_unused_mpr_estado_index.sql`.
+
+Cada migración verificada contra los advisors (warning desaparecido) y, en los cambios de RLS/grants, contra la suite completa de Playwright (18/18, un flaky no relacionado por latencia real de Gemini, confirmado en re-run aislado). 4 commits, 4 migraciones, todo pusheado a `main`.
+
+**Por qué**: cerrar de verdad la deuda técnica sembrada, no solo marcar los tickets como vistos — el hallazgo de FRESCO-27 en particular justificó investigar en profundidad en vez de aceptar el advisor al pie de la letra.
+
+**Siguiente**: sesión cerrada. Backlog en cero. Próxima ronda: seguir sembrando cards a medida que aparezcan hallazgos reales (patrón ya establecido: verificar primero, crear el ticket con contexto real, resolver con investigación real, no busywork).
