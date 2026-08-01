@@ -1142,3 +1142,19 @@ Conclusión real: el problema nunca fue el espaciado entre requests dentro de un
 **Por qué**: pedido directo del user de auditar qué se hizo con las fotos que cayeron en campo equivocado — no se había hecho nada hasta ahora, quedaban mal en vivo.
 
 **Siguiente**: sesión cerrada. Retomar con `fetch-photos.ts` (versión simplificada, 1 intento por receta) en frío. `FRESCO-31` sigue abierto, pendiente sumar este hallazgo como comentario.
+
+---
+
+## 2026-08-01 — Eliminadas las 2 últimas llamadas reales a Gemini
+
+**Qué**: el user preguntó por un cargo de ~5€ de la API de Gemini pensando que venía del load testing. Verificado en código: el load test pega solo contra el path Free (100% determinista, cero Gemini). Encontradas las 2 únicas llamadas reales que quedaban: explicación de aprendizaje Pro en `generate-meal-plan` (FR-5.5) y clasificación de pasillos + estimación de coste en `generate-shopping-list` (FR-4.2). Ninguna de las dos es selección de recetas — esa ya era determinista desde ADR-0005.
+
+Reemplazadas ambas por lógica determinista: la explicación Pro ahora se arma con plantilla fija en español usando los mismos datos que antes se le mandaban a Gemini (destacadas + recientesEvitadas). La clasificación de pasillos usa un mapa estático ingrediente→pasillo construido a mano cubriendo los ~190 ingredientes reales de la tabla `recipes` (vocabulario controlado, no texto libre — vale un mapa estático), más una tabla de precios aproximados por ingrediente/unidad para la estimación de coste. `_shared/gemini.ts` y `generate-shopping-list/prompt.ts` quedaron muertos, borrados.
+
+Verificado: tests (13/13), typecheck limpio, deploy en vivo de ambas funciones vía `supabase functions deploy` (el CLI resuelve solo todo el árbol de dependencias — más fiable que armar el array de `files` a mano para el MCP), y smoke test real end-to-end (plan de menú + lista de compra generados, 9 pasillos bien clasificados, sin caer en "Otros", coste estimado €65-88 para 41 ítems). Registros de prueba borrados de la BD después.
+
+**Progreso real al cierre**: cero llamadas a Gemini en toda la app, en cualquier función. El cargo de ~5€ que preguntó el user no viene de este código — sigue sin explicación confirmada (candidatos: coste acumulado de pruebas de julio ya visto en FRESCO-26, o las 3 imágenes de muestra de la evaluación de ilustraciones IA, aunque esas son ~$0.12 y no explican 5€ solas).
+
+**Por qué**: pedido directo del user — no quería más gasto de Gemini teniendo ya 1000 recetas en base de datos, aunque el gasto real no venía de la selección de recetas (que ya era determinista) sino de estas 2 otras funciones que no tenían relación directa con el conteo de recetas.
+
+**Siguiente**: pendiente real (no de este código): identificar el origen exacto del cargo de 5€ mirando la consola de facturación de Google Cloud directamente, ya que no es atribuible a ningún path de este repo tras esta limpieza. Descubierto de paso un bug preexistente y no arreglado en `consolidator.ts`: varias entradas de `BASE_QUANTITIES` usan claves con tilde (`calabacín`, `pimentón`, `orégano`, `nata líquida`, `atún en lata`, `muslo de pollo`) pero el lookup usa `normalizeNombre()` que quita tildes — esas entradas nunca matchean y caen al default `{cantidad:1, unidad:'unidades'}`. No tocado, fuera de alcance de este pedido.
