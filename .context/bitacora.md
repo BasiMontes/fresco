@@ -856,3 +856,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: confirmar que el redeploy no rompió nada y que ambos dominios públicos sirven la app real de forma idéntica.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Regresión al día: 3 escenarios nuevos automatizados, 1 obsoleto corregido
+
+**Qué**: user preguntó si quedaba algo por automatizar en Playwright. Revisado `regression.feature` contra todo lo que cambió esta sesión — 2 hallazgos reales:
+- El único `@pendiente` que quedaba ("la IA no devuelve un menú válido tras los reintentos") estaba obsoleto, no solo sin automatizar: describía el loop de reintentos de `index.ts` que ADR-0005 borró por completo. Reemplazado por el único 422 de generación que sigue siendo real hoy ("Catálogo insuficiente") — el mismo bug real vegano+sin_gluten+alergia-pescado que encontramos y arreglamos esta sesión, ahora documentado en el propio regression.feature.
+- 3 comportamientos reales de esta sesión sin ningún escenario, ni siquiera manual: rechazo de swap entre franjas de tipo distinto, la velocidad real del motor determinista, y `/qa` como superficie nueva.
+- Escritos y automatizados los 3: `tests/steps/calendario.steps.ts` (siembra un plan de 21 huecos vía REST con la cuenta dedicada Pro, arrastra desayuno sobre cena, confirma que ninguno cambia), `tests/steps/generacion-determinista.steps.ts` (cuenta Pro con historial real — el peor caso, incluye la llamada real a Gemini para la explicación — cronometra que el menú completo esté listo en menos de 10s), `tests/steps/qa-page.steps.ts` (página pública, confirma las 5 secciones, las 4 tarjetas de Edge Functions, y que no aparece ningún valor real de credencial en el HTML).
+- Encontrado en el camino (no introducido por este cambio): el fixture compartido de `@aprendizaje` (cuenta `LOCAL_USER`) se había quedado sin franjas "pendiente" — las 21 ya marcadas de corridas anteriores. Regenerado un menú fresco para esa cuenta, mismo patrón de mantenimiento ya documentado en el propio archivo de steps.
+- Suite completa: **18/18 verde** (antes 16, +3 nuevos, -1 corregido no sumaba automatización). `types:check`, `lint:check`, `build` limpios.
+
+**Por qué**: pedido explícito del user tras confirmar que el flujo funciona en PRE y PRO — cerrar la brecha real entre lo que el código hace hoy y lo que el registro de regresión todavía describía.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
