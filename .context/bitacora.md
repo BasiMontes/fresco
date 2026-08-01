@@ -1254,3 +1254,17 @@ Después FRESCO-34/35/36 delegados en paralelo a 3 subagentes (independientes en
 **Por qué**: continuación directa de la cola de tickets de la auditoría de seguridad/deuda técnica.
 
 **Siguiente**: FRESCO-38 (guest-mode anónimo per ADR-0003) — el más grande de la cola, empieza ahora.
+
+---
+
+## 2026-08-02 — FRESCO-38 cerrado: el guest-mode ya estaba hecho, no era feature por construir
+
+**Qué**: antes de implementar nada, verificado en vivo el estado real del guest-mode. Descubierto que `app/onboarding/page.tsx` ya llama a `signInAnonymously()` en su mount effect y `app/(app)/menu/page.tsx` ya tiene el banner "crea una cuenta" para usuarios anónimos — ambos referencian FRESCO-17, un ticket que no apareció en el audit de deuda técnica que generó FRESCO-38. Probado en vivo de punta a punta: signup anónimo real → perfil real → generate-meal-plan real, funciona sin ningún cambio de código, exactamente como predijo ADR-0003 (sesión anónima = JWT real, cero cambios necesarios en RLS ni Edge Functions).
+
+Lo único real pendiente: 4 comentarios en el código que seguían diciendo "guest-mode auth unresolved" — corregidos en `lib/api/edge-functions.ts`, `lib/api/user-profile.ts`, `supabase/functions/_shared/auth.ts`, `app/(app)/menu/page.tsx`. Sin cambio de comportamiento. Deploy de las 4 Edge Functions confirmado (por el cambio en `_shared/auth.ts`, aunque solo era comentario).
+
+**Progreso real al cierre**: FRESCO-38 cerrado, documentado como "ya resuelto vía FRESCO-17, este ticket solo aportó limpieza de documentación" — no se infló el alcance fingiendo trabajo que no hacía falta.
+
+**Por qué**: el audit de deuda técnica de sesiones anteriores se basó en grep de texto "TODO", no en verificar el comportamiento real — quedó demostrado el valor de verificar antes de ejecutar en vez de confiar ciegamente en un hallazgo de auditoría, aunque sea propio.
+
+**Progreso total del backlog de la sesión**: los 7 tickets de la auditoría de seguridad/deuda técnica quedan resueltos — 2 cerrados de verdad con cambios reales (FRESCO-33 CORS, FRESCO-37 dedupe), 3 cerrados con tests reales (FRESCO-34/35/36), 1 bloqueado por plan de pago (FRESCO-32), 1 cerrado como ya-hecho (FRESCO-38). Solo queda FRESCO-31 (fotos, 933/1000 pendientes, fix de colección Unsplash sin validar en vivo aún).
