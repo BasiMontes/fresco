@@ -72,3 +72,23 @@
     font-weight: 400;
   }
 }
+
+/*
+ * Shiki dual-theme code blocks (`components/qa/code-block.tsx`, `/qa` page).
+ * This app has no site-wide dark mode today — scoped to `.shiki` only, per
+ * Shiki's own dual-theme CSS-variable guide, rather than inventing a
+ * site-wide dark theme this project doesn't otherwise have.
+ */
+.shiki,
+.shiki span {
+  background-color: var(--shiki-light-bg) !important;
+  color: var(--shiki-light) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    background-color: var(--shiki-dark-bg) !important;
+    color: var(--shiki-dark) !important;
+  }
+}
