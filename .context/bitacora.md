@@ -782,3 +782,20 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: pedido explícito del user, en el orden que pidió (loading primero, mobile después). El bug de nav mobile no estaba en la lista — salió de mirar de verdad las capturas en vez de asumir que "no hay overflow" significaba "está bien".
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — `/qa` publicado + bug real de catálogo encontrado por el user y cerrado con 164 recetas nuevas
+
+**Qué**: dos piezas grandes en esta sesión.
+- **`/qa` (Software Testability Guide)**: página pública nueva con arquitectura, cuentas demo (por nombre de variable, nunca valores), testing DB/API/UI. Credenciales reales publicadas como Jira Epic `FRESCO-25` — nunca tocan el repo. Un subagente en worktree aislado hizo el codegen (page.tsx + `CodeBlock`/`RequestCard` con Shiki); yo hice las credenciales inline (nunca delegar secretos a un worktree, que además no tiene acceso a `.env`). Corregidas 2 cosas del output del subagente antes de mergear: el alias PRE/PRO estaba redactado como "sin confirmar" cuando esta sesión ya lo tenía verificado, y el fallback de credenciales apuntaba a una key de Jira inventada. Verificado local + en vivo (cero errores consola, mobile sin overflow, botón copiar funciona). Commit `fd99d72`, deploy READY.
+- **Bug real encontrado por el user en su propia cuenta**: "Generar mi menú" le tiraba el 422 genérico. Diagnosticado por perfil real (no logs — no había logs de aplicación para el intento, síntoma en sí mismo): su perfil es vegano + sin gluten + alérgico a pescado. `get_filtered_recipes()` para ese perfil exacto devolvía 20 recetas — una menos del mínimo duro de 21. Confirmado también que el frontend muestra el mismo texto de error para dos causas de 422 completamente distintas (catálogo insuficiente vs. IA agotó reintentos), lo cual ocultó la causa real.
+- El user pidió resolverlo con volumen serio: **cada uno de los 7 flags de dieta y cada uno de los 6 alérgenos, evaluados individualmente (no combinados), con ≥63 recetas por franja** (desayuno/comida/cena) — suficiente para planificar 3 semanas seguidas sin quedarse sin material, no solo la semana mínima. Medidos los gaps reales contra la base antes de escribir nada: los peores eran keto (7 desayuno / 3 comida) y vegano (8 desayuno / 3 comida).
+- Sembradas **164 recetas nuevas**, todas deliberadamente vegana + sin gluten + sin lactosa + sin huevo + keto + halal + libres de los 6 alérgenos rastreados a la vez (una sola receta "limpia" mueve los 13 ejes de restricción simultáneamente — la forma más eficiente de cerrar el gap). Generadas por combinatoria curada (base × estilo × sabor) sobre una tabla de ~40 ingredientes etiquetados, con un chequeo automático antes de publicar que verificaba cada fila realmente computaba como limpia (no confiar en la intención, verificar la composición real).
+- Insertadas vía PostgREST (mismo patrón que la sesión anterior: grant temporal a `service_role`, insert en lotes, revoke al terminar).
+- **Verificado con los 13 ejes**: los 7 flags y los 6 alérgenos superan 63 por franja. El perfil real que rompió pasó de 20 → 184 candidatas. Catálogo total: 150 → **314**.
+- Verificado en vivo de punta a punta: cuenta de test con el perfil exacto (vegano + sin gluten + alergia pescado) generó un menú real sin ninguna advertencia — antes tiraba 422, ahora limpio.
+
+**Por qué**: un usuario real (pagaría por la app) se topó con un error duro en el flujo más básico. El user fue explícito: "hay un riesgo que no podemos correr" — no alcanza con parchear el caso puntual, había que blindar cada restricción individual con margen real para uso continuado, no solo la primera semana.
+
+**Siguiente**: sin pendientes de ingeniería. Catálogo con margen real (3x el mínimo) en las 13 combinaciones de restricción individuales del onboarding.
