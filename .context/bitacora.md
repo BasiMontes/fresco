@@ -799,3 +799,18 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: un usuario real (pagaría por la app) se topó con un error duro en el flujo más básico. El user fue explícito: "hay un riesgo que no podemos correr" — no alcanza con parchear el caso puntual, había que blindar cada restricción individual con margen real para uso continuado, no solo la primera semana.
 
 **Siguiente**: sin pendientes de ingeniería. Catálogo con margen real (3x el mínimo) en las 13 combinaciones de restricción individuales del onboarding.
+
+---
+
+## 2026-08-01 — 3 hallazgos reales del user (screenshots) cerrados: swap sin lógica, sin fotos, generación lenta
+
+**Qué**: el user mandó 2 capturas reales de su propia cuenta y una pregunta abierta sobre velocidad. Los 3 confirmados en código antes de tocar nada, ninguno inventado:
+- **Swap entre franjas distintas**: `swap_meal_plan_slots()` (SQL) y el handler de drag-and-drop no chequeaban `tipo_plato` en absoluto — arrastrar un desayuno a la franja de cena lo dejaba ahí, relabeled "cena". Arreglado en las dos capas: la función SQL ahora rechaza (`raise exception`) un swap entre tipos distintos (migración `20260801000000`, aplicada), y el cliente deshabilita como drop target cualquier franja de tipo distinto al que se está arrastrando — el drag inválido ni siquiera arranca. Verificado en vivo: cross-type bloqueado (nada cambia), same-type sigue funcionando.
+- **Sin fotos en el calendario**: no era bug de render — `Recipe` nunca tuvo campo de imagen, decisión ya documentada en el propio código (`RecipeCard`: "no photography in the MVP per mvp-scope.md's Deferred to P1"). En vez de tocar ese scope (fuera de presupuesto para un proyecto de curso), se reemplazó la caja gris vacía por un ícono real por `categoria` (Lucide, ya era dependencia — cero librerías nuevas, cero costo por receta): `pasta`→Wheat, `pescado`→Fish, `ensalada`→Salad, etc. (12 categorías). Compartido entre `RecipeCard` (`/menu`, `/recipes`) y una versión compacta nueva en cada celda del calendario.
+- **Generación lenta**: el catálogo pasó de 55 a 314 recetas esta sesión — un perfil con pocas restricciones ahora puede tener un `get_filtered_recipes()` de 300+ filas, y el prompt las serializaba TODAS. Efecto secundario real de la propia ampliación de catálogo: los perfiles menos restrictivos (los que menos lo necesitaban) se volvieron más lentos. Arreglado capando a 40 recetas por `tipo_plato` en el texto del prompt (barajado por llamada, para variar entre generaciones) — la validación sigue contra el catálogo filtrado completo, esto solo achica lo que ve el modelo. Redeploy Edge Function versión 9.
+- Verificado de punta a punta con cuenta de test: generación real en 35s con perfil sin restricciones (el peor caso, catálogo grande), cero errores, íconos renderizando bien en `/menu` y `/calendar`, drag bloqueado/permitido correctamente.
+- 3 commits (`b02cb6a` swap+ícono calendario, `0c51277` ícono RecipeCard, `8263b0a` cap de prompt), deploy verificado READY.
+
+**Por qué**: 3 hallazgos reales del propio user usando la app, con evidencia (screenshots), no hipótesis. El pedido explícito fue "los 3, mi rey" — se hicieron los 3 en el orden de urgencia (integridad de datos primero, después UX, después performance).
+
+**Siguiente**: sin pendientes de ingeniería. Fotografía real de recetas sigue diferida a P1 (decisión de costo ya documentada, no revisada esta sesión).
