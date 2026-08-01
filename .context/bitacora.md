@@ -1088,3 +1088,19 @@ Arreglado sin gastar cupo extra: el script ahora pide 10 resultados por búsqued
 **Por qué**: el user pidió ver el progreso de fotos — la revisión honesta encontró el bug antes de seguir gastando cupo horario en repetir el mismo error 960 veces más.
 
 **Siguiente**: sesión cerrada. Retomar con `fetch-photos.ts` (versión con el fix, scratchpad de esta sesión) en tandas de ~40-50/hora. `FRESCO-31` trackea el pendiente, comentario con el detalle del bug + fix ya cargado ahí.
+
+---
+
+## 2026-08-01 — Fotos: bug de categoría genérica confirmado por el user + límite de ráfaga descubierto
+
+**Qué**: user reportó en vivo "tortilla de patatas" con foto de huevo frito — confirmado real (bajada y vista la imagen, era literalmente un huevo frito). Causa raíz encontrada: la búsqueda usaba `clasificacion.categoria` (bucket genérico "huevos") en vez del nombre del plato — esa categoría mezcla platos que no se parecen (tortilla, huevos revueltos, huevos poché...).
+
+Primer arreglo: tabla de traducción por "plato base" (extraído del nombre combinatorio). El user simplificó: prioridad **`nombre` → `descripcion_corta` → categoría** (sin tabla de traducción) — probado en vivo que el nombre completo sin recortar ya matchea bien vía el fuzzy search de Unsplash (confirmado: "spanish potato omelette tortilla" Y el nombre español completo devuelven la misma tortilla real). Descartada la tabla de bases, innecesaria.
+
+En el camino, tercer hallazgo real: Unsplash tiene un **límite de ráfaga** separado de la cuota de 50/hora — pegar requests muy seguidos (la cascada nombre→descripcion_corta→categoría de un mismo lote) tira 403 "Rate Limit Exceeded" aunque la cuota horaria muestre de sobra (confirmado con el header `X-Ratelimit-Remaining`, se recupera en ~5s). Arreglado con una pausa de 400ms entre cada request.
+
+**Progreso real al cierre**: 10/1000 con la versión final (nombre-first, pausa anti-ráfaga). Verificado visualmente: "Carne guisada con patatas" trae un guiso de carne coherente en cazuela de barro.
+
+**Por qué**: revisión honesta del user encontrando un problema real de calidad antes de escalar el mismo error a las 990 recetas restantes — dos rondas de ajuste en vivo hasta llegar a la versión simple y correcta.
+
+**Siguiente**: sesión cerrada. `fetch-photos.ts` (scratchpad, versión final: nombre→descripcion_corta→categoría, pausa 400ms) listo para tandas futuras. `FRESCO-31` tiene las 3 iteraciones documentadas en comentarios.
