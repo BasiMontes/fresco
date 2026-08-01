@@ -1158,3 +1158,17 @@ Verificado: tests (13/13), typecheck limpio, deploy en vivo de ambas funciones v
 **Por qué**: pedido directo del user — no quería más gasto de Gemini teniendo ya 1000 recetas en base de datos, aunque el gasto real no venía de la selección de recetas (que ya era determinista) sino de estas 2 otras funciones que no tenían relación directa con el conteo de recetas.
 
 **Siguiente**: pendiente real (no de este código): identificar el origen exacto del cargo de 5€ mirando la consola de facturación de Google Cloud directamente, ya que no es atribuible a ningún path de este repo tras esta limpieza. Descubierto de paso un bug preexistente y no arreglado en `consolidator.ts`: varias entradas de `BASE_QUANTITIES` usan claves con tilde (`calabacín`, `pimentón`, `orégano`, `nata líquida`, `atún en lata`, `muslo de pollo`) pero el lookup usa `normalizeNombre()` que quita tildes — esas entradas nunca matchean y caen al default `{cantidad:1, unidad:'unidades'}`. No tocado, fuera de alcance de este pedido.
+
+---
+
+## 2026-08-01 — Bug de tildes arreglado, fotos retomadas (46/1000), conectadas al frontend
+
+**Qué**: 3 cosas en una. (1) Arreglado el bug de tildes de `consolidator.ts` (`calabacin`, `salmon`, `atun en lata`, `nata liquida`, `pimenton`, `oregano` — 6 claves) — verificado en vivo que "atún en lata" ahora matchea de verdad (2 latas, antes caía al default 1 unidad). (2) Retomadas las tandas de fotos Unsplash: el bloqueo de burst ya se había liberado solo (sin cambios de código, solo tiempo) — tanda de 25 dio 16/25 sin ningún 403, tanda de 60 dio 22/60 con 25 errores 403 (el límite empezó a re-activarse bajo volumen sostenido, cortado ahí a propósito). 46/1000 fotos aplicadas al cierre. (3) Conectado `foto_url` al frontend real: `RecipeCard.tsx` muestra la foto de Unsplash cuando existe, ícono de categoría cuando es null, mismo layout en ambos casos — usa `next/image` (agregado `images.unsplash.com` a `remotePatterns` en `next.config.mjs`), tipos de Supabase regenerados (`bun run db:types`), campo `foto_url` sumado a la interfaz `Recipe` compartida.
+
+Verificado en vivo con Playwright en `/recipes` y `/menu`: fotos reales renderizan bien (aspect ratio, bordes redondeados, botón de favorito superpuesto), tarjetas sin foto siguen mostrando el ícono sin romper nada.
+
+**Aviso de seguridad menor**: al automatizar el login con `playwright-cli fill --submit`, el comando echó el email/password de la cuenta de test local (`LOCAL_USER_EMAIL`/`LOCAL_USER_PASSWORD`) en su propio log de "Ran Playwright code" — quedó visible en la transcripción de esta sesión. Es cuenta local de desarrollo, no producción, impacto real bajo, pero avisado al user en el momento. Patrón a evitar en sesiones futuras: `playwright-cli fill` con un valor leído de variable de entorno todavía lo imprime en su log de comando ejecutado, el patrón `bash -c 'set -a; . ./.env...'` no protege contra eso.
+
+**Por qué**: pedido directo del user — arreglar el bug encontrado de paso, y avanzar en paralelo con fotos + frontend ya que estaban desbloqueadas.
+
+**Siguiente**: seguir tandas de fotos en sesión futura, dejando pasar más tiempo entre tandas grandes para no re-activar el límite de Unsplash. 954/1000 recetas siguen sin foto. Pendiente sin tocar: el resto de `BASE_QUANTITIES` de `consolidator.ts` solo cubre ~40 de los ~190 ingredientes reales — la mayoría sigue devolviendo "1 unidades" por defecto en vez de una cantidad realista (gap de cobertura, no bug de tildes, no pedido esta sesión).
