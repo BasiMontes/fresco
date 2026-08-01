@@ -988,3 +988,19 @@ Verificado: suite completa de Playwright 18/18 corrida contra los 4 deploys real
 **Por qué**: continuar el patrón de auditoría real de esta sesión (DB ya auditada, tests ya auditados) en el área de negocio principal que quedaba: las Edge Functions.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Primer test negativo: aislamiento de datos entre usuarios (FRESCO-27)
+
+**Qué**: user preguntó si valía la pena sumar tests negativos para ampliar cobertura. Acordado: sí, pero apuntando a superficies reales ya identificadas, no tests especulativos. Elegido el caso obvio: el bug de FRESCO-27 (cross-user data leak vía RPC) todavía no tenía ningún test de regresión.
+
+Verificado en vivo el comportamiento exacto post-fix antes de escribir la aserción (no asumido): `get_recent_recipe_ids` con UUID ajeno → HTTP 200, body `null` (falla silenciosa por WHERE); `get_filtered_recipes` con UUID ajeno → HTTP 400, `"caller does not own profile ..."` (falla por `raise exception`, distinto porque es `plpgsql` vs `sql`). Escrito `tests/steps/aislamiento-datos.steps.ts` + escenario nuevo `@seguridad` en `regression.feature` — REST puro, sin browser, sin Gemini, corre en <1s.
+
+**Hallazgo de infraestructura de testing**: `bunx bddgen` esta vez SÍ regeneró los specs (mtime confirmado), mientras que `playwright test` solo (sin dev server activo en el medio) esta vez NO regeneró — contradice lo asumido en sesiones anteriores de que `defineBddConfig` siempre regenera al cargar la config. Comportamiento no 100% determinista entre ejecuciones; el patrón seguro de ahora en más es correr `bunx bddgen` explícito antes de un `-g` filtrado si el conteo de tests no coincide con lo esperado.
+
+Suite completa: 19/19 verde (18 anteriores + el nuevo).
+
+**Por qué**: pedido explícito del user, con criterio de priorizar tests baratos que protegen bugs reales ya demostrados, no cobertura genérica.
+
+**Siguiente**: sesión cerrada. Buenas candidatas para el próximo test negativo, si se retoma: rate limiting del signup (2/hora ya subido a 20 vía Gmail SMTP), y el guard de `swap_meal_plan_slots`/`jsonb_set_comprado` contra `p_slot_id`/`p_list_id` ajeno (mismo patrón, esas dos ya tenían el chequeo `auth.uid()` desde antes — nunca se demostró en un test que efectivamente rechacen).
