@@ -1196,6 +1196,22 @@ Hallazgos reales:
 
 ---
 
+## 2026-08-02 — Fix real de fondo para la calidad de fotos: colección curada de Unsplash (sin validar en vivo aún)
+
+**Qué**: el user marcó la calidad de las fotos como prioridad obligatoria — no seguir generando más hasta resolver el problema de fondo. Investigado (vía Tavily, documentación oficial de Unsplash, no supuesto) si existe un filtro real de "solo fotografía de comida". Confirmado: el endpoint `/search/photos` permite combinar `collections=<id>` con `query` en la misma llamada (la restricción de "no se pueden combinar" que aparece en la doc es para `/photos/random`, no para búsqueda). Encontrada la colección curada oficial "Food & Drink" de Unsplash — ID **3330455**, 2.5k fotos reales de fotografía de comida.
+
+Implementado en `fetch-photos.ts` (scratchpad): cada búsqueda ahora manda `query=<nombre> cooked meal food photography&collections=3330455`, restringiendo el universo de resultados posibles a fotografía de comida curada — esto ataca directamente la clase de error más grave encontrada en la auditoría anterior (fotos totalmente ajenas a comida, como el programa de boda para "Espaguetis a la boloñesa"), algo que ningún ajuste de texto de búsqueda podía garantizar por sí solo.
+
+**No se pudo validar en vivo**: el limitador de ráfaga de Unsplash seguía activo por el volumen acumulado de tandas de hoy (25+60+20+28+10+pruebas sueltas) — probado con tanda de 10, con 20s de espera adicional, con petición aislada — siempre 403. Cero escrituras en la base desde los intentos fallidos (el script solo escribe en éxito), nada que limpiar.
+
+**Progreso real al cierre**: sigue en 67/1000, sin cambios de datos esta ronda. El fix de fondo queda implementado y documentado (comentario de cabecera del script actualizado con el historial completo v1→v4), listo para probar en frío la próxima sesión.
+
+**Por qué**: pedido directo y enfático del user de resolver la causa raíz antes de seguir generando fotos en volumen — no seguir parcheando el texto de búsqueda sin evidencia de que realmente ataca el problema.
+
+**Siguiente**: sesión futura — probar el fix de la colección con una tanda chica (~10) primero, revisar visualmente antes de confiar en volumen. Si mejora de verdad, seguir con las 933 recetas restantes. Si el bloqueo de Unsplash persiste incluso en frío, evaluar pedir acceso "production" (5000/hora) o reconsiderar la opción de generación de imágenes por IA (~$39 para las restantes, descartada antes por costo, pero la calidad del stock-matching tiene un techo real que quedó demostrado hoy).
+
+---
+
 ## 2026-08-01 — Restos de Gemini limpiados, cobertura completa de ingredientes (con bug real encontrado y arreglado en el camino)
 
 **Qué**: 3 cosas. (1) Barrido el repo entero (no solo `supabase/functions/`) buscando "gemini" — 2 restos reales encontrados y arreglados: `api/config/env.ts` seguía exigiendo `GEMINI_API_KEY` sin que nada la usara (removida del schema, interfaz y mapping), y `app/qa/page.tsx` (guía pública de QA) decía explícitamente que Gemini se invocaba para la explicación de aprendizaje Pro — ya falso, corregido el diagrama de arquitectura y las 2 descripciones. También actualizado un comentario desactualizado en `playwright.config.ts` sobre el timeout de 90s (ya no hace falta por Gemini, pero se deja el valor por otros round-trips reales).
