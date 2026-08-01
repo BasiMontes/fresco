@@ -21,12 +21,6 @@ export interface IngredienteConsolidado {
   unidad: string
 }
 
-/** The exact JSON shape Gemini must return — see api-contracts.md §2b. */
-export interface ShoppingListModelOutput {
-  pasillos: ShoppingListPasillo[]
-  resumen: GenerateShoppingListResponse['resumen']
-}
-
 /** Row shape of the `meal_plan_recipes -> recipes` join used in index.ts step 6. */
 export interface SlotWithRecipeRow {
   /** `null` for an FR-8.2 / AC Scenario 4 (FRESCO-23) unsafe-slot row — the `!recipe` check below already skips it. */

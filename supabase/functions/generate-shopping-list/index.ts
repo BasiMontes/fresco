@@ -2,27 +2,27 @@
 //
 // Orchestrates FR-4.1-FR-4.4, api-contracts.md §2. Auth, DB reads/writes,
 // ownership checks, ingredient consolidation (deterministic, api-contracts.md
-// §2a), the Gemini prompt (aisle classification, prompt.ts), and the
-// retry/validation control flow are all real, working code (STORY-FRESCO-13).
+// §2a), and aisle classification + cost estimate (deterministic,
+// aisle-pricing.ts) are all real, working code (STORY-FRESCO-13). The aisle
+// classification used to be a Gemini call (prompt.ts, now deleted) — killed
+// per explicit decision to stop all Gemini spend: ingredient names are a
+// controlled vocabulary, not free text, so a static map is a reliable,
+// zero-cost substitute.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
-import { callGemini } from '../_shared/gemini.ts'
-import { logger } from '../_shared/logger.ts'
 import { consolidateIngredientes } from './consolidator.ts'
-import { buildShoppingSystemPrompt, buildShoppingUserPrompt } from './prompt.ts'
+import { classifyShoppingList } from './aisle-pricing.ts'
 import type {
   GenerateShoppingListRequest,
   GenerateShoppingListResponse,
   RawIngrediente,
-  ShoppingListModelOutput,
   SlotWithRecipeRow,
 } from './types.ts'
 
 const FN_NAME = 'generate-shopping-list'
-const MAX_RETRIES = 2
 
 Deno.serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req)
@@ -107,65 +107,9 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('No se pudieron consolidar ingredientes', 422)
     }
 
-    // 9. Classify + normalize via Gemini, with bounded retries (NFR-REL-1).
-    let listaData: ShoppingListModelOutput | null = null
-    let lastError = ''
-
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      const systemPrompt = buildShoppingSystemPrompt()
-      const userPrompt = buildShoppingUserPrompt({
-        ingredientes: ingredientesConsolidados,
-        semanaIso: plan.semana_iso,
-        numPersonas,
-        numRecetas: slots.length,
-      })
-
-      const result = await callGemini({
-        systemPrompt,
-        userPrompt,
-        config: {
-          temperature: 0.2, // classification task — consistency over variety
-          // 2048 was the api-contracts.md §2b spec value, tuned for
-          // gemini-1.5-flash. Its replacement (gemini-3.6-flash, see
-          // _shared/gemini.ts) spends hundreds of tokens on internal
-          // reasoning before any visible output — confirmed live on
-          // generate-meal-plan (same starvation bug, same fix). Bumped
-          // pre-emptively instead of waiting to rediscover it here.
-          maxOutputTokens: 8192,
-        },
-      })
-
-      if (!result.ok) {
-        lastError = result.errorText ?? 'Gemini call failed'
-        continue
-      }
-
-      try {
-        const parsed = JSON.parse(result.rawText.trim()) as ShoppingListModelOutput
-
-        if (!parsed.pasillos || !Array.isArray(parsed.pasillos)) {
-          lastError = 'Respuesta sin campo "pasillos"'
-          continue
-        }
-
-        // FR-4.1 / NFR-REL-1: retry unless >=90% of consolidated ingredients survived
-        const totalItemsIA = parsed.pasillos.reduce((acc, p) => acc + p.items.length, 0)
-        if (totalItemsIA < ingredientesConsolidados.length * 0.9) {
-          lastError = `IA devolvió solo ${totalItemsIA} de ${ingredientesConsolidados.length} ingredientes`
-          continue
-        }
-
-        listaData = parsed
-        break
-      } catch {
-        lastError = `JSON inválido en intento ${attempt + 1}`
-      }
-    }
-
-    if (!listaData) {
-      logger.error('Shopping list generation exhausted retries', { fn: FN_NAME, lastError })
-      throw new HttpError(`No se pudo generar la lista: ${lastError}`, 502)
-    }
+    // 9. Classify + estimate cost — deterministic, cannot fail the way a
+    // Gemini call could, so no retry loop needed.
+    const listaData = classifyShoppingList(ingredientesConsolidados)
 
     // 10. Persist
     const { data: savedList, error: saveError } = await supabase

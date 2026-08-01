@@ -1,21 +1,19 @@
 // supabase/functions/generate-meal-plan/index.ts
 //
-// ADR-0005: menu-slot selection is now a deterministic algorithm
-// (`menu-selector.ts`), not an LLM call — Gemini is reserved for the
-// Pro-tier learning explanation only, and only when there is real history to
-// explain. This removed the old retry loop entirely: a deterministic
-// selector can't produce malformed JSON or hallucinate a truncated recipe
-// id the way parsing untrusted Gemini output could (the exact bug class
-// commit 0ec383f had to guard against, now structurally unreachable for the
-// menu-fill step).
+// ADR-0005: menu-slot selection is a deterministic algorithm
+// (`menu-selector.ts`), not an LLM call. The Pro-tier learning explanation
+// (FR-5.5) was the one real Gemini call left in this function; it is now
+// also deterministic (`buildLearningExplanation` in prompt.ts) — the 1000+
+// recipe catalog and the recipe stats already computed here (destacadas,
+// recientesEvitadas) are enough to build the explanation without an LLM
+// call, so there is no more Gemini spend anywhere in this function.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
-import { callGemini } from '../_shared/gemini.ts'
 import { logger } from '../_shared/logger.ts'
-import { buildLearningSystemPrompt, buildLearningUserPrompt } from './prompt.ts'
+import { buildLearningExplanation } from './prompt.ts'
 import { selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
 import type {
@@ -112,10 +110,9 @@ Deno.serve(async (req: Request) => {
     const recipeMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]))
     const { menu, advertencias } = selectMenu({ candidates: recipes, recentRecipeIds, profile })
 
-    // 8. Pro learning explanation (FR-5.5) — the one real Gemini call left.
-    // Only attempted when there's genuine history to explain; a Gemini
-    // failure here is non-critical (the field is already null-tolerant
-    // everywhere downstream), so this never throws.
+    // 8. Pro learning explanation (FR-5.5) — deterministic, built from the
+    // recipe stats already computed here. Cannot fail the way a Gemini call
+    // could, so no try/catch needed.
     let explicacionAprendizaje: string | null = null
     if (isPro && recentRecipeIds.length > 0) {
       const chosenIds = new Set(
@@ -128,30 +125,7 @@ Deno.serve(async (req: Request) => {
         .slice(0, MAX_DESTACADAS_IN_PROMPT)
       const recientesEvitadas = recentRecipeIds.filter(id => recipeMap.has(id)).length
 
-      try {
-        const result = await callGemini({
-          systemPrompt: buildLearningSystemPrompt(),
-          userPrompt: buildLearningUserPrompt({ destacadas, recientesEvitadas }),
-          config: { temperature: 0.7, maxOutputTokens: 1024 },
-        })
-
-        if (result.ok) {
-          const parsed = JSON.parse(result.rawText.trim()) as { explicacion?: string }
-          const texto = parsed.explicacion?.trim()
-          explicacionAprendizaje = texto && texto.length > 0 ? texto : null
-        }
-        else {
-          logger.warn('Learning explanation call failed, continuing without it', { fn: FN_NAME, error: result.errorText })
-        }
-      }
-      catch (error) {
-        // FR-5.5 is explicitly non-critical (`?? null` already the contract
-        // everywhere downstream) — never let this block a real menu.
-        logger.warn('Learning explanation call threw, continuing without it', {
-          fn: FN_NAME,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+      explicacionAprendizaje = buildLearningExplanation({ destacadas, recientesEvitadas })
     }
 
     // 9. Persist meal_plans

@@ -1,42 +1,47 @@
-// Gemini prompt-building — ADR-0005. Menu-slot selection moved to
-// `menu-selector.ts` (a deterministic algorithm, not an LLM call); this file
-// now covers only the one place natural-language generation is actually
-// needed: the Pro-tier learning explanation (FR-5.5), and only when there is
-// real history to explain (`isPro && recentRecipeIds.length > 0`).
-//
-// Kept JSON-mode (`{"explicacion": "..."}`) rather than a plain-text
-// response so `_shared/gemini.ts`'s client (always requests
-// `responseMimeType: 'application/json'`) doesn't need a new code path for
-// this one caller.
+// Deterministic learning-explanation text builder — ADR-0005 already moved
+// menu-slot selection to `menu-selector.ts`; this was the one place natural-
+// language generation was still done via Gemini (FR-5.5, Pro-tier only,
+// only when there's real history to explain). Killed per explicit decision
+// to stop all Gemini spend now that the 1000+ recipe catalog and the recipe
+// stats already computed in index.ts (destacadas, recientesEvitadas) are
+// enough to build a warm, factual explanation without an LLM call.
 
 import type { Recipe } from './types.ts'
 
-export function buildLearningSystemPrompt(): string {
-  return `Eres el motor de explicación de aprendizaje de Fresco, una app de meal-planning para el mercado español. Un usuario Pro acaba de recibir un menú semanal seleccionado automáticamente teniendo en cuenta su historial de las últimas 2 semanas. Tu única tarea es escribir una explicación breve y cálida de qué se tuvo en cuenta.
-
-## REGLAS
-1. Escribe 2-3 frases, en primera persona del plural ("hemos priorizado...", "esta semana evitamos..."), cálidas y específicas — nunca genéricas ni vacías.
-2. Básate ÚNICAMENTE en los hechos reales que se te dan en el mensaje de usuario — nunca inventes platos, ingredientes o patrones que no se mencionen ahí.
-3. Responde EXCLUSIVAMENTE con este JSON, sin ningún texto adicional: {"explicacion": "tu texto aquí"}`
-}
-
-export interface BuildLearningUserPromptParams {
+export interface BuildLearningExplanationParams {
   /** This week's chosen recipes with a real "this works well" signal (rating_promedio >= 4 or veces_cocinada >= 3). */
   destacadas: Recipe[]
   /** Count of recipes excluded from this week's candidates for having appeared in the last 2 weeks. */
   recientesEvitadas: number
 }
 
-export function buildLearningUserPrompt({ destacadas, recientesEvitadas }: BuildLearningUserPromptParams): string {
-  const destacadasTexto = destacadas.length > 0
-    ? destacadas.map(r => `- ${r.nombre} (rating ${r.rating_promedio ?? '-'}, cocinada ${r.veces_cocinada} veces)`).join('\n')
-    : 'Ninguna receta con historial destacado esta semana.'
+function joinNombres(nombres: string[]): string {
+  if (nombres.length === 1) return nombres[0]
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`
+}
 
-  return `## RECETAS DE ESTA SEMANA CON BUEN HISTORIAL
-${destacadasTexto}
+/**
+ * Builds the Pro-tier learning-explanation text (FR-5.5) directly from the
+ * recipe stats already computed by the caller — same 2-3 warm, first-person-
+ * plural sentences the old Gemini prompt asked for, grounded only in the
+ * real facts passed in.
+ */
+export function buildLearningExplanation({ destacadas, recientesEvitadas }: BuildLearningExplanationParams): string {
+  const frases: string[] = []
 
-## REPETICIÓN EVITADA
-Esta semana se evitaron ${recientesEvitadas} receta(s) por haber aparecido ya en tus últimas 2 semanas de menús.
+  if (destacadas.length > 0) {
+    const lista = joinNombres(destacadas.map(r => r.nombre))
+    frases.push(`Esta semana hemos priorizado recetas que ya te funcionaron bien, como ${lista}.`)
+  }
 
-Escribe la explicación de aprendizaje basándote solo en estos hechos.`
+  if (recientesEvitadas > 0) {
+    const receta = recientesEvitadas === 1 ? 'receta' : 'recetas'
+    frases.push(`También evitamos ${recientesEvitadas} ${receta} que ya cocinaste en las últimas 2 semanas, para darte variedad.`)
+  }
+
+  if (frases.length === 0) {
+    frases.push('Esta semana no teníamos historial reciente tuyo, así que armamos el menú priorizando variedad y equilibrio nutricional.')
+  }
+
+  return frases.join(' ')
 }

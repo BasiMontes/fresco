@@ -1,8 +1,8 @@
 import type { Recipe } from './types.ts'
 import { describe, expect, test } from 'bun:test'
-import { buildLearningSystemPrompt, buildLearningUserPrompt } from './prompt.ts'
+import { buildLearningExplanation } from './prompt.ts'
 
-/** Minimal valid Recipe fixture — only the fields the learning prompt reads matter here. */
+/** Minimal valid Recipe fixture — only the fields the learning explanation reads matter here. */
 function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
   return {
     id: 'recipe-1',
@@ -27,42 +27,44 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
   }
 }
 
-describe('buildLearningSystemPrompt (ADR-0005 — Gemini scoped to the learning explanation only)', () => {
-  test('mandates 2-3 warm, specific sentences grounded only in the given facts', () => {
-    const prompt = buildLearningSystemPrompt()
-
-    expect(prompt).toContain('2-3 frases')
-    expect(prompt).toContain('ÚNICAMENTE en los hechos reales')
-  })
-
-  test('mandates the JSON-mode contract the shared Gemini client requires', () => {
-    const prompt = buildLearningSystemPrompt()
-
-    expect(prompt).toContain('{"explicacion"')
-  })
-})
-
-describe('buildLearningUserPrompt', () => {
-  test('lists real destacadas by name with their rating and veces_cocinada', () => {
-    const prompt = buildLearningUserPrompt({
-      destacadas: [makeRecipe({ nombre: 'Fabada asturiana', rating_promedio: 4.5, veces_cocinada: 7 })],
-      recientesEvitadas: 3,
+describe('buildLearningExplanation (ADR-0005 — deterministic, no Gemini call)', () => {
+  test('mentions a single destacada by name', () => {
+    const texto = buildLearningExplanation({
+      destacadas: [makeRecipe({ nombre: 'Fabada asturiana' })],
+      recientesEvitadas: 0,
     })
 
-    expect(prompt).toContain('Fabada asturiana')
-    expect(prompt).toContain('rating 4.5')
-    expect(prompt).toContain('cocinada 7 veces')
+    expect(texto).toContain('Fabada asturiana')
   })
 
-  test('states the real recientesEvitadas count', () => {
-    const prompt = buildLearningUserPrompt({ destacadas: [], recientesEvitadas: 5 })
+  test('joins multiple destacadas with "y" before the last one', () => {
+    const texto = buildLearningExplanation({
+      destacadas: [
+        makeRecipe({ nombre: 'Fabada asturiana' }),
+        makeRecipe({ nombre: 'Tortilla de patatas' }),
+        makeRecipe({ nombre: 'Gazpacho' }),
+      ],
+      recientesEvitadas: 0,
+    })
 
-    expect(prompt).toContain('se evitaron 5 receta(s)')
+    expect(texto).toContain('Fabada asturiana, Tortilla de patatas y Gazpacho')
   })
 
-  test('never invents a destacada when none qualify — states so explicitly instead of an empty section', () => {
-    const prompt = buildLearningUserPrompt({ destacadas: [], recientesEvitadas: 0 })
+  test('states the real recientesEvitadas count, singular', () => {
+    const texto = buildLearningExplanation({ destacadas: [], recientesEvitadas: 1 })
 
-    expect(prompt).toContain('Ninguna receta con historial destacado esta semana.')
+    expect(texto).toContain('evitamos 1 receta ')
+  })
+
+  test('states the real recientesEvitadas count, plural', () => {
+    const texto = buildLearningExplanation({ destacadas: [], recientesEvitadas: 5 })
+
+    expect(texto).toContain('evitamos 5 recetas ')
+  })
+
+  test('never invents a destacada when none qualify and there is nothing recent avoided — falls back to a generic warm sentence', () => {
+    const texto = buildLearningExplanation({ destacadas: [], recientesEvitadas: 0 })
+
+    expect(texto).toContain('armamos el menú priorizando variedad y equilibrio nutricional')
   })
 })
