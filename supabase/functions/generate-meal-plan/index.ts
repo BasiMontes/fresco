@@ -1,13 +1,13 @@
 // supabase/functions/generate-meal-plan/index.ts
 //
-// Orchestrates FR-2.1-FR-2.10, api-contracts.md §1. Auth, DB reads/writes,
-// the Free/Pro history branch, the SQL pre-filter call (FR-8.1 Layer 1), the
-// retry/validation control flow, persistence with manual rollback
-// compensation (NFR-REL-2), and response enrichment are real, working code.
-// The actual Gemini prompt-building (Layer 2 of the food-safety guardrail,
-// plus quality-rule wording) is deferred — see prompt.ts's TODOs — that is
-// implementation/model-tuning detail for /sprint-development, not this
-// bootstrap pass.
+// ADR-0005: menu-slot selection is now a deterministic algorithm
+// (`menu-selector.ts`), not an LLM call — Gemini is reserved for the
+// Pro-tier learning explanation only, and only when there is real history to
+// explain. This removed the old retry loop entirely: a deterministic
+// selector can't produce malformed JSON or hallucinate a truncated recipe
+// id the way parsing untrusted Gemini output could (the exact bug class
+// commit 0ec383f had to guard against, now structurally unreachable for the
+// menu-fill step).
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
@@ -15,14 +15,13 @@ import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { callGemini } from '../_shared/gemini.ts'
 import { logger } from '../_shared/logger.ts'
-import { buildSystemPrompt, buildUserPrompt } from './prompt.ts'
-import { validateMenuOutput } from './validator.ts'
+import { buildLearningSystemPrompt, buildLearningUserPrompt } from './prompt.ts'
+import { selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
 import type {
   DiaSemana,
   GenerateMealPlanRequest,
   GenerateMealPlanResponse,
-  MenuSemanal,
   Recipe,
   TipoPlatoSlot,
   UserProfile,
@@ -31,8 +30,13 @@ import type {
 const FN_NAME = 'generate-meal-plan'
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
-const MAX_RETRIES = 2
 const MIN_CATALOG_SIZE = 21 // 7 days x 3 slots — FR-2.1
+// A recipe counts as "worth mentioning" in the learning explanation when it
+// has a real positive signal — matches the bar `menu-selector.ts`'s own
+// scoring already treats as meaningfully good.
+const DESTACADA_MIN_RATING = 4
+const DESTACADA_MIN_VECES_COCINADA = 3
+const MAX_DESTACADAS_IN_PROMPT = 5
 
 Deno.serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req)
@@ -40,11 +44,6 @@ Deno.serve(async (req: Request) => {
 
   try {
     // 1. Auth (NFR-SEC-1)
-    //
-    // TODO: guest-mode auth unresolved, see business-api-map.md Discovery Gaps.
-    // EPIC-FRESCO-6 needs this endpoint reachable without a Supabase Auth JWT;
-    // requireAuthenticatedUser() (in _shared/auth.ts) carries the full note —
-    // not resolved/invented here.
     const authHeader = req.headers.get('Authorization')!
     const supabase = createRequestClient(authHeader)
     const user = await requireAuthenticatedUser(req, supabase)
@@ -92,8 +91,9 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // 6. Pro-only history read (FR-2.5, FR-5.4, ADR-0001). Free stays a single
-    // line: recentRecipeIds is [] and the prompt never receives history at all.
+    // 6. Pro-only history read (FR-2.5, FR-5.4, ADR-0001). Free stays a
+    // single line: recentRecipeIds is [] and selectMenu() never excludes
+    // anything for it.
     const isPro = profile.plan === 'pro' || profile.plan === 'family'
     let recentRecipeIds: string[] = []
 
@@ -105,131 +105,63 @@ Deno.serve(async (req: Request) => {
       recentRecipeIds = recentIds ?? []
     }
 
-    // 7. Build prompts + call Gemini, with bounded retries (NFR-REL-1).
-    // buildSystemPrompt/buildUserPrompt are TODO stubs — see prompt.ts — so
-    // this loop will fail fast until /sprint-development fills them in. The
-    // retry/validation shape itself is real.
-    const validRecipeIds = new Set<string>(recipes.map(r => r.id))
+    // 7. Select the 21 slots — deterministic, synchronous, cannot itself
+    // fail the way an LLM call could (ADR-0005). A slot with no safe
+    // candidate becomes NO_SAFE_RECIPE_SENTINEL with a real advertencia,
+    // same FR-8.2 / AC Scenario 4 contract as before.
     const recipeMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]))
-    let menuData: MenuSemanal | null = null
-    let lastErrors: string[] = []
+    const { menu, advertencias } = selectMenu({ candidates: recipes, recentRecipeIds, profile })
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      const systemPrompt = buildSystemPrompt()
-      const userPrompt = buildUserPrompt({
-        profile,
-        recipes,
-        recentRecipeIds,
-        semanaIso: semana_iso,
-        isPro,
-      })
-
-      const result = await callGemini({
-        systemPrompt,
-        userPrompt,
-        config: {
-          temperature: 0.7, // some variety without losing filter coherence
-          // 1024 was tuned against gemini-1.5-flash, a non-thinking model.
-          // Its replacement (gemini-3.6-flash, see _shared/gemini.ts) spends
-          // hundreds of tokens on internal reasoning before any visible
-          // output — confirmed live: a 3-word toy prompt alone used 241-283
-          // thoughtsTokenCount. Against the real 21-slot-menu task, 1024
-          // starved the actual JSON entirely (retries exhausted, invalid
-          // JSON every time). 8192 leaves headroom for both.
-          maxOutputTokens: 8192,
-        },
-      })
-
-      if (!result.ok) {
-        throw new HttpError(`Error de Gemini: ${result.errorText}`, 502)
-      }
-
-      let parsed: unknown
-      try {
-        parsed = JSON.parse(result.rawText.trim())
-      } catch {
-        lastErrors = [`Intento ${attempt + 1}: JSON inválido devuelto por la IA`]
-        continue
-      }
-
-      const validation = validateMenuOutput({
-        raw: parsed,
-        validRecipeIds,
-        semanaIso: semana_iso,
-        recipeById: recipeMap,
-        presupuestoSemanaEuros: profile.presupuesto_semana_euros,
-      })
-
-      if (validation.valid) {
-        menuData = parsed as MenuSemanal
-        // FR-2.10 / FR-8.2: propagate validator warnings into advertencias — never dropped
-        if (validation.warnings.length > 0) {
-          menuData.advertencias = [...(menuData.advertencias ?? []), ...validation.warnings]
-        }
-        break
-      }
-
-      if (validation.errors.length === 0 && validation.unsafeSlots.length > 0) {
-        // FR-8.2 / AC Scenario 4 (FRESCO-23): the model correctly reported
-        // there's no safe recipe for these slots, with a real advertencia —
-        // this is a valid, deliverable outcome (20/21, 19/21, ... slots),
-        // never a full failure. Retrying would feed the identical catalog
-        // and profile and reproduce the same result, so accept it as-is
-        // instead of burning the remaining attempts on a foregone
-        // conclusion.
-        //
-        // The `errors.length === 0` guard is load-bearing, found live: a
-        // real response had 14 genuine unsafeSlots AND a malformed/
-        // truncated recipe_id in an unrelated slot (Gemini hallucination) —
-        // errors and unsafeSlots aren't mutually exclusive in validator.ts's
-        // output. Without this guard, the malformed id sailed through
-        // straight into the DB insert as an invalid uuid, which the insert
-        // then rejected — a real 500, not the AC-4 422 this ticket promises.
-        menuData = parsed as MenuSemanal
-        if (validation.warnings.length > 0) {
-          menuData.advertencias = [...(menuData.advertencias ?? []), ...validation.warnings]
-        }
-        logger.warn('Menu generation delivered with unsafe slots flagged', {
-          fn: FN_NAME,
-          attempt,
-          unsafeSlots: validation.unsafeSlots,
-        })
-        break
-      }
-
-      lastErrors = validation.errors
-      logger.warn('Menu validation failed', { fn: FN_NAME, attempt, errors: validation.errors })
-    }
-
-    if (!menuData) {
-      // AC-4: distinct from a genuine upstream failure (Gemini call error,
-      // thrown as 502 above) — this is "we could not assemble a valid
-      // 21-slot menu given this user's constraints", the same class of
-      // "understood the request, can't fulfill it" case as the 422 thrown
-      // for an insufficient catalog above. Frontend narrows on this status
-      // to show AC-4-specific copy; conflating it with 502 would mislead a
-      // user experiencing a transient Gemini outage into thinking their
-      // dietary restrictions are the problem.
-      throw new HttpError(
-        `La IA no generó un menú válido tras ${MAX_RETRIES + 1} intentos: ${lastErrors.join('; ')}`,
-        422
+    // 8. Pro learning explanation (FR-5.5) — the one real Gemini call left.
+    // Only attempted when there's genuine history to explain; a Gemini
+    // failure here is non-critical (the field is already null-tolerant
+    // everywhere downstream), so this never throws.
+    let explicacionAprendizaje: string | null = null
+    if (isPro && recentRecipeIds.length > 0) {
+      const chosenIds = new Set(
+        DIAS.flatMap(dia => TIPOS.map(tipo => menu[dia][tipo])).filter(id => id !== NO_SAFE_RECIPE_SENTINEL),
       )
+      const destacadas = [...chosenIds]
+        .map(id => recipeMap.get(id))
+        .filter((r): r is Recipe => r !== undefined
+          && ((r.rating_promedio ?? 0) >= DESTACADA_MIN_RATING || r.veces_cocinada >= DESTACADA_MIN_VECES_COCINADA))
+        .slice(0, MAX_DESTACADAS_IN_PROMPT)
+      const recientesEvitadas = recentRecipeIds.filter(id => recipeMap.has(id)).length
+
+      try {
+        const result = await callGemini({
+          systemPrompt: buildLearningSystemPrompt(),
+          userPrompt: buildLearningUserPrompt({ destacadas, recientesEvitadas }),
+          config: { temperature: 0.7, maxOutputTokens: 1024 },
+        })
+
+        if (result.ok) {
+          const parsed = JSON.parse(result.rawText.trim()) as { explicacion?: string }
+          const texto = parsed.explicacion?.trim()
+          explicacionAprendizaje = texto && texto.length > 0 ? texto : null
+        }
+        else {
+          logger.warn('Learning explanation call failed, continuing without it', { fn: FN_NAME, error: result.errorText })
+        }
+      }
+      catch (error) {
+        // FR-5.5 is explicitly non-critical (`?? null` already the contract
+        // everywhere downstream) — never let this block a real menu.
+        logger.warn('Learning explanation call threw, continuing without it', {
+          fn: FN_NAME,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
     }
 
-    // FR-5.5 (FRESCO-22): a stray empty/whitespace string from the model is
-    // treated as "no explanation," not retried — unlike `advertencias`, this
-    // field isn't safety-critical, so it's normalized here rather than in
-    // `validator.ts`'s retry-triggering checks.
-    const explicacionAprendizaje = menuData.explicacion_aprendizaje?.trim() || null
-
-    // 8. Persist meal_plans
+    // 9. Persist meal_plans
     const { data: mealPlan, error: planError } = await supabase
       .from('meal_plans')
       .insert({
         user_id: user.id,
         semana_iso,
         fecha_inicio,
-        advertencias: menuData.advertencias ?? [],
+        advertencias,
         explicacion_aprendizaje: explicacionAprendizaje,
       })
       .select('id')
@@ -237,18 +169,14 @@ Deno.serve(async (req: Request) => {
 
     if (planError || !mealPlan) throw new HttpError('Error guardando el plan en la BD', 500)
 
-    // 9. Persist the 21 slots. NFR-REL-2: Supabase Edge Functions have no
+    // 10. Persist the 21 slots. NFR-REL-2: Supabase Edge Functions have no
     // native multi-table transaction, so a failed slot insert triggers a
-    // manual compensating delete of the orphaned meal_plans row — documented
-    // as a known reliability gap, not silently hidden.
+    // manual compensating delete of the orphaned meal_plans row.
     const slots = DIAS.flatMap(dia =>
       TIPOS.map(tipo => {
-        const recipeId = menuData!.menu[dia][tipo]
+        const recipeId = menu[dia][tipo]
         return {
           meal_plan_id: mealPlan.id,
-          // FR-8.2 / AC Scenario 4 (FRESCO-23): the sentinel is never a real
-          // recipe id — persisted as `null` (nullable since the migration
-          // that shipped alongside this change), not the literal string.
           recipe_id: recipeId === NO_SAFE_RECIPE_SENTINEL ? null : recipeId,
           dia,
           tipo_plato: tipo,
@@ -261,10 +189,6 @@ Deno.serve(async (req: Request) => {
 
     if (slotsError) {
       await supabase.from('meal_plans').delete().eq('id', mealPlan.id)
-      // `slotsError.message` is the whole reason this class of bug is
-      // diagnosable at all — found live that this log was dropping it
-      // entirely, so the real cause (a malformed uuid Gemini returned) was
-      // invisible anywhere except raw Postgres logs.
       logger.error('Slot insert failed, rolled back meal_plan', {
         fn: FN_NAME,
         mealPlanId: mealPlan.id,
@@ -273,14 +197,12 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('Error guardando las recetas del plan', 500)
     }
 
-    // 10. Enrich response with full recipe objects, not bare ids
-    // (`recipeMap` built earlier, before the retry loop — step 7 reuses it
-    // for the budget check.)
+    // 11. Enrich response with full recipe objects, not bare ids
     const menuEnriquecido = Object.fromEntries(
       DIAS.map(dia => [
         dia,
-        Object.fromEntries(TIPOS.map(tipo => {
-          const recipeId = menuData!.menu[dia][tipo]
+        Object.fromEntries(TIPOS.map((tipo) => {
+          const recipeId = menu[dia][tipo]
           return [tipo, recipeId === NO_SAFE_RECIPE_SENTINEL ? null : recipeMap.get(recipeId) ?? null]
         })),
       ])
@@ -290,7 +212,7 @@ Deno.serve(async (req: Request) => {
       meal_plan_id: mealPlan.id,
       semana_iso,
       menu: menuEnriquecido as GenerateMealPlanResponse['menu'],
-      advertencias: menuData.advertencias ?? [],
+      advertencias,
       explicacion_aprendizaje: explicacionAprendizaje,
     }
 

@@ -65,6 +65,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0002](./ADR-0002-position-swaps-bypass-learning-trigger.md) | Slot-position swaps must bypass `recipe_learning_trigger` | Accepted | — | — |
 | [ADR-0003](./ADR-0003-guest-auth-anonymous-sign-in.md) | Guest-mode authentication via Supabase Anonymous Sign-In | Accepted | — | — |
 | [ADR-0004](./ADR-0004-guest-data-reassignment-on-email-conflict.md) | Guest-data reassignment on email conflict: password-verified, service-role-only RPC | Accepted | — | — |
+| [ADR-0005](./ADR-0005-deterministic-menu-slot-selection.md) | Deterministic algorithm fills the 21 menu slots; Gemini scoped to the Pro learning explanation only | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
