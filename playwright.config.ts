@@ -38,8 +38,9 @@ export default defineConfig({
   workers: 1,
   // Playwright's own per-test timeout (default 30s) cuts a test short
   // before a longer `expect(...).toBeVisible({ timeout })` override even
-  // gets to finish waiting — found live: @lista-compra's real Gemini
-  // generation (~10-30s observed) needs headroom past the default.
+  // gets to finish waiting. Kept generous even after generate-shopping-list
+  // went fully deterministic (no more Gemini call) — other flows still do
+  // real network round-trips worth headroom past the default.
   timeout: 90_000,
   reporter: 'list',
   use: {

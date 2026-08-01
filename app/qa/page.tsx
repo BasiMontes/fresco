@@ -35,10 +35,7 @@ Next.js App Router (Vercel)
   |-- Supabase Postgres + RLS
   |
   v
-Edge Functions (Deno, server-only)
-  |
-  v
-Gemini API (gemini-3.6-flash)   <-- NUNCA se llama desde el cliente`;
+Edge Functions (Deno, server-only)   <-- 100% determinista, sin llamadas a IA`;
 
 export default function QaGuidePage() {
   const credentialsUrl = process.env.NEXT_PUBLIC_QA_CREDENTIALS_URL;
@@ -61,8 +58,8 @@ export default function QaGuidePage() {
         <h2 id="qa-architecture-heading" className="text-h3">Arquitectura</h2>
         <p className="mt-2 text-body-sm text-tertiary">
           Frontend Next.js desplegado en Vercel, backend en Supabase (Postgres + Auth + Edge
-          Functions), y una capa de IA (Gemini) que solo se invoca desde el servidor — nunca desde el
-          navegador.
+          Functions). Selección de menú, explicación de aprendizaje y lista de la compra son
+          100% deterministas — sin llamadas a modelos de IA en producción.
         </p>
         <CodeBlock code={architectureDiagram} lang="text" className="mt-3" />
 
@@ -209,7 +206,7 @@ export default function QaGuidePage() {
         <div className="mt-4 flex flex-col gap-4">
           <RequestCard
             name="generate-meal-plan"
-            description="Selecciona el menú semanal (7 días x 3 comidas) con un algoritmo determinista sobre el catálogo filtrado (ADR-0005) — Gemini solo se invoca aparte, y únicamente para la explicación de aprendizaje de un usuario Pro con historial real."
+            description="Selecciona el menú semanal (7 días x 3 comidas) con un algoritmo determinista sobre el catálogo filtrado (ADR-0005). La explicación de aprendizaje de un usuario Pro con historial real también es determinista — sin llamadas a IA en ningún paso."
             method="POST"
             path={`${FUNCTIONS_BASE_URL}/generate-meal-plan`}
             body={{ semana_iso: '2026-W32', fecha_inicio: '2026-08-03' }}

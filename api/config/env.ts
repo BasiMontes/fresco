@@ -8,16 +8,16 @@
 //
 // CLAUDE.md §10: public methods fail fast. `loadFrescoEnv()` throws a
 // descriptive error the moment it's called with a required var missing,
-// rather than letting a script fail later at the first Supabase/Gemini call
-// with an opaque "invalid API key" error. Kept as a callable function (not a
+// rather than letting a script fail later at the first Supabase call with an
+// opaque "invalid API key" error. Kept as a callable function (not a
 // module-level side effect) so importing just the `FrescoEnv` type doesn't
 // force validation to run — callers invoke `loadFrescoEnv()` at their own
 // entry point/boot.
 //
 // Same env var names as the Edge Functions use (SUPABASE_URL, not
-// NEXT_PUBLIC_SUPABASE_URL) — see supabase/functions/_shared/supabase-client.ts
-// and _shared/gemini.ts. Documented in .env.example under "Fresco backend
-// tooling (Bun scripts + Edge Functions)".
+// NEXT_PUBLIC_SUPABASE_URL) — see supabase/functions/_shared/supabase-client.ts.
+// Documented in .env.example under "Fresco backend tooling (Bun scripts +
+// Edge Functions)".
 
 import { z } from 'zod';
 
@@ -31,16 +31,12 @@ const frescoEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z
     .string({ message: 'SUPABASE_SERVICE_ROLE_KEY is required — copy .env.example to .env and fill it in' })
     .min(1, 'SUPABASE_SERVICE_ROLE_KEY cannot be empty'),
-  GEMINI_API_KEY: z
-    .string({ message: 'GEMINI_API_KEY is required — copy .env.example to .env and fill it in' })
-    .min(1, 'GEMINI_API_KEY cannot be empty'),
 });
 
 export interface FrescoEnv {
   supabaseUrl: string
   supabaseAnonKey: string
   supabaseServiceRoleKey: string
-  geminiApiKey: string
 }
 
 /**
@@ -54,7 +50,6 @@ export function loadFrescoEnv(): FrescoEnv {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   });
 
   if (!result.success) {
@@ -68,6 +63,5 @@ export function loadFrescoEnv(): FrescoEnv {
     supabaseUrl: result.data.SUPABASE_URL,
     supabaseAnonKey: result.data.SUPABASE_ANON_KEY,
     supabaseServiceRoleKey: result.data.SUPABASE_SERVICE_ROLE_KEY,
-    geminiApiKey: result.data.GEMINI_API_KEY,
   };
 }

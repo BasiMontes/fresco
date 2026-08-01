@@ -9,8 +9,8 @@
 // `process.env.NEXT_PUBLIC_*` expressions below, so this module is safe to
 // import from both Server and Client Components.
 //
-// Server-only secrets (SUPABASE_SERVICE_ROLE_KEY, GEMINI_API_KEY,
-// SUPABASE_URL, SUPABASE_ANON_KEY) are validated separately in
+// Server-only secrets (SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL,
+// SUPABASE_ANON_KEY) are validated separately in
 // `api/config/env.ts` — a Bun-script-only module, never imported here or
 // from `app/`/`components/`. Do not merge the two: doing so would risk a
 // secret leaking into the client bundle.
