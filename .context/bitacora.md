@@ -1022,3 +1022,21 @@ Suite completa: 21/21 verde.
 **Por qué**: continuar directamente las candidatas ya identificadas y aprobadas por el user en la sesión anterior.
 
 **Siguiente**: sesión cerrada. Nota para el futuro: la fixture compartida de `LOCAL_USER_EMAIL` en `@aprendizaje` se agota cada pocas corridas completas del suite — si se sigue viendo, vale la pena una limpieza automática al principio del suite en vez de regenerar a mano cada vez.
+
+---
+
+## 2026-08-01 — Catálogo ampliado a 1000 recetas (335/335/330) + recomendaciones para fotos y load testing
+
+**Qué**: user pidió ampliar el catálogo a ~1000 recetas (330-340 por bloque), y preguntó por fotos y load testing.
+- **Recetas**: catálogo pasó de 314 (106/110/98) a 1000 exactas (335 desayuno / 335 comida / 330 cena). Generadas 686 recetas nuevas (el delta real, no 1000 encima de las 314 existentes) con el mismo patrón de sesiones anteriores: generador combinatorio (bases × estilos × complementos) con `dieta`/`alergenos` computados desde una tabla real de tags por ingrediente, nunca hardcodeados. Verificado antes de insertar: cero duplicados de nombre, y que el catálogo combinado (314 + 686) sigue cumpliendo el mínimo de 63/tipo/restricción ya establecido para los 7 flags reales que usa `get_filtered_recipes` (vegetariano, vegano, sin_gluten, sin_lactosa, sin_huevo, keto, halal) — sumar solo puede mejorar ese mínimo, nunca empeorarlo. `kosher`/`paleo`/`bajo_fodmap` existen en el jsonb pero no forman parte de esa función de filtrado (confirmado leyendo el código), así que su distribución no es crítica.
+- Insertado vía Management API de Supabase (`POST .../database/query`) en 14 batches de 50 filas — más eficiente que pasar cada batch por el MCP (que hubiera gastado muchísimo contexto). Un bug de bash (`08`/`09` interpretados como octal inválido) hizo que 2 batches no entraran en la primera pasada — detectado por conteo (900 en vez de 1000), corregido reintentando solo esos 2 con nombres de archivo explícitos. El unique constraint de `slug` protegió contra duplicar el batch 000 que el bug reintentó por error.
+- Verificado: suite completa 21/21 verde contra el catálogo 3x más grande, y la generación de menú (el test más sensible a volumen de datos) tardó *menos* que antes (3.5s) — sin regresión de performance.
+- Sin cambios de repo — operación de datos pura, nada que comitear.
+
+- **Fotos**: recomendado Unsplash API (50 req/hora gratis en demo, 5000/hora aprobado, uso comercial permitido) con Pixabay como respaldo (5000/hora gratis desde el día 1). Plan: columna `foto_url` en `recipes` + script de búsqueda por nombre/categoría. Pendiente de que el user cree la cuenta de Unsplash y pase el Access Key — no ejecutado todavía.
+
+- **Load testing**: recomendado k6 apuntando solo a la generación de menú Free-tier (100% determinista post-ADR-0005, cero costo real de Gemini) — el único camino con Gemini real (explicación Pro, lista de la compra) queda fuera del load test para no quemar presupuesto del "Fresco Ticket". Propuesto 20-50 usuarios concurrentes como primer objetivo, midiendo p50/p95/error rate. Solo discutido, no ejecutado todavía.
+
+**Por qué**: pedido explícito del user para preparar el catálogo de cara a más usuarios reales, más las dos preguntas abiertas sobre fotos y capacidad.
+
+**Siguiente**: sesión cerrada. Pendiente si se retoma: (1) cuenta de Unsplash del user para arrancar fotos, (2) instalar/configurar k6 y correr el primer load test real contra `generate-meal-plan` Free-tier.
