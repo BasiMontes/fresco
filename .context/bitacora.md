@@ -1074,3 +1074,17 @@ Ejecutado el plan de Unsplash:
 **Por qué**: el user quiso explorar la vía de IA antes de comprometerse a Unsplash — evaluación real hecha, descartada por costo real ($39) y por decisión explícita del user de no gastar.
 
 **Siguiente**: sesión cerrada. Para retomar: correr `fetch-photos.ts` de nuevo (scratchpad de esta sesión, no persistido en el repo) en tandas de ~40 cada hora hasta completar las 1000. Pendiente separado, no pedido todavía: conectar `foto_url` a la UI real (`recipe-card.tsx` hoy usa el ícono de categoría como placeholder) — decisión de diseño para otra sesión.
+
+---
+
+## 2026-08-01 — Bug real encontrado en las fotos: recetas de la misma categoría compartían foto idéntica
+
+**Qué**: creado `FRESCO-31` para trackear el pendiente de completar las 960 fotos restantes. Al listar las 40 ya hechas para que el user las viera, encontrado un bug real: el script pedía 1 solo resultado por búsqueda de categoría, así que las 12 recetas de `carne` tenían la foto EXACTA misma, igual las 9 de `legumbres`, las 6 de `arroz`, etc. — se iba a notar apenas se vieran dos recetas de la misma categoría juntas.
+
+Arreglado sin gastar cupo extra: el script ahora pide 10 resultados por búsqueda (mismo costo de request) y elige uno distinto por receta vía hash del `id` — variedad real dentro de la categoría sin buscar más veces. Reseteadas las 40 fotos anteriores (`foto_url = null`) y reaplicado un lote de prueba de 10: **10/10 URLs distintas**, confirmado.
+
+**Progreso real al cierre**: 10/1000, quedan 990. Usado el cupo de la hora completo entre el reset y las pruebas del fix.
+
+**Por qué**: el user pidió ver el progreso de fotos — la revisión honesta encontró el bug antes de seguir gastando cupo horario en repetir el mismo error 960 veces más.
+
+**Siguiente**: sesión cerrada. Retomar con `fetch-photos.ts` (versión con el fix, scratchpad de esta sesión) en tandas de ~40-50/hora. `FRESCO-31` trackea el pendiente, comentario con el detalle del bug + fix ya cargado ahí.
