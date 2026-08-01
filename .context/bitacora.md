@@ -884,3 +884,23 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: pedido explícito del user, ronda de mantenimiento tras varias sesiones seguidas agregando steps con el mismo patrón copy-paste.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Backlog de Jira al día (FRESCO-25 cerrado) + bloqueador real de producción resuelto: SMTP propio para confirmación de cuenta
+
+**Qué**: repaso de backlog completo en Jira — FRESCO-4 a FRESCO-24 ya Finalizada; único abierto era FRESCO-25 (epic `/qa`), cuyo trabajo ya estaba shippeado y verificado en sesiones previas — transicionado a Finalizada. Backlog queda en cero abiertos.
+
+Preguntado si la app está lista para producción: verificado contra Supabase advisors + memoria — no del todo. Dos gaps reales encontrados:
+- **Bloqueador real, confirmado con datos**: `rate_limit_email_sent` del mailer default de Supabase estaba en **2 emails/hora**, sin SMTP propio configurado (`smtp_host: null`) — confirmado vía Management API (`GET /v1/projects/{ref}/config/auth`). Cualquier intento de subir ese límite o de tocar el template del mail (`mailer_templates_confirmation_content`) devolvía 400/402: Supabase bloquea ambas cosas en plan Free sin SMTP custom, sin excepción — corrige una suposición del user de que el template se podía tocar independientemente (no, es la misma llave).
+- `password_hibp_enabled` (protección de contraseñas filtradas) también bloqueado — requiere plan Pro, no relacionado al tema del mail.
+
+Explorado un dominio gratis para SMTP propio (DigitalPlat FreeDomain `.qzz.io`, GitHub Student Pack — sin `.edu` no aplica, GitHub Pages — no sirve para email, Freenom — muerto desde 2023 por demanda de Meta, `is-a.dev` — ToS restrictivo + review manual, `eu.org`/FreeDNS — mismo problema estructural de reputación compartida). Conclusión: gratis + sin fricción = reputación compartida con spam, no hay forma de evitarlo sin pagar o sin dominio propio.
+
+**Resuelto sin dominio ni costo**: user creó cuenta dedicada `hola.frescoapp@gmail.com`, generó App Password (2FA + `myaccount.google.com/apppasswords`). Configurado Gmail SMTP relay como SMTP custom de Supabase Auth (`smtp.gmail.com:587`) vía Management API — esto desbloqueó las tres cosas a la vez: `rate_limit_email_sent` subido a 20/hora, `mailer_templates_confirmation_content` reemplazado por template branded (verde/naranja, tokens de `DESIGN.md`), remitente pasa a "Fresco `<hola.frescoapp@gmail.com>`". Probado en vivo con un signup real a `basilio.montescastano@gmail.com` — llegó a Recibidos (no spam), TLS, template renderizado correcto. Confirmado que Gmail `+alias` (`email+test@gmail.com`) funciona tanto en Gmail como en la validación de la app, para poder generar múltiples cuentas de test reales sin gastar cupo del rate limit en emails distintos.
+
+Nota de higiene: quedó un usuario real sin confirmar en `auth.users` de la prueba (`basilio.montescastano@gmail.com`) — user decidió dejarlo, no borrar.
+
+**Por qué**: pregunta directa del user sobre production-readiness llevó a auditar de verdad en vez de asumir — el gap de email era real y ya se había manifestado en vivo (rate limit pegado en un test anterior). Sin esto, cualquier pico de altas reales rompía el flujo de confirmación.
+
+**Siguiente**: sesión cerrada. Queda como recordatorio a futuro: este SMTP vía Gmail personal es parche de etapa concierge (8-10 usuarios), no solución definitiva — cuando haya dominio propio real, migrar a Resend + dominio verificado y retirar la cuenta Gmail dedicada.
