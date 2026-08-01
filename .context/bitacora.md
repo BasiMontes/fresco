@@ -1268,3 +1268,19 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: el audit de deuda técnica de sesiones anteriores se basó en grep de texto "TODO", no en verificar el comportamiento real — quedó demostrado el valor de verificar antes de ejecutar en vez de confiar ciegamente en un hallazgo de auditoría, aunque sea propio.
 
 **Progreso total del backlog de la sesión**: los 7 tickets de la auditoría de seguridad/deuda técnica quedan resueltos — 2 cerrados de verdad con cambios reales (FRESCO-33 CORS, FRESCO-37 dedupe), 3 cerrados con tests reales (FRESCO-34/35/36), 1 bloqueado por plan de pago (FRESCO-32), 1 cerrado como ya-hecho (FRESCO-38). Solo queda FRESCO-31 (fotos, 933/1000 pendientes, fix de colección Unsplash sin validar en vivo aún).
+
+---
+
+## 2026-08-02 — Nueva ronda de auditoría: accesibilidad + resiliencia UX, 10 tickets creados
+
+**Qué**: 2 auditorías en paralelo (subagentes), áreas no cubiertas por la ronda anterior (esa fue seguridad + deuda técnica).
+
+**Accesibilidad (7 hallazgos reales)**: salto de heading h1→h3 en páginas del shell, falta `aria-current` en nav activo, inputs de login/signup sin label accesible, falta `aria-pressed` en los chips del onboarding, FAQ sin `aria-expanded`/`aria-controls`, wizard de onboarding no mueve el foco al cambiar de paso, errores/loading de formularios sin `aria-live`. Confirmado explícitamente que otras cosas YA están bien hechas (botón de favorito con aria-label, landmarks reales, SegmentedControl con role=radiogroup, imágenes con alt real, lang="es" seteado) — no se inflaron hallazgos donde no había.
+
+**Resiliencia UX (3 hallazgos reales)**: sin `error.tsx`/`global-error.tsx` de respaldo en ninguna parte, mensajes de error genéricos en el calendario (no distinguen tipo de fallo), sin manejo de sesión expirada (401 cae a mensaje genérico, nunca "volvé a iniciar sesión"). El resto del audit confirmó que la app está bastante disciplinada: los 4 Server Components de lectura (/menu, /calendar, /recipes, /shopping-list) comparten el mismo patrón deliberado y honestamente comentado de try/catch → empty state; doble-submit protegido en todos los botones mutantes; optimistic UI usado correctamente donde corresponde (swap) y evitado deliberadamente donde no (marcar cocinada/descartada, estado terminal). Offline/network-down explícitamente no implementado, marcado como prioridad baja razonable para la escala del proyecto, no se creó ticket para eso.
+
+**Tickets creados**: FRESCO-39 a FRESCO-48 (10 total), todos en Jira, todos "Tarea", severidad y esfuerzo documentados en cada uno.
+
+**Por qué**: pedido directo del user de otra ronda de auditoría tras cerrar los 7 tickets anteriores — "vamos a por los 10" sin objeciones.
+
+**Siguiente**: quedan FRESCO-31 (fotos, sin validar el fix de colección) y FRESCO-32 (bloqueado por plan Pro) de rondas anteriores, más estos 10 nuevos — ninguno empezado a implementar todavía.
