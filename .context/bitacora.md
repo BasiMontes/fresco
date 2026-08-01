@@ -1237,3 +1237,20 @@ Implementado en `fetch-photos.ts` (scratchpad): cada búsqueda ahora manda `quer
 **Por qué**: continuación directa de los 7 tickets creados en la auditoría de seguridad/deuda técnica de la sesión anterior, empezando por los de seguridad marcados como rápidos.
 
 **Siguiente**: quedan FRESCO-34 a 38 (tests, dedupe, guest-mode) sin tocar.
+
+---
+
+## 2026-08-02 — FRESCO-37/34/35/36 cerrados: dedupe + 4 archivos de tests nuevos
+
+**Qué**: continuación de la ronda de tickets técnicos. FRESCO-37 primero (inline, mecánico): `normalizeNombre()` duplicado entre `consolidator.ts` y `aisle-pricing.ts` movido a `supabase/functions/_shared/normalize.ts`, ambos archivos importan de ahí ahora. Deploy de `generate-shopping-list` confirmado.
+
+Después FRESCO-34/35/36 delegados en paralelo a 3 subagentes (independientes entre sí, sin overlap de archivos):
+- **34**: `consolidator.test.ts` + `aisle-pricing.test.ts`, 11 tests. Incluye test de regresión específico para el bug de precios de gramos reales (ya arreglado esta sesión) — si se reintroduce, el test falla. Hallazgo sin resolver: la rama `canSumUnits`/warning "Unidades incompatibles" parece código muerto, no se pudo construir un input real que la dispare.
+- **35**: `shopping-list.test.ts`, 6 tests. Hallazgo sin resolver: `getShoppingListForPlan`/`toggleShoppingListItem` no validan sesión antes de consultar (a diferencia de sus pares en `meal-plan.ts`/`user-profile.ts`), se apoyan solo en RLS/RPC — puede ser intencional.
+- **36**: `edge-functions.test.ts`, 12 tests. Confirmó que las llamadas de invitado hoy mandan sin header de auth — contexto directo para FRESCO-38.
+
+**Progreso real al cierre**: 83/83 tests pasando en todo el repo (subieron de 54 a 83), 0 cambios a la lógica de negocio real (los 3 subagentes solo agregaron tests, no tocaron los archivos bajo test). Ambos hallazgos (código muerto, inconsistencia de auth) documentados en comentarios de Jira, no resueltos — quedan fuera de alcance de "agregar tests".
+
+**Por qué**: continuación directa de la cola de tickets de la auditoría de seguridad/deuda técnica.
+
+**Siguiente**: FRESCO-38 (guest-mode anónimo per ADR-0003) — el más grande de la cola, empieza ahora.
