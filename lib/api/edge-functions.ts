@@ -51,9 +51,10 @@ async function callEdgeFunction<TResponse>(
     headers: {
       'Content-Type': 'application/json',
       // api-contracts.md §0: Authorization: Bearer <supabase-jwt> required on
-      // every call. `accessToken` is null for a guest session — Supabase's
-      // guest-mode auth path is itself unresolved (see below), so this will
-      // 401 against a real deployment until that gap is closed.
+      // every call. `accessToken` is only ever null before a session exists
+      // at all — guest sessions carry a real anonymous-user JWT (ADR-0003),
+      // so in practice this branch is a defensive fallback, not the guest
+      // path itself.
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify(body),
@@ -70,10 +71,11 @@ async function callEdgeFunction<TResponse>(
 /**
  * POST /generate-meal-plan — api-contracts.md §1.
  *
- * TODO: guest-mode auth unresolved, see business-api-map.md — a guest
- * (unauthenticated) caller has no Supabase JWT to send here yet. Until the
- * guest-auth mechanism is decided, `accessToken` must come from a real
- * signed-in Supabase session; do not invent a guest-session workaround here.
+ * `accessToken` is `null`-typed for the brief window before the onboarding
+ * page's mount effect resolves a session — by the time this is actually
+ * called, `accessToken` is always a real Supabase JWT, guest or registered
+ * (ADR-0003, FRESCO-17: guest mode uses `signInAnonymously()`, so a guest
+ * has a real anonymous-session JWT, not an absent one).
  */
 export async function generateMealPlan(
   request: GenerateMealPlanRequest,

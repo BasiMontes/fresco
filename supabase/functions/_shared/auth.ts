@@ -6,14 +6,12 @@ import { HttpError } from './http.ts'
  * than returning a nullable user. NFR-SEC-1: every Edge Function call must
  * resolve a real Supabase Auth user before touching any data.
  *
- * TODO: guest-mode auth unresolved, see business-api-map.md Discovery Gaps.
- * EPIC-FRESCO-6 / FR-6.1 requires a first-time visitor to generate one menu
- * without an account, but every source document (fresco-edge-function-
- * generate.md step 1, NFR-SEC-1) specifies this exact 401-on-missing-header
- * behavior with no carve-out. Whether guest mode needs an anonymous Supabase
- * session, a client-side-only generation path, or a guest-scoped token is
- * not resolved by any source document — not invented here. Resolve
- * explicitly in a future story before EPIC-FRESCO-6 can ship.
+ * EPIC-FRESCO-6 / FR-6.1 guest mode (ADR-0003, FRESCO-17): resolved via
+ * Supabase Anonymous Sign-In — an anonymous session is a fully-formed Auth
+ * session with a real JWT and `auth.uid()`, so it satisfies this check
+ * unmodified. No guest-specific branch needed here; `data.user.is_anonymous`
+ * is available on the returned `User` if a caller ever needs to distinguish
+ * guest from registered.
  */
 export async function requireAuthenticatedUser(
   req: Request,

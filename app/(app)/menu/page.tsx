@@ -39,10 +39,10 @@ export default async function MenuPage() {
   }
   catch (error) {
     // `getMealPlanForWeek` fails fast (throws) on a real read error,
-    // including "no authenticated session" — correct for the function
-    // itself, but guest/auth flow is unresolved everywhere else in this repo
-    // today (see `lib/api/edge-functions.ts`'s TODOs), so an unauthenticated
-    // visit is currently the only reachable state. A dedicated read-error UI
+    // including "no authenticated session" — a real gap remains only for a
+    // visit with literally zero session at all (no page currently forces one
+    // outside `/onboarding`'s mount effect), not for guest vs. registered
+    // (ADR-0003, FRESCO-17 resolved that). A dedicated read-error UI
     // (network/auth, distinct from "no plan yet") is real UI/UX-design scope
     // this story named but no AC scenario requires yet — tracked as a gap,
     // not silently dropped: for now this falls back to the same empty state

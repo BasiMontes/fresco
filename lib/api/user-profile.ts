@@ -38,10 +38,9 @@ export class UserProfileError extends Error {
  * Upserts the onboarding profile for the CURRENTLY authenticated user.
  *
  * Public method — fails fast (throws) rather than swallowing errors, per
- * `references/error-handling.md`. Assumes an authenticated Supabase session
- * exists (guest-mode onboarding is explicitly out of scope for FRESCO-5); if
- * none is found, this is a pre-existing gap shared with the untouched
- * guest-mode TODO in `app/onboarding/page.tsx`, not introduced by this story.
+ * `references/error-handling.md`. Assumes a Supabase session already exists
+ * — real or anonymous guest (ADR-0003, FRESCO-17 guarantees one before this
+ * is ever called from `app/onboarding/page.tsx`'s mount effect).
  *
  * `alergenos`/`ingredientes_odiados` are validated against the curated
  * option lists (not free text) before persisting — the DB columns are
