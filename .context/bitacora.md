@@ -1040,3 +1040,19 @@ Suite completa: 21/21 verde.
 **Por qué**: pedido explícito del user para preparar el catálogo de cara a más usuarios reales, más las dos preguntas abiertas sobre fotos y capacidad.
 
 **Siguiente**: sesión cerrada. Pendiente si se retoma: (1) cuenta de Unsplash del user para arrancar fotos, (2) instalar/configurar k6 y correr el primer load test real contra `generate-meal-plan` Free-tier.
+
+---
+
+## 2026-08-01 — Primer load test real: 20 usuarios concurrentes, p95 939ms, 99.92% éxito
+
+**Qué**: instalado k6 (brew), creada cuenta desechable de test (Free-tier, confirmada vía SQL directo para saltar el click de confirmación de mail, perfil sembrado a mano). Escrito `load-test.js`: ramping-vus 0→20 en 15s, sostenido 30s, baja en 10s, apuntando solo a `generate-meal-plan` (Free, determinista, cero Gemini real).
+
+Primer intento: 79% de error. Diagnosticado con una ráfaga manual de 20 curls verdaderamente concurrentes (200 limpio en los 20) — descartada causa de infraestructura/pool de conexiones. Causa real: bug en la fórmula de generación de `semana_iso` únicas del script — el multiplicador `__VU * 100000` desbordaba el rango válido de `Date` en un segundo intento, y el primero colisionaba semanas entre iteraciones del mismo VU (la unicidad tiene que ser global entre las 20 VUs porque todas comparten una sola cuenta). Corregido con `__VU * 300 + __ITER` (holgado sobre las iteraciones reales esperadas) alimentando año+semana ISO derivados matemáticamente.
+
+**Resultado real, limpio**: 1266 requests reales, 99.92% éxito (1 fallo transitorio), p50 639ms, p90 831ms, **p95 939ms**, máximo 2.77s, throughput sostenido ~23 req/s con 20 VUs concurrentes. Muy por debajo del objetivo (<3s p95). Confirma que el algoritmo determinista de ADR-0005 escala sin problema a un volumen bien por encima del cohort concierge actual, sin gastar nada de presupuesto de Gemini.
+
+Limpieza: 2063 `meal_plans` generados por el test borrados junto con la cuenta desechable completa (cascade se llevó los `meal_plan_recipes`). Verificado: suite completa 21/21 tras la limpieza, sin residuos.
+
+**Por qué**: continuar el plan de load testing ya acordado — validar capacidad real antes de necesitarla, con cero riesgo de costo real de IA.
+
+**Siguiente**: sesión cerrada. El script (`load-test.js`) quedó en el scratchpad de la sesión, no en el repo — si se quiere repetir como parte de CI/mantenimiento habría que decidir dónde vive de forma permanente (no se guardó en `supabase/` ni en `tests/` a propósito, para no comprometerse a mantenerlo sin que el user lo pida). Pendiente: fotos vía Unsplash (falta cuenta del user).
