@@ -47,6 +47,10 @@ export async function getShoppingListForPlan(
     return null;
   }
 
+  // Cast, not a runtime validation — `items` is jsonb typed as `Json`, but
+  // its real shape is guaranteed by `generate-shopping-list/index.ts`, the
+  // only writer of this column. Same trust boundary as `meal-plan.ts`'s
+  // `toRecipe()`.
   const pasillos = data.items as unknown as GenerateShoppingListResponse['pasillos'];
   const totalItems = pasillos.reduce((acc, pasillo) => acc + pasillo.items.length, 0);
 
