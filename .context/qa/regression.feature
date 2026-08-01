@@ -395,6 +395,20 @@ Característica: Flujo completo de usuario en Fresco
     Cuando la misma cuenta llama a get_filtered_recipes con el UUID de la otra
     Entonces la llamada es rechazada, no se filtra el catálogo con el perfil ajeno
 
+  @seguridad @edge-case @verificado-manual-2026-08-01 @automatizado
+  # Automatizado: tests/steps/aislamiento-datos.steps.ts
+  Escenario: Un usuario no puede intercambiar franjas del menú de otra cuenta
+    Dado que otra cuenta real tiene un menú con dos franjas propias
+    Cuando intento intercambiar esas dos franjas ajenas desde mi propia sesión
+    Entonces la llamada es rechazada por no ser el dueño del plan
+
+  @seguridad @edge-case @verificado-manual-2026-08-01 @automatizado
+  # Automatizado: tests/steps/aislamiento-datos.steps.ts
+  Escenario: Un usuario no puede marcar como comprado un ítem de la lista de la compra de otra cuenta
+    Dado que otra cuenta real tiene una lista de la compra con un ítem sin comprar
+    Cuando intento marcar ese ítem ajeno como comprado desde mi propia sesión
+    Entonces la llamada no da error pero el ítem de la otra cuenta sigue sin comprar
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
