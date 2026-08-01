@@ -921,3 +921,5 @@ Nota de higiene: quedó un usuario real sin confirmar en `auth.users` de la prue
 **Por qué**: pedido explícito del user tras ver el template inicial — quería fidelidad visual real (no solo colores) y coherencia de idioma con el mercado objetivo (España).
 
 **Siguiente**: sesión cerrada. Pendiente sin resolver, no bloqueante: confirmar en la consola de GCP qué está consumiendo el presupuesto "Fresco Ticket" (€5/mes) — probablemente Gemini API, no verificado con detalle en esta sesión.
+
+Verificación final: alta de test adicional (`+fresco5`) confirmó visualmente el resultado completo — logo, paleta, copy y CTA todos correctos. Cuenta de test borrada tras confirmar.
