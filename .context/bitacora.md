@@ -957,3 +957,13 @@ Cada migración verificada contra los advisors (warning desaparecido) y, en los 
 **Por qué**: cerrar de verdad la deuda técnica sembrada, no solo marcar los tickets como vistos — el hallazgo de FRESCO-27 en particular justificó investigar en profundidad en vez de aceptar el advisor al pie de la letra.
 
 **Siguiente**: sesión cerrada. Backlog en cero. Próxima ronda: seguir sembrando cards a medida que aparezcan hallazgos reales (patrón ya establecido: verificar primero, crear el ticket con contexto real, resolver con investigación real, no busywork).
+
+---
+
+## 2026-08-01 — Segunda pasada de advisors: sin hallazgos nuevos
+
+**Qué**: re-corridos los advisors de Supabase (security + performance) tras cerrar FRESCO-26 a 30. Todo lo que queda son exactamente los ítems que ya se decidieron a propósito: 4 `SECURITY DEFINER` marcados "authenticated puede ejecutar" (ya tienen `auth.uid()` chequeado por dentro, FRESCO-27), 3 `auth_allow_anonymous_sign_ins` (intencional, modo invitado, ADR-0003), `leaked_password_protection` (bloqueado por plan Free), y los 3 índices que se decidió mantener (FRESCO-30). El user preguntó si había que crear tickets para estos 4 — decidido que no: son decisiones ya tomadas y documentadas, no deuda accionable. Un ticket que nunca se puede cerrar (porque no hay acción real o porque ya está resuelto) rompe el propósito del backlog.
+
+**Por qué**: evitar ruido en Jira — el patrón establecido esta sesión es crear tickets solo cuando hay algo real por decidir o arreglar, no para re-documentar lo ya decidido.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
