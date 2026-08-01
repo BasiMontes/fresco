@@ -967,3 +967,24 @@ Cada migración verificada contra los advisors (warning desaparecido) y, en los 
 **Por qué**: evitar ruido en Jira — el patrón establecido esta sesión es crear tickets solo cuando hay algo real por decidir o arreglar, no para re-documentar lo ya decidido.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Auditoría de las 4 Edge Functions: comentarios desincronizados de ADR-0005 + logging inconsistente
+
+**Qué**: delegada a un subagente Explore una auditoría de código muerto de las 4 Edge Functions (`generate-meal-plan`, `generate-shopping-list`, `update-recipe-status`, `reassign-guest-data`) + `_shared/`. 5 hallazgos reales arreglados:
+- `generate-meal-plan/index.ts` — comentario que afirmaba un "bar" (umbral) en `menu-selector.ts` que no existe ahí (esa función usa un score continuo, no un umbral discreto).
+- `api/schemas/api-contracts.types.ts` — JSDoc seguía atribuyendo la decisión de slot `null` a "el modelo", cuando post-ADR-0005 es el selector determinista.
+- `_shared/gemini.ts` — comentario de cabecera se contradecía con el bloque de comentario 2 líneas más abajo: uno decía "pin no revisitado", el otro documentaba que se revisó dos veces en vivo (404 de `gemini-1.5-flash`, rechazo de `gemini-2.5-flash`).
+- `generate-shopping-list/consolidator.ts` y `_shared/http.ts` — un `console.warn`/`console.error` cada uno, en vez del `logger` estructurado compartido que usa el resto de call sites en las 4 funciones.
+- De paso, quitadas 2 referencias a `fresco-shopping-list.md` (borrador del founder que no existe en el repo, confirmado con `find`).
+
+Hallazgos de baja prioridad **no tocados**, por decisión explícita (el propio audit los marcó como no urgentes): unos pocos tipos exportados solo usados internamente (patrón TS normal, no un bug), boilerplate de auth duplicado literal en las 4 funciones (anotado, no refactorizado — decisión de negocio para otra sesión), y 3 idiomas distintos de ownership-check entre funciones (anotado, no unificado).
+
+**Aprendizaje operativo**: las Edge Functions no corren en el dev server de Next.js — hace falta redeployarlas de verdad (vía `deploy_edge_function`) para que un cambio de código tenga efecto. Como `_shared/http.ts` lo importan las 4 funciones, hubo que redeployar las 4 (no solo la que motivó el cambio) para que el fix fuera real en las 4 a la vez, no solo en el código fuente local.
+
+Verificado: suite completa de Playwright 18/18 corrida contra los 4 deploys reales (no contra el código local sin desplegar).
+
+**Por qué**: continuar el patrón de auditoría real de esta sesión (DB ya auditada, tests ya auditados) en el área de negocio principal que quedaba: las Edge Functions.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
