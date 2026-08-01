@@ -833,3 +833,16 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: el user pidió velocidad real, no un parche más — y el catálogo que se construyó esta sesión (314 recetas bien tageadas) hizo viable un cambio de arquitectura que antes no lo era. Decisión aprobada explícitamente antes de ejecutarla, documentada en ADR per convención del repo.
 
 **Siguiente**: sin pendientes de ingeniería. Si la variedad percibida del menú (heurística fija vs juicio de LLM) alguna vez se siente pobre, el punto único de ajuste es la función de scoring en `menu-selector.ts`, no un prompt.
+
+---
+
+## 2026-08-01 — `/qa` puesto al día tras ADR-0005 + activación del botón de credenciales
+
+**Qué**: revisada la página `/qa` (ya publicada antes esta sesión) contra todo lo que cambió después. Encontrado 1 desfase real: la card de `generate-meal-plan` seguía describiendo la generación como "usando IA" de punta a punta — cierto antes de ADR-0005, engañoso ahora que la selección de las 21 franjas es determinista y Gemini queda solo para la explicación de aprendizaje Pro. Corregido, commit `5c83196`, deploy verificado.
+- User agregó `NEXT_PUBLIC_QA_CREDENTIALS_URL` primero solo en `.env` local (probado: botón activo en local, seguía en fallback en producción — `NEXT_PUBLIC_*` se compila en build time, no alcanza con el `.env` local para que Vercel lo vea). Después lo agregó también en Vercel.
+- Redeploy real disparado (`vercel redeploy ... --target production`, no un simple `git push` — necesario porque promover un build viejo no vuelve a compilar y no recogería la variable nueva). Ready en 54s, aliaseado a `fresco-pre.vercel.app`.
+- Verificado en vivo: botón "Ver credenciales reales" activo en producción, abre `FRESCO-25` en pestaña nueva, fallback desaparecido.
+
+**Por qué**: mantener `/qa` honesto y funcional es parte del mismo criterio de esta sesión (no dejar texto que describa algo que ya no es cierto) — y el flujo de env var completó su ciclo real (local → Vercel → rebuild → verificado) en vez de asumir que "ya está" sin comprobarlo en cada capa.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
