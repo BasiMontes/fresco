@@ -81,17 +81,38 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la IA rellena esos huecos con recetas de tipo "comida" como sustituto
     Y el sistema muestra un aviso explícito ("Antes de continuar…") explicando qué se sustituyó y por qué
 
-  @generacion-menu @edge-case @pendiente
-  Escenario: La generación falla porque la IA no devuelve un menú válido tras los reintentos
-    Dado que el modelo no logra producir un JSON válido o completo tras 3 intentos
-    Cuando se agotan los reintentos
-    Entonces el sistema responde 422 con un mensaje claro de que no pudo generar un menú válido
-    Y el frontend distingue este caso del error genérico de IA (502)
-    # No forzable en vivo de forma determinística — depende de que Gemini
-    # falle estructuralmente 3 veces seguidas, y no hay seam para mockear
-    # esa llamada server-to-server desde fuera. Verificado solo por código
-    # (index.ts:196-209, distinto del 502 de fallo de Gemini; onboarding/
-    # page.tsx ya distingue 422 con mensaje amigable), no en vivo.
+  @generacion-menu @edge-case @verificado-manual-2026-08-01
+  Escenario: El catálogo filtrado no llega al mínimo de 21 recetas para el perfil declarado (ADR-0005)
+    Dado que las restricciones combinadas del usuario dejan menos de 21 recetas disponibles tras el filtro SQL
+    Cuando intenta generar el menú
+    Entonces el sistema responde 422 "Catálogo insuficiente" antes de intentar seleccionar ninguna franja
+    Y el frontend muestra el mismo mensaje amigable de restricciones demasiado estrictas
+    # Reemplaza el escenario "la IA no devuelve un menú válido tras los
+    # reintentos": ese loop de reintentos ya no existe (ADR-0005, selección
+    # determinista — index.ts nunca vuelve a llamar a Gemini para elegir
+    # franjas, no puede fallar así). Este es el único 422 de generación que
+    # sigue siendo real hoy. Encontrado en vivo, no hipotético: un perfil
+    # real vegano + sin gluten + alérgico a pescado dejó el catálogo en 20
+    # recetas (uno menos del mínimo) el 2026-08-01, antes de ampliar el
+    # catálogo a 314 recetas con margen por restricción individual. No
+    # automatizado por combinatoria frágil (depende de una intersección
+    # exacta que el catálogo puede dejar de reproducir según crezca) — se
+    # verificó directamente contra `get_filtered_recipes()` vía SQL con el
+    # perfil real que lo disparó.
+
+  @generacion-menu @verificado-manual-2026-08-01 @automatizado
+  # Automatizado: tests/steps/generacion-determinista.steps.ts
+  Escenario: La generación de menú es rápida y no depende de una llamada de IA por franja (ADR-0005)
+    Dado que un usuario Pro con historial real completa el onboarding
+    Cuando pulsa "Generar mi menú"
+    Entonces el menú completo queda listo en menos de 10 segundos
+    # Antes de ADR-0005 (selección vía Gemini para las 21 franjas), la
+    # generación tardaba entre 20 y 110 segundos de forma variable — el
+    # modelo de razonamiento gastaba cientos de tokens "pensando" antes de
+    # devolver nada, sin importar el tamaño del catálogo. El umbral de 10s
+    # deja margen real sobre los ~2-3s observados en vivo (incluyendo, para
+    # un usuario Pro, la llamada real a Gemini para la explicación de
+    # aprendizaje — la única IA que queda en el flujo).
 
   @generacion-menu @edge-case @verificado-manual-2026-07-31
   Escenario: Ya existe un plan para la semana solicitada
@@ -224,6 +245,22 @@ Característica: Flujo completo de usuario en Fresco
     # Regresión real: la policy RLS de "recipes" solo permitía rol anon;
     # corregida 2026-07-29 (migración allow_authenticated_read_recipes).
 
+  @calendario @edge-case @verificado-manual-2026-08-01 @automatizado
+  # Automatizado: tests/steps/calendario.steps.ts
+  Escenario: El sistema rechaza un intercambio entre franjas de tipo distinto
+    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
+    Cuando arrastra el plato de un desayuno sobre el hueco de una cena
+    Entonces el intercambio no se realiza
+    Y ambos huecos conservan su receta y su franja originales
+    # Bug real encontrado por el usuario en vivo (screenshot, 2026-08-01):
+    # arrastrar un desayuno a la franja de cena lo dejaba ahí, relabeled
+    # "cena", sin ningún chequeo de tipo_plato ni en el cliente ni en
+    # swap_meal_plan_slots() (SQL). Corregido en ambas capas: la función SQL
+    # ahora rechaza (`raise exception`) un swap entre tipos distintos
+    # (migración 20260801000000), y el cliente deshabilita como drop target
+    # cualquier franja de tipo distinto — el drag inválido ni siquiera
+    # arranca.
+
   @calendario @edge-case @verificado-manual-2026-07-31
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
     Dado que un primer intercambio todavía no ha terminado de guardarse
@@ -329,6 +366,18 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el menú semanal del usuario no tiene ingredientes que se puedan consolidar
     Cuando solicita la lista de la compra
     Entonces ve un mensaje claro de que la lista no se pudo generar, nunca una lista vacía presentada como válida
+
+  # ==========================================================================
+  # Guía de testeabilidad para QA (/qa)
+  # ==========================================================================
+
+  @qa @verificado-manual-2026-08-01 @automatizado
+  # Automatizado: tests/steps/qa-page.steps.ts
+  Escenario: La guía de testeabilidad en /qa es pública y muestra las 4 Edge Functions reales
+    Dado que un visitante sin sesión visita /qa
+    Entonces ve la arquitectura, los usuarios demo y las secciones de testing DB/API/UI
+    Y ve una tarjeta por cada una de las 4 Edge Functions reales con su método y ruta
+    Y no ve ningún valor real de credencial, solo nombres de variables de entorno
 
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
