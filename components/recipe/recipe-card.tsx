@@ -3,14 +3,16 @@ import type { Recipe, RecipeDieta } from '@schemas';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
+import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { cn } from '@/lib/utils';
 
 /**
  * Mirrors DESIGN.md's `components.recipe-card`: base card treatment + a
- * dedicated image area (`rounded.lg`, washed placeholder — no photography in
- * the MVP per mvp-scope.md's "Deferred to P1" list), a top-right circular
- * favorite button, an `h6` kicker, a heading-font title, one tag, and a meta
- * line ("50 min · fácil · 2,80€/persona").
+ * dedicated image area (`rounded.lg`, washed placeholder with a per-category
+ * icon — real photography stays deferred to P1 per mvp-scope.md, but a flat
+ * gray box with zero information was worse than it needed to be for free),
+ * a top-right circular favorite button, an `h6` kicker, a heading-font
+ * title, one tag, and a meta line ("50 min · fácil · 2,80€/persona").
  *
  * Consumes the real, nested `@schemas` `Recipe` shape (`clasificacion`/
  * `meta`/`dieta` objects, the live DB/Edge Function contract) — not a flat
@@ -48,10 +50,12 @@ function firstActiveDietaLabel(dieta: RecipeDieta | null): string | null {
 
 export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: RecipeCardProps) {
   const dietaLabel = firstActiveDietaLabel(recipe.dieta);
+  const CategoryIcon = getCategoryIcon(recipe.clasificacion?.categoria);
 
   return (
     <div className={cn('rounded-card bg-surface p-3 shadow-sm', className)}>
-      <div className="relative mb-2 aspect-[4/3] w-full overflow-hidden rounded-lg bg-neutral-200">
+      <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
+        <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
         <Button
           variant="icon"
           size="sm"
