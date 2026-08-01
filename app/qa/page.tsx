@@ -209,7 +209,7 @@ export default function QaGuidePage() {
         <div className="mt-4 flex flex-col gap-4">
           <RequestCard
             name="generate-meal-plan"
-            description="Genera el menú semanal completo (7 días x 3 comidas) usando IA, a partir del perfil del usuario."
+            description="Selecciona el menú semanal (7 días x 3 comidas) con un algoritmo determinista sobre el catálogo filtrado (ADR-0005) — Gemini solo se invoca aparte, y únicamente para la explicación de aprendizaje de un usuario Pro con historial real."
             method="POST"
             path={`${FUNCTIONS_BASE_URL}/generate-meal-plan`}
             body={{ semana_iso: '2026-W32', fecha_inicio: '2026-08-03' }}
