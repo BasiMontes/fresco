@@ -1172,3 +1172,17 @@ Verificado en vivo con Playwright en `/recipes` y `/menu`: fotos reales renderiz
 **Por qué**: pedido directo del user — arreglar el bug encontrado de paso, y avanzar en paralelo con fotos + frontend ya que estaban desbloqueadas.
 
 **Siguiente**: seguir tandas de fotos en sesión futura, dejando pasar más tiempo entre tandas grandes para no re-activar el límite de Unsplash. 954/1000 recetas siguen sin foto. Pendiente sin tocar: el resto de `BASE_QUANTITIES` de `consolidator.ts` solo cubre ~40 de los ~190 ingredientes reales — la mayoría sigue devolviendo "1 unidades" por defecto en vez de una cantidad realista (gap de cobertura, no bug de tildes, no pedido esta sesión).
+
+---
+
+## 2026-08-01 — Restos de Gemini limpiados, cobertura completa de ingredientes (con bug real encontrado y arreglado en el camino)
+
+**Qué**: 3 cosas. (1) Barrido el repo entero (no solo `supabase/functions/`) buscando "gemini" — 2 restos reales encontrados y arreglados: `api/config/env.ts` seguía exigiendo `GEMINI_API_KEY` sin que nada la usara (removida del schema, interfaz y mapping), y `app/qa/page.tsx` (guía pública de QA) decía explícitamente que Gemini se invocaba para la explicación de aprendizaje Pro — ya falso, corregido el diagrama de arquitectura y las 2 descripciones. También actualizado un comentario desactualizado en `playwright.config.ts` sobre el timeout de 90s (ya no hace falta por Gemini, pero se deja el valor por otros round-trips reales).
+
+(2) Ampliada la cobertura de `BASE_QUANTITIES` en `consolidator.ts` de ~40 a las 200 entradas reales de la tabla `recipes` (verificado con script de cobertura contra la lista real de la base, 200/200). Antes, la mayoría de ingredientes caían al default "1 unidades" sin relación con la cantidad real.
+
+(3) Esa ampliación **destapó un bug real** en `aisle-pricing.ts`: los precios "por unidad" de ingredientes caros (salmón, pollo, cordero, jamón ibérico, etc.) estaban pensados para cuando esos ingredientes caían al default de 1 unidad — al pasar a tener cantidades reales en gramos (400-1000g), el precio se multiplicaba por esos gramos como si fuera precio-por-unidad, disparando un total de compra a **3213-4347€ para 37 ítems** (detectado en el smoke test post-deploy, no en producción). Reescritos esos ~35 overrides a precio real por gramo/ml. Verificado en vivo tras el fix: plan real de 21 recetas, lista de 39 ítems, total sano de **71-96€**.
+
+**Por qué**: pedido directo del user de verificar honestamente "¿ya quitamos todo Gemini?" (no, había 2 restos) y de continuar con la cobertura de `consolidator.ts` que se había dejado pendiente. El bug de precios no estaba pedido — apareció al verificar en vivo después del cambio, y se arregló en la misma pasada por ser un regreso directo causado por el propio trabajo de esta sesión.
+
+**Siguiente**: sesión cerrada en este frente. Quedan igual: fotos (954/1000, retomar más tarde), cargo de 5€ en GCP sin investigar (el user pidió olvidarlo por ahora).
