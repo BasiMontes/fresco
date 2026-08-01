@@ -380,6 +380,22 @@ Característica: Flujo completo de usuario en Fresco
     Y no ve ningún valor real de credencial, solo nombres de variables de entorno
 
   # ==========================================================================
+  # Seguridad — aislamiento de datos entre usuarios
+  # ==========================================================================
+
+  @seguridad @edge-case @verificado-manual-2026-08-01 @automatizado
+  # Automatizado: tests/steps/aislamiento-datos.steps.ts
+  # Cubre el fix de FRESCO-27: get_filtered_recipes/get_recent_recipe_ids son
+  # SECURITY DEFINER (bypassan RLS) — antes del fix confiaban ciegamente en
+  # p_user_id, dejando leer perfil/historial de cualquier otra cuenta real.
+  Escenario: Un usuario no puede leer el historial ni el perfil de otro pasando su UUID
+    Dado que dos cuentas reales y distintas existen, cada una con su propio perfil e historial de comidas
+    Cuando una de las cuentas llama a get_recent_recipe_ids con el UUID de la otra
+    Entonces no recibe el historial real de la otra cuenta
+    Cuando la misma cuenta llama a get_filtered_recipes con el UUID de la otra
+    Entonces la llamada es rechazada, no se filtra el catálogo con el perfil ajeno
+
+  # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
   # ==========================================================================
