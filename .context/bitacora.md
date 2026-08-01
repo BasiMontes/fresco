@@ -1116,3 +1116,17 @@ En el camino, tercer hallazgo real: Unsplash tiene un **límite de ráfaga** sep
 **Por qué**: pedido directo del user de seguir con las tandas; encontrado en el camino que el arreglo anterior (pausa de 400ms) no era suficiente bajo carga real.
 
 **Siguiente**: sesión cerrada. Pendiente real, no resuelto: simplificar `fetch-photos.ts` a un solo intento por receta (solo `nombre`, sin cascada de fallback) para bajar el volumen de requests por receta de hasta 3 a 1, o probar una pausa fija más agresiva (2-3s). Detalle completo en los comentarios de `FRESCO-31`.
+
+---
+
+## 2026-08-01 — Simplificado a 1 intento por receta: confirmado que el bloqueo no es de espaciado
+
+**Qué**: simplificado `fetch-photos.ts` a pedido del user — solo `nombre`, sin cascada de fallback (1 request por receta en vez de hasta 3). Probado con una tanda de 25: **0/25 exitosas**, las 25 con 403. Pero un pedido aislado inmediatamente después de la tanda funcionó normal (200 OK).
+
+Conclusión real: el problema nunca fue el espaciado entre requests dentro de una tanda — es que una vez que Unsplash dispara el bloqueo, se queda activo un rato sostenido (más de los 4s de cooldown que tenía el script), casi seguro por el volumen acumulado de pruebas/tandas de toda la sesión de hoy sobre la misma cuenta/IP. La cuenta en sí está sana. No se insistió más para no empeorarlo.
+
+**Progreso al cierre**: sigue en 19/1000 (sin cambios esta ronda, la tanda de prueba no aportó ninguna foto nueva).
+
+**Por qué**: pedido directo del user de simplificar el script — la simplificación en sí quedó bien hecha y probablemente sea la base correcta, solo que esta sesión ya había agotado el margen real de Unsplash antes de probarla.
+
+**Siguiente**: sesión cerrada. Retomar en frío (otra sesión, con más tiempo de por medio desde el último request) con la versión simplificada de `fetch-photos.ts` (1 intento por receta, ya lista). Si el bloqueo persiste igual en frío, sería momento de pedir acceso "production" a Unsplash (5000/hora) en vez de seguir peleando el límite gratis.
