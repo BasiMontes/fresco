@@ -1175,6 +1175,27 @@ Verificado en vivo con Playwright en `/recipes` y `/menu`: fotos reales renderiz
 
 ---
 
+## 2026-08-02 — Auditoría visual completa de las fotos aplicadas: bug real de nombres, 2 rondas de mejora del script
+
+**Qué**: el user reportó fotos que no correspondían al nombre de la receta ("Arroz con magro y pimientos" mostraba solo pimientos crudos). Se hizo revisión visual real, imagen por imagen (descargadas y vistas con la herramienta de lectura de imágenes), de las 70-71 fotos aplicadas hasta el momento — no solo mirar la URL de búsqueda, sino abrir cada foto y compararla contra el nombre real.
+
+Hallazgos reales:
+1. **Bug de nombres roto "X de con Y"** en el generador combinatorio de recetas de una sesión anterior — afectaba **71 recetas**, no solo las 2 que se habían notado a simple vista (`Pudding de coco rallado`, `Wok de tamari`, `Berenjena rellena`, `Sopa de ajo`, `Batido verde`, `Revuelto de cúrcuma`, `Bol de semillas de calabaza`, etc.). Arreglado con un `UPDATE ... replace(nombre, 'de con ', 'de ')` sobre las 71 filas afectadas — verificado que no quedó ningún otro patrón roto (`con con`, `de de`, dobles espacios).
+2. **Fotos duplicadas por colisión de hash**: varias recetas distintas compartían literalmente la misma foto (hasta 3 recetas con la misma imagen en un caso) porque el algoritmo elegía entre el top-10 de resultados de Unsplash por hash del id — con nombres de recetas similares, el hash podía coincidir en el mismo índice. Encontrados y reseteados en 2 rondas: primero 20 recetas, después 28 más tras una revisión exhaustiva de las 70.
+3. **Calidad real de las fotos** (revisión ojo por ojo de las 70): ~30% de las fotos aplicadas mostraban ingredientes crudos, fotos de producto empaquetado, o directamente contenido sin relación (el caso más grave: "Espaguetis a la boloñesa" devolvió un programa de boda en portugués).
+
+**2 mejoras reales al script** (`fetch-photos.ts`, vive en scratchpad):
+- Sesgo de búsqueda: se pasó de buscar solo el nombre a añadir `cooked meal food photography` (antes se probó `food plated dish`, insuficiente) — reduce fotos de ingrediente crudo o producto empaquetado.
+- Selección restringida a los 4 resultados más relevantes de Unsplash (antes elegía entre los 10, y los peores casos — incluido el programa de boda — salían de los índices 5-9, donde la relevancia ya es baja).
+
+**Progreso real al cierre**: 67/1000 fotos (bajó un poco respecto a las 71 previas porque algunas de las reseteadas no encontraron match en esta tanda — quedan en null, listas para reintentar). Calidad subjetivamente mucho mejor tras las 2 rondas de reset + mejora de query, aunque no perfecta (algunos platos raros como "pisto" siguen sin buena cobertura en el catálogo de Unsplash).
+
+**Por qué**: el user detectó el problema de calidad real usando la app, no confió ciegamente en que "está aplicado" significara "está bien" — pedido explícito de revisar TODAS las fotos, no una muestra.
+
+**Siguiente**: quedan 933/1000 recetas sin foto. El script mejorado (top-4, "cooked meal food photography") es la base para las próximas tandas. Recomendado: antes de cada tanda grande futura, hacer una revisión visual de una muestra tras aplicar, no asumir que la query mejorada garantiza calidad al 100% — quedó demostrado que incluso con mejoras, quedan casos flojos (parciales, sin el ingrediente clave visible).
+
+---
+
 ## 2026-08-01 — Restos de Gemini limpiados, cobertura completa de ingredientes (con bug real encontrado y arreglado en el camino)
 
 **Qué**: 3 cosas. (1) Barrido el repo entero (no solo `supabase/functions/`) buscando "gemini" — 2 restos reales encontrados y arreglados: `api/config/env.ts` seguía exigiendo `GEMINI_API_KEY` sin que nada la usara (removida del schema, interfaz y mapping), y `app/qa/page.tsx` (guía pública de QA) decía explícitamente que Gemini se invocaba para la explicación de aprendizaje Pro — ya falso, corregido el diagrama de arquitectura y las 2 descripciones. También actualizado un comentario desactualizado en `playwright.config.ts` sobre el timeout de 90s (ya no hace falta por Gemini, pero se deja el valor por otros round-trips reales).
