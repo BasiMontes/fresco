@@ -148,6 +148,42 @@ export interface BuildUserPromptParams {
   isPro: boolean
 }
 
+// Found live (2026-08-01): after the catalog grew past ~150 recipes, a
+// lenient profile's SQL-filtered set can run past 300 — every one of those
+// was being serialized into the prompt in full, ballooning input tokens and
+// visibly slowing generation for exactly the users who need it least (few
+// restrictions = huge candidate pool = huge prompt). The model only ever
+// needs enough real variety to fill 21 slots well, not every match; capping
+// per tipo_plato keeps the three meal types evenly represented regardless of
+// how large the underlying catalog grows.
+const MAX_RECIPES_PER_TIPO_IN_PROMPT = 40
+
+/**
+ * Caps how many recipes of each `tipo_plato` are shown to the model,
+ * shuffled per call so repeated generations for the same profile don't
+ * always see the identical capped subset. A no-op below the cap.
+ */
+function sampleForPrompt(recipes: Recipe[]): Recipe[] {
+  const byTipo = new Map<string, Recipe[]>()
+  for (const recipe of recipes) {
+    const tipo = recipe.clasificacion?.tipo_plato ?? 'comida'
+    const group = byTipo.get(tipo) ?? []
+    group.push(recipe)
+    byTipo.set(tipo, group)
+  }
+
+  const sampled: Recipe[] = []
+  for (const group of byTipo.values()) {
+    if (group.length <= MAX_RECIPES_PER_TIPO_IN_PROMPT) {
+      sampled.push(...group)
+      continue
+    }
+    const shuffled = [...group].sort(() => Math.random() - 0.5)
+    sampled.push(...shuffled.slice(0, MAX_RECIPES_PER_TIPO_IN_PROMPT))
+  }
+  return sampled
+}
+
 /**
  * Serializes profile + filtered catalog + history section into the user
  * prompt. `isPro` gates whether `recentRecipeIds` is included at all (FR-2.5,
@@ -165,7 +201,10 @@ export function buildUserPrompt({
   isPro,
 }: BuildUserPromptParams): string {
   const temporada = getCurrentSeason()
-  const catalogo = recipes.map(serializeRecipe).join('\n')
+  // Caps the PROMPT TEXT only — `index.ts` still validates the model's
+  // response against the full filtered `validRecipeIds` set, so this never
+  // narrows what counts as a "real" recipe, only what gets shown per call.
+  const catalogo = sampleForPrompt(recipes).map(serializeRecipe).join('\n')
 
   const historial = !isPro
     ? 'Plan Free: no se aplica historial de repetición (REGLA ABSOLUTA 3 no aplica a este plan).'
