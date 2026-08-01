@@ -36,6 +36,8 @@ const DIA_LABELS: Record<DiaSemana, string> = {
 
 const DIAS = Object.keys(DIA_LABELS) as DiaSemana[];
 const SLOTS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
+/** `Date.prototype.getDay()` order (Sunday = 0) -> this grid's `DiaSemana` keys, for the "today" mark below. */
+const JS_WEEKDAY_TO_DIA: DiaSemana[] = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 
 /** Composite id `@dnd-kit` needs for each draggable/droppable slot node. */
 function slotId(slot: SlotKey): string {
@@ -203,25 +205,42 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
       )}
 
       <DndContext id="calendar-grid" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[840px] grid-cols-7 gap-3">
-            {DIAS.map(dia => (
-              <div key={dia} className="flex flex-col gap-3">
-                <p className="text-label">{DIA_LABELS[dia]}</p>
-                {SLOTS.map(tipo => (
-                  <SlotCell
-                    key={tipo}
-                    dia={dia}
-                    tipo={tipo}
-                    recipe={menu[dia][tipo]}
-                    estado={estados[dia][tipo]}
-                    dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
-                    pending={pendingSlots.has(slotId({ dia, tipo }))}
-                    onMark={estado => void handleMarkEstado(dia, tipo, estado)}
-                  />
-                ))}
-              </div>
-            ))}
+        {/*
+          Widened from a 7-column CSS grid squeezed into an 840px min-width
+          (~120px/day — real recipe names wrapped into a near-unreadable
+          vertical word stack) to a horizontally-scrolling row of fixed-width
+          columns. Real per-column width beats cramming all 7 days into one
+          viewport.
+        */}
+        <div className="overflow-x-auto pb-2">
+          <div className="flex gap-3">
+            {DIAS.map((dia) => {
+              const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
+              return (
+                <div key={dia} className="flex w-64 shrink-0 flex-col gap-3">
+                  <p
+                    className={cn(
+                      'text-label',
+                      isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-background',
+                    )}
+                  >
+                    {DIA_LABELS[dia]}
+                  </p>
+                  {SLOTS.map(tipo => (
+                    <SlotCell
+                      key={tipo}
+                      dia={dia}
+                      tipo={tipo}
+                      recipe={menu[dia][tipo]}
+                      estado={estados[dia][tipo]}
+                      dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
+                      pending={pendingSlots.has(slotId({ dia, tipo }))}
+                      onMark={estado => void handleMarkEstado(dia, tipo, estado)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       </DndContext>
