@@ -4,6 +4,7 @@
 // top-level handler via toErrorResponse() — see api-contracts.md §0 for the
 // { error: string } response shape this produces.
 import { corsHeaders } from './cors.ts'
+import { logger } from './logger.ts'
 
 export interface ErrorBody {
   error: string
@@ -44,6 +45,6 @@ export function toErrorResponse(err: unknown, fnName: string): Response {
   if (err instanceof HttpError) {
     return errorResponse(err.message, err.status)
   }
-  console.error(`[${fnName}] Unexpected error:`, err)
+  logger.error('Unexpected error', { fn: fnName, error: err instanceof Error ? err.message : String(err) })
   return errorResponse('Error interno del servidor', 500)
 }

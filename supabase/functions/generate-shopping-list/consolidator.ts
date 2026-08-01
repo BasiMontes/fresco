@@ -3,15 +3,15 @@
 // engineering, so unlike prompt.ts it is implemented for real here, not
 // deferred as a TODO.
 //
-// Ported from fresco-shopping-list.md's consolidator.ts, unchanged — this
-// logic doesn't touch `recipes`' JSONB vs. typed-relational question at all,
-// it only consumes plain ingredient-name strings.
+// Doesn't touch `recipes`' JSONB vs. typed-relational question at all — it
+// only consumes plain ingredient-name strings.
 
 import type { IngredienteConsolidado, RawIngrediente } from './types.ts'
+import { logger } from '../_shared/logger.ts'
 
 // Base quantity/unit per normalized ingredient name, scaled by
 // (raciones_usuario / raciones_receta). Realistic estimates for Spanish home
-// cooking — see fresco-shopping-list.md for the full rationale.
+// cooking.
 const BASE_QUANTITIES: Record<string, { cantidad: number; unidad: string }> = {
   cebolla: { cantidad: 1, unidad: 'unidades' },
   ajo: { cantidad: 3, unidad: 'dientes' },
@@ -137,7 +137,7 @@ export function consolidateIngredientes(
         const { cantidad: total, unidad: totalUnit } = fromBaseUnit(existBase + cantBase, existUnit)
         map.set(key, { cantidad: total, unidad: totalUnit })
       } else {
-        console.warn(`[generate-shopping-list] Unidades incompatibles para "${key}": ${existUnit} vs ${unitBase}`)
+        logger.warn('Unidades incompatibles', { fn: 'generate-shopping-list', ingrediente: key, existUnit, unitBase })
       }
     } else {
       const { cantidad, unidad } = fromBaseUnit(cantBase, unitBase)

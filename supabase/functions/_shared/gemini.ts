@@ -1,12 +1,12 @@
 // Thin Gemini Flash API client shared by generate-meal-plan and
 // generate-shopping-list. This is HTTP transport + response-shape unwrapping
-// — not prompt-engineering — so unlike each function's own prompt.ts (which
-// is deferred, see their TODOs), it is implemented for real here.
+// — not prompt-engineering — so unlike each function's own prompt.ts, it
+// is implemented for real here.
 //
 // Model string + endpoint per fresco-edge-function-generate.md /
 // fresco-shopping-list.md. architecture.md §2 flags `gemini-1.5-flash` as a
-// versioning risk (Google may deprecate/change it silently) — pinned as-is
-// per the founder's explicit choice, not revisited here.
+// versioning risk (Google may deprecate/change it silently) — that risk
+// materialized (see below), so the pin has already been revisited twice.
 
 // gemini-1.5-flash (originally pinned per architecture.md §2) was fully
 // removed by Google (confirmed via ListModels, 2026-07-29: 404 NOT_FOUND) —

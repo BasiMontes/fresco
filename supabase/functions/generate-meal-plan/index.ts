@@ -32,8 +32,8 @@ const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 const MIN_CATALOG_SIZE = 21 // 7 days x 3 slots — FR-2.1
 // A recipe counts as "worth mentioning" in the learning explanation when it
-// has a real positive signal — matches the bar `menu-selector.ts`'s own
-// scoring already treats as meaningfully good.
+// has a real positive signal — a discrete threshold, unlike `menu-selector.ts`'s
+// continuous weighted score, since this is prose for a human, not a sort key.
 const DESTACADA_MIN_RATING = 4
 const DESTACADA_MIN_VECES_COCINADA = 3
 const MAX_DESTACADAS_IN_PROMPT = 5
