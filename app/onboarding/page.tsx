@@ -5,7 +5,7 @@ import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -110,6 +110,14 @@ export default function OnboardingPage() {
 
   const household = validateHousehold({ adultos, ninos });
 
+  // A11y: the wizard swaps step content in place (single route) — without
+  // this, a screen-reader/keyboard user gets no signal the content changed
+  // when advancing/going back, since focus stays wherever it was.
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    stepHeadingRef.current?.focus();
+  }, [step]);
+
   async function handleGenerate() {
     setIsGenerating(true);
     setGenerateError(null);
@@ -169,7 +177,7 @@ export default function OnboardingPage() {
   return (
     <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
       {sessionError && (
-        <p data-testid="session_error_message" className="mb-4 text-body-sm text-error">
+        <p data-testid="session_error_message" role="alert" aria-live="assertive" className="mb-4 text-body-sm text-error">
           {sessionError}
         </p>
       )}
@@ -189,7 +197,7 @@ export default function OnboardingPage() {
       <Card className="mt-6">
         {step === 1 && (
           <>
-            <h1 className="text-h3">¿Qué dieta y restricciones sigue tu hogar?</h1>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">¿Qué dieta y restricciones sigue tu hogar?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {DIETA_OPTIONS.map((option) => {
@@ -203,6 +211,7 @@ export default function OnboardingPage() {
                     type="button"
                     data-testid="dieta_option"
                     disabled={isLocked}
+                    aria-pressed={dietaState[option.value]}
                     onClick={() => toggleDieta(option.value)}
                   >
                     <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
@@ -220,6 +229,7 @@ export default function OnboardingPage() {
                   key={option.value}
                   type="button"
                   data-testid="alergeno_option"
+                  aria-pressed={alergenos.includes(option.value)}
                   onClick={() => toggleAlergeno(option.value)}
                 >
                   <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
@@ -236,6 +246,7 @@ export default function OnboardingPage() {
                   key={option.value}
                   type="button"
                   data-testid="ingrediente_odiado_option"
+                  aria-pressed={ingredientesOdiados.includes(option.value)}
                   onClick={() => toggleIngredienteOdiado(option.value)}
                 >
                   <Tag variant={ingredientesOdiados.includes(option.value) ? 'selected' : 'outline'}>
@@ -249,7 +260,7 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <>
-            <h1 className="text-h3">¿Cuáles son tus cocinas favoritas?</h1>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">¿Cuáles son tus cocinas favoritas?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {COCINA_OPTIONS.map(option => (
@@ -257,6 +268,7 @@ export default function OnboardingPage() {
                   key={option.value}
                   type="button"
                   data-testid="cocina_option"
+                  aria-pressed={cocinasFavoritas.includes(option.value)}
                   onClick={() => toggleCocina(option.value)}
                 >
                   <Tag variant={cocinasFavoritas.includes(option.value) ? 'selected' : 'outline'}>
@@ -270,7 +282,7 @@ export default function OnboardingPage() {
 
         {step === 3 && (
           <>
-            <h1 className="text-h3">¿Quiénes cocináis en casa?</h1>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">¿Quiénes cocináis en casa?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
             <div className="mt-4 flex gap-4">
               <label className="flex flex-col gap-1">
@@ -299,7 +311,7 @@ export default function OnboardingPage() {
               </label>
             </div>
             {!household.valid && (
-              <p data-testid="household_validation_message" className="mt-2 text-body-sm text-error">
+              <p data-testid="household_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
                 {household.message}
               </p>
             )}
@@ -307,7 +319,7 @@ export default function OnboardingPage() {
         )}
 
         {generateError && (
-          <p data-testid="generate_error_message" className="mt-4 text-body-sm text-error">
+          <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
             {generateError}
           </p>
         )}
@@ -319,7 +331,7 @@ export default function OnboardingPage() {
           // wait once that shipped. Kept the spinner + hint pattern itself
           // (still reassuring during any wait, however short), just
           // corrected what it claims.
-          <p data-testid="generating_hint" className="mt-4 text-body-sm text-tertiary">
+          <p data-testid="generating_hint" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
             Preparando tu menú…
           </p>
         )}

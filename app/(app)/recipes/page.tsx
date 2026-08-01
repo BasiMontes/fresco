@@ -33,6 +33,7 @@ export default async function RecipesPage() {
         Las recetas que Fresco ha usado en tus menús.
       </p>
 
+      <h2 className="sr-only">Tus recetas</h2>
       {recipes.length === 0
         ? (
             <EmptyState

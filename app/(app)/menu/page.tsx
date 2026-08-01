@@ -100,6 +100,7 @@ export default async function MenuPage() {
         </Card>
       )}
 
+      <h2 className="sr-only">Menú de hoy por comida</h2>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(['desayuno', 'comida', 'cena'] as const).map(slot => (
           <div key={slot}>

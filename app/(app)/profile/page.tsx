@@ -37,6 +37,7 @@ export default async function ProfilePage() {
     <div className="mx-auto max-w-2xl">
       <h1 className="text-h2">Perfil</h1>
 
+      <h2 className="sr-only">Tu cuenta</h2>
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>{user?.email ?? 'Invitada'}</CardTitle>

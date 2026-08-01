@@ -54,6 +54,7 @@ export default function LoginPage() {
             data-testid="email_input"
             type="email"
             placeholder="Correo electrónico"
+            aria-label="Correo electrónico"
             required
             autoComplete="email"
             value={email}
@@ -63,6 +64,7 @@ export default function LoginPage() {
             data-testid="password_input"
             type="password"
             placeholder="Contraseña"
+            aria-label="Contraseña"
             required
             autoComplete="current-password"
             value={password}
@@ -74,7 +76,7 @@ export default function LoginPage() {
         </form>
 
         {loginError && (
-          <p data-testid="login_error_message" className="mt-4 text-body-sm text-error">
+          <p data-testid="login_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
             {loginError}
           </p>
         )}

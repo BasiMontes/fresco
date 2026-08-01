@@ -142,6 +142,7 @@ export default function SignupPage() {
             data-testid="email_input"
             type="email"
             placeholder="Correo electrónico"
+            aria-label="Correo electrónico"
             required
             autoComplete="email"
             value={email}
@@ -151,6 +152,7 @@ export default function SignupPage() {
             data-testid="password_input"
             type="password"
             placeholder="Contraseña"
+            aria-label="Contraseña"
             required
             autoComplete="new-password"
             value={password}
@@ -162,14 +164,14 @@ export default function SignupPage() {
         </form>
 
         {signupError && (
-          <p data-testid="signup_error_message" className="mt-4 text-body-sm text-error">
+          <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
             {signupError}
           </p>
         )}
 
         {emailConflict && (
           <div className="mt-4 flex flex-col gap-3">
-            <p data-testid="signup_email_conflict_message" className="text-body-sm text-error">
+            <p data-testid="signup_email_conflict_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
               Ya existe una cuenta con ese email. Ingresa su contraseña para continuar con ella y
               conservar el menú que acabas de generar.
             </p>
@@ -184,6 +186,7 @@ export default function SignupPage() {
                 data-testid="conflict_password_input"
                 type="password"
                 placeholder="Contraseña de esa cuenta"
+                aria-label="Contraseña de esa cuenta"
                 autoComplete="current-password"
                 value={conflictPassword}
                 onChange={e => setConflictPassword(e.target.value)}
@@ -198,7 +201,7 @@ export default function SignupPage() {
               </Button>
             </form>
             {reassignError && (
-              <p data-testid="signup_reassign_error_message" className="text-body-sm text-error">
+              <p data-testid="signup_reassign_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
                 {reassignError}
               </p>
             )}

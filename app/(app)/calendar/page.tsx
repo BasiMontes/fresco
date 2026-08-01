@@ -33,11 +33,11 @@ export default async function CalendarPage() {
   catch (error) {
     // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
     // `getMealPlanForWeek` fails fast (throws) on a real read error,
-    // including "no authenticated session" — correct for the function
-    // itself, but guest/auth flow is unresolved everywhere else in this repo
-    // today, so an unauthenticated visit is currently the only reachable
-    // state. Falls back to the same empty state rather than crashing the
-    // page; a dedicated read-error UI is a tracked gap, not this story's job.
+    // including "no authenticated session" — a real gap remains only for a
+    // visit with literally zero session at all, not for guest vs. registered
+    // (ADR-0003, FRESCO-17 resolved that). Falls back to the same empty
+    // state rather than crashing the page; a dedicated read-error UI is a
+    // tracked gap, not this story's job.
     // Logged so a real DB/network outage stays visible in server logs.
     console.error('[/calendar] getMealPlanForWeek failed, falling back to empty state', error);
     plan = null;

@@ -46,6 +46,8 @@ export function Faq() {
               <button
                 type="button"
                 onClick={() => setOpenIndex(isOpen ? null : index)}
+                aria-expanded={isOpen}
+                aria-controls={`faq-answer-${index}`}
                 className="flex w-full items-start justify-between gap-4 text-left text-label text-text"
               >
                 {faq.question}
@@ -54,9 +56,14 @@ export function Faq() {
                     'size-5 shrink-0 text-neutral-500 transition-transform',
                     isOpen && 'rotate-45 text-primary',
                   )}
+                  aria-hidden="true"
                 />
               </button>
-              {isOpen && <p className="mt-2 text-body-sm text-tertiary">{faq.answer}</p>}
+              {isOpen && (
+                <p id={`faq-answer-${index}`} className="mt-2 text-body-sm text-tertiary">
+                  {faq.answer}
+                </p>
+              )}
             </div>
           );
         })}
