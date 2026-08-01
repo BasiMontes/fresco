@@ -1,7 +1,7 @@
 'use client';
 
-import type { DragEndEvent } from '@dnd-kit/core';
-import type { Recipe } from '@schemas';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { CategoriaReceta, Recipe } from '@schemas';
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid, SlotKey } from '@/lib/calendar/apply-slot-swap';
 import {
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { updateRecipeStatus } from '@/lib/api/edge-functions';
 import { swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
+import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -83,6 +84,13 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
   // Stage 3 review; fixed by making overlapping drags impossible rather than
   // reconciling them after the fact.
   const [pendingSlots, setPendingSlots] = React.useState<ReadonlySet<string>>(new Set());
+  // Tracks the `tipo` of the slot currently being dragged so every OTHER
+  // `SlotCell` can disable itself as a drop target for the duration — a
+  // franja never accepts a recipe from a different meal type (see the
+  // `from.tipo !== to.tipo` guard in `handleDragEnd` below, and the real
+  // enforcement in `swap_meal_plan_slots()`). `null` when nothing is being
+  // dragged.
+  const [draggingTipo, setDraggingTipo] = React.useState<TipoPlato | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
 
   const sensors = useSensors(
@@ -90,7 +98,13 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
     useSensor(KeyboardSensor),
   );
 
+  function handleDragStart(event: DragStartEvent) {
+    const from = event.active.data.current as SlotKey | undefined;
+    setDraggingTipo(from?.tipo ?? null);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setDraggingTipo(null);
     const { active, over } = event;
     if (!over || active.id === over.id) {
       return;
@@ -99,6 +113,15 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
     const from = active.data.current as SlotKey | undefined;
     const to = over.data.current as SlotKey | undefined;
     if (!from || !to) {
+      return;
+    }
+
+    // Each slot's `tipo` is fixed at generation time — a reorder can only
+    // move a recipe to a different DAY, never a different meal type. The
+    // real enforcement lives in `swap_meal_plan_slots()` itself (rejects a
+    // mismatched swap outright); this is the UX-level guard so a mismatched
+    // drag never even starts the optimistic update or the RPC round trip.
+    if (from.tipo !== to.tipo) {
       return;
     }
 
@@ -179,7 +202,7 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
         </p>
       )}
 
-      <DndContext id="calendar-grid" sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext id="calendar-grid" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto">
           <div className="grid min-w-[840px] grid-cols-7 gap-3">
             {DIAS.map(dia => (
@@ -192,6 +215,7 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
                     tipo={tipo}
                     recipe={menu[dia][tipo]}
                     estado={estados[dia][tipo]}
+                    dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
                     pending={pendingSlots.has(slotId({ dia, tipo }))}
                     onMark={estado => void handleMarkEstado(dia, tipo, estado)}
                   />
@@ -233,6 +257,8 @@ interface SlotCellProps {
   estado: EstadoRecetaSlot
   /** True while this slot is part of an in-flight swap or mark-status call — blocks both. */
   pending: boolean
+  /** True while a slot of a DIFFERENT `tipo` is being dragged — this cell can never be a valid drop target for it. */
+  dropDisabled: boolean
   /** STORY-FRESCO-15 — marks this slot cocinada/descartada; no-ops if not pendiente. */
   onMark: (estado: 'cocinada' | 'descartada') => void
 }
@@ -244,7 +270,7 @@ interface SlotCellProps {
  * node via `setRefs` below (dnd-kit tracks draggable/droppable ids in
  * separate registries, so reusing the same composite id for both is safe).
  */
-function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps) {
+function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: SlotCellProps) {
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
 
@@ -262,7 +288,11 @@ function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps)
     isDragging,
   } = useDraggable({ id, data: slotKey, disabled });
 
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey, disabled });
+  // A slot never accepts a drop from a different `tipo` (see `draggingTipo`
+  // in the parent) — disabling the droppable outright, not just styling it
+  // differently, means dnd-kit's own `over` never resolves to this cell, so
+  // there is nothing for `handleDragEnd`'s guard to even need to catch.
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey, disabled: disabled || dropDisabled });
 
   const setRefs = React.useCallback(
     (node: HTMLElement | null) => {
@@ -309,7 +339,10 @@ function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps)
           <p className="text-caption uppercase text-tertiary">{tipo}</p>
           {recipe
             ? (
-                <p className={cn('text-body-sm', estado === 'descartada' && 'line-through')}>{recipe.nombre}</p>
+                <div className="mt-1 flex items-start gap-1.5">
+                  <RecipeSlotIcon categoria={recipe.clasificacion?.categoria} />
+                  <p className={cn('text-body-sm', estado === 'descartada' && 'line-through')}>{recipe.nombre}</p>
+                </div>
               )
             : (
                 <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
@@ -364,4 +397,15 @@ function SlotCell({ dia, tipo, recipe, estado, pending, onMark }: SlotCellProps)
       )}
     </div>
   );
+}
+
+/**
+ * Small per-category mark next to the recipe name — this grid's 7-column
+ * width has no room for `RecipeCard`'s full image-area treatment, so this
+ * is the compact version of the same "no photography in the MVP, but an
+ * icon beats a blank" placeholder decision.
+ */
+function RecipeSlotIcon({ categoria }: { categoria: CategoriaReceta | null | undefined }) {
+  const Icon = getCategoryIcon(categoria);
+  return <Icon className="mt-0.5 size-3.5 shrink-0 text-tertiary" aria-hidden="true" />;
 }
