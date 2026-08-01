@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { currentWeekMonday, getAccessToken, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @calendario,
@@ -23,46 +24,13 @@ const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 interface Ctx { desayunoNombre: string, cenaNombre: string }
 const ctx: Ctx = { desayunoNombre: '', cenaNombre: '' };
 
-/** Monday of the current ISO week, `YYYY-MM-DD` — same algorithm as `entrega-parcial.steps.ts`. */
-function currentWeekMonday(): { semanaIso: string, fechaInicio: string } {
-  const now = new Date();
-  const day = now.getUTCDay() || 7;
-  const monday = new Date(now);
-  monday.setUTCDate(now.getUTCDate() - day + 1);
-  const fechaInicio = monday.toISOString().slice(0, 10);
-
-  const target = new Date(monday);
-  target.setUTCDate(target.getUTCDate() + 3);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const week = 1 + Math.round(
-    ((target.getTime() - firstThursday.getTime()) / 86_400_000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7,
-  );
-  return { semanaIso: `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`, fechaInicio };
-}
-
-async function getAccessToken(request: import('@playwright/test').APIRequestContext): Promise<string> {
-  const response = await request.post(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      data: { email: process.env.PRO_TEST_USER_EMAIL, password: process.env.PRO_TEST_USER_PASSWORD },
-    },
-  );
-  const body = await response.json() as { access_token: string };
-  return body.access_token;
-}
-
 Given(/^que el usuario tiene un menú semanal generado con los 21 huecos llenos$/, async ({ page, request }) => {
   if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
     throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
   }
 
-  const accessToken = await getAccessToken(request);
-  const headers = {
-    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-  };
+  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+  const headers = restHeaders(accessToken);
   const userRes = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, { headers });
   const { id: userId } = await userRes.json() as { id: string };
   const { semanaIso, fechaInicio } = currentWeekMonday();

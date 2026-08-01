@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @aprendizaje,
@@ -22,49 +23,12 @@ const { Given, When, Then } = createBdd(test);
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
 const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 
-function isoWeekOf(date: Date): string {
-  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const dayNum = target.getUTCDay() || 7;
-  target.setUTCDate(target.getUTCDate() + 4 - dayNum);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const week = 1 + Math.round(((target.getTime() - firstThursday.getTime()) / 86_400_000
-    - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
-  return `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
-}
-
-function mondayOfWeekContaining(date: Date): Date {
-  const day = date.getUTCDay() || 7;
-  const monday = new Date(date);
-  monday.setUTCDate(date.getUTCDate() - day + 1);
-  return monday;
-}
-
-async function getAccessToken(request: import('@playwright/test').APIRequestContext): Promise<string> {
-  const response = await request.post(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      data: { email: process.env.PRO_TEST_USER_EMAIL, password: process.env.PRO_TEST_USER_PASSWORD },
-    },
-  );
-  const body = await response.json() as { access_token: string };
-  return body.access_token;
-}
-
-function restHeaders(accessToken: string) {
-  return {
-    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-  };
-}
-
 Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, async ({ request }) => {
   if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
     throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
   }
 
-  const accessToken = await getAccessToken(request);
+  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
   const headers = restHeaders(accessToken);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const userId = await currentUserId(request, accessToken);
@@ -124,14 +88,6 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
   });
   if (!genRes.ok()) { throw new Error(`generate-meal-plan failed: ${genRes.status()} ${await genRes.text()}`); }
 });
-
-async function currentUserId(request: import('@playwright/test').APIRequestContext, accessToken: string): Promise<string> {
-  const res = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${accessToken}` },
-  });
-  const body = await res.json() as { id: string };
-  return body.id;
-}
 
 When(/^visita \/menu$/, async ({ page }) => {
   await page.goto('/login');

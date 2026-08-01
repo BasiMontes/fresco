@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { currentUserId, currentWeekMonday, getAccessToken, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @generacion-menu,
@@ -26,59 +27,13 @@ const { Given, When, Then } = createBdd(test);
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
 const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 
-/** Monday of the current ISO week, `YYYY-MM-DD` — matches `lib/date/iso-week.ts`'s convention. */
-function currentWeekMonday(): { semanaIso: string, fechaInicio: string } {
-  const now = new Date();
-  const day = now.getUTCDay() || 7; // Sunday (0) -> 7
-  const monday = new Date(now);
-  monday.setUTCDate(now.getUTCDate() - day + 1);
-  const fechaInicio = monday.toISOString().slice(0, 10);
-
-  // ISO week number (same algorithm as lib/date/iso-week.ts).
-  const target = new Date(monday);
-  target.setUTCDate(target.getUTCDate() + 3);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const week = 1 + Math.round(
-    ((target.getTime() - firstThursday.getTime()) / 86_400_000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7,
-  );
-  return { semanaIso: `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`, fechaInicio };
-}
-
-async function getAccessToken(request: import('@playwright/test').APIRequestContext): Promise<string> {
-  const response = await request.post(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      data: { email: process.env.PRO_TEST_USER_EMAIL, password: process.env.PRO_TEST_USER_PASSWORD },
-    },
-  );
-  const body = await response.json() as { access_token: string };
-  return body.access_token;
-}
-
-async function restHeaders(accessToken: string) {
-  return {
-    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-  };
-}
-
-async function currentUserId(request: import('@playwright/test').APIRequestContext, accessToken: string): Promise<string> {
-  const res = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${accessToken}` },
-  });
-  const body = await res.json() as { id: string };
-  return body.id;
-}
-
 Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ request }) => {
   if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
     throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
   }
 
-  const accessToken = await getAccessToken(request);
-  const headers = await restHeaders(accessToken);
+  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+  const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
   const { semanaIso, fechaInicio } = currentWeekMonday();
 

@@ -1,5 +1,6 @@
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { getAccessToken } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @generacion-menu,
@@ -21,18 +22,6 @@ const { Given, When, Then } = createBdd(test);
 // isn't the old 20-110s thinking-model latency.
 const MAX_GENERATION_MS = 10_000;
 
-async function getAccessToken(request: import('@playwright/test').APIRequestContext): Promise<string> {
-  const response = await request.post(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      data: { email: process.env.PRO_TEST_USER_EMAIL, password: process.env.PRO_TEST_USER_PASSWORD },
-    },
-  );
-  const body = await response.json() as { access_token: string };
-  return body.access_token;
-}
-
 let generationStartedAt = 0;
 
 Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({ page, request }) => {
@@ -43,7 +32,7 @@ Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({
   // Clears only the CURRENT week's plan so a fresh generation is possible
   // (409 otherwise) — the account's older weeks stay intact as the real
   // history `get_recent_recipe_ids()` reads for the explanation call.
-  const accessToken = await getAccessToken(request);
+  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
   const headers = {
     apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     Authorization: `Bearer ${accessToken}`,

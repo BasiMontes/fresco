@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { getAccessToken } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @lista-compra,
@@ -26,18 +27,6 @@ import { test } from '../fixtures';
 
 const { Given, When, Then } = createBdd(test);
 
-async function getAccessToken(request: import('@playwright/test').APIRequestContext): Promise<string> {
-  const response = await request.post(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
-    {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      data: { email: process.env.LOCAL_USER_EMAIL, password: process.env.LOCAL_USER_PASSWORD },
-    },
-  );
-  const body = await response.json() as { access_token: string };
-  return body.access_token;
-}
-
 /**
  * Fixture reset — deletes this user's existing real shopping list, if any.
  * PostgREST rejects an unfiltered DELETE ("DELETE requires a WHERE
@@ -46,7 +35,7 @@ async function getAccessToken(request: import('@playwright/test').APIRequestCont
  * satisfies PostgREST without narrowing what RLS already allows.
  */
 async function resetShoppingListFixture(request: import('@playwright/test').APIRequestContext): Promise<void> {
-  const accessToken = await getAccessToken(request);
+  const accessToken = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
   await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/shopping_lists?id=not.is.null`, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
