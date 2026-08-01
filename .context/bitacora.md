@@ -904,3 +904,20 @@ Nota de higiene: quedó un usuario real sin confirmar en `auth.users` de la prue
 **Por qué**: pregunta directa del user sobre production-readiness llevó a auditar de verdad en vez de asumir — el gap de email era real y ya se había manifestado en vivo (rate limit pegado en un test anterior). Sin esto, cualquier pico de altas reales rompía el flujo de confirmación.
 
 **Siguiente**: sesión cerrada. Queda como recordatorio a futuro: este SMTP vía Gmail personal es parche de etapa concierge (8-10 usuarios), no solución definitiva — cuando haya dominio propio real, migrar a Resend + dominio verificado y retirar la cuenta Gmail dedicada.
+
+---
+
+## 2026-08-01 — Template de confirmación de cuenta: logo real, tokens de DESIGN.md, español de España, copy con personalidad
+
+**Qué**: user pidió "darle amor" al template de confirmación (el que quedó branded en la sesión anterior) para que siguiera el diseño real de la app y usara español de España, no latinoamericano.
+- Rasterizado `public/brand/logo-negativo.svg` → `logo-negativo-email.png` (instalado `librsvg`/`rsvg-convert` vía brew, no había herramienta de conversión SVG→PNG disponible) — los clientes de correo (Outlook, varios de Android) no renderizan SVG de forma confiable. Commiteado y pusheado; verificado accesible en `https://fresco-pro.vercel.app/brand/logo-negativo-email.png` tras el deploy.
+- Reescrito el HTML del template: logo real en el header verde (antes era texto/emoji), tipografía Figtree con fallbacks de sistema, misma paleta de `DESIGN.md` (verde `#0F4E0E`, naranja `#DF8C26`, fondo `#FAF3E3`).
+- Copy corregido de voseo rioplatense ("Confirmá", "empezá") a español de España estándar ("Confirma", "has creado" en vez de "creaste").
+- Segunda vuelta: copy con más personalidad jugando con "fresco" (comida fresca), evitando el otro significado de "fresco" (caradura) que hubiera confundido — título "Que no se te pase el punto", cuerpo "tan fresca como nuestras recetas", pie "aquí seguimos tan frescos". Botón CTA se dejó sin chiste a propósito (claridad de acción > personalidad).
+- Aplicado vía Management API (`PATCH .../config/auth`, campo `mailer_templates_confirmation_content`), probado en vivo con 4 altas reales usando el truco de Gmail `+alias` sobre la cuenta del user — confirmado logo, colores y copy renderizando bien en Gmail.
+- Limpieza: las 4 cuentas de test (`basilio.montescastano@gmail.com` + 3 alias) borradas de `auth.users` vía SQL directo (MCP) tras confirmar visualmente — el user pidió no seguir recibiendo el mismo mail de prueba repetido. Luego recreada la cuenta base a pedido.
+- Aclarado de paso: nada de esto genera costo (Gmail personal gratis, config de Supabase Auth gratis, altas de test dentro del free tier). El user compartió por error una alerta de Google Cloud Billing ("Fresco Ticket", €5, 50% alcanzado) pensando que era de esto — aclarado que es de GCP (probablemente uso real de Gemini API acumulado de sesiones anteriores), no relacionado al email ni comprobado en detalle todavía.
+
+**Por qué**: pedido explícito del user tras ver el template inicial — quería fidelidad visual real (no solo colores) y coherencia de idioma con el mercado objetivo (España).
+
+**Siguiente**: sesión cerrada. Pendiente sin resolver, no bloqueante: confirmar en la consola de GCP qué está consumiendo el presupuesto "Fresco Ticket" (€5/mes) — probablemente Gemini API, no verificado con detalle en esta sesión.
