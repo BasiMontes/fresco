@@ -1056,3 +1056,21 @@ Limpieza: 2063 `meal_plans` generados por el test borrados junto con la cuenta d
 **Por qué**: continuar el plan de load testing ya acordado — validar capacidad real antes de necesitarla, con cero riesgo de costo real de IA.
 
 **Siguiente**: sesión cerrada. El script (`load-test.js`) quedó en el scratchpad de la sesión, no en el repo — si se quiere repetir como parte de CI/mantenimiento habría que decidir dónde vive de forma permanente (no se guardó en `supabase/` ni en `tests/` a propósito, para no comprometerse a mantenerlo sin que el user lo pida). Pendiente: fotos vía Unsplash (falta cuenta del user).
+
+---
+
+## 2026-08-01 — Fotos de recetas: descartada IA por costo, arrancado Unsplash (40/1000)
+
+**Qué**: user pidió explorar generar las fotos con IA en vez de Unsplash, y varios estilos de ilustración para elegir. Probado en vivo con `gemini-2.5-flash-image` (misma `GEMINI_API_KEY`) — funciona, 3 estilos generados (plana a color, sticker/badge, line-art minimalista). Corregido un malentendido real del user: pensaba que "generar con Claude" no tenía costo porque ya paga la suscripción de Claude — aclarado que Claude (Anthropic) no tiene generación de imágenes en este entorno (confirmado buscando en las tools disponibles, no hay ninguna), y que lo que se probó fue una llamada directa a Gemini (Google), facturada aparte a su cuenta de Google Cloud — nada que ver con su suscripción a Claude. Costo real verificado: $0.039/imagen → **~$39 para las 1000**, y ese modelo se apaga el 2 de octubre 2026 (mismo patrón de deprecación que ya pasó dos veces este proyecto). El user decidió no gastar y volver al plan original de Unsplash (gratis).
+
+Ejecutado el plan de Unsplash:
+- User creó la cuenta y la app en `unsplash.com/oauth/applications`, agregó las 4 vars al `.env` (con el nombre "UNPLASH_*", sin la S — respetado tal cual, no corregido).
+- Migración `20260801050000_add_recipes_foto_url.sql` — columna `foto_url` en `recipes`.
+- Script `fetch-photos.ts` (scratchpad, no en el repo): busca 1 foto por receta usando la **categoría** (`carne`→"roasted meat dish", etc.), no el nombre exacto combinatorio de la receta — los nombres generados no tienen match directo en Unsplash, pero la categoría sí da resultados reales y relevantes.
+- Hallazgo real en el camino: el primer intento de escribir `foto_url` vía PostgREST con la `anon` key falló en silencio (devolvía 200 pero no tocaba nada) — RLS en `recipes` solo tiene policy de `SELECT`, el `GRANT UPDATE` de columna no alcanza sin policy. Cambiado el flujo: el script solo busca en Unsplash y vuelca JSON; la escritura real se aplica vía SQL directo (mismo patrón de bypass de RLS ya usado toda la sesión).
+- Verificado visualmente: la primera foto aplicada (fabada asturiana → "lentil stew") se ve profesional y coherente.
+- **40 de 1000 recetas con foto real** al cierre de la sesión — frenado a propósito dentro del límite gratis de 50 búsquedas/hora de Unsplash (dejando margen). Completar las 960 restantes necesita ~19 tandas más de 1 hora cada una (o pedir acceso "production" a Unsplash, 5000/hora, mismo gratis, con revisión manual de ellos).
+
+**Por qué**: el user quiso explorar la vía de IA antes de comprometerse a Unsplash — evaluación real hecha, descartada por costo real ($39) y por decisión explícita del user de no gastar.
+
+**Siguiente**: sesión cerrada. Para retomar: correr `fetch-photos.ts` de nuevo (scratchpad de esta sesión, no persistido en el repo) en tandas de ~40 cada hora hasta completar las 1000. Pendiente separado, no pedido todavía: conectar `foto_url` a la UI real (`recipe-card.tsx` hoy usa el ícono de categoría como placeholder) — decisión de diseño para otra sesión.
