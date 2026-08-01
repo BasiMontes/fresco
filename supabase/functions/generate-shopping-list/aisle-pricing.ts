@@ -11,6 +11,7 @@
 
 import type { IngredienteConsolidado } from './types.ts'
 import type { ShoppingListItem, ShoppingListPasillo } from '../../../api/schemas/shopping-list.types.ts'
+import { normalizeNombre } from '../_shared/normalize.ts'
 
 export const PASILLOS = [
   'Frutas y verduras',
@@ -27,20 +28,6 @@ export const PASILLOS = [
   'Higiene y limpieza',
   'Otros',
 ] as const
-
-/** Same normalization consolidator.ts applies — `ingredientesConsolidados[].nombre` already arrives in this form. */
-function normalizeNombre(nombre: string): string {
-  return nombre
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[áàä]/g, 'a')
-    .replace(/[éèë]/g, 'e')
-    .replace(/[íìï]/g, 'i')
-    .replace(/[óòö]/g, 'o')
-    .replace(/[úùü]/g, 'u')
-    .replace(/ñ/g, 'n')
-}
 
 const INGREDIENT_AISLE: Record<string, (typeof PASILLOS)[number]> = {
   // Frutas y verduras

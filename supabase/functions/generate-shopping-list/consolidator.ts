@@ -8,6 +8,7 @@
 
 import type { IngredienteConsolidado, RawIngrediente } from './types.ts'
 import { logger } from '../_shared/logger.ts'
+import { normalizeNombre } from '../_shared/normalize.ts'
 
 // Base quantity/unit per normalized ingredient name, scaled by
 // (raciones_usuario / raciones_receta). Realistic estimates for Spanish home
@@ -231,19 +232,6 @@ const BASE_QUANTITIES: Record<string, { cantidad: number; unidad: string }> = {
   // Bebidas
   'vino blanco': { cantidad: 200, unidad: 'ml' },
   'vino tinto': { cantidad: 200, unidad: 'ml' },
-}
-
-function normalizeNombre(nombre: string): string {
-  return nombre
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[áàä]/g, 'a')
-    .replace(/[éèë]/g, 'e')
-    .replace(/[íìï]/g, 'i')
-    .replace(/[óòö]/g, 'o')
-    .replace(/[úùü]/g, 'u')
-    .replace(/ñ/g, 'n')
 }
 
 function canSumUnits(u1: string, u2: string): boolean {
