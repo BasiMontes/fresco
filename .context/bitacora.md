@@ -871,3 +871,16 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: pedido explícito del user tras confirmar que el flujo funciona en PRE y PRO — cerrar la brecha real entre lo que el código hace hoy y lo que el registro de regresión todavía describía.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Auditoría de código muerto: comentarios obsoletos + helpers de test duplicados
+
+**Qué**: user pidió analizar código muerto y ver qué se podía refactorizar, sin apuntar a ningún archivo. Dos hallazgos reales:
+- Documentación desincronizada de ADR-0005 (el cambio a selección determinista de menú): `registro-progresivo.steps.ts` seguía justificando timeouts de 240s/200s citando el viejo loop de reintentos de Gemini que ya no existe; `onboarding/page.tsx` seguía prometiendo "Puede tardar hasta un minuto — estamos preparando tu menú con IA." Ambos corregidos para reflejar el comportamiento real (~2-3s, sin reintentos) — timeouts bajados a 60s/20s en línea con lo ya cronometrado en `generacion-determinista.steps.ts`.
+- `getAccessToken` estaba duplicado 6 veces entre archivos de steps (una por cuenta distinta), `currentUserId` 3 veces, el cálculo de lunes-de-semana-ISO 2-3 veces. Extraído todo a `tests/test-helpers.ts` (fuera de `tests/steps/` a propósito, para que el glob de `bddgen` no lo trate como step definition). Los 6 archivos consumidores (`entrega-parcial`, `aprendizaje-pro`, `calendario`, `generacion-determinista`, `shopping-list`, `registro-progresivo-edge`) actualizados a importar en vez de redefinir.
+- `types:check`, `lint:check` y la suite completa de Playwright (18/18) verdes tras el refactor — sin cambio de comportamiento, solo eliminación de duplicación.
+
+**Por qué**: pedido explícito del user, ronda de mantenimiento tras varias sesiones seguidas agregando steps con el mismo patrón copy-paste.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
