@@ -1130,3 +1130,15 @@ Conclusión real: el problema nunca fue el espaciado entre requests dentro de un
 **Por qué**: pedido directo del user de simplificar el script — la simplificación en sí quedó bien hecha y probablemente sea la base correcta, solo que esta sesión ya había agotado el margen real de Unsplash antes de probarla.
 
 **Siguiente**: sesión cerrada. Retomar en frío (otra sesión, con más tiempo de por medio desde el último request) con la versión simplificada de `fetch-photos.ts` (1 intento por receta, ya lista). Si el bloqueo persiste igual en frío, sería momento de pedir acceso "production" a Unsplash (5000/hora) en vez de seguir peleando el límite gratis.
+
+---
+
+## 2026-08-01 — Auditadas las 19 fotos aplicadas: 11 quedaron en categoría genérica, reseteadas
+
+**Qué**: revisadas una por una las 19 recetas con `foto_url` (decodificada la query real detrás de cada URL de Unsplash). 8 correctas — matcheadas por `nombre` (7) o `descripcion_corta` (1): Arroz con magro y pimientos, Carne guisada con patatas, Estofado de cerdo con zanahorias, Gachas dulces andaluzas, Porridge de avena con manzana y canela, Ternera en salsa con guisantes, Tortilla de calabacín y cebolla, Tostada con hummus y pepino. 11 cayeron en bucket genérico de categoría (mismo problema de fondo que el caso tortilla/huevo frito, sin revisar hasta ahora): Arepa rellena de queso, Bizcocho casero de yogur, Bol de quinoa con fruta y frutos secos, Croissant con jamón y queso, Ensalada de garbanzos con atún, Huevos a la mexicana, Pan con tomate y jamón ibérico, Tortilla de claras con espárragos, Tostada con crema de cacahuete y plátano, Tostada de centeno con salmón y eneldo, Wrap de huevo revuelto y verduras. Reseteadas esas 11 a `foto_url = null` vía SQL directo (sin gasto de cuota Unsplash).
+
+**Progreso real al cierre**: 8/1000 fotos buenas confirmadas, 11 vueltas a pendiente (990 + 11 = 1001... no, total pendiente 992).
+
+**Por qué**: pedido directo del user de auditar qué se hizo con las fotos que cayeron en campo equivocado — no se había hecho nada hasta ahora, quedaban mal en vivo.
+
+**Siguiente**: sesión cerrada. Retomar con `fetch-photos.ts` (versión simplificada, 1 intento por receta) en frío. `FRESCO-31` sigue abierto, pendiente sumar este hallazgo como comentario.
