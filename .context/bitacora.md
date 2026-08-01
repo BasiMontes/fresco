@@ -846,3 +846,13 @@ Sin concepto de admin en el schema (no `role` column, no tabla admin, no `is_adm
 **Por qué**: mantener `/qa` honesto y funcional es parte del mismo criterio de esta sesión (no dejar texto que describa algo que ya no es cierto) — y el flujo de env var completó su ciclo real (local → Vercel → rebuild → verificado) en vez de asumir que "ya está" sin comprobarlo en cada capa.
 
 **Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
+
+---
+
+## 2026-08-01 — Flujo completo verificado en PRE y PRO
+
+**Qué**: user pidió repetir el flujo completo en `fresco-pre.vercel.app` y también en `fresco-pro.vercel.app` tras el redeploy con la variable de credenciales. Confirmado primero que ambos alias siguen apuntando al mismo deploy ID (`dpl_69PeEaNrD42rZYCgUad71zDBRpp8`) tras el redeploy. Corrido el recorrido completo en PRE con cuenta de test fresca: login → onboarding → generación real (~1s, motor determinista ADR-0005) → calendario → lista de la compra → recetas → perfil, cero errores de consola. En PRO no se comparte sesión (dominios distintos, cookies por origen — comportamiento normal del navegador, no bug), así que se logueó ahí también con la misma cuenta para confirmar que el mismo build/backend responde igual — trajo el mismo menú real, cero errores. Cuenta de test borrada al terminar.
+
+**Por qué**: confirmar que el redeploy no rompió nada y que ambos dominios públicos sirven la app real de forma idéntica.
+
+**Siguiente**: sesión cerrada. Sin pendientes de ingeniería.
