@@ -1004,3 +1004,21 @@ Suite completa: 19/19 verde (18 anteriores + el nuevo).
 **Por qué**: pedido explícito del user, con criterio de priorizar tests baratos que protegen bugs reales ya demostrados, no cobertura genérica.
 
 **Siguiente**: sesión cerrada. Buenas candidatas para el próximo test negativo, si se retoma: rate limiting del signup (2/hora ya subido a 20 vía Gmail SMTP), y el guard de `swap_meal_plan_slots`/`jsonb_set_comprado` contra `p_slot_id`/`p_list_id` ajeno (mismo patrón, esas dos ya tenían el chequeo `auth.uid()` desde antes — nunca se demostró en un test que efectivamente rechacen).
+
+---
+
+## 2026-08-01 — 2 tests negativos más: swap_meal_plan_slots y jsonb_set_comprado
+
+**Qué**: cerradas las 2 candidatas anotadas en la entrada anterior. Verificado en vivo el comportamiento exacto antes de escribir la aserción (mismo criterio que la vez pasada):
+- `swap_meal_plan_slots` con slots ajenos → HTTP 400, `"caller does not own meal plan ..."` (rechaza con excepción, como `get_filtered_recipes`).
+- `jsonb_set_comprado` con `p_list_id` ajeno → HTTP 204, **sin error** — falla silenciosa por el `WHERE user_id = auth.uid()` que no matchea ninguna fila. La aserción real no puede ser el status code (parece éxito); hay que releer el dato de la cuenta dueña y confirmar que sigue sin tocar.
+
+Extendido `tests/steps/aislamiento-datos.steps.ts` con 2 escenarios `@seguridad` más — mismo patrón REST puro, sin Gemini.
+
+**Efecto secundario real, no causado por estos tests**: al correr el suite completo, los 3 tests `@aprendizaje` fallaron por la fixture compartida de `LOCAL_USER` agotada (mismo problema recurrente ya documentado 2 veces esta sesión — no relacionado a los tests nuevos, que solo tocan datos de `PRO_TEST_USER`). Regenerado un menú fresco para `LOCAL_USER` vía la API real y confirmado que los 3 pasan de nuevo.
+
+Suite completa: 21/21 verde.
+
+**Por qué**: continuar directamente las candidatas ya identificadas y aprobadas por el user en la sesión anterior.
+
+**Siguiente**: sesión cerrada. Nota para el futuro: la fixture compartida de `LOCAL_USER_EMAIL` en `@aprendizaje` se agota cada pocas corridas completas del suite — si se sigue viendo, vale la pena una limpieza automática al principio del suite en vez de regenerar a mano cada vez.
