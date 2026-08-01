@@ -84,8 +84,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const response: UpdateRecipeStatusResponse = { ok: true, estado }
-    return jsonResponse(response)
+    return jsonResponse(response, { req })
   } catch (err) {
-    return toErrorResponse(err, FN_NAME)
+    return toErrorResponse(err, { req, fnName: FN_NAME })
   }
 })

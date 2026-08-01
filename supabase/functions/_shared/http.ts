@@ -3,7 +3,7 @@
 // thrown by auth/validation code and caught once at each function's
 // top-level handler via toErrorResponse() — see api-contracts.md §0 for the
 // { error: string } response shape this produces.
-import { corsHeaders } from './cors.ts'
+import { getCorsHeaders } from './cors.ts'
 import { logger } from './logger.ts'
 
 export interface ErrorBody {
@@ -20,18 +20,18 @@ export class HttpError extends Error {
   }
 }
 
-export function errorResponse(message: string, status: number): Response {
+export function errorResponse(message: string, options: { req: Request, status: number }): Response {
   const body: ErrorBody = { error: message }
   return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: options.status,
+    headers: { ...getCorsHeaders(options.req), 'Content-Type': 'application/json' },
   })
 }
 
-export function jsonResponse<T>(data: T, status = 200): Response {
+export function jsonResponse<T>(data: T, options: { req: Request, status?: number }): Response {
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: options.status ?? 200,
+    headers: { ...getCorsHeaders(options.req), 'Content-Type': 'application/json' },
   })
 }
 
@@ -41,10 +41,10 @@ export function jsonResponse<T>(data: T, status = 200): Response {
  * status; anything else is an unexpected 500 (logged, never leaked verbatim
  * to the caller).
  */
-export function toErrorResponse(err: unknown, fnName: string): Response {
+export function toErrorResponse(err: unknown, options: { req: Request, fnName: string }): Response {
   if (err instanceof HttpError) {
-    return errorResponse(err.message, err.status)
+    return errorResponse(err.message, { req: options.req, status: err.status })
   }
-  logger.error('Unexpected error', { fn: fnName, error: err instanceof Error ? err.message : String(err) })
-  return errorResponse('Error interno del servidor', 500)
+  logger.error('Unexpected error', { fn: options.fnName, error: err instanceof Error ? err.message : String(err) })
+  return errorResponse('Error interno del servidor', { req: options.req, status: 500 })
 }

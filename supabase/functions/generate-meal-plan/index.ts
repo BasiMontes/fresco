@@ -190,8 +190,8 @@ Deno.serve(async (req: Request) => {
       explicacion_aprendizaje: explicacionAprendizaje,
     }
 
-    return jsonResponse(response)
+    return jsonResponse(response, { req })
   } catch (err) {
-    return toErrorResponse(err, FN_NAME)
+    return toErrorResponse(err, { req, fnName: FN_NAME })
   }
 })

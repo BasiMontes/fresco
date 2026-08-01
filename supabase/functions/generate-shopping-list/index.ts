@@ -131,8 +131,8 @@ Deno.serve(async (req: Request) => {
       pasillos: listaData.pasillos,
       resumen: listaData.resumen,
     }
-    return jsonResponse(response)
+    return jsonResponse(response, { req })
   } catch (err) {
-    return toErrorResponse(err, FN_NAME)
+    return toErrorResponse(err, { req, fnName: FN_NAME })
   }
 })

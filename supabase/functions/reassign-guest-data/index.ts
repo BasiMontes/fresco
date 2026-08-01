@@ -88,9 +88,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const response: ReassignGuestDataResponse = { reassigned: true }
-    return jsonResponse(response)
+    return jsonResponse(response, { req })
   }
   catch (err) {
-    return toErrorResponse(err, FN_NAME)
+    return toErrorResponse(err, { req, fnName: FN_NAME })
   }
 })
