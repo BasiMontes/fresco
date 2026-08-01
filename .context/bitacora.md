@@ -923,3 +923,20 @@ Nota de higiene: quedó un usuario real sin confirmar en `auth.users` de la prue
 **Siguiente**: sesión cerrada. Pendiente sin resolver, no bloqueante: confirmar en la consola de GCP qué está consumiendo el presupuesto "Fresco Ticket" (€5/mes) — probablemente Gemini API, no verificado con detalle en esta sesión.
 
 Verificación final: alta de test adicional (`+fresco5`) confirmó visualmente el resultado completo — logo, paleta, copy y CTA todos correctos. Cuenta de test borrada tras confirmar.
+
+---
+
+## 2026-08-01 — 5 tickets nuevos de deuda técnica real, sembrados desde hallazgos ya verificados
+
+**Qué**: creadas en Jira 5 tareas a partir de hallazgos concretos de esta misma sesión (no especulativos):
+- `FRESCO-26` — revisar gasto de Google Cloud (presupuesto "Fresco Ticket", €5/mes al 50%) y confirmar origen real del consumo (probable Gemini API).
+- `FRESCO-27` — revisar las 7 funciones `SECURITY DEFINER` ejecutables por `anon`/`authenticated` (Supabase advisors, security).
+- `FRESCO-28` — optimizar 12 policies RLS que re-evalúan `auth.<function>()` por fila en vez de `(select ...)` (Supabase advisors, performance).
+- `FRESCO-29` — mover `pg_trgm` fuera del schema `public`.
+- `FRESCO-30` — revisar 4 índices sin uso, candidatos a borrar.
+
+Ninguna es bloqueante para el cohort concierge actual — quedan en backlog para cuando toque una ronda de hardening/performance.
+
+**Por qué**: con el backlog en cero tras cerrar FRESCO-25, el user pidió seguir sembrando tareas reales en vez de dejar los hallazgos de hoy (billing + advisors de Supabase) solo documentados en bitácora sin trazabilidad en Jira.
+
+**Siguiente**: sesión cerrada. Backlog: FRESCO-26 a FRESCO-30 abiertas, ninguna urgente.
