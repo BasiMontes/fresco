@@ -229,7 +229,6 @@ export default function SignupPage() {
           open={legalModalOpen}
           onOpenChange={setLegalModalOpen}
           section={legalModalSection}
-          onSectionChange={setLegalModalSection}
         />
 
         {signupError && (

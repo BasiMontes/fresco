@@ -1,15 +1,8 @@
 'use client';
 
 import { Dialog } from '@/components/ui/dialog';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 
 export type LegalSection = 'terminos' | 'privacidad' | 'contacto';
-
-const SECTION_OPTIONS = [
-  { value: 'terminos', label: 'Términos' },
-  { value: 'privacidad', label: 'Privacidad' },
-  { value: 'contacto', label: 'Contacto' },
-] as const;
 
 const SECTION_LABEL: Record<LegalSection, string> = {
   terminos: 'Términos de Servicio',
@@ -98,32 +91,30 @@ export interface LegalModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   section: LegalSection
-  onSectionChange: (section: LegalSection) => void
 }
 
 /**
- * FRESCO-51 — Términos de Servicio / Política de Privacidad / Contacto as one
- * modal with a tab switch, so a caller can deep-link straight to the section
- * that's relevant to it (e.g. FRESCO-53's registro checkbox opens straight to
- * `terminos` from its own link, `privacidad` from its own — same modal,
- * different `section`).
+ * FRESCO-51 — Términos de Servicio / Política de Privacidad / Contacto, each
+ * its own standalone modal (no shared tab switcher between them — a caller
+ * that wants a different document closes this one and opens the other
+ * trigger, e.g. `LegalLinks`' three separate links). Wider on desktop
+ * (`sm:max-w-2xl` vs `Dialog`'s own `max-w-lg` default) — legal text reads
+ * better with more line width than the general-purpose default allows.
  *
  * Contacto is a static email + `mailto:` link, no form, no backend —
  * confirmed with the user before this story's AC was written (a working
  * contact form was explicitly descoped).
  */
-export function LegalModal({ open, onOpenChange, section, onSectionChange }: LegalModalProps) {
+export function LegalModal({ open, onOpenChange, section }: LegalModalProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} aria-label={SECTION_LABEL[section]} data-testid="legal_modal">
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      aria-label={SECTION_LABEL[section]}
+      data-testid="legal_modal"
+      className="sm:max-w-2xl"
+    >
       <h2 className="text-h4 pr-8">{SECTION_LABEL[section]}</h2>
-
-      <SegmentedControl
-        options={[...SECTION_OPTIONS]}
-        value={section}
-        onChange={value => onSectionChange(value as LegalSection)}
-        aria-label="Elegir documento"
-        className="mt-3"
-      />
 
       <div className="mt-4 text-body-sm text-text">
         {(section === 'terminos' || section === 'privacidad') && (

@@ -36,7 +36,7 @@ export function LegalLinks() {
         </button>
       </p>
 
-      <LegalModal open={open} onOpenChange={setOpen} section={section} onSectionChange={setSection} />
+      <LegalModal open={open} onOpenChange={setOpen} section={section} />
     </>
   );
 }
