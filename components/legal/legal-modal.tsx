@@ -17,13 +17,8 @@ const SECTION_LABEL: Record<LegalSection, string> = {
   contacto: 'Contacto',
 };
 
-/**
- * FRESCO-51: placeholder, not a live inbox — `fresco.app` is not an owned
- * domain yet (same constraint as the Resend/SMTP setup: no owned domain, no
- * working mail on it). Update once a real domain + mailbox exist; until then
- * this is example content, same as the Términos/Privacidad placeholder copy.
- */
-const CONTACT_EMAIL = 'hola@fresco.app';
+/** FRESCO-51: real inbox — `hola.frescoapp@gmail.com` is the working Gmail address Supabase Auth itself sends from (no `@fresco.app` domain exists). */
+const CONTACT_EMAIL = 'hola.frescoapp@gmail.com';
 
 export interface LegalModalProps {
   open: boolean
@@ -89,9 +84,6 @@ export function LegalModal({ open, onOpenChange, section, onSectionChange }: Leg
 
         {section === 'contacto' && (
           <div data-testid="legal_modal_content_contacto">
-            <p className="mb-3 rounded-md bg-warning/10 p-2 text-caption text-warning">
-              Dirección de ejemplo — pendiente de un dominio propio antes de producción.
-            </p>
             <p>¿Alguna duda? Escríbenos directamente:</p>
             <a
               href={`mailto:${CONTACT_EMAIL}`}
