@@ -1428,3 +1428,15 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user, continuando el backlog. FRESCO-53 era la última historia bloqueada por FRESCO-51.
 
 **Siguiente**: FRESCO-49/50/51/52/53 — la iniciativa completa de Legal/Contacto + Recuperar Contraseña + checkbox de registro queda cerrada de punta a punta, con los 2 bugs reales encontrados en el camino (open redirect en `/auth/confirm`, email de contacto con dominio inventado) arreglados y documentados.
+
+---
+
+## 2026-08-02 — Texto de Términos/Privacidad real (commit `522584a`)
+
+**Qué**: pedido del user de buscar texto legal en `github.com/BasiMontes/fresco-app-lovable` (público) y `github.com/BasiMontes/frescoapp` (privado) — dos iteraciones anteriores del proyecto. `frescoapp` tenía un `LegalModal.tsx` con 7 secciones de Términos + 5 de Privacidad, bien escrito y acorde al producto actual (menús, listas de compra, aprendizaje Pro). `fresco-app-lovable` resultó ser una versión vieja que mencionaba "gestión de despensa" y "tickets" — la feature de escaneo de recibos, que está en la lista negra de out-of-scope — descartado.
+
+Adaptado el de `frescoapp` a `components/legal/legal-modal.tsx`: sacada la dirección física ficticia ("Calle de la Innovación 123, Madrid") y "Fresco App Inc." (no existen), sacadas menciones a integraciones con supermercados (blacklisted) y notificaciones (no implementadas), contacto real (`hola.frescoapp@gmail.com`) en vez de los emails `legal@fresco.app`/`privacy@fresco.app` inventados del original. Sigue con el banner de "borrador pendiente de revisión legal" — adaptar texto de otro repo no reemplaza esa revisión real.
+
+**Por qué**: pedido directo del user, cerrando el contenido real de FRESCO-51 (el DoD original solo pedía placeholder, pero había mejor material disponible en repos anteriores del mismo proyecto).
+
+**Siguiente**: nada pendiente inmediato. Si el user quiere, un abogado real todavía tiene que revisar este texto antes de producción — sigue siendo la única pieza de FRESCO-51 genuinamente fuera de alcance de desarrollo.
