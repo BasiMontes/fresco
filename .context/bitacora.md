@@ -1464,3 +1464,15 @@ Corrida una tanda de 30: 22/30 encontradas y aplicadas, cero duplicados verifica
 **Por qué**: pedido directo del user, con pedido explícito de no asumir calidad sin chequear.
 
 **Siguiente**: quedan 867/1000.
+
+---
+
+## 2026-08-02 — FRESCO-31: v6 del script — traduce en vez de solo pelar acentos (commit `07070c0`)
+
+**Qué**: causa raíz real de las fotos raras (bowl con Jarritos y cactus para "champiñones al ajillo") — se mandaba el nombre de la receta en ESPAÑOL a Unsplash, que indexa en inglés. Arreglado sin gastar en ninguna IA de traducción (el user cortó explícitamente esa opción, "sin gasto, ya no pago más IAs") — diccionario estático español→inglés armado con el vocabulario real de la tabla (consultado por SQL, no inventado), más filtrado de modificadores genéricos sin señal visual ("estilo mediterráneo", "versión ligera", "con guarnición de temporada"). `topK` bajado de 4 a 2 — pedido explícito del user: "menos pero mejor".
+
+Probado el diccionario contra nombres reales antes de gastar quota (encontró y corrigió huecos reales: "picante", "griega", "semillas", "lino" faltaban). Corrida una tanda de 30 real: 0/30 aplicadas, pero por el limitador de Unsplash agotado (ya iban 2 tandas hoy, 90+ requests), no por calidad — las queries que se alcanzaron a mandar antes del 403 salieron limpias en inglés correcto.
+
+**Por qué**: pedido directo del user tras ver el resultado raro de la tanda anterior — "mejor el prompt o el script aunque saquemos menos imágenes, pero mejores".
+
+**Siguiente**: retomar cuando resetee la quota de Unsplash (~1h desde la última tanda). El script v6 queda listo, sin verificación de calidad real contra resultados nuevos todavía (los 133 ya aplicados fueron con v5).
