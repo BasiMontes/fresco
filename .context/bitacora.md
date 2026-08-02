@@ -1324,3 +1324,13 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user de arreglar lo que ya había antes de seguir generando más — encontró más problemas de calidad al usar la app.
 
 **Siguiente**: el script queda con 2 fixes reales de fondo (dedup por photo-id + seed desde toda la base) listos para las próximas tandas. Quedan 935/1000 recetas sin foto. `Bol de skyr con semillas de chía` y `Risotto de setas` son casos que Unsplash simplemente no tiene fotografiados bien — reintentar más tarde o aceptar que se queden sin foto.
+
+---
+
+## 2026-08-02 — Tanda de 30 con el fix real: 24/30, cero duplicados
+
+**Qué**: primera tanda grande tras los 2 fixes de fondo (dedup por photo-id + seed desde toda la base). 24/30 fotos nuevas, solo 1 error 403. Verificado con la misma consulta SQL de duplicados: cero coincidencias en las 89 fotos totales aplicadas.
+
+**Progreso real al cierre**: 89/1000, cero duplicados.
+
+**Siguiente**: seguir tandas, el script ya es confiable en este frente (no en precisión de plato, eso sigue siendo mejor pero no perfecto).
