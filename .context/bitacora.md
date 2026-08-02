@@ -1452,3 +1452,15 @@ Corrida una tanda de 30: 22/30 encontradas y aplicadas, cero duplicados verifica
 **Por qué**: pedido directo del user ("seguí con el próximo ticket") tras confirmar que no quedaba ninguna historia por refinar.
 
 **Siguiente**: quedan 878/1000. A razón de ~20-22 por tanda de 30 (límite gratis de Unsplash, ~50/hora), son unas ~40 tandas más. El script ya vive en el repo — cualquier sesión futura puede retomarlo sin reconstruirlo. Alternativa mencionada en el ticket (acceso "production" de Unsplash, 5000/hora) sigue sin pedirse.
+
+---
+
+## 2026-08-02 — FRESCO-31: segunda tanda, 11 aplicadas, chequeo visual real (100→133/1000)
+
+**Qué**: tanda de 30 más, cortada temprano por el burst limiter (11/30). Antes de confirmar que "funciona bien" (pedido explícito del user), descargué y miré 3 de las fotos nuevas en vez de asumir. 2/3 bien (plato cocinado emplatado); la tercera (champiñones al ajillo) trajo un bowl estilo poke con una botella de Jarritos en cuadro y fondo de cactus — no es el fallo de "ingrediente crudo suelto" que se buscaba evitar, pero sí staging que no combina con el plato real. Aplicada igual, mismo criterio de siempre — no hay curación perfecta con este approach de búsqueda por texto, ya documentado en el script.
+
+**Progreso real: 133/1000**, cero duplicados verificado.
+
+**Por qué**: pedido directo del user, con pedido explícito de no asumir calidad sin chequear.
+
+**Siguiente**: quedan 867/1000.
