@@ -214,6 +214,30 @@ Característica: Flujo completo de usuario en Fresco
     Y no se mueve ni se modifica ningún dato
 
   # ==========================================================================
+  # Panel de Inicio — saludo personalizado (EPIC-FRESCO-54 / STORY-FRESCO-55)
+  # ==========================================================================
+
+  @panel-inicio @verificado-manual-2026-08-02
+  Escenario: El saludo de Inicio muestra el nombre real cuando el perfil lo tiene guardado
+    Dado que el usuario guardó su nombre en /profile
+    Cuando abre /menu (Inicio)
+    Entonces ve el saludo con su nombre real ("¡Hola, <nombre>!")
+
+  @panel-inicio @edge-case @verificado-manual-2026-08-02
+  Escenario: El saludo de Inicio cae a un mensaje genérico cuando el nombre no está cargado
+    Dado que el usuario no tiene un nombre guardado en su perfil
+    Cuando abre /menu (Inicio)
+    Entonces ve un saludo genérico ("¡Hola!"), sin espacio en blanco ni error
+    # Verificado en vivo por la vía de sesión invitada/anónima (ADR-0003):
+    # sin nombre guardado, /menu renderiza el saludo genérico sin fallo.
+
+  @panel-inicio @edge-case @verificado-manual-2026-08-02
+  Escenario: Los iconos de favoritos y notificaciones de Inicio son solo visuales
+    Dado que el usuario está en /menu (Inicio)
+    Cuando toca el icono de favoritos o el de notificaciones de la cabecera
+    Entonces no ocurre ninguna acción funcional, ya que en esta versión son solo decorativos
+
+  # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================
 
