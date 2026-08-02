@@ -1392,3 +1392,24 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user, siguiendo el orden natural del backlog recién creado.
 
 **Siguiente**: FRESCO-53 (checkbox de registro) ya puede arrancar — su bloqueo en Jira (FRESCO-51 Blocks FRESCO-53) queda resuelto en la práctica, aunque el estado vivo se consulta en Jira, no se congela acá. `LegalModal` queda listo para que FRESCO-53 lo importe directo y dispare su propio `section` desde los links dentro del checkbox.
+
+---
+
+## 2026-08-02 — FRESCO-51 corrección de email + FRESCO-52 implementada: recuperar contraseña (commits `486ec72`, `2f4dda8`)
+
+**Corrección FRESCO-51**: revisando el config real de Supabase Auth para FRESCO-52, encontré SMTP ya configurado (Gmail, `hola.frescoapp@gmail.com`) — la memoria `project_resend_smtp_blocked` estaba desactualizada (alguien lo resolvió entre el 31/07 y hoy, no fue esta sesión). El email de contacto de FRESCO-51 (`hola@fresco.app`) era un dominio inventado — corregido al real. Memoria actualizada.
+
+**FRESCO-52 — flujo "Olvidé mi contraseña" completo**, `/sprint-development` modo Solo:
+- `app/auth/confirm/route.ts`: verifica el link de recuperación de Supabase. Investigado antes de codear (research delegado a subagente + docs de Supabase): los links de recuperación usan `token_hash` + `verifyOtp({type:'recovery'})`, NO `exchangeCodeForSession` (eso es solo para OAuth/SSO) — fácil de confundir, documentación conflictiva si no se verifica contra la fuente real.
+- `app/forgot-password/page.tsx` + `app/update-password/page.tsx`: pantallas de solicitud y de nueva contraseña. Anti-enumeración igual que registro. `/update-password` cierra sesión y redirige a `/login` tras guardar — login real con la contraseña nueva, no continuidad silenciosa.
+- Infra tocada vía Management API de Supabase (fuera de código): template de email de recuperación actualizado con el mismo branding que ya tenía el de confirmación de cuenta, apuntando a la ruta propia en vez del verify hosteado de Supabase; `site_url` corregido de `localhost:3000` a `https://fresco-pro.vercel.app` (rompía los links reales en producción, nadie lo había notado).
+
+**Bug de seguridad real encontrado en el review inline**: `next` (destino post-verificación) venía de un query param sin validar — `next=https://sitio-malicioso.com` habría producido un open redirect justo después de una verificación de auth exitosa. Arreglado: solo rutas relativas.
+
+**Gap de testing declarado**: sin `SUPABASE_SERVICE_ROLE_KEY` en `.env` no hay forma de generar un link de recuperación real localmente, y no hay acceso a la bandeja `hola.frescoapp@gmail.com` desde este entorno. Probado en vivo cada pieza por separado (solicitud + anti-enumeración, link inválido → mensaje + reintento, guard de sesión en `/update-password`) — el tramo feliz completo (`verifyOtp` → sesión → `updateUser`) no se clickeó end-to-end real, descansa en la API documentada de Supabase + code review.
+
+**Nota de seguridad de sesión**: al parchear el config de Supabase Auth vía API, la respuesta trajo `smtp_pass` en texto plano dentro del JSON completo — quedó en el output de una llamada de este chat. No se reimprimió ni se guardó en ningún archivo/commit/comentario después de detectarlo, pero el user debería saber que ese valor pasó por el transcript de esta sesión.
+
+**Por qué**: pedido directo del user, continuando el backlog recién creado.
+
+**Siguiente**: si el user quiere confirmar el tramo feliz real, tiene que probarlo él mismo (acceso a `hola.frescoapp@gmail.com` + un email de prueba real) — pedir el enlace desde `/forgot-password`, revisar que llegue con el diseño nuevo, clickear, y confirmar que cae en `/update-password` con sesión válida.
