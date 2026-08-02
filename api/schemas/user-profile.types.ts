@@ -11,6 +11,8 @@ export interface UserProfile {
   id: string
   created_at: string
   updated_at: string
+  /** Display name for the `/menu` greeting (FRESCO-55). Nullable — falls back to a generic greeting when unset. */
+  nombre: string | null
   plan: PlanUsuario
   plan_expires_at: string | null
   num_personas: number

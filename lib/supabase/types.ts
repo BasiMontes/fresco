@@ -242,6 +242,7 @@ export type Database = {
           ingredientes_odiados: string[]
           ninos: number
           nivel_picante: Database["public"]["Enums"]["nivel_picante"]
+          nombre: string | null
           num_personas: number
           plan: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at: string | null
@@ -268,6 +269,7 @@ export type Database = {
           ingredientes_odiados?: string[]
           ninos?: number
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
+          nombre?: string | null
           num_personas?: number
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
@@ -294,6 +296,7 @@ export type Database = {
           ingredientes_odiados?: string[]
           ninos?: number
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
+          nombre?: string | null
           num_personas?: number
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
