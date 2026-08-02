@@ -1476,3 +1476,15 @@ Probado el diccionario contra nombres reales antes de gastar quota (encontró y 
 **Por qué**: pedido directo del user tras ver el resultado raro de la tanda anterior — "mejor el prompt o el script aunque saquemos menos imágenes, pero mejores".
 
 **Siguiente**: retomar cuando resetee la quota de Unsplash (~1h desde la última tanda). El script v6 queda listo, sin verificación de calidad real contra resultados nuevos todavía (los 133 ya aplicados fueron con v5).
+
+---
+
+## 2026-08-02 — FRESCO-51: modales separados, sin tabs, más ancho en desktop (commit `98991b8`)
+
+**Qué**: pedido del user mientras seguía con otras tareas — Términos/Privacidad/Contacto ya no van unidos en un modal con tabs, cada uno es su propio modal independiente. Sacado el `SegmentedControl` de `LegalModal`; ahora solo renderiza el `section` que se le pasa. `LegalLinks` y el checkbox de registro (FRESCO-53) no cambiaron de comportamiento externo — ya abrían con un `section` específico por link, solo perdieron la posibilidad de cambiar de documento sin cerrar el modal. Ancho en desktop: `sm:max-w-2xl` (antes heredaba el `max-w-lg` genérico del `Dialog`).
+
+Verificado en vivo: cada link abre su propio documento sin rastro de los otros (sin radiogroup, sin tabs), mobile sigue bien, probado también desde el checkbox de FRESCO-53.
+
+**Por qué**: pedido directo del user, feedback sobre el diseño ya shippeado de FRESCO-51.
+
+**Siguiente**: nada pendiente de este cambio.
