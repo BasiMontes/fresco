@@ -36,7 +36,7 @@ export default async function ProfilePage() {
 
   let nombre: string | null = null;
   try {
-    nombre = await getUserNombre(supabase);
+    nombre = await getUserNombre(supabase, user?.id);
   }
   catch (error) {
     // Same conservative fallback as `plan` above: a real read failure falls

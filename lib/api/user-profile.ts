@@ -144,20 +144,34 @@ export async function updateNombre(
  * (onboarding not completed) or a not-yet-set `nombre` is not an error for
  * this read — both simply return `null`, letting the caller fall back to a
  * generic greeting rather than crashing the page.
+ *
+ * `userId` is an optional escape hatch for callers (`/menu`, `/profile`)
+ * that already resolved `auth.getUser()` once at the top of the page — when
+ * passed, the internal `auth.getUser()` call is skipped so the page doesn't
+ * pay for a third redundant round trip on top of its own call plus the one
+ * inside `getMealPlanForWeek`/`getUserPlan`. Omitting it keeps the function
+ * safely callable on its own (e.g. in isolation, in tests).
  */
 export async function getUserNombre(
   client: SupabaseClient<Database>,
+  userId?: string,
 ): Promise<string | null> {
-  const { data: { user }, error: userError } = await client.auth.getUser();
+  let resolvedUserId = userId;
 
-  if (userError || !user) {
-    throw new UserProfileError('No hay una sesión autenticada para leer el nombre.');
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el nombre.');
+    }
+
+    resolvedUserId = user.id;
   }
 
   const { data, error } = await client
     .from('user_profiles')
     .select('nombre')
-    .eq('id', user.id)
+    .eq('id', resolvedUserId)
     .maybeSingle();
 
   if (error) {

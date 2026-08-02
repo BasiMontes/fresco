@@ -215,27 +215,34 @@ describe('updateNombre', () => {
 
 /** Minimal mock client exposing `.select().eq().maybeSingle()` — all `getUserNombre()` calls. */
 function createNombreMockClient(options: { userId?: string, nombreRow?: { nombre: string | null } | null, dbErrorMessage?: string } = {}) {
+  const getUserCalls: unknown[] = [];
+  const eqCalls: unknown[] = [];
+
   const mock = {
     auth: {
-      getUser: async () => (
-        options.userId
+      getUser: async () => {
+        getUserCalls.push(undefined);
+        return options.userId
           ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
+          : { data: { user: null }, error: null };
+      },
     },
     from: () => ({
       select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({
-            data: options.dbErrorMessage ? null : (options.nombreRow ?? null),
-            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
-          }),
-        }),
+        eq: (_column: string, value: string) => {
+          eqCalls.push(value);
+          return {
+            maybeSingle: async () => ({
+              data: options.dbErrorMessage ? null : (options.nombreRow ?? null),
+              error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+            }),
+          };
+        },
       }),
     }),
   };
 
-  return { client: mock as unknown as SupabaseClient<Database> };
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, eqCalls };
 }
 
 describe('getUserNombre', () => {
@@ -273,5 +280,25 @@ describe('getUserNombre', () => {
     const { client } = createNombreMockClient({});
 
     await expectRejection(getUserNombre(client));
+  });
+
+  test('without a userId argument, resolves the user via an internal auth.getUser() call', async () => {
+    const { client, getUserCalls, eqCalls } = createNombreMockClient({ userId: 'user-123', nombreRow: { nombre: 'Laura' } });
+
+    const result = await getUserNombre(client);
+
+    expect(result).toBe('Laura');
+    expect(getUserCalls).toHaveLength(1);
+    expect(eqCalls).toEqual(['user-123']);
+  });
+
+  test('with a userId argument, skips the internal auth.getUser() call and queries by the given id', async () => {
+    const { client, getUserCalls, eqCalls } = createNombreMockClient({ nombreRow: { nombre: 'Laura' } });
+
+    const result = await getUserNombre(client, 'user-456');
+
+    expect(result).toBe('Laura');
+    expect(getUserCalls).toHaveLength(0);
+    expect(eqCalls).toEqual(['user-456']);
   });
 });

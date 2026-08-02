@@ -37,7 +37,7 @@ export default async function MenuPage() {
 
   let nombre: string | null = null;
   try {
-    nombre = await getUserNombre(supabase);
+    nombre = await getUserNombre(supabase, user?.id);
   }
   catch (error) {
     // Same conservative fallback as every other server-side profile read on
