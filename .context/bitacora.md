@@ -1334,3 +1334,13 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Progreso real al cierre**: 89/1000, cero duplicados.
 
 **Siguiente**: seguir tandas, el script ya es confiable en este frente (no en precisión de plato, eso sigue siendo mejor pero no perfecto).
+
+---
+
+## 2026-08-02 — 100/1000 fotos, cero duplicados — cortado por señales del limitador
+
+**Qué**: 2 tandas más de 30 cada una. Primera: 24/30. Segunda: 11/30 con 13 errores 403 — el limitador de ráfaga empezó a activarse de nuevo tras el volumen acumulado del día. Cortado a propósito antes de que se trabe del todo.
+
+**Progreso real al cierre**: 100/1000 (número redondo, casualidad), cero duplicados confirmado con la misma consulta SQL de verificación.
+
+**Siguiente**: retomar en frío. El script queda sano (dedup real, sesgo de query, sin colección). Quedan 900/1000 recetas sin foto.
