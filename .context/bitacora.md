@@ -1488,3 +1488,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, feedback sobre el diseño ya shippeado de FRESCO-51.
 
 **Siguiente**: nada pendiente de este cambio.
+
+---
+
+## 2026-08-02 — Landing (`/`): logo naranja duplicado fuera, footer real conectado al modal (commit `337b8f2`)
+
+**Qué**: pedido con captura de pantalla de la landing (`/`, no lo tenía tocado hasta ahora — tiene su propio `SiteFooter`/`FinalCta`, sistema separado de `LegalLinks`). Sacado el logo naranja de `FinalCta` (redundante, el footer de abajo ya tiene el suyo). `SiteFooter`'s links "Privacidad/Términos/Contacto" eran `<a href="#">` muertos — ahora abren el mismo `LegalModal` de FRESCO-51, cada uno a su sección.
+
+**Por qué**: pedido directo del user con captura adjunta.
+
+**Siguiente**: nada pendiente.
