@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Suspense, useState } from 'react';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -111,6 +112,8 @@ function LoginPageInner() {
           </Link>
         </p>
       </Card>
+
+      <LegalLinks />
     </div>
   );
 }

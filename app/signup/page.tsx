@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useState } from 'react';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -223,6 +224,8 @@ export default function SignupPage() {
           </Link>
         </p>
       </Card>
+
+      <LegalLinks />
     </div>
   );
 }
