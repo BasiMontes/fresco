@@ -17,13 +17,19 @@ export interface NombreFormProps {
  * `/profile` — lets the user set the display name used by the `/menu`
  * greeting (FRESCO-55). Empty/whitespace-only validation mirrors
  * `app/onboarding/page.tsx`'s `household_validation_message` pattern exactly
- * (disabled submit + inline `role="alert"` message), not a bespoke shape.
+ * (disabled submit + inline `role="alert"` message), not a bespoke shape —
+ * including that pattern's silent-until-touched start: `household` there
+ * defaults to a valid 2 adults/0 kids, so its error never shows on mount.
+ * This field has no valid default for a first-time user (`nombreInicial ===
+ * null`), so it needs an explicit `touched` gate to get the same
+ * silent-on-first-paint behavior.
  */
 export function NombreForm({ nombreInicial }: NombreFormProps) {
   const [nombre, setNombre] = useState(nombreInicial ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [touched, setTouched] = useState(false);
 
   const trimmed = nombre.trim();
   const isValid = trimmed.length > 0;
@@ -71,10 +77,11 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
             onChange={(event) => {
               setNombre(event.target.value);
               setSaved(false);
+              setTouched(true);
             }}
             className={!isValid ? 'border-error' : ''}
           />
-          {!isValid && (
+          {touched && !isValid && (
             <p data-testid="nombre_validation_message" role="alert" aria-live="polite" className="text-body-sm text-error">
               Indica un nombre para guardar.
             </p>
