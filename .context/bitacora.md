@@ -1306,3 +1306,21 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user de empezar por accesibilidad tras la ronda de auditoría, "sin miedo, sírvete vos mismo" — ejecutado de punta a punta sin pausas intermedias de confirmación, dado el permiso explícito.
 
 **Siguiente**: quedan FRESCO-31 (fotos, sin validar fix de colección), FRESCO-32 (bloqueado, alternativa de Pwned Passwords documentada en el ticket para abordar después), y los 3 tickets de resiliencia UX (46/47/48) de la misma ronda de auditoría, sin empezar todavía.
+
+---
+
+## 2026-08-02 — Arreglados los duplicados reales de las 67 fotos + 2 bugs de fondo en el script encontrados y corregidos
+
+**Qué**: pedido de "soluciona las fotos que tenemos" antes de seguir generando más. Escaneo de duplicados en las 67 aplicadas: 5 grupos, 11 recetas — incluido un caso nuevo de **una sola foto compartida por 3 recetas distintas** (Bol de semillas de calabaza con limón, Revuelto de cúrcuma y ajo con jengibre, Tortilla de patata ligera).
+
+**2 bugs reales encontrados y corregidos en el camino**:
+
+1. **El fix de colección de Unsplash (nunca validado antes) resultó contraproducente.** Probado por primera vez en vivo: de 11 recetas, solo 2 encontraron alguna foto (la colección curada de 2.5k imágenes es demasiado chica para 1000 nombres de plato distintos), y las 2 que sí encontraron estaban **mal igual** (una hamburguesa para "Congrí cubano", un sándwich para "Porridge de avena con manzana"). Revertido el parámetro `collections=` por completo — queda documentado en el script como probado y descartado, no como pendiente.
+
+2. **Bug real de comparación de duplicados**: el primer intento de arreglar las colisiones de foto (un Set de URLs ya usadas) no funcionó — seguían repitiéndose las mismas fotos tras resetear y reintentar. Causa real: la URL de Unsplash lleva un parámetro `ixid` de tracking que cambia según la búsqueda, así que la MISMA foto genera un string distinto en cada consulta — comparar por URL completa nunca detectaba el duplicado real. Arreglado comparando por el segmento `photo-<id>` de la URL, no por el string completo. Además, el set de "fotos ya usadas" ahora se siembra con TODAS las fotos ya aplicadas en la base al arrancar el script, no solo con las de la tanda actual — así una foto nueva tampoco puede chocar con una ya aplicada en una sesión anterior.
+
+**Progreso real al cierre**: 65/1000 (bajó de 67 porque 2 recetas — Bol de skyr, Risotto de setas — nunca encontraron match en ningún intento, quedaron en null). **Cero duplicados** confirmado con una consulta SQL de verificación tras el arreglo. Verificadas visualmente 5 de las fotos nuevas (todas plato real, cocinado, bien emplatado).
+
+**Por qué**: pedido directo del user de arreglar lo que ya había antes de seguir generando más — encontró más problemas de calidad al usar la app.
+
+**Siguiente**: el script queda con 2 fixes reales de fondo (dedup por photo-id + seed desde toda la base) listos para las próximas tandas. Quedan 935/1000 recetas sin foto. `Bol de skyr con semillas de chía` y `Risotto de setas` son casos que Unsplash simplemente no tiene fotografiados bien — reintentar más tarde o aceptar que se queden sin foto.
