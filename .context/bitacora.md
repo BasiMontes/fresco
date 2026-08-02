@@ -1375,3 +1375,20 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user. FRESCO-49/50 son adiciones post-MVP orgánicas, no estaban en `master-implementation-plan.md` — sin Master Sprint asignado a propósito, no se inventó uno.
 
 **Siguiente**: contenido legal real (texto definitivo de Términos/Privacidad) queda como responsabilidad de negocio, marcado Out of Scope en FRESCO-51. Deliverability del email de recuperación de contraseña (FRESCO-52) choca con el bloqueo de Resend SMTP ya conocido (`project_resend_smtp_blocked`) — no bloquea desarrollar el flujo, sí bloquea probarlo end-to-end hasta resolver dominio propio.
+
+---
+
+## 2026-08-02 — FRESCO-51 implementada: modal de Legal/Contacto (commit `6432a64`)
+
+**Qué**: `/sprint-development` modo Solo (plan → código → review → cierre, todo inline). 3 archivos nuevos:
+- `components/ui/dialog.tsx`: modal accesible hecho a mano (focus trap, Escape, click en backdrop, scroll lock) — no hay librería de dialog en el repo, sigue el mismo patrón cva/forwardRef que `button.tsx`/`card.tsx` en vez de meter Radix para un solo uso.
+- `components/legal/legal-modal.tsx` + `legal-links.tsx`: modal con 3 tabs (Términos/Privacidad/Contacto) vía `SegmentedControl` existente, deep-link por sección. Cableado en `/login` y `/signup` (footer).
+- Términos/Privacidad: contenido placeholder marcado visualmente, pendiente de revisión legal real.
+
+**Bug real encontrado en vivo con playwright-cli**: el focus trap usaba `useEffect(..., [])` — corría una sola vez cuando el componente montaba con `open=false` (el padre nunca desmonta `Dialog`, solo cambia qué devuelve). El foco nunca entraba al modal al abrirlo. Arreglado con `useEffect(..., [open])`. Sin la prueba en vivo (types/lint/build no lo detectan) hubiera pasado el review sin que nadie lo notara.
+
+**Segundo hallazgo, en el review inline**: el email de contacto (`hola@fresco.app`) asumía un dominio que no se posee (`project_resend_smtp_blocked`, mismo bloqueo). Marcado como placeholder igual que Términos/Privacidad — antes no lo estaba, era inconsistente. Documentado en comentario de Jira que el DoD debería ampliarse a cubrir esto también, no solo el texto legal.
+
+**Por qué**: pedido directo del user, siguiendo el orden natural del backlog recién creado.
+
+**Siguiente**: FRESCO-53 (checkbox de registro) ya puede arrancar — su bloqueo en Jira (FRESCO-51 Blocks FRESCO-53) queda resuelto en la práctica, aunque el estado vivo se consulta en Jira, no se congela acá. `LegalModal` queda listo para que FRESCO-53 lo importe directo y dispare su propio `section` desde los links dentro del checkbox.
