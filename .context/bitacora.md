@@ -1344,3 +1344,18 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Progreso real al cierre**: 100/1000 (número redondo, casualidad), cero duplicados confirmado con la misma consulta SQL de verificación.
 
 **Siguiente**: retomar en frío. El script queda sano (dedup real, sesgo de query, sin colección). Quedan 900/1000 recetas sin foto.
+
+---
+
+## 2026-08-02 — FRESCO-32 bloqueada (Supabase Pro), FRESCO-46/47/48 cerradas (resiliencia de errores)
+
+**Qué**:
+- FRESCO-32 (leaked-password protection): verificado en docs oficiales de Supabase que la feature requiere plan Pro (`password_hibp_enabled` no es un toggle libre en Free). La org está en Free — transicionada a **Blocked** con comentario documentando la fuente y el motivo. Sin sprint activo asignable: el board del proyecto es tipo Kanban (`acli`/REST confirmaron "El tablero no admite sprints"), así que queda solo en backlog.
+- FRESCO-46/47/48 (batch de resiliencia UX de sesión, mismo audit que cerró FRESCO-39-45 antes): implementadas y cerradas en un commit (`fe7164b`).
+  - **FRESCO-46**: `app/error.tsx` + `app/global-error.tsx` — antes no existía ningún error boundary, un fallo sin try/catch local caía en la página de error genérica de Next sin marca. Usa `unstable_retry` (prop nueva de Next 16.2, reemplaza `reset` — confirmado en los docs locales pinneados antes de escribir código, por el warning de AGENTS.md de que esta versión de Next tiene breaking changes reales).
+  - **FRESCO-47**: `CalendarGrid` mostraba el mismo mensaje genérico para cualquier fallo. Ahora el swap distingue `MealPlanError` (RPC rechazó — datos cambiaron bajo el usuario) de un fallo de red; el marcado de estado distingue el 409 real (`update-recipe-status`'s terminal-state guard, FR-5.1 — el plato ya fue marcado por otra pestaña) de un fallo genérico.
+  - **FRESCO-48**: `callEdgeFunction` interceptaba cualquier no-2xx igual — un 401 (JWT vencido, `requireAuthenticatedUser` en las Edge Functions) caía en el mismo "no pudimos..." genérico que todos los consumidores (onboarding, shopping-list, calendar) ya tenían. Ahora centralizado: 401 redirige a `/login?session_expired=1`, y `/login` lee ese flag (con `useSearchParams` + `Suspense` — Next 16 exige el boundary o el build de producción falla, verificado con `bun run build` real, no asumido).
+
+**Por qué**: pedido directo del user tras confirmar backlog de la auditoría de resiliencia. FRESCO-32 bloqueada por decisión de producto (no pagar Supabase Pro ahora), no por límite técnico.
+
+**Siguiente**: quedan FRESCO-39-48 todas cerradas o bloqueadas con motivo documentado. Nada pendiente de esta auditoría salvo revisar Supabase Pro más adelante si cambia la decisión de negocio.
