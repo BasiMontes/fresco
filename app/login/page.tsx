@@ -3,9 +3,9 @@
 import type { FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,25 @@ import { createClient } from '@/lib/supabase/client';
 
 /**
  * `/login` — sign-in counterpart to `/signup` for an existing account.
+ * Wrapped in `Suspense` (Next 16 docs: a static page calling
+ * `useSearchParams` from a Client Component must have one, or the
+ * production build fails).
  */
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  // FRESCO-48: `callEdgeFunction` redirects here with this flag on a 401
+  // (expired/invalid JWT) — without it, a session-expiry redirect looks
+  // identical to a visitor who just chose to log in, with no explanation
+  // for why they were bounced.
+  const sessionExpired = useSearchParams().get('session_expired') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +64,12 @@ export default function LoginPage() {
         <p className="mt-1 text-body-sm text-tertiary">
           Accede a tu cuenta para ver tu menú.
         </p>
+
+        {sessionExpired && (
+          <p data-testid="session_expired_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+            Tu sesión expiró. Inicia sesión de nuevo.
+          </p>
+        )}
 
         <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
           <Input

@@ -62,6 +62,17 @@ async function callEdgeFunction<TResponse>(
 
   if (!response.ok) {
     const errorBody = (await response.json().catch(() => ({ error: response.statusText }))) as EdgeFunctionErrorResponse;
+    // FRESCO-48: 401 here always means the JWT `requireAuthenticatedUser()`
+    // checked was missing or expired (supabase/functions/_shared/auth.ts) —
+    // every consumer (onboarding, shopping-list-generator, calendar-grid)
+    // only ever distinguished 422/409 and fell through to a generic "no
+    // pudimos..." message on this case, leaving the user staring at a wrong
+    // error instead of being told to log back in. Handled once here rather
+    // than in each consumer — this module is 'use client'-only (every
+    // caller is a client component), so `window` is always defined.
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.location.href = '/login?session_expired=1';
+    }
     throw new EdgeFunctionError(response.status, errorBody);
   }
 

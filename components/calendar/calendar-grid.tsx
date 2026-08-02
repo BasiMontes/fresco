@@ -17,8 +17,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { Check, GripVertical, X } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { updateRecipeStatus } from '@/lib/api/edge-functions';
-import { swapMealPlanSlots } from '@/lib/api/meal-plan';
+import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
+import { MealPlanError, swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { createClient } from '@/lib/supabase/client';
@@ -144,7 +144,16 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
       .catch((error) => {
         console.error('[CalendarGrid] swapMealPlanSlots failed, reverting', error);
         setMenu(current => applySlotSwap(current, from, to));
-        setErrorMessage('No se pudo guardar el nuevo orden. Vuelve a intentarlo.');
+        // FRESCO-47: `MealPlanError` wraps a real RPC rejection (stale data —
+        // the slot or its meal plan changed under us, e.g. another tab) —
+        // distinct from a network/timeout failure, which throws a plain
+        // fetch/TypeError instead. Same narrowing precedent as onboarding's
+        // 422-vs-generic split, applied to this path's own error shape.
+        setErrorMessage(
+          error instanceof MealPlanError
+            ? 'No se pudo guardar el nuevo orden: el menú cambió mientras tanto. Actualiza la página.'
+            : 'No se pudo guardar el nuevo orden. Revisa tu conexión e inténtalo de nuevo.',
+        );
       })
       .finally(() => {
         setPendingSlots((current) => {
@@ -182,7 +191,16 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
     }
     catch (error) {
       console.error('[CalendarGrid] updateRecipeStatus failed', error);
-      setErrorMessage('No se pudo guardar el estado del plato. Vuelve a intentarlo.');
+      // FRESCO-47: 409 is the terminal-state guard in `update-recipe-status`
+      // (FR-5.1 — a slot already marked cocinada/descartada can't be
+      // re-patched) firing on a real race — another tab/device got there
+      // first. That's a distinct, expected case, not the same as a bare
+      // network/500 failure.
+      setErrorMessage(
+        error instanceof EdgeFunctionError && error.status === 409
+          ? 'Este plato ya fue marcado. Actualiza la página para ver su estado actual.'
+          : 'No se pudo guardar el estado del plato. Vuelve a intentarlo.',
+      );
     }
     finally {
       setPendingSlots((current) => {
