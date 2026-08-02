@@ -1,0 +1,29 @@
+# Inicio | Mostrar últimas recetas añadidas
+
+**Jira Key:** [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59)
+**Epic:** [FRESCO-54](https://basiliomontescastano.atlassian.net/browse/FRESCO-54) (Panel de Inicio)
+**Type:** Historia
+**Status:** Listo
+**Priority:** Medium
+**Story Points:** -
+
+---
+
+## Overview
+
+## User story
+
+Como Laura, quiero ver las últimas recetas añadidas al catálogo desde Inicio, para descubrir novedades sin tener que entrar a buscarlas.
+
+---
+
+## Metadata
+
+- **Created:** 8/2/2026
+- **Updated:** 8/2/2026
+- **Reporter:** Basi Montes
+- **Assignee:** Basi Montes
+
+---
+
+_Synced from Jira by sync-jira-issues_

@@ -1498,3 +1498,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user con captura adjunta.
 
 **Siguiente**: nada pendiente.
+
+---
+
+## 2026-08-02 — FRESCO-55 fix-and-iterate (post-adversarial-review)
+
+**Qué:** Corregidos los 3 hallazgos de la revisión adversarial independiente sobre los commits `4ed9c72..35b2469` (FRESCO-55, saludo personalizado en Inicio): (1) `components/profile/nombre-form.tsx` mostraba el mensaje de error rojo en el primer render para todo usuario nuevo, antes de escribir nada — ahora gateado tras un estado `touched`; (2) `getUserNombre()` (`lib/api/user-profile.ts`) hacía una tercera llamada interna a `auth.getUser()` en `/menu` y `/profile` pese a que ambas páginas ya resuelven el usuario arriba — ahora acepta un `userId` opcional para saltarse el fetch interno, con tests para ambas formas de llamada; (3) `.context/qa/regression.feature` no tenía escenarios para los 3 AC de FRESCO-55 (saludo con nombre, saludo genérico, iconos favoritos/notificaciones inertes) — añadidos y verificados en vivo por la vía de sesión invitada/anónima.
+
+**Por qué:** El propio flujo de sprint-development exige una pasada de fix-and-iterate tras una revisión adversarial con hallazgos legítimos, antes de dar la historia por cerrada; el patrón `touched`/`dirty` evita un error falso en el primer pintado (contradecía el propio comentario del componente sobre imitar `app/onboarding/page.tsx`), la llamada redundante a `auth.getUser()` es coste de red evitable añadido por este story, y el registro de regresión es la convención propia del repo para no perder causística verificada en vivo.
+
+**Siguiente:** Ninguno pendiente de esta pasada — 3 commits nuevos (`6030a62`, `7409aeb`, `2195f75`) sobre los 4 originales, verificación completa (`lint:check`, `types:check`, `bun test`, `next build`) en verde, nada pusheado. Quedan sin tocar y fuera de alcance: `.context/PBI/epic-tree.md`, `.context/business/domain-glossary.md`, `components/landing/final-cta.tsx` (modificaciones preexistentes ajenas a esta tarea).

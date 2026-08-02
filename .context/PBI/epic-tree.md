@@ -58,7 +58,6 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
 **Status:** Listo | **Stories:** 1 | **Points:** 0
@@ -70,6 +69,16 @@ _Project: FRESCO_
 **Status:** Listo | **Stories:** 1 | **Points:** 0
 
 - [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52) Recuperar Contraseña | Restablecer contraseña desde un enlace por email _(- pts, Listo)_
+
+## [FRESCO-54](https://basiliomontescastano.atlassian.net/browse/FRESCO-54) - Panel de Inicio
+
+**Status:** Listo | **Stories:** 5 | **Points:** 0
+
+- [FRESCO-55](https://basiliomontescastano.atlassian.net/browse/FRESCO-55) Inicio | Saludar al usuario por su nombre _(- pts, Listo)_
+- [FRESCO-56](https://basiliomontescastano.atlassian.net/browse/FRESCO-56) Inicio | Mostrar sugerencia destacada que abre el Calendario _(- pts, Listo)_
+- [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57) Inicio | Mostrar cantidad de recetas disponibles _(- pts, Listo)_
+- [FRESCO-58](https://basiliomontescastano.atlassian.net/browse/FRESCO-58) Inicio | Mostrar estimaciones de ahorro semanal _(- pts, Listo)_
+- [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59) Inicio | Mostrar últimas recetas añadidas _(- pts, Listo)_
 
 ---
 

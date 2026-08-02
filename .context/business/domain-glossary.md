@@ -46,6 +46,14 @@ English prose is used for everything else in this glossary and its sibling docum
 
 ---
 
+## §2.5 — Post-MVP Product Concepts
+
+Concepts introduced after the original 8 MVP epics (all Finalizada/Listo as of Master Sprint 0-2 closeout) shipped. Added here per the §5 Change Protocol, in the same change that introduces the Jira epic using the term.
+
+**Recetas disponibles** — The count of catalog `recipes` a given user can actually eat, i.e. the size of the result set `get_filtered_recipes(p_user_id)` returns for them (excludes anything matching their declared allergens/disliked ingredients/diet flags — see `user_profiles` in §3 below). Surfaced to the user as a single number (e.g. on the Inicio panel's recipe-count card) — not the raw `recipes` catalog total, which is the same for every user regardless of restrictions.
+
+---
+
 ## §3 — Product Entities
 
 Short-form definitions only — full column shapes, relationships, and status (live vs. designed) live in `.context/business/business-data-map.md` §2 (Entity Map).
