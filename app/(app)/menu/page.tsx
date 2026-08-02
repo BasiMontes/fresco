@@ -1,13 +1,14 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
-import { Zap } from 'lucide-react';
+import { Bell, Heart, Zap } from 'lucide-react';
 
 import Link from 'next/link';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
+import { getUserNombre } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -33,6 +34,18 @@ import { createClient } from '@/lib/supabase/server';
 export default async function MenuPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  let nombre: string | null = null;
+  try {
+    nombre = await getUserNombre(supabase);
+  }
+  catch (error) {
+    // Same conservative fallback as every other server-side profile read on
+    // this page: a real read failure falls back to `null` (generic
+    // "¡Hola!" greeting) rather than crashing the page.
+    console.error('[/menu] getUserNombre failed, defaulting to null', error);
+  }
+
   let plan: MenuSemanalPersistido | null;
   try {
     plan = await getMealPlanForWeek(supabase);
@@ -65,8 +78,20 @@ export default async function MenuPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-h2">Hoy</h1>
-      <p className="mt-1 text-body-md text-tertiary">Tu menú de lunes, listo.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-h2">{nombre ? `¡Hola, ${nombre}!` : '¡Hola!'}</h1>
+          <p className="mt-1 text-body-md text-tertiary">Tu menú de hoy, listo.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="icon" size="sm" aria-label="Favoritos" data-testid="favoritos_button">
+            <Heart className="size-4" />
+          </Button>
+          <Button type="button" variant="icon" size="sm" aria-label="Notificaciones" data-testid="notificaciones_button">
+            <Bell className="size-4" />
+          </Button>
+        </div>
+      </div>
 
       {user?.is_anonymous && (
         <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">

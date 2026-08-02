@@ -111,6 +111,6 @@ Then(/^conserva el menú que ya había generado como invitada$/, async ({ page }
   // Real content check — the menu generated in the Given step is still
   // there, not a fresh empty state (which would mean the conversion lost
   // the guest's data instead of preserving it).
-  await expect(page.getByText('Hoy')).toBeVisible();
+  await expect(page.getByText('Tu menú de hoy, listo.')).toBeVisible();
   await expect(page.getByTestId('menu_empty_state')).toHaveCount(0);
 });
