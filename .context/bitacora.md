@@ -1440,3 +1440,15 @@ Adaptado el de `frescoapp` a `components/legal/legal-modal.tsx`: sacada la direc
 **Por qué**: pedido directo del user, cerrando el contenido real de FRESCO-51 (el DoD original solo pedía placeholder, pero había mejor material disponible en repos anteriores del mismo proyecto).
 
 **Siguiente**: nada pendiente inmediato. Si el user quiere, un abogado real todavía tiene que revisar este texto antes de producción — sigue siendo la única pieza de FRESCO-51 genuinamente fuera de alcance de desarrollo.
+
+---
+
+## 2026-08-02 — FRESCO-31 retomado: script persistido al repo + tanda de 30 (commit `2345f04`)
+
+**Qué**: único ticket real pendiente en todo el backlog (todas las Historia ya Finalizada). El script `fetch-recipe-photos.ts` vivía solo en el scratchpad de cada sesión — nunca en el repo, se perdía y había que reconstruirlo cada vez (nota propia del ticket lo señalaba). Persistido a `scripts/fetch-recipe-photos.ts`, con la receta JSON→SQL para aplicar los resultados documentada inline (antes era un paso manual/ad hoc).
+
+Corrida una tanda de 30: 22/30 encontradas y aplicadas, cero duplicados verificado. Progreso real 100→122/1000 (el título del ticket decía "40/1000", desactualizado — corregido).
+
+**Por qué**: pedido directo del user ("seguí con el próximo ticket") tras confirmar que no quedaba ninguna historia por refinar.
+
+**Siguiente**: quedan 878/1000. A razón de ~20-22 por tanda de 30 (límite gratis de Unsplash, ~50/hora), son unas ~40 tandas más. El script ya vive en el repo — cualquier sesión futura puede retomarlo sin reconstruirlo. Alternativa mencionada en el ticket (acceso "production" de Unsplash, 5000/hora) sigue sin pedirse.
