@@ -1,14 +1,14 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
 
+/**
+ * No logo here — `SiteFooter` right below already shows one, a second mark
+ * this close reads as a mistake, not emphasis.
+ */
 export function FinalCta() {
   return (
     <section className="border-t border-border bg-background px-4 py-20 text-center md:px-8">
-      <div className="mb-7 flex justify-center">
-        <Image src="/brand/logo-naranja.svg" alt="Fresco" width={140} height={40} />
-      </div>
       <h2 className="text-h1 text-text">
         El próximo domingo
         <br />
