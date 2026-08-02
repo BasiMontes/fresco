@@ -33,6 +33,10 @@ function LoginPageInner() {
   // identical to a visitor who just chose to log in, with no explanation
   // for why they were bounced.
   const sessionExpired = useSearchParams().get('session_expired') === '1';
+  // FRESCO-52: `/update-password` redirects here (after signing the user out)
+  // once her new password is saved, so she lands with a real login step and
+  // a confirmation her password actually changed — not silently signed in.
+  const passwordReset = useSearchParams().get('password_reset') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,6 +76,12 @@ function LoginPageInner() {
           </p>
         )}
 
+        {passwordReset && (
+          <p data-testid="password_reset_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
+            Tu contraseña se actualizó. Inicia sesión con la nueva.
+          </p>
+        )}
+
         <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
           <Input
             data-testid="email_input"
@@ -97,6 +107,12 @@ function LoginPageInner() {
             {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
           </Button>
         </form>
+
+        <p className="mt-3 text-center text-body-sm">
+          <Link href="/forgot-password" data-testid="forgot_password_link" className="text-primary">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
 
         {loginError && (
           <p data-testid="login_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
