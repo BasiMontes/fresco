@@ -1,16 +1,19 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import type { LegalSection } from '@/components/legal/legal-modal';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LegalLinks } from '@/components/legal/legal-links';
+import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
+
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -28,6 +31,13 @@ export default function SignupPage() {
   const [conflictPassword, setConflictPassword] = useState('');
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
+  // FRESCO-53: reuses FRESCO-51's `LegalModal` directly (not `LegalLinks` —
+  // this owns its own open/section state so a link inside the checkbox
+  // row can deep-link straight to the relevant document).
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalSection, setLegalModalSection] = useState<LegalSection>('terminos');
 
   /**
    * ADR-0004 (FRESCO-20): the guest proves she owns the conflicting account
@@ -69,6 +79,11 @@ export default function SignupPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setTermsError(null);
+    if (!acceptedTerms) {
+      setTermsError('Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
+      return;
+    }
     setIsSubmitting(true);
     setSignupError(null);
     setEmailConflict(false);
@@ -159,10 +174,63 @@ export default function SignupPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
+          <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
+            <input
+              type="checkbox"
+              data-testid="accept_terms_checkbox"
+              checked={acceptedTerms}
+              onChange={e => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 size-4 shrink-0 accent-primary"
+            />
+            <span>
+              Al crear una cuenta, aceptas nuestros
+              {' '}
+              <button
+                type="button"
+                data-testid="accept_terms_link_terminos"
+                onClick={() => {
+                  setLegalModalSection('terminos');
+                  setLegalModalOpen(true);
+                }}
+                className="text-primary underline"
+              >
+                Términos de Servicio
+              </button>
+              {' '}
+              y nuestra
+              {' '}
+              <button
+                type="button"
+                data-testid="accept_terms_link_privacidad"
+                onClick={() => {
+                  setLegalModalSection('privacidad');
+                  setLegalModalOpen(true);
+                }}
+                className="text-primary underline"
+              >
+                Política de Privacidad
+              </button>
+              .
+            </span>
+          </label>
+
+          {termsError && (
+            <p data-testid="accept_terms_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+              {termsError}
+            </p>
+          )}
+
           <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
             {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
           </Button>
         </form>
+
+        <LegalModal
+          open={legalModalOpen}
+          onOpenChange={setLegalModalOpen}
+          section={legalModalSection}
+          onSectionChange={setLegalModalSection}
+        />
 
         {signupError && (
           <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
