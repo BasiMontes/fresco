@@ -1413,3 +1413,18 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user, continuando el backlog recién creado.
 
 **Siguiente**: si el user quiere confirmar el tramo feliz real, tiene que probarlo él mismo (acceso a `hola.frescoapp@gmail.com` + un email de prueba real) — pedir el enlace desde `/forgot-password`, revisar que llegue con el diseño nuevo, clickear, y confirmar que cae en `/update-password` con sesión válida.
+
+---
+
+## 2026-08-02 — Gap de FRESCO-52 cerrado con `SUPABASE_SERVICE_ROLE_KEY` + FRESCO-53 implementada (commit `22860be`)
+
+**Cierre real del gap de FRESCO-52**: el user agregó `SUPABASE_SERVICE_ROLE_KEY` al `.env`. Con eso, `auth.admin.generate_link` generó un `token_hash` real para la cuenta de test — probado el tramo feliz completo de verdad: `/auth/confirm` con token real → sesión real → `/update-password` con form visible. Reset a la misma contraseña → Supabase rechazó con 422 real ("New password should be different"), confirmando que `updateUser` está bien conectado. Reset a una temporal → éxito real → redirige a `/login?password_reset=1`. Nuevo link → reset de vuelta a la contraseña original → login real → aterriza en `/menu`. Cuenta de test quedó exactamente como estaba.
+
+**FRESCO-53 — checkbox de aceptación en registro**, `/sprint-development` modo Solo:
+- Checkbox sin marcar por defecto en `/signup`, bloquea el submit con mensaje propio (no validación nativa del navegador) hasta marcarlo.
+- Reutiliza `LegalModal` de FRESCO-51 directo (no `LegalLinks` — estado propio de sección/apertura), exactamente como quedó planeado en el comentario de esa historia.
+- Riesgo revisado en el review: `<button>` dentro de `<label>` podría togglear el checkbox por accidente al clickear un link (comportamiento nativo de forwarding). Verificado en vivo que NO pasa — sin fix necesario, solo confirmación.
+
+**Por qué**: pedido directo del user, continuando el backlog. FRESCO-53 era la última historia bloqueada por FRESCO-51.
+
+**Siguiente**: FRESCO-49/50/51/52/53 — la iniciativa completa de Legal/Contacto + Recuperar Contraseña + checkbox de registro queda cerrada de punta a punta, con los 2 bugs reales encontrados en el camino (open redirect en `/auth/confirm`, email de contacto con dominio inventado) arreglados y documentados.
