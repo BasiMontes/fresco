@@ -1359,3 +1359,19 @@ Lo único real pendiente: 4 comentarios en el código que seguían diciendo "gue
 **Por qué**: pedido directo del user tras confirmar backlog de la auditoría de resiliencia. FRESCO-32 bloqueada por decisión de producto (no pagar Supabase Pro ahora), no por límite técnico.
 
 **Siguiente**: quedan FRESCO-39-48 todas cerradas o bloqueadas con motivo documentado. Nada pendiente de esta auditoría salvo revisar Supabase Pro más adelante si cambia la decisión de negocio.
+
+---
+
+## 2026-08-02 — Backlog: Legal/Contacto + Recuperar Contraseña + checkbox de registro (2 épicas nuevas, 3 historias) + sprint sequencing puesto al día
+
+**Qué**:
+- `/product-management` Workflow B: 2 épicas nuevas — **FRESCO-49** (Información Legal y Contacto) y **FRESCO-50** (Recuperación de Contraseña) — más 1 historia bajo la épica existente FRESCO-18 (Registro Progresivo).
+  - **FRESCO-51** (bajo FRESCO-49): modal responsive de Términos de Servicio, Política de Privacidad y Contacto. Contacto = info estática + `mailto:`, sin formulario con backend (confirmado con el user antes de escribir AC).
+  - **FRESCO-52** (bajo FRESCO-50): flujo completo "Olvidé mi contraseña" — solicitar enlace, definir nueva contraseña, mismo patrón anti-enumeración que el registro existente (FRESCO-19/ADR-0004).
+  - **FRESCO-53** (bajo FRESCO-18): checkbox de aceptación de Términos/Privacidad en el registro, con enlaces. Bloqueada por FRESCO-51 (`Blocks`, dirección verificada con `link list`).
+- 2 bugs reales encontrados y ya documentados en memoria para no repetirlos: los custom fields de AC/Scope/OOS/Business-Rules en este workspace son texto plano de 255 caracteres (no ADF) — se usó el fallback a comentarios ya declarado en `jira-required.yaml`. Y `acli workitem create --parent X --from-json Y` ignora `--parent` en silencio — arreglado con REST PUT directo al campo `parent`, verificado.
+- Sprint sequencing (`/dev-roadmap`) puesto al día: encontró 4 edges reales que existían en Jira desde antes pero nunca se habían volcado al doc (FRESCO-17→19, FRESCO-15→22, más 2 `relates` blandos) — deuda de sesiones previas, no solo de esta. `.context/dev-roadmap.md` regenerado completo: 10 épicas en el backbone, 8 edges duros + 3 blandos, 4 Execution Sprints, 0 ciclos.
+
+**Por qué**: pedido directo del user. FRESCO-49/50 son adiciones post-MVP orgánicas, no estaban en `master-implementation-plan.md` — sin Master Sprint asignado a propósito, no se inventó uno.
+
+**Siguiente**: contenido legal real (texto definitivo de Términos/Privacidad) queda como responsabilidad de negocio, marcado Out of Scope en FRESCO-51. Deliverability del email de recuperación de contraseña (FRESCO-52) choca con el bloqueo de Resend SMTP ya conocido (`project_resend_smtp_blocked`) — no bloquea desarrollar el flujo, sí bloquea probarlo end-to-end hasta resolver dominio propio.

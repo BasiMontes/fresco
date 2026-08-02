@@ -49,9 +49,27 @@ _Project: FRESCO_
 
 ## [FRESCO-18](https://basiliomontescastano.atlassian.net/browse/FRESCO-18) - Registro Progresivo
 
-**Status:** Finalizada | **Stories:** 1 | **Points:** 0
+**Status:** Finalizada | **Stories:** 2 | **Points:** 0
 
 - [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19) Registro Progresivo | Solicitar registro tras ver el menú generado _(- pts, Finalizada)_
+- [FRESCO-53](https://basiliomontescastano.atlassian.net/browse/FRESCO-53) Registro | Aceptar Términos de Servicio y Privacidad al crear cuenta _(- pts, Listo)_
+
+## [FRESCO-25](https://basiliomontescastano.atlassian.net/browse/FRESCO-25) - Credenciales de testeabilidad — QA (/qa)
+
+**Status:** Finalizada | **Stories:** 0 | **Points:** 0
+
+
+## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
+
+**Status:** Listo | **Stories:** 1 | **Points:** 0
+
+- [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51) Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal _(- pts, Listo)_
+
+## [FRESCO-50](https://basiliomontescastano.atlassian.net/browse/FRESCO-50) - Recuperación de Contraseña
+
+**Status:** Listo | **Stories:** 1 | **Points:** 0
+
+- [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52) Recuperar Contraseña | Restablecer contraseña desde un enlace por email _(- pts, Listo)_
 
 ---
 
