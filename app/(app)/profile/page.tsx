@@ -1,7 +1,8 @@
+import { NombreForm } from '@/components/profile/nombre-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
-import { getUserPlan } from '@/lib/api/user-profile';
+import { getUserNombre, getUserPlan } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 const PLAN_LABELS = { free: 'Plan Free', pro: 'Plan Pro', family: 'Plan Family' } as const;
@@ -33,6 +34,16 @@ export default async function ProfilePage() {
     console.error('[/profile] getUserPlan failed, defaulting to free', error);
   }
 
+  let nombre: string | null = null;
+  try {
+    nombre = await getUserNombre(supabase);
+  }
+  catch (error) {
+    // Same conservative fallback as `plan` above: a real read failure falls
+    // back to `null` (the form renders empty) rather than crashing the page.
+    console.error('[/profile] getUserNombre failed, defaulting to null', error);
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-h2">Perfil</h1>
@@ -46,6 +57,8 @@ export default async function ProfilePage() {
           <Tag variant={plan === 'free' ? 'neutral' : 'accent'}>{PLAN_LABELS[plan]}</Tag>
         </CardContent>
       </Card>
+
+      <NombreForm nombreInicial={nombre} />
 
       {plan === 'free' && (
         <Card variant="pro" className="mt-4">
