@@ -8,7 +8,7 @@ import { buttonVariants } from '@/components/ui/button';
  */
 export function FinalCta() {
   return (
-    <section className="border-t border-border bg-background px-4 py-20 text-center md:px-8">
+    <section className="border-t border-border bg-surface px-4 py-20 text-center md:px-8">
       <h2 className="text-h1 text-text">
         El próximo domingo
         <br />
