@@ -102,3 +102,67 @@ export async function getUserPlan(
 
   return data?.plan ?? 'free';
 }
+
+/**
+ * Updates the CURRENTLY authenticated user's display name (FRESCO-55, `/menu`
+ * greeting). Public method — fails fast (throws) rather than swallowing
+ * errors, per `references/error-handling.md`, mirroring `upsertUserProfile`.
+ *
+ * Rejects an empty-after-trim value here rather than relying solely on the
+ * caller's UI validation — a defensive guard against a stored value that
+ * would only ever render as a broken "¡Hola, !" greeting.
+ */
+export async function updateNombre(
+  client: SupabaseClient<Database>,
+  nombre: string,
+): Promise<void> {
+  const trimmed = nombre.trim();
+
+  if (trimmed.length === 0) {
+    throw new UserProfileError('El nombre no puede estar vacío.');
+  }
+
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new UserProfileError('No hay una sesión autenticada para guardar el nombre.');
+  }
+
+  const { error } = await client
+    .from('user_profiles')
+    .update({ nombre: trimmed })
+    .eq('id', user.id);
+
+  if (error) {
+    throw new UserProfileError(`No se pudo guardar el nombre: ${error.message}`);
+  }
+}
+
+/**
+ * Reads the CURRENTLY authenticated user's display name (FRESCO-55, `/menu`
+ * greeting). Same defensive pattern as `getUserPlan`: a missing profile row
+ * (onboarding not completed) or a not-yet-set `nombre` is not an error for
+ * this read — both simply return `null`, letting the caller fall back to a
+ * generic greeting rather than crashing the page.
+ */
+export async function getUserNombre(
+  client: SupabaseClient<Database>,
+): Promise<string | null> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new UserProfileError('No hay una sesión autenticada para leer el nombre.');
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('nombre')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el nombre: ${error.message}`);
+  }
+
+  return data?.nombre ?? null;
+}
