@@ -9,9 +9,24 @@
 // duplicates afterward: `select foto_url, count(*) from recipes where
 // foto_url is not null group by foto_url having count(*) > 1`.
 //
-// Fetches one Unsplash photo per recipe. v5 — single attempt per recipe,
-// query = `${nombre} cooked meal food photography`. NOT collection-scoped
-// (tried and reverted, see below).
+// Fetches one Unsplash photo per recipe. v6 — translates the query,
+// doesn't just accent-strip it. Root cause found live this session: v5 sent
+// the raw SPANISH recipe name to Unsplash, an English-tagged stock-photo
+// database — a real miss ("Champiñones al ajillo con perejil picante con
+// jengibre" returned a poke bowl with a Jarritos soda bottle and a cactus
+// in frame; nothing about the query semantically matched "garlic
+// mushrooms"). No paid translation API (explicit user constraint, zero
+// added cost) — instead: (1) strip the generic filler modifiers this
+// dataset's combinatorial name-generator adds (`al estilo mediterráneo`,
+// `versión ligera`, `con guarnición de temporada`, etc.) that carry zero
+// photographic signal and only dilute the query, then (2) translate the
+// remaining real content words via a static ES->EN dictionary built from
+// this table's actual vocabulary (proteins, techniques, bases, visually-
+// meaningful seasonings). Unrecognized words pass through untranslated
+// rather than being dropped — degrades gracefully instead of losing
+// content. `topK` also dropped 4 -> 2 (see below) — user's own framing:
+// "fewer but better", trust top-relevance more now that queries are
+// actually in the right language.
 //
 // STATUS AS OF 2026-08-02 (afternoon session): collection-scoping to
 // Unsplash's official "Food & Drink" collection (id 3330455) was
@@ -59,6 +74,153 @@ const BATCH_SIZE = Number(process.argv[2] ?? 30);
 
 function stripAccents(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036F]/g, '');
+}
+
+// Generic modifiers this table's combinatorial name-generator adds to
+// nearly every recipe \u2014 none of them describe anything a camera can see,
+// they only pad the query with words Unsplash has to (fail to) match
+// against. Matched against the accent-stripped, lowercased name.
+const FILLER_PHRASES: RegExp[] = [
+  /\bal estilo (mediterraneo|del sur)\b/g,
+  /\bestilo casero\b/g,
+  /\bversion ligera\b/g,
+  /\bcon guarnicion de temporada\b/g,
+  /\bcon verduras de temporada\b/g,
+  /\bcon especias\b/g,
+  /\bcon hierbas frescas\b/g,
+];
+
+// Static Spanish->English dictionary, built from this table's real
+// vocabulary (sampled live via SQL, not guessed) \u2014 proteins, cooking
+// techniques, bases, and the seasonings/garnishes that actually carry
+// visual signal. Keys are accent-stripped + lowercased to match
+// `stripAccents(...).toLowerCase()` output. No paid translation API by
+// explicit user constraint (zero added cost); words missing from this map
+// pass through unmodified rather than being dropped.
+const ES_EN_WORDS: Record<string, string> = {
+  // proteins
+  'pollo': 'chicken',
+  'cerdo': 'pork',
+  'ternera': 'beef',
+  'pavo': 'turkey',
+  'salmon': 'salmon',
+  'gambas': 'shrimp',
+  'merluza': 'hake',
+  'dorada': 'sea bream',
+  'atun': 'tuna',
+  'mejillones': 'mussels',
+  'calamares': 'squid',
+  'huevos': 'eggs',
+  'huevo': 'egg',
+  'conejo': 'rabbit',
+  'solomillo': 'tenderloin',
+  'lomo': 'pork loin',
+  'jamon': 'ham',
+  'panceta': 'bacon',
+  'costillas': 'ribs',
+  'tofu': 'tofu',
+  'tempeh': 'tempeh',
+  'seitan': 'seitan',
+  'higado': 'liver',
+  // techniques
+  'horno': 'baked',
+  'plancha': 'grilled',
+  'salteado': 'sauteed',
+  'salteada': 'sauteed',
+  'salteados': 'sauteed',
+  'salteadas': 'sauteed',
+  'guisado': 'stewed',
+  'guisada': 'stewed',
+  'asada': 'roasted',
+  'asado': 'roasted',
+  'asadas': 'roasted',
+  'asados': 'roasted',
+  'revueltos': 'scrambled',
+  'poche': 'poached',
+  'vapor': 'steamed',
+  'estofadas': 'braised',
+  'estofado': 'braised',
+  'frito': 'fried',
+  'frita': 'fried',
+  'ahumado': 'smoked',
+  // bases
+  'arroz': 'rice',
+  'pasta': 'pasta',
+  'lentejas': 'lentils',
+  'garbanzos': 'chickpeas',
+  'alubias': 'beans',
+  'quinoa': 'quinoa',
+  'patatas': 'potatoes',
+  'avena': 'oats',
+  // dish types
+  'ensalada': 'salad',
+  'sopa': 'soup',
+  'crema': 'creamy soup',
+  'tortilla': 'omelette',
+  'tostada': 'toast',
+  'bowl': 'bowl',
+  'batido': 'smoothie',
+  'yogur': 'yogurt',
+  'gofres': 'waffles',
+  'muesli': 'muesli',
+  'porridge': 'oatmeal',
+  'wrap': 'wrap',
+  'sandwich': 'sandwich',
+  'hamburguesa': 'burger',
+  'bagel': 'bagel',
+  'risotto': 'risotto',
+  'lasana': 'lasagna',
+  'curry': 'curry',
+  'griego': 'greek',
+  // vegetables / extras
+  'champinones': 'mushrooms',
+  'setas': 'mushrooms',
+  'espinacas': 'spinach',
+  'calabaza': 'pumpkin',
+  'berenjena': 'eggplant',
+  'berenjenas': 'eggplant',
+  'tomate': 'tomato',
+  'aguacate': 'avocado',
+  'queso': 'cheese',
+  'cebolla': 'onion',
+  'coliflor': 'cauliflower',
+  'repollo': 'cabbage',
+  'verduras': 'vegetables',
+  'granola': 'granola',
+  // seasonings/garnishes with real visual signal
+  'miel': 'honey',
+  'canela': 'cinnamon',
+  'limon': 'lemon',
+  'lima': 'lime',
+  'jengibre': 'ginger',
+  'ajo': 'garlic',
+  'ajillo': 'garlic',
+  'perejil': 'parsley',
+  'cilantro': 'cilantro',
+  'albahaca': 'basil',
+  'tamari': 'tamari',
+  'sesamo': 'sesame',
+  'curcuma': 'turmeric',
+  'comino': 'cumin',
+  'aceitunas': 'olives',
+  'frutos rojos': 'berries',
+  'nueces': 'walnuts',
+  'semillas': 'seeds',
+  'lino': 'flax',
+  'girasol': 'sunflower',
+  'picante': 'spicy',
+  'griega': 'greek',
+};
+
+const STOPWORDS = new Set(['con', 'y', 'de', 'a', 'la', 'el', 'del', 'las', 'los', 'al']);
+
+function translateQuery(nombre: string): string {
+  let text = stripAccents(nombre.toLowerCase());
+  for (const pattern of FILLER_PHRASES) { text = text.replace(pattern, ' '); }
+
+  const words = text.split(/\s+/).filter(Boolean).filter(w => !STOPWORDS.has(w));
+  const translated = words.map(w => ES_EN_WORDS[w] ?? w);
+  return [...new Set(translated)].join(' ');
 }
 
 interface RecipeRow {
@@ -109,22 +271,25 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
   const body = await res.json() as { results: { urls: { regular: string } }[] };
   if (body.results.length === 0) { return null; }
 
-  // Pick from Unsplash's top 4 (most-relevant) results first, not all 10 —
+  // Pick from Unsplash's top 2 (most-relevant) results first, not all 10 —
   // a live full review of 70 applied photos found the worst mismatches
   // (a wedding program for "Espaguetis a la boloñesa", raw ingredients for
   // several soups/salads) came from indices 5-9, where relevance craters.
-  // Hashed (not always index 0) so recipes with an overlapping top-4 don't
-  // reach for the identical first choice — BUT the hash alone isn't enough:
-  // two recipes with near-identical result sets and the same hash%topK
-  // land on the literal same photo every time, deterministically, no
-  // matter how many times you retry (confirmed live this session — 2
-  // pairs collided again on a re-run after a reset, byte-identical URLs).
-  // `usedUrls` (shared across the whole batch by the caller) is what
-  // actually breaks the tie: the first recipe to reach a given photo
-  // claims it, the next one falls through to its next-preferred index,
-  // and only past that to the "worse" indices 4-9 as a last resort before
-  // giving up rather than forcing a duplicate.
-  const topK = Math.min(4, body.results.length);
+  // v6: narrowed 4 -> 2 (was reaching into index 2-3 too often, e.g. the
+  // Jarritos-bottle/cactus mismatch) — trust top-relevance more now that
+  // the query is actually translated (see file header), per the explicit
+  // "fewer but better" direction. Hashed (not always index 0) so recipes
+  // with an overlapping top-2 don't reach for the identical first choice —
+  // BUT the hash alone isn't enough: two recipes with near-identical result
+  // sets and the same hash%topK land on the literal same photo every time,
+  // deterministically, no matter how many times you retry (confirmed live
+  // this session — 2 pairs collided again on a re-run after a reset,
+  // byte-identical URLs). `usedUrls` (shared across the whole batch by the
+  // caller) is what actually breaks the tie: the first recipe to reach a
+  // given photo claims it, the next one falls through to its
+  // next-preferred index, and only past that to the "worse" indices 2-9 as
+  // a last resort before giving up rather than forcing a duplicate.
+  const topK = Math.min(2, body.results.length);
   let hash = 0;
   for (let i = 0; i < seed.length; i++) { hash = (hash * 31 + seed.charCodeAt(i)) >>> 0; }
   const preferredStart = hash % topK;
@@ -176,7 +341,11 @@ async function main() {
     // single raw tomato). Unsplash's tags/alt-text skew English, so an
     // explicit "cooked" disambiguator pushes results toward actual
     // prepared-meal photography instead of ingredient close-ups.
-    const query = `${stripAccents(recipe.nombre)} cooked meal food photography`;
+    // v6: `translateQuery` replaces the raw accent-stripped Spanish name —
+    // see the file header for why (Spanish query into an English-tagged
+    // database was the real root cause of bad matches, not just relevance
+    // ranking).
+    const query = `${translateQuery(recipe.nombre)} cooked meal food photography`;
     const url = await searchUnsplash(query, recipe.id, usedUrls);
 
     if (url) {
