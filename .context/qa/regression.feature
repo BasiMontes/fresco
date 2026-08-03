@@ -249,6 +249,18 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /menu (Inicio)
     Entonces ve el banner de sugerencia de todas formas, junto al estado vacío
 
+  @panel-inicio @verificado-manual-2026-08-03
+  Escenario: Inicio muestra el número real de recetas disponibles para el perfil del usuario
+    Dado que el usuario tiene alérgenos e ingredientes marcados en su perfil
+    Cuando abre /menu (Inicio)
+    Entonces ve el número de recetas disponibles que respetan esas restricciones
+
+  @panel-inicio @verificado-manual-2026-08-03
+  Escenario: Tocar la card de recetas disponibles lleva al catálogo
+    Dado que el usuario ve la card de recetas disponibles en Inicio
+    Cuando toca la card
+    Entonces es llevado a la pantalla de Recetas
+
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================

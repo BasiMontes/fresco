@@ -2,6 +2,7 @@ import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import { Bell, Heart, Zap } from 'lucide-react';
 
 import Link from 'next/link';
+import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { RecipeCard } from '@/components/recipe/recipe-card';
@@ -9,6 +10,7 @@ import { AlertBanner } from '@/components/ui/alert-banner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
+import { getAvailableRecipesCount } from '@/lib/api/recipes';
 import { getUserNombre } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
@@ -47,6 +49,18 @@ export default async function MenuPage() {
     console.error('[/menu] getUserNombre failed, defaulting to null', error);
   }
 
+  let recetasDisponibles: number | null = null;
+  try {
+    recetasDisponibles = await getAvailableRecipesCount(supabase, user?.id);
+  }
+  catch (error) {
+    // Same conservative fallback as every other server-side read on this
+    // page: a real read failure hides the card rather than crashing the
+    // page or showing a misleading "0" (which would read as an empty
+    // catalog, not a transient error).
+    console.error('[/menu] getAvailableRecipesCount failed, hiding the card', error);
+  }
+
   let plan: MenuSemanalPersistido | null;
   try {
     plan = await getMealPlanForWeek(supabase);
@@ -72,6 +86,10 @@ export default async function MenuPage() {
       <div className="mx-auto max-w-3xl">
         {/* FRESCO-56: banner shown regardless of plan state, per AC. */}
         <CalendarSuggestionBanner />
+        {/* FRESCO-57: profile-based count, independent of having a plan. */}
+        {recetasDisponibles !== null && (
+          <AvailableRecipesCard count={recetasDisponibles} />
+        )}
         <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
@@ -97,6 +115,10 @@ export default async function MenuPage() {
       </div>
 
       <CalendarSuggestionBanner />
+
+      {recetasDisponibles !== null && (
+        <AvailableRecipesCard count={recetasDisponibles} />
+      )}
 
       {user?.is_anonymous && (
         <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">
