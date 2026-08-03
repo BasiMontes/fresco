@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getMealPlanForWeek, MealPlanError, swapMealPlanSlots } from './meal-plan';
+import { deleteMealPlan, getMealPlanForWeek, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
 
@@ -227,5 +227,61 @@ describe('swapMealPlanSlots', () => {
     const { client } = createRpcMockClient({ errorMessage: 'foreign key violation' });
 
     await expectRejection(swapMealPlanSlots(client, 'slot-a-id', 'slot-b-id'));
+  });
+});
+
+/** Minimal mock client exposing `.auth.getUser()` + `.from().delete().eq().eq()` — all `deleteMealPlan()` calls. */
+function createDeleteMockClient(options: { userId?: string, errorMessage?: string } = {}) {
+  const eqCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      delete: () => ({
+        eq: (column: string, value: string) => {
+          eqCalls.push({ column, value });
+          return {
+            eq: async (column2: string, value2: string) => {
+              eqCalls.push({ column: column2, value: value2 });
+              return { error: options.errorMessage ? { message: options.errorMessage } : null };
+            },
+          };
+        },
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, eqCalls };
+}
+
+describe('deleteMealPlan', () => {
+  test('resolves without throwing when the delete succeeds, scoped by id AND user_id', async () => {
+    const { client, eqCalls } = createDeleteMockClient({ userId: 'user-123' });
+
+    const result = await deleteMealPlan(client, 'plan-1');
+
+    expect(result).toBeUndefined();
+    expect(eqCalls).toEqual([
+      { column: 'id', value: 'plan-1' },
+      { column: 'user_id', value: 'user-123' },
+    ]);
+  });
+
+  test('throws MealPlanError with the underlying message when the delete fails', async () => {
+    const { client } = createDeleteMockClient({ userId: 'user-123', errorMessage: 'permission denied' });
+
+    await expectRejection(deleteMealPlan(client, 'plan-1'));
+  });
+
+  test('throws MealPlanError when there is no authenticated session', async () => {
+    const { client } = createDeleteMockClient({});
+
+    await expectRejection(deleteMealPlan(client, 'plan-1'));
   });
 });

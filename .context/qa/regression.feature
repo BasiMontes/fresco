@@ -284,7 +284,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces es llevada a la pantalla de Recetas
 
   # ==========================================================================
-  # Control del Menú Semanal (EPIC-FRESCO-60 / STORY-FRESCO-61)
+  # Control del Menú Semanal (EPIC-FRESCO-60 / STORY-FRESCO-61/62/63)
   # ==========================================================================
 
   @calendario @verificado-manual-2026-08-03
@@ -304,6 +304,18 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el usuario visita /calendar con un valor de semana mal formado en la URL
     Cuando la página carga
     Entonces ve la semana actual, sin ningún error
+
+  @calendario @verificado-manual-2026-08-03
+  Escenario: El usuario elimina el menú de la semana que está viendo
+    Dado que el usuario ve un menú generado para la semana actual
+    Cuando toca el botón de eliminar
+    Entonces el menú completo de esa semana desaparece y ve el mismo estado vacío que si nunca hubiera generado uno
+
+  @calendario @edge-case @verificado-manual-2026-08-03
+  Escenario: No hay opción de eliminar cuando no hay menú generado
+    Dado que el usuario ve el estado vacío de una semana sin menú generado
+    Cuando mira los controles disponibles
+    Entonces no se le ofrece la opción de eliminar
 
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)

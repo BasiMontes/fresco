@@ -1,6 +1,7 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
+import { DeleteWeekButton } from '@/components/calendar/delete-week-button';
 import { WeekNavigation } from '@/components/calendar/week-navigation';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
@@ -91,7 +92,10 @@ export default async function CalendarPage({
     <div className="mx-auto max-w-5xl">
       <div className="flex items-center justify-between">
         <h1 className="text-h2">Calendario semanal</h1>
-        <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
+        <div className="flex items-center gap-2">
+          <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
+          <DeleteWeekButton mealPlanId={plan.mealPlanId} />
+        </div>
       </div>
       <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
 

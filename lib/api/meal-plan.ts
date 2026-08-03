@@ -244,3 +244,35 @@ export async function swapMealPlanSlots(
     throw new MealPlanError(`No se pudo intercambiar los huecos del menú: ${error.message}`);
   }
 }
+
+/**
+ * Deletes the CURRENTLY authenticated user's own `meal_plans` row (FRESCO-62,
+ * `/calendar` "eliminar el menú de la semana" control). `meal_plan_recipes`
+ * cascades (`on delete cascade`, `20260725120100_create_fresco_core_tables.sql`)
+ * — no separate cleanup needed. Scoped by `user_id` explicitly, on top of the
+ * table's own `meal_plans_delete_own` RLS policy, matching the same
+ * defense-in-depth pattern `getUserRecipes()` already uses.
+ *
+ * Public method — fails fast (throws `MealPlanError`), same convention as
+ * every other write in this file.
+ */
+export async function deleteMealPlan(
+  client: SupabaseClient<Database>,
+  mealPlanId: string,
+): Promise<void> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new MealPlanError('No hay una sesión autenticada para eliminar el menú.');
+  }
+
+  const { error } = await client
+    .from('meal_plans')
+    .delete()
+    .eq('id', mealPlanId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    throw new MealPlanError(`No se pudo eliminar el menú: ${error.message}`);
+  }
+}

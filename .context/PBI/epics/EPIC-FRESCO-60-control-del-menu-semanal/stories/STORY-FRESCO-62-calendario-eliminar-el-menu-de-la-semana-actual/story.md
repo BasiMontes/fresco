@@ -24,6 +24,14 @@ Como Laura, quiero eliminar el menú que estoy viendo en /calendar, para poder e
 
 ---
 
+## Traceability
+
+### Historia (1)
+
+- [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Finalizada)_
+
+---
+
 ## Metadata
 
 - **Created:** 8/3/2026
