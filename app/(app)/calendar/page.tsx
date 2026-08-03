@@ -2,6 +2,7 @@ import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { DeleteWeekButton } from '@/components/calendar/delete-week-button';
+import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
 import { WeekNavigation } from '@/components/calendar/week-navigation';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
@@ -71,7 +72,10 @@ export default async function CalendarPage({
           <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
         </div>
         <div className="mt-6">
-          <NoMenuEmptyState data-testid="calendar_empty_state" />
+          <NoMenuEmptyState
+            data-testid="calendar_empty_state"
+            action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} />}
+          />
         </div>
       </div>
     );

@@ -317,6 +317,21 @@ Característica: Flujo completo de usuario en Fresco
     Cuando mira los controles disponibles
     Entonces no se le ofrece la opción de eliminar
 
+  @calendario @verificado-manual-2026-08-03
+  Escenario: Generar un menú nuevo directamente desde el Calendario
+    Dado que el usuario está viendo una semana sin menú generado todavía
+    Cuando toca "Generar mi menú"
+    Entonces recibe un menú semanal completo para esa semana sin salir de /calendar
+
+  @calendario @edge-case @pendiente
+  Escenario: No se puede generar sobre una semana que ya tiene menú
+    Dado que el usuario está viendo una semana que ya tiene un menú generado
+    Cuando mira los controles disponibles
+    Entonces no puede generar uno nuevo directamente — primero tiene que eliminar el existente
+    # Verificado estructuralmente (el botón nunca se renderiza en esa rama),
+    # no como acción bloqueada explícita — @pendiente hasta un intento real
+    # de re-generar sobre una semana con plan (caso defensivo 409).
+
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================
