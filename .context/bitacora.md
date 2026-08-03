@@ -1562,3 +1562,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user tras confirmar que no había más features nuevas definidas en ningún doc — se negó a inventar el feature, el user lo trajo con su propio mockup.
 
 **Siguiente**: EPIC-FRESCO-60 dev-ready (FRESCO-61/62/63, todas "Listo", desbloqueadas — FRESCO-7 ya está Finalizada). `dev-roadmap.md` al día. FRESCO-31 sigue con 727/1000 restantes.
+
+---
+
+## 2026-08-03 — FRESCO-61: navegación entre semanas en el Calendario
+
+**Qué**: `/sprint-development` modo Solo. `getDateFromIsoWeek()`/`addIsoWeeks()` nuevas en `lib/date/iso-week.ts` (inversa real de `getIsoWeek()`, verificada con un round-trip sobre todo un año + cruce de límite de año 2026→2027). `/calendar` ahora lee `?semana=YYYY-Www` de `searchParams` (es una `Promise` en esta versión de Next.js, no sync), con regex estricta y fallback silencioso a la semana actual ante cualquier valor mal formado o ausente — probado en vivo pasando basura literal en la URL, cae bien, sin crash. `getMealPlanForWeek()` ya aceptaba una semana explícita desde antes (nunca se había llamado con una) — cero cambios ahí. Componente `WeekNavigation` con label real de rango Lunes-Domingo ("3–9 ago"), no el label tipo mes del mockup del user ("FEB 2026") — el modelo de datos es estrictamente semanal, se lo dije explícito en el plan antes de codear (mockup es inspiración, no spec literal, Regla 14).
+
+**Por qué**: pedido directo del user, siguiente historia de la épica recién sembrada.
+
+**Siguiente**: FRESCO-61 en `Control de calidad`, commit `2c37b83` pusheado. Quedan FRESCO-62 (eliminar plan de la semana) y FRESCO-63 (generar para la semana vista) de EPIC-FRESCO-60, ambas desbloqueadas (FRESCO-7 ya Finalizada).
