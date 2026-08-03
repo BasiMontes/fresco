@@ -1664,3 +1664,15 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, segunda historia de la épica.
 
 **Siguiente**: FRESCO-66 en `Control de calidad`, commit `464419b` pusheado. Quedan FRESCO-67 (filtros dieta/alérgeno/cocina) y FRESCO-68 (crear propia) de EPIC-FRESCO-64, ambas desbloqueadas.
+
+---
+
+## 2026-08-03 — FRESCO-67: filtros cocina/dieta/alérgeno en la Biblioteca
+
+**Qué**: `/sprint-development` modo Solo. 3 predicados nuevos (`matchesCocina`, `matchesDieta`, `matchesAlergenoFilter`) sumados al mismo `filter()` de FRESCO-65/66 — sin fetch nuevo, `getCatalogRecipes()` ya traía `clasificacion`/`dieta`/`alergenos`. `FilterSelect` nuevo (wrapper mínimo sobre `<select>` nativo, estilizado tipo pill como `Input`): sin primitivo de dropdown en el design system y `SegmentedControl` quedaría demasiado ancho para 7-10 opciones. Reusa `ALERGENO_OPTIONS` (ya curado) y `DIETA_LABELS` — este último se exportó desde `recipe-card.tsx` (antes privado) en vez de duplicar el mapa.
+
+**Verificado en vivo**: cocina "italiana" narrow correcto (risotto, ensaladas, sopa italiana); dieta "vegano" narrow correcto por flag `dieta.vegano`; alérgeno "Gluten" excluye panes/tostadas, deja una receta "sin gluten" explícita. **Hallazgo real, no tocado**: filtrando por "vegano" la card mostraba tag "vegetariano" — quirk pre-existente de `firstActiveDietaLabel()` en `RecipeCard` (toma el primer flag `true` en orden de `DIETA_LABELS`, vegetariano antes que vegano; receta vegana también es vegetariana, ambos flags true). El filtro en sí matcheaba bien, es solo el tag mostrado — fuera de alcance de esta historia, documentado en `review.md`.
+
+**Por qué**: pedido directo del user, tercera historia de la épica.
+
+**Siguiente**: FRESCO-67 en `Control de calidad`, commit `95e8383` pusheado. Queda solo FRESCO-68 (crear receta propia) de EPIC-FRESCO-64, sin bloqueos, tabla nueva a diseñar en su propio Stage 1.
