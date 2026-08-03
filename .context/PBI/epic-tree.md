@@ -58,7 +58,6 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
 **Status:** Finalizada | **Stories:** 1 | **Points:** 0
@@ -83,11 +82,11 @@ _Project: FRESCO_
 
 ## [FRESCO-60](https://basiliomontescastano.atlassian.net/browse/FRESCO-60) - Control del Menú Semanal
 
-**Status:** Listo | **Stories:** 3 | **Points:** 0
+**Status:** Finalizada | **Stories:** 3 | **Points:** 0
 
-- [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61) Calendario | Navegar entre semanas del menú _(- pts, Listo)_
-- [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62) Calendario | Eliminar el menú de la semana actual _(- pts, Listo)_
-- [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63) Calendario | Generar un menú nuevo para la semana _(- pts, Listo)_
+- [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61) Calendario | Navegar entre semanas del menú _(- pts, Finalizada)_
+- [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62) Calendario | Eliminar el menú de la semana actual _(- pts, Finalizada)_
+- [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63) Calendario | Generar un menú nuevo para la semana _(- pts, Finalizada)_
 
 ---
 

@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61)
 **Epic:** [FRESCO-60](https://basiliomontescastano.atlassian.net/browse/FRESCO-60) (Control del Menú Semanal)
 **Type:** Historia
-**Status:** Listo
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 

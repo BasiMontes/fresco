@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-60](https://basiliomontescastano.atlassian.net/browse/FRESCO-60)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -17,9 +17,9 @@ Extiende /calendar con control directo sobre el menú de cada semana: navegar en
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61) | Calendario | Navegar entre semanas del menú | - | Medium | Listo |
-| [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62) | Calendario | Eliminar el menú de la semana actual | - | Medium | Listo |
-| [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63) | Calendario | Generar un menú nuevo para la semana | - | Medium | Listo |
+| [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61) | Calendario | Navegar entre semanas del menú | - | Medium | Finalizada |
+| [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62) | Calendario | Eliminar el menú de la semana actual | - | Medium | Finalizada |
+| [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63) | Calendario | Generar un menú nuevo para la semana | - | Medium | Finalizada |
 
 ---
 
