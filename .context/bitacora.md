@@ -1622,3 +1622,19 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user ("Seguí con FRESCO-31") — el patrón ya estaba documentado como gap conocido de sesión anterior, corregirlo de una es mejor que seguir gastando cupo real en las mismas recetas muertas cada tanda.
 
 **Siguiente**: quedan 689/1000. El fix debería sostener una tasa de acierto más alta (60-85% vs el ~40-50% de antes) en las próximas tandas — confirmar que se mantiene con más corridas.
+
+---
+
+## 2026-08-03 — `/product-management`: nueva épica FRESCO-64 (Biblioteca de Recetas), sembrada a partir de mockup + pedido de 4 puntos
+
+**Qué**:
+- User trajo mockup + 4 pedidos: buscador de recetas, tabs Todo/Desayuno/Comida/Cena, filtros por tags/dieta/alérgenos, "crear propia receta".
+- **Gap real detectado antes de codear/sembrar**: "crear propia" toca `recipes`, tabla documentada en `business-api-map.md` como propiedad exclusiva de 3 actores (generador IA, trigger de aprendizaje, seed del founder) — una receta creada por usuaria sería un 4to actor no documentado. Pregunté al user en vez de inventar: ¿la receta propia entra al generador de menús (necesitaría los mismos campos de seguridad alimentaria) o es solo biblioteca personal? Eligió **solo biblioteca personal** — acota mucho el alcance: tabla nueva separada, sin campos de dieta/alérgenos, sin tocar `get_filtered_recipes()`.
+- **Inferencia declarada, no asumida en silencio**: el mockup dice "Biblioteca — Inspiración basada en tu stock", pero `/recipes` hoy solo muestra recetas YA cocinadas (`getUserRecipes()`), no el catálogo completo. Interpreté que la Biblioteca nueva reencuadra la pantalla a descubrimiento de catálogo completo (mismo patrón que ya usan FRESCO-57/59 vía `get_filtered_recipes()`) — dejado explícito en la épica y en `dev-roadmap.md` para que el user corrija si no es lo que quiere.
+- Clasificado Level 2 (`/product-management` Workflow B) — 4 historias, mismo patrón de hoy: EPIC-FRESCO-64 + FRESCO-65 (buscar) / FRESCO-66 (tabs) / FRESCO-67 (filtros dieta/alérgeno/cocina) / FRESCO-68 (crear propia). AC/Scope/OOS/Rules vía comment fallback de siempre.
+- Active Dependency Discovery: FRESCO-65 bundlea el grid base del catálogo completo en su propio Scope → FRESCO-66 y FRESCO-67 (que filtran ESE mismo grid) dependen realmente de que FRESCO-65 exista primero — edge real, no ruido (a diferencia de la regla "borrar antes de generar" de FRESCO-62/63, que sí era ruido). FRESCO-68 sin dependencias (tabla separada). Creados los 3 links `Blocks` reales en Jira DURANTE el seed (no retroactivo esta vez — la propia lección de "correr /dev-roadmap al final de cada seed" ya aprendida hoy, aplicada de una).
+- `/dev-roadmap` corrido al cierre: backbone (§2) con EPIC-FRESCO-64 → EPIC-FRESCO-8; grafo (§3) con los 3 edges nuevos; §4 regenerado (Execution Sprint 1 gana FRESCO-68, Sprint 2 gana FRESCO-65, Sprint 3 gana FRESCO-66/67); sin ciclos.
+
+**Por qué**: pedido directo del user con mockup real — se negó a inventar el alcance de "crear propia" sin resolver el gap arquitectónico real primero.
+
+**Siguiente**: EPIC-FRESCO-64 dev-ready — FRESCO-68 arrancable ya (sin bloqueos), FRESCO-65 igual (solo depende de FRESCO-9, ya Finalizada), FRESCO-66/67 esperan a que FRESCO-65 exista. `dev-roadmap.md` al día. FRESCO-31 sigue con 689/1000.
