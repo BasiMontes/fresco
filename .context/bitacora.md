@@ -1586,3 +1586,17 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, siguiente historia de la épica.
 
 **Siguiente**: FRESCO-62 en `Control de calidad`, commit `51fe212` pusheado. Queda FRESCO-63 (generar menú para la semana vista) — última historia de EPIC-FRESCO-60.
+
+---
+
+## 2026-08-03 — FRESCO-63: generar menú directo desde el Calendario — EPIC-FRESCO-60 completa
+
+**Qué**: `/sprint-development` modo Solo. `GenerateWeekButton` nuevo llama `generateMealPlan()` (ya existente, ya genérico por semana) directo desde `/calendar` para la semana que se está viendo, sin pasar por `/onboarding`. `NoMenuEmptyState` ganó un prop `action` opcional (el primitivo `EmptyState` que envuelve ya lo soportaba, nunca se había expuesto) — `/menu` sigue igual sin pasar el prop, `/calendar` mete el botón nuevo. Reutiliza tal cual el manejo de error 422/genérico que `app/onboarding/page.tsx` ya tenía validado en vivo de una sesión anterior; el 409 del Edge Function (una semana, un plan) se maneja a la defensiva aunque el botón nunca se renderiza con un plan ya existente.
+
+**Verificado en vivo con Gemini real de nuevo**: cuenta de prueba sin plan (quedó limpia por la verificación de FRESCO-62) — click en "Generar mi menú" directo desde `/calendar` (sin redirect a onboarding/menu), 21 huecos reales generados en ~8s, el botón de eliminar reaparece y el de generar desaparece (mismo patrón estructural que FRESCO-62 a la inversa). Plan de prueba borrado al final de la verificación, DB queda limpia.
+
+**Épica FRESCO-60 completa**: FRESCO-61/62/63 las 3 en `Control de calidad`. Épica en sí sigue en `Listo` — falta preguntarle al user si la cierra a mano como las anteriores.
+
+**Por qué**: pedido directo del user, última historia de la épica.
+
+**Siguiente**: FRESCO-63 pusheado, commit `7254021`. Pendiente: confirmar con el user si cierra FRESCO-60 (+61/62/63) a `Finalizada`, mismo criterio que FRESCO-54/49/50. FRESCO-31 sigue con 727/1000 (última cifra conocida, no se tocó esta sesión de features).
