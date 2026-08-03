@@ -1638,3 +1638,17 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user con mockup real — se negó a inventar el alcance de "crear propia" sin resolver el gap arquitectónico real primero.
 
 **Siguiente**: EPIC-FRESCO-64 dev-ready — FRESCO-68 arrancable ya (sin bloqueos), FRESCO-65 igual (solo depende de FRESCO-9, ya Finalizada), FRESCO-66/67 esperan a que FRESCO-65 exista. `dev-roadmap.md` al día. FRESCO-31 sigue con 689/1000.
+
+---
+
+## 2026-08-03 — FRESCO-65: `/recipes` reencuadrada como Biblioteca + buscador
+
+**Qué**: `/sprint-development` modo Solo. `getCatalogRecipes()` nuevo reutiliza `get_filtered_recipes()` (mismo RPC de seguridad alimentaria que FRESCO-57/59) como fuente de `/recipes`, reemplazando `getUserRecipes()` — la pantalla pasa de "solo lo que ya cociné" a descubrimiento del catálogo completo filtrado por perfil, tal como se dejó explícito al sembrar la épica. `getUserRecipes()` **eliminado** de `lib/api/meal-plan.ts`: mi propio cambio lo dejó sin ningún llamador (verificado con grep antes de borrar, sin test que lo cubriera tampoco) — código muerto causado por mi propio cambio, no código ajeno.
+
+`RecipeLibrary` (cliente) filtra client-side por nombre O ingrediente (subcadena simple, sin acentos) — sin round-trip por tecla, el catálogo ya viene acotado al perfil (cientos de filas, no las 1000 de la tabla completa). Dos empty states distintos a propósito: catálogo vacío (perfil muy restrictivo, raro) vs. búsqueda sin resultados (común, arreglo real distinto: borrar la búsqueda, no tocar el perfil).
+
+**Verificado en vivo con datos reales**: grid con fotos reales de FRESCO-31, buscador "pollo" narrow correcto por nombre e ingrediente — **hallazgo real de paso**: "pollo" también trajo "Repollo salteado" porque "pollo" es subcadena literal de "repollo" (sin límite de palabra) — no es bug contra el AC tal como está escrito, documentado en `regression.feature` como causística real, no arreglado (agregar límite de palabra perdería búsquedas parciales legítimas). Estado vacío de catálogo (perfil sin ninguna receta elegible) no verificado en vivo — requeriría un perfil de prueba artificialmente restrictivo, revisado solo en código.
+
+**Por qué**: pedido directo del user, primera historia de la épica nueva.
+
+**Siguiente**: FRESCO-65 en `Control de calidad`, commit `b72be3d` pusheado. FRESCO-66/67 (tabs y filtros) ahora desbloqueadas (dependían de que FRESCO-65 exista). FRESCO-68 (crear propia) sigue sin bloqueos, independiente.
