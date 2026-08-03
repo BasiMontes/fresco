@@ -271,6 +271,18 @@ Característica: Flujo completo de usuario en Fresco
     # en la propia UI ("Cifras de referencia general, pendientes de validar
     # con datos reales de mercado").
 
+  @panel-inicio @verificado-manual-2026-08-03
+  Escenario: Inicio muestra las últimas recetas añadidas al catálogo, dentro del perfil del usuario
+    Dado que Laura abre Inicio
+    Cuando mira la sección de últimas recetas
+    Entonces ve las recetas agregadas más recientemente al catálogo, dentro de las que puede comer según su perfil
+
+  @panel-inicio @verificado-manual-2026-08-03
+  Escenario: Tocar "Ver todas" en últimas recetas lleva al catálogo
+    Dado que Laura ve la sección de últimas recetas en Inicio
+    Cuando toca "Ver todas"
+    Entonces es llevada a la pantalla de Recetas
+
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================

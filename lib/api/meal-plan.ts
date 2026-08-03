@@ -1,11 +1,10 @@
 import type { Recipe } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { RecipeRow } from '@/lib/api/recipes';
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
+import { toRecipe } from '@/lib/api/recipes';
 import { getIsoWeek } from '@/lib/date/iso-week';
-
-/** Raw `public.recipes` row shape — jsonb columns typed as `Json`, per `lib/supabase/types.ts`. */
-type RecipeRow = Database['public']['Tables']['recipes']['Row'];
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const TIPOS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
@@ -57,26 +56,6 @@ export class MealPlanError extends Error {
     super(message);
     this.name = 'MealPlanError';
   }
-}
-
-/**
- * Reshapes a raw `recipes` row (jsonb columns typed as `Json`) into the
- * strongly-typed `@schemas` `Recipe` shape. A cast, not a runtime validation
- * — mirrors the same trust boundary `generate-meal-plan/index.ts` already
- * takes on the backend (`.returns<Recipe[]>()` on the same table).
- */
-function toRecipe(row: RecipeRow): Recipe {
-  return {
-    ...row,
-    meta: row.meta as unknown as Recipe['meta'],
-    clasificacion: row.clasificacion as unknown as Recipe['clasificacion'],
-    dieta: row.dieta as unknown as Recipe['dieta'],
-    alergenos: row.alergenos as unknown as Recipe['alergenos'],
-    ingredientes_principales: row.ingredientes_principales as unknown as Recipe['ingredientes_principales'],
-    ingredientes_que_puede_desagradar: row.ingredientes_que_puede_desagradar as unknown as Recipe['ingredientes_que_puede_desagradar'],
-    temporada: row.temporada as unknown as Recipe['temporada'],
-    pasos_resumen: row.pasos_resumen as unknown as Recipe['pasos_resumen'],
-  };
 }
 
 /** Return shape of `reshapeMenu()` — the recipe grid plus its parallel slot-id and estado grids. */

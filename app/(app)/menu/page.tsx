@@ -1,9 +1,11 @@
+import type { Recipe } from '@schemas';
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import { Bell, Heart, Zap } from 'lucide-react';
 
 import Link from 'next/link';
 import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
+import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
 import { RecipeCard } from '@/components/recipe/recipe-card';
@@ -11,7 +13,7 @@ import { AlertBanner } from '@/components/ui/alert-banner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
-import { getAvailableRecipesCount } from '@/lib/api/recipes';
+import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getUserNombre } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
@@ -62,6 +64,16 @@ export default async function MenuPage() {
     console.error('[/menu] getAvailableRecipesCount failed, hiding the card', error);
   }
 
+  let ultimasRecetas: Recipe[] = [];
+  try {
+    ultimasRecetas = await getLatestAvailableRecipes(supabase, user?.id);
+  }
+  catch (error) {
+    // Same fail-soft pattern as the other value-indicator reads on this
+    // page: hides the section instead of crashing the page.
+    console.error('[/menu] getLatestAvailableRecipes failed, hiding the section', error);
+  }
+
   let plan: MenuSemanalPersistido | null;
   try {
     plan = await getMealPlanForWeek(supabase);
@@ -92,6 +104,7 @@ export default async function MenuPage() {
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
         <SavingsEstimateCards />
+        <LatestRecipesSection recipes={ultimasRecetas} />
         <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
@@ -182,6 +195,8 @@ export default async function MenuPage() {
           Cocinar ya
         </Link>
       </div>
+
+      <LatestRecipesSection recipes={ultimasRecetas} />
     </div>
   );
 }
