@@ -1,4 +1,4 @@
-import type { Recipe } from '@schemas';
+import type { RecetaPropia, Recipe } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 
@@ -148,4 +148,73 @@ export async function getCatalogRecipes(
   }
 
   return (data ?? []).map(toRecipe);
+}
+
+/**
+ * The CURRENTLY authenticated user's personal recipes (FRESCO-68, `/recipes`
+ * "Biblioteca"). Reads `public.recetas_propias` directly (not a `get_filtered_recipes()`-style
+ * RPC) — RLS `recetas_propias_select_own` already scopes rows to `auth.uid()`,
+ * so this is a plain table select, not a security-relevant filter like its
+ * catalog siblings above.
+ */
+export async function getRecetasPropias(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<RecetaPropia[]> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new RecipesError('No hay una sesión autenticada para leer tus recetas propias.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('recetas_propias')
+    .select('*')
+    .eq('user_id', resolvedUserId);
+
+  if (error) {
+    throw new RecipesError(`No se pudieron leer tus recetas propias: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+export interface CreateRecetaPropiaInput {
+  nombre: string
+  ingredientes: string[]
+  pasos: string[]
+}
+
+/**
+ * Creates a personal recipe for the CURRENTLY authenticated user (FRESCO-68).
+ * `user_id` is set explicitly from the resolved session — RLS `recetas_propias_insert_own`'s
+ * `with check` requires it match `auth.uid()`, so this can't be left implicit.
+ */
+export async function createRecetaPropia(
+  client: SupabaseClient<Database>,
+  input: CreateRecetaPropiaInput,
+): Promise<RecetaPropia> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new RecipesError('No hay una sesión autenticada para crear una receta propia.');
+  }
+
+  const { data, error } = await client
+    .from('recetas_propias')
+    .insert({ user_id: user.id, ...input })
+    .select('*')
+    .single();
+
+  if (error) {
+    throw new RecipesError(`No se pudo guardar tu receta: ${error.message}`);
+  }
+
+  return data;
 }

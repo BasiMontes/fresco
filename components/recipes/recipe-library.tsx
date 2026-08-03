@@ -1,9 +1,12 @@
 'use client';
 
-import type { Recipe, RecipeDieta, TipoCocina } from '@schemas';
-import { BookOpen, Search } from 'lucide-react';
+import type { RecetaPropia, Recipe, RecipeDieta, TipoCocina } from '@schemas';
+import { BookOpen, Plus, Search } from 'lucide-react';
 import * as React from 'react';
 import { DIETA_LABELS, RecipeCard } from '@/components/recipe/recipe-card';
+import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
+import { PersonalRecipeCard } from '@/components/recipes/personal-recipe-card';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -99,12 +102,14 @@ function matchesAlergenoFilter(recipe: Recipe, alergeno: string): boolean {
   return !alergenos.includes(alergeno);
 }
 
-export function RecipeLibrary({ recipes }: { recipes: Recipe[] }) {
+export function RecipeLibrary({ recipes, recetasPropias }: { recipes: Recipe[], recetasPropias: RecetaPropia[] }) {
   const [query, setQuery] = React.useState('');
   const [tab, setTab] = React.useState<MealTab>('todo');
   const [cocina, setCocina] = React.useState<string>(TODAS_LAS_COCINAS);
   const [dieta, setDieta] = React.useState<string>(CUALQUIER_DIETA);
   const [alergeno, setAlergeno] = React.useState<string>(NINGUN_ALERGENO);
+  const [misRecetas, setMisRecetas] = React.useState(recetasPropias);
+  const [createOpen, setCreateOpen] = React.useState(false);
   const filtered = React.useMemo(
     () => recipes.filter(recipe =>
       matchesQuery(recipe, query)
@@ -117,18 +122,46 @@ export function RecipeLibrary({ recipes }: { recipes: Recipe[] }) {
 
   return (
     <div>
-      <div className="relative mt-6">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-tertiary" aria-hidden="true" />
-        <Input
-          type="search"
-          placeholder="Buscar receta, ingrediente..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-          className="pl-9"
-          data-testid="recipe_search_input"
-          aria-label="Buscar receta o ingrediente"
-        />
+      <div className="mt-6 flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-tertiary" aria-hidden="true" />
+          <Input
+            type="search"
+            placeholder="Buscar receta, ingrediente..."
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            className="pl-9"
+            data-testid="recipe_search_input"
+            aria-label="Buscar receta o ingrediente"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setCreateOpen(true)}
+          data-testid="crear_propia_button"
+        >
+          <Plus className="size-4" aria-hidden="true" />
+          Crear propia
+        </Button>
       </div>
+
+      <CreateRecipeForm
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={receta => setMisRecetas(current => [receta, ...current])}
+      />
+
+      {misRecetas.length > 0 && (
+        <div className="mt-6" data-testid="personal_recipes_section">
+          <h2 className="text-h6 uppercase text-tertiary">Tus recetas</h2>
+          <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {misRecetas.map(receta => (
+              <PersonalRecipeCard key={receta.id} receta={receta} />
+            ))}
+          </div>
+        </div>
+      )}
 
       <SegmentedControl
         className="mt-4"

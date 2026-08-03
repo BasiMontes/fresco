@@ -109,6 +109,44 @@ export type Database = {
           },
         ]
       }
+      recetas_propias: {
+        Row: {
+          created_at: string
+          id: string
+          ingredientes: string[]
+          nombre: string
+          pasos: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredientes?: string[]
+          nombre: string
+          pasos?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredientes?: string[]
+          nombre?: string
+          pasos?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recetas_propias_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           alergenos: Json | null

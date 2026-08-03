@@ -95,3 +95,20 @@ export interface Recipe {
   rating_promedio: number | null
   ultima_vez_en_menu: string | null
 }
+
+/**
+ * A personal recipe a user creates for their own library (FRESCO-68).
+ * Deliberately NOT `Recipe` — that shape carries catalog-only fields
+ * (`slug`, `meta`, `clasificacion`, `dieta`, `alergenos`, ...) a personal
+ * recipe has no reason to hold, and this table is never read by
+ * `get_filtered_recipes()` or the AI menu generator.
+ */
+export interface RecetaPropia {
+  id: string
+  created_at: string
+  updated_at: string
+  user_id: string
+  nombre: string
+  ingredientes: string[]
+  pasos: string[]
+}

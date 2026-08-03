@@ -600,6 +600,27 @@ Característica: Flujo completo de usuario en Fresco
     Cuando activa ese filtro de alérgeno en la Biblioteca
     Entonces no ve ninguna receta que lo contenga, sin que cambie su perfil permanente
 
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Crear una receta propia
+    Dado que Laura está en la Biblioteca
+    Cuando completa el formulario "Crear propia" con nombre, ingredientes y pasos, y confirma
+    Entonces su receta aparece en la sección "Tus recetas", distinguible del catálogo
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Campos obligatorios al crear una receta propia
+    Dado que Laura abre el formulario de "Crear propia" sin completar el nombre
+    Cuando intenta guardar
+    Entonces ve un mensaje claro pidiéndole completar el nombre antes de guardar
+
+  @biblioteca @pendiente
+  Escenario: Receta propia no participa en la generación de menú
+    Dado que Laura tiene una receta propia guardada
+    Cuando genera un menú semanal nuevo
+    Entonces esa receta propia nunca aparece en el menú generado por la IA
+    # No verificado con un ciclo de generación real -- garantía estructural
+    # confirmada por code review (get_filtered_recipes()/generate-meal-plan
+    # nunca referencian recetas_propias), no por prueba en vivo.
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)

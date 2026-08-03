@@ -1,5 +1,5 @@
 import { EmptyCatalogState, RecipeLibrary } from '@/components/recipes/recipe-library';
-import { getCatalogRecipes } from '@/lib/api/recipes';
+import { getCatalogRecipes, getRecetasPropias } from '@/lib/api/recipes';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -31,6 +31,15 @@ export default async function RecipesPage() {
     recipes = [];
   }
 
+  let recetasPropias: Awaited<ReturnType<typeof getRecetasPropias>>;
+  try {
+    recetasPropias = await getRecetasPropias(supabase);
+  }
+  catch (error) {
+    console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
+    recetasPropias = [];
+  }
+
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-h2">Biblioteca</h1>
@@ -41,7 +50,7 @@ export default async function RecipesPage() {
       <h2 className="sr-only">Recetas del catálogo</h2>
       {recipes.length === 0
         ? <EmptyCatalogState />
-        : <RecipeLibrary recipes={recipes} />}
+        : <RecipeLibrary recipes={recipes} recetasPropias={recetasPropias} />}
     </div>
   );
 }

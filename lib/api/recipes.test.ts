@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, RecipesError } from './recipes';
+import { createRecetaPropia, getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, getRecetasPropias, RecipesError } from './recipes';
 
 async function expectRejection(promise: Promise<unknown>): Promise<void> {
   let thrownError: unknown;
@@ -293,5 +293,146 @@ describe('getCatalogRecipes', () => {
 
     expect(getUserCalls).toHaveLength(0);
     expect(rpcCalls).toEqual([{ fn: 'get_filtered_recipes', args: { p_user_id: 'user-456' } }]);
+  });
+});
+
+const SAMPLE_RECETA_PROPIA = {
+  id: 'receta-1',
+  created_at: '2026-08-03T00:00:00Z',
+  updated_at: '2026-08-03T00:00:00Z',
+  user_id: 'user-123',
+  nombre: 'Tortilla de mi abuela',
+  ingredientes: ['huevo', 'patata'],
+  pasos: ['pelar patatas', 'batir huevos'],
+};
+
+/** Minimal mock client exposing `.from('recetas_propias').select().eq()` — all `getRecetasPropias()` calls. */
+function createRecetasPropiasMockClient(options: { userId?: string, rows?: unknown[], dbErrorMessage?: string } = {}) {
+  const getUserCalls: unknown[] = [];
+  const eqCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => {
+        getUserCalls.push(undefined);
+        return options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null };
+      },
+    },
+    from: (table: string) => ({
+      select: () => ({
+        eq: async (column: string, value: unknown) => {
+          eqCalls.push({ table, column, value });
+          return {
+            data: options.dbErrorMessage ? null : (options.rows ?? []),
+            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+          };
+        },
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, eqCalls };
+}
+
+describe('getRecetasPropias', () => {
+  test('returns the personal recipe rows as-is', async () => {
+    const { client } = createRecetasPropiasMockClient({ userId: 'user-123', rows: [SAMPLE_RECETA_PROPIA] });
+
+    const result = await getRecetasPropias(client);
+
+    expect(result).toEqual([SAMPLE_RECETA_PROPIA]);
+  });
+
+  test('returns an empty array when there are no rows', async () => {
+    const { client } = createRecetasPropiasMockClient({ userId: 'user-123', rows: [] });
+
+    const result = await getRecetasPropias(client);
+
+    expect(result).toEqual([]);
+  });
+
+  test('throws RecipesError on a real database error', async () => {
+    const { client } = createRecetasPropiasMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(getRecetasPropias(client));
+  });
+
+  test('throws RecipesError when there is no authenticated session', async () => {
+    const { client } = createRecetasPropiasMockClient({});
+
+    await expectRejection(getRecetasPropias(client));
+  });
+
+  test('with a userId argument, skips the internal auth.getUser() call and queries by the given id', async () => {
+    const { client, getUserCalls, eqCalls } = createRecetasPropiasMockClient({ rows: [] });
+
+    await getRecetasPropias(client, 'user-456');
+
+    expect(getUserCalls).toHaveLength(0);
+    expect(eqCalls).toEqual([{ table: 'recetas_propias', column: 'user_id', value: 'user-456' }]);
+  });
+});
+
+/** Minimal mock client exposing `.from('recetas_propias').insert().select().single()` — all `createRecetaPropia()` calls. */
+function createInsertMockClient(options: { userId?: string, row?: unknown, dbErrorMessage?: string } = {}) {
+  const getUserCalls: unknown[] = [];
+  const insertCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => {
+        getUserCalls.push(undefined);
+        return options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null };
+      },
+    },
+    from: (table: string) => ({
+      insert: (payload: unknown) => {
+        insertCalls.push({ table, payload });
+        return {
+          select: () => ({
+            single: async () => ({
+              data: options.dbErrorMessage ? null : (options.row ?? null),
+              error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+            }),
+          }),
+        };
+      },
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, insertCalls };
+}
+
+describe('createRecetaPropia', () => {
+  test('inserts with the resolved user_id and returns the created row', async () => {
+    const { client, insertCalls } = createInsertMockClient({ userId: 'user-123', row: SAMPLE_RECETA_PROPIA });
+
+    const result = await createRecetaPropia(client, {
+      nombre: 'Tortilla de mi abuela',
+      ingredientes: ['huevo', 'patata'],
+      pasos: ['pelar patatas', 'batir huevos'],
+    });
+
+    expect(result).toEqual(SAMPLE_RECETA_PROPIA);
+    expect(insertCalls).toEqual([{
+      table: 'recetas_propias',
+      payload: { user_id: 'user-123', nombre: 'Tortilla de mi abuela', ingredientes: ['huevo', 'patata'], pasos: ['pelar patatas', 'batir huevos'] },
+    }]);
+  });
+
+  test('throws RecipesError on a real database error', async () => {
+    const { client } = createInsertMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(createRecetaPropia(client, { nombre: 'x', ingredientes: [], pasos: [] }));
+  });
+
+  test('throws RecipesError when there is no authenticated session', async () => {
+    const { client } = createInsertMockClient({});
+
+    await expectRejection(createRecetaPropia(client, { nombre: 'x', ingredientes: [], pasos: [] }));
   });
 });
