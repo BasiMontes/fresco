@@ -1600,3 +1600,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, última historia de la épica.
 
 **Siguiente**: FRESCO-63 pusheado, commit `7254021`. Pendiente: confirmar con el user si cierra FRESCO-60 (+61/62/63) a `Finalizada`, mismo criterio que FRESCO-54/49/50. FRESCO-31 sigue con 727/1000 (última cifra conocida, no se tocó esta sesión de features).
+
+---
+
+## 2026-08-03 — Cierre EPIC-FRESCO-60 — backlog del proyecto 100% `Finalizada`
+
+**Qué**: user confirmó cerrar FRESCO-60 + sus 3 historias (61/62/63) a mano, mismo criterio de siempre (proyecto solo, sin QA distinta). Verificado post-transición vía `acli jira workitem search --json` (no el eco del comando). Chequeo final: JQL sobre TODAS las Historia y TODAS las Epic del proyecto con `status != Finalizada` → cero resultados en ambas. Backlog completo del proyecto (9 épicas, 20 historias) queda en `Finalizada`.
+
+**Por qué**: pedido directo del user tras cerrar FRESCO-63 ("cerralas. Necesitas más tareas?").
+
+**Siguiente**: nada dev-ready en Jira. Sesión de hoy de punta a punta: FRESCO-31 (+40 fotos, 233→273/1000), housekeeping de 2 épicas viejas (FRESCO-49/50), épica nueva completa EPIC-FRESCO-54 (Panel de Inicio, 5 historias) y épica nueva completa EPIC-FRESCO-60 (Control del Menú Semanal, 3 historias) — sembradas y shippeadas la misma sesión. Para la próxima: FRESCO-31 (727/1000 restantes) o sembrar iniciativa nueva vía `/product-management` cuando el user traiga la próxima idea/mockup.
