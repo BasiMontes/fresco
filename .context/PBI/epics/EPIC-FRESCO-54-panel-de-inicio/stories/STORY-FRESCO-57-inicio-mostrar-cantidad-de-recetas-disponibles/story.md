@@ -17,6 +17,14 @@ Como Laura, quiero ver cuántas recetas tengo disponibles desde Inicio, para sab
 
 ---
 
+## Traceability
+
+### Historia (1)
+
+- [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Finalizada)_
+
+---
+
 ## Metadata
 
 - **Created:** 8/2/2026

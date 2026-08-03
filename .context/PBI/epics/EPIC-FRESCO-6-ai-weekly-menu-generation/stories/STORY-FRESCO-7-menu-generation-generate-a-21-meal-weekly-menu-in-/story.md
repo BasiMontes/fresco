@@ -27,13 +27,16 @@ Como Laura, la planificadora agotada, quiero una semana completa de comidas gene
 
 ## Traceability
 
-### Historias (5)
+### Historias (8)
 
 - [FRESCO-5](https://basiliomontescastano.atlassian.net/browse/FRESCO-5): Onboarding | Completar dieta, cocinas y hogar en 3 pasos _(Finalizada)_
 - [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Finalizada)_
 - [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11): Calendario | Reordenar el menú generado arrastrando platos entre espacios _(Finalizada)_
 - [FRESCO-13](https://basiliomontescastano.atlassian.net/browse/FRESCO-13): Lista de la Compra | Generar y marcar como comprados los ingredientes del menú semanal _(Finalizada)_
 - [FRESCO-15](https://basiliomontescastano.atlassian.net/browse/FRESCO-15): Aprendizaje | Marcar un plato del menú como cocinado o descartado _(Finalizada)_
+- [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61): Calendario | Navegar entre semanas del menú _(Finalizada)_
+- [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62): Calendario | Eliminar el menú de la semana actual _(Finalizada)_
+- [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63): Calendario | Generar un menú nuevo para la semana _(Finalizada)_
 
 ### Tarea (1)
 
@@ -44,7 +47,7 @@ Como Laura, la planificadora agotada, quiero una semana completa de comidas gene
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/3/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** implementation-plan-ready

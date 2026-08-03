@@ -142,12 +142,15 @@ FRESCO-7 (Menu Generation) ──> FRESCO-61, FRESCO-62, FRESCO-63 (Calendario |
 FRESCO-9 (Food Safety) ──> FRESCO-65 (Biblioteca | Buscar recetas)
    [Blocks, created this pass — reads get_filtered_recipes()]
 
-FRESCO-65 (Biblioteca | Buscar recetas) ──> FRESCO-66 (Biblioteca | Filtrar por tipo de comida), FRESCO-67 (Biblioteca | Filtrar dieta/alérgeno/cocina)
+FRESCO-65 (Biblioteca | Buscar recetas) ──> FRESCO-66 (Biblioteca | Filtrar por tipo de comida), FRESCO-67 (Biblioteca | Filtrar dieta/alérgeno/cocina), FRESCO-69 (Biblioteca | View full recipe detail)
    [Blocks, created this pass — 65's own Scope bundles the base full-catalog
    grid the "Biblioteca" reframe introduces; 66/67 filter that same grid,
-   which doesn't exist before 65 ships]
+   69 opens a detail view from a card in it — none of the three exist
+   before 65 ships]
 
-FRESCO-68 (Biblioteca | Crear receta propia)   — no edges (a fully separate new table, out of get_filtered_recipes()'s reach entirely, confirmed with the user)
+FRESCO-68 (Biblioteca | Crear receta propia) ──> FRESCO-69 (Biblioteca | View full recipe detail)
+   [Blocks, new this pass — 69 must also render a personal recipe's shape
+   (name/ingredients/steps only), which doesn't exist before 68 ships]
 ```
 
 Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` soft/informational (`Relates`) — does NOT delay the §4 sort. No mockup gates (`🔒`) exist in this graph yet.
@@ -170,6 +173,8 @@ Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` so
 | FRESCO-9 (Food Safety) | FRESCO-65 (Biblioteca \| Buscar recetas por nombre o ingrediente) | hard (`Blocks`) | The Biblioteca's base grid reads `get_filtered_recipes()` — the same food-safety RPC FRESCO-9 created. Link created and direction-verified this pass. |
 | FRESCO-65 (Biblioteca \| Buscar recetas por nombre o ingrediente) | FRESCO-66 (Biblioteca \| Filtrar recetas por tipo de comida) | hard (`Blocks`) | FRESCO-65's own Scope bundles the full-catalog grid the "Biblioteca" reframe introduces (`/recipes` currently only shows `getUserRecipes()`, past-cooked history) — FRESCO-66's tabs filter that same grid, which doesn't exist before FRESCO-65 ships. Link created and direction-verified this pass. |
 | FRESCO-65 (Biblioteca \| Buscar recetas por nombre o ingrediente) | FRESCO-67 (Biblioteca \| Filtrar por dieta, alérgenos y cocina) | hard (`Blocks`) | Same reasoning as the row above — FRESCO-67's filters narrow the same base grid. Link created and direction-verified this pass. |
+| FRESCO-65 (Biblioteca \| Buscar recetas por nombre o ingrediente) | FRESCO-69 (Biblioteca \| View full recipe detail) | hard (`Blocks`) | The detail view opens from a card in the base catalog grid FRESCO-65 introduced — nothing to click into before that grid exists. Link created and direction-verified this pass. |
+| FRESCO-68 (Biblioteca \| Crear una receta propia) | FRESCO-69 (Biblioteca \| View full recipe detail) | hard (`Blocks`) | The detail view must also render a personal recipe (name/ingredients/steps only, no catalog metadata) — that shape doesn't exist before FRESCO-68 ships. Link created and direction-verified this pass. |
 
 **Soft (`Relates`, informational only — never delays the sort):**
 
@@ -189,7 +194,9 @@ Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` so
 
 **No edges exist among FRESCO-61 / FRESCO-62 / FRESCO-63 themselves either**, despite the product-level rule that generating (FRESCO-63) is blocked while a plan already exists and must go through deleting (FRESCO-62) first. That rule was evaluated against the sprint-sequencing noise heuristic ("does it disappear if we reorder sprints?") and filtered OUT as a business/AC-level rule, not a dev-order dependency — a developer can build and test FRESCO-63's generation path against a manually-cleared week without FRESCO-62 existing yet. The rule itself lives in FRESCO-63's own Business Rules field, not as a Jira link.
 
-**No edges exist for FRESCO-68 (Biblioteca | Crear receta propia)** — a fully separate new table (personal recipes, no `dieta`/`alergenos` fields), confirmed with the user to be out of `get_filtered_recipes()`'s and the AI generator's reach entirely. Independent of FRESCO-65/66/67 and of any other epic.
+**FRESCO-68 (Biblioteca | Crear receta propia) has no edges among FRESCO-65/66/67** — a fully separate new table (personal recipes, no `dieta`/`alergenos` fields), confirmed with the user to be out of `get_filtered_recipes()`'s and the AI generator's reach entirely. It DOES now block FRESCO-69 (see the hard-edge table above) — the detail view is the first story to need both recipe shapes in the same place.
+
+**New this pass**: FRESCO-69 (Biblioteca | View full recipe detail), a Level-1 single-story addition to EPIC-FRESCO-64 (`/product-management` Workflow B). Two hard edges created and direction-verified: FRESCO-65→69 (needs the base grid to open a card from) and FRESCO-68→69 (needs the personal-recipe shape it must also render). Both prerequisites are already `Finalizada`, so the edges are documentation of a real dependency, not a live blocker.
 
 ---
 

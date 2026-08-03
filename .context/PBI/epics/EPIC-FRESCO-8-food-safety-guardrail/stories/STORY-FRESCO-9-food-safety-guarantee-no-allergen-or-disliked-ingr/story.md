@@ -26,9 +26,12 @@ Como Laura, la planificadora agotada (o cualquier usuaria con una alergia o rest
 
 ## Traceability
 
-### Historia (1)
+### Historias (4)
 
 - [FRESCO-7](https://basiliomontescastano.atlassian.net/browse/FRESCO-7): Generación de Menú | Generar un menú semanal de 21 comidas en menos de 30 segundos _(Finalizada)_
+- [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57): Inicio | Mostrar cantidad de recetas disponibles _(Finalizada)_
+- [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59): Inicio | Mostrar últimas recetas añadidas _(Finalizada)_
+- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65): Biblioteca | Buscar recetas por nombre o ingrediente _(Finalizada)_
 
 ### Tarea (1)
 
@@ -39,7 +42,7 @@ Como Laura, la planificadora agotada (o cualquier usuaria con una alergia o rest
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/3/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** implementation-plan-ready

@@ -24,6 +24,14 @@ Como Laura, quiero cargar una receta propia a mi Biblioteca personal, para tener
 
 ---
 
+## Traceability
+
+### Historia (1)
+
+- [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69): Biblioteca | View full recipe detail _(Listo)_
+
+---
+
 ## Metadata
 
 - **Created:** 8/3/2026

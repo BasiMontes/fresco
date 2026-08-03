@@ -1730,3 +1730,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 368/1000 con foto, 632 restantes.
+
+---
+
+## 2026-08-03 — FRESCO-69 seedeada: detalle de receta (nueva historia en EPIC-FRESCO-64)
+
+**Qué**: `/product-management` Workflow B (feature incremental). Clasificado Level 1 (historia individual, entra en EPIC-FRESCO-64) — abrir cualquier card de la Biblioteca (catálogo o propia) y ver el detalle completo. Creada FRESCO-69 en Jira, Epic Link a FRESCO-64 (parcheado vía REST PUT, el mismo workaround de siempre — `acli edit` no soporta `--parent`), verificado por REST GET directo. Scope/OOS/AC/Business Rules publicados vía comment fallback (255 chars). Active Dependency Discovery: FRESCO-65 (necesita el grid base) y FRESCO-68 (necesita el shape de receta propia) identificados como prerequisitos reales — ambos ya Finalizada, así que los edges documentan una dependencia real sin bloquear nada hoy. Links creados y dirección verificada. `dev-roadmap.md` §3 actualizado con los 2 edges nuevos.
+
+**Por qué**: pedido directo del user ("Hay que diseñar el detalle de la receta").
+
+**Siguiente**: FRESCO-69 en `Listo`, lista para `/sprint-development`. Debe manejar los dos shapes (`Recipe` del catálogo, rico en metadata; `RecetaPropia`, solo nombre/ingredientes/pasos) en la misma vista.
