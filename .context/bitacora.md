@@ -1572,3 +1572,17 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, siguiente historia de la épica recién sembrada.
 
 **Siguiente**: FRESCO-61 en `Control de calidad`, commit `2c37b83` pusheado. Quedan FRESCO-62 (eliminar plan de la semana) y FRESCO-63 (generar para la semana vista) de EPIC-FRESCO-60, ambas desbloqueadas (FRESCO-7 ya Finalizada).
+
+---
+
+## 2026-08-03 — FRESCO-62: eliminar el menú de la semana vista en el Calendario
+
+**Qué**: `/sprint-development` modo Solo. `deleteMealPlan()` nuevo en `lib/api/meal-plan.ts` — borra la fila `meal_plans` por `id` + `user_id` (cascada ya existente en `meal_plan_recipes`, sin migración nueva). Botón nuevo (`delete-week-button.tsx`, `'use client'`) solo se renderiza en la rama con plan; llama `deleteMealPlan()` y después `router.refresh()` — a diferencia de los swaps/marcados de `CalendarGrid` (estado local optimista), borrar todo el plan cambia de rama server-side completa, así que necesita el re-fetch real del Server Component, no un parche de estado local.
+
+**Verificado en vivo de verdad, no solo estructural**: cuenta de prueba no tenía plan en ninguna semana (mismo hallazgo de toda la sesión) — se generó un menú real vía `/onboarding` (Gemini, ~10s, selecciones default) específicamente para poder probar el borrado real. Antes: 21 huecos con recetas reales. Click en eliminar → cae exacto al mismo estado vacío que una semana nunca generada. Chequeo directo en DB: `meal_plan_recipes` sin filas huérfanas (0) tras la cascada. Plan de prueba quedó borrado por la propia verificación, sin limpieza manual extra.
+
+**Hallazgo real no-bug**: a 1280px de viewport el botón de eliminar queda fuera del recorte visible junto con parte de la grilla (la página ya es más ancha que 1280px por las 7 columnas del calendario — comportamiento preexistente, no causado por esta historia). Confirmado ensanchando a 1600px: todo se ve bien.
+
+**Por qué**: pedido directo del user, siguiente historia de la épica.
+
+**Siguiente**: FRESCO-62 en `Control de calidad`, commit `51fe212` pusheado. Queda FRESCO-63 (generar menú para la semana vista) — última historia de EPIC-FRESCO-60.
