@@ -324,12 +324,27 @@ async function main() {
   const usedUrls = new Set(existing.map(r => photoId(r.foto_url)));
   console.error(`Seeded ${usedUrls.size} already-applied photo URLs as excluded.`);
 
-  const listRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre,descripcion_corta,clasificacion&foto_url=is.null&limit=${BATCH_SIZE}`,
+  // v7 — pull a much larger candidate pool (not just BATCH_SIZE) and shuffle
+  // it before slicing. Found live across 4 straight batches this session:
+  // the same ~15 recipes (chía, "Coles de Bruselas...", "Tortilla francesa
+  // con canela", etc.) always land in the first BATCH_SIZE `foto_url is
+  // null` rows in the same DB order, fail every single time (Unsplash has
+  // nothing for that exact query), and get re-tried batch after batch —
+  // burning real quota on the same dead rows instead of reaching new
+  // recipes. Shuffling the pool client-side means a failing recipe competes
+  // for a slot on equal terms with every other un-photographed recipe,
+  // instead of monopolizing the front of the queue forever.
+  const poolRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre,descripcion_corta,clasificacion&foto_url=is.null&limit=${BATCH_SIZE * 10}`,
     { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
   );
-  const recipes = await listRes.json() as RecipeRow[];
-  console.error(`Fetching photos for ${recipes.length} recipes (batch size ${BATCH_SIZE})...`);
+  const pool = await poolRes.json() as RecipeRow[];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const recipes = pool.slice(0, BATCH_SIZE);
+  console.error(`Fetching photos for ${recipes.length} recipes (batch size ${BATCH_SIZE}, shuffled from a pool of ${pool.length})...`);
 
   // Single attempt per recipe, no cascade — the nombre -> descripcion_corta
   // -> categoria fallback chain was tripping Unsplash's burst limiter by
