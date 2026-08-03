@@ -30,7 +30,7 @@ Como Laura, quiero buscar recetas por nombre o ingrediente en la Biblioteca, par
 - [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Finalizada)_
 - [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66): Biblioteca | Filtrar recetas por tipo de comida _(Finalizada)_
 - [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67): Biblioteca | Filtrar por dieta, alérgenos y cocina _(Finalizada)_
-- [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69): Biblioteca | View full recipe detail _(Listo)_
+- [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69): Biblioteca | View full recipe detail _(Finalizada)_
 
 ---
 

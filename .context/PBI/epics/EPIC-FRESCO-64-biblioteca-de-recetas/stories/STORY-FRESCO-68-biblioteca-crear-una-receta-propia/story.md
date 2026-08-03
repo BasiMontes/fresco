@@ -28,7 +28,7 @@ Como Laura, quiero cargar una receta propia a mi Biblioteca personal, para tener
 
 ### Historia (1)
 
-- [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69): Biblioteca | View full recipe detail _(Listo)_
+- [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69): Biblioteca | View full recipe detail _(Finalizada)_
 
 ---
 

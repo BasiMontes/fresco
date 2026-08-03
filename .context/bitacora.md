@@ -1754,3 +1754,13 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user ("Hay que diseñar el detalle de la receta").
 
 **Siguiente**: FRESCO-69 en `Control de calidad`, commit `09554e4` pusheado. EPIC-FRESCO-64 ahora tiene 5 historias — todas Finalizada salvo esta, recién shippeada.
+
+---
+
+## 2026-08-03 — FRESCO-69 cerrada: EPIC-FRESCO-64 con sus 5 historias completas
+
+**Qué**: confirmado por el user, FRESCO-69 transicionada a `Finalizada`. Verificado vía `acli jira workitem search`. Sync local corrido (`get FRESCO-69` + `pull --epic FRESCO-64`).
+
+**Por qué**: pedido directo del user tras verificar la historia en vivo.
+
+**Siguiente**: EPIC-FRESCO-64 (Biblioteca de Recetas) con sus 5 historias (65/66/67/68/69) todas `Finalizada`: buscador, tabs de tipo de comida, filtros de cocina/dieta/alérgeno, crear receta propia, y detalle de receta. FRESCO-31 (fotos) sigue abierta en background, 368/1000.
