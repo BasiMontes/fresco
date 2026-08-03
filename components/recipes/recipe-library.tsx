@@ -1,12 +1,13 @@
 'use client';
 
-import type { Recipe } from '@schemas';
+import type { Recipe, RecipeDieta, TipoCocina } from '@schemas';
 import { BookOpen, Search } from 'lucide-react';
 import * as React from 'react';
-import { RecipeCard } from '@/components/recipe/recipe-card';
+import { DIETA_LABELS, RecipeCard } from '@/components/recipe/recipe-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 
 type MealTab = 'todo' | 'desayuno' | 'comida' | 'cena';
 
@@ -16,6 +17,32 @@ const MEAL_TABS: { value: MealTab, label: string }[] = [
   { value: 'comida', label: 'Comida' },
   { value: 'cena', label: 'Cena' },
 ];
+
+const TODAS_LAS_COCINAS = 'todas' as const;
+const CUALQUIER_DIETA = 'cualquiera' as const;
+const NINGUN_ALERGENO = 'ninguno' as const;
+
+const COCINA_OPTIONS: TipoCocina[] = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'];
+const DIETA_OPTIONS = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
+
+/** FRESCO-67 — no dropdown primitive exists in this design system yet; a native `<select>`, styled to match `Input`'s pill shape, is the simplest correct choice for a single-pick list this size (7–10 options — `SegmentedControl` would be too wide/cluttered at that count). */
+function FilterSelect({ label, value, onChange, children }: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  children: React.ReactNode
+}) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={event => onChange(event.target.value)}
+      className="h-9 rounded-full border border-border bg-surface px-3 text-body-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      {children}
+    </select>
+  );
+}
 
 /**
  * FRESCO-66 — a recipe with `clasificacion: null` (some seed rows are only
@@ -48,12 +75,44 @@ function matchesQuery(recipe: Recipe, query: string): boolean {
   return ingredientes.some(ingrediente => ingrediente.toLowerCase().includes(needle));
 }
 
+function matchesCocina(recipe: Recipe, cocina: string): boolean {
+  if (cocina === TODAS_LAS_COCINAS) { return true; }
+  return recipe.clasificacion?.cocina === cocina;
+}
+
+function matchesDieta(recipe: Recipe, dieta: string): boolean {
+  if (dieta === CUALQUIER_DIETA) { return true; }
+  return recipe.dieta?.[dieta as keyof RecipeDieta] === true;
+}
+
+/**
+ * FRESCO-67 — a temporary, session-only narrowing (per the story's own
+ * Business Rules): never writes to `user_profiles`, never widens past what
+ * the permanent profile already excludes. The catalog this filter runs
+ * against is already the safety-filtered set from `getCatalogRecipes()` —
+ * an allergen the profile permanently excludes never reaches this filter to
+ * begin with.
+ */
+function matchesAlergenoFilter(recipe: Recipe, alergeno: string): boolean {
+  if (alergeno === NINGUN_ALERGENO) { return true; }
+  const alergenos = recipe.alergenos ?? [];
+  return !alergenos.includes(alergeno);
+}
+
 export function RecipeLibrary({ recipes }: { recipes: Recipe[] }) {
   const [query, setQuery] = React.useState('');
   const [tab, setTab] = React.useState<MealTab>('todo');
+  const [cocina, setCocina] = React.useState<string>(TODAS_LAS_COCINAS);
+  const [dieta, setDieta] = React.useState<string>(CUALQUIER_DIETA);
+  const [alergeno, setAlergeno] = React.useState<string>(NINGUN_ALERGENO);
   const filtered = React.useMemo(
-    () => recipes.filter(recipe => matchesQuery(recipe, query) && matchesTab(recipe, tab)),
-    [recipes, query, tab],
+    () => recipes.filter(recipe =>
+      matchesQuery(recipe, query)
+      && matchesTab(recipe, tab)
+      && matchesCocina(recipe, cocina)
+      && matchesDieta(recipe, dieta)
+      && matchesAlergenoFilter(recipe, alergeno)),
+    [recipes, query, tab, cocina, dieta, alergeno],
   );
 
   return (
@@ -78,6 +137,29 @@ export function RecipeLibrary({ recipes }: { recipes: Recipe[] }) {
         value={tab}
         onChange={value => setTab(value as MealTab)}
       />
+
+      <div className="mt-4 flex flex-wrap gap-2" data-testid="recipe_library_filters">
+        <FilterSelect label="Filtrar por cocina" value={cocina} onChange={setCocina}>
+          <option value={TODAS_LAS_COCINAS}>Todas las cocinas</option>
+          {COCINA_OPTIONS.map(option => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect label="Filtrar por dieta" value={dieta} onChange={setDieta}>
+          <option value={CUALQUIER_DIETA}>Cualquier dieta</option>
+          {DIETA_OPTIONS.map(option => (
+            <option key={option} value={option}>{DIETA_LABELS[option]}</option>
+          ))}
+        </FilterSelect>
+
+        <FilterSelect label="Evitar un alérgeno puntual" value={alergeno} onChange={setAlergeno}>
+          <option value={NINGUN_ALERGENO}>Sin evitar ningún alérgeno</option>
+          {ALERGENO_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </FilterSelect>
+      </div>
 
       {filtered.length === 0
         ? (

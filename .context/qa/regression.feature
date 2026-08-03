@@ -582,6 +582,24 @@ Característica: Flujo completo de usuario en Fresco
     Cuando escribe algo en el buscador
     Entonces los resultados respetan ambos filtros a la vez
 
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Filtrar la Biblioteca por cocina
+    Dado que Laura está en la Biblioteca
+    Cuando selecciona un filtro de cocina, por ejemplo "Italiana"
+    Entonces ve solo recetas de esa cocina
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Filtrar la Biblioteca por dieta
+    Dado que Laura está en la Biblioteca
+    Cuando selecciona un filtro de dieta, por ejemplo "Vegano"
+    Entonces ve solo recetas que cumplen esa restricción
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Filtrar la Biblioteca por un alérgeno puntual
+    Dado que Laura quiere evitar un ingrediente puntual que no tiene declarado en su perfil
+    Cuando activa ese filtro de alérgeno en la Biblioteca
+    Entonces no ve ninguna receta que lo contenga, sin que cambie su perfil permanente
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)

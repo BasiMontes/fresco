@@ -30,7 +30,7 @@ export interface RecipeCardProps {
   className?: string
 }
 
-const DIETA_LABELS: Partial<Record<keyof RecipeDieta, string>> = {
+export const DIETA_LABELS: Partial<Record<keyof RecipeDieta, string>> = {
   vegetariano: 'vegetariano',
   vegano: 'vegano',
   sin_gluten: 'sin gluten',

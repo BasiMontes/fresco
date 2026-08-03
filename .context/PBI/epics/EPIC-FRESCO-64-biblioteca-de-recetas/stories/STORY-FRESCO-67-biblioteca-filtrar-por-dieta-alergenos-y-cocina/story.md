@@ -27,7 +27,7 @@ Como Laura, quiero filtrar la Biblioteca por tipo de cocina, restricción de die
 
 ### Historia (1)
 
-- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65): Biblioteca | Buscar recetas por nombre o ingrediente _(Listo)_
+- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65): Biblioteca | Buscar recetas por nombre o ingrediente _(Control de calidad)_
 
 ---
 
