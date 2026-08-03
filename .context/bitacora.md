@@ -1720,3 +1720,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 348/1000 con foto, 652 restantes. Tasa de hit bajando batch a batch por agotamiento de fotos "buenas" disponibles para nombres repetidos — a considerar si vale la pena ampliar `topK` más adelante o aceptar el rendimiento decreciente.
+
+---
+
+## 2026-08-03 — FRESCO-31: tercer batch (20/30, 368/1000 total)
+
+**Qué**: mismo script, batch de 30 sobre pool de 300. 20/30 hits, tasa recuperada respecto al batch anterior (15/30) — fallos concentrados en los mismos nombres recurrentes ya vistos (tostadas de salmón ahumado, ensalada de quinoa, muesli, porridge), consistente con la hipótesis de agotamiento de fotos buenas para esos platos específicos, no un problema nuevo. Aplicado, verificado cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 368/1000 con foto, 632 restantes.
