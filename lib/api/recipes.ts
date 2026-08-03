@@ -116,3 +116,36 @@ export async function getLatestAvailableRecipes(
 
   return (data ?? []).map(toRecipe);
 }
+
+/**
+ * The full catalog available to the CURRENTLY authenticated user's profile
+ * (FRESCO-65, `/recipes` "Biblioteca" browse grid). Same `get_filtered_recipes()`
+ * safety pre-filter as its siblings — no `.order()`/`.limit()` here: unlike
+ * `getLatestAvailableRecipes()`, this is meant to be the whole browsable set,
+ * not a recency-biased slice.
+ */
+export async function getCatalogRecipes(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<Recipe[]> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new RecipesError('No hay una sesión autenticada para leer el catálogo.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .rpc('get_filtered_recipes', { p_user_id: resolvedUserId });
+
+  if (error) {
+    throw new RecipesError(`No se pudo leer el catálogo de recetas: ${error.message}`);
+  }
+
+  return (data ?? []).map(toRecipe);
+}

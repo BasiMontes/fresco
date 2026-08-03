@@ -529,6 +529,42 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la llamada no da error pero el ítem de la otra cuenta sigue sin comprar
 
   # ==========================================================================
+  # Biblioteca de Recetas (EPIC-FRESCO-64 / STORY-FRESCO-65)
+  # ==========================================================================
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Buscar una receta por nombre en la Biblioteca
+    Dado que Laura está en la Biblioteca de recetas
+    Cuando escribe el nombre de una receta en el buscador
+    Entonces ve solo las recetas del catálogo que coinciden con ese nombre
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Buscar una receta por ingrediente en la Biblioteca
+    Dado que Laura está en la Biblioteca de recetas
+    Cuando escribe un ingrediente en el buscador
+    Entonces ve las recetas del catálogo que contienen ese ingrediente
+    # Nota real verificada en vivo: la coincidencia es por subcadena simple,
+    # sin límite de palabra — buscar "pollo" también trae "Repollo
+    # salteado..." porque "pollo" es subcadena literal de "repollo". No es
+    # un bug contra el AC tal como está escrito, pero es una causística real
+    # a tener en cuenta.
+
+  @biblioteca @edge-case @verificado-manual-2026-08-03
+  Escenario: El buscador de la Biblioteca no encuentra resultados
+    Dado que Laura busca algo que ninguna receta contiene
+    Cuando mira los resultados
+    Entonces ve un estado vacío claro y distinto al de "sin recetas en el catálogo"
+
+  @biblioteca @edge-case @pendiente
+  Escenario: El catálogo de la Biblioteca está vacío para el perfil de Laura
+    Dado que el perfil de Laura excluye todas las recetas del catálogo
+    Cuando abre la Biblioteca
+    Entonces ve un estado vacío que la orienta a revisar su perfil, no su búsqueda
+    # No verificado en vivo — requeriría un perfil de prueba artificialmente
+    # restrictivo; revisado solo en código (misma rama `length === 0` que el
+    # resto de estados vacíos de esta familia de páginas).
+
+  # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
   # ==========================================================================
