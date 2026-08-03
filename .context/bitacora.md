@@ -1710,3 +1710,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 333/1000 con foto, 667 restantes. Sin cambios de código, nada que commitear salvo esta bitácora.
+
+---
+
+## 2026-08-03 — FRESCO-31: segundo batch (15/30, 348/1000 total)
+
+**Qué**: mismo script, batch de 30 sobre pool de 300. 15/30 hits — tasa más baja que el batch anterior (22/30), sin errores de rate-limit en el log (verificado, no hay 403/"Rate" en `/tmp/batch.log`). Causa real: el set de fotos ya usadas (333 excluidas) reduce candidatos disponibles para nombres de plato repetidos ("tostada de aguacate", "ensalada de quinoa") que ya reclamaron sus mejores 2 resultados en batches previos — degradación esperada del diseño anti-duplicado, no un bug. Aplicado, verificado cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 348/1000 con foto, 652 restantes. Tasa de hit bajando batch a batch por agotamiento de fotos "buenas" disponibles para nombres repetidos — a considerar si vale la pena ampliar `topK` más adelante o aceptar el rendimiento decreciente.
