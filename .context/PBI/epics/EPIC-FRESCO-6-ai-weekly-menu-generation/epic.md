@@ -24,7 +24,7 @@ Cubre la generación del menú semanal completo (21 comidas: 7 días × desayuno
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/2/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** mvp

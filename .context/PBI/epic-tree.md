@@ -52,11 +52,12 @@ _Project: FRESCO_
 **Status:** Finalizada | **Stories:** 2 | **Points:** 0
 
 - [FRESCO-19](https://basiliomontescastano.atlassian.net/browse/FRESCO-19) Registro Progresivo | Solicitar registro tras ver el menú generado _(- pts, Finalizada)_
-- [FRESCO-53](https://basiliomontescastano.atlassian.net/browse/FRESCO-53) Registro | Aceptar Términos de Servicio y Privacidad al crear cuenta _(- pts, Listo)_
+- [FRESCO-53](https://basiliomontescastano.atlassian.net/browse/FRESCO-53) Registro | Aceptar Términos de Servicio y Privacidad al crear cuenta _(- pts, Finalizada)_
 
 ## [FRESCO-25](https://basiliomontescastano.atlassian.net/browse/FRESCO-25) - Credenciales de testeabilidad — QA (/qa)
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
+
 
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
@@ -79,6 +80,14 @@ _Project: FRESCO_
 - [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57) Inicio | Mostrar cantidad de recetas disponibles _(- pts, Finalizada)_
 - [FRESCO-58](https://basiliomontescastano.atlassian.net/browse/FRESCO-58) Inicio | Mostrar estimaciones de ahorro semanal _(- pts, Finalizada)_
 - [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59) Inicio | Mostrar últimas recetas añadidas _(- pts, Finalizada)_
+
+## [FRESCO-60](https://basiliomontescastano.atlassian.net/browse/FRESCO-60) - Control del Menú Semanal
+
+**Status:** Listo | **Stories:** 3 | **Points:** 0
+
+- [FRESCO-61](https://basiliomontescastano.atlassian.net/browse/FRESCO-61) Calendario | Navegar entre semanas del menú _(- pts, Listo)_
+- [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62) Calendario | Eliminar el menú de la semana actual _(- pts, Listo)_
+- [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63) Calendario | Generar un menú nuevo para la semana _(- pts, Listo)_
 
 ---
 

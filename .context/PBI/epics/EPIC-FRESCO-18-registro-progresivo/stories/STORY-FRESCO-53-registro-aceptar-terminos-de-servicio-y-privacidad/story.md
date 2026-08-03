@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-53](https://basiliomontescastano.atlassian.net/browse/FRESCO-53)
 **Epic:** [FRESCO-18](https://basiliomontescastano.atlassian.net/browse/FRESCO-18) (Registro Progresivo)
 **Type:** Historia
-**Status:** Listo
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -29,7 +29,7 @@
 
 ### Historia (1)
 
-- [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51): Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal _(Listo)_
+- [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51): Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal _(Finalizada)_
 
 ---
 
