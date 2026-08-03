@@ -59,3 +59,39 @@ export function getIsoWeekMonday(date: Date = new Date()): string {
   target.setUTCDate(target.getUTCDate() - getIsoWeekday(target) + 1);
   return target.toISOString().slice(0, 10);
 }
+
+/**
+ * Inverse of `getIsoWeek()`: given `'YYYY-Www'`, returns the Monday of that
+ * ISO week as a UTC `Date`. Per ISO 8601, 4 January is always in week 1, so
+ * week 1's Monday anchors every other week in the year by simple 7-day
+ * multiples (FRESCO-61 — `/calendar` week navigation needs this to compute
+ * the adjacent week's `semana_iso` from the one currently being viewed).
+ */
+export function getDateFromIsoWeek(isoWeek: string): Date {
+  const match = /^(\d{4})-W(\d{2})$/.exec(isoWeek);
+  if (!match) {
+    throw new Error(`Invalid ISO week string: ${isoWeek}`);
+  }
+
+  const [, yearStr, weekStr] = match;
+  const isoYear = Number(yearStr);
+  const week = Number(weekStr);
+
+  const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - getIsoWeekday(jan4) + 1);
+
+  const target = new Date(week1Monday);
+  target.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+  return target;
+}
+
+/**
+ * Returns the `'YYYY-Www'` string `delta` weeks away from `isoWeek`
+ * (negative = earlier, positive = later). Used for the prev/next controls.
+ */
+export function addIsoWeeks(isoWeek: string, delta: number): string {
+  const monday = getDateFromIsoWeek(isoWeek);
+  monday.setUTCDate(monday.getUTCDate() + delta * 7);
+  return getIsoWeek(monday);
+}

@@ -284,6 +284,28 @@ Característica: Flujo completo de usuario en Fresco
     Entonces es llevada a la pantalla de Recetas
 
   # ==========================================================================
+  # Control del Menú Semanal (EPIC-FRESCO-60 / STORY-FRESCO-61)
+  # ==========================================================================
+
+  @calendario @verificado-manual-2026-08-03
+  Escenario: Ver la semana siguiente desde el Calendario
+    Dado que el usuario está en /calendar viendo la semana actual
+    Cuando toca el control de semana siguiente
+    Entonces ve el menú de la semana siguiente si existe, o el estado vacío si todavía no se generó ninguno
+
+  @calendario @verificado-manual-2026-08-03
+  Escenario: Ver la semana anterior desde el Calendario
+    Dado que el usuario está en /calendar viendo la semana actual
+    Cuando toca el control de semana anterior
+    Entonces ve el menú de la semana anterior si existe, o el estado vacío si nunca se generó uno para esa semana
+
+  @calendario @edge-case @verificado-manual-2026-08-03
+  Escenario: Un parámetro de semana inválido en la URL cae a la semana actual
+    Dado que el usuario visita /calendar con un valor de semana mal formado en la URL
+    Cuando la página carga
+    Entonces ve la semana actual, sin ningún error
+
+  # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================
 

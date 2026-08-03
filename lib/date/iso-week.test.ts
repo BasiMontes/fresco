@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getIsoWeek, getIsoWeekMonday } from './iso-week';
+import { addIsoWeeks, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from './iso-week';
 
 function utc(year: number, month: number, day: number): Date {
   return new Date(Date.UTC(year, month, day));
@@ -57,5 +57,45 @@ describe('getIsoWeekMonday', () => {
 
   test('defaults to the current date when called with no argument', () => {
     expect(getIsoWeekMonday()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe('getDateFromIsoWeek', () => {
+  test('is the exact inverse of getIsoWeek across a full year sweep', () => {
+    for (let day = 1; day <= 365; day += 3) {
+      const date = new Date(Date.UTC(2026, 0, day));
+      const isoWeek = getIsoWeek(date);
+      const monday = getDateFromIsoWeek(isoWeek);
+      expect(getIsoWeek(monday)).toBe(isoWeek);
+    }
+  });
+
+  test('returns the Monday matching getIsoWeekMonday for the same date', () => {
+    const date = utc(2026, 1, 15);
+    const isoWeek = getIsoWeek(date);
+    const monday = getDateFromIsoWeek(isoWeek);
+    expect(monday.toISOString().slice(0, 10)).toBe(getIsoWeekMonday(date));
+  });
+
+  test('throws on a malformed ISO week string', () => {
+    expect(() => getDateFromIsoWeek('not-a-week')).toThrow();
+    expect(() => getDateFromIsoWeek('2026-13')).toThrow();
+  });
+});
+
+describe('addIsoWeeks', () => {
+  test('adding 1 week then subtracting 1 week returns to the original week', () => {
+    const original = '2026-W05';
+    expect(addIsoWeeks(addIsoWeeks(original, 1), -1)).toBe(original);
+  });
+
+  test('adding 0 weeks is a no-op', () => {
+    expect(addIsoWeeks('2026-W20', 0)).toBe('2026-W20');
+  });
+
+  test('crosses a year boundary correctly (last week of 2026 + 1 = first week of 2027)', () => {
+    // 2026-12-28 is a Monday, ISO week 2026-W53 per the ISO 8601 leap-week rule.
+    const lastWeekOf2026 = getIsoWeek(utc(2026, 11, 28));
+    expect(addIsoWeeks(lastWeekOf2026, 1)).toBe('2027-W01');
   });
 });
