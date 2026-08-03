@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
+import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -90,6 +91,7 @@ export default async function MenuPage() {
         {recetasDisponibles !== null && (
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
+        <SavingsEstimateCards />
         <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
@@ -119,6 +121,8 @@ export default async function MenuPage() {
       {recetasDisponibles !== null && (
         <AvailableRecipesCard count={recetasDisponibles} />
       )}
+
+      <SavingsEstimateCards />
 
       {user?.is_anonymous && (
         <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">

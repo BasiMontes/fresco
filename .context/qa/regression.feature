@@ -261,6 +261,16 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca la card
     Entonces es llevado a la pantalla de Recetas
 
+  @panel-inicio @verificado-manual-2026-08-03
+  Escenario: Inicio muestra las tres estimaciones orientativas
+    Dado que Laura abre Inicio
+    Cuando mira las cards de estimación
+    Entonces ve una estimación de gasto semanal, una de ahorro y una de tiempo recuperado, cada una indicando que es un valor orientativo
+    # Cifras placeholder genéricas (no calculadas por usuario, per Business
+    # Rule de FRESCO-58) — pendientes de validación real de negocio, marcadas
+    # en la propia UI ("Cifras de referencia general, pendientes de validar
+    # con datos reales de mercado").
+
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================
