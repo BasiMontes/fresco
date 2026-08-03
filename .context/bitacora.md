@@ -1529,3 +1529,17 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user — primero FRESCO-31, después "el resto" del backlog (push pendiente, luego FRESCO-56, 57, 58 y 59 corridas de un tirón — "vamos de lujo hoy" / "si seguimos así nos la ventilamos hoy").
 
 **Siguiente**: **Épica FRESCO-54 completa** — 5/5 historias en `Control de calidad` en Jira (no `Finalizada` — sin QA persona distinta, mismo patrón que FRESCO-7: requiere confirmación explícita del user antes de cerrar a mano). Commits `7e9835a`/`38009c1`/`d306a35`/`e0836d7` pusheados a `main`. FRESCO-31 sigue con 758/1000 restantes (retomar cuando resetee la quota de Unsplash). Pendiente real de negocio (no de dev): validar las 3 cifras de FRESCO-58 con datos de mercado reales antes de sacar el aviso de "pendiente de revisión" de la UI.
+
+---
+
+## 2026-08-03 — Cierre de 3 épicas (FRESCO-54/49/50) + tanda de FRESCO-31
+
+**Qué**:
+- User confirmó cerrar a mano FRESCO-54 y sus 5 historias (55/56/57/58/59) a `Finalizada` — mismo criterio ya usado para FRESCO-7 (proyecto de una sola persona, sin QA distinta del dev). Verificado post-transición vía `acli jira workitem search --json` (no confiar en el eco del comando, regla ya establecida en sesiones previas).
+- **Gap real encontrado de paso**: al chequear qué quedaba en el backlog, las 17 Historia del proyecto entero resultaron estar YA todas `Finalizada` — pero 2 épicas (FRESCO-49 Información Legal y Contacto, FRESCO-50 Recuperación de Contraseña) seguían en `Listo` pese a que sus historias hijas (FRESCO-51/52/53) llevaban rato en `Finalizada`. Mismo tipo de gap que FRESCO-7 tuvo en su momento — nadie transicionó la épica al cerrar la última historia hija. User confirmó cerrarlas también.
+- `epic-tree.md` + carpetas de las 3 épicas re-sincronizadas de Jira (`pull --epic`) tras cada tanda de transiciones — nunca hand-editado (es `[SYNC]`).
+- FRESCO-31: tanda de 30, 16/30 aplicadas (242→258/1000), cero duplicados. Spot-check de 2: "Bol de avena con canela" match perfecto (avena + canela visible); "Huevos revueltos con canela" trajo huevos fritos con yema entera, no revueltos — mismatch menor, aplicada igual (mismo criterio que sesiones previas, sin curación perfecta con este approach).
+
+**Por qué**: pedido directo del user ("cerralas. Con qué seguimos?") — housekeeping de las 2 épicas ofrecido como opción antes de continuar, elegido explícitamente por el user en vez de dejarlo colgado.
+
+**Siguiente**: **Backlog de historias del proyecto vacío** — las 17 Historia + las 8 épicas conocidas (FRESCO-4/6/8/10/12/14/16/18/25/49/50/54) todas `Finalizada`. Nada dev-ready en Jira sin refinar. Opciones para la próxima sesión: seguir FRESCO-31 (742/1000 restantes) o sembrar un Master Sprint nuevo vía `/product-management` (no hay iniciativa post-MVP definida más allá de lo ya cerrado).
