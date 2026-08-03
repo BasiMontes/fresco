@@ -90,12 +90,12 @@ _Project: FRESCO_
 
 ## [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) - Biblioteca de Recetas
 
-**Status:** Listo | **Stories:** 4 | **Points:** 0
+**Status:** Finalizada | **Stories:** 4 | **Points:** 0
 
-- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65) Biblioteca | Buscar recetas por nombre o ingrediente _(- pts, Listo)_
-- [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66) Biblioteca | Filtrar recetas por tipo de comida _(- pts, Listo)_
-- [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) Biblioteca | Filtrar por dieta, alérgenos y cocina _(- pts, Listo)_
-- [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) Biblioteca | Crear una receta propia _(- pts, Listo)_
+- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65) Biblioteca | Buscar recetas por nombre o ingrediente _(- pts, Finalizada)_
+- [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66) Biblioteca | Filtrar recetas por tipo de comida _(- pts, Finalizada)_
+- [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) Biblioteca | Filtrar por dieta, alérgenos y cocina _(- pts, Finalizada)_
+- [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) Biblioteca | Crear una receta propia _(- pts, Finalizada)_
 
 ---
 

@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66)
 **Epic:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) (Biblioteca de Recetas)
 **Type:** Historia
-**Status:** Listo
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -27,7 +27,7 @@ Como Laura, quiero filtrar la Biblioteca por Desayuno, Comida o Cena, para no re
 
 ### Historia (1)
 
-- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65): Biblioteca | Buscar recetas por nombre o ingrediente _(Control de calidad)_
+- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65): Biblioteca | Buscar recetas por nombre o ingrediente _(Finalizada)_
 
 ---
 

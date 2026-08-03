@@ -1690,3 +1690,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, cuarta y última historia de EPIC-FRESCO-64.
 
 **Siguiente**: FRESCO-68 en `Control de calidad`, commit `3e3f321` pusheado. **EPIC-FRESCO-64 completa** (65/66/67/68 todas en `Control de calidad`) — falta decisión del user sobre cerrar epic+historias a `Finalizada`. FRESCO-31 (fotos) sigue pendiente en background.
+
+---
+
+## 2026-08-03 — EPIC-FRESCO-64 cerrada: Biblioteca de Recetas completa
+
+**Qué**: confirmado por el user, transicionadas a `Finalizada` las 4 historias (FRESCO-65/66/67/68) y el epic FRESCO-64. Verificado vía `acli jira workitem search --jql` (no solo el eco de la transición). Sync local corrido (`jira:sync-issues get FRESCO-64` + `pull --epic FRESCO-64`).
+
+**Por qué**: pedido directo del user tras completar la última historia de la épica.
+
+**Siguiente**: EPIC-FRESCO-64 (Biblioteca de Recetas) completa de punta a punta: buscador, tabs de tipo de comida, filtros de cocina/dieta/alérgeno, y creación de recetas propias. Queda abierta FRESCO-31 (fotos, background, ~689/1000 sin foto la última vez que se contó).

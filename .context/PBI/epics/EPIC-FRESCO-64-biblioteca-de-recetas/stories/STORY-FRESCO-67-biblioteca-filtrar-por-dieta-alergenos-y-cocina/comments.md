@@ -55,5 +55,44 @@ Then no ve ninguna receta que lo contenga, sin que cambie su perfil permanente
 
 ---
 
+### Basi Montes - 8/3/2026, 3:23:07 PM
+
+## Spec Implementation Plan (Dev)
+
+### Goal
+
+Add cuisine / diet / one-off-allergen filters to the Biblioteca grid (FRESCO-65/66), combinable with the existing search and meal-type tab.
+
+### Steps
+
+1. `components/recipe/recipe-card.tsx` — export the existing private `DIETA_LABELS` map (already has all 10 `RecipeDieta` flags with display labels) instead of duplicating a second copy in the new filter UI.
+2. `components/recipes/recipe-library.tsx` — 3 new native `<select>` controls (no dropdown primitive exists in this design system yet; a native `<select>`, styled to match `Input`'s pill shape, is the simplest correct choice for two 7–10-option single-pick lists — `SegmentedControl` renders every option as a visible pill and would be too wide/cluttered at that count, unlike the 4-option meal-type tab):
+3. Filter combines with the existing predicates: a recipe passes when it matches search AND meal tab AND (cocina filter is "Todas" OR `clasificacion?.cocina` matches) AND (dieta filter is "Cualquiera" OR that `dieta` flag is true) AND (allergen filter is "Ninguno" OR that allergen is NOT in `alergenos`).
+4. No new data fetch — `getCatalogRecipes()` already returns `clasificacion`, `dieta`, and `alergenos` for every recipe.
+5. Live-UI check (dev server + Playwright): each filter narrows correctly, resets to "show all" at its default option, and composes with search/tab already in place.
+
+### AC mapping
+
+| AC scenario | covered_by |
+| --- | --- |
+| Filtrar por cocina | live-ui |
+| Filtrar por dieta | live-ui |
+| Filtrar por un alérgeno puntual | live-ui |
+
+### Technical decisions
+
+- Native `<select>` over a custom dropdown component — no such primitive exists in this design system, and building one for a single story would be a bigger diff than the filtering logic itself. Styled minimally (pill shape, matching `Input`) rather than left unstyled.
+- The allergen filter is a temporary, session-only narrowing (per the story's own Business Rules) — it never writes to `user*profiles`, and never widens past what the permanent profile already excludes (a recipe already excluded by the profile's `get*filtered_recipes()` pass never re-enters via this filter, since this filter only runs client-side on the already-safety-filtered catalog).
+- Reused `ALERGENO_OPTIONS` (already the DB-verified, curated vocabulary) instead of inventing a second list that could drift from what `recipes.alergenos` actually contains.
+
+### Workload Forecast
+
+Estimated: ~90 additions + ~5 deletions = ~95 total lines
+400-line budget risk: Low
+Chain strategy: stacked-to-main (solo-main, direct push)
+Decision needed before apply: No
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -17,10 +17,10 @@ Rediseña /recipes como una "Biblioteca" de descubrimiento: buscador, pestañas 
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65) | Biblioteca | Buscar recetas por nombre o ingrediente | - | Medium | Listo |
-| [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66) | Biblioteca | Filtrar recetas por tipo de comida | - | Medium | Listo |
-| [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) | Biblioteca | Filtrar por dieta, alérgenos y cocina | - | Medium | Listo |
-| [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) | Biblioteca | Crear una receta propia | - | Medium | Listo |
+| [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65) | Biblioteca | Buscar recetas por nombre o ingrediente | - | Medium | Finalizada |
+| [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66) | Biblioteca | Filtrar recetas por tipo de comida | - | Medium | Finalizada |
+| [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) | Biblioteca | Filtrar por dieta, alérgenos y cocina | - | Medium | Finalizada |
+| [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) | Biblioteca | Crear una receta propia | - | Medium | Finalizada |
 
 ---
 

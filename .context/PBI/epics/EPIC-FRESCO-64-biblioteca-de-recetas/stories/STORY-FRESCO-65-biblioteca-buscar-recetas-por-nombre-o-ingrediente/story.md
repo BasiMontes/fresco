@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65)
 **Epic:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) (Biblioteca de Recetas)
 **Type:** Historia
-**Status:** Listo
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -28,8 +28,8 @@ Como Laura, quiero buscar recetas por nombre o ingrediente en la Biblioteca, par
 ### Historias (3)
 
 - [FRESCO-9](https://basiliomontescastano.atlassian.net/browse/FRESCO-9): Seguridad Alimentaria | Garantizar que ningún alérgeno o ingrediente no deseado aparezca nunca en un menú _(Finalizada)_
-- [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66): Biblioteca | Filtrar recetas por tipo de comida _(Listo)_
-- [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67): Biblioteca | Filtrar por dieta, alérgenos y cocina _(Listo)_
+- [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66): Biblioteca | Filtrar recetas por tipo de comida _(Finalizada)_
+- [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67): Biblioteca | Filtrar por dieta, alérgenos y cocina _(Finalizada)_
 
 ---
 
