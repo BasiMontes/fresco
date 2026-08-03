@@ -1700,3 +1700,13 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user tras completar la última historia de la épica.
 
 **Siguiente**: EPIC-FRESCO-64 (Biblioteca de Recetas) completa de punta a punta: buscador, tabs de tipo de comida, filtros de cocina/dieta/alérgeno, y creación de recetas propias. Queda abierta FRESCO-31 (fotos, background, ~689/1000 sin foto la última vez que se contó).
+
+---
+
+## 2026-08-03 — FRESCO-31: batch más de fotos (22/30, 333/1000 total)
+
+**Qué**: corrida `scripts/fetch-recipe-photos.ts` (v7, sin cambios de código) con batch de 30 sobre pool de 300 recetas sin foto (barajado). 22/30 hits, 8 sin resultado en Unsplash (nombres muy compuestos tipo "Berenjenas asadas con y sésamo con ajo asado" o pescados poco comunes como "Dorada al horno..."). Aplicado vía SQL directo, verificado cero duplicados (`group by foto_url having count(*) > 1` → vacío).
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 333/1000 con foto, 667 restantes. Sin cambios de código, nada que commitear salvo esta bitácora.
