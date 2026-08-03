@@ -60,15 +60,15 @@ _Project: FRESCO_
 
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
-**Status:** Listo | **Stories:** 1 | **Points:** 0
+**Status:** Finalizada | **Stories:** 1 | **Points:** 0
 
-- [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51) Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal _(- pts, Listo)_
+- [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51) Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal _(- pts, Finalizada)_
 
 ## [FRESCO-50](https://basiliomontescastano.atlassian.net/browse/FRESCO-50) - Recuperación de Contraseña
 
-**Status:** Listo | **Stories:** 1 | **Points:** 0
+**Status:** Finalizada | **Stories:** 1 | **Points:** 0
 
-- [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52) Recuperar Contraseña | Restablecer contraseña desde un enlace por email _(- pts, Listo)_
+- [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52) Recuperar Contraseña | Restablecer contraseña desde un enlace por email _(- pts, Finalizada)_
 
 ## [FRESCO-54](https://basiliomontescastano.atlassian.net/browse/FRESCO-54) - Panel de Inicio
 

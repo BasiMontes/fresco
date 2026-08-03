@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52)
 **Epic:** [FRESCO-50](https://basiliomontescastano.atlassian.net/browse/FRESCO-50) (Recuperación de Contraseña)
 **Type:** Historia
-**Status:** Listo
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-50](https://basiliomontescastano.atlassian.net/browse/FRESCO-50)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -21,14 +21,14 @@ El flujo sigue el mismo patrón anti-enumeración ya establecido en el registro 
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52) | Recuperar Contraseña | Restablecer contraseña desde un enlace por email | - | Medium | Listo |
+| [FRESCO-52](https://basiliomontescastano.atlassian.net/browse/FRESCO-52) | Recuperar Contraseña | Restablecer contraseña desde un enlace por email | - | Medium | Finalizada |
 
 ---
 
 ## Metadata
 
 - **Created:** 8/2/2026
-- **Updated:** 8/2/2026
+- **Updated:** 8/3/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** new-feature, post-mvp

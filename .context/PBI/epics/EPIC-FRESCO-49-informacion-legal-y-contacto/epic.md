@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -21,14 +21,14 @@ El contenido legal real (texto definitivo de Términos y Privacidad) es responsa
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51) | Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal | - | Medium | Listo |
+| [FRESCO-51](https://basiliomontescastano.atlassian.net/browse/FRESCO-51) | Legal | Consultar Términos de Servicio, Privacidad y Contacto en modal | - | Medium | Finalizada |
 
 ---
 
 ## Metadata
 
 - **Created:** 8/2/2026
-- **Updated:** 8/2/2026
+- **Updated:** 8/3/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** new-feature, post-mvp
