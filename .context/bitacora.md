@@ -1740,3 +1740,17 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user ("Hay que diseñar el detalle de la receta").
 
 **Siguiente**: FRESCO-69 en `Listo`, lista para `/sprint-development`. Debe manejar los dos shapes (`Recipe` del catálogo, rico en metadata; `RecetaPropia`, solo nombre/ingredientes/pasos) en la misma vista.
+
+---
+
+## 2026-08-03 — FRESCO-69: vista de detalle de receta implementada
+
+**Qué**: `/sprint-development` modo Solo. `getRecipeDetail(client, id, userId?)` nuevo en `lib/api/recipes.ts` — prueba `recetas_propias` primero (lookup barato por PK, ya scoped por RLS), si no encuentra cae al catálogo encadenando `.eq('id', id)` sobre `get_filtered_recipes()` (mismo patrón que `.order()/.limit()` en `getLatestAvailableRecipes`). Una receta fuera del perfil de seguridad alimentaria simplemente no da resultado ahí, igual que nunca aparece en el grid — sin chequeo de seguridad separado. Devuelve `null` si no matchea ninguna tabla (no lanza error — "no existe para vos" es resultado esperado, no falla de sistema).
+
+Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos ramas de render pequeñas (`CatalogRecipeDetail`/`PersonalRecipeDetail`) en vez de duplicar el shell compartido (link de volver, nombre, ingredientes, pasos) — solo difiere el bloque de metadata. Cards del catálogo y propias ahora son `next/link` al detalle; el botón de favorito (todavía no wireado a ninguna función real) recibió `preventDefault`/`stopPropagation` para no disparar navegación cuando se conecte a futuro — consecuencia necesaria de volver la card clickeable, no scope creep.
+
+**Verificado en vivo**: receta propia ("Tortilla de mi abuela") — nombre, tag "Tu receta", ingredientes, pasos. Receta de catálogo ("Tostada con jamón serrano...") — foto real, categoría, tags de cocina/dieta/alérgeno, tiempo/dificultad/costo, descripción, ingredientes, pasos. Volver funciona desde ambos tipos. Estado "no encontrada" probado con UUID inventado — mensaje correcto, no crashea. Sin errores de consola en ningún paso.
+
+**Por qué**: pedido directo del user ("Hay que diseñar el detalle de la receta").
+
+**Siguiente**: FRESCO-69 en `Control de calidad`, commit `09554e4` pusheado. EPIC-FRESCO-64 ahora tiene 5 historias — todas Finalizada salvo esta, recién shippeada.
