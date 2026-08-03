@@ -185,6 +185,9 @@ const ES_EN_WORDS: Record<string, string> = {
   'cebolla': 'onion',
   'coliflor': 'cauliflower',
   'repollo': 'cabbage',
+  'coles': 'brussels',
+  'bruselas': 'sprouts',
+  'chia': 'chia seeds',
   'verduras': 'vegetables',
   'granola': 'granola',
   // seasonings/garnishes with real visual signal
