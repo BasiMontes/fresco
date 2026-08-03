@@ -1610,3 +1610,15 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user tras cerrar FRESCO-63 ("cerralas. Necesitas más tareas?").
 
 **Siguiente**: nada dev-ready en Jira. Sesión de hoy de punta a punta: FRESCO-31 (+40 fotos, 233→273/1000), housekeeping de 2 épicas viejas (FRESCO-49/50), épica nueva completa EPIC-FRESCO-54 (Panel de Inicio, 5 historias) y épica nueva completa EPIC-FRESCO-60 (Control del Menú Semanal, 3 historias) — sembradas y shippeadas la misma sesión. Para la próxima: FRESCO-31 (727/1000 restantes) o sembrar iniciativa nueva vía `/product-management` cuando el user traiga la próxima idea/mockup.
+
+---
+
+## 2026-08-03 — FRESCO-31: script v7, arreglado el patrón de recetas trabadas (273→311/1000)
+
+**Qué**: el hallazgo flagged 2 tandas atrás ("mismas ~15 recetas fallan siempre, gastan cupo real sin avanzar") se confirmó por 4ta vez seguida al arrancar esta tanda — se arregló de una en vez de seguir tolerándolo. Causa real: el script pedía los primeros N `foto_url is null` en orden de DB (siempre el mismo orden), así que una receta que falla queda para siempre en el frente de la cola. Fix: trae un pool 10x más grande (300 en vez de 30) y lo mezcla client-side antes de cortar el batch — cualquier receta problemática ahora compite en igualdad con el resto, no monopoliza el frente.
+
+**Resultado medido, no solo teórico**: primera tanda post-fix, mismos datos subyacentes: 14/30 → 26/30 (casi el doble). Segunda tanda: 12/20 (60%, sigue sólido). Total sesión: 273→311/1000, cero duplicados en ambas. Spot-check de 2: solomillo de cerdo match sólido; "tostada con jamón serrano" trajo un sandwich (no tostada), mismatch menor tolerado, mismo criterio de siempre.
+
+**Por qué**: pedido directo del user ("Seguí con FRESCO-31") — el patrón ya estaba documentado como gap conocido de sesión anterior, corregirlo de una es mejor que seguir gastando cupo real en las mismas recetas muertas cada tanda.
+
+**Siguiente**: quedan 689/1000. El fix debería sostener una tasa de acierto más alta (60-85% vs el ~40-50% de antes) en las próximas tandas — confirmar que se mantiene con más corridas.
