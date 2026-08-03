@@ -88,6 +88,15 @@ _Project: FRESCO_
 - [FRESCO-62](https://basiliomontescastano.atlassian.net/browse/FRESCO-62) Calendario | Eliminar el menú de la semana actual _(- pts, Finalizada)_
 - [FRESCO-63](https://basiliomontescastano.atlassian.net/browse/FRESCO-63) Calendario | Generar un menú nuevo para la semana _(- pts, Finalizada)_
 
+## [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) - Biblioteca de Recetas
+
+**Status:** Listo | **Stories:** 4 | **Points:** 0
+
+- [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65) Biblioteca | Buscar recetas por nombre o ingrediente _(- pts, Listo)_
+- [FRESCO-66](https://basiliomontescastano.atlassian.net/browse/FRESCO-66) Biblioteca | Filtrar recetas por tipo de comida _(- pts, Listo)_
+- [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) Biblioteca | Filtrar por dieta, alérgenos y cocina _(- pts, Listo)_
+- [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) Biblioteca | Crear una receta propia _(- pts, Listo)_
+
 ---
 
 _Synced from Jira by sync-jira-issues_
