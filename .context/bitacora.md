@@ -1676,3 +1676,17 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, tercera historia de la épica.
 
 **Siguiente**: FRESCO-67 en `Control de calidad`, commit `95e8383` pusheado. Queda solo FRESCO-68 (crear receta propia) de EPIC-FRESCO-64, sin bloqueos, tabla nueva a diseñar en su propio Stage 1.
+
+---
+
+## 2026-08-03 — FRESCO-68: crear receta propia (última historia de EPIC-FRESCO-64)
+
+**Qué**: `/sprint-development` modo Solo. Tabla nueva `recetas_propias` (typed-relational, igual convención que `user_profiles`/`meal_plans`, no el shape jsonb de `recipes`) — RLS solo `select_own`+`insert_own`, sin política de update/delete (edición/borrado fuera de alcance, denegado a nivel DB, no solo ocultado en la UI). Tipo `RecetaPropia` nuevo en `@schemas`, deliberadamente separado de `Recipe` para no forzar nulls en campos exclusivos del catálogo. `getRecetasPropias()`/`createRecetaPropia()` en `lib/api/recipes.ts`. UI: `PersonalRecipeCard` + `CreateRecipeForm` (diálogo reusando el primitivo `Dialog` de FRESCO-51), validación de nombre obligatorio calcada de `nombre-form.tsx`. Sección "Tus recetas" en `RecipeLibrary`, separada del grid de catálogo — decisión explícita: las recetas propias no entran en la cadena de filtros (búsqueda/tabs/cocina/dieta/alérgeno) porque no tienen `clasificacion`/`dieta`/`alergenos`.
+
+**Bug real encontrado y arreglado en vivo**: primer load de `/recipes` tiró "permission denied for table recetas_propias" — la migración creó tabla+RLS pero nunca el GRANT de tabla para `authenticated`, exactamente el mismo gap ya documentado en `20260729120000_grant_authenticated_table_privileges.sql` para las otras 4 tablas typed-relational de este proyecto (nota ya existía en `regression.feature` como checklist de infraestructura — la tuve delante y aun así la pisé de nuevo). Arreglado con migración `20260803010000_...`, reverificado en vivo: error desaparece, receta persiste correcta en DB.
+
+**Verificado en vivo**: guardar sin nombre → mensaje de validación inline, no guarda; formulario completo → receta aparece al instante bajo "Tus recetas" con tag "Tu receta", confirmado también directo en DB. No se verificó con un ciclo real de generación de menú que la receta propia nunca aparezca — garantía estructural confirmada por code review (`get_filtered_recipes()`/`generate-meal-plan` nunca referencian `recetas_propias`), documentado como tal en `review.md`, no como hecho a ciegas.
+
+**Por qué**: pedido directo del user, cuarta y última historia de EPIC-FRESCO-64.
+
+**Siguiente**: FRESCO-68 en `Control de calidad`, commit `3e3f321` pusheado. **EPIC-FRESCO-64 completa** (65/66/67/68 todas en `Control de calidad`) — falta decisión del user sobre cerrar epic+historias a `Finalizada`. FRESCO-31 (fotos) sigue pendiente en background.
