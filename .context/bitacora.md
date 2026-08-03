@@ -1652,3 +1652,15 @@ Verificado en vivo: cada link abre su propio documento sin rastro de los otros (
 **Por qué**: pedido directo del user, primera historia de la épica nueva.
 
 **Siguiente**: FRESCO-65 en `Control de calidad`, commit `b72be3d` pusheado. FRESCO-66/67 (tabs y filtros) ahora desbloqueadas (dependían de que FRESCO-65 exista). FRESCO-68 (crear propia) sigue sin bloqueos, independiente.
+
+---
+
+## 2026-08-03 — FRESCO-66: tabs Todo/Desayuno/Comida/Cena en la Biblioteca
+
+**Qué**: `/sprint-development` modo Solo. Reutilizado `SegmentedControl` (primitivo ya existente, mismo token de DESIGN.md "radio-style pill group") en vez de construir un tab bar nuevo — cero UI nueva, solo wiring. Combina con el buscador de FRESCO-65 en el mismo `filter()`: una receta pasa si matchea la búsqueda Y (pestaña "Todo" O `clasificacion.tipo_plato` coincide). Sin fetch nuevo — `getCatalogRecipes()` ya traía `clasificacion` completo.
+
+**Verificado en vivo**: pestaña "Cena" filtra a platos de cena reales (ensaladas, sopas, distinto del desayuno que se ve en "Todo"); "Todo" vuelve a mostrar todo; combinación "Cena" + buscar "ensalada" da exactamente la intersección (4 recetas, todas "Ensalada...").
+
+**Por qué**: pedido directo del user, segunda historia de la épica.
+
+**Siguiente**: FRESCO-66 en `Control de calidad`, commit `464419b` pusheado. Quedan FRESCO-67 (filtros dieta/alérgeno/cocina) y FRESCO-68 (crear propia) de EPIC-FRESCO-64, ambas desbloqueadas.
