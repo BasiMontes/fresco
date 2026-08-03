@@ -6,6 +6,27 @@ import * as React from 'react';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+
+type MealTab = 'todo' | 'desayuno' | 'comida' | 'cena';
+
+const MEAL_TABS: { value: MealTab, label: string }[] = [
+  { value: 'todo', label: 'Todo' },
+  { value: 'desayuno', label: 'Desayuno' },
+  { value: 'comida', label: 'Comida' },
+  { value: 'cena', label: 'Cena' },
+];
+
+/**
+ * FRESCO-66 — a recipe with `clasificacion: null` (some seed rows are only
+ * partially populated, per `RecipeCard`'s own doc comment) never matches a
+ * specific meal tab but still shows under "Todo" — same optional-chaining
+ * fallback already used elsewhere for `clasificacion`.
+ */
+function matchesTab(recipe: Recipe, tab: MealTab): boolean {
+  if (tab === 'todo') { return true; }
+  return recipe.clasificacion?.tipo_plato === tab;
+}
 
 /**
  * FRESCO-65 — client-side search over the safety-filtered catalog the page
@@ -29,9 +50,10 @@ function matchesQuery(recipe: Recipe, query: string): boolean {
 
 export function RecipeLibrary({ recipes }: { recipes: Recipe[] }) {
   const [query, setQuery] = React.useState('');
+  const [tab, setTab] = React.useState<MealTab>('todo');
   const filtered = React.useMemo(
-    () => recipes.filter(recipe => matchesQuery(recipe, query)),
-    [recipes, query],
+    () => recipes.filter(recipe => matchesQuery(recipe, query) && matchesTab(recipe, tab)),
+    [recipes, query, tab],
   );
 
   return (
@@ -48,6 +70,14 @@ export function RecipeLibrary({ recipes }: { recipes: Recipe[] }) {
           aria-label="Buscar receta o ingrediente"
         />
       </div>
+
+      <SegmentedControl
+        className="mt-4"
+        aria-label="Filtrar por tipo de comida"
+        options={MEAL_TABS}
+        value={tab}
+        onChange={value => setTab(value as MealTab)}
+      />
 
       {filtered.length === 0
         ? (

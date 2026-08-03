@@ -564,6 +564,24 @@ Característica: Flujo completo de usuario en Fresco
     # restrictivo; revisado solo en código (misma rama `length === 0` que el
     # resto de estados vacíos de esta familia de páginas).
 
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Filtrar la Biblioteca por tipo de comida
+    Dado que Laura está en la Biblioteca
+    Cuando toca la pestaña "Cena"
+    Entonces ve solo recetas de cena del catálogo
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Volver a ver todo el catálogo en la Biblioteca
+    Dado que Laura tiene una pestaña de tipo de comida activa
+    Cuando toca "Todo"
+    Entonces vuelve a ver el catálogo completo
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Buscador y pestaña de tipo de comida combinados en la Biblioteca
+    Dado que Laura tiene la pestaña "Cena" activa
+    Cuando escribe algo en el buscador
+    Entonces los resultados respetan ambos filtros a la vez
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
