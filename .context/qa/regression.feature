@@ -621,6 +621,24 @@ Característica: Flujo completo de usuario en Fresco
     # confirmada por code review (get_filtered_recipes()/generate-meal-plan
     # nunca referencian recetas_propias), no por prueba en vivo.
 
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Ver detalle de una receta del catálogo
+    Dado que Laura está en la Biblioteca
+    Cuando abre una receta del catálogo
+    Entonces ve su nombre, ingredientes, pasos, tiempo, dificultad y tags de dieta/alérgeno/cocina
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Ver detalle de una receta propia
+    Dado que Laura tiene una receta propia en su Biblioteca
+    Cuando la abre
+    Entonces ve su nombre, ingredientes y pasos, distinguible como receta propia
+
+  @biblioteca @verificado-manual-2026-08-03
+  Escenario: Volver a la Biblioteca desde el detalle
+    Dado que Laura está viendo el detalle de una receta
+    Cuando elige volver
+    Entonces regresa a la Biblioteca
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)

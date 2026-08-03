@@ -1,0 +1,143 @@
+import type { RecetaPropia, Recipe, RecipeDieta } from '@schemas';
+import type { RecipeDetail } from '@/lib/api/recipes';
+import { ArrowLeft, BookOpen } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { DIETA_LABELS } from '@/components/recipe/recipe-card';
+import { buttonVariants } from '@/components/ui/button';
+import { Tag } from '@/components/ui/tag';
+import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
+import { getCategoryIcon } from '@/lib/recipes/category-icon';
+
+/** Every active diet flag as a display label — unlike `RecipeCard`'s single "first match" pick (space-constrained), the detail view has room to show all of them. */
+function activeDietaLabels(dieta: RecipeDieta | null): string[] {
+  if (!dieta) { return []; }
+  return (Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[])
+    .filter(flag => dieta[flag])
+    .map(flag => DIETA_LABELS[flag])
+    .filter((label): label is string => Boolean(label));
+}
+
+function alergenoLabel(value: string): string {
+  return ALERGENO_OPTIONS.find(option => option.value === value)?.label ?? value;
+}
+
+function BackToLibraryLink() {
+  return (
+    <Link href="/recipes" className={buttonVariants({ variant: 'ghost' })} data-testid="recipe_detail_back_link">
+      <ArrowLeft className="size-4" aria-hidden="true" />
+      Volver a la Biblioteca
+    </Link>
+  );
+}
+
+function CatalogRecipeDetail({ receta }: { receta: Recipe }) {
+  const CategoryIcon = getCategoryIcon(receta.clasificacion?.categoria);
+  const dietaLabels = activeDietaLabels(receta.dieta);
+  const ingredientes = receta.ingredientes_principales ?? [];
+  const pasos = receta.pasos_resumen ?? [];
+
+  return (
+    <div>
+      <BackToLibraryLink />
+
+      <div className="relative mt-4 grid aspect-video w-full place-items-center overflow-hidden rounded-card bg-neutral-200">
+        {receta.foto_url
+          ? (
+              <Image
+                src={receta.foto_url}
+                alt={receta.nombre}
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            )
+          : (
+              <CategoryIcon className="size-16 text-neutral-400" aria-hidden="true" />
+            )}
+      </div>
+
+      <p className="mt-4 text-h6 uppercase text-tertiary">{receta.clasificacion?.categoria ?? '—'}</p>
+      <h1 className="text-h2">{receta.nombre}</h1>
+
+      <div className="mt-2 flex flex-wrap gap-2" data-testid="recipe_detail_tags">
+        {receta.clasificacion?.cocina && <Tag variant="neutral">{receta.clasificacion.cocina}</Tag>}
+        {dietaLabels.map(label => <Tag key={label} variant="accent">{label}</Tag>)}
+        {(receta.alergenos ?? []).map(alergeno => (
+          <Tag key={alergeno} variant="accent-2">
+            {alergenoLabel(alergeno)}
+          </Tag>
+        ))}
+      </div>
+
+      <p className="mt-3 text-body-md text-tertiary">
+        {receta.meta?.tiempo_total_min ?? '—'}
+        {' '}
+        min ·
+        {' '}
+        {receta.meta?.dificultad ?? '—'}
+        {' '}
+        ·
+        {' '}
+        {receta.meta?.coste_estimado ?? '—'}
+      </p>
+
+      {receta.descripcion_corta && <p className="mt-4 text-body-md">{receta.descripcion_corta}</p>}
+
+      <h2 className="mt-6 text-h4">Ingredientes</h2>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-body-md" data-testid="recipe_detail_ingredientes">
+        {ingredientes.map(ingrediente => <li key={ingrediente}>{ingrediente}</li>)}
+      </ul>
+
+      <h2 className="mt-6 text-h4">Preparación</h2>
+      <ol className="mt-2 list-decimal space-y-2 pl-5 text-body-md" data-testid="recipe_detail_pasos">
+        {pasos.map(paso => <li key={paso}>{paso}</li>)}
+      </ol>
+    </div>
+  );
+}
+
+function PersonalRecipeDetail({ receta }: { receta: RecetaPropia }) {
+  return (
+    <div>
+      <BackToLibraryLink />
+
+      <div className="relative mt-4 grid aspect-video w-full place-items-center overflow-hidden rounded-card bg-neutral-200">
+        <BookOpen className="size-16 text-neutral-400" aria-hidden="true" />
+      </div>
+
+      <h1 className="mt-4 text-h2">{receta.nombre}</h1>
+      <div className="mt-2">
+        <Tag variant="outline">Tu receta</Tag>
+      </div>
+
+      <h2 className="mt-6 text-h4">Ingredientes</h2>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-body-md" data-testid="recipe_detail_ingredientes">
+        {receta.ingredientes.map(ingrediente => <li key={ingrediente}>{ingrediente}</li>)}
+      </ul>
+
+      <h2 className="mt-6 text-h4">Preparación</h2>
+      <ol className="mt-2 list-decimal space-y-2 pl-5 text-body-md" data-testid="recipe_detail_pasos">
+        {receta.pasos.map(paso => <li key={paso}>{paso}</li>)}
+      </ol>
+    </div>
+  );
+}
+
+/** OOS (no edit/delete/rate/menu-add/share) and the shell (back link, name, ingredients, steps) are identical for both recipe types — only the metadata block differs, so this dispatches to one of two small render branches rather than duplicating the shell. */
+export function RecipeDetailView({ detail }: { detail: RecipeDetail }) {
+  return detail.kind === 'catalogo'
+    ? <CatalogRecipeDetail receta={detail.receta} />
+    : <PersonalRecipeDetail receta={detail.receta} />;
+}
+
+export function RecipeNotFoundState() {
+  return (
+    <div>
+      <BackToLibraryLink />
+      <p className="mt-6 text-body-md text-tertiary" data-testid="recipe_detail_not_found">
+        No encontramos esta receta. Puede que ya no esté disponible para tu perfil.
+      </p>
+    </div>
+  );
+}

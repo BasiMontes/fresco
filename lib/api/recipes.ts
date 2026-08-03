@@ -218,3 +218,70 @@ export async function createRecetaPropia(
 
   return data;
 }
+
+export type RecipeDetail
+  = | { kind: 'catalogo', receta: Recipe }
+    | { kind: 'propia', receta: RecetaPropia };
+
+/**
+ * A single recipe's detail by id (FRESCO-69), for whichever recipe type
+ * `id` belongs to. Tries `recetas_propias` first (cheap PK lookup, RLS
+ * already scopes it to the caller) before the catalog, since a personal
+ * recipe never shows up in `get_filtered_recipes()` and checking it first
+ * avoids a wasted RPC call on the common "it's mine" case.
+ *
+ * The catalog lookup chains `.eq('id', id)` onto `get_filtered_recipes()`
+ * exactly like `getLatestAvailableRecipes()` chains `.order()/.limit()` onto
+ * the same RPC — so a recipe outside Laura's food-safety profile returns no
+ * row here, the same as it never appearing in the Biblioteca grid, rather
+ * than needing a second, separate safety check.
+ *
+ * Returns `null` when `id` matches neither table (deleted, wrong id, or a
+ * catalog recipe excluded by the caller's profile) — the page renders a
+ * not-found state rather than throwing, since "recipe doesn't exist for you"
+ * is an expected outcome, not a system error.
+ */
+export async function getRecipeDetail(
+  client: SupabaseClient<Database>,
+  id: string,
+  userId?: string,
+): Promise<RecipeDetail | null> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new RecipesError('No hay una sesión autenticada para leer esta receta.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data: propia, error: propiaError } = await client
+    .from('recetas_propias')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (propiaError) {
+    throw new RecipesError(`No se pudo leer la receta: ${propiaError.message}`);
+  }
+  if (propia) {
+    return { kind: 'propia', receta: propia };
+  }
+
+  const { data: catalogo, error: catalogoError } = await client
+    .rpc('get_filtered_recipes', { p_user_id: resolvedUserId })
+    .eq('id', id)
+    .maybeSingle();
+
+  if (catalogoError) {
+    throw new RecipesError(`No se pudo leer la receta: ${catalogoError.message}`);
+  }
+  if (catalogo) {
+    return { kind: 'catalogo', receta: toRecipe(catalogo) };
+  }
+
+  return null;
+}

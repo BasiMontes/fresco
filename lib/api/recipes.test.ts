@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { createRecetaPropia, getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, getRecetasPropias, RecipesError } from './recipes';
+import { createRecetaPropia, getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, getRecetasPropias, getRecipeDetail, RecipesError } from './recipes';
 
 async function expectRejection(promise: Promise<unknown>): Promise<void> {
   let thrownError: unknown;
@@ -434,5 +434,108 @@ describe('createRecetaPropia', () => {
     const { client } = createInsertMockClient({});
 
     await expectRejection(createRecetaPropia(client, { nombre: 'x', ingredientes: [], pasos: [] }));
+  });
+});
+
+/** Minimal mock client covering both `getRecipeDetail()` lookup paths: `.from('recetas_propias').select().eq().maybeSingle()` and `.rpc().eq().maybeSingle()`. */
+function createDetailMockClient(options: {
+  userId?: string
+  propiaRow?: unknown | null
+  propiaErrorMessage?: string
+  catalogoRow?: unknown | null
+  catalogoErrorMessage?: string
+} = {}) {
+  const getUserCalls: unknown[] = [];
+  const propiaEqCalls: unknown[] = [];
+  const rpcEqCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => {
+        getUserCalls.push(undefined);
+        return options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null };
+      },
+    },
+    from: (table: string) => ({
+      select: () => ({
+        eq: (column: string, value: unknown) => ({
+          maybeSingle: async () => {
+            propiaEqCalls.push({ table, column, value });
+            return {
+              data: options.propiaErrorMessage ? null : (options.propiaRow ?? null),
+              error: options.propiaErrorMessage ? { message: options.propiaErrorMessage } : null,
+            };
+          },
+        }),
+      }),
+    }),
+    rpc: (fn: string, args: unknown) => ({
+      eq: (column: string, value: unknown) => ({
+        maybeSingle: async () => {
+          rpcEqCalls.push({ fn, args, column, value });
+          return {
+            data: options.catalogoErrorMessage ? null : (options.catalogoRow ?? null),
+            error: options.catalogoErrorMessage ? { message: options.catalogoErrorMessage } : null,
+          };
+        },
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, propiaEqCalls, rpcEqCalls };
+}
+
+describe('getRecipeDetail', () => {
+  test('returns the personal recipe when the id matches recetas_propias, without querying the catalog', async () => {
+    const { client, rpcEqCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: SAMPLE_RECETA_PROPIA });
+
+    const result = await getRecipeDetail(client, 'receta-1');
+
+    expect(result).toEqual({ kind: 'propia', receta: SAMPLE_RECETA_PROPIA });
+    expect(rpcEqCalls).toHaveLength(0);
+  });
+
+  test('falls back to the catalog when the id does not match a personal recipe', async () => {
+    const { client } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: SAMPLE_ROW });
+
+    const result = await getRecipeDetail(client, 'recipe-1');
+
+    expect(result).toEqual({ kind: 'catalogo', receta: expect.objectContaining({ id: 'recipe-1', nombre: 'Risotto de setas' }) });
+  });
+
+  test('returns null when the id matches neither table', async () => {
+    const { client } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: null });
+
+    const result = await getRecipeDetail(client, 'unknown-id');
+
+    expect(result).toBeNull();
+  });
+
+  test('throws RecipesError on a recetas_propias lookup error', async () => {
+    const { client } = createDetailMockClient({ userId: 'user-123', propiaErrorMessage: 'connection reset' });
+
+    await expectRejection(getRecipeDetail(client, 'receta-1'));
+  });
+
+  test('throws RecipesError on a catalog lookup error', async () => {
+    const { client } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoErrorMessage: 'connection reset' });
+
+    await expectRejection(getRecipeDetail(client, 'recipe-1'));
+  });
+
+  test('throws RecipesError when there is no authenticated session', async () => {
+    const { client } = createDetailMockClient({});
+
+    await expectRejection(getRecipeDetail(client, 'recipe-1'));
+  });
+
+  test('with a userId argument, skips the internal auth.getUser() call', async () => {
+    const { client, getUserCalls } = createDetailMockClient({ propiaRow: null, catalogoRow: null });
+
+    await getRecipeDetail(client, 'recipe-1', 'user-456');
+
+    expect(getUserCalls).toHaveLength(0);
   });
 });

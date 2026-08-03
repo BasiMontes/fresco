@@ -2,6 +2,7 @@
 
 import type { RecetaPropia, Recipe, RecipeDieta, TipoCocina } from '@schemas';
 import { BookOpen, Plus, Search } from 'lucide-react';
+import Link from 'next/link';
 import * as React from 'react';
 import { DIETA_LABELS, RecipeCard } from '@/components/recipe/recipe-card';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
@@ -157,7 +158,9 @@ export function RecipeLibrary({ recipes, recetasPropias }: { recipes: Recipe[], 
           <h2 className="text-h6 uppercase text-tertiary">Tus recetas</h2>
           <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {misRecetas.map(receta => (
-              <PersonalRecipeCard key={receta.id} receta={receta} />
+              <Link key={receta.id} href={`/recipes/${receta.id}`}>
+                <PersonalRecipeCard receta={receta} />
+              </Link>
             ))}
           </div>
         </div>
@@ -207,7 +210,9 @@ export function RecipeLibrary({ recipes, recetasPropias }: { recipes: Recipe[], 
         : (
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="recipe_library_grid">
               {filtered.map(recipe => (
-                <RecipeCard key={recipe.id} recipe={recipe} />
+                <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
+                  <RecipeCard recipe={recipe} />
+                </Link>
               ))}
             </div>
           )}

@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69)
 **Epic:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) (Biblioteca de Recetas)
 **Type:** Historia
-**Status:** Listo
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 

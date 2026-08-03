@@ -74,7 +74,14 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
           variant="icon"
           size="sm"
           aria-label={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-          onClick={onToggleFavorite}
+          onClick={(event) => {
+            // FRESCO-69 — the card is now wrapped in a Link to the detail
+            // page; without this the favorite button's click would bubble
+            // into a navigation instead of toggling the favorite.
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleFavorite?.();
+          }}
           className="absolute right-2 top-2"
         >
           <Heart className={cn('size-4', isFavorite && 'fill-primary')} />
