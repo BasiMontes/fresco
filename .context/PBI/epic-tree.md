@@ -72,13 +72,13 @@ _Project: FRESCO_
 
 ## [FRESCO-54](https://basiliomontescastano.atlassian.net/browse/FRESCO-54) - Panel de Inicio
 
-**Status:** Listo | **Stories:** 5 | **Points:** 0
+**Status:** Finalizada | **Stories:** 5 | **Points:** 0
 
-- [FRESCO-55](https://basiliomontescastano.atlassian.net/browse/FRESCO-55) Inicio | Saludar al usuario por su nombre _(- pts, Listo)_
-- [FRESCO-56](https://basiliomontescastano.atlassian.net/browse/FRESCO-56) Inicio | Mostrar sugerencia destacada que abre el Calendario _(- pts, Listo)_
-- [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57) Inicio | Mostrar cantidad de recetas disponibles _(- pts, Listo)_
-- [FRESCO-58](https://basiliomontescastano.atlassian.net/browse/FRESCO-58) Inicio | Mostrar estimaciones de ahorro semanal _(- pts, Listo)_
-- [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59) Inicio | Mostrar últimas recetas añadidas _(- pts, Listo)_
+- [FRESCO-55](https://basiliomontescastano.atlassian.net/browse/FRESCO-55) Inicio | Saludar al usuario por su nombre _(- pts, Finalizada)_
+- [FRESCO-56](https://basiliomontescastano.atlassian.net/browse/FRESCO-56) Inicio | Mostrar sugerencia destacada que abre el Calendario _(- pts, Finalizada)_
+- [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57) Inicio | Mostrar cantidad de recetas disponibles _(- pts, Finalizada)_
+- [FRESCO-58](https://basiliomontescastano.atlassian.net/browse/FRESCO-58) Inicio | Mostrar estimaciones de ahorro semanal _(- pts, Finalizada)_
+- [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59) Inicio | Mostrar últimas recetas añadidas _(- pts, Finalizada)_
 
 ---
 

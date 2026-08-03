@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-54](https://basiliomontescastano.atlassian.net/browse/FRESCO-54)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -30,18 +30,18 @@ El usuario abre la app y en un vistazo entiende "qué tengo esta semana" y "cuá
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-55](https://basiliomontescastano.atlassian.net/browse/FRESCO-55) | Inicio | Saludar al usuario por su nombre | - | Medium | Listo |
-| [FRESCO-56](https://basiliomontescastano.atlassian.net/browse/FRESCO-56) | Inicio | Mostrar sugerencia destacada que abre el Calendario | - | Medium | Listo |
-| [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57) | Inicio | Mostrar cantidad de recetas disponibles | - | Medium | Listo |
-| [FRESCO-58](https://basiliomontescastano.atlassian.net/browse/FRESCO-58) | Inicio | Mostrar estimaciones de ahorro semanal | - | Medium | Listo |
-| [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59) | Inicio | Mostrar últimas recetas añadidas | - | Medium | Listo |
+| [FRESCO-55](https://basiliomontescastano.atlassian.net/browse/FRESCO-55) | Inicio | Saludar al usuario por su nombre | - | Medium | Finalizada |
+| [FRESCO-56](https://basiliomontescastano.atlassian.net/browse/FRESCO-56) | Inicio | Mostrar sugerencia destacada que abre el Calendario | - | Medium | Finalizada |
+| [FRESCO-57](https://basiliomontescastano.atlassian.net/browse/FRESCO-57) | Inicio | Mostrar cantidad de recetas disponibles | - | Medium | Finalizada |
+| [FRESCO-58](https://basiliomontescastano.atlassian.net/browse/FRESCO-58) | Inicio | Mostrar estimaciones de ahorro semanal | - | Medium | Finalizada |
+| [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59) | Inicio | Mostrar últimas recetas añadidas | - | Medium | Finalizada |
 
 ---
 
 ## Metadata
 
 - **Created:** 8/2/2026
-- **Updated:** 8/2/2026
+- **Updated:** 8/3/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** new-feature, post-mvp
