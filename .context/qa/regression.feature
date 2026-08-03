@@ -237,6 +237,18 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca el icono de favoritos o el de notificaciones de la cabecera
     Entonces no ocurre ninguna acción funcional, ya que en esta versión son solo decorativos
 
+  @panel-inicio @verificado-manual-2026-08-03
+  Escenario: La sugerencia de Calendario en Inicio lleva directo al plan semanal
+    Dado que el usuario está en /menu (Inicio) y ve el banner de sugerencia
+    Cuando toca el botón "Ver mi plan semanal"
+    Entonces es llevado directamente a /calendar
+
+  @panel-inicio @edge-case @verificado-manual-2026-08-03
+  Escenario: El banner de sugerencia de Calendario se muestra aunque no exista un menú generado todavía
+    Dado que el usuario no tiene un menú generado para esta semana
+    Cuando abre /menu (Inicio)
+    Entonces ve el banner de sugerencia de todas formas, junto al estado vacío
+
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================

@@ -2,6 +2,7 @@ import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import { Bell, Heart, Zap } from 'lucide-react';
 
 import Link from 'next/link';
+import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
@@ -69,6 +70,8 @@ export default async function MenuPage() {
   if (!plan) {
     return (
       <div className="mx-auto max-w-3xl">
+        {/* FRESCO-56: banner shown regardless of plan state, per AC. */}
+        <CalendarSuggestionBanner />
         <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
@@ -92,6 +95,8 @@ export default async function MenuPage() {
           </Button>
         </div>
       </div>
+
+      <CalendarSuggestionBanner />
 
       {user?.is_anonymous && (
         <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">
