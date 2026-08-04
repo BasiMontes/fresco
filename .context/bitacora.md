@@ -1950,3 +1950,13 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user ("aplica los fixes de performance... acepto el riesgo"), pero el riesgo real resultó ser distinto (y más agudo) al que se había evaluado en abstracto — un bloqueo técnico de plataforma, no solo un riesgo de datos obsoletos. Se lo comuniqué antes de construir nada (3 opciones con trade-offs), el user eligió la más ambiciosa (Server Action), y aun así el muro apareció en runtime, no en el diseño.
 
 **Siguiente**: caching del catálogo queda fuera, documentado como deuda técnica con motivo real, no como TODO silencioso — si se retoma en el futuro, la vía correcta es esperar a que `'use cache: private'` deje de ser experimental (o adoptar `cacheComponents` deliberadamente como decisión de arquitectura aparte, no como side-effect de esta tarea). El fast-path de `getRecipeDetail` es la única pieza de este ítem que quedó en producción.
+
+---
+
+## 2026-08-04 — FRESCO-31: décimo batch (7/30, 442/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 7/30 hits, tasa se mantiene en el mismo nivel bajo de los últimos batches — fallos concentrados en el mismo puñado recurrente (huevos poché, tortitas, pollo al horno/plancha, ensalada de quinoa/garbanzos, mejillones al vapor, pasta con setas, tostada de aguacate/queso fresco, bowl de avena/yogur). Aplicado con `supabase db query --linked -f batch10.sql`. Verificado con el mismo CLI: `442/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 442/1000 con foto, 558 restantes.
