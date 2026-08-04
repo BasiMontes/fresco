@@ -1,3 +1,5 @@
+'use client';
+
 import type { Recipe, RecipeDieta } from '@schemas';
 
 import { Heart } from 'lucide-react';
