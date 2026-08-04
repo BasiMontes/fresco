@@ -35,14 +35,14 @@ criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 
 | Métrica | Valor |
 |---|---|
-| Escenarios totales | 71 |
+| Escenarios totales | 77 |
 | `@automatizado` (tienen test Playwright real) | 21 |
-| `@pendiente` (escritos, sin verificar ni automatizar) | 3 |
+| `@pendiente` (escritos, sin verificar ni automatizar) | 4 |
 | `@no-implementado` (comportamiento deseado, aún sin construir) | 0 — todo lo que estaba `@no-implementado` ya ha enviado (ver Nota) |
-| `@edge-case` (causística no-camino-feliz) | 30 |
-| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 68 |
+| `@edge-case` (causística no-camino-feliz) | 31 |
+| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 73 |
 | Ficheros de step definitions (`tests/steps/*.steps.ts`) | 12 |
-| Áreas / secciones | 11 |
+| Áreas / secciones | 12 |
 
 > **Nota sobre `@no-implementado`:** ahora mismo ningún escenario de
 > `regression.feature` lleva ese tag — todo lo que en su momento se documentó
@@ -64,6 +64,7 @@ criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 9. Guía de testeabilidad para QA (/qa) (1 escenario)
 10. Seguridad — aislamiento de datos entre usuarios (3 escenarios)
 11. Biblioteca de Recetas — EPIC-FRESCO-64 / STORY-FRESCO-65 (16 escenarios)
+12. Perfil (6 escenarios)
 
 ---
 
@@ -1156,6 +1157,78 @@ Escenario: Volver a la Biblioteca desde el detalle
 
 ---
 
+## 12. Perfil
+
+### 12.1 Editar preferencias de dieta y alérgenos desde el perfil
+
+**Tags:** `@perfil` `@verificado-manual-2026-08-04`
+
+```gherkin
+Escenario: Editar preferencias de dieta y alérgenos desde el perfil
+  Dado que Laura está en /profile
+  Cuando activa un chip de dieta y confirma "Actualizar Preferencias"
+  Entonces la preferencia queda guardada y sigue activa tras recargar la página
+```
+
+**Automatización:** Manual, no automatizado aún. Verificado en vivo con Playwright CLI contra `localhost:3000` (cuenta QA `qa.fresco@local.test`): toggle "Vegetariano" → guardar → `POST .../rest/v1/user_profiles` real (200) → reload → chip queda `[pressed]`, confirmando persistencia real en DB, no solo estado de UI. Revertido tras la prueba.
+
+### 12.2 Descargar un backup de los propios datos en JSON
+
+**Tags:** `@perfil` `@verificado-manual-2026-08-04`
+
+```gherkin
+Escenario: Descargar un backup de los propios datos en JSON
+  Dado que Laura está en /profile
+  Cuando pulsa "Descargar" en Backup JSON
+  Entonces recibe un fichero con su perfil, menús, listas de la compra y recetas propias reales
+```
+
+**Automatización:** Manual, no automatizado aún. Verificado en vivo: `GET /api/profile/export` sin sesión → `401` correcto (no hay fuga sin auth); con sesión real vía navegador → descarga real `fresco-datos-<fecha>.json` con `user_profile`, `meal_plans`, `shopping_lists`, `recetas_propias` poblados con datos reales de la cuenta QA.
+
+### 12.3 Cerrar sesión desde el perfil
+
+**Tags:** `@perfil` `@verificado-manual-2026-08-04`
+
+```gherkin
+Escenario: Cerrar sesión desde el perfil
+  Dado que Laura está en /profile con sesión activa
+  Cuando pulsa "Salir"
+  Entonces la cookie de sesión se elimina y vuelve a /login
+```
+
+**Automatización:** Manual, no automatizado aún. Verificado en vivo en `fresco-pro.vercel.app`: tras "Salir", `cookie-list --domain=fresco-pro.vercel.app` devuelve cero cookies (sesión realmente eliminada, no solo redirect visual). Revisitar `/menu` sin sesión después no filtra datos de nadie — muestra el estado genérico "sin plan aún" (comportamiento de invitado, ADR-0003), no un crash ni una fuga.
+
+### 12.4 Borrar cuenta exige escribir el email exacto para habilitarse
+
+**Tags:** `@perfil` `@edge-case` `@verificado-manual-2026-08-04`
+
+```gherkin
+Escenario: Borrar cuenta exige escribir el email exacto para habilitarse
+  Dado que Laura abre el diálogo "Borrar cuenta definitivamente"
+  Cuando escribe un email distinto al suyo
+  Entonces el botón de confirmación sigue deshabilitado
+  Cuando escribe su propio email exacto
+  Entonces el botón de confirmación se habilita
+```
+
+**Automatización:** Manual, no automatizado aún. Verificado en vivo: email incorrecto → botón `[disabled]`; email exacto (`qa.fresco@local.test`) → botón habilitado. Cancelado sin confirmar (ver 12.5 — no se ejecutó el borrado real).
+
+### 12.5 Borrar cuenta definitivamente elimina la cuenta y todos sus datos
+
+**Tags:** `@perfil` `@pendiente`
+
+```gherkin
+Escenario: Borrar cuenta definitivamente elimina la cuenta y todos sus datos
+  Dado que Laura confirma el borrado con su email exacto
+  Cuando el sistema ejecuta la Edge Function delete-account
+  Entonces su auth.users se elimina y el cascade de FK limpia user_profiles/meal_plans/shopping_lists/recetas_propias
+  Y la sesión se cierra y es redirigida a /login con un mensaje de despedida
+```
+
+**Automatización:** Manual, no automatizado aún. **No verificado con una ejecución real de punta a punta** — destructivo e irreversible, no ejecutado contra ninguna cuenta sin confirmación explícita separada del usuario (la cuenta QA local la usan los tests automatizados de `tests/steps/*.steps.ts`, borrarla los rompería). Lo que sí está verificado: el gating del diálogo (12.4), que `delete-account` está deployada y `ACTIVE` en Supabase (`supabase functions list`), y que el cascade de FK (`user_profiles`/`meal_plans`/`shopping_lists`/`recetas_propias` → `auth.users`, todos `ON DELETE CASCADE`) está confirmado por migración — no por ejecución.
+
+---
+
 ## Notas de infraestructura
 
 No son Gherkin ejecutable, pero son causística real encontrada en pruebas en vivo — checklist de regresión para no repetir el mismo hallazgo dos veces. Copiadas verbatim de la sección final de `regression.feature`:
@@ -1164,6 +1237,7 @@ No son Gherkin ejecutable, pero son causística real encontrada en pruebas en vi
 - Toda Edge Function nueva debe deployarse (`list_edge_functions` vía MCP) — el código puede existir sin estar nunca desplegado.
 - Toda tabla nueva con RLS necesita, además de las policies, el GRANT de tabla para el rol `authenticated` (y `anon` si aplica) — RLS sin GRANT bloquea todo; GRANT sin política de rol correcto también bloquea todo.
 - El modelo de Gemini pineado en `supabase/functions/_shared/gemini.ts` puede quedar deprecado por Google sin aviso — verificar contra `ListModels` si un 404/"no longer available" aparece en vivo.
+- Un componente con handler de evento (`onClick`) SIN `'use client'`, renderizado directo desde una página Server Component, crashea toda la página ("Event handlers cannot be passed to Client Component props") — no basta con que compile/typecheck limpio, solo se ve en vivo en el navegador. Encontrado en `RecipeCard` (bug real desde FRESCO-69, 2026-08-03, sin detectar hasta esta sesión de pruebas en vivo).
 
 ---
 

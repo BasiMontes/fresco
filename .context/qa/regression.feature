@@ -640,6 +640,49 @@ Característica: Flujo completo de usuario en Fresco
     Entonces regresa a la Biblioteca
 
   # ==========================================================================
+  # Perfil
+  # ==========================================================================
+
+  @perfil @verificado-manual-2026-08-04
+  Escenario: Editar preferencias de dieta y alérgenos desde el perfil
+    Dado que Laura está en /profile
+    Cuando activa un chip de dieta y confirma "Actualizar Preferencias"
+    Entonces la preferencia queda guardada y sigue activa tras recargar la página
+
+  @perfil @verificado-manual-2026-08-04
+  Escenario: Descargar un backup de los propios datos en JSON
+    Dado que Laura está en /profile
+    Cuando pulsa "Descargar" en Backup JSON
+    Entonces recibe un fichero con su perfil, menús, listas de la compra y recetas propias reales
+
+  @perfil @verificado-manual-2026-08-04
+  Escenario: Cerrar sesión desde el perfil
+    Dado que Laura está en /profile con sesión activa
+    Cuando pulsa "Salir"
+    Entonces la cookie de sesión se elimina y vuelve a /login
+
+  @perfil @edge-case @verificado-manual-2026-08-04
+  Escenario: Borrar cuenta exige escribir el email exacto para habilitarse
+    Dado que Laura abre el diálogo "Borrar cuenta definitivamente"
+    Cuando escribe un email distinto al suyo
+    Entonces el botón de confirmación sigue deshabilitado
+    Cuando escribe su propio email exacto
+    Entonces el botón de confirmación se habilita
+
+  @perfil @pendiente
+  Escenario: Borrar cuenta definitivamente elimina la cuenta y todos sus datos
+    Dado que Laura confirma el borrado con su email exacto
+    Cuando el sistema ejecuta la Edge Function delete-account
+    Entonces su auth.users se elimina y el cascade de FK limpia user_profiles/meal_plans/shopping_lists/recetas_propias
+    Y la sesión se cierra y es redirigida a /login con un mensaje de despedida
+    # No verificado con una ejecución real de punta a punta -- destructivo e
+    # irreversible, no ejecutado contra ninguna cuenta sin confirmación
+    # explícita separada. Verificado sí: el gating del diálogo (ver escenario
+    # anterior), que la Edge Function está deployada y ACTIVE, y que el
+    # cascade de FK (user_profiles/meal_plans/shopping_lists/recetas_propias
+    # -> auth.users, todos ON DELETE CASCADE) está confirmado por migración.
+
+  # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
   # ==========================================================================
@@ -654,3 +697,9 @@ Característica: Flujo completo de usuario en Fresco
   # - El modelo de Gemini pineado en supabase/functions/_shared/gemini.ts
   #   puede quedar deprecado por Google sin aviso — verificar contra
   #   ListModels si un 404/"no longer available" aparece en vivo.
+  # - Un componente con handler de evento (onClick) SIN 'use client', renderizado
+  #   directo desde una página Server Component, crashea toda la página
+  #   ("Event handlers cannot be passed to Client Component props") -- no
+  #   basta con que compile/typecheck limpio, solo se ve en vivo en el
+  #   navegador. Encontrado en RecipeCard (bug real desde FRESCO-69,
+  #   2026-08-03, sin detectar hasta esta sesión de pruebas en vivo).
