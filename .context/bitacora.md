@@ -2074,3 +2074,20 @@ Lint + types verdes. Commit `e6a3b74`, push directo a `main`. Jira `Listo → WI
 **Por qué**: pedido directo del user, mismo lote de las 10 tarjetas — este era el único que solo necesitaba una respuesta de color, no un mockup completo.
 
 **Siguiente**: 6 tickets siguen esperando algo del user: mockups (FRESCO-71/72/78), confirmación de alcance (FRESCO-76), cifras reales o decisión de negocio (FRESCO-75), repro en vivo con perfil real (FRESCO-74 parte 1). FRESCO-70/79/73/74(parte 2) en "Control de calidad", esperando confirmación del user para pasar a "Finalizada".
+
+---
+
+## 2026-08-04 — FRESCO-71/72: pantallas nuevas (favoritos + notificaciones)
+
+**Qué**: user dio los mockups de FRESCO-71/72 (adjuntos en Jira, descargados vía REST `attachment/content` — `acli` no tiene comando de descarga, solo `list`). Ambos mockups mostraban una nav vieja (Despensa/Lista Compra) que no existe en la app real — confirmado con el user antes de construir, se usa la nav real de 4 ítems. FRESCO-72 además mostraba "Productos por caducar, 13 items" — dato de una función de despensa/caducidad que no existe en Fresco; user confirmó que falta pensar la lista real de notificaciones, queda como trabajo futuro, no inventado acá.
+
+- **FRESCO-71**: `app/(app)/favorites/page.tsx` nueva — header "Tus Favoritos" + `EmptyState` compartido (mismo componente que ya usa `/recipes` en su búsqueda vacía). Siempre renderiza vacío: no existe backend de favoritos en ningún lado (FRESCO-77), así que "Lista vacía" es el estado real, no un placeholder. Botón corazón de `/menu` (antes muerto) ahora enlaza `/favorites`. Commit `e145b3f`.
+- **FRESCO-72**: `app/(app)/notifications/page.tsx` nueva — header "Centro de Avisos" + `EmptyState` honesto ("Sin notificaciones"), sin inventar datos de caducidad. Botón campana de `/menu` (antes muerto) ahora enlaza `/notifications`. Commit `ef09209`.
+
+Ambas reutilizan el patrón `ArrowLeft` + link "Volver" ya existente en `recipe-detail.tsx` (no el botón circular ícono-solo del mockup) y el componente `EmptyState` compartido — Live-UI-First (Regla #14), inspiración del mockup adaptada a lo que ya existe, no copiado literal.
+
+Lint + types verdes. Verificado en vivo con Playwright: ambas pantallas, navegación desde los botones de `/menu`, sidebar con el nuevo verde (FRESCO-70) visible de fondo. Push directo a `main`. Jira `Listo → WIP → Control de calidad`, comentario de cierre por ticket.
+
+**Por qué**: user confirmó los 2 mockups y aclaró el alcance de notificaciones — desbloqueó ambos tickets en la misma sesión.
+
+**Siguiente**: FRESCO-78 (diseño cards "hoy") usa el diseño genérico de `RecipeCard` — confirmado por el user, revisar qué falta cerrar ahí. Quedan: confirmación de alcance (FRESCO-76), cifras reales o decisión de negocio (FRESCO-75), repro en vivo con perfil real (FRESCO-74 parte 1), backend de favoritos (FRESCO-77, ahora desbloquea el contenido real de FRESCO-71). Definir lista real de tipos de notificación queda anotado como candidato a ticket de producto aparte (no abierto todavía). 6 tickets en "Control de calidad" esperando confirmación del user para "Finalizada".
