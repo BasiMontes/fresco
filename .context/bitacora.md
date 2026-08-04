@@ -1887,6 +1887,16 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 
 ---
 
+## 2026-08-04 — Deploy a Vercel: link inicial + push cubre `fresco-pre` y `fresco-pro`
+
+**Qué**: pedido directo del user ("subelo a vercel para ambos entornos, pre y pro"). Repo no estaba linkeado localmente (`.vercel/` no existía) — `vercel link --repo --scope basi-montes-projects` confirmó el proyecto real `fresco` (memoria previa: ignorar decoys `frescoapp`/`fresco-app`). Commit `ac64548` (rediseño de perfil) pusheado a `main`; el push disparó solo un deploy de Producción vía integración GitHub de Vercel. Descubrimiento real: **`fresco-pre.vercel.app` y `fresco-pro.vercel.app` son ambos alias del mismo deployment de Producción** en este setup `solo-main` (`vercel inspect` lo confirma, misma `id` de deployment bajo ambos dominios) — no son dos deploys separados, un solo push ya cubre los dos nombres de entorno que maneja el user. Verificado `status: ● Ready` vía `vercel inspect --wait`.
+
+**Por qué**: pedido directo del user.
+
+**Siguiente**: nada pendiente de este deploy en sí. Sigue abierto, sin relación con Vercel: deployar `delete-account` a Supabase (bloqueado por el mismo `Unauthorized` de MCP, ver entrada anterior) y el smoke test real de `/profile` que el user va a hacer directo en `fresco-pro.vercel.app`.
+
+---
+
 ## 2026-08-04 — Auditoría de performance: hallazgos (solo investigación, sin cambios)
 
 **Qué**: pedido directo del user ("la noto muy lenta"). Agente en background, solo lectura — build output, los 8 `page.tsx` de `app/(app)`+`app/*`, `lib/api/*.ts`, `proxy.ts` (middleware), las 2 Edge Functions de generación, migraciones SQL relevantes. Corrección importante sobre una asunción propia del brief: **Gemini ya no se usa** — `generate-meal-plan`/`generate-shopping-list` son 100% deterministas desde ADR-0005 ("explicit decision to stop all Gemini spend"), generación de menú observada en ~2-3s con estado de carga real en el botón. No es la causa de la lentitud percibida.
