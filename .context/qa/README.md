@@ -43,3 +43,4 @@ If the scope ever outgrows a single file, split by area (`login.feature`, `calen
 - Per-story AC (Jira-synced, one story at a time) → `.context/PBI/epics/EPIC-<KEY>-*/stories/STORY-<KEY>-*/comments.md`.
 - Session narrative / why decisions were made → `.context/bitacora.md`.
 - `/testability-guide` generates the in-app `/qa` page (credentials + testability guide for a human QA) — a different artifact, not a replacement for this scenario log.
+- `.context/qa/bitacora-tests.md` — the AgileTest-import-ready compiled view of every scenario here plus its Playwright automation status, derived from this file + `tests/steps/*.ts`; append-only like this one, re-synced from `regression.feature` if they ever drift.

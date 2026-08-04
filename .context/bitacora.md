@@ -1764,3 +1764,85 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user tras verificar la historia en vivo.
 
 **Siguiente**: EPIC-FRESCO-64 (Biblioteca de Recetas) con sus 5 historias (65/66/67/68/69) todas `Finalizada`: buscador, tabs de tipo de comida, filtros de cocina/dieta/alérgeno, crear receta propia, y detalle de receta. FRESCO-31 (fotos) sigue abierta en background, 368/1000.
+
+---
+
+## 2026-08-04 — FRESCO-31: cuarto batch (16/30, 384/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 16/30 hits, tasa similar al batch anterior (15/30) — fallos concentrados en los mismos nombres recurrentes (muesli, dorada al horno, tostada con salmón/jamón, ensalada de quinoa, seitan/tofu salteado), agotamiento de fotos "buenas" ya conocido. **Aplicación distinta esta vez**: Supabase MCP devolvió `Unauthorized` (`SUPABASE_ACCESS_TOKEN` faltante/inválido), primera vez que pasa en este backfill. Aplicado en su lugar vía `supabase db query --linked -f batch4.sql` (CLI 2.109.1, Management API, no necesitó el token de acceso MCP). Verificado con el mismo CLI: `384/1000` con foto, cero duplicados (`group by foto_url having count(*) > 1` vacío).
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 384/1000 con foto, 616 restantes. `SUPABASE_ACCESS_TOKEN` a revisar en `.env`/`.env.example` si se quiere volver a usar Supabase MCP en vez de `supabase db query --linked` como fallback — no bloqueante, el CLI cubre el mismo caso.
+
+---
+
+## 2026-08-04 — SUPABASE_ACCESS_TOKEN reseteado, MCP sigue Unauthorized (env cacheado)
+
+**Qué**: user reseteó `SUPABASE_ACCESS_TOKEN` (admin-scope, dashboard → Account Tokens) y lo agregó a `.env` línea 91. Reintentado `mcp__supabase__list_projects` — sigue `Unauthorized`. Confirma Critical Rule #9: env de MCP se cachea al spawn de la sesión, no refresca mid-session — hace falta reiniciar sesión del agente para que el MCP levante el token nuevo. Token no se repitió en ningún mensaje ni se guardó en memoria — vive solo en `.env`.
+
+**Por qué**: pedido directo del user, arreglando el gap de Unauthorized del batch anterior.
+
+**Siguiente**: reiniciar sesión de Claude Code para que Supabase MCP levante `SUPABASE_ACCESS_TOKEN` nuevo. Mientras tanto `supabase db query --linked` sigue de fallback funcional (no depende de este token).
+
+---
+
+## 2026-08-04 — FRESCO-31: quinto batch (11/30, 395/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 11/30 hits, tasa más baja de la serie — fallos concentrados en el mismo puñado de nombres recurrentes ya vistos en batches anteriores (tostada con salmón ahumado, dorada al horno, calamares a la plancha, pasta con setas, porridge/bowl de avena, batido verde), agotamiento de fotos "buenas" para esos platos específicos. Aplicado con `supabase db query --linked -f batch5.sql` (MCP sigue Unauthorized, ver entrada anterior). Verificado con el mismo CLI: `395/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 395/1000 con foto, 605 restantes.
+
+---
+
+## 2026-08-04 — FRESCO-31: sexto batch (13/30, 408/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 13/30 hits, fallos concentrados en el mismo puñado recurrente (dorada al horno, tostada con salmón ahumado, huevos poché/revueltos, batido verde, bowl de avena, tempeh/tofu salteado). Aplicado con `supabase db query --linked -f batch6.sql` (MCP Supabase sigue Unauthorized, sesión pendiente de reinicio). Verificado con el mismo CLI: `408/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 408/1000 con foto, 592 restantes.
+
+---
+
+## 2026-08-04 — direnv instalado: fix definitivo para Supabase MCP Unauthorized
+
+**Qué**: causa raíz del `Unauthorized` recurrente: `.mcp.json` resuelve `${SUPABASE_ACCESS_TOKEN}` desde env real del shell al lanzar el MCP, no lee `.env` directo — y el shell del user no tenía la var exportada (`env | grep` vacío), reiniciar solo la sesión de Claude no alcanzaba. Instalado `direnv` (brew), agregado `eval "$(direnv hook zsh)"` a `~/.zshrc`, user corrió `direnv allow` en el repo (`.envrc` ya existía, preparado para esto). Alternativa descartada: wrapper `bun run claude` (ya existe en `package.json`, hace `source .env` antes de lanzar) — depende de acordarse de usarlo siempre, direnv es automático por `cd`.
+
+**Por qué**: pedido directo del user tras el segundo intento fallido de reinicio de sesión.
+
+**Siguiente**: falta confirmar en próxima sesión de Claude Code que `mcp__supabase__list_projects` ya no da `Unauthorized`. Mientras tanto `supabase db query --linked` sigue de fallback funcional para el backfill de fotos.
+
+---
+
+## 2026-08-04 — FRESCO-31: séptimo batch (12/30, 420/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 12/30 hits, fallos concentrados en el mismo puñado recurrente (berenjenas rellenas/asadas, champiñones salteados con tamari, alubias con verduras, tortitas, ensalada de garbanzos, mejillones al vapor). Aplicado con `supabase db query --linked -f batch7.sql` (MCP aún sin confirmar tras fix de direnv, ver entrada anterior). Verificado con el mismo CLI: `420/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 420/1000 con foto, 580 restantes.
+
+---
+
+## 2026-08-04 — FRESCO-31: octavo batch (7/30, 427/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. Solo 7/30 hits — tasa más baja de toda la serie hasta ahora, caída marcada respecto al batch anterior (12/30). Fallos concentrados en el mismo puñado recurrente de siempre (solomillo de cerdo, tortilla francesa, salteado de seitan/tofu, garbanzos con espinacas, coles de Bruselas asadas, conejo al ajillo, pollo al horno) — consistente con la hipótesis de agotamiento acumulado: cada nombre de plato repetido reclama sus mejores 2 resultados de Unsplash y no vuelve a matchear en batches posteriores. Aplicado con `supabase db query --linked -f batch8.sql`. Verificado con el mismo CLI: `427/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 427/1000 con foto, 573 restantes. Tasa de hit cayendo fuerte batch a batch — a evaluar si vale ampliar `topK` en el script o aceptar que los últimos ~570 van a necesitar más batches para el mismo rendimiento.
+
+---
+
+## 2026-08-04 — `.context/qa/bitacora-tests.md` creado: compilación de tests lista para AgileTest
+
+**Qué**: pedido directo del user — compilar todos los escenarios Gherkin (`.context/qa/regression.feature`, 71 escenarios) + su estado real de automatización Playwright (12 ficheros `tests/steps/*.steps.ts`) en un único fichero nuevo, `.context/qa/bitacora-tests.md` (1193 líneas), pensado para pegar/importar en Jira vía la app AgileTest. Tarea delegada a un agente general-purpose (cruzaba el umbral de 4+ ficheros de lectura obligatoria a delegar: `regression.feature`, `README.md`, `playwright.config.ts`, `tests/fixtures.ts`, `tests/test-helpers.ts` + 12 step files). `regression.feature` sigue siendo la fuente de verdad — este fichero nuevo es una vista derivada, cada escenario en bloque ` ```gherkin ` verbatim (copiable tal cual a un Test issue de AgileTest) más una línea "Automatización" (step file real + qué mockea/toca de verdad, o "Manual, no automatizado aún"). Diseñado explícitamente como bitácora viva igual que `.context/bitacora.md` — sección "Cómo actualizar este fichero" al final con las reglas de append para sesiones futuras (nunca reescribir, siempre `regression.feature` primero, nuevas áreas van al final no alfabético).
+
+**Verificado**: conteo real vía grep — 71 escenarios (no ~22 como estimaba el brief inicial, era una cifra vieja de cuando el fichero tenía menos épicas), 21 `@automatizado`, 3 `@pendiente`, 0 `@no-implementado` (todo lo que estaba sin construir ya se implementó), 30 `@edge-case`, 68 `@verificado-manual-*`, 11 áreas. Confirmado con `git diff --stat` que `regression.feature`/`playwright.config.ts`/`tests/` quedaron intocados — el agente era de solo lectura sobre esos. Único cambio colateral: una línea añadida a `.context/qa/README.md` §Related apuntando al fichero nuevo.
+
+**Por qué**: pedido directo del user, para tener trazabilidad de QA importable a Jira/AgileTest y que crezca junto con cada historia nueva.
+
+**Siguiente**: fichero listo para pegar/importar en AgileTest. Queda pendiente el flujo real de importación en Jira (no probado en vivo, es fuera del alcance de esta sesión — la AI no tiene acceso a AgileTest). A partir de ahora, cada historia con UI nueva debería actualizar `regression.feature` + `bitacora-tests.md` en el mismo sprint, no como tarea aparte.
