@@ -41,58 +41,49 @@ export default async function MenuPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let nombre: string | null = null;
-  try {
-    nombre = await getUserNombre(supabase, user?.id);
-  }
-  catch (error) {
-    // Same conservative fallback as every other server-side profile read on
-    // this page: a real read failure falls back to `null` (generic
-    // "¡Hola!" greeting) rather than crashing the page.
-    console.error('[/menu] getUserNombre failed, defaulting to null', error);
-  }
-
-  let recetasDisponibles: number | null = null;
-  try {
-    recetasDisponibles = await getAvailableRecipesCount(supabase, user?.id);
-  }
-  catch (error) {
-    // Same conservative fallback as every other server-side read on this
-    // page: a real read failure hides the card rather than crashing the
-    // page or showing a misleading "0" (which would read as an empty
-    // catalog, not a transient error).
-    console.error('[/menu] getAvailableRecipesCount failed, hiding the card', error);
-  }
-
-  let ultimasRecetas: Recipe[] = [];
-  try {
-    ultimasRecetas = await getLatestAvailableRecipes(supabase, user?.id);
-  }
-  catch (error) {
-    // Same fail-soft pattern as the other value-indicator reads on this
-    // page: hides the section instead of crashing the page.
-    console.error('[/menu] getLatestAvailableRecipes failed, hiding the section', error);
-  }
-
-  let plan: MenuSemanalPersistido | null;
-  try {
-    plan = await getMealPlanForWeek(supabase);
-  }
-  catch (error) {
-    // `getMealPlanForWeek` fails fast (throws) on a real read error,
-    // including "no authenticated session" — a real gap remains only for a
-    // visit with literally zero session at all (no page currently forces one
-    // outside `/onboarding`'s mount effect), not for guest vs. registered
-    // (ADR-0003, FRESCO-17 resolved that). A dedicated read-error UI
-    // (network/auth, distinct from "no plan yet") is real UI/UX-design scope
-    // this story named but no AC scenario requires yet — tracked as a gap,
-    // not silently dropped: for now this falls back to the same empty state
-    // rather than crashing the page. Logged so a real DB/network outage is
-    // still visible in server logs instead of looking identical to a benign
-    // "haven't generated a menu yet" state.
-    console.error('[/menu] getMealPlanForWeek failed, falling back to empty state', error);
-    plan = null;
-  }
+  // The four reads below are mutually independent once `user.id` is
+  // resolved — run them concurrently rather than paying for 4 sequential
+  // round trips. Each keeps its own fallback via `.catch()` (same
+  // conservative-default judgment call as before) so one call's rejection
+  // can't take the others down with it.
+  const [nombre, recetasDisponibles, ultimasRecetas, plan] = await Promise.all([
+    getUserNombre(supabase, user?.id).catch((error) => {
+      // Same conservative fallback as every other server-side profile read on
+      // this page: a real read failure falls back to `null` (generic
+      // "¡Hola!" greeting) rather than crashing the page.
+      console.error('[/menu] getUserNombre failed, defaulting to null', error);
+      return null;
+    }),
+    getAvailableRecipesCount(supabase, user?.id).catch((error) => {
+      // Same conservative fallback as every other server-side read on this
+      // page: a real read failure hides the card rather than crashing the
+      // page or showing a misleading "0" (which would read as an empty
+      // catalog, not a transient error).
+      console.error('[/menu] getAvailableRecipesCount failed, hiding the card', error);
+      return null;
+    }),
+    getLatestAvailableRecipes(supabase, user?.id).catch((error) => {
+      // Same fail-soft pattern as the other value-indicator reads on this
+      // page: hides the section instead of crashing the page.
+      console.error('[/menu] getLatestAvailableRecipes failed, hiding the section', error);
+      return [] as Recipe[];
+    }),
+    getMealPlanForWeek(supabase, undefined, user?.id).catch((error) => {
+      // `getMealPlanForWeek` fails fast (throws) on a real read error,
+      // including "no authenticated session" — a real gap remains only for a
+      // visit with literally zero session at all (no page currently forces one
+      // outside `/onboarding`'s mount effect), not for guest vs. registered
+      // (ADR-0003, FRESCO-17 resolved that). A dedicated read-error UI
+      // (network/auth, distinct from "no plan yet") is real UI/UX-design scope
+      // this story named but no AC scenario requires yet — tracked as a gap,
+      // not silently dropped: for now this falls back to the same empty state
+      // rather than crashing the page. Logged so a real DB/network outage is
+      // still visible in server logs instead of looking identical to a benign
+      // "haven't generated a menu yet" state.
+      console.error('[/menu] getMealPlanForWeek failed, falling back to empty state', error);
+      return null as MenuSemanalPersistido | null;
+    }),
+  ]);
 
   if (!plan) {
     return (

@@ -1897,6 +1897,26 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 
 ---
 
+## 2026-08-04 — Fixes de performance aplicados (3 de 4 hallazgos)
+
+**Qué**: pedido directo del user tras la auditoría de antes. Aclaración honesta al user primero: la auditoría fue lectura de código + build output (agente en background), no un trace en vivo de la lentitud real — los hallazgos "confirmados" son grep literal (ej. cero `Promise.all` en todo el repo), no medición de tiempos reales, porque no pude loguearme (mismo bloqueo de credenciales). Delegado a un agente (multi-archivo, cruzaba el umbral de delegación) con alcance deliberadamente acotado a 3 de los 4 ítems de la punch list:
+
+1. **`Promise.all` en los 3 puntos identificados** (`/menu`, `/profile`, `/recipes`) — cada `await` independiente ahora corre en paralelo, con `.catch()` individual por promesa preservando el mismo fallback conservador que ya existía por llamada (no `Promise.allSettled`, el patrón `.catch()` reproduce igual el "cada lectura tiene su propio valor por defecto" sin perder el short-circuit limpio de `Promise.all`).
+2. **`getMealPlanForWeek` acepta `userId` opcional** ahora, mismo patrón que sus hermanas `getAvailableRecipesCount`/`getUserNombre` — corta el tercer round-trip de `auth.getUser()` que hacía por su cuenta dentro del `Promise.all` de `/menu`.
+3. **Índices GIN** en `recipes.alergenos` e `recipes.ingredientes_principales` (migración `20260804000000_...`) — aceleran el operador `?|` que usa `get_filtered_recipes()`. Aplicados vía `supabase db query --linked` (MCP sigue Unauthorized) y verificados con `pg_indexes` en la DB real. `recipes.dieta` deliberadamente sin indexar — sus filtros usan `->>'key'::boolean`, un GIN plano sobre la columna no lo acelera, haría falta un índice de expresión por cada una de las 7 keys, no vale la pena a ~1000 filas.
+
+**Deliberadamente NO aplicado** (2 ítems de la punch list original, explicados al user antes de delegar, no solo omitidos):
+- **Caching del catálogo** — el resultado depende del perfil vivo de cada user (`dieta_*`/`alergenos`, editable en `/profile` justo en esta misma sesión) y de `foto_url` (backfill en curso de FRESCO-31); acertar la invalidación sin servir datos obsoletos (ej. receta con alérgeno tras actualizar preferencias) es un riesgo de correctness real que no vale la pena a este volumen/tráfico todavía.
+- **Fast-path de `getRecipeDetail`** — tocaría `get_filtered_recipes()`, función `SECURITY DEFINER` recién endurecida en esta misma sesión de historial contra una vulnerabilidad real de suplantación de `p_user_id`. Cualquier cambio a esa función necesita su propia pasada dedicada, no un tweak de performance empaquetado junto a otra cosa.
+
+**Verificado**: `types:check` y `lint:check` limpios, confirmado independientemente por mí además del reporte del agente. Revisé el diff completo de `/menu/page.tsx` y `meal-plan.ts` a mano — comportamiento de fallback idéntico al original, solo paralelizado.
+
+**Por qué**: pedido directo del user.
+
+**Siguiente**: sin commitear todavía (pendiente de confirmación de push). Caching y fast-path de `getRecipeDetail` quedan como deuda técnica documentada, no como TODO silencioso — retomar solo si el catálogo crece mucho o el tráfico real lo justifica.
+
+---
+
 ## 2026-08-04 — Auditoría de performance: hallazgos (solo investigación, sin cambios)
 
 **Qué**: pedido directo del user ("la noto muy lenta"). Agente en background, solo lectura — build output, los 8 `page.tsx` de `app/(app)`+`app/*`, `lib/api/*.ts`, `proxy.ts` (middleware), las 2 Edge Functions de generación, migraciones SQL relevantes. Corrección importante sobre una asunción propia del brief: **Gemini ya no se usa** — `generate-meal-plan`/`generate-shopping-list` son 100% deterministas desde ADR-0005 ("explicit decision to stop all Gemini spend"), generación de menú observada en ~2-3s con estado de carga real en el botón. No es la causa de la lentitud percibida.

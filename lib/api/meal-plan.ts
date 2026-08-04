@@ -133,21 +133,32 @@ function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
  * no plan exists yet for `semanaIso`: a household that hasn't generated a
  * menu for the requested week is a normal, expected state (first-ever
  * visit, or a future week not yet requested), not a failure.
+ *
+ * `userId` is the same optional escape hatch as `getUserNombre`/
+ * `getAvailableRecipesCount` — callers that already resolved
+ * `auth.getUser()` (e.g. `/menu`) can skip the redundant round trip.
  */
 export async function getMealPlanForWeek(
   client: SupabaseClient<Database>,
   semanaIso: string = getIsoWeek(),
+  userId?: string,
 ): Promise<MenuSemanalPersistido | null> {
-  const { data: { user }, error: userError } = await client.auth.getUser();
+  let resolvedUserId = userId;
 
-  if (userError || !user) {
-    throw new MealPlanError('No hay una sesión autenticada para leer el menú.');
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new MealPlanError('No hay una sesión autenticada para leer el menú.');
+    }
+
+    resolvedUserId = user.id;
   }
 
   const { data, error } = await client
     .from('meal_plans')
     .select('id, semana_iso, advertencias, explicacion_aprendizaje, meal_plan_recipes(id, dia, tipo_plato, estado, recipes(*))')
-    .eq('user_id', user.id)
+    .eq('user_id', resolvedUserId)
     .eq('semana_iso', semanaIso)
     .maybeSingle();
 

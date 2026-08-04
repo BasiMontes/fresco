@@ -18,27 +18,25 @@ import { createClient } from '@/lib/supabase/server';
  */
 export default async function RecipesPage() {
   const supabase = await createClient();
-  let recipes: Awaited<ReturnType<typeof getCatalogRecipes>>;
-  try {
-    recipes = await getCatalogRecipes(supabase);
-  }
-  catch (error) {
-    // Same judgment call as every other read on this page family: a real
-    // read failure falls back to the empty state rather than crashing the
-    // page — logged so a real outage stays visible in server logs instead
-    // of looking like a profile with zero eligible recipes.
-    console.error('[/recipes] getCatalogRecipes failed, falling back to empty state', error);
-    recipes = [];
-  }
 
-  let recetasPropias: Awaited<ReturnType<typeof getRecetasPropias>>;
-  try {
-    recetasPropias = await getRecetasPropias(supabase);
-  }
-  catch (error) {
-    console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
-    recetasPropias = [];
-  }
+  // The two reads below are mutually independent — run them concurrently
+  // rather than paying for 2 sequential round trips. Each keeps its own
+  // fallback via `.catch()` (same judgment calls as before) so one call's
+  // rejection can't take the other down with it.
+  const [recipes, recetasPropias] = await Promise.all([
+    getCatalogRecipes(supabase).catch((error) => {
+      // Same judgment call as every other read on this page family: a real
+      // read failure falls back to the empty state rather than crashing the
+      // page — logged so a real outage stays visible in server logs instead
+      // of looking like a profile with zero eligible recipes.
+      console.error('[/recipes] getCatalogRecipes failed, falling back to empty state', error);
+      return [] as Awaited<ReturnType<typeof getCatalogRecipes>>;
+    }),
+    getRecetasPropias(supabase).catch((error) => {
+      console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
+      return [] as Awaited<ReturnType<typeof getRecetasPropias>>;
+    }),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl">

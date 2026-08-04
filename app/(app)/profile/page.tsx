@@ -37,52 +37,47 @@ export default async function ProfilePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let plan: Awaited<ReturnType<typeof getUserPlan>> = 'free';
-  try {
-    plan = await getUserPlan(supabase);
-  }
-  catch (error) {
-    // Same judgment call as every other page reading server-side profile
-    // data: a real read failure defaults to the more conservative 'free'
-    // (shows the upsell) rather than crashing the page.
-    console.error('[/profile] getUserPlan failed, defaulting to free', error);
-  }
-
-  let nombre: string | null = null;
-  try {
-    nombre = await getUserNombre(supabase, user?.id);
-  }
-  catch (error) {
-    // Same conservative fallback as `plan` above: a real read failure falls
-    // back to `null` (the form renders empty) rather than crashing the page.
-    console.error('[/profile] getUserNombre failed, defaulting to null', error);
-  }
-
-  // Same conservative-default judgment call as `plan`/`nombre` above: a real
-  // read failure falls back to a safe empty state (`PreferencesForm` still
-  // renders, just unchecked) rather than crashing the page or silently
-  // hiding the whole section.
-  let dietaryPreferences: Awaited<ReturnType<typeof getUserDietaryPreferences>> = {
-    num_personas: 2,
-    adultos: 2,
-    ninos: 0,
-    dieta_vegetariano: false,
-    dieta_vegano: false,
-    dieta_sin_gluten: false,
-    dieta_sin_lactosa: false,
-    dieta_sin_huevo: false,
-    dieta_keto: false,
-    dieta_halal: false,
-    alergenos: [],
-    ingredientes_odiados: [],
-    cocinas_favoritas: [],
-  };
-  try {
-    dietaryPreferences = await getUserDietaryPreferences(supabase, user?.id);
-  }
-  catch (error) {
-    console.error('[/profile] getUserDietaryPreferences failed, defaulting to empty preferences', error);
-  }
+  // The three reads below are mutually independent — run them concurrently
+  // rather than paying for 3 sequential round trips. Each keeps its own
+  // fallback via `.catch()` (same conservative-default judgment calls as
+  // before) so one call's rejection can't take the others down with it.
+  const [plan, nombre, dietaryPreferences] = await Promise.all([
+    getUserPlan(supabase).catch((error) => {
+      // Same judgment call as every other page reading server-side profile
+      // data: a real read failure defaults to the more conservative 'free'
+      // (shows the upsell) rather than crashing the page.
+      console.error('[/profile] getUserPlan failed, defaulting to free', error);
+      return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+    }),
+    getUserNombre(supabase, user?.id).catch((error) => {
+      // Same conservative fallback as `plan` above: a real read failure falls
+      // back to `null` (the form renders empty) rather than crashing the page.
+      console.error('[/profile] getUserNombre failed, defaulting to null', error);
+      return null;
+    }),
+    getUserDietaryPreferences(supabase, user?.id).catch((error) => {
+      // Same conservative-default judgment call as `plan`/`nombre` above: a
+      // real read failure falls back to a safe empty state (`PreferencesForm`
+      // still renders, just unchecked) rather than crashing the page or
+      // silently hiding the whole section.
+      console.error('[/profile] getUserDietaryPreferences failed, defaulting to empty preferences', error);
+      return {
+        num_personas: 2,
+        adultos: 2,
+        ninos: 0,
+        dieta_vegetariano: false,
+        dieta_vegano: false,
+        dieta_sin_gluten: false,
+        dieta_sin_lactosa: false,
+        dieta_sin_huevo: false,
+        dieta_keto: false,
+        dieta_halal: false,
+        alergenos: [],
+        ingredientes_odiados: [],
+        cocinas_favoritas: [],
+      } as Awaited<ReturnType<typeof getUserDietaryPreferences>>;
+    }),
+  ]);
 
   const initial = nombre?.trim().charAt(0).toUpperCase();
 
