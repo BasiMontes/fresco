@@ -10,7 +10,7 @@ import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
@@ -111,12 +111,12 @@ export default async function MenuPage() {
           <p className="mt-1 text-body-md text-tertiary">Tu menú de hoy, listo.</p>
         </div>
         <div className="flex gap-2">
-          <Button type="button" variant="icon" size="sm" aria-label="Favoritos" data-testid="favoritos_button">
+          <Link href="/favorites" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Favoritos" data-testid="favoritos_button">
             <Heart className="size-4" />
-          </Button>
-          <Button type="button" variant="icon" size="sm" aria-label="Notificaciones" data-testid="notificaciones_button">
+          </Link>
+          <Link href="/notifications" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Notificaciones" data-testid="notificaciones_button">
             <Bell className="size-4" />
-          </Button>
+          </Link>
         </div>
       </div>
 
