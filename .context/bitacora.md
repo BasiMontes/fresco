@@ -2117,3 +2117,23 @@ Los 3 documentados en Jira con el motivo del cierre, `Listo → WIP → Control 
 **Por qué**: pedido directo del user — cerrar los últimos 3 bloqueos del lote de las 10 tarjetas.
 
 **Siguiente**: las 10 tarjetas originales (FRESCO-70 a 79) están todas resueltas — 6 con cambio de código real (70/71/72/73/74-parte2/79) + 4 confirmadas/cerradas sin tocar código (74-parte1/75/76/78). Las 9 tocadas están en "Control de calidad" esperando confirmación explícita del user para pasar a "Finalizada" (mismo patrón que épicas previas — no cerrar solo). Queda abierto: **FRESCO-77** (backend de favoritos — tabla, RLS, API/RPC de toggle, wiring en 3 call sites de `RecipeCard`), el único de los 10 que sigue sin arrancar; desbloquea además el contenido real de FRESCO-71 (hoy siempre vacío).
+
+---
+
+## 2026-08-04 — FRESCO-77: backend de favoritos completo
+
+**Qué**: capa de favoritos completa, antes inexistente en cualquier lugar del código (confirmado en la investigación original de FRESCO-77).
+
+- **DB**: tabla `favorites` (`user_id`, `recipe_id`, `unique(user_id, recipe_id)`), RLS select/insert/delete propio — mismo patrón que `recetas_propias` (20260803). Migraciones `20260804020000_create_favorites_table.sql` + `20260804030000_grant_authenticated_favorites.sql`, aplicadas al proyecto real vía Supabase MCP (`apply_migration`). Advisor de seguridad revisado tras aplicar: sin hallazgos nuevos reales, el único warning ("permite anon") es el mismo patrón que ya tienen `meal_plans`/`shopping_lists`/`recetas_propias`/`user_profiles` por el modo invitado. `bun run db:types` corrido para regenerar `lib/supabase/types.ts`.
+- **API**: `lib/api/favorites.ts` — `getFavoriteRecipeIds`, `getFavoriteRecipes` (embed vía la FK a `recipes`, no un segundo round-trip), `addFavorite`, `removeFavorite`. Mismo estilo que el resto de `lib/api/*.ts` (resolución de sesión inline con `userId?` opcional, clase `FavoritesError` propia, sin RPC porque es un insert/delete simple de una tabla, no una mutación jsonb/atómica).
+- **UI**: `components/recipe/favorite-recipe-card.tsx` — wrapper cliente nuevo, toggle optimista + revert en fallo, mismo patrón que `ShoppingListView`'s `comprado`. Cableado en los 3 call sites reales (`/menu` recetas de hoy, "Últimas recetas añadidas", biblioteca `/recipes`) + `/favorites` ahora lee datos reales en vez de estar siempre vacía.
+
+Lint + types + build verdes (1 error real de tipos en el camino: pasar una función async directo a `onToggleFavorite` — TS exige envolver en closure síncrono `() => { void handleToggle(); }`, mismo patrón que ya usa el resto del código con handlers async).
+
+**Verificado en vivo con Playwright, de punta a punta, con requests reales**: favoritear desde `/menu` → POST 201 confirmado por network log → aparece real en `/favorites` con foto/nombre/tag correctos → quitar desde ahí → DELETE 204 confirmado → recarga confirma que no vuelve (no era solo estado local). Repetido desde la biblioteca `/recipes` (card envuelta en `Link`) — confirmado que el click en el corazón no dispara la navegación (stopPropagation del `RecipeCard` original sigue funcionando a través del wrapper). Tabla verificada limpia (0 filas) después de las pruebas — nada de prueba quedó en la DB real.
+
+Commits `b4e4b48` (DB) + `e0fdb9a` (API + UI), push directo a `main`. Jira `Listo → WIP → Control de calidad`, comentario de cierre con evidencia.
+
+**Por qué**: pedido directo del user, último de los 10 tickets del lote — cierra el ciclo completo iniciado con el batch de fotos de FRESCO-31 al principio de la sesión.
+
+**Siguiente**: las 10 tarjetas originales (FRESCO-70 a 79) completas de punta a punta — 7 con cambio de código real (70/71/72/73/74-parte2/77/79) + 3 confirmadas/cerradas sin tocar código (74-parte1/75/76/78). Las 10 en "Control de calidad" esperando confirmación explícita del user para pasar a "Finalizada" — mismo patrón que épicas previas, no cerrar solo. Nada dev-ready pendiente de esta sesión.
