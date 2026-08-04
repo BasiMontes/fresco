@@ -1974,3 +1974,17 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user tras reportar que la navegación seguía sintiéndose mal pese al trabajo de performance anterior.
 
 **Siguiente**: pendiente medir `/calendar` en producción tras el deploy para confirmar el mismo salto de 750-1900ms → ~30-50ms visto en las otras páginas. `loading.tsx`/`Suspense` sigue como hallazgo abierto, no como fix aplicado.
+
+---
+
+## 2026-08-04 — Causa raíz real de "navegación horrible": mismatch de región Vercel↔Supabase
+
+**Qué**: tras deployar el fix de `/calendar`, medí en producción real con clicks cronometrados (`page.click()` + `waitForLoadState('networkidle')`, no solo lectura de código) para confirmar la mejora — y descubrí que mi diagnóstico anterior estaba incompleto. Los números "rápidos" (30-50ms) de sesiones de medición previas eran hits del Router Cache del cliente de Next.js (páginas ya visitadas en la misma sesión de navegador), no renders reales del servidor. Medido en frío de verdad (click inmediato tras `goto()`, sin dar tiempo al prefetch en background de Next.js): **`/calendar` Y `/profile` ambos en 1400-2000ms** — no es un problema de `/calendar` en particular, es sistémico, toda la app.
+
+**Causa raíz confirmada**: `vercel inspect` mostró las funciones corriendo en `[iad1]` (Washington D.C.). Supabase está en `eu-west-1` (Irlanda) — ya documentado en bitácoras de sesiones previas. Cada render server-side paga latencia transatlántica completa: el `auth.getUser()` de `proxy.ts` (corre en casi cada request) más las llamadas propias de cada página a Supabase, cada una cruzando el Atlántico ida y vuelta. Esto explica por qué mis fixes de hoy (`Promise.all`, GIN, PK fast-path) ayudaron de verdad —menos round-trips— pero no resolvían el síntoma: cada round-trip que queda sigue cruzando el océano.
+
+**Fix aplicado**: `vercel.json` nuevo con `{"regions": ["dub1"]}` — Dublín, la región de Vercel más cercana posible a `eu-west-1` de Supabase (prácticamente el mismo lugar geográfico). Verificado el código de región válido y la sintaxis exacta contra la doc oficial de Vercel antes de escribir (Tavily MCP falló por API key inválida — usé el fallback `WebSearch` per esta misma regla del repo, no adiviné el código). until
+
+**Por qué**: pedido directo del user, siguiendo la pista de que la navegación seguía mal pese al trabajo previo — el hallazgo real solo salió de medir en vivo con rigor (clicks en frío reales), no de leer código.
+
+**Siguiente**: deployar y remedir en producción con `dub1` para confirmar la caída real de latencia (objetivo: de ~1500ms a algo cercano a los ~40ms que ya se ven cuando el Router Cache está caliente). `functionFailoverRegions`/multi-región es Pro/Enterprise-only en Vercel, no aplica aquí (single-region alcanza en cualquier plan).
