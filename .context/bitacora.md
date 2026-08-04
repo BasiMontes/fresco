@@ -1926,3 +1926,13 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user.
 
 **Siguiente**: punch list priorizada, sin aplicar ningún fix todavía (tarea era solo investigación) — orden sugerido: (1) `Promise.all` en los `await` independientes de cada página, (2) pasar `userId` ya resuelto a `getMealPlanForWeek` para cortar el tercer round-trip de auth, (3) capa de caching sobre el catálogo de recetas, (4) índices GIN en `recipes.alergenos`/`recipes.dieta` + lookup directo por PK en `getRecipeDetail`. Bundle size no verificable con evidencia sólida (Next.js 16 + Turbopack ya no imprime la tabla clásica de First Load JS) — sin `next/bundle-analyzer` instalado, ítem marcado como pendiente de tooling, no como hallazgo confirmado.
+
+---
+
+## 2026-08-04 — Ayuda section: 3 modales reales reemplazan "Próximamente"
+
+**Qué**: `/profile`, tarjeta Ayuda — las 3 filas inertes (`Configuración`/`FAQ`/`Privacidad`) reemplazadas por `AyudaSection` (`components/profile/ayuda-section.tsx`, nuevo), un client component que abre modales `Dialog` (mismo patrón que `LegalModal`). `Privacidad` reutiliza `LegalModal` sin modificar (`section="privacidad"`) — mismo componente ya usado en login/signup. `Configuración` muestra email real, plan actual (`PLAN_LABELS[plan]`, ya resuelto en la página) y fecha de alta (`user.created_at`, formateada con `Intl.DateTimeFormat('es-ES', ...)`, sin nueva query) — solo lectura, sin settings nuevos. `FAQ` con 5 preguntas verificadas contra código real: generación determinista (ADR-0005, no Gemini para elegir recetas), edición de preferencias (misma página), diferencia Free/Pro (copy textual reusado del `Card` de upsell existente, sin contradecirlo), borrado de datos (`DangerZone` real), filtrado de alérgenos (`get_filtered_recipes()`, operador `?|` estructural en SQL).
+
+**Por qué**: pedido directo del user — reemplazar placeholders "Próximamente" por contenido real, sin inventar features ni duplicar copy legal ya existente.
+
+**Siguiente**: `types:check`/`lint:check` limpios. Smoke test en vivo de los 3 modales confirmado por mí después del build del agente (Playwright, `localhost:3000`, sesión real): Configuración muestra email/plan/fecha reales, FAQ renderiza las 5 preguntas, Privacidad abre el `LegalModal` real — cero errores de consola en ninguno de los tres. Tarea #4 del roadmap local cerrada de punta a punta.

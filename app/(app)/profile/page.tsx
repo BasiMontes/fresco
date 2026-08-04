@@ -1,4 +1,5 @@
-import { ChevronRight, HelpCircle, Settings, Shield, User as UserIcon } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
+import { AyudaSection } from '@/components/profile/ayuda-section';
 import { DangerZone } from '@/components/profile/danger-zone';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
@@ -10,28 +11,24 @@ import { createClient } from '@/lib/supabase/server';
 
 const PLAN_LABELS = { free: 'Plan Free', pro: 'Plan Pro', family: 'Plan Family' } as const;
 
-const AYUDA_ROWS = [
-  { icon: Settings, label: 'Configuración' },
-  { icon: HelpCircle, label: 'FAQ' },
-  { icon: Shield, label: 'Privacidad' },
-];
-
 /**
  * `/profile` — nav item 4. Real session (email) + real tier (`getUserPlan()`,
  * STORY-FRESCO-15) + real dietary preferences (`getUserDietaryPreferences()`,
  * FRESCO-70), replacing the original name-tag-only page with a real profile:
- * greeting header, editable preferences, an Ayuda section (inert — see
- * below), and a footer "zona de peligro" with 3 real account actions
- * (`DangerZone`: logout, JSON export, permanent deletion).
+ * greeting header, editable preferences, an Ayuda section (see below), and a
+ * footer "zona de peligro" with 3 real account actions (`DangerZone`:
+ * logout, JSON export, permanent deletion).
  *
  * The upgrade CTA stays a disabled "Próximamente" rather than a live link:
  * payment/self-serve upgrade infra is explicitly deferred past this MVP
  * (`.context/PRD/mvp-scope.md` — Stripe/payment-link handling belongs to
  * the founder's manual concierge-validation process, not to any epic here).
  * A working-looking button with nowhere real to go would be worse than an
- * honest "not yet" — same judgment call now applied to the Ayuda section's 3
- * rows (`Configuración`/`FAQ`/`Privacidad`): none of those sub-pages exist
- * yet, so they render as inert rows rather than dead links.
+ * honest "not yet" — that same judgment call is why the Ayuda section's 3
+ * rows (`Configuración`/`FAQ`/`Privacidad`) are now real modals
+ * (`AyudaSection`) instead of the inert "Próximamente" rows they used to be:
+ * `Privacidad` reuses the existing `LegalModal` as-is, and `Configuración`/
+ * `FAQ` follow that same modal pattern rather than becoming full page routes.
  */
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -81,6 +78,14 @@ export default async function ProfilePage() {
 
   const initial = nombre?.trim().charAt(0).toUpperCase();
 
+  // `user.created_at` comes back from `auth.getUser()` above — no extra
+  // query. Formatted with `Intl.DateTimeFormat` (no date-formatting utility
+  // exists yet in this repo; `lib/date/iso-week.ts` is ISO-week-string math,
+  // not a human-readable formatter) rather than hand-rolling a new one.
+  const memberSince = user?.created_at
+    ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(user.created_at))
+    : null;
+
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="text-h2">Perfil</h1>
@@ -124,24 +129,11 @@ export default async function ProfilePage() {
             <CardTitle>Ayuda</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col divide-y divide-border">
-              {AYUDA_ROWS.map(({ icon: Icon, label }) => (
-                <div
-                  key={label}
-                  aria-disabled="true"
-                  className="flex items-center justify-between gap-2 py-3 text-tertiary first:pt-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-2 text-body-md">
-                    <Icon className="size-4" aria-hidden="true" />
-                    {label}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Tag variant="neutral">Próximamente</Tag>
-                    <ChevronRight className="size-4" aria-hidden="true" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <AyudaSection
+              email={user?.email ?? 'Invitada'}
+              planLabel={PLAN_LABELS[plan]}
+              memberSince={memberSince}
+            />
           </CardContent>
         </Card>
       </div>

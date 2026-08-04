@@ -1,0 +1,152 @@
+'use client';
+
+import { ChevronRight, HelpCircle, Settings, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { LegalModal } from '@/components/legal/legal-modal';
+import { Dialog } from '@/components/ui/dialog';
+
+interface FaqItem {
+  question: string
+  answer: string
+}
+
+/**
+ * Grounded in this session's own reading of the relevant code — no invented
+ * features:
+ * - Menu generation: `.context/ADR/ADR-0005-deterministic-menu-slot-selection.md`
+ *   — a deterministic algorithm fills all 21 slots; Gemini is only called
+ *   (Pro-tier) to write the learning-explanation text, never to pick recipes.
+ * - Free vs. Pro: the exact sentence already shown in this page's own
+ *   Pro-upsell `Card` below, quoted verbatim so this never contradicts it.
+ * - Data deletion: the real, working `DangerZone` actions on this same page
+ *   (`/api/profile/export`, `DeleteAccountDialog`).
+ * - Allergen filtering: `get_filtered_recipes()`
+ *   (`supabase/migrations/20260725120100_create_fresco_core_tables.sql`) —
+ *   `not (coalesce(r.alergenos, '[]'::jsonb) ?| v_profile.alergenos)` excludes
+ *   matching recipes structurally, at the SQL layer, before any menu is built.
+ */
+const FAQ_ITEMS: FaqItem[] = [
+  {
+    question: '¿Cómo genera Fresco mi menú semanal?',
+    answer: 'Un algoritmo determinista rellena las 21 franjas de la semana combinando tu dieta, tus alergias y —si tienes Plan Pro— lo que ya has cocinado o descartado. No es una IA la que elige receta a receta: Gemini solo entra en juego en Plan Pro, para redactar la explicación de qué ha aprendido de ti.',
+  },
+  {
+    question: '¿Cómo cambio mis preferencias de dieta o alérgenos?',
+    answer: 'Edítalas cuando quieras en la tarjeta "Preferencias", justo arriba en esta misma página.',
+  },
+  {
+    question: '¿Qué diferencia hay entre Plan Free y Plan Pro?',
+    answer: 'En Free, cada menú se genera solo a partir de tu dieta y tus alergias. Con Pro, además, cada menú aprende de lo que cocinas y descartas la semana anterior — cuanto más lo uses, menos tienes que pensar.',
+  },
+  {
+    question: '¿Puedo borrar mis datos?',
+    answer: 'Sí. En la sección "Zona de peligro", al final de esta página, puedes descargar un backup en JSON de todos tus datos o borrar tu cuenta de forma definitiva.',
+  },
+  {
+    question: '¿Fresco filtra automáticamente mis alergias?',
+    answer: 'Sí, de forma estructural: las recetas que contienen alguno de tus alérgenos declarados se excluyen directamente en la base de datos antes de que se genere el menú — no depende de que una IA "recuerde" evitarlas.',
+  },
+];
+
+export interface AyudaSectionProps {
+  /** Real logged-in email, header's own `'Invitada'` fallback for consistency. */
+  email: string
+  /** Already-resolved plan label (`PLAN_LABELS[plan]`) — no refetch here. */
+  planLabel: string
+  /** `user.created_at`, pre-formatted as a readable Spanish date, or `null` if unavailable. */
+  memberSince: string | null
+}
+
+type AyudaModal = 'configuracion' | 'faq' | 'privacidad' | null;
+
+const ROWS = [
+  { key: 'configuracion' as const, icon: Settings, label: 'Configuración' },
+  { key: 'faq' as const, icon: HelpCircle, label: 'FAQ' },
+  { key: 'privacidad' as const, icon: Shield, label: 'Privacidad' },
+];
+
+/**
+ * `/profile` Ayuda section — replaces the previous inert "Próximamente" rows
+ * with 3 real modals. `Configuración` and `FAQ` follow `LegalModal`'s exact
+ * pattern (same `Dialog` primitive, same title + sectioned-body structure)
+ * for consistency with how `Privacidad` already opens elsewhere in this app;
+ * `Privacidad` itself reuses `LegalModal` unmodified rather than duplicating
+ * its already-real privacy copy.
+ */
+export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProps) {
+  const [openModal, setOpenModal] = useState<AyudaModal>(null);
+
+  return (
+    <>
+      <div className="flex flex-col divide-y divide-border">
+        {ROWS.map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            type="button"
+            data-testid={`ayuda_row_${key}`}
+            onClick={() => setOpenModal(key)}
+            className="flex items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
+          >
+            <div className="flex items-center gap-2 text-body-md">
+              <Icon className="size-4" aria-hidden="true" />
+              {label}
+            </div>
+            <ChevronRight className="size-4 text-tertiary" aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+
+      <Dialog
+        open={openModal === 'configuracion'}
+        onOpenChange={open => setOpenModal(open ? 'configuracion' : null)}
+        aria-label="Configuración"
+        data-testid="settings_modal"
+      >
+        <h2 className="text-h4 pr-8">Configuración</h2>
+        <div className="mt-4 flex flex-col gap-4 text-body-sm text-text">
+          <div>
+            <h3 className="text-label mb-1">Email</h3>
+            <p className="text-tertiary">{email}</p>
+          </div>
+          <div>
+            <h3 className="text-label mb-1">Plan actual</h3>
+            <p className="text-tertiary">{planLabel}</p>
+          </div>
+          {memberSince && (
+            <div>
+              <h3 className="text-label mb-1">Miembro desde</h3>
+              <p className="text-tertiary">{memberSince}</p>
+            </div>
+          )}
+          <p className="text-caption text-tertiary">
+            ¿Quieres cambiar tu dieta o alérgenos? Edítalos en la tarjeta "Preferencias" de arriba.
+          </p>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={openModal === 'faq'}
+        onOpenChange={open => setOpenModal(open ? 'faq' : null)}
+        aria-label="Preguntas frecuentes"
+        data-testid="faq_modal"
+        className="sm:max-w-2xl"
+      >
+        <h2 className="text-h4 pr-8">Preguntas frecuentes</h2>
+        <div className="mt-4 flex flex-col gap-4 text-body-sm text-text">
+          {FAQ_ITEMS.map(({ question, answer }) => (
+            <div key={question}>
+              <h3 className="text-label mb-1">{question}</h3>
+              <p className="text-tertiary">{answer}</p>
+            </div>
+          ))}
+        </div>
+      </Dialog>
+
+      <LegalModal
+        open={openModal === 'privacidad'}
+        onOpenChange={open => setOpenModal(open ? 'privacidad' : null)}
+        section="privacidad"
+      />
+    </>
+  );
+}
