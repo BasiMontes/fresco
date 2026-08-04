@@ -2040,3 +2040,23 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user — revisar, documentar mejor y después solucionar las 10.
 
 **Siguiente**: de las 10, 3 están listas para implementar sin más bloqueos (FRESCO-79, FRESCO-73, FRESCO-74 parte 2). El resto necesita algo del user primero: color (70), mockup (71/72/78), confirmación de alcance (76), cifras reales o decisión de negocio (75), repro en vivo (74 parte 1). FRESCO-77/71 conviene secuenciarlos juntos (backend de favoritos + pantalla). Preguntar al user por qué orden arrancar.
+
+---
+
+## 2026-08-04 — FRESCO-79/73/74(parte 2): 3 fixes vía /sprint-development (modo Solo)
+
+**Qué**: user eligió arrancar los 3 tickets sin bloqueos. `/sprint-development` en modo Solo (tickets chicos, 1 archivo cada uno, ya investigados). Listo → WIP → implementar → verificar → Control de calidad, sin PR (repo `solo-main`, push directo a `main`).
+
+- **FRESCO-79**: `components/menu/latest-recipes-section.tsx:24` — `text-h5` → `text-h4` en el título "Últimas recetas añadidas". Commit `6bd3eb1`.
+- **FRESCO-73**: `components/menu/calendar-suggestion-banner.tsx:20` — `variant: 'secondary'` → `variant: 'default'` en el botón "Ver mi plan semanal". Comentario del componente actualizado para no dejar una justificación desactualizada. Commit `a1e6161`.
+- **FRESCO-74 (parte 2)**: `components/recipes/recipe-library.tsx` — agregado label "X recetas encontradas" sobre la grilla de `/recipes`, usando `filtered.length` ya calculado. Commit `b8ca22d`.
+
+Verificación: lint + `tsc --noEmit` + `bun run build` en paralelo, todo verde (1 error de lint auto-fixeado, salto de línea JSX). Validación visual en vivo con Playwright CLI (dev server local, login con `LOCAL_USER_EMAIL`/`LOCAL_USER_PASSWORD` de `.env`, ya exportadas en el proceso — no fue necesario leerlas): las 3 confirmadas correctas contra la UI real, no solo contra el build.
+
+**Hallazgo real durante la verificación (relevante para FRESCO-74 parte 1, no arreglado)**: con el perfil de QA usado, tanto `/menu` como `/recipes` muestran `1000/1000` — el catálogo completo, cero exclusión por perfil/dieta/alérgenos. Puede ser normal (perfil sin restricciones) o ser la causa real del reporte del ticket — documentado en el comentario de FRESCO-74, sigue esperando repro del user con el perfil donde vio el número mal.
+
+Los 3 commits pusheados directo a `main` (solo-main = deploy real). Los 3 tickets transicionados Jira `Listo → WIP → Control de calidad`, con comentario de cierre por ticket (commit hash + evidencia de verificación en vivo).
+
+**Por qué**: pedido directo del user, continuación de la revisión de las 10 tarjetas de la sesión anterior — arrancar los 3 que no tenían bloqueos.
+
+**Siguiente**: 7 tickets siguen esperando algo del user antes de poder tocarlos: color de destino (FRESCO-70), mockups (FRESCO-71/72/78), confirmación de alcance (FRESCO-76), cifras reales o decisión de negocio (FRESCO-75), repro en vivo con perfil real (FRESCO-74 parte 1). FRESCO-77+71 conviene trabajarlos juntos (backend de favoritos + pantalla que lo consume). Mismo patrón que épicas previas (FRESCO-54/49/50/60/64): estos 3 tickets quedan en "Control de calidad" esperando confirmación explícita del user antes de pasar a "Finalizada" — no cerrar solo.
