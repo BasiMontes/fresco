@@ -437,7 +437,7 @@ describe('createRecetaPropia', () => {
   });
 });
 
-/** Minimal mock client covering both `getRecipeDetail()` lookup paths: `.from('recetas_propias').select().eq().maybeSingle()` and `.rpc().eq().maybeSingle()`. */
+/** Minimal mock client covering both `getRecipeDetail()` lookup paths: `.from('recetas_propias').select().eq().maybeSingle()` and `.rpc(..., { p_recipe_id }).maybeSingle()`. */
 function createDetailMockClient(options: {
   userId?: string
   propiaRow?: unknown | null
@@ -447,7 +447,7 @@ function createDetailMockClient(options: {
 } = {}) {
   const getUserCalls: unknown[] = [];
   const propiaEqCalls: unknown[] = [];
-  const rpcEqCalls: unknown[] = [];
+  const rpcCalls: unknown[] = [];
 
   const mock = {
     auth: {
@@ -472,37 +472,36 @@ function createDetailMockClient(options: {
       }),
     }),
     rpc: (fn: string, args: unknown) => ({
-      eq: (column: string, value: unknown) => ({
-        maybeSingle: async () => {
-          rpcEqCalls.push({ fn, args, column, value });
-          return {
-            data: options.catalogoErrorMessage ? null : (options.catalogoRow ?? null),
-            error: options.catalogoErrorMessage ? { message: options.catalogoErrorMessage } : null,
-          };
-        },
-      }),
+      maybeSingle: async () => {
+        rpcCalls.push({ fn, args });
+        return {
+          data: options.catalogoErrorMessage ? null : (options.catalogoRow ?? null),
+          error: options.catalogoErrorMessage ? { message: options.catalogoErrorMessage } : null,
+        };
+      },
     }),
   };
 
-  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, propiaEqCalls, rpcEqCalls };
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, propiaEqCalls, rpcCalls };
 }
 
 describe('getRecipeDetail', () => {
   test('returns the personal recipe when the id matches recetas_propias, without querying the catalog', async () => {
-    const { client, rpcEqCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: SAMPLE_RECETA_PROPIA });
+    const { client, rpcCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: SAMPLE_RECETA_PROPIA });
 
     const result = await getRecipeDetail(client, 'receta-1');
 
     expect(result).toEqual({ kind: 'propia', receta: SAMPLE_RECETA_PROPIA });
-    expect(rpcEqCalls).toHaveLength(0);
+    expect(rpcCalls).toHaveLength(0);
   });
 
-  test('falls back to the catalog when the id does not match a personal recipe', async () => {
-    const { client } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: SAMPLE_ROW });
+  test('falls back to the catalog when the id does not match a personal recipe, passing p_recipe_id to narrow the RPC', async () => {
+    const { client, rpcCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: SAMPLE_ROW });
 
     const result = await getRecipeDetail(client, 'recipe-1');
 
     expect(result).toEqual({ kind: 'catalogo', receta: expect.objectContaining({ id: 'recipe-1', nombre: 'Risotto de setas' }) });
+    expect(rpcCalls).toEqual([{ fn: 'get_filtered_recipes', args: { p_user_id: 'user-123', p_recipe_id: 'recipe-1' } }]);
   });
 
   test('returns null when the id matches neither table', async () => {

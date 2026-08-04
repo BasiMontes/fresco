@@ -230,11 +230,12 @@ export type RecipeDetail
  * recipe never shows up in `get_filtered_recipes()` and checking it first
  * avoids a wasted RPC call on the common "it's mine" case.
  *
- * The catalog lookup chains `.eq('id', id)` onto `get_filtered_recipes()`
- * exactly like `getLatestAvailableRecipes()` chains `.order()/.limit()` onto
- * the same RPC — so a recipe outside Laura's food-safety profile returns no
- * row here, the same as it never appearing in the Biblioteca grid, rather
- * than needing a second, separate safety check.
+ * The catalog lookup passes `id` as `get_filtered_recipes()`'s `p_recipe_id`
+ * parameter, letting Postgres use the `recipes` primary-key index instead of
+ * filtering the whole catalog client-side for one row — so a recipe outside
+ * Laura's food-safety profile returns no row here, the same as it never
+ * appearing in the Biblioteca grid, rather than needing a second, separate
+ * safety check.
  *
  * Returns `null` when `id` matches neither table (deleted, wrong id, or a
  * catalog recipe excluded by the caller's profile) — the page renders a
@@ -272,8 +273,7 @@ export async function getRecipeDetail(
   }
 
   const { data: catalogo, error: catalogoError } = await client
-    .rpc('get_filtered_recipes', { p_user_id: resolvedUserId })
-    .eq('id', id)
+    .rpc('get_filtered_recipes', { p_user_id: resolvedUserId, p_recipe_id: id })
     .maybeSingle();
 
   if (catalogoError) {

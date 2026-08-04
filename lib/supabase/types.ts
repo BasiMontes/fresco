@@ -351,7 +351,7 @@ export type Database = {
     }
     Functions: {
       get_filtered_recipes: {
-        Args: { p_user_id: string }
+        Args: { p_recipe_id?: string; p_user_id: string }
         Returns: {
           alergenos: Json | null
           clasificacion: Json | null
