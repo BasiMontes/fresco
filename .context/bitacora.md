@@ -2018,3 +2018,25 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user, continuación del backfill en background — antes de revisar y documentar las 10 tarjetas nuevas en "Listo".
 
 **Siguiente**: 451/1000 con foto, 549 restantes. Candidato real para v8 del script (no arreglado, fuera de foco hoy): las tasas de hit vienen cayendo corrida a corrida (16→15→13→12→7→8→7→5→4) a medida que el pool restante se concentra en nombres largos con múltiples modificadores de relleno encadenados — `FILLER_PHRASES` solo cubre combinaciones fijas, no cualquier orden/cantidad de modificadores.
+
+---
+
+## 2026-08-04 — Documentadas 10 tarjetas nuevas en "Listo" (FRESCO-70 a 79)
+
+**Qué**: el user creó 10 tarjetas (7 `Error`, 3 `Tarea`) directo en la columna "Listo" del tablero, todas sin descripción — solo título. Investigado el código real (agente Explore, solo lectura) para diagnosticar cada una antes de escribir nada, y documentada la descripción de las 10 en Jira (ADF vía `md-to-adf.ts`, español, `.claude/skills/acli`).
+
+**Hallazgos reales por ticket** (evidencia de código, no solo el título):
+- **FRESCO-79** (jerarquía visual "Últimas recetas"): confirmado — título de sección y títulos de card usan el mismo `text-h5` que el body normal, cero diferenciación.
+- **FRESCO-78** (diseño cards "hoy"): reutiliza `RecipeCard` genérico, sin variante propia. Bloqueado — falta mockup, Regla Crítica #14.
+- **FRESCO-77** (favoritos no funcionan en "hoy"): el bug es de toda la app, no solo "hoy" — `RecipeCard` tiene el botón cableado pero NINGÚN call site (hoy/últimas recetas/biblioteca) le pasa `isFavorite`/`onToggleFavorite`. Más profundo: no existe capa de persistencia de favoritos en absoluto (sin tabla, sin RPC). Acoplado con FRESCO-71.
+- **FRESCO-76** (brand design): `DESIGN.md` ya existe completo + assets de marca — probablemente ya resuelto, pedido al user confirmar si falta algo puntual.
+- **FRESCO-75** (revisar estimaciones) — user confirmó: widget de ahorro en `/menu`, 3 cifras (~45€/~15€/~3h) ya marcadas en el propio código como placeholder sin validar, con banner visible advirtiéndolo. Decisión de negocio, no solo dev.
+- **FRESCO-74** (número de recetas) — user confirmó: ambas partes. (1) auditar el contador real de `/menu` (RPC `get_filtered_recipes`, nada hardcodeado en código, necesita repro en vivo con el user). (2) `/recipes` no muestra ningún contador — falta agregar, es tarea.
+- **FRESCO-73** (botón "Ver mi plan semanal" a primario): 1 línea, único call site — pero revierte una decisión de diseño tomada a propósito (regla "un solo botón `action` por pantalla", documentada en el propio comentario del componente). No viola la regla, la revierte conscientemente.
+- **FRESCO-72** (pantalla notificaciones): confirmado no existe. Ya hay botón campana muerto en `/menu` sin `onClick`. Bloqueado — falta mockup, Regla Crítica #14.
+- **FRESCO-71** (pantalla recetas favoritas): confirmado no existe. Botón corazón muerto en `/menu`. Acoplado con FRESCO-77 (sin backend de favoritos, esta pantalla no tiene qué mostrar). Bloqueado — falta mockup.
+- **FRESCO-70** (color sidebar desktop): **no es un bug** — el color actual coincide exacto con `DESIGN.md`, que documenta esa superficie a propósito y advierte "nunca reusar en otro lado". Es un pedido de cambiar el diseño establecido. Pedido al user el color de destino.
+
+**Por qué**: pedido directo del user — revisar, documentar mejor y después solucionar las 10.
+
+**Siguiente**: de las 10, 3 están listas para implementar sin más bloqueos (FRESCO-79, FRESCO-73, FRESCO-74 parte 2). El resto necesita algo del user primero: color (70), mockup (71/72/78), confirmación de alcance (76), cifras reales o decisión de negocio (75), repro en vivo (74 parte 1). FRESCO-77/71 conviene secuenciarlos juntos (backend de favoritos + pantalla). Preguntar al user por qué orden arrancar.
