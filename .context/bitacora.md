@@ -1998,3 +1998,13 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: verificar que el fix de región realmente movió la aguja, no solo asumirlo por la teoría.
 
 **Siguiente**: la latencia restante (~270-350ms por fetch) es network RTT normal cliente↔Vercel↔Supabase con todo ya co-ubicado en Dublín/Irlanda — no queda margen obvio de "mismatch geográfico" por exprimir. El wall-clock alto que se sigue viendo en pruebas de clicks en frío es en gran parte ruido de medición (prefetch de fondo), no lentitud real percibida por un usuario — confirmar con el user si la sensación de lentitud mejoró en uso real, no solo en estas mediciones sintéticas. `loading.tsx`/`Suspense` (cero feedback visual durante la navegación) sigue siendo el hallazgo de UX abierto más impactante que queda sin tocar.
+
+---
+
+## 2026-08-04 — FRESCO-31: undécimo batch (5/30, 447/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 5/30 hits, tasa más baja de toda la serie hasta ahora — fallos concentrados en el mismo puñado recurrente (tostada con salmón ahumado, bowl de yogur/avena, huevos revueltos, arroz con verduras, salteado de seitan, ensalada de garbanzos, coliflor al horno). Aplicado con `supabase db query --linked -f batch11.sql`. Verificado con el mismo CLI: `447/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 447/1000 con foto, 553 restantes.
