@@ -2091,3 +2091,13 @@ Lint + types verdes. Verificado en vivo con Playwright: ambas pantallas, navegac
 **Por qué**: user confirmó los 2 mockups y aclaró el alcance de notificaciones — desbloqueó ambos tickets en la misma sesión.
 
 **Siguiente**: FRESCO-78 (diseño cards "hoy") usa el diseño genérico de `RecipeCard` — confirmado por el user, revisar qué falta cerrar ahí. Quedan: confirmación de alcance (FRESCO-76), cifras reales o decisión de negocio (FRESCO-75), repro en vivo con perfil real (FRESCO-74 parte 1), backend de favoritos (FRESCO-77, ahora desbloquea el contenido real de FRESCO-71). Definir lista real de tipos de notificación queda anotado como candidato a ticket de producto aparte (no abierto todavía). 6 tickets en "Control de calidad" esperando confirmación del user para "Finalizada".
+
+---
+
+## 2026-08-04 — FRESCO-78: resuelto sin cambio de código
+
+**Qué**: user confirmó que las tarjetas de "recetas de hoy" usan el diseño genérico de `RecipeCard` a propósito — no hace falta variante visual distinta. Documentado en Jira, sin tocar `app/(app)/menu/page.tsx` ni `RecipeCard`. Jira `Listo → WIP → Control de calidad`.
+
+**Por qué**: pedido directo del user, cierre del lote de las 10 tarjetas.
+
+**Siguiente**: 7 tickets en "Control de calidad" (70/71/72/73/74-parte2/78/79) esperando confirmación del user para pasar a "Finalizada" — mismo patrón que épicas previas. Quedan abiertos sin tocar: FRESCO-75 (cifras/decisión de negocio), FRESCO-76 (confirmar alcance), FRESCO-74 parte 1 (repro en vivo), FRESCO-77 (backend de favoritos, desbloquea contenido real de FRESCO-71).
