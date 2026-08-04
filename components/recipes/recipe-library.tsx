@@ -197,6 +197,14 @@ export function RecipeLibrary({ recipes, recetasPropias }: { recipes: Recipe[], 
         </FilterSelect>
       </div>
 
+      {filtered.length > 0 && (
+        <p className="mt-4 text-body-sm text-tertiary" data-testid="recipe_library_count">
+          {filtered.length}
+          {' '}
+          {filtered.length === 1 ? 'receta encontrada' : 'recetas encontradas'}
+        </p>
+      )}
+
       {filtered.length === 0
         ? (
             <EmptyState
