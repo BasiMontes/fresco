@@ -39,7 +39,7 @@ export default async function ProfilePage() {
   // fallback via `.catch()` (same conservative-default judgment calls as
   // before) so one call's rejection can't take the others down with it.
   const [plan, nombre, dietaryPreferences] = await Promise.all([
-    getUserPlan(supabase).catch((error) => {
+    getUserPlan(supabase, user?.id).catch((error) => {
       // Same judgment call as every other page reading server-side profile
       // data: a real read failure defaults to the more conservative 'free'
       // (shows the upsell) rather than crashing the page.

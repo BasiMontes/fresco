@@ -150,17 +150,24 @@ export async function getUserDietaryPreferences(
  */
 export async function getUserPlan(
   client: SupabaseClient<Database>,
+  userId?: string,
 ): Promise<UserProfile['plan']> {
-  const { data: { user }, error: userError } = await client.auth.getUser();
+  let resolvedUserId = userId;
 
-  if (userError || !user) {
-    throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+    }
+
+    resolvedUserId = user.id;
   }
 
   const { data, error } = await client
     .from('user_profiles')
     .select('plan')
-    .eq('id', user.id)
+    .eq('id', resolvedUserId)
     .maybeSingle();
 
   if (error) {

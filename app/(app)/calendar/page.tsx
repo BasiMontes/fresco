@@ -36,6 +36,7 @@ export default async function CalendarPage({
   searchParams: Promise<{ semana?: string }>
 }) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   // FRESCO-61: `?semana=YYYY-Www` picks which week to view (prev/next
   // controls below). A malformed or absent value falls back to the current
@@ -47,22 +48,32 @@ export default async function CalendarPage({
     : getIsoWeek();
   const mondayIso = getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10);
 
-  let plan: MenuSemanalPersistido | null;
-  try {
-    plan = await getMealPlanForWeek(supabase, semanaIso);
-  }
-  catch (error) {
-    // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
-    // `getMealPlanForWeek` fails fast (throws) on a real read error,
-    // including "no authenticated session" — a real gap remains only for a
-    // visit with literally zero session at all, not for guest vs. registered
-    // (ADR-0003, FRESCO-17 resolved that). Falls back to the same empty
-    // state rather than crashing the page; a dedicated read-error UI is a
-    // tracked gap, not this story's job.
-    // Logged so a real DB/network outage stays visible in server logs.
-    console.error('[/calendar] getMealPlanForWeek failed, falling back to empty state', error);
-    plan = null;
-  }
+  // `plan` and `userPlan` are mutually independent reads — run them
+  // concurrently rather than sequentially (this page still awaited each in
+  // turn, unlike /menu, /profile, and /recipes, already fixed this session).
+  // Both are also passed the already-resolved `user.id`, cutting the
+  // redundant internal auth.getUser() round trip each would otherwise make.
+  const [plan, userPlan] = await Promise.all([
+    getMealPlanForWeek(supabase, semanaIso, user?.id).catch((error) => {
+      // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
+      // `getMealPlanForWeek` fails fast (throws) on a real read error,
+      // including "no authenticated session" — a real gap remains only for a
+      // visit with literally zero session at all, not for guest vs. registered
+      // (ADR-0003, FRESCO-17 resolved that). Falls back to the same empty
+      // state rather than crashing the page; a dedicated read-error UI is a
+      // tracked gap, not this story's job.
+      // Logged so a real DB/network outage stays visible in server logs.
+      console.error('[/calendar] getMealPlanForWeek failed, falling back to empty state', error);
+      return null as MenuSemanalPersistido | null;
+    }),
+    // Gates the Free-tier "esto es una función Pro" notice (STORY-FRESCO-15,
+    // Business Rules) — a read failure here is not worth crashing the page
+    // over, defaults to the more conservative 'free' (shows the notice).
+    getUserPlan(supabase, user?.id).catch((error) => {
+      console.error('[/calendar] getUserPlan failed, defaulting to free', error);
+      return 'free' as 'free' | 'pro' | 'family';
+    }),
+  ]);
 
   if (!plan) {
     return (
@@ -79,17 +90,6 @@ export default async function CalendarPage({
         </div>
       </div>
     );
-  }
-
-  // Gates the Free-tier "esto es una función Pro" notice (STORY-FRESCO-15,
-  // Business Rules) — a read failure here is not worth crashing the page
-  // over, defaults to the more conservative 'free' (shows the notice).
-  let userPlan: 'free' | 'pro' | 'family' = 'free';
-  try {
-    userPlan = await getUserPlan(supabase);
-  }
-  catch (error) {
-    console.error('[/calendar] getUserPlan failed, defaulting to free', error);
   }
 
   return (

@@ -1960,3 +1960,17 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 442/1000 con foto, 558 restantes.
+
+---
+
+## 2026-08-04 — `/calendar` era el cuello de botella real de "navegación horrible"
+
+**Qué**: el user reportó navegación entre páginas muy lenta pese a los fixes de performance de antes. Medí en vivo con Playwright contra `fresco-pro.vercel.app` (no solo lectura de código esta vez) — clicks reales cronometrados con `page.click()` + `waitForLoadState('networkidle')`: `/menu`/`/recipes`/`/profile` en 30-50ms (ya arreglados hoy), pero `/calendar` reproduciblemente en 754-1900ms (dos mediciones limpias). Causa: el mismo patrón que ya arreglé 3 veces hoy pero nunca toqué en esta página — `getMealPlanForWeek(supabase, semanaIso)` seguido de `getUserPlan(supabase)` en secuencia, ninguno con `userId` ya resuelto (cada uno hace su propio `auth.getUser()` redundante, sumado al de `proxy.ts`). `getUserPlan` tampoco tenía el parámetro `userId?` opcional que sus hermanas (`getUserNombre`/`getAvailableRecipesCount`/etc.) ya tenían — añadido ahora, mismo patrón exacto. `/calendar/page.tsx` resuelve `user` una vez y corre ambas lecturas en `Promise.all`, cada una con su propio `.catch()` preservando el fallback existente; el bloque secuencial viejo de `getUserPlan` (que solo corría tras el early-return de plan vacío) se eliminó, ahora se pide en paralelo desde el principio. También pasé `user?.id` a `getUserPlan` en `/profile` de paso, mismo hueco, arreglo de una línea.
+
+**Hallazgo aparte, no tocado todavía**: cero `loading.tsx`/`Suspense` en toda la app — cada navegación se ve congelada sin feedback visual mientras carga, lo cual empeora la percepción de lentitud incluso en páginas ya rápidas. No arreglado esta sesión (scope nuevo, no pedido), documentado para retomar.
+
+**Verificado**: `types:check`/`lint:check` limpios, 138 tests unitarios pasan (suite completa, no solo `recipes.test.ts`). Probado en vivo local: `/calendar` carga con datos reales, cero errores de consola.
+
+**Por qué**: pedido directo del user tras reportar que la navegación seguía sintiéndose mal pese al trabajo de performance anterior.
+
+**Siguiente**: pendiente medir `/calendar` en producción tras el deploy para confirmar el mismo salto de 750-1900ms → ~30-50ms visto en las otras páginas. `loading.tsx`/`Suspense` sigue como hallazgo abierto, no como fix aplicado.
