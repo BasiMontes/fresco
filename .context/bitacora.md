@@ -2060,3 +2060,17 @@ Los 3 commits pusheados directo a `main` (solo-main = deploy real). Los 3 ticket
 **Por qué**: pedido directo del user, continuación de la revisión de las 10 tarjetas de la sesión anterior — arrancar los 3 que no tenían bloqueos.
 
 **Siguiente**: 7 tickets siguen esperando algo del user antes de poder tocarlos: color de destino (FRESCO-70), mockups (FRESCO-71/72/78), confirmación de alcance (FRESCO-76), cifras reales o decisión de negocio (FRESCO-75), repro en vivo con perfil real (FRESCO-74 parte 1). FRESCO-77+71 conviene trabajarlos juntos (backend de favoritos + pantalla que lo consume). Mismo patrón que épicas previas (FRESCO-54/49/50/60/64): estos 3 tickets quedan en "Control de calidad" esperando confirmación explícita del user antes de pasar a "Finalizada" — no cerrar solo.
+
+---
+
+## 2026-08-04 — FRESCO-70: sidebar a verde primario
+
+**Qué**: user contestó de inmediato — `#0F4E0E` no es un color nuevo, es el token `primary`/`accent-500` ("verde corporativo") ya existente en la paleta. `components/layout/sidebar.tsx`: `bg-accent-900` → `bg-primary`, pill del ítem activo `text-accent-900` → `text-primary`. `DESIGN.md`: token `nav-sidebar.backgroundColor` actualizado a `{colors.primary}`, sección de Navegación reescrita (ya no aplica la frase "el extremo oscuro de la rampa se vuelve superficie" — ahora es el verde primario, no el extremo oscuro).
+
+Contraste calculado (WCAG): blanco/crema sobre `#0F4E0E` ≈ 9.9:1 — pasa AA (4.5:1) y AAA (7:1) con margen amplio; el logo negativo sigue siendo la elección correcta. Verificado en vivo con Playwright (mismo flujo que la tanda anterior): logo y navegación perfectamente legibles contra el nuevo fondo.
+
+Lint + types verdes. Commit `e6a3b74`, push directo a `main`. Jira `Listo → WIP → Control de calidad`, comentario de cierre con evidencia.
+
+**Por qué**: pedido directo del user, mismo lote de las 10 tarjetas — este era el único que solo necesitaba una respuesta de color, no un mockup completo.
+
+**Siguiente**: 6 tickets siguen esperando algo del user: mockups (FRESCO-71/72/78), confirmación de alcance (FRESCO-76), cifras reales o decisión de negocio (FRESCO-75), repro en vivo con perfil real (FRESCO-74 parte 1). FRESCO-70/79/73/74(parte 2) en "Control de calidad", esperando confirmación del user para pasar a "Finalizada".
