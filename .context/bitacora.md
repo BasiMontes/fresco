@@ -1988,3 +1988,13 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user, siguiendo la pista de que la navegación seguía mal pese al trabajo previo — el hallazgo real solo salió de medir en vivo con rigor (clicks en frío reales), no de leer código.
 
 **Siguiente**: deployar y remedir en producción con `dub1` para confirmar la caída real de latencia (objetivo: de ~1500ms a algo cercano a los ~40ms que ya se ven cuando el Router Cache está caliente). `functionFailoverRegions`/multi-región es Pro/Enterprise-only en Vercel, no aplica aquí (single-region alcanza en cualquier plan).
+
+---
+
+## 2026-08-04 — Región migrada, mejora real confirmada (no la esperada al 100%)
+
+**Qué**: deploy `9d7e5dc` verificado `[dub1]` en `vercel inspect` — funciones corriendo en Dublín ahora, no Washington D.C. Remedido en producción con el mismo rigor (clicks en frío, cero espera de prefetch). El wall-clock total (`click` → `networkidle`) siguió en ~1100-1440ms, similar al número de antes — pero esa medición estaba inflada: `waitForLoadState('networkidle')` espera también los prefetches en background de semanas adyacentes que `/calendar` dispara solo, no solo el fetch que realmente le importa al usuario. Medida la duración del fetch real que carga la página (`playwright-cli request`, campo `duration`, que sí aísla servidor+red del ruido de prefetch): **925ms → 271ms en `/calendar`**, ~3.4x más rápido, mejora real y medida, no cosmética. `/profile` en 351ms tras el fix (sin baseline limpio previo para ese mismo método de medición, pero mismo orden de magnitud que `/calendar` post-fix).
+
+**Por qué**: verificar que el fix de región realmente movió la aguja, no solo asumirlo por la teoría.
+
+**Siguiente**: la latencia restante (~270-350ms por fetch) es network RTT normal cliente↔Vercel↔Supabase con todo ya co-ubicado en Dublín/Irlanda — no queda margen obvio de "mismatch geográfico" por exprimir. El wall-clock alto que se sigue viendo en pruebas de clicks en frío es en gran parte ruido de medición (prefetch de fondo), no lentitud real percibida por un usuario — confirmar con el user si la sensación de lentitud mejoró en uso real, no solo en estas mediciones sintéticas. `loading.tsx`/`Suspense` (cero feedback visual durante la navegación) sigue siendo el hallazgo de UX abierto más impactante que queda sin tocar.
