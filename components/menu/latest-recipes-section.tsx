@@ -21,7 +21,7 @@ export function LatestRecipesSection({ recipes }: { recipes: Recipe[] }) {
   return (
     <div className="mt-6" data-testid="latest_recipes_section">
       <div className="flex items-center justify-between">
-        <h2 className="text-h5">Últimas recetas añadidas</h2>
+        <h2 className="text-h4">Últimas recetas añadidas</h2>
         <Link href="/recipes" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Ver todas
         </Link>
