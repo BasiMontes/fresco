@@ -75,6 +75,73 @@ export async function upsertUserProfile(
 }
 
 /**
+ * Onboarding defaults (mirrors `lib/store/onboarding-store.ts`'s
+ * `initialState` for `adultos`/`ninos`) — used only as the fallback when no
+ * `user_profiles` row exists yet, same conservative-default judgment call as
+ * `getUserPlan`'s `'free'` fallback.
+ */
+const DEFAULT_ONBOARDING_PROFILE: OnboardingProfilePayload = {
+  num_personas: 2,
+  adultos: 2,
+  ninos: 0,
+  dieta_vegetariano: false,
+  dieta_vegano: false,
+  dieta_sin_gluten: false,
+  dieta_sin_lactosa: false,
+  dieta_sin_huevo: false,
+  dieta_keto: false,
+  dieta_halal: false,
+  alergenos: [],
+  ingredientes_odiados: [],
+  cocinas_favoritas: [],
+};
+
+/**
+ * Reads the CURRENTLY authenticated user's onboarding profile (`/profile`
+ * preferences editor, FRESCO-70) — every field `upsertUserProfile` requires,
+ * not just the dietary ones the editor's UI exposes. A save only lets the
+ * user touch the dietary flags/`alergenos`, but it round-trips through
+ * `upsertUserProfile`'s full `OnboardingProfilePayload` shape; reading back
+ * only the dietary subset would force that save to submit fabricated
+ * zero/empty values for `num_personas`/`adultos`/`ninos`/
+ * `ingredientes_odiados`/`cocinas_favoritas`, silently wiping real onboarding
+ * data the user never asked to change.
+ *
+ * Same defensive pattern as `getUserNombre`: a missing profile row is not an
+ * error for this read, it falls back to `DEFAULT_ONBOARDING_PROFILE`. Same
+ * `userId` escape hatch, for the same reason (`/profile` already resolved
+ * `auth.getUser()` once at the top of the page).
+ */
+export async function getUserDietaryPreferences(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<OnboardingProfilePayload> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer las preferencias.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas')
+    .eq('id', resolvedUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudieron leer las preferencias: ${error.message}`);
+  }
+
+  return data ?? DEFAULT_ONBOARDING_PROFILE;
+}
+
+/**
  * Reads the CURRENTLY authenticated user's plan tier (FRESCO-15 — gates the
  * "esto es una función Pro" notice shown to Free users). Defaults to
  * `'free'` when no profile row exists yet (onboarding not completed) rather

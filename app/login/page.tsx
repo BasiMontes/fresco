@@ -37,6 +37,10 @@ function LoginPageInner() {
   // once her new password is saved, so she lands with a real login step and
   // a confirmation her password actually changed — not silently signed in.
   const passwordReset = useSearchParams().get('password_reset') === '1';
+  // FRESCO-70: `/profile`'s delete-account dialog redirects here (after
+  // signing out) once the account is gone — a plain farewell confirmation,
+  // same query-flag pattern as `passwordReset` above.
+  const accountDeleted = useSearchParams().get('account_deleted') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,6 +83,12 @@ function LoginPageInner() {
         {passwordReset && (
           <p data-testid="password_reset_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
             Tu contraseña se actualizó. Inicia sesión con la nueva.
+          </p>
+        )}
+
+        {accountDeleted && (
+          <p data-testid="account_deleted_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
+            Tu cuenta se eliminó correctamente. Gracias por haber probado Fresco.
           </p>
         )}
 

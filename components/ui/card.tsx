@@ -12,6 +12,13 @@ import { cn } from '@/lib/utils';
  * `insight` is meaning-carrying, not decorative (DESIGN.md Don'ts): only use
  * it for a genuine "Fresco learned something" moment (the Pro-tier learning
  * moat, EPIC-FRESCO-5).
+ *
+ * `danger` is not a DESIGN.md token — no destructive card variant exists
+ * there. Added for `/profile`'s "zona de peligro" footer (FRESCO-70) as a
+ * minimal extension: same structure as `pro` (2px border + `shadow-md`), just
+ * swapping the primary-color border for the `error` token already used
+ * app-wide for destructive affordances (e.g. `DeleteWeekButton`'s
+ * `text-error` trash icon) — no new color invented.
  */
 const cardVariants = cva('rounded-card p-3', {
   variants: {
@@ -19,6 +26,7 @@ const cardVariants = cva('rounded-card p-3', {
       default: 'bg-surface shadow-sm',
       insight: 'bg-accent-100 text-accent-800 shadow-md',
       pro: 'border-2 border-primary bg-surface shadow-md',
+      danger: 'border-2 border-error bg-surface shadow-md',
     },
   },
   defaultVariants: {

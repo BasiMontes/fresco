@@ -9,6 +9,7 @@
  */
 
 import type {
+  DeleteAccountResponse,
   GenerateMealPlanRequest,
   GenerateMealPlanResponse,
   ReassignGuestDataRequest,
@@ -129,6 +130,16 @@ export async function reassignGuestData(
   accessToken: string,
 ): Promise<ReassignGuestDataResponse> {
   return callEdgeFunction<ReassignGuestDataResponse>('reassign-guest-data', request, accessToken);
+}
+
+/**
+ * POST /delete-account — `/profile` danger zone (FRESCO-70). Irreversible;
+ * permanently deletes the CURRENTLY authenticated user's account. No request
+ * body — the caller is resolved server-side from `accessToken` alone, same
+ * shape as every other call here, just an empty body.
+ */
+export async function deleteAccount(accessToken: string): Promise<DeleteAccountResponse> {
+  return callEdgeFunction<DeleteAccountResponse>('delete-account', {}, accessToken);
 }
 
 export { EdgeFunctionError };

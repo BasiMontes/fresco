@@ -78,3 +78,13 @@ export interface UpdateRecipeStatusResponse {
 export interface ApiErrorResponse {
   error: string
 }
+
+// POST /delete-account — `/profile` danger zone. No request body; the
+// caller is resolved from her own Authorization header and can only ever
+// delete her own account. Cascades through every user-owned table at the DB
+// level (`user_profiles.id -> auth.users.id ON DELETE CASCADE`, migration
+// 20260725120100), so the Edge Function itself needs no RPC, unlike
+// `reassign-guest-data`.
+export interface DeleteAccountResponse {
+  deleted: boolean
+}

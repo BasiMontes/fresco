@@ -1846,3 +1846,53 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user, para tener trazabilidad de QA importable a Jira/AgileTest y que crezca junto con cada historia nueva.
 
 **Siguiente**: fichero listo para pegar/importar en AgileTest. Queda pendiente el flujo real de importación en Jira (no probado en vivo, es fuera del alcance de esta sesión — la AI no tiene acceso a AgileTest). A partir de ahora, cada historia con UI nueva debería actualizar `regression.feature` + `bitacora-tests.md` en el mismo sprint, no como tarea aparte.
+
+---
+
+## 2026-08-04 — commit + push de bitacora-tests.md
+
+**Qué**: commiteado y pusheado a `main` (`a795f0f`) `.context/qa/bitacora-tests.md` + el link en `README.md` + esta bitácora. Confirmado con el user antes de pushear (Critical Rule #4). Todos los hooks de pre-commit/pre-push pasaron limpio (tsc, lint-vars, lint-skills, prettier, eslint, check-vars, build-skill-registry).
+
+**Por qué**: pedido directo del user.
+
+**Siguiente**: nada pendiente de este cambio.
+
+---
+
+## 2026-08-04 — FRESCO-31: noveno batch (8/30, 435/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 8/30 hits, tasa se mantiene baja (línea con el batch anterior de 7/30) — fallos concentrados en el mismo puñado recurrente de siempre (garbanzos con espinacas, ensalada de quinoa/garbanzos, tortitas, huevos poché, bacalao/dorada al horno, mejillones al vapor, tostadas variadas). Aplicado con `supabase db query --linked -f batch9.sql`. Verificado con el mismo CLI: `435/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 435/1000 con foto, 565 restantes.
+
+---
+
+## 2026-08-04 — Rediseño de `/profile`: perfil real (preferencias, ayuda, zona de peligro)
+
+**Qué**: pedido directo del user con 2 mockups (mobile + desktop) — "no parece página de perfil". La página real solo tenía email+plan+nombre. Delegado a un agente general-purpose (cruzaba el umbral de 4+ ficheros a leer: `user-profile.ts`, `onboarding/page.tsx`, `card.tsx`/`tag.tsx`/`button.tsx`/`dialog.tsx`, `bottom-tab-bar.tsx`/`sidebar.tsx`, la Edge Function `reassign-guest-data` + sus 4 `_shared/*`, migraciones). Antes de delegar verifiqué yo mismo la parte de riesgo real: el cascade de FK (`user_profiles`→`auth.users` y `meal_plans`/`shopping_lists`/`recetas_propias`→`user_profiles`, todos `ON DELETE CASCADE`) ya limpia todo solo al borrar el `auth.users`, y que `reassign-guest-data/index.ts` ya usa exactamente `serviceClient.auth.admin.deleteUser()` — precedente exacto a espejar, sin inventar mecanismo nuevo.
+
+**Construido, adaptado al design system real (no copia literal del mockup)**: header con avatar/inicial + email + `Tag` de plan real (sin inventar un contador de "ahorro €" que no existe en el schema); `Preferencias` con los chips de dieta REALES (vegetariano/vegano/sin gluten/sin lactosa/sin huevo/keto/halal + alérgenos, reusando el patrón exacto de `app/onboarding/page.tsx` — no las categorías falsas del mockup tipo Kosher/Healthy/Indian/Fast); `Ayuda` con Configuración/FAQ/Privacidad como filas inertes "Próximamente" (mismo patrón que el CTA Pro de esta misma página, esas sub-páginas no existen); zona de peligro con 3 acciones reales confirmadas por el user: **Salir** (`signOut()` real), **Backup JSON** (`app/api/profile/export/route.ts`, Route Handler server-side RLS-scoped, exporta `user_profiles`+`meal_plans`+`shopping_lists`+`recetas_propias` del usuario), **Borrar cuenta definitivamente** (`supabase/functions/delete-account/`, espeja `reassign-guest-data` sin el paso RPC porque el cascade ya limpia todo; en cliente, `Dialog` que exige escribir el propio email exacto antes de habilitar el botón — única fricción de seguridad de un flujo irreversible).
+
+**Desviación del brief documentada por el agente**: el lector de preferencias no trae solo los campos de dieta sueltos — trae el `OnboardingProfilePayload` completo (incluye `num_personas`/`ingredientes_odiados`/`cocinas_favoritas`), porque `upsertUserProfile` exige el payload entero y un lector parcial habría sobreescrito esos campos con vacíos al guardar. Decisión correcta, evita pérdida de datos real. También tocó `app/login/page.tsx` (fuera del alcance original listado) para el mensaje de despedida tras borrar cuenta — reusó el patrón existente de `passwordReset`/`sessionExpired` en esa misma página en vez de inventar uno nuevo.
+
+**Verificado**: `types:check` y `lint:check` limpios (0 errores). Smoke test de compilación con `bun run dev`: `/profile` y `/login` responden 200. **No se pudo probar en vivo con sesión real** — bloqueado por permisos de directorio al leer `LOCAL_USER_EMAIL`/`PASSWORD` de `.env` (ni `Read` ni `Bash` me lo permitieron). Preguntado al user cómo probar; decidió avanzar directo a commit+push+deploy sin test en vivo previo de mi parte — **queda pendiente de smoke test real por el user en Vercel tras el deploy**.
+
+**Edge Function `delete-account` sin deployar todavía**: el mismo `Unauthorized` de Supabase MCP de antes en esta sesión persiste (aún con el token reseteado + direnv corregido — no confirmado si ya se resolvió, sesión de Claude Code no reiniciada desde el fix). Hasta que se deploye, el botón "Borrar cuenta definitivamente" en producción fallará limpio (error, no bypasea nada) en vez de silenciosamente no hacer nada — comportamiento seguro por defecto, pero no funcional hasta el deploy manual (`supabase functions deploy delete-account` o vía MCP una vez autenticado).
+
+**Por qué**: pedido directo del user.
+
+**Siguiente**: deployar `delete-account` a Supabase (bloqueado por MCP auth, ver arriba). Smoke test real de `/profile` en producción por el user. `Configuración`/`FAQ`/`Privacidad` siguen sin construir (fuera de alcance, deliberado).
+
+---
+
+## 2026-08-04 — Auditoría de performance: hallazgos (solo investigación, sin cambios)
+
+**Qué**: pedido directo del user ("la noto muy lenta"). Agente en background, solo lectura — build output, los 8 `page.tsx` de `app/(app)`+`app/*`, `lib/api/*.ts`, `proxy.ts` (middleware), las 2 Edge Functions de generación, migraciones SQL relevantes. Corrección importante sobre una asunción propia del brief: **Gemini ya no se usa** — `generate-meal-plan`/`generate-shopping-list` son 100% deterministas desde ADR-0005 ("explicit decision to stop all Gemini spend"), generación de menú observada en ~2-3s con estado de carga real en el botón. No es la causa de la lentitud percibida.
+
+**Causa real, sistémica**: cero uso de `Promise.all` en todo el repo (confirmado por grep) — cada página hace sus llamadas a Supabase en cascada secuencial en vez de en paralelo (`/menu` encadena 4 round-trips independientes uno tras otro). Además `auth.getUser()` se revalida contra el servidor de Supabase 2-3 veces por navegación: una vez en `proxy.ts` (middleware, corre en CASI toda request), otra vez en cada página, y una tercera en `getMealPlanForWeek()` porque esa función —a diferencia de sus hermanas `getAvailableRecipesCount`/`getLatestAvailableRecipes`/`getUserNombre`— no acepta un `userId` ya resuelto como parámetro opcional. Cero caching (`unstable_cache`/`revalidate`/React `cache()`) en ningún lado — el catálogo de recetas (~1000 filas, básicamente estático) se re-lee y re-filtra desde cero en cada carga de página. `get_filtered_recipes()` es un full-table-scan con operadores JSONB por fila, sin índice GIN sobre `alergenos`/`dieta` — y `getRecipeDetail()` paga ese scan completo solo para traer UNA receta por PK en vez de un lookup indexado directo. Imágenes, fuentes, y el límite Server/Client Component están todos correctos (sin hallazgos ahí).
+
+**Por qué**: pedido directo del user.
+
+**Siguiente**: punch list priorizada, sin aplicar ningún fix todavía (tarea era solo investigación) — orden sugerido: (1) `Promise.all` en los `await` independientes de cada página, (2) pasar `userId` ya resuelto a `getMealPlanForWeek` para cortar el tercer round-trip de auth, (3) capa de caching sobre el catálogo de recetas, (4) índices GIN en `recipes.alergenos`/`recipes.dieta` + lookup directo por PK en `getRecipeDetail`. Bundle size no verificable con evidencia sólida (Next.js 16 + Turbopack ya no imprime la tabla clásica de First Load JS) — sin `next/bundle-analyzer` instalado, ítem marcado como pendiente de tooling, no como hallazgo confirmado.
