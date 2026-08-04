@@ -9,12 +9,11 @@ import { cn } from '@/lib/utils';
 
 /**
  * Desktop navigation — mirrors DESIGN.md's `components.nav-sidebar` token:
- * dark `accent-900` background, active item highlighted with a filled pill
- * in background/cream. Per DESIGN.md ("the one place in the system where
- * the dark end of the accent ramp becomes a surface color"), this is the
- * only surface in the app that uses the dark accent-900 background — never
- * reuse it elsewhere. Uses `Logo negativo`, never the base logo, per
- * DESIGN.md's Do's list.
+ * `primary` (`#0F4E0E`, "verde corporativo") background, active item
+ * highlighted with a filled pill in background/cream. FRESCO-70 — changed
+ * from the dark `accent-900` end of the ramp to the primary brand green
+ * itself; white/cream logo and text still clear WCAG AA (~9.9:1) against
+ * it. Uses `Logo negativo`, never the base logo, per DESIGN.md's Do's list.
  */
 const NAV_ITEMS = [
   { href: '/menu', label: 'Menú', icon: Home },
@@ -27,7 +26,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-accent-900 px-4 py-6 text-background md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col bg-primary px-4 py-6 text-background md:flex">
       <Link href="/menu" className="mb-8 flex items-center px-2">
         <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} priority />
       </Link>
@@ -42,7 +41,7 @@ export function Sidebar() {
               className={cn(
                 'flex items-center gap-3 rounded-full px-4 py-2 text-label font-sans transition-colors',
                 isActive
-                  ? 'bg-background text-accent-900'
+                  ? 'bg-background text-primary'
                   : 'text-background/80 hover:bg-background/10',
               )}
             >

@@ -191,7 +191,7 @@ components:
     textColor: '{colors.primary}'
     rounded: '{rounded.full}'
   nav-sidebar:
-    backgroundColor: '{colors.accent-900}'
+    backgroundColor: '{colors.primary}'
     textColor: '{colors.background}'
   nav-bottom-tab:
     backgroundColor: '{colors.background}'
@@ -293,7 +293,7 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 **Icons** — a minimal 2px-stroke line set, always `{colors.primary}`: home, calendar, recipes (open book), shopping list, profile, save/heart, add (calendar+plus), notifications (bell), "cook now" (lightning bolt), and a 6-dot drag handle. Single stroke weight and single color across the entire set — no per-icon color exceptions.
 
 **Navigation** — one destination set (Home/Menu, Calendar, Recipes, Profile) surfaced two ways:
-- `nav-sidebar` (desktop): dark `{colors.accent-900}` background, active item highlighted with a pill (`rounded.full`) in white/cream — the one place in the system where the dark end of the accent ramp becomes a surface color rather than just a text/border tint. Use the `Logo negativo` lockup here, never the base logo.
+- `nav-sidebar` (desktop): `{colors.primary}` background, active item highlighted with a pill (`rounded.full`) in white/cream — FRESCO-70 moved this off the dark `accent-900` end of the ramp onto the primary brand green itself, the one surface in the system where `primary` becomes a background rather than just a text/icon/border color. Use the `Logo negativo` lockup here, never the base logo — still clears WCAG AA (~9.9:1) against `#0F4E0E`.
 - `nav-bottom-tab` (mobile): background background-colored, `{colors.primary}` icons, dot-indicator active state rather than a pill or background fill — kept lighter-weight than the sidebar because mobile chrome competes for less space.
 
 ## Do's and Don'ts
