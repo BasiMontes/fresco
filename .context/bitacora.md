@@ -2101,3 +2101,19 @@ Lint + types verdes. Verificado en vivo con Playwright: ambas pantallas, navegac
 **Por qué**: pedido directo del user, cierre del lote de las 10 tarjetas.
 
 **Siguiente**: 7 tickets en "Control de calidad" (70/71/72/73/74-parte2/78/79) esperando confirmación del user para pasar a "Finalizada" — mismo patrón que épicas previas. Quedan abiertos sin tocar: FRESCO-75 (cifras/decisión de negocio), FRESCO-76 (confirmar alcance), FRESCO-74 parte 1 (repro en vivo), FRESCO-77 (backend de favoritos, desbloquea contenido real de FRESCO-71).
+
+---
+
+## 2026-08-04 — FRESCO-75/76/74(parte 1): cerrados sin cambio de código
+
+**Qué**: user resolvió los 3 últimos bloqueos con respuestas directas, sin ambigüedad:
+
+- **FRESCO-75**: mantener las 3 cifras del widget de ahorro como estimación general — el código y el banner ya las marcan correctamente como orientativas, sin validar. Cerrado sin tocar `savings-estimate-cards.tsx`.
+- **FRESCO-76**: confirmado, el brand design ya está completo (`DESIGN.md` + assets). Cerrado sin cambio de código.
+- **FRESCO-74 parte 1**: causa real identificada — fue error de reproducción, no bug de producto. El perfil de prueba no tenía ninguna restricción marcada (sin dieta, sin alérgenos), así que "1000 recetas disponibles" es el resultado correcto para ese perfil, coherente con lo que ya decía el código (`get_filtered_recipes()` real, nada hardcodeado). FRESCO-74 completo (parte 1 + parte 2) cerrado.
+
+Los 3 documentados en Jira con el motivo del cierre, `Listo → WIP → Control de calidad` (75/76) — FRESCO-74 ya estaba en Control de calidad desde la parte 2, solo se agregó el comentario de cierre de la parte 1.
+
+**Por qué**: pedido directo del user — cerrar los últimos 3 bloqueos del lote de las 10 tarjetas.
+
+**Siguiente**: las 10 tarjetas originales (FRESCO-70 a 79) están todas resueltas — 6 con cambio de código real (70/71/72/73/74-parte2/79) + 4 confirmadas/cerradas sin tocar código (74-parte1/75/76/78). Las 9 tocadas están en "Control de calidad" esperando confirmación explícita del user para pasar a "Finalizada" (mismo patrón que épicas previas — no cerrar solo). Queda abierto: **FRESCO-77** (backend de favoritos — tabla, RLS, API/RPC de toggle, wiring en 3 call sites de `RecipeCard`), el único de los 10 que sigue sin arrancar; desbloquea además el contenido real de FRESCO-71 (hoy siempre vacío).
