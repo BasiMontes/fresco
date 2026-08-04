@@ -1913,7 +1913,7 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 
 **Por qué**: pedido directo del user.
 
-**Siguiente**: sin commitear todavía (pendiente de confirmación de push). Caching y fast-path de `getRecipeDetail` quedan como deuda técnica documentada, no como TODO silencioso — retomar solo si el catálogo crece mucho o el tráfico real lo justifica.
+**Siguiente**: commiteado (`4501a7e`) y pusheado a `main`, deploy a `fresco-pre`/`fresco-pro` verificado `● Ready`. Caching y fast-path de `getRecipeDetail` quedan como deuda técnica documentada, no como TODO silencioso — retomar solo si el catálogo crece mucho o el tráfico real lo justifica. Sigue sin medirse en vivo el impacto real (mismo bloqueo de credenciales) — la mejora es sólida por diseño (menos round-trips, índices reales) pero no hay un "antes/después" en ms confirmado.
 
 ---
 
