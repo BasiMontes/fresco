@@ -2008,3 +2008,13 @@ Ruta nueva `/recipes/[id]` (Server Component). `RecipeDetailView` despacha a dos
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 447/1000 con foto, 553 restantes.
+
+---
+
+## 2026-08-04 — FRESCO-31: duodécimo batch (4/30, 451/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. Primera corrida real desperdició cupo: redirigí `stdout`+`stderr` juntos a un archivo (`> file 2>&1`) para capturar el JSON, pero el JSON final se mezcló con las líneas `console.error` de progreso y `jq` no pudo parsearlo — 30 llamadas reales a Unsplash tiradas a la basura, ningún resultado aplicado. Corregido separando streams (`> batch.json 2>batch.log`) y recorrido de nuevo — 2da corrida real: 4/30 hits (tasa más baja aún que la anterior; el pool de 300 sigue dominado por las mismas combinaciones "estilo casero/mediterráneo/del sur + version ligera" que el filtro `FILLER_PHRASES` no cubre en todos los órdenes). Confirmado sin pisar el límite de 50/hora: revisado el log de la 2da corrida, cero 403. Aplicado con `supabase db query --linked -f batch12.sql`. Verificado con el mismo CLI: `451/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background — antes de revisar y documentar las 10 tarjetas nuevas en "Listo".
+
+**Siguiente**: 451/1000 con foto, 549 restantes. Candidato real para v8 del script (no arreglado, fuera de foco hoy): las tasas de hit vienen cayendo corrida a corrida (16→15→13→12→7→8→7→5→4) a medida que el pool restante se concentra en nombres largos con múltiples modificadores de relleno encadenados — `FILLER_PHRASES` solo cubre combinaciones fijas, no cualquier orden/cantidad de modificadores.
