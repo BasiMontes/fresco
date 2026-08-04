@@ -1,4 +1,5 @@
 import { EmptyCatalogState, RecipeLibrary } from '@/components/recipes/recipe-library';
+import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getCatalogRecipes, getRecetasPropias } from '@/lib/api/recipes';
 import { createClient } from '@/lib/supabase/server';
 
@@ -23,7 +24,7 @@ export default async function RecipesPage() {
   // rather than paying for 2 sequential round trips. Each keeps its own
   // fallback via `.catch()` (same judgment calls as before) so one call's
   // rejection can't take the other down with it.
-  const [recipes, recetasPropias] = await Promise.all([
+  const [recipes, recetasPropias, favoriteIds] = await Promise.all([
     getCatalogRecipes(supabase).catch((error) => {
       // Same judgment call as every other read on this page family: a real
       // read failure falls back to the empty state rather than crashing the
@@ -35,6 +36,10 @@ export default async function RecipesPage() {
     getRecetasPropias(supabase).catch((error) => {
       console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
       return [] as Awaited<ReturnType<typeof getRecetasPropias>>;
+    }),
+    getFavoriteRecipeIds(supabase).catch((error) => {
+      console.error('[/recipes] getFavoriteRecipeIds failed, defaulting to none favorited', error);
+      return new Set<string>();
     }),
   ]);
 
@@ -48,7 +53,7 @@ export default async function RecipesPage() {
       <h2 className="sr-only">Recetas del catálogo</h2>
       {recipes.length === 0
         ? <EmptyCatalogState />
-        : <RecipeLibrary recipes={recipes} recetasPropias={recetasPropias} />}
+        : <RecipeLibrary recipes={recipes} recetasPropias={recetasPropias} favoriteRecipeIds={favoriteIds} />}
     </div>
   );
 }

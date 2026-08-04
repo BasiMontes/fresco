@@ -8,10 +8,11 @@ import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-
 import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
-import { RecipeCard } from '@/components/recipe/recipe-card';
+import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getUserNombre } from '@/lib/api/user-profile';
@@ -46,7 +47,7 @@ export default async function MenuPage() {
   // round trips. Each keeps its own fallback via `.catch()` (same
   // conservative-default judgment call as before) so one call's rejection
   // can't take the others down with it.
-  const [nombre, recetasDisponibles, ultimasRecetas, plan] = await Promise.all([
+  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds] = await Promise.all([
     getUserNombre(supabase, user?.id).catch((error) => {
       // Same conservative fallback as every other server-side profile read on
       // this page: a real read failure falls back to `null` (generic
@@ -83,6 +84,13 @@ export default async function MenuPage() {
       console.error('[/menu] getMealPlanForWeek failed, falling back to empty state', error);
       return null as MenuSemanalPersistido | null;
     }),
+    getFavoriteRecipeIds(supabase, user?.id).catch((error) => {
+      // Same fail-soft pattern as the other reads on this page: a favorites
+      // read failure just shows every heart as unfavorited rather than
+      // crashing the page.
+      console.error('[/menu] getFavoriteRecipeIds failed, defaulting to none favorited', error);
+      return new Set<string>();
+    }),
   ]);
 
   if (!plan) {
@@ -95,7 +103,7 @@ export default async function MenuPage() {
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
         <SavingsEstimateCards />
-        <LatestRecipesSection recipes={ultimasRecetas} />
+        <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
         <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
@@ -166,7 +174,7 @@ export default async function MenuPage() {
           <div key={slot}>
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
             {hoy[slot]
-              ? <RecipeCard recipe={hoy[slot]} />
+              ? <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} />
               : (
                   // FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for
                   // this slot — `AlertBanner` above already surfaces why.
@@ -187,7 +195,7 @@ export default async function MenuPage() {
         </Link>
       </div>
 
-      <LatestRecipesSection recipes={ultimasRecetas} />
+      <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import type { Recipe } from '@schemas';
 import Link from 'next/link';
-import { RecipeCard } from '@/components/recipe/recipe-card';
+import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { buttonVariants } from '@/components/ui/button';
 
 /**
@@ -13,7 +13,7 @@ import { buttonVariants } from '@/components/ui/button';
  * shouldn't see a dead-looking "Últimas recetas" heading with no cards
  * under it.
  */
-export function LatestRecipesSection({ recipes }: { recipes: Recipe[] }) {
+export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: Recipe[], favoriteRecipeIds: Set<string> }) {
   if (recipes.length === 0) {
     return null;
   }
@@ -28,7 +28,7 @@ export function LatestRecipesSection({ recipes }: { recipes: Recipe[] }) {
       </div>
       <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {recipes.map(recipe => (
-          <RecipeCard key={recipe.id} recipe={recipe} />
+          <FavoriteRecipeCard key={recipe.id} recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
         ))}
       </div>
     </div>

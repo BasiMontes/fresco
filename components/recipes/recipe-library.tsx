@@ -4,7 +4,8 @@ import type { RecetaPropia, Recipe, RecipeDieta, TipoCocina } from '@schemas';
 import { BookOpen, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
-import { DIETA_LABELS, RecipeCard } from '@/components/recipe/recipe-card';
+import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
+import { DIETA_LABELS } from '@/components/recipe/recipe-card';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
 import { PersonalRecipeCard } from '@/components/recipes/personal-recipe-card';
 import { Button } from '@/components/ui/button';
@@ -103,7 +104,7 @@ function matchesAlergenoFilter(recipe: Recipe, alergeno: string): boolean {
   return !alergenos.includes(alergeno);
 }
 
-export function RecipeLibrary({ recipes, recetasPropias }: { recipes: Recipe[], recetasPropias: RecetaPropia[] }) {
+export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { recipes: Recipe[], recetasPropias: RecetaPropia[], favoriteRecipeIds: Set<string> }) {
   const [query, setQuery] = React.useState('');
   const [tab, setTab] = React.useState<MealTab>('todo');
   const [cocina, setCocina] = React.useState<string>(TODAS_LAS_COCINAS);
@@ -219,7 +220,7 @@ export function RecipeLibrary({ recipes, recetasPropias }: { recipes: Recipe[], 
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="recipe_library_grid">
               {filtered.map(recipe => (
                 <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-                  <RecipeCard recipe={recipe} />
+                  <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
                 </Link>
               ))}
             </div>
