@@ -2191,3 +2191,13 @@ Después, tanda de 30 sobre pool de 300: 5/30 hits. Aplicado con `supabase db qu
 **Por qué**: user pidió explícitamente arreglar el script antes de seguir gastando cupo, en vez de aguantar la tasa cayendo (5→3→2→1) o pasar a "production" de Unsplash.
 
 **Siguiente**: 488/1000 con foto, 512 restantes. Con la tasa recuperada a niveles de sesiones anteriores (~15-23/30), el ritmo real vuelve a ser razonable sin necesitar el acceso "production". Reevaluar si la tasa vuelve a caer más adelante (el pool restante seguirá reduciéndose).
+
+---
+
+## 2026-08-05 — FRESCO-31: decimonoveno batch (12/30, 500/1000 total) — mitad del catálogo
+
+**Qué**: primera tanda real con el fix v8 (`per_page=30`) ya commiteado. 12/30 hits — confirma que el fix se sostiene, no fue un pico aislado de la corrida de validación. Un solo `403` aislado en el log (limitador de ráfaga, recuperado solo tras el cooldown de 4s ya existente, sin impacto real en el resultado). Aplicado con `supabase db query --linked -f batch19.sql`. Verificado: `500/1000` con foto, cero duplicados — mitad del catálogo con foto real.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 500/1000 con foto, 500 restantes.
