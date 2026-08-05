@@ -2137,3 +2137,13 @@ Commits `b4e4b48` (DB) + `e0fdb9a` (API + UI), push directo a `main`. Jira `List
 **Por qué**: pedido directo del user, último de los 10 tickets del lote — cierra el ciclo completo iniciado con el batch de fotos de FRESCO-31 al principio de la sesión.
 
 **Siguiente**: las 10 tarjetas originales (FRESCO-70 a 79) completas de punta a punta — 7 con cambio de código real (70/71/72/73/74-parte2/77/79) + 3 confirmadas/cerradas sin tocar código (74-parte1/75/76/78). Las 10 en "Control de calidad" esperando confirmación explícita del user para pasar a "Finalizada" — mismo patrón que épicas previas, no cerrar solo. Nada dev-ready pendiente de esta sesión.
+
+---
+
+## 2026-08-05 — FRESCO-31: decimotercer batch (3/30, 454/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 3/30 hits, tasa consistente con la caída ya documentada (pool restante dominado por nombres con múltiples modificadores de relleno encadenados que `FILLER_PHRASES` no cubre). Aplicado con `supabase db query --linked -f batch13.sql`. Verificado con el mismo CLI: `454/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 454/1000 con foto, 546 restantes. v8 del script (excluir recetas fallidas anteriores o randomizar más agresivamente) sigue siendo el candidato real para subir la tasa de hit, no abordado todavía.
