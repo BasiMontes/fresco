@@ -2157,3 +2157,15 @@ Commits `b4e4b48` (DB) + `e0fdb9a` (API + UI), push directo a `main`. Jira `List
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 457/1000 con foto, 543 restantes.
+
+---
+
+## 2026-08-05 — FRESCO-31: título/descripción actualizados + decimoquinto batch (5/30, 462/1000 total)
+
+**Qué**: pedido del user de refrescar la tarjeta FRESCO-31 en Jira, que tenía título y descripción muy desactualizados (título decía "133/1000", descripción decía "40/1000" y apuntaba a un script que "no está en el repo" cuando `fetch-recipe-photos.ts` sí lo está hace rato). Actualizado vía `acli`: título a "457/1000 hecho" (número real al momento), descripción reescrita con el path real del script, la tasa de hit decreciente documentada, la alternativa de acceso "production" de Unsplash, y marcado como resuelto el pendiente viejo de conectar `foto_url` a la UI (`RecipeCard` ya la usa).
+
+Después, tanda de 30 sobre pool de 300: 5/30 hits. Aplicado con `supabase db query --linked -f batch15.sql`. Verificado: `462/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user — primero poner al día la tarjeta, después seguir con el backfill.
+
+**Siguiente**: 462/1000 con foto, 538 restantes.
