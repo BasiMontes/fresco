@@ -2179,3 +2179,15 @@ Después, tanda de 30 sobre pool de 300: 5/30 hits. Aplicado con `supabase db qu
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 464/1000 con foto, 536 restantes. Tasa cayendo tanda a tanda (5→3→2) — v8 del script cada vez más urgente si se quiere seguir a este ritmo en vez de ir a acceso "production" de Unsplash.
+
+---
+
+## 2026-08-05 — FRESCO-31: v8 real (per_page 10→30) — 1/30 pasó a 23/30
+
+**Qué**: decimoséptimo batch dio 1/30 (465/1000 aplicado, sin loguear en su momento — user pidió pausar para arreglar el script antes de seguir). Diagnóstico real del log: 27 de los 29 fallos eran recetas de desayuno (avena, huevos, yogur, tostadas, muesli) — sin ningún 403/rate-limit en el log, así que no era el limitador. Causa real: desayuno es un set cerrado de ~10-15 conceptos visuales (bowl de avena, huevos revueltos, tostada con aguacate, etc.) repetidos en cientos de variantes combinatorias — con `per_page=10`, el pool real de fotos de Unsplash para cada concepto se agota rápido contra `usedUrls` (465 ya aplicadas), no es un problema de traducción ni de relevancia como se pensaba en sesiones anteriores.
+
+**Fix v8** (`scripts/fetch-recipe-photos.ts`): `per_page` 10 → 30 (el máximo que permite la API de Unsplash) — el mismo `topK=2` de preferencia por relevancia se mantiene sin tocar, pero el loop de fallback ahora tiene 3x más candidatos para encontrar una foto libre antes de rendirse. Validado en vivo: misma corrida de la que salió el diagnóstico, próxima tanda con el fix aplicado dio **23/30** (vs 1/30 antes) — incluyó desayunos que antes fallaban siempre ("Muesli con leche con miel", "Huevos poche estilo casero con canela"). Aplicado con `supabase db query --linked -f batch18.sql`. Verificado: `488/1000` con foto, cero duplicados. Commit `3395591`, push directo a `main`.
+
+**Por qué**: user pidió explícitamente arreglar el script antes de seguir gastando cupo, en vez de aguantar la tasa cayendo (5→3→2→1) o pasar a "production" de Unsplash.
+
+**Siguiente**: 488/1000 con foto, 512 restantes. Con la tasa recuperada a niveles de sesiones anteriores (~15-23/30), el ritmo real vuelve a ser razonable sin necesitar el acceso "production". Reevaluar si la tasa vuelve a caer más adelante (el pool restante seguirá reduciéndose).
