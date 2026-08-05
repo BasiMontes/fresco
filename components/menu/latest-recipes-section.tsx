@@ -1,5 +1,6 @@
 import type { Recipe } from '@schemas';
 import Link from 'next/link';
+import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { buttonVariants } from '@/components/ui/button';
 
@@ -32,6 +33,10 @@ import { buttonVariants } from '@/components/ui/button';
  * — `/recipes` and `/favorites` keep their own denser grid, confirmed with
  * the user as intentional (they're browse/search surfaces, not a preview
  * strip).
+ *
+ * FRESCO-78 — `HorizontalScrollRow` adds click-to-scroll arrows that hide
+ * themselves at each end, so a scrollable-but-visually-flat row doesn't
+ * silently hide the fact that there's more to see.
  */
 export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: Recipe[], favoriteRecipeIds: Set<string> }) {
   if (recipes.length === 0) {
@@ -46,7 +51,7 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
           Ver todas
         </Link>
       </div>
-      <div className="mt-2 flex gap-4 overflow-x-auto pb-2">
+      <HorizontalScrollRow className="mt-2">
         {recipes.map(recipe => (
           <FavoriteRecipeCard
             key={recipe.id}
@@ -55,7 +60,7 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
             className="w-60 shrink-0"
           />
         ))}
-      </div>
+      </HorizontalScrollRow>
     </div>
   );
 }
