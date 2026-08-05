@@ -2316,3 +2316,13 @@ Verificado en vivo con Playwright: las 3 cards de "hoy" terminan exactamente a l
 **Por qué**: pedido directo del user, mismo ticket reabierto por segunda vez con feedback visual concreto.
 
 **Siguiente**: nada pendiente. FRESCO-78 sigue en Control de calidad — dos rondas de feedback real ya resueltas, esperando confirmación del user para Finalizada.
+
+---
+
+## 2026-08-05 — FRESCO-31: vigésimo primer batch (18/30, 537/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 18/30 hits, tasa alta sostenida. Aplicado con `supabase db query --linked -f batch21.sql`. Verificado: `537/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 537/1000 con foto, 463 restantes.
