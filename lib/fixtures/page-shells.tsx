@@ -42,10 +42,10 @@ export function MenuPageFixture() {
         </div>
         <div className="flex gap-2">
           <Link href="/favorites" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Favoritos">
-            <Heart className="size-4" />
+            <Heart className="size-5" />
           </Link>
           <Link href="/notifications" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Notificaciones">
-            <Bell className="size-4" />
+            <Bell className="size-5" />
           </Link>
         </div>
       </div>
