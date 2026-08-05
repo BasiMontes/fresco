@@ -2169,3 +2169,13 @@ Después, tanda de 30 sobre pool de 300: 5/30 hits. Aplicado con `supabase db qu
 **Por qué**: pedido directo del user — primero poner al día la tarjeta, después seguir con el backfill.
 
 **Siguiente**: 462/1000 con foto, 538 restantes.
+
+---
+
+## 2026-08-05 — FRESCO-31: decimosexto batch (2/30, 464/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 2/30 hits, tasa más baja de toda la serie hasta ahora — sigue confirmando el patrón ya documentado (pool restante concentrado en nombres con modificadores de relleno encadenados). Aplicado con `supabase db query --linked -f batch16.sql`. Verificado: `464/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 464/1000 con foto, 536 restantes. Tasa cayendo tanda a tanda (5→3→2) — v8 del script cada vez más urgente si se quiere seguir a este ritmo en vez de ir a acceso "production" de Unsplash.
