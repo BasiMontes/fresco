@@ -2147,3 +2147,13 @@ Commits `b4e4b48` (DB) + `e0fdb9a` (API + UI), push directo a `main`. Jira `List
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 454/1000 con foto, 546 restantes. v8 del script (excluir recetas fallidas anteriores o randomizar más agresivamente) sigue siendo el candidato real para subir la tasa de hit, no abordado todavía.
+
+---
+
+## 2026-08-05 — FRESCO-31: decimocuarto batch (3/30, 457/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts`, batch de 30 sobre pool de 300. 3/30 hits, misma tasa que la tanda anterior. Aplicado con `supabase db query --linked -f batch14.sql`. Verificado: `457/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 457/1000 con foto, 543 restantes.
