@@ -7,8 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
  * usuarios, no calculados a partir de la actividad real de cada usuario en
  * esta versión." No sourced spend/savings/time-recovered figures exist
  * anywhere in this repo's business docs — these are illustrative
- * placeholders proposed with the user rather than invented unreviewed
- * (see the shared caption below), not validated market numbers.
+ * placeholders proposed with the user rather than invented unreviewed, not
+ * validated market numbers. FRESCO-75 — the disclaimer caption that used to
+ * sit under these cards was removed at the user's request; the estimates
+ * themselves are unchanged.
  */
 const ESTIMATES = [
   { icon: Wallet, value: '~45€', label: 'Gasto semanal estimado' },
@@ -26,14 +28,10 @@ export function SavingsEstimateCards() {
               <Icon className="size-5 text-primary" aria-hidden="true" />
               <p className="text-h3">{value}</p>
               <p className="text-body-sm text-tertiary">{label}</p>
-              <p className="text-caption text-tertiary">Valor orientativo</p>
             </CardContent>
           </Card>
         ))}
       </div>
-      <p className="mt-2 rounded-md bg-warning/10 p-2 text-caption text-warning">
-        Cifras de referencia general, pendientes de validar con datos reales de mercado.
-      </p>
     </div>
   );
 }
