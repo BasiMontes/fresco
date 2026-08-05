@@ -2273,3 +2273,13 @@ Verificado en vivo con Playwright: íconos ocupan más el círculo, resto de la 
 **Por qué**: pedido directo del user, feedback visual sobre un detalle de tamaño.
 
 **Siguiente**: nada pendiente. Commit `51498f3`, push directo a `main`.
+
+---
+
+## 2026-08-05 — /menu: "Ahorro estimado" → "Ahorro orientativo"
+
+**Qué**: `components/menu/savings-estimate-cards.tsx` — label de la tarjeta central cambiado por pedido del user. Sin otras referencias al texto viejo en el repo. Verificado en vivo con Playwright.
+
+**Por qué**: pedido directo del user, ajuste de copy.
+
+**Siguiente**: nada pendiente. Commit `e915785`, push directo a `main`.
