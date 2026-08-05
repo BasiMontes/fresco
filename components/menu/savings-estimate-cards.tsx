@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
  */
 const ESTIMATES = [
   { icon: Wallet, value: '~45€', label: 'Gasto semanal estimado' },
-  { icon: TrendingDown, value: '~15€', label: 'Ahorro estimado' },
+  { icon: TrendingDown, value: '~15€', label: 'Ahorro orientativo' },
   { icon: Clock, value: '~3h', label: 'Tiempo recuperado' },
 ] as const;
 
