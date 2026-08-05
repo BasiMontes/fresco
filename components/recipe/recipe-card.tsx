@@ -24,6 +24,17 @@ import { cn } from '@/lib/utils';
  * columns the seeding pipeline populated only partially, per that type's own
  * doc comment), so every field read below is optional-chained with a
  * fallback rather than assumed present.
+ *
+ * FRESCO-78 — `h-full flex flex-col` on the root: cards in the same grid
+ * row were visually uneven bottom edges when one title wrapped to more
+ * lines than its neighbors (grid stretches the *grid item* to row height
+ * by default, but this card's own box just sat at its natural content
+ * height inside that taller cell, leaving blank space below it). Callers
+ * whose grid item isn't this card's own root directly (e.g. `/menu`'s
+ * "hoy" slots, which put a label above the card in the same cell) pass
+ * `flex-1` via `className` instead — `flex-basis:0` from `flex-1` takes
+ * precedence over `height:100%` from `h-full` here, so the two compose
+ * correctly rather than fighting.
  */
 export interface RecipeCardProps {
   recipe: Recipe
@@ -57,7 +68,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
   const CategoryIcon = getCategoryIcon(recipe.clasificacion?.categoria);
 
   return (
-    <div className={cn('rounded-card bg-surface p-3 shadow-sm', className)}>
+    <div className={cn('flex h-full flex-col rounded-card bg-surface p-3 shadow-sm', className)}>
       <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
         {recipe.foto_url
           ? (

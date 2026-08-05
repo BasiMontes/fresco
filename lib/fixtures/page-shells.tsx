@@ -56,9 +56,9 @@ export function MenuPageFixture() {
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(['desayuno', 'comida', 'cena'] as const).map(slot => (
-          <div key={slot}>
+          <div key={slot} className="flex flex-col">
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
-            <FavoriteRecipeCard recipe={makeFixtureRecipe({ id: `fixture-${slot}` })} initialIsFavorite={false} />
+            <FavoriteRecipeCard recipe={makeFixtureRecipe({ id: `fixture-${slot}` })} initialIsFavorite={false} className="flex-1" />
           </div>
         ))}
       </div>

@@ -171,14 +171,14 @@ export default async function MenuPage() {
       <h2 className="sr-only">Menú de hoy por comida</h2>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(['desayuno', 'comida', 'cena'] as const).map(slot => (
-          <div key={slot}>
+          <div key={slot} className="flex flex-col">
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
             {hoy[slot]
-              ? <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} />
+              ? <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} className="flex-1" />
               : (
                   // FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for
                   // this slot — `AlertBanner` above already surfaces why.
-                  <Card data-testid={`menu_slot_${slot}_sin_receta`}>
+                  <Card data-testid={`menu_slot_${slot}_sin_receta`} className="flex-1">
                     <CardContent className="text-body-sm italic text-tertiary">
                       Sin receta segura
                     </CardContent>

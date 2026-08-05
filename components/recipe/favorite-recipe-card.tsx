@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 export interface FavoriteRecipeCardProps {
   recipe: Recipe
   initialIsFavorite: boolean
+  className?: string
 }
 
 /**
@@ -18,7 +19,7 @@ export interface FavoriteRecipeCardProps {
  * update + revert-on-failure, same pattern as `ShoppingListView`'s
  * `comprado` checkbox.
  */
-export function FavoriteRecipeCard({ recipe, initialIsFavorite }: FavoriteRecipeCardProps) {
+export function FavoriteRecipeCard({ recipe, initialIsFavorite, className }: FavoriteRecipeCardProps) {
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const supabase = React.useMemo(() => createClient(), []);
 
@@ -40,5 +41,5 @@ export function FavoriteRecipeCard({ recipe, initialIsFavorite }: FavoriteRecipe
     }
   }
 
-  return <RecipeCard recipe={recipe} isFavorite={isFavorite} onToggleFavorite={() => { void handleToggle(); }} />;
+  return <RecipeCard recipe={recipe} isFavorite={isFavorite} onToggleFavorite={() => { void handleToggle(); }} className={className} />;
 }
