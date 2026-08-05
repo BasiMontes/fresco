@@ -2225,3 +2225,27 @@ Verificado en vivo con Playwright: los 4 skeletons renderizan y calzan visualmen
 **Por qué**: pedido directo del user, resuelve un hallazgo UX real ya identificado en sesión anterior.
 
 **Siguiente**: regenerar bones (`bunx boneyard-js build http://localhost:3000/dev/skeleton-capture --no-scan --force`) cada vez que cambie el layout real de alguna de las 4 pantallas — mismo modelo operativo que `bun run db:types`, paso manual documentado, no automatizado en CI todavía.
+
+---
+
+## 2026-08-05 — Evaluación e instalación cancelada de graphify (herramienta de terceros)
+
+**Qué**: user pidió instalar dos repos de terceros seguidos, ambos con patrón de estrellas estadísticamente implausible para su antigüedad — `ponytail` (96.8k estrellas, repo de 2 meses, dueño con 1393 followers) y `graphify` (102.9k estrellas, org de 5 semanas, 2 repos públicos). Investigado cada uno antes de tocar nada: código de hooks de `ponytail` revisado y limpio (sin red, sin exec sospechoso), user decidió no instalarlo (solo pedí que corriera los `/plugin` él mismo, no puedo ejecutarlos). `graphify` sí se instaló tras confirmación explícita del user pese al aviso.
+
+**Instalación real**: `brew install uv` (prerequisito, no estaba) → `uv tool install graphifyy` → `graphify install` (registró skill en `~/.claude/skills/graphify/` + sección en `~/.claude/CLAUDE.md` global). Corrido `/graphify .` sobre el repo completo: detectó 965 archivos/~1.28M palabras (superó el umbral de 500 archivos → pedí confirmación de alcance, user eligió seguir con todo el repo igual). Extracción AST completada sin problema: 4612 nodos, 11420 edges, sin LLM. La extracción semántica (docs/imágenes, 626 archivos sin `GEMINI_API_KEY`) requería 30 subagentes en paralelo — confirmado con el user antes de disparar por el volumen real de tokens. A mitad de los 30 (5 lanzados), **el user canceló la operación** — no había dimensionado el gasto de tokens real hasta verlo en curso.
+
+**Cleanup completo pedido y ejecutado**: `graphify uninstall --purge` (sacó el skill + borró `graphify-out/`), sección residual en `~/.claude/CLAUDE.md` sacada a mano (el uninstaller no la detectó — quedó huérfana), `uv tool uninstall graphifyy`, `brew uninstall uv`, y los directorios de estado de `uv` (`~/.local/share/uv`, `~/.local/bin`) — estos últimos bloqueados por el permiso del harness (`rm -rf` fuera del repo denegado incluso con `dangerouslyDisableSandbox`), los borró el user a mano. `git status` limpio, nada de esto tocó el repo de Fresco. `boneyard-js` (instalado antes en la misma sesión) no se tocó, sigue activo.
+
+**Por qué**: pedido directo del user en ambos sentidos — instalar primero, desinstalar todo después al ver el costo real. Caso real de por qué frenar a confirmar alcance antes de operaciones grandes (30 subagentes) vale la pena, incluso cuando el user ya dijo que siga.
+
+**Siguiente**: nada pendiente de esto — repo de Fresco intacto, sistema del user limpio. Si en el futuro se evalúa una herramienta similar, repetir el mismo patrón de due-diligence (chequear antigüedad de cuenta/org vs. cantidad de estrellas, revisar código real de hooks/instaladores antes de instalar) y dimensionar el costo real (cantidad de subagentes/tokens) ANTES de confirmar, no después de empezar.
+
+---
+
+## 2026-08-05 — FRESCO-31: vigésimo batch (19/30, 519/1000 total) — más de la mitad
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8, `per_page=30`), batch de 30 sobre pool de 300. 19/30 hits, tasa alta y sostenida — confirma que el fix v8 sigue funcionando bien varias tandas después. Aplicado con `supabase db query --linked -f batch20.sql`. Verificado: `519/1000` con foto, cero duplicados — más de la mitad del catálogo.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 519/1000 con foto, 481 restantes.
