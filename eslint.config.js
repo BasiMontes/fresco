@@ -34,6 +34,10 @@ export default antfu({
     // doesn't exist in this project — `db:types` had never been run before,
     // so the mismatch stayed latent until the first real regeneration.
     'lib/supabase/types.ts',
+    // boneyard-js CLI output (`npx boneyard-js build`, per its own header
+    // comment "do not edit"). Same reasoning as lib/supabase/types.ts above
+    // — machine-generated, re-running the CLI would just diverge it again.
+    'bones/**',
     // Git worktrees placed under .claude/worktrees/ are another branch's full
     // checkout — never lint another tree from this one.
     '.claude/worktrees/**',

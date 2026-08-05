@@ -44,6 +44,7 @@
     "@inquirer/prompts": "^8.1.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
+    "boneyard-js": "^1.9.0",
     "boxen": "^8.0.1",
     "class-variance-authority": "^0.7.1",
     "cli-table3": "^0.6.5",
