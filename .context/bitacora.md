@@ -2326,3 +2326,21 @@ Verificado en vivo con Playwright: las 3 cards de "hoy" terminan exactamente a l
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 537/1000 con foto, 463 restantes.
+
+---
+
+## 2026-08-05/06 — FRESCO-78: la vuelta larga hasta el diagnóstico real (ancho de card, no altura)
+
+**Qué**: user volvió a reportar "estas tarjetas siguen sin estar arregladas" sobre "Últimas recetas añadidas" con una captura. Larga sesión de verificación real, no asumida:
+
+- Medí con `getBoundingClientRect()` en Chromium (desktop + mobile), WebKit, y Brave real con perfil nuevo (instalado en la máquina para la prueba) — las 6 cards daban **301px exacto** en todos, tanto local como en producción real (`fresco-pro.vercel.app`, logueado, sin caché — headers confirmados `no-cache`/`x-vercel-cache: MISS`). El fix de altura de la sesión anterior SÍ estaba funcionando.
+- User insistía que seguía roto en su Brave real. Pedí capturas de consola para medir su DOM real — varias idas y vueltas (el user corrió `copy()` en vez de `console.log()`, no entendía qué pegar) hasta que una captura con las DevTools dockeadas abajo mostró — para MI ojo — las 6 cards perfectamente alineadas.
+- **El reclamo real no era altura pareja** (eso ya estaba resuelto hace 2 rondas) — era que a 6 columnas angostas, títulos de 4-5 palabras rompían palabra por palabra y la sección se veía apretada/fea comparada con las cards anchas de "hoy" arriba. El user lo dijo clarísimo recién con una captura de referencia: "tienen que verse así" (las cards de "hoy").
+
+**Fix real aplicado**: `LatestRecipesSection` pasó de grid `lg:grid-cols-6` a fila con scroll horizontal (`flex overflow-x-auto`), cards de ancho fijo `w-60` — mismo ancho que las cards de "hoy" en el mismo contenedor `max-w-3xl`. Confirmado con el user: alcance acotado a esta sección — `/recipes` (biblioteca) y `/favoritos` se quedan con su grid más denso (hasta 4 columnas), porque son superficies de navegar/buscar, no una vitrina de preview como esta.
+
+Verificado en vivo: `scrollWidth` (1528px) > `clientWidth` (768px) — el scroll horizontal real funciona, no es solo visual. Bones de `boneyard-js` regenerados. Commit `590f3da`, push directo a `main`. 3 comentarios de seguimiento en Jira documentando cada vuelta del diagnóstico.
+
+**Por qué**: pedido directo del user — tercera ronda de feedback sobre el mismo ticket, con una confusión real de diagnóstico de mi parte: asumí que "altura pareja" era el problema (ya resuelto) mientras el user hablaba de "ancho de card" — otro eje del diseño completamente distinto, no el que yo estaba midiendo.
+
+**Siguiente**: FRESCO-78 sigue en Control de calidad — tres rondas de feedback real ya resueltas. Lección para la próxima: cuando el user dice "sigue roto" tras confirmar mi propia medición en 4 entornos distintos, no asumir que es caché/navegador — pedirle ANTES una referencia visual de "cómo tiene que verse" en vez de seguir cazando la causa técnica a ciegas.
