@@ -2366,3 +2366,24 @@ Verificado en vivo con Playwright: clickeé la flecha derecha 3 veces seguidas �
 **Por qué**: pedido directo del user, mejora de affordance sobre el scroll horizontal ya implementado.
 
 **Siguiente**: nada pendiente. FRESCO-78 sigue en Control de calidad — cuatro rondas de feedback real ya resueltas.
+
+---
+
+## 2026-08-06 — FRESCO-80 (nuevo): /calendar adopta el estilo visual de RecipeCard
+
+**Qué**: user pidió, usando el resultado de FRESCO-78 como referencia, adaptar las tarjetas de `/calendar` (grilla semanal) al mismo lenguaje visual — pero primero pidió explícitamente crear el ticket en Jira antes de tocar código (a diferencia del resto de la sesión, donde se implementaba directo). **FRESCO-80** creado (Tarea), documentado con evidencia real del código actual (`SlotCell` en `components/calendar/calendar-grid.tsx`, líneas 342-437 en ese momento) y 4 puntos de complejidad identificados de antemano: drag&drop, botones de marcar estado, altura de columna, ancho de columna — el propio código ya explicaba que el formato compacto era una decisión consciente de densidad (7 días visibles), no un descuido.
+
+**Implementación** (mismo día, tras confirmación "Arrancá ya"):
+- `SlotCell` reescrito: de fila compacta (ícono 14px + nombre) a tratamiento completo tipo `RecipeCard` — imagen 4:3 (foto real o placeholder por categoría), kicker de categoría, título, un tag de dieta. No es `<RecipeCard>` literal (esta celda necesita drag&drop + controles de marcar estado que ese componente no tiene) — replica la estructura a mano.
+- Drag handle reubicado: antes inline junto al nombre, ahora ícono flotante arriba-izquierda de la imagen (espejo del corazón de favoritos de `RecipeCard`, que va arriba-derecha).
+- Botones de marcar cocinado/descartado: se quedan pegados abajo (`mt-auto`), mismo criterio ya documentado en el código (competir por ancho con el título los colapsaba — hallazgo de una sesión anterior, no se repitió el error).
+- Columna de día: `w-64` → `w-60`, igual ancho que `RecipeCard` en el resto de la app.
+- `firstActiveDietaLabel` exportado desde `recipe-card.tsx` (antes función privada) para reusar la misma lógica de "un tag de dieta" en vez de reimplementarla en el calendario.
+
+Verificado en vivo con Playwright: **drag&drop real** (arrastré el handle de Lunes-desayuno sobre Martes-desayuno, confirmé el swap por el texto de las recetas, no solo visual) y **botón de marcar cocinado real** (badge "Cocinado" apareció tras el click) — no solo que compilara, que las dos interacciones más delicadas del componente siguieran funcionando igual que antes del rediseño. Bones de `boneyard-js` regenerados (226 bones en `calendar-page`, subió de 163 por las imágenes nuevas).
+
+Commit `47181d7`, push directo a `main`. Documentado en Jira con el mismo detalle que el resto del lote.
+
+**Por qué**: pedido directo del user — primera vez en la sesión que pidió explícitamente "creá la Jira primero" antes de implementar, en vez del patrón habitual de esta sesión (documentar+arreglar en el mismo pase).
+
+**Siguiente**: nada pendiente. FRESCO-80 en Control de calidad. Recordar para la próxima vez que se toque `CalendarGrid`: el drag handle vive DENTRO del área de imagen ahora, no como fila independiente — cualquier cambio a la imagen debe preservar ese posicionamiento.
