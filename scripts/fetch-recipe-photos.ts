@@ -257,8 +257,19 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
   // with hourly quota to spare (confirmed live: 403 "Rate Limit Exceeded"
   // while X-Ratelimit-Remaining still showed plenty left; recovered within
   // 5s of pausing).
+  //
+  // v8 — per_page 10 -> 30. Root cause found live: with ~465 photos already
+  // applied, breakfast recipes (avena/huevos/yogur/tostadas/muesli) hit
+  // "no photo found" at a much higher rate than lunch/dinner ones — batch
+  // 17 was 27/30 breakfast failures, 0 rate-limit errors in the log. These
+  // are a narrow, closed set of visual concepts repeated across hundreds of
+  // combinatorial name variants, so with only 10 candidates per query the
+  // small set of real "scrambled eggs"/"oatmeal bowl"/etc. photos gets
+  // exhausted by `usedUrls` fast — not a translation or relevance problem,
+  // an exhaustion problem. 30 (Unsplash's per_page max) gives the fallback
+  // loop below 3x more candidates to find an unclaimed one before giving up.
   await sleep(1200);
-  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=10&orientation=squarish`, {
+  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&orientation=squarish`, {
     headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
   });
   if (!res.ok) {
@@ -274,7 +285,7 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
   const body = await res.json() as { results: { urls: { regular: string } }[] };
   if (body.results.length === 0) { return null; }
 
-  // Pick from Unsplash's top 2 (most-relevant) results first, not all 10 —
+  // Pick from Unsplash's top 2 (most-relevant) results first, not all 30 —
   // a live full review of 70 applied photos found the worst mismatches
   // (a wedding program for "Espaguetis a la boloñesa", raw ingredients for
   // several soups/salads) came from indices 5-9, where relevance craters.
@@ -290,7 +301,7 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
   // byte-identical URLs). `usedUrls` (shared across the whole batch by the
   // caller) is what actually breaks the tie: the first recipe to reach a
   // given photo claims it, the next one falls through to its
-  // next-preferred index, and only past that to the "worse" indices 2-9 as
+  // next-preferred index, and only past that to the "worse" indices 2-29 as
   // a last resort before giving up rather than forcing a duplicate.
   const topK = Math.min(2, body.results.length);
   let hash = 0;
