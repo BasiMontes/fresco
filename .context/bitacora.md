@@ -2201,3 +2201,27 @@ Después, tanda de 30 sobre pool de 300: 5/30 hits. Aplicado con `supabase db qu
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 500/1000 con foto, 500 restantes.
+
+---
+
+## 2026-08-05 — Skeleton loading screens (boneyard-js) en /menu, /recipes, /calendar, /shopping-list
+
+**Qué**: user pidió instalar `github.com/0xGF/boneyard` (paquete `boneyard-js`, 6.7k stars, MIT) para mostrar skeleton mientras cargan las 4 pantallas con datos. Encaja con un hallazgo real ya documentado en sesión anterior: cero `loading.tsx` en toda la app, cero feedback visual durante navegación — "el hallazgo UX abierto más impactante que queda sin tocar".
+
+**Cómo funciona la librería**: CLI (`npx boneyard-js build`) abre un browser headless, visita la app, encuentra cada `<Skeleton name="...">`, mide su layout real y genera `.bones.json` + un `registry.ts`. En runtime, `<Skeleton name="X" loading={bool}>` muestra los "bones" (placeholders) capturados por ese nombre, sin medir DOM en producción (SSR-friendly, JSON estático).
+
+**2 problemas reales encontrados en vivo, no documentados en el README/docs oficiales**:
+1. **Auth**: las 4 pantallas reales están detrás del route group `(app)` (auth-gated) — el crawler anónimo del CLI nunca las alcanza (confirmado: "No skeletons found" en las 11 rutas del scan de filesystem). Solución: página pública dedicada `app/dev/skeleton-capture/page.tsx` (mismo patrón que `/qa`, no linkeada en nav) que monta los 4 `<Skeleton>` con datos fixture — el CLI captura por *nombre*, no por URL, así que no importa que viva en otro lado.
+2. **Duplicación de módulo entre client boundaries de Next.js**: con `import '@/bones/registry'` solo en `app/layout.tsx` (server component), el registro de bones nunca llegaba a los `<Skeleton>` de otras rutas — confirmado con `getBoundingClientRect()` en vivo: `data-boneyard-content` quedaba vacío, `activeBones` era `null`. Causa real: Turbopack le da a cada entry point `'use client'` su propio bundle, y el registro de boneyard es un `Map` en memoria a nivel de módulo — dos instancias del mismo `shared.js` de la librería en dos bundles separados nunca comparten estado. Fix: cada archivo que usa `<Skeleton>` importa el registry él mismo (confirmado en vivo: bones pasaron de 0 a 82 renderizados apenas se agregó el import directo en el mismo archivo). Documentado en comentario de `app/layout.tsx` para que no se repita el error.
+
+**Colores**: nunca los grises puros por default de la librería (`#f0f0f0`/`#222222`) — DESIGN.md prohíbe explícitamente gris puro para chrome neutral. Usados `neutral-300`/`neutral-800` reales (`#DED2B8`/`#493F2C`), animación `shimmer`.
+
+**Fixtures** (`lib/fixtures/recipe.ts` + `lib/fixtures/page-shells.tsx`): factories de `Recipe`/grilla semanal/lista de compra con forma real (tipos completos, sin campos faltantes), reutilizando los componentes reales de cada pantalla (`RecipeCard`, `CalendarGrid`, `ShoppingListView`, etc.) alimentados con datos de mentira — nunca hand-dibujando el layout a mano, coherente con la filosofía de la librería ("pixel-perfect, extraído de tu UI real").
+
+Verificado en vivo con Playwright: los 4 skeletons renderizan y calzan visualmente con el layout real de cada pantalla (header, banners, grillas de tarjetas, filas de compra). Lint + types + build verdes (2 errores reales de tipos en los fixtures — campos faltantes de `RecipeClasificacion`/`RecipeDieta`, corregidos; lint de los archivos generados excluido vía `eslint.config.js`/`.prettierignore`, mismo criterio que `lib/supabase/types.ts`).
+
+2 commits: `74fcf52` (dependencia + infra de captura) + `be3f707` (wiring de los 4 `loading.tsx`), push directo a `main`.
+
+**Por qué**: pedido directo del user, resuelve un hallazgo UX real ya identificado en sesión anterior.
+
+**Siguiente**: regenerar bones (`bunx boneyard-js build http://localhost:3000/dev/skeleton-capture --no-scan --force`) cada vez que cambie el layout real de alguna de las 4 pantallas — mismo modelo operativo que `bun run db:types`, paso manual documentado, no automatizado en CI todavía.
