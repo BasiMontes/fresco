@@ -2249,3 +2249,15 @@ Verificado en vivo con Playwright: los 4 skeletons renderizan y calzan visualmen
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 519/1000 con foto, 481 restantes.
+
+---
+
+## 2026-08-05 — /menu: sacado el disclaimer del widget de ahorro
+
+**Qué**: user pasó captura señalando "Valor orientativo" (bajo cada tarjeta) y "Cifras de referencia general, pendientes de validar con datos reales de mercado." (banner debajo) — pidió sacar ambos textos. `components/menu/savings-estimate-cards.tsx`: las 2 líneas eliminadas, las 3 cifras (~45€/~15€/~3h) sin cambios. Comentario del componente actualizado (ya no referencia el caption sacado).
+
+Verificado en vivo con Playwright: `/menu` sin ninguno de los dos textos, resto de la pantalla intacto.
+
+**Por qué**: pedido directo del user, decisión de copy/UI — las cifras siguen siendo las mismas estimaciones generales de FRESCO-75, solo cambia qué tan visible es la advertencia.
+
+**Siguiente**: nada pendiente. Commit `ed989b7`, push directo a `main`.
