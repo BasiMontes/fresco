@@ -2354,3 +2354,15 @@ Verificado en vivo: `scrollWidth` (1528px) > `clientWidth` (768px) — el scroll
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 549/1000 con foto, 451 restantes.
+
+---
+
+## 2026-08-06 — FRESCO-78: flechas de dirección en el scroll horizontal
+
+**Qué**: user pidió agregar flechas al scroll horizontal de "Últimas recetas" para que quede claro que hay más recetas. Nuevo `components/menu/horizontal-scroll-row.tsx` (client component) — botones izquierda/derecha (`scrollBy` ~1 card), se esconden solos en cada punta (arranca con solo la derecha visible, termina con solo la izquierda, ninguna si todo entra sin scroll). `LatestRecipesSection` ahora envuelve las cards en este wrapper en vez del `div` plano.
+
+Verificado en vivo con Playwright: clickeé la flecha derecha 3 veces seguidas — al inicio solo derecha, a mitad ambas, al final solo izquierda. Bones regenerados. Commit `7d3e864`, push directo a `main`.
+
+**Por qué**: pedido directo del user, mejora de affordance sobre el scroll horizontal ya implementado.
+
+**Siguiente**: nada pendiente. FRESCO-78 sigue en Control de calidad — cuatro rondas de feedback real ya resueltas.
