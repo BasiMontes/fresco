@@ -1,7 +1,7 @@
 'use client';
 
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { CategoriaReceta, Recipe } from '@schemas';
+import type { Recipe } from '@schemas';
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid, SlotKey } from '@/lib/calendar/apply-slot-swap';
 import {
@@ -15,8 +15,11 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, GripVertical, X } from 'lucide-react';
+import Image from 'next/image';
 import * as React from 'react';
+import { firstActiveDietaLabel } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
+import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { MealPlanError, swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
@@ -235,7 +238,7 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
             {DIAS.map((dia) => {
               const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
               return (
-                <div key={dia} className="flex w-64 shrink-0 flex-col gap-3">
+                <div key={dia} className="flex w-60 shrink-0 flex-col gap-3">
                   <p
                     className={cn(
                       'text-label',
@@ -306,6 +309,20 @@ interface SlotCellProps {
  * dnd-kit hooks; their `setNodeRef` callbacks are chained onto the same DOM
  * node via `setRefs` below (dnd-kit tracks draggable/droppable ids in
  * separate registries, so reusing the same composite id for both is safe).
+ *
+ * FRESCO-80 — full `RecipeCard`-style treatment (image area, category
+ * kicker, title, one diet tag) instead of the old compact icon+name row.
+ * Column width dropped from `w-64` to `w-60` to match `RecipeCard`'s own
+ * width elsewhere (`/menu`, `/recipes`, `/favorites`). Not literally
+ * `<RecipeCard>` — this cell needs the drag handle and mark-status
+ * controls that component doesn't have, so it mirrors the same visual
+ * structure by hand rather than wrapping it. The drag handle moved onto
+ * the image area (top-left, matching where `RecipeCard`'s favorite heart
+ * sits top-right) since the compact row's inline handle no longer has a
+ * home; mark-status controls stay pinned to the bottom (`mt-auto`) below
+ * whatever content precedes them, same "stacked below, not beside" reason
+ * as before (STORY-FRESCO-15 — a buttons row competing for width with a
+ * long title collapses the title's wrapper).
  */
 function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: SlotCellProps) {
   const slotKey: SlotKey = { dia, tipo };
@@ -339,65 +356,81 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
     [setDragRef, setDropRef],
   );
 
+  const CategoryIcon = getCategoryIcon(recipe?.clasificacion?.categoria);
+  const dietaLabel = recipe ? firstActiveDietaLabel(recipe.dieta) : null;
+
   return (
     <div
       ref={setRefs}
       data-testid={`calendar_slot_${dia}_${tipo}`}
       style={{ transform: CSS.Translate.toString(transform) }}
       className={cn(
-        'flex flex-col gap-2 rounded-card bg-surface p-3 shadow-sm',
+        'flex flex-col rounded-card bg-surface p-3 shadow-sm',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
         pending && 'cursor-wait opacity-70',
         estado === 'descartada' && 'opacity-60',
       )}
     >
-      <div className="flex items-start gap-2">
-        {/*
-          Drag activation listeners live ONLY on this handle, not the whole
-          cell (dnd-kit's documented "drag handle" pattern) — spreading them
-          on the outer div, as before FRESCO-15, made the entire cell a drag
-          source, so the PointerSensor captured every pointerdown on the mark
-          buttons below and the drag gesture fired instead of their onClick.
-          Found live: the buttons never worked, dnd-kit's own screen-reader
-          announcer confirmed a self-drop was registered on every click.
-        */}
-        <button
-          type="button"
-          {...listeners}
-          {...attributes}
-          aria-label="Arrastrar para reordenar"
-          className="-m-1 shrink-0 cursor-grab touch-none p-1 disabled:cursor-not-allowed"
-          disabled={disabled}
-        >
-          <GripVertical className="size-4 text-tertiary" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <p className="text-caption uppercase text-tertiary">{tipo}</p>
-          {recipe
-            ? (
-                <div className="mt-1 flex items-start gap-1.5">
-                  <RecipeSlotIcon categoria={recipe.clasificacion?.categoria} />
-                  <p className={cn('text-body-sm', estado === 'descartada' && 'line-through')}>{recipe.nombre}</p>
-                </div>
-              )
-            : (
-                <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
-                  Sin receta segura
-                </p>
-              )}
-        </div>
-      </div>
+      <p className="mb-2 text-h6 uppercase text-tertiary">{tipo}</p>
 
-      {/*
-        Stacked BELOW the recipe row (not beside it) — found live: at this
-        grid's real column width (~120px, 7 columns), a badge/buttons row
-        competing for horizontal space with the recipe name collapsed the
-        name's flex-1 wrapper to 0 width, rendering its text on top of the
-        badge instead of beside it. Vertical stacking has no such conflict.
-      */}
+      {recipe
+        ? (
+            <>
+              <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
+                {recipe.foto_url
+                  ? (
+                      <Image
+                        src={recipe.foto_url}
+                        alt={recipe.nombre}
+                        fill
+                        sizes="240px"
+                        className="object-cover"
+                      />
+                    )
+                  : (
+                      <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
+                    )}
+                {/*
+                  Drag activation listeners live ONLY on this handle, not the
+                  whole cell (dnd-kit's documented "drag handle" pattern) —
+                  spreading them on the outer div, as before FRESCO-15, made
+                  the entire cell a drag source, so the PointerSensor captured
+                  every pointerdown on the mark buttons below and the drag
+                  gesture fired instead of their onClick. Found live: the
+                  buttons never worked, dnd-kit's own screen-reader announcer
+                  confirmed a self-drop was registered on every click.
+                */}
+                <Button
+                  type="button"
+                  variant="icon"
+                  size="sm"
+                  {...listeners}
+                  {...attributes}
+                  aria-label="Arrastrar para reordenar"
+                  disabled={disabled}
+                  className="absolute left-2 top-2 cursor-grab touch-none disabled:cursor-not-allowed"
+                >
+                  <GripVertical className="size-4" />
+                </Button>
+              </div>
+              <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
+              <h3 className={cn('text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
+              {dietaLabel && (
+                <div className="mt-1">
+                  <Tag variant="accent">{dietaLabel}</Tag>
+                </div>
+              )}
+            </>
+          )
+        : (
+            <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
+              Sin receta segura
+            </p>
+          )}
+
       {recipe && estado === 'pendiente' && (
-        <div className="flex justify-end gap-1">
+        <div className="mt-auto flex justify-end gap-1 pt-2">
           <button
             type="button"
             data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
@@ -421,11 +454,11 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
         </div>
       )}
 
-      {estado !== 'pendiente' && (
+      {recipe && estado !== 'pendiente' && (
         <p
           data-testid={`calendar_slot_${dia}_${tipo}_estado_badge`}
           className={cn(
-            'text-right text-caption uppercase',
+            'mt-auto pt-2 text-right text-caption uppercase',
             estado === 'cocinada' ? 'text-primary' : 'text-tertiary',
           )}
         >
@@ -434,15 +467,4 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
       )}
     </div>
   );
-}
-
-/**
- * Small per-category mark next to the recipe name — this grid's 7-column
- * width has no room for `RecipeCard`'s full image-area treatment, so this
- * is the compact version of the same "no photography in the MVP, but an
- * icon beats a blank" placeholder decision.
- */
-function RecipeSlotIcon({ categoria }: { categoria: CategoriaReceta | null | undefined }) {
-  const Icon = getCategoryIcon(categoria);
-  return <Icon className="mt-0.5 size-3.5 shrink-0 text-tertiary" aria-hidden="true" />;
 }

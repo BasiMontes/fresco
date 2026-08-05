@@ -56,8 +56,14 @@ export const DIETA_LABELS: Partial<Record<keyof RecipeDieta, string>> = {
   kosher: 'kosher',
 };
 
-/** First active diet flag on `dieta`, as a display label, or `null` if none/unknown. */
-function firstActiveDietaLabel(dieta: RecipeDieta | null): string | null {
+/**
+ * First active diet flag on `dieta`, as a display label, or `null` if
+ * none/unknown. Exported — FRESCO-80's `CalendarGrid` mirrors this same
+ * "one tag" rule for its own recipe cards, not `RecipeCard` itself (its
+ * cards need drag-and-drop + mark-status controls `RecipeCard` doesn't
+ * have), so it reuses this helper rather than re-deriving the same logic.
+ */
+export function firstActiveDietaLabel(dieta: RecipeDieta | null): string | null {
   if (!dieta) { return null; }
   const active = (Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[]).find(flag => dieta[flag]);
   return active ? (DIETA_LABELS[active] ?? null) : null;
