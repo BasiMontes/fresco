@@ -2344,3 +2344,13 @@ Verificado en vivo: `scrollWidth` (1528px) > `clientWidth` (768px) — el scroll
 **Por qué**: pedido directo del user — tercera ronda de feedback sobre el mismo ticket, con una confusión real de diagnóstico de mi parte: asumí que "altura pareja" era el problema (ya resuelto) mientras el user hablaba de "ancho de card" — otro eje del diseño completamente distinto, no el que yo estaba midiendo.
 
 **Siguiente**: FRESCO-78 sigue en Control de calidad — tres rondas de feedback real ya resueltas. Lección para la próxima: cuando el user dice "sigue roto" tras confirmar mi propia medición en 4 entornos distintos, no asumir que es caché/navegador — pedirle ANTES una referencia visual de "cómo tiene que verse" en vez de seguir cazando la causa técnica a ciegas.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo segundo batch (12/30, 549/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 12/30 hits. Aplicado con `supabase db query --linked -f batch22.sql`. Verificado: `549/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 549/1000 con foto, 451 restantes.
