@@ -19,6 +19,19 @@ import { buttonVariants } from '@/components/ui/button';
  * specifically to out-rank the card titles at `h5`; when FRESCO-78 later
  * bumped card titles to `h4` too, this had to move again or the two would
  * tie again.
+ *
+ * FRESCO-78 — grid dropped from `lg:grid-cols-6`, then dropped entirely
+ * in favor of a horizontal-scroll strip: cards are a fixed width (`w-60`)
+ * matching the "hoy" grid's own card width at this page's `max-w-3xl`
+ * container (same visual size, confirmed with the user), `flex` +
+ * `overflow-x-auto` instead of wrapping to a second row. At 6 narrow grid
+ * columns, 4-5-word recipe titles wrapped to one word per line and looked
+ * cramped next to the wider "hoy" cards right above this section — the
+ * user's real complaint wasn't row-height equality (already fixed), it
+ * was these cards looking nothing like those. Scoped to this section only
+ * — `/recipes` and `/favorites` keep their own denser grid, confirmed with
+ * the user as intentional (they're browse/search surfaces, not a preview
+ * strip).
  */
 export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: Recipe[], favoriteRecipeIds: Set<string> }) {
   if (recipes.length === 0) {
@@ -33,9 +46,14 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
           Ver todas
         </Link>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mt-2 flex gap-4 overflow-x-auto pb-2">
         {recipes.map(recipe => (
-          <FavoriteRecipeCard key={recipe.id} recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
+          <FavoriteRecipeCard
+            key={recipe.id}
+            recipe={recipe}
+            initialIsFavorite={favoriteRecipeIds.has(recipe.id)}
+            className="w-60 shrink-0"
+          />
         ))}
       </div>
     </div>
