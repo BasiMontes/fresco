@@ -2261,3 +2261,15 @@ Verificado en vivo con Playwright: `/menu` sin ninguno de los dos textos, resto 
 **Por qué**: pedido directo del user, decisión de copy/UI — las cifras siguen siendo las mismas estimaciones generales de FRESCO-75, solo cambia qué tan visible es la advertencia.
 
 **Siguiente**: nada pendiente. Commit `ed989b7`, push directo a `main`.
+
+---
+
+## 2026-08-05 — /menu: íconos de favoritos/notificaciones agrandados
+
+**Qué**: user pasó captura del botón corazón/campana de la cabecera de `/menu`, señalando que se ven minúsculos dentro del círculo. `Heart`/`Bell` estaban en `size-4` (16px) dentro de un círculo de 36px (`variant: 'icon'`) — subidos a `size-5` (20px). Cambiado en `app/(app)/menu/page.tsx` y su espejo `lib/fixtures/page-shells.tsx` (el fixture que usa boneyard para capturar el skeleton de `/menu` — si diverge del real, el skeleton deja de calzar). Bones de `menu-page` regenerados después del cambio.
+
+Verificado en vivo con Playwright: íconos ocupan más el círculo, resto de la pantalla sin cambios.
+
+**Por qué**: pedido directo del user, feedback visual sobre un detalle de tamaño.
+
+**Siguiente**: nada pendiente. Commit `51498f3`, push directo a `main`.
