@@ -2387,3 +2387,17 @@ Commit `47181d7`, push directo a `main`. Documentado en Jira con el mismo detall
 **Por qué**: pedido directo del user — primera vez en la sesión que pidió explícitamente "creá la Jira primero" antes de implementar, en vez del patrón habitual de esta sesión (documentar+arreglar en el mismo pase).
 
 **Siguiente**: nada pendiente. FRESCO-80 en Control de calidad. Recordar para la próxima vez que se toque `CalendarGrid`: el drag handle vive DENTRO del área de imagen ahora, no como fila independiente — cualquier cambio a la imagen debe preservar ese posicionamiento.
+
+---
+
+## 2026-08-06 — FRESCO-80: bug real de layout — sidebar arrastrada por el scroll horizontal
+
+**Qué**: user reportó con captura que la sidebar se corría junto con el scroll horizontal del calendario (logo cortado, íconos de nav desaparecidos). Causa real: `<main>` en `components/layout/app-shell.tsx` es un flex item sin `min-width` override — default de flexbox es `min-width: auto`, así que el contenido ancho de `CalendarGrid` (su propio `overflow-x-auto`) forzaba a `<main>` a crecer más allá del viewport en vez de recortar internamente, arrastrando la página entera — sidebar incluida, que es un flex item hermano, no `position: fixed`.
+
+Fix: `min-w-0` en `<main>`. Corrige TODAS las pantallas bajo `AppShell` (no solo `/calendar`, que es la única con contenido lo bastante ancho hoy para exponerlo — cualquier pantalla futura con scroll horizontal interno se hubiera topado con lo mismo).
+
+Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé `document.body.scrollWidth === window.innerWidth` (cero overflow de página), captura confirma sidebar completa mientras el calendario scrollea. Bones regenerados (sin cambio real de geometría, `min-w-0` no afecta el render normal). Commit `087f609`, push directo a `main`.
+
+**Por qué**: pedido directo del user, bug real expuesto por el propio rediseño de FRESCO-80.
+
+**Siguiente**: nada pendiente. FRESCO-80 sigue en Control de calidad.
