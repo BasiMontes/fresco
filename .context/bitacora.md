@@ -2283,3 +2283,20 @@ Verificado en vivo con Playwright: íconos ocupan más el círculo, resto de la 
 **Por qué**: pedido directo del user, ajuste de copy.
 
 **Siguiente**: nada pendiente. Commit `e915785`, push directo a `main`.
+
+---
+
+## 2026-08-05 — FRESCO-78 reabierto: jerarquía + contraste real de tags
+
+**Qué**: FRESCO-78 estaba cerrado sin cambio de código esta misma sesión (el user había confirmado el diseño genérico de `RecipeCard`) — pasó captura señalando "no hay jerarquía visual, las tags no tienen suficiente contraste" y lo reabrió con feedback concreto.
+
+- **Tags**: causa real diagnosticada, no obvia — `accent-100` (fondo del tag) y `bg-surface` (fondo de la card) son casi el mismo tono claro; el texto (`accent-800`) tenía contraste de sobra, pero el PILL en sí se perdía contra la card. Confirmado con el user: subido a `accent-200`. `DESIGN.md`'s token `tag-accent` actualizado para no quedar desalineado con el código (mismo criterio que FRESCO-70).
+- **Jerarquía**: user eligió "título más grande" sobre "categoría más marcada". `RecipeCard` título `text-h5` → `text-h4`. **Efecto colateral real encontrado**: esto empataba con el fix de FRESCO-79 de la sesión anterior (había subido "Últimas recetas añadidas" a `h4` específicamente para estar un escalón arriba de las cards, que entonces eran `h5`) — corregida la sección a `h3` para no perder el orden de nuevo.
+
+Verificado en vivo con Playwright: tags visiblemente más distinguibles de la card, títulos más grandes, jerarquía de secciones intacta. Bones de `boneyard-js` regenerados (cambió el layout real de `/menu` y `/recipes`).
+
+Commit `ad6a223`, push directo a `main`. Comentario de seguimiento en Jira. Sigue en Control de calidad.
+
+**Por qué**: pedido directo del user, feedback visual concreto sobre un ticket que ya se había dado por cerrado sin tocar código.
+
+**Siguiente**: nada pendiente. Ojo si se vuelve a tocar el tamaño de título de `RecipeCard` o de la sección "Últimas recetas" en el futuro — mantener la jerarquía relativa entre ambos (sección siempre un escalón arriba de las cards), documentado en el comentario de `latest-recipes-section.tsx`.
