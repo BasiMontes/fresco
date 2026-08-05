@@ -176,7 +176,7 @@ components:
     textColor: '{colors.background}'
     rounded: '{rounded.full}'
   tag-accent:
-    backgroundColor: '{colors.accent-100}'
+    backgroundColor: '{colors.accent-200}'
     textColor: '{colors.accent-800}'
     rounded: '{rounded.full}'
   tag-accent-2:

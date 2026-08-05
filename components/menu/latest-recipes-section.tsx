@@ -12,6 +12,13 @@ import { buttonVariants } from '@/components/ui/button';
  * header — a household new enough to have zero eligible recipes yet
  * shouldn't see a dead-looking "Últimas recetas" heading with no cards
  * under it.
+ *
+ * FRESCO-78/79 — section heading is `text-h3`, one step above `RecipeCard`'s
+ * own title (`text-h4` as of FRESCO-78). Keep it a step above whatever
+ * `RecipeCard` uses — FRESCO-79 originally bumped this heading to `h4`
+ * specifically to out-rank the card titles at `h5`; when FRESCO-78 later
+ * bumped card titles to `h4` too, this had to move again or the two would
+ * tie again.
  */
 export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: Recipe[], favoriteRecipeIds: Set<string> }) {
   if (recipes.length === 0) {
@@ -21,7 +28,7 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
   return (
     <div className="mt-6" data-testid="latest_recipes_section">
       <div className="flex items-center justify-between">
-        <h2 className="text-h4">Últimas recetas añadidas</h2>
+        <h2 className="text-h3">Últimas recetas añadidas</h2>
         <Link href="/recipes" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Ver todas
         </Link>
