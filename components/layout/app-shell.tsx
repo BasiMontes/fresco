@@ -13,7 +13,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">{children}</main>
+      {/*
+        min-w-0 overrides the flex item default of min-width:auto — without
+        it, a wide horizontally-scrolling descendant (e.g. CalendarGrid's
+        own overflow-x-auto row) can force THIS flex item to grow past the
+        viewport instead of clipping/scrolling internally, dragging the
+        whole page (sidebar included, since it's a sibling flex item, not
+        fixed-position) into horizontal scroll along with it.
+      */}
+      <main className="min-w-0 flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">{children}</main>
       <BottomTabBar />
     </div>
   );
