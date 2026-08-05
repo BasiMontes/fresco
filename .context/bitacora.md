@@ -2300,3 +2300,19 @@ Commit `ad6a223`, push directo a `main`. Comentario de seguimiento en Jira. Sigu
 **Por qué**: pedido directo del user, feedback visual concreto sobre un ticket que ya se había dado por cerrado sin tocar código.
 
 **Siguiente**: nada pendiente. Ojo si se vuelve a tocar el tamaño de título de `RecipeCard` o de la sección "Últimas recetas" en el futuro — mantener la jerarquía relativa entre ambos (sección siempre un escalón arriba de las cards), documentado en el comentario de `latest-recipes-section.tsx`.
+
+---
+
+## 2026-08-05 — FRESCO-78: cards de la misma fila con altura pareja
+
+**Qué**: user pasó otra captura sobre el mismo ticket — bordes inferiores de las 3 cards de "hoy" no alineados (título de 2 líneas en una, 1 línea en la vecina). Pidió homogeneidad, "todo en uno".
+
+Causa real: CSS Grid estira la CELDA a la altura de fila por default, pero `RecipeCard` no llenaba esa celda estirada — se quedaba en su altura de contenido natural, dejando espacio en blanco (sin fondo) debajo cuando el título rompía distinto que el vecino.
+
+Fix: `RecipeCard` con `h-full flex flex-col` en la raíz — funciona directo en los 3 lugares donde la card ES la celda del grid (Últimas recetas, biblioteca, favoritos). En `/menu`, las celdas de "hoy" tienen una etiqueta (DESAYUNO/COMIDA/CENA) arriba de la card dentro de la misma celda — ahí `h-full` solo hubiera desbordado (compite por espacio con la etiqueta) — se envolvió esa celda en `flex flex-col` y la card recibe `flex-1` en vez de depender de `h-full` (`flex-basis:0` de `flex-1` gana sobre `height:100%` de `h-full`, componen sin pelearse). Nuevo prop `className` agregado a `FavoriteRecipeCard` para poder pasarlo.
+
+Verificado en vivo con Playwright: las 3 cards de "hoy" terminan exactamente a la misma altura ahora, sin romper `/recipes` ni el resto. Bones de `boneyard-js` regenerados. Commit `1790782`, push directo a `main`. Comentario de seguimiento en Jira.
+
+**Por qué**: pedido directo del user, mismo ticket reabierto por segunda vez con feedback visual concreto.
+
+**Siguiente**: nada pendiente. FRESCO-78 sigue en Control de calidad — dos rondas de feedback real ya resueltas, esperando confirmación del user para Finalizada.
