@@ -58,6 +58,12 @@ export default antfu({
     // project's typescript-eslint project service). Lint these with `deno
     // lint` / `deno fmt` instead, not this project's ESLint config.
     'supabase/functions/**',
+    // Impeccable design-hook cache — local-only (ignored via
+    // .git/info/exclude, not the shared .gitignore), machine-written on
+    // every post-edit hook run. ESLint's own ignore glob (like Prettier's
+    // .prettierignore) doesn't fall back to .gitignore, so without this it
+    // lints a local tool cache no one else's checkout even has.
+    '.impeccable/**',
   ],
 
   // Custom rules
