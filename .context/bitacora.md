@@ -2503,3 +2503,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, contenido ya redactado de antemano — la tarea fue ejecutar create/transition/link/sync siguiendo Phase 2A del skill `product-management`, no redactar de cero.
 
 **Siguiente**: sin asignar. Pendiente evaluar si vale la pena declarar el tipo de enlace `Dependencies` en este workspace de Jira (hoy no existe) para dejar de degradar a `Relates` en futuras historias con dependencias reales.
+
+---
+
+## 2026-08-06 — FRESCO-84: Stage 2 — código de la etiqueta de plan en el sidebar
+
+**Qué**: implementé el plan Stage 1 ya aprobado (comentario Jira): `app/(app)/layout.tsx` ahora resuelve `getUserPlan` en paralelo con `getUserNombre` vía `Promise.all` (mismo fallback conservador `'free'` que `/profile/page.tsx`); `AccountUser` (`components/layout/sidebar-account.tsx`) se extendió con `plan: UserProfile['plan']`, con un `PLAN_LABELS` local duplicado del que ya vive en `/profile/page.tsx` (convención del propio archivo — copias locales, no extracción compartida) y el mismo split de variante `Tag` (`neutral` para free, `accent` para pro/family); `components/layout/sidebar.tsx` pasa `plan={user.plan}` al `<SidebarAccount>`. Testid nuevo `plan_tag` en la definición del componente (dominio-específico, no genérico). Un solo commit (`3c5b098`, sin push). `types:check`, `lint:check` y `build` verdes. Validación en vivo con Playwright CLI contra `qa.fresco@local.test` (dev server local): confirmé los 3 valores reales (`free`/`pro`/`family`) alternando el campo `plan` en Supabase vía MCP y recargando — la etiqueta cambió correctamente a "Plan Free" (neutral), "Plan Pro" (accent) y "Plan Family" (accent) en cada caso, revertido a `free` (valor original) al terminar. Escenario sin sesión (`cookie-clear` + `/menu`) confirmó que todo el bloque `SidebarAccount` (nombre/email/etiqueta/logout) sigue ausente, heredando el guard ya validado en FRESCO-82 sin código nuevo. Hallazgo: la app no implementa un toggle de modo oscuro real (`globals.css` solo tiene una regla `prefers-color-scheme: dark` para el resaltador de código `shiki`, no para la UI) — paleta única de marca, así que la verificación "light/dark" se redujo a confirmar la única paleta en vivo, sin una segunda pasada real de dark mode que hacer.
+
+**Por qué**: pedido directo del user, Stage 2 del flujo `/sprint-development` sobre el plan Stage 1 ya publicado en Jira, sin re-derivar el plan.
+
+**Siguiente**: sin push (pedido explícito de no hacerlo). Falta Stage 3 (PR + code review) y Stage 4 (deploy a staging) cuando el user lo pida.
