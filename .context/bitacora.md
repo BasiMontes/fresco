@@ -2663,3 +2663,13 @@ Transicioné FRESCO-88 a "Control de calidad" y publiqué el comentario de aviso
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 618/1000 con foto, 382 restantes.
+
+---
+
+## 2026-08-06 — FRESCO-31: trigésimo primer batch (10/30, 628/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 10/30 hits. Aplicado con `supabase db query --linked -f batch31.sql`. Verificado: `628/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 628/1000 con foto, 372 restantes.
