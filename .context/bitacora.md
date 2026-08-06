@@ -2593,3 +2593,19 @@ Validado en vivo: corazones/campana visiblemente más sólidos, chevron confirma
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 604/1000 con foto, 396 restantes.
+
+---
+
+## 2026-08-06 — FRESCO-85/86: reabierto — el fix de tamaño no bastaba, faltaba grosor de trazo
+
+**Qué**: user reportó en incógnito (sin caché) que corazón/campana seguían "chicos" y la flecha "color crema" DESPUÉS del fix ya deployado. Verifiqué en `fresco-pro.vercel.app` con `getBoundingClientRect`/`getComputedStyle` en vivo: 22×22px exacto, `rgb(15, 78, 14)` exacto — tamaño y color YA estaban correctos, medidos dos veces. El problema real nunca fue eso: un trazo de 2px (default de `lucide-react`) no llena suficiente área a ningún tamaño como para leerse "sólido" — es un problema de peso visual, no de tamaño ni de hex.
+
+Iteré en vivo (dev server, manipulación directa de `stroke-width` vía DOM antes de tocar código) y armé un artifact comparativo (2px/2.5px/3px, zoom 4× sobre la campana real) para que el user decida con evidencia visual real en vez de que yo vuelva a "confirmar" con números. DESIGN.md fija el trazo en 2px para *todo* el set de iconos ("single stroke weight ... no per-icon exceptions") — no era una opción neutral subir el grosor solo en los 4 iconos señalados sin romper esa regla. Presenté el tradeoff (parche local inconsistente vs. cambio de marca real en 31 archivos) — el user eligió el cambio global.
+
+**Fix**: una sola regla CSS (`svg.lucide { stroke-width: 3; }` en `app/globals.css`, `@layer base`) en vez de tocar `strokeWidth` en 31 archivos — fuente única, aplica parejo a cada icono `lucide-react` de la app sin excepción. `DESIGN.md` actualizado (2px → 3px, con nota de por qué y qué tickets lo motivaron) como fuente de verdad del token, siguiendo el mismo patrón de nota-de-cambio que ya usa la línea de `nav-sidebar` (FRESCO-70).
+
+Barrido visual en vivo por toda la app (Inicio, tarjetas de receta, calendario — drag handles, flechas de semana, papelera) para confirmar que el cambio global no rompía nada en contextos con iconos más grandes (`size-10` de categoría) — todo consistente, nada se ve "grueso" de más. `types:check`/`lint:check` verdes, detector `impeccable` sin hallazgos.
+
+**Por qué**: pedido directo del user tras 2 rondas de feedback sobre la misma percepción — la causa real necesitaba iteración visual, no solo re-medir el token.
+
+**Siguiente**: FRESCO-87 (los 5 sitios restantes en `size-4`) hereda el trazo 3px automáticamente vía la regla global — cuando se implemente esa ticket, solo falta el tamaño (`size-[22px]`), el grosor ya queda resuelto para todos.

@@ -71,6 +71,18 @@
     font-family: var(--font-heading), Caprasimo, 'Baloo 2', cursive;
     font-weight: 400;
   }
+
+  /*
+   * FRESCO-85/86/87 — DESIGN.md's icon set (`components.icon`) locks a
+   * single stroke weight app-wide; lucide-react's own default (2) read too
+   * thin against the button-icon circle (36px) at the token's own 22px
+   * icon size. Overridden here, once, so every `lucide-react` icon in the
+   * app — not just the ones a given screen happens to touch — shares the
+   * same weight (DESIGN.md's own "no per-icon exceptions" rule).
+   */
+  svg.lucide {
+    stroke-width: 3;
+  }
 }
 
 /*
