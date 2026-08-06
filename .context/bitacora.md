@@ -2573,3 +2573,13 @@ Validado en vivo: corazones/campana visiblemente más sólidos, chevron confirma
 **Por qué**: pedido directo del user, seguimiento del hallazgo fuera de alcance dejado anotado en FRESCO-85/86.
 
 **Siguiente**: FRESCO-87 sin priorizar en el backlog, sin implementar.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo séptimo batch (10/30, 597/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 10/30 hits. Aplicado con `supabase db query --linked -f batch27.sql`. Verificado: `597/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 597/1000 con foto, 403 restantes.
