@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
+import type { AccountUser } from '@/components/layout/sidebar-account';
 
 import { BottomTabBar } from '@/components/layout/bottom-tab-bar';
 import { Sidebar } from '@/components/layout/sidebar';
 
 export interface AppShellProps {
   children: ReactNode
-  /** Signed-in user's account info (FRESCO-82), forwarded to `Sidebar`. */
-  user: {
-    nombre: string | null
-    email: string
-  }
+  /**
+   * Signed-in user's account info (FRESCO-82), forwarded to `Sidebar` —
+   * `null` when there is no active session (see `Sidebar`'s `user` prop).
+   */
+  user: AccountUser | null
 }
 
 /**

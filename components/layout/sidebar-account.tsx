@@ -6,20 +6,30 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 
-export interface SidebarAccountProps {
+/**
+ * Shared shape for the signed-in user's account info (FRESCO-82), threaded
+ * through `layout → AppShell → Sidebar → SidebarAccount`. Defined here and
+ * re-exported so the 3 consumers don't each redeclare the same object type.
+ */
+export interface AccountUser {
   /** Display name from `user_profiles.nombre` — `null` when not set yet. */
   nombre: string | null
   /** The signed-in user's email, from `auth.getUser()`. */
   email: string
 }
 
+export type SidebarAccountProps = AccountUser;
+
 /**
  * Sidebar footer account block (FRESCO-82): name + email + avatar/initial,
  * plus the logout action, pinned to the bottom of the desktop sidebar via
  * `mt-auto` on the parent `<aside>` (`sidebar.tsx`). Only ever mounted
  * inside `app/(app)/layout.tsx` — `/login` and `/signup` live outside that
- * route group and never render `AppShell`, so "no session → no component"
- * (AC scenario 3) is a structural guarantee, not a runtime check here.
+ * route group and never render `AppShell`, so no `/login`/`/signup` route
+ * can render this component. `Sidebar` additionally skips mounting it when
+ * `user` is `null` (no active session — AC scenario 3), so the "no session
+ * → no component" guarantee holds even for routes under `(app)/` that
+ * somehow render without a resolved user.
  *
  * Logout reuses the exact call sequence already shipped and working in
  * `components/profile/danger-zone.tsx` (`createClient()` browser client →

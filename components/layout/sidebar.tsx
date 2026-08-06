@@ -1,10 +1,11 @@
 'use client';
 
+import type { AccountUser } from '@/components/layout/sidebar-account';
 import { BookOpen, Calendar, Home, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
+import { usePathname } from 'next/navigation';
 import { SidebarAccount } from '@/components/layout/sidebar-account';
 import { cn } from '@/lib/utils';
 
@@ -24,11 +25,12 @@ const NAV_ITEMS = [
 ] as const;
 
 export interface SidebarProps {
-  /** Signed-in user's account info (FRESCO-82), rendered in the sidebar footer. */
-  user: {
-    nombre: string | null
-    email: string
-  }
+  /**
+   * Signed-in user's account info (FRESCO-82), rendered in the sidebar
+   * footer — `null` when there is no active session, in which case
+   * `SidebarAccount` is not mounted at all (AC scenario 3).
+   */
+  user: AccountUser | null
 }
 
 export function Sidebar({ user }: SidebarProps) {
@@ -60,7 +62,7 @@ export function Sidebar({ user }: SidebarProps) {
           );
         })}
       </nav>
-      <SidebarAccount nombre={user.nombre} email={user.email} />
+      {user && <SidebarAccount nombre={user.nombre} email={user.email} />}
     </aside>
   );
 }

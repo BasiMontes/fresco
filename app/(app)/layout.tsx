@@ -9,7 +9,10 @@ import { createClient } from '@/lib/supabase/server';
  * round trip per page. Same conservative-default fallback as
  * `/profile/page.tsx`: a `getUserNombre` read failure degrades to `null`
  * (sidebar footer falls back to the icon avatar) rather than crashing the
- * whole authenticated shell.
+ * whole authenticated shell. When `auth.getUser()` itself returns no user
+ * (no active session), `AppShell` gets `user: null` — `Sidebar` then skips
+ * mounting `SidebarAccount` entirely instead of showing it with a blank
+ * identity and a still-active logout button.
  */
 export default async function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -20,5 +23,5 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     return null;
   });
 
-  return <AppShell user={{ nombre, email: user?.email ?? '' }}>{children}</AppShell>;
+  return <AppShell user={user ? { nombre, email: user.email ?? '' } : null}>{children}</AppShell>;
 }
