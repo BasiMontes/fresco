@@ -75,7 +75,7 @@ export function SidebarAccount({ nombre, email }: SidebarAccountProps) {
           type="button"
           variant="icon"
           aria-label="Cerrar sesión"
-          data-testid="logout_button"
+          data-testid="sidebar_logout_button"
           disabled={isLoggingOut}
           onClick={() => void handleLogout()}
           className="bg-background/10 text-background hover:bg-background/20"
@@ -84,7 +84,7 @@ export function SidebarAccount({ nombre, email }: SidebarAccountProps) {
         </Button>
       </div>
       {logoutError && (
-        <p data-testid="logout_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
+        <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
           {logoutError}
         </p>
       )}
