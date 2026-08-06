@@ -77,6 +77,7 @@ export function SidebarAccount({ nombre, email }: SidebarAccountProps) {
           aria-label="Cerrar sesión"
           data-testid="sidebar_logout_button"
           disabled={isLoggingOut}
+          aria-busy={isLoggingOut}
           onClick={() => void handleLogout()}
           className="bg-background/10 text-background hover:bg-background/20"
         >
