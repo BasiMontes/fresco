@@ -1,6 +1,7 @@
 import type { UserProfile } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import { cache } from 'react';
 import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/dietary-options';
 
 /**
@@ -225,11 +226,25 @@ export async function updateNombre(
  * pay for a third redundant round trip on top of its own call plus the one
  * inside `getMealPlanForWeek`/`getUserPlan`. Omitting it keeps the function
  * safely callable on its own (e.g. in isolation, in tests).
+ *
+ * Wrapped in `React.cache()` so repeated calls with the *same* arguments
+ * within a single render pass (e.g. `(app)/layout.tsx` and
+ * `(app)/profile/page.tsx` both resolving the signed-in user's `nombre`)
+ * dedupe to one underlying read. Note: this only dedupes when the `client`
+ * argument is reference-equal across call sites — today each caller builds
+ * its own client via `createClient()`, so the two calls still miss this
+ * cache in practice. Making `createClient()` itself request-memoized would
+ * close that gap, but it's called from Route Handlers too
+ * (`app/api/profile/export/route.ts`, `app/auth/confirm/route.ts`), which
+ * sit outside the React render tree — `React.cache()` there would not reset
+ * per-request and could leak one request's client into another. Left as-is;
+ * the safe half of this fix (memoizing this function's own work per
+ * matching arguments) still ships.
  */
-export async function getUserNombre(
+export const getUserNombre = cache(async (
   client: SupabaseClient<Database>,
   userId?: string,
-): Promise<string | null> {
+): Promise<string | null> => {
   let resolvedUserId = userId;
 
   if (!resolvedUserId) {
@@ -253,4 +268,4 @@ export async function getUserNombre(
   }
 
   return data?.nombre ?? null;
-}
+});
