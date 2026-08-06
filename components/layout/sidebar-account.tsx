@@ -70,22 +70,22 @@ export function SidebarAccount({ nombre, email, plan }: SidebarAccountProps) {
 
   return (
     <div data-testid="sidebarAccount" className="mt-auto border-t border-background/10 pt-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div
           data-testid="user_avatar"
           aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
+          className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
         >
           {initial || <UserIcon className="size-4" />}
         </div>
         <div className="min-w-0 flex-1">
-          <p data-testid="user_name" className="truncate text-body-sm font-semibold text-background">
+          <p data-testid="user_name" className="truncate text-label text-background">
             {nombre || 'Sin nombre'}
           </p>
-          <p data-testid="user_email" className="truncate text-body-sm text-background/70">
+          <p data-testid="user_email" className="mt-0.5 truncate text-caption text-background/70">
             {email}
           </p>
-          <Tag data-testid="plan_tag" variant={getPlanTagVariant(plan)} className="mt-1">
+          <Tag data-testid="plan_tag" variant={getPlanTagVariant(plan)} className="mt-1.5">
             {PLAN_LABELS[plan]}
           </Tag>
         </div>

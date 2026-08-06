@@ -2523,3 +2523,27 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, corrida completa de `/sprint-development` Stages 1-4 sobre la historia que extiende el footer de cuenta de FRESCO-82 con el plan de suscripción.
 
 **Siguiente**: sin asignar (mismo criterio que FRESCO-82, sin fase shift-left QA). Pendiente: evaluar declarar el tipo de enlace `Dependencies` real en el workspace de Jira (hoy degradado a `Relates`).
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo sexto batch (12/30, 587/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300, ventana horaria de Unsplash ya recargada. 12/30 hits. Aplicado con `supabase db query --linked -f batch26.sql`. Verificado: `587/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 587/1000 con foto, 413 restantes.
+
+---
+
+## 2026-08-06 — Sidebar footer: jerarquía visual (skill `impeccable`)
+
+**Qué**: usuario marcó que el footer de cuenta (FRESCO-82/84) no tenía jerarquía visual — nombre, email y plan competían al mismo peso, avatar/logout se veían descolgados del bloque de texto. Cargué la skill `impeccable` (`polish` sobre `components/layout/sidebar-account.tsx`), actualizada de v4.0.2 a v4.0.4 a pedido del user (`npx impeccable update`, modifica ~60 archivos de la skill instalada en `.agents/skills/impeccable/`, sin commitear — separado de este cambio). Causa raíz: nombre y email usaban el mismo tamaño (`text-body-sm`, 13px), solo el peso los distinguía — el design system ya define `text-label` (14px/600) y `text-caption` (11px/400) sin usar en este componente. Fix: nombre a `text-label` (lidera), email a `text-caption` (secundario, mismo tamaño que el propio `Tag`), avatar/logout pasados de `items-center` a `items-start` con `mt-0.5` en el avatar para anclarlos visualmente al nombre en vez de centrarse contra las 3 líneas del bloque.
+
+Primer intento puso email + plan en la misma fila — descartado en vivo: en el ancho angosto del sidebar (`w-64`) el pill de plan le comía el espacio al email, quedaba truncado a "qa.fr..." casi ilegible. Vuelto a apilar en filas separadas. Segundo hallazgo en vivo: bajé la opacidad del email a `/60` buscando más contraste jerárquico, medí el contraste real (`fg*op + bg*(1-op)` contra `#0F4E0E`) y dio 4.30:1 — bajo el piso de 4.5:1 del propio skill para texto normal. Revertido a `/70` (5.26:1, el valor original, seguro).
+
+Validado en vivo (Playwright, dev server): nombre real, nombre largo con truncado, y verificación de que el avatar ahora alinea con la primera línea en vez de centrarse contra el bloque completo. Detector mecánico del skill (`detect.mjs`) sin hallazgos antes y después. `types:check` y `lint:check` verdes.
+
+**Por qué**: pedido directo del user tras notar la falta de jerarquía en un screenshot de producción.
+
+**Siguiente**: sin ticket Jira abierto para esto (ajuste visual menor post-hoc sobre FRESCO-82/84, no amerita historia propia). Pendiente decidir si commitear la actualización de la skill `impeccable` (cambios grandes, no relacionados al código de la app).
