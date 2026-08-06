@@ -2699,3 +2699,13 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 **Por qué**: pedido directo del user (QA exhaustivo + un ticket por hallazgo), con la reconciliación de duplicados como trabajo no pedido pero necesario para no dejar el backlog con basura.
 
 **Siguiente**: 20 tickets de defecto abiertos, ninguno priorizado ni asignado — decisión del user. Los 2 CRITICAL comparten causa raíz (modo invitado tratado como cuenta normal donde no lo es) y probablemente conviene atacarlos juntos.
+
+---
+
+## 2026-08-06 — FRESCO-31: trigésimo segundo batch (6/30, 634/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 6/30 hits. Aplicado con `supabase db query --linked -f batch32.sql`. Verificado: `634/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 634/1000 con foto, 366 restantes.
