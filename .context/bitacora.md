@@ -2463,3 +2463,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: cerrar el loop CHANGES REQUESTED de `review.md` antes de Stage 3 (PR + deploy).
 
 **Siguiente**: Stage 3 — PR + code review + deploy a staging. Sigue pendiente considerar story/tech-debt aparte para el guard de ruta faltante en `(app)/` (`proxy.ts`).
+
+---
+
+## 2026-08-06 — FRESCO-82: cierre — push a main + Ready For QA
+
+**Qué**: adjudiqué el review adversarial contra el diff real (`review.md`), Spec Compliance Matrix con los 4 escenarios AC cubiertos por evidencia manual (`compliance-matrix.md`), commit de sync PBI (épica FRESCO-81 + historia FRESCO-82 + `epic-tree.md`). Confirmado por el user, `git push origin main` (14 commits desde `ae74551`, estrategia `solo-main` — sin rama/PR intermedio). Transicioné FRESCO-82 vía `acli` a "Control de calidad" (nombre real del status `ready_for_qa` en este workspace — la transición se llama "QA" pero acli solo la resuelve pasando el nombre del status destino, no el nombre de la transición). Comentario de aviso a QA publicado en el ticket con resumen de implementación + hallazgos corregidos + evidencia.
+
+**Por qué**: pedido directo del user ("implementa la historia FRESCO-82"), corrida completa de `/sprint-development` Stages 1-4 (Stage 5 producción es evento separado, no disparado).
+
+**Siguiente**: sin asignar (no hubo fase shift-left QA identificable para este ticket, historia nueva creada en la misma sesión — regla de asignación de `sprint-development` dice dejar sin asignar en ese caso, no al developer). Pendiente: story/tech-debt aparte para el guard de ruta faltante en `(app)/` (`proxy.ts` no redirige sin sesión) — hallazgo repetido en Stage 2 y Stage 3, nunca en alcance de FRESCO-82.
