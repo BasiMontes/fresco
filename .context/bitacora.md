@@ -2620,4 +2620,14 @@ Barrido visual en vivo por toda la app (Inicio, tarjetas de receta, calendario �
 
 **Por qué**: la verificación en vivo que agendé para después de la sesión anterior encontró que el fix no había llegado realmente — confirmar en producción, no solo confiar en el commit pusheado, evitó reportar "resuelto" una tercera vez sin estarlo.
 
-**Siguiente**: pendiente push + reverificación en `fresco-pro.vercel.app` con el mismo método (`getComputedStyle` real, no solo mirar el código).
+**Siguiente**: pusheado (`57a274d`) y reverificado en `fresco-pro.vercel.app` — `getComputedStyle` real da `3px` en campana/corazón/flecha, confirmado. FRESCO-85/86 cerradas de verdad esta vez.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo noveno batch (10/30, 614/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 10/30 hits. Aplicado con `supabase db query --linked -f batch29.sql`. Verificado: `614/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 614/1000 con foto, 386 restantes.
