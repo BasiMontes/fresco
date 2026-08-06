@@ -2513,3 +2513,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, Stage 2 del flujo `/sprint-development` sobre el plan Stage 1 ya publicado en Jira, sin re-derivar el plan.
 
 **Siguiente**: sin push (pedido explícito de no hacerlo). Falta Stage 3 (PR + code review) y Stage 4 (deploy a staging) cuando el user lo pida.
+
+---
+
+## 2026-08-06 — FRESCO-84: cierre — push a main + Ready For QA
+
+**Qué**: adjudiqué el review adversarial (2 legítimos corregidos — `React.cache()` en `getUserPlan`, `PLAN_LABELS`/variant extraídos a `lib/plan-labels.ts` compartido con `/profile`; 1 divergencia de texto ratificada por LIVE-UI-FIRST; 1 nitpick descartado por convención preexistente), Spec Compliance Matrix con los 4 escenarios cubiertos. Confirmado por el user, `git push origin main` (8 commits desde `519eb4a`). Transicioné FRESCO-84 vía `acli` a "Control de calidad". Comentario de aviso a QA publicado.
+
+**Por qué**: pedido directo del user, corrida completa de `/sprint-development` Stages 1-4 sobre la historia que extiende el footer de cuenta de FRESCO-82 con el plan de suscripción.
+
+**Siguiente**: sin asignar (mismo criterio que FRESCO-82, sin fase shift-left QA). Pendiente: evaluar declarar el tipo de enlace `Dependencies` real en el workspace de Jira (hoy degradado a `Relates`).
