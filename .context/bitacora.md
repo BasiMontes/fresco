@@ -2401,3 +2401,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, bug real expuesto por el propio rediseño de FRESCO-80.
 
 **Siguiente**: nada pendiente. FRESCO-80 sigue en Control de calidad.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo tercer batch (8/30, 557/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 8/30 hits. Aplicado con `supabase db query --linked -f batch23.sql`. Verificado: `557/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 557/1000 con foto, 443 restantes.
