@@ -16,6 +16,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Check, GripVertical, X } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { firstActiveDietaLabel } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
@@ -325,6 +326,7 @@ interface SlotCellProps {
  * long title collapses the title's wrapper).
  */
 function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: SlotCellProps) {
+  const router = useRouter();
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
 
@@ -364,8 +366,20 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
       ref={setRefs}
       data-testid={`calendar_slot_${dia}_${tipo}`}
       style={{ transform: CSS.Translate.toString(transform) }}
+      /*
+       * STORY-FRESCO-88 — plain `onClick`, not a `<Link>` wrap: this root
+       * already hosts nested `<button>` descendants (drag handle + mark
+       * controls), and nesting interactive elements inside an `<a>` is
+       * invalid HTML. `disabled` (pending || no recipe) covers both "nothing
+       * to open" and "swap/mark in flight" cases. The three controls below
+       * stop propagation on their own `onClick`/`pointerdown` so a tap on
+       * them never bubbles up to this handler — same pattern as the
+       * favorite heart in `recipe-card.tsx`.
+       */
+      onClick={recipe && !disabled ? () => router.push(`/recipes/${recipe.id}`) : undefined}
       className={cn(
         'flex flex-col rounded-card bg-surface p-3 shadow-sm',
+        !disabled && 'cursor-pointer',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
         pending && 'cursor-wait opacity-70',
@@ -409,6 +423,11 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
                   {...attributes}
                   aria-label="Arrastrar para reordenar"
                   disabled={disabled}
+                  // STORY-FRESCO-88 — dnd-kit's own pointer handling (via
+                  // `listeners`) must still fire, so no `preventDefault()`
+                  // here; only stop the `click` from bubbling into the
+                  // cell's navigation `onClick`.
+                  onClick={event => event.stopPropagation()}
                   className="absolute left-2 top-2 cursor-grab touch-none disabled:cursor-not-allowed"
                 >
                   <GripVertical className="size-4" />
@@ -436,7 +455,10 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
             data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
             aria-label="Marcar como cocinado"
             disabled={pending}
-            onClick={() => onMark('cocinada')}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMark('cocinada');
+            }}
             className="rounded-full p-1 text-tertiary hover:bg-primary hover:text-background disabled:pointer-events-none"
           >
             <Check className="size-4" />
@@ -446,7 +468,10 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
             data-testid={`calendar_slot_${dia}_${tipo}_mark_descartada`}
             aria-label="Marcar como descartado"
             disabled={pending}
-            onClick={() => onMark('descartada')}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMark('descartada');
+            }}
             className="rounded-full p-1 text-tertiary hover:bg-error hover:text-background disabled:pointer-events-none"
           >
             <X className="size-4" />
