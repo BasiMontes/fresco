@@ -2631,3 +2631,11 @@ Barrido visual en vivo por toda la app (Inicio, tarjetas de receta, calendario �
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 614/1000 con foto, 386 restantes.
+
+## 2026-08-06 — FRESCO-88: abrir el detalle al tocar cualquier tarjeta de receta
+
+**Qué**: 3 commits atómicos siguiendo el Spec Implementation Plan de Stage 1. `app/(app)/menu/page.tsx` — tarjetas de "hoy" envueltas en `<Link href="/recipes/[id]">`. `components/menu/latest-recipes-section.tsx` — mismo wrap en "Últimas recetas añadidas". `components/calendar/calendar-grid.tsx` (`SlotCell`) — `onClick` con `router.push()` en el div raíz (no `<Link>`, porque anida `<button>`), guardado por `recipe && !disabled`; `event.stopPropagation()` agregado al drag-handle y a los dos botones de marcar cocinada/descartada para que no naveguen por bubbling. Verificado en vivo con `/playwright-cli` (login QA, desktop + mobile 390×844): las 4 tarjetas navegan a `/recipes/[id]` correcto, drag real (mousedown→varios mousemove→mouseup, no `.dragTo()` porque dnd-kit usa Pointer Events y ese método no dispara nada) hace swap de recetas sin navegar, marcar cocinada/descartada ejecuta sin navegar, click simple en el drag-handle tampoco navega. `bun run types:check` y `bun run build` verdes; `eslint` limpio en los 3 archivos tocados (el `bun run lint:check` global falla por un `.impeccable/hook.cache.json` gitignored fuera del alcance de esta historia, no relacionado al código).
+
+**Por qué**: AC de FRESCO-88 — toda tarjeta de receta debe abrir el detalle al tocar, sin romper las acciones propias del Calendario (drag, marcar estado).
+
+**Siguiente**: el riesgo residual marcado "no bloqueante, verificar en vivo" en el plan de Stage 1 (posible click sintético post-drag de dnd-kit) quedó descartado — el drag real nunca dispara navegación, no hizo falta guarda adicional (`isDragging`). Ninguna guarda extra requerida; `stopPropagation()` en los 3 controles bastó.
