@@ -2639,3 +2639,17 @@ Barrido visual en vivo por toda la app (Inicio, tarjetas de receta, calendario �
 **Por qué**: AC de FRESCO-88 — toda tarjeta de receta debe abrir el detalle al tocar, sin romper las acciones propias del Calendario (drag, marcar estado).
 
 **Siguiente**: el riesgo residual marcado "no bloqueante, verificar en vivo" en el plan de Stage 1 (posible click sintético post-drag de dnd-kit) quedó descartado — el drag real nunca dispara navegación, no hizo falta guarda adicional (`isDragging`). Ninguna guarda extra requerida; `stopPropagation()` en los 3 controles bastó.
+
+---
+
+## 2026-08-06 — FRESCO-88: cierre — review, fix de accesibilidad, push a main + Ready For QA
+
+**Qué**: el subagente de review adversarial se cortó a mitad de tarea por límite de sesión (`API error: session limit`) — hice el review yo mismo, inline, contra el diff real. Encontré 1 hallazgo legítimo: la celda del Calendario navegaba con click/tap (nuevo en esta historia) pero no tenía `tabIndex`/`role`/`onKeyDown` — las otras 2 superficies (Inicio) usan `<Link>` real, accesible por teclado de forma nativa, así que el Calendario quedaba como la única superficie de esta misma historia que un usuario de teclado no podía usar. Corregido: `role="link"` + `tabIndex={0}` + `onKeyDown` (Enter) condicionados a `recipe && !disabled`, con guard `event.target === event.currentTarget` para que el `keydown` del drag-handle/botones de marcar (que sí hacen `stopPropagation` en `click`, pero el evento `keydown` de un `<button>` nativo burbujea independiente de eso) no dispare la navegación del padre por accidente. Validado en vivo: `Tab` enfoca la celda, `Enter` navega; `Enter` con foco en el drag-handle NO navega.
+
+Al pushear, 2 bloqueos de pre-push encadenados por el mismo archivo: `.impeccable/hook.cache.json` (cache local del hook de diseño de `impeccable`, ignorado vía `.git/info/exclude` pero no vía `.gitignore` compartido) rompía primero `prettier --check` y después `eslint` — ninguno de los dos honra `.gitignore`, mismo patrón ya documentado repetidas veces en `.prettierignore` para `.playwright-mcp/`, `.backups/`, etc. Agregada la entrada equivalente en `.prettierignore` y en `eslint.config.js` (`ignores`), siguiendo el estilo de comentario ya establecido en ambos archivos.
+
+Transicioné FRESCO-88 a "Control de calidad" y publiqué el comentario de aviso a QA.
+
+**Por qué**: cerrar Stage 3/4 del flujo `/sprint-development` sobre FRESCO-88 — el subagente de review se quedó sin sesión, así que terminé el trabajo yo directamente en vez de reintentar otro subagente con el mismo límite.
+
+**Siguiente**: sin asignar (mismo criterio de siempre, sin fase shift-left QA). El límite de sesión de subagentes resetea 20:20 (Madrid) — a tener en cuenta si se dispara otro subagente pesado antes de esa hora.
