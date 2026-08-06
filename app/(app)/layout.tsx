@@ -1,5 +1,5 @@
 import { AppShell } from '@/components/layout/app-shell';
-import { getUserNombre } from '@/lib/api/user-profile';
+import { getUserNombre, getUserPlan } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -13,15 +13,27 @@ import { createClient } from '@/lib/supabase/server';
  * (no active session), `AppShell` gets `user: null` — `Sidebar` then skips
  * mounting `SidebarAccount` entirely instead of showing it with a blank
  * identity and a still-active logout button.
+ *
+ * `getUserPlan` (FRESCO-84) is fetched in parallel with `getUserNombre` —
+ * the two reads are mutually independent, so there's no reason to pay for
+ * two sequential round trips. Same conservative-default fallback as
+ * `/profile/page.tsx`: a read failure degrades to `'free'` rather than
+ * crashing the shell.
  */
 export default async function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const nombre = await getUserNombre(supabase, user?.id).catch((error) => {
-    console.error('[AppGroupLayout] getUserNombre failed, defaulting to null', error);
-    return null;
-  });
+  const [nombre, plan] = await Promise.all([
+    getUserNombre(supabase, user?.id).catch((error) => {
+      console.error('[AppGroupLayout] getUserNombre failed, defaulting to null', error);
+      return null;
+    }),
+    getUserPlan(supabase, user?.id).catch((error) => {
+      console.error('[AppGroupLayout] getUserPlan failed, defaulting to free', error);
+      return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+    }),
+  ]);
 
-  return <AppShell user={user ? { nombre, email: user.email ?? '' } : null}>{children}</AppShell>;
+  return <AppShell user={user ? { nombre, email: user.email ?? '', plan } : null}>{children}</AppShell>;
 }

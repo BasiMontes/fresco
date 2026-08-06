@@ -62,7 +62,7 @@ export function Sidebar({ user }: SidebarProps) {
           );
         })}
       </nav>
-      {user && <SidebarAccount nombre={user.nombre} email={user.email} />}
+      {user && <SidebarAccount nombre={user.nombre} email={user.email} plan={user.plan} />}
     </aside>
   );
 }

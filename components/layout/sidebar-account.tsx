@@ -1,9 +1,11 @@
 'use client';
 
+import type { UserProfile } from '@schemas';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Tag } from '@/components/ui/tag';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -16,7 +18,18 @@ export interface AccountUser {
   nombre: string | null
   /** The signed-in user's email, from `auth.getUser()`. */
   email: string
+  /** The signed-in user's subscription tier (FRESCO-84), from `getUserPlan()`. */
+  plan: UserProfile['plan']
 }
+
+/**
+ * Plan-tier label copy (FRESCO-84) — deliberately duplicated from
+ * `app/(app)/profile/page.tsx`'s own local `PLAN_LABELS` rather than shared,
+ * matching this file's own stated convention of independent local copies
+ * for small, single-file patterns. Same exact strings + `Tag` variant split
+ * already shipped and live in `/profile`, per Rule 14 (LIVE-UI-FIRST).
+ */
+const PLAN_LABELS = { free: 'Plan Free', pro: 'Plan Pro', family: 'Plan Family' } as const;
 
 export type SidebarAccountProps = AccountUser;
 
@@ -38,7 +51,7 @@ export type SidebarAccountProps = AccountUser;
  * convention of independent local copies of this same 3-line pattern
  * (`danger-zone.tsx`, `app/update-password/page.tsx`).
  */
-export function SidebarAccount({ nombre, email }: SidebarAccountProps) {
+export function SidebarAccount({ nombre, email, plan }: SidebarAccountProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -80,6 +93,9 @@ export function SidebarAccount({ nombre, email }: SidebarAccountProps) {
           <p data-testid="user_email" className="truncate text-body-sm text-background/70">
             {email}
           </p>
+          <Tag data-testid="plan_tag" variant={plan === 'free' ? 'neutral' : 'accent'} className="mt-1">
+            {PLAN_LABELS[plan]}
+          </Tag>
         </div>
         <Button
           type="button"
