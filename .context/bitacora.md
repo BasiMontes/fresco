@@ -2445,3 +2445,21 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: Stage 1 (plan técnico) ya aprobado en el comentario de Jira; esta sesión fue Stage 2 (implementación + verificación + validación visual), sin push/PR (Stage 3 aparte).
 
 **Siguiente**: Stage 3 — PR + code review + deploy a staging. Considerar abrir story/tech-debt aparte para el guard de ruta faltante en `(app)/`.
+
+---
+
+## 2026-08-06 — FRESCO-82: aplicados los 5 fixes adjudicados del code review
+
+**Qué**: 4 commits atómicos sobre `review.md` (adjudicación previa contra diff real, findings 1-5 legitimate, finding 6 dismissed sin cambio):
+- Fix 1 (CRITICAL): `sidebar-account.tsx` — `data-testid="logout_button"`/`logout_error_message` (colisionaban con `danger-zone.tsx`, ambos montados a la vez en `/profile`) renombrados a `sidebar_logout_button`/`sidebar_logout_error_message`.
+- Fix 5 (NIT): `aria-busy={isLoggingOut}` en el botón de logout del sidebar, paridad con `danger-zone.tsx`.
+- Fix 2 (MAJOR) + Fix 4 (MEDIUM), un solo commit por tocar las mismas líneas de tipo en los 3 archivos: `AppShell`/`Sidebar` ahora reciben `user: AccountUser | null` (tipo extraído y reexportado desde `sidebar-account.tsx`, antes redeclarado 3 veces); `Sidebar` ya no monta `SidebarAccount` si `user` es `null`; `app/(app)/layout.tsx` pasa `user ? {...} : null` en vez del fallback `?? ''` que dejaba pasar sesión nula con footer de cuenta activo (nombre "Sin nombre" + botón logout habilitado sin sesión real). `proxy.ts` NO tocado — fuera de alcance, ya documentado en la entrada anterior.
+- Fix 3 (MEDIUM): `getUserNombre` (`lib/api/user-profile.ts`) envuelto en `React.cache()`. Documentado en el propio commit que esto NO logra deduplicación real hoy: cada caller (`layout.tsx`, `profile/page.tsx`) crea su propio cliente Supabase vía `createClient()`, así que el argumento `client` difiere por referencia entre llamadas y rompe el cache-key match de `React.cache`. Memoizar `createClient()` en sí (que sí igualaría el argumento) se evaluó y se descartó: se usa también desde Route Handlers (`app/api/profile/export/route.ts`, `app/auth/confirm/route.ts`), que quedan fuera del árbol de render de React — `React.cache()` ahí no resetea por-request y podría filtrar el cliente de una request a otra.
+
+**Verificación**: `bun run types:check`, `bun run lint:check` (1 error de orden de imports en `sidebar.tsx`, autofixed con `eslint --fix`), `bun run build` — todo verde. `bun test lib/api/user-profile.test.ts` — 21/21 pass (el wrap en `cache()` no rompió la suite: cada test usa un mock client distinto por objeto, así que el cache-key nunca colisiona entre tests).
+
+**Validación en vivo (Fix 2, Playwright, sesión sin cookies)**: `bun run dev` + `playwright-cli` con sesión limpia (`-s=fresco-fix2`, sin `--persistent`), navegación directa a `/menu` sin login. Confirmado por snapshot de accesibilidad + `eval` en DOM + screenshot: `[data-testid="sidebar_logout_button"]`, `[data-testid="sidebarAccount"]` y el texto "Sin nombre" ausentes del DOM — el resto del sidebar (logo, nav Menú/Calendario/Recetas/Perfil) sigue renderizando igual que antes (gap preexistente de `/menu` sin guard de ruta, ya documentado, no tocado). Dev server apagado al terminar.
+
+**Por qué**: cerrar el loop CHANGES REQUESTED de `review.md` antes de Stage 3 (PR + deploy).
+
+**Siguiente**: Stage 3 — PR + code review + deploy a staging. Sigue pendiente considerar story/tech-debt aparte para el guard de ruta faltante en `(app)/` (`proxy.ts`).
