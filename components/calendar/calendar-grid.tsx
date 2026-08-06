@@ -375,8 +375,27 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
        * stop propagation on their own `onClick`/`pointerdown` so a tap on
        * them never bubbles up to this handler — same pattern as the
        * favorite heart in `recipe-card.tsx`.
+       *
+       * `role`/`tabIndex`/`onKeyDown` (Enter) — a plain `onClick` div is
+       * mouse/touch-only; the Inicio surfaces this story also touches use a
+       * real `<Link>` (keyboard-accessible for free), so without these this
+       * cell would be the one surface in the story a keyboard user can't
+       * reach. `event.target === event.currentTarget` guards against the
+       * keydown bubbling up from the nested drag-handle/mark buttons when
+       * THEY are activated via Enter — those already `stopPropagation()` on
+       * `click`, but a native button's `keydown` bubbles independently of
+       * that, so the guard is the actual fix, not the stopPropagation.
        */
       onClick={recipe && !disabled ? () => router.push(`/recipes/${recipe.id}`) : undefined}
+      role={recipe && !disabled ? 'link' : undefined}
+      tabIndex={recipe && !disabled ? 0 : undefined}
+      onKeyDown={recipe && !disabled
+        ? (event) => {
+            if (event.key === 'Enter' && event.target === event.currentTarget) {
+              router.push(`/recipes/${recipe.id}`);
+            }
+          }
+        : undefined}
       className={cn(
         'flex flex-col rounded-card bg-surface p-3 shadow-sm',
         !disabled && 'cursor-pointer',
