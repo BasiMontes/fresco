@@ -101,9 +101,10 @@ _Project: FRESCO_
 
 ## [FRESCO-81](https://basiliomontescastano.atlassian.net/browse/FRESCO-81) - Cuenta y Sesión
 
-**Status:** Listo | **Stories:** 1 | **Points:** 0
+**Status:** Listo | **Stories:** 2 | **Points:** 0
 
 - [FRESCO-82](https://basiliomontescastano.atlassian.net/browse/FRESCO-82) Cuenta | Ver datos de la cuenta y cerrar sesión desde el sidebar _(- pts, Control de calidad)_
+- [FRESCO-84](https://basiliomontescastano.atlassian.net/browse/FRESCO-84) Cuenta | Ver el plan de suscripción en el sidebar _(- pts, Control de calidad)_
 
 ---
 

@@ -2493,3 +2493,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, confirmar en producción real lo que Stage 2/3 ya había validado contra dev server.
 
 **Siguiente**: FRESCO-82 confirmado funcionando en producción. Sin acciones pendientes de este ticket.
+
+---
+
+## 2026-08-06 — FRESCO-84: historia nueva "Ver el plan de suscripción en el sidebar"
+
+**Qué**: creé FRESCO-84 (Historia, épica FRESCO-81, Nivel 1 del workflow `/product-management`) reutilizando `getUserPlan()` (`lib/api/user-profile.ts`) ya existente — historia 100% de UI, sin cambios de datos. AC/Scope/Out-of-Scope/Business-Rules cayeron a fallback de comentario (los 4 campos custom de este workspace son `textfield` de 255 caracteres, no ADF — confirmado ya en sesiones previas para FRESCO-82). Transicionada a "Control de calidad" (`--status` de acli resuelve por nombre de status destino, no de transición). Dependencia con FRESCO-82 detectada en Active Dependency Discovery (ambas tocan el mismo componente `SidebarAccount`): el tipo de enlace `Dependencies` NO existe en este workspace (confirmado vía `acli jira workitem link type` — solo AgileTest, AgileTest Defect, Blocks, Cloners, Duplicate, Relates) — degradado al fallback declarado en `jira-required.yaml` (`Relates`, simétrico, dirección perdida) y flageado como tal, en vez de usar `Blocks` (que hubiera preservado dirección pero no es el fallback formalmente declarado para `dependencies`). Sync local materializado (`story.md` + `comments.md`), `epic.md` y `epic-tree.md` refrescados.
+
+**Por qué**: pedido directo del user, contenido ya redactado de antemano — la tarea fue ejecutar create/transition/link/sync siguiendo Phase 2A del skill `product-management`, no redactar de cero.
+
+**Siguiente**: sin asignar. Pendiente evaluar si vale la pena declarar el tipo de enlace `Dependencies` en este workspace de Jira (hoy no existe) para dejar de degradar a `Relates` en futuras historias con dependencias reales.

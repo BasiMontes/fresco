@@ -38,6 +38,14 @@
 
 ---
 
+## Traceability
+
+### Historia (1)
+
+- [FRESCO-84](https://basiliomontescastano.atlassian.net/browse/FRESCO-84): Cuenta | Ver el plan de suscripción en el sidebar _(Control de calidad)_
+
+---
+
 ## Metadata
 
 - **Created:** 8/6/2026
