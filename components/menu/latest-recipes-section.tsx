@@ -53,12 +53,12 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
       </div>
       <HorizontalScrollRow className="mt-2">
         {recipes.map(recipe => (
-          <FavoriteRecipeCard
-            key={recipe.id}
-            recipe={recipe}
-            initialIsFavorite={favoriteRecipeIds.has(recipe.id)}
-            className="w-60 shrink-0"
-          />
+          <Link key={recipe.id} href={`/recipes/${recipe.id}`} className="flex w-60 shrink-0">
+            <FavoriteRecipeCard
+              recipe={recipe}
+              initialIsFavorite={favoriteRecipeIds.has(recipe.id)}
+            />
+          </Link>
         ))}
       </HorizontalScrollRow>
     </div>
