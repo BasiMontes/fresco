@@ -58,6 +58,7 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
+
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
 **Status:** Finalizada | **Stories:** 1 | **Points:** 0
@@ -97,6 +98,12 @@ _Project: FRESCO_
 - [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) Biblioteca | Filtrar por dieta, alérgenos y cocina _(- pts, Finalizada)_
 - [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) Biblioteca | Crear una receta propia _(- pts, Finalizada)_
 - [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69) Biblioteca | View full recipe detail _(- pts, Finalizada)_
+
+## [FRESCO-81](https://basiliomontescastano.atlassian.net/browse/FRESCO-81) - Cuenta y Sesión
+
+**Status:** Listo | **Stories:** 1 | **Points:** 0
+
+- [FRESCO-82](https://basiliomontescastano.atlassian.net/browse/FRESCO-82) Cuenta | Ver datos de la cuenta y cerrar sesión desde el sidebar _(- pts, Control de calidad)_
 
 ---
 
