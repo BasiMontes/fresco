@@ -102,6 +102,15 @@ supabase/.temp/
 .playwright-cli/
 
 # ===========================================
+# Impeccable design-hook cache - generated, local-only
+# ===========================================
+# .impeccable/hook.cache.json is written by the impeccable skill's post-edit
+# design hook (ignored via .git/info/exclude, not the shared .gitignore).
+# Prettier honors only .prettierignore, so without this glob format:check
+# fails on a local tool cache no one else's checkout even has.
+.impeccable/
+
+# ===========================================
 # Backup artifacts - generated, gitignored
 # ===========================================
 # .backups/ holds machine-generated backup dumps and key-mapping files (already
