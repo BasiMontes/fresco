@@ -2411,3 +2411,23 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 557/1000 con foto, 443 restantes.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo cuarto batch (11/30, 568/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 11/30 hits. Aplicado con `supabase db query --linked -f batch24.sql` (tabla real `public.recipes`, no `recetas`). Verificado: `568/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 568/1000 con foto, 432 restantes.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo quinto batch (7/20, 575/1000 total) — ventana horaria agotada
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 20 (ajustado a los 20 requests que quedaban en la ventana horaria de Unsplash de 50/hora, tras gastar 30 en el batch anterior). 7/20 hits. Aplicado con `supabase db query --linked -f batch25.sql`. Verificado: `575/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user — agotar la ventana horaria de Unsplash en la misma sesión en vez de dejar cupo sin usar.
+
+**Siguiente**: 575/1000 con foto, 425 restantes. Ventana de Unsplash en 0; próximo batch espera a que recargue (top de la hora).
