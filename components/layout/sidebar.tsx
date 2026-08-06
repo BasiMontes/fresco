@@ -35,7 +35,7 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-primary px-4 py-6 text-background md:flex">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto bg-primary px-4 py-6 text-background md:flex">
       <Link href="/menu" className="mb-8 flex items-center px-2">
         <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} priority />
       </Link>
