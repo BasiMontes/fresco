@@ -2547,3 +2547,19 @@ Validado en vivo (Playwright, dev server): nombre real, nombre largo con truncad
 **Por qué**: pedido directo del user tras notar la falta de jerarquía en un screenshot de producción.
 
 **Siguiente**: sin ticket Jira abierto para esto (ajuste visual menor post-hoc sobre FRESCO-82/84, no amerita historia propia). Pendiente decidir si commitear la actualización de la skill `impeccable` (cambios grandes, no relacionados al código de la app).
+
+---
+
+## 2026-08-06 — FRESCO-85 / FRESCO-86: iconos sin jerarquía + flecha "pálida"
+
+**Qué**: user pasó 2 capturas de producción — iconos de favoritos/notificaciones (cabecera de Inicio) y de tarjetas de receta "pequeños, no corresponden a la jerarquía", y la flecha del scroll horizontal "pálida" pidiendo cambiarla a verde corporativo. Creé FRESCO-85 y FRESCO-86 (tipo Error, standalone, mismo patrón que FRESCO-70/78/83) con la investigación de código ya documentada antes de tocar nada.
+
+**Causa raíz real (no era lo que parecía)**: `tailwind.config.ts` sobreescribe la escala `spacing` de Tailwind con la fórmula 4.4px×n de DESIGN.md, pero solo define las keys `1,2,3,4,6,8` — la key `5` nunca se agregó, así que `size-5` caía al default de Tailwind (20px) en vez de los 22px reales (4.4×5) del token `components.icon.size` de DESIGN.md. Inventario completo de los 8 sitios `variant="icon"` de la app: la mayoría en `size-4` (17.6px), 2 en `size-5` (20px por el gap) — ninguno llegaba a los 22px del token. Para la flecha del scroll: el color en código ya era `text-primary` (`#0F4E0E`, verde corporativo) desde siempre — confirmado con `getComputedStyle` en vivo (`rgb(15, 78, 14)` exacto). El "pálido" era 100% el trazo de 2px de `lucide-react` a 16px, no un color equivocado.
+
+**Fix aplicado** (solo los 3 archivos que documentan las 2 tickets, no los 8 — el resto queda anotado, no tocado): `size-[22px]` explícito (no toqué la escala global `spacing` del `tailwind.config.ts` — blast radius no auditado, cualquier otro `-5` de la app se vería afectado) en `app/(app)/menu/page.tsx` (Heart/Bell), `components/recipe/recipe-card.tsx` (Heart), `components/menu/horizontal-scroll-row.tsx` (ChevronLeft/ChevronRight).
+
+Validado en vivo: corazones/campana visiblemente más sólidos, chevron confirmado verde corporativo real por computed style. `types:check`/`lint:check` verdes, detector `impeccable` sin hallazgos.
+
+**Por qué**: pedido directo del user, "crea Jira, documenta y lo solucionamos" — creación + fix en la misma sesión.
+
+**Siguiente**: quedan 5 sitios más con el mismo `size-4` (`sidebar-account.tsx` logout, `calendar-grid.tsx` drag handle, `delete-week-button.tsx`, back-arrows de `/notifications` y `/favorites`) sin tocar — no estaban en el alcance documentado de FRESCO-85/86. Candidato a ticket de consistencia aparte si el user lo pide. La key `5` faltante en `tailwind.config.ts spacing` también queda sin agregar globalmente (mismo motivo: blast radius no auditado).

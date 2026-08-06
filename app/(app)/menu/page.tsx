@@ -120,10 +120,10 @@ export default async function MenuPage() {
         </div>
         <div className="flex gap-2">
           <Link href="/favorites" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Favoritos" data-testid="favoritos_button">
-            <Heart className="size-5" />
+            <Heart className="size-[22px]" />
           </Link>
           <Link href="/notifications" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Notificaciones" data-testid="notificaciones_button">
-            <Bell className="size-5" />
+            <Bell className="size-[22px]" />
           </Link>
         </div>
       </div>

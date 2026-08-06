@@ -103,7 +103,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
           }}
           className="absolute right-2 top-2"
         >
-          <Heart className={cn('size-4', isFavorite && 'fill-primary')} />
+          <Heart className={cn('size-[22px]', isFavorite && 'fill-primary')} />
         </Button>
       </div>
       <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
