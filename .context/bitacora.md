@@ -2583,3 +2583,13 @@ Validado en vivo: corazones/campana visiblemente más sólidos, chevron confirma
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 597/1000 con foto, 403 restantes.
+
+---
+
+## 2026-08-06 — FRESCO-31: vigésimo octavo batch (7/30, 604/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 7/30 hits. Aplicado con `supabase db query --linked -f batch28.sql`. Verificado: `604/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 604/1000 con foto, 396 restantes.
