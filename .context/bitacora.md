@@ -2483,3 +2483,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user, seguimiento del hallazgo fuera de alcance de FRESCO-82.
 
 **Siguiente**: FRESCO-83 sin priorizar en el backlog, sin épica asignada.
+
+---
+
+## 2026-08-06 — FRESCO-82: smoke test en producción
+
+**Qué**: verifiqué el deploy de `main` (`60e9df9`) en Vercel — `vercel ls -m githubCommitSha` confirmó `READY`, target `production`, alias real `fresco-pro.vercel.app`. Smoke test con Playwright en dos pasadas: (1) sin login — home, `/login`, `/menu` sin sesión (footer de cuenta correctamente ausente), cero errores de consola; (2) con login (credenciales `PRO_TEST_USER_EMAIL` pasadas por el user en el chat, usadas solo en memoria de la sesión de Playwright, nunca escritas a archivo) — footer de cuenta visible con email correcto y avatar (nombre en "Sin nombre", fallback esperado por falta de dato en el perfil de ese user de test, no bug), logout real: cookies a cero + redirect a `/login`.
+
+**Por qué**: pedido directo del user, confirmar en producción real lo que Stage 2/3 ya había validado contra dev server.
+
+**Siguiente**: FRESCO-82 confirmado funcionando en producción. Sin acciones pendientes de este ticket.
