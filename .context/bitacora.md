@@ -2653,3 +2653,13 @@ Transicioné FRESCO-88 a "Control de calidad" y publiqué el comentario de aviso
 **Por qué**: cerrar Stage 3/4 del flujo `/sprint-development` sobre FRESCO-88 — el subagente de review se quedó sin sesión, así que terminé el trabajo yo directamente en vez de reintentar otro subagente con el mismo límite.
 
 **Siguiente**: sin asignar (mismo criterio de siempre, sin fase shift-left QA). El límite de sesión de subagentes resetea 20:20 (Madrid) — a tener en cuenta si se dispara otro subagente pesado antes de esa hora.
+
+---
+
+## 2026-08-06 — FRESCO-31: trigésimo batch (4/30, 618/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 4/30 hits — tasa de acierto siguiendo la caída esperada a medida que el pool de recetas sin foto se achica. Aplicado con `supabase db query --linked -f batch30.sql`. Verificado: `618/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+**Siguiente**: 618/1000 con foto, 382 restantes.
