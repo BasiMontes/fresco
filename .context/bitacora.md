@@ -2431,3 +2431,17 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user — agotar la ventana horaria de Unsplash en la misma sesión en vez de dejar cupo sin usar.
 
 **Siguiente**: 575/1000 con foto, 425 restantes. Ventana de Unsplash en 0; próximo batch espera a que recargue (top de la hora).
+
+---
+
+## 2026-08-06 — FRESCO-82: cuenta y logout en el pie del sidebar (Stage 2, implementación)
+
+**Qué**: `SidebarAccount` (`components/layout/sidebar-account.tsx`, nuevo) — avatar/inicial, nombre, email truncados, botón cerrar sesión (mismo `signOut()` browser-client → `router.push('/login')` que `danger-zone.tsx`, copiado localmente por convención ya establecida en el repo). `Sidebar` y `AppShell` ahora reciben `user: { nombre, email }`; `app/(app)/layout.tsx` pasó a Server Component async que hace el fetch una sola vez (`auth.getUser()` + `getUserNombre()`, mismo fallback conservador que `/profile`). 3 commits atómicos.
+
+**Hallazgo real durante validación visual en vivo** (Playwright): el footer se renderizaba correcto en el DOM pero quedaba fuera de la pantalla — el `<aside>` no tenía altura fijada al viewport, así que al ser hermano flex de un `<main>` más alto que la pantalla, se estiraba a la altura de TODA la página y `mt-auto` empujaba el footer al fondo del scroll completo, no al fondo visible del sidebar. Fix: `sticky top-0 h-screen overflow-y-auto` en el `<aside>` (`sidebar.tsx`) — commit separado, mismo archivo ya en alcance de la historia.
+
+**Hallazgo fuera de alcance (NO tocado)**: navegar directo a `/menu` sin sesión activa (cookies limpias tras logout) sigue renderizando el shell con datos degradados en vez de redirigir a `/login` — `proxy.ts` sólo refresca cookies, no hay guard de ruta. Preexistente, no introducido por esta historia; el AC de FRESCO-82 sólo exige que el componente no aparezca en `/login`/`/signup` (confirmado), no que `/menu` esté protegido — eso es un gap de arquitectura de auth más grande, candidato a story/ADR aparte.
+
+**Por qué**: Stage 1 (plan técnico) ya aprobado en el comentario de Jira; esta sesión fue Stage 2 (implementación + verificación + validación visual), sin push/PR (Stage 3 aparte).
+
+**Siguiente**: Stage 3 — PR + code review + deploy a staging. Considerar abrir story/tech-debt aparte para el guard de ruta faltante en `(app)/`.
