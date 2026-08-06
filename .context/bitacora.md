@@ -2473,3 +2473,13 @@ Verificado en vivo: forcé el scroll interno del calendario vía JS y confirmé 
 **Por qué**: pedido directo del user ("implementa la historia FRESCO-82"), corrida completa de `/sprint-development` Stages 1-4 (Stage 5 producción es evento separado, no disparado).
 
 **Siguiente**: sin asignar (no hubo fase shift-left QA identificable para este ticket, historia nueva creada en la misma sesión — regla de asignación de `sprint-development` dice dejar sin asignar en ese caso, no al developer). Pendiente: story/tech-debt aparte para el guard de ruta faltante en `(app)/` (`proxy.ts` no redirige sin sesión) — hallazgo repetido en Stage 2 y Stage 3, nunca en alcance de FRESCO-82.
+
+---
+
+## 2026-08-06 — FRESCO-83: ticket abierto para el guard de ruta faltante
+
+**Qué**: creé FRESCO-83 (tipo Error, standalone sin épica, mismo patrón que los demás `DEFECT-FRESCO-*` del proyecto) documentando el gap encontrado en Stage 2/3 de FRESCO-82: rutas bajo `(app)/` no redirigen a `/login` sin sesión activa (`proxy.ts` solo refresca cookies, no hace guard). Descripción con repro + alcance + nota explícita de no romper Modo Invitado (sesión anónima). Primer intento con `acli ... -d <path>` guardó la ruta del archivo como texto literal en la descripción (flag equivocado, es `--description-file` no `-d`); corregido convirtiendo el markdown a ADF real vía `md-to-adf.ts` antes de escribir el campo. Estado inicial "Listo" confirmado como el equivalente real a backlog/To-Do en este workspace (categoría `new`, no `done` — nombre engañoso).
+
+**Por qué**: pedido directo del user, seguimiento del hallazgo fuera de alcance de FRESCO-82.
+
+**Siguiente**: FRESCO-83 sin priorizar en el backlog, sin épica asignada.
