@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { getUserDietaryPreferences, getUserNombre, getUserPlan } from '@/lib/api/user-profile';
+import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { createClient } from '@/lib/supabase/server';
-
-const PLAN_LABELS = { free: 'Plan Free', pro: 'Plan Pro', family: 'Plan Family' } as const;
 
 /**
  * `/profile` — nav item 4. Real session (email) + real tier (`getUserPlan()`,
@@ -108,7 +107,7 @@ export default async function ProfilePage() {
               <p className="text-body-sm text-tertiary">{user?.email ?? 'Invitada'}</p>
             </div>
           </div>
-          <Tag variant={plan === 'free' ? 'neutral' : 'accent'}>{PLAN_LABELS[plan]}</Tag>
+          <Tag variant={getPlanTagVariant(plan)}>{PLAN_LABELS[plan]}</Tag>
         </div>
       </Card>
 
