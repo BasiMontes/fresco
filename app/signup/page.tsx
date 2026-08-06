@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
+import { translateAuthError } from '@/lib/auth-errors';
 
 import { createClient } from '@/lib/supabase/client';
 
@@ -60,7 +61,7 @@ export default function SignupPage() {
 
       const { error } = await client.auth.signInWithPassword({ email, password: conflictPassword });
       if (error) {
-        setReassignError(error.message);
+        setReassignError(translateAuthError(error));
         return;
       }
       router.push('/menu');
@@ -108,7 +109,7 @@ export default function SignupPage() {
             setEmailConflict(true);
           }
           else {
-            setSignupError(error.message);
+            setSignupError(translateAuthError(error));
           }
           return;
         }
@@ -119,7 +120,7 @@ export default function SignupPage() {
 
       const { data, error } = await client.auth.signUp({ email, password });
       if (error) {
-        setSignupError(error.message);
+        setSignupError(translateAuthError(error));
         return;
       }
       // Supabase's documented anti-enumeration behavior: signing up with an

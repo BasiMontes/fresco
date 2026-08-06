@@ -10,6 +10,7 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { translateAuthError } from '@/lib/auth-errors';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -54,7 +55,7 @@ function LoginPageInner() {
       const client = createClient();
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) {
-        setLoginError(error.message);
+        setLoginError(translateAuthError(error));
         return;
       }
       router.push('/menu');
