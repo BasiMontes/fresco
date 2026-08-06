@@ -9,6 +9,14 @@ const config: Config = {
     './components/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
   ],
+  // `lucide-react` injects the `lucide`/`lucide-<name>` classes on its <svg>
+  // internally (node_modules, outside `content`'s static scan) — Tailwind's
+  // JIT purge can't see them referenced anywhere and drops any custom rule
+  // targeting `.lucide` (confirmed empirically: `svg.lucide { stroke-width:
+  // 3 }` in globals.css silently vanished from the production build output,
+  // reproduced locally with `bun run build`, identical to the deployed
+  // chunk). Safelisting keeps it.
+  safelist: ['lucide'],
   theme: {
     extend: {
       colors: {

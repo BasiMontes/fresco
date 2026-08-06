@@ -2609,3 +2609,15 @@ Barrido visual en vivo por toda la app (Inicio, tarjetas de receta, calendario �
 **Por qué**: pedido directo del user tras 2 rondas de feedback sobre la misma percepción — la causa real necesitaba iteración visual, no solo re-medir el token.
 
 **Siguiente**: FRESCO-87 (los 5 sitios restantes en `size-4`) hereda el trazo 3px automáticamente vía la regla global — cuando se implemente esa ticket, solo falta el tamaño (`size-[22px]`), el grosor ya queda resuelto para todos.
+
+---
+
+## 2026-08-06 — FRESCO-85/86: fix del stroke-width no llegó a producción — Tailwind purgaba la regla
+
+**Qué**: verifiqué el deploy del fix anterior (`4558dc3`) en `fresco-pro.vercel.app` con `getComputedStyle` real — `stroke-width` seguía en `2px`, no `3px`. Descargué el CSS servido en producción y confirmé que la regla `svg.lucide { stroke-width: 3 }` NO estaba en el bundle, aunque sí estaba en el commit pusheado (verificado con `git show`). Reproduje el mismo resultado con `bun run build` local — mismo hash de chunk que el de Vercel, misma ausencia de la regla. Causa real: `lucide-react` inyecta la clase `lucide`/`lucide-<nombre>` en el `<svg>` en runtime, dentro de `node_modules` — nunca aparece como texto literal en ningún archivo que Tailwind escanea (`content: ['./app/**/*.{ts,tsx}', ...]`), así que el purge JIT de Tailwind v3 la trata como "no usada" y la descarta del build de producción, incluso siendo CSS escrita a mano dentro de `@layer base`.
+
+**Fix**: agregado `safelist: ['lucide']` a `tailwind.config.ts` (fuera de `content`, top-level) — protege la clase del purge sin tocar la regla CSS en sí. Verificado localmente: `bun run build` desde cero, el chunk generado ahora sí contiene `svg.lucide{stroke-width:3px}` (antes ausente con el mismo comando). `types:check`/`lint:check` verdes.
+
+**Por qué**: la verificación en vivo que agendé para después de la sesión anterior encontró que el fix no había llegado realmente — confirmar en producción, no solo confiar en el commit pusheado, evitó reportar "resuelto" una tercera vez sin estarlo.
+
+**Siguiente**: pendiente push + reverificación en `fresco-pro.vercel.app` con el mismo método (`getComputedStyle` real, no solo mirar el código).
