@@ -174,7 +174,11 @@ export default async function MenuPage() {
           <div key={slot} className="flex flex-col">
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
             {hoy[slot]
-              ? <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} className="flex-1" />
+              ? (
+                  <Link href={`/recipes/${hoy[slot].id}`} className="flex flex-1">
+                    <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} className="flex-1" />
+                  </Link>
+                )
               : (
                   // FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for
                   // this slot — `AlertBanner` above already surfaces why.
