@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-85](https://basiliomontescastano.atlassian.net/browse/FRESCO-85)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Control de calidad
 **Components:** None
 
 ---

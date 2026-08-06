@@ -58,6 +58,7 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
+
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
 **Status:** Finalizada | **Stories:** 1 | **Points:** 0

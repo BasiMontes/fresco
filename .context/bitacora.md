@@ -2673,3 +2673,29 @@ Transicioné FRESCO-88 a "Control de calidad" y publiqué el comentario de aviso
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
 **Siguiente**: 628/1000 con foto, 372 restantes.
+
+---
+
+## 2026-08-06 — 2 defects CRITICAL del QA sweep de onboarding/menú/calendario, creados en Jira
+
+**Qué**: FRESCO-89 (registro progresivo nunca completa la conversión de cuenta invitada — `updateUser()` sobre usuario anónimo solo encola cambio de email pendiente vía doble opt-in, `handleSubmit` en `app/signup/page.tsx` lo trata como éxito y redirige; login posterior da 400. Mismo root cause bloquea el flujo `emailConflict`/`reassignGuestData` de ADR-0004/FRESCO-20) y FRESCO-90 ("Cerrar sesión" en modo invitado, `components/layout/sidebar-account.tsx`, borra sin aviso el menú generado — dato real en `meal_plans` queda inaccesible), transcritos 1:1 desde el QA sweep de hoy (2 CRITICAL / 5 MAJOR / 4 MINOR sobre Modo Invitado, Onboarding, Registro Progresivo, Menú, Calendario, Aprendizaje). Ambos como tipo "Error" standalone, sin épica, descripción en las 4 secciones ya usadas en FRESCO-70/78/83/85/86/87 (`## Qué se observa` / `## Por qué importa` / `## Alcance` / `## Cómo reproducir`), publicada vía MD→ADF (`md-to-adf.ts` + `--description-file`, verificado ADF real no texto plano) y sincronizada a `.context/PBI/defects/`. Prioridad quedó en el default (Medium) — `acli jira workitem create`/`edit` no expone flag `--priority` en esta instalación (v1.3.18), conocido de sesiones previas; el user decide manualmente si sube a High.
+
+**Nota operativa**: la primera creación de FRESCO-90 salió duplicada (FRESCO-90 y FRESCO-91 idénticos, mismo `acli create` corrido dos veces) — detectado con `workitem search --jql "created >= -1h"` antes de tocar descripciones, FRESCO-91 borrado (`workitem delete --yes`) sin dejar rastro huérfano.
+
+**Por qué**: pedido directo del user — 2 hallazgos CRITICAL de la sesión QA de hoy necesitaban ticket propio para poder priorizarse/asignarse, sin tocar el status inicial (queda en manos del user transicionar).
+
+**Siguiente**: user decide prioridad (probablemente High en ambos, dado el impacto: pérdida de acceso a cuenta y pérdida de datos reales) y cuándo mover a Ready For Dev.
+
+---
+
+## 2026-08-06 — QA sweep completo + 20 tickets de defectos + limpieza de duplicados
+
+**Qué**: pedido del user de actuar como QA Lead senior y hacer un barrido exhaustivo de toda la app. Despaché 3 agentes en paralelo (Biblioteca/Recetas/Favoritos, Onboarding/Menú/Calendario, Auth/Perfil/Legal), cada uno con su propia cuenta de test para no chocar datos. Resultado: 2 CRITICAL, 6 MAJOR, 11 MINOR — consolidados en un artifact único (comparativo de severidad, hallazgos deduplicados donde 2 pases distintos encontraron el mismo bug de forma independiente). FRESCO-83 confirmado reproducido, no duplicado.
+
+A pedido del user de "abrir un ticket por cada hallazgo", despaché 3 agentes más (CRITICAL/MAJOR/MINOR) para crear los 19 tickets en Jira. En paralelo, uno de los 3 agentes de QA original (`add3f71904338b57a`, el de Onboarding/Menú/Calendario) se reactivó por su cuenta y también empezó a crear tickets para sus propios hallazgos — mecanismo exacto no claro, pero el resultado fue real: 10 tickets duplicados (mismo bug, 2 keys distintas, formato "[QA] ..." con estructura de comentario en vez de la convención `## Qué se observa` del proyecto). Detecté la colisión por la notificación de resultado del agente MAJOR (mencionaba keys que yo no había pedido), confirmé con `acli jira workitem search --jql "project = FRESCO AND key >= FRESCO-89"`, y **maté el agente MINOR a tiempo parcial** (`TaskStop`) — ya había creado los 11 tickets pero no alcanzó a duplicarlos de nuevo ni a hacer el sync final.
+
+Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem delete --yes` × 10 — FRESCO-92,93,95,96,97,98,99,100,101,102), conservados los míos (siguen la convención establecida). Un hallazgo genuinamente nuevo sobrevivió del agente reactivado — **FRESCO-94** ("recargar la página a mitad del onboarding borra todo el progreso sin avisar") — no estaba en mi reporte consolidado original; el propio agente admitió en su reporte que su `.md` decía "5 MAJOR" pero solo había redactado 4, y este era el que le faltaba. Le saqué el prefijo "[QA]" del summary para consistencia con el resto del batch. Sync local completo de los 20 tickets sobrevivientes (FRESCO-89, 90, 94, 103-119).
+
+**Por qué**: pedido directo del user (QA exhaustivo + un ticket por hallazgo), con la reconciliación de duplicados como trabajo no pedido pero necesario para no dejar el backlog con basura.
+
+**Siguiente**: 20 tickets de defecto abiertos, ninguno priorizado ni asignado — decisión del user. Los 2 CRITICAL comparten causa raíz (modo invitado tratado como cuenta normal donde no lo es) y probablemente conviene atacarlos juntos.
