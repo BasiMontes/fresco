@@ -2563,3 +2563,13 @@ Validado en vivo: corazones/campana visiblemente más sólidos, chevron confirma
 **Por qué**: pedido directo del user, "crea Jira, documenta y lo solucionamos" — creación + fix en la misma sesión.
 
 **Siguiente**: quedan 5 sitios más con el mismo `size-4` (`sidebar-account.tsx` logout, `calendar-grid.tsx` drag handle, `delete-week-button.tsx`, back-arrows de `/notifications` y `/favorites`) sin tocar — no estaban en el alcance documentado de FRESCO-85/86. Candidato a ticket de consistencia aparte si el user lo pide. La key `5` faltante en `tailwind.config.ts spacing` también queda sin agregar globalmente (mismo motivo: blast radius no auditado).
+
+---
+
+## 2026-08-06 — FRESCO-87: ticket de consistencia para los 5 sitios restantes
+
+**Qué**: creé FRESCO-87 (tipo Error, standalone) documentando los 5 botones `variant="icon"` que quedaron fuera del alcance de FRESCO-85/86 (`sidebar-account.tsx` logout, `calendar-grid.tsx` drag handle, `delete-week-button.tsx`, back-arrows de `/notifications` y `/favorites`) — misma causa raíz ya diagnosticada (gap de la key `5` en `tailwind.config.ts spacing`), sin repetir la investigación. Incluye alcance sugerido (`size-[22px]` sitio por sitio, igual que FRESCO-85/86) más una opción no bloqueante de arreglar la escala global si se audita primero. Sin implementar — solo pedido de creación.
+
+**Por qué**: pedido directo del user, seguimiento del hallazgo fuera de alcance dejado anotado en FRESCO-85/86.
+
+**Siguiente**: FRESCO-87 sin priorizar en el backlog, sin implementar.
