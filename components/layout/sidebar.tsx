@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { SidebarAccount } from '@/components/layout/sidebar-account';
 import { cn } from '@/lib/utils';
 
 /**
@@ -22,7 +23,15 @@ const NAV_ITEMS = [
   { href: '/profile', label: 'Perfil', icon: User },
 ] as const;
 
-export function Sidebar() {
+export interface SidebarProps {
+  /** Signed-in user's account info (FRESCO-82), rendered in the sidebar footer. */
+  user: {
+    nombre: string | null
+    email: string
+  }
+}
+
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -51,6 +60,7 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <SidebarAccount nombre={user.nombre} email={user.email} />
     </aside>
   );
 }

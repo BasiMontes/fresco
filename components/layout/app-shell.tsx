@@ -3,16 +3,25 @@ import type { ReactNode } from 'react';
 import { BottomTabBar } from '@/components/layout/bottom-tab-bar';
 import { Sidebar } from '@/components/layout/sidebar';
 
+export interface AppShellProps {
+  children: ReactNode
+  /** Signed-in user's account info (FRESCO-82), forwarded to `Sidebar`. */
+  user: {
+    nombre: string | null
+    email: string
+  }
+}
+
 /**
  * Combines the desktop sidebar and mobile bottom tab bar per DESIGN.md's
  * Navigation section — "one destination set... surfaced two ways". Wraps
  * every authenticated/app-shell route (menu, calendar, recipes, profile,
  * shopping-list).
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, user }: AppShellProps) {
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar user={user} />
       {/*
         min-w-0 overrides the flex item default of min-width:auto — without
         it, a wide horizontally-scrolling descendant (e.g. CalendarGrid's
