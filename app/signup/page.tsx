@@ -32,6 +32,20 @@ export default function SignupPage() {
   const [conflictPassword, setConflictPassword] = useState('');
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
+  // FRESCO-89: Supabase requires the anonymous user's email to be verified
+  // before it can be linked (docs: "Convert an anonymous user to a
+  // permanent user" — updateUser({ email }) then, only after verification,
+  // updateUser({ password })). This project has secure email change ON
+  // (`mailer_secure_email_change_enabled`), so the single-call
+  // `updateUser({ email, password })` used to silently queue a pending
+  // change instead of applying it — login with the "created" account failed
+  // forever if the guest session was ever lost.
+  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   // FRESCO-53: reuses FRESCO-51's `LegalModal` directly (not `LegalLinks` —
   // this owns its own open/section state so a link inside the checkbox
   // row can deep-link straight to the relevant document).
@@ -81,6 +95,72 @@ export default function SignupPage() {
     }
   }
 
+  /**
+   * FRESCO-89, step 2 of the anonymous-conversion flow: her email is only
+   * linked once the OTP is verified — only then does Supabase allow the
+   * password to be set on the (now-linked) identity.
+   *
+   * `email_exists` is checked HERE, not at the step-1 `updateUser({ email })`
+   * call: verified live that a pending change queues (200, no error) even
+   * when the target email already belongs to another confirmed account —
+   * same anti-enumeration behavior this file already documents for the
+   * plain `signUp` path above. The conflict only surfaces once Supabase
+   * tries to actually commit the swap, i.e. here.
+   */
+  async function handleVerifyOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsVerifyingOtp(true);
+    setOtpError(null);
+    try {
+      const client = createClient();
+      const { error: verifyError } = await client.auth.verifyOtp({
+        email,
+        token: otpCode,
+        type: 'email_change',
+      });
+      if (verifyError) {
+        if (verifyError.code === 'email_exists') {
+          setEmailConflict(true);
+          return;
+        }
+        setOtpError(translateAuthError(verifyError));
+        return;
+      }
+      const { error: passwordError } = await client.auth.updateUser({ password });
+      if (passwordError) {
+        if (passwordError.code === 'email_exists') {
+          setEmailConflict(true);
+          return;
+        }
+        setOtpError(translateAuthError(passwordError));
+        return;
+      }
+      // She already has a profile + generated menu — back to it, not onboarding.
+      router.push('/menu');
+    }
+    finally {
+      setIsVerifyingOtp(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    setIsResendingOtp(true);
+    setOtpError(null);
+    setResendMessage(null);
+    try {
+      const client = createClient();
+      const { error } = await client.auth.updateUser({ email });
+      if (error) {
+        setOtpError(translateAuthError(error));
+        return;
+      }
+      setResendMessage('Te enviamos un nuevo código.');
+    }
+    finally {
+      setIsResendingOtp(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmittingRef.current) { return; }
@@ -102,7 +182,10 @@ export default function SignupPage() {
       // preserves the same `user_id`, so the menu she already generated
       // stays hers. `signUp` would create an unrelated new user instead.
       if (user?.is_anonymous) {
-        const { error } = await client.auth.updateUser({ email, password });
+        // FRESCO-89: only link the email here — the password is set after
+        // she verifies it (see `handleVerifyOtp`). Sending both together
+        // used to return a false 200 (change queued, never applied).
+        const { error } = await client.auth.updateUser({ email });
         if (error) {
           if (error.code === 'email_exists') {
             // AC (edge case): the email belongs to a different, existing
@@ -118,8 +201,7 @@ export default function SignupPage() {
           }
           return;
         }
-        // She already has a profile + generated menu — back to it, not onboarding.
-        router.push('/menu');
+        setStep('otp');
         return;
       }
 
@@ -155,148 +237,204 @@ export default function SignupPage() {
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
       <Card>
-        <h1 className="text-h3">Guarda tu menú</h1>
-        <p className="mt-1 text-body-sm text-tertiary">
-          Crea una cuenta para no perder el menú que acabamos de generar.
-        </p>
+        {emailConflict
+          ? (
+              <>
+                <h1 className="text-h3">Ya existe una cuenta con ese email</h1>
+                <p data-testid="signup_email_conflict_message" role="alert" aria-live="assertive" className="mt-1 text-body-sm text-tertiary">
+                  Ingresa su contraseña para continuar con ella y conservar el menú que acabas de generar.
+                </p>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleReassign();
+                  }}
+                  className="mt-6 flex flex-col gap-3"
+                >
+                  <Input
+                    data-testid="conflict_password_input"
+                    type="password"
+                    placeholder="Contraseña de esa cuenta"
+                    aria-label="Contraseña de esa cuenta"
+                    autoComplete="current-password"
+                    value={conflictPassword}
+                    onChange={e => setConflictPassword(e.target.value)}
+                  />
+                  <Button
+                    data-testid="signup_reassign_button"
+                    type="submit"
+                    variant="secondary"
+                    disabled={isReassigning || !conflictPassword}
+                  >
+                    {isReassigning ? 'Verificando…' : 'Continuar con esta cuenta'}
+                  </Button>
+                </form>
+                {reassignError && (
+                  <p data-testid="signup_reassign_error_message" role="alert" aria-live="assertive" className="mt-3 text-body-sm text-error">
+                    {reassignError}
+                  </p>
+                )}
+                <p className="mt-4 text-center text-body-sm text-tertiary">
+                  o
+                  {' '}
+                  <Link href="/login" className="text-primary">
+                    inicia sesión manualmente
+                  </Link>
+                </p>
+              </>
+            )
+          : step === 'form'
+            ? (
+                <>
+                  <h1 className="text-h3">Guarda tu menú</h1>
+                  <p className="mt-1 text-body-sm text-tertiary">
+                    Crea una cuenta para no perder el menú que acabamos de generar.
+                  </p>
 
-        <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
-          <Input
-            data-testid="email_input"
-            type="email"
-            placeholder="Correo electrónico"
-            aria-label="Correo electrónico"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
-          <Input
-            data-testid="password_input"
-            type="password"
-            placeholder="Contraseña"
-            aria-label="Contraseña"
-            required
-            autoComplete="new-password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
-          <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
-            <input
-              type="checkbox"
-              data-testid="accept_terms_checkbox"
-              checked={acceptedTerms}
-              onChange={e => setAcceptedTerms(e.target.checked)}
-              className="mt-0.5 size-4 shrink-0 accent-primary"
-            />
-            <span>
-              Al crear una cuenta, aceptas nuestros
-              {' '}
-              <button
-                type="button"
-                data-testid="accept_terms_link_terminos"
-                onClick={() => {
-                  setLegalModalSection('terminos');
-                  setLegalModalOpen(true);
-                }}
-                className="text-primary underline"
-              >
-                Términos de Servicio
-              </button>
-              {' '}
-              y nuestra
-              {' '}
-              <button
-                type="button"
-                data-testid="accept_terms_link_privacidad"
-                onClick={() => {
-                  setLegalModalSection('privacidad');
-                  setLegalModalOpen(true);
-                }}
-                className="text-primary underline"
-              >
-                Política de Privacidad
-              </button>
-              .
-            </span>
-          </label>
+                  <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+                    <Input
+                      data-testid="email_input"
+                      type="email"
+                      placeholder="Correo electrónico"
+                      aria-label="Correo electrónico"
+                      required
+                      autoComplete="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                    />
+                    <Input
+                      data-testid="password_input"
+                      type="password"
+                      placeholder="Contraseña"
+                      aria-label="Contraseña"
+                      required
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                    />
+                    <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
+                      <input
+                        type="checkbox"
+                        data-testid="accept_terms_checkbox"
+                        checked={acceptedTerms}
+                        onChange={e => setAcceptedTerms(e.target.checked)}
+                        className="mt-0.5 size-4 shrink-0 accent-primary"
+                      />
+                      <span>
+                        Al crear una cuenta, aceptas nuestros
+                        {' '}
+                        <button
+                          type="button"
+                          data-testid="accept_terms_link_terminos"
+                          onClick={() => {
+                            setLegalModalSection('terminos');
+                            setLegalModalOpen(true);
+                          }}
+                          className="text-primary underline"
+                        >
+                          Términos de Servicio
+                        </button>
+                        {' '}
+                        y nuestra
+                        {' '}
+                        <button
+                          type="button"
+                          data-testid="accept_terms_link_privacidad"
+                          onClick={() => {
+                            setLegalModalSection('privacidad');
+                            setLegalModalOpen(true);
+                          }}
+                          className="text-primary underline"
+                        >
+                          Política de Privacidad
+                        </button>
+                        .
+                      </span>
+                    </label>
 
-          {termsError && (
-            <p data-testid="accept_terms_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-              {termsError}
-            </p>
-          )}
+                    {termsError && (
+                      <p data-testid="accept_terms_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+                        {termsError}
+                      </p>
+                    )}
 
-          <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
-            {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
-          </Button>
-        </form>
+                    <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+                      {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
+                    </Button>
+                  </form>
 
-        <LegalModal
-          open={legalModalOpen}
-          onOpenChange={setLegalModalOpen}
-          section={legalModalSection}
-        />
+                  <LegalModal
+                    open={legalModalOpen}
+                    onOpenChange={setLegalModalOpen}
+                    section={legalModalSection}
+                  />
 
-        {signupError && (
-          <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
-            {signupError}
-          </p>
-        )}
+                  {signupError && (
+                    <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+                      {signupError}
+                    </p>
+                  )}
 
-        {emailConflict && (
-          <div className="mt-4 flex flex-col gap-3">
-            <p data-testid="signup_email_conflict_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-              Ya existe una cuenta con ese email. Ingresa su contraseña para continuar con ella y
-              conservar el menú que acabas de generar.
-            </p>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void handleReassign();
-              }}
-              className="flex flex-col gap-3"
-            >
-              <Input
-                data-testid="conflict_password_input"
-                type="password"
-                placeholder="Contraseña de esa cuenta"
-                aria-label="Contraseña de esa cuenta"
-                autoComplete="current-password"
-                value={conflictPassword}
-                onChange={e => setConflictPassword(e.target.value)}
-              />
-              <Button
-                data-testid="signup_reassign_button"
-                type="submit"
-                variant="secondary"
-                disabled={isReassigning || !conflictPassword}
-              >
-                {isReassigning ? 'Verificando…' : 'Continuar con esta cuenta'}
-              </Button>
-            </form>
-            {reassignError && (
-              <p data-testid="signup_reassign_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-                {reassignError}
-              </p>
-            )}
-            <p className="text-center text-body-sm text-tertiary">
-              o
-              {' '}
-              <Link href="/login" className="text-primary">
-                inicia sesión manualmente
-              </Link>
-            </p>
-          </div>
-        )}
+                  <p className="mt-4 text-center text-body-sm text-tertiary">
+                    ¿Ya tienes cuenta?
+                    {' '}
+                    <Link href="/login" className="text-primary">
+                      Inicia sesión
+                    </Link>
+                  </p>
+                </>
+              )
+            : (
+                <>
+                  <h1 className="text-h3">Revisa tu correo</h1>
+                  <p className="mt-1 text-body-sm text-tertiary">
+                    Te enviamos un código a
+                    {' '}
+                    <strong>{email}</strong>
+                    . Ingrésalo para confirmar tu cuenta.
+                  </p>
 
-        <p className="mt-4 text-center text-body-sm text-tertiary">
-          ¿Ya tienes cuenta?
-          {' '}
-          <Link href="/login" className="text-primary">
-            Inicia sesión
-          </Link>
-        </p>
+                  <form onSubmit={event => void handleVerifyOtp(event)} className="mt-6 flex flex-col gap-3">
+                    <Input
+                      data-testid="otp_code_input"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Código de 6 dígitos"
+                      aria-label="Código de verificación"
+                      required
+                      autoComplete="one-time-code"
+                      value={otpCode}
+                      onChange={e => setOtpCode(e.target.value)}
+                    />
+
+                    {otpError && (
+                      <p data-testid="signup_otp_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+                        {otpError}
+                      </p>
+                    )}
+
+                    {resendMessage && (
+                      <p data-testid="signup_otp_resend_message" role="status" aria-live="polite" className="text-body-sm text-tertiary">
+                        {resendMessage}
+                      </p>
+                    )}
+
+                    <Button data-testid="signup_verify_otp_button" type="submit" className="mt-2" disabled={isVerifyingOtp || !otpCode}>
+                      {isVerifyingOtp ? 'Verificando…' : 'Confirmar código'}
+                    </Button>
+
+                    <button
+                      type="button"
+                      data-testid="signup_resend_otp_button"
+                      onClick={() => void handleResendOtp()}
+                      disabled={isResendingOtp}
+                      className="text-center text-body-sm text-primary underline"
+                    >
+                      {isResendingOtp ? 'Reenviando…' : '¿No te llegó? Reenviar código'}
+                    </button>
+                  </form>
+                </>
+              )}
       </Card>
 
       <LegalLinks />

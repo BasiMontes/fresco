@@ -30,6 +30,7 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   over_request_rate_limit: 'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
   over_email_send_rate_limit: 'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
   same_password: 'La nueva contraseña debe ser distinta a la actual.',
+  otp_expired: 'El código expiró o no es válido. Solicita uno nuevo.',
 };
 
 const GENERIC_AUTH_ERROR = 'Algo salió mal. Inténtalo de nuevo en unos segundos.';
