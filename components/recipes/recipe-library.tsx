@@ -212,8 +212,8 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
               data-testid="recipe_search_empty_state"
               className="mt-6"
               icon={<Search className="size-8 text-tertiary" aria-hidden="true" />}
-              title="No encontramos nada para tu búsqueda"
-              description="Prueba con otro nombre o ingrediente."
+              title="No encontramos nada en el catálogo para tu búsqueda"
+              description="Prueba con otro nombre o ingrediente. La búsqueda y los filtros no aplican a tus recetas propias, que siguen visibles arriba."
             />
           )
         : (
