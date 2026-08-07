@@ -831,9 +831,11 @@ Característica: Flujo completo de usuario en Fresco
     # client-reference, no el objeto real (confirmado con un dump de debug:
     # {} en runtime, sin error de build/tipos). Esto ya afectaba a
     # DIETA_LABELS — los tags de dieta nunca aparecían en el detalle de
-    # receta de catálogo; ahora sí. Ver también FRESCO-116 (espacio faltante
-    # en el meta de la tarjeta), sin fix todavía, no forma parte de este
-    # arreglo.
+    # receta de catálogo; ahora sí. FRESCO-116 (espacio faltante en el meta
+    # de la tarjeta, "30 min ·alto") arreglado por separado el mismo día
+    # (2026-08-07): faltaba un {' '} explícito entre "min ·" y el valor de
+    # coste_estimado en recipe-card.tsx. Verificado en vivo: "30 min · alto"
+    # con espacio correcto.
 
   @biblioteca @edge-case @verificado-manual-2026-08-06
   Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo

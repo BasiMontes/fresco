@@ -1452,7 +1452,9 @@ Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en 
   # export de datos plano desde un módulo 'use client' recibe un stub de
   # client-reference, no el objeto real. Esto ya afectaba a DIETA_LABELS —
   # ver corrección en el escenario 11.14. FRESCO-116 (espacio faltante en
-  # el meta de la tarjeta) sigue sin fix, no forma parte de este arreglo.
+  # el meta de la tarjeta, "30 min ·alto") arreglado por separado el mismo
+  # día (2026-08-07): faltaba un {' '} explícito en recipe-card.tsx.
+  # Verificado en vivo: "30 min · alto" con espacio correcto.
 ```
 
 **Automatización:** Manual, no automatizado aún.

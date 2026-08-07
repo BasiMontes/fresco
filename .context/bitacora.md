@@ -2777,3 +2777,11 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 **Por qué**: siguiente en la lista priorizada del QA sweep. El bug de arrastre es hallazgo colateral, no buscado — necesario para que el fix del ticket funcionara de verdad.
 
 **Siguiente**: quedan 15 tickets abiertos del QA sweep: 89, 90, 103, 104, 105, 107-116 salvo 106/94/117/118/119.
+
+## 2026-08-07 — FRESCO-116: espacio faltante en meta de tarjeta de receta
+
+**Qué**: fix trivial de una línea, detectado colateralmente mientras se trabajaba FRESCO-117. `components/recipe/recipe-card.tsx` — faltaba `{' '}` explícito entre "min ·" y el valor de `coste_estimado`, renderizando "30 min ·alto" en vez de "30 min · alto" (`recipe-detail.tsx` ya lo hacía bien en sus 3 posiciones). Verificado en vivo con Playwright. Commit directo a `main`. Jira: Listo → WIP → Merged → Control de calidad. QA docs actualizados in situ.
+
+**Por qué**: siguiente en la lista priorizada del QA sweep.
+
+**Siguiente**: quedan 14 tickets abiertos del QA sweep: 89, 90, 103, 104, 105, 107-115 salvo 106/94/116/117/118/119.
