@@ -2708,4 +2708,32 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 
 **Por qué**: pedido directo del user, continuación del backfill en background.
 
+---
+
+## 2026-08-06 — FRESCO-31: trigésimo tercer batch (6/30, 640/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 6/30 hits. Aplicado con `supabase db query --linked -f batch33.sql`. Verificado: `640/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+---
+
+## 2026-08-06 — FRESCO-106: mensajes de error de Auth traducidos al español
+
+**Qué**: `lib/auth-errors.ts` nuevo — `translateAuthError(error: unknown)`, mapa `AUTH_ERROR_MESSAGES` keyed por `error.code` (no por `error.message`, que no es estable) para los códigos reales de Supabase Auth (`invalid_credentials`, `weak_password`, `user_already_exists`, `email_exists`, `email_not_confirmed`, rate-limits, `same_password`), fallback genérico en español para el resto. Wireado en `app/login/page.tsx` y en los 3 puntos de `app/signup/page.tsx` que mostraban `error.message` crudo. Bug encontrado en vivo durante el wireado: usar `isAuthApiError` dejaba sin traducir `weak_password` porque Supabase lo devuelve como `AuthWeakPasswordError` (subclase de `CustomAuthError`, no de `AuthApiError`) — cambiado a `isAuthError` (guard de la clase base), que sí cubre esa subclase. Reverificado en vivo con Playwright inspeccionando el body real de la respuesta de Supabase.
+
+**Por qué**: la app es 100% en español pero los errores de Auth se mostraban en inglés crudo (`error.message` de Supabase) — hallazgo del QA sweep, ticket MAJOR.
+
+**Siguiente**: pusheado a `main`. Quedan 19 tickets abiertos del QA sweep (FRESCO-89, 90, 94, 103-105, 107-120 salvo 106).
+
+---
+
+## 2026-08-06 — Resync de `.context/qa/regression.feature` y `.context/qa/bitacora-tests.md` con toda la sesión de QA
+
+**Qué**: el user señaló que estas dos bitácoras de QA (regla de CLAUDE.md/`.context/qa/README.md`: cada escenario probado en vivo o cada edge case encontrado debe sumarse ahí) no se habían tocado durante toda la sesión del QA sweep + fixes. Puesta al día retroactiva: 21 `Escenario` nuevos insertados en `regression.feature` en sus secciones existentes correctas (nunca una sección nueva), 2 escenarios viejos corregidos in situ con nota de actualización en vez de borrados (conversión invitado→cuenta real, iconos de Inicio ahora son links reales) — uno por cada hallazgo del QA sweep con fix pendiente (FRESCO-89, 90, 94, 95/103, 96/104, 98/105, 99/111, 100/110, 101/109, 102/112, 107, 108, 109-119) más los ya arreglados (85/86/87, 88, 106) documentados como verificados. `bitacora-tests.md` (derivada, formato AgileTest) resincronizada entrada por entrada detrás de `regression.feature`: secciones 1, 2, 3, 4, 5, 7, 11 y 12 ampliadas (2 correcciones in situ + 18 entradas nuevas), tabla de resumen ejecutivo y índice de áreas recalculados contando tags reales (`rg` sobre las líneas `**Tags:**`, no a mano): 94 escenarios totales (antes 77), 48 `@edge-case` (antes 31), 90 `@verificado-manual-*` (antes 73), `@automatizado` sin cambios en 21.
+
+**Por qué**: regla explícita de CLAUDE.md incumplida durante toda la sesión — sin esto, el trabajo de QA de hoy (20 tickets + 3 fixes) queda invisible para AgileTest y para la próxima sesión que lea estas bitácoras como fuente de verdad.
+
+**Siguiente**: seguir resolviendo los 19 tickets de defectos abiertos en orden de prioridad (FRESCO-89, 90, 94 primero — misma causa raíz de modo invitado — luego el resto de MAJOR, luego los 11 MINOR).
+
 **Siguiente**: 634/1000 con foto, 366 restantes.

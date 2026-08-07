@@ -38,6 +38,26 @@ Característica: Flujo completo de usuario en Fresco
     Cuando confirma el formulario de /login
     Entonces ve un mensaje de error claro
     Y permanece en /login sin sesión activa
+    # Bug real encontrado en barrido QA 2026-08-06 (FRESCO-106): el mensaje
+    # se mostraba literal en inglés (`error.message` de Supabase sin
+    # traducir — "Invalid login credentials"), en una app 100% en español.
+    # Mismo patrón replicado en /signup. Corregido: lib/auth-errors.ts
+    # traduce por error.code (no por .message), con fallback genérico en
+    # español para cualquier error no mapeado (red, CORS, rate-limit).
+    # Re-verificado en vivo tras el fix: mensaje "Email o contraseña
+    # incorrectos." en español.
+
+  @login @edge-case @verificado-manual-2026-08-06
+  Escenario: Doble-click rápido en "Iniciar sesión" no dispara dos intentos de autenticación
+    Dado que un usuario completa email y contraseña válidos en /login
+    Cuando hace dos clicks sincrónicos sobre "Iniciar sesión" sin esperar entre ambos
+    Entonces solo se dispara una llamada de autenticación
+    # FRESCO-114 (MINOR, sin fix todavía): el guard `disabled={isSubmitting}`
+    # depende de un re-render de React que no llega a tiempo si los dos
+    # clicks ocurren en el mismo tick — confirmado en vivo, 2 requests POST
+    # idénticos a /auth/v1/token en la pestaña de red. No rompe el flujo
+    # (Supabase maneja bien el duplicado), pero gasta cupo de rate-limit
+    # más rápido de lo necesario.
 
   @registro @verificado-manual-2026-07-29 @automatizado
   # Automatizado: tests/steps/signup.steps.ts (playwright-bdd, mock de red — ver comentario en el step file)
@@ -120,6 +140,38 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta generar de nuevo sin eliminar el plan existente
     Entonces el sistema responde 409 y no crea un plan duplicado
 
+  @onboarding @edge-case @verificado-manual-2026-08-06
+  Escenario: El 409 de "ya existe un menú" muestra un mensaje accionable en /onboarding
+    Dado que el usuario ya generó un menú para la semana actual
+    Cuando repite el flujo de onboarding completo para la misma semana
+    Entonces ve un mensaje específico ("ya tienes un menú esta semana") con una salida clara a /menu o /calendar
+    # FRESCO-104 (MAJOR, sin fix todavía): app/onboarding/page.tsx
+    # (handleGenerate) solo distingue el caso 422 — el 409 real cae al
+    # mensaje genérico "No pudimos guardar tu perfil... Intenta de nuevo.",
+    # engañoso (reintentar nunca funciona) y sin salida. El equivalente en
+    # components/calendar/generate-week-button.tsx SÍ maneja el 409
+    # correctamente — confirma que es un gap, no una limitación técnica.
+
+  @onboarding @edge-case @verificado-manual-2026-08-06
+  Escenario: Recargar la página a mitad del onboarding no borra el progreso ya completado
+    Dado que el usuario completó el paso 1 o 2 del onboarding
+    Cuando recarga la página antes de llegar al paso 3
+    Entonces sus respuestas ya dadas siguen ahí, no vuelve al paso 1 en blanco
+    # FRESCO-94 (MAJOR, sin fix todavía): el estado del onboarding vive solo
+    # en memoria de React, sin persistir a localStorage/sessionStorage ni a
+    # DB hasta el submit final del paso 3 — un refresh a mitad de camino
+    # pierde todo lo ya completado, sin ningún aviso.
+
+  @onboarding @edge-case @verificado-manual-2026-08-06
+  Escenario: El campo "Adultos" del hogar respeta un tope superior razonable
+    Dado que el usuario está en el paso 3 del onboarding (hogar)
+    Cuando escribe un valor muy grande (ej. 999) en "Adultos"
+    Entonces el sistema lo rechaza o lo acota a un máximo razonable antes de permitir generar el menú
+    # FRESCO-110 (MINOR, sin fix todavía): el input tiene `max={10}` visual,
+    # pero validateHousehold() (lib/validation/onboarding.ts) solo exige
+    # adultos > 0 — con adultos=999 el botón "Generar mi menú" queda
+    # habilitado igual.
+
   @generacion-menu @edge-case @verificado-manual-2026-07-31
   Escenario: El perfil de usuario no existe todavía
     Dado que un usuario autenticado nunca completó el onboarding
@@ -173,11 +225,35 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/registro-progresivo.steps.ts (playwright-bdd,
   # sesión anónima + generación real; updateUser() mockeado — mismo criterio
   # que @registro para no quemar un envío de email real)
+  # ATENCIÓN — este escenario quedó DESACTUALIZADO por el hallazgo de abajo
+  # (FRESCO-89, barrido QA 2026-08-06): automatizado con updateUser()
+  # mockeado, nunca verificado de punta a punta contra el proyecto real de
+  # Supabase con un logout real intermedio. Con datos reales, la conversión
+  # NO se completa — ver el escenario siguiente para el comportamiento
+  # verdadero observado en vivo.
   Escenario: La invitada convierte su sesión anónima en una cuenta real
     Dado que una invitada con sesión anónima y un email nuevo rellena email y contraseña en /signup
     Cuando confirma el formulario
     Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
     Y conserva el menú que ya había generado como invitada
+
+  @registro-progresivo @edge-case @verificado-manual-2026-08-06
+  Escenario: La conversión de invitada a cuenta real no sobrevive a perder la sesión anónima original
+    Dado que una invitada generó un menú y "creó su cuenta" en /signup con un email nuevo
+    Cuando limpia cookies/localStorage (simula cerrar el navegador o cambiar de dispositivo) e intenta loguearse con esas mismas credenciales
+    Entonces el login debería funcionar siempre, porque "crear cuenta" implica que quedó guardada de verdad
+    # FRESCO-89 (CRITICAL, sin fix todavía): `client.auth.updateUser({email,
+    # password})` sobre un usuario anónimo en este proyecto de Supabase solo
+    # encola un cambio de email pendiente (doble opt-in) — NO lo aplica de
+    # inmediato. Verificado en DB: email:"", new_email seteado,
+    # is_anonymous:true. app/signup/page.tsx no contempla este caso: si
+    # updateUser() no devuelve error, asume éxito y redirige a /menu sin
+    # ningún "revisa tu correo". Login posterior con esas credenciales →
+    # 400 Invalid login credentials. Si la invitada pierde la sesión
+    # anónima original, la cuenta y el menú son irrecuperables. Mismo root
+    # cause rompe también el escenario de "email ya registrado → reasignar
+    # cuenta" de abajo — probado contra el email real de PRO_TEST_USER_EMAIL,
+    # la UI de reasignación nunca se dispara.
 
   @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (target real:
@@ -213,6 +289,18 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un error claro
     Y no se mueve ni se modifica ningún dato
 
+  @invitado @edge-case @verificado-manual-2026-08-06
+  Escenario: Cerrar sesión como invitada advierte antes de borrar el menú generado
+    Dado que una invitada generó un menú y tiene sesión anónima activa
+    Cuando toca "Cerrar sesión" en el sidebar
+    Entonces se le advierte específicamente que va a perder el menú generado, distinto del logout normal de una cuenta real
+    # FRESCO-90 (CRITICAL, sin fix todavía): mismo botón y copy que el
+    # logout de una cuenta real (donde es 100% seguro y reversible) — para
+    # una invitada es, en la práctica, un borrado irreversible de datos
+    # reales (meal_plans). Verificado: tras el logout, /menu vuelve a
+    # "Todavía no tienes un menú para esta semana", sin ningún aviso previo
+    # diferenciado.
+
   # ==========================================================================
   # Panel de Inicio — saludo personalizado (EPIC-FRESCO-54 / STORY-FRESCO-55)
   # ==========================================================================
@@ -231,11 +319,40 @@ Característica: Flujo completo de usuario en Fresco
     # Verificado en vivo por la vía de sesión invitada/anónima (ADR-0003):
     # sin nombre guardado, /menu renderiza el saludo genérico sin fallo.
 
-  @panel-inicio @edge-case @verificado-manual-2026-08-02
-  Escenario: Los iconos de favoritos y notificaciones de Inicio son solo visuales
+  @panel-inicio @verificado-manual-2026-08-06
+  Escenario: Los iconos de favoritos y notificaciones de Inicio navegan a sus pantallas reales
     Dado que el usuario está en /menu (Inicio)
     Cuando toca el icono de favoritos o el de notificaciones de la cabecera
-    Entonces no ocurre ninguna acción funcional, ya que en esta versión son solo decorativos
+    Entonces es llevado a /favorites o /notifications respectivamente
+    # ACTUALIZADO 2026-08-06: este escenario decía "son solo decorativos" —
+    # ya no es cierto, ambos son `<Link>` reales (app/(app)/menu/page.tsx).
+    # Mismos iconos también corregidos de tamaño/grosor esta sesión
+    # (FRESCO-85/86/87: 22px + stroke-width 3, antes 17.6px/20px con trazo
+    # de 2px que leía "pálido" — el fix real necesitó un `safelist` en
+    # tailwind.config.ts porque Tailwind purgaba la clase `lucide`, inyectada
+    # en runtime por la librería, invisible al escaneo estático de content).
+
+  @panel-inicio @edge-case @verificado-manual-2026-08-06
+  Escenario: El sidebar muestra un placeholder de email para invitadas, no una línea en blanco
+    Dado que una invitada con sesión anónima genera un menú
+    Cuando mira el pie de la barra lateral (desktop)
+    Entonces ve algún indicador tipo "Invitada" en vez de un espacio vacío bajo el nombre
+    # FRESCO-111 (MINOR, sin fix todavía): components/layout/sidebar-account.tsx
+    # renderiza {email} sin fallback — para una sesión anónima email es "",
+    # así que se ve una línea en blanco. app/(app)/profile/page.tsx SÍ tiene
+    # el fallback correcto (user?.email ?? 'Invitada') para el mismo caso —
+    # inconsistencia entre dos componentes que resuelven el mismo dato.
+
+  @panel-inicio @edge-case @verificado-manual-2026-08-06
+  Escenario: "Ver más recetas" del scroll horizontal y "cargar más" de la lista tienen nombres accesibles distintos
+    Dado que Laura está en la sección "Últimas recetas añadidas" de Inicio
+    Cuando un lector de pantalla anuncia la flecha de scroll y el botón de cargar más
+    Entonces cada control anuncia una acción distinta y reconocible
+    # FRESCO-112 (MINOR, sin fix todavía): ambos exponen el mismo
+    # aria-label "Ver más recetas" (components/menu/horizontal-scroll-row.tsx
+    # vs. el botón de cargar más) — ambiguo por lector de pantalla o control
+    # por voz, aunque hacen cosas distintas (scroll del carrusel vs. cargar
+    # más recetas).
 
   @panel-inicio @verificado-manual-2026-08-03
   Escenario: La sugerencia de Calendario en Inicio lleva directo al plan semanal
@@ -298,6 +415,27 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el usuario está en /calendar viendo la semana actual
     Cuando toca el control de semana anterior
     Entonces ve el menú de la semana anterior si existe, o el estado vacío si nunca se generó uno para esa semana
+
+  @calendario @edge-case @verificado-manual-2026-08-06
+  Escenario: La etiqueta de semana distingue los meses cuando la semana cruza de mes
+    Dado que el usuario navega a una semana que empieza en un mes y termina en el siguiente (ej. 27 jul – 2 ago)
+    Cuando mira la etiqueta de semana
+    Entonces queda claro a qué mes pertenece cada extremo
+    # FRESCO-109 (MINOR, sin fix todavía): components/calendar/week-navigation.tsx
+    # calcula el label usando siempre el mes del domingo para ambos
+    # extremos — se muestra literalmente "27–2 AGO", que se lee como si el
+    # 27 fuera de agosto (después del 2), cuando en realidad es de julio.
+
+  @calendario @edge-case @verificado-manual-2026-08-06
+  Escenario: El botón de eliminar semana es alcanzable en mobile
+    Dado que el usuario tiene un menú generado, viewport 375px
+    Cuando busca el botón de eliminar semana en el header de /calendar
+    Entonces está visible y alcanzable sin scroll horizontal accidental
+    # FRESCO-105 (MAJOR, sin fix todavía): el botón de papelera queda casi
+    # totalmente fuera del viewport (x: 374.6 sobre 375px de ancho), y
+    # document.body.scrollWidth (411px) supera window.innerWidth (375px) —
+    # la página gana 36px de scroll horizontal no deseado. En la práctica,
+    # "eliminar semana" es inalcanzable en mobile sin ese scroll accidental.
 
   @calendario @edge-case @verificado-manual-2026-08-03
   Escenario: Un parámetro de semana inválido en la URL cae a la semana actual
@@ -428,6 +566,19 @@ Característica: Flujo completo de usuario en Fresco
     # estático cumple la intención de comunicación; la aplicación real del
     # historial a generación futura es capacidad separada, gateada en el
     # tiempo (Fuera de Alcance de FRESCO-15).
+
+  @aprendizaje @edge-case @verificado-manual-2026-08-06
+  Escenario: Marcar cocinado/descartado en plan Free coincide con lo que dice el aviso
+    Dado que el usuario es de nivel gratuito (Free) y ya vio el aviso "tu menú actual no se ve afectado"
+    Cuando marca un plato como cocinado de todas formas
+    Entonces el resultado real coincide con lo que el aviso le hizo esperar
+    # FRESCO-103 (MAJOR, sin fix todavía): el marcado se guarda de verdad
+    # vía updateRecipeStatus, persiste tras recargar, y es (según el propio
+    # código) un estado terminal de una sola vía — sin ningún check de
+    # userPlan en handleMarkEstado. Una usuaria Free que confía en el aviso
+    # puede terminar con un cambio irreversible que creía sin efecto. Queda
+    # abierta la decisión de negocio: ¿el aviso está mal, o el marcado
+    # debería de verdad no aplicar en Free?
 
   @aprendizaje @verificado-manual-2026-07-31
   Escenario: La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
@@ -576,6 +727,17 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca "Todo"
     Entonces vuelve a ver el catálogo completo
 
+  @biblioteca @edge-case @verificado-manual-2026-08-06
+  Escenario: "Tus recetas" respeta la búsqueda y los filtros de la Biblioteca
+    Dado que Laura tiene una receta propia guardada y busca algo que ninguna receta contiene
+    Cuando mira la sección "Tus recetas" y el mensaje de "No encontramos nada"
+    Entonces ambos son consistentes entre sí, sin mostrar una receta y "no encontramos nada" a la vez
+    # FRESCO-115 (MINOR, sin fix todavía): components/recipes/recipe-library.tsx
+    # — "Tus recetas" ignora por completo la búsqueda y los filtros, sigue
+    # mostrándose completa aunque el catálogo diga "No encontramos nada para
+    # tu búsqueda" justo debajo. Mismo comportamiento con cualquier
+    # combinación de filtros (tab de comida, cocina, dieta, alérgeno).
+
   @biblioteca @verificado-manual-2026-08-03
   Escenario: Buscador y pestaña de tipo de comida combinados en la Biblioteca
     Dado que Laura tiene la pestaña "Cena" activa
@@ -606,11 +768,34 @@ Característica: Flujo completo de usuario en Fresco
     Cuando completa el formulario "Crear propia" con nombre, ingredientes y pasos, y confirma
     Entonces su receta aparece en la sección "Tus recetas", distinguible del catálogo
 
+  @biblioteca @edge-case @verificado-manual-2026-08-06
+  Escenario: Un nombre de receta propia extremadamente largo no rompe el layout de la grilla
+    Dado que Laura pega un nombre de ~1000 caracteres en el formulario "Crear propia"
+    Cuando guarda la receta
+    Entonces la tarjeta se trunca visualmente, sin desalinear el resto de la grilla "Tus recetas"
+    # FRESCO-107 (MAJOR, sin fix todavía): sin `maxLength` en el input
+    # (create-recipe-form.tsx), sin tope en la constraint de DB, sin
+    # truncate/line-clamp en personal-recipe-card.tsx — la tarjeta crece a
+    # ~30 líneas y desalinea toda la grilla.
+
   @biblioteca @verificado-manual-2026-08-03
   Escenario: Campos obligatorios al crear una receta propia
     Dado que Laura abre el formulario de "Crear propia" sin completar el nombre
     Cuando intenta guardar
     Entonces ve un mensaje claro pidiéndole completar el nombre antes de guardar
+
+  @biblioteca @edge-case @verificado-manual-2026-08-06
+  Escenario: El botón "Guardar receta" se deshabilita mientras el nombre esté vacío
+    Dado que Laura abre "Crear propia" y deja el nombre vacío o solo con espacios
+    Cuando mira el botón "Guardar receta"
+    Entonces está deshabilitado, no solo mostrando un error tras el click
+    # FRESCO-118 (MINOR, sin fix todavía): el botón solo tiene
+    # disabled={isSaving} — se mantiene clickeable con nombre vacío. El
+    # propio comentario del componente dice que replica
+    # components/profile/nombre-form.tsx ("disabled submit while invalid or
+    # saving"), pero ese SÍ hace disabled={!isValid || isSaving} — no
+    # bloquea nada grave (handleSubmit corta con if (!isValid) return), pero
+    # el usuario no recibe la señal visual esperada.
 
   @biblioteca @pendiente
   Escenario: Receta propia no participa en la generación de menú
@@ -627,6 +812,42 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre una receta del catálogo
     Entonces ve su nombre, ingredientes, pasos, tiempo, dificultad y tags de dieta/alérgeno/cocina
 
+  @biblioteca @edge-case @verificado-manual-2026-08-06
+  Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en snake_case crudo
+    Dado que Laura ve una receta cuya dificultad es "muy_facil" o cuyo coste es "muy_bajo"
+    Cuando mira la tarjeta o el detalle de esa receta
+    Entonces ve un texto humanizado ("muy fácil"), no el valor crudo del enum con guion bajo
+    # FRESCO-117 (MINOR, sin fix todavía): recipe-card.tsx y
+    # recipe-detail.tsx muestran `dificultad`/`coste_estimado` tal cual
+    # (CosteEstimado/DificultadReceta de api/schemas/recipe.types.ts), sin
+    # un mapa de labels como el que ya existe para dieta (DIETA_LABELS).
+    # También falta un espacio en el separador del meta de la tarjeta:
+    # "30 min ·alto" en vez de "30 min · alto" (falta un {' '} explícito en
+    # recipe-card.tsx, presente correctamente en recipe-detail.tsx).
+
+  @biblioteca @edge-case @verificado-manual-2026-08-06
+  Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
+    Dado que Laura abre el detalle de una receta de catálogo
+    Cuando busca el control de favorito en esa pantalla
+    Entonces puede alternar el favorito ahí mismo, sin volver a la Biblioteca o Favoritos
+    # FRESCO-108 (MAJOR, sin fix todavía): components/recipes/recipe-detail.tsx
+    # (CatalogRecipeDetail) no renderiza ningún botón de favorito — el único
+    # control funcional vive en RecipeCard/FavoriteRecipeCard. El comentario
+    # "OOS" del componente lista edit/delete/rate/menu-add/share como fuera
+    # de alcance, pero no menciona favorito — parece un gap, no una
+    # exclusión intencional.
+
+  @biblioteca @edge-case @verificado-manual-2026-08-06
+  Escenario: El filtro de tipo de comida soporta navegación por flechas de teclado (patrón radiogroup)
+    Dado que Laura tabula hasta el grupo "Filtrar por tipo de comida" en la Biblioteca
+    Cuando usa las flechas izquierda/derecha
+    Entonces la selección se mueve entre las opciones, con Tab deteniéndose solo en la opción activa
+    # FRESCO-119 (MINOR, sin fix todavía): components/ui/segmented-control.tsx
+    # — cada opción es un <button role="radio"> nativo sin gestión de
+    # tabIndex ni manejador de flechas. Funciona igual con Tab + Enter/Espacio
+    # (no bloquea el flujo), pero se desvía del patrón ARIA APG esperado
+    # para un radiogroup.
+
   @biblioteca @verificado-manual-2026-08-03
   Escenario: Ver detalle de una receta propia
     Dado que Laura tiene una receta propia en su Biblioteca
@@ -642,6 +863,18 @@ Característica: Flujo completo de usuario en Fresco
   # ==========================================================================
   # Perfil
   # ==========================================================================
+
+  @perfil @edge-case @verificado-manual-2026-08-06
+  Escenario: El input "Tu nombre" no muestra borde de error en el primer render
+    Dado que Laura entra a /profile con una cuenta que todavía no tiene nombre guardado
+    Cuando la página carga por primera vez, sin que ella haya tocado el campo
+    Entonces el input "Tu nombre" se ve neutral, sin borde de error
+    # FRESCO-113 (MINOR, sin fix todavía): components/profile/nombre-form.tsx
+    # — el mensaje de validación SÍ respeta el gate de `touched` (silencioso
+    # al primer paint, según su propio comentario de intención), pero la
+    # clase CSS del input (`!isValid ? 'border-error' : ''`) ignora ese
+    # mismo gate — el borde rojo aparece de entrada, sin ningún mensaje que
+    # lo explique. Cosmético, no bloquea el guardado.
 
   @perfil @verificado-manual-2026-08-04
   Escenario: Editar preferencias de dieta y alérgenos desde el perfil
