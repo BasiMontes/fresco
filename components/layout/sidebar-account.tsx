@@ -4,6 +4,7 @@ import type { UserProfile } from '@schemas';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
@@ -21,6 +22,8 @@ export interface AccountUser {
   email: string
   /** The signed-in user's subscription tier (FRESCO-84), from `getUserPlan()`. */
   plan: UserProfile['plan']
+  /** Whether this is a guest session (`user.is_anonymous`), from `auth.getUser()`. */
+  isAnonymous: boolean
 }
 
 export type SidebarAccountProps = AccountUser;
@@ -43,10 +46,15 @@ export type SidebarAccountProps = AccountUser;
  * convention of independent local copies of this same 3-line pattern
  * (`danger-zone.tsx`, `app/update-password/page.tsx`).
  */
-export function SidebarAccount({ nombre, email, plan }: SidebarAccountProps) {
+export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAccountProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  // FRESCO-90: a guest's logout is functionally "delete my generated menu"
+  // (the anonymous session IS the account) — gated behind a confirmation
+  // dialog instead of firing immediately, unlike a real account's logout
+  // (100% safe/reversible, no gate needed).
+  const [showGuestConfirm, setShowGuestConfirm] = useState(false);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -92,11 +100,11 @@ export function SidebarAccount({ nombre, email, plan }: SidebarAccountProps) {
         <Button
           type="button"
           variant="icon"
-          aria-label="Cerrar sesión"
+          aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
           data-testid="sidebar_logout_button"
           disabled={isLoggingOut}
           aria-busy={isLoggingOut}
-          onClick={() => void handleLogout()}
+          onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
           className="bg-background/10 text-background hover:bg-background/20"
         >
           <LogOut className="size-4" aria-hidden="true" />
@@ -106,6 +114,17 @@ export function SidebarAccount({ nombre, email, plan }: SidebarAccountProps) {
         <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
           {logoutError}
         </p>
+      )}
+      {isAnonymous && (
+        <GuestLogoutDialog
+          open={showGuestConfirm}
+          onOpenChange={setShowGuestConfirm}
+          isLoggingOut={isLoggingOut}
+          onConfirm={() => {
+            setShowGuestConfirm(false);
+            void handleLogout();
+          }}
+        />
       )}
     </div>
   );

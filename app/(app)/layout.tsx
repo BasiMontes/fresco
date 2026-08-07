@@ -35,5 +35,5 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     }),
   ]);
 
-  return <AppShell user={user ? { nombre, email: user.email ?? '', plan } : null}>{children}</AppShell>;
+  return <AppShell user={user ? { nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false } : null}>{children}</AppShell>;
 }
