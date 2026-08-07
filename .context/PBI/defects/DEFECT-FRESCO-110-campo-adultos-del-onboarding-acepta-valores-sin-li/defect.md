@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-110](https://basiliomontescastano.atlassian.net/browse/FRESCO-110)
 **Priority:** Medium
-**Status:** Listo
+**Status:** WIP
 **Components:** None
 
 ---
@@ -35,7 +35,7 @@ Hacer que `validateHousehold()` valide contra el mismo tope de 10 que sugiere el
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-114](https://basiliomontescastano.atlassian.net/browse/FRESCO-114)
 **Priority:** Medium
-**Status:** Listo
+**Status:** WIP
 **Components:** None
 
 ---
@@ -36,7 +36,7 @@ Mismo patrón afecta signup/forgot-password/update-password (todos usan `disable
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

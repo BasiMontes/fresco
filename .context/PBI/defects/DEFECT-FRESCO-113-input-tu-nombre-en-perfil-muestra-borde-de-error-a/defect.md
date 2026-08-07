@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-113](https://basiliomontescastano.atlassian.net/browse/FRESCO-113)
 **Priority:** Medium
-**Status:** Listo
+**Status:** WIP
 **Components:** None
 
 ---
@@ -36,7 +36,7 @@ Gatear también la clase `border-error` por `touched`, igual que ya hace el mens
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

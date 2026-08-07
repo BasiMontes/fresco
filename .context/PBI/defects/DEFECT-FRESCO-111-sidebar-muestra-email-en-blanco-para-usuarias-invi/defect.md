@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-111](https://basiliomontescastano.atlassian.net/browse/FRESCO-111)
 **Priority:** Medium
-**Status:** Listo
+**Status:** WIP
 **Components:** None
 
 ---
@@ -35,7 +35,7 @@ Aplicar el mismo fallback que ya usa `app/(app)/profile/page.tsx`: `email ?? 'In
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 
