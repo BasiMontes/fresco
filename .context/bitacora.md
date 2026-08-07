@@ -2813,3 +2813,11 @@ Verificación en vivo con Playwright para las 6 UI-facing (109, 111, 112, 113, 1
 **Por qué**: último de los 3 tickets pesados del QA sweep con causa raíz de modo invitado (94, 119-107 ya cerrados).
 
 **Siguiente**: quedan FRESCO-89 y FRESCO-90, mismo root cause de modo invitado/conversión de cuenta. 89 requiere investigar configuración de Supabase Auth (doble opt-in de cambio de email) — el más complejo de los 20 originales.
+
+## 2026-08-07 — FRESCO-90: confirmación antes de logout de invitada
+
+**Qué**: fix vía `/sprint-development` modo SOLO. Root cause: `sidebar-account.tsx`'s `handleLogout` llamaba `signOut()` directo sin distinguir sesión anónima de cuenta real — para invitada, logout invalida la sesión anónima y todo dato real ligado a ella (`meal_plans`) queda inalcanzable, sin ninguna advertencia distinta al logout normal (100% seguro para cuenta real). Fix: `isAnonymous` (de `user.is_anonymous`) threaded por `app/(app)/layout.tsx` → `Sidebar` → `SidebarAccount`; nuevo `components/layout/guest-logout-dialog.tsx` (mismo patrón que `delete-account-dialog.tsx`), gateado solo cuando `isAnonymous`. Verificado en vivo con Playwright ambos caminos: invitada con menú generado → click logout → diálogo, no redirige hasta confirmar → confirmar → `/login`; cuenta real logueada → logout directo sin diálogo, comportamiento preexistente intacto. Nota de seguridad: durante la verificación con cuenta real, el `fill()` de Playwright imprimió `LOCAL_USER_EMAIL`/`LOCAL_USER_PASSWORD` en texto plano en la salida de la herramienta — flageado al user, decidió no rotar (cuenta local de test, sin acceso a producción). Commit a `main`. Jira: Listo → WIP → Merged → Control de calidad.
+
+**Por qué**: penúltimo ticket del QA sweep original.
+
+**Siguiente**: queda solo FRESCO-89 — el más complejo, mismo root cause de modo invitado. Requiere investigar configuración de Supabase Auth (doble opt-in de cambio de email) antes de decidir el fix.

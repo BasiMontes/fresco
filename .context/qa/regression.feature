@@ -288,17 +288,16 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un error claro
     Y no se mueve ni se modifica ningún dato
 
-  @invitado @edge-case @verificado-manual-2026-08-06
+  @invitado @edge-case @verificado-manual-2026-08-07
   Escenario: Cerrar sesión como invitada advierte antes de borrar el menú generado
     Dado que una invitada generó un menú y tiene sesión anónima activa
     Cuando toca "Cerrar sesión" en el sidebar
     Entonces se le advierte específicamente que va a perder el menú generado, distinto del logout normal de una cuenta real
-    # FRESCO-90 (CRITICAL, sin fix todavía): mismo botón y copy que el
-    # logout de una cuenta real (donde es 100% seguro y reversible) — para
-    # una invitada es, en la práctica, un borrado irreversible de datos
-    # reales (meal_plans). Verificado: tras el logout, /menu vuelve a
-    # "Todavía no tienes un menú para esta semana", sin ningún aviso previo
-    # diferenciado.
+    # FRESCO-90 (arreglado 2026-08-07): nuevo guest-logout-dialog.tsx,
+    # gateado por user.is_anonymous threaded desde app/(app)/layout.tsx.
+    # Verificado en vivo: invitada con menú → click logout → diálogo, no
+    # redirige hasta confirmar; cuenta real → logout directo sin diálogo,
+    # comportamiento preexistente intacto.
 
   # ==========================================================================
   # Panel de Inicio — saludo personalizado (EPIC-FRESCO-54 / STORY-FRESCO-55)
