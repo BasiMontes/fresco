@@ -35,7 +35,7 @@ Implementar roving tabindex (solo la opción seleccionada en el flujo de Tab) y 
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 
