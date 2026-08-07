@@ -2753,3 +2753,11 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 **Por qué**: siguiendo la priorización pedida por el user ("por el principio, dale caña") sobre los 19 tickets abiertos del QA sweep — FRESCO-94 era el único High.
 
 **Siguiente**: quedan 18 tickets abiertos (Medium) del QA sweep: 89, 90, 103, 104, 105, 107-119 salvo 106/94. Sin priorizar entre ellos todavía.
+
+## 2026-08-07 — FRESCO-119: roving tabindex + flechas en SegmentedControl
+
+**Qué**: fix vía `/sprint-development` modo SOLO, siguiendo la lista priorizada tras FRESCO-94. `components/ui/segmented-control.tsx` — cada opción era un `<button role="radio">` sin gestión de `tabIndex` ni manejador de teclas, desviándose del patrón ARIA APG `radiogroup`. Implementado roving tabindex (solo la opción marcada, o la primera si ninguna lo está, es alcanzable por Tab) + `onKeyDown` con ArrowLeft/ArrowRight que mueve foco y selección entre opciones, con wrap en los extremos. Sin infra de test de componentes React en el repo (no testing-library/DOM para `bun test`) — verificado en vivo con Playwright sobre `/recipes`: `tabindex="0"` solo en la opción marcada, ArrowRight/ArrowLeft mueven check+foco, wrap confirmado en ambas direcciones. 2 commits directos a `main`: `fix(FRESCO-119)` + `docs(pbi)`. Jira: Listo → WIP → Merged → Control de calidad. `regression.feature` + `bitacora-tests.md` actualizados in situ.
+
+**Por qué**: siguiente ticket en la lista priorizada del QA sweep tras el único High (FRESCO-94).
+
+**Siguiente**: quedan 17 tickets abiertos (Medium/Minor) del QA sweep: 89, 90, 103, 104, 105, 107-118 salvo 106/94/119.

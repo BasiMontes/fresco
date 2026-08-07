@@ -838,16 +838,16 @@ Característica: Flujo completo de usuario en Fresco
     # de alcance, pero no menciona favorito — parece un gap, no una
     # exclusión intencional.
 
-  @biblioteca @edge-case @verificado-manual-2026-08-06
+  @biblioteca @edge-case @verificado-manual-2026-08-07
   Escenario: El filtro de tipo de comida soporta navegación por flechas de teclado (patrón radiogroup)
     Dado que Laura tabula hasta el grupo "Filtrar por tipo de comida" en la Biblioteca
     Cuando usa las flechas izquierda/derecha
     Entonces la selección se mueve entre las opciones, con Tab deteniéndose solo en la opción activa
-    # FRESCO-119 (MINOR, sin fix todavía): components/ui/segmented-control.tsx
-    # — cada opción es un <button role="radio"> nativo sin gestión de
-    # tabIndex ni manejador de flechas. Funciona igual con Tab + Enter/Espacio
-    # (no bloquea el flujo), pero se desvía del patrón ARIA APG esperado
-    # para un radiogroup.
+    # FRESCO-119 (arreglado 2026-08-07): components/ui/segmented-control.tsx
+    # ahora implementa roving tabindex + flechas izquierda/derecha (con
+    # wrap). Verificado en vivo con Playwright sobre /recipes: solo la
+    # opción marcada tiene tabindex="0", ArrowRight/ArrowLeft mueven foco y
+    # selección, wrap correcto en ambos extremos.
 
   @biblioteca @verificado-manual-2026-08-03
   Escenario: Ver detalle de una receta propia
