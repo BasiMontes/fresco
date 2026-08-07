@@ -2718,6 +2718,14 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 
 ---
 
+## 2026-08-07 — FRESCO-31: trigésimo cuarto batch (5/30, 645/1000 total)
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 5/30 hits (tasa de hit siguiendo la tendencia decreciente ya documentada — pool cada vez más agotado de conceptos visuales cubiertos). Aplicado vía SQL directo (`supabase db query --linked`). Verificado con Supabase MCP: `645/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user, continuación del backfill en background.
+
+---
+
 ## 2026-08-06 — FRESCO-106: mensajes de error de Auth traducidos al español
 
 **Qué**: `lib/auth-errors.ts` nuevo — `translateAuthError(error: unknown)`, mapa `AUTH_ERROR_MESSAGES` keyed por `error.code` (no por `error.message`, que no es estable) para los códigos reales de Supabase Auth (`invalid_credentials`, `weak_password`, `user_already_exists`, `email_exists`, `email_not_confirmed`, rate-limits, `same_password`), fallback genérico en español para el resto. Wireado en `app/login/page.tsx` y en los 3 puntos de `app/signup/page.tsx` que mostraban `error.message` crudo. Bug encontrado en vivo durante el wireado: usar `isAuthApiError` dejaba sin traducir `weak_password` porque Supabase lo devuelve como `AuthWeakPasswordError` (subclase de `CustomAuthError`, no de `AuthApiError`) — cambiado a `isAuthError` (guard de la clase base), que sí cubre esa subclase. Reverificado en vivo con Playwright inspeccionando el body real de la respuesta de Supabase.
