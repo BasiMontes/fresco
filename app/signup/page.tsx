@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,9 @@ export default function SignupPage() {
   const [termsError, setTermsError] = useState<string | null>(null);
   const [legalModalOpen, setLegalModalOpen] = useState(false);
   const [legalModalSection, setLegalModalSection] = useState<LegalSection>('terminos');
+  // FRESCO-114: see login/page.tsx — a ref guard catches a synchronous
+  // double-click that `disabled={isSubmitting}` alone misses.
+  const isSubmittingRef = useRef(false);
 
   /**
    * ADR-0004 (FRESCO-20): the guest proves she owns the conflicting account
@@ -80,11 +83,13 @@ export default function SignupPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmittingRef.current) { return; }
     setTermsError(null);
     if (!acceptedTerms) {
       setTermsError('Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
       return;
     }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setSignupError(null);
     setEmailConflict(false);
@@ -140,6 +145,7 @@ export default function SignupPage() {
       router.push('/onboarding');
     }
     finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }

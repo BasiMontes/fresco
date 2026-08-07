@@ -28,6 +28,9 @@ export default function UpdatePasswordPage() {
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // FRESCO-114: see login/page.tsx — a ref guard catches a synchronous
+  // double-click that `disabled={isSubmitting}` alone misses.
+  const isSubmittingRef = React.useRef(false);
 
   React.useEffect(() => {
     const client = createClient();
@@ -45,6 +48,8 @@ export default function UpdatePasswordPage() {
       return;
     }
 
+    if (isSubmittingRef.current) { return; }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const client = createClient();
@@ -57,6 +62,7 @@ export default function UpdatePasswordPage() {
       router.push('/login?password_reset=1');
     }
     finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }

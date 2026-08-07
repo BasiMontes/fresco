@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,9 +32,14 @@ function ForgotPasswordPageInner() {
   // recovery link was invalid/expired, so the user can immediately request
   // a new one instead of hitting a dead end.
   const invalidLink = useSearchParams().get('error') === 'invalid_link';
+  // FRESCO-114: see login/page.tsx — a ref guard catches a synchronous
+  // double-click that `disabled={isSubmitting}` alone misses.
+  const isSubmittingRef = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmittingRef.current) { return; }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       const client = createClient();
@@ -46,6 +51,7 @@ function ForgotPasswordPageInner() {
       setSubmitted(true);
     }
     finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -46,9 +46,17 @@ function LoginPageInner() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  // FRESCO-114: `disabled={isSubmitting}` alone depends on a React re-render
+  // that doesn't land in time for two synchronous clicks in the same JS
+  // tick — confirmed live via a programmatic double-click, 2 identical
+  // POSTs to /auth/v1/token. A ref is read/written synchronously, so it
+  // catches the second click even before React re-renders the button.
+  const isSubmittingRef = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmittingRef.current) { return; }
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setLoginError(null);
     try {
@@ -61,6 +69,7 @@ function LoginPageInner() {
       router.push('/menu');
     }
     finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }
