@@ -2761,3 +2761,11 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 **Por qué**: siguiente ticket en la lista priorizada del QA sweep tras el único High (FRESCO-94).
 
 **Siguiente**: quedan 17 tickets abiertos (Medium/Minor) del QA sweep: 89, 90, 103, 104, 105, 107-118 salvo 106/94/119.
+
+## 2026-08-07 — FRESCO-118: botón "Guardar receta" ahora respeta nombre inválido
+
+**Qué**: fix trivial de una línea. `components/recipes/create-recipe-form.tsx` — el submit solo tenía `disabled={isSaving}`, no `!isValid` como su propio comentario dice replicar de `nombre-form.tsx`. Cambiado a `disabled={!isValid || isSaving}`. Verificado en vivo con Playwright: deshabilitado con nombre vacío/solo espacios, habilitado al escribir nombre real. Commit directo a `main`. Jira: Listo → WIP → Merged → Control de calidad. QA docs actualizados in situ.
+
+**Por qué**: siguiente en la lista priorizada del QA sweep.
+
+**Siguiente**: quedan 16 tickets abiertos del QA sweep: 89, 90, 103, 104, 105, 107, 108-117 salvo 106/94/118/119.

@@ -785,18 +785,15 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta guardar
     Entonces ve un mensaje claro pidiéndole completar el nombre antes de guardar
 
-  @biblioteca @edge-case @verificado-manual-2026-08-06
+  @biblioteca @edge-case @verificado-manual-2026-08-07
   Escenario: El botón "Guardar receta" se deshabilita mientras el nombre esté vacío
     Dado que Laura abre "Crear propia" y deja el nombre vacío o solo con espacios
     Cuando mira el botón "Guardar receta"
     Entonces está deshabilitado, no solo mostrando un error tras el click
-    # FRESCO-118 (MINOR, sin fix todavía): el botón solo tiene
-    # disabled={isSaving} — se mantiene clickeable con nombre vacío. El
-    # propio comentario del componente dice que replica
-    # components/profile/nombre-form.tsx ("disabled submit while invalid or
-    # saving"), pero ese SÍ hace disabled={!isValid || isSaving} — no
-    # bloquea nada grave (handleSubmit corta con if (!isValid) return), pero
-    # el usuario no recibe la señal visual esperada.
+    # FRESCO-118 (arreglado 2026-08-07): disabled={!isValid || isSaving},
+    # igual que components/profile/nombre-form.tsx. Verificado en vivo con
+    # Playwright: deshabilitado con nombre vacío/solo espacios, habilitado
+    # al escribir un nombre real.
 
   @biblioteca @pendiente
   Escenario: Receta propia no participa en la generación de menú
