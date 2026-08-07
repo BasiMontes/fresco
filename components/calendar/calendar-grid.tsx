@@ -18,13 +18,13 @@ import { Check, GripVertical, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { firstActiveDietaLabel } from '@/components/recipe/recipe-card';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { MealPlanError, swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
+import { firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 

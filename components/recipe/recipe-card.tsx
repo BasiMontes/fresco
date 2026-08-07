@@ -1,12 +1,13 @@
 'use client';
 
-import type { Recipe, RecipeDieta } from '@schemas';
+import type { Recipe } from '@schemas';
 
 import { Heart } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
+import { COSTE_ESTIMADO_LABELS, firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { cn } from '@/lib/utils';
 
 /**
@@ -41,32 +42,6 @@ export interface RecipeCardProps {
   isFavorite?: boolean
   onToggleFavorite?: () => void
   className?: string
-}
-
-export const DIETA_LABELS: Partial<Record<keyof RecipeDieta, string>> = {
-  vegetariano: 'vegetariano',
-  vegano: 'vegano',
-  sin_gluten: 'sin gluten',
-  sin_lactosa: 'sin lactosa',
-  sin_huevo: 'sin huevo',
-  bajo_fodmap: 'bajo FODMAP',
-  keto: 'keto',
-  paleo: 'paleo',
-  halal: 'halal',
-  kosher: 'kosher',
-};
-
-/**
- * First active diet flag on `dieta`, as a display label, or `null` if
- * none/unknown. Exported — FRESCO-80's `CalendarGrid` mirrors this same
- * "one tag" rule for its own recipe cards, not `RecipeCard` itself (its
- * cards need drag-and-drop + mark-status controls `RecipeCard` doesn't
- * have), so it reuses this helper rather than re-deriving the same logic.
- */
-export function firstActiveDietaLabel(dieta: RecipeDieta | null): string | null {
-  if (!dieta) { return null; }
-  const active = (Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[]).find(flag => dieta[flag]);
-  return active ? (DIETA_LABELS[active] ?? null) : null;
 }
 
 export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: RecipeCardProps) {
@@ -117,7 +92,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
         {recipe.meta?.tiempo_total_min ?? '—'}
         {' '}
         min ·
-        {recipe.meta?.coste_estimado ?? '—'}
+        {recipe.meta?.coste_estimado ? COSTE_ESTIMADO_LABELS[recipe.meta.coste_estimado] : '—'}
       </p>
     </div>
   );

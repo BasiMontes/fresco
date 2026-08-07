@@ -5,7 +5,6 @@ import { BookOpen, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
-import { DIETA_LABELS } from '@/components/recipe/recipe-card';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
 import { PersonalRecipeCard } from '@/components/recipes/personal-recipe-card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
+import { DIETA_LABELS } from '@/lib/recipes/labels';
 
 type MealTab = 'todo' | 'desayuno' | 'comida' | 'cena';
 

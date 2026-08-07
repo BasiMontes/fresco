@@ -3,11 +3,11 @@ import type { RecipeDetail } from '@/lib/api/recipes';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { DIETA_LABELS } from '@/components/recipe/recipe-card';
 import { buttonVariants } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
+import { COSTE_ESTIMADO_LABELS, DIETA_LABELS, DIFICULTAD_LABELS } from '@/lib/recipes/labels';
 
 /** Every active diet flag as a display label — unlike `RecipeCard`'s single "first match" pick (space-constrained), the detail view has room to show all of them. */
 function activeDietaLabels(dieta: RecipeDieta | null): string[] {
@@ -75,11 +75,11 @@ function CatalogRecipeDetail({ receta }: { receta: Recipe }) {
         {' '}
         min ·
         {' '}
-        {receta.meta?.dificultad ?? '—'}
+        {receta.meta?.dificultad ? DIFICULTAD_LABELS[receta.meta.dificultad] : '—'}
         {' '}
         ·
         {' '}
-        {receta.meta?.coste_estimado ?? '—'}
+        {receta.meta?.coste_estimado ? COSTE_ESTIMADO_LABELS[receta.meta.coste_estimado] : '—'}
       </p>
 
       {receta.descripcion_corta && <p className="mt-4 text-body-md">{receta.descripcion_corta}</p>}
