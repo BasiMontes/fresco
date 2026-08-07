@@ -107,10 +107,15 @@ When(/^visita \/calendar$/, async ({ page }) => {
   await loginAndGoToCalendar(page);
 });
 
-Then(/^ve un aviso claro de que marcar cocinado\/descartado es una función de nivel Pro$/, async ({ page }) => {
+Then(/^ve un aviso sobre marcar cocinado\/descartado en el plan Free$/, async ({ page }) => {
   await expect(page.getByTestId('learning_free_tier_notice')).toBeVisible();
 });
 
-Then(/^ese aviso aclara que su menú actual no se ve afectado$/, async ({ page }) => {
-  await expect(page.getByTestId('learning_free_tier_notice')).toContainText('tu menú actual no se ve afectado');
+Then(/^ese aviso aclara que el marcado se guarda igual, y que lo exclusivo de Pro es el aprendizaje$/, async ({ page }) => {
+  // FRESCO-103: the notice used to claim marking was Pro-only and "your
+  // current menu isn't affected" — false, the mark always persisted
+  // regardless of plan. Corrected to state the real behavior (mark
+  // persists in Free too) and the real Pro differentiator (future-menu
+  // learning from those marks).
+  await expect(page.getByTestId('learning_free_tier_notice')).toContainText('se guarda igual en el plan Free');
 });

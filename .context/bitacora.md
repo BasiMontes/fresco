@@ -2805,3 +2805,11 @@ Verificación en vivo con Playwright para las 6 UI-facing (109, 111, 112, 113, 1
 **Por qué**: user pidió completar los 14 tickets abiertos del QA sweep tras FRESCO-94/119/118/117/116.
 
 **Siguiente**: quedan 3 tickets, los más pesados — FRESCO-89, 90, 103, todos con la misma causa raíz de modo invitado. 103 tiene decisión de negocio abierta (no asumida), 89 requiere investigar configuración de Supabase Auth (doble opt-in de cambio de email).
+
+## 2026-08-07 — FRESCO-103: aviso de "función Pro" corregido en Calendario
+
+**Qué**: fix vía `/sprint-development` modo SOLO. Decisión de negocio abierta en el ticket, resuelta con recomendación aceptada por el user: corregir el aviso en vez de bloquear el marcado en Free — el marcado ya persiste para usuarias Free reales en producción (bloquearlo ahora sería regresión) y el aprendizaje real (diferenciador Pro) no está implementado todavía. `calendar-grid.tsx`: copy cambiado de "es función Pro... tu menú actual no se ve afectado" a "se guarda igual en el plan Free. Lo exclusivo de Pro es que tu próximo menú aprenda de esos marcados." Encontrado en el camino: había un test automatizado real (`tests/steps/aprendizaje.steps.ts`, Playwright BDD) que aseraba el texto viejo exacto — actualizado el step + regex junto con el fix, y el escenario Gherkin correspondiente en `regression.feature`/`bitacora-tests.md` (2 escenarios sobre este mismo hallazgo plegados en 1). Recalculado el conteo de "Escenarios totales" del resumen ejecutivo de `bitacora-tests.md` (94→93) tras el plegado — resto de conteos (`@automatizado`, `@edge-case`, etc.) sin cambio real, no auditados a fondo en esta sesión (posible drift acumulado de sesiones previas, fuera de alcance de este ticket). Commit a `main`. Jira: Listo → WIP → Merged → Control de calidad.
+
+**Por qué**: último de los 3 tickets pesados del QA sweep con causa raíz de modo invitado (94, 119-107 ya cerrados).
+
+**Siguiente**: quedan FRESCO-89 y FRESCO-90, mismo root cause de modo invitado/conversión de cuenta. 89 requiere investigar configuración de Supabase Auth (doble opt-in de cambio de email) — el más complejo de los 20 originales.

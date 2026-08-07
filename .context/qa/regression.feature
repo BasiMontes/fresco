@@ -552,30 +552,22 @@ Característica: Flujo completo de usuario en Fresco
     Entonces no ve ningún control para volver a marcarlo
     Y el plato queda fijado en su estado actual
 
-  @aprendizaje @edge-case @verificado-manual-2026-07-31 @automatizado
+  @aprendizaje @edge-case @verificado-manual-2026-08-07 @automatizado
   # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
-  Escenario: Usuaria de nivel gratuito ve el aviso de función Pro
+  Escenario: Usuaria de nivel gratuito ve el aviso de marcado en Free
     Dado que el usuario es de nivel gratuito (Free)
     Cuando visita /calendar
-    Entonces ve un aviso claro de que marcar cocinado/descartado es una función de nivel Pro
-    Y ese aviso aclara que su menú actual no se ve afectado
-    # AC original menciona "recibe su menú de la semana siguiente" — este aviso
-    # estático cumple la intención de comunicación; la aplicación real del
-    # historial a generación futura es capacidad separada, gateada en el
-    # tiempo (Fuera de Alcance de FRESCO-15).
-
-  @aprendizaje @edge-case @verificado-manual-2026-08-06
-  Escenario: Marcar cocinado/descartado en plan Free coincide con lo que dice el aviso
-    Dado que el usuario es de nivel gratuito (Free) y ya vio el aviso "tu menú actual no se ve afectado"
-    Cuando marca un plato como cocinado de todas formas
-    Entonces el resultado real coincide con lo que el aviso le hizo esperar
-    # FRESCO-103 (MAJOR, sin fix todavía): el marcado se guarda de verdad
-    # vía updateRecipeStatus, persiste tras recargar, y es (según el propio
-    # código) un estado terminal de una sola vía — sin ningún check de
-    # userPlan en handleMarkEstado. Una usuaria Free que confía en el aviso
-    # puede terminar con un cambio irreversible que creía sin efecto. Queda
-    # abierta la decisión de negocio: ¿el aviso está mal, o el marcado
-    # debería de verdad no aplicar en Free?
+    Entonces ve un aviso sobre marcar cocinado/descartado en el plan Free
+    Y ese aviso aclara que el marcado se guarda igual, y que lo exclusivo de Pro es el aprendizaje
+    # FRESCO-103 (arreglado 2026-08-07, decisión del user con recomendación):
+    # el aviso original decía "es función Pro... tu menú actual no se ve
+    # afectado", pero el marcado siempre persistía igual en Free (sin check
+    # de userPlan en handleMarkEstado, confirmado en código) — una usuaria
+    # Free que confiara en el aviso terminaba con un cambio irreversible que
+    # creía sin efecto. Se corrigió el aviso en vez de bloquear el marcado:
+    # ya persiste para usuarias Free reales en producción (bloquearlo ahora
+    # sería regresión), y el aprendizaje real (Pro) no está implementado
+    # todavía. Step + regex actualizados en aprendizaje.steps.ts.
 
   @aprendizaje @verificado-manual-2026-07-31
   Escenario: La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)

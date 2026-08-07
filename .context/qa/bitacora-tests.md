@@ -29,13 +29,13 @@ misma cabecera `# language: es` / `Característica:` que ya declara
 los grupos de sección (`# ====...====`) del `.feature` origen — útil como
 criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 
-**Última actualización:** 2026-08-06.
+**Última actualización:** 2026-08-07.
 
 ## Resumen ejecutivo
 
 | Métrica | Valor |
 |---|---|
-| Escenarios totales | 94 |
+| Escenarios totales | 93 |
 | `@automatizado` (tienen test Playwright real) | 21 |
 | `@pendiente` (escritos, sin verificar ni automatizar) | 4 |
 | `@no-implementado` (comportamiento deseado, aún sin construir) | 0 — todo lo que estaba `@no-implementado` ya ha enviado (ver Nota) |
@@ -59,7 +59,7 @@ criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 4. Panel de Inicio — saludo personalizado — EPIC-FRESCO-54 / STORY-FRESCO-55 (12 escenarios)
 5. Control del Menú Semanal — EPIC-FRESCO-60 / STORY-FRESCO-61/62/63 (9 escenarios)
 6. Calendario editable — EPIC-FRESCO-10 / STORY-FRESCO-11 (6 escenarios)
-7. Aprendizaje Cocinado/Descartado — EPIC-FRESCO-14 / STORY-FRESCO-15 (7 escenarios)
+7. Aprendizaje Cocinado/Descartado — EPIC-FRESCO-14 / STORY-FRESCO-15 (6 escenarios)
 8. Lista de la compra — EPIC-FRESCO-12 / STORY-FRESCO-13 (4 escenarios)
 9. Guía de testeabilidad para QA (/qa) (1 escenario)
 10. Seguridad — aislamiento de datos entre usuarios (3 escenarios)
@@ -943,43 +943,31 @@ Escenario: Intentar cambiar el estado de un plato ya marcado
 
 **Automatización:** `tests/steps/aprendizaje.steps.ts` — marca un slot real, recarga la página (lectura real desde el Server Component, no estado optimista de cliente) y confirma que sigue fijado y sin controles para volver a marcarlo.
 
-### 7.4 Usuaria de nivel gratuito ve el aviso de función Pro
+### 7.4 Usuaria de nivel gratuito ve el aviso de marcado en Free
 
-**Tags:** `@aprendizaje` `@edge-case` `@verificado-manual-2026-07-31` `@automatizado`
+**Tags:** `@aprendizaje` `@edge-case` `@verificado-manual-2026-08-07` `@automatizado`
 
 ```gherkin
-Escenario: Usuaria de nivel gratuito ve el aviso de función Pro
+Escenario: Usuaria de nivel gratuito ve el aviso de marcado en Free
   Dado que el usuario es de nivel gratuito (Free)
   Cuando visita /calendar
-  Entonces ve un aviso claro de que marcar cocinado/descartado es una función de nivel Pro
-  Y ese aviso aclara que su menú actual no se ve afectado
-  # AC original menciona "recibe su menú de la semana siguiente" — este aviso
-  # estático cumple la intención de comunicación; la aplicación real del
-  # historial a generación futura es capacidad separada, gateada en el
-  # tiempo (Fuera de Alcance de FRESCO-15).
+  Entonces ve un aviso sobre marcar cocinado/descartado en el plan Free
+  Y ese aviso aclara que el marcado se guarda igual, y que lo exclusivo de Pro es el aprendizaje
+  # FRESCO-103 (arreglado 2026-08-07, decisión del user con recomendación):
+  # el aviso original decía "es función Pro... tu menú actual no se ve
+  # afectado", pero el marcado siempre persistía igual en Free (sin check
+  # de userPlan en handleMarkEstado) — una usuaria Free que confiara en el
+  # aviso terminaba con un cambio irreversible que creía sin efecto. Se
+  # corrigió el aviso en vez de bloquear el marcado: ya persiste para
+  # usuarias Free reales en producción (bloquearlo ahora sería regresión),
+  # y el aprendizaje real (Pro) no está implementado todavía.
 ```
 
-**Automatización:** `tests/steps/aprendizaje.steps.ts` — asume el plan `free` por defecto del perfil de `LOCAL_USER_EMAIL` (precondición asertada, no fijada por el test) y verifica el texto exacto del aviso Pro en `/calendar`.
+**Automatización:** `tests/steps/aprendizaje.steps.ts` — asume el plan `free` por defecto del perfil de `LOCAL_USER_EMAIL` (precondición asertada, no fijada por el test) y verifica el texto del aviso corregido en `/calendar`. Step + regex actualizados junto con el fix.
 
 ### 7.5 Marcar cocinado/descartado en plan Free coincide con lo que dice el aviso
 
-**Tags:** `@aprendizaje` `@edge-case` `@verificado-manual-2026-08-06`
-
-```gherkin
-Escenario: Marcar cocinado/descartado en plan Free coincide con lo que dice el aviso
-  Dado que el usuario es de nivel gratuito (Free) y ya vio el aviso "tu menú actual no se ve afectado"
-  Cuando marca un plato como cocinado de todas formas
-  Entonces el resultado real coincide con lo que el aviso le hizo esperar
-  # FRESCO-103 (MAJOR, sin fix todavía): el marcado se guarda de verdad
-  # vía updateRecipeStatus, persiste tras recargar, y es (según el propio
-  # código) un estado terminal de una sola vía — sin ningún check de
-  # userPlan en handleMarkEstado. Una usuaria Free que confía en el aviso
-  # puede terminar con un cambio irreversible que creía sin efecto. Queda
-  # abierta la decisión de negocio: ¿el aviso está mal, o el marcado
-  # debería de verdad no aplicar en Free?
-```
-
-**Automatización:** Manual, no automatizado aún — la decisión de negocio pendiente determina qué lado del comportamiento automatizar.
+Resuelto y plegado dentro de 7.4 el 2026-08-07 (FRESCO-103) — mismo hallazgo, misma fix, sin Tags/Gherkin propios ya (no cuenta como escenario aparte en el resumen ejecutivo). Ver la nota de 7.4.
 
 ### 7.5 La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
 
