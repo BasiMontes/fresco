@@ -3,6 +3,7 @@ import type { RecipeDetail } from '@/lib/api/recipes';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { FavoriteToggleButton } from '@/components/recipe/favorite-toggle-button';
 import { buttonVariants } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
@@ -31,7 +32,7 @@ function BackToLibraryLink() {
   );
 }
 
-function CatalogRecipeDetail({ receta }: { receta: Recipe }) {
+function CatalogRecipeDetail({ receta, initialIsFavorite }: { receta: Recipe, initialIsFavorite: boolean }) {
   const CategoryIcon = getCategoryIcon(receta.clasificacion?.categoria);
   const dietaLabels = activeDietaLabels(receta.dieta);
   const ingredientes = receta.ingredientes_principales ?? [];
@@ -55,6 +56,11 @@ function CatalogRecipeDetail({ receta }: { receta: Recipe }) {
           : (
               <CategoryIcon className="size-16 text-neutral-400" aria-hidden="true" />
             )}
+        <FavoriteToggleButton
+          recipeId={receta.id}
+          initialIsFavorite={initialIsFavorite}
+          className="absolute right-2 top-2"
+        />
       </div>
 
       <p className="mt-4 text-h6 uppercase text-tertiary">{receta.clasificacion?.categoria ?? '—'}</p>
@@ -125,9 +131,9 @@ function PersonalRecipeDetail({ receta }: { receta: RecetaPropia }) {
 }
 
 /** OOS (no edit/delete/rate/menu-add/share) and the shell (back link, name, ingredients, steps) are identical for both recipe types — only the metadata block differs, so this dispatches to one of two small render branches rather than duplicating the shell. */
-export function RecipeDetailView({ detail }: { detail: RecipeDetail }) {
+export function RecipeDetailView({ detail, initialIsFavorite }: { detail: RecipeDetail, initialIsFavorite: boolean }) {
   return detail.kind === 'catalogo'
-    ? <CatalogRecipeDetail receta={detail.receta} />
+    ? <CatalogRecipeDetail receta={detail.receta} initialIsFavorite={initialIsFavorite} />
     : <PersonalRecipeDetail receta={detail.receta} />;
 }
 

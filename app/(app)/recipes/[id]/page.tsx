@@ -1,4 +1,5 @@
 import { RecipeDetailView, RecipeNotFoundState } from '@/components/recipes/recipe-detail';
+import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getRecipeDetail } from '@/lib/api/recipes';
 import { createClient } from '@/lib/supabase/server';
 
@@ -21,9 +22,21 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
     detail = null;
   }
 
+  // FRESCO-108: only the catalog branch renders the favorite toggle (a
+  // RecetaPropia can't be favorited — `favorites.recipe_id` FK only points
+  // at `public.recipes`), but computing it here (not blocking) keeps the
+  // detail fetch above as the only hard failure path for this page.
+  let isFavorite = false;
+  try {
+    isFavorite = (await getFavoriteRecipeIds(supabase)).has(id);
+  }
+  catch (error) {
+    console.error('[/recipes/[id]] getFavoriteRecipeIds failed, defaulting to not-favorited', error);
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
-      {detail ? <RecipeDetailView detail={detail} /> : <RecipeNotFoundState />}
+      {detail ? <RecipeDetailView detail={detail} initialIsFavorite={isFavorite} /> : <RecipeNotFoundState />}
     </div>
   );
 }
