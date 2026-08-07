@@ -79,7 +79,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
               setSaved(false);
               setTouched(true);
             }}
-            className={!isValid ? 'border-error' : ''}
+            className={touched && !isValid ? 'border-error' : ''}
           />
           {touched && !isValid && (
             <p data-testid="nombre_validation_message" role="alert" aria-live="polite" className="text-body-sm text-error">
