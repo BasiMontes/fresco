@@ -1340,13 +1340,19 @@ Escenario: Receta propia no participa en la generación de menú
 
 ### 11.14 Ver detalle de una receta del catálogo
 
-**Tags:** `@biblioteca` `@verificado-manual-2026-08-03`
+**Tags:** `@biblioteca` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: Ver detalle de una receta del catálogo
   Dado que Laura está en la Biblioteca
   Cuando abre una receta del catálogo
   Entonces ve su nombre, ingredientes, pasos, tiempo, dificultad y tags de dieta/alérgeno/cocina
+  # Corrección 2026-08-07: los tags de dieta NUNCA se mostraban aquí desde
+  # que se escribió este escenario (2026-08-03) — DIETA_LABELS vivía en un
+  # módulo 'use client', invisible para este Server Component. No detectado
+  # en su momento porque la verificación manual no separó "tags de dieta"
+  # de "tags de alérgeno/cocina" en la evidencia. Arreglado junto con
+  # FRESCO-117.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -1431,20 +1437,22 @@ Escenario: El botón "Guardar receta" se deshabilita mientras el nombre esté va
 
 ### 11.20 El texto de dificultad y coste estimado se muestra humanizado, no en snake_case crudo
 
-**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en snake_case crudo
   Dado que Laura ve una receta cuya dificultad es "muy_facil" o cuyo coste es "muy_bajo"
   Cuando mira la tarjeta o el detalle de esa receta
   Entonces ve un texto humanizado ("muy fácil"), no el valor crudo del enum con guion bajo
-  # FRESCO-117 (MINOR, sin fix todavía): recipe-card.tsx y
-  # recipe-detail.tsx muestran `dificultad`/`coste_estimado` tal cual
-  # (CosteEstimado/DificultadReceta de api/schemas/recipe.types.ts), sin
-  # un mapa de labels como el que ya existe para dieta (DIETA_LABELS).
-  # También falta un espacio en el separador del meta de la tarjeta:
-  # "30 min ·alto" en vez de "30 min · alto" (falta un {' '} explícito en
-  # recipe-card.tsx, presente correctamente en recipe-detail.tsx).
+  # FRESCO-117 (arreglado 2026-08-07): nuevo lib/recipes/labels.ts
+  # (COSTE_ESTIMADO_LABELS/DIFICULTAD_LABELS, junto a DIETA_LABELS movido
+  # ahí también) consumido por recipe-card.tsx y recipe-detail.tsx.
+  # Bug de arrastre encontrado en vivo: los maps vivían en recipe-card.tsx
+  # ('use client') — un Server Component (recipe-detail.tsx) importando un
+  # export de datos plano desde un módulo 'use client' recibe un stub de
+  # client-reference, no el objeto real. Esto ya afectaba a DIETA_LABELS —
+  # ver corrección en el escenario 11.14. FRESCO-116 (espacio faltante en
+  # el meta de la tarjeta) sigue sin fix, no forma parte de este arreglo.
 ```
 
 **Automatización:** Manual, no automatizado aún.
