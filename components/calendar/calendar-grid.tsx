@@ -222,7 +222,7 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
           data-testid="learning_free_tier_notice"
           className="mb-4 rounded-md bg-surface p-3 text-body-sm text-tertiary"
         >
-          Marcar un plato como cocinado o descartado es una función de nivel Pro — tu menú actual no se ve afectado.
+          Marcar un plato como cocinado o descartado se guarda igual en el plan Free. Lo exclusivo de Pro es que tu próximo menú aprenda de esos marcados.
         </p>
       )}
 
