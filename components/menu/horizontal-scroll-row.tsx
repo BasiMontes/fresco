@@ -63,7 +63,7 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
       {canScrollRight && (
         <button
           type="button"
-          aria-label="Ver más recetas"
+          aria-label="Ver recetas siguientes"
           onClick={() => scrollByCard(1)}
           className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -right-2 top-1/2 z-10 -translate-y-1/2 shadow-md')}
         >
