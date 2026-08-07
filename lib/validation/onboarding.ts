@@ -10,6 +10,12 @@
  * it defensively in case the derivation changes later.
  */
 
+// FRESCO-110: matches the `max={10}` attribute both onboarding step-3
+// inputs already carry visually — the input suggested a cap that
+// `validateHousehold()` never actually enforced, letting e.g. adultos=999
+// through with the "Generar mi menú" button enabled.
+export const HOUSEHOLD_FIELD_MAX = 10;
+
 export interface HouseholdInput {
   adultos: number
   ninos: number
@@ -25,8 +31,16 @@ export function validateHousehold({ adultos, ninos }: HouseholdInput): Household
     return { valid: false, message: 'Indica al menos un adulto en el hogar.' };
   }
 
+  if (adultos > HOUSEHOLD_FIELD_MAX) {
+    return { valid: false, message: `El número de adultos no puede superar ${HOUSEHOLD_FIELD_MAX}.` };
+  }
+
   if (Number.isNaN(ninos) || ninos < 0) {
     return { valid: false, message: 'El número de niños no puede ser negativo.' };
+  }
+
+  if (ninos > HOUSEHOLD_FIELD_MAX) {
+    return { valid: false, message: `El número de niños no puede superar ${HOUSEHOLD_FIELD_MAX}.` };
   }
 
   const numPersonas = adultos + ninos;

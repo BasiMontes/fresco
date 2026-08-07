@@ -37,4 +37,25 @@ describe('validateHousehold', () => {
     expect(result.valid).toBe(false);
     expect(result.message).toBe('El número de niños no puede ser negativo.');
   });
+
+  test('adultos above the input\'s max=10 is invalid with a specific message', () => {
+    const result = validateHousehold({ adultos: 999, ninos: 0 });
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toBe('El número de adultos no puede superar 10.');
+  });
+
+  test('ninos above the input\'s max=10 is invalid with a specific message', () => {
+    const result = validateHousehold({ adultos: 2, ninos: 999 });
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toBe('El número de niños no puede superar 10.');
+  });
+
+  test('exactly 10 adults is valid (boundary)', () => {
+    const result = validateHousehold({ adultos: 10, ninos: 0 });
+
+    expect(result.valid).toBe(true);
+    expect(result.message).toBeNull();
+  });
 });
