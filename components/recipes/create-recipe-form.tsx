@@ -96,6 +96,7 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated }: CreateRecipe
             data-testid="receta_nombre_input"
             type="text"
             placeholder="Nombre de la receta"
+            maxLength={100}
             value={nombre}
             onChange={(event) => {
               setNombre(event.target.value);

@@ -15,7 +15,7 @@ export function PersonalRecipeCard({ receta, className }: { receta: RecetaPropia
       <div className="mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
         <NotebookPen className="size-10 text-neutral-400" aria-hidden="true" />
       </div>
-      <h3 className="text-h5">{receta.nombre}</h3>
+      <h3 className="line-clamp-2 text-h5">{receta.nombre}</h3>
       <div className="mt-1">
         <Tag variant="outline">Tu receta</Tag>
       </div>
