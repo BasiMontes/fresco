@@ -152,6 +152,10 @@ export default function OnboardingPage() {
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
         session?.access_token ?? null,
       );
+      // FRESCO-94: the store now persists to sessionStorage so a mid-wizard
+      // reload survives — reset here so a later same-tab visit to
+      // /onboarding doesn't resurface this run's stale answers.
+      useOnboardingStore.getState().reset();
       router.push('/menu');
     }
     catch (error) {

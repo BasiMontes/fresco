@@ -1,5 +1,6 @@
 import type { TipoCocina } from '@schemas';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 /**
  * Client-side state for the 3-step onboarding flow (EPIC-FRESCO-1: diet,
@@ -67,7 +68,28 @@ function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter(item => item !== value) : [...list, value];
 }
 
-export const useOnboardingStore = create<OnboardingState>(set => ({
+// SSR-safe: `sessionStorage` doesn't exist during Next.js server rendering.
+// `zustand/middleware`'s `createJSONStorage` calls this factory exactly
+// ONCE at module load and caches the result — so the `typeof window` check
+// must live INSIDE each method (re-evaluated per call), not around which
+// object gets returned, or a module evaluated once with no `window` would
+// be stuck on a no-op forever even after the client mounts.
+function getOnboardingStorage(): Storage {
+  return {
+    getItem: key => (typeof window === 'undefined' ? null : window.sessionStorage.getItem(key)),
+    setItem: (key, value) => {
+      if (typeof window !== 'undefined') { window.sessionStorage.setItem(key, value); }
+    },
+    removeItem: (key) => {
+      if (typeof window !== 'undefined') { window.sessionStorage.removeItem(key); }
+    },
+    length: 0,
+    clear: () => {},
+    key: () => null,
+  };
+}
+
+export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   ...initialState,
   setStep: step => set({ step }),
   toggleDieta: field =>
@@ -113,4 +135,27 @@ export const useOnboardingStore = create<OnboardingState>(set => ({
   setAdultos: value => set({ adultos: value }),
   setNinos: value => set({ ninos: value }),
   reset: () => set(initialState),
+}), {
+  // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
+  // with no warning — this was a plain in-memory `create()`, and a reload
+  // re-mounts the JS runtime from scratch. `sessionStorage` (not
+  // `localStorage`) matches the defect's expected fix exactly: survives a
+  // reload, still clears on tab close, same privacy footprint as before.
+  name: 'fresco-onboarding',
+  storage: createJSONStorage(getOnboardingStorage),
+  partialize: state => ({
+    step: state.step,
+    dietaVegetariano: state.dietaVegetariano,
+    dietaVegano: state.dietaVegano,
+    dietaSinGluten: state.dietaSinGluten,
+    dietaSinLactosa: state.dietaSinLactosa,
+    dietaSinHuevo: state.dietaSinHuevo,
+    dietaKeto: state.dietaKeto,
+    dietaHalal: state.dietaHalal,
+    alergenos: state.alergenos,
+    ingredientesOdiados: state.ingredientesOdiados,
+    cocinasFavoritas: state.cocinasFavoritas,
+    adultos: state.adultos,
+    ninos: state.ninos,
+  }),
 }));
