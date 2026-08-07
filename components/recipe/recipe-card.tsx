@@ -92,6 +92,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
         {recipe.meta?.tiempo_total_min ?? '—'}
         {' '}
         min ·
+        {' '}
         {recipe.meta?.coste_estimado ? COSTE_ESTIMADO_LABELS[recipe.meta.coste_estimado] : '—'}
       </p>
     </div>
