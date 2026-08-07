@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-89](https://basiliomontescastano.atlassian.net/browse/FRESCO-89)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Control de calidad
 **Components:** None
 
 ---
@@ -51,7 +51,7 @@ Este es el mecanismo central de conversión invitada → cuenta (Modo Invitado +
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 
