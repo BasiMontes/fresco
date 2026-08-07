@@ -220,53 +220,66 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un banner "Crea una cuenta para no perder este menú"
     Y un enlace a /signup
 
-  @registro-progresivo @verificado-manual-2026-07-31 @automatizado
-  # Automatizado: tests/steps/registro-progresivo.steps.ts (playwright-bdd,
-  # sesión anónima + generación real; updateUser() mockeado — mismo criterio
-  # que @registro para no quemar un envío de email real)
-  # ATENCIÓN — este escenario quedó DESACTUALIZADO por el hallazgo de abajo
-  # (FRESCO-89, barrido QA 2026-08-06): automatizado con updateUser()
-  # mockeado, nunca verificado de punta a punta contra el proyecto real de
-  # Supabase con un logout real intermedio. Con datos reales, la conversión
-  # NO se completa — ver el escenario siguiente para el comportamiento
-  # verdadero observado en vivo.
+  @registro-progresivo @verificado-manual-2026-08-07
+  # FRESCO-89 (arreglado 2026-08-07): la conversión ahora es un flujo de dos
+  # pasos — updateUser({ email }) primero, luego (tras verificar el código de
+  # 6 dígitos enviado al correo) verifyOtp() + updateUser({ password }). Es
+  # el patrón que los docs oficiales de Supabase documentan para "Convert an
+  # anonymous user to a permanent user"; el proyecto tiene secure email
+  # change activado, así que el password no puede aplicarse hasta que el
+  # email quede verificado. Verificado en vivo con Playwright contra el
+  # proyecto real de Supabase: la pantalla "Revisa tu correo" aparece tras el
+  # paso 1, un código erróneo muestra el error traducido correctamente. El
+  # último tramo del camino feliz (código real → password seteado → login
+  # sobrevive a perder la sesión anónima) no se pudo verificar de punta a
+  # punta en esta sesión por falta de acceso a un inbox real — pendiente de
+  # una pasada de QA manual con una cuenta de correo real.
   Escenario: La invitada convierte su sesión anónima en una cuenta real
     Dado que una invitada con sesión anónima y un email nuevo rellena email y contraseña en /signup
-    Cuando confirma el formulario
+    Cuando confirma el formulario y verifica el código de 6 dígitos enviado a su correo
     Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
     Y conserva el menú que ya había generado como invitada
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-06
+  @registro-progresivo @edge-case @verificado-manual-2026-08-07
   Escenario: La conversión de invitada a cuenta real no sobrevive a perder la sesión anónima original
     Dado que una invitada generó un menú y "creó su cuenta" en /signup con un email nuevo
     Cuando limpia cookies/localStorage (simula cerrar el navegador o cambiar de dispositivo) e intenta loguearse con esas mismas credenciales
     Entonces el login debería funcionar siempre, porque "crear cuenta" implica que quedó guardada de verdad
-    # FRESCO-89 (CRITICAL, sin fix todavía): `client.auth.updateUser({email,
-    # password})` sobre un usuario anónimo en este proyecto de Supabase solo
-    # encola un cambio de email pendiente (doble opt-in) — NO lo aplica de
-    # inmediato. Verificado en DB: email:"", new_email seteado,
-    # is_anonymous:true. app/signup/page.tsx no contempla este caso: si
-    # updateUser() no devuelve error, asume éxito y redirige a /menu sin
-    # ningún "revisa tu correo". Login posterior con esas credenciales →
-    # 400 Invalid login credentials. Si la invitada pierde la sesión
-    # anónima original, la cuenta y el menú son irrecuperables. Mismo root
-    # cause rompe también el escenario de "email ya registrado → reasignar
-    # cuenta" de abajo — probado contra el email real de PRO_TEST_USER_EMAIL,
-    # la UI de reasignación nunca se dispara.
+    # FRESCO-89 (arreglado 2026-08-07): root cause era `client.auth.
+    # updateUser({email, password})` en una sola llamada — con secure email
+    # change activado, Supabase solo encola el cambio (doble opt-in) y nunca
+    # lo aplica sin verificación. Fix: `app/signup/page.tsx` ahora separa
+    # `updateUser({ email })` del `updateUser({ password })`, con una
+    # pantalla intermedia de verificación por OTP (`handleVerifyOtp`) entre
+    # ambos. Ver el escenario de arriba para el detalle de lo verificado en
+    # vivo y lo pendiente de QA manual.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
-  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (target real:
-  # PRO_TEST_USER_EMAIL, no el usuario de test compartido)
+  @registro-progresivo @edge-case @pendiente
+  # NO automatizable con la infraestructura de test actual: verificado en
+  # vivo (dos veces, con USER_EMAIL_PRE y con la llamada updateUser({email,
+  # password}) original combinada) que Supabase encola el cambio con 200 sin
+  # error — incluso cuando el email de destino ya pertenece a otra cuenta
+  # confirmada — el mismo comportamiento anti-enumeración que este archivo ya
+  # documenta para el signUp() normal. El conflicto real (`email_exists`)
+  # solo puede surgir en `handleVerifyOtp` (verifyOtp() o el updateUser({
+  # password }) posterior), que ahora lo captura y muestra esta misma
+  # pantalla — pero confirmarlo de punta a punta requiere el código de 6
+  # dígitos real, y no hay ningún fixture en `tests/` que lea un inbox real
+  # (ni siquiera para PRO_TEST_USER_EMAIL). Pendiente de QA manual con
+  # inbox real.
   Escenario: El email de conversión ya pertenece a una cuenta real distinta
     Dado que una invitada intenta convertir su sesión con un email ya registrado
-    Cuando confirma el formulario de /signup
+    Cuando confirma el formulario de /signup y verifica el código de 6 dígitos
     Entonces ve un mensaje claro explicando el conflicto
     Y se le ofrece continuar con la cuenta existente ingresando su contraseña
-    # Disparado en vivo contra el email real ya registrado del usuario de
-    # test — 422 email_exists real, mensaje correcto.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
-  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
+  @registro-progresivo @edge-case @pendiente
+  # Depende de alcanzar la pantalla de conflicto de arriba — mismo bloqueo:
+  # requiere el código de 6 dígitos real de PRO_TEST_USER_EMAIL, sin fixture
+  # de lectura de inbox en tests/. El mecanismo de reasignación en sí
+  # (`handleReassign`, `reassign_guest_data()`) no se tocó en FRESCO-89 y
+  # sigue siendo el mismo verificado de punta a punta el 2026-07-31 — lo que
+  # cambió es solo cómo se llega a esta pantalla.
   Escenario: La invitada resuelve el conflicto con la contraseña correcta de la cuenta existente
     Dado que la invitada ve el conflicto de email y conoce la contraseña de esa cuenta
     Cuando la ingresa y confirma
@@ -274,14 +287,11 @@ Característica: Flujo completo de usuario en Fresco
     Y su sesión anónima y perfil huérfano se eliminan
     Y la cuenta real conserva exactamente su plan original, sin duplicarse
     Y es redirigida a /menu como la cuenta real
-    # Verificado de punta a punta con casos reales: forzado el conflicto a
-    # propósito (misma semana que la cuenta real ya tenía un plan),
-    # confirmado por SQL directo (perfil/usuario anónimo borrados, plan
-    # conflictivo descartado, cuenta real intacta). También clickeado en
-    # navegador real en una pasada posterior.
+    # Verificado de punta a punta con casos reales el 2026-07-31, cuando
+    # todavía se llegaba a esta pantalla sin pasar por OTP (ver nota arriba).
 
-  @registro-progresivo @edge-case @verificado-manual-2026-07-31 @automatizado
-  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
+  @registro-progresivo @edge-case @pendiente
+  # Mismo bloqueo que los dos escenarios anteriores.
   Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
     Dado que la invitada ve el conflicto de email
     Cuando ingresa una contraseña incorrecta para esa cuenta

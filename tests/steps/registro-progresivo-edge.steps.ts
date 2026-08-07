@@ -9,15 +9,18 @@ import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restH
  * save-your-menu banner, and the email-conflict / reassignment trio
  * (FRESCO-19/FRESCO-20).
  *
- * The conflict/reassignment scenarios target `PRO_TEST_USER_EMAIL` (the
- * dedicated account from `entrega-parcial.steps.ts` /
- * `aprendizaje-pro.steps.ts`) as the "already exists" account — real
- * `updateUser()` conflict + real `reassign-guest-data` call, nothing
- * mocked. Reusing that account here is intentional and safe: FRESCO-20's
- * `reassign_guest_data()` explicitly discards the GUEST's conflicting plan
- * when the destination already has one for that week (never overwrites the
- * real account's data) — the exact behavior "conserva su plan original,
- * sin duplicarse" asserts.
+ * FRESCO-89 (2026-08-07): the 3 conflict/reassignment scenarios below are
+ * `test.skip()`'d, not deleted. Verified live (twice, including with the
+ * original combined `updateUser({ email, password })` call) that Supabase
+ * queues the pending email change with a 200 and no error even when the
+ * target email already belongs to another confirmed account — the same
+ * anti-enumeration behavior this suite already works around for `signUp()`.
+ * `email_exists` now only surfaces inside `handleVerifyOtp`
+ * (`app/signup/page.tsx`), which requires the real 6-digit code sent to
+ * `PRO_TEST_USER_EMAIL`'s inbox — this test suite has no fixture that reads
+ * a real inbox, for this account or any other. Automating this again needs
+ * that fixture built first; until then it's manual QA
+ * (`.context/qa/regression.feature`).
  */
 
 const { Given, When, Then } = createBdd(test);
@@ -112,6 +115,7 @@ Then(/^un enlace a \/signup$/, async ({ page }) => {
 // ── "El email de conversión ya pertenece a una cuenta real distinta" ───────
 
 Given(/^que una invitada intenta convertir su sesión con un email ya registrado$/, async ({ page }) => {
+  test.skip(true, 'FRESCO-89: email_exists now only surfaces after a real OTP verification — no inbox-reading fixture in this suite (see file header).');
   await ensureAnonymousSession(page);
   await page.goto('/signup');
   await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
@@ -136,6 +140,7 @@ Then(/^se le ofrece continuar con la cuenta existente ingresando su contraseña$
 Given(
   /^que la invitada ve el conflicto de email y conoce la contraseña de esa cuenta$/,
   async ({ page, request }) => {
+    test.skip(true, 'FRESCO-89: email_exists now only surfaces after a real OTP verification — no inbox-reading fixture in this suite (see file header).');
     test.setTimeout(240_000);
     if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
       throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
@@ -184,6 +189,7 @@ Then(/^es redirigida a \/menu como la cuenta real$/, async ({ page }) => {
 // ── "La invitada ingresa una contraseña incorrecta al intentar reasignar" ──
 
 Given(/^que la invitada ve el conflicto de email$/, async ({ page }) => {
+  test.skip(true, 'FRESCO-89: email_exists now only surfaces after a real OTP verification — no inbox-reading fixture in this suite (see file header).');
   await ensureAnonymousSession(page);
   await reachEmailConflict(page);
 });

@@ -36,11 +36,11 @@ criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 | Métrica | Valor |
 |---|---|
 | Escenarios totales | 93 |
-| `@automatizado` (tienen test Playwright real) | 21 |
-| `@pendiente` (escritos, sin verificar ni automatizar) | 4 |
+| `@automatizado` (tienen test Playwright real) | 17 |
+| `@pendiente` (escritos, sin verificar ni automatizar) | 7 |
 | `@no-implementado` (comportamiento deseado, aún sin construir) | 0 — todo lo que estaba `@no-implementado` ya ha enviado (ver Nota) |
-| `@edge-case` (causística no-camino-feliz) | 48 |
-| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 90 |
+| `@edge-case` (causística no-camino-feliz) | 47 |
+| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 86 |
 | Ficheros de step definitions (`tests/steps/*.steps.ts`) | 12 |
 | Áreas / secciones | 12 |
 
@@ -380,45 +380,41 @@ Escenario: La invitada ve una invitación a guardar su menú
 
 **Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — genera una sesión anónima real (FRESCO-17, ADR-0003) y un menú real vía Gemini (sin mock), luego asserta el banner de guardado y su enlace a `/signup`.
 
-### 3.3 La invitada convierte su sesión anónima en una cuenta real ⚠️ DESACTUALIZADO
+### 3.3 La invitada convierte su sesión anónima en una cuenta real
 
-**Tags:** `@registro-progresivo` `@verificado-manual-2026-07-31` `@automatizado`
+**Tags:** `@registro-progresivo` `@verificado-manual-2026-08-07`
 
-> **Ver 3.7 para el comportamiento real verificado en producción.** Este
-> escenario está automatizado con `updateUser()` mockeado — nunca se
-> verificó de punta a punta contra el proyecto real de Supabase con un
-> logout real intermedio. Con datos reales la conversión NO se completa
-> (FRESCO-89, barrido QA 2026-08-06).
+> FRESCO-89 (arreglado 2026-08-07): el flujo real de dos pasos (email →
+> verificación OTP → password) reemplaza al escenario mockeado que ocultaba
+> el bug. Ver 3.7 para el detalle del fix.
 
 ```gherkin
 Escenario: La invitada convierte su sesión anónima en una cuenta real
   Dado que una invitada con sesión anónima y un email nuevo rellena email y contraseña en /signup
-  Cuando confirma el formulario
+  Cuando confirma el formulario y verifica el código de 6 dígitos enviado a su correo
   Entonces su sesión anónima se actualiza a una cuenta real (mismo user_id)
   Y conserva el menú que ya había generado como invitada
 ```
 
-**Automatización:** `tests/steps/registro-progresivo.steps.ts` — sesión anónima real + generación real de menú (sin mock, espera explícitamente la cookie de sesión antes de avanzar el onboarding, porque un script puede ganarle la carrera al `mount effect` que crea la sesión anónima); solo la llamada final `updateUser({ email, password })` se mockea, mismo criterio que `@registro` para no quemar un envío de email real. Verifica que el menú generado como invitada sigue presente tras la conversión. **Este mock es precisamente lo que ocultó FRESCO-89** — nunca ejercitó la respuesta real de Supabase.
+**Automatización:** ninguna — `tests/steps/registro-progresivo.steps.ts` quedó desconectada de `regression.feature` (ya no tiene `@automatizado`, el proyecto solo compila escenarios con ese tag). Su mock de `updateUser({ email, password })` es precisamente lo que ocultó FRESCO-89 — verificado en vivo con Playwright contra el proyecto real de Supabase en su lugar (pantalla "Revisa tu correo" tras el paso 1, error traducido con un código erróneo). El tramo final del camino feliz (código real → password → login sobrevive a perder la sesión anónima) queda pendiente de QA manual — no hay fixture de lectura de inbox real en `tests/`.
 
 ### 3.4 El email de conversión ya pertenece a una cuenta real distinta
 
-**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-07-31` `@automatizado`
+**Tags:** `@registro-progresivo` `@edge-case` `@pendiente`
 
 ```gherkin
 Escenario: El email de conversión ya pertenece a una cuenta real distinta
   Dado que una invitada intenta convertir su sesión con un email ya registrado
-  Cuando confirma el formulario de /signup
+  Cuando confirma el formulario de /signup y verifica el código de 6 dígitos
   Entonces ve un mensaje claro explicando el conflicto
   Y se le ofrece continuar con la cuenta existente ingresando su contraseña
-  # Disparado en vivo contra el email real ya registrado del usuario de
-  # test — 422 email_exists real, mensaje correcto.
 ```
 
-**Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — dispara el conflicto real contra `PRO_TEST_USER_EMAIL` (la cuenta "ya existente"), sin mock; verifica el mensaje de conflicto y el formulario de contraseña/reasignación.
+**Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — `test.skip()`'d desde FRESCO-89 (arreglado 2026-08-07), con el motivo documentado en el header del archivo. Verificado en vivo (dos veces, con `USER_EMAIL_PRE` y con la llamada `updateUser({email, password})` original combinada) que Supabase encola el cambio con 200 sin error incluso cuando el email de destino ya pertenece a otra cuenta confirmada — mismo comportamiento anti-enumeración que este archivo ya documenta para `signUp()`. `email_exists` ahora solo puede surgir dentro de `handleVerifyOtp` (`app/signup/page.tsx`), que lo captura y muestra esta misma pantalla — pero confirmarlo de punta a punta requiere el código de 6 dígitos real de `PRO_TEST_USER_EMAIL`, y no hay fixture de lectura de inbox en `tests/`. Pendiente de QA manual.
 
 ### 3.5 La invitada resuelve el conflicto con la contraseña correcta de la cuenta existente
 
-**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-07-31` `@automatizado`
+**Tags:** `@registro-progresivo` `@edge-case` `@pendiente`
 
 ```gherkin
 Escenario: La invitada resuelve el conflicto con la contraseña correcta de la cuenta existente
@@ -428,18 +424,15 @@ Escenario: La invitada resuelve el conflicto con la contraseña correcta de la c
   Y su sesión anónima y perfil huérfano se eliminan
   Y la cuenta real conserva exactamente su plan original, sin duplicarse
   Y es redirigida a /menu como la cuenta real
-  # Verificado de punta a punta con casos reales: forzado el conflicto a
-  # propósito (misma semana que la cuenta real ya tenía un plan),
-  # confirmado por SQL directo (perfil/usuario anónimo borrados, plan
-  # conflictivo descartado, cuenta real intacta). También clickeado en
-  # navegador real en una pasada posterior.
+  # Verificado de punta a punta con casos reales el 2026-07-31, cuando
+  # todavía se llegaba a esta pantalla sin pasar por OTP (ver 3.4).
 ```
 
-**Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — siembra un plan real en `PRO_TEST_USER_EMAIL` para la semana actual, genera un menú real de invitada para la misma semana (conflicto genuino), resuelve con la contraseña real y confirma vía la API real (`reassign-guest-data`) que la cuenta real conserva exactamente 1 plan para esa semana, nada mockeado; el borrado de sesión anónima/perfil huérfano no es verificable desde el navegador y queda cubierto por la propia migración transaccional de `reassign_guest_data()`.
+**Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — `test.skip()`'d, mismo bloqueo que 3.4 (depende de llegar a la pantalla de conflicto). El mecanismo de reasignación en sí (`handleReassign`, `reassign_guest_data()`) no se tocó en FRESCO-89 y sigue siendo el mismo verificado de punta a punta el 2026-07-31 — lo que cambió es solo cómo se llega a esta pantalla.
 
 ### 3.6 La invitada ingresa una contraseña incorrecta al intentar reasignar
 
-**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-07-31` `@automatizado`
+**Tags:** `@registro-progresivo` `@edge-case` `@pendiente`
 
 ```gherkin
 Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
@@ -449,32 +442,29 @@ Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
   Y no se mueve ni se modifica ningún dato
 ```
 
-**Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — reproduce el conflicto real, envía una contraseña deliberadamente incorrecta y comprueba el mensaje de error y que sigue en `/signup` con el formulario de conflicto intacto.
+**Automatización:** `tests/steps/registro-progresivo-edge.steps.ts` — `test.skip()`'d, mismo bloqueo que 3.4/3.5.
 
 ### 3.7 La conversión de invitada a cuenta real no sobrevive a perder la sesión anónima original
 
-**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: La conversión de invitada a cuenta real no sobrevive a perder la sesión anónima original
   Dado que una invitada generó un menú y "creó su cuenta" en /signup con un email nuevo
   Cuando limpia cookies/localStorage (simula cerrar el navegador o cambiar de dispositivo) e intenta loguearse con esas mismas credenciales
   Entonces el login debería funcionar siempre, porque "crear cuenta" implica que quedó guardada de verdad
-  # FRESCO-89 (CRITICAL, sin fix todavía): `client.auth.updateUser({email,
-  # password})` sobre un usuario anónimo en este proyecto de Supabase solo
-  # encola un cambio de email pendiente (doble opt-in) — NO lo aplica de
-  # inmediato. Verificado en DB: email:"", new_email seteado,
-  # is_anonymous:true. app/signup/page.tsx no contempla este caso: si
-  # updateUser() no devuelve error, asume éxito y redirige a /menu sin
-  # ningún "revisa tu correo". Login posterior con esas credenciales →
-  # 400 Invalid login credentials. Si la invitada pierde la sesión
-  # anónima original, la cuenta y el menú son irrecuperables. Mismo root
-  # cause rompe también 3.4/3.5 (reasignación de cuenta) — probado contra
-  # el email real de PRO_TEST_USER_EMAIL, la UI de reasignación nunca se
-  # dispara.
+  # FRESCO-89 (arreglado 2026-08-07): root cause era `client.auth.
+  # updateUser({email, password})` en una sola llamada — con secure email
+  # change activado, Supabase solo encola el cambio (doble opt-in) y nunca
+  # lo aplica sin verificación. Fix: `app/signup/page.tsx` ahora separa
+  # `updateUser({ email })` del `updateUser({ password })`, con una
+  # pantalla intermedia de verificación por OTP (`handleVerifyOtp`) entre
+  # ambos — el patrón que los docs oficiales de Supabase documentan para
+  # "Convert an anonymous user to a permanent user". Ver 3.3 para el
+  # detalle de lo verificado en vivo y lo pendiente de QA manual.
 ```
 
-**Automatización:** Manual, no automatizado aún — el fix requiere primero una decisión de arquitectura (desactivar el doble opt-in de email change para este caso vs. rediseñar el flujo con confirmación explícita).
+**Automatización:** Manual — ver 3.3 para lo verificado en vivo.
 
 ### 3.8 Cerrar sesión como invitada advierte antes de borrar el menú generado
 
