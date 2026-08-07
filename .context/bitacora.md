@@ -2832,3 +2832,14 @@ Verificación en vivo con Playwright para las 6 UI-facing (109, 111, 112, 113, 1
 **Por qué**: último ticket del QA sweep original de 20 defectos (2026-08-06). Root cause compartido con FRESCO-90/94/119/118/117/116/107-115/103: modo invitado y conversión de cuenta.
 
 **Siguiente**: QA sweep completo — los 20 tickets originales están cerrados (Control de calidad). Queda pendiente la verificación manual con inbox real de FRESCO-89 (camino feliz completo + conflicto de email) antes de poder marcarlo `@verificado-manual` sin reservas en QA docs. Sin más tarjetas priorizadas en cola.
+
+
+---
+
+## 2026-08-07 — Skills de metodología (addyosmani/agent-skills) + MCP 21st.dev
+
+**Qué**: `ui-ux-pro-max` ya estaba instalada (`.agents/skills/`), nada que hacer. Instalados 18 skills de `https://github.com/addyosmani/agent-skills` a nivel global (`~/.claude/skills/`, `bunx skills add ... --global --agent claude-code`): api-and-interface-design, browser-testing-with-devtools, code-simplification, context-engineering, debugging-and-error-recovery, deprecation-and-migration, documentation-and-adrs, doubt-driven-development, frontend-ui-engineering, idea-refine, incremental-implementation, interview-me, observability-and-instrumentation, performance-optimization, planning-and-task-breakdown, shipping-and-launch, source-driven-development, using-agent-skills — dejados afuera 6 que duplican skills nativos del repo (git-workflow-and-versioning, code-review-and-quality, security-and-hardening, spec-driven-development, test-driven-development, ci-cd-and-automation), decisión del user tras preguntarle. Agregado MCP `21st` a `.mcp.json` (fuentes de diseño/componentes 21st.dev) — config generada con `npx @21st-dev/cli@latest init --client claude` (el paquete viejo `@21st-dev/magic` está deprecado, redirige a este). Requiere `API_KEY_21ST` en `.env` (bloqueado para tocar ese archivo directamente por permisos de la sesión) — pendiente que el user la agregue y reinicie la sesión del agente.
+
+**Por qué**: pedido directo del user — ampliar catálogo de skills de metodología general + tener 21st.dev como fuente de componentes/diseño a mano.
+
+**Siguiente**: user debe agregar `API_KEY_21ST` a `.env` (clave en https://21st.dev/mcp) y reiniciar sesión para que el MCP quede operativo.
