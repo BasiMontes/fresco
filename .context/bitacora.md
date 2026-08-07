@@ -2785,3 +2785,23 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 **Por qué**: siguiente en la lista priorizada del QA sweep.
 
 **Siguiente**: quedan 14 tickets abiertos del QA sweep: 89, 90, 103, 104, 105, 107-115 salvo 106/94/116/117/118/119.
+
+## 2026-08-07 — Batch FRESCO-107/108/109/110/111/112/113/114/115: resto del QA sweep
+
+**Qué**: 8 tickets restantes arreglados en un lote vía `/sprint-development` modo SOLO (usuario pidió ir por los 14 abiertos). Por ticket:
+
+- **FRESCO-115** (decisión del user vía pregunta): `RecetaPropia` no tiene `clasificacion`/`dieta`/`alergenos`, no puede filtrar como el catálogo — se aclaró el copy del EmptyState en vez de inventar lógica no soportada por el modelo de datos.
+- **FRESCO-114**: guard síncrono (`useRef`) contra doble-submit en los 4 formularios de auth (login/signup/forgot-password/update-password) — `disabled={isSubmitting}` solo actúa tras re-render, no alcanza el mismo tick de JS. Verificado en vivo: 3 clicks sincrónicos → 1 solo POST (antes: cada click producía su propio request).
+- **FRESCO-113**: `nombre-form.tsx` — className del input gateado por `touched && !isValid`, igual que ya hacía el mensaje de validación.
+- **FRESCO-112**: investigado en vivo — el "botón de cargar más" del reporte no existe en el código actual (solo "Ver todas", con nombre ya distinto); renombrada la flecha derecha del carrusel de "Ver más recetas" a "Ver recetas siguientes".
+- **FRESCO-111**: `sidebar-account.tsx` — `{email || 'Invitada'}`.
+- **FRESCO-110**: `validateHousehold()` ahora valida contra `HOUSEHOLD_FIELD_MAX=10` (adultos y niños), igual al `max=10` visual de ambos inputs. 3 tests nuevos.
+- **FRESCO-109**: nueva `formatWeekRangeLabel()` en `lib/date/iso-week.ts` — muestra ambos meses cuando la semana los cruza ("27 jul – 2 ago"). 3 tests nuevos.
+- **FRESCO-108** (feature real, no one-liner): nuevo `components/recipe/favorite-toggle-button.tsx` (mismo patrón optimista que `FavoriteRecipeCard`), montado en `CatalogRecipeDetail`; el page del detalle ahora también lee `getFavoriteRecipeIds()`. Verificado en vivo: toggle funciona y persiste tras reload.
+- **FRESCO-107**: `maxLength={100}` en el input de "Crear propia" + `line-clamp-2` en `personal-recipe-card.tsx` como defensa independiente.
+
+Verificación en vivo con Playwright para las 6 UI-facing (109, 111, 112, 113, 114, 107, 108); tests unitarios para 110/109 (`bun test` completo: 147 pass). 8 commits atómicos + 1 commit de docs PBI, pusheados a `main`. Jira: Listo → WIP → Merged → Control de calidad en las 9. `regression.feature` + `bitacora-tests.md` actualizados in situ para las 9.
+
+**Por qué**: user pidió completar los 14 tickets abiertos del QA sweep tras FRESCO-94/119/118/117/116.
+
+**Siguiente**: quedan 3 tickets, los más pesados — FRESCO-89, 90, 103, todos con la misma causa raíz de modo invitado. 103 tiene decisión de negocio abierta (no asumida), 89 requiere investigar configuración de Supabase Auth (doble opt-in de cambio de email).

@@ -134,19 +134,16 @@ Escenario: Alta falla porque el email ya está registrado
 
 ### 1.5 Doble-click rápido en "Iniciar sesión" no dispara dos intentos de autenticación
 
-**Tags:** `@login` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@login` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: Doble-click rápido en "Iniciar sesión" no dispara dos intentos de autenticación
   Dado que un usuario completa email y contraseña válidos en /login
   Cuando hace dos clicks sincrónicos sobre "Iniciar sesión" sin esperar entre ambos
   Entonces solo se dispara una llamada de autenticación
-  # FRESCO-114 (MINOR, sin fix todavía): el guard `disabled={isSubmitting}`
-  # depende de un re-render de React que no llega a tiempo si los dos
-  # clicks ocurren en el mismo tick — confirmado en vivo, 2 requests POST
-  # idénticos a /auth/v1/token en la pestaña de red. No rompe el flujo
-  # (Supabase maneja bien el duplicado), pero gasta cupo de rate-limit
-  # más rápido de lo necesario.
+  # FRESCO-114 (arreglado 2026-08-07): guard síncrono (useRef) en los 4
+  # formularios con el mismo patrón. Verificado en vivo: 3 clicks
+  # sincrónicos producen 1 solo POST.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -337,17 +334,15 @@ Escenario: Recargar la página a mitad del onboarding no borra el progreso ya co
 
 ### 2.11 El campo "Adultos" del hogar respeta un tope superior razonable
 
-**Tags:** `@onboarding` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@onboarding` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: El campo "Adultos" del hogar respeta un tope superior razonable
   Dado que el usuario está en el paso 3 del onboarding (hogar)
   Cuando escribe un valor muy grande (ej. 999) en "Adultos"
   Entonces el sistema lo rechaza o lo acota a un máximo razonable antes de permitir generar el menú
-  # FRESCO-110 (MINOR, sin fix todavía): el input tiene `max={10}` visual,
-  # pero validateHousehold() (lib/validation/onboarding.ts) solo exige
-  # adultos > 0 — con adultos=999 el botón "Generar mi menú" queda
-  # habilitado igual.
+  # FRESCO-110 (arreglado 2026-08-07): validateHousehold() valida contra
+  # HOUSEHOLD_FIELD_MAX=10 (adultos y niños), igual al max=10 visual.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -645,36 +640,31 @@ Escenario: Tocar "Ver todas" en últimas recetas lleva al catálogo
 
 ### 4.11 El sidebar muestra un placeholder de email para invitadas, no una línea en blanco
 
-**Tags:** `@panel-inicio` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@panel-inicio` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: El sidebar muestra un placeholder de email para invitadas, no una línea en blanco
   Dado que una invitada con sesión anónima genera un menú
   Cuando mira el pie de la barra lateral (desktop)
   Entonces ve algún indicador tipo "Invitada" en vez de un espacio vacío bajo el nombre
-  # FRESCO-111 (MINOR, sin fix todavía): components/layout/sidebar-account.tsx
-  # renderiza {email} sin fallback — para una sesión anónima email es "",
-  # así que se ve una línea en blanco. app/(app)/profile/page.tsx SÍ tiene
-  # el fallback correcto (user?.email ?? 'Invitada') para el mismo caso —
-  # inconsistencia entre dos componentes que resuelven el mismo dato.
+  # FRESCO-111 (arreglado 2026-08-07): sidebar-account.tsx usa
+  # {email || 'Invitada'}. Verificado en vivo.
 ```
 
 **Automatización:** Manual, no automatizado aún.
 
 ### 4.12 "Ver más recetas" del scroll horizontal y "cargar más" de la lista tienen nombres accesibles distintos
 
-**Tags:** `@panel-inicio` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@panel-inicio` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: "Ver más recetas" del scroll horizontal y "cargar más" de la lista tienen nombres accesibles distintos
   Dado que Laura está en la sección "Últimas recetas añadidas" de Inicio
   Cuando un lector de pantalla anuncia la flecha de scroll y el botón de cargar más
   Entonces cada control anuncia una acción distinta y reconocible
-  # FRESCO-112 (MINOR, sin fix todavía): ambos exponen el mismo
-  # aria-label "Ver más recetas" (components/menu/horizontal-scroll-row.tsx
-  # vs. el botón de cargar más) — ambiguo por lector de pantalla o control
-  # por voz, aunque hacen cosas distintas (scroll del carrusel vs. cargar
-  # más recetas).
+  # FRESCO-112 (arreglado 2026-08-07): el "botón de cargar más" descrito no
+  # existe en el código actual — solo la flecha derecha del carrusel tenía
+  # "Ver más recetas", renombrada a "Ver recetas siguientes".
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -779,17 +769,15 @@ Escenario: No se puede generar sobre una semana que ya tiene menú
 
 ### 5.8 La etiqueta de semana distingue los meses cuando la semana cruza de mes
 
-**Tags:** `@calendario` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@calendario` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: La etiqueta de semana distingue los meses cuando la semana cruza de mes
   Dado que el usuario navega a una semana que empieza en un mes y termina en el siguiente (ej. 27 jul – 2 ago)
   Cuando mira la etiqueta de semana
   Entonces queda claro a qué mes pertenece cada extremo
-  # FRESCO-109 (MINOR, sin fix todavía): components/calendar/week-navigation.tsx
-  # calcula el label usando siempre el mes del domingo para ambos
-  # extremos — se muestra literalmente "27–2 AGO", que se lee como si el
-  # 27 fuera de agosto (después del 2), cuando en realidad es de julio.
+  # FRESCO-109 (arreglado 2026-08-07): nueva formatWeekRangeLabel() en
+  # lib/date/iso-week.ts. Verificado en vivo: "27 jul – 2 ago".
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -1383,37 +1371,34 @@ Escenario: Volver a la Biblioteca desde el detalle
 
 **Automatización:** Manual, no automatizado aún.
 
-### 11.17 "Tus recetas" respeta la búsqueda y los filtros de la Biblioteca
+### 11.17 El mensaje de "No encontramos nada" deja claro que solo aplica al catálogo
 
-**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
-Escenario: "Tus recetas" respeta la búsqueda y los filtros de la Biblioteca
-  Dado que Laura tiene una receta propia guardada y busca algo que ninguna receta contiene
+Escenario: El mensaje de "No encontramos nada" deja claro que solo aplica al catálogo
+  Dado que Laura tiene una receta propia guardada y busca algo que ninguna receta del catálogo contiene
   Cuando mira la sección "Tus recetas" y el mensaje de "No encontramos nada"
-  Entonces ambos son consistentes entre sí, sin mostrar una receta y "no encontramos nada" a la vez
-  # FRESCO-115 (MINOR, sin fix todavía): components/recipes/recipe-library.tsx
-  # — "Tus recetas" ignora por completo la búsqueda y los filtros, sigue
-  # mostrándose completa aunque el catálogo diga "No encontramos nada para
-  # tu búsqueda" justo debajo. Mismo comportamiento con cualquier
-  # combinación de filtros (tab de comida, cocina, dieta, alérgeno).
+  Entonces el mensaje aclara que la búsqueda/filtros no aplican a "Tus recetas", que sigue visible arriba
+  # FRESCO-115 (arreglado 2026-08-07, decisión del user): RecetaPropia no
+  # soporta filtros de dieta/cocina/alérgeno — se aclaró el copy del
+  # EmptyState en vez de inventar lógica no soportada por el modelo de
+  # datos. "Tus recetas" sigue sin filtrarse, por diseño.
 ```
 
 **Automatización:** Manual, no automatizado aún.
 
 ### 11.18 Un nombre de receta propia extremadamente largo no rompe el layout de la grilla
 
-**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: Un nombre de receta propia extremadamente largo no rompe el layout de la grilla
   Dado que Laura pega un nombre de ~1000 caracteres en el formulario "Crear propia"
   Cuando guarda la receta
   Entonces la tarjeta se trunca visualmente, sin desalinear el resto de la grilla "Tus recetas"
-  # FRESCO-107 (MAJOR, sin fix todavía): sin `maxLength` en el input
-  # (create-recipe-form.tsx), sin tope en la constraint de DB, sin
-  # truncate/line-clamp en personal-recipe-card.tsx — la tarjeta crece a
-  # ~30 líneas y desalinea toda la grilla.
+  # FRESCO-107 (arreglado 2026-08-07): maxLength={100} en el input +
+  # line-clamp-2 en la card. Verificado en vivo.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -1461,19 +1446,16 @@ Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en 
 
 ### 11.21 Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
 
-**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
   Dado que Laura abre el detalle de una receta de catálogo
   Cuando busca el control de favorito en esa pantalla
   Entonces puede alternar el favorito ahí mismo, sin volver a la Biblioteca o Favoritos
-  # FRESCO-108 (MAJOR, sin fix todavía): components/recipes/recipe-detail.tsx
-  # (CatalogRecipeDetail) no renderiza ningún botón de favorito — el único
-  # control funcional vive en RecipeCard/FavoriteRecipeCard. El comentario
-  # "OOS" del componente lista edit/delete/rate/menu-add/share como fuera
-  # de alcance, pero no menciona favorito — parece un gap, no una
-  # exclusión intencional.
+  # FRESCO-108 (arreglado 2026-08-07): nuevo favorite-toggle-button.tsx en
+  # CatalogRecipeDetail. Verificado en vivo: toggle funciona y persiste
+  # tras reload.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -1570,19 +1552,15 @@ Escenario: Borrar cuenta definitivamente elimina la cuenta y todos sus datos
 
 ### 12.6 El input "Tu nombre" no muestra borde de error en el primer render
 
-**Tags:** `@perfil` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@perfil` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: El input "Tu nombre" no muestra borde de error en el primer render
   Dado que Laura entra a /profile con una cuenta que todavía no tiene nombre guardado
   Cuando la página carga por primera vez, sin que ella haya tocado el campo
   Entonces el input "Tu nombre" se ve neutral, sin borde de error
-  # FRESCO-113 (MINOR, sin fix todavía): components/profile/nombre-form.tsx
-  # — el mensaje de validación SÍ respeta el gate de `touched` (silencioso
-  # al primer paint, según su propio comentario de intención), pero la
-  # clase CSS del input (`!isValid ? 'border-error' : ''`) ignora ese
-  # mismo gate — el borde rojo aparece de entrada, sin ningún mensaje que
-  # lo explique. Cosmético, no bloquea el guardado.
+  # FRESCO-113 (arreglado 2026-08-07): className gateado por
+  # touched && !isValid. Verificado en vivo.
 ```
 
 **Automatización:** Manual, no automatizado aún.
