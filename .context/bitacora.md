@@ -2745,3 +2745,11 @@ Reconciliación: borrados los 10 duplicados del lado "[QA]" (`acli jira workitem
 **Siguiente**: seguir resolviendo los 19 tickets de defectos abiertos en orden de prioridad (FRESCO-89, 90, 94 primero — misma causa raíz de modo invitado — luego el resto de MAJOR, luego los 11 MINOR).
 
 **Siguiente**: 634/1000 con foto, 366 restantes.
+
+## 2026-08-07 — FRESCO-94: persistencia de sessionStorage en onboarding
+
+**Qué**: fix vía `/sprint-development` modo SOLO. Causa raíz: `lib/store/onboarding-store.ts` era zustand en memoria puro (sin `persist`) — un F5 a mitad del wizard remonta el runtime y el store vuelve a `initialState`, perdiendo todas las selecciones sin aviso. Envuelto con `persist` (middleware de `zustand/middleware`) sobre `sessionStorage`, `partialize` solo a los campos de respuesta. Gotcha encontrado en vivo: `createJSONStorage` resuelve el storage UNA vez al cargar el módulo y lo cachea — un guard `typeof window` que decide qué objeto devolver (no-op vs real) queda pegado al no-op para siempre en una instancia de módulo de larga vida; solución: mover el chequeo `typeof window` DENTRO de cada método (`getItem`/`setItem`/`removeItem`), reevaluado en cada llamada. `app/onboarding/page.tsx`: `reset()` del store antes de `router.push('/menu')` en éxito, para no filtrar respuestas viejas a una futura visita en la misma pestaña. 3 tests nuevos en `onboarding-store.test.ts` (Bun test no tiene DOM, mock de `Storage` en memoria). Verificado en vivo con Playwright: togglear dietas, F5, chips siguen `pressed`. `regression.feature` + `bitacora-tests.md` actualizados in situ (FRESCO-94 pasó de "sin fix" a "arreglado"). 2 commits directos a `main` (repo `solo-main`, sin PR): `fix(FRESCO-94)` + `docs(pbi)` sync del cache de Jira. Jira: Listo → WIP → Merged → Control de calidad.
+
+**Por qué**: siguiendo la priorización pedida por el user ("por el principio, dale caña") sobre los 19 tickets abiertos del QA sweep — FRESCO-94 era el único High.
+
+**Siguiente**: quedan 18 tickets abiertos (Medium) del QA sweep: 89, 90, 103, 104, 105, 107-119 salvo 106/94. Sin priorizar entre ellos todavía.

@@ -152,15 +152,16 @@ Característica: Flujo completo de usuario en Fresco
     # components/calendar/generate-week-button.tsx SÍ maneja el 409
     # correctamente — confirma que es un gap, no una limitación técnica.
 
-  @onboarding @edge-case @verificado-manual-2026-08-06
+  @onboarding @edge-case @verificado-manual-2026-08-07
   Escenario: Recargar la página a mitad del onboarding no borra el progreso ya completado
     Dado que el usuario completó el paso 1 o 2 del onboarding
     Cuando recarga la página antes de llegar al paso 3
     Entonces sus respuestas ya dadas siguen ahí, no vuelve al paso 1 en blanco
-    # FRESCO-94 (MAJOR, sin fix todavía): el estado del onboarding vive solo
-    # en memoria de React, sin persistir a localStorage/sessionStorage ni a
-    # DB hasta el submit final del paso 3 — un refresh a mitad de camino
-    # pierde todo lo ya completado, sin ningún aviso.
+    # FRESCO-94 (arreglado 2026-08-07): lib/store/onboarding-store.ts ahora
+    # persiste a sessionStorage vía zustand persist; verificado en vivo con
+    # Playwright — tras F5 los chips de dieta/alérgenos siguen `pressed`.
+    # El store se resetea al generar el menú con éxito para no filtrar
+    # respuestas viejas a una futura visita en la misma pestaña.
 
   @onboarding @edge-case @verificado-manual-2026-08-06
   Escenario: El campo "Adultos" del hogar respeta un tope superior razonable

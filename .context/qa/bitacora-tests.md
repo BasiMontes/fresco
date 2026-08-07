@@ -319,17 +319,18 @@ Escenario: El 409 de "ya existe un menú" muestra un mensaje accionable en /onbo
 
 ### 2.10 Recargar la página a mitad del onboarding no borra el progreso ya completado
 
-**Tags:** `@onboarding` `@edge-case` `@verificado-manual-2026-08-06`
+**Tags:** `@onboarding` `@edge-case` `@verificado-manual-2026-08-07`
 
 ```gherkin
 Escenario: Recargar la página a mitad del onboarding no borra el progreso ya completado
   Dado que el usuario completó el paso 1 o 2 del onboarding
   Cuando recarga la página antes de llegar al paso 3
   Entonces sus respuestas ya dadas siguen ahí, no vuelve al paso 1 en blanco
-  # FRESCO-94 (MAJOR, sin fix todavía): el estado del onboarding vive solo
-  # en memoria de React, sin persistir a localStorage/sessionStorage ni a
-  # DB hasta el submit final del paso 3 — un refresh a mitad de camino
-  # pierde todo lo ya completado, sin ningún aviso.
+  # FRESCO-94 (arreglado 2026-08-07): lib/store/onboarding-store.ts ahora
+  # persiste a sessionStorage vía zustand persist; verificado en vivo con
+  # Playwright — tras F5 los chips de dieta/alérgenos siguen `pressed`.
+  # El store se resetea al generar el menú con éxito para no filtrar
+  # respuestas viejas a una futura visita en la misma pestaña.
 ```
 
 **Automatización:** Manual, no automatizado aún.
