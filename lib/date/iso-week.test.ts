@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { addIsoWeeks, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from './iso-week';
+import { addIsoWeeks, formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from './iso-week';
 
 function utc(year: number, month: number, day: number): Date {
   return new Date(Date.UTC(year, month, day));
@@ -97,5 +97,21 @@ describe('addIsoWeeks', () => {
     // 2026-12-28 is a Monday, ISO week 2026-W53 per the ISO 8601 leap-week rule.
     const lastWeekOf2026 = getIsoWeek(utc(2026, 11, 28));
     expect(addIsoWeeks(lastWeekOf2026, 1)).toBe('2027-W01');
+  });
+});
+
+describe('formatWeekRangeLabel', () => {
+  test('a week within a single month omits the start month (FRESCO-109)', () => {
+    expect(formatWeekRangeLabel('2026-02-02')).toBe('2–8 feb');
+  });
+
+  test('a week crossing a month boundary shows both months (FRESCO-109)', () => {
+    // Monday 2026-07-27 -> Sunday 2026-08-02.
+    expect(formatWeekRangeLabel('2026-07-27')).toBe('27 jul – 2 ago');
+  });
+
+  test('a week crossing a year boundary shows both months', () => {
+    // Monday 2026-12-28 -> Sunday 2027-01-03.
+    expect(formatWeekRangeLabel('2026-12-28')).toBe('28 dic – 3 ene');
   });
 });

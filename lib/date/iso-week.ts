@@ -95,3 +95,26 @@ export function addIsoWeeks(isoWeek: string, delta: number): string {
   monday.setUTCDate(monday.getUTCDate() + delta * 7);
   return getIsoWeek(monday);
 }
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+/**
+ * Human-readable Monday-Sunday range label for `/calendar`'s week
+ * navigation (e.g. "3–9 feb"). FRESCO-109: a week that crosses a month
+ * boundary always used the Sunday's month for both ends ("27–2 ago"),
+ * reading as if the 27th were in August — now shown as "27 jul – 2 ago"
+ * whenever the two ends fall in different months.
+ */
+export function formatWeekRangeLabel(mondayIso: string): string {
+  const monday = new Date(`${mondayIso}T00:00:00.000Z`);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  const mondayMonth = MESES[monday.getUTCMonth()];
+  const sundayMonth = MESES[sunday.getUTCMonth()];
+
+  if (mondayMonth === sundayMonth) {
+    return `${monday.getUTCDate()}–${sunday.getUTCDate()} ${sundayMonth}`;
+  }
+  return `${monday.getUTCDate()} ${mondayMonth} – ${sunday.getUTCDate()} ${sundayMonth}`;
+}

@@ -1,8 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { addIsoWeeks } from '@/lib/date/iso-week';
-
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+import { addIsoWeeks, formatWeekRangeLabel } from '@/lib/date/iso-week';
 
 /**
  * FRESCO-61 — prev/next controls for `/calendar`. `mondayIso` is the
@@ -15,10 +13,7 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'o
  * a week-granular feature (Rule 14: mockup as inspiration, not literal spec).
  */
 export function WeekNavigation({ semanaIso, mondayIso }: { semanaIso: string, mondayIso: string }) {
-  const monday = new Date(`${mondayIso}T00:00:00.000Z`);
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
-  const label = `${monday.getUTCDate()}–${sunday.getUTCDate()} ${MESES[sunday.getUTCMonth()]}`;
+  const label = formatWeekRangeLabel(mondayIso);
 
   const semanaAnterior = addIsoWeeks(semanaIso, -1);
   const semanaSiguiente = addIsoWeeks(semanaIso, 1);
