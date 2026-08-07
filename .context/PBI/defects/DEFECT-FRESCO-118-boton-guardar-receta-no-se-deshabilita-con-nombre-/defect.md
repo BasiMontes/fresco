@@ -35,7 +35,7 @@ Agregar el mismo guard `disabled={!isValid || isSaving}` que ya usa `nombre-form
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/7/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 
