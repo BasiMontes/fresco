@@ -2843,3 +2843,14 @@ Verificación en vivo con Playwright para las 6 UI-facing (109, 111, 112, 113, 1
 **Por qué**: pedido directo del user — ampliar catálogo de skills de metodología general + tener 21st.dev como fuente de componentes/diseño a mano.
 
 **Siguiente**: user debe agregar `API_KEY_21ST` a `.env` (clave en https://21st.dev/mcp) y reiniciar sesión para que el MCP quede operativo.
+
+
+---
+
+## 2026-08-08 — Batch 35 de fotos de recetas
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 11/30 hits. Aplicado con `supabase db query --linked -f batch35.sql`. Verificado: `656/1000` con foto, cero duplicados.
+
+**Por qué**: continuación del backfill en background, pedido directo del user.
+
+**Siguiente**: 656/1000 con foto, 344 restantes.
