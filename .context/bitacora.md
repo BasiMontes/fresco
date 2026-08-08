@@ -2886,3 +2886,14 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: continuación del backfill, pedido directo del user.
 
 **Siguiente**: 663/1000 con foto, 337 restantes.
+
+
+---
+
+## 2026-08-08 — /master-implementation-plan + /dev-roadmap regenerados, batch 36 de fotos
+
+**Qué**: pedido del user tras el QA sweep ("2 y 3" de las opciones ofrecidas). `/master-implementation-plan` reescrito completo (delegado a subagente) — la versión vieja (25-07) era pre-código, cada Master Sprint que nombraba ya está construido; la nueva identifica lo que realmente falta: entorno `production` (no existe), sign-off legal, terminar backfill de fotos, decisión sobre DELETE de `recipes`, CRUD de `recetas_propias`, decisión build-vs-retirar Notifications, limpieza de sesiones anónimas huérfanas. `/dev-roadmap` sincronizado en modo quirúrgico (preserva §2/§3/§5/§6 a mano, solo regenera §4): encontrados 2 epics nuevos vía re-scan completo (`EPIC-FRESCO-81` Cuenta y Sesión con 2 historias, `EPIC-FRESCO-25` credenciales QA sin hijos) y 1 historia nueva sin ningún link en Jira (`FRESCO-88`, abrir detalle al tocar cualquier tarjeta) — creados y verificados en dirección 3 edges reales (`FRESCO-69/59/11 → FRESCO-88`) fundamentados en su propio DoD. Al recalcular el sort de Kahn desde cero se encontró un bug real en la versión anterior: `FRESCO-69` tenía bloqueadores reales pero nunca aparecía en ninguna fila de Execution Sprint — corregido (no es un edge nuevo, era un bug del sort anterior). Batch 36 de fotos: 7/30 hits, `663/1000` con foto, cero duplicados.
+
+**Por qué**: pedido directo del user — mantener el roadmap de 3 capas (estrategia/secuencia/story) sincronizado con la realidad del código tras el QA sweep, más continuar el backfill en background.
+
+**Siguiente**: 663/1000 con foto, 337 restantes. Roadmap de 3 capas al día (master-implementation-plan.md, dev-roadmap.md, business-feature-map.md todos regenerados 2026-08-08). Sigue pendiente FRESCO-89's verificación manual con inbox real.
