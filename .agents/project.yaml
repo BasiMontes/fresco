@@ -10,7 +10,7 @@
 project:
   project_name: fresco # fill per project — Project name (e.g. MyProject)
   project_key: FRESCO # fill per project — Project key in issue tracker (e.g. PROJ, OB, UPEX)
-  webapp_domain: fresco-production.vercel.app # fill per project — Domain of the web application under test (e.g. myproject.com). Was fresco-pro.vercel.app, a stale/never-real domain — corrected 2026-08-08 alongside the production environment setup.
+  webapp_domain: fresco-pro.vercel.app # fill per project — Domain of the web application under test (e.g. myproject.com). Confirmed 2026-08-08 via `vercel alias ls` as a REAL, auto-following Vercel Production domain — earlier in this same session it was wrongly assumed stale/fake and briefly replaced with a manually-aliased fresco-production.vercel.app, which does NOT auto-follow new deploys (a static alias); reverted to this one.
 
 backend:
   backend_repo: . # fill per project — Relative path to backend repository (e.g. ../my-backend)
@@ -91,10 +91,10 @@ environments:
     api_url: 'http://localhost:3000/api' # fill per project — API base URL for local env (e.g. http://localhost:3000/api)
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for local — Fresco project (eu-west-1)
   staging:
-    web_url: 'https://fresco-staging.vercel.app' # Vercel Preview alias, tracks the `staging` branch — set up 2026-08-08 (git-flow-master Strategy Setup). Prior value (fresco-pro.vercel.app) was stale/wrong, never matched a real deployment.
+    web_url: 'https://fresco-staging.vercel.app' # Manually-aliased to the latest `staging`-branch Preview deploy — set up 2026-08-08 (git-flow-master Strategy Setup). NOT auto-following: `vercel alias set` targets one specific deployment, not "whatever staging deploys next" — Vercel's `.vercel.app` branch-domain auto-assignment is a dashboard-only feature this CLI can't reach. Re-run `vercel alias set <new-preview-url> fresco-staging.vercel.app` after every staging deploy, or this goes stale.
     api_url: 'https://fresco-staging.vercel.app/api'
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for staging — Fresco project (eu-west-1)
   production:
-    web_url: 'https://fresco-production.vercel.app' # Vercel Production alias, tracks the `main` branch — set up 2026-08-08. Same Supabase project as staging (user decision: shared DB, no isolation split — see master-implementation-plan.md §3 "Production environment provisioning").
-    api_url: 'https://fresco-production.vercel.app/api'
+    web_url: 'https://fresco-pro.vercel.app' # REAL, auto-following Vercel Production domain (confirmed via `vercel alias ls` 2026-08-08 — always tracks the latest Production deploy of `main`, unlike the staging alias above). Same Supabase project as staging (user decision: shared DB, no isolation split — see master-implementation-plan.md §3 "Production environment provisioning").
+    api_url: 'https://fresco-pro.vercel.app/api'
     db_project_ref: jdqemhewjrjuopssdurn # SAME Supabase project as staging/local — deliberate, not an oversight
