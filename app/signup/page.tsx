@@ -165,13 +165,22 @@ export default function SignupPage() {
     event.preventDefault();
     if (isSubmittingRef.current) { return; }
     setTermsError(null);
+    setSignupError(null);
     if (!acceptedTerms) {
       setTermsError('Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
       return;
     }
+    // FRESCO-123: reject a weak password before the anonymous-conversion
+    // branch fires its real OTP email — without this, she pays the full
+    // email round-trip only to discover the password was rejected all
+    // along. Mirrors Supabase's own `weak_password` threshold (see
+    // `lib/auth-errors.ts`) so the message is never a surprise later.
+    if (password.length < 6) {
+      setSignupError('La contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
     isSubmittingRef.current = true;
     setIsSubmitting(true);
-    setSignupError(null);
     setEmailConflict(false);
     try {
       const client = createClient();
@@ -308,6 +317,7 @@ export default function SignupPage() {
                       placeholder="Contraseña"
                       aria-label="Contraseña"
                       required
+                      minLength={6}
                       autoComplete="new-password"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
