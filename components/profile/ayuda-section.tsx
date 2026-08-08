@@ -14,8 +14,11 @@ interface FaqItem {
  * Grounded in this session's own reading of the relevant code — no invented
  * features:
  * - Menu generation: `.context/ADR/ADR-0005-deterministic-menu-slot-selection.md`
- *   — a deterministic algorithm fills all 21 slots; Gemini is only called
- *   (Pro-tier) to write the learning-explanation text, never to pick recipes.
+ *   plus a follow-up commit (`ae3b560`, 2026-08-01) — a deterministic
+ *   algorithm fills all 21 slots AND writes the learning-explanation text
+ *   (Pro-tier). Gemini was fully removed from production; there is no LLM
+ *   call anywhere in this path (FRESCO-121, QA sweep 2026-08-08 confirmed
+ *   this FAQ item still claimed otherwise).
  * - Free vs. Pro: the exact sentence already shown in this page's own
  *   Pro-upsell `Card` below, quoted verbatim so this never contradicts it.
  * - Data deletion: the real, working `DangerZone` actions on this same page
@@ -28,7 +31,7 @@ interface FaqItem {
 const FAQ_ITEMS: FaqItem[] = [
   {
     question: '¿Cómo genera Fresco mi menú semanal?',
-    answer: 'Un algoritmo determinista rellena las 21 franjas de la semana combinando tu dieta, tus alergias y —si tienes Plan Pro— lo que ya has cocinado o descartado. No es una IA la que elige receta a receta: Gemini solo entra en juego en Plan Pro, para redactar la explicación de qué ha aprendido de ti.',
+    answer: 'Un algoritmo determinista rellena las 21 franjas de la semana combinando tu dieta, tus alergias y —si tienes Plan Pro— tu historial de calendario reciente. No es una IA la que elige receta a receta, ni la que redacta la explicación: todo el proceso es determinista, sin llamadas a ningún modelo de IA.',
   },
   {
     question: '¿Cómo cambio mis preferencias de dieta o alérgenos?',
