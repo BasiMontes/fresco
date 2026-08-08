@@ -2875,3 +2875,14 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: pedido directo del user — barrido de calidad de máximo esfuerzo sobre toda la aplicación, no solo los tickets ya conocidos.
 
 **Siguiente**: sin tickets abiertos del QA sweep. Batch de fotos de recetas sigue en 656/1000 (344 restantes) — no tocado esta sesión.
+
+
+---
+
+## 2026-08-08 — Batch 36 de fotos de recetas
+
+**Qué**: mismo script `fetch-recipe-photos.ts` (v8), batch de 30 sobre pool de 300. 7/30 hits. Aplicado con `supabase db query --linked -f batch36.sql`. Verificado: `663/1000` con foto, cero duplicados.
+
+**Por qué**: continuación del backfill, pedido directo del user.
+
+**Siguiente**: 663/1000 con foto, 337 restantes.
