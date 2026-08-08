@@ -2908,3 +2908,14 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: pedido del user tras el QA sweep — atacar el primer gap de Master Sprint 0. Decisión de arquitectura real (git strategy + topología de entornos), no solo código.
 
 **Siguiente**: quedan 3 ítems más de Master Sprint 0 (sign-off legal, decisión DELETE de `recipes`) más Master Sprint 1 completo (CRUD `recetas_propias`, Notifications, limpieza de sesiones anónimas). `staging.web_url` necesita re-aliasing manual (`vercel alias set`) después de cada deploy futuro a esa branch — no es automático, documentado en `project.yaml`.
+
+
+---
+
+## 2026-08-08 — Revisión de contenido de Términos/Privacidad (no asesoría legal real)
+
+**Qué**: siguiente ítem de Master Sprint 0. Aclarado con el user antes de tocar nada: no soy abogado, no puedo dar sign-off legal real — el banner "Borrador — pendiente de revisión legal" existe justamente para eso y no se toca. Hecha una revisión de contenido seria, señalando 8 gaps materiales que un abogado real marcaría primero: dato de alergias sin base legal explícita (categoría especial, GDPR Art. 9), sin cláusula de ley aplicable/jurisdicción, sin entidad legal real detrás del ToS (el comentario original ya evitaba fabricar una — se mantiene la misma disciplina con un placeholder explícito, nunca inventado), derechos GDPR incompletos (faltaba portabilidad/oposición/limitación/AEPD), sin plazo de retención, sin cláusula de contenido de usuario (recetas_propias, feature que no existía cuando se escribió el borrador original), sin transferencias internacionales, responsabilidad muy fina. El user pidió redactar la mejora — `legal-modal.tsx` actualizado con las 8 correcciones, banner intacto. Verificado en vivo con Playwright.
+
+**Por qué**: pedido del user, siguiente gap de Master Sprint 0.
+
+**Siguiente**: el placeholder de entidad legal (`LEGAL_ENTITY_PLACEHOLDER`) sigue sin resolver — necesita nombre real + NIF/CIF antes de poder sacar el banner. Quedan del roadmap: decisión DELETE de `recipes`, CRUD `recetas_propias`, decisión Notifications.
