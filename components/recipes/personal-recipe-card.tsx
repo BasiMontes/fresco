@@ -22,7 +22,7 @@ export function PersonalRecipeCard({ receta, className }: { receta: RecetaPropia
       <p className="mt-2 text-body-sm text-tertiary">
         {receta.ingredientes.length}
         {' '}
-        ingredientes
+        {receta.ingredientes.length === 1 ? 'ingrediente' : 'ingredientes'}
       </p>
     </div>
   );
