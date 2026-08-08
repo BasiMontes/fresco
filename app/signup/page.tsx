@@ -412,6 +412,8 @@ export default function SignupPage() {
                       placeholder="Código de 6 dígitos"
                       aria-label="Código de verificación"
                       required
+                      pattern="\d{6}"
+                      maxLength={6}
                       autoComplete="one-time-code"
                       value={otpCode}
                       onChange={e => setOtpCode(e.target.value)}
@@ -429,7 +431,7 @@ export default function SignupPage() {
                       </p>
                     )}
 
-                    <Button data-testid="signup_verify_otp_button" type="submit" className="mt-2" disabled={isVerifyingOtp || !otpCode}>
+                    <Button data-testid="signup_verify_otp_button" type="submit" className="mt-2" disabled={isVerifyingOtp || otpCode.length !== 6}>
                       {isVerifyingOtp ? 'Verificando…' : 'Confirmar código'}
                     </Button>
 
