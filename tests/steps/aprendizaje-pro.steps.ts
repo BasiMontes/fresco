@@ -13,9 +13,10 @@ import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restH
  * would corrupt `@aprendizaje`'s own pendiente-slot fixture on the shared
  * `LOCAL_USER_EMAIL` account.
  *
- * Real Gemini call (real generation, real isPro branch, real history read)
- * — no mocking here, same acceptance as @lista-compra: a network mock can't
- * produce a real card-insight to assert against.
+ * Real generation (real isPro branch, real history read) — no mocking here,
+ * same acceptance as @lista-compra: a network mock can't produce a real
+ * card-insight to assert against. Deterministic since ADR-0005/ADR-0006 —
+ * no Gemini call anywhere in this path anymore.
  */
 
 const { Given, When, Then } = createBdd(test);
@@ -33,8 +34,9 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const userId = await currentUserId(request, accessToken);
 
-  // Real history requires a real Pro-tier profile — get_recent_recipe_ids()
-  // is read unconditionally by index.ts once isPro is true server-side.
+  // Real history requires a real Pro-tier profile — get_recent_recipe_marks()
+  // (ADR-0006) is read unconditionally by index.ts once isPro is true
+  // server-side.
   const patchRes = await request.patch(`${url}/rest/v1/user_profiles`, {
     headers: { ...headers, Prefer: 'return=minimal' },
     params: { id: `eq.${userId}` },
@@ -50,8 +52,10 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
   const recipes = await recipesRes.json() as { id: string }[];
   if (recipes.length === 0) { throw new Error('No recipes available in the catalog to seed the fixture.'); }
 
-  // Seed a real "last week" plan so get_recent_recipe_ids() (2-week window)
-  // finds real history for this account.
+  // Seed a real "last week" plan, all slots `cocinada`, so
+  // get_recent_recipe_marks() (2-week window, ADR-0006) finds real
+  // cocinada/descartada history for this account — `pendiente` slots
+  // would no longer count as history since FRESCO-120.
   const lastMonday = mondayOfWeekContaining(new Date());
   lastMonday.setUTCDate(lastMonday.getUTCDate() - 7);
   const lastWeekPlanRes = await request.post(`${url}/rest/v1/meal_plans`, {
@@ -78,9 +82,10 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
   const seedRes = await request.post(`${url}/rest/v1/meal_plan_recipes`, { headers, data: lastWeekSlots });
   if (!seedRes.ok()) { throw new Error(`Failed to seed last week's history: ${seedRes.status()} ${await seedRes.text()}`); }
 
-  // Real generation for the CURRENT week — real Gemini call, real isPro
-  // branch, real history read. No mock: a network-mocked response can't
-  // produce a real card-insight to assert against.
+  // Real generation for the CURRENT week — real isPro branch, real history
+  // read, deterministic (no Gemini call, ADR-0005/ADR-0006). No mock: a
+  // network-mocked response can't produce a real card-insight to assert
+  // against.
   const genRes = await request.post(`${url}/functions/v1/generate-meal-plan`, {
     headers,
     data: { semana_iso: isoWeekOf(new Date()), fecha_inicio: mondayOfWeekContaining(new Date()).toISOString().slice(0, 10) },
