@@ -30,7 +30,7 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: 'Fresco — Menús semanales con IA que aprende de lo que realmente cocinas',
+  title: 'Fresco — Menús semanales que aprenden de lo que realmente cocinas',
   description:
     'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
 };
