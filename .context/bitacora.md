@@ -2854,3 +2854,24 @@ Verificación en vivo con Playwright para las 6 UI-facing (109, 111, 112, 113, 1
 **Por qué**: continuación del backfill en background, pedido directo del user.
 
 **Siguiente**: 656/1000 con foto, 344 restantes.
+
+
+---
+
+## 2026-08-08 — QA Lead sweep de máximo esfuerzo: 3 agentes en paralelo, 9 tickets, 8 arreglados
+
+**Qué**: pedido explícito del user de actuar como QA Lead senior, análisis exhaustivo de la app completa con "los cinco sentidos". Regenerado primero `.context/business/business-feature-map.md` (61 features, 15 dominios) como mapa base. Despachados 3 agentes en paralelo, cada uno con su propia identidad de test para no chocar datos (invitada/anónimo — sesiones libres; `LOCAL_USER_EMAIL` — Free; `PRO_TEST_USER_EMAIL` — Pro), cubriendo entre los 3 los 15 dominios del feature map con boundary values + equivalence classes (combinatoria literal es infinita). Cero CRITICAL. Consolidados 9 hallazgos reales (5 MAJOR + 4 MINOR, sin duplicados) en tickets Jira FRESCO-120 a 128, luego arreglados uno por uno vía `/sprint-development` modo SOLO:
+
+- **FRESCO-120** (el grande, decisión de arquitectura — ADR-0006): el "aprendizaje" Pro no dependía de marcar cocinado/descartado — `get_recent_recipe_ids()` excluía TODO lo reciente sin mirar `estado`, y "destacadas" leía columnas globales (`recipes.veces_cocinada`/`rating_promedio`, compartidas entre todos los usuarios). Usuario eligió "mecanismo real" sobre "solo corregir el copy". Nuevas `get_recent_recipe_marks()` + `get_user_cooked_recipe_ids()` (ambas con el mismo check `auth.uid()` de ownership que la función que reemplazan — ADR-0001), `buildLearningExplanation()` ahora separa cocinadas/descartadas. Verificado en vivo contra `PRO_TEST_USER_EMAIL`: exclusión exacta, texto correcto. Edge Function redeployada.
+- **FRESCO-121/127/128**: mismo tema, 3 sitios distintos con copy "Gemini"/"IA" desactualizada desde que se mató Gemini el 2026-08-01 (ADR-0005) — FAQ de Ayuda, autocontradicción en `/qa`, title tag global. Los 3 corregidos.
+- **FRESCO-122**: 228/1000 recetas (22.8%) con dificultad en blanco — dato real usaba `"alta"`, nunca parte del enum `DificultadReceta`. Migración de datos, cero cambio de código.
+- **FRESCO-123**: password débil pasaba el paso 1 del signup de invitada, gastando el roundtrip completo de OTP antes de rechazarse. `minLength=6` + chequeo JS.
+- **FRESCO-125**: "1 ingredientes" (pluralización naive) en recetas propias.
+- **FRESCO-126**: botón de confirmar OTP se podía clickear con menos de 6 dígitos.
+- **FRESCO-124** (investigado, no arreglado — cerrado como no-reproducible): el hallazgo original decía "sin constraint server-side para nombre vacío" — investigado y el `CHECK` YA EXISTÍA desde el día 1 de la tabla (2026-08-03), verificado en vivo que rechaza inserts vacíos. La fila reportada era debris transitorio de los 3 agentes corriendo en paralelo contra la misma DB, no un gap real.
+
+Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada ticket, tests E2E de Playwright (`aprendizaje`/`Pro`) re-verificados en vivo tras regenerar specs (2 fallos iniciales eran specs `.features-gen` compiladas antes de ediciones de esta misma sesión, no regresión real). `regression.feature`/`bitacora-tests.md` actualizados in situ (93→100 escenarios, 12→13 áreas). Nuevo `ADR-0006` registrando la decisión de FRESCO-120. 9 commits atómicos + docs + PBI sync, todos directos a `main`.
+
+**Por qué**: pedido directo del user — barrido de calidad de máximo esfuerzo sobre toda la aplicación, no solo los tickets ya conocidos.
+
+**Siguiente**: sin tickets abiertos del QA sweep. Batch de fotos de recetas sigue en 656/1000 (344 restantes) — no tocado esta sesión.
