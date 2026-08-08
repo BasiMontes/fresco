@@ -2919,3 +2919,14 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: pedido del user, siguiente gap de Master Sprint 0.
 
 **Siguiente**: el placeholder de entidad legal (`LEGAL_ENTITY_PLACEHOLDER`) sigue sin resolver — necesita nombre real + NIF/CIF antes de poder sacar el banner. Quedan del roadmap: decisión DELETE de `recipes`, CRUD `recetas_propias`, decisión Notifications.
+
+
+---
+
+## 2026-08-08 — Bug reportado en producción real: onboarding paso 3 falla al generar menú
+
+**Qué**: user reportó en vivo (iPhone, wifi, screenshot) "No pudimos guardar tu perfil o generar tu menú" en paso 3 con TODAS las opciones marcadas en paso 1 (7 dietas + 6 alérgenos + 14 ingredientes). Investigado a fondo antes de tocar código: contada la combinatoria exacta reportada directo contra el catálogo real — 128 recetas seguras, muy por encima del mínimo de 21 — la teoría de "demasiadas restricciones" queda descartada numéricamente. Reproducido el mismo flujo vía Playwright contra `fresco-pro.vercel.app` real (mismas 34 selecciones) → 200 limpio, sin poder reproducir el fallo de forma determinista. Causa raíz real queda sin confirmar (sospecha: primera vez que tráfico real pegaba contra el `production` armado ese mismo día). Lo que sí se identificó y arregló con certeza: `app/onboarding/page.tsx`'s catch colapsaba CUALQUIER fallo (red caída, sesión expirada, error real de servidor, catálogo insuficiente) en un único mensaje genérico sin ninguna pista útil — diferenciados ahora 4 casos reales (TypeError de red, UserProfileError, EdgeFunctionError 422, EdgeFunctionError otro status). Verificado en vivo simulando un corte de conexión real: mensaje nuevo y específico ("revisa tu conexión a internet"), no el genérico de antes. Deployado a producción real (`fresco-pro.vercel.app`) tras confirmación explícita del user ("es bloqueante #1").
+
+**Por qué**: reporte directo del user sobre un fallo real que vivió — máxima prioridad, primer uso real de la producción recién montada.
+
+**Siguiente**: si vuelve a pasar, el mensaje que se muestre ahora sí va a decir qué fue realmente (red / servidor / perfil / catálogo) — eso resuelve el diagnóstico a futuro aunque la causa de esta vez específica no se haya confirmado. Documentado en `.context/qa/regression.feature`, notas de infraestructura.
