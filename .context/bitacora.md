@@ -2897,3 +2897,14 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: pedido directo del user — mantener el roadmap de 3 capas (estrategia/secuencia/story) sincronizado con la realidad del código tras el QA sweep, más continuar el backfill en background.
 
 **Siguiente**: 663/1000 con foto, 337 restantes. Roadmap de 3 capas al día (master-implementation-plan.md, dev-roadmap.md, business-feature-map.md todos regenerados 2026-08-08). Sigue pendiente FRESCO-89's verificación manual con inbox real.
+
+
+---
+
+## 2026-08-08 — Entorno de producción real: git strategy main-integration + dominios Vercel corregidos
+
+**Qué**: primer ítem de Master Sprint 0 (`master-implementation-plan.md`) — "producción no existe". Investigación reveló que la premisa era parcialmente incorrecta: cada push a `main` (`solo-main`, sin gate) ya deployaba a Vercel Production real; lo que faltaba era un staging real y la documentación correcta. Decisiones del user: mismo proyecto Supabase para staging/producción (sin split de DB), y agregar un gate real de staging (no solo renombrar la etiqueta). Vía `/git-flow-master` Strategy Setup: creada branch `staging` off `main`, cuestionario Q1-Q4 (promoción fast-forward-only, merge --no-ff a staging, hotfix branch-off-main-con-backmerge, push directo a protegidas requiere confirmación cada vez), bloque `git_strategy` escrito en `project.yaml` (`main-integration`). Deploy de Preview real disparado manualmente vía `vercel deploy` (el push a `staging` no auto-disparó — sí lo hace el push a `main`, confirmado). Encontrado y corregido un error propio en el camino: un alias manual (`fresco-production.vercel.app`) no sigue deploys nuevos automáticamente — `fresco-pro.vercel.app` (el dominio que ya estaba en el project.yaml original) SÍ es el dominio real de Production que Vercel actualiza solo, confirmado vía `vercel alias ls`. Revertido a ese, alias incorrecto eliminado. `environments.production` nuevo en `project.yaml`, `environments.staging.web_url` corregido a `fresco-staging.vercel.app` (alias mantenido a mano — Vercel no expone asignación de branch-a-dominio por CLI, solo dashboard). 2 commits en `staging`, ambos ff-promovidos a `main` con confirmación explícita cada vez.
+
+**Por qué**: pedido del user tras el QA sweep — atacar el primer gap de Master Sprint 0. Decisión de arquitectura real (git strategy + topología de entornos), no solo código.
+
+**Siguiente**: quedan 3 ítems más de Master Sprint 0 (sign-off legal, decisión DELETE de `recipes`) más Master Sprint 1 completo (CRUD `recetas_propias`, Notifications, limpieza de sesiones anónimas). `staging.web_url` necesita re-aliasing manual (`vercel alias set`) después de cada deploy futuro a esa branch — no es automático, documentado en `project.yaml`.
