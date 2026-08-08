@@ -10,7 +10,7 @@
 project:
   project_name: fresco # fill per project — Project name (e.g. MyProject)
   project_key: FRESCO # fill per project — Project key in issue tracker (e.g. PROJ, OB, UPEX)
-  webapp_domain: fresco-pro.vercel.app # fill per project — Domain of the web application under test (e.g. myproject.com)
+  webapp_domain: fresco-production.vercel.app # fill per project — Domain of the web application under test (e.g. myproject.com). Was fresco-pro.vercel.app, a stale/never-real domain — corrected 2026-08-08 alongside the production environment setup.
 
 backend:
   backend_repo: . # fill per project — Relative path to backend repository (e.g. ../my-backend)
@@ -40,32 +40,35 @@ testing:
 # updater (bootstrapOnly), so each project keeps its own. Filled by git-flow-master, NOT by
 # `agents:setup`. These leaves are read directly (not {{VAR}} template vars) → skipped by vars:check.
 git_strategy:
-  strategy: solo-main # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow
+  strategy: main-integration # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow
   description: >
-    Single long-lived branch (main); single maintainer (this repo is the boilerplate
-    template itself). Work is committed and pushed directly to main (PRs optional).
-    Every push to main is effectively a release of the template. No integration branch,
-    no promotion path, no hotfix ceremony.
+    main (production, real Vercel Production deploy) + staging (integration, Vercel
+    Preview deploy). Every push so far had landed straight on Vercel Production with
+    no gate — staging now provides a real pre-production check before promoting.
+    Both branches share the same Supabase project (jdqemhewjrjuopssdurn); this split
+    is Vercel/branching only, not a database split. Set up 2026-08-08 (git-flow-master
+    Strategy Setup, single-maintainer project).
   branches:
     production: main # release / default branch
-    integration: null # long-lived integration branch name (e.g. staging), or null
+    integration: staging # long-lived integration branch name (e.g. staging), or null
     ephemeral_pattern: null # on-demand trunk pattern, or null
-  protected: [main] # branches requiring explicit confirm before a direct push
+  protected: [main, staging] # branches requiring explicit confirm before a direct push
   decisions: # captured by the Strategy Setup questionnaire (Q1/Q2/Q3)
-    promote_method: n/a # ff-only | merge-commit | squash | n/a
-    feature_merge: n/a # merge-commit | squash | rebase-merge | n/a
-    hotfix_policy: n/a # branch-off-prod-backmerge | via-integration | none | n/a
+    promote_method: ff-only # ff-only | merge-commit | squash | n/a
+    feature_merge: merge-commit # merge-commit | squash | rebase-merge | n/a
+    hotfix_policy: branch-off-prod-backmerge # branch-off-prod-backmerge | via-integration | none | n/a
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
-    direct_push_to_protected: allowed # forbidden | confirm | allowed (solo-main = allowed)
-    admin_bypass: true # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
-    require_pr_reviews: 0 # null | 0 | N — min approvals before merge to a protected branch (informational)
+    direct_push_to_protected: confirm # forbidden | confirm | allowed
+    admin_bypass: false # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
+    require_pr_reviews: null # null | 0 | N — min approvals before merge to a protected branch (informational)
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
     naming_without_key: '{prefix}/{kebab-slug}'
   meta:
-    setup_version: 1
+    setup_version: 2
     created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
+    updated: 2026-08-08 # switched from solo-main to main-integration
 
 # Variables declared above that are consumed OUTSIDE the {{TEMPLATE}} system
 # (env vars in scripts/, shell `yq` reads embedded in skill docs, etc.).
@@ -88,6 +91,10 @@ environments:
     api_url: 'http://localhost:3000/api' # fill per project — API base URL for local env (e.g. http://localhost:3000/api)
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for local — Fresco project (eu-west-1)
   staging:
-    web_url: fresco-pro.vercel.app # fill per project — Frontend URL for staging env (e.g. https://staging.myproject.com)
-    api_url: fresco-pro.vercel.app/api # fill per project — API base URL for staging env (e.g. https://api-staging.myproject.com)
+    web_url: 'https://fresco-staging.vercel.app' # Vercel Preview alias, tracks the `staging` branch — set up 2026-08-08 (git-flow-master Strategy Setup). Prior value (fresco-pro.vercel.app) was stale/wrong, never matched a real deployment.
+    api_url: 'https://fresco-staging.vercel.app/api'
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for staging — Fresco project (eu-west-1)
+  production:
+    web_url: 'https://fresco-production.vercel.app' # Vercel Production alias, tracks the `main` branch — set up 2026-08-08. Same Supabase project as staging (user decision: shared DB, no isolation split — see master-implementation-plan.md §3 "Production environment provisioning").
+    api_url: 'https://fresco-production.vercel.app/api'
+    db_project_ref: jdqemhewjrjuopssdurn # SAME Supabase project as staging/local — deliberate, not an oversight
