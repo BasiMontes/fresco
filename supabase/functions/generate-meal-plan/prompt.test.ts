@@ -27,11 +27,12 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
   }
 }
 
-describe('buildLearningExplanation (ADR-0005 — deterministic, no Gemini call)', () => {
+describe('buildLearningExplanation (ADR-0005 — deterministic, no Gemini call; FRESCO-120 — real cocinada/descartada signal)', () => {
   test('mentions a single destacada by name', () => {
     const texto = buildLearningExplanation({
       destacadas: [makeRecipe({ nombre: 'Fabada asturiana' })],
-      recientesEvitadas: 0,
+      cocinadasEvitadas: 0,
+      descartadasEvitadas: 0,
     })
 
     expect(texto).toContain('Fabada asturiana')
@@ -44,26 +45,49 @@ describe('buildLearningExplanation (ADR-0005 — deterministic, no Gemini call)'
         makeRecipe({ nombre: 'Tortilla de patatas' }),
         makeRecipe({ nombre: 'Gazpacho' }),
       ],
-      recientesEvitadas: 0,
+      cocinadasEvitadas: 0,
+      descartadasEvitadas: 0,
     })
 
     expect(texto).toContain('Fabada asturiana, Tortilla de patatas y Gazpacho')
   })
 
-  test('states the real recientesEvitadas count, singular', () => {
-    const texto = buildLearningExplanation({ destacadas: [], recientesEvitadas: 1 })
+  test('states the real cocinadasEvitadas count, singular', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 1, descartadasEvitadas: 0 })
 
     expect(texto).toContain('evitamos 1 receta ')
+    expect(texto).toContain('ya cocinaste')
   })
 
-  test('states the real recientesEvitadas count, plural', () => {
-    const texto = buildLearningExplanation({ destacadas: [], recientesEvitadas: 5 })
+  test('states the real cocinadasEvitadas count, plural', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 5, descartadasEvitadas: 0 })
 
     expect(texto).toContain('evitamos 5 recetas ')
   })
 
+  test('states the real descartadasEvitadas count, singular, and never calls a discard "cocinaste"', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 0, descartadasEvitadas: 1 })
+
+    expect(texto).toContain('dejamos fuera 1 receta ')
+    expect(texto).toContain('descartaste')
+    expect(texto).not.toContain('cocinaste')
+  })
+
+  test('states the real descartadasEvitadas count, plural', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 0, descartadasEvitadas: 3 })
+
+    expect(texto).toContain('dejamos fuera 3 recetas ')
+  })
+
+  test('mentions both cocinadas and descartadas when both are present, never conflating them', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 2, descartadasEvitadas: 1 })
+
+    expect(texto).toContain('evitamos 2 recetas que ya cocinaste')
+    expect(texto).toContain('dejamos fuera 1 receta que descartaste')
+  })
+
   test('never invents a destacada when none qualify and there is nothing recent avoided — falls back to a generic warm sentence', () => {
-    const texto = buildLearningExplanation({ destacadas: [], recientesEvitadas: 0 })
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 0, descartadasEvitadas: 0 })
 
     expect(texto).toContain('armamos el menú priorizando variedad y equilibrio nutricional')
   })

@@ -29,11 +29,6 @@ const FN_NAME = 'generate-meal-plan'
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 const MIN_CATALOG_SIZE = 21 // 7 days x 3 slots — FR-2.1
-// A recipe counts as "worth mentioning" in the learning explanation when it
-// has a real positive signal — a discrete threshold, unlike `menu-selector.ts`'s
-// continuous weighted score, since this is prose for a human, not a sort key.
-const DESTACADA_MIN_RATING = 4
-const DESTACADA_MIN_VECES_COCINADA = 3
 const MAX_DESTACADAS_IN_PROMPT = 5
 
 Deno.serve(async (req: Request) => {
@@ -92,15 +87,31 @@ Deno.serve(async (req: Request) => {
     // 6. Pro-only history read (FR-2.5, FR-5.4, ADR-0001). Free stays a
     // single line: recentRecipeIds is [] and selectMenu() never excludes
     // anything for it.
+    //
+    // FRESCO-120: only `cocinada`/`descartada` are a real signal from the
+    // user — `pendiente` (never touched) and `sustituida` are not "you
+    // already had this," so they no longer get excluded. Before this fix,
+    // ALL recent recipes were excluded regardless of mark, so a Pro user
+    // who never marked anything got the identical no-repeat behavior as
+    // one who diligently marked everything — the mechanism didn't actually
+    // depend on the marks the product copy promises it learns from.
     const isPro = profile.plan === 'pro' || profile.plan === 'family'
     let recentRecipeIds: string[] = []
+    let cocinadasEvitadas = 0
+    let descartadasEvitadas = 0
 
     if (isPro) {
-      const { data: recentIds } = await supabase.rpc('get_recent_recipe_ids', {
+      const { data: marks } = await supabase.rpc('get_recent_recipe_marks', {
         p_user_id: user.id,
         p_weeks: 2,
       })
-      recentRecipeIds = recentIds ?? []
+      for (const mark of marks ?? []) {
+        if (mark.estado === 'cocinada' || mark.estado === 'descartada') {
+          recentRecipeIds.push(mark.recipe_id)
+          if (mark.estado === 'cocinada') cocinadasEvitadas++
+          else descartadasEvitadas++
+        }
+      }
     }
 
     // 7. Select the 21 slots — deterministic, synchronous, cannot itself
@@ -113,19 +124,28 @@ Deno.serve(async (req: Request) => {
     // 8. Pro learning explanation (FR-5.5) — deterministic, built from the
     // recipe stats already computed here. Cannot fail the way a Gemini call
     // could, so no try/catch needed.
+    //
+    // FRESCO-120: `destacadas` used to read `recipes.veces_cocinada`/
+    // `rating_promedio` — aggregate columns shared across every user, not a
+    // personal Pro signal. Now sourced from `get_user_cooked_recipe_ids`:
+    // recipes THIS user has personally marked cocinada, so "ya te funcionó
+    // bien" is actually about them.
     let explicacionAprendizaje: string | null = null
-    if (isPro && recentRecipeIds.length > 0) {
+    if (isPro) {
+      const { data: cookedIds } = await supabase.rpc('get_user_cooked_recipe_ids', { p_user_id: user.id })
+      const personalCookedIds = new Set(cookedIds ?? [])
       const chosenIds = new Set(
         DIAS.flatMap(dia => TIPOS.map(tipo => menu[dia][tipo])).filter(id => id !== NO_SAFE_RECIPE_SENTINEL),
       )
       const destacadas = [...chosenIds]
+        .filter(id => personalCookedIds.has(id))
         .map(id => recipeMap.get(id))
-        .filter((r): r is Recipe => r !== undefined
-          && ((r.rating_promedio ?? 0) >= DESTACADA_MIN_RATING || r.veces_cocinada >= DESTACADA_MIN_VECES_COCINADA))
+        .filter((r): r is Recipe => r !== undefined)
         .slice(0, MAX_DESTACADAS_IN_PROMPT)
-      const recientesEvitadas = recentRecipeIds.filter(id => recipeMap.has(id)).length
 
-      explicacionAprendizaje = buildLearningExplanation({ destacadas, recientesEvitadas })
+      if (destacadas.length > 0 || recentRecipeIds.length > 0) {
+        explicacionAprendizaje = buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas })
+      }
     }
 
     // 9. Persist meal_plans
