@@ -1044,3 +1044,18 @@ Característica: Flujo completo de usuario en Fresco
   #   basta con que compile/typecheck limpio, solo se ve en vivo en el
   #   navegador. Encontrado en RecipeCard (bug real desde FRESCO-69,
   #   2026-08-03, sin detectar hasta esta sesión de pruebas en vivo).
+  # - 2026-08-08, reporte real de producción (iPhone, wifi): "No pudimos
+  #   guardar tu perfil o generar tu menú" en el paso 3 del onboarding con
+  #   TODAS las opciones marcadas (7 dietas + 6 alérgenos + 14 ingredientes
+  #   en el paso 1). Investigado a fondo: la combinatoria exacta reportada
+  #   deja 128 recetas seguras en el catálogo (muy por encima del mínimo de
+  #   21), y el mismo flujo reproducido vía Playwright contra producción
+  #   real dio 200 limpio — no se pudo reproducir de forma determinista. La
+  #   causa real queda sin confirmar (sospecha: primera carga real contra el
+  #   `production` recién creado ese mismo día). Lo que SÍ se confirmó y
+  #   arregló: el catch de app/onboarding/page.tsx colapsaba todo fallo
+  #   (red, sesión expirada, error de servidor, catálogo insuficiente) en un
+  #   único mensaje genérico, sin dar ninguna pista real. Ahora diferencia
+  #   4 casos reales (TypeError de red, UserProfileError, EdgeFunctionError
+  #   422, EdgeFunctionError otro status) — si vuelve a pasar, el mensaje va
+  #   a decir qué fue de verdad.
