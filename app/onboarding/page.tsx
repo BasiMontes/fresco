@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
-import { upsertUserProfile } from '@/lib/api/user-profile';
+import { upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
@@ -159,14 +159,37 @@ export default function OnboardingPage() {
       router.push('/menu');
     }
     catch (error) {
+      // FRESCO (2026-08-08, live bug report): this catch used to collapse
+      // every failure mode into one generic message — a real network drop,
+      // an expired/missing session, a genuine server error, and the
+      // catalog-too-small case were all indistinguishable to the user (and
+      // to us debugging her report afterward). Each branch below is a real,
+      // previously-observed failure mode, not speculative:
       // AC-4 ("La generación no puede producir un menú válido"): index.ts
       // throws a 422 only when the filtered candidate catalog itself is too
-      // small (fewer than 21 safe recipes after allergen/diet filtering) —
-      // a distinct, expected case, so it gets its own clear message instead
-      // of being conflated with the generic fallback.
+      // small (fewer than 21 safe recipes after allergen/diet filtering).
       if (error instanceof EdgeFunctionError && error.status === 422) {
         setGenerateError(
           'No pudimos generar un menú válido con tus restricciones actuales. Prueba a ampliar tus preferencias o inténtalo de nuevo más tarde.',
+        );
+      }
+      // A network failure (offline, connection dropped mid-request, DNS
+      // failure) surfaces as a plain TypeError from `fetch` itself — never
+      // reaches the EdgeFunctionError/UserProfileError branches below,
+      // since those require a real HTTP response to construct.
+      else if (error instanceof TypeError) {
+        setGenerateError(
+          'No pudimos conectar con el servidor. Revisa tu conexión a internet e inténtalo de nuevo.',
+        );
+      }
+      else if (error instanceof UserProfileError) {
+        // UserProfileError's own message is already a complete, user-facing
+        // Spanish sentence (see lib/api/user-profile.ts) — don't re-wrap it.
+        setGenerateError(error.message);
+      }
+      else if (error instanceof EdgeFunctionError) {
+        setGenerateError(
+          `No pudimos generar tu menú (error del servidor, código ${error.status}). Inténtalo de nuevo en unos segundos.`,
         );
       }
       else {
