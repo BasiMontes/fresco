@@ -254,6 +254,30 @@ Característica: Flujo completo de usuario en Fresco
     # ambos. Ver el escenario de arriba para el detalle de lo verificado en
     # vivo y lo pendiente de QA manual.
 
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08
+  Escenario: Una password débil se rechaza antes de gastar el roundtrip de OTP
+    Dado que una invitada rellena /signup con un email nuevo y una password de menos de 6 caracteres
+    Cuando confirma el formulario
+    Entonces se rechaza de inmediato, sin llegar a la pantalla de OTP
+    # FRESCO-123 (arreglado 2026-08-08): app/signup/page.tsx no validaba la
+    # password client-side — una invitada gastaba todo el roundtrip real de
+    # email (esperar código, copiarlo) para recién ahí enterarse de que su
+    # password de 3 caracteres se rechazaba. Fix: minLength=6 en el input +
+    # chequeo JS con el mismo mensaje que usa weak_password de Supabase.
+    # Verificado en vivo: password "123" nunca llega a "Revisa tu correo";
+    # password válida sigue llegando normalmente (sin regresión).
+
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08
+  Escenario: El botón de confirmar código OTP solo se habilita con los 6 dígitos completos
+    Dado que la invitada está en la pantalla de OTP
+    Cuando escribe menos de 6 dígitos
+    Entonces el botón "Confirmar código" permanece deshabilitado
+    # FRESCO-126 (arreglado 2026-08-08): el gate solo chequeaba !otpCode
+    # (truthy), dejaba enviar con 2 dígitos — el servidor siempre rechaza
+    # pero era una request desperdiciada (el error ya se mostraba bien
+    # traducido, sin fuga de error crudo). Fix: gate por
+    # otpCode.length === 6 + maxLength/pattern en el input.
+
   @registro-progresivo @edge-case @pendiente
   # NO automatizable con la infraestructura de test actual: verificado en
   # vivo (dos veces, con USER_EMAIL_PRE y con la llamada updateUser({email,
@@ -578,18 +602,29 @@ Característica: Flujo completo de usuario en Fresco
     # sería regresión), y el aprendizaje real (Pro) no está implementado
     # todavía. Step + regex actualizados en aprendizaje.steps.ts.
 
-  @aprendizaje @verificado-manual-2026-07-31
+  @aprendizaje @verificado-manual-2026-08-08
   Escenario: La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
     Dado que un usuario Pro tiene al menos 2 semanas de historial cocinado/descartado real
     Cuando se genera su menú de la semana siguiente
-    Entonces la IA evita repetir recetas descartadas y prioriza las bien valoradas
-    Y genera una explicación cálida en "explicacion_aprendizaje", separada de "advertencias"
+    Entonces el algoritmo determinista evita repetir recetas marcadas cocinada o descartada, sin tocar las pendientes
+    Y genera una explicación cálida en "explicacion_aprendizaje", separada de "advertencias", que menciona cocinadas y descartadas por separado
     Y queda persistida en su propio campo, no mezclada con las advertencias de seguridad
-    # Verificado en vivo: usuario de test flippeado temporalmente a plan
-    # 'pro', historial real ya existente, llamada directa al Edge Function
-    # para la semana siguiente → explicación real, cálida, en primera
-    # persona plural, separada limpiamente. Confirmado persistida y que el
-    # select() del cliente la devuelve. Plan revertido a free después.
+    # FRESCO-120 (arreglado 2026-08-08, ADR-0006): root cause encontrado en
+    # el QA sweep del 2026-08-08 — get_recent_recipe_ids() excluía TODO lo
+    # reciente sin mirar estado, así que un Pro que nunca marcaba nada
+    # recibía la misma exclusión que uno que marcaba todo; la explicación
+    # además decía "ya cocinaste" sobre recetas descartadas; y "destacadas"
+    # leía columnas globales (recipes.veces_cocinada/rating_promedio,
+    # compartidas entre TODOS los usuarios), no historial personal. Fix:
+    # nueva get_recent_recipe_marks() (devuelve estado, solo cocinada+
+    # descartada excluyen) + get_user_cooked_recipe_ids() (historial
+    # personal para destacadas) + buildLearningExplanation() ahora reporta
+    # cocinadasEvitadas/descartadasEvitadas por separado. Verificado en
+    # vivo contra PRO_TEST_USER_EMAIL: 1 slot marcado cocinada + 1
+    # descartada + 19 pendientes → semana siguiente excluye exactamente
+    # esos 2, el resto sigue disponible, texto separa "ya cocinaste"(1) de
+    # "descartaste"(1). "la IA" ya no aplica — sigue siendo 100%
+    # determinista desde ADR-0005, esta ficha solo estaba desactualizada.
 
   @aprendizaje @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/aprendizaje-pro.steps.ts (playwright-bdd,
@@ -834,6 +869,38 @@ Característica: Flujo completo de usuario en Fresco
     # (2026-08-07): faltaba un {' '} explícito entre "min ·" y el valor de
     # coste_estimado en recipe-card.tsx. Verificado en vivo: "30 min · alto"
     # con espacio correcto.
+    # FRESCO-122 (arreglado 2026-08-08): 228/1000 recetas (22.8%) tenían
+    # meta.dificultad = "alta" en el dato real — valor que nunca fue parte
+    # del enum DificultadReceta (muy_facil|facil|media|avanzada). Como meta
+    # es jsonb no tipado en Postgres, el mismatch era invisible a TS y
+    # renderizaba "30 min ·  · muy bajo" (doble punto, dificultad en
+    # blanco). Fix: migración de datos normalizando "alta"→"avanzada" —
+    # cero cambio de código, el tipo y el label map ya estaban bien.
+    # Verificado en vivo: "30 min · avanzada · muy bajo".
+
+  @biblioteca @edge-case @verificado-manual-2026-08-08
+  Escenario: Receta propia con 1 solo ingrediente usa singular "1 ingrediente"
+    Dado que Laura tiene una receta propia con exactamente 1 ingrediente
+    Cuando ve su tarjeta en Recetas
+    Entonces lee "1 ingrediente", no "1 ingredientes"
+    # FRESCO-125 (arreglado 2026-08-08): pluralización naive en
+    # personal-recipe-card.tsx, siempre añadía "s". Verificado en vivo.
+
+  @biblioteca @edge-case @verificado-manual-2026-08-08
+  Escenario: Receta propia con nombre vacío — investigado, constraint server-side ya existía
+    Dado que se intenta insertar una receta propia con nombre vacío o solo espacios
+    Cuando la escritura llega a Postgres
+    Entonces se rechaza por un CHECK constraint
+    # FRESCO-124: el QA sweep del 2026-08-08 encontró una fila real con
+    # nombre vacío en producción — investigado, el CHECK
+    # (char_length(trim(nombre)) > 0) YA EXISTÍA desde la creación de la
+    # tabla (20260803000000_create_recetas_propias_table.sql), verificado
+    # en vivo que rechaza un INSERT directo con nombre en blanco. La fila
+    # reportada era debris transitorio de un test concurrente (varios
+    # agentes de QA corriendo en paralelo contra la misma DB), no un gap
+    # real — eliminada como limpieza. Ticket cerrado como no-reproducible.
+    # Nota aparte, fuera de este ticket: el límite de 100 caracteres
+    # (FRESCO-107) sí sigue siendo solo client-side, sin backstop en DB.
 
   @biblioteca @edge-case @verificado-manual-2026-08-07
   Escenario: Se puede marcar/desmarcar favorito desde el detalle de una receta del catálogo
@@ -881,6 +948,17 @@ Característica: Flujo completo de usuario en Fresco
     # touched && !isValid, igual que el mensaje. Verificado en vivo: sin
     # borde rojo en primer render, rojo tras touch+vacío.
 
+  @perfil @edge-case @verificado-manual-2026-08-08
+  Escenario: El FAQ de Ayuda describe correctamente cómo se genera el menú, sin mencionar Gemini
+    Dado que Laura abre /profile → Ayuda → FAQ
+    Cuando lee "¿Cómo genera Fresco mi menú semanal?"
+    Entonces el texto describe un proceso 100% determinista, sin ninguna mención a Gemini ni IA
+    # FRESCO-121 (arreglado 2026-08-08): el FAQ decía "Gemini solo entra en
+    # juego en Plan Pro, para redactar la explicación" — falso desde el
+    # 2026-08-01 (ADR-0005 + commit ae3b560), confirmado independientemente
+    # por los 3 agentes del QA sweep del 2026-08-08. Reescrito. Verificado
+    # en vivo: cero menciones a "gemini" en el texto renderizado.
+
   @perfil @verificado-manual-2026-08-04
   Escenario: Editar preferencias de dieta y alérgenos desde el perfil
     Dado que Laura está en /profile
@@ -919,6 +997,31 @@ Característica: Flujo completo de usuario en Fresco
     # anterior), que la Edge Function está deployada y ACTIVE, y que el
     # cascade de FK (user_profiles/meal_plans/shopping_lists/recetas_propias
     # -> auth.users, todos ON DELETE CASCADE) está confirmado por migración.
+
+  # ==========================================================================
+  # QA y herramientas de desarrollo
+  # ==========================================================================
+
+  @qa @edge-case @verificado-manual-2026-08-08
+  Escenario: La página /qa no se autocontradice sobre la arquitectura de generación
+    Dado que un evaluador externo abre /qa
+    Cuando lee la cabecera y la sección "Arquitectura"
+    Entonces ambas describen el mismo mecanismo, sin mencionar "IA" en una y "100% determinista, sin IA" en la otra
+    # FRESCO-127 (arreglado 2026-08-08): la cabecera decía "generación
+    # asistida por IA", la sección Arquitectura dos párrafos después decía
+    # "100% deterministas — sin llamadas a modelos de IA en producción".
+    # Se corrigió la cabecera para que coincida.
+
+  @app-shell @edge-case @verificado-manual-2026-08-08
+  Escenario: El title tag global no reclama un mecanismo de "IA" que ya no existe
+    Dado que cualquier página de la app carga
+    Cuando se inspecciona el <title> del documento
+    Entonces no menciona "IA" como el mecanismo del producto
+    # FRESCO-128 (arreglado 2026-08-08): "Fresco — Menús semanales con IA
+    # que aprende de lo que realmente cocinas" → "Fresco — Menús semanales
+    # que aprenden de lo que realmente cocinas". Mismo tema que
+    # FRESCO-121/127, visible en cada pestaña/resultado de búsqueda/preview
+    # de link compartido.
 
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística

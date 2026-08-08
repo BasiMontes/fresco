@@ -29,20 +29,20 @@ misma cabecera `# language: es` / `Característica:` que ya declara
 los grupos de sección (`# ====...====`) del `.feature` origen — útil como
 criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 
-**Última actualización:** 2026-08-07.
+**Última actualización:** 2026-08-08.
 
 ## Resumen ejecutivo
 
 | Métrica | Valor |
 |---|---|
-| Escenarios totales | 93 |
+| Escenarios totales | 100 |
 | `@automatizado` (tienen test Playwright real) | 17 |
 | `@pendiente` (escritos, sin verificar ni automatizar) | 7 |
 | `@no-implementado` (comportamiento deseado, aún sin construir) | 0 — todo lo que estaba `@no-implementado` ya ha enviado (ver Nota) |
-| `@edge-case` (causística no-camino-feliz) | 47 |
-| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 86 |
+| `@edge-case` (causística no-camino-feliz) | 54 |
+| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 93 |
 | Ficheros de step definitions (`tests/steps/*.steps.ts`) | 12 |
-| Áreas / secciones | 12 |
+| Áreas / secciones | 13 |
 
 > **Nota sobre `@no-implementado`:** ahora mismo ningún escenario de
 > `regression.feature` lleva ese tag — todo lo que en su momento se documentó
@@ -55,16 +55,17 @@ criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 
 1. Autenticación (5 escenarios)
 2. Onboarding y generación de menú — EPIC-FRESCO-4 / EPIC-FRESCO-6 (11 escenarios)
-3. Modo Invitado y Registro Progresivo — EPIC-FRESCO-16 / EPIC-FRESCO-18 (8 escenarios)
+3. Modo Invitado y Registro Progresivo — EPIC-FRESCO-16 / EPIC-FRESCO-18 (10 escenarios)
 4. Panel de Inicio — saludo personalizado — EPIC-FRESCO-54 / STORY-FRESCO-55 (12 escenarios)
 5. Control del Menú Semanal — EPIC-FRESCO-60 / STORY-FRESCO-61/62/63 (9 escenarios)
 6. Calendario editable — EPIC-FRESCO-10 / STORY-FRESCO-11 (6 escenarios)
 7. Aprendizaje Cocinado/Descartado — EPIC-FRESCO-14 / STORY-FRESCO-15 (6 escenarios)
 8. Lista de la compra — EPIC-FRESCO-12 / STORY-FRESCO-13 (4 escenarios)
-9. Guía de testeabilidad para QA (/qa) (1 escenario)
+9. Guía de testeabilidad para QA (/qa) (2 escenarios)
 10. Seguridad — aislamiento de datos entre usuarios (3 escenarios)
-11. Biblioteca de Recetas — EPIC-FRESCO-64 / STORY-FRESCO-65 (22 escenarios)
-12. Perfil (6 escenarios)
+11. Biblioteca de Recetas — EPIC-FRESCO-64 / STORY-FRESCO-65 (24 escenarios)
+12. Perfil (7 escenarios)
+13. App Shell — metadatos globales (1 escenario)
 
 ---
 
@@ -478,6 +479,36 @@ Escenario: Cerrar sesión como invitada advierte antes de borrar el menú genera
   # FRESCO-90 (arreglado 2026-08-07): nuevo guest-logout-dialog.tsx,
   # gateado por user.is_anonymous. Verificado en vivo: invitada → diálogo
   # antes de salir; cuenta real → logout directo, sin cambio.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 3.9 Una password débil se rechaza antes de gastar el roundtrip de OTP
+
+**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: Una password débil se rechaza antes de gastar el roundtrip de OTP
+  Dado que una invitada rellena /signup con un email nuevo y una password de menos de 6 caracteres
+  Cuando confirma el formulario
+  Entonces se rechaza de inmediato, sin llegar a la pantalla de OTP
+  # FRESCO-123 (arreglado 2026-08-08): minLength=6 + chequeo JS con el
+  # mismo mensaje de weak_password. Verificado en vivo.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 3.10 El botón de confirmar código OTP solo se habilita con los 6 dígitos completos
+
+**Tags:** `@registro-progresivo` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: El botón de confirmar código OTP solo se habilita con los 6 dígitos completos
+  Dado que la invitada está en la pantalla de OTP
+  Cuando escribe menos de 6 dígitos
+  Entonces el botón "Confirmar código" permanece deshabilitado
+  # FRESCO-126 (arreglado 2026-08-08): gate cambiado de !otpCode a
+  # otpCode.length === 6. Verificado en vivo.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -958,20 +989,24 @@ Resuelto y plegado dentro de 7.4 el 2026-08-07 (FRESCO-103) — mismo hallazgo, 
 
 ### 7.5 La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
 
-**Tags:** `@aprendizaje` `@verificado-manual-2026-07-31`
+**Tags:** `@aprendizaje` `@verificado-manual-2026-08-08`
 
 ```gherkin
 Escenario: La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
   Dado que un usuario Pro tiene al menos 2 semanas de historial cocinado/descartado real
   Cuando se genera su menú de la semana siguiente
-  Entonces la IA evita repetir recetas descartadas y prioriza las bien valoradas
-  Y genera una explicación cálida en "explicacion_aprendizaje", separada de "advertencias"
+  Entonces el algoritmo determinista evita repetir recetas marcadas cocinada o descartada, sin tocar las pendientes
+  Y genera una explicación cálida en "explicacion_aprendizaje", separada de "advertencias", que menciona cocinadas y descartadas por separado
   Y queda persistida en su propio campo, no mezclada con las advertencias de seguridad
-  # Verificado en vivo: usuario de test flippeado temporalmente a plan
-  # 'pro', historial real ya existente, llamada directa al Edge Function
-  # para la semana siguiente → explicación real, cálida, en primera
-  # persona plural, separada limpiamente. Confirmado persistida y que el
-  # select() del cliente la devuelve. Plan revertido a free después.
+  # FRESCO-120 (arreglado 2026-08-08, ADR-0006): ver detalle completo en
+  # regression.feature — root cause era que get_recent_recipe_ids()
+  # excluía TODO lo reciente sin mirar estado (un Pro que nunca marcaba
+  # nada recibía la misma exclusión que uno que marcaba todo) y
+  # "destacadas" leía columnas globales compartidas entre todos los
+  # usuarios, no historial personal. Nuevas get_recent_recipe_marks() +
+  # get_user_cooked_recipe_ids() (ambas con el mismo check auth.uid() de
+  # ownership que la función que reemplazan). Verificado en vivo contra
+  # PRO_TEST_USER_EMAIL.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -988,7 +1023,7 @@ Escenario: El usuario Pro ve la tarjeta de explicación en /menu
   Y nunca se mezcla visualmente con el banner de advertencias
 ```
 
-**Automatización:** `tests/steps/aprendizaje-pro.steps.ts` — usa `PRO_TEST_USER_EMAIL`, fuerza `plan='pro'` vía REST, siembra una semana anterior real con estado `cocinada` y dispara una llamada real (sin mock) a `generate-meal-plan` con Gemini real, para poder asertar contra una tarjeta `card-insight` real y confirmar que su texto nunca aparece dentro del banner de advertencias.
+**Automatización:** `tests/steps/aprendizaje-pro.steps.ts` — usa `PRO_TEST_USER_EMAIL`, fuerza `plan='pro'` vía REST, siembra una semana anterior real con estado `cocinada` y dispara una llamada real (sin mock, determinista desde ADR-0005/ADR-0006 — sin Gemini) a `generate-meal-plan`, para poder asertar contra una tarjeta `card-insight` real y confirmar que su texto nunca aparece dentro del banner de advertencias. Re-verificado en vivo el 2026-08-08 tras FRESCO-120: sigue en verde.
 
 ---
 
@@ -1068,6 +1103,23 @@ Escenario: La guía de testeabilidad en /qa es pública y muestra las 4 Edge Fun
 ```
 
 **Automatización:** `tests/steps/qa-page.steps.ts` — sin auth ni fixture (`/qa` es una página pública, estática, prerenderizada); verifica las 5 secciones (Arquitectura, Usuarios demo, Testing DB/API/UI), las 4 tarjetas de Edge Function (`generate-meal-plan`, `generate-shopping-list`, `reassign-guest-data`, `update-recipe-status`) y que solo aparecen NOMBRES de variables de entorno (`LOCAL_USER_EMAIL`, `PRO_TEST_USER_EMAIL`), nunca un valor real de credencial.
+
+### 9.2 La página /qa no se autocontradice sobre la arquitectura de generación
+
+**Tags:** `@qa` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: La página /qa no se autocontradice sobre la arquitectura de generación
+  Dado que un evaluador externo abre /qa
+  Cuando lee la cabecera y la sección "Arquitectura"
+  Entonces ambas describen el mismo mecanismo, sin mencionar "IA" en una y "100% determinista, sin IA" en la otra
+  # FRESCO-127 (arreglado 2026-08-08): la cabecera decía "generación
+  # asistida por IA", la sección Arquitectura dos párrafos después decía
+  # "100% deterministas — sin llamadas a modelos de IA en producción".
+  # Se corrigió la cabecera para que coincida.
+```
+
+**Automatización:** Manual, no automatizado aún.
 
 ---
 
@@ -1415,6 +1467,12 @@ Escenario: El texto de dificultad y coste estimado se muestra humanizado, no en 
   # el meta de la tarjeta, "30 min ·alto") arreglado por separado el mismo
   # día (2026-08-07): faltaba un {' '} explícito en recipe-card.tsx.
   # Verificado en vivo: "30 min · alto" con espacio correcto.
+  # FRESCO-122 (arreglado 2026-08-08): 228/1000 recetas (22.8%) tenían
+  # meta.dificultad = "alta" en el dato real, valor que nunca fue parte
+  # del enum DificultadReceta — invisible a TS porque meta es jsonb.
+  # Renderizaba "30 min ·  · muy bajo" (dificultad en blanco). Fix: pura
+  # migración de datos ("alta"→"avanzada"), cero cambio de código.
+  # Verificado en vivo: "30 min · avanzada · muy bajo".
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -1449,6 +1507,44 @@ Escenario: El filtro de tipo de comida soporta navegación por flechas de teclad
   # wrap). Verificado en vivo con Playwright sobre /recipes: solo la
   # opción marcada tiene tabindex="0", ArrowRight/ArrowLeft mueven foco y
   # selección, wrap correcto en ambos extremos.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 11.23 Receta propia con 1 solo ingrediente usa singular "1 ingrediente"
+
+**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: Receta propia con 1 solo ingrediente usa singular "1 ingrediente"
+  Dado que Laura tiene una receta propia con exactamente 1 ingrediente
+  Cuando ve su tarjeta en Recetas
+  Entonces lee "1 ingrediente", no "1 ingredientes"
+  # FRESCO-125 (arreglado 2026-08-08): pluralización naive en
+  # personal-recipe-card.tsx, siempre añadía "s". Verificado en vivo.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 11.24 Receta propia con nombre vacío — investigado, constraint server-side ya existía
+
+**Tags:** `@biblioteca` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: Receta propia con nombre vacío — investigado, constraint server-side ya existía
+  Dado que se intenta insertar una receta propia con nombre vacío o solo espacios
+  Cuando la escritura llega a Postgres
+  Entonces se rechaza por un CHECK constraint
+  # FRESCO-124: el QA sweep del 2026-08-08 encontró una fila real con
+  # nombre vacío en producción — investigado, el CHECK
+  # (char_length(trim(nombre)) > 0) YA EXISTÍA desde la creación de la
+  # tabla (20260803000000_create_recetas_propias_table.sql). Verificado
+  # en vivo que rechaza un INSERT directo con nombre en blanco. La fila
+  # reportada era debris transitorio de un test concurrente (varios
+  # agentes de QA en paralelo contra la misma DB), no un gap real —
+  # eliminada como limpieza. Ticket cerrado como no-reproducible. Nota
+  # aparte: el límite de 100 caracteres (FRESCO-107) sí sigue siendo solo
+  # client-side, sin backstop en DB.
 ```
 
 **Automatización:** Manual, no automatizado aún.
@@ -1536,6 +1632,44 @@ Escenario: El input "Tu nombre" no muestra borde de error en el primer render
   Entonces el input "Tu nombre" se ve neutral, sin borde de error
   # FRESCO-113 (arreglado 2026-08-07): className gateado por
   # touched && !isValid. Verificado en vivo.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 12.7 El FAQ de Ayuda describe correctamente cómo se genera el menú, sin mencionar Gemini
+
+**Tags:** `@perfil` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: El FAQ de Ayuda describe correctamente cómo se genera el menú, sin mencionar Gemini
+  Dado que Laura abre /profile → Ayuda → FAQ
+  Cuando lee "¿Cómo genera Fresco mi menú semanal?"
+  Entonces el texto describe un proceso 100% determinista, sin ninguna mención a Gemini ni IA
+  # FRESCO-121 (arreglado 2026-08-08): el FAQ decía "Gemini solo entra en
+  # juego en Plan Pro, para redactar la explicación" — falso desde el
+  # 2026-08-01 (ADR-0005 + commit ae3b560), confirmado independientemente
+  # por los 3 agentes del QA sweep del 2026-08-08. Reescrito.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+---
+
+## 13. App Shell — metadatos globales
+
+### 13.1 El title tag global no reclama un mecanismo de "IA" que ya no existe
+
+**Tags:** `@app-shell` `@edge-case` `@verificado-manual-2026-08-08`
+
+```gherkin
+Escenario: El title tag global no reclama un mecanismo de "IA" que ya no existe
+  Dado que cualquier página de la app carga
+  Cuando se inspecciona el <title> del documento
+  Entonces no menciona "IA" como el mecanismo del producto
+  # FRESCO-128 (arreglado 2026-08-08): "Fresco — Menús semanales con IA
+  # que aprende de lo que realmente cocinas" → "Fresco — Menús semanales
+  # que aprenden de lo que realmente cocinas". Mismo tema que
+  # FRESCO-121/127.
 ```
 
 **Automatización:** Manual, no automatizado aún.
