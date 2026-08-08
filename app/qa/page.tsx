@@ -47,7 +47,7 @@ export default function QaGuidePage() {
         <h1 className="text-h2">Guía de testeabilidad para QA</h1>
         <p className="mt-2 text-body-md text-tertiary">
           Fresco es una app de planificación de menús semanales construida con Next.js (App Router) y
-          Supabase (Postgres, Auth y Edge Functions), con una capa de generación asistida por IA. Esta
+          Supabase (Postgres, Auth y Edge Functions), con generación de menú 100% determinista. Esta
           página reúne todo lo necesario para que un evaluador externo pueda probar la aplicación a
           nivel de base de datos, API y UI, sin depender de nadie del equipo.
         </p>
