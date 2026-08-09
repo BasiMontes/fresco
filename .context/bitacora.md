@@ -2963,3 +2963,16 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: pedido directo del user, mismo día que se cerraron los 9 tickets en staging.
 
 **Siguiente**: los 9 tickets (FRESCO-129 a FRESCO-137) están en producción real. Jira se dejó en "Control de calidad" a propósito — el deploy no equivale a sign-off de QA, son cosas distintas. 6 migraciones nuevas en `user_profiles` viven ahora en la única BD compartida entre staging y producción (ya estaban ahí desde que se aplicaron, sin cambio adicional en este paso).
+
+**Corrección** (ver entrada siguiente): esta entrada dice "los 9 tickets" pero en realidad FRESCO-129 seguía sin implementar en este momento — quedó pendiente desde el arranque de la sesión, la conversación se desvió al video de bugs antes de llegar a él. Detectado al armar el monitoreo de Jira post-deploy (FRESCO-129 aparecía en "Listo", no "Control de calidad" como los otros 8).
+
+
+---
+
+## 2026-08-09 — FRESCO-129 implementado y promovido a producción (el que faltaba)
+
+**Qué**: bug original de toda la sesión (botón "Ya tengo cuenta" del landing apuntaba a `/signup` en vez de `/login`) — detectado sin implementar recién al armar el monitoreo de Jira post-deploy. Implementado vía `/sprint-development` Solo (branch → cambio de una línea en `components/landing/site-nav.tsx` → lint/types verdes → Playwright en vivo, click real confirmando navegación a `/login`) → PR → merge a `staging` → promovido a `main` con el mismo patrón de reconciliación que la vez anterior (`main` y `staging` habían vuelto a divergir por el commit de bitácora anterior hecho directo en `main`) → verificado `Ready` + smoke test real contra `fresco-pro.vercel.app` confirmando `/url: /login`.
+
+**Por qué**: pedido del user tras notar el hueco durante el armado del monitoreo QA.
+
+**Siguiente**: ahora sí los 10 tickets completos (FRESCO-129 a FRESCO-137) están en producción real. Monitoreo de Jira (30 min de intervalo) sigue activo sobre FRESCO-130 a 137 — pendiente decidir si sumar FRESCO-129 al mismo lote o dejarlo aparte.
