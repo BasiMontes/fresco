@@ -154,7 +154,7 @@ export async function getUserDietaryPreferences(
 
   const { data, error } = await client
     .from('user_profiles')
-    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas')
+    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_meals, planning_days')
     .eq('id', resolvedUserId)
     .maybeSingle();
 
@@ -162,7 +162,12 @@ export async function getUserDietaryPreferences(
     throw new UserProfileError(`No se pudieron leer las preferencias: ${error.message}`);
   }
 
-  return data ?? DEFAULT_ONBOARDING_PROFILE;
+  // FRESCO-153: `planning_meals`'s DB enum also allows `'snack'`, same gap
+  // `lib/api/meal-plan.ts` already documents for `tipo_plato` — narrowed
+  // here rather than widening `OnboardingProfilePayload`, since the only
+  // writers of this column (onboarding, this preferences form) offer just
+  // desayuno/comida/cena.
+  return (data as OnboardingProfilePayload | null) ?? DEFAULT_ONBOARDING_PROFILE;
 }
 
 /**

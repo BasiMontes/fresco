@@ -7,7 +7,7 @@ import { WeekNavigation } from '@/components/calendar/week-navigation';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
-import { getUserPlan } from '@/lib/api/user-profile';
+import { getUserDietaryPreferences, getUserPlan } from '@/lib/api/user-profile';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { createClient } from '@/lib/supabase/server';
 
@@ -53,7 +53,7 @@ export default async function CalendarPage({
   // turn, unlike /menu, /profile, and /recipes, already fixed this session).
   // Both are also passed the already-resolved `user.id`, cutting the
   // redundant internal auth.getUser() round trip each would otherwise make.
-  const [plan, userPlan] = await Promise.all([
+  const [plan, userPlan, dietaryPreferences] = await Promise.all([
     getMealPlanForWeek(supabase, semanaIso, user?.id).catch((error) => {
       // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
       // `getMealPlanForWeek` fails fast (throws) on a real read error,
@@ -72,6 +72,13 @@ export default async function CalendarPage({
     getUserPlan(supabase, user?.id).catch((error) => {
       console.error('[/calendar] getUserPlan failed, defaulting to free', error);
       return 'free' as 'free' | 'pro' | 'family';
+    }),
+    // FRESCO-153: which days/meal types she actually wants to see —
+    // `CalendarGrid` defaults to the full week/3 meals if this read fails,
+    // same conservative-fallback pattern as the reads above.
+    getUserDietaryPreferences(supabase, user?.id).catch((error) => {
+      console.error('[/calendar] getUserDietaryPreferences failed, showing the full grid', error);
+      return null;
     }),
   ]);
 
@@ -115,6 +122,8 @@ export default async function CalendarPage({
           slotIds={plan.slotIds}
           initialEstados={plan.estados}
           userPlan={userPlan}
+          planningDays={dietaryPreferences?.planning_days}
+          planningMeals={dietaryPreferences?.planning_meals}
         />
       </div>
     </div>

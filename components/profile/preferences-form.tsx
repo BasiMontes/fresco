@@ -1,5 +1,6 @@
 'use client';
 
+import type { DiaSemana, TipoPlatoSlot } from '@schemas';
 import type { FormEvent } from 'react';
 import type { OnboardingProfilePayload } from '@/lib/api/user-profile';
 import { useState } from 'react';
@@ -30,6 +31,28 @@ const DIETA_FIELDS: { key: DietaKey, label: string }[] = [
   { key: 'dieta_halal', label: 'Halal' },
 ];
 
+// FRESCO-153: same option sets + labels as app/onboarding/page.tsx Step 4
+// (MEAL_OPTIONS/DAY_OPTIONS) — kept editable here so a choice made at
+// onboarding isn't locked in forever.
+const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
+  { value: 'desayuno', label: 'Desayuno' },
+  { value: 'comida', label: 'Almuerzo' },
+  { value: 'cena', label: 'Cena' },
+];
+
+const DAY_OPTIONS: { value: DiaSemana, label: string }[] = [
+  { value: 'lunes', label: 'Lun' },
+  { value: 'martes', label: 'Mar' },
+  { value: 'miercoles', label: 'Mié' },
+  { value: 'jueves', label: 'Jue' },
+  { value: 'viernes', label: 'Vie' },
+  { value: 'sabado', label: 'Sáb' },
+  { value: 'domingo', label: 'Dom' },
+];
+
+const ALL_MEALS: TipoPlatoSlot[] = MEAL_OPTIONS.map(option => option.value);
+const ALL_DAYS: DiaSemana[] = DAY_OPTIONS.map(option => option.value);
+
 /**
  * `/profile` — lets the user edit the dietary preferences captured at
  * onboarding (FRESCO-70). Chip interaction (toggle pills, "vegana implies
@@ -38,10 +61,11 @@ const DIETA_FIELDS: { key: DietaKey, label: string }[] = [
  * lock rule (AC-2 there). Save/error/success states mirror
  * `components/profile/nombre-form.tsx` exactly.
  *
- * Only the dietary flags and `alergenos` are editable here — household size,
- * disliked ingredients, and favorite cuisines stay onboarding-only for this
- * story, but their current values are still carried in `preferences` state
- * so a save round-trips them unchanged through `upsertUserProfile`.
+ * The dietary flags, `alergenos`, and (FRESCO-153) `planning_meals`/
+ * `planning_days` are editable here — household size, disliked ingredients,
+ * and favorite cuisines stay onboarding-only for this story, but their
+ * current values are still carried in `preferences` state so a save
+ * round-trips them unchanged through `upsertUserProfile`.
  */
 export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   const [preferences, setPreferences] = useState(initialPreferences);
@@ -73,6 +97,32 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
         ? prev.alergenos.filter(v => v !== value)
         : [...prev.alergenos, value],
     }));
+  }
+
+  function toggleMeal(value: TipoPlatoSlot) {
+    setSaved(false);
+    setPreferences((prev) => {
+      const current = prev.planning_meals ?? ALL_MEALS;
+      return {
+        ...prev,
+        planning_meals: current.includes(value)
+          ? current.filter(v => v !== value)
+          : [...current, value],
+      };
+    });
+  }
+
+  function toggleDay(value: DiaSemana) {
+    setSaved(false);
+    setPreferences((prev) => {
+      const current = prev.planning_days ?? ALL_DAYS;
+      return {
+        ...prev,
+        planning_days: current.includes(value)
+          ? current.filter(v => v !== value)
+          : [...current, value],
+      };
+    });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -133,6 +183,42 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
             onClick={() => toggleAlergeno(option.value)}
           >
             <Tag variant={preferences.alergenos.includes(option.value) ? 'selected' : 'outline'}>
+              {option.label}
+            </Tag>
+          </button>
+        ))}
+      </div>
+
+      {/* FRESCO-153: was set at onboarding (FRESCO-135/136) but never
+          editable afterward — same Tag-toggle pattern as onboarding Step 4. */}
+      <h4 className="mt-4 text-h6 uppercase text-tertiary">Comidas a planificar</h4>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {MEAL_OPTIONS.map(option => (
+          <button
+            key={option.value}
+            type="button"
+            data-testid="preferencia_comida_option"
+            aria-pressed={(preferences.planning_meals ?? ALL_MEALS).includes(option.value)}
+            onClick={() => toggleMeal(option.value)}
+          >
+            <Tag variant={(preferences.planning_meals ?? ALL_MEALS).includes(option.value) ? 'selected' : 'outline'}>
+              {option.label}
+            </Tag>
+          </button>
+        ))}
+      </div>
+
+      <h4 className="mt-4 text-h6 uppercase text-tertiary">Días a planificar</h4>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {DAY_OPTIONS.map(option => (
+          <button
+            key={option.value}
+            type="button"
+            data-testid="preferencia_dia_option"
+            aria-pressed={(preferences.planning_days ?? ALL_DAYS).includes(option.value)}
+            onClick={() => toggleDay(option.value)}
+          >
+            <Tag variant={(preferences.planning_days ?? ALL_DAYS).includes(option.value) ? 'selected' : 'outline'}>
               {option.label}
             </Tag>
           </button>
