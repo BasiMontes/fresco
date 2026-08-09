@@ -224,7 +224,7 @@ export default function OnboardingPage() {
       <Card className="mt-6">
         {step === 1 && (
           <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">¿Qué dieta y restricciones sigue tu hogar?</h1>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3">¿Qué dieta y restricciones sigue tu hogar?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {DIETA_OPTIONS.map((option) => {
@@ -287,7 +287,7 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">¿Cuáles son tus cocinas favoritas?</h1>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3">¿Cuáles son tus cocinas favoritas?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {COCINA_OPTIONS.map(option => (
@@ -309,7 +309,7 @@ export default function OnboardingPage() {
 
         {step === 3 && (
           <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">¿Quiénes cocináis en casa?</h1>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3">¿Quiénes cocináis en casa?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
             <div className="mt-4 flex gap-4">
               <label className="flex flex-col gap-1">
