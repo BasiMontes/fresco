@@ -1,4 +1,4 @@
-import type { ObjetivoUsuario, SexoUsuario, TipoCocina } from '@schemas';
+import type { ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -46,6 +46,7 @@ export interface OnboardingState {
   ingredientesOdiadosTextoLibre: string
   cocinasTextoLibre: string
   presupuestoSemanaEuros: number | null
+  planningMeals: TipoPlatoSlot[]
   setStep: (step: 1 | 2 | 3 | 4) => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
@@ -61,6 +62,7 @@ export interface OnboardingState {
   setIngredientesOdiadosTextoLibre: (value: string) => void
   setCocinasTextoLibre: (value: string) => void
   setPresupuestoSemanaEuros: (value: number | null) => void
+  toggleMeal: (value: TipoPlatoSlot) => void
   reset: () => void
 }
 
@@ -86,6 +88,7 @@ const initialState = {
   ingredientesOdiadosTextoLibre: '',
   cocinasTextoLibre: '',
   presupuestoSemanaEuros: null as number | null,
+  planningMeals: ['desayuno', 'comida', 'cena'] as TipoPlatoSlot[],
 };
 
 function toggleInArray<T>(list: T[], value: T): T[] {
@@ -166,6 +169,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setIngredientesOdiadosTextoLibre: value => set({ ingredientesOdiadosTextoLibre: value }),
   setCocinasTextoLibre: value => set({ cocinasTextoLibre: value }),
   setPresupuestoSemanaEuros: value => set({ presupuestoSemanaEuros: value }),
+  toggleMeal: value => set(state => ({ planningMeals: toggleInArray(state.planningMeals, value) })),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -197,5 +201,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     ingredientesOdiadosTextoLibre: state.ingredientesOdiadosTextoLibre,
     cocinasTextoLibre: state.cocinasTextoLibre,
     presupuestoSemanaEuros: state.presupuestoSemanaEuros,
+    planningMeals: state.planningMeals,
   }),
 }));
