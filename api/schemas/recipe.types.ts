@@ -65,22 +65,6 @@ export interface RecipeDieta {
 }
 
 /**
- * Provenance for a recipe ingested from an external dataset (FRESCO-138).
- * `declared_license` records the license AS DECLARED BY THE DATASET
- * PUBLISHER — not an independent verification of the underlying content's
- * rights (per the dataset's own DATA_SOURCES.md nuance: a Kaggle publisher
- * declaring CC0 does not, by itself, establish ownership of every
- * individual photo/recipe in the set).
- */
-export interface RecipeSource {
-  provider: string
-  dataset: string
-  dataset_publisher: string
-  source_recipe_id: string
-  declared_license: string
-}
-
-/**
  * Row shape of `public.recipes` as read from Supabase. jsonb columns are
  * typed as their conceptual shape (per fresco-core-tecnico.md §1) but may be
  * `null` for rows the batch-generation pipeline populated only partially —
@@ -110,8 +94,6 @@ export interface Recipe {
   veces_descartada: number
   rating_promedio: number | null
   ultima_vez_en_menu: string | null
-  /** Null for the original AI-generated catalog. Populated for recipes ingested from an external dataset (FRESCO-138). */
-  source: RecipeSource | null
 }
 
 /**
