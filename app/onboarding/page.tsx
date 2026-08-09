@@ -253,6 +253,7 @@ export default function OnboardingPage() {
                           data-testid="dieta_vegetariano_lock_info"
                           aria-label="Por qué Vegetariano está bloqueado"
                           aria-describedby="dieta_vegetariano_lock_tooltip"
+                          aria-expanded={vegetarianoLockTooltipOpen}
                           className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
                           onClick={() => setVegetarianoLockTooltipOpen(open => !open)}
                         >
