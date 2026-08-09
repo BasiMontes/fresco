@@ -3053,3 +3053,20 @@ Revertido de forma completa e inmediata, misma sesión:
 **Por qué**: gap real en el flujo `main-integration` de este repo — el merge a `staging` (vía PR) no promueve automáticamente a `main` (deploy real de producción). Nada lo fuerza ni lo avisa; Jira/bitácora habían quedado desincronizados de lo que realmente estaba en producción.
 
 **Siguiente**: para futuros tickets marcados "deployado a producción", verificar contra el log de commits de `main` (no solo el merge a `staging`) antes de darlo por cerrado. Sin bloqueantes pendientes de esta sesión.
+
+---
+
+## 2026-08-09 — 4 bugs live (FRESCO-150/151/152/153): implementados, PR, staging + prod nivelados
+
+**Qué**: user reportó 4 hallazgos en vivo tras probar el signup real (cuenta basi_montes+test@hotmail.com): (1) datos de onboarding de una cuenta filtrándose a otra vía sessionStorage sin scope por usuario, (2) dropdown custom (Sexo/Objetivo/Nivel) no cerraba al elegir opción en iOS Safari, (3) copy/CTA del paso 4 de onboarding poco claro cuando ya existe menú, (4) planning_meals/planning_days elegidos en onboarding se guardaban pero no afectaban nada (generación, calendario, /menu) ni eran editables después. Se crearon 4 tickets (FRESCO-150 a 153), cada uno implementado con /sprint-development (Solo, inline) en su propia rama, PR contra staging:
+
+- FRESCO-150 (PR #23): reset() del store de onboarding ahora se llama en login, signup y los 4 puntos reales de logout — antes solo se limpiaba tras generación exitosa.
+- FRESCO-151 (PR #24): WebKit dispara un click fantasma sobre el botón trigger justo después del click de la opción — reproducido con event-logging en playwright --browser=webkit, corregido con un ref-guard que ignora ese segundo click.
+- FRESCO-152 (PR #25): mensaje de éxito explícito antes de redirigir tras generar, y el CTA principal pasa a "Ver mi menú" (ghost, de-enfatizado) cuando ya existe un plan, reemplazando el link secundario que convivía con el botón naranja activo.
+- FRESCO-153 (PR #26): hallazgo de arquitectura en el camino — lib/api/meal-plan.ts's reshapeMenu tiene un invariante fail-fast que exige las 21 filas completas de meal_plan_recipes (una fila faltante se trata como corrupción). Filtrar la generación misma habría roto ese invariante — en su lugar, el filtrado se hizo en la capa de lectura/render: CalendarGrid y /menu ahora aceptan planningDays/planningMeals y solo muestran esas columnas/filas (la BD sigue teniendo las 21 filas siempre), y /profile ganó dos secciones nuevas de toggles para editar la elección después de onboarding.
+
+Los 4 PRs mergeados a staging (merge commit, feature_merge configurado), luego promovidos a main vía git push origin staging:main (ff-only) y deploy a producción vía vercel --prod — confirmado en el alias de fresco-pro.vercel.app.
+
+**Por qué**: decisión explícita del user — "quiero que ahora mismo todo esté nivelado" (staging=prod) mientras el producto está en fase de pulido activo con tráfico controlado; gate de QA en staging se reserva para más adelante, cuando entre tráfico real o cambios más grandes.
+
+**Siguiente**: ninguno de los 4 quedó bloqueante. FRESCO-148 (borde grueso del banner de error en calendar-grid.tsx, hallazgo del hook de diseño) sigue pendiente de revisión humana, sin relación con esta sesión. El polling silencioso de QA sobre FRESCO-129-137 sigue armado.
