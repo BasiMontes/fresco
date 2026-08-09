@@ -318,9 +318,11 @@ export type Database = {
           nivel_picante: Database["public"]["Enums"]["nivel_picante"]
           nombre: string | null
           num_personas: number
+          objetivo: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at: string | null
           presupuesto_semana_euros: number | null
+          sexo: Database["public"]["Enums"]["sexo_usuario"] | null
           tiempo_max_finde_min: number
           tiempo_max_semana_min: number
           updated_at: string
@@ -345,9 +347,11 @@ export type Database = {
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
           nombre?: string | null
           num_personas?: number
+          objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
           presupuesto_semana_euros?: number | null
+          sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           tiempo_max_finde_min?: number
           tiempo_max_semana_min?: number
           updated_at?: string
@@ -372,9 +376,11 @@ export type Database = {
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
           nombre?: string | null
           num_personas?: number
+          objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
           presupuesto_semana_euros?: number | null
+          sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           tiempo_max_finde_min?: number
           tiempo_max_semana_min?: number
           updated_at?: string
@@ -416,8 +422,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_recent_recipe_ids: {
+      get_recent_recipe_marks: {
         Args: { p_user_id: string; p_weeks?: number }
+        Returns: {
+          estado: Database["public"]["Enums"]["estado_receta_menu"]
+          recipe_id: string
+        }[]
+      }
+      get_user_cooked_recipe_ids: {
+        Args: { p_user_id: string }
         Returns: string[]
       }
       jsonb_set_comprado: {
@@ -450,7 +463,15 @@ export type Database = {
       estado_receta_menu: "pendiente" | "cocinada" | "descartada" | "sustituida"
       nivel_contundencia: "ligero" | "media" | "contundente"
       nivel_picante: "ninguno" | "suave" | "medio" | "fuerte"
+      objetivo_usuario:
+        | "perder_peso"
+        | "comer_sano"
+        | "ahorrar_dinero"
+        | "ganar_masa_muscular"
+        | "comer_variado"
+        | "reducir_desperdicio"
       plan_usuario: "free" | "pro" | "family"
+      sexo_usuario: "mujer" | "hombre" | "otro" | "prefiero_no_decir"
       tipo_cocina:
         | "española"
         | "italiana"
@@ -599,7 +620,16 @@ export const Constants = {
       estado_receta_menu: ["pendiente", "cocinada", "descartada", "sustituida"],
       nivel_contundencia: ["ligero", "media", "contundente"],
       nivel_picante: ["ninguno", "suave", "medio", "fuerte"],
+      objetivo_usuario: [
+        "perder_peso",
+        "comer_sano",
+        "ahorrar_dinero",
+        "ganar_masa_muscular",
+        "comer_variado",
+        "reducir_desperdicio",
+      ],
       plan_usuario: ["free", "pro", "family"],
+      sexo_usuario: ["mujer", "hombre", "otro", "prefiero_no_decir"],
       tipo_cocina: [
         "española",
         "italiana",
