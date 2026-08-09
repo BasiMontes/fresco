@@ -41,7 +41,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/signup" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+          <Link href="/login" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
             Ya tengo cuenta
           </Link>
           <Link
