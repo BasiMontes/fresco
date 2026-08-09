@@ -8,6 +8,7 @@ import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
+import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -62,6 +63,10 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
     try {
       const client = createClient();
       await client.auth.signOut();
+      // FRESCO-150: sessionStorage isn't scoped per-account — clear any
+      // onboarding draft so it doesn't leak into whoever logs in next on
+      // this browser tab.
+      useOnboardingStore.getState().reset();
       router.push('/login');
     }
     catch (error) {

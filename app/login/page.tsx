@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { translateAuthError } from '@/lib/auth-errors';
+import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -66,6 +67,10 @@ function LoginPageInner() {
         setLoginError(translateAuthError(error));
         return;
       }
+      // FRESCO-150: sessionStorage isn't scoped per-account — clear any
+      // draft left by a previous session in this same browser tab so it
+      // doesn't leak into this account's onboarding.
+      useOnboardingStore.getState().reset();
       router.push('/menu');
     }
     finally {

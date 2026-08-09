@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { deleteAccount, EdgeFunctionError } from '@/lib/api/edge-functions';
+import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
 export interface DeleteAccountDialogProps {
@@ -43,6 +44,10 @@ export function DeleteAccountDialog({ open, onOpenChange, email }: DeleteAccount
       }
       await deleteAccount(session.access_token);
       await client.auth.signOut();
+      // FRESCO-150: sessionStorage isn't scoped per-account — clear any
+      // onboarding draft so it doesn't leak into whoever logs in next on
+      // this browser tab.
+      useOnboardingStore.getState().reset();
       router.push('/login?account_deleted=1');
     }
     catch (error) {

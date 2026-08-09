@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { DeleteAccountDialog } from '@/components/profile/delete-account-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
 export interface DangerZoneProps {
@@ -30,6 +31,10 @@ export function DangerZone({ email }: DangerZoneProps) {
     try {
       const client = createClient();
       await client.auth.signOut();
+      // FRESCO-150: sessionStorage isn't scoped per-account — clear any
+      // onboarding draft so it doesn't leak into whoever logs in next on
+      // this browser tab.
+      useOnboardingStore.getState().reset();
       router.push('/login');
     }
     catch (error) {
