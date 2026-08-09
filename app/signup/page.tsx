@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
+import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 import { createClient } from '@/lib/supabase/client';
 
@@ -232,6 +233,10 @@ export default function SignupPage() {
         setSignupError('Ya existe una cuenta con ese email. Inicia sesión en su lugar.');
         return;
       }
+      // FRESCO-150: sessionStorage isn't scoped per-account — clear any
+      // draft left by a previous session in this same browser tab before
+      // this brand-new account starts its own onboarding.
+      useOnboardingStore.getState().reset();
       // New users always go through onboarding next — see FRESCO-1.
       router.push('/onboarding');
     }

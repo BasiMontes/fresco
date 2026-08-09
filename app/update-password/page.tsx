@@ -7,6 +7,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -59,6 +60,10 @@ export default function UpdatePasswordPage() {
         return;
       }
       await client.auth.signOut();
+      // FRESCO-150: sessionStorage isn't scoped per-account — clear any
+      // onboarding draft so it doesn't leak into whoever logs in next on
+      // this browser tab.
+      useOnboardingStore.getState().reset();
       router.push('/login?password_reset=1');
     }
     finally {
