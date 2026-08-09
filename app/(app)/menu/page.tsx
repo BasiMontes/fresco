@@ -15,7 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
-import { getUserNombre } from '@/lib/api/user-profile';
+import { getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -47,7 +47,7 @@ export default async function MenuPage() {
   // round trips. Each keeps its own fallback via `.catch()` (same
   // conservative-default judgment call as before) so one call's rejection
   // can't take the others down with it.
-  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds] = await Promise.all([
+  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences] = await Promise.all([
     getUserNombre(supabase, user?.id).catch((error) => {
       // Same conservative fallback as every other server-side profile read on
       // this page: a real read failure falls back to `null` (generic
@@ -90,6 +90,13 @@ export default async function MenuPage() {
       // crashing the page.
       console.error('[/menu] getFavoriteRecipeIds failed, defaulting to none favorited', error);
       return new Set<string>();
+    }),
+    // FRESCO-153: gates which of today's 3 meal slots render below — a
+    // read failure just falls back to showing all 3, same conservative
+    // default `CalendarGrid` uses for the equivalent read on `/calendar`.
+    getUserDietaryPreferences(supabase, user?.id).catch((error) => {
+      console.error('[/menu] getUserDietaryPreferences failed, showing all meal slots', error);
+      return null;
     }),
   ]);
 
@@ -170,7 +177,7 @@ export default async function MenuPage() {
 
       <h2 className="sr-only">Menú de hoy por comida</h2>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {(['desayuno', 'comida', 'cena'] as const).map(slot => (
+        {(dietaryPreferences?.planning_meals ?? (['desayuno', 'comida', 'cena'] as const)).map(slot => (
           <div key={slot} className="flex flex-col">
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
             {hoy[slot]

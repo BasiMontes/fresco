@@ -57,6 +57,16 @@ export interface CalendarGridProps {
   initialEstados: EstadosGrid
   /** STORY-FRESCO-15 — gates the Free-tier "esto es una función Pro" notice. */
   userPlan: 'free' | 'pro' | 'family'
+  /**
+   * FRESCO-153 — the user's onboarding/profile day and meal-type choices.
+   * Every one of the 21 `meal_plan_recipes` rows still exists in the DB
+   * (`reshapeMenu`'s fail-fast invariant requires the full grid — see
+   * `lib/api/meal-plan.ts`), this only narrows what's *rendered*: days/meal
+   * types she opted out of stay generated but hidden here. Defaults to the
+   * full week/all 3 meals when omitted (e.g. no profile row yet).
+   */
+  planningDays?: DiaSemana[]
+  planningMeals?: TipoPlato[]
 }
 
 /**
@@ -77,7 +87,14 @@ export interface CalendarGridProps {
  * reusing the `text-error` token precedent from `app/onboarding/page.tsx`'s
  * `generateError` surface.
  */
-export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }: CalendarGridProps) {
+export function CalendarGrid({
+  initialMenu,
+  slotIds,
+  initialEstados,
+  userPlan,
+  planningDays = DIAS,
+  planningMeals = SLOTS,
+}: CalendarGridProps) {
   const [menu, setMenu] = React.useState<MenuGrid>(initialMenu);
   const [estados, setEstados] = React.useState<EstadosGrid>(initialEstados);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -236,7 +253,7 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
         */}
         <div className="overflow-x-auto pb-2">
           <div className="flex gap-3">
-            {DIAS.map((dia) => {
+            {planningDays.map((dia) => {
               const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
               return (
                 <div key={dia} className="flex w-60 shrink-0 flex-col gap-3">
@@ -248,7 +265,7 @@ export function CalendarGrid({ initialMenu, slotIds, initialEstados, userPlan }:
                   >
                     {DIA_LABELS[dia]}
                   </p>
-                  {SLOTS.map(tipo => (
+                  {planningMeals.map(tipo => (
                     <SlotCell
                       key={tipo}
                       dia={dia}
