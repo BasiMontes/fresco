@@ -26,7 +26,12 @@ export type OnboardingProfilePayload = Pick<
   | 'alergenos'
   | 'ingredientes_odiados'
   | 'cocinas_favoritas'
->;
+// `nombre`/`sexo`/`objetivo` (FRESCO-132) are optional here — `/profile`'s
+// preferences editor (FRESCO-70) round-trips this same type through
+// `getUserDietaryPreferences` without selecting these 3 columns, and a save
+// from there must NOT wipe them (an omitted key drops out of Supabase's
+// upsert SET clause entirely, leaving the existing value untouched).
+> & Partial<Pick<UserProfile, 'nombre' | 'sexo' | 'objetivo'>>;
 
 export class UserProfileError extends Error {
   constructor(message: string) {

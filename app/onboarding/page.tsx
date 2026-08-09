@@ -1,6 +1,6 @@
 'use client';
 
-import type { TipoCocina } from '@schemas';
+import type { ObjetivoUsuario, SexoUsuario, TipoCocina } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dropdown } from '@/components/ui/dropdown';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
@@ -19,15 +20,32 @@ import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
 
 /**
- * `/onboarding` — EPIC-FRESCO-1 (US 1.1/1.2: 3-step onboarding, kept short
+ * `/onboarding` — EPIC-FRESCO-1 (US 1.1/1.2: 4-step onboarding, kept short
  * so a guest doesn't abandon before reaching any value — user-journeys.md
- * Journey 1, Step 2). Single route driving all 3 steps internally (judgment
- * call, see report) rather than 3 separate routes.
+ * Journey 1, Step 2). Single route driving all 4 steps internally (judgment
+ * call, see report) rather than separate routes.
  *
  * FRESCO-5 extends this scaffold with the full FR-1.1 profile (diet,
  * allergens, disliked ingredients, favorite cuisines, household size) and
  * persists it to `user_profiles` before continuing on to menu generation.
+ * FRESCO-132 adds step 1 (name, sex, goal) — more signal for recommendations.
  */
+
+const SEXO_OPTIONS: { value: SexoUsuario, label: string }[] = [
+  { value: 'mujer', label: 'Mujer' },
+  { value: 'hombre', label: 'Hombre' },
+  { value: 'otro', label: 'Otro' },
+  { value: 'prefiero_no_decir', label: 'Prefiero no decirlo' },
+];
+
+const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
+  { value: 'perder_peso', label: 'Perder peso' },
+  { value: 'comer_sano', label: 'Comer sano' },
+  { value: 'ahorrar_dinero', label: 'Ahorrar dinero' },
+  { value: 'ganar_masa_muscular', label: 'Ganar masa muscular' },
+  { value: 'comer_variado', label: 'Comer más variado' },
+  { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida' },
+];
 
 const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
   { value: 'dietaVegetariano', label: 'Vegetariano' },
@@ -78,6 +96,9 @@ export default function OnboardingPage() {
   }, []);
   const {
     step,
+    nombre,
+    sexo,
+    objetivo,
     dietaVegetariano,
     dietaVegano,
     dietaSinGluten,
@@ -91,6 +112,9 @@ export default function OnboardingPage() {
     adultos,
     ninos,
     setStep,
+    setNombre,
+    setSexo,
+    setObjetivo,
     toggleDieta,
     toggleAlergeno,
     toggleIngredienteOdiado,
@@ -128,6 +152,9 @@ export default function OnboardingPage() {
       // A session (real or anonymous guest, FRESCO-17) is guaranteed by the
       // mount effect above before this handler is reachable.
       await upsertUserProfile(client, {
+        nombre,
+        sexo,
+        objetivo,
         num_personas: adultos + ninos,
         adultos,
         ninos,
@@ -214,16 +241,58 @@ export default function OnboardingPage() {
         {' '}
         {step}
         {' '}
-        de 3
+        de 4
       </p>
       <div className="mt-2 flex gap-1">
-        {[1, 2, 3].map(s => (
+        {[1, 2, 3, 4].map(s => (
           <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-surface'}`} />
         ))}
       </div>
 
       <Card className="mt-6">
         {step === 1 && (
+          <>
+            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">Cuéntanos sobre ti</h1>
+            <p className="mt-1 text-body-sm text-tertiary">Nos ayuda a afinar las recomendaciones. Todo es opcional.</p>
+
+            <label className="mt-4 flex flex-col gap-1">
+              <span className="text-body-sm text-tertiary">Nombre</span>
+              <Input
+                data-testid="nombre_input"
+                type="text"
+                value={nombre}
+                onChange={e => setNombre(e.target.value)}
+                placeholder="¿Cómo te llamas?"
+              />
+            </label>
+
+            <label className="mt-4 flex flex-col gap-1">
+              <span className="text-body-sm text-tertiary">Sexo</span>
+              <Dropdown
+                data-testid="sexo_dropdown"
+                aria-label="Sexo"
+                options={SEXO_OPTIONS}
+                value={sexo}
+                onChange={value => setSexo(value as SexoUsuario)}
+                placeholder="Selecciona una opción"
+              />
+            </label>
+
+            <label className="mt-4 flex flex-col gap-1">
+              <span className="text-body-sm text-tertiary">Objetivo</span>
+              <Dropdown
+                data-testid="objetivo_dropdown"
+                aria-label="Objetivo"
+                options={OBJETIVO_OPTIONS}
+                value={objetivo}
+                onChange={value => setObjetivo(value as ObjetivoUsuario)}
+                placeholder="¿Qué buscas conseguir?"
+              />
+            </label>
+          </>
+        )}
+
+        {step === 2 && (
           <>
             <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Qué dieta y restricciones sigue tu hogar?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
@@ -309,7 +378,7 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <>
             <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Cuáles son tus cocinas favoritas?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
@@ -331,7 +400,7 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <>
             <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Quiénes cocináis en casa?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
@@ -391,14 +460,14 @@ export default function OnboardingPage() {
           <Button
             data-testid="back_button"
             variant="secondary"
-            onClick={() => setStep((step > 1 ? step - 1 : 1) as 1 | 2 | 3)}
+            onClick={() => setStep((step > 1 ? step - 1 : 1) as 1 | 2 | 3 | 4)}
             disabled={step === 1}
           >
             Atrás
           </Button>
-          {step < 3
+          {step < 4
             ? (
-                <Button data-testid="next_button" onClick={() => setStep((step + 1) as 1 | 2 | 3)}>
+                <Button data-testid="next_button" onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4)}>
                   Siguiente
                 </Button>
               )

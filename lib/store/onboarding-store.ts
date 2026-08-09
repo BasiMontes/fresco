@@ -1,14 +1,14 @@
-import type { TipoCocina } from '@schemas';
+import type { ObjetivoUsuario, SexoUsuario, TipoCocina } from '@schemas';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 /**
- * Client-side state for the 3-step onboarding flow (EPIC-FRESCO-1: diet,
- * allergens, disliked ingredients, favorite cuisines, household size). A
- * single route (`/onboarding`) drives all 3 steps internally rather than 3
- * separate routes — judgment call, see report: keeps the guest's "3 steps
- * only" promise (user-journeys.md Journey 1, Step 2) legible as one
- * continuous flow instead of full-page navigations between steps.
+ * Client-side state for the 4-step onboarding flow (EPIC-FRESCO-1: name,
+ * sex, goal, diet, allergens, disliked ingredients, favorite cuisines,
+ * household size — step 1, name/sex/goal, added by FRESCO-132). A single
+ * route (`/onboarding`) drives all steps internally rather than separate
+ * routes — judgment call, see report: keeps the flow legible as one
+ * continuous journey instead of full-page navigations between steps.
  *
  * Field names mirror `user_profiles`' columns field-for-field (camelCase
  * here; mapped to the snake_case column names at the persistence boundary in
@@ -25,7 +25,10 @@ export type DietaFlag
     | 'dietaHalal';
 
 export interface OnboardingState {
-  step: 1 | 2 | 3
+  step: 1 | 2 | 3 | 4
+  nombre: string
+  sexo: SexoUsuario | null
+  objetivo: ObjetivoUsuario | null
   dietaVegetariano: boolean
   dietaVegano: boolean
   dietaSinGluten: boolean
@@ -38,7 +41,10 @@ export interface OnboardingState {
   cocinasFavoritas: TipoCocina[]
   adultos: number
   ninos: number
-  setStep: (step: 1 | 2 | 3) => void
+  setStep: (step: 1 | 2 | 3 | 4) => void
+  setNombre: (value: string) => void
+  setSexo: (value: SexoUsuario) => void
+  setObjetivo: (value: ObjetivoUsuario) => void
   toggleDieta: (field: DietaFlag) => void
   toggleAlergeno: (value: string) => void
   toggleIngredienteOdiado: (value: string) => void
@@ -50,6 +56,9 @@ export interface OnboardingState {
 
 const initialState = {
   step: 1 as const,
+  nombre: '',
+  sexo: null as SexoUsuario | null,
+  objetivo: null as ObjetivoUsuario | null,
   dietaVegetariano: false,
   dietaVegano: false,
   dietaSinGluten: false,
@@ -92,6 +101,9 @@ function getOnboardingStorage(): Storage {
 export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   ...initialState,
   setStep: step => set({ step }),
+  setNombre: nombre => set({ nombre }),
+  setSexo: sexo => set({ sexo }),
+  setObjetivo: objetivo => set({ objetivo }),
   toggleDieta: field =>
     set((state) => {
       // AC-2: a "vegana" declaration always implies "vegetariana" — enforced
@@ -145,6 +157,9 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   storage: createJSONStorage(getOnboardingStorage),
   partialize: state => ({
     step: state.step,
+    nombre: state.nombre,
+    sexo: state.sexo,
+    objetivo: state.objetivo,
     dietaVegetariano: state.dietaVegetariano,
     dietaVegano: state.dietaVegano,
     dietaSinGluten: state.dietaSinGluten,
