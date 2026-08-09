@@ -3,6 +3,7 @@
 import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useEffect, useRef, useState } from 'react';
@@ -90,6 +91,13 @@ const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
   { value: 'latina', label: 'Latina' },
   { value: 'internacional', label: 'Internacional' },
 ];
+
+// FRESCO-104: distinct from the generic fallback below — a 409 here can
+// never be resolved by retrying (the week already has a plan), so it gets
+// its own message + a real exit link instead of the generic "intenta de
+// nuevo". Same wording as components/calendar/generate-week-button.tsx's
+// 409 branch.
+const EXISTING_MENU_FOR_WEEK_MESSAGE = 'Ya existe un menú para esta semana.';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -255,6 +263,12 @@ export default function OnboardingPage() {
         setGenerateError(
           'No pudimos generar un menú válido con tus restricciones actuales. Prueba a ampliar tus preferencias o inténtalo de nuevo más tarde.',
         );
+      }
+      // FRESCO-104: index.ts throws 409 when a plan for this week already
+      // exists — reintentar el formulario nunca lo resuelve. Mismo caso que
+      // components/calendar/generate-week-button.tsx ya maneja.
+      else if (error instanceof EdgeFunctionError && error.status === 409) {
+        setGenerateError(EXISTING_MENU_FOR_WEEK_MESSAGE);
       }
       // A network failure (offline, connection dropped mid-request, DNS
       // failure) surfaces as a plain TypeError from `fetch` itself — never
@@ -607,9 +621,16 @@ export default function OnboardingPage() {
         )}
 
         {generateError && (
-          <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
-            {generateError}
-          </p>
+          <div className="mt-4">
+            <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+              {generateError}
+            </p>
+            {generateError === EXISTING_MENU_FOR_WEEK_MESSAGE && (
+              <Link href="/menu" data-testid="view_existing_menu_link" className="text-body-sm text-primary">
+                Ver mi menú actual
+              </Link>
+            )}
+          </div>
         )}
 
         {isGenerating && (
