@@ -39,6 +39,13 @@ export function Dropdown({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const selected = options.find(option => option.value === value) ?? null;
+  // FRESCO-151: WebKit (confirmed via playwright --browser=webkit +
+  // real iPhone report) fires a phantom second `click` on the trigger
+  // button right after the option's own click closes the list — a
+  // touch-to-mouse-event synthesis quirk, not something we can prevent
+  // upstream. This ref lets the trigger's onClick recognize and swallow
+  // that immediate follow-up instead of treating it as a real toggle.
+  const justSelectedRef = useRef(false);
 
   useEffect(() => {
     if (!open) {
@@ -54,8 +61,9 @@ export function Dropdown({
   }, [open]);
 
   function selectOption(optionValue: string) {
-    onChange(optionValue);
+    justSelectedRef.current = true;
     setOpen(false);
+    onChange(optionValue);
   }
 
   return (
@@ -67,7 +75,13 @@ export function Dropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
         className="flex h-9 w-full items-center justify-between rounded-full border border-border bg-surface px-3 text-body-md text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        onClick={() => setOpen(current => !current)}
+        onClick={() => {
+          if (justSelectedRef.current) {
+            justSelectedRef.current = false;
+            return;
+          }
+          setOpen(current => !current);
+        }}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             setOpen(false);
