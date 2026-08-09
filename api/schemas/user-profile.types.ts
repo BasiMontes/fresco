@@ -39,9 +39,17 @@ export interface UserProfile {
   dieta_halal: boolean
   /** See recipe.types.ts `Alergeno` for the 13-vs-14 EU allergen list note. */
   alergenos: string[]
+  /** Onboarding step 2 (FRESCO-133). Free-text note for diet/restrictions not covered by the predefined chips. */
+  dieta_texto_libre: string | null
+  /** Onboarding step 2 (FRESCO-133). Free-text note for allergens not covered by the predefined chips. */
+  alergenos_texto_libre: string | null
   ingredientes_odiados: string[]
+  /** Onboarding step 2 (FRESCO-133). Free-text note for disliked ingredients not covered by the predefined chips. */
+  ingredientes_odiados_texto_libre: string | null
   ingredientes_favoritos: string[]
   cocinas_favoritas: TipoCocina[]
+  /** Onboarding step 3 (FRESCO-133). Free-text note for favorite cuisines not covered by the predefined chips. */
+  cocinas_texto_libre: string | null
   nivel_picante: NivelPicante
   contundencia_preferida: NivelContundencia
   tiempo_max_semana_min: number
