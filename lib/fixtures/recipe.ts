@@ -56,6 +56,7 @@ export function makeFixtureRecipe(overrides: Partial<Recipe> = {}): Recipe {
     veces_descartada: 0,
     rating_promedio: null,
     ultima_vez_en_menu: null,
+    source: null,
     ...overrides,
   };
 }
