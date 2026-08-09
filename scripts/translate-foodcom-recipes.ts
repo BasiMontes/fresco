@@ -33,6 +33,15 @@
 import type { FoodComCandidate } from './curate-foodcom-recipes';
 import { z } from 'zod';
 import { DATASET_SOURCE } from './curate-foodcom-recipes';
+import {
+  ALERGENOS_VOCAB,
+  CATEGORIA_RECETA,
+  COSTE_ESTIMADO,
+  DIFICULTAD_RECETA,
+  TEMPORADA,
+  TIPO_COCINA,
+  TIPO_PLATO,
+} from './foodcom-recipe-taxonomy';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash';
@@ -41,37 +50,6 @@ const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/intera
 const BATCH_SIZE = Number(process.argv[2] ?? 30);
 const CANDIDATES_PATH = process.argv[3] ?? 'data/raw/foodcom-candidates.json';
 const PROGRESS_PATH = process.argv[4] ?? 'data/raw/foodcom-translate-progress.json';
-
-// Mirrors the literal unions in `api/schemas/recipe.types.ts`. Duplicated
-// here (not imported) because those are compile-time-only types — both the
-// outbound Gemini schema and the inbound runtime validation need real
-// arrays/enums to check against. Keep in sync by hand if the source types
-// change; a mismatch here fails LOUD (every candidate gets rejected with a
-// visible reason), not silently.
-const TIPO_PLATO = ['desayuno', 'comida', 'cena', 'snack'] as const;
-const CATEGORIA_RECETA = ['pasta', 'arroz', 'legumbres', 'carne', 'pescado', 'verdura', 'huevos', 'sopa', 'ensalada', 'sandwich', 'pizza', 'guiso'] as const;
-const TIPO_COCINA = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'] as const;
-const COSTE_ESTIMADO = ['muy_bajo', 'bajo', 'medio', 'alto'] as const;
-const DIFICULTAD_RECETA = ['muy_facil', 'facil', 'media', 'avanzada'] as const;
-const TEMPORADA = ['primavera', 'verano', 'otoño', 'invierno', 'todo_el_año'] as const;
-
-// Live vocabulary, not the disputed doc list — queried 2026-08-09 via
-// `select distinct jsonb_array_elements_text(alergenos) from recipes`.
-const ALERGENOS_VOCAB = [
-  'apio',
-  'cacahuetes',
-  'crustaceos',
-  'frutos_de_cascara',
-  'frutos_secos',
-  'gluten',
-  'huevo',
-  'lactosa',
-  'moluscos',
-  'pescado',
-  'sesamo',
-  'soja',
-  'sulfitos',
-] as const;
 
 export const translatedRecipeSchema = z.object({
   nombre: z.string().min(1),
