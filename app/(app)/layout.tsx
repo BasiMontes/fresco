@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { getUserNombre, getUserPlan } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
@@ -9,10 +10,12 @@ import { createClient } from '@/lib/supabase/server';
  * round trip per page. Same conservative-default fallback as
  * `/profile/page.tsx`: a `getUserNombre` read failure degrades to `null`
  * (sidebar footer falls back to the icon avatar) rather than crashing the
- * whole authenticated shell. When `auth.getUser()` itself returns no user
- * (no active session), `AppShell` gets `user: null` — `Sidebar` then skips
- * mounting `SidebarAccount` entirely instead of showing it with a blank
- * identity and a still-active logout button.
+ * whole authenticated shell.
+ *
+ * FRESCO-83: `auth.getUser()` returning no user means no active session at
+ * all (Guest Mode has an anonymous Supabase session, so `user` is still
+ * truthy there) — redirect to `/login` instead of rendering the shell with
+ * degraded/empty data, which is what every route under `(app)/` used to do.
  *
  * `getUserPlan` (FRESCO-84) is fetched in parallel with `getUserNombre` —
  * the two reads are mutually independent, so there's no reason to pay for
@@ -24,16 +27,18 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) { redirect('/login'); }
+
   const [nombre, plan] = await Promise.all([
-    getUserNombre(supabase, user?.id).catch((error) => {
+    getUserNombre(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] getUserNombre failed, defaulting to null', error);
       return null;
     }),
-    getUserPlan(supabase, user?.id).catch((error) => {
+    getUserPlan(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] getUserPlan failed, defaulting to free', error);
       return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
     }),
   ]);
 
-  return <AppShell user={user ? { nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false } : null}>{children}</AppShell>;
+  return <AppShell user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}>{children}</AppShell>;
 }
