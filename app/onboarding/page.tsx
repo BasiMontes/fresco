@@ -1,6 +1,6 @@
 'use client';
 
-import type { DiaSemana, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -45,6 +45,14 @@ const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
   { value: 'ganar_masa_muscular', label: 'Ganar masa muscular' },
   { value: 'comer_variado', label: 'Comer más variado' },
   { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida' },
+];
+
+const NIVEL_EXPERIENCIA_OPTIONS: { value: NivelExperienciaCulinaria, label: string }[] = [
+  { value: 'aprendiz', label: 'Aprendiz' },
+  { value: 'novato', label: 'Novato' },
+  { value: 'intermedio', label: 'Intermedio' },
+  { value: 'chef', label: 'Chef' },
+  { value: 'experto', label: 'Experto' },
 ];
 
 const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
@@ -134,6 +142,7 @@ export default function OnboardingPage() {
     presupuestoSemanaEuros,
     planningMeals,
     planningDays,
+    nivelExperiencia,
     setStep,
     setNombre,
     setSexo,
@@ -153,6 +162,7 @@ export default function OnboardingPage() {
     toggleDay,
     selectAllDays,
     selectNoDays,
+    setNivelExperiencia,
   } = useOnboardingStore();
 
   const dietaState: Record<DietaFlag, boolean> = {
@@ -212,6 +222,7 @@ export default function OnboardingPage() {
         presupuesto_semana_euros: presupuestoSemanaEuros,
         planning_meals: planningMeals,
         planning_days: planningDays,
+        nivel_experiencia: nivelExperiencia,
       });
 
       const now = new Date();
@@ -331,6 +342,18 @@ export default function OnboardingPage() {
                 value={objetivo}
                 onChange={value => setObjetivo(value as ObjetivoUsuario)}
                 placeholder="¿Qué buscas conseguir?"
+              />
+            </label>
+
+            <label className="mt-4 flex flex-col gap-1">
+              <span className="text-body-sm text-tertiary">Nivel de experiencia culinaria</span>
+              <Dropdown
+                data-testid="nivel_experiencia_dropdown"
+                aria-label="Nivel de experiencia culinaria"
+                options={NIVEL_EXPERIENCIA_OPTIONS}
+                value={nivelExperiencia}
+                onChange={value => setNivelExperiencia(value as NivelExperienciaCulinaria)}
+                placeholder="¿Cuánto sabes cocinar?"
               />
             </label>
           </>
