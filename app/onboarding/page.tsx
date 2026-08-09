@@ -111,6 +111,10 @@ export default function OnboardingPage() {
     cocinasFavoritas,
     adultos,
     ninos,
+    dietaTextoLibre,
+    alergenosTextoLibre,
+    ingredientesOdiadosTextoLibre,
+    cocinasTextoLibre,
     setStep,
     setNombre,
     setSexo,
@@ -121,6 +125,10 @@ export default function OnboardingPage() {
     toggleCocina,
     setAdultos,
     setNinos,
+    setDietaTextoLibre,
+    setAlergenosTextoLibre,
+    setIngredientesOdiadosTextoLibre,
+    setCocinasTextoLibre,
   } = useOnboardingStore();
 
   const dietaState: Record<DietaFlag, boolean> = {
@@ -168,6 +176,10 @@ export default function OnboardingPage() {
         alergenos,
         ingredientes_odiados: ingredientesOdiados,
         cocinas_favoritas: cocinasFavoritas,
+        dieta_texto_libre: dietaTextoLibre,
+        alergenos_texto_libre: alergenosTextoLibre,
+        ingredientes_odiados_texto_libre: ingredientesOdiadosTextoLibre,
+        cocinas_texto_libre: cocinasTextoLibre,
       });
 
       const now = new Date();
@@ -341,6 +353,15 @@ export default function OnboardingPage() {
                 );
               })}
             </div>
+            <Input
+              data-testid="dieta_texto_libre_input"
+              type="text"
+              value={dietaTextoLibre}
+              onChange={e => setDietaTextoLibre(e.target.value)}
+              placeholder="¿Algo más que debamos saber?"
+              aria-label="Dieta y restricciones — texto libre"
+              className="mt-2"
+            />
 
             <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -358,6 +379,15 @@ export default function OnboardingPage() {
                 </button>
               ))}
             </div>
+            <Input
+              data-testid="alergenos_texto_libre_input"
+              type="text"
+              value={alergenosTextoLibre}
+              onChange={e => setAlergenosTextoLibre(e.target.value)}
+              placeholder="¿Algún otro alérgeno?"
+              aria-label="Alérgenos — texto libre"
+              className="mt-2"
+            />
 
             <h2 className="mt-6 text-h5">¿Algún ingrediente que no te guste?</h2>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -375,6 +405,15 @@ export default function OnboardingPage() {
                 </button>
               ))}
             </div>
+            <Input
+              data-testid="ingredientes_odiados_texto_libre_input"
+              type="text"
+              value={ingredientesOdiadosTextoLibre}
+              onChange={e => setIngredientesOdiadosTextoLibre(e.target.value)}
+              placeholder="¿Algún otro ingrediente que no te guste?"
+              aria-label="Ingredientes que no gustan — texto libre"
+              className="mt-2"
+            />
           </>
         )}
 
@@ -397,6 +436,15 @@ export default function OnboardingPage() {
                 </button>
               ))}
             </div>
+            <Input
+              data-testid="cocinas_texto_libre_input"
+              type="text"
+              value={cocinasTextoLibre}
+              onChange={e => setCocinasTextoLibre(e.target.value)}
+              placeholder="¿Alguna otra cocina que te guste?"
+              aria-label="Cocinas favoritas — texto libre"
+              className="mt-2"
+            />
           </>
         )}
 

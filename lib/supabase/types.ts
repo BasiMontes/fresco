@@ -301,7 +301,9 @@ export type Database = {
         Row: {
           adultos: number
           alergenos: string[]
+          alergenos_texto_libre: string | null
           cocinas_favoritas: Database["public"]["Enums"]["tipo_cocina"][]
+          cocinas_texto_libre: string | null
           contundencia_preferida: Database["public"]["Enums"]["nivel_contundencia"]
           created_at: string
           dieta_halal: boolean
@@ -309,11 +311,13 @@ export type Database = {
           dieta_sin_gluten: boolean
           dieta_sin_huevo: boolean
           dieta_sin_lactosa: boolean
+          dieta_texto_libre: string | null
           dieta_vegano: boolean
           dieta_vegetariano: boolean
           id: string
           ingredientes_favoritos: string[]
           ingredientes_odiados: string[]
+          ingredientes_odiados_texto_libre: string | null
           ninos: number
           nivel_picante: Database["public"]["Enums"]["nivel_picante"]
           nombre: string | null
@@ -330,7 +334,9 @@ export type Database = {
         Insert: {
           adultos?: number
           alergenos?: string[]
+          alergenos_texto_libre?: string | null
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
+          cocinas_texto_libre?: string | null
           contundencia_preferida?: Database["public"]["Enums"]["nivel_contundencia"]
           created_at?: string
           dieta_halal?: boolean
@@ -338,11 +344,13 @@ export type Database = {
           dieta_sin_gluten?: boolean
           dieta_sin_huevo?: boolean
           dieta_sin_lactosa?: boolean
+          dieta_texto_libre?: string | null
           dieta_vegano?: boolean
           dieta_vegetariano?: boolean
           id: string
           ingredientes_favoritos?: string[]
           ingredientes_odiados?: string[]
+          ingredientes_odiados_texto_libre?: string | null
           ninos?: number
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
           nombre?: string | null
@@ -359,7 +367,9 @@ export type Database = {
         Update: {
           adultos?: number
           alergenos?: string[]
+          alergenos_texto_libre?: string | null
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
+          cocinas_texto_libre?: string | null
           contundencia_preferida?: Database["public"]["Enums"]["nivel_contundencia"]
           created_at?: string
           dieta_halal?: boolean
@@ -367,11 +377,13 @@ export type Database = {
           dieta_sin_gluten?: boolean
           dieta_sin_huevo?: boolean
           dieta_sin_lactosa?: boolean
+          dieta_texto_libre?: string | null
           dieta_vegano?: boolean
           dieta_vegetariano?: boolean
           id?: string
           ingredientes_favoritos?: string[]
           ingredientes_odiados?: string[]
+          ingredientes_odiados_texto_libre?: string | null
           ninos?: number
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
           nombre?: string | null

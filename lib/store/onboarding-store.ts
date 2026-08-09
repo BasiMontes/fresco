@@ -41,6 +41,10 @@ export interface OnboardingState {
   cocinasFavoritas: TipoCocina[]
   adultos: number
   ninos: number
+  dietaTextoLibre: string
+  alergenosTextoLibre: string
+  ingredientesOdiadosTextoLibre: string
+  cocinasTextoLibre: string
   setStep: (step: 1 | 2 | 3 | 4) => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
@@ -51,6 +55,10 @@ export interface OnboardingState {
   toggleCocina: (value: TipoCocina) => void
   setAdultos: (value: number) => void
   setNinos: (value: number) => void
+  setDietaTextoLibre: (value: string) => void
+  setAlergenosTextoLibre: (value: string) => void
+  setIngredientesOdiadosTextoLibre: (value: string) => void
+  setCocinasTextoLibre: (value: string) => void
   reset: () => void
 }
 
@@ -71,6 +79,10 @@ const initialState = {
   cocinasFavoritas: [] as TipoCocina[],
   adultos: 2,
   ninos: 0,
+  dietaTextoLibre: '',
+  alergenosTextoLibre: '',
+  ingredientesOdiadosTextoLibre: '',
+  cocinasTextoLibre: '',
 };
 
 function toggleInArray<T>(list: T[], value: T): T[] {
@@ -146,6 +158,10 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     set(state => ({ cocinasFavoritas: toggleInArray(state.cocinasFavoritas, value) })),
   setAdultos: value => set({ adultos: value }),
   setNinos: value => set({ ninos: value }),
+  setDietaTextoLibre: value => set({ dietaTextoLibre: value }),
+  setAlergenosTextoLibre: value => set({ alergenosTextoLibre: value }),
+  setIngredientesOdiadosTextoLibre: value => set({ ingredientesOdiadosTextoLibre: value }),
+  setCocinasTextoLibre: value => set({ cocinasTextoLibre: value }),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -172,5 +188,9 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     cocinasFavoritas: state.cocinasFavoritas,
     adultos: state.adultos,
     ninos: state.ninos,
+    dietaTextoLibre: state.dietaTextoLibre,
+    alergenosTextoLibre: state.alergenosTextoLibre,
+    ingredientesOdiadosTextoLibre: state.ingredientesOdiadosTextoLibre,
+    cocinasTextoLibre: state.cocinasTextoLibre,
   }),
 }));
