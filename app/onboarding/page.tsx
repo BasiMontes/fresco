@@ -54,6 +54,7 @@ export default function OnboardingPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [vegetarianoLockTooltipOpen, setVegetarianoLockTooltipOpen] = useState(false);
 
   // FRESCO-17 (Guest Mode, US 6.1): a first-time visitor reaches this page
   // with no Supabase session at all. Ensure one exists before she can reach
@@ -226,25 +227,48 @@ export default function OnboardingPage() {
           <>
             <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Qué dieta y restricciones sigue tu hogar?</h1>
             <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               {DIETA_OPTIONS.map((option) => {
                 // AC-2: "vegana" always implies "vegetariana" — the
                 // vegetariano chip stays visually locked selected whenever
                 // vegano is active, and cannot be toggled off from here.
                 const isLocked = option.value === 'dietaVegetariano' && dietaVegano;
                 return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    data-testid="dieta_option"
-                    disabled={isLocked}
-                    aria-pressed={dietaState[option.value]}
-                    onClick={() => toggleDieta(option.value)}
-                  >
-                    <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
-                      {option.label}
-                    </Tag>
-                  </button>
+                  <span key={option.value} className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      data-testid="dieta_option"
+                      disabled={isLocked}
+                      aria-pressed={dietaState[option.value]}
+                      onClick={() => toggleDieta(option.value)}
+                    >
+                      <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
+                        {option.label}
+                      </Tag>
+                    </button>
+                    {isLocked && (
+                      <span className="group relative inline-flex">
+                        <button
+                          type="button"
+                          data-testid="dieta_vegetariano_lock_info"
+                          aria-label="Por qué Vegetariano está bloqueado"
+                          aria-describedby="dieta_vegetariano_lock_tooltip"
+                          aria-expanded={vegetarianoLockTooltipOpen}
+                          className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
+                          onClick={() => setVegetarianoLockTooltipOpen(open => !open)}
+                        >
+                          i
+                        </button>
+                        <span
+                          id="dieta_vegetariano_lock_tooltip"
+                          role="tooltip"
+                          className={`absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background ${vegetarianoLockTooltipOpen ? '' : 'pointer-events-none opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100`}
+                        >
+                          Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas.
+                        </span>
+                      </span>
+                    )}
+                  </span>
                 );
               })}
             </div>
