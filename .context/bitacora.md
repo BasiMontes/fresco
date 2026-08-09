@@ -2963,3 +2963,33 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: pedido directo del user, mismo día que se cerraron los 9 tickets en staging.
 
 **Siguiente**: los 9 tickets (FRESCO-129 a FRESCO-137) están en producción real. Jira se dejó en "Control de calidad" a propósito — el deploy no equivale a sign-off de QA, son cosas distintas. 6 migraciones nuevas en `user_profiles` viven ahora en la única BD compartida entre staging y producción (ya estaban ahí desde que se aplicaron, sin cambio adicional en este paso).
+
+**Corrección** (ver entrada siguiente): esta entrada dice "los 9 tickets" pero en realidad FRESCO-129 seguía sin implementar en este momento — quedó pendiente desde el arranque de la sesión, la conversación se desvió al video de bugs antes de llegar a él. Detectado al armar el monitoreo de Jira post-deploy (FRESCO-129 aparecía en "Listo", no "Control de calidad" como los otros 8).
+
+
+---
+
+## 2026-08-09 — FRESCO-129 implementado y promovido a producción (el que faltaba)
+
+**Qué**: bug original de toda la sesión (botón "Ya tengo cuenta" del landing apuntaba a `/signup` en vez de `/login`) — detectado sin implementar recién al armar el monitoreo de Jira post-deploy. Implementado vía `/sprint-development` Solo (branch → cambio de una línea en `components/landing/site-nav.tsx` → lint/types verdes → Playwright en vivo, click real confirmando navegación a `/login`) → PR → merge a `staging` → promovido a `main` con el mismo patrón de reconciliación que la vez anterior (`main` y `staging` habían vuelto a divergir por el commit de bitácora anterior hecho directo en `main`) → verificado `Ready` + smoke test real contra `fresco-pro.vercel.app` confirmando `/url: /login`.
+
+**Por qué**: pedido del user tras notar el hueco durante el armado del monitoreo QA.
+
+**Siguiente**: ahora sí los 10 tickets completos (FRESCO-129 a FRESCO-137) están en producción real. Monitoreo de Jira (30 min de intervalo) sigue activo sobre FRESCO-130 a 137 — pendiente decidir si sumar FRESCO-129 al mismo lote o dejarlo aparte.
+
+---
+
+## 2026-08-09 — Migración de recetas Food.com: spec aprobada, Tasks 1-5 en staging (FRESCO-138 a FRESCO-143)
+
+**Qué**: user trajo una propuesta externa sobre documentar/migrar el catálogo de recetas hacia el dataset Kaggle "Food.com Recipes and Reviews" (Irkaal, CC0 declarado). Corrido el flujo completo `brainstorming` → spec aprobada (`docs/superpowers/specs/2026-08-09-foodcom-recipe-dataset-migration-design.md`) → plan de 11 tareas (`tasks/plan.md`, `tasks/todo.md`) vía `planning-and-task-breakdown` (sustituto de `writing-plans`, no instalado en este entorno — avisado al user). Decisión clave encontrada durante el brainstorming: `meal_plan_recipes.recipe_id` tiene `ON DELETE RESTRICT` con 65 planes reales referenciando el catálogo actual — descarta "reemplazar", fuerza **coexistencia** (recetas nuevas se suman, ~1000 actuales quedan intactas). Implementado uno por uno vía `/sprint-development` Solo, cada uno con su propio Jira, branch, PR y merge a `staging` confirmado por el user:
+- **FRESCO-139** (Task 1): migración `recipes.source jsonb`, aditiva.
+- **FRESCO-140** (Task 2): tipo `RecipeSource` + campo `Recipe.source`; arregladas 3 roturas de tipos en consumidores existentes (`toRecipe()`, fixture, test de `apply-slot-swap`).
+- **FRESCO-141** (Task 3): `data/README.md` + `data/raw/` en `.gitignore` — instrucciones de descarga manual desde Kaggle (no hay ruta anónima de descarga automatizada).
+- **FRESCO-142** (Task 4): `scripts/curate-foodcom-recipes.ts` — Stage 1 de curación, sin IA. Parser CSV propio en streaming (quote-aware, RFC4180, sin cargar los 704MB en memoria) + parser de literales-vector de R (`c("a", "b")`, formato real confirmado contra el CSV real que el user bajó manualmente a `data/raw/recipes.csv`). Filtra filas incompletas (nombre/ingredientes/instrucciones vacíos), filtra por rating mínimo (solo si el rating existe), deduplica contra `recipes.nombre`/`slug` existentes (case-insensitive, loose match) y escribe JSON candidato. Desviación documentada en el propio header del script: el dedup exige una lectura de solo-lectura a Supabase, técnicamente contradice el "no network calls" literal de la spec — leído como "sin llamadas a proveedores de IA" (lo que sí introduce Stage 2), no como una prohibición total, mismo patrón que ya usa `fetch-recipe-photos.ts`. Limitación real también documentada: el dataset está en inglés y el catálogo actual en español, así que el dedup mismo-idioma casi nunca va a disparar contra duplicados reales — la traducción ocurre después, en Stage 2.
+- **FRESCO-143** (Task 5): 16 tests unitarios sobre la lógica de filtrado/dedup (`bun test` verde).
+
+Verificación manual del script contra un CSV fixture chico (una fila válida, una con rating bajo, dos incompletas) — comportamiento correcto confirmado antes de escribir los tests formales.
+
+**Por qué**: pedido directo del user ("Arranca con Task 1. Recuerda ir creando las jiras"), siguiendo el plan aprobado en el brainstorming.
+
+**Siguiente**: Task 6 (FRESCO-144) — `scripts/translate-foodcom-recipes.ts`, Stage 2: traducción + mapeo de taxonomía vía Gemini en lotes resumibles de ~30, mismo patrón de "emite JSON, no inserta directo" que `fetch-recipe-photos.ts`. Depende de Tasks 2+5 (ya listas). Después: Task 7 (contrato de calidad de datos), Task 8 (`DATA_SOURCES.md`), y Tasks 9-11 (ejecución real — correr Stage 1 completo, Stage 2 en lotes multi-sesión, backfill de fotos). Los 5 tickets de esta entrada están en `staging`, Jira en "Control de calidad" (mismo criterio que los 9 de onboarding: deploy/merge no es sign-off de QA).
