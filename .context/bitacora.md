@@ -3042,3 +3042,14 @@ Revertido de forma completa e inmediata, misma sesión:
 **Por qué**: decisión directa del user tras revisar el dataset — "no me cuadra". Pivote de producto/alcance, no un bug encontrado en la implementación (el pipeline en sí funcionaba: 8 tickets implementados, testeados, mergeados a staging antes de este revert).
 
 **Siguiente**: vuelta al plan original — seguir el backfill de fotos de FRESCO-31 (557/1000) sobre el catálogo existente de 1000 recetas, sin tocar nada del dataset externo. FRESCO-148 (hallazgo del banner de error) sigue pendiente de revisión humana, sin relación con este revert.
+
+
+---
+
+## 2026-08-09 — Fix crítico: fixes FRESCO-104/105/87/83 nunca llegaron a producción (staging→main sin promover)
+
+**Qué**: user reportó error 409 genérico en `/onboarding` paso 4/4 en producción (`fresco-pro.vercel.app`, cuenta basi_montes@hotmail.com) — mensaje esperado era "Ya existe un menú para esta semana" (fix de FRESCO-104), pero salió el fallback genérico "no pudimos generar tu menú (error del servidor, código 409)". Investigación: el commit `19cf2cd` (fix FRESCO-104) existía en `staging` pero nunca se mergeó a `main`. Mismo problema para FRESCO-105 (header calendario mobile) y FRESCO-87 (tamaño iconos) — los 3 PRs se mergearon a `staging` pero la promoción `staging`→`main` nunca se ejecutó, pese a que Jira y la bitácora ya los daban como "deployado". `git-flow-master` confirmó fast-forward limpio (`main` ancestro puro de `staging`, 15 commits de diferencia) y ejecutó `git push origin staging:main` (estrategia `main-integration`, `promote_method: ff-only`). Deploy a producción vía `vercel --prod` — nuevo deployment (`dpl_2N5ffL9NpZJ8NdhMisZYHYkVJEfc`) confirmado en la lista de alias de `fresco-pro.vercel.app` (aunque `vercel project ls` seguía mostrando `fresco-pre.vercel.app` como dominio primario — hay que mirar el `Aliases` de `vercel inspect`, no la columna de `project ls`).
+
+**Por qué**: gap real en el flujo `main-integration` de este repo — el merge a `staging` (vía PR) no promueve automáticamente a `main` (deploy real de producción). Nada lo fuerza ni lo avisa; Jira/bitácora habían quedado desincronizados de lo que realmente estaba en producción.
+
+**Siguiente**: para futuros tickets marcados "deployado a producción", verificar contra el log de commits de `main` (no solo el merge a `staging`) antes de darlo por cerrado. Sin bloqueantes pendientes de esta sesión.
