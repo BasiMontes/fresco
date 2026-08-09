@@ -2951,4 +2951,15 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 
 **Por qué**: pedido directo del user, iterado en tiempo real durante la sesión ("hay que hacerlas todas, continua con la siguiente").
 
-**Siguiente**: los 9 tickets están en `staging` (Jira: "Control de calidad", sin asignar — no hubo fase shift-left QA para ninguno). Ninguno se promovió a producción — Stage 5 es un evento separado y gated que no se pidió en esta sesión. `app/onboarding/page.tsx` y `lib/store/onboarding-store.ts` crecieron bastante — si llega una décima tarea de onboarding, vale la pena evaluar si conviene partir la página en componentes por paso.
+**Siguiente**: los 9 tickets estuvieron en `staging` (Jira: "Control de calidad", sin asignar — no hubo fase shift-left QA para ninguno). `app/onboarding/page.tsx` y `lib/store/onboarding-store.ts` crecieron bastante — si llega una décima tarea de onboarding, vale la pena evaluar si conviene partir la página en componentes por paso.
+
+
+---
+
+## 2026-08-09 — Los 9 tickets de onboarding promovidos a producción real
+
+**Qué**: user pidió deploy a producción explícitamente tras cerrar los 9 tickets en staging. Aclarado antes de tocar nada: ninguno tuvo verificación QA independiente (solo verificación de código propia con Playwright durante el desarrollo) — user confirmó igual como dueño del proyecto, hace también de QA. Pre-deploy checklist: `lint:check`, `types:check` y `build` (`next build`) corridos limpios sobre `staging` antes de promover. `main` y `staging` habían divergido (el commit de bitácora anterior se hizo directo en `main`, sin pasar por `staging`) — reconciliado con un merge commit `main`→`staging` (sin conflictos, archivos distintos) en vez de reescribir historia, luego `staging`→`main` en fast-forward limpio. Deploy verificado con `vercel inspect --wait` (status `Ready`, target `production`, alias `fresco-pro.vercel.app` confirmado) + smoke test real con Playwright contra `fresco-pro.vercel.app`: "Paso 1 de 4" (FRESCO-132) y outline transparente (FRESCO-130) confirmados en vivo.
+
+**Por qué**: pedido directo del user, mismo día que se cerraron los 9 tickets en staging.
+
+**Siguiente**: los 9 tickets (FRESCO-129 a FRESCO-137) están en producción real. Jira se dejó en "Control de calidad" a propósito — el deploy no equivale a sign-off de QA, son cosas distintas. 6 migraciones nuevas en `user_profiles` viven ahora en la única BD compartida entre staging y producción (ya estaban ahí desde que se aplicaron, sin cambio adicional en este paso).
