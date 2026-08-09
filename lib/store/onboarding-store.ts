@@ -1,4 +1,4 @@
-import type { DiaSemana, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -50,6 +50,7 @@ export interface OnboardingState {
   presupuestoSemanaEuros: number | null
   planningMeals: TipoPlatoSlot[]
   planningDays: DiaSemana[]
+  nivelExperiencia: NivelExperienciaCulinaria | null
   setStep: (step: 1 | 2 | 3 | 4) => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
@@ -69,6 +70,7 @@ export interface OnboardingState {
   toggleDay: (value: DiaSemana) => void
   selectAllDays: () => void
   selectNoDays: () => void
+  setNivelExperiencia: (value: NivelExperienciaCulinaria) => void
   reset: () => void
 }
 
@@ -96,6 +98,7 @@ const initialState = {
   presupuestoSemanaEuros: null as number | null,
   planningMeals: ['desayuno', 'comida', 'cena'] as TipoPlatoSlot[],
   planningDays: ALL_DIAS_SEMANA,
+  nivelExperiencia: null as NivelExperienciaCulinaria | null,
 };
 
 function toggleInArray<T>(list: T[], value: T): T[] {
@@ -180,6 +183,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   toggleDay: value => set(state => ({ planningDays: toggleInArray(state.planningDays, value) })),
   selectAllDays: () => set({ planningDays: ALL_DIAS_SEMANA }),
   selectNoDays: () => set({ planningDays: [] }),
+  setNivelExperiencia: value => set({ nivelExperiencia: value }),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -213,5 +217,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     presupuestoSemanaEuros: state.presupuestoSemanaEuros,
     planningMeals: state.planningMeals,
     planningDays: state.planningDays,
+    nivelExperiencia: state.nivelExperiencia,
   }),
 }));

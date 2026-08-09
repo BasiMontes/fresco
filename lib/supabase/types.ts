@@ -319,6 +319,9 @@ export type Database = {
           ingredientes_odiados: string[]
           ingredientes_odiados_texto_libre: string | null
           ninos: number
+          nivel_experiencia:
+            | Database["public"]["Enums"]["nivel_experiencia_culinaria"]
+            | null
           nivel_picante: Database["public"]["Enums"]["nivel_picante"]
           nombre: string | null
           num_personas: number
@@ -354,6 +357,9 @@ export type Database = {
           ingredientes_odiados?: string[]
           ingredientes_odiados_texto_libre?: string | null
           ninos?: number
+          nivel_experiencia?:
+            | Database["public"]["Enums"]["nivel_experiencia_culinaria"]
+            | null
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
           nombre?: string | null
           num_personas?: number
@@ -389,6 +395,9 @@ export type Database = {
           ingredientes_odiados?: string[]
           ingredientes_odiados_texto_libre?: string | null
           ninos?: number
+          nivel_experiencia?:
+            | Database["public"]["Enums"]["nivel_experiencia_culinaria"]
+            | null
           nivel_picante?: Database["public"]["Enums"]["nivel_picante"]
           nombre?: string | null
           num_personas?: number
@@ -480,6 +489,12 @@ export type Database = {
         | "domingo"
       estado_receta_menu: "pendiente" | "cocinada" | "descartada" | "sustituida"
       nivel_contundencia: "ligero" | "media" | "contundente"
+      nivel_experiencia_culinaria:
+        | "aprendiz"
+        | "novato"
+        | "intermedio"
+        | "chef"
+        | "experto"
       nivel_picante: "ninguno" | "suave" | "medio" | "fuerte"
       objetivo_usuario:
         | "perder_peso"
@@ -637,6 +652,13 @@ export const Constants = {
       ],
       estado_receta_menu: ["pendiente", "cocinada", "descartada", "sustituida"],
       nivel_contundencia: ["ligero", "media", "contundente"],
+      nivel_experiencia_culinaria: [
+        "aprendiz",
+        "novato",
+        "intermedio",
+        "chef",
+        "experto",
+      ],
       nivel_picante: ["ninguno", "suave", "medio", "fuerte"],
       objetivo_usuario: [
         "perder_peso",

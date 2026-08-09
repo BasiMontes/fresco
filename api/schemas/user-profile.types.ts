@@ -16,6 +16,7 @@ export type ObjetivoUsuario
     | 'ganar_masa_muscular'
     | 'comer_variado'
     | 'reducir_desperdicio';
+export type NivelExperienciaCulinaria = 'aprendiz' | 'novato' | 'intermedio' | 'chef' | 'experto';
 
 export interface UserProfile {
   id: string
@@ -61,4 +62,6 @@ export interface UserProfile {
   planning_meals: TipoPlatoSlot[]
   /** Onboarding (FRESCO-136). Which days of the week to plan by default. Defaults to all 7. */
   planning_days: DiaSemana[]
+  /** Onboarding (FRESCO-137). Cooking experience level ("cocinillas"). Nullable — used to adjust recipe complexity/time. */
+  nivel_experiencia: NivelExperienciaCulinaria | null
 }
