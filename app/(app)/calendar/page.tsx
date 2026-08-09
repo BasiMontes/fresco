@@ -78,7 +78,7 @@ export default async function CalendarPage({
   if (!plan) {
     return (
       <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-h2">Calendario semanal</h1>
           <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
         </div>
@@ -94,7 +94,7 @@ export default async function CalendarPage({
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-h2">Calendario semanal</h1>
         <div className="flex items-center gap-2">
           <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
