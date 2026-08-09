@@ -31,7 +31,6 @@ export function toRecipe(row: RecipeRow): Recipe {
     ingredientes_que_puede_desagradar: row.ingredientes_que_puede_desagradar as unknown as Recipe['ingredientes_que_puede_desagradar'],
     temporada: row.temporada as unknown as Recipe['temporada'],
     pasos_resumen: row.pasos_resumen as unknown as Recipe['pasos_resumen'],
-    source: row.source as unknown as Recipe['source'],
   };
 }
 
