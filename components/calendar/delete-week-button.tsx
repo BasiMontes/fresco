@@ -51,7 +51,7 @@ export function DeleteWeekButton({ mealPlanId }: { mealPlanId: string }) {
         disabled={pending}
         onClick={() => void handleDelete()}
       >
-        <Trash2 className="size-4 text-error" />
+        <Trash2 className="size-[22px] text-error" />
       </Button>
       {error && (
         <p

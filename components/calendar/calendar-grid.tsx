@@ -449,7 +449,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
                   onClick={event => event.stopPropagation()}
                   className="absolute left-2 top-2 cursor-grab touch-none disabled:cursor-not-allowed"
                 >
-                  <GripVertical className="size-4" />
+                  <GripVertical className="size-[22px]" />
                 </Button>
               </div>
               <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
