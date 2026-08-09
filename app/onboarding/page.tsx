@@ -3,7 +3,6 @@
 import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useEffect, useRef, useState } from 'react';
@@ -102,7 +101,9 @@ const EXISTING_MENU_FOR_WEEK_MESSAGE = 'Ya existe un menú para esta semana.';
 export default function OnboardingPage() {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateSuccess, setGenerateSuccess] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const hasExistingMenu = generateError === EXISTING_MENU_FOR_WEEK_MESSAGE;
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [vegetarianoLockTooltipOpen, setVegetarianoLockTooltipOpen] = useState(false);
 
@@ -199,6 +200,7 @@ export default function OnboardingPage() {
   async function handleGenerate() {
     setIsGenerating(true);
     setGenerateError(null);
+    setGenerateSuccess(false);
     try {
       const client = createClient();
       // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
@@ -243,6 +245,11 @@ export default function OnboardingPage() {
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
         session?.access_token ?? null,
       );
+      // FRESCO-152: brief explicit confirmation before leaving — the
+      // redirect used to fire immediately with no acknowledgment that
+      // the generation actually succeeded.
+      setGenerateSuccess(true);
+      await new Promise(resolve => setTimeout(resolve, 900));
       // FRESCO-94: the store now persists to sessionStorage so a mid-wizard
       // reload survives — reset here so a later same-tab visit to
       // /onboarding doesn't resurface this run's stale answers.
@@ -620,30 +627,41 @@ export default function OnboardingPage() {
           </>
         )}
 
-        {generateError && (
+        {generateError && !hasExistingMenu && (
           <div className="mt-4">
             <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
               {generateError}
             </p>
-            {generateError === EXISTING_MENU_FOR_WEEK_MESSAGE && (
-              <Link href="/menu" data-testid="view_existing_menu_link" className="text-body-sm text-primary">
-                Ver mi menú actual
-              </Link>
-            )}
           </div>
         )}
 
-        {isGenerating && (
-          // ADR-0005: menu-slot selection is now a deterministic algorithm
-          // (~2-3s observed live), not a per-call Gemini generation — the
-          // old "puede tardar hasta un minuto" copy overstated the real
-          // wait once that shipped. Kept the spinner + hint pattern itself
-          // (still reassuring during any wait, however short), just
-          // corrected what it claims.
-          <p data-testid="generating_hint" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
-            Preparando tu menú…
+        {/* FRESCO-152: when a plan already exists, the error text stays
+            informational but the *action* moves into the primary CTA below
+            ("Ver mi menú", de-emphasized) instead of also living here as a
+            separate link — one action, not two competing ones. */}
+        {hasExistingMenu && (
+          <p data-testid="generate_error_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
+            {generateError}
           </p>
         )}
+
+        {generateSuccess
+          ? (
+              <p data-testid="generate_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
+                Se ha generado tu menú correctamente. Te llevamos a verlo…
+              </p>
+            )
+          : isGenerating && (
+            // ADR-0005: menu-slot selection is now a deterministic algorithm
+            // (~2-3s observed live), not a per-call Gemini generation — the
+            // old "puede tardar hasta un minuto" copy overstated the real
+            // wait once that shipped. Kept the spinner + hint pattern itself
+            // (still reassuring during any wait, however short), just
+            // corrected what it claims.
+            <p data-testid="generating_hint" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
+              Preparando tu menú…
+            </p>
+          )}
 
         <div className="mt-6 flex justify-between">
           <Button
@@ -660,27 +678,41 @@ export default function OnboardingPage() {
                   Siguiente
                 </Button>
               )
-            : (
-                <Button
-                  data-testid="generate_menu_button"
-                  variant="action"
-                  onClick={() => {
-                    void handleGenerate();
-                  }}
-                  disabled={isGenerating || !household.valid || !presupuestoValid}
-                >
-                  {isGenerating
-                    ? (
-                        <>
-                          <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                          Generando menú…
-                        </>
-                      )
-                    : (
-                        'Generar mi menú'
-                      )}
-                </Button>
-              )}
+            // FRESCO-152: once a plan already exists for this week,
+            // "Generar mi menú" can't succeed — the primary action becomes
+            // a de-emphasized "Ver mi menú" instead of repeating a CTA that
+            // structurally cannot work.
+            : hasExistingMenu
+              ? (
+                  <Button
+                    data-testid="view_existing_menu_button"
+                    variant="ghost"
+                    onClick={() => router.push('/menu')}
+                  >
+                    Ver mi menú
+                  </Button>
+                )
+              : (
+                  <Button
+                    data-testid="generate_menu_button"
+                    variant="action"
+                    onClick={() => {
+                      void handleGenerate();
+                    }}
+                    disabled={isGenerating || !household.valid || !presupuestoValid}
+                  >
+                    {isGenerating
+                      ? (
+                          <>
+                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                            {generateSuccess ? '¡Menú generado!' : 'Generando menú…'}
+                          </>
+                        )
+                      : (
+                          'Generar mi menú'
+                        )}
+                  </Button>
+                )}
         </div>
       </Card>
     </div>
