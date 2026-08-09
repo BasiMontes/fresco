@@ -3022,3 +3022,23 @@ Verificación manual del script contra un CSV fixture chico (una fila válida, u
 **Por qué**: pedido directo del user tras revisar el tablero ("Dale a las que están sin arrancar").
 
 **Siguiente**: las 30 issues del tablero quedan: 0 sin arrancar entre los bugs sueltos, 1 en WIP (FRESCO-31, backfill de fotos 557/1000, continuación opcional), 1 bloqueada (FRESCO-147, Tasks 9-11 de la migración, falta `GEMINI_API_KEY`), y 25 en "Control de calidad" esperando validación QA real (los 9 de onboarding + estos 4 + las 8 de FRESCO-80/82/84-86/88-90/94/103/106-117 que ya estaban ahí antes de esta sesión). El monitor de Jira sobre FRESCO-129..137 sigue activo independientemente.
+
+Este último punto (FRESCO-147 bloqueada) quedó obsoleto minutos después — ver entrada siguiente.
+
+
+---
+
+## 2026-08-09 — Migración de recetas Food.com revertida por completo (FRESCO-138 y los 9 hijos → Rechazos)
+
+**Qué**: durante la revisión del hallazgo de diseño en `calendar-grid.tsx` (creado como FRESCO-148, borde lateral grueso en el banner de error del drag-swap — evaluado como probable falso positivo del hook, banner de alerta no card genérica, dejado sin tocar hasta revisión humana con DESIGN.md), el user revisó el dataset Food.com de Kaggle por encima y decidió que no convencía. Pedido explícito: eliminar TODA referencia al dataset, volver al plan original — quedarse con las ~1000 recetas curadas actuales, seguir sacando fotos vía el pipeline de Unsplash (FRESCO-31) receta a receta.
+
+Revertido de forma completa e inmediata, misma sesión:
+- **Código eliminado** (PR #22, mergeado a `staging`, + commit directo en `main` para los docs que se habían filtrado ahí sin pasar por staging): `scripts/curate-foodcom-recipes.ts`, `translate-foodcom-recipes.ts`, `foodcom-recipe-taxonomy.ts`, `recipe-data-contract.test.ts` (+ sus tests), `docs/superpowers/specs/2026-08-09-foodcom-recipe-dataset-migration-design.md`, `tasks/plan.md`, `tasks/todo.md`, `DATA_SOURCES.md`, `data/README.md`, el CSV real en `data/raw/` (nunca comiteado, gitignored), el bloque `data/raw/` de `.gitignore`, el tipo `RecipeSource` y el campo `Recipe.source` (+ sus 3 consumidores: `toRecipe()`, fixture, test de `apply-slot-swap`).
+- **BD real revertida**: confirmado explícitamente con el user antes de tocarla (pregunta directa: ¿borro la columna o la dejo?) — user eligió borrarla. Nueva migración `20260809181000_drop_source_from_recipes.sql` (`alter table recipes drop column source`), aplicada en vivo vía Supabase MCP. La migración original que la agregó (FRESCO-139) NO se borró/reescribió — se mantiene como registro histórico, siguiendo la misma disciplina que cualquier migración ya aplicada. Cero pérdida de datos real: la columna siempre estuvo `null` en las 1000 filas (Stage 2 nunca corrió). Tipos de Supabase regenerados (`lib/supabase/types.ts`).
+- **`scripts/fetch-recipe-photos.ts` (FRESCO-31) intacto** — casi lo borro por error al hacer `git rm` en lote (incluí el nombre por accidente en la lista), detectado y restaurado antes de comitear nada.
+- **Verificación**: `bun run types:check` y `bun run lint:check` limpios, `bun test` 150/150 verde en los 13 archivos de test, grep de todo el repo por "foodcom"/"kaggle"/"RecipeSource" — solo quedan la propia bitácora (registro histórico, no se toca) y el comentario explicativo de la nueva migración de DROP COLUMN.
+- **Jira**: comentario con el rationale completo en el épico FRESCO-138, comentario corto apuntando al épico en cada uno de los 9 hijos (FRESCO-139 a FRESCO-147), los 10 (épico + hijos) transicionados a "Rechazos".
+
+**Por qué**: decisión directa del user tras revisar el dataset — "no me cuadra". Pivote de producto/alcance, no un bug encontrado en la implementación (el pipeline en sí funcionaba: 8 tickets implementados, testeados, mergeados a staging antes de este revert).
+
+**Siguiente**: vuelta al plan original — seguir el backfill de fotos de FRESCO-31 (557/1000) sobre el catálogo existente de 1000 recetas, sin tocar nada del dataset externo. FRESCO-148 (hallazgo del banner de error) sigue pendiente de revisión humana, sin relación con este revert.
