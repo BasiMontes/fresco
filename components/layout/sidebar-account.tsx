@@ -107,7 +107,7 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
           onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
           className="bg-background/10 text-background hover:bg-background/20"
         >
-          <LogOut className="size-4" aria-hidden="true" />
+          <LogOut className="size-[22px]" aria-hidden="true" />
         </Button>
       </div>
       {logoutError && (
