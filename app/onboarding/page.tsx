@@ -1,6 +1,6 @@
 'use client';
 
-import type { ObjetivoUsuario, SexoUsuario, TipoCocina } from '@schemas';
+import type { ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -45,6 +45,12 @@ const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
   { value: 'ganar_masa_muscular', label: 'Ganar masa muscular' },
   { value: 'comer_variado', label: 'Comer más variado' },
   { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida' },
+];
+
+const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
+  { value: 'desayuno', label: 'Desayuno' },
+  { value: 'comida', label: 'Almuerzo' },
+  { value: 'cena', label: 'Cena' },
 ];
 
 const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
@@ -116,6 +122,7 @@ export default function OnboardingPage() {
     ingredientesOdiadosTextoLibre,
     cocinasTextoLibre,
     presupuestoSemanaEuros,
+    planningMeals,
     setStep,
     setNombre,
     setSexo,
@@ -131,6 +138,7 @@ export default function OnboardingPage() {
     setIngredientesOdiadosTextoLibre,
     setCocinasTextoLibre,
     setPresupuestoSemanaEuros,
+    toggleMeal,
   } = useOnboardingStore();
 
   const dietaState: Record<DietaFlag, boolean> = {
@@ -188,6 +196,7 @@ export default function OnboardingPage() {
         // DB check constraint: presupuesto_semana_euros > 0 — 0/negative
         // rejected, only a genuine positive value or null is valid.
         presupuesto_semana_euros: presupuestoSemanaEuros,
+        planning_meals: planningMeals,
       });
 
       const now = new Date();
@@ -512,6 +521,24 @@ export default function OnboardingPage() {
                 El presupuesto debe ser mayor que 0.
               </p>
             )}
+
+            <h2 className="mt-6 text-h5">¿Qué comidas quieres planificar?</h2>
+            <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos las 3.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {MEAL_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid="meal_option"
+                  aria-pressed={planningMeals.includes(option.value)}
+                  onClick={() => toggleMeal(option.value)}
+                >
+                  <Tag variant={planningMeals.includes(option.value) ? 'selected' : 'outline'}>
+                    {option.label}
+                  </Tag>
+                </button>
+              ))}
+            </div>
           </>
         )}
 
