@@ -29,12 +29,12 @@ export type OnboardingProfilePayload = Pick<
   | 'cocinas_favoritas'
 // `nombre`/`sexo`/`objetivo` (FRESCO-132), the 4 `*_texto_libre` fields
 // (FRESCO-133), `presupuesto_semana_euros` (FRESCO-134), and
-// `planning_meals` (FRESCO-135) are optional here — `/profile`'s
-// preferences editor (FRESCO-70) round-trips this same type through
-// `getUserDietaryPreferences` without selecting these columns, and a save
-// from there must NOT wipe them (an omitted key drops out of Supabase's
-// upsert SET clause entirely, leaving the existing value untouched; a
-// missing key on INSERT falls back to the column's DB default).
+// `planning_meals`/`planning_days` (FRESCO-135/136) are optional here —
+// `/profile`'s preferences editor (FRESCO-70) round-trips this same type
+// through `getUserDietaryPreferences` without selecting these columns, and
+// a save from there must NOT wipe them (an omitted key drops out of
+// Supabase's upsert SET clause entirely, leaving the existing value
+// untouched; a missing key on INSERT falls back to the column's DB default).
 > & Partial<Pick<
   UserProfile,
   | 'nombre'
@@ -46,6 +46,7 @@ export type OnboardingProfilePayload = Pick<
   | 'cocinas_texto_libre'
   | 'presupuesto_semana_euros'
   | 'planning_meals'
+  | 'planning_days'
 >>;
 
 export class UserProfileError extends Error {

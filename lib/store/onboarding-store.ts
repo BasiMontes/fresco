@@ -1,4 +1,4 @@
-import type { ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
@@ -14,6 +14,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
  * here; mapped to the snake_case column names at the persistence boundary in
  * `lib/api/user-profile.ts`), per STORY-FRESCO-5's implementation plan Step 1.
  */
+
+export const ALL_DIAS_SEMANA: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 
 export type DietaFlag
   = | 'dietaVegetariano'
@@ -47,6 +49,7 @@ export interface OnboardingState {
   cocinasTextoLibre: string
   presupuestoSemanaEuros: number | null
   planningMeals: TipoPlatoSlot[]
+  planningDays: DiaSemana[]
   setStep: (step: 1 | 2 | 3 | 4) => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
@@ -63,6 +66,9 @@ export interface OnboardingState {
   setCocinasTextoLibre: (value: string) => void
   setPresupuestoSemanaEuros: (value: number | null) => void
   toggleMeal: (value: TipoPlatoSlot) => void
+  toggleDay: (value: DiaSemana) => void
+  selectAllDays: () => void
+  selectNoDays: () => void
   reset: () => void
 }
 
@@ -89,6 +95,7 @@ const initialState = {
   cocinasTextoLibre: '',
   presupuestoSemanaEuros: null as number | null,
   planningMeals: ['desayuno', 'comida', 'cena'] as TipoPlatoSlot[],
+  planningDays: ALL_DIAS_SEMANA,
 };
 
 function toggleInArray<T>(list: T[], value: T): T[] {
@@ -170,6 +177,9 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setCocinasTextoLibre: value => set({ cocinasTextoLibre: value }),
   setPresupuestoSemanaEuros: value => set({ presupuestoSemanaEuros: value }),
   toggleMeal: value => set(state => ({ planningMeals: toggleInArray(state.planningMeals, value) })),
+  toggleDay: value => set(state => ({ planningDays: toggleInArray(state.planningDays, value) })),
+  selectAllDays: () => set({ planningDays: ALL_DIAS_SEMANA }),
+  selectNoDays: () => set({ planningDays: [] }),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -202,5 +212,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     cocinasTextoLibre: state.cocinasTextoLibre,
     presupuestoSemanaEuros: state.presupuestoSemanaEuros,
     planningMeals: state.planningMeals,
+    planningDays: state.planningDays,
   }),
 }));
