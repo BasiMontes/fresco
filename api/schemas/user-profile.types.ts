@@ -1,4 +1,5 @@
 import type { TipoPlatoSlot } from './api-contracts.types.ts';
+import type { DiaSemana } from './meal-plan.types.ts';
 import type { TipoCocina } from './recipe.types.ts';
 
 // Row shape of `public.user_profiles` — typed-relational (fresco-schema-sql.md
@@ -58,4 +59,6 @@ export interface UserProfile {
   presupuesto_semana_euros: number | null
   /** Onboarding (FRESCO-135). Which meals to plan by default. Defaults to all 3. */
   planning_meals: TipoPlatoSlot[]
+  /** Onboarding (FRESCO-136). Which days of the week to plan by default. Defaults to all 7. */
+  planning_days: DiaSemana[]
 }

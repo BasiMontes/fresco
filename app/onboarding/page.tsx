@@ -1,6 +1,6 @@
 'use client';
 
-import type { ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -51,6 +51,16 @@ const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
   { value: 'desayuno', label: 'Desayuno' },
   { value: 'comida', label: 'Almuerzo' },
   { value: 'cena', label: 'Cena' },
+];
+
+const DAY_OPTIONS: { value: DiaSemana, label: string }[] = [
+  { value: 'lunes', label: 'Lun' },
+  { value: 'martes', label: 'Mar' },
+  { value: 'miercoles', label: 'Mié' },
+  { value: 'jueves', label: 'Jue' },
+  { value: 'viernes', label: 'Vie' },
+  { value: 'sabado', label: 'Sáb' },
+  { value: 'domingo', label: 'Dom' },
 ];
 
 const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
@@ -123,6 +133,7 @@ export default function OnboardingPage() {
     cocinasTextoLibre,
     presupuestoSemanaEuros,
     planningMeals,
+    planningDays,
     setStep,
     setNombre,
     setSexo,
@@ -139,6 +150,9 @@ export default function OnboardingPage() {
     setCocinasTextoLibre,
     setPresupuestoSemanaEuros,
     toggleMeal,
+    toggleDay,
+    selectAllDays,
+    selectNoDays,
   } = useOnboardingStore();
 
   const dietaState: Record<DietaFlag, boolean> = {
@@ -197,6 +211,7 @@ export default function OnboardingPage() {
         // rejected, only a genuine positive value or null is valid.
         presupuesto_semana_euros: presupuestoSemanaEuros,
         planning_meals: planningMeals,
+        planning_days: planningDays,
       });
 
       const now = new Date();
@@ -538,6 +553,32 @@ export default function OnboardingPage() {
                   </Tag>
                 </button>
               ))}
+            </div>
+
+            <h2 className="mt-6 text-h5">¿Qué días quieres planificar?</h2>
+            <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos los 7.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {DAY_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  data-testid="day_option"
+                  aria-pressed={planningDays.includes(option.value)}
+                  onClick={() => toggleDay(option.value)}
+                >
+                  <Tag variant={planningDays.includes(option.value) ? 'selected' : 'outline'}>
+                    {option.label}
+                  </Tag>
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 flex gap-3">
+              <button type="button" data-testid="select_all_days_button" className="text-caption font-sans text-primary" onClick={selectAllDays}>
+                Todos
+              </button>
+              <button type="button" data-testid="select_no_days_button" className="text-caption font-sans text-tertiary" onClick={selectNoDays}>
+                Ninguno
+              </button>
             </div>
           </>
         )}

@@ -325,6 +325,7 @@ export type Database = {
           objetivo: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at: string | null
+          planning_days: Database["public"]["Enums"]["dia_semana"][]
           planning_meals: Database["public"]["Enums"]["tipo_plato"][]
           presupuesto_semana_euros: number | null
           sexo: Database["public"]["Enums"]["sexo_usuario"] | null
@@ -359,6 +360,7 @@ export type Database = {
           objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
+          planning_days?: Database["public"]["Enums"]["dia_semana"][]
           planning_meals?: Database["public"]["Enums"]["tipo_plato"][]
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
@@ -393,6 +395,7 @@ export type Database = {
           objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
+          planning_days?: Database["public"]["Enums"]["dia_semana"][]
           planning_meals?: Database["public"]["Enums"]["tipo_plato"][]
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
