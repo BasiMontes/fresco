@@ -115,6 +115,7 @@ export default function OnboardingPage() {
     alergenosTextoLibre,
     ingredientesOdiadosTextoLibre,
     cocinasTextoLibre,
+    presupuestoSemanaEuros,
     setStep,
     setNombre,
     setSexo,
@@ -129,6 +130,7 @@ export default function OnboardingPage() {
     setAlergenosTextoLibre,
     setIngredientesOdiadosTextoLibre,
     setCocinasTextoLibre,
+    setPresupuestoSemanaEuros,
   } = useOnboardingStore();
 
   const dietaState: Record<DietaFlag, boolean> = {
@@ -142,6 +144,9 @@ export default function OnboardingPage() {
   };
 
   const household = validateHousehold({ adultos, ninos });
+  // DB check constraint: presupuesto_semana_euros > 0 — null (unset) is
+  // valid, only an explicit non-positive value is rejected.
+  const presupuestoValid = presupuestoSemanaEuros === null || presupuestoSemanaEuros > 0;
 
   // A11y: the wizard swaps step content in place (single route) — without
   // this, a screen-reader/keyboard user gets no signal the content changed
@@ -180,6 +185,9 @@ export default function OnboardingPage() {
         alergenos_texto_libre: alergenosTextoLibre,
         ingredientes_odiados_texto_libre: ingredientesOdiadosTextoLibre,
         cocinas_texto_libre: cocinasTextoLibre,
+        // DB check constraint: presupuesto_semana_euros > 0 — 0/negative
+        // rejected, only a genuine positive value or null is valid.
+        presupuesto_semana_euros: presupuestoSemanaEuros,
       });
 
       const now = new Date();
@@ -483,6 +491,27 @@ export default function OnboardingPage() {
                 {household.message}
               </p>
             )}
+
+            <label className="mt-4 flex flex-col gap-1">
+              <span className="text-body-sm text-tertiary">Presupuesto semanal (estimado)</span>
+              <Input
+                data-testid="presupuesto_input"
+                type="number"
+                min={1}
+                value={presupuestoSemanaEuros ?? ''}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setPresupuestoSemanaEuros(raw === '' ? null : Number(raw));
+                }}
+                placeholder="Ej. 80"
+                className={`max-w-32 ${!presupuestoValid ? 'border-error' : ''}`}
+              />
+            </label>
+            {!presupuestoValid && (
+              <p data-testid="presupuesto_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
+                El presupuesto debe ser mayor que 0.
+              </p>
+            )}
           </>
         )}
 
@@ -526,7 +555,7 @@ export default function OnboardingPage() {
                   onClick={() => {
                     void handleGenerate();
                   }}
-                  disabled={isGenerating || !household.valid}
+                  disabled={isGenerating || !household.valid || !presupuestoValid}
                 >
                   {isGenerating
                     ? (
