@@ -2930,3 +2930,25 @@ Verificación: `bun test` (150 pass), `types:check`/`lint:check` limpios en cada
 **Por qué**: reporte directo del user sobre un fallo real que vivió — máxima prioridad, primer uso real de la producción recién montada.
 
 **Siguiente**: si vuelve a pasar, el mensaje que se muestre ahora sí va a decir qué fue realmente (red / servidor / perfil / catálogo) — eso resuelve el diagnóstico a futuro aunque la causa de esta vez específica no se haya confirmado. Documentado en `.context/qa/regression.feature`, notas de infraestructura.
+
+
+---
+
+## 2026-08-09 — 9 bugs/tareas de onboarding reportados en vivo, todos implementados y en staging (FRESCO-129 a FRESCO-137)
+
+**Qué**: user pasó una lista de errores/tareas de onboarding uno por uno (texto + capturas + código de referencia de la app antigua). Por cada uno: creado el Jira correspondiente, luego implementado vía `/sprint-development` en modo Solo (branch → código → verificación lint/types → Playwright en vivo → PR → merge a `staging` con confirmación explícita cada vez). Resumen:
+- **FRESCO-129** (bug, ya en main): botón "Ya tengo cuenta" del landing apuntaba a `/signup` en vez de `/login`.
+- **FRESCO-130** (bug): recuadro de foco visible en el título de cada paso del onboarding. Primer fix (quitar clases `focus-visible:outline`) resultó incompleto — el navegador seguía pintando su outline nativo por defecto; encontrado durante la validación en vivo de FRESCO-131 y corregido en un PR de seguimiento (`outline-none` explícito).
+- **FRESCO-131** (bug): tooltip explicando por qué "Vegetariano" se bloquea al elegir "Vegano" (chip está `disabled`, no puede alojar hover directamente — trigger "i" separado). Bug real encontrado y arreglado en la propia implementación: hover (mouseenter) y tap (click-toggle) compartían el mismo estado y se cancelaban entre sí en móvil — separados en dos estados independientes (CSS `group-hover` para desktop, estado propio para tap).
+- **FRESCO-132** (tarea): nuevo paso 1 del onboarding — nombre, dropdown de sexo, dropdown de objetivo. Construido `components/ui/dropdown.tsx` (listbox propio, no `<select>` nativo — no existía en el design system). Onboarding pasa de 3 a 4 pasos.
+- **FRESCO-133** (tarea): input de texto libre bajo cada uno de los 4 grupos de chips (dieta, alérgenos, ingredientes que no gustan, cocinas favoritas).
+- **FRESCO-134** (tarea): presupuesto semanal estimado en el paso de hogar — la columna `presupuesto_semana_euros` ya existía en la BD (de un cambio anterior no relacionado), solo faltaba la UI.
+- **FRESCO-135** (tarea): selector de comidas a planificar (Desayuno/Almuerzo/Cena) — reutiliza el enum `tipo_plato` ya existente en vez de crear uno nuevo.
+- **FRESCO-136** (tarea): selector de días a planificar (Lun-Dom) + atajos "Todos"/"Ninguno" — reutiliza el enum `dia_semana` ya existente.
+- **FRESCO-137** (tarea): dropdown de nivel de experiencia culinaria ("cocinillas": Aprendiz/Novato/Intermedio/Chef/Experto) — niveles propuestos por mí, validados con el user antes de migrar.
+
+6 migraciones nuevas en `user_profiles` (sexo, objetivo, 4× `*_texto_libre`, `planning_meals`, `planning_days`, `nivel_experiencia`), todas aplicadas directo a la BD real compartida (staging+producción comparten el mismo proyecto Supabase) con confirmación explícita del user antes de cada una — todas aditivas/nullable o `NOT NULL DEFAULT` seguro, cero filas rotas de las 68 existentes. Todos los campos nuevos son opcionales en `OnboardingProfilePayload` a propósito: el editor de preferencias de `/profile` (FRESCO-70) reutiliza ese mismo tipo sin seleccionar estas columnas, y un campo ausente en el objeto no entra en el `SET` del upsert de Supabase — así un guardado desde `/profile` nunca borra sin querer estos datos nuevos.
+
+**Por qué**: pedido directo del user, iterado en tiempo real durante la sesión ("hay que hacerlas todas, continua con la siguiente").
+
+**Siguiente**: los 9 tickets están en `staging` (Jira: "Control de calidad", sin asignar — no hubo fase shift-left QA para ninguno). Ninguno se promovió a producción — Stage 5 es un evento separado y gated que no se pidió en esta sesión. `app/onboarding/page.tsx` y `lib/store/onboarding-store.ts` crecieron bastante — si llega una décima tarea de onboarding, vale la pena evaluar si conviene partir la página en componentes por paso.
