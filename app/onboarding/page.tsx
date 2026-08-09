@@ -247,30 +247,24 @@ export default function OnboardingPage() {
                       </Tag>
                     </button>
                     {isLocked && (
-                      <span className="relative inline-flex">
+                      <span className="group relative inline-flex">
                         <button
                           type="button"
                           data-testid="dieta_vegetariano_lock_info"
                           aria-label="Por qué Vegetariano está bloqueado"
                           aria-describedby="dieta_vegetariano_lock_tooltip"
                           className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
-                          onMouseEnter={() => setVegetarianoLockTooltipOpen(true)}
-                          onMouseLeave={() => setVegetarianoLockTooltipOpen(false)}
-                          onFocus={() => setVegetarianoLockTooltipOpen(true)}
-                          onBlur={() => setVegetarianoLockTooltipOpen(false)}
                           onClick={() => setVegetarianoLockTooltipOpen(open => !open)}
                         >
                           i
                         </button>
-                        {vegetarianoLockTooltipOpen && (
-                          <span
-                            id="dieta_vegetariano_lock_tooltip"
-                            role="tooltip"
-                            className="absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background"
-                          >
-                            Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas.
-                          </span>
-                        )}
+                        <span
+                          id="dieta_vegetariano_lock_tooltip"
+                          role="tooltip"
+                          className={`absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background ${vegetarianoLockTooltipOpen ? '' : 'pointer-events-none opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100`}
+                        >
+                          Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas.
+                        </span>
                       </span>
                     )}
                   </span>
