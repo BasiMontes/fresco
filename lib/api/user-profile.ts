@@ -8,8 +8,9 @@ import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/diet
  * Onboarding-owned subset of `user_profiles` columns (FR-1.1). Fields the DB
  * defaults and this story never touches (`plan`, `plan_expires_at`,
  * `nivel_picante`, `contundencia_preferida`, `tiempo_max_*`,
- * `presupuesto_semana_euros`, `ingredientes_favoritos`) are intentionally
- * excluded — see STORY-FRESCO-5's implementation plan, "Types & Type Safety".
+ * `ingredientes_favoritos`) are intentionally excluded — see STORY-FRESCO-5's
+ * implementation plan, "Types & Type Safety". `presupuesto_semana_euros`
+ * joined the optional group below with FRESCO-134.
  */
 export type OnboardingProfilePayload = Pick<
   UserProfile,
@@ -26,12 +27,13 @@ export type OnboardingProfilePayload = Pick<
   | 'alergenos'
   | 'ingredientes_odiados'
   | 'cocinas_favoritas'
-// `nombre`/`sexo`/`objetivo` (FRESCO-132) and the 4 `*_texto_libre` fields
-// (FRESCO-133) are optional here — `/profile`'s preferences editor
-// (FRESCO-70) round-trips this same type through `getUserDietaryPreferences`
-// without selecting these columns, and a save from there must NOT wipe them
-// (an omitted key drops out of Supabase's upsert SET clause entirely,
-// leaving the existing value untouched).
+// `nombre`/`sexo`/`objetivo` (FRESCO-132), the 4 `*_texto_libre` fields
+// (FRESCO-133), and `presupuesto_semana_euros` (FRESCO-134) are optional
+// here — `/profile`'s preferences editor (FRESCO-70) round-trips this same
+// type through `getUserDietaryPreferences` without selecting these columns,
+// and a save from there must NOT wipe them (an omitted key drops out of
+// Supabase's upsert SET clause entirely, leaving the existing value
+// untouched).
 > & Partial<Pick<
   UserProfile,
   | 'nombre'
@@ -41,6 +43,7 @@ export type OnboardingProfilePayload = Pick<
   | 'alergenos_texto_libre'
   | 'ingredientes_odiados_texto_libre'
   | 'cocinas_texto_libre'
+  | 'presupuesto_semana_euros'
 >>;
 
 export class UserProfileError extends Error {

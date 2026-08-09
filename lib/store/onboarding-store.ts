@@ -45,6 +45,7 @@ export interface OnboardingState {
   alergenosTextoLibre: string
   ingredientesOdiadosTextoLibre: string
   cocinasTextoLibre: string
+  presupuestoSemanaEuros: number | null
   setStep: (step: 1 | 2 | 3 | 4) => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
@@ -59,6 +60,7 @@ export interface OnboardingState {
   setAlergenosTextoLibre: (value: string) => void
   setIngredientesOdiadosTextoLibre: (value: string) => void
   setCocinasTextoLibre: (value: string) => void
+  setPresupuestoSemanaEuros: (value: number | null) => void
   reset: () => void
 }
 
@@ -83,6 +85,7 @@ const initialState = {
   alergenosTextoLibre: '',
   ingredientesOdiadosTextoLibre: '',
   cocinasTextoLibre: '',
+  presupuestoSemanaEuros: null as number | null,
 };
 
 function toggleInArray<T>(list: T[], value: T): T[] {
@@ -162,6 +165,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setAlergenosTextoLibre: value => set({ alergenosTextoLibre: value }),
   setIngredientesOdiadosTextoLibre: value => set({ ingredientesOdiadosTextoLibre: value }),
   setCocinasTextoLibre: value => set({ cocinasTextoLibre: value }),
+  setPresupuestoSemanaEuros: value => set({ presupuestoSemanaEuros: value }),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -192,5 +196,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     alergenosTextoLibre: state.alergenosTextoLibre,
     ingredientesOdiadosTextoLibre: state.ingredientesOdiadosTextoLibre,
     cocinasTextoLibre: state.cocinasTextoLibre,
+    presupuestoSemanaEuros: state.presupuestoSemanaEuros,
   }),
 }));
