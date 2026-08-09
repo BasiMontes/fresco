@@ -199,6 +199,7 @@ export type Database = {
           pasos_resumen: Json | null
           rating_promedio: number | null
           slug: string
+          source: Json | null
           temporada: Json | null
           ultima_vez_en_menu: string | null
           updated_at: string
@@ -220,6 +221,7 @@ export type Database = {
           pasos_resumen?: Json | null
           rating_promedio?: number | null
           slug: string
+          source?: Json | null
           temporada?: Json | null
           ultima_vez_en_menu?: string | null
           updated_at?: string
@@ -241,6 +243,7 @@ export type Database = {
           pasos_resumen?: Json | null
           rating_promedio?: number | null
           slug?: string
+          source?: Json | null
           temporada?: Json | null
           ultima_vez_en_menu?: string | null
           updated_at?: string
@@ -436,6 +439,7 @@ export type Database = {
           pasos_resumen: Json | null
           rating_promedio: number | null
           slug: string
+          source: Json | null
           temporada: Json | null
           ultima_vez_en_menu: string | null
           updated_at: string
