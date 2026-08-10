@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     question: '¿Puedo borrar mis datos?',
-    answer: 'Sí. En la sección "Zona de peligro", al final de esta página, puedes descargar un backup en JSON de todos tus datos o borrar tu cuenta de forma definitiva.',
+    answer: 'Sí. En la sección "Zona de peligro", al final de esta página, puedes descargar un backup en CSV de todos tus datos o borrar tu cuenta de forma definitiva.',
   },
   {
     question: '¿Fresco filtra automáticamente mis alergias?',

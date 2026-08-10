@@ -15,7 +15,8 @@ export interface DangerZoneProps {
 
 /**
  * `/profile` footer "zona de peligro" (FRESCO-70): the 3 real, functional
- * account actions — logout, JSON data export, permanent account deletion.
+ * account actions — logout, CSV data export (FRESCO-163), permanent account
+ * deletion.
  * All three are genuinely wired, not placeholders — unlike the Ayuda
  * section's inert "Próximamente" rows on the same page.
  */
@@ -71,7 +72,7 @@ export function DangerZone({ email }: DangerZoneProps) {
       <div className="flex items-center justify-between gap-3 py-3">
         <div className="flex items-center gap-2 text-body-md text-text">
           <Download className="size-4 text-tertiary" aria-hidden="true" />
-          Backup JSON
+          Backup CSV
         </div>
         <a
           href="/api/profile/export"
