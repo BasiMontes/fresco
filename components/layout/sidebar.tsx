@@ -1,7 +1,7 @@
 'use client';
 
 import type { AccountUser } from '@/components/layout/sidebar-account';
-import { BookOpen, Calendar, Home, User } from 'lucide-react';
+import { BookOpen, Calendar, Home, ShoppingCart, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -21,6 +21,9 @@ const NAV_ITEMS = [
   { href: '/menu', label: 'Menú', icon: Home },
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/recipes', label: 'Recetas', icon: BookOpen },
+  // FRESCO-164 — /shopping-list (STORY-FRESCO-13) was fully built and
+  // working, just unreachable: no nav item linked to it anywhere.
+  { href: '/shopping-list', label: 'Lista', icon: ShoppingCart },
   { href: '/profile', label: 'Perfil', icon: User },
 ] as const;
 
