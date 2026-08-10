@@ -250,13 +250,48 @@ export function CalendarGrid({
           vertical word stack) to a horizontally-scrolling row of fixed-width
           columns. Real per-column width beats cramming all 7 days into one
           viewport.
+
+          FRESCO-159 — CSS Grid (not flex) columns, plus a sticky meal-type
+          label column: replaces the old per-`SlotCell` "DESAYUNO"/"COMIDA"/
+          "CENA" text, which repeated identically across every day column
+          (a real "why does this say Desayuno 7 times" complaint, not just a
+          style nit). A flex-column day-stack next to an independent
+          flex-column label-stack would drift out of alignment the moment
+          any card's recipe title wraps to a different number of lines than
+          its neighbors — CSS Grid's shared row tracks size to the tallest
+          cell IN THAT ROW ACROSS EVERY COLUMN by construction, so the label
+          for "comida" always lines up with every day's comida card
+          regardless of how tall any of them render. `gridAutoFlow: column`
+          + an explicit `gridTemplateRows` of exactly `planningMeals.length +
+          1` tracks makes this work from plain DOM order: the label column
+          contributes 1 (spacer) + N (labels) items, each day column
+          contributes 1 (day header) + N (`SlotCell`s) items — every group
+          fills one column of the row template before wrapping to the next,
+          no manual row/column index bookkeeping needed.
         */}
         <div className="overflow-x-auto pb-2">
-          <div className="flex gap-3">
+          <div
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: `auto repeat(${planningDays.length}, 15rem)`,
+              gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
+              gridAutoFlow: 'column',
+            }}
+          >
+            <div aria-hidden="true" />
+            {planningMeals.map(tipo => (
+              <p
+                key={tipo}
+                className="sticky left-0 z-10 bg-background pr-3 pt-3 text-h6 uppercase text-tertiary"
+              >
+                {tipo}
+              </p>
+            ))}
+
             {planningDays.map((dia) => {
               const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
               return (
-                <div key={dia} className="flex w-60 shrink-0 flex-col gap-3">
+                <React.Fragment key={dia}>
                   <p
                     className={cn(
                       'text-label',
@@ -277,7 +312,7 @@ export function CalendarGrid({
                       onMark={estado => void handleMarkEstado(dia, tipo, estado)}
                     />
                   ))}
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
@@ -422,8 +457,6 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
         estado === 'descartada' && 'opacity-60',
       )}
     >
-      <p className="mb-2 text-h6 uppercase text-tertiary">{tipo}</p>
-
       {recipe
         ? (
             <>
