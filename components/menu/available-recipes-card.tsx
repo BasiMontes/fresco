@@ -13,13 +13,11 @@ import { Card, CardContent } from '@/components/ui/card';
 export function AvailableRecipesCard({ count }: { count: number }) {
   return (
     <Link href="/recipes" data-testid="available_recipes_card" className="block">
-      <Card className="mt-4 flex items-center gap-3">
-        <CardContent className="flex items-center gap-3">
-          <BookOpen className="size-6 shrink-0 text-primary" aria-hidden="true" />
-          <div>
-            <p className="text-h2">{count}</p>
-            <p className="text-body-sm text-tertiary">recetas disponibles para ti</p>
-          </div>
+      <Card>
+        <CardContent className="flex flex-col items-start gap-1">
+          <BookOpen className="size-5 text-primary" aria-hidden="true" />
+          <p className="text-h3">{count}</p>
+          <p className="text-body-sm text-tertiary">recetas disponibles</p>
         </CardContent>
       </Card>
     </Link>

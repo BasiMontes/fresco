@@ -106,10 +106,12 @@ export default async function MenuPage() {
         {/* FRESCO-56: banner shown regardless of plan state, per AC. */}
         <CalendarSuggestionBanner />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
-        {recetasDisponibles !== null && (
-          <AvailableRecipesCard count={recetasDisponibles} />
-        )}
-        <SavingsEstimateCards />
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {recetasDisponibles !== null && (
+            <AvailableRecipesCard count={recetasDisponibles} />
+          )}
+          <SavingsEstimateCards />
+        </div>
         <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
         <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
@@ -137,11 +139,12 @@ export default async function MenuPage() {
 
       <CalendarSuggestionBanner />
 
-      {recetasDisponibles !== null && (
-        <AvailableRecipesCard count={recetasDisponibles} />
-      )}
-
-      <SavingsEstimateCards />
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {recetasDisponibles !== null && (
+          <AvailableRecipesCard count={recetasDisponibles} />
+        )}
+        <SavingsEstimateCards />
+      </div>
 
       {user?.is_anonymous && (
         <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">

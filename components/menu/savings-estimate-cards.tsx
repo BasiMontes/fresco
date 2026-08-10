@@ -18,20 +18,24 @@ const ESTIMATES = [
   { icon: Clock, value: '~3h', label: 'Tiempo recuperado' },
 ] as const;
 
+/**
+ * FRESCO-156: no longer owns its own grid wrapper — renders as siblings of
+ * `AvailableRecipesCard` inside the shared 2x2/4-col grid in `/menu`'s page
+ * component, so all four value-indicator cards (recetas disponibles + these
+ * 3) reflow together on mobile instead of stacking as 4 separate rows.
+ */
 export function SavingsEstimateCards() {
   return (
-    <div className="mt-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="savings_estimate_cards">
-        {ESTIMATES.map(({ icon: Icon, value, label }) => (
-          <Card key={label}>
-            <CardContent className="flex flex-col items-start gap-1">
-              <Icon className="size-5 text-primary" aria-hidden="true" />
-              <p className="text-h3">{value}</p>
-              <p className="text-body-sm text-tertiary">{label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+    <>
+      {ESTIMATES.map(({ icon: Icon, value, label }) => (
+        <Card key={label} data-testid="savings_estimate_cards">
+          <CardContent className="flex flex-col items-start gap-1">
+            <Icon className="size-5 text-primary" aria-hidden="true" />
+            <p className="text-h3">{value}</p>
+            <p className="text-body-sm text-tertiary">{label}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </>
   );
 }
