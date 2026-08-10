@@ -8,6 +8,7 @@ import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
 import { PersonalRecipeCard } from '@/components/recipes/personal-recipe-card';
 import { Button } from '@/components/ui/button';
+import { Dropdown } from '@/components/ui/dropdown';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -30,24 +31,30 @@ const NINGUN_ALERGENO = 'ninguno' as const;
 const COCINA_OPTIONS: TipoCocina[] = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'];
 const DIETA_OPTIONS = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
 
-/** FRESCO-67 — no dropdown primitive exists in this design system yet; a native `<select>`, styled to match `Input`'s pill shape, is the simplest correct choice for a single-pick list this size (7–10 options — `SegmentedControl` would be too wide/cluttered at that count). */
-function FilterSelect({ label, value, onChange, children }: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  children: React.ReactNode
-}) {
-  return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={event => onChange(event.target.value)}
-      className="h-9 rounded-full border border-border bg-surface px-3 text-body-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-    >
-      {children}
-    </select>
-  );
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+/**
+ * FRESCO-160 — the 3 filters below used to be native `<select>` elements
+ * (FRESCO-67's own doc comment: "no dropdown primitive exists in this
+ * design system yet"). One does now (`components/ui/dropdown.tsx`, built
+ * for onboarding's Sexo/Objetivo/Nivel pickers) — these option lists are
+ * reshaped once here into that component's `{value, label}` shape rather
+ * than inline at each call site.
+ */
+const COCINA_DROPDOWN_OPTIONS = [
+  { value: TODAS_LAS_COCINAS, label: 'Todas las cocinas' },
+  ...COCINA_OPTIONS.map(option => ({ value: option, label: capitalize(option) })),
+];
+const DIETA_DROPDOWN_OPTIONS = [
+  { value: CUALQUIER_DIETA, label: 'Cualquier dieta' },
+  ...DIETA_OPTIONS.map(option => ({ value: option, label: DIETA_LABELS[option] ?? option })),
+];
+const ALERGENO_DROPDOWN_OPTIONS = [
+  { value: NINGUN_ALERGENO, label: 'Sin evitar ningún alérgeno' },
+  ...ALERGENO_OPTIONS,
+];
 
 /**
  * FRESCO-66 — a recipe with `clasificacion: null` (some seed rows are only
@@ -175,27 +182,40 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
         onChange={value => setTab(value as MealTab)}
       />
 
-      <div className="mt-4 flex flex-wrap gap-2" data-testid="recipe_library_filters">
-        <FilterSelect label="Filtrar por cocina" value={cocina} onChange={setCocina}>
-          <option value={TODAS_LAS_COCINAS}>Todas las cocinas</option>
-          {COCINA_OPTIONS.map(option => (
-            <option key={option} value={option}>{option}</option>
-          ))}
-        </FilterSelect>
+      <h2 className="mt-4 text-h6 uppercase text-tertiary">Filtros</h2>
+      <div className="mt-2 flex flex-wrap gap-3" data-testid="recipe_library_filters">
+        <label className="flex flex-col gap-1">
+          <span className="text-caption uppercase text-tertiary">Cocina</span>
+          <Dropdown
+            data-testid="cocina_filter_dropdown"
+            aria-label="Filtrar por cocina"
+            options={COCINA_DROPDOWN_OPTIONS}
+            value={cocina}
+            onChange={setCocina}
+          />
+        </label>
 
-        <FilterSelect label="Filtrar por dieta" value={dieta} onChange={setDieta}>
-          <option value={CUALQUIER_DIETA}>Cualquier dieta</option>
-          {DIETA_OPTIONS.map(option => (
-            <option key={option} value={option}>{DIETA_LABELS[option]}</option>
-          ))}
-        </FilterSelect>
+        <label className="flex flex-col gap-1">
+          <span className="text-caption uppercase text-tertiary">Dieta</span>
+          <Dropdown
+            data-testid="dieta_filter_dropdown"
+            aria-label="Filtrar por dieta"
+            options={DIETA_DROPDOWN_OPTIONS}
+            value={dieta}
+            onChange={setDieta}
+          />
+        </label>
 
-        <FilterSelect label="Evitar un alérgeno puntual" value={alergeno} onChange={setAlergeno}>
-          <option value={NINGUN_ALERGENO}>Sin evitar ningún alérgeno</option>
-          {ALERGENO_OPTIONS.map(option => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </FilterSelect>
+        <label className="flex flex-col gap-1">
+          <span className="text-caption uppercase text-tertiary">Alérgeno</span>
+          <Dropdown
+            data-testid="alergeno_filter_dropdown"
+            aria-label="Evitar un alérgeno puntual"
+            options={ALERGENO_DROPDOWN_OPTIONS}
+            value={alergeno}
+            onChange={setAlergeno}
+          />
+        </label>
       </div>
 
       {filtered.length > 0 && (
