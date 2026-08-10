@@ -3,7 +3,9 @@
 import { ChevronRight, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { LegalModal } from '@/components/legal/legal-modal';
+import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { createClient } from '@/lib/supabase/client';
 
 interface FaqItem {
   question: string
@@ -78,6 +80,25 @@ const ROWS = [
  */
 export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProps) {
   const [openModal, setOpenModal] = useState<AyudaModal>(null);
+  // FRESCO-161 — reuses the same `resetPasswordForEmail` call and
+  // anti-enumeration posture (no error branching — Supabase's own API never
+  // reveals whether the address has an account either) as
+  // `app/forgot-password/page.tsx`'s step 1, rather than building a
+  // current-password-verification form from scratch.
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  async function handleSendPasswordReset() {
+    setIsSendingReset(true);
+    try {
+      const client = createClient();
+      await client.auth.resetPasswordForEmail(email);
+      setResetSent(true);
+    }
+    finally {
+      setIsSendingReset(false);
+    }
+  }
 
   return (
     <>
@@ -121,6 +142,31 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
               <p className="text-tertiary">{memberSince}</p>
             </div>
           )}
+          <div>
+            <h3 className="text-label mb-1">Contraseña</h3>
+            {resetSent
+              ? (
+                  <p data-testid="password_reset_sent_message" role="status" aria-live="polite" className="text-tertiary">
+                    Te enviamos un enlace a
+                    {' '}
+                    {email}
+                    {' '}
+                    para elegir una nueva contraseña.
+                  </p>
+                )
+              : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    data-testid="cambiar_contrasena_button"
+                    disabled={isSendingReset}
+                    onClick={() => void handleSendPasswordReset()}
+                  >
+                    {isSendingReset ? 'Enviando…' : 'Cambiar contraseña'}
+                  </Button>
+                )}
+          </div>
           <p className="text-caption text-tertiary">
             ¿Quieres cambiar tu dieta o alérgenos? Edítalos en la tarjeta "Preferencias" de arriba.
           </p>
