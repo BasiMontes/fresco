@@ -442,6 +442,12 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
                       <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
                     )}
                 {/*
+                  FRESCO-159 — no drag handle for desayuno: user-reported
+                  finding, breakfast slots don't need drag & drop. Not
+                  rendering the handle is sufficient to disable dragging
+                  entirely (see the comment below) — no need to also flip
+                  `useDraggable`'s `disabled` flag.
+
                   Drag activation listeners live ONLY on this handle, not the
                   whole cell (dnd-kit's documented "drag handle" pattern) —
                   spreading them on the outer div, as before FRESCO-15, made
@@ -451,23 +457,25 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
                   buttons never worked, dnd-kit's own screen-reader announcer
                   confirmed a self-drop was registered on every click.
                 */}
-                <Button
-                  type="button"
-                  variant="icon"
-                  size="sm"
-                  {...listeners}
-                  {...attributes}
-                  aria-label="Arrastrar para reordenar"
-                  disabled={disabled}
-                  // STORY-FRESCO-88 — dnd-kit's own pointer handling (via
-                  // `listeners`) must still fire, so no `preventDefault()`
-                  // here; only stop the `click` from bubbling into the
-                  // cell's navigation `onClick`.
-                  onClick={event => event.stopPropagation()}
-                  className="absolute left-2 top-2 cursor-grab touch-none disabled:cursor-not-allowed"
-                >
-                  <GripVertical className="size-[22px]" />
-                </Button>
+                {tipo !== 'desayuno' && (
+                  <Button
+                    type="button"
+                    variant="icon"
+                    size="sm"
+                    {...listeners}
+                    {...attributes}
+                    aria-label="Arrastrar para reordenar"
+                    disabled={disabled}
+                    // STORY-FRESCO-88 — dnd-kit's own pointer handling (via
+                    // `listeners`) must still fire, so no `preventDefault()`
+                    // here; only stop the `click` from bubbling into the
+                    // cell's navigation `onClick`.
+                    onClick={event => event.stopPropagation()}
+                    className="absolute left-2 top-2 cursor-grab touch-none disabled:cursor-not-allowed"
+                  >
+                    <GripVertical className="size-[22px]" />
+                  </Button>
+                )}
               </div>
               <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
               <h3 className={cn('text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
