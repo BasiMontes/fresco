@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, HelpCircle, Settings, Shield } from 'lucide-react';
+import { ChevronRight, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
@@ -62,12 +62,15 @@ export interface AyudaSectionProps {
   memberSince: string | null
 }
 
-type AyudaModal = 'configuracion' | 'faq' | 'privacidad' | null;
+type AyudaModal = 'configuracion' | 'faq' | 'privacidad' | 'terminos' | null;
 
 const ROWS = [
   { key: 'configuracion' as const, icon: Settings, label: 'Configuración' },
   { key: 'faq' as const, icon: HelpCircle, label: 'FAQ' },
   { key: 'privacidad' as const, icon: Shield, label: 'Privacidad' },
+  // FRESCO-162 — the content already existed in LegalModal (TERMS_SECTIONS),
+  // just had no entry point from `/profile`.
+  { key: 'terminos' as const, icon: FileText, label: 'Términos de Servicio' },
 ];
 
 /**
@@ -181,15 +184,24 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
         className="sm:max-w-2xl"
       >
         <h2 className="text-h4 pr-8">Preguntas frecuentes</h2>
-        <div className="mt-4 flex flex-col gap-4 text-body-sm text-text">
+        {/* FRESCO-162 — bumped from text-body-sm/text-tertiary (13px, muted)
+            to text-body-md/text-text (15px, full-contrast): this is the
+            primary content being read, not secondary metadata. */}
+        <div className="mt-4 flex flex-col gap-4 text-body-md text-text">
           {FAQ_ITEMS.map(({ question, answer }) => (
             <div key={question}>
               <h3 className="text-label mb-1">{question}</h3>
-              <p className="text-tertiary">{answer}</p>
+              <p>{answer}</p>
             </div>
           ))}
         </div>
       </Dialog>
+
+      <LegalModal
+        open={openModal === 'terminos'}
+        onOpenChange={open => setOpenModal(open ? 'terminos' : null)}
+        section="terminos"
+      />
 
       <LegalModal
         open={openModal === 'privacidad'}

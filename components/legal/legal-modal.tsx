@@ -146,7 +146,7 @@ export function LegalModal({ open, onOpenChange, section }: LegalModalProps) {
     >
       <h2 className="text-h4 pr-8">{SECTION_LABEL[section]}</h2>
 
-      <div className="mt-4 text-body-sm text-text">
+      <div className="mt-4 text-body-md text-text">
         {(section === 'terminos' || section === 'privacidad') && (
           <div data-testid={`legal_modal_content_${section}`}>
             <p className="mb-4 rounded-md bg-warning/10 p-2 text-caption text-warning">
@@ -156,7 +156,10 @@ export function LegalModal({ open, onOpenChange, section }: LegalModalProps) {
               {(section === 'terminos' ? TERMS_SECTIONS : PRIVACY_SECTIONS).map(({ title, body }) => (
                 <div key={title}>
                   <h3 className="text-label mb-1">{title}</h3>
-                  <p className="text-tertiary">{body}</p>
+                  {/* FRESCO-162 — bumped from text-tertiary (muted) to
+                      inherit the parent's text-text: legal body copy is
+                      primary content to read, not secondary metadata. */}
+                  <p>{body}</p>
                 </div>
               ))}
             </div>
