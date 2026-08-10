@@ -16,6 +16,11 @@ const MAX_WEEK_OFFSET = 2;
  * strictly weekly (`meal_plans.semana_iso`), and a month framing doesn't fit
  * a week-granular feature (Rule 14: mockup as inspiration, not literal spec).
  *
+ * FRESCO-157 — user-reported finding: this control read as too wide.
+ * Circle buttons trimmed `size-9` (36px) -> `size-8` (32px) and the date
+ * label's `min-w-24` (96px) -> `min-w-20` (80px), still comfortably fitting
+ * the longest label shape ("27 jul – 2 ago") without truncating.
+ *
  * FRESCO-158 — user-reported finding: navigation was unbounded, letting a
  * user scroll arbitrarily far into the past/future for a feature whose data
  * model (and generation flow) really only makes sense within a handful of
@@ -46,7 +51,7 @@ export function WeekNavigation({ semanaIso, mondayIso }: { semanaIso: string, mo
               href={`/calendar?semana=${semanaAnterior}`}
               aria-label="Semana anterior"
               data-testid="week_nav_prev"
-              className="grid size-9 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200"
+              className="grid size-8 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200"
             >
               <ChevronLeft className="size-4" />
             </Link>
@@ -56,12 +61,12 @@ export function WeekNavigation({ semanaIso, mondayIso }: { semanaIso: string, mo
               aria-label="Semana anterior"
               aria-disabled="true"
               data-testid="week_nav_prev"
-              className="grid size-9 place-items-center rounded-full bg-surface text-tertiary opacity-40"
+              className="grid size-8 place-items-center rounded-full bg-surface text-tertiary opacity-40"
             >
               <ChevronLeft className="size-4" />
             </span>
           )}
-      <p className="min-w-24 text-center text-label uppercase text-text" data-testid="week_nav_label">
+      <p className="min-w-20 text-center text-label uppercase text-text" data-testid="week_nav_label">
         {label}
       </p>
       {canGoNext
@@ -70,7 +75,7 @@ export function WeekNavigation({ semanaIso, mondayIso }: { semanaIso: string, mo
               href={`/calendar?semana=${semanaSiguiente}`}
               aria-label="Semana siguiente"
               data-testid="week_nav_next"
-              className="grid size-9 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200"
+              className="grid size-8 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200"
             >
               <ChevronRight className="size-4" />
             </Link>
@@ -80,7 +85,7 @@ export function WeekNavigation({ semanaIso, mondayIso }: { semanaIso: string, mo
               aria-label="Semana siguiente"
               aria-disabled="true"
               data-testid="week_nav_next"
-              className="grid size-9 place-items-center rounded-full bg-surface text-tertiary opacity-40"
+              className="grid size-8 place-items-center rounded-full bg-surface text-tertiary opacity-40"
             >
               <ChevronRight className="size-4" />
             </span>
