@@ -188,6 +188,17 @@ export default function OnboardingPage() {
   // DB check constraint: presupuesto_semana_euros > 0 — null (unset) is
   // valid, only an explicit non-positive value is rejected.
   const presupuestoValid = presupuestoSemanaEuros === null || presupuestoSemanaEuros > 0;
+  // FRESCO-165/166 — QA sweep found "Ninguno" (days) left 0 days selected
+  // with "Generar mi menú" still enabled: it generated a menu anyway. Worse,
+  // deselecting all 3 meals didn't block generation either, and because
+  // `upsertUserProfile()` below persists `planning_meals`/`planning_days`
+  // BEFORE `generateMealPlan()` runs, a user who reached that state and hit
+  // a generation failure (e.g. 409 "plan already exists") was left with a
+  // permanently-saved empty preference — `/menu` reads today's meals from
+  // that (now-corrupted) preference, not from the real stored plan, so it
+  // rendered with zero meal cards and no explanation. Blocking submission
+  // here prevents the empty-preference profile write from ever happening.
+  const hasInvalidPlanning = planningDays.length === 0 || planningMeals.length === 0;
 
   // A11y: the wizard swaps step content in place (single route) — without
   // this, a screen-reader/keyboard user gets no signal the content changed
@@ -624,6 +635,12 @@ export default function OnboardingPage() {
                 Ninguno
               </button>
             </div>
+
+            {hasInvalidPlanning && (
+              <p data-testid="planning_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
+                Selecciona al menos un día y una comida para generar tu menú.
+              </p>
+            )}
           </>
         )}
 
@@ -699,7 +716,7 @@ export default function OnboardingPage() {
                     onClick={() => {
                       void handleGenerate();
                     }}
-                    disabled={isGenerating || !household.valid || !presupuestoValid}
+                    disabled={isGenerating || !household.valid || !presupuestoValid || hasInvalidPlanning}
                   >
                     {isGenerating
                       ? (
