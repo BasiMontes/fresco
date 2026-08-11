@@ -31,6 +31,12 @@ export default function SignupPage() {
   const [signupError, setSignupError] = useState<string | null>(null);
   const [emailConflict, setEmailConflict] = useState(false);
   const [conflictPassword, setConflictPassword] = useState('');
+  // FRESCO-190: this project requires email confirmation, so `signUp()`
+  // succeeds without establishing a session. Set once that's confirmed, so
+  // she sees a clear "check your email" state instead of being redirected
+  // to /onboarding, where `ensureGuestSession()` would otherwise find no
+  // session and silently create a disconnected anonymous guest.
+  const [signupPendingConfirmation, setSignupPendingConfirmation] = useState(false);
   const [isReassigning, setIsReassigning] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
   // FRESCO-89: Supabase requires the anonymous user's email to be verified
@@ -233,6 +239,20 @@ export default function SignupPage() {
         setSignupError('Ya existe una cuenta con ese email. Inicia sesión en su lugar.');
         return;
       }
+      // FRESCO-190: `signUp()` above returns 200 the moment the account is
+      // created, regardless of whether Supabase actually issued a session —
+      // this project requires email confirmation, so it normally does NOT.
+      // Redirecting to /onboarding unconditionally used to let its
+      // `ensureGuestSession()` effect find no session and silently create a
+      // disconnected anonymous guest, masking that her real account was
+      // still sitting unconfirmed. Only the exceptional case (Supabase did
+      // return a session — e.g. if email confirmation is ever disabled)
+      // continues into onboarding; otherwise she gets a clear "check your
+      // email" state and stays right here.
+      if (!data.session) {
+        setSignupPendingConfirmation(true);
+        return;
+      }
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
       // draft left by a previous session in this same browser tab before
       // this brand-new account starts its own onboarding.
@@ -297,161 +317,178 @@ export default function SignupPage() {
                 </p>
               </>
             )
-          : step === 'form'
+          : signupPendingConfirmation
             ? (
                 <>
-                  <h1 className="text-h3">Guarda tu menú</h1>
-                  <p className="mt-1 text-body-sm text-tertiary">
-                    Crea una cuenta para no perder el menú que acabamos de generar.
-                  </p>
-
-                  <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
-                    <Input
-                      data-testid="email_input"
-                      type="email"
-                      placeholder="Correo electrónico"
-                      aria-label="Correo electrónico"
-                      required
-                      autoComplete="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                    />
-                    <Input
-                      data-testid="password_input"
-                      type="password"
-                      placeholder="Contraseña"
-                      aria-label="Contraseña"
-                      required
-                      minLength={6}
-                      autoComplete="new-password"
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                    />
-                    <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
-                      <input
-                        type="checkbox"
-                        data-testid="accept_terms_checkbox"
-                        checked={acceptedTerms}
-                        onChange={e => setAcceptedTerms(e.target.checked)}
-                        className="mt-0.5 size-4 shrink-0 accent-primary"
-                      />
-                      <span>
-                        Al crear una cuenta, aceptas nuestros
-                        {' '}
-                        <button
-                          type="button"
-                          data-testid="accept_terms_link_terminos"
-                          onClick={() => {
-                            setLegalModalSection('terminos');
-                            setLegalModalOpen(true);
-                          }}
-                          className="text-primary underline"
-                        >
-                          Términos de Servicio
-                        </button>
-                        {' '}
-                        y nuestra
-                        {' '}
-                        <button
-                          type="button"
-                          data-testid="accept_terms_link_privacidad"
-                          onClick={() => {
-                            setLegalModalSection('privacidad');
-                            setLegalModalOpen(true);
-                          }}
-                          className="text-primary underline"
-                        >
-                          Política de Privacidad
-                        </button>
-                        .
-                      </span>
-                    </label>
-
-                    {termsError && (
-                      <p data-testid="accept_terms_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-                        {termsError}
-                      </p>
-                    )}
-
-                    <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
-                      {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
-                    </Button>
-                  </form>
-
-                  <LegalModal
-                    open={legalModalOpen}
-                    onOpenChange={setLegalModalOpen}
-                    section={legalModalSection}
-                  />
-
-                  {signupError && (
-                    <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
-                      {signupError}
-                    </p>
-                  )}
-
-                  <p className="mt-4 text-center text-body-sm text-tertiary">
-                    ¿Ya tienes cuenta?
+                  <h1 className="text-h3">Revisa tu correo</h1>
+                  <p data-testid="signup_confirmation_pending_message" role="status" aria-live="polite" className="mt-1 text-body-sm text-tertiary">
+                    Te enviamos un enlace de confirmación a
                     {' '}
+                    <strong>{email}</strong>
+                    . Ábrelo para activar tu cuenta y luego inicia sesión.
+                  </p>
+                  <p className="mt-4 text-center text-body-sm text-tertiary">
                     <Link href="/login" className="text-primary">
-                      Inicia sesión
+                      Ir a iniciar sesión
                     </Link>
                   </p>
                 </>
               )
-            : (
-                <>
-                  <h1 className="text-h3">Revisa tu correo</h1>
-                  <p className="mt-1 text-body-sm text-tertiary">
-                    Te enviamos un código a
-                    {' '}
-                    <strong>{email}</strong>
-                    . Ingrésalo para confirmar tu cuenta.
-                  </p>
+            : step === 'form'
+              ? (
+                  <>
+                    <h1 className="text-h3">Guarda tu menú</h1>
+                    <p className="mt-1 text-body-sm text-tertiary">
+                      Crea una cuenta para no perder el menú que acabamos de generar.
+                    </p>
 
-                  <form onSubmit={event => void handleVerifyOtp(event)} className="mt-6 flex flex-col gap-3">
-                    <Input
-                      data-testid="otp_code_input"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Código de 6 dígitos"
-                      aria-label="Código de verificación"
-                      required
-                      pattern="\d{6}"
-                      maxLength={6}
-                      autoComplete="one-time-code"
-                      value={otpCode}
-                      onChange={e => setOtpCode(e.target.value)}
+                    <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+                      <Input
+                        data-testid="email_input"
+                        type="email"
+                        placeholder="Correo electrónico"
+                        aria-label="Correo electrónico"
+                        required
+                        autoComplete="email"
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                      />
+                      <Input
+                        data-testid="password_input"
+                        type="password"
+                        placeholder="Contraseña"
+                        aria-label="Contraseña"
+                        required
+                        minLength={6}
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                      />
+                      <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
+                        <input
+                          type="checkbox"
+                          data-testid="accept_terms_checkbox"
+                          checked={acceptedTerms}
+                          onChange={e => setAcceptedTerms(e.target.checked)}
+                          className="mt-0.5 size-4 shrink-0 accent-primary"
+                        />
+                        <span>
+                          Al crear una cuenta, aceptas nuestros
+                          {' '}
+                          <button
+                            type="button"
+                            data-testid="accept_terms_link_terminos"
+                            onClick={() => {
+                              setLegalModalSection('terminos');
+                              setLegalModalOpen(true);
+                            }}
+                            className="text-primary underline"
+                          >
+                            Términos de Servicio
+                          </button>
+                          {' '}
+                          y nuestra
+                          {' '}
+                          <button
+                            type="button"
+                            data-testid="accept_terms_link_privacidad"
+                            onClick={() => {
+                              setLegalModalSection('privacidad');
+                              setLegalModalOpen(true);
+                            }}
+                            className="text-primary underline"
+                          >
+                            Política de Privacidad
+                          </button>
+                          .
+                        </span>
+                      </label>
+
+                      {termsError && (
+                        <p data-testid="accept_terms_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+                          {termsError}
+                        </p>
+                      )}
+
+                      <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+                        {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
+                      </Button>
+                    </form>
+
+                    <LegalModal
+                      open={legalModalOpen}
+                      onOpenChange={setLegalModalOpen}
+                      section={legalModalSection}
                     />
 
-                    {otpError && (
-                      <p data-testid="signup_otp_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-                        {otpError}
+                    {signupError && (
+                      <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+                        {signupError}
                       </p>
                     )}
 
-                    {resendMessage && (
-                      <p data-testid="signup_otp_resend_message" role="status" aria-live="polite" className="text-body-sm text-tertiary">
-                        {resendMessage}
-                      </p>
-                    )}
+                    <p className="mt-4 text-center text-body-sm text-tertiary">
+                      ¿Ya tienes cuenta?
+                      {' '}
+                      <Link href="/login" className="text-primary">
+                        Inicia sesión
+                      </Link>
+                    </p>
+                  </>
+                )
+              : (
+                  <>
+                    <h1 className="text-h3">Revisa tu correo</h1>
+                    <p className="mt-1 text-body-sm text-tertiary">
+                      Te enviamos un código a
+                      {' '}
+                      <strong>{email}</strong>
+                      . Ingrésalo para confirmar tu cuenta.
+                    </p>
 
-                    <Button data-testid="signup_verify_otp_button" type="submit" className="mt-2" disabled={isVerifyingOtp || otpCode.length !== 6}>
-                      {isVerifyingOtp ? 'Verificando…' : 'Confirmar código'}
-                    </Button>
+                    <form onSubmit={event => void handleVerifyOtp(event)} className="mt-6 flex flex-col gap-3">
+                      <Input
+                        data-testid="otp_code_input"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Código de 6 dígitos"
+                        aria-label="Código de verificación"
+                        required
+                        pattern="\d{6}"
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        value={otpCode}
+                        onChange={e => setOtpCode(e.target.value)}
+                      />
 
-                    <button
-                      type="button"
-                      data-testid="signup_resend_otp_button"
-                      onClick={() => void handleResendOtp()}
-                      disabled={isResendingOtp}
-                      className="text-center text-body-sm text-primary underline"
-                    >
-                      {isResendingOtp ? 'Reenviando…' : '¿No te llegó? Reenviar código'}
-                    </button>
-                  </form>
-                </>
-              )}
+                      {otpError && (
+                        <p data-testid="signup_otp_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+                          {otpError}
+                        </p>
+                      )}
+
+                      {resendMessage && (
+                        <p data-testid="signup_otp_resend_message" role="status" aria-live="polite" className="text-body-sm text-tertiary">
+                          {resendMessage}
+                        </p>
+                      )}
+
+                      <Button data-testid="signup_verify_otp_button" type="submit" className="mt-2" disabled={isVerifyingOtp || otpCode.length !== 6}>
+                        {isVerifyingOtp ? 'Verificando…' : 'Confirmar código'}
+                      </Button>
+
+                      <button
+                        type="button"
+                        data-testid="signup_resend_otp_button"
+                        onClick={() => void handleResendOtp()}
+                        disabled={isResendingOtp}
+                        className="text-center text-body-sm text-primary underline"
+                      >
+                        {isResendingOtp ? 'Reenviando…' : '¿No te llegó? Reenviar código'}
+                      </button>
+                    </form>
+                  </>
+                )}
       </Card>
 
       <LegalLinks />
