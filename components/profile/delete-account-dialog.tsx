@@ -9,11 +9,16 @@ import { deleteAccount, EdgeFunctionError } from '@/lib/api/edge-functions';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
+/** Fixed phrase a guest types to confirm deletion — guests have no real email to type instead. */
+const GUEST_CONFIRMATION_PHRASE = 'BORRAR CUENTA';
+
 export interface DeleteAccountDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** The caller's own email — the confirmation gate below. */
+  /** The caller's own email — the confirmation gate below. Always `''` for a guest session. */
   email: string
+  /** Whether this is a guest/anonymous session (`user.is_anonymous`) — it has no real email, so it confirms via `GUEST_CONFIRMATION_PHRASE` instead. */
+  isAnonymous: boolean
 }
 
 /**
@@ -23,14 +28,21 @@ export interface DeleteAccountDialogProps {
  * user has typed her own email exactly, a deliberate click-through guard
  * against a misclick on an action that cannot be undone (cascades through
  * every user-owned table at the DB level, see `deleteAccount`'s doc comment).
+ *
+ * FRESCO-168: a guest session's `email` is always `''` (no real email exists
+ * to type), so the confirmation target switches to a fixed phrase
+ * (`GUEST_CONFIRMATION_PHRASE`) for `isAnonymous` sessions — otherwise the
+ * gate is mathematically impossible to pass (`'' === ''` is never reachable
+ * because the guard also requires a non-empty input).
  */
-export function DeleteAccountDialog({ open, onOpenChange, email }: DeleteAccountDialogProps) {
+export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: DeleteAccountDialogProps) {
   const router = useRouter();
-  const [typedEmail, setTypedEmail] = useState('');
+  const [typedConfirmation, setTypedConfirmation] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const isConfirmed = typedEmail.trim().length > 0 && typedEmail.trim() === email;
+  const confirmationTarget = isAnonymous ? GUEST_CONFIRMATION_PHRASE : email;
+  const isConfirmed = typedConfirmation.trim().length > 0 && typedConfirmation.trim() === confirmationTarget;
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -74,7 +86,7 @@ export function DeleteAccountDialog({ open, onOpenChange, email }: DeleteAccount
         Esta acción no se puede deshacer. Se eliminarán tu perfil, tus menús, tus listas de la
         compra y tus recetas propias. Escribe
         {' '}
-        <strong className="text-text">{email}</strong>
+        <strong className="text-text">{confirmationTarget}</strong>
         {' '}
         para confirmar.
       </p>
@@ -83,11 +95,11 @@ export function DeleteAccountDialog({ open, onOpenChange, email }: DeleteAccount
         className="mt-4"
         data-testid="delete_account_email_input"
         type="text"
-        placeholder={email}
-        aria-label="Escribe tu email para confirmar"
+        placeholder={confirmationTarget}
+        aria-label={isAnonymous ? 'Escribe BORRAR CUENTA para confirmar' : 'Escribe tu email para confirmar'}
         autoComplete="off"
-        value={typedEmail}
-        onChange={event => setTypedEmail(event.target.value)}
+        value={typedConfirmation}
+        onChange={event => setTypedConfirmation(event.target.value)}
       />
 
       {deleteError && (

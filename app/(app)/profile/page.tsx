@@ -159,7 +159,7 @@ export default async function ProfilePage() {
           <CardTitle>Zona de peligro</CardTitle>
         </CardHeader>
         <CardContent>
-          <DangerZone email={user?.email ?? ''} />
+          <DangerZone email={user?.email ?? ''} isAnonymous={user?.is_anonymous ?? false} />
         </CardContent>
       </Card>
     </div>
