@@ -11,6 +11,8 @@ import { createClient } from '@/lib/supabase/client';
 export interface DangerZoneProps {
   /** The caller's own email — passed through to the delete-account confirmation gate. */
   email: string
+  /** Whether this is a guest/anonymous session — passed through to the delete-account confirmation gate (FRESCO-168). */
+  isAnonymous: boolean
 }
 
 /**
@@ -20,7 +22,7 @@ export interface DangerZoneProps {
  * All three are genuinely wired, not placeholders — unlike the Ayuda
  * section's inert "Próximamente" rows on the same page.
  */
-export function DangerZone({ email }: DangerZoneProps) {
+export function DangerZone({ email, isAnonymous }: DangerZoneProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -101,7 +103,7 @@ export function DangerZone({ email }: DangerZoneProps) {
         </Button>
       </div>
 
-      <DeleteAccountDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} email={email} />
+      <DeleteAccountDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} email={email} isAnonymous={isAnonymous} />
     </div>
   );
 }
