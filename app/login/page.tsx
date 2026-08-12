@@ -1,6 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import { isAuthError } from '@supabase/supabase-js';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -47,6 +48,14 @@ function LoginPageInner() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  // FRESCO-190: set when login fails specifically because the account's
+  // email was never confirmed — the compounding half of the signup bug,
+  // where the account exists but was unreachable with no way to get a new
+  // confirmation link. Holds the email so the resend button below doesn't
+  // need her to retype it.
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+  const [resendConfirmationMessage, setResendConfirmationMessage] = useState<string | null>(null);
   // FRESCO-114: `disabled={isSubmitting}` alone depends on a React re-render
   // that doesn't land in time for two synchronous clicks in the same JS
   // tick — confirmed live via a programmatic double-click, 2 identical
@@ -60,11 +69,18 @@ function LoginPageInner() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     setLoginError(null);
+    setUnconfirmedEmail(null);
+    setResendConfirmationMessage(null);
     try {
       const client = createClient();
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) {
         setLoginError(translateAuthError(error));
+        // FRESCO-190: surface a resend affordance instead of leaving her
+        // stuck on a generic error with no path back to her account.
+        if (isAuthError(error) && error.code === 'email_not_confirmed') {
+          setUnconfirmedEmail(email);
+        }
         return;
       }
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
@@ -76,6 +92,24 @@ function LoginPageInner() {
     finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleResendConfirmation() {
+    if (!unconfirmedEmail) { return; }
+    setIsResendingConfirmation(true);
+    setResendConfirmationMessage(null);
+    try {
+      const client = createClient();
+      const { error } = await client.auth.resend({ type: 'signup', email: unconfirmedEmail });
+      if (error) {
+        setLoginError(translateAuthError(error));
+        return;
+      }
+      setResendConfirmationMessage('Te enviamos un nuevo enlace de confirmación.');
+    }
+    finally {
+      setIsResendingConfirmation(false);
     }
   }
 
@@ -143,6 +177,25 @@ function LoginPageInner() {
           <p data-testid="login_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
             {loginError}
           </p>
+        )}
+
+        {unconfirmedEmail && (
+          <div className="mt-2 text-center">
+            <button
+              type="button"
+              data-testid="resend_confirmation_button"
+              onClick={() => void handleResendConfirmation()}
+              disabled={isResendingConfirmation}
+              className="text-body-sm text-primary underline"
+            >
+              {isResendingConfirmation ? 'Reenviando…' : 'Reenviar email de confirmación'}
+            </button>
+            {resendConfirmationMessage && (
+              <p data-testid="resend_confirmation_message" role="status" aria-live="polite" className="mt-1 text-body-sm text-tertiary">
+                {resendConfirmationMessage}
+              </p>
+            )}
+          </div>
         )}
 
         <p className="mt-4 text-center text-body-sm text-tertiary">
