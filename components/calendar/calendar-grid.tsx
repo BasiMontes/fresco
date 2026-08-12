@@ -7,7 +7,8 @@ import type { MenuGrid, SlotKey } from '@/lib/calendar/apply-slot-swap';
 import {
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -116,8 +117,61 @@ export function CalendarGrid({
   const [draggingTipo, setDraggingTipo] = React.useState<TipoPlato | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
 
+  // FRESCO-170 — the meal-type label column ("desayuno"/"comida"/"cena")
+  // used `position: sticky; left: 0` to stay pinned while the grid scrolls
+  // horizontally. That doesn't work here: `gridAutoFlow: 'column'` places
+  // each label in its own single-column grid cell (~90px, sized to content),
+  // and a sticky element's containing block is that cell — once scrolled
+  // past the cell's own width, the label has nowhere left to "stick" and
+  // scrolls away with the rest of the row (unlike a `<table>`'s sticky first
+  // column, whose containing block is the full-width `<tr>`). Fixed by
+  // manually counter-translating the labels by the scroll container's own
+  // `scrollLeft` on every `scroll` event — same visual result as sticky,
+  // without depending on a containing block CSS Grid doesn't give this
+  // layout. Direct DOM writes (not React state) keep this off the render
+  // path so it doesn't add a re-render per scroll frame.
+  const scrollerRef = React.useRef<HTMLDivElement>(null);
+  const labelRefs = React.useRef<(HTMLParagraphElement | null)[]>([]);
+
+  React.useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) {
+      return;
+    }
+
+    const syncLabelsToScroll = () => {
+      const translateX = `translateX(${scroller.scrollLeft}px)`;
+      labelRefs.current.forEach((label) => {
+        if (label) {
+          label.style.transform = translateX;
+        }
+      });
+    };
+
+    syncLabelsToScroll();
+    scroller.addEventListener('scroll', syncLabelsToScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', syncLabelsToScroll);
+  }, [planningMeals.length]);
+
+  // FRESCO-170 — split mouse vs touch instead of one shared `PointerSensor`,
+  // each with its own activation constraint, because the two inputs need
+  // opposite disambiguation strategies on the same 36×36 drag handle:
+  //  - Mouse: `distance: 8` — a drag starts the moment the pointer travels
+  //    8px, matching the previous snappy desktop feel.
+  //  - Touch: `delay: 200, tolerance: 8` (long-press) — a quick swipe that
+  //    starts on the handle is released back to the browser as a scroll
+  //    within the 200ms window (see `hasExceededDistance` cancelling the
+  //    pending drag in dnd-kit's `AbstractPointerSensor.handleMove`); only a
+  //    press-and-hold activates a drag. A touch-side `distance` constraint
+  //    alone doesn't work here — once the handle's `touch-action: none` is
+  //    removed (see below), the browser can commit to native scrolling
+  //    within the first few px of *any* touch move, and dnd-kit's later
+  //    `preventDefault()` can no longer cancel a scroll already in
+  //    progress. `delay` sidesteps the race entirely: nothing moves during
+  //    the hold, so the browser never starts scrolling in the first place.
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor),
   );
 
@@ -251,9 +305,11 @@ export function CalendarGrid({
           columns. Real per-column width beats cramming all 7 days into one
           viewport.
 
-          FRESCO-159 — CSS Grid (not flex) columns, plus a sticky meal-type
-          label column: replaces the old per-`SlotCell` "DESAYUNO"/"COMIDA"/
-          "CENA" text, which repeated identically across every day column
+          FRESCO-159 — CSS Grid (not flex) columns, plus a meal-type label
+          column pinned during horizontal scroll (FRESCO-170 — via JS
+          scroll-sync, not CSS `sticky`; see the label's own comment below):
+          replaces the old per-`SlotCell` "DESAYUNO"/"COMIDA"/"CENA" text,
+          which repeated identically across every day column
           (a real "why does this say Desayuno 7 times" complaint, not just a
           style nit). A flex-column day-stack next to an independent
           flex-column label-stack would drift out of alignment the moment
@@ -269,7 +325,7 @@ export function CalendarGrid({
           fills one column of the row template before wrapping to the next,
           no manual row/column index bookkeeping needed.
         */}
-        <div className="overflow-x-auto pb-2">
+        <div ref={scrollerRef} className="overflow-x-auto pb-2">
           <div
             className="grid gap-3"
             style={{
@@ -279,10 +335,11 @@ export function CalendarGrid({
             }}
           >
             <div aria-hidden="true" />
-            {planningMeals.map(tipo => (
+            {planningMeals.map((tipo, index) => (
               <p
                 key={tipo}
-                className="sticky left-0 z-10 bg-background pr-3 pt-3 text-h6 uppercase text-tertiary"
+                ref={(el) => { labelRefs.current[index] = el; }}
+                className="relative z-10 bg-background pr-3 pt-3 text-h6 uppercase text-tertiary"
               >
                 {tipo}
               </p>
@@ -504,7 +561,17 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
                     // here; only stop the `click` from bubbling into the
                     // cell's navigation `onClick`.
                     onClick={event => event.stopPropagation()}
-                    className="absolute left-2 top-2 cursor-grab touch-none disabled:cursor-not-allowed"
+                    // FRESCO-170 — no `touch-none` here (was `cursor-grab
+                    // touch-none`): `touch-action: none` disables the
+                    // browser's native touch scrolling unconditionally for
+                    // any touch that starts on this element, regardless of
+                    // dnd-kit's own activation logic — confirmed live: a
+                    // touch swipe starting on this handle couldn't scroll
+                    // the grid at all, while the same swipe starting
+                    // anywhere else on the card scrolled fine. The `sensors`
+                    // activationConstraints above (see the comment there)
+                    // now arbitrate scroll-vs-drag intent instead.
+                    className="absolute left-2 top-2 cursor-grab disabled:cursor-not-allowed"
                   >
                     <GripVertical className="size-[22px]" />
                   </Button>
