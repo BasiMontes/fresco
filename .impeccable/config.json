@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "components/calendar/calendar-grid.tsx"
+        ],
+        "createdAt": "2026-08-13T16:06:11.043Z",
+        "reason": "User-confirmed false positive on FRESCO-148: error-banner border-l-4 border-error is a recognized alert pattern (Material/GitHub flash banners), not a decorative side-tab."
+      }
+    ]
+  }
+}
