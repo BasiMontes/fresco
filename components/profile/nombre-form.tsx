@@ -1,6 +1,7 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +26,7 @@ export interface NombreFormProps {
  * silent-on-first-paint behavior.
  */
 export function NombreForm({ nombreInicial }: NombreFormProps) {
+  const router = useRouter();
   const [nombre, setNombre] = useState(nombreInicial ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -47,6 +49,10 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
       const client = createClient();
       await updateNombre(client, trimmed);
       setSaved(true);
+      // FRESCO-179: /profile's greeting card and the sidebar both read
+      // `nombre` server-side (AppGroupLayout, /profile page.tsx) — without
+      // this, the save persists but those stay stale until a manual reload.
+      router.refresh();
     }
     catch (error) {
       console.error('[NombreForm] updateNombre failed', error);
