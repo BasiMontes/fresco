@@ -345,7 +345,7 @@ export function CalendarGrid({
               </p>
             ))}
 
-            {planningDays.map((dia) => {
+            {planningDays.map((dia, diaIndex) => {
               const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
               return (
                 <React.Fragment key={dia}>
@@ -367,6 +367,17 @@ export function CalendarGrid({
                       dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
                       pending={pendingSlots.has(slotId({ dia, tipo }))}
                       onMark={estado => void handleMarkEstado(dia, tipo, estado)}
+                      // FRESCO-183: every slot card is the same size, so
+                      // Chrome's LCP candidate can be whichever equally-
+                      // sized image finishes painting LAST within the
+                      // visible (unscrolled) region of this horizontally
+                      // scrollable grid — confirmed live via getBoundingClientRect
+                      // (grid's own rendered width ~954px vs ~1858px
+                      // scrollWidth at a standard desktop viewport, fitting
+                      // ~3-4 day columns before the grid clips). Covering
+                      // the first 4 days is a safe margin without eager-
+                      // loading all ~21 images across every day.
+                      priority={diaIndex <= 3}
                     />
                   ))}
                 </React.Fragment>
@@ -411,6 +422,8 @@ interface SlotCellProps {
   dropDisabled: boolean
   /** STORY-FRESCO-15 — marks this slot cocinada/descartada; no-ops if not pendiente. */
   onMark: (estado: 'cocinada' | 'descartada') => void
+  /** FRESCO-183 — true for slots in the grid's visible (unscrolled) day range; loads the image eagerly instead of lazily. */
+  priority: boolean
 }
 
 /**
@@ -434,7 +447,7 @@ interface SlotCellProps {
  * as before (STORY-FRESCO-15 — a buttons row competing for width with a
  * long title collapses the title's wrapper).
  */
-function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: SlotCellProps) {
+function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, priority }: SlotCellProps) {
   const router = useRouter();
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
@@ -525,6 +538,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark }: 
                         alt={recipe.nombre}
                         fill
                         sizes="240px"
+                        priority={priority}
                         className="object-cover"
                       />
                     )
