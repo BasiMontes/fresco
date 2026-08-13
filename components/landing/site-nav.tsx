@@ -22,7 +22,12 @@ export function SiteNav() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
+    // FRESCO-169: was `bg-background/95 backdrop-blur` — Tailwind can't
+    // apply an opacity modifier to a color defined as a raw `var(--color-*)`
+    // reference (tailwind.config.ts), so it silently resolved to a fully
+    // transparent background (confirmed via getComputedStyle). Solid
+    // bg-background fixes contrast on any section behind it.
+    <header className="sticky top-0 z-20 border-b border-border bg-background">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-8">
         <Link href="#" className="shrink-0">
           <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} priority />
