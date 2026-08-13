@@ -139,7 +139,7 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
             placeholder="Buscar receta, ingrediente..."
             value={query}
             onChange={event => setQuery(event.target.value)}
-            className="pl-9"
+            className="truncate pl-9"
             data-testid="recipe_search_input"
             aria-label="Buscar receta o ingrediente"
           />
