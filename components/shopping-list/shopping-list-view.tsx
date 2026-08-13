@@ -11,6 +11,17 @@ export interface ShoppingListViewProps {
 }
 
 /**
+ * FRESCO-180 — `unidad` is free text from the shopping-list Edge Function
+ * (Gemini classification, `lib/api/types.ts`'s `unidad: string`), not a
+ * fixed union, so this only singularizes the one unit the QA sweep actually
+ * found broken ("1 unidades") rather than guessing a general Spanish
+ * pluralization rule for units we have no confirmed data on.
+ */
+function formatUnidad(cantidad: number, unidad: string): string {
+  return cantidad === 1 && unidad === 'unidades' ? 'unidad' : unidad;
+}
+
+/**
  * Real shopping list (STORY-FRESCO-13) — replaces the old `MOCK_SHOPPING_LIST`
  * shell. `comprado` toggle calls `toggleShoppingListItem()` directly (no
  * Edge Function, per api-contracts.md §3 / the `jsonb_set_comprado` RPC),
@@ -97,7 +108,7 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                     ·
                     {item.cantidad}
                     {' '}
-                    {item.unidad}
+                    {formatUnidad(item.cantidad, item.unidad)}
                   </span>
                 </li>
               ))}
