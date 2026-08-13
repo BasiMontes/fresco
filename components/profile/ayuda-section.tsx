@@ -90,12 +90,24 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
   // current-password-verification form from scratch.
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState(false);
 
   async function handleSendPasswordReset() {
     setIsSendingReset(true);
+    setResetError(false);
     try {
       const client = createClient();
-      await client.auth.resetPasswordForEmail(email);
+      const { error } = await client.auth.resetPasswordForEmail(email);
+      // FRESCO-167: a real API failure (rate-limit, network, 5xx) must not
+      // be silenced as success — only "email doesn't exist" stays hidden,
+      // per the anti-enumeration posture this flow shares with
+      // forgot-password/page.tsx. `error` here is a real API error, never
+      // "unknown email" (Supabase doesn't distinguish that case in the
+      // response either).
+      if (error) {
+        setResetError(true);
+        return;
+      }
       setResetSent(true);
     }
     finally {
@@ -158,16 +170,23 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
                   </p>
                 )
               : (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    data-testid="cambiar_contrasena_button"
-                    disabled={isSendingReset}
-                    onClick={() => void handleSendPasswordReset()}
-                  >
-                    {isSendingReset ? 'Enviando…' : 'Cambiar contraseña'}
-                  </Button>
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      data-testid="cambiar_contrasena_button"
+                      disabled={isSendingReset}
+                      onClick={() => void handleSendPasswordReset()}
+                    >
+                      {isSendingReset ? 'Enviando…' : 'Cambiar contraseña'}
+                    </Button>
+                    {resetError && (
+                      <p data-testid="password_reset_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
+                        No pudimos enviar el enlace. Inténtalo de nuevo.
+                      </p>
+                    )}
+                  </>
                 )}
           </div>
           <p className="text-caption text-tertiary">
