@@ -132,6 +132,13 @@ export function CalendarGrid({
   // path so it doesn't add a re-render per scroll frame.
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const labelRefs = React.useRef<(HTMLParagraphElement | null)[]>([]);
+  // FRESCO-184 — the grid's horizontal scroll had no visual affordance: the
+  // last visible day column just clipped mid-card at 768px/1280px with
+  // nothing suggesting more days exist to the right. Tracked via the same
+  // scroll listener as the label sync above (one listener, not two) plus a
+  // `ResizeObserver` on the scroller itself, since a viewport resize alone
+  // (no scroll event) can flip whether the content overflows at all.
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
 
   React.useEffect(() => {
     const scroller = scrollerRef.current;
@@ -146,12 +153,19 @@ export function CalendarGrid({
           label.style.transform = translateX;
         }
       });
+      // 1px buffer for sub-pixel rounding at the exact scrolled-to-end position.
+      setCanScrollRight(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1);
     };
 
     syncLabelsToScroll();
     scroller.addEventListener('scroll', syncLabelsToScroll, { passive: true });
-    return () => scroller.removeEventListener('scroll', syncLabelsToScroll);
-  }, [planningMeals.length]);
+    const resizeObserver = new ResizeObserver(syncLabelsToScroll);
+    resizeObserver.observe(scroller);
+    return () => {
+      scroller.removeEventListener('scroll', syncLabelsToScroll);
+      resizeObserver.disconnect();
+    };
+  }, [planningMeals.length, planningDays.length]);
 
   // FRESCO-170 — split mouse vs touch instead of one shared `PointerSensor`,
   // each with its own activation constraint, because the two inputs need
@@ -325,64 +339,73 @@ export function CalendarGrid({
           fills one column of the row template before wrapping to the next,
           no manual row/column index bookkeeping needed.
         */}
-        <div ref={scrollerRef} className="overflow-x-auto pb-2">
-          <div
-            className="grid gap-3"
-            style={{
-              gridTemplateColumns: `auto repeat(${planningDays.length}, 15rem)`,
-              gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
-              gridAutoFlow: 'column',
-            }}
-          >
-            <div aria-hidden="true" />
-            {planningMeals.map((tipo, index) => (
-              <p
-                key={tipo}
-                ref={(el) => { labelRefs.current[index] = el; }}
-                className="relative z-10 bg-background pr-3 pt-3 text-h6 uppercase text-tertiary"
-              >
-                {tipo}
-              </p>
-            ))}
+        <div className="relative">
+          {canScrollRight && (
+            <div
+              aria-hidden="true"
+              data-testid="calendar_scroll_hint"
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent"
+            />
+          )}
+          <div ref={scrollerRef} className="overflow-x-auto pb-2">
+            <div
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: `auto repeat(${planningDays.length}, 15rem)`,
+                gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
+                gridAutoFlow: 'column',
+              }}
+            >
+              <div aria-hidden="true" />
+              {planningMeals.map((tipo, index) => (
+                <p
+                  key={tipo}
+                  ref={(el) => { labelRefs.current[index] = el; }}
+                  className="relative z-10 bg-background pr-3 pt-3 text-h6 uppercase text-tertiary"
+                >
+                  {tipo}
+                </p>
+              ))}
 
-            {planningDays.map((dia, diaIndex) => {
-              const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
-              return (
-                <React.Fragment key={dia}>
-                  <p
-                    className={cn(
-                      'text-label',
-                      isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-background',
-                    )}
-                  >
-                    {DIA_LABELS[dia]}
-                  </p>
-                  {planningMeals.map(tipo => (
-                    <SlotCell
-                      key={tipo}
-                      dia={dia}
-                      tipo={tipo}
-                      recipe={menu[dia][tipo]}
-                      estado={estados[dia][tipo]}
-                      dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
-                      pending={pendingSlots.has(slotId({ dia, tipo }))}
-                      onMark={estado => void handleMarkEstado(dia, tipo, estado)}
-                      // FRESCO-183: every slot card is the same size, so
-                      // Chrome's LCP candidate can be whichever equally-
-                      // sized image finishes painting LAST within the
-                      // visible (unscrolled) region of this horizontally
-                      // scrollable grid — confirmed live via getBoundingClientRect
-                      // (grid's own rendered width ~954px vs ~1858px
-                      // scrollWidth at a standard desktop viewport, fitting
-                      // ~3-4 day columns before the grid clips). Covering
-                      // the first 4 days is a safe margin without eager-
-                      // loading all ~21 images across every day.
-                      priority={diaIndex <= 3}
-                    />
-                  ))}
-                </React.Fragment>
-              );
-            })}
+              {planningDays.map((dia, diaIndex) => {
+                const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
+                return (
+                  <React.Fragment key={dia}>
+                    <p
+                      className={cn(
+                        'text-label',
+                        isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-background',
+                      )}
+                    >
+                      {DIA_LABELS[dia]}
+                    </p>
+                    {planningMeals.map(tipo => (
+                      <SlotCell
+                        key={tipo}
+                        dia={dia}
+                        tipo={tipo}
+                        recipe={menu[dia][tipo]}
+                        estado={estados[dia][tipo]}
+                        dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
+                        pending={pendingSlots.has(slotId({ dia, tipo }))}
+                        onMark={estado => void handleMarkEstado(dia, tipo, estado)}
+                        // FRESCO-183: every slot card is the same size, so
+                        // Chrome's LCP candidate can be whichever equally-
+                        // sized image finishes painting LAST within the
+                        // visible (unscrolled) region of this horizontally
+                        // scrollable grid — confirmed live via getBoundingClientRect
+                        // (grid's own rendered width ~954px vs ~1858px
+                        // scrollWidth at a standard desktop viewport, fitting
+                        // ~3-4 day columns before the grid clips). Covering
+                        // the first 4 days is a safe margin without eager-
+                        // loading all ~21 images across every day.
+                        priority={diaIndex <= 3}
+                      />
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </div>
         </div>
       </DndContext>
