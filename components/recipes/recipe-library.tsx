@@ -24,6 +24,9 @@ const MEAL_TABS: { value: MealTab, label: string }[] = [
   { value: 'cena', label: 'Cena' },
 ];
 
+/** FRESCO-187 — how many recipes render per page before "Ver más recetas" appends the next batch. */
+const RECIPE_PAGE_SIZE = 30;
+
 const TODAS_LAS_COCINAS = 'todas' as const;
 const CUALQUIER_DIETA = 'cualquiera' as const;
 const NINGUN_ALERGENO = 'ninguno' as const;
@@ -128,6 +131,18 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
       && matchesAlergenoFilter(recipe, alergeno)),
     [recipes, query, tab, cocina, dieta, alergeno],
   );
+  // FRESCO-187 — the full catalog (hundreds of recipes) rendered into the
+  // DOM in one shot with no cap. Filtering itself stays instant (still runs
+  // client-side over the full `recipes` array above — that's not what was
+  // slow), only the RENDER is paginated. Resets to one page whenever the
+  // filtered set changes, so switching filters after loading more pages
+  // never leaves a stale, oversized render or hides genuine results below
+  // an already-scrolled-past page boundary.
+  const [visibleCount, setVisibleCount] = React.useState(RECIPE_PAGE_SIZE);
+  React.useEffect(() => {
+    setVisibleCount(RECIPE_PAGE_SIZE);
+  }, [filtered]);
+  const visible = filtered.slice(0, visibleCount);
 
   return (
     <div>
@@ -237,13 +252,27 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
             />
           )
         : (
-            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="recipe_library_grid">
-              {filtered.map(recipe => (
-                <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-                  <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
-                </Link>
-              ))}
-            </div>
+            <>
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="recipe_library_grid">
+                {visible.map(recipe => (
+                  <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
+                    <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
+                  </Link>
+                ))}
+              </div>
+              {visibleCount < filtered.length && (
+                <div className="mt-6 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    data-testid="recipe_library_load_more_button"
+                    onClick={() => setVisibleCount(count => count + RECIPE_PAGE_SIZE)}
+                  >
+                    Ver más recetas
+                  </Button>
+                </div>
+              )}
+            </>
           )}
     </div>
   );
