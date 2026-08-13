@@ -3418,3 +3418,19 @@ Efectos colaterales de las propias pruebas en vivo, encontrados y corregidos en 
 **Por qué**: continuación del mismo pedido del user — terminar el backlog completo de bugs "Listo", priorizado por severidad.
 
 **Siguiente**: el backlog de "Listo" queda solo con el epic FRESCO-81 ("Cuenta y Sesión") sin abordar — no es un bug, es contenedor de historias. FRESCO-191 (revisión de diseño de lista de compra vía Stitch MCP) sigue pendiente, requiere reiniciar sesión para que el MCP cargue. El posible bug sistémico de opacidad Tailwind en `dialog.tsx`/`legal-modal.tsx`/`sidebar.tsx`/`sidebar-account.tsx` sigue sin auditar.
+
+---
+
+## 2026-08-13 — FRESCO-191: rediseño de lista de compra sin esperar al MCP de Stitch
+
+**Qué**: el MCP de Stitch (agregado a `.mcp.json` más temprano en la sesión) no cargó — requiere reinicio de sesión, no pasó. El user en cambio había adjuntado el mockup directo en la tarjeta de Jira (screenshot PNG + HTML exportado de Stitch). `acli workitem view` no trae attachments por default (solo devuelve `assignee/description/issuetype/status/summary` salvo que se pidan explícitamente) — encontrados y descargados vía REST directo (`GET /rest/api/3/issue/FRESCO-191?fields=attachment`, luego `GET .../attachment/content/{id}`).
+
+Adaptado `components/shopping-list/shopping-list-view.tsx` contra el mockup, usando solo datos reales ya existentes: `resumen.coste_estimado_min/max` y un conteo de pendientes en vivo (ambos ya calculados por `getShoppingListForPlan`, nunca mostrados en la UI) ahora en una card de Resumen. Headers de pasillo con ícono, mapeados de los 10 nombres de pasillo reales muestreados en vivo por SQL (`pasillo.nombre` es texto libre del prompt de la Edge Function, sin enum en el repo) — fallback `ChefHat` para cualquier no mapeado, mismo patrón que `category-icon.tsx`. Descartado a propósito, sin inventar datos: precio por item (la app solo tiene precio de lista completa), carrusel "Sugerencias para ti" + badges "Nuevo" (sin esos datos), nav inferior Pantry/History del mockup (es el nav global de `AppShell`, toca todas las rutas).
+
+Dos hallazgos en el camino, ambos corregidos antes de mergear: (1) `bg-secondary/10` en el ícono de pasillo pisó el mismo bug de opacidad de FRESCO-169 — reemplazado por `accent-2-100` (tinte pre-calculado del mismo color, sin modificador). (2) intenté un checkbox `rounded-full` para matchear el mockup — confirmado en vivo (`getComputedStyle`) que `appearance: auto` del navegador ignora `border-radius` en un checkbox nativo sin estilizar; no existe componente `Checkbox` custom en el design system, así que se dejó el checkbox cuadrado nativo normal, igual que el resto de la app, en vez de dejar algo a medio estilizar.
+
+PR #62 mergeado (squash) a `staging`, commit `fe9ffbb`. `comprado` toggle, optimistic-update-with-revert, y todos los `data-testid` existentes intactos. Validado en vivo: toggle funciona, contador de pendientes se actualiza al instante, persiste tras reload (round-trip a estado original para no ensuciar la cuenta QA).
+
+**Por qué**: pedido directo del user ("adapta sin romper nada") — la conexión del MCP quedó como secundaria, no bloqueante.
+
+**Siguiente**: cuando el user reinicie sesión y el MCP de Stitch cargue, se puede comparar este resultado contra el diseño real dentro de Stitch (proyecto/pantallas) si hace falta iterar más. Sin pendientes de código en este ticket.
