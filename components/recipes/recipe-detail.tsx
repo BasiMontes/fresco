@@ -118,14 +118,30 @@ function PersonalRecipeDetail({ receta }: { receta: RecetaPropia }) {
       </div>
 
       <h2 className="mt-6 text-h4">Ingredientes</h2>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-body-md" data-testid="recipe_detail_ingredientes">
-        {receta.ingredientes.map(ingrediente => <li key={ingrediente}>{ingrediente}</li>)}
-      </ul>
+      {receta.ingredientes.length > 0
+        ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-body-md" data-testid="recipe_detail_ingredientes">
+              {receta.ingredientes.map(ingrediente => <li key={ingrediente}>{ingrediente}</li>)}
+            </ul>
+          )
+        : (
+            <p className="mt-2 text-body-sm italic text-tertiary" data-testid="recipe_detail_ingredientes_vacio">
+              Sin ingredientes añadidos.
+            </p>
+          )}
 
       <h2 className="mt-6 text-h4">Preparación</h2>
-      <ol className="mt-2 list-decimal space-y-2 pl-5 text-body-md" data-testid="recipe_detail_pasos">
-        {receta.pasos.map(paso => <li key={paso}>{paso}</li>)}
-      </ol>
+      {receta.pasos.length > 0
+        ? (
+            <ol className="mt-2 list-decimal space-y-2 pl-5 text-body-md" data-testid="recipe_detail_pasos">
+              {receta.pasos.map(paso => <li key={paso}>{paso}</li>)}
+            </ol>
+          )
+        : (
+            <p className="mt-2 text-body-sm italic text-tertiary" data-testid="recipe_detail_pasos_vacio">
+              Sin pasos añadidos.
+            </p>
+          )}
     </div>
   );
 }
