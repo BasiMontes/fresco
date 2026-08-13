@@ -16,6 +16,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
  */
 
 export const ALL_DIAS_SEMANA: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+export const ALL_TIPO_PLATO_SLOT: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena'];
 
 export type DietaFlag
   = | 'dietaVegetariano'
@@ -70,6 +71,8 @@ export interface OnboardingState {
   toggleDay: (value: DiaSemana) => void
   selectAllDays: () => void
   selectNoDays: () => void
+  selectAllMeals: () => void
+  selectNoMeals: () => void
   setNivelExperiencia: (value: NivelExperienciaCulinaria) => void
   reset: () => void
 }
@@ -183,6 +186,8 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   toggleDay: value => set(state => ({ planningDays: toggleInArray(state.planningDays, value) })),
   selectAllDays: () => set({ planningDays: ALL_DIAS_SEMANA }),
   selectNoDays: () => set({ planningDays: [] }),
+  selectAllMeals: () => set({ planningMeals: ALL_TIPO_PLATO_SLOT }),
+  selectNoMeals: () => set({ planningMeals: [] }),
   setNivelExperiencia: value => set({ nivelExperiencia: value }),
   reset: () => set(initialState),
 }), {

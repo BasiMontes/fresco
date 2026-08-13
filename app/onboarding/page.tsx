@@ -171,6 +171,8 @@ export default function OnboardingPage() {
     toggleDay,
     selectAllDays,
     selectNoDays,
+    selectAllMeals,
+    selectNoMeals,
     setNivelExperiencia,
   } = useOnboardingStore();
 
@@ -608,6 +610,14 @@ export default function OnboardingPage() {
                   </Tag>
                 </button>
               ))}
+            </div>
+            <div className="mt-2 flex gap-3">
+              <button type="button" data-testid="select_all_meals_button" className="text-caption font-sans text-primary" onClick={selectAllMeals}>
+                Todos
+              </button>
+              <button type="button" data-testid="select_no_meals_button" className="text-caption font-sans text-tertiary" onClick={selectNoMeals}>
+                Ninguno
+              </button>
             </div>
 
             <h2 className="mt-6 text-h5">¿Qué días quieres planificar?</h2>
