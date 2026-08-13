@@ -39,6 +39,13 @@
       "headers": {
         "x-api-key": "${API_KEY_21ST}"
       }
+    },
+    "stitch": {
+      "type": "http",
+      "url": "https://stitch.googleapis.com/mcp",
+      "headers": {
+        "X-Goog-Api-Key": "${API_KEY_GOOGLE_STITCH}"
+      }
     }
   }
 }

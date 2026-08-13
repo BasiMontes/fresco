@@ -3356,3 +3356,65 @@ Traído a la rama principal vía cherry-pick de `8e0b558` solamente (sin commit 
 **Por qué**: pedido directo del user ("lanza otro batch más") para seguir el backfill FRESCO-31.
 
 **Siguiente**: 772/1000, 228 restantes. Si el próximo batch sigue devolviendo 403 desde el inicio, es la cuota horaria agotada — pausar hasta que resetee (rolling, sin hora exacta conocida) en vez de seguir quemando batches contra 403 constante.
+
+---
+
+## 2026-08-13 — Dos batches más de fotos (772→797) + FRESCO-31 actualizada en Jira
+
+**Qué**: dos batches más de `fetch-recipe-photos.ts`. Primero: 19/30 hits (772→791). Segundo: solo 6/30 — cascada de 403 a mitad de corrida, cuota/burst limiter de Unsplash agotándose (confirmado, no falso positivo). Aplicados vía Supabase MCP, verificado sin duplicados ambas veces. Jira FRESCO-31 estaba desactualizada (summary decía "772/1000" desde la sesión anterior) — actualizado el summary al conteo real y agregado comentario con el detalle de ambos batches y el cuello de botella actual (variantes solo-de-relleno tipo "versión ligera"/"con especias" apilados, que siguen colapsando al mismo query traducido incluso con el fallback amplio v10).
+
+**Por qué**: continuación directa del backfill FRESCO-31 a pedido del user ("lanza otro batch de fotos" / "lanza otro"), más el pedido explícito de sincronizar la tarjeta de Jira ("Esta tarjeta no está actualizada").
+
+**Siguiente**: 797/1000, 203 restantes. Próximo batch mejor esperar reset de cuota horaria de Unsplash antes de relanzar.
+
+---
+
+## 2026-08-13 — 10 bugs de "Listo" a "Control de calidad" (FRESCO-181/182/148/167/169/171/172/173/174/175) + Stitch MCP conectado
+
+**Qué**: revisado el tablero — columna "Listo" (Ready for Dev, no Done — mapea a categoría `new`) tenía 22 bugs + 1 epic. User pidió abordar la mitad hoy, priorizando severidad (MAJOR → sin tag → MINOR), moviendo cada uno a Control de calidad. Corrido en modo Solo de `/sprint-development` (sin subagentes por stage), un ticket por vez: plan liviano → fix → lint/types → validación en vivo (Playwright CLI, login con credenciales de `.env`) → PR contra `staging` → squash-merge → transición Jira → comentario de deploy. Los 10:
+
+- **FRESCO-181** (MAJOR): `Dropdown` de filtros de recetas sin patrón de teclado WAI-ARIA listbox — agregado roving tabindex + Arrow/Home/End/Enter/Escape completo.
+- **FRESCO-182** (MAJOR): sin `app/not-found.tsx` — 404 default de Next en inglés. Página propia con logo, copy en español, link a `/`.
+- **FRESCO-148**: revisado contra DESIGN.md (sin guía de componente para banners) — decisión humana: falso positivo del hook impeccable (borde-izquierdo-de-color es patrón de alerta válido), sin tocar código, movido a QA directo.
+- **FRESCO-167**: `handleSendPasswordReset` no chequeaba `{ error }` de `resetPasswordForEmail()` — un 400 real quedaba silenciado como éxito. Ahora muestra fallo real, postura anti-enumeración intacta. Validado con mock de red (400 en `auth/v1/recover`).
+- **FRESCO-169** (root-cause no trivial): header de landing se volvía 100% transparente al hacer scroll sobre secciones oscuras — `bg-background/95` resolvía a `rgba(0,0,0,0)` porque `tailwind.config.ts` mapea `background` a `var(--color-background)` crudo, y Tailwind no puede aplicar modificador de opacidad sobre eso. Fix: `bg-background` sólido. **Mismo patrón roto detectado en 4 archivos más** (`dialog.tsx` overlay, `legal-modal.tsx`, `sidebar.tsx`, `sidebar-account.tsx`) — no tocados (fuera de alcance), anotado en Jira para ticket aparte.
+- **FRESCO-171**: quitar de favoritos en `/favorites` no sacaba la tarjeta del grid hasta reload — extraído `FavoritesGrid` (client, estado local) + `onToggleFavorite` opcional en `FavoriteRecipeCard`, disparado solo tras confirmar el write.
+- **FRESCO-172**: agregado par Todos/Ninguno para comidas en onboarding paso 4 (mismo patrón que días) — `selectAllMeals`/`selectNoMeals` en el store.
+- **FRESCO-173**: logo del header enlazaba a `#` en vez de `/` — un carácter.
+- **FRESCO-174**: login/signup/forgot-password sin `<title>` propio — son client components, `metadata` solo funciona en Server Components, agregado un `layout.tsx` por ruta.
+- **FRESCO-175**: borrar semana era inmediato sin confirmación — agregado diálogo Cancelar/Confirmar (patrón `guest-logout-dialog.tsx`). Nota: revierte deliberadamente la regla de negocio original de FRESCO-62 ("inmediato, sin confirmación").
+
+10 PRs (#43-51, uno reintentado por 502 transitorio de GitHub durante el merge de #44 — el squash sí aplicó, solo falló la limpieza de la branch, reintentada después con éxito), todos mergeados a `staging`, todos transicionados a Control de calidad, todos con comentario de deploy.
+
+Aparte: user conectó el MCP de Google Stitch (diseño con IA), API key ya en `.env` (`API_KEY_GOOGLE_STITCH`). Verificado vía Tavily el endpoint oficial (`https://stitch.googleapis.com/mcp`, header `X-Goog-Api-Key`) tras encontrar fuentes de terceros contradictorias (algunas apuntaban a un paquete npm sin verificar) — no se instaló nada a ciegas, se le pidió al user el snippet exacto de su panel de Stitch antes de tocar `.mcp.json`. Agregado a `.mcp.json` siguiendo el mismo patrón que `21st` (`type: http`, `${API_KEY_GOOGLE_STITCH}`). Creada FRESCO-191 ("Revisar diseño de lista de la compra vía Stitch MCP") para abordar después de este batch de bugs, per pedido explícito del user.
+
+**Por qué**: pedido directo del user de abordar el backlog de "Listo" paso a paso, priorizado por severidad, con meta explícita de mover 10 a Control de calidad en el día.
+
+**Siguiente**: quedan 12 bugs + el epic FRESCO-81 sin abordar en "Listo" (los MINOR restantes: 176-189 salvo los 5 ya hechos). El MCP de Stitch necesita reinicio de sesión para cargar (agregado a `.mcp.json` a mitad de sesión). FRESCO-191 queda pendiente hasta después del batch de bugs. Posible bug sistémico de opacidad Tailwind en 4 archivos más — evaluar si vale ticket propio. `.env.example` no se pudo tocar (bloqueado por permisos del sandbox) — falta documentar `API_KEY_GOOGLE_STITCH` ahí si se quiere.
+
+---
+
+## 2026-08-13 — Últimos 12 bugs de "Listo" (FRESCO-176 a 189) — batch completo
+
+**Qué**: continuación directa del batch anterior, mismo orden de severidad (sin tag → MINOR), mismo modo Solo de `/sprint-development`. Los 12:
+
+- **FRESCO-176**: placeholder de búsqueda de recetas se cortaba sin elipsis en mobile — agregado `truncate` al input.
+- **FRESCO-177**: ya resuelto por FRESCO-168 (sesión previa) — `confirmationTarget` ya usa `GUEST_CONFIRMATION_PHRASE` para invitados. Sin cambio de código.
+- **FRESCO-178**: email en blanco para invitados en Configuración — root cause: `user?.email ?? 'Invitada'` en `page.tsx` no atrapa `''` (`??` solo cubre `null`/`undefined`). Fallback con `||` en el punto de render.
+- **FRESCO-179**: guardar nombre no refrescaba header/sidebar — `router.refresh()` tras guardado exitoso.
+- **FRESCO-180**: "1 unidades" en lista de compra — `formatUnidad()` en cliente, solo singulariza el caso reportado, sin tocar la Edge Function. Validado con lista real regenerada.
+- **FRESCO-183**: warning de LCP en `/calendar` sin `loading="eager"`. Root cause no trivial: con todas las tarjetas del mismo tamaño, el candidato LCP de Chrome no es determinístico — probé día 0 solo, luego días 0-1, ambos insuficientes; medido el ancho real del grid (~954px) vs su `scrollWidth` (~1858px), caben ~3-4 columnas visibles. `priority` cubre los primeros 4 días.
+- **FRESCO-184**: columnas de días cortadas sin indicio de scroll — gradiente en el borde derecho, visible solo mientras haya más contenido (mismo scroll listener + `ResizeObserver`).
+- **FRESCO-185**: sin feedback de "guardando" al crear receta propia — texto condicional "Guardando…".
+- **FRESCO-186**: receta solo-con-nombre mostraba listas vacías sin placeholder — "Sin ingredientes añadidos."/"Sin pasos añadidos." en el detalle, sin tocar la validación del form.
+- **FRESCO-187**: `/recipes` renderizaba el catálogo completo (1000 recetas) sin paginación. La referencia del ticket ("`/menu` tiene un botón funcional que agrega de a poco") no existía tal cual — ese componente es un scroll horizontal fijo, no carga incremental. Implementada paginación de render (30/página, filtrado sigue instantáneo sobre el array completo).
+- **FRESCO-188**: ya resuelto — `CopyButton` ya implementa el estado "Copiado" con checkmark. Sin cambio de código.
+- **FRESCO-189**: sin señal de rate-limiting tras logins fallidos repetidos — contador client-side (nunca enviado a ningún lado), aviso con link a restablecer contraseña tras 3 fallos seguidos. No bloquea el submit, la limitación real sigue en Supabase.
+
+11 PRs (#52-61, más el commit de corrección de un comentario stale en #56), todos mergeados a `staging`, todos transicionados a Control de calidad, todos con comentario de deploy. 2 de los 12 (177, 188) resultaron ya resueltos por sesiones previas — verificados en vivo antes de cerrar sin tocar código.
+
+Efectos colaterales de las propias pruebas en vivo, encontrados y corregidos en el camino: (1) 2 recetas de prueba creadas en la cuenta QA (FRESCO-180, FRESCO-186) — borradas vía SQL tras validar; (2) el nombre del usuario QA quedó en `''` tras pasar por el wizard de onboarding sin llenar el campo (efecto colateral de regenerar el menú para FRESCO-180) — restaurado a "QA Tester" vía SQL directo.
+
+**Por qué**: continuación del mismo pedido del user — terminar el backlog completo de bugs "Listo", priorizado por severidad.
+
+**Siguiente**: el backlog de "Listo" queda solo con el epic FRESCO-81 ("Cuenta y Sesión") sin abordar — no es un bug, es contenedor de historias. FRESCO-191 (revisión de diseño de lista de compra vía Stitch MCP) sigue pendiente, requiere reiniciar sesión para que el MCP cargue. El posible bug sistémico de opacidad Tailwind en `dialog.tsx`/`legal-modal.tsx`/`sidebar.tsx`/`sidebar-account.tsx` sigue sin auditar.
