@@ -422,7 +422,7 @@ interface SlotCellProps {
   dropDisabled: boolean
   /** STORY-FRESCO-15 — marks this slot cocinada/descartada; no-ops if not pendiente. */
   onMark: (estado: 'cocinada' | 'descartada') => void
-  /** FRESCO-183 — true only for the top-left slot (the LCP candidate); loads its image eagerly instead of lazily. */
+  /** FRESCO-183 — true for slots in the grid's visible (unscrolled) day range; loads the image eagerly instead of lazily. */
   priority: boolean
 }
 
