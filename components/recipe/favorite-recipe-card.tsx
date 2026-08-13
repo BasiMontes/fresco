@@ -10,6 +10,7 @@ export interface FavoriteRecipeCardProps {
   recipe: Recipe
   initialIsFavorite: boolean
   className?: string
+  onToggleFavorite?: (recipeId: string, isFavorite: boolean) => void
 }
 
 /**
@@ -19,7 +20,7 @@ export interface FavoriteRecipeCardProps {
  * update + revert-on-failure, same pattern as `ShoppingListView`'s
  * `comprado` checkbox.
  */
-export function FavoriteRecipeCard({ recipe, initialIsFavorite, className }: FavoriteRecipeCardProps) {
+export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onToggleFavorite }: FavoriteRecipeCardProps) {
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const supabase = React.useMemo(() => createClient(), []);
 
@@ -34,6 +35,11 @@ export function FavoriteRecipeCard({ recipe, initialIsFavorite, className }: Fav
       else {
         await removeFavorite(supabase, recipe.id);
       }
+      // FRESCO-171: only notify the parent once the write is confirmed —
+      // never optimistically, so a failed toggle (caught below) can't leave
+      // a page-level list (e.g. /favorites) out of sync with a card that
+      // reverted itself.
+      onToggleFavorite?.(recipe.id, next);
     }
     catch (error) {
       console.error('[FavoriteRecipeCard] toggle failed, reverting', error);
