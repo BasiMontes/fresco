@@ -62,6 +62,14 @@ function LoginPageInner() {
   // POSTs to /auth/v1/token. A ref is read/written synchronously, so it
   // catches the second click even before React re-renders the button.
   const isSubmittingRef = useRef(false);
+  // FRESCO-189: Supabase already rate-limits repeated failures server-side
+  // (`over_request_rate_limit`, already translated below), but nothing told
+  // the user that repeated failures were even being noticed — a QA sweep of
+  // 5 rapid attempts against the same account got the same generic 400
+  // every time, with no escalating signal. This is a client-side-only
+  // counter (never sent anywhere, resets on success or page reload) purely
+  // to surface a visible warning after a few failures in a row.
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,6 +84,7 @@ function LoginPageInner() {
       const { error } = await client.auth.signInWithPassword({ email, password });
       if (error) {
         setLoginError(translateAuthError(error));
+        setFailedAttempts(count => count + 1);
         // FRESCO-190: surface a resend affordance instead of leaving her
         // stuck on a generic error with no path back to her account.
         if (isAuthError(error) && error.code === 'email_not_confirmed') {
@@ -176,6 +185,17 @@ function LoginPageInner() {
         {loginError && (
           <p data-testid="login_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
             {loginError}
+          </p>
+        )}
+
+        {failedAttempts >= 3 && (
+          <p data-testid="login_repeated_failures_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-tertiary">
+            Varios intentos fallidos seguidos. Si no recuerdas tu contraseña, puedes
+            {' '}
+            <Link href="/forgot-password" className="text-primary">
+              restablecerla
+            </Link>
+            .
           </p>
         )}
 
