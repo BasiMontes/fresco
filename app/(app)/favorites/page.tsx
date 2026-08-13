@@ -1,8 +1,7 @@
-import { ArrowLeft, Heart } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
+import { FavoritesGrid } from '@/components/recipe/favorites-grid';
 import { buttonVariants } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
 import { getFavoriteRecipes } from '@/lib/api/favorites';
 import { createClient } from '@/lib/supabase/server';
 
@@ -12,8 +11,9 @@ import { createClient } from '@/lib/supabase/server';
  * app's real 4-item nav via `AppShell`, not the mockup's.
  *
  * FRESCO-77 — now backed by real data (`favorites` table). Cards stay
- * favoritable here too (`FavoriteRecipeCard`), so unfavoriting from this
- * page removes the recipe on the next render, not just visually.
+ * favoritable here too, via `FavoritesGrid` (FRESCO-171 — that's the
+ * client boundary that removes a card from view the moment it's
+ * unfavorited, not just on the next full reload).
  */
 export default async function FavoritesPage() {
   const supabase = await createClient();
@@ -38,25 +38,7 @@ export default async function FavoritesPage() {
         </div>
       </div>
 
-      {recetas.length === 0
-        ? (
-            <EmptyState
-              className="mt-6"
-              data-testid="favorites_empty_state"
-              icon={<Heart className="size-8 text-tertiary" aria-hidden="true" />}
-              title="Lista vacía"
-              description="Guarda recetas para verlas aquí."
-            />
-          )
-        : (
-            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="favorites_grid">
-              {recetas.map(recipe => (
-                <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-                  <FavoriteRecipeCard recipe={recipe} initialIsFavorite />
-                </Link>
-              ))}
-            </div>
-          )}
+      <FavoritesGrid recipes={recetas} />
     </div>
   );
 }
