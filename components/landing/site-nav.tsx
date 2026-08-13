@@ -29,7 +29,7 @@ export function SiteNav() {
     // bg-background fixes contrast on any section behind it.
     <header className="sticky top-0 z-20 border-b border-border bg-background">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-8">
-        <Link href="#" className="shrink-0">
+        <Link href="/" className="shrink-0">
           <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} priority />
         </Link>
 
