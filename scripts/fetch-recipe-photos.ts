@@ -66,6 +66,30 @@
 // giving up on the hash-for-variety approach in favor of always picking
 // index 0 (best-relevance, but back to the literal-duplicate risk this was
 // designed to avoid in the first place — the real tension is unresolved).
+//
+// v9 — root-caused the hit-rate collapse at 735/1000 applied (was 7-11/30,
+// dropped to 1-3/30). NOT a translation/relevance problem: this table's
+// combinatorial name-generator produces dozens of distinct recipes that
+// all collapse to the SAME translated query once FILLER_PHRASES strips the
+// modifier ("Salmon al horno con hierbas frescas version ligera" / "...al
+// estilo del sur con guarnicion de temporada" / "...estilo casero version
+// ligera" all reduce to "salmon baked cooked meal food photography" —
+// confirmed by sampling 15 random still-unphotographed rows live, every
+// one was a filler-only variant of an already-saturated concept). With
+// per_page capped at 30 and hundreds of recipes funneling into a few dozen
+// concept-buckets (baked salmon, chickpea salad, grilled squid...), those
+// buckets exhaust their entire page-1 candidate pool against `usedUrls`
+// well before the recipe pool does — every later recipe in that bucket
+// gets "no unclaimed candidate", indistinguishable in the old code from
+// "Unsplash genuinely has nothing for this". Fix: `searchUnsplash` now
+// tries page 2 (results 31-60) ONLY when page 1 returned candidates but
+// all were already claimed — a real page-2 fetch, not a relevance
+// downgrade, since Unsplash's own ranking for a common concept like
+// "salmon baked" stays legitimately on-topic 30-60 results deep (unlike
+// the old per_page=10/index 5-9 finding, which was a different, much
+// shallower pool). Costs a second HTTP call only in the exhaustion case
+// (rare early in a run, common now), so the burst-limiter cooldown logic
+// applies to both requests equally.
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -226,6 +250,25 @@ function translateQuery(nombre: string): string {
   return [...new Set(translated)].join(' ');
 }
 
+// v10 — broad-query fallback tier, only fired when the precise query is
+// fully exhausted (searchUnsplash returned null after trying page 1 + page
+// 2 where applicable). At 736/1000 applied, the precise query's hit rate
+// dropped to ~1/30 — most remaining recipes are filler-only variants of an
+// already-saturated concept-bucket (see v9 note), and pagination alone
+// can't fix a bucket whose TOTAL corpus is already claimed. User's own
+// call: since a later polish pass will manually fix any photo that
+// doesn't match reality, precision matters less than coverage right now —
+// trade some specificity for a much bigger candidate pool. Keeps only the
+// first 2 translated content words (dish-type/base + primary protein or
+// main ingredient, in source order — the words FILLER_PHRASES/STOPWORDS
+// leave closest to the front of the name) and drops the "cooked meal"
+// bias entirely, since that bias is exactly the kind of extra specificity
+// that shrinks the corpus for a bucket that's already running dry.
+function broadenQuery(nombre: string): string {
+  const words = translateQuery(nombre).split(' ').filter(Boolean);
+  return words.slice(0, 2).join(' ');
+}
+
 interface RecipeRow {
   id: string
   nombre: string
@@ -250,30 +293,19 @@ function photoId(url: string): string {
   return url.match(/\/(photo-[^?]+)/)?.[1] ?? url;
 }
 
-async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
+async function fetchUnsplashPage(query: string, page: number): Promise<{ urls: { regular: string } }[] | null> {
   // Unsplash has a short burst limiter distinct from the 50/hour quota —
   // firing requests back-to-back (as this script does across the
   // nombre -> descripcion_corta -> categoria fallback chain) trips it even
   // with hourly quota to spare (confirmed live: 403 "Rate Limit Exceeded"
   // while X-Ratelimit-Remaining still showed plenty left; recovered within
   // 5s of pausing).
-  //
-  // v8 — per_page 10 -> 30. Root cause found live: with ~465 photos already
-  // applied, breakfast recipes (avena/huevos/yogur/tostadas/muesli) hit
-  // "no photo found" at a much higher rate than lunch/dinner ones — batch
-  // 17 was 27/30 breakfast failures, 0 rate-limit errors in the log. These
-  // are a narrow, closed set of visual concepts repeated across hundreds of
-  // combinatorial name variants, so with only 10 candidates per query the
-  // small set of real "scrambled eggs"/"oatmeal bowl"/etc. photos gets
-  // exhausted by `usedUrls` fast — not a translation or relevance problem,
-  // an exhaustion problem. 30 (Unsplash's per_page max) gives the fallback
-  // loop below 3x more candidates to find an unclaimed one before giving up.
   await sleep(1200);
-  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&orientation=squarish`, {
+  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish`, {
     headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
   });
   if (!res.ok) {
-    console.error(`Unsplash error ${res.status} for query "${query}"`);
+    console.error(`Unsplash error ${res.status} for query "${query}" (page ${page})`);
     if (res.status === 403) {
       // Burst limiter, not the hourly quota — 400ms wasn't enough to clear
       // it reliably across a real batch (confirmed live: still cascaded on
@@ -283,7 +315,14 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
     return null;
   }
   const body = await res.json() as { results: { urls: { regular: string } }[] };
-  if (body.results.length === 0) { return null; }
+  return body.results;
+}
+
+// Picks the seed-hashed top-2 first, then falls through the rest of a
+// single page's results, in the order described at the v6 note above (file
+// header). Returns null if every candidate in this page is already used.
+function pickFromPage(results: { urls: { regular: string } }[], seed: string, usedUrls: Set<string>): string | null {
+  if (results.length === 0) { return null; }
 
   // Pick from Unsplash's top 2 (most-relevant) results first, not all 30 —
   // a live full review of 70 applied photos found the worst mismatches
@@ -303,23 +342,63 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
   // given photo claims it, the next one falls through to its
   // next-preferred index, and only past that to the "worse" indices 2-29 as
   // a last resort before giving up rather than forcing a duplicate.
-  const topK = Math.min(2, body.results.length);
+  const topK = Math.min(2, results.length);
   let hash = 0;
   for (let i = 0; i < seed.length; i++) { hash = (hash * 31 + seed.charCodeAt(i)) >>> 0; }
   const preferredStart = hash % topK;
 
   const order: number[] = [];
   for (let i = 0; i < topK; i++) { order.push((preferredStart + i) % topK); }
-  for (let i = topK; i < body.results.length; i++) { order.push(i); }
+  for (let i = topK; i < results.length; i++) { order.push(i); }
 
   for (const idx of order) {
-    const url = body.results[idx]?.urls.regular;
+    const url = results[idx]?.urls.regular;
     if (url && !usedUrls.has(photoId(url))) {
       usedUrls.add(photoId(url));
       return url;
     }
   }
   return null;
+}
+
+// v8 — per_page 10 -> 30. Root cause found live: with ~465 photos already
+// applied, breakfast recipes (avena/huevos/yogur/tostadas/muesli) hit
+// "no photo found" at a much higher rate than lunch/dinner ones — batch
+// 17 was 27/30 breakfast failures, 0 rate-limit errors in the log. These
+// are a narrow, closed set of visual concepts repeated across hundreds of
+// combinatorial name variants, so with only 10 candidates per query the
+// small set of real "scrambled eggs"/"oatmeal bowl"/etc. photos gets
+// exhausted by `usedUrls` fast — not a translation or relevance problem,
+// an exhaustion problem. 30 (Unsplash's per_page max) gives the fallback
+// loop below 3x more candidates to find an unclaimed one before giving up.
+//
+// v9 — added a page-2 fallback. See the file-header v9 note: once a
+// concept-bucket's ENTIRE page-1 pool is claimed (not just top-K), every
+// later recipe in that bucket used to fail outright. Page 1 exhausted (had
+// results, all claimed) -> try page 2 before giving up. Page 1 genuinely
+// empty (Unsplash has nothing for this query at all) -> don't bother with
+// page 2 either, same conclusion either page.
+async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
+  const page1 = await fetchUnsplashPage(query, 1);
+  if (page1 === null || page1.length === 0) { return null; }
+
+  const fromPage1 = pickFromPage(page1, seed, usedUrls);
+  if (fromPage1) { return fromPage1; }
+
+  // A page-1 result count under 30 (the per_page max) means Unsplash's
+  // total corpus for this query is fully contained in page 1 — there is no
+  // page 2 to fetch. Confirmed live: 8/10 exhausted queries in a v9 test
+  // batch had page1.length < 30, and every one of those returned an empty
+  // page 2 (wasted request, some even tripped the burst limiter). Only
+  // firing page 2 when page 1 came back full targets the real case (a
+  // large concept-bucket like "baked salmon" with 60+ total photos, where
+  // the first 30 are claimed but 30 more genuinely exist) instead of
+  // burning a guaranteed-empty request on small/niche queries.
+  if (page1.length < 30) { return null; }
+
+  const page2 = await fetchUnsplashPage(query, 2);
+  if (page2 === null || page2.length === 0) { return null; }
+  return pickFromPage(page2, seed, usedUrls);
 }
 
 async function main() {
@@ -357,10 +436,12 @@ async function main() {
   const recipes = pool.slice(0, BATCH_SIZE);
   console.error(`Fetching photos for ${recipes.length} recipes (batch size ${BATCH_SIZE}, shuffled from a pool of ${pool.length})...`);
 
-  // Single attempt per recipe, no cascade — the nombre -> descripcion_corta
-  // -> categoria fallback chain was tripping Unsplash's burst limiter by
-  // firing up to 3 requests per recipe; one request per recipe is the real
-  // fix, not a longer delay on top of the same 3x volume.
+  // v10 — two attempts per recipe, not the old 3-request nombre ->
+  // descripcion_corta -> categoria cascade (dropped for tripping the burst
+  // limiter). Tier 1 (precise) fires first; tier 2 (broad, see
+  // `broadenQuery`) fires ONLY when tier 1 comes back with nothing, so a
+  // still-viable precise match never gets diluted, and the extra request
+  // only lands on recipes that were already going to fail otherwise.
   const results: { id: string, foto_url: string }[] = [];
   for (const recipe of recipes) {
     // "cooked meal food photography" bias: raw nombre alone too often
@@ -374,8 +455,15 @@ async function main() {
     // see the file header for why (Spanish query into an English-tagged
     // database was the real root cause of bad matches, not just relevance
     // ranking).
-    const query = `${translateQuery(recipe.nombre)} cooked meal food photography`;
-    const url = await searchUnsplash(query, recipe.id, usedUrls);
+    const preciseQuery = `${translateQuery(recipe.nombre)} cooked meal food photography`;
+    let url = await searchUnsplash(preciseQuery, recipe.id, usedUrls);
+    let query = preciseQuery;
+
+    if (!url) {
+      const broadQuery = `${broadenQuery(recipe.nombre)} food photography`;
+      url = await searchUnsplash(broadQuery, recipe.id, usedUrls);
+      if (url) { query = `${broadQuery} [broad]`; }
+    }
 
     if (url) {
       results.push({ id: recipe.id, foto_url: url });
