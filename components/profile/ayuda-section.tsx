@@ -145,7 +145,10 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
         <div className="mt-4 flex flex-col gap-4 text-body-sm text-text">
           <div>
             <h3 className="text-label mb-1">Email</h3>
-            <p className="text-tertiary">{email}</p>
+            {/* FRESCO-178: a guest session's email is '' (empty string, not
+                null/undefined) — the page.tsx caller's `?? 'Invitada'`
+                fallback never catches it, so it rendered blank here. */}
+            <p className="text-tertiary">{email || 'Invitada'}</p>
           </div>
           <div>
             <h3 className="text-label mb-1">Plan actual</h3>
