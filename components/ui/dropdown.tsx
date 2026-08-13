@@ -37,7 +37,10 @@ export function Dropdown({
   'aria-label': ariaLabel,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const selected = options.find(option => option.value === value) ?? null;
   // FRESCO-151: WebKit (confirmed via playwright --browser=webkit +
   // real iPhone report) fires a phantom second `click` on the trigger
@@ -60,15 +63,70 @@ export function Dropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  // FRESCO-181: WAI-ARIA listbox keyboard pattern needs the active option
+  // focused on open, not left on whatever the browser defaults to.
+  useEffect(() => {
+    if (open) {
+      const initialIndex = selected ? options.findIndex(option => option.value === selected.value) : 0;
+      setActiveIndex(initialIndex === -1 ? 0 : initialIndex);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      optionRefs.current[activeIndex]?.focus();
+    }
+  }, [open, activeIndex]);
+
   function selectOption(optionValue: string) {
     justSelectedRef.current = true;
     setOpen(false);
     onChange(optionValue);
   }
 
+  function moveActive(nextIndex: number) {
+    setActiveIndex(Math.max(0, Math.min(options.length - 1, nextIndex)));
+  }
+
+  function handleListKeyDown(event: React.KeyboardEvent<HTMLUListElement>) {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        moveActive(activeIndex + 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        moveActive(activeIndex - 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        moveActive(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        moveActive(options.length - 1);
+        break;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        selectOption(options[activeIndex].value);
+        triggerRef.current?.focus();
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setOpen(false);
+        triggerRef.current?.focus();
+        break;
+      case 'Tab':
+        setOpen(false);
+        break;
+    }
+  }
+
   return (
     <div ref={rootRef} className={cn('relative', className)}>
       <button
+        ref={triggerRef}
         type="button"
         data-testid={dataTestId}
         aria-label={ariaLabel}
@@ -98,13 +156,16 @@ export function Dropdown({
         <ul
           role="listbox"
           aria-label={ariaLabel}
+          onKeyDown={handleListKeyDown}
           className="absolute top-full left-0 z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-card border border-border bg-surface p-1 shadow-lg"
         >
-          {options.map(option => (
+          {options.map((option, index) => (
             <li key={option.value}>
               <button
+                ref={(element) => { optionRefs.current[index] = element; }}
                 type="button"
                 role="option"
+                tabIndex={index === activeIndex ? 0 : -1}
                 aria-selected={option.value === value}
                 className={cn(
                   'w-full rounded-full px-3 py-2 text-left text-body-md hover:bg-primary-light',
