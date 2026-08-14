@@ -3495,6 +3495,29 @@ Deployado el Edge Function (`supabase functions deploy generate-shopping-list`),
 
 ---
 
+## 2026-08-14 — FRESCO-195: 8 escenarios e2e rotos encontrados y arreglados + 4 nuevos
+
+**Qué**: user preguntó si había algún escenario nuevo para automatizar en Playwright. Antes de sumar, corrí el suite existente completo (`bun run test:e2e`) para no automatizar sobre una base rota — encontré **8 de 17 fallando**, nada que ver con el trabajo de hoy. Triado uno por uno en vez de asumir una causa común:
+
+1. **@seguridad**: `get_recent_recipe_ids` renombrada a `get_recent_recipe_marks` hace 6 días (FRESCO-120, migración `20260808010000`) — test seguía llamando al nombre viejo. Assertion también cambiada (`null` → `[]`, la nueva función es `returns table`).
+2. **@lista-compra**: assertion buscaba texto pre-rediseño ("X productos · estimado Y-Z EUR") — ya no existe desde el pase visual de FRESCO-191.
+3. **@generacion-menu (velocidad) + @registro-progresivo** (misma causa raíz): onboarding ganó un 4to paso (cocinas favoritas se separó en su propio paso) — los tests hacían 2 clicks en "Siguiente" en vez de 3, nunca llegaban al botón real. Confirmado en vivo navegando el flujo a mano antes de tocar el test.
+4. **@generacion-menu edge-case** (sin receta segura): `PRO_TEST_USER_EMAIL` tenía `planning_meals` reducido a `{comida,cena}` por fuga de estado de otra sesión/test — `/menu` (FRESCO-172: el grid "hoy" ahora itera sobre `planning_meals`, no un array fijo) nunca renderizaba el slot de desayuno sembrado, sin importar qué tan bien sembrado estuviera. Confirmado por SQL directo antes de escribir el fix. Reset agregado al fixture.
+5. **@calendario edge-case** (2 archivos): el escenario arrastraba desde un slot de desayuno — FRESCO-159 quitó el handle de arrastre de desayuno del DOM por completo (no solo disabled). Cambiado el origen a "comida" (mismo chequeo real de tipo distinto, con un origen que sigue siendo arrastrable) + comentario explicando por qué. La assertion hermana en `entrega-parcial.steps.ts` (`toBeDisabled()`) también corregida a `toHaveCount(0)`.
+6. **@registro**: checkbox de Términos y Condiciones agregado a `/signup` después de escrito este test — bloqueaba el `signUp()` real en el cliente antes de llegar a la red (`if (!acceptedTerms) return`), por eso el mock nunca veía la request.
+
+**Escenarios nuevos** (cero cobertura antes): precio por producto, "Vaciar comprados" (ambos FRESCO-191 segunda vuelta), sugerencias por favoritos + "Añadir" (FRESCO-194) — con fixture que busca en el catálogo real una receta con ingredientes 100% disjuntos de la lista ya generada, determinístico en vez de esperar suerte. Y el más valioso: **scroll táctil horizontal mobile del calendario**, guarda de regresión de FRESCO-170 — BLOCKER encontrado DOS VECES por QA sweeps reales (10 y 11 ago) antes de arreglarse de verdad, cero cobertura automatizada existía. Necesitó contexto mobile-emulado dedicado (`browser.newContext(devices['iPhone 15'])`, no el proyecto Desktop Chrome default) + CDP touch dispatch real (mouse-wheel/dragTo no reproducen el bug que esto guarda) + un `data-testid="calendar_grid_scroller"` nuevo agregado a `calendar-grid.tsx` para no depender de matching por clase.
+
+**Gotcha real de tooling**: `.features-gen/` (specs compilados por `playwright-bdd` desde `regression.feature`) quedó con cache de 6 días (mtime 8 ago) pese a ediciones reales del `.feature` — varias corridas de "verificación" durante esta sesión en realidad seguían probando texto de escenario viejo sin que yo lo supiera, hasta que noté que el conteo de tests no subía de 17 a 21 después de agregar escenarios nuevos. `bunx bddgen test` corrido a mano lo resuelve — no hay regeneración automática confiable antes de `playwright test` en este setup.
+
+Verificado: `bun run test:e2e` — **21/21 pasan**, corrida limpia sin interferencia concurrente (sesiones previas de investigación habían mutado cuentas de fixture compartidas mientras corrían tests en paralelo, dando falsos negativos que casi me hacen perseguir bugs que no existían). PR #67 → `staging`, mergeado, promocionado a `main`/prod, deploy verificado `READY`/`production`. Ticket FRESCO-195 creado documentando todo.
+
+**Por qué**: pedido directo del user, pero investigar reveló una base de test-suite silenciosamente rota desde hace hasta 6 días — decisión explícita del user ("Solucionar los 8") de arreglar todo antes de sumar cobertura nueva sobre una base que no se podía confiar.
+
+**Siguiente**: sin pendientes de código. `main`/`staging` sincronizados en `5cec56a`. La flakiness documentada de `@aprendizaje` (estado compartido mutable entre escenarios, ya conocida y aceptada por el propio archivo) sigue siendo la única inestabilidad restante del suite, no accionable sin rediseñar el fixture.
+
+---
+
 ## 2026-08-14 — Foto batch (842/1000) + FRESCO-194 implementado (sugerencias por favoritos)
 
 **Qué — foto batch**: corrida una tanda de `fetch-recipe-photos.ts` (30 recetas, 10/30 hit rate — bajando como ya documentaba el propio script, quedan las variantes filler-only de conceptos saturados). Progreso real verificado por SQL: 842/1000 (ni el título ni la descripción de FRESCO-31 en Jira estaban al día — decían 821 y 772). Cero duplicados. Cortado por cuota: 6 de 50 requests/hora de Unsplash restantes. Comentario con el estado real dejado en FRESCO-31.
