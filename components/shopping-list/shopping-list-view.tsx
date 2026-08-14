@@ -23,6 +23,7 @@ import * as React from 'react';
 import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
@@ -247,12 +248,10 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
           </div>
           <div className="shrink-0 text-right">
             <p className="text-caption uppercase tracking-wide text-tertiary">Total estimado</p>
-            <p className="text-h5 text-primary">
-              {list.resumen.coste_estimado_min}
+            <p className="text-h5 font-heading text-primary">
+              {list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}
               –
-              {list.resumen.coste_estimado_max}
-              {' '}
-              {list.resumen.moneda}
+              {formatPrecio(list.resumen.coste_estimado_max)}
             </p>
           </div>
         </div>
@@ -325,12 +324,10 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                 <ul className="flex flex-col divide-y divide-border">
                   {pasillo.items.map((item, itemIdx) => (
                     <li key={item.nombre} className="flex items-center gap-4 p-4">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
                         checked={item.comprado}
                         onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
-                        className="size-5 shrink-0 accent-primary"
                       />
                       <div className="flex min-w-0 flex-1 flex-col">
                         <span
