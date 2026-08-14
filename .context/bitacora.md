@@ -3518,6 +3518,22 @@ Verificado: `bun run test:e2e` — **21/21 pasan**, corrida limpia sin interfere
 
 ---
 
+## 2026-08-14 — FRESCO-191: tercera vuelta, checkbox circular real + fix de tipografía
+
+**Qué**: user pasó captura fresca de la app en vivo (`qa-pro-test@fresco.qa`, mismo mockup de referencia de siempre) señalando diferencias: "Tipografía, las sugerencias, los checkboxes". Investigado cada uno antes de tocar código:
+
+- **Sugerencias**: parecía ausente en la captura. Chequeado por SQL: la cuenta tiene 1 favorito real (`Tostada integral con tomates cherry y queso feta`), pero sus 3 ingredientes (`pan integral`, `tomates cherry`, `queso feta`) ya estaban los tres en la lista de 35 ítems generada. Carrusel vacío es el comportamiento correcto de `get-shopping-list-suggestions` (excluye lo ya presente) — no era bug, no se tocó código.
+- **Tipografía**: real, confirmado por `getComputedStyle` en producción antes de asumir nada — "Total estimado" renderizaba en Figtree (font body) en vez de Caprasimo (font heading), mientras el resto de la pantalla (h1, h2, h3) sí usaba Caprasimo. Causa: Caprasimo se aplica vía selector global `h1,h2,h3,h4,h5,h6` en `globals.css`, no vía la clase Tailwind `text-h5` (que solo trae tamaño/line-height) — y ese número vivía en un `<p>`, no en un tag de heading real. Agregada la clase `font-heading` explícita. De paso corregido el formato del número mismo elemento: tenía coma decimal rota (punto: "59.78–80.87 EUR") mientras cada precio por ítem en la misma pantalla ya usa coma+€ — ahora "59,78–80,87€", consistente.
+- **Checkboxes**: pregunté si construir el componente real ahora o dejarlo documentado — user pidió construirlo. Nuevo `components/ui/checkbox.tsx`: input nativo real (`appearance-none`, mantiene semántica de teclado/formulario/a11y) + un ícono `Check` de lucide-react superpuesto, mostrado vía `peer-checked:opacity-100` — el círculo y el check se dibujan a mano porque `appearance:auto` de un checkbox nativo sin estilizar ignora `border-radius` en todos los navegadores probados (ya confirmado en la primera pasada de FRESCO-191). Reemplaza el `<input type="checkbox">` crudo en `shopping-list-view.tsx`; no se tocó el checkbox de Términos en `/signup` (caso distinto, sin mockup de referencia para ese).
+
+Verificado en vivo contra la MISMA cuenta de la captura del user (`qa-pro-test@fresco.qa`, prod primero para confirmar el diagnóstico, después local para confirmar el fix): checkbox marca/desmarca con círculo verde sólido + check blanco, "Total estimado" en Caprasimo con coma y un solo €, persiste tras toggle. `bun test` 150/150, `types:check`/`lint:check` verdes. PR #68 → `staging`, mergeado, promocionado a `main`/prod, deploy verificado `READY`/`production`.
+
+**Por qué**: feedback directo del user tras revisar en vivo, comparando explícitamente contra el mockup de Stitch una vez más.
+
+**Siguiente**: sin pendientes de código en FRESCO-191 por ahora. `main`/`staging` sincronizados en `757a30d`.
+
+---
+
 ## 2026-08-14 — Foto batch (842/1000) + FRESCO-194 implementado (sugerencias por favoritos)
 
 **Qué — foto batch**: corrida una tanda de `fetch-recipe-photos.ts` (30 recetas, 10/30 hit rate — bajando como ya documentaba el propio script, quedan las variantes filler-only de conceptos saturados). Progreso real verificado por SQL: 842/1000 (ni el título ni la descripción de FRESCO-31 en Jira estaban al día — decían 821 y 772). Cero duplicados. Cortado por cuota: 6 de 50 requests/hora de Unsplash restantes. Comentario con el estado real dejado en FRESCO-31.
