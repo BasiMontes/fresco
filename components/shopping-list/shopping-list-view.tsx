@@ -12,10 +12,12 @@ import {
   Fish,
   Package,
   Sandwich,
+  Trash2,
   Utensils,
   Wheat,
 } from 'lucide-react';
 import * as React from 'react';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
@@ -34,6 +36,10 @@ export interface ShoppingListViewProps {
  */
 function formatUnidad(cantidad: number, unidad: string): string {
   return cantidad === 1 && unidad === 'unidades' ? 'unidad' : unidad;
+}
+
+function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 /**
@@ -82,6 +88,14 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * badges (no suggestion/recency data exists), and its Pantry/History bottom
  * nav (that's `AppShell`'s shared nav across every route, out of scope
  * here).
+ *
+ * FRESCO-191 QA rework — mockup's "Completar compra" CTA had no backing
+ * action (only get/toggle exist), so it's repurposed as "Vaciar comprados"
+ * (bulk-untoggle already-checked items via the same `toggleShoppingListItem`
+ * used per-row) instead of built as a decorative no-op. Also fixed the
+ * pasillo icon glyph, which was rendering at ~4px — `size-4` and `p-1.5` on
+ * the same element (border-box) let the padding eat into the fixed box; the
+ * padding now lives on a wrapper span around the icon.
  */
 export function ShoppingListView({ list }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
@@ -91,6 +105,13 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
   const pendientes = pasillos.reduce(
     (count, pasillo) => count + pasillo.items.filter(item => !item.comprado).length,
     0,
+  );
+
+  const compradosCoords = pasillos.flatMap((pasillo, pasilloIdx) =>
+    pasillo.items
+      .map((item, itemIdx) => ({ item, pasilloIdx, itemIdx }))
+      .filter(({ item }) => item.comprado)
+      .map(({ pasilloIdx: pIdx, itemIdx: iIdx }) => [pIdx, iIdx] as const),
   );
 
   function setComprado(pasilloIdx: number, itemIdx: number, comprado: boolean) {
@@ -120,6 +141,12 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
       setComprado(pasilloIdx, itemIdx, !nextComprado);
       setErrorMessage('No se pudo guardar el cambio. Vuelve a intentarlo.');
     }
+  }
+
+  async function handleClearComprados() {
+    await Promise.all(
+      compradosCoords.map(async ([pasilloIdx, itemIdx]) => handleToggle(pasilloIdx, itemIdx, false)),
+    );
   }
 
   return (
@@ -166,8 +193,14 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                     an opacity modifier — bg-secondary/10 silently resolves to
                     transparent, same root cause as FRESCO-169 (tailwind.config.ts
                     maps every semantic color to a raw var(--color-*) reference,
-                    which Tailwind can't decompose for the alpha channel). */}
-                <PasilloIcon className="size-4 rounded-lg bg-accent-2-100 p-1.5 text-secondary" aria-hidden="true" />
+                    which Tailwind can't decompose for the alpha channel).
+
+                    Padding lives on this wrapper span, not on the icon itself —
+                    size-4 + p-1.5 on the same element (border-box) ate into the
+                    icon's own fixed box, shrinking the visible glyph to ~4px. */}
+                <span className="flex shrink-0 items-center justify-center rounded-lg bg-accent-2-100 p-1.5">
+                  <PasilloIcon className="size-4 text-secondary" aria-hidden="true" />
+                </span>
                 {pasillo.nombre}
               </h3>
               <Card className="p-0">
@@ -188,7 +221,7 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                             item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
                           )}
                         >
-                          {item.nombre}
+                          {capitalize(item.nombre)}
                         </span>
                         <span className="text-caption text-tertiary">
                           {item.cantidad}
@@ -204,6 +237,19 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
           );
         })}
       </div>
+
+      {compradosCoords.length > 0 && (
+        <Button
+          type="button"
+          size="lg"
+          className="mt-6 w-full"
+          onClick={() => void handleClearComprados()}
+          data-testid="shopping_list_clear_comprados_button"
+        >
+          <Trash2 className="size-4" aria-hidden="true" />
+          Vaciar comprados
+        </Button>
+      )}
     </div>
   );
 }
