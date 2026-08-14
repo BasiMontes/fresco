@@ -369,17 +369,19 @@ export function classifyShoppingList(ingredientes: IngredienteConsolidado[]): Cl
   for (const ingrediente of ingredientes) {
     const nombreNormalizado = normalizeNombre(ingrediente.nombre)
     const pasillo = pasilloFor(nombreNormalizado)
+    const precioItem = precioUnitario(nombreNormalizado, ingrediente.unidad) * ingrediente.cantidad
     const item: ShoppingListItem = {
       nombre: ingrediente.nombre,
       cantidad: ingrediente.cantidad,
       unidad: ingrediente.unidad,
       comprado: false,
+      precio_estimado: Math.round(precioItem * 100) / 100,
     }
 
     if (!porPasillo.has(pasillo)) porPasillo.set(pasillo, [])
     porPasillo.get(pasillo)!.push(item)
 
-    costeTotal += precioUnitario(nombreNormalizado, ingrediente.unidad) * ingrediente.cantidad
+    costeTotal += precioItem
   }
 
   const pasillos: ShoppingListPasillo[] = PASILLOS
