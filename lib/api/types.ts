@@ -8,6 +8,8 @@
  * vocabulary 1:1.
  */
 
+import type { ShoppingListItem, ShoppingListPasillo } from '@schemas';
+
 export type DiaSemana
   = | 'lunes'
     | 'martes'
@@ -44,18 +46,13 @@ export interface GenerateShoppingListRequest {
   meal_plan_id: string // uuid — must already exist and belong to the caller
 }
 
-export interface ShoppingListItem {
-  nombre: string
-  cantidad: number
-  unidad: string
-  comprado: boolean
-}
-
-export interface ShoppingListPasillo {
-  nombre: string // exact aisle name, from the fixed 13-aisle vocabulary
-  orden: number
-  items: ShoppingListItem[]
-}
+/**
+ * Re-exported from `@schemas` instead of hand-duplicated, same fix as the
+ * `Recipe` re-export above (STORY-FRESCO-7 batch 2) — this pair used to be
+ * a separate hand-copied shape here that silently drifted out of sync when
+ * `precio_estimado` was added to the canonical `ShoppingListItem` (FRESCO-191).
+ */
+export type { ShoppingListItem, ShoppingListPasillo };
 
 export interface GenerateShoppingListResponse {
   shopping_list_id: string

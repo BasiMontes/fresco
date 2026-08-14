@@ -6,6 +6,14 @@ export interface ShoppingListItem {
   cantidad: number
   unidad: string
   comprado: boolean
+  /**
+   * Estimated price for this item's own quantity — same deterministic
+   * per-unit price table `aisle-pricing.ts` already used to compute the
+   * list-level `coste_estimado_min/max`, just kept per item instead of
+   * only summed. Optional: lists persisted before this field existed have
+   * no value for it.
+   */
+  precio_estimado?: number
 }
 
 export interface ShoppingListPasillo {

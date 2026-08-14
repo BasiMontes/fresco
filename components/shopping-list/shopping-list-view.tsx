@@ -42,6 +42,11 @@ function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+/** Matches the app's existing static-copy convention (`recipe-card.tsx`: "2,80€/persona") — comma decimal, no space before the symbol. */
+function formatPrecio(precio: number): string {
+  return `${precio.toFixed(2).replace('.', ',')}€`;
+}
+
 /**
  * FRESCO-191 — `pasillo.nombre` comes from the Edge Function's fixed-aisle
  * prompt (`types.ts`'s own comment: "exact aisle name, from the fixed
@@ -83,11 +88,14 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * icon headers, rounded checkbox rows. Adopted only what real data
  * supports — `resumen.coste_estimado_min/max` and a live pending-count were
  * already computed, just not surfaced in a dedicated card before. Left out
- * deliberately: the mockup's per-item prices (this app only prices the
- * whole list, not each item), "Sugerencias para ti" carousel and "Nuevo"
- * badges (no suggestion/recency data exists), and its Pantry/History bottom
- * nav (that's `AppShell`'s shared nav across every route, out of scope
- * here).
+ * deliberately: "Sugerencias para ti" carousel and "Nuevo" badges (no
+ * suggestion/recency data exists anywhere — a real "sugerencias" feature
+ * needs its own data source decision, not invented here) and its
+ * Pantry/History bottom nav (that's `AppShell`'s shared nav across every
+ * route, out of scope here). Per-item price is NOT in that left-out list —
+ * `aisle-pricing.ts` already computed a real per-ingredient price to build
+ * the list-level total, just never kept it on the item; `precio_estimado`
+ * exposes that same number instead of only summing it.
  *
  * FRESCO-191 QA rework — mockup's "Completar compra" CTA had no backing
  * action (only get/toggle exist), so it's repurposed as "Vaciar comprados"
@@ -227,6 +235,12 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                           {item.cantidad}
                           {' '}
                           {formatUnidad(item.cantidad, item.unidad)}
+                          {item.precio_estimado !== undefined && (
+                            <>
+                              {' · '}
+                              {formatPrecio(item.precio_estimado)}
+                            </>
+                          )}
                         </span>
                       </div>
                     </li>
