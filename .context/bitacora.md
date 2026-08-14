@@ -3448,3 +3448,13 @@ Verificado en vivo con sesión real (login QA vía `.env`): ícono legible, nomb
 **Por qué**: feedback directo de QA del user ("no hay pixel perfect, faltan componentes") + pedido explícito de hacer la pantalla responsive (el mockup adjunto en Jira ya era el diseño mobile).
 
 **Siguiente**: mergear PR #63 cuando el user lo revise. Sin otros pendientes de código en este ticket — el checkbox cuadrado (vs. circular del mockup) sigue siendo decisión ya documentada (no existe componente `Checkbox` custom en el design system).
+
+---
+
+## 2026-08-14 — FRESCO-191: merge + promoción a producción
+
+**Qué**: PR #63 mergeado a `staging` (merge commit, `gh pr merge --merge --delete-branch`, política `feature_merge: merge-commit` de `.agents/project.yaml`) tras CI verde (Vercel Preview deployment READY). User pidió "todo en prod" — confirmado alcance real antes de ejecutar: staging tenía 24 commits sin promocionar (desde FRESCO-181 hasta el fix de hoy), no solo el de FRESCO-191. Confirmado con el user promocionar los 24. `main` fast-forwardeado a la punta de `staging` (`git merge --ff-only`, sin conflictos, política `promote_method: ff-only`) y pusheado. Deployment de producción verificado con `vercel inspect --wait` hasta `READY`, target `production`, aliaseado a `fresco-pro.vercel.app` (dominio real). Smoke check `curl` → 200.
+
+**Por qué**: pedido explícito del user tras aprobar el fix de FRESCO-191, pero "todo en prod" resultó ambiguo en alcance (24 commits acumulados) — se confirmó antes de un fast-forward a producción real, acción difícil de revertir.
+
+**Siguiente**: ticket FRESCO-191 vuelve a QA para re-verificación en producción (comentario agregado en Jira). Sin pendientes de código.
