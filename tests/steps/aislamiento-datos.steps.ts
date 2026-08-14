@@ -6,8 +6,12 @@ import { currentUserId, getAccessToken, restHeaders } from '../test-helpers';
 /**
  * Step definitions for `.context/qa/regression.feature` — @seguridad,
  * "Un usuario no puede leer el historial ni el perfil de otro pasando su
- * UUID" (FRESCO-27 fix — `get_filtered_recipes`/`get_recent_recipe_ids` are
+ * UUID" (FRESCO-27 fix — `get_filtered_recipes`/`get_recent_recipe_marks` are
  * `SECURITY DEFINER` and used to trust `p_user_id` blindly).
+ * `get_recent_recipe_marks` replaced `get_recent_recipe_ids` in FRESCO-120
+ * (migration `20260808010000`) — same `mp.user_id = auth.uid()` ownership
+ * check, just a `returns table` shape now instead of a scalar array (see
+ * the assertion below for what that changes).
  *
  * Pure REST, no browser, no Gemini call — cheap and fast by design. This is
  * the negative-test pattern for ownership bugs: assert directly against the
@@ -46,8 +50,8 @@ Given(
   },
 );
 
-When(/^una de las cuentas llama a get_recent_recipe_ids con el UUID de la otra$/, async ({ request }) => {
-  const res = await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_recent_recipe_ids`, {
+When(/^una de las cuentas llama a get_recent_recipe_marks con el UUID de la otra$/, async ({ request }) => {
+  const res = await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_recent_recipe_marks`, {
     headers: restHeaders(ctx.accessTokenA),
     data: { p_user_id: ctx.userIdB, p_weeks: 2 },
   });
@@ -55,10 +59,11 @@ When(/^una de las cuentas llama a get_recent_recipe_ids con el UUID de la otra$/
 });
 
 Then(/^no recibe el historial real de la otra cuenta$/, () => {
-  // The fix makes this a silent-empty result (`null`), not the other
-  // account's real recipe ids — matches get_recent_recipe_ids' own
-  // pure-SQL shape (an added WHERE condition, not a raised exception).
-  expect(ctx.recentIdsResult).toBeNull();
+  // The fix makes this a silent-empty result — `get_recent_recipe_marks`
+  // is `returns table(...)`, so PostgREST serializes zero matching rows as
+  // `[]`, not `null` (that was the OLD `get_recent_recipe_ids` scalar-array
+  // shape, retired in FRESCO-120).
+  expect(ctx.recentIdsResult).toEqual([]);
 });
 
 When(/^la misma cuenta llama a get_filtered_recipes con el UUID de la otra$/, async ({ request }) => {

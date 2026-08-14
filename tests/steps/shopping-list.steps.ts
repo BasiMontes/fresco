@@ -1,7 +1,21 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { getAccessToken } from '../test-helpers';
+import { getAccessToken, restHeaders } from '../test-helpers';
+
+/** Mirrors `supabase/functions/_shared/normalize.ts` — can't import across the Deno/Node boundary, small enough to duplicate for test-only overlap checks. */
+function normalizeNombre(nombre: string): string {
+  return nombre
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[áàä]/g, 'a')
+    .replace(/[éèë]/g, 'e')
+    .replace(/[íìï]/g, 'i')
+    .replace(/[óòö]/g, 'o')
+    .replace(/[úùü]/g, 'u')
+    .replace(/ñ/g, 'n');
+}
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @lista-compra,
@@ -78,7 +92,12 @@ Then(/^el sistema consolida los ingredientes y los clasifica por pasillo$/, asyn
 });
 
 Then(/^ve un resumen con el total de productos y el coste estimado$/, async ({ page }) => {
-  await expect(page.getByText(/\d+ productos · estimado \d+–\d+ EUR/)).toBeVisible();
+  // Two separate assertions, not one combined regex — FRESCO-191's visual
+  // pass (2026-08-13) split "X productos · estimado Y-Z EUR" into a
+  // pendientes count and a "Total estimado" figure in separate DOM nodes
+  // (Resumen card), so a single cross-node text match no longer applies.
+  await expect(page.getByText(/\d+ artículos? pendientes?/)).toBeVisible();
+  await expect(page.getByText(/\d+(\.\d+)?–\d+(\.\d+)? EUR/)).toBeVisible();
 });
 
 Given(/^que el usuario tiene una lista de la compra generada$/, async ({ page, request }) => {
@@ -96,6 +115,131 @@ When(/^marca un producto como comprado$/, async ({ page }) => {
 
 Then(/^el producto se muestra visualmente como comprado$/, async ({ page }) => {
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
+});
+
+// ── Precio por producto (FRESCO-191, segunda vuelta) ────────────────────────
+
+Then(/^cada producto muestra su cantidad, unidad y precio estimado$/, async ({ page }) => {
+  // Real deterministic price (aisle-pricing.ts), same format the app uses
+  // elsewhere ("2,80€" — comma decimal, no space, per recipe-card.tsx).
+  await expect(page.getByText(/\d+(,\d+)? \S+ · \d+,\d{2}€/).first()).toBeVisible();
+});
+
+Then(/^el precio se conserva la próxima vez que abre la lista$/, async ({ page }) => {
+  await page.reload();
+  await expect(page.getByText(/\d+(,\d+)? \S+ · \d+,\d{2}€/).first()).toBeVisible();
+});
+
+// ── Vaciar comprados (FRESCO-191, QA rework) ────────────────────────────────
+
+Given(/^que el usuario tiene una lista de la compra generada con un producto marcado como comprado$/, async ({ page, request }) => {
+  await resetShoppingListFixture(request);
+  await loginAndGoToShoppingList(page);
+  await page.getByTestId('generate_shopping_list_button').click();
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId('shopping_list_item_0_0').check();
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
+});
+
+When(/^pulsa "Vaciar comprados"$/, async ({ page }) => {
+  await page.getByTestId('shopping_list_clear_comprados_button').click();
+});
+
+Then(/^todos los productos quedan desmarcados$/, async ({ page }) => {
+  await expect(page.getByTestId('shopping_list_item_0_0')).not.toBeChecked();
+});
+
+Then(/^el botón "Vaciar comprados" desaparece$/, async ({ page }) => {
+  await expect(page.getByTestId('shopping_list_clear_comprados_button')).toHaveCount(0);
+});
+
+// ── Sugerencias basadas en favoritos (FRESCO-194) ───────────────────────────
+
+Given(
+  /^que el usuario tiene una lista de la compra generada y una receta favorita con un ingrediente que no está en la lista$/,
+  async ({ page, request }) => {
+    await resetShoppingListFixture(request);
+    await loginAndGoToShoppingList(page);
+    await page.getByTestId('generate_shopping_list_button').click();
+    await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
+
+    const accessToken = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+    const headers = restHeaders(accessToken);
+    const userRes = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, { headers });
+    const { id: userId } = await userRes.json() as { id: string };
+
+    // Real ingredient names already on the just-generated list, normalized
+    // the same way get-shopping-list-suggestions excludes against.
+    const listRes = await request.get(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/shopping_lists?user_id=eq.${userId}&select=items`,
+      { headers },
+    );
+    const [list] = await listRes.json() as { items: { items: { nombre: string }[] }[] }[];
+    const enLista = new Set(
+      list.items.flatMap(pasillo => pasillo.items.map(item => normalizeNombre(item.nombre))),
+    );
+
+    // A real catalog recipe whose ingredientes_principales are ENTIRELY
+    // disjoint from the just-generated list — guarantees the suggestion
+    // carousel has something to show, deterministically, instead of hoping
+    // a fixed recipe id happens not to overlap this run's random menu.
+    const recipesRes = await request.get(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/recipes?select=id,ingredientes_principales&limit=200`,
+      { headers },
+    );
+    const recipes = await recipesRes.json() as { id: string, ingredientes_principales: string[] | null }[];
+    const disjointRecipe = recipes.find(r =>
+      (r.ingredientes_principales ?? []).length > 0
+      && r.ingredientes_principales!.every(ingrediente => !enLista.has(normalizeNombre(ingrediente))));
+    if (!disjointRecipe) {
+      throw new Error('No se encontró ninguna receta del catálogo con ingredientes fuera de la lista generada — no se pudo sembrar el fixture.');
+    }
+
+    // Reset favorites so only this seeded recipe drives the carousel —
+    // same reset-before-seed hygiene as resetShoppingListFixture.
+    await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites?user_id=eq.${userId}`, { headers });
+    await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites`, {
+      headers,
+      data: { user_id: userId, recipe_id: disjointRecipe.id },
+    });
+
+    await page.reload();
+    await expect(page.getByTestId('shopping_list_suggestions_section')).toBeVisible();
+  },
+);
+
+let addedSuggestionNombre = '';
+
+When(/^pulsa "Añadir" en esa sugerencia$/, async ({ page }) => {
+  // `shopping_list_add_suggestion_<nombre>` embeds the raw (uncapitalized)
+  // ingredient name — captured before clicking so the Then step can assert
+  // the SAME product landed in the real list, not just "something did".
+  const button = page.getByTestId('shopping_list_suggestions_section').getByRole('button', { name: 'Añadir' }).first();
+  const testId = await button.getAttribute('data-testid');
+  addedSuggestionNombre = testId!.replace('shopping_list_add_suggestion_', '');
+  await button.click();
+});
+
+Then(/^el producto aparece en la lista, en su pasillo correspondiente$/, async ({ page }) => {
+  const capitalized = addedSuggestionNombre.charAt(0).toUpperCase() + addedSuggestionNombre.slice(1);
+  // Outside the suggestions carousel — proves it landed in a real aisle
+  // list item row, not just still sitting in the (about-to-shrink) card.
+  await expect(page.locator('main').getByText(capitalized, { exact: true })).toBeVisible();
+});
+
+Then(/^la sugerencia desaparece del carrusel$/, async ({ page }) => {
+  // Checks the ADDED suggestion specifically, not "the whole carousel is
+  // gone" — the seeded favorite recipe can have up to 3
+  // ingredientes_principales, each its own suggestion (MAX_SUGGESTIONS=3
+  // truncates by ingredient, not by recipe), so adding one doesn't
+  // necessarily empty the section if the recipe had others.
+  await expect(page.getByTestId(`shopping_list_add_suggestion_${addedSuggestionNombre}`)).toHaveCount(0);
+});
+
+Then(/^el producto se conserva la próxima vez que abre la lista$/, async ({ page }) => {
+  const capitalized = addedSuggestionNombre.charAt(0).toUpperCase() + addedSuggestionNombre.slice(1);
+  await page.reload();
+  await expect(page.locator('main').getByText(capitalized, { exact: true })).toBeVisible();
 });
 
 Then(/^el estado se conserva la próxima vez que abre la lista$/, async ({ page }) => {

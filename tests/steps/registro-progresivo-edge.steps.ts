@@ -39,9 +39,13 @@ async function ensureAnonymousSession(page: import('@playwright/test').Page): Pr
     .toBe(true);
 }
 
-/** Completes the 3-step onboarding + a REAL Gemini generation as the current anonymous guest. */
+/** Completes the 4-step onboarding + a REAL Gemini generation as the current anonymous guest. */
 async function generateRealGuestMenu(page: import('@playwright/test').Page): Promise<void> {
   await ensureAnonymousSession(page);
+  // 3 clicks reaches step 4 ("Paso 4 de 4"), where "Generar mi menú" lives
+  // — onboarding gained a step (cocinas favoritas split out on its own)
+  // since this was 2 clicks/3 steps.
+  await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('generate_menu_button').click();

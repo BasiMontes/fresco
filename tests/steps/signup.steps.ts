@@ -88,6 +88,11 @@ Given(/^que un visitante sin cuenta rellena email y contraseña en \/signup$/, a
 
   await page.getByTestId('email_input').fill(ctx.email);
   await page.getByTestId('password_input').fill(ctx.password);
+  // Required since the ToS checkbox was added — handleSubmit's `if
+  // (!acceptedTerms) return` blocks the real signUp() call (and this
+  // route/waitForRequest never fires) before it ever reaches the network,
+  // no matter how the rest of the form is filled.
+  await page.getByTestId('accept_terms_checkbox').check();
 });
 
 When(/^confirma el formulario$/, async ({ page }) => {
