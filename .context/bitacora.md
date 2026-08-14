@@ -3458,3 +3458,19 @@ Verificado en vivo con sesión real (login QA vía `.env`): ícono legible, nomb
 **Por qué**: pedido explícito del user tras aprobar el fix de FRESCO-191, pero "todo en prod" resultó ambiguo en alcance (24 commits acumulados) — se confirmó antes de un fast-forward a producción real, acción difícil de revertir.
 
 **Siguiente**: ticket FRESCO-191 vuelve a QA para re-verificación en producción (comentario agregado en Jira). Sin pendientes de código.
+
+---
+
+## 2026-08-14 — FRESCO-193: hotfix CORS bloqueaba 5 Edge Functions en fresco-pre
+
+**Qué**: user reportó (captura de consola) `generate-shopping-list` fallando con error CORS real en `fresco-pre.vercel.app` — "No 'Access-Control-Allow-Origin' header is present". Investigado: `ALLOWED_ORIGINS` en `supabase/functions/_shared/cors.ts` solo tenía `fresco-pro.vercel.app` + `localhost:3000`. Faltaban dos orígenes reales: `fresco-pre.vercel.app` (segundo alias del mismo deployment de producción — confirmado con `vercel inspect`, mismo `dpl_id` que `fresco-pro.vercel.app` — usado para QA desde 2026-08-04 según esta misma bitácora, nunca agregado al allowlist) y `fresco-staging.vercel.app` (URL de staging documentada en `.agents/project.yaml`, tampoco estaba).
+
+Bug afectaba las 5 Edge Functions que importan ese módulo compartido: `generate-shopping-list`, `generate-meal-plan`, `update-recipe-status`, `delete-account`, `reassign-guest-data` — cualquiera llamada desde esos dos orígenes quedaba bloqueada en el browser antes de llegar a red.
+
+Fix: agregados los dos orígenes al `Set`. Redeployadas las 5 funciones vía `supabase functions deploy` (aprendizaje ya documentado en esta bitácora: un cambio en `_shared/cors.ts` no tiene efecto hasta redeployar cada función que lo importa, no alcanza con el cambio de código fuente). Verificado en vivo, dos formas: `curl -X OPTIONS` con `Origin: fresco-pre.vercel.app` → ahora devuelve `Access-Control-Allow-Origin` correcto; `fetch()` real desde el browser en `fresco-pre.vercel.app` (Playwright, sesión real logueada) → ya no tira error de red, llega al servidor (401 esperado, sin auth en el fetch de prueba).
+
+Creado ticket FRESCO-193 (Error, `[MAJOR]`) documentando causa+fix. Dado que ya estaba deployado en vivo (Edge Functions se deployan aparte de Vercel/git), se trató como hotfix: branch `fix/FRESCO-193-cors-missing-origins` off `main` (política `hotfix_policy: branch-off-prod-backmerge` de `.agents/project.yaml`), PR #64 → `main`, mergeado tras CI verde, back-merge a `staging` para no dejarla atrás.
+
+**Por qué**: bug reportado en vivo por el user, bloqueaba funcionalidad core (generar lista de compra, generar menú, actualizar estado de receta, borrar cuenta, reasignar datos de invitado) para cualquiera en el dominio `fresco-pre.vercel.app` — dominio que la propia bitácora confirma se usa desde hace meses para verificar producción.
+
+**Siguiente**: sin pendientes de código. `main` y `staging` sincronizados en `239d687`.
