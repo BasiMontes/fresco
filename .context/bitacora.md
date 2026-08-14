@@ -3492,3 +3492,23 @@ Deployado el Edge Function (`supabase functions deploy generate-shopping-list`),
 **Por qué**: feedback directo del user tras revisar el resultado en vivo — no asumir qué "elemento faltante" quería decir, se le preguntó antes de reimplementar nada.
 
 **Siguiente**: FRESCO-194 (sugerencias/badge Nuevo) sin implementación, pendiente de decisión de producto sobre la fuente de datos. `main`/`staging` sincronizados en `00fdea0`.
+
+---
+
+## 2026-08-14 — Foto batch (842/1000) + FRESCO-194 implementado (sugerencias por favoritos)
+
+**Qué — foto batch**: corrida una tanda de `fetch-recipe-photos.ts` (30 recetas, 10/30 hit rate — bajando como ya documentaba el propio script, quedan las variantes filler-only de conceptos saturados). Progreso real verificado por SQL: 842/1000 (ni el título ni la descripción de FRESCO-31 en Jira estaban al día — decían 821 y 772). Cero duplicados. Cortado por cuota: 6 de 50 requests/hora de Unsplash restantes. Comentario con el estado real dejado en FRESCO-31.
+
+**Qué — FRESCO-194**: preguntado al user qué fuente de datos usar para "sugerencias" (favoritos vs. historial vs. ambos) — eligió favoritos. Investigado el modelo real antes de codear: `favorites` (user_id, recipe_id) ya existe, `recipes.ingredientes_principales` es un array de nombres (sin cantidad) — suficiente para sugerir, no para persistir sin una cantidad base. `aisle-pricing.ts`/`consolidator.ts` ya tenían `pasilloFor`/`precioUnitario`/`BASE_QUANTITIES` sin exportar — exportados en vez de reimplementados en otro lado.
+
+Implementado: Edge Function nueva `get-shopping-list-suggestions` (frecuencia de ingredientes across favoritos, excluye lo ya en la lista por nombre normalizado, top 3, clasifica pasillo+precio con las mismas funciones que `generate-shopping-list`). RPC nueva `jsonb_add_item` (migración `20260814170000_add_jsonb_add_item_rpc.sql`, aplicada real vía `apply_migration` + archivo local) — plpgsql, no un `jsonb_set` simple como `jsonb_set_comprado`, porque el pasillo destino puede no existir todavía en la lista (busca o crea el bucket). Mismo patrón de ownership check + revoke/grant explícito a `authenticated` que toda función `SECURITY DEFINER` de este proyecto (la migración de hardening de 2026-08-01 documenta por qué: Postgres da EXECUTE a PUBLIC por default en funciones nuevas).
+
+Contratos nuevos agregados a `api/schemas/api-contracts.types.ts` (fuente canónica compartida Edge Functions + frontend, no reinventados por lado). Frontend reusa `HorizontalScrollRow` (ya existía para `LatestRecipesSection`, no un carousel nuevo) + mismo patrón optimistic-update-with-revert del checkbox.
+
+Verificado en vivo con cuenta real con 2 favoritos reales (6 ingredientes, 3 ya en la lista, 3 sugeridos correctamente: fresas/miel/queso fresco). Iconos de pasillo correctos por DOM (Carrot/Droplet/Egg). "+ Añadir" persiste tras reload, sugerencia desaparece del carrusel al agregarse. Un path sin confirmar en vivo: creación de pasillo nuevo al añadir (ningún caso real de la cuenta de test cayó en esa rama) — user aceptó mergear igual, confiando en la revisión de código (mismo patrón ya usado en el resto del proyecto).
+
+`bun test` 150/150, `types:check`/`lint:check` verdes en ambas rondas. PR #65 (precio por item, ya cerrado en la entrada anterior) y PR #66 (sugerencias) — ambos mergeados a `staging` y promocionados a `main`/prod, deploy verificado `READY`/`production` cada vez.
+
+**Por qué**: continuación directa del pedido del user ("batch de fotos, dale al 194 también") — dos frentes en paralelo dentro de la misma sesión.
+
+**Siguiente**: sin pendientes de código en FRESCO-194. FRESCO-31 sigue con 158 recetas sin foto, bloqueado por cuota de Unsplash hasta que se resetee (o se pida acceso "production" a la API, alternativa ya documentada en el ticket). `main`/`staging` sincronizados en `3a45f73`.
