@@ -12,8 +12,10 @@ import { normalizeNombre } from '../_shared/normalize.ts'
 
 // Base quantity/unit per normalized ingredient name, scaled by
 // (raciones_usuario / raciones_receta). Realistic estimates for Spanish home
-// cooking.
-const BASE_QUANTITIES: Record<string, { cantidad: number; unidad: string }> = {
+// cooking. Exported for `get-shopping-list-suggestions` — a suggested
+// ingredient has no recipe/raciones context to scale from, so it uses this
+// base amount unscaled (same one every recipe's *first* serving uses here).
+export const BASE_QUANTITIES: Record<string, { cantidad: number; unidad: string }> = {
   // Frutas y verduras
   aceitunas: { cantidad: 50, unidad: 'g' },
   aguacate: { cantidad: 1, unidad: 'unidades' },

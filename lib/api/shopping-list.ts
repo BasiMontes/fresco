@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { GenerateShoppingListResponse } from '@/lib/api/types';
-import type { Database } from '@/lib/supabase/types';
+import type { GenerateShoppingListResponse, ShoppingListItem } from '@/lib/api/types';
+import type { Database, Json } from '@/lib/supabase/types';
 
 export class ShoppingListError extends Error {
   constructor(message: string) {
@@ -93,5 +93,32 @@ export async function toggleShoppingListItem(
 
   if (error) {
     throw new ShoppingListError(`No se pudo actualizar el producto: ${error.message}`);
+  }
+}
+
+/**
+ * Adds a suggested item (FRESCO-194's favorites-based carousel) to the
+ * given pasillo via the `jsonb_add_item` `security definer` RPC — same
+ * direct-write precedent as `toggleShoppingListItem`. `jsonb_add_item`
+ * appends a new pasillo bucket automatically if this is the list's first
+ * item for that aisle.
+ */
+export async function addShoppingListItem(
+  client: SupabaseClient<Database>,
+  listId: string,
+  pasilloNombre: string,
+  item: ShoppingListItem,
+): Promise<void> {
+  const { error } = await client.rpc('jsonb_add_item', {
+    p_list_id: listId,
+    p_pasillo_nombre: pasilloNombre,
+    // `ShoppingListItem` is a real jsonb value (all fields serializable) —
+    // the mismatch is only that its type has no index signature, not that
+    // the shape is wrong.
+    p_item: item as unknown as Json,
+  });
+
+  if (error) {
+    throw new ShoppingListError(`No se pudo añadir el producto: ${error.message}`);
   }
 }

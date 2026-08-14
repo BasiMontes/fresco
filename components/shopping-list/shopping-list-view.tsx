@@ -2,6 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
+import type { ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
 import {
   Beef,
   Carrot,
@@ -10,16 +11,20 @@ import {
   Droplet,
   Egg,
   Fish,
+  Lightbulb,
   Package,
+  Plus,
   Sandwich,
   Trash2,
   Utensils,
   Wheat,
 } from 'lucide-react';
 import * as React from 'react';
+import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { toggleShoppingListItem } from '@/lib/api/shopping-list';
+import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
+import { addShoppingListItem, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -88,14 +93,12 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * icon headers, rounded checkbox rows. Adopted only what real data
  * supports — `resumen.coste_estimado_min/max` and a live pending-count were
  * already computed, just not surfaced in a dedicated card before. Left out
- * deliberately: "Sugerencias para ti" carousel and "Nuevo" badges (no
- * suggestion/recency data exists anywhere — a real "sugerencias" feature
- * needs its own data source decision, not invented here) and its
- * Pantry/History bottom nav (that's `AppShell`'s shared nav across every
- * route, out of scope here). Per-item price is NOT in that left-out list —
- * `aisle-pricing.ts` already computed a real per-ingredient price to build
- * the list-level total, just never kept it on the item; `precio_estimado`
- * exposes that same number instead of only summing it.
+ * deliberately: "Nuevo" badges (no recency data exists anywhere — see
+ * FRESCO-194) and its Pantry/History bottom nav (that's `AppShell`'s shared
+ * nav across every route, out of scope here). Per-item price is NOT in that
+ * left-out list — `aisle-pricing.ts` already computed a real per-ingredient
+ * price to build the list-level total, just never kept it on the item;
+ * `precio_estimado` exposes that same number instead of only summing it.
  *
  * FRESCO-191 QA rework — mockup's "Completar compra" CTA had no backing
  * action (only get/toggle exist), so it's repurposed as "Vaciar comprados"
@@ -104,11 +107,47 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * pasillo icon glyph, which was rendering at ~4px — `size-4` and `p-1.5` on
  * the same element (border-box) let the padding eat into the fixed box; the
  * padding now lives on a wrapper span around the icon.
+ *
+ * FRESCO-194 — "Sugerencias para ti" carousel, real data only: ingredients
+ * from the caller's own favorited recipes not already in this list
+ * (`get-shopping-list-suggestions` Edge Function — no suggestion/recency
+ * data exists anywhere else in this app, so favorites is the only real
+ * signal; "Nuevo" stays out, it needs recency tracking this app doesn't
+ * have). "+ Añadir" uses the same optimistic-update-with-revert pattern as
+ * the checkbox toggle, via the new `jsonb_add_item` RPC.
  */
 export function ShoppingListView({ list }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
+  const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
+  const pasillosOriginales = React.useMemo(() => new Set(list.pasillos.map(p => p.nombre)), [list.pasillos]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadSuggestions() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const { suggestions: fetched } = await getShoppingListSuggestions(
+          { shopping_list_id: list.id },
+          session?.access_token ?? null,
+        );
+        if (!cancelled) { setSuggestions(fetched); }
+      }
+      catch (error) {
+        // Suggestions are a nice-to-have, not core list functionality — a
+        // failure here shouldn't block the page or surface an error banner
+        // over the real list, just show nothing.
+        console.error('[ShoppingListView] getShoppingListSuggestions failed', error);
+      }
+    }
+
+    void loadSuggestions();
+    return () => {
+      cancelled = true;
+    };
+  }, [list.id, supabase]);
 
   const pendientes = pasillos.reduce(
     (count, pasillo) => count + pasillo.items.filter(item => !item.comprado).length,
@@ -157,6 +196,40 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
     );
   }
 
+  async function handleAddSuggestion(suggestion: ShoppingListSuggestion) {
+    setErrorMessage(null);
+    const newItem: ShoppingListItem = {
+      nombre: suggestion.nombre,
+      cantidad: suggestion.cantidad,
+      unidad: suggestion.unidad,
+      comprado: false,
+      precio_estimado: suggestion.precio_estimado,
+    };
+
+    setSuggestions(current => current.filter(s => s.nombre !== suggestion.nombre));
+    setPasillos((current) => {
+      const idx = current.findIndex(p => p.nombre === suggestion.pasillo);
+      if (idx === -1) {
+        return [...current, { nombre: suggestion.pasillo, orden: current.length + 1, items: [newItem] }];
+      }
+      return current.map((p, i) => (i === idx ? { ...p, items: [...p.items, newItem] } : p));
+    });
+
+    try {
+      await addShoppingListItem(supabase, list.id, suggestion.pasillo, newItem);
+    }
+    catch (error) {
+      console.error('[ShoppingListView] addShoppingListItem failed, reverting', error);
+      setPasillos(current =>
+        current
+          .map(p => (p.nombre === suggestion.pasillo ? { ...p, items: p.items.filter(i => i !== newItem) } : p))
+          .filter(p => p.items.length > 0 || pasillosOriginales.has(p.nombre)),
+      );
+      setSuggestions(current => [...current, suggestion]);
+      setErrorMessage('No se pudo añadir el producto. Vuelve a intentarlo.');
+    }
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-h2">Lista de la compra</h1>
@@ -189,6 +262,43 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
         <p data-testid="shopping_list_toggle_error_message" className="mt-2 text-body-sm text-error">
           {errorMessage}
         </p>
+      )}
+
+      {suggestions.length > 0 && (
+        <div className="mt-6" data-testid="shopping_list_suggestions_section">
+          <h3 className="flex items-center gap-2 text-caption uppercase tracking-wide text-tertiary">
+            <Lightbulb className="size-3.5" aria-hidden="true" />
+            Sugerencias para ti
+          </h3>
+          <HorizontalScrollRow className="mt-2">
+            {suggestions.map((suggestion) => {
+              const SuggestionIcon = getPasilloIcon(suggestion.pasillo);
+              return (
+                <Card key={suggestion.nombre} className="flex w-40 shrink-0 flex-col justify-between gap-3">
+                  <div>
+                    <span className="flex size-10 items-center justify-center rounded-full bg-accent-2-100">
+                      <SuggestionIcon className="size-5 text-secondary" aria-hidden="true" />
+                    </span>
+                    <p className="mt-2 line-clamp-2 text-body-sm font-medium text-text">
+                      {capitalize(suggestion.nombre)}
+                    </p>
+                    <p className="mt-1 text-caption text-tertiary">{formatPrecio(suggestion.precio_estimado)}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void handleAddSuggestion(suggestion)}
+                    data-testid={`shopping_list_add_suggestion_${suggestion.nombre}`}
+                  >
+                    <Plus className="size-3.5" aria-hidden="true" />
+                    Añadir
+                  </Button>
+                </Card>
+              );
+            })}
+          </HorizontalScrollRow>
+        </div>
       )}
 
       <div className="mt-6 flex flex-col gap-6">

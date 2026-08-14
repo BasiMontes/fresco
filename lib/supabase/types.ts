@@ -460,6 +460,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string[]
       }
+      jsonb_add_item: {
+        Args: { p_item: Json; p_list_id: string; p_pasillo_nombre: string }
+        Returns: undefined
+      }
       jsonb_set_comprado: {
         Args: {
           p_comprado: boolean

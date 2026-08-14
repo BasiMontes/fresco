@@ -59,6 +59,25 @@ export interface GenerateShoppingListResponse {
   }
 }
 
+// POST /get-shopping-list-suggestions — FRESCO-194. Real data only:
+// ingredients from the caller's own favorited recipes not already in the
+// given list. No suggestion/recency data exists elsewhere in this app.
+export interface GetShoppingListSuggestionsRequest {
+  shopping_list_id: string
+}
+
+export interface ShoppingListSuggestion {
+  nombre: string
+  pasillo: string
+  cantidad: number
+  unidad: string
+  precio_estimado: number
+}
+
+export interface GetShoppingListSuggestionsResponse {
+  suggestions: ShoppingListSuggestion[]
+}
+
 // PATCH /update-recipe-status (via Edge Function update-recipe-status) — api-contracts.md §4
 export interface UpdateRecipeStatusRequest {
   meal_plan_recipe_id: string
