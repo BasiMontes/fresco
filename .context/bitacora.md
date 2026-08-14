@@ -3474,3 +3474,21 @@ Creado ticket FRESCO-193 (Error, `[MAJOR]`) documentando causa+fix. Dado que ya 
 **Por qué**: bug reportado en vivo por el user, bloqueaba funcionalidad core (generar lista de compra, generar menú, actualizar estado de receta, borrar cuenta, reasignar datos de invitado) para cualquiera en el dominio `fresco-pre.vercel.app` — dominio que la propia bitácora confirma se usa desde hace meses para verificar producción.
 
 **Siguiente**: sin pendientes de código. `main` y `staging` sincronizados en `239d687`.
+
+---
+
+## 2026-08-14 — FRESCO-191: segunda vuelta, precio real por item
+
+**Qué**: user volvió a pasar el mismo mockup local (mismo hash que el de Jira, confirmado con `md5`) diciendo que la 191 seguía sin estar lista. Pregunté qué faltaba puntualmente en vez de asumir — respondió: carrusel "Sugerencias para ti" y precio por item.
+
+Releído el HTML exportado del mockup completo (no solo el screenshot) esta vez. Investigado si precio por item era dato real o inventado: `aisle-pricing.ts` (`generate-shopping-list`) ya calculaba un precio determinístico real por ingrediente (`precioUnitario() * cantidad`, misma tabla `PRICE_OVERRIDE`/`PRICE_PER_UNIT_TYPE` que arma el total) — solo lo sumaba a `costeTotal` y tiraba el valor individual. No hacía falta inventar nada: se agregó `precio_estimado` (opcional, backward-compatible con listas viejas) a `ShoppingListItem`, expuesto por item en vez de perdido en la suma.
+
+De paso, encontrado y arreglado un bug de duplicación de tipos: `lib/api/types.ts` tenía su propia copia hand-rolled de `ShoppingListItem`/`ShoppingListPasillo` en vez de reexportar desde `@schemas` — el mismo problema que `Recipe` ya tuvo (STORY-FRESCO-7 batch 2, documentado en el propio archivo) y que nadie corrigió para shopping-list. Agregar el campo nuevo al schema canónico lo hizo explotar en tsc en vez de divergir en silencio — arreglado con el mismo patrón de re-export.
+
+Sugerencias para ti + badge "Nuevo": sin dato real en ningún lado (no hay fuente de "sugerido", no hay tracking de recencia/historial en `shopping_lists`, cada lista se genera de cero). No se inventó nada — creado FRESCO-194 como follow-up para definir el dato antes de tocar código, y la 191 cierra sin esos dos elementos.
+
+Deployado el Edge Function (`supabase functions deploy generate-shopping-list`), verificado en vivo: borrada la lista persistida de la cuenta QA (predataba el campo), regenerada, precios reales visibles (`1,60€`, `0,15€`, etc.), formato de moneda alineado a la convención ya usada en el resto de la app (`2,80€` de `recipe-card.tsx`) en vez del formato del mockup. `bun test` 150/150, `types:check`/`lint:check` verdes. PR #65 → `staging`, mergeado, promocionado a `main`/prod tras confirmar con el user (mismo patrón que el resto de la sesión), deploy verificado `READY`/`production`.
+
+**Por qué**: feedback directo del user tras revisar el resultado en vivo — no asumir qué "elemento faltante" quería decir, se le preguntó antes de reimplementar nada.
+
+**Siguiente**: FRESCO-194 (sugerencias/badge Nuevo) sin implementación, pendiente de decisión de producto sobre la fuente de datos. `main`/`staging` sincronizados en `00fdea0`.
