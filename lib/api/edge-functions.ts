@@ -20,6 +20,8 @@ import type {
   EdgeFunctionErrorResponse,
   GenerateShoppingListRequest,
   GenerateShoppingListResponse,
+  GetShoppingListSuggestionsRequest,
+  GetShoppingListSuggestionsResponse,
   UpdateRecipeStatusRequest,
   UpdateRecipeStatusResponse,
 } from './types';
@@ -103,6 +105,18 @@ export async function generateShoppingList(
 ): Promise<GenerateShoppingListResponse> {
   return callEdgeFunction<GenerateShoppingListResponse>(
     'generate-shopping-list',
+    request,
+    accessToken,
+  );
+}
+
+/** POST /get-shopping-list-suggestions — FRESCO-194. */
+export async function getShoppingListSuggestions(
+  request: GetShoppingListSuggestionsRequest,
+  accessToken: string | null,
+): Promise<GetShoppingListSuggestionsResponse> {
+  return callEdgeFunction<GetShoppingListSuggestionsResponse>(
+    'get-shopping-list-suggestions',
     request,
     accessToken,
   );

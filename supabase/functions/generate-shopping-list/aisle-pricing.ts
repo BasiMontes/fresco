@@ -338,11 +338,13 @@ const PRICE_PER_UNIT_TYPE: Record<string, number> = {
 
 const COSTE_MARGEN = 0.15 // +/- 15% band around the point estimate — "mejor esfuerzo", never exact
 
-function pasilloFor(nombreNormalizado: string): (typeof PASILLOS)[number] {
+/** Exported for `get-shopping-list-suggestions` — same classification a consolidated item gets, for a single not-yet-consolidated ingredient. */
+export function pasilloFor(nombreNormalizado: string): (typeof PASILLOS)[number] {
   return INGREDIENT_AISLE[nombreNormalizado] ?? 'Otros'
 }
 
-function precioUnitario(nombreNormalizado: string, unidad: string): number {
+/** Exported for `get-shopping-list-suggestions` — same pricing a consolidated item gets, for a single not-yet-consolidated ingredient. */
+export function precioUnitario(nombreNormalizado: string, unidad: string): number {
   return PRICE_OVERRIDE[nombreNormalizado] ?? PRICE_PER_UNIT_TYPE[unidad] ?? PRICE_PER_UNIT_TYPE.unidades
 }
 

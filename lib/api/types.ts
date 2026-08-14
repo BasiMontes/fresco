@@ -78,6 +78,17 @@ export interface ToggleShoppingListItemParams {
   p_comprado: boolean
 }
 
+/** `jsonb_add_item` RPC params — mirrors `ToggleShoppingListItemParams` above, same direct-Supabase-client pattern. */
+export interface AddShoppingListItemParams {
+  p_list_id: string
+  p_pasillo_nombre: string
+  p_item: ShoppingListItem
+}
+
+// --- 3b. POST /get-shopping-list-suggestions (FRESCO-194) -------------------
+
+export type { GetShoppingListSuggestionsRequest, GetShoppingListSuggestionsResponse, ShoppingListSuggestion } from '@schemas';
+
 // --- 4. PATCH /update-recipe-status (api-contracts.md §4) ------------------
 
 export interface UpdateRecipeStatusRequest {
