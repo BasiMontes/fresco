@@ -3434,3 +3434,17 @@ PR #62 mergeado (squash) a `staging`, commit `fe9ffbb`. `comprado` toggle, optim
 **Por qué**: pedido directo del user ("adapta sin romper nada") — la conexión del MCP quedó como secundaria, no bloqueante.
 
 **Siguiente**: cuando el user reinicie sesión y el MCP de Stitch cargue, se puede comparar este resultado contra el diseño real dentro de Stitch (proyecto/pantallas) si hace falta iterar más. Sin pendientes de código en este ticket.
+
+---
+
+## 2026-08-14 — FRESCO-191: rework post-QA (pixel-fidelity + CTA faltante)
+
+**Qué**: QA marcó el PR #62 como no pixel-perfect y con un componente faltante. Auditado en vivo (Playwright, desktop 1440px + mobile 390px) contra el mismo mockup del ticket (screenshot + HTML descargados de nuevo vía REST). Antes de tocar código se descartaron dos falsos positivos con medición real (`getComputedStyle`): el "gap" entre filas de ítem resultó ser el card de `divide-y` normal, sin bug; el contraste card-vs-página resultó ser exactamente el token `surface` (#F1E3C6) sobre `background` (#FAF3E3) de `DESIGN.md` — el mockup usa blanco puro, pero el sistema real usa contraste sutil a propósito ("lift slightly off the page... without a hard shadow"), así que se mantuvo el token en vez de perseguir el mockup (LIVE-UI-FIRST). También se descartó una alarma inicial de overlap con el bottom nav mobile — artefacto de stitching de screenshot `--full-page` sobre un elemento `fixed`, no bug real; `AppShell`'s `pb-20` ya lo cubre.
+
+Tres hallazgos reales, confirmados con medición antes de fixear: (1) `PasilloIcon` con `size-4` y `p-1.5` en el mismo elemento — `border-box` hace que el padding coma la caja fija de 16px, el glifo quedaba en ~4px, invisible (confirmado vía `getComputedStyle` del `<svg>`). Fix: padding movido a un `span` envolvente separado. (2) Nombres de ítem en minúscula cruda vs Title Case del mockup — agregado `capitalize()` (mismo patrón ya usado en `recipe-library.tsx`). (3) CTA "Completar compra" del mockup no existía — no hay acción de "completar lista" en el backend (solo `getShoppingListForPlan`/`toggleShoppingListItem`). Pregunté al user cómo resolverlo (repurpose / omitir / nuevo backend); eligió repurpose. Implementado como "Vaciar comprados": desmarca en bloque los ítems `comprado`, reusando `toggleShoppingListItem` por ítem (mismo patrón optimistic-update-with-revert), solo visible si hay al menos un ítem marcado.
+
+Verificado en vivo con sesión real (login QA vía `.env`): ícono legible, nombres capitalizados, botón desmarca y persiste tras reload, botón desaparece cuando no hay marcados. `lint:check` + `types:check` verdes. Commit único `fix(FRESCO-191): QA rework on shopping-list — icon glyph, casing, clear CTA` en `fix/FRESCO-191-qa-rework`, PR #63 → `staging`. Comentario de resumen agregado al ticket de Jira.
+
+**Por qué**: feedback directo de QA del user ("no hay pixel perfect, faltan componentes") + pedido explícito de hacer la pantalla responsive (el mockup adjunto en Jira ya era el diseño mobile).
+
+**Siguiente**: mergear PR #63 cuando el user lo revise. Sin otros pendientes de código en este ticket — el checkbox cuadrado (vs. circular del mockup) sigue siendo decisión ya documentada (no existe componente `Checkbox` custom en el design system).
