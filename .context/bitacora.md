@@ -3534,6 +3534,24 @@ Verificado en vivo contra la MISMA cuenta de la captura del user (`qa-pro-test@f
 
 ---
 
+## 2026-08-14 — FRESCO-196: 18 términos con tilde/ñ faltante en el catálogo
+
+**Qué**: user reportó "Brocoli" y "Champinones" sin tilde/ñ en la lista de la compra, pidió ticket + fix. Investigado el alcance real por SQL antes de tocar nada — no eran solo esos dos: **18 términos distintos** existían en dos grafías dentro del mismo catálogo (con y sin tilde/ñ), según qué tanda de generación de recetas los escribió: `brocoli`/`brócoli`, `champinones`/`champiñones`, `calabacin`/`calabacín`, `atun`/`atún`, `limon`/`limón`, `salmon`/`salmón`, `platano`/`plátano`, `esparragos`/`espárragos`, `sesamo`/`sésamo`, `higado`/`hígado`, `azafran`/`azafrán`, `aji amarillo`/`ají amarillo`, `jamon serrano`/`jamón serrano`, `judias verdes`/`judías verdes`, `maiz blanco`/`maíz blanco`, `pimenton dulce`/`pimentón dulce`, `pimenton picante`/`pimentón picante`, `secreto iberico`/`secreto ibérico`.
+
+Confirmado antes de fixear que esto es seguro: `aisle-pricing.ts` clasifica/precia por `normalizeNombre()` (quita tildes/ñ antes de comparar) — los diccionarios internos (`INGREDIENT_AISLE`, `PRICE_OVERRIDE`, `BASE_QUANTITIES`) ya están en forma sin tilde a propósito, como claves de lookup, no como texto visible — corregir el dato crudo no toca el matching.
+
+Migración de datos (no de schema, mismo patrón que `20260808000000_normalize_dificultad_alta_to_avanzada.sql`): corrige `recipes.ingredientes_principales`, `recipes.ingredientes_que_puede_desagradar`, Y las `shopping_lists.items` YA persistidas (7 filas afectadas, cuentas reales incluidas) — así las listas ya generadas se ven bien al toque, no solo las nuevas. Aplicada directo contra la DB real, verificado 0 filas con cualquiera de los 18 términos malos tras el fix, confirmado visualmente en producción con la MISMA cuenta y lista del reporte del user (`qa-pro-test@fresco.qa`: "Brócoli", "Calabacín", "Champiñones" correctos).
+
+Ticket FRESCO-196 creado documentando alcance real + causa + fix. PR #69 (solo el archivo de migración como registro histórico, el dato ya estaba corregido en vivo antes de abrir el PR) → `staging`, mergeado, promocionado a `main` — sin deploy de app, es fix de datos puro.
+
+**Sobre "sigue faltando la sección de sugerencias"** (misma cuenta, mismo mensaje del user, pidiendo opinión): no coincido en que sea un bug. La cuenta tiene 1 solo favorito real y sus 3 ingredientes ya estaban los tres en la lista generada — carrusel vacío es el comportamiento correcto de `get-shopping-list-suggestions` (ya verificado funcionando end-to-end con otra cuenta con favoritos reales sin cubrir, sesión anterior). Comunicado directo al user con la evidencia SQL, no se tocó código.
+
+**Por qué**: bug real reportado por el user en vivo — pidió explícitamente "jira y corregimos", investigación reveló que el alcance real era 9x más grande que los 2 ejemplos que vio en pantalla.
+
+**Siguiente**: sin pendientes de código. `main`/`staging` sincronizados en `023f17f`.
+
+---
+
 ## 2026-08-14 — Foto batch (842/1000) + FRESCO-194 implementado (sugerencias por favoritos)
 
 **Qué — foto batch**: corrida una tanda de `fetch-recipe-photos.ts` (30 recetas, 10/30 hit rate — bajando como ya documentaba el propio script, quedan las variantes filler-only de conceptos saturados). Progreso real verificado por SQL: 842/1000 (ni el título ni la descripción de FRESCO-31 en Jira estaban al día — decían 821 y 772). Cero duplicados. Cortado por cuota: 6 de 50 requests/hora de Unsplash restantes. Comentario con el estado real dejado en FRESCO-31.
