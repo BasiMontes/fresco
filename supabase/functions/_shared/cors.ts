@@ -1,11 +1,19 @@
 // Shared CORS headers for Edge Function calls. Originally a wildcard origin
 // ("dev-time convenience", api-contracts.md §0) — narrowed per FRESCO-33 to
-// the app's real origins now that they're known. `.agents/project.yaml`
-// `environments.staging.web_url` (fresco-pro.vercel.app) is this project's
-// only deployed environment; `http://localhost:3000` covers local dev
-// against real Edge Functions.
+// the app's real origins now that they're known. `.agents/project.yaml`'s
+// `environments.production.web_url` (fresco-pro.vercel.app) and
+// `environments.staging.web_url` (fresco-staging.vercel.app) are both
+// listed, plus `fresco-pre.vercel.app` — a second alias of the same
+// production deployment (`solo-main`-style Vercel project, confirmed via
+// `vercel inspect`: both alias the same deployment id) that the team has
+// used interchangeably with `fresco-pro.vercel.app` for QA since 2026-08-04
+// but that was never added here, silently CORS-blocking every Edge Function
+// call made from it. `http://localhost:3000` covers local dev against real
+// Edge Functions.
 const ALLOWED_ORIGINS = new Set([
   'https://fresco-pro.vercel.app',
+  'https://fresco-pre.vercel.app',
+  'https://fresco-staging.vercel.app',
   'http://localhost:3000',
 ])
 
