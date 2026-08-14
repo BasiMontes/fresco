@@ -347,7 +347,7 @@ export function CalendarGrid({
               className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent"
             />
           )}
-          <div ref={scrollerRef} className="overflow-x-auto pb-2">
+          <div ref={scrollerRef} data-testid="calendar_grid_scroller" className="overflow-x-auto pb-2">
             <div
               className="grid gap-3"
               style={{

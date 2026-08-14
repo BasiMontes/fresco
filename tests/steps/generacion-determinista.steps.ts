@@ -54,6 +54,11 @@ Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({
   await page.waitForURL('**/menu');
 
   await page.goto('/onboarding');
+  // 4 steps total (Paso 1 de 4 → 4 de 4) — 3 clicks reaches step 4, where
+  // "Generar mi menú" lives. Was 2 clicks/3 steps when this file was
+  // written; onboarding gained a step since (cocinas favoritas split out
+  // on its own), never updated here.
+  await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
 });

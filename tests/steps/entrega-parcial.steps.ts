@@ -41,6 +41,17 @@ Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ 
   // shopping-list.steps.ts's resetShoppingListFixture.
   await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/meal_plans?id=not.is.null`, { headers });
 
+  // /menu's "hoy" grid only renders the slots in planning_meals (FRESCO-172)
+  // — found live leaking real state from another scenario/session: this
+  // account's planning_meals had shrunk to {comida,cena}, so the seeded
+  // null-recipe desayuno slot below never rendered at all, no matter how
+  // correctly it was seeded. Reset to all 3 so this scenario doesn't depend
+  // on whatever a prior run left behind.
+  await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
+    headers,
+    data: { planning_meals: ['desayuno', 'comida', 'cena'] },
+  });
+
   // A real recipe id from the live catalog — never hardcoded (the founder's
   // batch-seeding process can reshuffle `recipes` at any time).
   const recipesRes = await request.get(
@@ -101,8 +112,11 @@ Then(/^no puede arrastrarla ni marcarla como cocinada\/descartada$/, async ({ pa
   // descartado on.
   await expect(page.getByTestId('calendar_slot_lunes_desayuno_mark_cocinada')).toHaveCount(0);
   await expect(page.getByTestId('calendar_slot_lunes_desayuno_mark_descartada')).toHaveCount(0);
-  // The drag handle is disabled — dnd-kit's useDraggable(disabled: true).
+  // No drag handle at all for desayuno (FRESCO-159) — not merely disabled.
+  // Was `useDraggable(disabled: true)` (a disabled-but-present button) when
+  // this scenario was written; FRESCO-159 later removed the button from
+  // the DOM entirely for every desayuno slot, regardless of recipe_id.
   await expect(
     page.getByTestId('calendar_slot_lunes_desayuno').getByRole('button', { name: 'Arrastrar para reordenar' }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
 });

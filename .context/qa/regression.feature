@@ -536,7 +536,7 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/calendario.steps.ts
   Escenario: El sistema rechaza un intercambio entre franjas de tipo distinto
     Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
-    Cuando arrastra el plato de un desayuno sobre el hueco de una cena
+    Cuando arrastra el plato de una comida sobre el hueco de una cena
     Entonces el intercambio no se realiza
     Y ambos huecos conservan su receta y su franja originales
     # Bug real encontrado por el usuario en vivo (screenshot, 2026-08-01):
@@ -547,6 +547,25 @@ Característica: Flujo completo de usuario en Fresco
     # (migración 20260801000000), y el cliente deshabilita como drop target
     # cualquier franja de tipo distinto — el drag inválido ni siquiera
     # arranca.
+    # Fuente cambiada de desayuno a comida (2026-08-14): FRESCO-159 quitó el
+    # handle de arrastre de desayuno por completo (ya no es un origen de
+    # drag posible en absoluto), así que ya no sirve para probar el rechazo
+    # de tipo distinto — comida→cena preserva el mismo chequeo real
+    # (tipo_plato distinto), con un origen que sigue siendo arrastrable.
+
+  @calendario @verificado-manual-2026-08-14 @automatizado
+  # Automatizado: tests/steps/calendario.steps.ts (contexto mobile-emulado dedicado, CDP touch dispatch)
+  Escenario: El grid del calendario responde a scroll táctil horizontal en mobile
+    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos, en un viewport mobile con touch
+    Cuando desliza el dedo horizontalmente sobre el grid
+    Entonces el grid se desplaza y muestra días más allá del lunes
+    # FRESCO-170 — BLOCKER encontrado DOS veces (QA sweep 2026-08-10, re-
+    # confirmado 2026-08-11 tras un primer "fix" que solo tocó el label
+    # sticky, no el scroll táctil en sí, que seguía completamente muerto).
+    # Causa real: touch-action: none incondicional en el handle de arrastre
+    # + un PointerSensor compartido sin distinguir mouse de touch. Cero
+    # cobertura de regresión existía para esto antes de este escenario —
+    # mouse-wheel/dragTo no lo detectan, hace falta touch real (CDP).
 
   @calendario @edge-case @verificado-manual-2026-07-31
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
@@ -655,6 +674,39 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el producto se muestra visualmente como comprado
     Y el estado se conserva la próxima vez que abre la lista
 
+  @lista-compra @verificado-manual-2026-08-14 @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
+  Escenario: Cada producto de la lista muestra su precio estimado
+    Dado que el usuario tiene una lista de la compra generada
+    Entonces cada producto muestra su cantidad, unidad y precio estimado
+    Y el precio se conserva la próxima vez que abre la lista
+    # FRESCO-191 (segunda vuelta): aisle-pricing.ts ya calculaba un precio
+    # real por ingrediente para armar el total — precio_estimado lo expone
+    # por producto en vez de perderlo en la suma.
+
+  @lista-compra @verificado-manual-2026-08-14 @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
+  Escenario: Vaciar comprados desmarca todos los productos marcados
+    Dado que el usuario tiene una lista de la compra generada con un producto marcado como comprado
+    Cuando pulsa "Vaciar comprados"
+    Entonces todos los productos quedan desmarcados
+    Y el botón "Vaciar comprados" desaparece
+    # FRESCO-191 (QA rework): repurpose real del CTA "Completar compra" del
+    # mockup — sin acción de "completar lista" en el backend, así que se
+    # convirtió en un desmarcado en bloque real vía toggleShoppingListItem.
+
+  @lista-compra @verificado-manual-2026-08-14 @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
+  Escenario: Sugerencias basadas en favoritos permiten añadir un producto a la lista
+    Dado que el usuario tiene una lista de la compra generada y una receta favorita con un ingrediente que no está en la lista
+    Cuando pulsa "Añadir" en esa sugerencia
+    Entonces el producto aparece en la lista, en su pasillo correspondiente
+    Y la sugerencia desaparece del carrusel
+    Y el producto se conserva la próxima vez que abre la lista
+    # FRESCO-194: única fuente de datos real disponible para "sugerencias"
+    # (favoritos → ingredientes no presentes en la lista actual). "Nuevo"
+    # queda fuera — sin tracking de recencia en shopping_lists.
+
   @lista-compra @edge-case @verificado-manual-2026-07-31
   Escenario: Ya existe una lista de la compra para ese menú
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
@@ -688,12 +740,15 @@ Característica: Flujo completo de usuario en Fresco
 
   @seguridad @edge-case @verificado-manual-2026-08-01 @automatizado
   # Automatizado: tests/steps/aislamiento-datos.steps.ts
-  # Cubre el fix de FRESCO-27: get_filtered_recipes/get_recent_recipe_ids son
+  # Cubre el fix de FRESCO-27: get_filtered_recipes/get_recent_recipe_marks son
   # SECURITY DEFINER (bypassan RLS) — antes del fix confiaban ciegamente en
   # p_user_id, dejando leer perfil/historial de cualquier otra cuenta real.
+  # get_recent_recipe_ids (nombre original de este escenario) fue reemplazada
+  # por get_recent_recipe_marks en FRESCO-120 (20260808010000) — mismo check
+  # de ownership, misma cobertura de seguridad, nombre actualizado.
   Escenario: Un usuario no puede leer el historial ni el perfil de otro pasando su UUID
     Dado que dos cuentas reales y distintas existen, cada una con su propio perfil e historial de comidas
-    Cuando una de las cuentas llama a get_recent_recipe_ids con el UUID de la otra
+    Cuando una de las cuentas llama a get_recent_recipe_marks con el UUID de la otra
     Entonces no recibe el historial real de la otra cuenta
     Cuando la misma cuenta llama a get_filtered_recipes con el UUID de la otra
     Entonces la llamada es rechazada, no se filtra el catálogo con el perfil ajeno
