@@ -88,6 +88,13 @@ export default function SignupPage() {
         setReassignError(translateAuthError(error));
         return;
       }
+      // FRESCO-204: she may have browsed /menu as the anonymous guest
+      // earlier in this session — Next's client Router Cache can otherwise
+      // serve that stale (is_anonymous: true) RSC payload instead of
+      // refetching, showing the "create an account" banner right after she
+      // just did. `router.refresh()` busts it, same pattern used elsewhere
+      // in this app after server state changes.
+      router.refresh();
       router.push('/menu');
     }
     catch (err) {
@@ -143,6 +150,9 @@ export default function SignupPage() {
         return;
       }
       // She already has a profile + generated menu — back to it, not onboarding.
+      // FRESCO-204: same Router Cache staleness risk as `handleReassign`
+      // above — bust it before returning to /menu.
+      router.refresh();
       router.push('/menu');
     }
     finally {
