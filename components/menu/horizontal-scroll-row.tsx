@@ -48,7 +48,7 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
           type="button"
           aria-label="Ver recetas anteriores"
           onClick={() => scrollByCard(-1)}
-          className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -left-2 top-1/2 z-10 -translate-y-1/2 shadow-md')}
+          className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -left-2 top-1/2 z-10 -translate-y-1/2 bg-primary text-background shadow-md hover:bg-accent-600')}
         >
           <ChevronLeft className="size-[22px]" />
         </button>
@@ -65,7 +65,7 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
           type="button"
           aria-label="Ver recetas siguientes"
           onClick={() => scrollByCard(1)}
-          className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -right-2 top-1/2 z-10 -translate-y-1/2 shadow-md')}
+          className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -right-2 top-1/2 z-10 -translate-y-1/2 bg-primary text-background shadow-md hover:bg-accent-600')}
         >
           <ChevronRight className="size-[22px]" />
         </button>
