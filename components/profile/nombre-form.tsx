@@ -35,6 +35,12 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
 
   const trimmed = nombre.trim();
   const isValid = trimmed.length > 0;
+  // FRESCO-217: `nombreInicial` is the persisted value (this component's own
+  // `handleSubmit` calls `router.refresh()` after a save, so the prop itself
+  // advances to the newly-saved name) — comparing straight against the prop
+  // rather than a separate snapshot ref keeps "saved" and "unchanged" the
+  // same disabled state without extra bookkeeping.
+  const isDirty = trimmed !== (nombreInicial ?? '').trim();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -103,7 +109,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
             </p>
           )}
           <div>
-            <Button type="submit" variant="action" disabled={!isValid || isSaving} data-testid="guardar_nombre_button">
+            <Button type="submit" variant="action" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button">
               Guardar
             </Button>
           </div>

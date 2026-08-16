@@ -54,6 +54,44 @@ const ALL_MEALS: TipoPlatoSlot[] = MEAL_OPTIONS.map(option => option.value);
 const ALL_DAYS: DiaSemana[] = DAY_OPTIONS.map(option => option.value);
 
 /**
+ * Order-independent equality — the toggle handlers below don't guarantee a
+ * value re-added after removal lands back at its original array index, so a
+ * plain index-by-index (or `JSON.stringify`) comparison would report a
+ * revert-to-original edit as still dirty.
+ */
+function sameValues(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((value, index) => value === sortedB[index]);
+}
+
+/**
+ * FRESCO-216: only the fields this form actually exposes can go dirty —
+ * `num_personas`/`adultos`/`ninos`/`ingredientes_odiados`/`cocinas_favoritas`
+ * (and the optional onboarding-only fields) round-trip through `preferences`
+ * state unchanged, so comparing the full object would never disagree with
+ * this narrower check but would also silently start relying on those fields
+ * staying untouched forever.
+ */
+function isPreferencesDirty(current: OnboardingProfilePayload, initial: OnboardingProfilePayload): boolean {
+  return (
+    current.dieta_vegetariano !== initial.dieta_vegetariano
+    || current.dieta_vegano !== initial.dieta_vegano
+    || current.dieta_sin_gluten !== initial.dieta_sin_gluten
+    || current.dieta_sin_lactosa !== initial.dieta_sin_lactosa
+    || current.dieta_sin_huevo !== initial.dieta_sin_huevo
+    || current.dieta_keto !== initial.dieta_keto
+    || current.dieta_halal !== initial.dieta_halal
+    || !sameValues(current.alergenos, initial.alergenos)
+    || !sameValues(current.planning_meals ?? ALL_MEALS, initial.planning_meals ?? ALL_MEALS)
+    || !sameValues(current.planning_days ?? ALL_DAYS, initial.planning_days ?? ALL_DAYS)
+  );
+}
+
+/**
  * `/profile` — lets the user edit the dietary preferences captured at
  * onboarding (FRESCO-70). Chip interaction (toggle pills, "vegana implies
  * vegetariana" lock) is lifted straight from `app/onboarding/page.tsx` Step
@@ -72,6 +110,8 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const isDirty = isPreferencesDirty(preferences, initialPreferences);
 
   function toggleDieta(key: DietaKey) {
     setSaved(false);
@@ -237,7 +277,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
       )}
 
       <div className="mt-4">
-        <Button type="submit" variant="action" disabled={isSaving} data-testid="actualizar_preferencias_button">
+        <Button type="submit" variant="action" disabled={isSaving || !isDirty} data-testid="actualizar_preferencias_button">
           {isSaving ? 'Guardando…' : 'Actualizar Preferencias'}
         </Button>
       </div>
