@@ -3619,3 +3619,21 @@ PR #73 (`fix/FRESCO-205-recipe-back-link-copy` → `staging`), squash-merge (ram
 **Por qué**: bug de copy/navegación reportado en Jira — el link de "volver" no reflejaba el origen real de la navegación, confundiendo al usuario sobre a dónde volvería.
 
 **Siguiente**: sin pendientes de código en FRESCO-205. `staging` en `9fb7893` (incluye este fix como ancestro).
+
+---
+
+## 2026-08-16 — FRESCO-207: flechas de scroll lateral invisibles sobre la tarjeta de receta
+
+**Qué**: bug reportado — las flechas de scroll horizontal del carrusel (`components/menu/horizontal-scroll-row.tsx`, usado en "Últimas recetas añadidas" de `/menu` y en la lista de la compra) no se distinguían de la tarjeta de receta detrás. Causa raíz confirmada por código, no supuesta: ambas usaban literalmente el mismo hex — el botón usa `buttonVariants({ variant: 'icon' })` (`bg-surface text-primary`, `#f1e3c6`) y `RecipeCard` usa `bg-surface` como fondo de tarjeta (`components/recipe/recipe-card.tsx:52`) — mismo color exacto, cero contraste, solo una sombra `shadow-md` de por medio.
+
+Fix quirúrgico: en las dos flechas de `HorizontalScrollRow`, override del fondo/texto del variant `icon` a `bg-primary text-background hover:bg-accent-600` — el mismo tratamiento ya usado por el variant `default` (CTA primario) del design system, no un patrón nuevo inventado. Resultado: círculo verde corporativo (`#0f4e0e`) sólido con chevron blanco, visible tanto sobre la tarjeta (`bg-surface`) como sobre el fondo de página (`bg-background`).
+
+**Hallazgos de entorno (worktree)**: mismo bloqueo que en FRESCO-208 — `cp`/`Write` hacia `.env` denegados por el sandbox del agente (permiso específico sobre ese path), y Turbopack falla igual con el symlink de `node_modules` fuera del worktree (`next dev --webpack` como workaround). Diferencia esta vez: ni `rsync` fue necesario — bastó exportar las vars de Supabase/app inline en el mismo comando que lanza `next dev` (nunca se creó `.env` en disco), suficiente para que el login real y `/menu` funcionaran en Playwright.
+
+Verificado en vivo (`next dev --webpack -p 3012`, login con cuenta QA real): screenshot antes/después del carrusel muestra ambas flechas (izquierda y derecha) como círculo verde sólido, claramente diferenciado de las tarjetas cream detrás. `lint:check`/`types:check` verdes.
+
+PR #74 (`fix/FRESCO-207-carousel-arrow-color` → `staging`), squash-merge (merge commit `333b6fc`). Varios agentes mergeando en paralelo a `staging` en la misma ventana causó que el primer par de deploys de Vercel quedara `CANCELED` (superados por el siguiente push antes de terminar build) — resuelto verificando por ancestría git que el commit de FRESCO-207 estaba incluido en el deploy que sí llegó a `READY` (`fresco-b7g24xsoj...`, commit `9fb7893`), en vez de asumir que el deploy del propio merge commit sería el definitivo. Jira: WIP → Merged → Control de calidad.
+
+**Por qué**: bug de UI reportado en Jira (FRESCO-207), defecto visual con causa raíz de un solo hex compartido entre dos componentes.
+
+**Siguiente**: sin pendientes de código en FRESCO-207. `staging` en `9fb7893` (+ este commit de bitácora).
