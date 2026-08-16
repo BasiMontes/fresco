@@ -107,6 +107,20 @@ export default function OnboardingPage() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [vegetarianoLockTooltipOpen, setVegetarianoLockTooltipOpen] = useState(false);
 
+  // FRESCO-201: resetting the store synchronously before router.push()
+  // re-rendered this still-mounted page at step 1 for the ~1s the /menu
+  // navigation took to commit, flashing the wizard back to the start.
+  // Deferring the reset to actual unmount (post-navigation) removes the
+  // flash while preserving FRESCO-94's intent below.
+  const resetOnUnmount = useRef(false);
+  useEffect(() => {
+    return () => {
+      if (resetOnUnmount.current) {
+        useOnboardingStore.getState().reset();
+      }
+    };
+  }, []);
+
   // FRESCO-17 (Guest Mode, US 6.1): a first-time visitor reaches this page
   // with no Supabase session at all. Ensure one exists before she can reach
   // Step 3 — a just-registered user arriving from `/signup` already has a
@@ -264,9 +278,10 @@ export default function OnboardingPage() {
       setGenerateSuccess(true);
       await new Promise(resolve => setTimeout(resolve, 900));
       // FRESCO-94: the store now persists to sessionStorage so a mid-wizard
-      // reload survives — reset here so a later same-tab visit to
-      // /onboarding doesn't resurface this run's stale answers.
-      useOnboardingStore.getState().reset();
+      // reload survives — reset so a later same-tab visit to /onboarding
+      // doesn't resurface this run's stale answers (deferred to unmount,
+      // see resetOnUnmount above — FRESCO-201).
+      resetOnUnmount.current = true;
       router.push('/menu');
     }
     catch (error) {
