@@ -236,7 +236,7 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
       <h1 className="text-h2">Lista de la compra</h1>
 
       <Card className="mt-4">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-h5">Resumen</h2>
             <p className="mt-1 flex items-center gap-1.5 text-body-sm text-tertiary">
