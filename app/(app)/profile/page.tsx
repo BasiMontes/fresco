@@ -1,6 +1,6 @@
 import { User as UserIcon } from 'lucide-react';
 import { AyudaSection } from '@/components/profile/ayuda-section';
-import { DangerZone } from '@/components/profile/danger-zone';
+import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,10 @@ import { createClient } from '@/lib/supabase/server';
  * `/profile` — nav item 4. Real session (email) + real tier (`getUserPlan()`,
  * STORY-FRESCO-15) + real dietary preferences (`getUserDietaryPreferences()`,
  * FRESCO-70), replacing the original name-tag-only page with a real profile:
- * greeting header, editable preferences, an Ayuda section (see below), and a
- * footer "zona de peligro" with 3 real account actions (`DangerZone`:
- * logout, JSON export, permanent deletion).
+ * greeting header, editable preferences, an Ayuda section (see below), a
+ * "Cuenta" card (`AccountActions`: logout, CSV export), and a footer "zona
+ * de peligro" (`DangerZone`, FRESCO-220) scoped to permanent deletion only —
+ * the one genuinely destructive action.
  *
  * The upgrade CTA stays a disabled "Próximamente" rather than a live link:
  * payment/self-serve upgrade infra is explicitly deferred past this MVP
@@ -153,6 +154,17 @@ export default async function ProfilePage() {
           </div>
         </Card>
       )}
+
+      {/* FRESCO-220: logout + CSV export moved out of the danger-styled
+          card below — neither is a destructive action. */}
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Cuenta</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AccountActions />
+        </CardContent>
+      </Card>
 
       <Card variant="danger" className="mt-4">
         <CardHeader>

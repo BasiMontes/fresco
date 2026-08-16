@@ -23,8 +23,8 @@ interface FaqItem {
  *   this FAQ item still claimed otherwise).
  * - Free vs. Pro: the exact sentence already shown in this page's own
  *   Pro-upsell `Card` below, quoted verbatim so this never contradicts it.
- * - Data deletion: the real, working `DangerZone` actions on this same page
- *   (`/api/profile/export`, `DeleteAccountDialog`).
+ * - Data deletion: the real, working `AccountActions`/`DangerZone` actions on
+ *   this same page (`/api/profile/export`, `DeleteAccountDialog`).
  * - Allergen filtering: `get_filtered_recipes()`
  *   (`supabase/migrations/20260725120100_create_fresco_core_tables.sql`) —
  *   `not (coalesce(r.alergenos, '[]'::jsonb) ?| v_profile.alergenos)` excludes
@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     question: '¿Puedo borrar mis datos?',
-    answer: 'Sí. En la sección "Zona de peligro", al final de esta página, puedes descargar un backup en CSV de todos tus datos o borrar tu cuenta de forma definitiva.',
+    answer: 'Sí. En la tarjeta "Cuenta" puedes descargar un backup en CSV de todos tus datos, y en "Zona de peligro", al final de esta página, borrar tu cuenta de forma definitiva.',
   },
   {
     question: '¿Fresco filtra automáticamente mis alergias?',
