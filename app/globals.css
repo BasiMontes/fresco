@@ -52,6 +52,17 @@
 }
 
 @layer base {
+  /*
+   * FRESCO-208 — `html` needs its own `bg-background`, not just `body`.
+   * Vertical rubber-band/elastic overscroll (macOS trackpad, iOS Safari)
+   * paints the bounce region past the document's top/bottom edge using
+   * `html`'s background, not `body`'s propagated one — leaving it unset
+   * exposed the browser-default white instead of the app's cream token.
+   */
+  html {
+    @apply bg-background;
+  }
+
   body {
     @apply bg-background text-text;
     font-family:
