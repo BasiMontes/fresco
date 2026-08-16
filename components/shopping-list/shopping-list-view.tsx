@@ -300,7 +300,9 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
         </div>
       )}
 
-      <div className="mt-6 flex flex-col gap-6">
+      {/* `pb-24` keeps the last aisle card clear of the floating "Vaciar
+          comprados" button below, once it's showing. */}
+      <div className="mt-6 flex flex-col gap-6 pb-24">
         {pasillos.map((pasillo, pasilloIdx) => {
           const PasilloIcon = getPasilloIcon(pasillo.nombre);
           return (
@@ -360,16 +362,23 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
       </div>
 
       {compradosCoords.length > 0 && (
-        <Button
-          type="button"
-          size="lg"
-          className="mt-6 w-full"
-          onClick={() => void handleClearComprados()}
-          data-testid="shopping_list_clear_comprados_button"
-        >
-          <Trash2 className="size-4" aria-hidden="true" />
-          Vaciar comprados
-        </Button>
+        // FRESCO-214: floating instead of inline-at-the-bottom-of-the-list —
+        // stays reachable without scrolling past every aisle first. Sits
+        // above `BottomTabBar` (mobile, `z-[100]`) and clears it plus the
+        // device safe area via the `bottom-[calc(...)]` offset; `md:` drops
+        // to a smaller offset once that tab bar is hidden.
+        <div className="fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[90] flex justify-center px-4 md:bottom-[calc(2rem+env(safe-area-inset-bottom))]">
+          <Button
+            type="button"
+            size="lg"
+            className="shadow-lg"
+            onClick={() => void handleClearComprados()}
+            data-testid="shopping_list_clear_comprados_button"
+          >
+            <Trash2 className="size-4" aria-hidden="true" />
+            Vaciar comprados
+          </Button>
+        </div>
       )}
     </div>
   );
