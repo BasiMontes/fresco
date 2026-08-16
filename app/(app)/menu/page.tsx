@@ -185,7 +185,7 @@ export default async function MenuPage() {
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
             {hoy[slot]
               ? (
-                  <Link href={`/recipes/${hoy[slot].id}`} className="flex flex-1">
+                  <Link href={`/recipes/${hoy[slot].id}?from=menu`} className="flex flex-1">
                     <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} className="flex-1" />
                   </Link>
                 )

@@ -23,16 +23,23 @@ function alergenoLabel(value: string): string {
   return ALERGENO_OPTIONS.find(option => option.value === value)?.label ?? value;
 }
 
-function BackToLibraryLink() {
-  return (
-    <Link href="/recipes" className={buttonVariants({ variant: 'ghost' })} data-testid="recipe_detail_back_link">
-      <ArrowLeft className="size-4" aria-hidden="true" />
-      Volver a la Biblioteca
-    </Link>
-  );
+function BackToLibraryLink({ from }: { from?: string }) {
+  return from === 'menu'
+    ? (
+        <Link href="/menu" className={buttonVariants({ variant: 'ghost' })} data-testid="recipe_detail_back_link">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Volver al menú
+        </Link>
+      )
+    : (
+        <Link href="/recipes" className={buttonVariants({ variant: 'ghost' })} data-testid="recipe_detail_back_link">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Volver a la Biblioteca
+        </Link>
+      );
 }
 
-function CatalogRecipeDetail({ receta, initialIsFavorite }: { receta: Recipe, initialIsFavorite: boolean }) {
+function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Recipe, initialIsFavorite: boolean, from?: string }) {
   const CategoryIcon = getCategoryIcon(receta.clasificacion?.categoria);
   const dietaLabels = activeDietaLabels(receta.dieta);
   const ingredientes = receta.ingredientes_principales ?? [];
@@ -40,7 +47,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite }: { receta: Recipe, in
 
   return (
     <div>
-      <BackToLibraryLink />
+      <BackToLibraryLink from={from} />
 
       <div className="relative mt-4 grid aspect-video w-full place-items-center overflow-hidden rounded-card bg-neutral-200">
         {receta.foto_url
@@ -103,10 +110,10 @@ function CatalogRecipeDetail({ receta, initialIsFavorite }: { receta: Recipe, in
   );
 }
 
-function PersonalRecipeDetail({ receta }: { receta: RecetaPropia }) {
+function PersonalRecipeDetail({ receta, from }: { receta: RecetaPropia, from?: string }) {
   return (
     <div>
-      <BackToLibraryLink />
+      <BackToLibraryLink from={from} />
 
       <div className="relative mt-4 grid aspect-video w-full place-items-center overflow-hidden rounded-card bg-neutral-200">
         <BookOpen className="size-16 text-neutral-400" aria-hidden="true" />
@@ -147,16 +154,16 @@ function PersonalRecipeDetail({ receta }: { receta: RecetaPropia }) {
 }
 
 /** OOS (no edit/delete/rate/menu-add/share) and the shell (back link, name, ingredients, steps) are identical for both recipe types — only the metadata block differs, so this dispatches to one of two small render branches rather than duplicating the shell. */
-export function RecipeDetailView({ detail, initialIsFavorite }: { detail: RecipeDetail, initialIsFavorite: boolean }) {
+export function RecipeDetailView({ detail, initialIsFavorite, from }: { detail: RecipeDetail, initialIsFavorite: boolean, from?: string }) {
   return detail.kind === 'catalogo'
-    ? <CatalogRecipeDetail receta={detail.receta} initialIsFavorite={initialIsFavorite} />
-    : <PersonalRecipeDetail receta={detail.receta} />;
+    ? <CatalogRecipeDetail receta={detail.receta} initialIsFavorite={initialIsFavorite} from={from} />
+    : <PersonalRecipeDetail receta={detail.receta} from={from} />;
 }
 
-export function RecipeNotFoundState() {
+export function RecipeNotFoundState({ from }: { from?: string }) {
   return (
     <div>
-      <BackToLibraryLink />
+      <BackToLibraryLink from={from} />
       <p className="mt-6 text-body-md text-tertiary" data-testid="recipe_detail_not_found">
         No encontramos esta receta. Puede que ya no esté disponible para tu perfil.
       </p>

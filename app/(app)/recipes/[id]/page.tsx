@@ -9,8 +9,12 @@ import { createClient } from '@/lib/supabase/server';
  * steps only) — see `getRecipeDetail()` for how `id` resolves to one or the
  * other.
  */
-export default async function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function RecipeDetailPage({ params, searchParams }: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ from?: string }>
+}) {
   const { id } = await params;
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   let detail: Awaited<ReturnType<typeof getRecipeDetail>>;
@@ -36,7 +40,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="mx-auto max-w-2xl">
-      {detail ? <RecipeDetailView detail={detail} initialIsFavorite={isFavorite} /> : <RecipeNotFoundState />}
+      {detail ? <RecipeDetailView detail={detail} initialIsFavorite={isFavorite} from={from} /> : <RecipeNotFoundState from={from} />}
     </div>
   );
 }
