@@ -189,16 +189,23 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
         </div>
       )}
 
-      <SegmentedControl
-        className="mt-4"
-        aria-label="Filtrar por tipo de comida"
-        options={MEAL_TABS}
-        value={tab}
-        onChange={value => setTab(value as MealTab)}
-      />
-
       <h2 className="mt-4 text-h6 uppercase text-tertiary">Filtros</h2>
-      <div className="mt-2 flex flex-wrap gap-3" data-testid="recipe_library_filters">
+      {/* FRESCO-211: the meal-type tab used to sit on its own row above this
+       * one, a different height than the dropdown filters below it. It now
+       * shares this row (`items-end` aligns every control's own baseline,
+       * same as the labeled dropdowns) and matches their `h-9` size. */}
+      <div className="mt-2 flex flex-wrap items-end gap-3" data-testid="recipe_library_filters">
+        <div className="flex flex-col gap-1">
+          <span className="text-caption uppercase text-tertiary">Comida</span>
+          <SegmentedControl
+            className="h-9 items-center"
+            aria-label="Filtrar por tipo de comida"
+            options={MEAL_TABS}
+            value={tab}
+            onChange={value => setTab(value as MealTab)}
+          />
+        </div>
+
         <label className="flex flex-col gap-1">
           <span className="text-caption uppercase text-tertiary">Cocina</span>
           <Dropdown
