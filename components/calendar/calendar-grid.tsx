@@ -134,17 +134,30 @@ export function CalendarGrid({
   const labelRefs = React.useRef<(HTMLParagraphElement | null)[]>([]);
   // FRESCO-184 — the grid's horizontal scroll had no visual affordance: the
   // last visible day column just clipped mid-card at 768px/1280px with
-  // nothing suggesting more days exist to the right. Tracked via the same
-  // scroll listener as the label sync above (one listener, not two) plus a
-  // `ResizeObserver` on the scroller itself, since a viewport resize alone
-  // (no scroll event) can flip whether the content overflows at all.
+  // nothing suggesting more days exist to the right. Tracked in the same
+  // loop as the label sync above, since a viewport resize alone (no scroll)
+  // can flip whether the content overflows at all.
   const [canScrollRight, setCanScrollRight] = React.useState(false);
 
+  // FRESCO-222 — on mobile the labels visibly drifted/jumped away from
+  // their day column while swiping ("se mueve"). Root cause: the original
+  // fix (FRESCO-170, see above) re-synced the transform on the `scroll`
+  // event. During touch-driven momentum/inertial scrolling, mobile
+  // browsers dispatch `scroll` at a much lower, throttled rate than the
+  // compositor actually moves the content (desktop wheel/trackpad scroll
+  // doesn't have this gap, which is why it only ever showed up on mobile)
+  // — so the label visibly lagged a beat behind the cards, reads as the
+  // label "moving" on its own. `requestAnimationFrame` reads `scrollLeft`
+  // every paint frame instead of waiting on the `scroll` event, staying in
+  // lockstep with the compositor regardless of input device; it also
+  // subsumes the old resize-driven re-check for `canScrollRight` for free.
   React.useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller) {
       return;
     }
+
+    let frameId: number;
 
     const syncLabelsToScroll = () => {
       const translateX = `translateX(${scroller.scrollLeft}px)`;
@@ -155,16 +168,11 @@ export function CalendarGrid({
       });
       // 1px buffer for sub-pixel rounding at the exact scrolled-to-end position.
       setCanScrollRight(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1);
+      frameId = requestAnimationFrame(syncLabelsToScroll);
     };
 
-    syncLabelsToScroll();
-    scroller.addEventListener('scroll', syncLabelsToScroll, { passive: true });
-    const resizeObserver = new ResizeObserver(syncLabelsToScroll);
-    resizeObserver.observe(scroller);
-    return () => {
-      scroller.removeEventListener('scroll', syncLabelsToScroll);
-      resizeObserver.disconnect();
-    };
+    frameId = requestAnimationFrame(syncLabelsToScroll);
+    return () => cancelAnimationFrame(frameId);
   }, [planningMeals.length, planningDays.length]);
 
   // FRESCO-170 — split mouse vs touch instead of one shared `PointerSensor`,
