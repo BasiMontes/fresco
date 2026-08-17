@@ -3665,3 +3665,23 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 **Por qué**: findings de code review sobre el PR #83 — comentario impreciso y documentación de design system/SRS quedaron apuntando a UI ya eliminada.
 
 **Siguiente**: sin pendientes de código en FRESCO-206. PR #83 (`fix/FRESCO-206-remove-cocinar-ya-button` → `staging`) actualizado, pendiente de merge.
+
+---
+
+## 2026-08-17 — FRESCO-199 (fase 1/2, esquema + generación): exclusión de comidas por día real, no solo visual
+
+**Qué**: segunda feature grande del roadmap (197+198+218 ya cerrada). Investigación previa a codear reveló que el problema era más profundo de lo que decía el ticket: `planning_meals`/`planning_days` eran 2 arrays planos sin relación entre sí (no se puede expresar "sin almuerzo solo el martes"), pero además **la generación real nunca los leía** — `generate-meal-plan`/`menu-selector.ts` (ADR-0005) siempre llenaba las 21 franjas, esos 2 campos solo se usaban para ocultar filas/columnas en `/menu` y `/calendar`. Alcance acordado con el user: arreglar modelo + generación real, no solo el filtro visual.
+
+**Esquema** (2 migraciones aplicadas contra la DB real vía Supabase MCP, proyecto `jdqemhewjrjuopssdurn`, compartido entre `main` y `staging`): `planning_selection jsonb` (matriz `día → comidas[]`) reemplaza `planning_meals`/`planning_days`, con backfill de las filas existentes (cruce de los 2 arrays viejos, mismo dato, solo reformado) antes de dropearlas — verificado en vivo post-migración que el backfill quedó correcto. Nuevo valor `'excluida'` en el enum `estado_receta_menu`, distinto de la combinación `NO_SAFE_RECIPE_SENTINEL`/`pendiente` (esa sigue siendo un gap real con advertencia; una franja excluida es elección del user, sin advertencia).
+
+**Generación** (`menu-selector.ts`/`index.ts`): `selectMenu` ahora lee `profile.planning_selection[dia]` — si la comida no está ahí, la franja se marca `SLOT_EXCLUDED_SENTINEL` directo, sin correr el scoring, y `index.ts` la persiste con `estado: 'excluida'` + `recipe_id: null`. 3 tests nuevos cubren el comportamiento (`menu-selector.test.ts`).
+
+**Compatibilidad de UI** (deliberadamente NO rediseñada esta sesión — fase 2 aparte): `lib/planning-selection.ts` (nuevo) da `toPlanningSelection`/`fromPlanningSelection`, la conversión de frontera entre la matriz nueva y las 2 listas planas que el onboarding y `/perfil` todavía editan — mismo comportamiento visible que antes (selección uniforme para toda la semana), sin picker granular por día todavía. Tocados solo lo mínimo para seguir compilando: `app/onboarding/page.tsx`, `components/profile/preferences-form.tsx`, `app/(app)/calendar/page.tsx`, `app/(app)/menu/page.tsx`, `lib/api/user-profile.ts`.
+
+**Verificación real contra la DB en vivo**: `mcp__supabase__list_migrations` confirmó estado pre-migración, `apply_migration` x2, `execute_sql` confirmó backfill correcto en 5 perfiles reales, `get_advisors` sin warnings nuevos, `generate_typescript_types` confirmó que mi edición manual de `lib/supabase/types.ts` coincidía exactamente con el codegen real (cero diff). La función edge desplegada actualmente NO lee `planning_meals`/`planning_days` (nunca los leyó), así que el drop de columnas no rompió nada en producción — el feature de exclusión real se activa recién cuando se despliegue el código nuevo junto con el merge de esta PR.
+
+3 commits atómicos (`3c45f2c` esquema, `e9ad887` generación, `b0aa784` glue de UI), `types:check`/`lint:check`/`bun test` (154/154) verdes.
+
+**Por qué**: plan de 5 features grandes acordado con el user, trabajado uno por uno para no saturar contexto. Esta es la 199 (2/5).
+
+**Siguiente**: PR pendiente de abrir para `feat/FRESCO-199-planning-selection-schema` → `staging`. Fase 2 (picker granular día×comida real en onboarding/perfil, y `calendar-grid`/`menu` renderizando franjas excluidas individuales en vez de ocultar filas enteras) queda como trabajo separado, explícitamente diferido. Quedan 3 grupos de features grandes: 203, 219, 221.
