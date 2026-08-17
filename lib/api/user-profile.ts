@@ -29,7 +29,7 @@ export type OnboardingProfilePayload = Pick<
   | 'cocinas_favoritas'
 // `nombre`/`sexo`/`objetivo` (FRESCO-132), the 4 `*_texto_libre` fields
 // (FRESCO-133), `presupuesto_semana_euros` (FRESCO-134),
-// `planning_meals`/`planning_days` (FRESCO-135/136), and
+// `planning_selection` (FRESCO-135/136/199), and
 // `nivel_experiencia` (FRESCO-137) are optional here — `/profile`'s
 // preferences editor (FRESCO-70) round-trips this same type through
 // `getUserDietaryPreferences` without selecting these columns, and a save
@@ -46,8 +46,7 @@ export type OnboardingProfilePayload = Pick<
   | 'ingredientes_odiados_texto_libre'
   | 'cocinas_texto_libre'
   | 'presupuesto_semana_euros'
-  | 'planning_meals'
-  | 'planning_days'
+  | 'planning_selection'
   | 'nivel_experiencia'
 >>;
 
@@ -154,7 +153,7 @@ export async function getUserDietaryPreferences(
 
   const { data, error } = await client
     .from('user_profiles')
-    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_meals, planning_days')
+    .select('num_personas, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, planning_selection')
     .eq('id', resolvedUserId)
     .maybeSingle();
 
@@ -162,10 +161,10 @@ export async function getUserDietaryPreferences(
     throw new UserProfileError(`No se pudieron leer las preferencias: ${error.message}`);
   }
 
-  // FRESCO-153: `planning_meals`'s DB enum also allows `'snack'`, same gap
-  // `lib/api/meal-plan.ts` already documents for `tipo_plato` — narrowed
-  // here rather than widening `OnboardingProfilePayload`, since the only
-  // writers of this column (onboarding, this preferences form) offer just
+  // FRESCO-153: the underlying `tipo_plato` DB enum also allows `'snack'`,
+  // same gap `lib/api/meal-plan.ts` already documents — narrowed here rather
+  // than widening `OnboardingProfilePayload`, since the only writers of
+  // `planning_selection` (onboarding, this preferences form) offer just
   // desayuno/comida/cena.
   return (data as OnboardingProfilePayload | null) ?? DEFAULT_ONBOARDING_PROFILE;
 }

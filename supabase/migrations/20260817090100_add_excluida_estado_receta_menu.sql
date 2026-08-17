@@ -1,0 +1,11 @@
+-- FRESCO-199: a slot the user explicitly excluded from planning (via the new
+-- planning_selection column) needs a distinct estado from
+-- NO_SAFE_RECIPE_SENTINEL's 'pendiente' + null recipe_id -- that combination
+-- already means "the system tried and found no safe candidate," a real gap
+-- with its own advertencia (FR-8.2). An excluded slot is the user's own
+-- choice, not a gap, so it must stay distinguishable downstream (shopping-
+-- list generation, calendar-grid rendering, the FR-5.x learning trigger).
+--
+-- Isolated in its own migration/transaction: a new enum value cannot be
+-- referenced in the same transaction that adds it.
+alter type public.estado_receta_menu add value 'excluida';

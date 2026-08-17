@@ -19,3 +19,13 @@ export type { GenerateMealPlanRequest, GenerateMealPlanResponse, TipoPlatoSlot, 
  * `index.ts`'s persistence/enrichment logic didn't need to change.
  */
 export const NO_SAFE_RECIPE_SENTINEL = 'SIN_RECETA_SEGURA'
+
+/**
+ * FRESCO-199: the value `menu-selector.ts` assigns to a slot's `recipe_id`
+ * when the user's own `planning_selection` excludes that day+meal (e.g. no
+ * `comida` on `martes`) -- distinct from `NO_SAFE_RECIPE_SENTINEL`, which
+ * means the system searched and found nothing safe. An excluded slot is the
+ * user's choice, not a gap: no advertencia, no scoring pass, and persisted
+ * with `estado: 'excluida'` instead of `'pendiente'`.
+ */
+export const SLOT_EXCLUDED_SENTINEL = 'FRANJA_EXCLUIDA'

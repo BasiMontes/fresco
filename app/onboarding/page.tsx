@@ -15,6 +15,7 @@ import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
 import { upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
+import { toPlanningSelection } from '@/lib/planning-selection';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
@@ -207,8 +208,8 @@ export default function OnboardingPage() {
   // FRESCO-165/166 — QA sweep found "Ninguno" (days) left 0 days selected
   // with "Generar mi menú" still enabled: it generated a menu anyway. Worse,
   // deselecting all 3 meals didn't block generation either, and because
-  // `upsertUserProfile()` below persists `planning_meals`/`planning_days`
-  // BEFORE `generateMealPlan()` runs, a user who reached that state and hit
+  // `upsertUserProfile()` below persists `planning_selection` BEFORE
+  // `generateMealPlan()` runs, a user who reached that state and hit
   // a generation failure (e.g. 409 "plan already exists") was left with a
   // permanently-saved empty preference — `/menu` reads today's meals from
   // that (now-corrupted) preference, not from the real stored plan, so it
@@ -257,8 +258,7 @@ export default function OnboardingPage() {
         // DB check constraint: presupuesto_semana_euros > 0 — 0/negative
         // rejected, only a genuine positive value or null is valid.
         presupuesto_semana_euros: presupuestoSemanaEuros,
-        planning_meals: planningMeals,
-        planning_days: planningDays,
+        planning_selection: toPlanningSelection(planningDays, planningMeals),
         nivel_experiencia: nivelExperiencia,
       });
 

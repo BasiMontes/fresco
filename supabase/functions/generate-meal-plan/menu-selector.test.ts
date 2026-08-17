@@ -1,14 +1,19 @@
 import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
 import { describe, expect, test } from 'bun:test'
 import { selectMenu } from './menu-selector.ts'
-import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
+import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 
+const ALL_DAYS_ALL_MEALS: Record<DiaSemana, TipoPlatoSlot[]> = Object.fromEntries(
+  DIAS.map(dia => [dia, TIPOS]),
+) as Record<DiaSemana, TipoPlatoSlot[]>
+
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
     id: 'user-1',
+    planning_selection: ALL_DAYS_ALL_MEALS,
     created_at: '',
     updated_at: '',
     plan: 'free',
@@ -179,6 +184,42 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
       recentRecipeIds: [],
       profile: makeProfile({ presupuesto_semana_euros: null }),
     })
+
+    expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(false)
+  })
+})
+
+describe('selectMenu — planning_selection exclusions (FRESCO-199)', () => {
+  test('a day+meal excluded from planning_selection becomes the excluded sentinel, not the unsafe-recipe one', () => {
+    const profile = makeProfile({
+      planning_selection: { ...ALL_DAYS_ALL_MEALS, martes: ['desayuno', 'cena'] },
+    })
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], profile })
+
+    expect(menu.martes.comida).toBe(SLOT_EXCLUDED_SENTINEL)
+    expect(menu.martes.desayuno).not.toBe(SLOT_EXCLUDED_SENTINEL)
+    expect(menu.martes.cena).not.toBe(SLOT_EXCLUDED_SENTINEL)
+  })
+
+  test('an excluded slot raises no advertencia — it is the user\'s choice, not a gap', () => {
+    const profile = makeProfile({
+      planning_selection: { ...ALL_DAYS_ALL_MEALS, martes: ['desayuno', 'cena'] },
+    })
+    const { advertencias } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], profile })
+
+    expect(advertencias).toEqual([])
+  })
+
+  test('an excluded slot does not count toward the weekly budget check', () => {
+    const candidates = buildAmpleCatalog().map(r => ({
+      ...r,
+      meta: { ...r.meta!, coste_estimado: 'alto' as const },
+    }))
+    const allExcludedProfile = makeProfile({
+      planning_selection: Object.fromEntries(DIAS.map(dia => [dia, []])) as Record<DiaSemana, TipoPlatoSlot[]>,
+      presupuesto_semana_euros: 1,
+    })
+    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile: allExcludedProfile })
 
     expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(false)
   })
