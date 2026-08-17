@@ -32,7 +32,8 @@
 
 16. **FEATURE MAP SYNC — MODO OPTIMIZADO**:
     - **TRIGGER**: SOLO al finalizar un Epic completo o añadir una nueva capacidad de negocio mayor (no por bugs, refactorizaciones o ajustes de UI).
-    - **ACCIÓN**: Leer SOLO la sección específica del dominio que se modifica (usando `grep` o `sed` si es necesario, o pidiendo al usuario el bloque), actualizar y reescribir. No leer el archivo completo de 2000 líneas si solo se toca la tabla de "Usuarios".
+    - **ACCIÓN**: Leer SOLO la sección específica del dominio que se modifica (usando `grep` o `sed` si es necesario, o pidiendo al usuario el bloque), actualizar y reescribir. No leer el archivo completo de 2000 líneas si solo se toca la tabla de "Usuarios". Hazlo automáticamente al cerrar la historia, pero si el cambio es trivial, omite este paso para ahorrar tokens.
+   
 ---
 
 ## 2. BEHAVIORAL LAYER — HOW AI REASONS
