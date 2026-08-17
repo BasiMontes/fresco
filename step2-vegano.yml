@@ -1,0 +1,52 @@
+- generic [ref=e1]:
+    - alert [ref=e22]
+    - generic [ref=e23]:
+        - paragraph [ref=e24]: Paso 2 de 4
+        - generic [ref=e30]:
+            - heading "¿Qué dieta y restricciones sigue tu hogar?" [level=1] [ref=e56]
+            - paragraph [ref=e57]: Puedes elegir varias.
+            - generic [ref=e58]:
+                - generic [ref=e59]:
+                    - button "Vegetariano" [disabled] [pressed] [ref=e60]
+                    - generic [ref=e128]:
+                        - button "Por qué Vegetariano está bloqueado" [ref=e129] [cursor=pointer]: i
+                        - tooltip "Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas."
+                - button "Vegano" [active] [pressed] [ref=e63] [cursor=pointer]
+                - button "Sin gluten" [ref=e66] [cursor=pointer]
+                - button "Sin lactosa" [ref=e69] [cursor=pointer]
+                - button "Sin huevo" [ref=e72] [cursor=pointer]
+                - button "Keto" [ref=e75] [cursor=pointer]
+                - button "Halal" [ref=e78] [cursor=pointer]
+            - textbox "Dieta y restricciones — texto libre" [ref=e80]:
+                - /placeholder: ¿Algo más que debamos saber?
+            - heading "¿Algún alérgeno que debamos evitar?" [level=2] [ref=e81]
+            - generic [ref=e82]:
+                - button "Gluten" [ref=e83] [cursor=pointer]
+                - button "Huevo" [ref=e85] [cursor=pointer]
+                - button "Pescado" [ref=e87] [cursor=pointer]
+                - button "Frutos de cáscara" [ref=e89] [cursor=pointer]
+                - button "Apio" [ref=e91] [cursor=pointer]
+                - button "Sulfitos" [ref=e93] [cursor=pointer]
+            - textbox "Alérgenos — texto libre" [ref=e95]:
+                - /placeholder: ¿Algún otro alérgeno?
+            - heading "¿Algún ingrediente que no te guste?" [level=2] [ref=e96]
+            - generic [ref=e97]:
+                - button "Cebolla" [ref=e98] [cursor=pointer]
+                - button "Champiñones" [ref=e100] [cursor=pointer]
+                - button "Setas" [ref=e102] [cursor=pointer]
+                - button "Cilantro" [ref=e104] [cursor=pointer]
+                - button "Apio" [ref=e106] [cursor=pointer]
+                - button "Comino" [ref=e108] [cursor=pointer]
+                - button "Guisantes" [ref=e110] [cursor=pointer]
+                - button "Judías verdes" [ref=e112] [cursor=pointer]
+                - button "Pimiento rojo" [ref=e114] [cursor=pointer]
+                - button "Pimiento verde" [ref=e116] [cursor=pointer]
+                - button "Chorizo" [ref=e118] [cursor=pointer]
+                - button "Panceta" [ref=e120] [cursor=pointer]
+                - button "Tocino" [ref=e122] [cursor=pointer]
+                - button "Morcilla" [ref=e124] [cursor=pointer]
+            - textbox "Ingredientes que no gustan — texto libre" [ref=e126]:
+                - /placeholder: ¿Algún otro ingrediente que no te guste?
+            - generic [ref=e54]:
+                - button "Atrás" [ref=e127] [cursor=pointer]
+                - button "Siguiente" [ref=e55] [cursor=pointer]
