@@ -91,8 +91,8 @@ environments:
     api_url: 'http://localhost:3000/api' # fill per project — API base URL for local env (e.g. http://localhost:3000/api)
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for local — Fresco project (eu-west-1)
   staging:
-    web_url: 'https://fresco-staging.vercel.app' # Manually-aliased to the latest `staging`-branch Preview deploy — set up 2026-08-08 (git-flow-master Strategy Setup). NOT auto-following: `vercel alias set` targets one specific deployment, not "whatever staging deploys next" — Vercel's `.vercel.app` branch-domain auto-assignment is a dashboard-only feature this CLI can't reach. Re-run `vercel alias set <new-preview-url> fresco-staging.vercel.app` after every staging deploy, or this goes stale.
-    api_url: 'https://fresco-staging.vercel.app/api'
+    web_url: 'https://fresco-pre.vercel.app' # Manually-aliased to the latest `staging`-branch Preview deploy — corrected 2026-08-17 (fresco-staging.vercel.app was stale/wrong; fresco-pre.vercel.app is the one actually used). NOT auto-following: `vercel alias set` targets one specific deployment, not "whatever staging deploys next" — Vercel's `.vercel.app` branch-domain auto-assignment is a dashboard-only feature this CLI can't reach. Re-run `vercel alias set <new-preview-url> fresco-pre.vercel.app` after every staging deploy, or this goes stale. Auto-generated branch domain (always current, no manual re-alias needed) is `fresco-git-staging-basi-montes-projects.vercel.app` — prefer that if staleness becomes a recurring problem.
+    api_url: 'https://fresco-pre.vercel.app/api'
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for staging — Fresco project (eu-west-1)
   production:
     web_url: 'https://fresco-pro.vercel.app' # REAL, auto-following Vercel Production domain (confirmed via `vercel alias ls` 2026-08-08 — always tracks the latest Production deploy of `main`, unlike the staging alias above). Same Supabase project as staging (user decision: shared DB, no isolation split — see master-implementation-plan.md §3 "Production environment provisioning").
