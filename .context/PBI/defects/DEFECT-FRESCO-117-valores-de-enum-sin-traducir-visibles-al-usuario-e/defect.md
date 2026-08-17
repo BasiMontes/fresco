@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-117](https://basiliomontescastano.atlassian.net/browse/FRESCO-117)
 **Priority:** Medium
-**Status:** WIP
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -36,7 +36,7 @@ Crear un mapa de labels equivalente a `DIETA_LABELS` para `CosteEstimado` y `Dif
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/7/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

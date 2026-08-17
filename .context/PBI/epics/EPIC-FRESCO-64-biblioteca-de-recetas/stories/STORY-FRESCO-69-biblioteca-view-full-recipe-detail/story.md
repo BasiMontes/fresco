@@ -25,17 +25,18 @@ As Laura, I want to open a recipe from the Biblioteca and see its full detail, s
 
 ## Traceability
 
-### Historias (2)
+### Historias (3)
 
 - [FRESCO-65](https://basiliomontescastano.atlassian.net/browse/FRESCO-65): Biblioteca | Buscar recetas por nombre o ingrediente _(Finalizada)_
 - [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68): Biblioteca | Crear una receta propia _(Finalizada)_
+- [FRESCO-88](https://basiliomontescastano.atlassian.net/browse/FRESCO-88): Recetas | Abrir el detalle al tocar cualquier tarjeta de receta _(Finalizada)_
 
 ---
 
 ## Metadata
 
 - **Created:** 8/3/2026
-- **Updated:** 8/3/2026
+- **Updated:** 8/8/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** feature-extension, post-mvp

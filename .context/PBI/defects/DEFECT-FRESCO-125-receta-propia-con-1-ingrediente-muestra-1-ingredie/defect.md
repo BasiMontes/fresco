@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-125](https://basiliomontescastano.atlassian.net/browse/FRESCO-125)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -38,7 +38,7 @@ Ver Pasos para reproducir arriba.
 ## Metadata
 
 - **Created:** 8/8/2026
-- **Updated:** 8/8/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** minor, qa-sweep-2026-08-08

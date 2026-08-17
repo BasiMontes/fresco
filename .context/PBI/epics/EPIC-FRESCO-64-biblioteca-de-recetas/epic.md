@@ -22,7 +22,7 @@ Rediseña /recipes como una "Biblioteca" de descubrimiento: buscador, pestañas 
 | [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) | Biblioteca | Filtrar por dieta, alérgenos y cocina | - | Medium | Finalizada |
 | [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) | Biblioteca | Crear una receta propia | - | Medium | Finalizada |
 | [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69) | Biblioteca | View full recipe detail | - | Medium | Finalizada |
-| [FRESCO-88](https://basiliomontescastano.atlassian.net/browse/FRESCO-88) | Recetas | Abrir el detalle al tocar cualquier tarjeta de receta | - | Medium | Control de calidad |
+| [FRESCO-88](https://basiliomontescastano.atlassian.net/browse/FRESCO-88) | Recetas | Abrir el detalle al tocar cualquier tarjeta de receta | - | Medium | Finalizada |
 
 ---
 

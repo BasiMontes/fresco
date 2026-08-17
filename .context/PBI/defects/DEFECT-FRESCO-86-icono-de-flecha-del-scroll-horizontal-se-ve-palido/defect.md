@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-86](https://basiliomontescastano.atlassian.net/browse/FRESCO-86)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** WIP
 **Components:** None
 
 ---
@@ -42,7 +42,7 @@ El icono de navegación del carrusel de recetas es una de las pocas interaccione
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

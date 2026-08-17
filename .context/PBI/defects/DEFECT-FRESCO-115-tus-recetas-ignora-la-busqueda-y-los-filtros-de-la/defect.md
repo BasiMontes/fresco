@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-115](https://basiliomontescastano.atlassian.net/browse/FRESCO-115)
 **Priority:** Medium
-**Status:** WIP
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -35,7 +35,7 @@ Aplicar la búsqueda/filtros también a "Tus recetas", o aclarar en el mensaje d
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/7/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

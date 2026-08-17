@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-88](https://basiliomontescastano.atlassian.net/browse/FRESCO-88)
 **Epic:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) (Biblioteca de Recetas)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -28,10 +28,20 @@
 
 ---
 
+## Traceability
+
+### Historias (3)
+
+- [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69): Biblioteca | View full recipe detail _(Finalizada)_
+- [FRESCO-59](https://basiliomontescastano.atlassian.net/browse/FRESCO-59): Inicio | Mostrar últimas recetas añadidas _(Finalizada)_
+- [FRESCO-11](https://basiliomontescastano.atlassian.net/browse/FRESCO-11): Calendario | Reordenar el menú generado arrastrando platos entre espacios _(Finalizada)_
+
+---
+
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-83](https://basiliomontescastano.atlassian.net/browse/FRESCO-83)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -33,7 +33,7 @@ Descubierto durante el code review de FRESCO-82 (footer de cuenta en el sidebar)
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

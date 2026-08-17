@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-84](https://basiliomontescastano.atlassian.net/browse/FRESCO-84)
 **Epic:** [FRESCO-81](https://basiliomontescastano.atlassian.net/browse/FRESCO-81) (Cuenta y Sesión)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -33,14 +33,14 @@
 
 ### Historia (1)
 
-- [FRESCO-82](https://basiliomontescastano.atlassian.net/browse/FRESCO-82): Cuenta | Ver datos de la cuenta y cerrar sesión desde el sidebar _(Control de calidad)_
+- [FRESCO-82](https://basiliomontescastano.atlassian.net/browse/FRESCO-82): Cuenta | Ver datos de la cuenta y cerrar sesión desde el sidebar _(Finalizada)_
 
 ---
 
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** new-feature, post-mvp

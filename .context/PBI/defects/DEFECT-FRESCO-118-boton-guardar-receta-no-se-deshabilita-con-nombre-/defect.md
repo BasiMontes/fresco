@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-118](https://basiliomontescastano.atlassian.net/browse/FRESCO-118)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -35,7 +35,7 @@ Agregar el mismo guard `disabled={!isValid || isSaving}` que ya usa `nombre-form
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/7/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

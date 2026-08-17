@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-105](https://basiliomontescastano.atlassian.net/browse/FRESCO-105)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -37,7 +37,7 @@ Todos los controles del header (`h1` + `WeekNavigation` + `DeleteWeekButton`) de
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

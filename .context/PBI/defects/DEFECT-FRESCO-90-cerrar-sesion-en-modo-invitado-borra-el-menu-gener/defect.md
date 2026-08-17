@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-90](https://basiliomontescastano.atlassian.net/browse/FRESCO-90)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -46,7 +46,7 @@ Es el mismo botón y el mismo copy que el logout de una cuenta real (donde es 10
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/7/2026
+- **Updated:** 8/16/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 
