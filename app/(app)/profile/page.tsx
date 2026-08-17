@@ -108,7 +108,13 @@ export default async function ProfilePage() {
               <p className="text-body-sm text-tertiary">{user?.email ?? 'Invitada'}</p>
             </div>
           </div>
-          <Tag variant={getPlanTagVariant(plan)}>{PLAN_LABELS[plan]}</Tag>
+          <div className="flex flex-col items-end gap-1">
+            <Tag variant={getPlanTagVariant(plan)}>{PLAN_LABELS[plan]}</Tag>
+            {/* FRESCO-218 */}
+            <Tag variant={user?.is_anonymous ? 'neutral' : 'outline'}>
+              {user?.is_anonymous ? 'Invitada' : 'Registrada'}
+            </Tag>
+          </div>
         </div>
       </Card>
 
@@ -162,7 +168,7 @@ export default async function ProfilePage() {
           <CardTitle>Cuenta</CardTitle>
         </CardHeader>
         <CardContent>
-          <AccountActions />
+          <AccountActions email={user?.email ?? ''} isAnonymous={user?.is_anonymous ?? false} />
         </CardContent>
       </Card>
 

@@ -1,19 +1,32 @@
 'use client';
 
-import { Download, LogOut, Trash2 } from 'lucide-react';
+import { Download, Key, LogOut, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { DeleteAccountDialog } from '@/components/profile/delete-account-dialog';
+import { PasswordResetControl } from '@/components/profile/password-reset-control';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
+
+export interface AccountActionsProps {
+  /** Real logged-in email — `''` for a guest session, same convention as `DangerZone`. */
+  email: string
+  /** Whether this is a guest/anonymous session (`user.is_anonymous`) — a guest has no password to change. */
+  isAnonymous: boolean
+}
 
 /**
  * `/profile` "Cuenta" row group (FRESCO-220): logout + CSV data export
  * (FRESCO-163) — split out of `DangerZone` below, neither is actually a
  * destructive action, so neither belongs in the danger-styled card.
+ *
+ * FRESCO-218 — a "Contraseña" row was added here (registered users only):
+ * a masked placeholder + the same `PasswordResetControl` `AyudaSection`
+ * already uses, not a raw/real password (Supabase never exposes one to read
+ * back, hashed or otherwise).
  */
-export function AccountActions() {
+export function AccountActions({ email, isAnonymous }: AccountActionsProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -61,7 +74,7 @@ export function AccountActions() {
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-3 py-3 last:pb-0">
+      <div className="flex items-center justify-between gap-3 py-3">
         <div className="flex items-center gap-2 text-body-md text-text">
           <Download className="size-4 text-tertiary" aria-hidden="true" />
           Backup CSV
@@ -75,6 +88,17 @@ export function AccountActions() {
           Descargar
         </a>
       </div>
+
+      {!isAnonymous && (
+        <div className="flex items-center justify-between gap-3 py-3 last:pb-0">
+          <div className="flex items-center gap-2 text-body-md text-text">
+            <Key className="size-4 text-tertiary" aria-hidden="true" />
+            Contraseña
+            <span aria-hidden="true" className="text-tertiary">••••••••</span>
+          </div>
+          <PasswordResetControl email={email} testId="profile_cambiar_contrasena_button" />
+        </div>
+      )}
     </div>
   );
 }

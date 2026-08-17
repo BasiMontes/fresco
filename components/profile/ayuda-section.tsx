@@ -3,9 +3,8 @@
 import { ChevronRight, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { LegalModal } from '@/components/legal/legal-modal';
-import { Button } from '@/components/ui/button';
+import { PasswordResetControl } from '@/components/profile/password-reset-control';
 import { Dialog } from '@/components/ui/dialog';
-import { createClient } from '@/lib/supabase/client';
 
 interface FaqItem {
   question: string
@@ -83,37 +82,6 @@ const ROWS = [
  */
 export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProps) {
   const [openModal, setOpenModal] = useState<AyudaModal>(null);
-  // FRESCO-161 — reuses the same `resetPasswordForEmail` call and
-  // anti-enumeration posture (no error branching — Supabase's own API never
-  // reveals whether the address has an account either) as
-  // `app/forgot-password/page.tsx`'s step 1, rather than building a
-  // current-password-verification form from scratch.
-  const [isSendingReset, setIsSendingReset] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-  const [resetError, setResetError] = useState(false);
-
-  async function handleSendPasswordReset() {
-    setIsSendingReset(true);
-    setResetError(false);
-    try {
-      const client = createClient();
-      const { error } = await client.auth.resetPasswordForEmail(email);
-      // FRESCO-167: a real API failure (rate-limit, network, 5xx) must not
-      // be silenced as success — only "email doesn't exist" stays hidden,
-      // per the anti-enumeration posture this flow shares with
-      // forgot-password/page.tsx. `error` here is a real API error, never
-      // "unknown email" (Supabase doesn't distinguish that case in the
-      // response either).
-      if (error) {
-        setResetError(true);
-        return;
-      }
-      setResetSent(true);
-    }
-    finally {
-      setIsSendingReset(false);
-    }
-  }
 
   return (
     <>
@@ -162,35 +130,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
           )}
           <div>
             <h3 className="text-label mb-1">Contraseña</h3>
-            {resetSent
-              ? (
-                  <p data-testid="password_reset_sent_message" role="status" aria-live="polite" className="text-tertiary">
-                    Te enviamos un enlace a
-                    {' '}
-                    {email}
-                    {' '}
-                    para elegir una nueva contraseña.
-                  </p>
-                )
-              : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      data-testid="cambiar_contrasena_button"
-                      disabled={isSendingReset}
-                      onClick={() => void handleSendPasswordReset()}
-                    >
-                      {isSendingReset ? 'Enviando…' : 'Cambiar contraseña'}
-                    </Button>
-                    {resetError && (
-                      <p data-testid="password_reset_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
-                        No pudimos enviar el enlace. Inténtalo de nuevo.
-                      </p>
-                    )}
-                  </>
-                )}
+            <PasswordResetControl email={email} />
           </div>
           <p className="text-caption text-tertiary">
             ¿Quieres cambiar tu dieta o alérgenos? Edítalos en la tarjeta "Preferencias" de arriba.
