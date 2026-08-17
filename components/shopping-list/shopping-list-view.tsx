@@ -102,9 +102,11 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * `precio_estimado` exposes that same number instead of only summing it.
  *
  * FRESCO-191 QA rework — mockup's "Completar compra" CTA had no backing
- * action (only get/toggle exist), so it's repurposed as "Vaciar comprados"
- * (bulk-untoggle already-checked items via the same `toggleShoppingListItem`
- * used per-row) instead of built as a decorative no-op. Also fixed the
+ * action (only get/toggle exist), so it's repurposed as "Compra realizada"
+ * (FRESCO-215: bulk-untoggle already-checked items via the same
+ * `toggleShoppingListItem` used per-row, framed as finishing the shopping
+ * trip rather than a technical "clear" action) instead of built as a
+ * decorative no-op. Also fixed the
  * pasillo icon glyph, which was rendering at ~4px — `size-4` and `p-1.5` on
  * the same element (border-box) let the padding eat into the fixed box; the
  * padding now lives on a wrapper span around the icon.
@@ -300,8 +302,8 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
         </div>
       )}
 
-      {/* `pb-24` keeps the last aisle card clear of the floating "Vaciar
-          comprados" button below, once it's showing. */}
+      {/* `pb-24` keeps the last aisle card clear of the floating "Compra
+          realizada" button below, once it's showing. */}
       <div className="mt-6 flex flex-col gap-6 pb-24">
         {pasillos.map((pasillo, pasilloIdx) => {
           const PasilloIcon = getPasilloIcon(pasillo.nombre);
@@ -376,7 +378,7 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
             data-testid="shopping_list_clear_comprados_button"
           >
             <Trash2 className="size-4" aria-hidden="true" />
-            Vaciar comprados
+            Compra realizada
           </Button>
         </div>
       )}
