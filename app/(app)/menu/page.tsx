@@ -197,15 +197,23 @@ export default async function MenuPage() {
                     <FavoriteRecipeCard recipe={hoy[slot]} initialIsFavorite={favoriteIds.has(hoy[slot].id)} className="flex-1" />
                   </Link>
                 )
-              : (
-                  // FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for
-                  // this slot — `AlertBanner` above already surfaces why.
-                  <Card data-testid={`menu_slot_${slot}_sin_receta`} className="flex-1">
-                    <CardContent className="text-body-sm italic text-tertiary">
-                      Sin receta segura
-                    </CardContent>
-                  </Card>
-                )}
+              : plan.estados.lunes[slot] === 'excluida'
+                ? (
+                    <Card data-testid={`menu_slot_${slot}_excluida`} className="flex-1">
+                      <CardContent className="text-body-sm italic text-tertiary">
+                        Excluida por ti
+                      </CardContent>
+                    </Card>
+                  )
+                : (
+                    // FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for
+                    // this slot — `AlertBanner` above already surfaces why.
+                    <Card data-testid={`menu_slot_${slot}_sin_receta`} className="flex-1">
+                      <CardContent className="text-body-sm italic text-tertiary">
+                        Sin receta segura
+                      </CardContent>
+                    </Card>
+                  )}
           </div>
         ))}
       </div>

@@ -21,7 +21,7 @@ export type DiaSemana
 
 export type TipoPlato = 'desayuno' | 'comida' | 'cena';
 
-export type EstadoRecetaSlot = 'pendiente' | 'cocinada' | 'descartada' | 'sustituida';
+export type EstadoRecetaSlot = 'pendiente' | 'cocinada' | 'descartada' | 'sustituida' | 'excluida';
 
 /**
  * `Recipe` used to be hand-duplicated here as a flat shape (`tipo`,
