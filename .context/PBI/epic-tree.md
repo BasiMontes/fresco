@@ -98,14 +98,27 @@ _Project: FRESCO_
 - [FRESCO-67](https://basiliomontescastano.atlassian.net/browse/FRESCO-67) Biblioteca | Filtrar por dieta, alérgenos y cocina _(- pts, Finalizada)_
 - [FRESCO-68](https://basiliomontescastano.atlassian.net/browse/FRESCO-68) Biblioteca | Crear una receta propia _(- pts, Finalizada)_
 - [FRESCO-69](https://basiliomontescastano.atlassian.net/browse/FRESCO-69) Biblioteca | View full recipe detail _(- pts, Finalizada)_
-- [FRESCO-88](https://basiliomontescastano.atlassian.net/browse/FRESCO-88) Recetas | Abrir el detalle al tocar cualquier tarjeta de receta _(- pts, Control de calidad)_
+- [FRESCO-88](https://basiliomontescastano.atlassian.net/browse/FRESCO-88) Recetas | Abrir el detalle al tocar cualquier tarjeta de receta _(- pts, Finalizada)_
 
 ## [FRESCO-81](https://basiliomontescastano.atlassian.net/browse/FRESCO-81) - Cuenta y Sesión
 
 **Status:** Listo | **Stories:** 2 | **Points:** 0
 
-- [FRESCO-82](https://basiliomontescastano.atlassian.net/browse/FRESCO-82) Cuenta | Ver datos de la cuenta y cerrar sesión desde el sidebar _(- pts, Control de calidad)_
-- [FRESCO-84](https://basiliomontescastano.atlassian.net/browse/FRESCO-84) Cuenta | Ver el plan de suscripción en el sidebar _(- pts, Control de calidad)_
+- [FRESCO-82](https://basiliomontescastano.atlassian.net/browse/FRESCO-82) Cuenta | Ver datos de la cuenta y cerrar sesión desde el sidebar _(- pts, Finalizada)_
+- [FRESCO-84](https://basiliomontescastano.atlassian.net/browse/FRESCO-84) Cuenta | Ver el plan de suscripción en el sidebar _(- pts, Finalizada)_
+
+## [FRESCO-138](https://basiliomontescastano.atlassian.net/browse/FRESCO-138) - Migración de recetas: dataset Food.com (Kaggle)
+
+**Status:** Rechazos | **Stories:** 0 | **Points:** 0
+
+
+## [FRESCO-223](https://basiliomontescastano.atlassian.net/browse/FRESCO-223) - Centro de Avisos
+
+**Status:** Listo | **Stories:** 3 | **Points:** 0
+
+- [FRESCO-224](https://basiliomontescastano.atlassian.net/browse/FRESCO-224) Centro de Avisos | Ver mensaje de bienvenida al entrar por primera vez _(- pts, Control de calidad)_
+- [FRESCO-225](https://basiliomontescastano.atlassian.net/browse/FRESCO-225) Centro de Avisos | Ver aviso con las rutas principales de la app _(- pts, Control de calidad)_
+- [FRESCO-226](https://basiliomontescastano.atlassian.net/browse/FRESCO-226) Centro de Avisos | Ver recomendaciones de recetas que me pueden gustar _(- pts, Control de calidad)_
 
 ---
 
