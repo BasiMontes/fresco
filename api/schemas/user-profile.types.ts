@@ -58,10 +58,14 @@ export interface UserProfile {
   tiempo_max_semana_min: number
   tiempo_max_finde_min: number
   presupuesto_semana_euros: number | null
-  /** Onboarding (FRESCO-135). Which meals to plan by default. Defaults to all 3. */
-  planning_meals: TipoPlatoSlot[]
-  /** Onboarding (FRESCO-136). Which days of the week to plan by default. Defaults to all 7. */
-  planning_days: DiaSemana[]
+  /**
+   * Onboarding (FRESCO-135/136, FRESCO-199). Which meals to plan, per day of
+   * the week -- e.g. `{ martes: ['desayuno', 'cena'], ... }` skips lunch only
+   * on Tuesdays. Replaces the earlier `planning_meals`/`planning_days` pair
+   * (2 flat, unrelated arrays that could only toggle a whole meal type or a
+   * whole day at once). Defaults to all 3 meals on all 7 days.
+   */
+  planning_selection: Record<DiaSemana, TipoPlatoSlot[]>
   /** Onboarding (FRESCO-137). Cooking experience level ("cocinillas"). Nullable — used to adjust recipe complexity/time. */
   nivel_experiencia: NivelExperienciaCulinaria | null
 }

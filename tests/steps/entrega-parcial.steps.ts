@@ -41,15 +41,22 @@ Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ 
   // shopping-list.steps.ts's resetShoppingListFixture.
   await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/meal_plans?id=not.is.null`, { headers });
 
-  // /menu's "hoy" grid only renders the slots in planning_meals (FRESCO-172)
-  // — found live leaking real state from another scenario/session: this
-  // account's planning_meals had shrunk to {comida,cena}, so the seeded
-  // null-recipe desayuno slot below never rendered at all, no matter how
-  // correctly it was seeded. Reset to all 3 so this scenario doesn't depend
-  // on whatever a prior run left behind.
+  // /menu's "hoy" grid only renders the slots selected in planning_selection
+  // (FRESCO-172, FRESCO-199) — found live leaking real state from another
+  // scenario/session: this account's selection had shrunk to {comida,cena}
+  // on every day, so the seeded null-recipe desayuno slot below never
+  // rendered at all, no matter how correctly it was seeded. Reset to all 3
+  // meals on all 7 days so this scenario doesn't depend on whatever a prior
+  // run left behind.
   await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
     headers,
-    data: { planning_meals: ['desayuno', 'comida', 'cena'] },
+    data: {
+      planning_selection: Object.fromEntries(
+        ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].map(
+          dia => [dia, ['desayuno', 'comida', 'cena']],
+        ),
+      ),
+    },
   });
 
   // A real recipe id from the live catalog — never hardcoded (the founder's

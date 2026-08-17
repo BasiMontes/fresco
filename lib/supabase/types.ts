@@ -328,8 +328,7 @@ export type Database = {
           objetivo: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at: string | null
-          planning_days: Database["public"]["Enums"]["dia_semana"][]
-          planning_meals: Database["public"]["Enums"]["tipo_plato"][]
+          planning_selection: Json
           presupuesto_semana_euros: number | null
           sexo: Database["public"]["Enums"]["sexo_usuario"] | null
           tiempo_max_finde_min: number
@@ -366,8 +365,7 @@ export type Database = {
           objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
-          planning_days?: Database["public"]["Enums"]["dia_semana"][]
-          planning_meals?: Database["public"]["Enums"]["tipo_plato"][]
+          planning_selection?: Json
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           tiempo_max_finde_min?: number
@@ -404,8 +402,7 @@ export type Database = {
           objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
-          planning_days?: Database["public"]["Enums"]["dia_semana"][]
-          planning_meals?: Database["public"]["Enums"]["tipo_plato"][]
+          planning_selection?: Json
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           tiempo_max_finde_min?: number
@@ -491,7 +488,7 @@ export type Database = {
         | "viernes"
         | "sabado"
         | "domingo"
-      estado_receta_menu: "pendiente" | "cocinada" | "descartada" | "sustituida"
+      estado_receta_menu: "pendiente" | "cocinada" | "descartada" | "sustituida" | "excluida"
       nivel_contundencia: "ligero" | "media" | "contundente"
       nivel_experiencia_culinaria:
         | "aprendiz"
@@ -654,7 +651,7 @@ export const Constants = {
         "sabado",
         "domingo",
       ],
-      estado_receta_menu: ["pendiente", "cocinada", "descartada", "sustituida"],
+      estado_receta_menu: ["pendiente", "cocinada", "descartada", "sustituida", "excluida"],
       nivel_contundencia: ["ligero", "media", "contundente"],
       nivel_experiencia_culinaria: [
         "aprendiz",

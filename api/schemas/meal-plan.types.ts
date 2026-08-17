@@ -6,7 +6,8 @@ import type { TipoPlato } from './recipe.types.ts';
 export type DiaSemana
   = | 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
 
-export type EstadoRecetaMenu = 'pendiente' | 'cocinada' | 'descartada' | 'sustituida';
+/** FRESCO-199: 'excluida' marks a slot the user's own `planning_selection` left out (not a system gap). */
+export type EstadoRecetaMenu = 'pendiente' | 'cocinada' | 'descartada' | 'sustituida' | 'excluida';
 
 export interface MealPlan {
   id: string
