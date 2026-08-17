@@ -20,8 +20,7 @@
 12. **LANGUAGE DETECTION + MIRRORING**: At start of every conversation, READ FULL USER MESSAGE (not just opening words) to detect user's working language. Mirror that language in ALL conversational replies (questions, summaries, explanations, status updates). Repo artifacts ALWAYS English regardless of conversation language: code, code comments, commits, PR titles + bodies, branch names, file names, test names, configuration values, + any external action artifact (GitHub issues/PRs/comments, Slack messages, emails, deploy notes, MCP tool inputs). Override: if user explicitly request another language for specific artifact ("crea el ticket en español", "write this PR description in Spanish"), honor that request only for that artifact + continue defaulting to English for next ones unless re-requested.
     **Project-standing override — Jira content (this project only, set 2026-07-26):** all Jira issues/comments (epics, stories, AC, scope, descriptions) are written in **Spanish** by default, not English — team works in Spanish end-to-end for this artifact type. This is a persistent override of the general repo-artifact-English default above, not a one-off per-ticket request; it applies to every future Jira write until the user says otherwise. All other repo artifacts (code, commits, PRs, branch names) stay English as normal.
 13. **NO GLOBAL DISCARDS (MULTI-SESSION SAFETY)**: PROHIBITED to run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Multiple agent sessions may share this working tree without worktrees — a global discard silently destroys another session's uncommitted work, unrecoverably. Discard ONLY explicit paths YOU modified in THIS session (`git restore <path>...` / `git stash push <path>...`). Unsure who modified a file → do NOT restore it — ask the user.
-14. **UI FIDELITY CONTRACT**: Story has UI + `.context/design/master-design-plan.md` exists → look story up in §8 (US→Screen map) → open §4 screen spec + §2 frozen tokens → build against physical mockup in `.context/designs/<project-slug>/<batch-slug>/`. NEVER invent UI. Unratified divergence from mockup = defect (review gate). Story missing from §8 → STOP: (a) just-in-time mockup via `/design-system` screen phase (generates portable design brief, user takes it to Claude Design / Open Design, bundle returns to drop zone), (b) ratify spec-only build in §5 (+ ADR if architectural), or (c) explicit user-approved DESIGN.md-only build. No plan at all → DESIGN.md-only fidelity (tokens, no screen reference). AI NEVER generates mockups (design-system D7) — briefs out, human designs, bundles in.
-   **LIVE-UI-FIRST (refines design fidelity)**: the CURRENT LIVE UI is the source of truth for fidelity, NOT the mockup. Mockup = INSPIRATION to stay close to or improve upon, adapted to what already exists. Therefore: (1) before building UI, INSPECT the current live components and REUSE them; (2) never blind-copy the mockup where it conflicts with the improved live UI; (3) navigation — how a user reaches and moves through the app — is paramount for UX; (4) if the mockup has something genuinely good the live UI lacks, do NOT force it into the current story — file it as a future tech-story / tech-debt. Live-UI validation (`/sprint-development`) checks consistency with the current app + design system, not pixel-match to the mockup. Composes with — does NOT replace — the mockup/ADR ratification machinery above: a deliberate departure with no mockup is still recorded as a §5 spec-only divergence (+ ADR if architectural).
+14. **UI FIDELITY CONTRACT**: story has UI → look it up in `.context/design/master-design-plan.md` §8 (US→Screen map), build against that screen's spec + frozen tokens + physical mockup. NEVER invent UI; unratified mockup divergence = defect. Story missing from §8 → STOP, offer just-in-time mockup / spec-only ratification / user-approved DESIGN.md-only build. LIVE-UI-FIRST: current live UI is the real fidelity source, mockup is inspiration — inspect + reuse live components first, don't force mockup details the live UI improved on. Full contract + STOP options → `.claude/skills/agentic-dev-core/references/ui-fidelity-doctrine.md`.
 15. **SESSION LOGGING (`bitacora.md`)**: at the end of every session that does real work in this repo, append a summary entry to `.context/bitacora.md` — date, short title, then Qué / Por qué / Siguiente, matching the format the file's own header already declares. Do this automatically, without being asked. Append-only: never rewrite or delete a prior entry, only add a new one below it.
 16. **FEATURE MAP SYNC (`business-feature-map.md`)**: whenever a session ships a NEW feature (new user-facing capability, new endpoint, new integration — not a bug fix, copy tweak, or internal refactor), update `.context/business/business-feature-map.md` in the same session — add the feature to its domain's catalog (or create the domain section if new), update the CRUD matrix / endpoint / UI-inventory tables it touches, and bump `> **Last update**`. Do this automatically, without being asked, same trigger discipline as rule 15. Owned by `/business-feature-map` — invoke it for the update rather than hand-editing the file's structure.
 
@@ -41,54 +40,11 @@
 
 **GOAL-DRIVEN EXECUTION.** Define success criteria. Loop until verified. Transform vague tasks into testable goals ("add validation" → "write tests for invalid input, then make them pass"). Multi-step → state plan with explicit `verify:` per step (observable: test passes, file exists, exit 0, types:check clean). Complements 6-component briefing (§3) — does NOT replace it.
 
-**EXPANDABLE RESPONSES (BUTLER PATTERN).** Default to terse headline answer that resolves user's literal question. Then surface ALL other topics you would otherwise have covered as atomic bullet menu — one specific topic per bullet, NEVER aggregated into broad categories. Let user pull topics they care about; do not push every detail in one shot.
+**EXPANDABLE RESPONSES (BUTLER PATTERN).** Terse headline resolves the literal question, then every OTHER topic surfaces as an atomic one-line bullet menu (12 specific beats 3 broad buckets — no aggregation). Caveman compacts words, butler controls information granularity. Full spec + example → `references/behavioral-layer.md`.
 
-- **Atomicity over aggregation**: 12 specific bullets beats 3 broad buckets. User must be able to spot one item that matters to them; bundling hides it.
-- **No artificial cap**: bullet count determined by actual information richness. 2 topics → 2 bullets. 15 topics → 15 bullets.
-- **Bullet style mirrors caveman**: each bullet is 1-line hook (`topic-name — short fragment`), not paragraph.
-- **Headline first**: headline must stand alone — user got their answer even if they ignore menu.
-- **Composes with caveman**: caveman compacts WORDS, butler controls INFORMATION GRANULARITY. Both apply together.
+**PM VOICE (DEFAULT REGISTER).** Default register is Project Manager, not senior-dev-to-senior-dev: headline leads with user/business value, not technical action; bullets stay one menu, register chosen per bullet. Auto-suspends to technical register for that turn on file paths/errors/security/auth/migrations/prod-deploy topics, or when active skill is `/sprint-development` or output is code/commit/PR. Repo artifacts (code, commits, PRs) always technical, never PM Voice. Full triggers + risk-surface override + examples → `references/behavioral-layer.md`.
 
-Example (sprint-development closing): headline "Sprint shipped, 12 files, deploy live" + atomic bullets per file/change/flag/test/rollback step — not 3 buckets like "Code", "Tests", "Deploy".
-
-**PM VOICE (DEFAULT REGISTER).** Default communication register is **Project Manager voice**, not senior-dev-to-senior-dev. Headline reports user or business value, not technical action. Composes ON TOP of Butler — Butler controls granularity, PM Voice controls vocabulary at headline AND inside each bullet.
-
-- **Headline = value, not action**: lead with what changed for user or business, not which file / line / library you touched. Example: prefer "Profile cards breathe better now" over "Set padding to 24px on `<Card>`".
-- **Audience model**: assume reader is PM / PO / tester who understands product and flow, NOT syntax, library names, or framework internals. You are senior dev REPORTING to PM, not becoming one.
-- **Headline punch (foreground only)**: prefix headline with short attention-priming phrase signaling reply is compressed. Exact word is AI's choice, mirrors conversation language, MUST vary across replies to avoid feeling formulaic. Skip punch in background mode — harness signals (e.g. `result:`) already prime reader. Skip also for one-line trivial replies where punch would dwarf content.
-- **Bullet menu orientation (conditional)**: when response contains 3+ bullets serving as expandable topics, place short question between headline and menu inviting reader to pull thread. Wording is AI's choice and mirrors language. Skip question for 1-2 bullet menus that are clearly recap, not navigation.
-- **Bullets are SINGLE menu**: do NOT split into "PM-voice bullets above" and "technical bullets below". One menu; AI chooses each bullet's register (value-framed or technical) based on topic. File path and UX-impact statement can sit side by side.
-- **Suspension triggers (auto, one-turn, reverts after)**: switch to technical register for that turn when ANY of these fires —
-  - user message contains file paths, shell commands, literal errors / stack traces, function / class / library names
-  - user explicitly requests technical detail (in whatever phrasing)
-  - topic touches security, secrets, auth, RLS, migrations, rollback, irreversible actions, or prod deploy
-  - active skill is `/sprint-development` or output is commit message / PR body / code block
-- **Always-technical scopes (PM Voice never applies)**: code blocks, commit messages, PR titles + bodies, branch names, file names, security warnings, irreversible-action confirmations.
-- **Risk-Surface override**: even in PM Voice, if change affects data integrity, measurable performance, security, or rollback path → headline includes ONE line of technical impact alongside value framing.
-- **Mirrors language**: PM Voice — including punch phrase and menu-orientation question — adopts whatever language user is writing in. Repo artifacts stay English per Critical Rule #12.
-
-Example (same work, different register):
-
-- ❌ Senior-dev register: "Refactored `useAuthState` to memoize the Supabase session subscription and moved the listener into a `useEffect` with cleanup."
-- ✅ PM Voice: "App stops doing extra background work when users navigate between private screens — should feel lighter." Bullet menu underneath mixes UX impact, file paths, and follow-ups at each bullet's appropriate register.
-
-**VISUAL MAPPING BIAS.** When content is naturally mappable, prefer visual representation over paragraph of prose. Humans process structured visuals faster than narrative for comparisons, hierarchies, flows, and impact maps. AI decides per-response whether visual materially aids comprehension — visual should REPLACE prose, not decorate alongside it. Composes with other strategies: Caveman compresses words, Butler controls granularity, PM Voice controls register, Visual Mapping controls form.
-
-- **Types to reach for**:
-  - **Tables** (`| col | col |`) — comparisons (A vs B, before / after), key/value mappings (old name → new name), counts and metrics
-  - **ASCII flow diagrams** (`A ──→ B ──→ C`) — sequences, pipelines, propagation paths
-  - **Trees** (`├── └──`) — hierarchies, file structure, taxonomy
-  - **Boxes** (`┌──┐ │ │ └──┘`) — architecture components, system maps, state containers
-  - **State machines** (labelled arrows between states) — workflows, transitions, lifecycle
-- **Where to place**:
-  - **Below headline + punch, above question + bullets menu** — when visual is primary expansion of headline
-  - **Inside individual bullet** — when single topic in menu compresses better as mini-table or mini-diagram than as sentence
-- **When to skip**:
-  - Single-concept answers, yes / no responses, linear narratives where prose IS natural form
-  - When forcing structure feels decorative or padded
-- **Rendering safety**: prefer plain ASCII (`+--+`, `->`, `|`) over Unicode box-drawing (`┌──┐`, `→`) when uncertain about target terminal. Markdown tables render in most agent UIs but degrade in raw terminal output — judge per channel.
-
-**SIGNALS THESE WORK**: fewer unnecessary diff changes, fewer rewrites from overcomplication, clarifying questions BEFORE implementation rather than after mistakes. For PM Voice specifically: fewer "what does that mean?" follow-ups, faster sign-off on reported work, headlines that can be copy-pasted into Slack / Jira without rewriting. For Visual Mapping: users grasp impact at-a-glance and can paste tables / diagrams into docs without redrawing.
+**VISUAL MAPPING BIAS.** Prefer tables/ASCII trees/flow-diagrams over prose for comparisons, hierarchies, flows — visual REPLACES prose, doesn't decorate alongside it. Skip for single-concept or yes/no answers. Full type-by-type guide → `references/behavioral-layer.md`.
 
 ---
 
@@ -239,16 +195,16 @@ Example (same work, different register):
 
 > Whenever Bash invokes one of these binaries, LOAD matching skill via Skill tool BEFORE running command. Skill holds WHEN/WHAT; binary executes HOW. Skip load step = flying blind on syntax, flags, auth, error semantics.
 
-| CLI              | Skills to auto-load                                                    | Rationale                                                                       |
-| ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `bun`            | `/bun`                                                                 | Runtime + package manager. Skill covers bun-specific APIs, scripts, lockfile.   |
-| `gh`             | `/git-flow-master`                                                     | GitHub CLI + git workflow. Skill covers repo ops, PRs, `gh api` patterns.       |
-| `supabase`       | `/supabase`, `/supabase-postgres-best-practices`, `/project-bootstrap` | DB CLI + Postgres patterns + DB scaffold flow.                                  |
-| `vercel`         | `/vercel-cli`, `/deploy-to-vercel`, `/sprint-development`              | Vercel CLI cookbook (verification, env, debug, rollback) + community deploy workflow + sprint deploy stages. |
-| `resend`         | `/resend-cli`                                                          | Transactional email CLI — covers send, templates, domains.                      |
-| `acli`           | `/acli`                                                                | Atlassian CLI — Jira/Confluence workflows. Owns slug syntax + custom-field IDs. |
-| `playwright-cli` | `/playwright-cli`, `/sprint-development`                               | Browser automation — used by sprint-dev E2E checks + standalone QA capture.     |
-| `jq`             | `/acli`                                                                | JSON processor — required by acli skill for parsing `acli ... --json` output.   |
+| CLI              | Skills to auto-load                                                    |
+| ---------------- | ---------------------------------------------------------------------- |
+| `bun`            | `/bun`                                                                 |
+| `gh`             | `/git-flow-master`                                                     |
+| `supabase`       | `/supabase`, `/supabase-postgres-best-practices`, `/project-bootstrap` |
+| `vercel`         | `/vercel-cli`, `/deploy-to-vercel`, `/sprint-development`              |
+| `resend`         | `/resend-cli`                                                          |
+| `acli`           | `/acli`                                                                |
+| `playwright-cli` | `/playwright-cli`, `/sprint-development`                               |
+| `jq`             | `/acli`                                                                |
 
 **Mandatory**: before any `Bash` call that names one of these binaries, check matching skill loaded for this session. If not, load via Skill tool first. Hard gate, not suggestion.
 
@@ -285,42 +241,11 @@ Project values live in **`.agents/project.yaml`** — load once per session. NEV
 
 ---
 
-## 9. LOCAL CONTEXT (PBI)
+## 9. LOCAL CONTEXT (PBI) — POINTER
 
-> **`.context/PBI/` layout is OWNED by `scripts/sync-jira-issues.ts`.** Module = Epic (1:1). Jira is the source of truth; local `.md` files are a **read-only cache**. NEVER hand-write a Jira-mirrored file — author the plan/content, push it to the Jira field (or fallback), then run the sync. Dev-authored NON-Jira files live INSIDE the same folders.
+> `.context/PBI/` layout is OWNED by `scripts/sync-jira-issues.ts`. Module = Epic (1:1). Jira is the source of truth; local `.md` files are a **read-only cache**. NEVER hand-write a `[SYNC]` file (overwritten every sync) — author content, push to the Jira field, sync, read back. Full tree + fallback rule + detailed-read commands → `.claude/skills/agentic-dev-core/references/pbi-local-context.md`.
 
-**Canonical tree** (Epic-centric; `<KEY>` = Jira key, `<slug>` from summary):
-
-```
-.context/PBI/
-  epic-tree.md                                   [SYNC] master index
-  epics/EPIC-<KEY>-<slug>/
-    epic.md                                       [SYNC]
-    feature-implementation-plan.md                [SYNC ← Jira field / stub]
-    feature-test-plan.md                          [SYNC ← Jira field / stub]
-    stories/STORY-<KEY>-<slug>/
-      story.md                                    [SYNC]
-      acceptance-criteria.md  scope.md  out-of-scope.md  business-rules.md  workflow.md
-      implementation-plan.md                      [SYNC ← Jira `spec_implementation_plan` / stub]
-      comments.md                                 [SYNC, --include-comments]
-      context.md  progress.md  evidence/          [dev — non-Jira, OK]
-  bugs/ defects/ improvements/ tests/             [SYNC — standalone issue types]
-  test-plans/ test-executions/ test-sets/ preconditions/   [SYNC — Xray container issues (jira-xray); description holds the ATP/ATR body]
-```
-
-**`[SYNC]` files = forbidden to hand-write** (overwritten on every sync — NO file is hard-protected; Jira is the source of truth). The dev/feature implementation plan is authored, **pushed to its Jira field** (`spec_implementation_plan` / `feature_implementation_plan`), then read back from the synced `implementation-plan.md` / `feature-implementation-plan.md`. **Rule of thumb**: file mirrors a Jira field → read the synced copy, never author it locally. File holds info NOT in Jira (session notes, progress, roadmaps, evidence) → author locally as usual.
-
-> Sprint-level cross-ticket aggregate → `.context/reports/SPRINT-{N}-DEVELOPMENT.md` (generated by `/sprint-development` batch). Lifecycle → `.context/reports/README.md`.
-
-**DETAILED READS via the script** (replaces `acli view` for custom fields — `acli view` returns null for custom fields):
-- `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
-- `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped.
-
-**FALLBACK**: if a custom field a prompt must fill is absent from the instance, write the content as a structured Jira comment (`## <label>`) per `.agents/jira-required.yaml` → `fallback:`. The sync then emits a pointer stub for that field's `.md`. Never block on a missing field.
-
-**ENTRY POINT**: invoke `/sprint-development` — syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, drives plan → code → review → deploy.
-
-**RESUME SESSION**: `/sprint-development` Phase 0 resume contract — reads `.session/sprint-development/<JIRA-KEY>/progress.md` (per `.claude/skills/agentic-dev-core/references/session-management.md`), surfaces last completed phase, offers resume / restart / abort; the synced story folder + engram supply the content context.
+**ENTRY POINT**: invoke `/sprint-development` — syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, drives plan → code → review → deploy. Resume contract reads `.session/sprint-development/<JIRA-KEY>/progress.md`.
 
 ---
 

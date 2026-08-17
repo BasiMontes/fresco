@@ -60,23 +60,18 @@ If any of the above is missing, fast-fail and hand off to the appropriate setup 
 
 ---
 
-## Inputs — read these first, in this order
+## Inputs — LECTURA BAJO DEMANDA (LAZY LOADING)
+> **REGLA DE EFICIENCIA CRÍTICA**: NO leas esta lista completa por defecto. Carga solo lo estrictamente necesario para la tarea actual para ahorrar tokens.
 
-Canonical reading order for any AI starting cold on a sprint-development workflow. Read in order; stop earlier when the ticket is small enough that later inputs add no signal.
+1. `.agents/project.yaml` — (Leer solo una vez al inicio de la sesión).
+2. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/story.md` — (SIEMPRE leer, es el núcleo de la tarea).
+3. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md` — (Leer solo si ya existe un plan previo).
+4. `DESIGN.md` — (Leer SOLO si la historia implica cambios visuales/UI).
+5. `.context/business/domain-glossary.md` — (Leer SOLO si hay ambigüedad en términos de negocio o el usuario lo pide).
+6. `.context/ADR/` o `.context/SRS/` — (Leer SOLO si la tarea toca arquitectura transversal: auth, DB, infra).
+7. `.context/dev-roadmap.md` — (Leer SOLO si la tarea tiene dependencias bloqueantes con otros tickets).
 
-1. `.agents/project.yaml` — project identity, env URLs, project key, MCP names.
-2. `.agents/jira-required.yaml` — canonical slug catalog (custom fields, statuses, link types) for the active workspace.
-3. `.agents/jira-fields.json` — slug → numeric custom-field-ID mapping for `{{jira.<slug>}}` resolution.
-4. `.agents/jira-workflows.json` — workflow + transition catalog (resolves Ready For Dev → In Progress → In Review → Ready For QA).
-5. `.context/master-implementation-plan.md` (EPIC/strategy) **and** `.context/dev-roadmap.md` (TICKET/sequence) — the roadmap stack for the parent feature. The master plan gives Master Sprint priority; **`dev-roadmap.md` gives the dependency edges, execution-sprint order, and mockup-gates** — consult it as the canonical "what's next + what blocks this ticket" source (it subsumes the former `.context/PBI/sprint-sequence.md`). If it is missing, Phase 0 bootstraps it via `/dev-roadmap`.
-6. `.context/business/domain-glossary.md` — canonical domain terminology; consult BEFORE planning so the impl plan, code identifiers, PR prose, and Jira comments use canonical terms and avoid anti-glossary banned terms.
-7. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/context.md` — story-level context (dev-authored, non-Jira): session notes, open questions.
-8. `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md` — canonical story-level technical plan, synced from the Jira `spec_implementation_plan` field (read-only cache; read before Stage 2 resume).
-9. `.context/SRS/` architecture-specs and `.context/ADR/` — only when the story touches a cross-cutting concern (auth, data model, infra). Read existing ADRs so the plan honors a settled architectural decision instead of silently violating it.
-10. `DESIGN.md` (+ `.context/design/master-design-plan.md` when the project keeps per-screen specs) — **mandatory whenever the story has UI**. `DESIGN.md` is the token + component-system contract; a master design plan, when present, adds per-screen fidelity specs and a US→Screen map. Procedure: look the story up in **§8** (US→Screen map) → open that screen's spec in **§4** + the frozen-token contract in **§2** → build against the physical mockup in `.context/designs/<project-slug>/<batch-slug>/`. Don't invent UI on the fly; ratify any deliberate departure in §5 before coding. **Missing-row gate**: plan exists but the story has no §8 row → STOP and offer the user: (a) just-in-time mockup — route to `/design-system` screen phase, which generates a design brief (`references/screen-design-brief.md`) and waits for the bundle; (b) ratify a spec-only build as a §5 divergence (+ ADR if the departure is architectural); (c) explicit user-approved `DESIGN.md`-only build for this story. No plan at all → degrade gracefully to `DESIGN.md`-only fidelity (token checks, no screen reference).
-11. `.context/business/business-data-map.md` · `business-feature-map.md` · `business-api-map.md` — impact assessment when the story touches multiple domains.
-
-**Optional inputs.** Business maps (11) frequently arrive after `/business-*-map` runs and may be absent. Proceed without them when missing; surface a `missing_input` note in the Stage 1 plan so a later pass can fill the gap.
+**PROHIBIDO**: Cargar el `master-implementation-plan.md` completo o el `epic-tree.md` para tareas de una sola historia.
 
 ---
 
