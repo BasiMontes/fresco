@@ -12,6 +12,7 @@ import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
@@ -295,9 +296,8 @@ export default function SignupPage() {
                   }}
                   className="mt-6 flex flex-col gap-3"
                 >
-                  <Input
+                  <PasswordInput
                     data-testid="conflict_password_input"
-                    type="password"
                     placeholder="Contraseña de esa cuenta"
                     aria-label="Contraseña de esa cuenta"
                     autoComplete="current-password"
@@ -363,9 +363,8 @@ export default function SignupPage() {
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                       />
-                      <Input
+                      <PasswordInput
                         data-testid="password_input"
-                        type="password"
                         placeholder="Contraseña"
                         aria-label="Contraseña"
                         required
@@ -373,6 +372,7 @@ export default function SignupPage() {
                         autoComplete="new-password"
                         value={password}
                         onChange={e => setPassword(e.target.value)}
+                        showStrength
                       />
                       <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
                         <input
