@@ -686,14 +686,16 @@ Característica: Flujo completo de usuario en Fresco
 
   @lista-compra @verificado-manual-2026-08-14 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
-  Escenario: Vaciar comprados desmarca todos los productos marcados
+  Escenario: Compra realizada desmarca todos los productos marcados
     Dado que el usuario tiene una lista de la compra generada con un producto marcado como comprado
-    Cuando pulsa "Vaciar comprados"
+    Cuando pulsa "Compra realizada"
     Entonces todos los productos quedan desmarcados
-    Y el botón "Vaciar comprados" desaparece
+    Y el botón "Compra realizada" desaparece
     # FRESCO-191 (QA rework): repurpose real del CTA "Completar compra" del
     # mockup — sin acción de "completar lista" en el backend, así que se
     # convirtió en un desmarcado en bloque real vía toggleShoppingListItem.
+    # FRESCO-215: copy renombrada de "Vaciar comprados" a "Compra realizada"
+    # para comunicar la intención (fin de la compra) en vez de la mecánica.
 
   @lista-compra @verificado-manual-2026-08-14 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)

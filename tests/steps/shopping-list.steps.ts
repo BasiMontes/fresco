@@ -130,7 +130,7 @@ Then(/^el precio se conserva la próxima vez que abre la lista$/, async ({ page 
   await expect(page.getByText(/\d+(,\d+)? \S+ · \d+,\d{2}€/).first()).toBeVisible();
 });
 
-// ── Vaciar comprados (FRESCO-191, QA rework) ────────────────────────────────
+// ── Compra realizada (FRESCO-191, QA rework; copy per FRESCO-215) ──────────
 
 Given(/^que el usuario tiene una lista de la compra generada con un producto marcado como comprado$/, async ({ page, request }) => {
   await resetShoppingListFixture(request);
@@ -141,7 +141,7 @@ Given(/^que el usuario tiene una lista de la compra generada con un producto mar
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
 });
 
-When(/^pulsa "Vaciar comprados"$/, async ({ page }) => {
+When(/^pulsa "Compra realizada"$/, async ({ page }) => {
   await page.getByTestId('shopping_list_clear_comprados_button').click();
 });
 
@@ -149,7 +149,7 @@ Then(/^todos los productos quedan desmarcados$/, async ({ page }) => {
   await expect(page.getByTestId('shopping_list_item_0_0')).not.toBeChecked();
 });
 
-Then(/^el botón "Vaciar comprados" desaparece$/, async ({ page }) => {
+Then(/^el botón "Compra realizada" desaparece$/, async ({ page }) => {
   await expect(page.getByTestId('shopping_list_clear_comprados_button')).toHaveCount(0);
 });
 

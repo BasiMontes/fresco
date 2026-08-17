@@ -1,4 +1,4 @@
-import { Bell, BookOpen, Heart, Plus, Search, Zap } from 'lucide-react';
+import { Bell, BookOpen, Heart, Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { DeleteWeekButton } from '@/components/calendar/delete-week-button';
@@ -61,13 +61,6 @@ export function MenuPageFixture() {
             <FavoriteRecipeCard recipe={makeFixtureRecipe({ id: `fixture-${slot}` })} initialIsFavorite={false} className="flex-1" />
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 flex justify-center">
-        <span className={buttonVariants({ variant: 'action', size: 'lg' })}>
-          <Zap className="size-[18px]" strokeWidth={2} />
-          Cocinar ya
-        </span>
       </div>
 
       <LatestRecipesSection recipes={makeFixtureRecipes(6)} favoriteRecipeIds={new Set()} />

@@ -9,8 +9,9 @@ import { Card, CardContent } from '@/components/ui/card';
  * `components/ui/card.tsx` reserves for a genuine "Fresco learned
  * something" moment, not a decorative CTA. FRESCO-73 — `default` (primary)
  * button, not `secondary`: `default` isn't the `action` variant, so it
- * doesn't conflict with DESIGN.md's one-`action`-per-screen rule (`/menu`'s
- * single `action` CTA stays "Cocinar ya" / the guest save-menu banner).
+ * doesn't conflict with DESIGN.md's one-`action`-per-screen rule — the
+ * `action` CTA on this screen is the guest save-menu banner (anonymous
+ * users) or `NoMenuEmptyState`'s CTA (no plan yet), never both at once.
  */
 export function CalendarSuggestionBanner() {
   return (
