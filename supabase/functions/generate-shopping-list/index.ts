@@ -74,7 +74,7 @@ Deno.serve(async (req: Request) => {
     // query, which assumed a typed `raciones` column that doesn't exist here).
     const { data: slots, error: slotsError } = await supabase
       .from('meal_plan_recipes')
-      .select('recipe_id, recipes ( id, meta, ingredientes_principales )')
+      .select('recipe_id, dia, recipes ( id, nombre, meta, ingredientes_principales )')
       .eq('meal_plan_id', meal_plan_id)
       .returns<SlotWithRecipeRow[]>()
 
@@ -97,6 +97,8 @@ Deno.serve(async (req: Request) => {
           receta_id: recipe.id,
           raciones_receta: racionesReceta,
           raciones_usuario: numPersonas,
+          receta_nombre: recipe.nombre,
+          dia: slot.dia,
         })
       }
     }

@@ -9,6 +9,8 @@ function makeRaw(overrides: Partial<RawIngrediente> = {}): RawIngrediente {
     receta_id: 'recipe-1',
     raciones_receta: 4,
     raciones_usuario: 4,
+    receta_nombre: 'Receta de prueba',
+    dia: 'lunes',
     ...overrides,
   }
 }
@@ -20,17 +22,30 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
     ])
 
     // patata base = 400g; factor 4/2 = 2 -> ceil(400 * 2) = 800g
-    expect(result).toEqual([{ nombre: 'patata', cantidad: 800, unidad: 'g' }])
+    expect(result).toEqual([{
+      nombre: 'patata',
+      cantidad: 800,
+      unidad: 'g',
+      usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+    }])
   })
 
   test('sums the same ingredient across two recipe slots when units are compatible (g + g)', () => {
     const result = consolidateIngredientes([
-      makeRaw({ nombre: 'champinones', receta_id: 'r1' }),
-      makeRaw({ nombre: 'champinones', receta_id: 'r2' }),
+      makeRaw({ nombre: 'champinones', receta_id: 'r1', receta_nombre: 'Champiñones salteados', dia: 'lunes' }),
+      makeRaw({ nombre: 'champinones', receta_id: 'r2', receta_nombre: 'Tortilla de champiñones', dia: 'miercoles' }),
     ])
 
     // champinones base = 250g, factor 1 each -> 250g + 250g = 500g in one line
-    expect(result).toEqual([{ nombre: 'champinones', cantidad: 500, unidad: 'g' }])
+    expect(result).toEqual([{
+      nombre: 'champinones',
+      cantidad: 500,
+      unidad: 'g',
+      usos: [
+        { receta: 'Champiñones salteados', dia: 'lunes' },
+        { receta: 'Tortilla de champiñones', dia: 'miercoles' },
+      ],
+    }])
   })
 
   test('sums across three recipe slots and converts the total to kg past the 1000g threshold', () => {
@@ -43,7 +58,14 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
     // salmon base = 400g, factor 1 each -> 3 x 400g = 1200g -> stored as 1.2kg.
     // This is the exact accumulation shape (real gram quantities, multi-slot
     // summing) that exposed the aisle-pricing flat-price-times-grams bug.
-    expect(result).toEqual([{ nombre: 'salmon', cantidad: 1.2, unidad: 'kg' }])
+    expect(result).toEqual([{
+      nombre: 'salmon',
+      cantidad: 1.2,
+      unidad: 'kg',
+      // All three raws share the default receta_nombre/dia — real 3-slot
+      // input is exercised by the dedup test below instead.
+      usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+    }])
   })
 
   test('falls back to 1 unidad for an ingredient with no BASE_QUANTITIES entry', () => {
@@ -51,7 +73,12 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       makeRaw({ nombre: 'ingrediente inventado', raciones_receta: 4, raciones_usuario: 4 }),
     ])
 
-    expect(result).toEqual([{ nombre: 'ingrediente inventado', cantidad: 1, unidad: 'unidades' }])
+    expect(result).toEqual([{
+      nombre: 'ingrediente inventado',
+      cantidad: 1,
+      unidad: 'unidades',
+      usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+    }])
   })
 
   test('merges accent/case variants of the same ingredient name into a single consolidated line', () => {
@@ -62,7 +89,28 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
 
     // Both normalize to the same key 'tomate' — must merge, not produce two lines.
     expect(result).toHaveLength(1)
-    expect(result[0]).toEqual({ nombre: 'tomate', cantidad: 600, unidad: 'g' })
+    expect(result[0]).toEqual({
+      nombre: 'tomate',
+      cantidad: 600,
+      unidad: 'g',
+      // Both raws share the default receta_nombre/dia — dedup collapses to one uso.
+      usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+    })
+  })
+
+  test('keeps a distinct uso per (recipe, day) and dedupes an identical repeat', () => {
+    const result = consolidateIngredientes([
+      makeRaw({ nombre: 'cebolla', receta_id: 'r1', receta_nombre: 'Sofrito base', dia: 'lunes' }),
+      makeRaw({ nombre: 'cebolla', receta_id: 'r2', receta_nombre: 'Wok de verduras', dia: 'jueves' }),
+      // Same (recipe, day) pair repeated — e.g. the same recipe's ingredient
+      // list lists an ingredient twice. Must not produce a duplicate uso.
+      makeRaw({ nombre: 'cebolla', receta_id: 'r1', receta_nombre: 'Sofrito base', dia: 'lunes' }),
+    ])
+
+    expect(result[0].usos).toEqual([
+      { receta: 'Sofrito base', dia: 'lunes' },
+      { receta: 'Wok de verduras', dia: 'jueves' },
+    ])
   })
 
   // canSumUnits/logger.warn ("Unidades incompatibles") only fire when the same

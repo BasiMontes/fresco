@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
-import type { ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
+import type { DiaSemana, ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
 import {
   Beef,
   Carrot,
@@ -51,6 +51,31 @@ function capitalize(value: string): string {
 /** Matches the app's existing static-copy convention (`recipe-card.tsx`: "2,80€/persona") — comma decimal, no space before the symbol. */
 function formatPrecio(precio: number): string {
   return `${precio.toFixed(2).replace('.', ',')}€`;
+}
+
+/** Same mapping `calendar-grid.tsx` uses for `DiaSemana` values — kept local rather than shared since this is the only other consumer today. */
+const DIA_LABELS: Record<DiaSemana, string> = {
+  lunes: 'Lunes',
+  martes: 'Martes',
+  miercoles: 'Miércoles',
+  jueves: 'Jueves',
+  viernes: 'Viernes',
+  sabado: 'Sábado',
+  domingo: 'Domingo',
+};
+
+/**
+ * FRESCO-212 — "used for X, on Y" per ingredient row. `dia` is typed as
+ * `DiaSemana`, but this reads out of a persisted jsonb blob (`items` on
+ * `shopping_lists`) that the type doesn't enforce at runtime — `?? capitalize`
+ * falls back for a value that predates or doesn't match the enum, same
+ * conservative-fallback pattern as `getPasilloIcon` above.
+ */
+function formatUsos(usos: ShoppingListItem['usos']): string | null {
+  if (!usos || usos.length === 0) { return null; }
+  return usos
+    .map(uso => `${uso.receta} (${DIA_LABELS[uso.dia] ?? capitalize(uso.dia)})`)
+    .join(', ');
 }
 
 /**
@@ -324,36 +349,48 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
               </h3>
               <Card className="p-0">
                 <ul className="flex flex-col divide-y divide-border">
-                  {pasillo.items.map((item, itemIdx) => (
-                    <li key={item.nombre} className="flex items-center gap-4 p-4">
-                      <Checkbox
-                        data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
-                        checked={item.comprado}
-                        onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
-                      />
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span
-                          className={cn(
-                            'truncate text-body-lg',
-                            item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
+                  {pasillo.items.map((item, itemIdx) => {
+                    const usosLabel = formatUsos(item.usos);
+                    return (
+                      <li key={item.nombre} className="flex items-center gap-4 p-4">
+                        <Checkbox
+                          data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
+                          checked={item.comprado}
+                          onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span
+                            className={cn(
+                              'truncate text-body-lg',
+                              item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
+                            )}
+                          >
+                            {capitalize(item.nombre)}
+                          </span>
+                          <span className="text-caption text-tertiary">
+                            {item.cantidad}
+                            {' '}
+                            {formatUnidad(item.cantidad, item.unidad)}
+                            {item.precio_estimado !== undefined && (
+                              <>
+                                {' · '}
+                                {formatPrecio(item.precio_estimado)}
+                              </>
+                            )}
+                          </span>
+                          {/* FRESCO-212: which dish(es) + day(s) need this
+                              ingredient — absent for lists persisted before
+                              this field existed, and for suggestion-added
+                              items (no meal-plan provenance). */}
+                          {usosLabel && (
+                            <span className="truncate text-caption text-tertiary">
+                              {usosLabel}
+                            </span>
                           )}
-                        >
-                          {capitalize(item.nombre)}
-                        </span>
-                        <span className="text-caption text-tertiary">
-                          {item.cantidad}
-                          {' '}
-                          {formatUnidad(item.cantidad, item.unidad)}
-                          {item.precio_estimado !== undefined && (
-                            <>
-                              {' · '}
-                              {formatPrecio(item.precio_estimado)}
-                            </>
-                          )}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </Card>
             </div>

@@ -271,6 +271,11 @@ export function consolidateIngredientes(
   rawIngredientes: RawIngrediente[]
 ): IngredienteConsolidado[] {
   const map = new Map<string, { cantidad: number; unidad: string }>()
+  // FRESCO-212: every distinct (recipe, day) an ingredient was pulled from,
+  // tracked independently of quantity summing — a staple is still "used in"
+  // a recipe even on the rare path where a unit mismatch skips its quantity
+  // contribution (the `canSumUnits` else-branch below).
+  const usosMap = new Map<string, { receta: string; dia: string }[]>()
 
   for (const raw of rawIngredientes) {
     const key = normalizeNombre(raw.nombre)
@@ -283,6 +288,12 @@ export function consolidateIngredientes(
       Math.ceil(cantidadBase * factor),
       unidadBase
     )
+
+    const usos = usosMap.get(key) ?? []
+    if (!usos.some(u => u.receta === raw.receta_nombre && u.dia === raw.dia)) {
+      usos.push({ receta: raw.receta_nombre, dia: raw.dia })
+    }
+    usosMap.set(key, usos)
 
     if (map.has(key)) {
       const existing = map.get(key)!
@@ -304,5 +315,6 @@ export function consolidateIngredientes(
     nombre,
     cantidad,
     unidad,
+    usos: usosMap.get(nombre) ?? [],
   }))
 }

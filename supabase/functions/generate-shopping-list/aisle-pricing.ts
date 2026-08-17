@@ -378,6 +378,7 @@ export function classifyShoppingList(ingredientes: IngredienteConsolidado[]): Cl
       unidad: ingrediente.unidad,
       comprado: false,
       precio_estimado: Math.round(precioItem * 100) / 100,
+      usos: ingrediente.usos,
     }
 
     if (!porPasillo.has(pasillo)) porPasillo.set(pasillo, [])

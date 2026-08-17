@@ -1,5 +1,13 @@
+import type { DiaSemana } from './meal-plan.types';
+
 // Row shape of `public.shopping_lists` (fresco-schema-sql.md Block 6).
 // `items` is the jsonb aisle-grouped structure documented in api-contracts.md §2.
+
+/** One recipe/day this ingredient was pulled from (FRESCO-212). */
+export interface ShoppingListItemUso {
+  receta: string
+  dia: DiaSemana
+}
 
 export interface ShoppingListItem {
   nombre: string
@@ -14,6 +22,14 @@ export interface ShoppingListItem {
    * no value for it.
    */
   precio_estimado?: number
+  /**
+   * Every distinct (recipe, day) this ingredient was pulled from the meal
+   * plan for — lets the UI show "used for X, on Y" per row. Optional:
+   * lists persisted before this field existed have no value for it, and an
+   * item added from "Sugerencias para ti" (FRESCO-194) has no meal-plan
+   * provenance at all.
+   */
+  usos?: ShoppingListItemUso[]
 }
 
 export interface ShoppingListPasillo {

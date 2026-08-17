@@ -4,7 +4,7 @@ import { classifyShoppingList } from './aisle-pricing.ts'
 
 /** Minimal valid IngredienteConsolidado fixture — already-summed shopping-list line. */
 function makeIngrediente(overrides: Partial<IngredienteConsolidado> = {}): IngredienteConsolidado {
-  return { nombre: 'tomate', cantidad: 300, unidad: 'g', ...overrides }
+  return { nombre: 'tomate', cantidad: 300, unidad: 'g', usos: [], ...overrides }
 }
 
 describe('classifyShoppingList (FR-4.2/4.3 — deterministic, no Gemini call)', () => {
