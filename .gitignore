@@ -83,6 +83,13 @@ supabase/.temp
 # Claude Code scheduler runtime lock (sessionId + pid) — written by
 # ScheduleWakeup / scheduled tasks. Per-session, never committed.
 .claude/scheduled_tasks.lock
+# Isolated git worktrees created by EnterWorktree / manual `git worktree add`
+# for parallel/risky sessions — each is a real (often stale) checkout with
+# its own symlinked/copied .env. Never git-tracked (git itself already keeps
+# them out of `git status`/`git ls-files`), but a plain filesystem walk (e.g.
+# `vercel deploy`'s local upload) doesn't know that and will try to bundle
+# them — including any broken .env symlink — breaking the deploy archive.
+.claude/worktrees/
 .playwright-mcp
 .playwright-cli
 .backups/
