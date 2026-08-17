@@ -3665,3 +3665,19 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 **Por qué**: findings de code review sobre el PR #83 — comentario impreciso y documentación de design system/SRS quedaron apuntando a UI ya eliminada.
 
 **Siguiente**: sin pendientes de código en FRESCO-206. PR #83 (`fix/FRESCO-206-remove-cocinar-ya-button` → `staging`) actualizado, pendiente de merge.
+
+---
+
+## 2026-08-17 — FRESCO-198 + FRESCO-218: password UX en /signup, estado de cuenta en /perfil
+
+**Qué**: primera feature grande del grupo 197+198+218 (registro invitado). FRESCO-197 (registro invitado en sí) ya estaba implementado de antes (`ensureGuestSession()`, ADR-0003, EPIC-FRESCO-6) — sin trabajo. Quedaban dos gaps reales:
+
+**FRESCO-198** — `components/ui/password-input.tsx` (nuevo): wrapper de `Input` con toggle mostrar/ocultar (`Eye`/`EyeOff`) y medidor de fortaleza opcional (`showStrength`, heurística de longitud + variedad de clase de carácter, sin dependencia nueva — no hay zxcvbn en el repo). Usado en los dos campos password de `/signup`: el principal (creación de cuenta) con medidor, el de conflicto de cuenta (reingresar password existente para reclamarla) solo con el toggle — no tiene sentido "medir fortaleza" de una password que ya existe.
+
+**FRESCO-218** — `/perfil` ahora muestra estado de cuenta y contraseña: `Tag` "Invitada"/"Registrada" junto al badge de plan en la card de cabecera; fila nueva "Contraseña" en la card "Cuenta" (`••••••••` + botón "Cambiar contraseña", solo si no es invitada — un guest no tiene password). El botón reusa el mismo flow de `resetPasswordForEmail` que ya existía en `AyudaSection`'s modal de Configuración (FRESCO-161) — extraído a `components/profile/password-reset-control.tsx` en vez de duplicar la lógica. Bug real atrapado en la propia verificación (no en review externo): las dos instancias del control (la fila siempre visible + el modal de Ayuda cuando se abre) quedan montadas al mismo tiempo con el mismo `data-testid` — se agregó un prop `testId` para diferenciarlas.
+
+Verificado en vivo (`next dev --webpack`, worktree con `node_modules` symlinkeado desde el checkout principal — mismo patrón que sesiones anteriores, symlink borrado al terminar): screenshots de `/signup` confirmando medidor Débil→Fuerte + toggle funcionando, y de `/perfil` (login real con `LOCAL_USER_EMAIL`/`.env`) confirmando el tag "Registrada" y la fila de contraseña. `bun test` 151/151, `types:check`/`lint:check` verdes.
+
+**Por qué**: plan acordado con el user para las 5 features grandes pendientes — esta es la primera (197+198+218), ejecutada una por una para no saturar contexto.
+
+**Siguiente**: PR pendiente de abrir para `feat/FRESCO-198-218-password-ux-profile-status` → `staging`. Quedan 4 grupos de features grandes: 199, 203, 219, 221.
