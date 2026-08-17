@@ -106,7 +106,25 @@ export default async function ProfilePage() {
                 Hola
                 {nombre ? `, ${nombre}` : ''}
               </p>
-              <p className="text-body-sm text-tertiary">{user?.email ?? 'Invitada'}</p>
+              {/* FRESCO-218: reflect the onboarding identity choice
+                  (FRESCO-197) here — a guest sees a plain "Invitada" badge
+                  (no email exists to show), an upgraded/registered user sees
+                  her real email plus a masked password row. The dots are a
+                  fixed placeholder, never the real password — Supabase never
+                  exposes it, hashed or otherwise; this is purely a visual
+                  confirmation that credentials are set. */}
+              {user?.is_anonymous
+                ? (
+                    <Tag data-testid="profile_identity_guest_tag" variant="neutral" className="mt-1">
+                      Invitada
+                    </Tag>
+                  )
+                : (
+                    <div className="mt-0.5 flex flex-col gap-0.5">
+                      <p data-testid="profile_identity_email" className="text-body-sm text-tertiary">{user?.email}</p>
+                      <p data-testid="profile_identity_password_masked" className="text-body-sm tracking-widest text-tertiary">••••••••</p>
+                    </div>
+                  )}
             </div>
           </div>
           <Tag variant={getPlanTagVariant(plan)}>{PLAN_LABELS[plan]}</Tag>
