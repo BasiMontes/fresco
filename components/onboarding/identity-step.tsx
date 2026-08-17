@@ -1,0 +1,186 @@
+'use client';
+
+import type { FormEvent } from 'react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmailInput } from '@/components/ui/email-input';
+import { PasswordInput } from '@/components/ui/password-input';
+import { translateAuthError } from '@/lib/auth-errors';
+import { createClient } from '@/lib/supabase/client';
+
+export interface IdentityStepProps {
+  /** Called once a real Supabase session exists (guest or freshly-created account). */
+  onResolved: () => void
+}
+
+type IdentityChoice = 'guest' | 'account' | null;
+
+/**
+ * FRESCO-197: the first thing a brand-new visitor to `/onboarding` sees —
+ * "continuar como invitada" (no prompts at all, ADR-0003 `signInAnonymously`)
+ * vs "crear cuenta" (asks email + password only on this branch, using
+ * FRESCO-198's `EmailInput`/`PasswordInput`).
+ *
+ * A plain `signUp()`, not the anonymous-then-`updateUser()` upgrade path —
+ * she has no anonymous session yet at this point (that upgrade path is
+ * `/signup`'s job, for a guest who already generated a menu and decides
+ * later). Mirrors `/signup`'s own edge cases (anti-enumeration `identities:
+ * []`, pending-email-confirmation) rather than inventing new copy for them.
+ */
+export function IdentityStep({ onResolved }: IdentityStepProps) {
+  const [choice, setChoice] = useState<IdentityChoice>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState(false);
+
+  async function handleGuest() {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const client = createClient();
+      const { error: guestError } = await client.auth.signInAnonymously();
+      if (guestError) {
+        // ADR-0003: anonymous sign-ins are rate-limited (30/hour) on this
+        // project — a real, previously-observed failure mode.
+        setError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
+        return;
+      }
+      onResolved();
+    }
+    finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleCreateAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    // Mirrors /signup's own pre-check (FRESCO-123): reject a weak password
+    // before hitting the network — same 6-char threshold `lib/auth-errors.ts`
+    // maps from Supabase's own `weak_password` error.
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres.');
+      setIsSubmitting(false);
+      return;
+    }
+    try {
+      const client = createClient();
+      const { data, error: signUpError } = await client.auth.signUp({ email, password });
+      if (signUpError) {
+        setError(translateAuthError(signUpError));
+        return;
+      }
+      // Same anti-enumeration behavior /signup already documents: Supabase
+      // returns 200 with empty `identities` when the email already belongs
+      // to a confirmed account, instead of a normal error.
+      if (data.user?.identities?.length === 0) {
+        setError('Ya existe una cuenta con ese email. Inicia sesión en su lugar.');
+        return;
+      }
+      // Resend SMTP is currently blocked for this project (no owned sending
+      // domain yet — known, deliberately-deferred infra gap, ADR-0003
+      // Consequences). `signUp()` returns 200 the instant the account row is
+      // created, regardless of whether Supabase actually issued a session —
+      // when email confirmation is required (the normal case here), it
+      // won't have. Handle it as a real, expected state rather than a dead
+      // end: same pattern as `/signup`'s `signupPendingConfirmation`.
+      if (!data.session) {
+        setPendingConfirmation(true);
+        return;
+      }
+      onResolved();
+    }
+    finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (pendingConfirmation) {
+    return (
+      <Card>
+        <h1 className="text-h3">Revisa tu correo</h1>
+        <p data-testid="onboarding_signup_pending_confirmation_message" role="status" aria-live="polite" className="mt-1 text-body-sm text-tertiary">
+          Te enviamos un enlace de confirmación a
+          {' '}
+          <strong>{email}</strong>
+          . Ábrelo para activar tu cuenta y luego inicia sesión.
+        </p>
+        <p className="mt-4 text-center text-body-sm text-tertiary">
+          <Link href="/login" className="text-primary">Ir a iniciar sesión</Link>
+        </p>
+      </Card>
+    );
+  }
+
+  if (choice === 'account') {
+    return (
+      <Card>
+        <h1 className="text-h3">Crea tu cuenta</h1>
+        <p className="mt-1 text-body-sm text-tertiary">Así no pierdes tu progreso ni tu menú.</p>
+
+        <form onSubmit={event => void handleCreateAccount(event)} className="mt-6 flex flex-col gap-3">
+          <EmailInput value={email} onChange={setEmail} />
+          <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
+          <Button data-testid="onboarding_create_account_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+            {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta y continuar'}
+          </Button>
+        </form>
+
+        {error && (
+          <p data-testid="onboarding_identity_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          data-testid="onboarding_back_to_choice_button"
+          onClick={() => {
+            setChoice(null);
+            setError(null);
+          }}
+          className="mt-4 w-full text-center text-body-sm text-tertiary underline"
+        >
+          Volver
+        </button>
+      </Card>
+    );
+  }
+
+  return (
+    <Card data-testid="onboarding_identity_step">
+      <h1 className="text-h3">¿Cómo quieres empezar?</h1>
+      <p className="mt-1 text-body-sm text-tertiary">Puedes probar Fresco sin registrarte, o crear una cuenta desde ya.</p>
+
+      <div className="mt-6 flex flex-col gap-3">
+        <Button
+          data-testid="onboarding_continue_as_guest_button"
+          variant="action"
+          onClick={() => void handleGuest()}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
+        </Button>
+        <Button
+          data-testid="onboarding_create_account_button"
+          variant="secondary"
+          onClick={() => setChoice('account')}
+          disabled={isSubmitting}
+        >
+          Crear cuenta
+        </Button>
+      </div>
+
+      {error && (
+        <p data-testid="onboarding_identity_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+          {error}
+        </p>
+      )}
+    </Card>
+  );
+}

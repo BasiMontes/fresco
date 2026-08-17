@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useEffect, useRef, useState } from 'react';
+import { IdentityStep } from '@/components/onboarding/identity-step';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dropdown } from '@/components/ui/dropdown';
@@ -105,8 +106,13 @@ export default function OnboardingPage() {
   const [generateSuccess, setGenerateSuccess] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const hasExistingMenu = generateError === EXISTING_MENU_FOR_WEEK_MESSAGE;
-  const [sessionError, setSessionError] = useState<string | null>(null);
   const [vegetarianoLockTooltipOpen, setVegetarianoLockTooltipOpen] = useState(false);
+  // FRESCO-197: `null` = still checking for an existing session, `false` =
+  // no session — show the guest-vs-account choice, `true` = resolved
+  // (wizard renders). A just-registered user from /signup or a returning
+  // guest already carries a persisted Supabase session, so this only ever
+  // surfaces the choice to an actual first-time, session-less visitor.
+  const [identityResolved, setIdentityResolved] = useState<boolean | null>(null);
 
   // FRESCO-201: resetting the store synchronously before router.push()
   // re-rendered this still-mounted page at step 1 for the ~1s the /menu
@@ -122,25 +128,19 @@ export default function OnboardingPage() {
     };
   }, []);
 
-  // FRESCO-17 (Guest Mode, US 6.1): a first-time visitor reaches this page
-  // with no Supabase session at all. Ensure one exists before she can reach
-  // Step 3 — a just-registered user arriving from `/signup` already has a
-  // real session, so this only fires for an actual guest (ADR-0003).
+  // FRESCO-17/FRESCO-197 (Guest Mode, US 6.1): a first-time visitor reaches
+  // this page with no Supabase session at all — she now sees an explicit
+  // guest-vs-account choice (`IdentityStep`) instead of a silent anonymous
+  // sign-in. A just-registered user arriving from `/signup`, or a returning
+  // guest whose anonymous session already persisted, skips straight to the
+  // wizard below.
   useEffect(() => {
-    async function ensureGuestSession() {
+    async function checkSession() {
       const client = createClient();
       const { data: { session } } = await client.auth.getSession();
-      if (session) {
-        return;
-      }
-      const { error } = await client.auth.signInAnonymously();
-      if (error) {
-        // Real, previously-observed failure mode (ADR-0003: anonymous
-        // sign-ins are rate-limited), not a speculative one.
-        setSessionError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
-      }
+      setIdentityResolved(!!session);
     }
-    void ensureGuestSession();
+    void checkSession();
   }, []);
   const {
     step,
@@ -333,13 +333,27 @@ export default function OnboardingPage() {
     }
   }
 
+  // FRESCO-197: identity not resolved yet (session check in flight) — avoid
+  // flashing the guest-vs-account choice at a visitor who actually already
+  // has a session.
+  if (identityResolved === null) {
+    return (
+      <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-4 py-12">
+        <Loader2 data-testid="onboarding_identity_loading" className="size-6 animate-spin text-tertiary" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  if (!identityResolved) {
+    return (
+      <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
+        <IdentityStep onResolved={() => setIdentityResolved(true)} />
+      </div>
+    );
+  }
+
   return (
     <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
-      {sessionError && (
-        <p data-testid="session_error_message" role="alert" aria-live="assertive" className="mb-4 text-body-sm text-error">
-          {sessionError}
-        </p>
-      )}
       <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
         Paso
         {' '}
