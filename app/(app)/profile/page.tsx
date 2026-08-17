@@ -20,10 +20,11 @@ import { createClient } from '@/lib/supabase/server';
  * the one genuinely destructive action.
  *
  * The upgrade CTA stays a disabled "Próximamente" rather than a live link:
- * payment/self-serve upgrade infra is explicitly deferred past this MVP
- * (`.context/PRD/mvp-scope.md` — Stripe/payment-link handling belongs to
- * the founder's manual concierge-validation process, not to any epic here).
- * A working-looking button with nowhere real to go would be worse than an
+ * self-serve payment via Stripe is now in scope (EPIC-FRESCO-227, reversing
+ * the earlier manual-concierge-collection posture — see
+ * `.context/business/business-model.md` Revenue Streams), but this button
+ * still needs to be wired to the real checkout flow once STORY-FRESCO-228
+ * ships. A working-looking button with nowhere real to go would be worse than an
  * honest "not yet" — that same judgment call is why the Ayuda section's 3
  * rows (`Configuración`/`FAQ`/`Privacidad`) are now real modals
  * (`AyudaSection`) instead of the inert "Próximamente" rows they used to be:

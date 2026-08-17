@@ -76,6 +76,8 @@ _Scoped to the validation-stage go-to-market described in the Validation Plan be
 
 **Structural note:** this pricing model is a deliberate fix to a flaw in a prior iteration, where the Free tier already delivered the full core promise, removing any reason to upgrade. Here, Free delivers the menu-generation promise every week, but the learning/improvement promise — the actual differentiator — is Pro-only.
 
+**Payment collection (updated 2026-08-17):** self-serve payment via Stripe is now in scope — EPIC-FRESCO-227, reversing the earlier posture where Pro upgrades were collected manually by the founder during concierge validation. This is scoped to *payment collection* only; it does not change the Channels/Customer Relationships concierge-delivery model described below, which remains the go-to-market approach until validation concludes.
+
 ## Key Resources
 
 - The behavioral dataset per household: which recipes were marked cooked vs. discarded, over time. This is the resource the moat is built on.
