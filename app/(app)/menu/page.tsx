@@ -1,6 +1,6 @@
 import type { Recipe } from '@schemas';
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
-import { Bell, Heart, Zap } from 'lucide-react';
+import { Bell, Heart } from 'lucide-react';
 
 import Link from 'next/link';
 import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
@@ -200,13 +200,6 @@ export default async function MenuPage() {
                 )}
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 flex justify-center">
-        <Link href="/calendar" className={buttonVariants({ variant: 'action', size: 'lg' })}>
-          <Zap className="size-[18px]" strokeWidth={2} />
-          Cocinar ya
-        </Link>
       </div>
 
       <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />

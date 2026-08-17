@@ -10,7 +10,8 @@ import { Card, CardContent } from '@/components/ui/card';
  * something" moment, not a decorative CTA. FRESCO-73 — `default` (primary)
  * button, not `secondary`: `default` isn't the `action` variant, so it
  * doesn't conflict with DESIGN.md's one-`action`-per-screen rule (`/menu`'s
- * single `action` CTA stays "Cocinar ya" / the guest save-menu banner).
+ * only `action` CTA is the guest save-menu banner, shown to anonymous
+ * users only — FRESCO-206 removed the redundant "Cocinar ya" CTA).
  */
 export function CalendarSuggestionBanner() {
   return (
