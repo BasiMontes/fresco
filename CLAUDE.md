@@ -21,9 +21,18 @@
     **Project-standing override — Jira content (this project only, set 2026-07-26):** all Jira issues/comments (epics, stories, AC, scope, descriptions) are written in **Spanish** by default, not English — team works in Spanish end-to-end for this artifact type. This is a persistent override of the general repo-artifact-English default above, not a one-off per-ticket request; it applies to every future Jira write until the user says otherwise. All other repo artifacts (code, commits, PRs, branch names) stay English as normal.
 13. **NO GLOBAL DISCARDS (MULTI-SESSION SAFETY)**: PROHIBITED to run repo-wide destructive git commands: `git restore .`, `git checkout -- .`, `git reset --hard`, untargeted `git stash`, `git clean -f`. Multiple agent sessions may share this working tree without worktrees — a global discard silently destroys another session's uncommitted work, unrecoverably. Discard ONLY explicit paths YOU modified in THIS session (`git restore <path>...` / `git stash push <path>...`). Unsure who modified a file → do NOT restore it — ask the user.
 14. **UI FIDELITY CONTRACT**: story has UI → look it up in `.context/design/master-design-plan.md` §8 (US→Screen map), build against that screen's spec + frozen tokens + physical mockup. NEVER invent UI; unratified mockup divergence = defect. Story missing from §8 → STOP, offer just-in-time mockup / spec-only ratification / user-approved DESIGN.md-only build. LIVE-UI-FIRST: current live UI is the real fidelity source, mockup is inspiration — inspect + reuse live components first, don't force mockup details the live UI improved on. Full contract + STOP options → `.claude/skills/agentic-dev-core/references/ui-fidelity-doctrine.md`.
-15. **SESSION LOGGING (`bitacora.md`)**: at the end of every session that does real work in this repo, append a summary entry to `.context/bitacora.md` — date, short title, then Qué / Por qué / Siguiente, matching the format the file's own header already declares. Do this automatically, without being asked. Append-only: never rewrite or delete a prior entry, only add a new one below it.
-16. **FEATURE MAP SYNC (`business-feature-map.md`)**: whenever a session ships a NEW feature (new user-facing capability, new endpoint, new integration — not a bug fix, copy tweak, or internal refactor), update `.context/business/business-feature-map.md` in the same session — add the feature to its domain's catalog (or create the domain section if new), update the CRUD matrix / endpoint / UI-inventory tables it touches, and bump `> **Last update**`. Do this automatically, without being asked, same trigger discipline as rule 15. Owned by `/business-feature-map` — invoke it for the update rather than hand-editing the file's structure.
+15. **SESSION LOGGING (`bitacora.md`) — MODO OPTIMIZADO (CERO LECTURA)**:
+    - **TRIGGER (Cuándo)**: SOLO al completar una historia de Jira, resolver un bug crítico, o hacer un deploy. NUNCA por tareas triviales o cambios de texto.
+    - **ACCIÓN (Cómo)**: Usa **EXCLUSIVAMENTE** un comando bash de append ciego. Ejemplo: 
+      `echo "## 2026-08-17 - [Título corto]\n- Qué: ...\n- Por qué: ...\n- Siguiente: ..." >> fresco-app/.context/bitacora.md`
+    - **PROHIBICIÓN ABSOLUTA**: NUNCA uses `read_file`, `cat` o herramientas de lectura en `bitacora.md` antes de escribir. El formato es fijo y no requiere validación previa.
+    - **EXCEPCIÓN DE LECTURA**: Si necesitas verificar el último entry, usa SOLO `tail -n 10 fresco-app/.context/bitacora.md` (limita la lectura a 10 líneas máx., ~50 tokens).
+    - **ROTACIÓN AUTOMÁTICA**: Si el archivo supera las 50 entradas, el agente debe proponer: `mv fresco-app/.context/bitacora.md fresco-app/.context/bitacora-2026-08.md` y crear uno nuevo vacío.
 
+16. **FEATURE MAP SYNC — MODO OPTIMIZADO**:
+    - **TRIGGER**: SOLO al finalizar un Epic completo o añadir una nueva capacidad de negocio mayor (no por bugs, refactorizaciones o ajustes de UI).
+    - **ACCIÓN**: Leer SOLO la sección específica del dominio que se modifica (usando `grep` o `sed` si es necesario, o pidiendo al usuario el bloque), actualizar y reescribir. No leer el archivo completo de 2000 líneas si solo se toca la tabla de "Usuarios". Hazlo automáticamente al cerrar la historia, pero si el cambio es trivial, omite este paso para ahorrar tokens.
+   
 ---
 
 ## 2. BEHAVIORAL LAYER — HOW AI REASONS
@@ -59,6 +68,7 @@
 **NO SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, ask user, planning.
 
 **6-COMPONENT BRIEFING (MANDATORY every dispatch)**:
+**EXCEPCIÓN DE EFICIENCIA (CRÍTICA)**: El "6-COMPONENT BRIEFING" es MANDATORIO solo para tareas complejas (multi-paso, multi-archivo, tests E2E, migraciones). Para tareas triviales (leer 1-2 archivos, responder una pregunta de contexto, cambios de texto menores, formateo), ejecuta la acción directamente en la conversación principal o usa un dispatch simplificado de 1 línea. NO multipliques tokens innecesariamente en delegaciones simples.
 
 1. **Goal** — one sentence
 2. **Context docs** — files to read first
@@ -94,7 +104,7 @@
 | Infra scaffolding (backend/frontend)        | "scaffolding del proyecto", "API routes setup"                                                  | `/project-bootstrap`                               | `SRS/infrastructure.md`, `DESIGN.md`                            | Code edit                                    |
 | QA testability page + credentials artifact  | "create QA guide page", "guía de testeabilidad", "credenciales para testing", "update /qa page" | `/testability-guide`                               | `app/qa/page.tsx` snapshot, `.agents/project.yaml`, `.mcp.json` | Read + Write + `[ISSUE_TRACKER_TOOL]`        |
 | Backlog / story refinement                  | "create epic", "refine acceptance criteria"                                                     | `/product-management`                              | `.context/PBI/epic-tree.md`, `PRD/`, `business/domain-glossary.md` | `[ISSUE_TRACKER_TOOL]`                       |
-| Sprint-development ticket                   | "implementar esta historia", "trabajar UPEX-XXX"                                                | `/sprint-development`                              | `.context/PBI/epics/EPIC-*/stories/STORY-*/`, `business/domain-glossary.md`, `DESIGN.md` + `.context/design/master-design-plan.md` (UI stories — Rule 14) | `[ISSUE_TRACKER_TOOL]` + `[AUTOMATION_TOOL]` |
+| Sprint-development ticket                   | "implementar esta historia", "trabajar FRESCO-XXX"                                                | `/sprint-development`                              | `.context/PBI/epics/EPIC-*/stories/STORY-*/`, `business/domain-glossary.md`, `DESIGN.md` + `.context/design/master-design-plan.md` (UI stories — Rule 14) | `[ISSUE_TRACKER_TOOL]` + `[AUTOMATION_TOOL]` |
 | TDD slice / unit tests                      | "write unit tests", "TDD this function"                                                         | `/unit-testing`                                    | function under test, existing tests                             | Code edit                                    |
 | Sync AI memory                              | "sync memory", `/sync-ai-memory`                                                                | `/sync-ai-memory`                                  | `README.md`, this file, `.context/`, `package.json`             | Edit                                         |
 | Business map refresh                        | "refresh data map", `/business-*-map`                                                           | `/business-data-map` / `-feature-map` / `-api-map` | Supabase schema, backend code, PRD                              | Read + Write                                 |
@@ -245,7 +255,7 @@ Project values live in **`.agents/project.yaml`** — load once per session. NEV
 
 > `.context/PBI/` layout is OWNED by `scripts/sync-jira-issues.ts`. Module = Epic (1:1). Jira is the source of truth; local `.md` files are a **read-only cache**. NEVER hand-write a `[SYNC]` file (overwritten every sync) — author content, push to the Jira field, sync, read back. Full tree + fallback rule + detailed-read commands → `.claude/skills/agentic-dev-core/references/pbi-local-context.md`.
 
-**ENTRY POINT**: invoke `/sprint-development` — syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, drives plan → code → review → deploy. Resume contract reads `.session/sprint-development/<JIRA-KEY>/progress.md`.
+**ENTRY POINT**: invoke `/sprint-development` — syncs the ticket (`jira:sync-issues get`), explains story, loads the synced PBI, drives plan → code → review → deploy. Resume contract reads `.session/sprint-development/<JIRA-KEY>/progress.md` (per `.claude/skills/agentic-dev-core/references/session-management.md`).
 
 ---
 

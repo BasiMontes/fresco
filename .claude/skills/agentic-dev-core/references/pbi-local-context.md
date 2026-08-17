@@ -35,7 +35,8 @@ Sprint-level cross-ticket aggregate → `.context/reports/SPRINT-{N}-DEVELOPMENT
 
 Replaces `acli view` for custom fields — `acli view` returns null for custom fields:
 
-- `bun run jira:sync-issues get <KEY> --include-comments` → one issue, ALL custom fields + comments → read the generated `.md`.
+- `bun run jira:sync-issues get <KEY>` → one issue, ALL custom fields → read the generated `.md`. Do NOT add `--include-comments` by default — historical comments burn tokens and are rarely relevant to implementation.
+- `bun run jira:sync-issues get <KEY> --include-comments` → ONLY when the user explicitly asks about discussion history, or a blocker requires reviewing old comments.
 - `bun run jira:sync-issues jql "<query>"` → batch. `pull --epic <KEY>` / `--story <KEY>` → scoped.
 
 ## Fallback
