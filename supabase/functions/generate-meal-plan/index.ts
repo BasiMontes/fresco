@@ -15,7 +15,7 @@ import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { logger } from '../_shared/logger.ts'
 import { buildLearningExplanation } from './prompt.ts'
 import { selectMenu } from './menu-selector.ts'
-import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
+import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 import type {
   DiaSemana,
   GenerateMealPlanRequest,
@@ -135,7 +135,8 @@ Deno.serve(async (req: Request) => {
       const { data: cookedIds } = await supabase.rpc('get_user_cooked_recipe_ids', { p_user_id: user.id })
       const personalCookedIds = new Set(cookedIds ?? [])
       const chosenIds = new Set(
-        DIAS.flatMap(dia => TIPOS.map(tipo => menu[dia][tipo])).filter(id => id !== NO_SAFE_RECIPE_SENTINEL),
+        DIAS.flatMap(dia => TIPOS.map(tipo => menu[dia][tipo]))
+          .filter(id => id !== NO_SAFE_RECIPE_SENTINEL && id !== SLOT_EXCLUDED_SENTINEL),
       )
       const destacadas = [...chosenIds]
         .filter(id => personalCookedIds.has(id))
@@ -169,12 +170,17 @@ Deno.serve(async (req: Request) => {
     const slots = DIAS.flatMap(dia =>
       TIPOS.map(tipo => {
         const recipeId = menu[dia][tipo]
+        const isExcluded = recipeId === SLOT_EXCLUDED_SENTINEL
+        const isUnsafe = recipeId === NO_SAFE_RECIPE_SENTINEL
         return {
           meal_plan_id: mealPlan.id,
-          recipe_id: recipeId === NO_SAFE_RECIPE_SENTINEL ? null : recipeId,
+          recipe_id: isExcluded || isUnsafe ? null : recipeId,
           dia,
           tipo_plato: tipo,
-          estado: 'pendiente' as const,
+          // FRESCO-199: 'excluida' for the user's own choice, 'pendiente'
+          // (unchanged) for everything else, including NO_SAFE_RECIPE_SENTINEL
+          // -- that's still a real gap the FR-8.2 advertencia already covers.
+          estado: isExcluded ? 'excluida' as const : 'pendiente' as const,
         }
       })
     )
@@ -197,7 +203,8 @@ Deno.serve(async (req: Request) => {
         dia,
         Object.fromEntries(TIPOS.map((tipo) => {
           const recipeId = menu[dia][tipo]
-          return [tipo, recipeId === NO_SAFE_RECIPE_SENTINEL ? null : recipeMap.get(recipeId) ?? null]
+          const hasNoRecipe = recipeId === NO_SAFE_RECIPE_SENTINEL || recipeId === SLOT_EXCLUDED_SENTINEL
+          return [tipo, hasNoRecipe ? null : recipeMap.get(recipeId) ?? null]
         })),
       ])
     )

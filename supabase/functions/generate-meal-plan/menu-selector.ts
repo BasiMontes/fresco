@@ -16,7 +16,7 @@
 
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
-import { NO_SAFE_RECIPE_SENTINEL } from './types.ts'
+import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
 const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
@@ -108,6 +108,13 @@ export function selectMenu({ candidates, recentRecipeIds, profile }: SelectMenuP
     const timeLimit = isWeekend ? profile.tiempo_max_finde_min : profile.tiempo_max_semana_min
 
     for (const tipo of TIPOS) {
+      // FRESCO-199: the user's own choice, not a candidate-pool problem --
+      // skip the whole selection/scoring pass, no advertencia.
+      if (!profile.planning_selection[dia]?.includes(tipo)) {
+        menu[dia][tipo] = SLOT_EXCLUDED_SENTINEL
+        continue
+      }
+
       const basePool = byTipo.get(tipo) ?? []
 
       const available = basePool.filter((r) => {
@@ -166,7 +173,7 @@ export function selectMenu({ candidates, recentRecipeIds, profile }: SelectMenuP
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
         const recipeId = menu[dia][tipo]
-        if (recipeId === NO_SAFE_RECIPE_SENTINEL) continue
+        if (recipeId === NO_SAFE_RECIPE_SENTINEL || recipeId === SLOT_EXCLUDED_SENTINEL) continue
         const coste = recipeById.get(recipeId)?.meta?.coste_estimado
         if (coste) totalEuros += BUCKET_MIDPOINT_EUROS[coste]
       }
