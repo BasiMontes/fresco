@@ -270,7 +270,7 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 
 **Buttons** — heading-font label, always pill-shaped (`rounded.full`):
 - `button` (primary): filled `{colors.primary}`, `{colors.background}`-colored text. Default action.
-- `button-action`: filled `{colors.secondary}` (orange), white text. Reserved for the single highest-intent CTA on a screen — observed usage: "Cocinar ya" (Cook now), a lightning-bolt-flagged action distinct from every other button on the same screen.
+- `button-action`: filled `{colors.secondary}` (orange), white text. Reserved for the single highest-intent CTA on a screen — observed usage: "Generar mi menú" (Generate my menu), a lightning-bolt-flagged action distinct from every other button on the same screen.
 - `button-secondary`: outlined, `{colors.border}`-colored border, transparent fill.
 - `button-ghost`: text-only, `{colors.primary}` text, no border or fill.
 - `button-icon`: 36×36 circular, used for compact actions (e.g. the favorite/heart toggle on a recipe card).
@@ -298,10 +298,10 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 
 ## Do's and Don'ts
 
-**Documented AA bypass:** `button-action` (`{colors.background}` text on `{colors.secondary}` fill) measures ~2.4:1, below WCAG AA's 4.5:1 minimum for normal text — this is the canvas's own authored pairing (`background:var(--color-accent-2); color:#fff` in the source bundle), not an oversight. Because this variant is reserved for one short, heading-font, all-caps-weight label per screen (e.g. "Cocinar ya"), treat it as large/bold-text usage where the practical legibility risk is lower than the ratio alone suggests — but do not reuse this pairing for body copy or any text longer than a two-to-three-word button label, where the shortfall would actually hurt readability.
+**Documented AA bypass:** `button-action` (`{colors.background}` text on `{colors.secondary}` fill) measures ~2.4:1, below WCAG AA's 4.5:1 minimum for normal text — this is the canvas's own authored pairing (`background:var(--color-accent-2); color:#fff` in the source bundle), not an oversight. Because this variant is reserved for one short, heading-font, all-caps-weight label per screen (e.g. "Generar mi menú"), treat it as large/bold-text usage where the practical legibility risk is lower than the ratio alone suggests — but do not reuse this pairing for body copy or any text longer than a two-to-three-word button label, where the shortfall would actually hurt readability.
 
 **Do:**
-- Do reserve `button-action` (orange) for exactly one CTA per screen — the "Cocinar ya" pattern. Its whole effect depends on scarcity; treat it as a spotlight, not a secondary brand color.
+- Do reserve `button-action` (orange) for exactly one CTA per screen — the "Generar mi menú" pattern. Its whole effect depends on scarcity; treat it as a spotlight, not a secondary brand color.
 - Do use the `card-insight` (accent-100/800) treatment only for genuine "Fresco learned something" moments — this is the visible proof of the Pro-tier moat named in the Constitution, and diluting it into general-purpose highlight styling erodes the one signal that's supposed to justify the €4.99/month upgrade.
 - Do keep every button and tag fully pill-shaped (`rounded.full`). This is the most consistent shape signal in the system — a single square-cornered button or tag will visibly break the "cálido, redondeado" identity.
 - Do use the card-radius multiplier (`lg × 1.15`) for all card-family components, not the raw `rounded.lg` token — cards are meant to read rounder than buttons and inputs, not the same.

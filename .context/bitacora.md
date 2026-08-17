@@ -3637,3 +3637,15 @@ PR #74 (`fix/FRESCO-207-carousel-arrow-color` → `staging`), squash-merge (merg
 **Por qué**: bug de UI reportado en Jira (FRESCO-207), defecto visual con causa raíz de un solo hex compartido entre dos componentes.
 
 **Siguiente**: sin pendientes de código en FRESCO-207. `staging` en `9fb7893` (+ este commit de bitácora).
+
+---
+
+## 2026-08-17 — FRESCO-206: quitar botón "Cocinar ya" de /menu
+
+**Qué**: bug reportado — el botón "Cocinar ya" en `/menu` no aportaba utilidad (llevaba a `/calendar`, ya accesible desde el nav "Calendario"). Resolución del usuario: quitar el botón, no redirigir su comportamiento. Eliminado de `app/(app)/menu/page.tsx` junto con el import `Zap` (ya sin otro uso en el archivo) y el bloque equivalente en el fixture de skeleton-capture (`lib/fixtures/page-shells.tsx`). Doc comment desactualizado en `components/menu/calendar-suggestion-banner.tsx` (afirmaba que el guest save-menu banner era el "único" CTA `action` de `/menu`, ignorando el CTA `action` de `NoMenuEmptyState` en el estado sin plan) corregido para no prometer exclusividad falsa.
+
+Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en `DESIGN.md` (líneas ~273, 301, 304) y en `.context/SRS/non-functional-requirements.md` (NFR-A11Y-2) actualizadas al ejemplo vivo actual del mismo patrón: "Generar mi menú" (`components/menu/no-menu-empty-state.tsx`, `components/calendar/generate-week-button.tsx`), que sigue siendo el único CTA `action`+rayo por pantalla, mismo bypass de contraste documentado.
+
+**Por qué**: findings de code review sobre el PR #83 — comentario impreciso y documentación de design system/SRS quedaron apuntando a UI ya eliminada.
+
+**Siguiente**: sin pendientes de código en FRESCO-206. PR #83 (`fix/FRESCO-206-remove-cocinar-ya-button` → `staging`) actualizado, pendiente de merge.
