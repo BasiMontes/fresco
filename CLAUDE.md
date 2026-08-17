@@ -112,6 +112,7 @@ Example (same work, different register):
 **NO SUBAGENTS FOR**: quick lookups, memory reads/writes, task tracking, ask user, planning.
 
 **6-COMPONENT BRIEFING (MANDATORY every dispatch)**:
+**EXCEPCIÓN DE EFICIENCIA (CRÍTICA)**: El "6-COMPONENT BRIEFING" es MANDATORIO solo para tareas complejas (multi-paso, multi-archivo, tests E2E, migraciones). Para tareas triviales (leer 1-2 archivos, responder una pregunta de contexto, cambios de texto menores, formateo), ejecuta la acción directamente en la conversación principal o usa un dispatch simplificado de 1 línea. NO multipliques tokens innecesariamente en delegaciones simples.
 
 1. **Goal** — one sentence
 2. **Context docs** — files to read first
