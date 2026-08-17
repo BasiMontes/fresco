@@ -273,8 +273,10 @@ export function consolidateIngredientes(
   const map = new Map<string, { cantidad: number; unidad: string }>()
   // FRESCO-212: every distinct (recipe, day) an ingredient was pulled from,
   // tracked independently of quantity summing — a staple is still "used in"
-  // a recipe even on the rare path where a unit mismatch skips its quantity
-  // contribution (the `canSumUnits` else-branch below).
+  // a recipe even on the `canSumUnits` else-branch below, which quantity
+  // summing skips (unreachable in practice, since units are looked up from
+  // the same BASE_QUANTITIES table and can never actually diverge — see
+  // consolidator.test.ts).
   const usosMap = new Map<string, { receta: string; dia: string }[]>()
 
   for (const raw of rawIngredientes) {

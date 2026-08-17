@@ -383,7 +383,10 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                               this field existed, and for suggestion-added
                               items (no meal-plan provenance). */}
                           {usosLabel && (
-                            <span className="truncate text-caption text-tertiary">
+                            <span
+                              className="truncate text-caption text-tertiary"
+                              title={usosLabel}
+                            >
                               {usosLabel}
                             </span>
                           )}
