@@ -623,11 +623,17 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
               )}
             </>
           )
-        : (
-            <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
-              Sin receta segura
-            </p>
-          )}
+        : estado === 'excluida'
+          ? (
+              <p data-testid={`calendar_slot_${dia}_${tipo}_excluida`} className="text-body-sm italic text-tertiary">
+                Excluida por ti
+              </p>
+            )
+          : (
+              <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
+                Sin receta segura
+              </p>
+            )}
 
       {recipe && estado === 'pendiente' && (
         <div className="mt-auto flex justify-end gap-1 pt-2">

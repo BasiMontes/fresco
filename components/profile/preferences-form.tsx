@@ -153,7 +153,11 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   // every included day gets every included meal — since the granular
   // per-day picker is a separate follow-up. `toPlanningSelection`/
   // `fromPlanningSelection` are the boundary conversion to/from the DB's
-  // day->meals matrix.
+  // day->meals matrix. WARNING for whoever builds the per-day picker: once
+  // `planning_selection` can be asymmetric (a day with a different meal set
+  // than the rest), touching EITHER toggle here re-flattens the whole week
+  // to `nextMeals`/`nextDays`, silently destroying that day's distinct
+  // selection. Guard against that before shipping the picker.
   function toggleMeal(value: TipoPlatoSlot) {
     setSaved(false);
     setPreferences((prev) => {
