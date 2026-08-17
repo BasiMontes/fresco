@@ -58,7 +58,6 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
 **Status:** Finalizada | **Stories:** 1 | **Points:** 0
@@ -111,7 +110,6 @@ _Project: FRESCO_
 
 **Status:** Rechazos | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-223](https://basiliomontescastano.atlassian.net/browse/FRESCO-223) - Centro de Avisos
 
 **Status:** Listo | **Stories:** 3 | **Points:** 0
@@ -119,6 +117,15 @@ _Project: FRESCO_
 - [FRESCO-224](https://basiliomontescastano.atlassian.net/browse/FRESCO-224) Centro de Avisos | Ver mensaje de bienvenida al entrar por primera vez _(- pts, Control de calidad)_
 - [FRESCO-225](https://basiliomontescastano.atlassian.net/browse/FRESCO-225) Centro de Avisos | Ver aviso con las rutas principales de la app _(- pts, Control de calidad)_
 - [FRESCO-226](https://basiliomontescastano.atlassian.net/browse/FRESCO-226) Centro de Avisos | Ver recomendaciones de recetas que me pueden gustar _(- pts, Control de calidad)_
+
+## [FRESCO-227](https://basiliomontescastano.atlassian.net/browse/FRESCO-227) - Suscripción Pro (Stripe)
+
+**Status:** Listo | **Stories:** 4 | **Points:** 0
+
+- [FRESCO-228](https://basiliomontescastano.atlassian.net/browse/FRESCO-228) Suscripción | Actualizar a Pro desde el perfil _(- pts, Control de calidad)_
+- [FRESCO-230](https://basiliomontescastano.atlassian.net/browse/FRESCO-230) Suscripción | Reflejar el estado real de mi suscripción _(- pts, Control de calidad)_
+- [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231) Suscripción | Gestionar o cancelar mi suscripción desde el perfil _(- pts, Control de calidad)_
+- [FRESCO-232](https://basiliomontescastano.atlassian.net/browse/FRESCO-232) Suscripción | Saber si mi pago falló _(- pts, Control de calidad)_
 
 ---
 

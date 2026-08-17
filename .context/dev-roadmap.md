@@ -53,7 +53,9 @@ Two epics — **EPIC-FRESCO-49** (Información Legal y Contacto) and **EPIC-FRES
 
 **EPIC-FRESCO-223** (Centro de Avisos) is new this pass (2026-08-17), via `/product-management` Workflow B — Phase 2B (Full Epic). Refinement of FRESCO-203 (tech-debt trigger idea, left untouched). Three stories: FRESCO-224 (bienvenida), FRESCO-225 (rutas principales), FRESCO-226 (recomendaciones de recetas). Explicitly in-app passive content rendered inside the existing `/notifications` page — NOT push/browser/email notifications (`.context/PRD/mvp-scope.md` blacklist). FRESCO-226 reads dietary preferences (`user_profiles`, produced by Onboarding/EPIC-FRESCO-4) and the food-safety exclusion guarantee (EPIC-FRESCO-8) — both epics are already `Finalizada`, so this is the same "reads existing data, writes no new schema" forcing shape as EPIC-FRESCO-54/60/81, not a new spine branch. No epic-level Jira link created (same convention as those three — `dependencies` link type still absent from the workspace, and a link to an already-Done epic would add nothing actionable to the sort).
 
-Do not invent a Master Sprint assignment for any of the seven unplanned epics above (49, 50, 54, 60, 64, 81, 223) — if/when they get folded into one, that is a `/master-implementation-plan` decision, not a `/dev-roadmap` one.
+**EPIC-FRESCO-227** (Suscripción Pro (Stripe)) is new this pass (2026-08-17), via `/product-management` Workflow B — Phase 2B (Full Epic). Refinement of FRESCO-219 ("Perfil. Habilitar esta sección ¿Stripe?", left untouched). Reverses a deliberate MVP-scope deferral — `.context/PRD/mvp-scope.md` and `app/(app)/profile/page.tsx` both documented self-serve payment as intentionally excluded from MVP (manual "concierge validation" collection instead); user explicitly confirmed reversing that deferral this session. Four stories: FRESCO-228 (checkout — the epic's own internal prerequisite for the other three), FRESCO-230 (webhook-driven plan state), FRESCO-231 (self-serve billing management), FRESCO-232 (failed-payment handling). Unlike EPIC-FRESCO-54/60/81/223, this is NOT a read-only/no-new-schema epic — it introduces a genuinely new subscription/billing state that `business-data-map.md` does not yet document (no `stripe_customer_id` / subscription-status entity exists there today). No epic-level forced predecessor found via the data-map (reads only the existing `user_profiles.plan` column), so it is placed alongside the other unplanned Post-MVP epics rather than under a Master Sprint — but flagged here that the exact new-schema shape (subscription table vs. columns on `user_profiles`, webhook-driven state machine) is undecided and belongs to `/sprint-development` Stage 1 for FRESCO-228, same treatment as FRESCO-68's new-table gap.
+
+Do not invent a Master Sprint assignment for any of the eight unplanned epics above (49, 50, 54, 60, 64, 81, 223, 227) — if/when they get folded into one, that is a `/master-implementation-plan` decision, not a `/dev-roadmap` one.
 
 ```
 EPIC-FRESCO-4          EPIC-FRESCO-8
@@ -114,6 +116,13 @@ EPIC-FRESCO-223
    no upstream Jira link — reads user_profiles (Onboarding) +
    food-safety exclusion guarantee, both already Finalizada
    (post-MVP, unplanned)
+
+EPIC-FRESCO-227
+(Suscripción Pro (Stripe))
+   no upstream Jira link — no existing entity dependency in
+   business-data-map.md (new subscription/billing schema,
+   shape undecided — Stage 1 territory)
+   (post-MVP, unplanned; reverses a deliberate MVP-scope deferral)
 ```
 
 | Epic | Title | Depends on | Master Sprint |
@@ -133,6 +142,7 @@ EPIC-FRESCO-223
 | EPIC-FRESCO-64 | Biblioteca de Recetas | EPIC-FRESCO-8 (catalog grid/search/filters read `get_filtered_recipes()`); "crear propia" needs a new table, no epic dependency | Post-MVP (unplanned) |
 | EPIC-FRESCO-81 | Cuenta y Sesión | — (reads existing auth session, no new schema) | Post-MVP (unplanned) |
 | EPIC-FRESCO-223 | Centro de Avisos | — (reads `user_profiles` / food-safety exclusion, both already Finalizada, no new schema) | Post-MVP (unplanned) |
+| EPIC-FRESCO-227 | Suscripción Pro (Stripe) | — (no existing entity dependency in `business-data-map.md`; new subscription schema, shape undecided) | Post-MVP (unplanned) |
 
 ---
 
@@ -184,6 +194,12 @@ FRESCO-224, FRESCO-225, FRESCO-226 (Centro de Avisos)   — no edges, mutually i
    (INVEST-independent; FRESCO-226 reads user_profiles/get_filtered_recipes(),
    both already Finalizada — existing-data read is global noise, filtered
    per the heuristic, same treatment as FRESCO-55/56/58/82/84)
+
+FRESCO-228 (Suscripción | Checkout) ──┬──> FRESCO-230 (Reflejar estado real)
+(no inbound edges)                    ├──> FRESCO-231 (Gestionar/cancelar)
+                                       └──> FRESCO-232 (Saber si pago falló)
+   [Blocks, created + direction-verified this pass — 230/231/232 all read
+   or act on a subscription that only exists once 228's checkout ships]
 ```
 
 Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` soft/informational (`Relates`) — does NOT delay the §4 sort. No mockup gates (`🔒`) exist in this graph yet.
@@ -211,6 +227,9 @@ Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` so
 | FRESCO-69 (Biblioteca \| View full recipe detail) | FRESCO-88 (Recetas \| Abrir el detalle al tocar cualquier tarjeta de receta) | hard (`Blocks`) | FRESCO-88's DoD makes cards clickable app-wide, navigating to the SAME recipe-detail route FRESCO-69 built — nothing to navigate to before it exists. Zero links existed in Jira for FRESCO-88 (confirmed via `link list`); created and direction-verified this pass. |
 | FRESCO-59 (Inicio \| Mostrar últimas recetas añadidas) | FRESCO-88 (Recetas \| Abrir el detalle al tocar cualquier tarjeta de receta) | hard (`Blocks`) | FRESCO-88's DoD explicitly names "Inicio (menú de hoy y 'últimas recetas añadidas')" cards as one of the two surfaces to wire — the "últimas recetas" card FRESCO-59 built is that surface. Created and direction-verified this pass. |
 | FRESCO-11 (Calendario \| Reordenar el menú generado arrastrando platos entre espacios) | FRESCO-88 (Recetas \| Abrir el detalle al tocar cualquier tarjeta de receta) | hard (`Blocks`) | FRESCO-88's DoD explicitly requires Calendario cards to open the detail "sin romper arrastrar-y-soltar ni marcar cocinada/descartada" — the drag-and-drop interaction it must not break is what FRESCO-11 built. Created and direction-verified this pass. |
+| FRESCO-228 (Suscripción \| Actualizar a Pro desde el perfil) | FRESCO-230 (Suscripción \| Reflejar el estado real de mi suscripción) | hard (`Blocks`) | New this pass. Nothing to reflect state for — no webhook, no plan state, no subscription — until a real Stripe subscription exists, which only FRESCO-228's checkout creates. Created and direction-verified via `link list` (`outwardIssueKey: FRESCO-228`). |
+| FRESCO-228 (Suscripción \| Actualizar a Pro desde el perfil) | FRESCO-231 (Suscripción \| Gestionar o cancelar mi suscripción desde el perfil) | hard (`Blocks`) | New this pass. Nothing to manage or cancel until FRESCO-228 creates the subscription. Created and direction-verified. |
+| FRESCO-228 (Suscripción \| Actualizar a Pro desde el perfil) | FRESCO-232 (Suscripción \| Saber si mi pago falló) | hard (`Blocks`) | New this pass. A failed-payment retry cycle presupposes a subscription already exists to retry against — created by FRESCO-228. Created and direction-verified. |
 
 **Soft (`Relates`, informational only — never delays the sort):**
 
@@ -241,6 +260,8 @@ Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` so
 
 **New this pass (2026-08-17)**: EPIC-FRESCO-223 (Centro de Avisos) — FRESCO-224, FRESCO-225, FRESCO-226, seeded via `/product-management` Workflow B Phase 2B (Full Epic). Active dependency-discovery pass run per `add-feature.md` Step 7.5: `.context/PBI/epic-tree.md` + `business-data-map.md` checked, no entity-level or PRD-sequencing edge found among the three stories (mutually INVEST-independent) or to any other epic. FRESCO-226 reads `user_profiles` (dietary preferences) and the food-safety exclusion guarantee — both produced by EPIC-FRESCO-4/EPIC-FRESCO-8, already `Finalizada` — filtered out as global noise per the "does it disappear if we reorder sprints?" heuristic (identical treatment to EPIC-FRESCO-54/60/81's rows above). No Jira link created. Pairwise Scope-overlap check (Step 9) also run across the three stories: no duplicate bullets found.
 
+**New this pass (2026-08-17, second addition)**: EPIC-FRESCO-227 (Suscripción Pro (Stripe)) — FRESCO-228/230/231/232, seeded via `/product-management` Workflow B Phase 2B (Full Epic). Refinement of FRESCO-219, left untouched. Unlike EPIC-FRESCO-223 (mutually independent stories), this epic has a genuine intra-epic dependency: FRESCO-228 (checkout) is the reorder-test prerequisite for all three others — moving 230/231/232 before 228 breaks them (nothing to reflect/manage/retry without a subscription). Active dependency-discovery pass confirmed no additional edges: `.context/PBI/epic-tree.md` and `business-data-map.md` checked, no other epic's data is read or written by this one (it reads only `user_profiles.plan`, unchanged). Pairwise Scope-overlap check (Step 9) run across all 4 stories: no duplicate bullets found. **Correction applied this pass**: the three edges were initially created as `Relates` per the drafted procedure's literal fallback instruction, but `bun run jira:sync-link-types` (re-run at Phase 1.2 of this command) confirms `blocks → present` in this workspace — the same type every other hard edge in this document already uses. `Relates` is symmetric/informational and does not feed the Kahn sort below; using it here would have silently left FRESCO-228 unsequenced ahead of 230/231/232, defeating the stated purpose of linking them at all. The three links were deleted and recreated as `Blocks`, direction re-verified via `link list` (`outwardIssueKey: FRESCO-228` on all three) — consistent with the `Blocks`-not-`Relates` precedent already established in this document's own Link-type note below.
+
 ---
 
 ## 4. Execution sprints
@@ -249,14 +270,15 @@ Legend: `A ──> B` hard gate (B cannot start until A is Done). `A ··> B` so
 
 | Execution Sprint | Parallel-safe count | Story keys | Notes |
 |---|---|---|---|
-| Execution Sprint 1 | 14 | FRESCO-5, FRESCO-9, FRESCO-17, FRESCO-51, FRESCO-52, FRESCO-55, FRESCO-56, FRESCO-58, FRESCO-68, FRESCO-82, FRESCO-84, FRESCO-224, FRESCO-225, FRESCO-226 | No inbound hard edges — all fourteen unblocked today (FRESCO-82~FRESCO-84's link is soft `Relates`, doesn't delay either). Independent of each other; safe to build in parallel. Spans **Master Sprint 0** (5, 9), **Master Sprint 2** (17), **Post-MVP unplanned** (51, 52, 55, 56, 58, 68, 82, 84, 224, 225, 226). |
-| Execution Sprint 2 | 6 | FRESCO-7, FRESCO-19, FRESCO-53, FRESCO-57, FRESCO-59, FRESCO-65 | FRESCO-7 blocked by both FRESCO-5 AND FRESCO-9; FRESCO-19 blocked by FRESCO-17; FRESCO-53 blocked by FRESCO-51; FRESCO-57/59/65 blocked by FRESCO-9 only. No edges between these six — safe to build in parallel. Spans **Master Sprint 0** (7), **Master Sprint 2** (19), **Post-MVP unplanned** (53, 57, 59, 65). |
+| Execution Sprint 1 | 15 | FRESCO-5, FRESCO-9, FRESCO-17, FRESCO-51, FRESCO-52, FRESCO-55, FRESCO-56, FRESCO-58, FRESCO-68, FRESCO-82, FRESCO-84, FRESCO-224, FRESCO-225, FRESCO-226, FRESCO-228 | No inbound hard edges — all fifteen unblocked today (FRESCO-82~FRESCO-84's link is soft `Relates`, doesn't delay either). Independent of each other; safe to build in parallel. Spans **Master Sprint 0** (5, 9), **Master Sprint 2** (17), **Post-MVP unplanned** (51, 52, 55, 56, 58, 68, 82, 84, 224, 225, 226, 228). |
+| Execution Sprint 2 | 9 | FRESCO-7, FRESCO-19, FRESCO-53, FRESCO-57, FRESCO-59, FRESCO-65, FRESCO-230, FRESCO-231, FRESCO-232 | FRESCO-7 blocked by both FRESCO-5 AND FRESCO-9; FRESCO-19 blocked by FRESCO-17; FRESCO-53 blocked by FRESCO-51; FRESCO-57/59/65 blocked by FRESCO-9 only; FRESCO-230/231/232 blocked only by FRESCO-228 (new this pass). No edges between these nine — safe to build in parallel. Spans **Master Sprint 0** (7), **Master Sprint 2** (19), **Post-MVP unplanned** (53, 57, 59, 65, 230, 231, 232). |
 | Execution Sprint 3 | 9 | FRESCO-11, FRESCO-13, FRESCO-15, FRESCO-61, FRESCO-62, FRESCO-63, FRESCO-66, FRESCO-67, FRESCO-69 | FRESCO-11/13/15/61/62/63 blocked only by FRESCO-7; FRESCO-66/67 blocked only by FRESCO-65; FRESCO-69 blocked by FRESCO-65 AND FRESCO-68 (both resolve by end of Sprint 2/1). **FRESCO-69 was missing from this row in the prior version of this doc — a sort bug, fixed this pass, not a new edge.** Independent of each other; safe to build in parallel. Spans **Master Sprint 1** (11, 13, 15) and **Post-MVP unplanned** (61, 62, 63, 66, 67, 69). |
 | Execution Sprint 4 | 2 | FRESCO-22, FRESCO-88 | FRESCO-22 blocked only by FRESCO-15. FRESCO-88 blocked by FRESCO-69 (Sprint 3), FRESCO-59 (Sprint 2), FRESCO-11 (Sprint 3) — all three new edges this pass. No edge between 22 and 88 — safe to build in parallel. Spans **Master Sprint 1** (22) and **Post-MVP unplanned** (88). |
 
-- **Cycle warnings**: 0 (none detected — the graph is a layered DAG. FRESCO-88's 3 new edges add cross-chain fan-in but no back-edge: it merges the Master-Sprint-0→1 chain (via 69, via 11), the Panel-de-Inicio chain (via 59), landing in the last sprint alongside 22).
+- **Cycle warnings**: 0 (none detected — the graph is a layered DAG. FRESCO-88's 3 new edges add cross-chain fan-in but no back-edge: it merges the Master-Sprint-0→1 chain (via 69, via 11), the Panel-de-Inicio chain (via 59), landing in the last sprint alongside 22. FRESCO-228→230/231/232 is a simple one-level fan-out, no cycle risk.).
 - **Soft dependencies (relates)**: FRESCO-7 ~ FRESCO-23, FRESCO-9 ~ FRESCO-23, FRESCO-19 ~ FRESCO-20, FRESCO-82 ~ FRESCO-84 — see §3. None enforced in this sort.
-- **All-Done note**: every story in Execution Sprints 1–4 except FRESCO-61/62/63, FRESCO-65/66/67/68/69, and FRESCO-82/84/88/224/225/226 is already `Finalizada` in the tracker (the latter three groups are `Control de calidad`, one status short) — the sort reflects the full dependency graph regardless of status (per §1's rule that status is never frozen here), not "what's left to do". §6 Recipe B is the live query for that.
+- **Suscripción Pro (Stripe) result**: FRESCO-228 (checkout) lands in **Execution Sprint 1**, one full sprint ahead of FRESCO-230/231/232, which land in **Execution Sprint 2** — the `Blocks` correction (see §3 note above) is what makes this ordering real; had the links stayed `Relates`, all four would have landed in Sprint 1 together with no enforced sequencing.
+- **All-Done note**: every story in Execution Sprints 1–4 except FRESCO-61/62/63, FRESCO-65/66/67/68/69, FRESCO-82/84/88/224/225/226, and FRESCO-228/230/231/232 is already `Finalizada` in the tracker (the newest two groups are `Control de calidad`, one status short) — the sort reflects the full dependency graph regardless of status (per §1's rule that status is never frozen here), not "what's left to do". §6 Recipe B is the live query for that.
 
 ---
 
@@ -301,6 +323,8 @@ acli jira workitem search --jql "project = FRESCO AND issuetype in (Epic, Histor
 | FRESCO-57, FRESCO-59, FRESCO-61, FRESCO-62, FRESCO-63, FRESCO-65, FRESCO-66, FRESCO-67, FRESCO-68 | Same AC/Scope/OOS/Business-Rules-as-Jira-comments gap as the row above | Confirmed again for all 9 — same comment-fallback pattern, same reason (255-char `textfield` cap). The FRESCO-17/19/22 audit gap from the row above is still open; not resolved this pass either. |
 | FRESCO-82, FRESCO-84, FRESCO-88 | Same AC/Scope/OOS/Business-Rules-as-Jira-comments gap, not yet individually audited | New this pass — assumed same workspace-wide pattern as every other row here, not independently confirmed for these 3. |
 | FRESCO-224, FRESCO-225, FRESCO-226 | Same AC/Scope/OOS/Business-Rules-as-Jira-comments gap | Confirmed live this pass (2026-08-17): `acli workitem create --from-json` with ADF-object values on customfield_10176/10179/10180 failed with "El valor de la operación debe ser una cadena de texto" — same 255-char `textfield` constraint as every other row here. AC/Scope/OOS posted as `## <Label>` comments on all three; FRESCO-226 additionally carries a `## Business Rules Specification` comment (food-safety cross-reference to EPIC-FRESCO-8). Re-synced with `--include-comments` so `comments.md` materializes the content locally. |
+| FRESCO-228, FRESCO-230, FRESCO-231, FRESCO-232 | Same AC/Scope/OOS/Business-Rules-as-Jira-comments gap | Confirmed again this pass (2026-08-17, second addition): AC/Scope/OOS posted as `## <Label>` comments on all four; FRESCO-230 additionally carries a `## Business Rules Specification` comment (removes the manual "concierge validation" process once webhook-driven state ships). Re-synced with `--include-comments` so `comments.md` materializes the content locally on all four. |
+| FRESCO-228 | Payment-provider architecture choice undecided (Stripe Checkout vs. Payment Links vs. Elements) + the webhook-driven state machine shape (subscription table vs. `user_profiles` columns) | Flagged explicitly in the epic description as `/sprint-development` Stage 1 territory — may warrant an ADR (architectural, hard to reverse once the provider integration pattern is chosen). Not decided at seeding time. |
 | FRESCO-68 | "Crear receta propia" needs a NEW table (personal recipes) — schema not yet designed | User confirmed (AskUserQuestion, this pass) it stays fully separate from `recipes`/`get_filtered_recipes()`: no `dieta`/`alergenos`/food-safety fields needed, never read by `generate-meal-plan`. Schema design is `/sprint-development` Stage 1 territory, not decided here — flagged so whoever picks this up doesn't default to extending the founder-owned `recipes` table. |
 | FRESCO-65 | `/recipes` reframe from "recipes you've cooked" (`getUserRecipes()`) to full-catalog discovery is an inference from the mockup's own copy ("Inspiración basada en tu stock"), not a literal ask in the user's 4-bullet request | Stated explicitly in the epic description and this pass's session log for the user to correct if `/recipes` should stay historial-scoped instead. |
 | FRESCO-61, FRESCO-62, FRESCO-63 | No `master-design-plan.md` entry for `/calendar`'s new controls (prev/next, delete, generate) | The user supplied a screenshot mockup during this epic's seeding (week-nav + trash + "GENERAR" pill), but it was treated as inspiration for the AC/scope content only, per Rule 14's Live-UI-First doctrine — no formal screen-design-brief round-trip was run. Whoever picks up FRESCO-61/62/63 for implementation should build against the CURRENT live `/calendar` (existing `Button`/`Card` components, existing `NoMenuEmptyState`), not re-derive the mockup's exact visual style. |
@@ -308,6 +332,8 @@ acli jira workitem search --jql "project = FRESCO AND issuetype in (Epic, Histor
 **Edge-mapping TODO**: resolved again this pass (2026-08-08) — all 27 stories currently in the tracker (the 24 from the prior pass + FRESCO-82, FRESCO-84, FRESCO-88) are represented in §3. Two new epics found via a full epic re-scan (`acli jira workitem search --jql "project = FRESCO AND issuetype = Epic"`): EPIC-FRESCO-81 (Cuenta y Sesión, 2 stories, now in §2/§3) and EPIC-FRESCO-25 (Credenciales QA — no children, correctly excluded, see §2). FRESCO-17/19/22's AC/Scope/OOS-in-comments audit (row above) remains genuinely unresolved, carried forward as-is.
 
 **2026-08-17 pass**: EPIC-FRESCO-223 (Centro de Avisos) + FRESCO-224/225/226 added to §2/§3/§4/§6 via `/product-management` Workflow B Phase 2B. `bun run jira:sync-link-types` re-confirmed `dependencies → missing, fallback "relates" available` — same workspace state as every prior pass, no change. FRESCO-17/19/22's audit gap remains open, not touched this pass (out of scope for this feature add).
+
+**2026-08-17 pass, second addition**: EPIC-FRESCO-227 (Suscripción Pro (Stripe)) + FRESCO-228/230/231/232 added to §2/§3/§4/§6 via `/product-management` Workflow B Phase 2B. `bun run jira:sync-link-types` re-run: `blocks → present` (unlike `dependencies`, which remains absent) — this is the type used for the epic's 3 intra-epic hard edges (see §3 correction note). All 4 stories now represented in §3/§4. FRESCO-17/19/22's audit gap remains open, still out of scope for this feature add.
 
 ---
 
