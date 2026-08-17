@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
+import { fromPlanningSelection, toPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/client';
 
 export interface PreferencesFormProps {
@@ -52,6 +53,8 @@ const DAY_OPTIONS: { value: DiaSemana, label: string }[] = [
 
 const ALL_MEALS: TipoPlatoSlot[] = MEAL_OPTIONS.map(option => option.value);
 const ALL_DAYS: DiaSemana[] = DAY_OPTIONS.map(option => option.value);
+// FRESCO-199: fallback for a profile read before `planning_selection` existed.
+const DEFAULT_PLANNING_SELECTION = toPlanningSelection(ALL_DAYS, ALL_MEALS);
 
 /**
  * Order-independent equality — the toggle handlers below don't guarantee a
@@ -86,8 +89,14 @@ function isPreferencesDirty(current: OnboardingProfilePayload, initial: Onboardi
     || current.dieta_keto !== initial.dieta_keto
     || current.dieta_halal !== initial.dieta_halal
     || !sameValues(current.alergenos, initial.alergenos)
-    || !sameValues(current.planning_meals ?? ALL_MEALS, initial.planning_meals ?? ALL_MEALS)
-    || !sameValues(current.planning_days ?? ALL_DAYS, initial.planning_days ?? ALL_DAYS)
+    || !sameValues(
+      fromPlanningSelection(current.planning_selection ?? DEFAULT_PLANNING_SELECTION).meals,
+      fromPlanningSelection(initial.planning_selection ?? DEFAULT_PLANNING_SELECTION).meals,
+    )
+    || !sameValues(
+      fromPlanningSelection(current.planning_selection ?? DEFAULT_PLANNING_SELECTION).days,
+      fromPlanningSelection(initial.planning_selection ?? DEFAULT_PLANNING_SELECTION).days,
+    )
   );
 }
 
@@ -99,8 +108,8 @@ function isPreferencesDirty(current: OnboardingProfilePayload, initial: Onboardi
  * lock rule (AC-2 there). Save/error/success states mirror
  * `components/profile/nombre-form.tsx` exactly.
  *
- * The dietary flags, `alergenos`, and (FRESCO-153) `planning_meals`/
- * `planning_days` are editable here — household size, disliked ingredients,
+ * The dietary flags, `alergenos`, and (FRESCO-153, FRESCO-199) the meal/day
+ * planning selection are editable here — household size, disliked ingredients,
  * and favorite cuisines stay onboarding-only for this story, but their
  * current values are still carried in `preferences` state so a save
  * round-trips them unchanged through `upsertUserProfile`.
@@ -112,6 +121,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   const [saved, setSaved] = useState(false);
 
   const isDirty = isPreferencesDirty(preferences, initialPreferences);
+  const { days: selectedDays, meals: selectedMeals } = fromPlanningSelection(preferences.planning_selection ?? DEFAULT_PLANNING_SELECTION);
 
   function toggleDieta(key: DietaKey) {
     setSaved(false);
@@ -139,29 +149,26 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
     }));
   }
 
+  // FRESCO-199: these two toggles still edit the "whole week" flat view —
+  // every included day gets every included meal — since the granular
+  // per-day picker is a separate follow-up. `toPlanningSelection`/
+  // `fromPlanningSelection` are the boundary conversion to/from the DB's
+  // day->meals matrix.
   function toggleMeal(value: TipoPlatoSlot) {
     setSaved(false);
     setPreferences((prev) => {
-      const current = prev.planning_meals ?? ALL_MEALS;
-      return {
-        ...prev,
-        planning_meals: current.includes(value)
-          ? current.filter(v => v !== value)
-          : [...current, value],
-      };
+      const { days, meals } = fromPlanningSelection(prev.planning_selection ?? DEFAULT_PLANNING_SELECTION);
+      const nextMeals = meals.includes(value) ? meals.filter(v => v !== value) : [...meals, value];
+      return { ...prev, planning_selection: toPlanningSelection(days, nextMeals) };
     });
   }
 
   function toggleDay(value: DiaSemana) {
     setSaved(false);
     setPreferences((prev) => {
-      const current = prev.planning_days ?? ALL_DAYS;
-      return {
-        ...prev,
-        planning_days: current.includes(value)
-          ? current.filter(v => v !== value)
-          : [...current, value],
-      };
+      const { days, meals } = fromPlanningSelection(prev.planning_selection ?? DEFAULT_PLANNING_SELECTION);
+      const nextDays = days.includes(value) ? days.filter(v => v !== value) : [...days, value];
+      return { ...prev, planning_selection: toPlanningSelection(nextDays, meals) };
     });
   }
 
@@ -238,10 +245,10 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
             key={option.value}
             type="button"
             data-testid="preferencia_comida_option"
-            aria-pressed={(preferences.planning_meals ?? ALL_MEALS).includes(option.value)}
+            aria-pressed={selectedMeals.includes(option.value)}
             onClick={() => toggleMeal(option.value)}
           >
-            <Tag variant={(preferences.planning_meals ?? ALL_MEALS).includes(option.value) ? 'selected' : 'outline'}>
+            <Tag variant={selectedMeals.includes(option.value) ? 'selected' : 'outline'}>
               {option.label}
             </Tag>
           </button>
@@ -255,10 +262,10 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
             key={option.value}
             type="button"
             data-testid="preferencia_dia_option"
-            aria-pressed={(preferences.planning_days ?? ALL_DAYS).includes(option.value)}
+            aria-pressed={selectedDays.includes(option.value)}
             onClick={() => toggleDay(option.value)}
           >
-            <Tag variant={(preferences.planning_days ?? ALL_DAYS).includes(option.value) ? 'selected' : 'outline'}>
+            <Tag variant={selectedDays.includes(option.value) ? 'selected' : 'outline'}>
               {option.label}
             </Tag>
           </button>

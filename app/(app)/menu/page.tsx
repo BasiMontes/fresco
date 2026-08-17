@@ -16,6 +16,7 @@ import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
+import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -180,7 +181,14 @@ export default async function MenuPage() {
 
       <h2 className="sr-only">Menú de hoy por comida</h2>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {(dietaryPreferences?.planning_meals ?? (['desayuno', 'comida', 'cena'] as const)).map(slot => (
+        {/* FRESCO-199: `planning_selection` is per-day now — this row still
+            shows "today's meals" as a whole-week toggle (the union across
+            every included day) until a real per-day-aware /menu view ships;
+            the boundary-conversion phase kept the visible behavior the same
+            for the common case (a uniform selection across all days). */}
+        {(dietaryPreferences?.planning_selection
+          ? fromPlanningSelection(dietaryPreferences.planning_selection).meals
+          : (['desayuno', 'comida', 'cena'] as const)).map(slot => (
           <div key={slot} className="flex flex-col">
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>
             {hoy[slot]

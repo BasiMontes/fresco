@@ -9,6 +9,7 @@ import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getUserDietaryPreferences, getUserPlan } from '@/lib/api/user-profile';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
+import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 
 const ISO_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
@@ -116,14 +117,18 @@ export default async function CalendarPage({
         className="mt-4"
       />
 
+      {/* FRESCO-199: `planning_selection` is per-day now — `CalendarGrid`
+          still takes a whole-week days/meals pair (the union across every
+          included day) until it's updated to render per-slot exclusions
+          from the real `meal_plan_recipes` rows instead. */}
       <div className="mt-6">
         <CalendarGrid
           initialMenu={plan.menu}
           slotIds={plan.slotIds}
           initialEstados={plan.estados}
           userPlan={userPlan}
-          planningDays={dietaryPreferences?.planning_days}
-          planningMeals={dietaryPreferences?.planning_meals}
+          planningDays={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).days : undefined}
+          planningMeals={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).meals : undefined}
         />
       </div>
     </div>
