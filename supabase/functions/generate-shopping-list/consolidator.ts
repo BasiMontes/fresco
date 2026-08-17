@@ -278,9 +278,17 @@ export function consolidateIngredientes(
   // the same BASE_QUANTITIES table and can never actually diverge — see
   // consolidator.test.ts).
   const usosMap = new Map<string, { receta: string; dia: string }[]>()
+  // FRESCO-196: `key` below is accent-stripped on purpose (it's the lookup
+  // key into BASE_QUANTITIES/INGREDIENT_AISLE/PRICE_OVERRIDE), but it must
+  // never be shown to the user — keep the first accented `raw.nombre` seen
+  // per key so the final list displays "brócoli", not "brocoli".
+  const displayNombreMap = new Map<string, string>()
 
   for (const raw of rawIngredientes) {
     const key = normalizeNombre(raw.nombre)
+    if (!displayNombreMap.has(key)) {
+      displayNombreMap.set(key, raw.nombre.trim())
+    }
     const base = BASE_QUANTITIES[key]
     const factor = raw.raciones_usuario / raw.raciones_receta
 
@@ -313,10 +321,10 @@ export function consolidateIngredientes(
     }
   }
 
-  return Array.from(map.entries()).map(([nombre, { cantidad, unidad }]) => ({
-    nombre,
+  return Array.from(map.entries()).map(([key, { cantidad, unidad }]) => ({
+    nombre: displayNombreMap.get(key) ?? key,
     cantidad,
     unidad,
-    usos: usosMap.get(nombre) ?? [],
+    usos: usosMap.get(key) ?? [],
   }))
 }

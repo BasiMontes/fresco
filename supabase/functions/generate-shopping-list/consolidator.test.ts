@@ -87,10 +87,13 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       makeRaw({ nombre: 'tomate', receta_id: 'r2' }),
     ])
 
-    // Both normalize to the same key 'tomate' — must merge, not produce two lines.
+    // Both normalize to the same key 'tomate' — must merge, not produce two
+    // lines. Display nombre keeps the FIRST raw spelling seen ('Tomate'),
+    // not the normalized key — FRESCO-196: the normalized key is a lookup
+    // key only, never what the user sees.
     expect(result).toHaveLength(1)
     expect(result[0]).toEqual({
-      nombre: 'tomate',
+      nombre: 'Tomate',
       cantidad: 600,
       unidad: 'g',
       // Both raws share the default receta_nombre/dia — dedup collapses to one uso.
@@ -111,6 +114,17 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       { receta: 'Sofrito base', dia: 'lunes' },
       { receta: 'Wok de verduras', dia: 'jueves' },
     ])
+  })
+
+  test('FRESCO-196: displays the accented ingredient name, not the accent-stripped lookup key', () => {
+    const result = consolidateIngredientes([
+      makeRaw({ nombre: 'brócoli', receta_id: 'r1' }),
+      makeRaw({ nombre: 'limón', receta_id: 'r2' }),
+      makeRaw({ nombre: 'champiñones', receta_id: 'r3' }),
+    ])
+
+    const nombres = result.map(r => r.nombre)
+    expect(nombres).toEqual(['brócoli', 'limón', 'champiñones'])
   })
 
   // canSumUnits/logger.warn ("Unidades incompatibles") only fire when the same
