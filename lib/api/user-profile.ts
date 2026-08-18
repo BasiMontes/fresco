@@ -378,3 +378,73 @@ export async function markWelcomeNoticeSeen(
     throw new UserProfileError(`No se pudo guardar el perfil: ${error.message}`);
   }
 }
+
+/**
+ * Whether the Centro de Avisos main-routes notice (FRESCO-225) should be
+ * shown to the CURRENTLY authenticated user. Same conservative-default
+ * pattern as `getShouldShowWelcomeNotice`: a missing profile row (onboarding
+ * not completed) is not an error — it just means the notice stays hidden,
+ * same as a row that already has it marked dismissed.
+ */
+export async function getShouldShowRoutesNotice(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<boolean> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('aviso_rutas_descartado')
+    .eq('id', resolvedUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil: ${error.message}`);
+  }
+
+  return data !== null && !data.aviso_rutas_descartado;
+}
+
+/**
+ * Marks the Centro de Avisos main-routes notice (FRESCO-225) as dismissed
+ * for the CURRENTLY authenticated user, so it never shows again. Public
+ * method — fails fast (throws) rather than swallowing errors, per
+ * `references/error-handling.md`, mirroring `markWelcomeNoticeSeen`. Called
+ * from the client (`RoutesNotice`'s dismiss button) via a browser Supabase
+ * client, same pattern `NombreForm` already uses for `updateNombre`.
+ */
+export async function markRoutesNoticeDismissed(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<void> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para guardar el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { error } = await client
+    .from('user_profiles')
+    .update({ aviso_rutas_descartado: true })
+    .eq('id', resolvedUserId);
+
+  if (error) {
+    throw new UserProfileError(`No se pudo guardar el perfil: ${error.message}`);
+  }
+}

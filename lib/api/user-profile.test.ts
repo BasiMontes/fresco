@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getShouldShowWelcomeNotice, getUserNombre, getUserPlan, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
+import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
   num_personas: 3,
@@ -419,5 +419,124 @@ describe('markWelcomeNoticeSeen', () => {
     const { client } = createMarkWelcomeNoticeSeenMockClient({ userId: 'user-123', updateErrorMessage: 'constraint violation' });
 
     await expectRejection(markWelcomeNoticeSeen(client));
+  });
+});
+
+/** Minimal mock client exposing `.select().eq().maybeSingle()` — all `getShouldShowRoutesNotice()` calls. */
+function createRoutesNoticeMockClient(options: { userId?: string, row?: { aviso_rutas_descartado: boolean } | null, dbErrorMessage?: string } = {}) {
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: options.dbErrorMessage ? null : (options.row ?? null),
+            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+          }),
+        }),
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database> };
+}
+
+describe('getShouldShowRoutesNotice', () => {
+  test('returns true when a profile row exists and the notice is not dismissed', async () => {
+    const { client } = createRoutesNoticeMockClient({ userId: 'user-123', row: { aviso_rutas_descartado: false } });
+
+    const result = await getShouldShowRoutesNotice(client);
+
+    expect(result).toBe(true);
+  });
+
+  test('returns false when the notice was already dismissed', async () => {
+    const { client } = createRoutesNoticeMockClient({ userId: 'user-123', row: { aviso_rutas_descartado: true } });
+
+    const result = await getShouldShowRoutesNotice(client);
+
+    expect(result).toBe(false);
+  });
+
+  test('returns false when no profile row exists yet (onboarding not completed)', async () => {
+    const { client } = createRoutesNoticeMockClient({ userId: 'user-123', row: null });
+
+    const result = await getShouldShowRoutesNotice(client);
+
+    expect(result).toBe(false);
+  });
+
+  test('throws UserProfileError on a real database error', async () => {
+    const { client } = createRoutesNoticeMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(getShouldShowRoutesNotice(client));
+  });
+
+  test('throws UserProfileError when there is no authenticated session', async () => {
+    const { client } = createRoutesNoticeMockClient({});
+
+    await expectRejection(getShouldShowRoutesNotice(client));
+  });
+});
+
+/** Minimal mock client exposing `.update().eq()` — all `markRoutesNoticeDismissed()` calls. */
+function createMarkRoutesNoticeDismissedMockClient(options: { userId?: string, updateErrorMessage?: string } = {}) {
+  const updateCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      update: (payload: unknown) => ({
+        eq: async () => {
+          updateCalls.push(payload);
+          return { error: options.updateErrorMessage ? { message: options.updateErrorMessage } : null };
+        },
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, updateCalls };
+}
+
+describe('markRoutesNoticeDismissed', () => {
+  test('marks the notice as dismissed for the authenticated user', async () => {
+    const { client, updateCalls } = createMarkRoutesNoticeDismissedMockClient({ userId: 'user-123' });
+
+    await markRoutesNoticeDismissed(client);
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]).toEqual({ aviso_rutas_descartado: true });
+  });
+
+  test('with a userId argument, skips the internal auth.getUser() call', async () => {
+    const { client, updateCalls } = createMarkRoutesNoticeDismissedMockClient({});
+
+    await markRoutesNoticeDismissed(client, 'user-456');
+
+    expect(updateCalls).toHaveLength(1);
+  });
+
+  test('throws UserProfileError when there is no authenticated session', async () => {
+    const { client } = createMarkRoutesNoticeDismissedMockClient({});
+
+    await expectRejection(markRoutesNoticeDismissed(client));
+  });
+
+  test('throws UserProfileError when the update itself fails', async () => {
+    const { client } = createMarkRoutesNoticeDismissedMockClient({ userId: 'user-123', updateErrorMessage: 'constraint violation' });
+
+    await expectRejection(markRoutesNoticeDismissed(client));
   });
 });
