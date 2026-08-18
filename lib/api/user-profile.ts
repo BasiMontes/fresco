@@ -310,3 +310,71 @@ export const getUserNombre = cache(async (
 
   return data?.nombre ?? null;
 });
+
+/**
+ * Whether the Centro de Avisos welcome notice (FRESCO-224) should be shown to
+ * the CURRENTLY authenticated user. Same conservative-default pattern as
+ * `getUserPlan`/`getUserNombre`: a missing profile row (onboarding not
+ * completed) is not an error — it just means the notice stays hidden, same as
+ * a row that already has it marked seen.
+ */
+export async function getShouldShowWelcomeNotice(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<boolean> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('aviso_bienvenida_visto')
+    .eq('id', resolvedUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil: ${error.message}`);
+  }
+
+  return data !== null && !data.aviso_bienvenida_visto;
+}
+
+/**
+ * Marks the Centro de Avisos welcome notice (FRESCO-224) as seen for the
+ * CURRENTLY authenticated user, so it never shows again. Public method —
+ * fails fast (throws) rather than swallowing errors, per
+ * `references/error-handling.md`, mirroring `updateNombre`.
+ */
+export async function markWelcomeNoticeSeen(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<void> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para guardar el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { error } = await client
+    .from('user_profiles')
+    .update({ aviso_bienvenida_visto: true })
+    .eq('id', resolvedUserId);
+
+  if (error) {
+    throw new UserProfileError(`No se pudo guardar el perfil: ${error.message}`);
+  }
+}

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getUserNombre, getUserPlan, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
+import { getShouldShowWelcomeNotice, getUserNombre, getUserPlan, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
   num_personas: 3,
@@ -300,5 +300,124 @@ describe('getUserNombre', () => {
     expect(result).toBe('Laura');
     expect(getUserCalls).toHaveLength(0);
     expect(eqCalls).toEqual(['user-456']);
+  });
+});
+
+/** Minimal mock client exposing `.select().eq().maybeSingle()` — all `getShouldShowWelcomeNotice()` calls. */
+function createWelcomeNoticeMockClient(options: { userId?: string, row?: { aviso_bienvenida_visto: boolean } | null, dbErrorMessage?: string } = {}) {
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: options.dbErrorMessage ? null : (options.row ?? null),
+            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+          }),
+        }),
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database> };
+}
+
+describe('getShouldShowWelcomeNotice', () => {
+  test('returns true when a profile row exists and the notice is unseen', async () => {
+    const { client } = createWelcomeNoticeMockClient({ userId: 'user-123', row: { aviso_bienvenida_visto: false } });
+
+    const result = await getShouldShowWelcomeNotice(client);
+
+    expect(result).toBe(true);
+  });
+
+  test('returns false when the notice was already seen', async () => {
+    const { client } = createWelcomeNoticeMockClient({ userId: 'user-123', row: { aviso_bienvenida_visto: true } });
+
+    const result = await getShouldShowWelcomeNotice(client);
+
+    expect(result).toBe(false);
+  });
+
+  test('returns false when no profile row exists yet (onboarding not completed)', async () => {
+    const { client } = createWelcomeNoticeMockClient({ userId: 'user-123', row: null });
+
+    const result = await getShouldShowWelcomeNotice(client);
+
+    expect(result).toBe(false);
+  });
+
+  test('throws UserProfileError on a real database error', async () => {
+    const { client } = createWelcomeNoticeMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(getShouldShowWelcomeNotice(client));
+  });
+
+  test('throws UserProfileError when there is no authenticated session', async () => {
+    const { client } = createWelcomeNoticeMockClient({});
+
+    await expectRejection(getShouldShowWelcomeNotice(client));
+  });
+});
+
+/** Minimal mock client exposing `.update().eq()` — all `markWelcomeNoticeSeen()` calls. */
+function createMarkWelcomeNoticeSeenMockClient(options: { userId?: string, updateErrorMessage?: string } = {}) {
+  const updateCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      update: (payload: unknown) => ({
+        eq: async () => {
+          updateCalls.push(payload);
+          return { error: options.updateErrorMessage ? { message: options.updateErrorMessage } : null };
+        },
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, updateCalls };
+}
+
+describe('markWelcomeNoticeSeen', () => {
+  test('marks the notice as seen for the authenticated user', async () => {
+    const { client, updateCalls } = createMarkWelcomeNoticeSeenMockClient({ userId: 'user-123' });
+
+    await markWelcomeNoticeSeen(client);
+
+    expect(updateCalls).toHaveLength(1);
+    expect(updateCalls[0]).toEqual({ aviso_bienvenida_visto: true });
+  });
+
+  test('with a userId argument, skips the internal auth.getUser() call', async () => {
+    const { client, updateCalls } = createMarkWelcomeNoticeSeenMockClient({});
+
+    await markWelcomeNoticeSeen(client, 'user-456');
+
+    expect(updateCalls).toHaveLength(1);
+  });
+
+  test('throws UserProfileError when there is no authenticated session', async () => {
+    const { client } = createMarkWelcomeNoticeSeenMockClient({});
+
+    await expectRejection(markWelcomeNoticeSeen(client));
+  });
+
+  test('throws UserProfileError when the update itself fails', async () => {
+    const { client } = createMarkWelcomeNoticeSeenMockClient({ userId: 'user-123', updateErrorMessage: 'constraint violation' });
+
+    await expectRejection(markWelcomeNoticeSeen(client));
   });
 });

@@ -68,4 +68,6 @@ export interface UserProfile {
   planning_selection: Record<DiaSemana, TipoPlatoSlot[]>
   /** Onboarding (FRESCO-137). Cooking experience level ("cocinillas"). Nullable — used to adjust recipe complexity/time. */
   nivel_experiencia: NivelExperienciaCulinaria | null
+  /** Centro de Avisos welcome notice (FRESCO-224). Whether the one-time welcome notice has already been shown. */
+  aviso_bienvenida_visto: boolean
 }
