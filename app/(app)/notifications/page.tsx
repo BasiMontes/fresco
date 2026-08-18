@@ -1,11 +1,17 @@
 import { ArrowLeft, Bell, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
+import { RecommendedRecipesNotice } from '@/components/notifications/recommended-recipes-notice';
 import { RoutesNotice } from '@/components/notifications/routes-notice';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { getFavoriteRecipeIds } from '@/lib/api/favorites';
+import { getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
+
+/** FRESCO-226 AC's "número acotado" (Scope: "ej. 3"). */
+const RECOMMENDED_RECIPES_LIMIT = 3;
 
 /**
  * FRESCO-72 — mockup showed "Productos por caducar" (pantry-expiration
@@ -13,9 +19,9 @@ import { createClient } from '@/lib/supabase/server';
  * that from (confirmed with the user before building — real notification
  * types are still to be defined, tracked as future work, not invented here).
  * No general notification-generating system exists anywhere in the app yet —
- * `showWelcome` (FRESCO-224) and `showRoutes` (FRESCO-225) are the first
- * exceptions. Wire further real notification types/data once that scope is
- * defined.
+ * `showWelcome` (FRESCO-224), `showRoutes` (FRESCO-225), and
+ * `recommendedRecipes` (FRESCO-226) are the first exceptions. Wire further
+ * real notification types/data once that scope is defined.
  */
 export default async function NotificationsPage() {
   const supabase = await createClient();
@@ -24,7 +30,7 @@ export default async function NotificationsPage() {
   // Same conservative-default judgment call as `/profile`'s reads: a real
   // read failure hides the notice rather than crashing the page — worst case
   // it shows once more on a later visit, never breaks navigation.
-  const [showWelcome, showRoutes] = await Promise.all([
+  const [showWelcome, showRoutes, recommendedRecipes, favoriteRecipeIds] = await Promise.all([
     getShouldShowWelcomeNotice(supabase, user?.id).catch((error) => {
       console.error('[/notifications] getShouldShowWelcomeNotice failed, defaulting to hidden', error);
       return false;
@@ -32,6 +38,14 @@ export default async function NotificationsPage() {
     getShouldShowRoutesNotice(supabase, user?.id).catch((error) => {
       console.error('[/notifications] getShouldShowRoutesNotice failed, defaulting to hidden', error);
       return false;
+    }),
+    getLatestAvailableRecipes(supabase, user?.id, RECOMMENDED_RECIPES_LIMIT).catch((error) => {
+      console.error('[/notifications] getLatestAvailableRecipes failed, defaulting to hidden', error);
+      return [];
+    }),
+    getFavoriteRecipeIds(supabase, user?.id).catch((error) => {
+      console.error('[/notifications] getFavoriteRecipeIds failed, defaulting to none favorited', error);
+      return new Set<string>();
     }),
   ]);
 
@@ -74,7 +88,9 @@ export default async function NotificationsPage() {
 
       {showRoutes && <RoutesNotice />}
 
-      {!showWelcome && !showRoutes && (
+      <RecommendedRecipesNotice recipes={recommendedRecipes} favoriteRecipeIds={favoriteRecipeIds} />
+
+      {!showWelcome && !showRoutes && recommendedRecipes.length === 0 && (
         <EmptyState
           className="mt-6"
           data-testid="notifications_empty_state"

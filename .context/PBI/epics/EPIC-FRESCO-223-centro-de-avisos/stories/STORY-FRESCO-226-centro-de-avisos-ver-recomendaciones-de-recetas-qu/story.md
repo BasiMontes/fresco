@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-226](https://basiliomontescastano.atlassian.net/browse/FRESCO-226)
 **Epic:** [FRESCO-223](https://basiliomontescastano.atlassian.net/browse/FRESCO-223) (Centro de Avisos)
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
