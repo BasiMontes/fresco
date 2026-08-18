@@ -3,7 +3,7 @@ import { AyudaSection } from '@/components/profile/ayuda-section';
 import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
-import { Button } from '@/components/ui/button';
+import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { getUserDietaryPreferences, getUserNombre, getUserPlan } from '@/lib/api/user-profile';
@@ -19,14 +19,15 @@ import { createClient } from '@/lib/supabase/server';
  * de peligro" (`DangerZone`, FRESCO-220) scoped to permanent deletion only —
  * the one genuinely destructive action.
  *
- * The upgrade CTA stays a disabled "Próximamente" rather than a live link:
- * self-serve payment via Stripe is now in scope (EPIC-FRESCO-227, reversing
- * the earlier manual-concierge-collection posture — see
- * `.context/business/business-model.md` Revenue Streams), but this button
- * still needs to be wired to the real checkout flow once STORY-FRESCO-228
- * ships. A working-looking button with nowhere real to go would be worse than an
- * honest "not yet" — that same judgment call is why the Ayuda section's 3
- * rows (`Configuración`/`FAQ`/`Privacidad`) are now real modals
+ * The upgrade CTA (`UpgradeToProButton`, STORY-FRESCO-228) is now a live
+ * Stripe Checkout redirect — self-serve payment, reversing the earlier
+ * manual-concierge-collection posture (see `.context/business/business-model.md`
+ * Revenue Streams). Architecture is ADR-0007 (`.context/ADR/`): Stripe
+ * Checkout hosted, `subscription` mode, `POST /api/stripe/checkout` creates
+ * the session and this page only ever redirects to it — `plan` itself is
+ * written exclusively by the webhook (`POST /api/stripe/webhook`), never by
+ * this page or the client. That same "don't fake it" judgment call is why
+ * the Ayuda section's 3 rows (`Configuración`/`FAQ`/`Privacidad`) are now real modals
  * (`AyudaSection`) instead of the inert "Próximamente" rows they used to be:
  * `Privacidad` reuses the existing `LegalModal` as-is, and `Configuración`/
  * `FAQ` follow that same modal pattern rather than becoming full page routes.
@@ -167,9 +168,7 @@ export default async function ProfilePage() {
             más lo uses, menos tienes que pensar.
           </CardContent>
           <div className="mt-3">
-            <Button variant="action" disabled>
-              Próximamente
-            </Button>
+            <UpgradeToProButton />
           </div>
         </Card>
       )}
