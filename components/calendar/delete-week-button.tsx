@@ -58,7 +58,7 @@ export function DeleteWeekButton({ mealPlanId }: { mealPlanId: string }) {
         disabled={pending}
         onClick={() => setConfirmOpen(true)}
       >
-        <Trash2 className="size-[22px] text-error" />
+        <Trash2 className="size-6 text-error" />
       </Button>
       {error && (
         <p

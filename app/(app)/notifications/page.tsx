@@ -62,7 +62,7 @@ export default async function NotificationsPage() {
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center gap-3">
         <Link href="/menu" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Volver" data-testid="notifications_back_link">
-          <ArrowLeft className="size-[22px]" />
+          <ArrowLeft className="size-6" />
         </Link>
         <div>
           <h1 className="text-h2">Centro de Avisos</h1>

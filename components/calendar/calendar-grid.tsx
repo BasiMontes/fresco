@@ -618,7 +618,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
                     // now arbitrate scroll-vs-drag intent instead.
                     className="absolute left-2 top-2 cursor-grab disabled:cursor-not-allowed"
                   >
-                    <GripVertical className="size-[22px]" />
+                    <GripVertical className="size-6" />
                   </Button>
                 )}
               </div>
