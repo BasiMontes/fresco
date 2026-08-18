@@ -83,11 +83,11 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
 
   return (
     <div data-testid="sidebarAccount" className="mt-auto border-t border-background/10 pt-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <div
           data-testid="user_avatar"
           aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
+          className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
         >
           {initial || <UserIcon className="size-4" />}
         </div>
@@ -110,7 +110,7 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
           disabled={isLoggingOut}
           aria-busy={isLoggingOut}
           onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
-          className="bg-background/10 text-background hover:bg-background/20"
+          className="mt-0.5 shrink-0 bg-background/10 text-background hover:bg-background/20"
         >
           <LogOut className="size-6" aria-hidden="true" />
         </Button>
