@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-import { resolveProUpdateFromSession, stripe } from '@/lib/stripe';
+import { resolveCancellationCustomerId, resolveProUpdateFromSession, resolveRenewalUpdate, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
 /**
@@ -15,11 +15,20 @@ import { createServiceClient } from '@/lib/supabase/service';
  * signature against the exact raw bytes Stripe sent; a re-serialized JSON
  * body would fail verification.
  *
- * Only `checkout.session.completed` is handled today — every other event
- * type is a 200 no-op. FRESCO-230 (reflect ongoing subscription status),
- * FRESCO-231 (cancel/manage), and FRESCO-232 (failed payment) add their own
- * `case`s to this same handler later; they reuse this one endpoint rather
- * than each registering a separate webhook.
+ * Handles `checkout.session.completed` (initial purchase), `customer.
+ * subscription.updated` (renewal — keeps `plan: 'pro'` and refreshes
+ * `plan_expires_at`), and `customer.subscription.deleted` (the subscription's
+ * paid period actually ended — downgrades to `plan: 'free'`). Every other
+ * event type is a 200 no-op. FRESCO-231 (cancel/manage) and FRESCO-232
+ * (failed payment) add their own `case`s to this same handler later; they
+ * reuse this one endpoint rather than each registering a separate webhook.
+ *
+ * A user *requesting* cancellation is NOT handled specially: Stripe fires
+ * `customer.subscription.updated` with `status` still `'active'` and
+ * `cancel_at_period_end: true` in that case, which the renewal branch below
+ * already treats as a normal active-subscription update (keeps Pro) — per
+ * this story's AC, cancellation should only take effect once the paid period
+ * actually ends, which is `customer.subscription.deleted`.
  *
  * Once the signature verifies, a downstream failure (e.g. the Supabase
  * write) is logged with the Stripe event id and this still returns 200 —
@@ -47,38 +56,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Firma inválida.' }, { status: 400 });
   }
 
-  if (event.type !== 'checkout.session.completed') {
-    return NextResponse.json({ received: true });
-  }
-
   try {
-    const session = event.data.object;
-
-    if (!session.subscription) {
-      throw new Error('checkout.session.completed without a subscription id.');
-    }
-
-    const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
-    if (!priceId) {
-      throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
-    }
-    const update = resolveProUpdateFromSession(session, subscription, priceId);
-
-    const supabase = createServiceClient();
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({
-        plan: 'pro',
-        stripe_customer_id: update.stripeCustomerId,
-        stripe_subscription_id: update.stripeSubscriptionId,
-        plan_expires_at: update.planExpiresAt,
-      })
-      .eq('id', update.userId);
-
-    if (error) {
-      throw error;
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object);
+        break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object, event.id);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object, event.id);
+        break;
+      default:
+        // No-op — every event type this handler doesn't react to yet.
+        break;
     }
   }
   catch (error) {
@@ -88,4 +79,96 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ received: true });
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  if (!session.subscription) {
+    throw new Error('checkout.session.completed without a subscription id.');
+  }
+
+  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
+  if (!priceId) {
+    throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
+  }
+  const update = resolveProUpdateFromSession(session, subscription, priceId);
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({
+      plan: 'pro',
+      stripe_customer_id: update.stripeCustomerId,
+      stripe_subscription_id: update.stripeSubscriptionId,
+      plan_expires_at: update.planExpiresAt,
+    })
+    .eq('id', update.userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription, eventId: string): Promise<void> {
+  if (subscription.status !== 'active') {
+    // Not a renewal-shaped update (e.g. `past_due`, `unpaid`, `canceled`) —
+    // this story only reacts to the active-renewal case; other statuses are
+    // out of scope here (FRESCO-232 covers failed payments).
+    return;
+  }
+
+  const update = resolveRenewalUpdate(subscription);
+  const supabase = createServiceClient();
+  const { data: profile, error: lookupError } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('stripe_customer_id', update.stripeCustomerId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw lookupError;
+  }
+
+  if (!profile) {
+    console.error(`[/api/stripe/webhook] no user_profiles row for Stripe customer ${update.stripeCustomerId} (event ${eventId})`);
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('user_profiles')
+    .update({ plan: 'pro', plan_expires_at: update.planExpiresAt })
+    .eq('id', profile.id);
+
+  if (updateError) {
+    throw updateError;
+  }
+}
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription, eventId: string): Promise<void> {
+  const stripeCustomerId = resolveCancellationCustomerId(subscription);
+  const supabase = createServiceClient();
+  const { data: profile, error: lookupError } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('stripe_customer_id', stripeCustomerId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw lookupError;
+  }
+
+  if (!profile) {
+    console.error(`[/api/stripe/webhook] no user_profiles row for Stripe customer ${stripeCustomerId} (event ${eventId})`);
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('user_profiles')
+    .update({ plan: 'free' })
+    .eq('id', profile.id);
+
+  if (updateError) {
+    throw updateError;
+  }
 }
