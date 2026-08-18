@@ -1,7 +1,7 @@
 import type { Recipe } from '@schemas';
 import { UtensilsCrossed } from 'lucide-react';
 import Link from 'next/link';
-import { RecipeCard } from '@/components/recipe/recipe-card';
+import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 /**
@@ -14,8 +14,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  * every recipe) — the AC's "sin preferencias guardadas -> no notice" case
  * falls out of the existing filter for free, same "renders nothing when
  * there's nothing to show" pattern as `LatestRecipesSection`.
+ *
+ * `FavoriteRecipeCard` (not plain `RecipeCard`) — `RecipeCard`'s heart
+ * button always renders regardless of whether a working toggle is wired up,
+ * so a bare `RecipeCard` here would ship a heart icon that looks
+ * interactive but silently does nothing. Same real-toggle pattern as
+ * `LatestRecipesSection`.
  */
-export function RecommendedRecipesNotice({ recipes }: { recipes: Recipe[] }) {
+export function RecommendedRecipesNotice({ recipes, favoriteRecipeIds }: { recipes: Recipe[], favoriteRecipeIds: Set<string> }) {
   if (recipes.length === 0) {
     return null;
   }
@@ -31,7 +37,10 @@ export function RecommendedRecipesNotice({ recipes }: { recipes: Recipe[] }) {
       <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {recipes.map(recipe => (
           <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-            <RecipeCard recipe={recipe} />
+            <FavoriteRecipeCard
+              recipe={recipe}
+              initialIsFavorite={favoriteRecipeIds.has(recipe.id)}
+            />
           </Link>
         ))}
       </CardContent>

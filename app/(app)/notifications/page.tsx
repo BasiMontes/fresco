@@ -5,6 +5,7 @@ import { RoutesNotice } from '@/components/notifications/routes-notice';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
@@ -29,7 +30,7 @@ export default async function NotificationsPage() {
   // Same conservative-default judgment call as `/profile`'s reads: a real
   // read failure hides the notice rather than crashing the page — worst case
   // it shows once more on a later visit, never breaks navigation.
-  const [showWelcome, showRoutes, recommendedRecipes] = await Promise.all([
+  const [showWelcome, showRoutes, recommendedRecipes, favoriteRecipeIds] = await Promise.all([
     getShouldShowWelcomeNotice(supabase, user?.id).catch((error) => {
       console.error('[/notifications] getShouldShowWelcomeNotice failed, defaulting to hidden', error);
       return false;
@@ -41,6 +42,10 @@ export default async function NotificationsPage() {
     getLatestAvailableRecipes(supabase, user?.id, RECOMMENDED_RECIPES_LIMIT).catch((error) => {
       console.error('[/notifications] getLatestAvailableRecipes failed, defaulting to hidden', error);
       return [];
+    }),
+    getFavoriteRecipeIds(supabase, user?.id).catch((error) => {
+      console.error('[/notifications] getFavoriteRecipeIds failed, defaulting to none favorited', error);
+      return new Set<string>();
     }),
   ]);
 
@@ -83,7 +88,7 @@ export default async function NotificationsPage() {
 
       {showRoutes && <RoutesNotice />}
 
-      <RecommendedRecipesNotice recipes={recommendedRecipes} />
+      <RecommendedRecipesNotice recipes={recommendedRecipes} favoriteRecipeIds={favoriteRecipeIds} />
 
       {!showWelcome && !showRoutes && recommendedRecipes.length === 0 && (
         <EmptyState
