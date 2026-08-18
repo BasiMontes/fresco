@@ -335,6 +335,8 @@ export type Database = {
           planning_selection: Json
           presupuesto_semana_euros: number | null
           sexo: Database["public"]["Enums"]["sexo_usuario"] | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           tiempo_max_finde_min: number
           tiempo_max_semana_min: number
           updated_at: string
@@ -376,6 +378,8 @@ export type Database = {
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           tiempo_max_finde_min?: number
           tiempo_max_semana_min?: number
           updated_at?: string
@@ -417,6 +421,8 @@ export type Database = {
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           tiempo_max_finde_min?: number
           tiempo_max_semana_min?: number
           updated_at?: string

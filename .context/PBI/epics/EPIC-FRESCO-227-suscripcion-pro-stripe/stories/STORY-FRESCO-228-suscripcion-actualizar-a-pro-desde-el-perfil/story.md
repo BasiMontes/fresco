@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-228](https://basiliomontescastano.atlassian.net/browse/FRESCO-228)
 **Epic:** [FRESCO-227](https://basiliomontescastano.atlassian.net/browse/FRESCO-227) (Suscripción Pro (Stripe))
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** WIP
 **Priority:** High
 **Story Points:** -
 
@@ -23,8 +23,8 @@
 
 ### Historias (3)
 
-- [FRESCO-230](https://basiliomontescastano.atlassian.net/browse/FRESCO-230): Suscripción | Reflejar el estado real de mi suscripción _(Control de calidad)_
-- [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231): Suscripción | Gestionar o cancelar mi suscripción desde el perfil _(Control de calidad)_
+- [FRESCO-230](https://basiliomontescastano.atlassian.net/browse/FRESCO-230): Suscripción | Reflejar el estado real de mi suscripción _(Rechazos)_
+- [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231): Suscripción | Gestionar o cancelar mi suscripción desde el perfil _(Rechazos)_
 - [FRESCO-232](https://basiliomontescastano.atlassian.net/browse/FRESCO-232): Suscripción | Saber si mi pago falló _(Control de calidad)_
 
 ---
@@ -32,7 +32,7 @@
 ## Metadata
 
 - **Created:** 8/17/2026
-- **Updated:** 8/17/2026
+- **Updated:** 8/18/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** payments
