@@ -70,4 +70,6 @@ export interface UserProfile {
   nivel_experiencia: NivelExperienciaCulinaria | null
   /** Centro de Avisos welcome notice (FRESCO-224). Whether the one-time welcome notice has already been shown. */
   aviso_bienvenida_visto: boolean
+  /** Centro de Avisos main-routes notice (FRESCO-225). Whether the user has dismissed it. */
+  aviso_rutas_descartado: boolean
 }

@@ -1,9 +1,10 @@
 import { ArrowLeft, Bell, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
+import { RoutesNotice } from '@/components/notifications/routes-notice';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { getShouldShowWelcomeNotice, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
+import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -12,8 +13,9 @@ import { createClient } from '@/lib/supabase/server';
  * that from (confirmed with the user before building — real notification
  * types are still to be defined, tracked as future work, not invented here).
  * No general notification-generating system exists anywhere in the app yet —
- * `showWelcome` (FRESCO-224) is the first, one-time exception. Wire further
- * real notification types/data once that scope is defined.
+ * `showWelcome` (FRESCO-224) and `showRoutes` (FRESCO-225) are the first
+ * exceptions. Wire further real notification types/data once that scope is
+ * defined.
  */
 export default async function NotificationsPage() {
   const supabase = await createClient();
@@ -22,10 +24,16 @@ export default async function NotificationsPage() {
   // Same conservative-default judgment call as `/profile`'s reads: a real
   // read failure hides the notice rather than crashing the page — worst case
   // it shows once more on a later visit, never breaks navigation.
-  const showWelcome = await getShouldShowWelcomeNotice(supabase, user?.id).catch((error) => {
-    console.error('[/notifications] getShouldShowWelcomeNotice failed, defaulting to hidden', error);
-    return false;
-  });
+  const [showWelcome, showRoutes] = await Promise.all([
+    getShouldShowWelcomeNotice(supabase, user?.id).catch((error) => {
+      console.error('[/notifications] getShouldShowWelcomeNotice failed, defaulting to hidden', error);
+      return false;
+    }),
+    getShouldShowRoutesNotice(supabase, user?.id).catch((error) => {
+      console.error('[/notifications] getShouldShowRoutesNotice failed, defaulting to hidden', error);
+      return false;
+    }),
+  ]);
 
   if (showWelcome) {
     // Marked seen as soon as it's about to render, not on a separate
@@ -64,13 +72,17 @@ export default async function NotificationsPage() {
         </Card>
       )}
 
-      <EmptyState
-        className="mt-6"
-        data-testid="notifications_empty_state"
-        icon={<Bell className="size-8 text-tertiary" aria-hidden="true" />}
-        title="Sin notificaciones"
-        description="Te avisaremos aquí cuando haya algo nuevo."
-      />
+      {showRoutes && <RoutesNotice />}
+
+      {!showWelcome && !showRoutes && (
+        <EmptyState
+          className="mt-6"
+          data-testid="notifications_empty_state"
+          icon={<Bell className="size-8 text-tertiary" aria-hidden="true" />}
+          title="Sin notificaciones"
+          description="Te avisaremos aquí cuando haya algo nuevo."
+        />
+      )}
     </div>
   );
 }
