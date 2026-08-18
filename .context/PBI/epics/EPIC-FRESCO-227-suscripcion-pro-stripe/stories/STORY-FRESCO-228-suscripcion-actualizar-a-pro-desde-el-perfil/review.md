@@ -25,8 +25,11 @@ Reviewer: independent adversarial subagent (fresh context, no implementation sta
 | Trial sin tarjeta | manual | Same live-UI pass: Checkout page shows "7 días gratis" badge, only an email field + "Comenzar prueba" button — no card field | covered |
 | Pago completado activa Pro | test:`lib/stripe.test.ts` (`resolveProUpdateFromSession`, 6/6) + code review (raw-body signature verification confirmed before any write) | webhook handler, `app/api/stripe/webhook/route.ts` | covered (unit + static) — full webhook-trigger E2E not run; out of this skill's scope (no E2E/integration automation per sprint-development gotcha #10). Manual recipe (`stripe listen` + a real trial signup) handed to the user for a one-time confirmation post-merge. |
 
-## Live-UI pass — BLOCKING finding
+## Live-UI pass — resolved
 
-The Checkout page rendered by the current `STRIPE_PRICE_ID_PRO` shows product **"Prueba Fresco Chef Unlimited - Mensual"** at **3,99 €/mes**, not "Fresco Pro" at **€4.99/mes** (`.context/business/business-model.md`, this story's Scope). This is not a code defect — checkout creation and the webhook both correctly use whatever price the env var points to — it's a Stripe test-account configuration mismatch: `STRIPE_PRICE_ID_PRO` in `.env` currently points at a pre-existing, differently-named/priced product in the user's Stripe test account instead of a real "Fresco Pro €4.99/mes" price.
+Two rounds of Stripe test-account config drift, both user-owned (not code defects):
 
-**Blocks merge** until resolved: either re-point `STRIPE_PRICE_ID_PRO` at the correct price, or rename/reprice the existing product to match the business model. User-owned action (Stripe Dashboard), not something to fix in code.
+1. `STRIPE_PRICE_ID_PRO` first pointed at a pre-existing "Fresco Chef Unlimited" product (3,99 €/mes) instead of Fresco Pro.
+2. After the user created clean `FrescoPro-Mensual` (4,99 €/mes) + `FrescoPro-Anual` (44,99 €/mes) products and renamed the env vars to `STRIPE_PRICE_ID_PRO_MONTH`/`_ANUAL` (anual reserved for a future story), the checkout route/webhook still read the old bare `STRIPE_PRICE_ID_PRO` name and picked up the Anual price by accident.
+
+Fixed: `app/api/stripe/checkout/route.ts` and `app/api/stripe/webhook/route.ts` now read `STRIPE_PRICE_ID_PRO_MONTH`. Re-verified live: Checkout shows **"Prueba FrescoPro-Mensual"**, **4,99 €/mes**, **7 días gratis**, email-only (no card field). Matches Scope + AC exactly.
