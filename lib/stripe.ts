@@ -148,7 +148,7 @@ export interface RenewalUpdate {
  * branching on `cancel_at_period_end` needed. The eventual downgrade happens
  * via `resolveCancellationCustomerId` on `customer.subscription.deleted`.
  */
-export function resolveRenewalUpdate(subscription: Stripe.Subscription): RenewalUpdate {
+export function resolveRenewalUpdate(subscription: Stripe.Subscription, expectedPriceId: string): RenewalUpdate {
   if (subscription.status !== 'active') {
     throw new Error(`Subscription ${subscription.id} is not active (status: ${subscription.status}) — refusing to resolve a renewal update.`);
   }
@@ -156,6 +156,15 @@ export function resolveRenewalUpdate(subscription: Stripe.Subscription): Renewal
   const stripeCustomerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
   if (!stripeCustomerId) {
     throw new Error('Subscription is missing a Stripe customer id.');
+  }
+
+  // Code review on PR #101: without this check, ANY active subscription for
+  // an already-known Stripe customer would keep/grant Pro, regardless of
+  // price -- same class of gap PR #100's review closed on the initial
+  // checkout path.
+  const actualPriceId = subscription.items.data[0]?.price.id;
+  if (actualPriceId !== expectedPriceId) {
+    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${expectedPriceId} — refusing to renew Pro.`);
   }
 
   const currentPeriodEnd = subscription.items.data[0]?.current_period_end;

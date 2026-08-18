@@ -118,11 +118,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, even
     return;
   }
 
-  const update = resolveRenewalUpdate(subscription);
+  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
+  if (!priceId) {
+    throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
+  }
+  const update = resolveRenewalUpdate(subscription, priceId);
   const supabase = createServiceClient();
   const { data: profile, error: lookupError } = await supabase
     .from('user_profiles')
-    .select('id')
+    .select('id, stripe_subscription_id')
     .eq('stripe_customer_id', update.stripeCustomerId)
     .maybeSingle();
 
@@ -130,8 +134,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, even
     throw lookupError;
   }
 
-  if (!profile) {
-    console.error(`[/api/stripe/webhook] no user_profiles row for Stripe customer ${update.stripeCustomerId} (event ${eventId})`);
+  // Code review on PR #101: Stripe doesn't guarantee webhook delivery order,
+  // and a customer can have more than one subscription over time (cancel,
+  // then resubscribe before the old one's deferred `deleted` event arrives).
+  // Matching by customer id alone risks a stale/out-of-order event for a
+  // DIFFERENT subscription overwriting this customer's current
+  // plan_expires_at -- cross-check the event's subscription id against the
+  // one already on file, not just the customer id.
+  if (!profile || profile.stripe_subscription_id !== subscription.id) {
+    console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${update.stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely an out-of-order webhook delivery; self-heals on the next matching event`);
     return;
   }
 
@@ -150,7 +161,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   const supabase = createServiceClient();
   const { data: profile, error: lookupError } = await supabase
     .from('user_profiles')
-    .select('id')
+    .select('id, stripe_subscription_id')
     .eq('stripe_customer_id', stripeCustomerId)
     .maybeSingle();
 
@@ -158,8 +169,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
     throw lookupError;
   }
 
-  if (!profile) {
-    console.error(`[/api/stripe/webhook] no user_profiles row for Stripe customer ${stripeCustomerId} (event ${eventId})`);
+  // Same out-of-order-delivery guard as handleSubscriptionUpdated: a
+  // `deleted` event for an OLD subscription arriving after the customer
+  // resubscribed (new stripe_subscription_id on file) must NOT downgrade a
+  // now-legitimately-active Pro customer.
+  if (!profile || profile.stripe_subscription_id !== subscription.id) {
+    console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely a stale/out-of-order delete for a superseded subscription`);
     return;
   }
 

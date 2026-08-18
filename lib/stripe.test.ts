@@ -79,7 +79,7 @@ describe('resolveProUpdateFromSession', () => {
 
 describe('resolveRenewalUpdate', () => {
   test('maps an active subscription to a Pro-preserving plan_expires_at refresh', () => {
-    const result = resolveRenewalUpdate(fakeSubscription());
+    const result = resolveRenewalUpdate(fakeSubscription(), PRO_PRICE_ID);
 
     expect(result).toEqual({
       stripeCustomerId: 'cus_abc',
@@ -88,24 +88,31 @@ describe('resolveRenewalUpdate', () => {
   });
 
   test('reads the customer id off an expanded customer object, not just a bare string', () => {
-    const result = resolveRenewalUpdate(fakeSubscription({ customer: { id: 'cus_expanded' } as Stripe.Customer }));
+    const result = resolveRenewalUpdate(fakeSubscription({ customer: { id: 'cus_expanded' } as Stripe.Customer }), PRO_PRICE_ID);
 
     expect(result.stripeCustomerId).toBe('cus_expanded');
   });
 
   test('throws when the subscription is not active (e.g. a mid-cycle cancel request)', () => {
-    expect(() => resolveRenewalUpdate(fakeSubscription({ status: 'canceled' })))
+    expect(() => resolveRenewalUpdate(fakeSubscription({ status: 'canceled' }), PRO_PRICE_ID))
       .toThrow('is not active');
   });
 
   test('throws when the subscription has no Stripe customer', () => {
-    expect(() => resolveRenewalUpdate(fakeSubscription({ customer: null as unknown as Stripe.Subscription['customer'] })))
+    expect(() => resolveRenewalUpdate(fakeSubscription({ customer: null as unknown as Stripe.Subscription['customer'] }), PRO_PRICE_ID))
       .toThrow('Stripe customer id');
   });
 
   test('throws when the subscription item has no current_period_end', () => {
-    expect(() => resolveRenewalUpdate(fakeSubscription({ items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: undefined }] } as unknown as Stripe.Subscription['items'] })))
+    expect(() => resolveRenewalUpdate(fakeSubscription({ items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: undefined }] } as unknown as Stripe.Subscription['items'] }), PRO_PRICE_ID))
       .toThrow('current_period_end');
+  });
+
+  test('throws when the subscription price does not match the expected Pro price', () => {
+    expect(() => resolveRenewalUpdate(
+      fakeSubscription({ items: { data: [{ price: { id: 'price_some_other_product' }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'] }),
+      PRO_PRICE_ID,
+    )).toThrow('does not match expected Pro price');
   });
 });
 
