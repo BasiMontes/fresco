@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No hay una sesión autenticada.' }, { status: 401 });
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID_PRO;
+  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
   if (!priceId) {
-    console.error('[/api/stripe/checkout] STRIPE_PRICE_ID_PRO is not set');
+    console.error('[/api/stripe/checkout] STRIPE_PRICE_ID_PRO_MONTH is not set');
     return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
   }
 
