@@ -165,7 +165,8 @@ export default async function ProfilePage() {
           </CardHeader>
           <CardContent className="text-body-sm text-tertiary">
             Con Pro, cada menú aprende de lo que cocinas y descartas la semana anterior — cuanto
-            más lo uses, menos tienes que pensar.
+            más lo uses, menos tienes que pensar. 7 días de prueba gratis, sin tarjeta. Después,
+            €4.99/mes.
           </CardContent>
           <div className="mt-3">
             <UpgradeToProButton />
