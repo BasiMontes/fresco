@@ -35,12 +35,15 @@ export function BottomTabBar() {
             key={href}
             href={href}
             aria-current={isActive ? 'page' : undefined}
-            className="flex flex-1 flex-col items-center gap-0.5 py-1.5 text-caption text-primary"
+            className="relative flex flex-1 flex-col items-center gap-0.5 py-1 text-caption text-primary"
           >
             <Icon className="size-5" strokeWidth={2} />
             <span>{label}</span>
             <span
-              className={cn('size-1 rounded-full', isActive ? 'bg-primary' : 'bg-transparent')}
+              className={cn(
+                'absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full',
+                isActive ? 'bg-primary' : 'bg-transparent',
+              )}
             />
           </Link>
         );
