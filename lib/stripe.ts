@@ -22,7 +22,12 @@ function requireStripeSecretKey(): string {
 }
 
 /** Initialized Stripe SDK client. Import this instead of constructing `new Stripe(...)` at call sites. */
-export const stripe = new Stripe(requireStripeSecretKey());
+export const stripe = new Stripe(requireStripeSecretKey(), {
+  // Pinned to the version this SDK (`stripe@22.5.0`) was generated against —
+  // otherwise the effective API version is whatever Stripe's account default
+  // is at call time, an implicit and silently-shiftable surface.
+  apiVersion: '2026-07-29.dahlia',
+});
 
 export interface ProUpdateFromSession {
   userId: string
@@ -57,6 +62,7 @@ export interface ProUpdateFromSession {
 export function resolveProUpdateFromSession(
   session: Stripe.Checkout.Session,
   subscription: Stripe.Subscription,
+  expectedPriceId: string,
 ): ProUpdateFromSession {
   const userId = session.client_reference_id;
   if (!userId) {
@@ -70,6 +76,16 @@ export function resolveProUpdateFromSession(
 
   if (!subscription.trial_end) {
     throw new Error('Subscription is missing trial_end — cannot compute plan_expires_at.');
+  }
+
+  // Code review on PR #100: without this check, ANY completed subscription
+  // checkout in the Stripe account (not just the Pro price) would grant
+  // `plan: 'pro'` — this is the only server-side check standing between
+  // that and a Pro grant, since Checkout Session creation trusts whatever
+  // price id the client requested.
+  const actualPriceId = subscription.items.data[0]?.price.id;
+  if (actualPriceId !== expectedPriceId) {
+    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${expectedPriceId} — refusing to grant Pro.`);
   }
 
   return {

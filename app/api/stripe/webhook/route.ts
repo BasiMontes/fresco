@@ -60,7 +60,11 @@ export async function POST(request: Request) {
 
     const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const update = resolveProUpdateFromSession(session, subscription);
+    const priceId = process.env.STRIPE_PRICE_ID_PRO;
+    if (!priceId) {
+      throw new Error('STRIPE_PRICE_ID_PRO is not configured.');
+    }
+    const update = resolveProUpdateFromSession(session, subscription, priceId);
 
     const supabase = createServiceClient();
     const { error } = await supabase
