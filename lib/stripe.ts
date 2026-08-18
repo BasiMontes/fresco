@@ -21,12 +21,36 @@ function requireStripeSecretKey(): string {
   return key;
 }
 
-/** Initialized Stripe SDK client. Import this instead of constructing `new Stripe(...)` at call sites. */
-export const stripe = new Stripe(requireStripeSecretKey(), {
-  // Pinned to the version this SDK (`stripe@22.5.0`) was generated against —
-  // otherwise the effective API version is whatever Stripe's account default
-  // is at call time, an implicit and silently-shiftable surface.
-  apiVersion: '2026-07-29.dahlia',
+let cachedStripe: Stripe | undefined;
+
+function getStripe(): Stripe {
+  cachedStripe ??= new Stripe(requireStripeSecretKey(), {
+    // Pinned to the version this SDK (`stripe@22.5.0`) was generated against —
+    // otherwise the effective API version is whatever Stripe's account default
+    // is at call time, an implicit and silently-shiftable surface.
+    apiVersion: '2026-07-29.dahlia',
+  });
+
+  return cachedStripe;
+}
+
+/**
+ * Initialized Stripe SDK client. Import this instead of constructing
+ * `new Stripe(...)` at call sites.
+ *
+ * Lazy via a Proxy (mirrors `lib/env.ts`'s `clientEnv`) — validation runs on
+ * the FIRST property read, not at module import. A staging build (2026-08-18)
+ * broke on this: Next.js's page-data-collection pass imports the whole module
+ * graph, including route handlers that only reference `stripe` when actually
+ * invoked — an eager `new Stripe(...)` at module scope crashed the build the
+ * moment `STRIPE_SECRET_KEY` was unset anywhere, not just when the route
+ * actually ran.
+ */
+export const stripe: Stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    const real = getStripe();
+    return Reflect.get(real, prop, real);
+  },
 });
 
 export interface ProUpdateFromSession {
