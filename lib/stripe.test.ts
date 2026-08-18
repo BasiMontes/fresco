@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { describe, expect, test } from 'bun:test';
-import { resolveProUpdateFromSession } from './stripe';
+import { resolveCancellationCustomerId, resolveProUpdateFromSession, resolveRenewalUpdate } from './stripe';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -23,8 +23,10 @@ const PRO_PRICE_ID = 'price_pro_test';
 function fakeSubscription(overrides: Partial<Stripe.Subscription> = {}): Stripe.Subscription {
   return {
     id: 'sub_xyz',
+    customer: 'cus_abc',
+    status: 'active',
     trial_end: 1_700_000_000, // 2023-11-14T22:13:20.000Z
-    items: { data: [{ price: { id: PRO_PRICE_ID } }] },
+    items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: 1_700_000_000 }] }, // 2023-11-14T22:13:20.000Z
     ...overrides,
   } as unknown as Stripe.Subscription;
 }
@@ -72,5 +74,52 @@ describe('resolveProUpdateFromSession', () => {
       fakeSubscription({ items: { data: [{ price: { id: 'price_some_other_product' } }] } as unknown as Stripe.Subscription['items'] }),
       PRO_PRICE_ID,
     )).toThrow('does not match expected Pro price');
+  });
+});
+
+describe('resolveRenewalUpdate', () => {
+  test('maps an active subscription to a Pro-preserving plan_expires_at refresh', () => {
+    const result = resolveRenewalUpdate(fakeSubscription());
+
+    expect(result).toEqual({
+      stripeCustomerId: 'cus_abc',
+      planExpiresAt: '2023-11-14T22:13:20.000Z',
+    });
+  });
+
+  test('reads the customer id off an expanded customer object, not just a bare string', () => {
+    const result = resolveRenewalUpdate(fakeSubscription({ customer: { id: 'cus_expanded' } as Stripe.Customer }));
+
+    expect(result.stripeCustomerId).toBe('cus_expanded');
+  });
+
+  test('throws when the subscription is not active (e.g. a mid-cycle cancel request)', () => {
+    expect(() => resolveRenewalUpdate(fakeSubscription({ status: 'canceled' })))
+      .toThrow('is not active');
+  });
+
+  test('throws when the subscription has no Stripe customer', () => {
+    expect(() => resolveRenewalUpdate(fakeSubscription({ customer: null as unknown as Stripe.Subscription['customer'] })))
+      .toThrow('Stripe customer id');
+  });
+
+  test('throws when the subscription item has no current_period_end', () => {
+    expect(() => resolveRenewalUpdate(fakeSubscription({ items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: undefined }] } as unknown as Stripe.Subscription['items'] })))
+      .toThrow('current_period_end');
+  });
+});
+
+describe('resolveCancellationCustomerId', () => {
+  test('returns the Stripe customer id off an ended subscription', () => {
+    expect(resolveCancellationCustomerId(fakeSubscription())).toBe('cus_abc');
+  });
+
+  test('reads the customer id off an expanded customer object, not just a bare string', () => {
+    expect(resolveCancellationCustomerId(fakeSubscription({ customer: { id: 'cus_expanded' } as Stripe.Customer }))).toBe('cus_expanded');
+  });
+
+  test('throws when the subscription has no Stripe customer', () => {
+    expect(() => resolveCancellationCustomerId(fakeSubscription({ customer: null as unknown as Stripe.Subscription['customer'] })))
+      .toThrow('Stripe customer id');
   });
 });
