@@ -1,18 +1,41 @@
-import { ArrowLeft, Bell } from 'lucide-react';
+import { ArrowLeft, Bell, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { getShouldShowWelcomeNotice, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * FRESCO-72 — mockup showed "Productos por caducar" (pantry-expiration
  * alerts), but Fresco has no pantry/expiration-tracking feature to source
  * that from (confirmed with the user before building — real notification
  * types are still to be defined, tracked as future work, not invented here).
- * Always renders the empty state — no notification-generating system exists
- * anywhere in the app yet. Wire real notification types/data once that
- * scope is defined.
+ * No general notification-generating system exists anywhere in the app yet —
+ * `showWelcome` (FRESCO-224) is the first, one-time exception. Wire further
+ * real notification types/data once that scope is defined.
  */
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Same conservative-default judgment call as `/profile`'s reads: a real
+  // read failure hides the notice rather than crashing the page — worst case
+  // it shows once more on a later visit, never breaks navigation.
+  const showWelcome = await getShouldShowWelcomeNotice(supabase, user?.id).catch((error) => {
+    console.error('[/notifications] getShouldShowWelcomeNotice failed, defaulting to hidden', error);
+    return false;
+  });
+
+  if (showWelcome) {
+    // Marked seen as soon as it's about to render, not on a separate
+    // dismiss action — the AC only requires "doesn't come back", and this
+    // avoids adding client-side interactivity for a one-time notice.
+    await markWelcomeNoticeSeen(supabase, user?.id).catch((error) => {
+      console.error('[/notifications] markWelcomeNoticeSeen failed', error);
+    });
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center gap-3">
@@ -24,6 +47,22 @@ export default function NotificationsPage() {
           <p className="text-body-sm uppercase text-tertiary">Tus notificaciones</p>
         </div>
       </div>
+
+      {showWelcome && (
+        <Card className="mt-6" data-testid="notifications_welcome_card">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <PartyPopper className="size-5 text-primary" aria-hidden="true" />
+              <CardTitle>¡Bienvenida al Centro de Avisos!</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <CardDescription>
+              Aquí te iremos avisando de lo importante: recetas que te pueden gustar, las rutas principales de la app y cualquier novedad que valga la pena.
+            </CardDescription>
+          </CardContent>
+        </Card>
+      )}
 
       <EmptyState
         className="mt-6"

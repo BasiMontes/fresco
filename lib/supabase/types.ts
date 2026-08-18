@@ -302,6 +302,9 @@ export type Database = {
           adultos: number
           alergenos: string[]
           alergenos_texto_libre: string | null
+          aviso_bienvenida_visto: boolean
+          centro_avisos_bienvenida_vista: boolean
+          centro_avisos_rutas_descartado: boolean
           cocinas_favoritas: Database["public"]["Enums"]["tipo_cocina"][]
           cocinas_texto_libre: string | null
           contundencia_preferida: Database["public"]["Enums"]["nivel_contundencia"]
@@ -339,6 +342,9 @@ export type Database = {
           adultos?: number
           alergenos?: string[]
           alergenos_texto_libre?: string | null
+          aviso_bienvenida_visto?: boolean
+          centro_avisos_bienvenida_vista?: boolean
+          centro_avisos_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
           cocinas_texto_libre?: string | null
           contundencia_preferida?: Database["public"]["Enums"]["nivel_contundencia"]
@@ -376,6 +382,9 @@ export type Database = {
           adultos?: number
           alergenos?: string[]
           alergenos_texto_libre?: string | null
+          aviso_bienvenida_visto?: boolean
+          centro_avisos_bienvenida_vista?: boolean
+          centro_avisos_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
           cocinas_texto_libre?: string | null
           contundencia_preferida?: Database["public"]["Enums"]["nivel_contundencia"]
@@ -488,7 +497,12 @@ export type Database = {
         | "viernes"
         | "sabado"
         | "domingo"
-      estado_receta_menu: "pendiente" | "cocinada" | "descartada" | "sustituida" | "excluida"
+      estado_receta_menu:
+        | "pendiente"
+        | "cocinada"
+        | "descartada"
+        | "sustituida"
+        | "excluida"
       nivel_contundencia: "ligero" | "media" | "contundente"
       nivel_experiencia_culinaria:
         | "aprendiz"
@@ -651,7 +665,13 @@ export const Constants = {
         "sabado",
         "domingo",
       ],
-      estado_receta_menu: ["pendiente", "cocinada", "descartada", "sustituida", "excluida"],
+      estado_receta_menu: [
+        "pendiente",
+        "cocinada",
+        "descartada",
+        "sustituida",
+        "excluida",
+      ],
       nivel_contundencia: ["ligero", "media", "contundente"],
       nivel_experiencia_culinaria: [
         "aprendiz",
