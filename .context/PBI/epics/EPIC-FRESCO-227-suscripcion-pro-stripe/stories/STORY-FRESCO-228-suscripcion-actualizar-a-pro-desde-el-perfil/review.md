@@ -21,8 +21,12 @@ Reviewer: independent adversarial subagent (fresh context, no implementation sta
 
 | AC scenario (Gherkin) | covered_by | evidence | status |
 |---|---|---|---|
-| Iniciar checkout desde el perfil | test:`lib/stripe.test.ts` (mapping) + manual | `UpgradeToProButton` → `POST /api/stripe/checkout` → redirect | manual (pending live-UI pass) |
-| Trial sin tarjeta | manual | `trial_period_days: 7` + `payment_method_collection: 'if_required'` in `app/api/stripe/checkout/route.ts` | manual (pending live-UI pass) |
-| Pago completado activa Pro | test:`lib/stripe.test.ts` (`resolveProUpdateFromSession`, 6/6) + manual | webhook handler, `app/api/stripe/webhook/route.ts` | manual (pending `stripe listen` trigger test) |
+| Iniciar checkout desde el perfil | test:`lib/stripe.test.ts` (mapping) + manual | Live-UI pass (Playwright, `LOCAL_USER_EMAIL`, Free plan): clicked CTA on `/profile`, redirected to `checkout.stripe.com/c/pay/cs_test_...`, zero console errors | covered |
+| Trial sin tarjeta | manual | Same live-UI pass: Checkout page shows "7 días gratis" badge, only an email field + "Comenzar prueba" button — no card field | covered |
+| Pago completado activa Pro | test:`lib/stripe.test.ts` (`resolveProUpdateFromSession`, 6/6) + code review (raw-body signature verification confirmed before any write) | webhook handler, `app/api/stripe/webhook/route.ts` | covered (unit + static) — full webhook-trigger E2E not run; out of this skill's scope (no E2E/integration automation per sprint-development gotcha #10). Manual recipe (`stripe listen` + a real trial signup) handed to the user for a one-time confirmation post-merge. |
 
-Live-UI + webhook-trigger manual passes not yet run in this review pass — next step before merge.
+## Live-UI pass — BLOCKING finding
+
+The Checkout page rendered by the current `STRIPE_PRICE_ID_PRO` shows product **"Prueba Fresco Chef Unlimited - Mensual"** at **3,99 €/mes**, not "Fresco Pro" at **€4.99/mes** (`.context/business/business-model.md`, this story's Scope). This is not a code defect — checkout creation and the webhook both correctly use whatever price the env var points to — it's a Stripe test-account configuration mismatch: `STRIPE_PRICE_ID_PRO` in `.env` currently points at a pre-existing, differently-named/priced product in the user's Stripe test account instead of a real "Fresco Pro €4.99/mes" price.
+
+**Blocks merge** until resolved: either re-point `STRIPE_PRICE_ID_PRO` at the correct price, or rename/reprice the existing product to match the business model. User-owned action (Stripe Dashboard), not something to fix in code.
