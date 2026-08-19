@@ -18,11 +18,13 @@ import { createServiceClient } from '@/lib/supabase/service';
  * Handles `checkout.session.completed` (initial purchase), `customer.
  * subscription.updated` (renewal — keeps `plan: 'pro'` and refreshes
  * `plan_expires_at`; also carries the FRESCO-232 payment-failed signal —
- * `past_due`/`unpaid` sets `payment_failed_at`, a recovered `active` clears
- * it), and `customer.subscription.deleted` (the subscription's paid period
- * actually ended — downgrades to `plan: 'free'`). Every other event type is a
- * 200 no-op. FRESCO-231 (cancel/manage) reuses this same handler rather than
- * registering a separate webhook.
+ * `past_due` sets `payment_failed_at` while Stripe keeps retrying, `unpaid`
+ * downgrades straight to `plan: 'free'` once Stripe gives up retrying, and a
+ * recovered `active` clears the aviso), and `customer.subscription.deleted`
+ * (the subscription's paid period actually ended some other way — downgrades
+ * to `plan: 'free'`). Every other event type is a 200 no-op. FRESCO-231
+ * (cancel/manage) reuses this same handler rather than registering a
+ * separate webhook.
  *
  * A user *requesting* cancellation is NOT handled specially: Stripe fires
  * `customer.subscription.updated` with `status` still `'active'` and
@@ -103,6 +105,10 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
       stripe_customer_id: update.stripeCustomerId,
       stripe_subscription_id: update.stripeSubscriptionId,
       plan_expires_at: update.planExpiresAt,
+      // FRESCO-232: a fresh checkout starts a clean subscription — clear any
+      // failed-payment aviso left over from a prior one (out-of-order webhook
+      // delivery, or a resubscribe after a lapsed Pro period).
+      payment_failed_at: null,
     })
     .eq('id', update.userId);
 
@@ -143,13 +149,31 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, even
     return;
   }
 
-  if (paymentStatus.failed) {
+  if (paymentStatus.kind === 'retrying') {
     // FRESCO-232: charge failed, still within Stripe's own retry window —
     // `plan` is deliberately untouched (stays `'pro'`), only the aviso flag
     // is set.
     const { error: updateError } = await supabase
       .from('user_profiles')
       .update({ payment_failed_at: new Date().toISOString() })
+      .eq('id', profile.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+    return;
+  }
+
+  if (paymentStatus.kind === 'exhausted') {
+    // FRESCO-232 (AC3): Stripe gave up retrying without necessarily
+    // canceling the subscription outright (depends on the account's dunning
+    // config — "Cancel subscription" vs. "Mark uncollectible" after retries
+    // exhaust). Downgrading here, rather than only reacting to
+    // `customer.subscription.deleted`, makes AC3 hold regardless of that
+    // dashboard setting.
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ plan: 'free', payment_failed_at: null })
       .eq('id', profile.id);
 
     if (updateError) {
