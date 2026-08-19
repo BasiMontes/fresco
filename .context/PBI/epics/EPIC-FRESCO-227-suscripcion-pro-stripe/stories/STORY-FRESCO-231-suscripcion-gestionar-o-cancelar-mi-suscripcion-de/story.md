@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231)
 **Epic:** [FRESCO-227](https://basiliomontescastano.atlassian.net/browse/FRESCO-227) (Suscripción Pro (Stripe))
 **Type:** Historia
-**Status:** Control de calidad
+**Status:** WIP
 **Priority:** Medium
 **Story Points:** -
 
@@ -30,7 +30,7 @@
 ## Metadata
 
 - **Created:** 8/17/2026
-- **Updated:** 8/17/2026
+- **Updated:** 8/19/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** payments
