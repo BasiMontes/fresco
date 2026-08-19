@@ -1,6 +1,7 @@
 import { User as UserIcon } from 'lucide-react';
 import { AyudaSection } from '@/components/profile/ayuda-section';
 import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
+import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
@@ -170,6 +171,26 @@ export default async function ProfilePage() {
           </CardContent>
           <div className="mt-3">
             <UpgradeToProButton />
+          </div>
+        </Card>
+      )}
+
+      {/* STORY-FRESCO-231: symmetric card for Pro users — exactly one of this
+          card and the upsell above ever renders, gated on the same `plan`.
+          "Manage" delegates entirely to the Stripe-hosted Billing Portal
+          (next invoice date/amount, cancel/reactivate, payment method) —
+          no custom UI needed for any of that here. */}
+      {plan === 'pro' && (
+        <Card variant="pro" className="mt-4">
+          <CardHeader>
+            <CardTitle>Tu suscripción</CardTitle>
+          </CardHeader>
+          <CardContent className="text-body-sm text-tertiary">
+            Ya eres Fresco Pro. Desde aquí puedes ver tu próxima factura, cambiar tu método de
+            pago o cancelar cuando quieras.
+          </CardContent>
+          <div className="mt-3">
+            <ManageSubscriptionButton />
           </div>
         </Card>
       )}
