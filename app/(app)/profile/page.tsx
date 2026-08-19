@@ -7,7 +7,7 @@ import { PreferencesForm } from '@/components/profile/preferences-form';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
-import { getUserDietaryPreferences, getUserNombre, getUserPlan } from '@/lib/api/user-profile';
+import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan } from '@/lib/api/user-profile';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { createClient } from '@/lib/supabase/server';
 
@@ -41,13 +41,19 @@ export default async function ProfilePage() {
   // rather than paying for 3 sequential round trips. Each keeps its own
   // fallback via `.catch()` (same conservative-default judgment calls as
   // before) so one call's rejection can't take the others down with it.
-  const [plan, nombre, dietaryPreferences] = await Promise.all([
+  const [plan, paymentFailedAt, nombre, dietaryPreferences] = await Promise.all([
     getUserPlan(supabase, user?.id).catch((error) => {
       // Same judgment call as every other page reading server-side profile
       // data: a real read failure defaults to the more conservative 'free'
       // (shows the upsell) rather than crashing the page.
       console.error('[/profile] getUserPlan failed, defaulting to free', error);
       return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+    }),
+    getPaymentFailedAt(supabase, user?.id).catch((error) => {
+      // Same conservative-default judgment call: a real read failure hides
+      // the aviso rather than crashing the page.
+      console.error('[/profile] getPaymentFailedAt failed, defaulting to null', error);
+      return null;
     }),
     getUserNombre(supabase, user?.id).catch((error) => {
       // Same conservative fallback as `plan` above: a real read failure falls
@@ -172,6 +178,26 @@ export default async function ProfilePage() {
           <div className="mt-3">
             <UpgradeToProButton />
           </div>
+        </Card>
+      )}
+
+      {/* STORY-FRESCO-232: payment-failed aviso — only ever shown alongside
+          the Pro card below (plan stays 'pro' during Stripe's own retry
+          window, see lib/stripe.ts `resolvePaymentStatusUpdate`), never
+          alongside the upsell above. Points at that card's
+          `ManageSubscriptionButton` (FRESCO-231) rather than rendering a
+          second instance here — the Billing Portal it opens is also where
+          the payment method gets updated, no separate flow needed. */}
+      {plan === 'pro' && paymentFailedAt && (
+        <Card variant="danger" className="mt-4" data-testid="payment_failed_notice">
+          <CardHeader>
+            <CardTitle>Tu último pago falló</CardTitle>
+          </CardHeader>
+          <CardContent className="text-body-sm text-tertiary">
+            No pudimos cobrar tu suscripción Pro. Actualiza tu método de pago desde
+            &ldquo;Gestionar mi suscripción&rdquo; más abajo para que no pierdas el acceso —
+            seguimos intentando el cobro mientras tanto.
+          </CardContent>
         </Card>
       )}
 

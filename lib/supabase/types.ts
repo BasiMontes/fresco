@@ -330,6 +330,7 @@ export type Database = {
           nombre: string | null
           num_personas: number
           objetivo: Database["public"]["Enums"]["objetivo_usuario"] | null
+          payment_failed_at: string | null
           plan: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at: string | null
           planning_selection: Json
@@ -373,6 +374,7 @@ export type Database = {
           nombre?: string | null
           num_personas?: number
           objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
+          payment_failed_at?: string | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
           planning_selection?: Json
@@ -416,6 +418,7 @@ export type Database = {
           nombre?: string | null
           num_personas?: number
           objetivo?: Database["public"]["Enums"]["objetivo_usuario"] | null
+          payment_failed_at?: string | null
           plan?: Database["public"]["Enums"]["plan_usuario"]
           plan_expires_at?: string | null
           planning_selection?: Json

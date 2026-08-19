@@ -178,6 +178,59 @@ export function resolveRenewalUpdate(subscription: Stripe.Subscription, expected
   };
 }
 
+export interface PaymentStatusUpdate {
+  stripeCustomerId: string
+  /**
+   * `'retrying'` — a charge failed but Stripe is still within its own retry
+   * window (`past_due`); `plan` stays untouched. `'recovered'` — a retry
+   * succeeded (`active`); `plan` stays untouched (it was already `'pro'`).
+   * `'exhausted'` — Stripe has given up retrying (`unpaid`) without ever
+   * canceling the subscription outright, so `customer.subscription.deleted`
+   * may never fire for this customer; downgrades to `'free'` here so AC3
+   * ("pago sigue fallando revierte a Free") holds regardless of which
+   * dunning action (Cancel vs. mark Unpaid) the Stripe account is configured
+   * with — see review discussion on STORY-FRESCO-232's PR.
+   */
+  kind: 'retrying' | 'recovered' | 'exhausted'
+}
+
+/**
+ * Pure mapping from a `customer.subscription.updated` event's Subscription to
+ * the payment-failed signal the webhook handler writes to `user_profiles`
+ * (STORY-FRESCO-232). Stripe's own retry schedule IS this story's "periodo de
+ * gracia" (Out of Scope: no app-side retry scheduling) — `'retrying'` and
+ * `'recovered'` cover that window without ever touching `plan`.
+ *
+ * Deliberately does NOT gate on price id like `resolveRenewalUpdate` does —
+ * unlike granting/renewing Pro, reacting to a payment-status change for the
+ * wrong price carries no risk of granting access, so the extra guard would
+ * only add a silent no-op branch with no corresponding AC.
+ *
+ * Any other status (`canceled`, `incomplete`, `incomplete_expired`,
+ * `trialing`, `paused`) is out of scope for this signal — returns `null`, and
+ * the caller leaves both `plan` and `payment_failed_at` untouched.
+ */
+export function resolvePaymentStatusUpdate(subscription: Stripe.Subscription): PaymentStatusUpdate | null {
+  const stripeCustomerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+  if (!stripeCustomerId) {
+    throw new Error('Subscription is missing a Stripe customer id.');
+  }
+
+  if (subscription.status === 'past_due') {
+    return { stripeCustomerId, kind: 'retrying' };
+  }
+
+  if (subscription.status === 'unpaid') {
+    return { stripeCustomerId, kind: 'exhausted' };
+  }
+
+  if (subscription.status === 'active') {
+    return { stripeCustomerId, kind: 'recovered' };
+  }
+
+  return null;
+}
+
 /**
  * Pure mapping from a `customer.subscription.deleted` event's Subscription to
  * the Stripe customer id the webhook handler uses to look up the

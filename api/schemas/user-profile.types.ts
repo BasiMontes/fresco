@@ -30,6 +30,8 @@ export interface UserProfile {
   objetivo: ObjetivoUsuario | null
   plan: PlanUsuario
   plan_expires_at: string | null
+  /** FRESCO-232: set by the webhook when a Pro renewal charge fails, cleared on a successful retry or on final downgrade to free. */
+  payment_failed_at: string | null
   num_personas: number
   adultos: number
   ninos: number

@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-import { resolveCancellationCustomerId, resolveProUpdateFromSession, resolveRenewalUpdate, stripe } from '@/lib/stripe';
+import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
 /**
@@ -17,11 +17,14 @@ import { createServiceClient } from '@/lib/supabase/service';
  *
  * Handles `checkout.session.completed` (initial purchase), `customer.
  * subscription.updated` (renewal — keeps `plan: 'pro'` and refreshes
- * `plan_expires_at`), and `customer.subscription.deleted` (the subscription's
- * paid period actually ended — downgrades to `plan: 'free'`). Every other
- * event type is a 200 no-op. FRESCO-231 (cancel/manage) and FRESCO-232
- * (failed payment) add their own `case`s to this same handler later; they
- * reuse this one endpoint rather than each registering a separate webhook.
+ * `plan_expires_at`; also carries the FRESCO-232 payment-failed signal —
+ * `past_due` sets `payment_failed_at` while Stripe keeps retrying, `unpaid`
+ * downgrades straight to `plan: 'free'` once Stripe gives up retrying, and a
+ * recovered `active` clears the aviso), and `customer.subscription.deleted`
+ * (the subscription's paid period actually ended some other way — downgrades
+ * to `plan: 'free'`). Every other event type is a 200 no-op. FRESCO-231
+ * (cancel/manage) reuses this same handler rather than registering a
+ * separate webhook.
  *
  * A user *requesting* cancellation is NOT handled specially: Stripe fires
  * `customer.subscription.updated` with `status` still `'active'` and
@@ -102,6 +105,10 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
       stripe_customer_id: update.stripeCustomerId,
       stripe_subscription_id: update.stripeSubscriptionId,
       plan_expires_at: update.planExpiresAt,
+      // FRESCO-232: a fresh checkout starts a clean subscription — clear any
+      // failed-payment aviso left over from a prior one (out-of-order webhook
+      // delivery, or a resubscribe after a lapsed Pro period).
+      payment_failed_at: null,
     })
     .eq('id', update.userId);
 
@@ -111,23 +118,19 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription, eventId: string): Promise<void> {
-  if (subscription.status !== 'active') {
-    // Not a renewal-shaped update (e.g. `past_due`, `unpaid`, `canceled`) —
-    // this story only reacts to the active-renewal case; other statuses are
-    // out of scope here (FRESCO-232 covers failed payments).
+  const paymentStatus = resolvePaymentStatusUpdate(subscription);
+  if (!paymentStatus) {
+    // Status outside {past_due, unpaid, active} (e.g. `canceled`,
+    // `incomplete`) — out of scope for both the renewal and the
+    // payment-failed signal.
     return;
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
-  if (!priceId) {
-    throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
-  }
-  const update = resolveRenewalUpdate(subscription, priceId);
   const supabase = createServiceClient();
   const { data: profile, error: lookupError } = await supabase
     .from('user_profiles')
     .select('id, stripe_subscription_id')
-    .eq('stripe_customer_id', update.stripeCustomerId)
+    .eq('stripe_customer_id', paymentStatus.stripeCustomerId)
     .maybeSingle();
 
   if (lookupError) {
@@ -142,13 +145,55 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, even
   // plan_expires_at -- cross-check the event's subscription id against the
   // one already on file, not just the customer id.
   if (!profile || profile.stripe_subscription_id !== subscription.id) {
-    console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${update.stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely an out-of-order webhook delivery; self-heals on the next matching event`);
+    console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${paymentStatus.stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely an out-of-order webhook delivery; self-heals on the next matching event`);
     return;
   }
 
+  if (paymentStatus.kind === 'retrying') {
+    // FRESCO-232: charge failed, still within Stripe's own retry window —
+    // `plan` is deliberately untouched (stays `'pro'`), only the aviso flag
+    // is set.
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ payment_failed_at: new Date().toISOString() })
+      .eq('id', profile.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+    return;
+  }
+
+  if (paymentStatus.kind === 'exhausted') {
+    // FRESCO-232 (AC3): Stripe gave up retrying without necessarily
+    // canceling the subscription outright (depends on the account's dunning
+    // config — "Cancel subscription" vs. "Mark uncollectible" after retries
+    // exhaust). Downgrading here, rather than only reacting to
+    // `customer.subscription.deleted`, makes AC3 hold regardless of that
+    // dashboard setting.
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ plan: 'free', payment_failed_at: null })
+      .eq('id', profile.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+    return;
+  }
+
+  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
+  if (!priceId) {
+    throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
+  }
+  const update = resolveRenewalUpdate(subscription, priceId);
+
   const { error: updateError } = await supabase
     .from('user_profiles')
-    .update({ plan: 'pro', plan_expires_at: update.planExpiresAt })
+    // FRESCO-232: a renewal-shaped `active` update also means any prior
+    // failed-payment aviso just resolved (retry succeeded) -- clear it here
+    // rather than in a separate write.
+    .update({ plan: 'pro', plan_expires_at: update.planExpiresAt, payment_failed_at: null })
     .eq('id', profile.id);
 
   if (updateError) {
@@ -180,7 +225,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
 
   const { error: updateError } = await supabase
     .from('user_profiles')
-    .update({ plan: 'free' })
+    // FRESCO-232: also clear a stale payment-failed aviso -- the account is
+    // Free now, the aviso no longer applies.
+    .update({ plan: 'free', payment_failed_at: null })
     .eq('id', profile.id);
 
   if (updateError) {
