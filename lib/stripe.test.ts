@@ -117,19 +117,19 @@ describe('resolveRenewalUpdate', () => {
 });
 
 describe('resolvePaymentStatusUpdate', () => {
-  test('returns failed: true for a past_due subscription', () => {
+  test('returns kind: retrying for a past_due subscription', () => {
     expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'past_due' })))
-      .toEqual({ stripeCustomerId: 'cus_abc', failed: true });
+      .toEqual({ stripeCustomerId: 'cus_abc', kind: 'retrying' });
   });
 
-  test('returns failed: true for an unpaid subscription', () => {
+  test('returns kind: exhausted for an unpaid subscription (Stripe gave up retrying)', () => {
     expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'unpaid' })))
-      .toEqual({ stripeCustomerId: 'cus_abc', failed: true });
+      .toEqual({ stripeCustomerId: 'cus_abc', kind: 'exhausted' });
   });
 
-  test('returns failed: false for a recovered active subscription', () => {
+  test('returns kind: recovered for an active subscription', () => {
     expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'active' })))
-      .toEqual({ stripeCustomerId: 'cus_abc', failed: false });
+      .toEqual({ stripeCustomerId: 'cus_abc', kind: 'recovered' });
   });
 
   test('returns null for a status out of scope for this signal (e.g. canceled)', () => {
