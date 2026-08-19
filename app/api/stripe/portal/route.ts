@@ -28,16 +28,25 @@ export async function POST(request: NextRequest) {
 
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
-    .select('stripe_customer_id')
+    .select('plan, stripe_customer_id')
     .eq('id', user.id)
     .maybeSingle();
 
   if (profileError) {
-    console.error('[/api/stripe/portal] failed to read stripe_customer_id', profileError);
-    return NextResponse.json({ error: 'No se encontró tu suscripción.' }, { status: 500 });
+    console.error('[/api/stripe/portal] failed to read profile', profileError);
+    return NextResponse.json({ error: 'No se pudo comprobar tu suscripción.' }, { status: 500 });
   }
 
-  const stripeCustomerId = profile?.stripe_customer_id;
+  // Code review on PR #102: the UI only renders this CTA for plan === 'pro',
+  // but that alone doesn't stop a direct POST here -- a user who was Pro and
+  // later downgraded retains a stale stripe_customer_id (the cancellation
+  // webhook clears `plan`, not the Stripe ids), so without this check she
+  // could still open a live portal session for her now-defunct customer.
+  if (profile?.plan !== 'pro') {
+    return NextResponse.json({ error: 'No se encontró tu suscripción.' }, { status: 404 });
+  }
+
+  const stripeCustomerId = profile.stripe_customer_id;
   if (!stripeCustomerId) {
     return NextResponse.json({ error: 'No se encontró tu suscripción.' }, { status: 404 });
   }
