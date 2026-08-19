@@ -119,3 +119,77 @@ export function resolveProUpdateFromSession(
     planExpiresAt: new Date(subscription.trial_end * 1000).toISOString(),
   };
 }
+
+export interface RenewalUpdate {
+  stripeCustomerId: string
+  /** ISO timestamp — the current billing period's end, becomes `user_profiles.plan_expires_at`. */
+  planExpiresAt: string
+}
+
+/**
+ * Pure mapping from a `customer.subscription.updated` event's Subscription to
+ * the `user_profiles` write the webhook handler performs on renewal (STORY-
+ * FRESCO-230). Only called when the caller has already routed on event type —
+ * this function itself gates on `status` so a caller mistake (e.g. wiring it
+ * up to the wrong event) fails loudly instead of silently granting Pro.
+ *
+ * `current_period_end` is read off `subscription.items.data[0]`, not the
+ * top-level `Subscription` object — on the pinned API version
+ * (`2026-07-29.dahlia`) that field lives on `Stripe.SubscriptionItem`, not
+ * `Stripe.Subscription` (confirmed against the installed SDK's own
+ * `.d.ts` files; the top-level field no longer exists on this API version's
+ * type).
+ *
+ * A subscription with `status !== 'active'` is deliberately NOT handled here
+ * — this keeps the function correct-by-construction for the "cancel request
+ * doesn't downgrade mid-period" AC: Stripe sets `cancel_at_period_end: true`
+ * but leaves `status: 'active'` until the period actually ends, so this
+ * helper still returns a Pro-preserving update in that case, no special-case
+ * branching on `cancel_at_period_end` needed. The eventual downgrade happens
+ * via `resolveCancellationCustomerId` on `customer.subscription.deleted`.
+ */
+export function resolveRenewalUpdate(subscription: Stripe.Subscription, expectedPriceId: string): RenewalUpdate {
+  if (subscription.status !== 'active') {
+    throw new Error(`Subscription ${subscription.id} is not active (status: ${subscription.status}) — refusing to resolve a renewal update.`);
+  }
+
+  const stripeCustomerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+  if (!stripeCustomerId) {
+    throw new Error('Subscription is missing a Stripe customer id.');
+  }
+
+  // Code review on PR #101: without this check, ANY active subscription for
+  // an already-known Stripe customer would keep/grant Pro, regardless of
+  // price -- same class of gap PR #100's review closed on the initial
+  // checkout path.
+  const actualPriceId = subscription.items.data[0]?.price.id;
+  if (actualPriceId !== expectedPriceId) {
+    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${expectedPriceId} — refusing to renew Pro.`);
+  }
+
+  const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
+  if (!currentPeriodEnd) {
+    throw new Error('Subscription is missing current_period_end — cannot compute plan_expires_at.');
+  }
+
+  return {
+    stripeCustomerId,
+    planExpiresAt: new Date(currentPeriodEnd * 1000).toISOString(),
+  };
+}
+
+/**
+ * Pure mapping from a `customer.subscription.deleted` event's Subscription to
+ * the Stripe customer id the webhook handler uses to look up the
+ * `user_profiles` row to downgrade to `plan: 'free'` (STORY-FRESCO-230). This
+ * event fires when Stripe actually ends the subscription (the paid period is
+ * over) — not when a user merely requests cancellation.
+ */
+export function resolveCancellationCustomerId(subscription: Stripe.Subscription): string {
+  const stripeCustomerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+  if (!stripeCustomerId) {
+    throw new Error('Subscription is missing a Stripe customer id.');
+  }
+
+  return stripeCustomerId;
+}
