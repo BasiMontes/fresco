@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { describe, expect, test } from 'bun:test';
-import { resolveCancellationCustomerId, resolveProUpdateFromSession, resolveRenewalUpdate } from './stripe';
+import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate } from './stripe';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -113,6 +113,37 @@ describe('resolveRenewalUpdate', () => {
       fakeSubscription({ items: { data: [{ price: { id: 'price_some_other_product' }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'] }),
       PRO_PRICE_ID,
     )).toThrow('does not match expected Pro price');
+  });
+});
+
+describe('resolvePaymentStatusUpdate', () => {
+  test('returns failed: true for a past_due subscription', () => {
+    expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'past_due' })))
+      .toEqual({ stripeCustomerId: 'cus_abc', failed: true });
+  });
+
+  test('returns failed: true for an unpaid subscription', () => {
+    expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'unpaid' })))
+      .toEqual({ stripeCustomerId: 'cus_abc', failed: true });
+  });
+
+  test('returns failed: false for a recovered active subscription', () => {
+    expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'active' })))
+      .toEqual({ stripeCustomerId: 'cus_abc', failed: false });
+  });
+
+  test('returns null for a status out of scope for this signal (e.g. canceled)', () => {
+    expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'canceled' }))).toBeNull();
+  });
+
+  test('reads the customer id off an expanded customer object, not just a bare string', () => {
+    const result = resolvePaymentStatusUpdate(fakeSubscription({ status: 'past_due', customer: { id: 'cus_expanded' } as Stripe.Customer }));
+    expect(result?.stripeCustomerId).toBe('cus_expanded');
+  });
+
+  test('throws when the subscription has no Stripe customer', () => {
+    expect(() => resolvePaymentStatusUpdate(fakeSubscription({ status: 'past_due', customer: null as unknown as Stripe.Subscription['customer'] })))
+      .toThrow('Stripe customer id');
   });
 });
 
