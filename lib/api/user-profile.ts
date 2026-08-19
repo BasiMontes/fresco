@@ -220,6 +220,42 @@ export const getUserPlan = cache(async (
 });
 
 /**
+ * Reads the CURRENTLY authenticated user's failed-payment aviso timestamp
+ * (`/profile`'s Pro banner, FRESCO-232) — set by the Stripe webhook when a
+ * renewal charge fails, cleared on a successful retry or a final downgrade to
+ * Free. Same conservative-default pattern as `getUserPlan`: a missing profile
+ * row is not an error, it just means no aviso.
+ */
+export const getPaymentFailedAt = cache(async (
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<string | null> => {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('payment_failed_at')
+    .eq('id', resolvedUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil: ${error.message}`);
+  }
+
+  return data?.payment_failed_at ?? null;
+});
+
+/**
  * Updates the CURRENTLY authenticated user's display name (FRESCO-55, `/menu`
  * greeting). Public method — fails fast (throws) rather than swallowing
  * errors, per `references/error-handling.md`, mirroring `upsertUserProfile`.
