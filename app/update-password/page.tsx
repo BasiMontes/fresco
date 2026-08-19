@@ -105,7 +105,10 @@ export default function UpdatePasswordPage() {
               minLength={6}
               autoComplete="new-password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError(null);
+              }}
             />
             <Input
               data-testid="update_password_confirm_input"
@@ -115,7 +118,10 @@ export default function UpdatePasswordPage() {
               required
               autoComplete="new-password"
               value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError(null);
+              }}
             />
             <Button data-testid="update_password_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
               {isSubmitting ? 'Guardando…' : 'Guardar contraseña'}
