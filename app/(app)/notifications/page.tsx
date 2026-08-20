@@ -1,5 +1,6 @@
 import { ArrowLeft, Bell, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
+import { PaymentFailedNotice } from '@/components/notifications/payment-failed-notice';
 import { RecommendedRecipesNotice } from '@/components/notifications/recommended-recipes-notice';
 import { RoutesNotice } from '@/components/notifications/routes-notice';
 import { buttonVariants } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/ui/empty-state';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getLatestAvailableRecipes } from '@/lib/api/recipes';
-import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
+import { getPaymentFailedAt, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserPlan, isPaymentFailedAlertActive, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /** FRESCO-226 AC's "número acotado" (Scope: "ej. 3"). */
@@ -20,7 +21,10 @@ const RECOMMENDED_RECIPES_LIMIT = 3;
  * types are still to be defined, tracked as future work, not invented here).
  * No general notification-generating system exists anywhere in the app yet —
  * `showWelcome` (FRESCO-224), `showRoutes` (FRESCO-225), and
- * `recommendedRecipes` (FRESCO-226) are the first exceptions. Wire further
+ * `recommendedRecipes` (FRESCO-226) are the first exceptions. FRESCO-234
+ * added the first REAL system alert (`paymentFailedAt`, sourced from
+ * FRESCO-232's data, already gating `/profile`'s own card) — rendered above
+ * the three curated sections since a real alert takes priority. Wire further
  * real notification types/data once that scope is defined.
  */
 export default async function NotificationsPage() {
@@ -30,7 +34,20 @@ export default async function NotificationsPage() {
   // Same conservative-default judgment call as `/profile`'s reads: a real
   // read failure hides the notice rather than crashing the page — worst case
   // it shows once more on a later visit, never breaks navigation.
-  const [showWelcome, showRoutes, recommendedRecipes, favoriteRecipeIds] = await Promise.all([
+  const [plan, paymentFailedAt, showWelcome, showRoutes, recommendedRecipes, favoriteRecipeIds] = await Promise.all([
+    getUserPlan(supabase, user?.id).catch((error) => {
+      // Same conservative-default judgment call as `/profile`'s read: a real
+      // read failure defaults to 'free' (hides the payment-failed notice)
+      // rather than crashing the page.
+      console.error('[/notifications] getUserPlan failed, defaulting to free', error);
+      return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+    }),
+    getPaymentFailedAt(supabase, user?.id).catch((error) => {
+      // Same conservative-default judgment call as `/profile`'s read: a real
+      // read failure hides the aviso rather than crashing the page.
+      console.error('[/notifications] getPaymentFailedAt failed, defaulting to null', error);
+      return null;
+    }),
     getShouldShowWelcomeNotice(supabase, user?.id).catch((error) => {
       console.error('[/notifications] getShouldShowWelcomeNotice failed, defaulting to hidden', error);
       return false;
@@ -48,6 +65,8 @@ export default async function NotificationsPage() {
       return new Set<string>();
     }),
   ]);
+
+  const showPaymentFailed = isPaymentFailedAlertActive(plan, paymentFailedAt);
 
   if (showWelcome) {
     // Marked seen as soon as it's about to render, not on a separate
@@ -70,6 +89,10 @@ export default async function NotificationsPage() {
         </div>
       </div>
 
+      {/* FRESCO-234: the real system alert takes priority over curated
+          content, so it renders first. */}
+      <PaymentFailedNotice paymentFailedAt={showPaymentFailed ? paymentFailedAt : null} />
+
       {showWelcome && (
         <Card className="mt-6" data-testid="notifications_welcome_card">
           <CardHeader>
@@ -90,7 +113,7 @@ export default async function NotificationsPage() {
 
       <RecommendedRecipesNotice recipes={recommendedRecipes} favoriteRecipeIds={favoriteRecipeIds} />
 
-      {!showWelcome && !showRoutes && recommendedRecipes.length === 0 && (
+      {!showPaymentFailed && !showWelcome && !showRoutes && recommendedRecipes.length === 0 && (
         <EmptyState
           className="mt-6"
           data-testid="notifications_empty_state"
