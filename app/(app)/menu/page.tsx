@@ -15,9 +15,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
-import { getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
+import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
+import { cn } from '@/lib/utils';
 
 /**
  * `/menu` (Home) — nav item 1. Today's meals at a glance + the
@@ -48,7 +49,7 @@ export default async function MenuPage() {
   // round trips. Each keeps its own fallback via `.catch()` (same
   // conservative-default judgment call as before) so one call's rejection
   // can't take the others down with it.
-  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences] = await Promise.all([
+  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications] = await Promise.all([
     getUserNombre(supabase, user?.id).catch((error) => {
       // Same conservative fallback as every other server-side profile read on
       // this page: a real read failure falls back to `null` (generic
@@ -99,6 +100,13 @@ export default async function MenuPage() {
       console.error('[/menu] getUserDietaryPreferences failed, showing all meal slots', error);
       return null;
     }),
+    // FRESCO-234: gates the bell-icon badge dot below — a read failure just
+    // hides the badge (no false-positive "you have something new") rather
+    // than crashing the page.
+    getHasUnseenNotifications(supabase, user?.id).catch((error) => {
+      console.error('[/menu] getHasUnseenNotifications failed, hiding the badge', error);
+      return false;
+    }),
   ]);
 
   if (!plan) {
@@ -132,8 +140,15 @@ export default async function MenuPage() {
           <Link href="/favorites" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Favoritos" data-testid="favoritos_button">
             <Heart className="size-6" />
           </Link>
-          <Link href="/notifications" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Notificaciones" data-testid="notificaciones_button">
+          <Link href="/notifications" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'relative')} aria-label="Notificaciones" data-testid="notificaciones_button">
             <Bell className="size-6" />
+            {hasUnseenNotifications && (
+              <span
+                aria-hidden="true"
+                data-testid="notificaciones_badge"
+                className="absolute right-1.5 top-1.5 size-2 rounded-full bg-error"
+              />
+            )}
           </Link>
         </div>
       </div>
