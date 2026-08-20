@@ -256,6 +256,19 @@ export const getPaymentFailedAt = cache(async (
 });
 
 /**
+ * Single source of truth for "is the payment-failed alert active" — Pro plan
+ * AND a non-null `payment_failed_at`. Shared by `/profile`'s card,
+ * `/notifications`'s notice, and the `/menu` badge (FRESCO-234) so the three
+ * surfaces can't drift out of sync if the eligibility rule ever changes.
+ */
+export function isPaymentFailedAlertActive(
+  plan: UserProfile['plan'],
+  paymentFailedAt: string | null,
+): boolean {
+  return plan === 'pro' && Boolean(paymentFailedAt);
+}
+
+/**
  * Whether the CURRENTLY authenticated user has any unseen Centro de Avisos
  * notice (FRESCO-234, `/menu`'s bell-icon badge) — a binary dot indicator,
  * not a count, so this only ever needs a boolean OR across the same
@@ -301,7 +314,7 @@ export async function getHasUnseenNotifications(
 
   return !data.aviso_bienvenida_visto
     || !data.aviso_rutas_descartado
-    || (data.plan === 'pro' && Boolean(data.payment_failed_at));
+    || isPaymentFailedAlertActive(data.plan, data.payment_failed_at);
 }
 
 /**

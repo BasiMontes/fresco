@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/ui/empty-state';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getLatestAvailableRecipes } from '@/lib/api/recipes';
-import { getPaymentFailedAt, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserPlan, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
+import { getPaymentFailedAt, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserPlan, isPaymentFailedAlertActive, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /** FRESCO-226 AC's "número acotado" (Scope: "ej. 3"). */
@@ -66,9 +66,7 @@ export default async function NotificationsPage() {
     }),
   ]);
 
-  // Same 'pro' + non-null gate as `/profile`'s payment_failed_notice card
-  // (STORY-FRESCO-232) — plan stays 'pro' during Stripe's own retry window.
-  const showPaymentFailed = plan === 'pro' && Boolean(paymentFailedAt);
+  const showPaymentFailed = isPaymentFailedAlertActive(plan, paymentFailedAt);
 
   if (showWelcome) {
     // Marked seen as soon as it's about to render, not on a separate

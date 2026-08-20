@@ -44,8 +44,8 @@ export default async function MenuPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // The four reads below are mutually independent once `user.id` is
-  // resolved — run them concurrently rather than paying for 4 sequential
+  // The reads below are mutually independent once `user.id` is
+  // resolved — run them concurrently rather than paying for sequential
   // round trips. Each keeps its own fallback via `.catch()` (same
   // conservative-default judgment call as before) so one call's rejection
   // can't take the others down with it.

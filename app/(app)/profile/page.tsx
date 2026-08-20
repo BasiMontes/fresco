@@ -7,7 +7,7 @@ import { PreferencesForm } from '@/components/profile/preferences-form';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
-import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan } from '@/lib/api/user-profile';
+import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, isPaymentFailedAlertActive } from '@/lib/api/user-profile';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { createClient } from '@/lib/supabase/server';
 
@@ -188,7 +188,7 @@ export default async function ProfilePage() {
           `ManageSubscriptionButton` (FRESCO-231) rather than rendering a
           second instance here — the Billing Portal it opens is also where
           the payment method gets updated, no separate flow needed. */}
-      {plan === 'pro' && paymentFailedAt && (
+      {isPaymentFailedAlertActive(plan, paymentFailedAt) && (
         <Card variant="danger" className="mt-4" data-testid="payment_failed_notice">
           <CardHeader>
             <CardTitle>Tu último pago falló</CardTitle>
