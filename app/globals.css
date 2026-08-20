@@ -53,14 +53,16 @@
 
 @layer base {
   /*
-   * FRESCO-208 — `html` needs its own `bg-background`, not just `body`.
-   * Vertical rubber-band/elastic overscroll (macOS trackpad, iOS Safari)
-   * paints the bounce region past the document's top/bottom edge using
-   * `html`'s background, not `body`'s propagated one — leaving it unset
-   * exposed the browser-default white instead of the app's cream token.
+   * FRESCO-208 — the earlier `bg-background` fix only recolored the bounce
+   * region; it didn't stop the sidebar's own gap during vertical rubber-band
+   * overscroll (macOS trackpad / iOS Safari), since the sidebar is
+   * `sticky` + `h-screen` and never extends past the viewport. Blocking the
+   * bounce outright (`overscroll-behavior-y: none`) removes the gap at the
+   * source instead of trying to color-match it.
    */
   html {
     @apply bg-background;
+    overscroll-behavior-y: none;
   }
 
   body {
