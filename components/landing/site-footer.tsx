@@ -41,7 +41,11 @@ export function SiteFooter() {
           </div>
         </div>
         <p className="border-t border-accent-600 pt-5 text-caption text-accent-500">
-          © 2025 Fresco · Hecho con cariño (y muchas lentejas)
+          ©
+          {' '}
+          {new Date().getFullYear()}
+          {' '}
+          Fresco · Hecho con cariño (y muchas lentejas)
         </p>
       </div>
 
