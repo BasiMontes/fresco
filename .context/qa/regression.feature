@@ -79,6 +79,61 @@ Característica: Flujo completo de usuario en Fresco
     # Fix: app/signup/page.tsx ahora detecta `identities.length === 0` y
     # muestra el error real.
 
+  @login @recuperar-password @verificado-manual-2026-08-19
+  Escenario: Solicitar el enlace de recuperación de contraseña
+    Dado que un usuario visita /forgot-password
+    Cuando introduce su email registrado y confirma el formulario
+    Entonces ve un mensaje genérico confirmando que si la cuenta existe, recibirá un enlace
+
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  Escenario: El mensaje de recuperación de contraseña no revela si el email existe (anti-enumeración)
+    Dado que un visitante introduce un email que no está registrado en /forgot-password
+    Cuando confirma el formulario
+    Entonces ve exactamente el mismo mensaje genérico que con un email real
+    # Mismo patrón anti-enumeración que signUp() (ver escenario "Alta falla
+    # porque el email ya está registrado"), aplicado también aquí por diseño
+    # de Supabase Auth. Verificado en vivo comparando ambos mensajes carácter
+    # a carácter.
+
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  Escenario: El campo de email en /forgot-password exige un formato válido antes de enviar
+    Dado que un usuario deja vacío el campo de email en /forgot-password
+    Cuando intenta confirmar el formulario
+    Entonces el navegador bloquea el envío con la validación nativa del campo (required + type=email), sin llamar al backend
+
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  Escenario: Confirmar la nueva contraseña detecta que no coincide con la anterior
+    Dado que un usuario está en /update-password
+    Cuando escribe una contraseña y una confirmación distintas y confirma
+    Entonces ve el mensaje "Las contraseñas no coinciden."
+
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  Escenario: Un mensaje de error obsoleto puede confundir sobre el problema real de la contraseña
+    Dado que un usuario en /update-password ya vio "Las contraseñas no coinciden." por un intento anterior
+    Cuando corrige la confirmación para que ambas coincidan, pero deja una contraseña de menos de 6 caracteres, y reenvía
+    Entonces el envío se bloquea por la validación nativa de longitud mínima (minLength=6)
+    Y el mensaje "Las contraseñas no coinciden." sigue visible en pantalla, describiendo un problema que ya no es real
+    # Bug real encontrado en vivo (barrido QA 2026-08-19), sin ticket todavía:
+    # el segundo intento nunca llega al handler de JS que limpia/actualiza el
+    # mensaje de error, porque el atributo minLength=6 del input bloquea el
+    # submit de forma silenciosa (sin popup visible en este navegador/CLI)
+    # antes de que se revalide el mismatch. El usuario se queda viendo un
+    # error que ya no describe la causa real del bloqueo (contraseña corta,
+    # no contraseñas distintas). Severidad: menor (edge-case de doble error,
+    # no bloquea el flujo feliz — el usuario puede seguir corrigiendo).
+
+  @login @recuperar-password @pendiente
+  Escenario: Completar la recuperación de contraseña de punta a punta con el enlace real del correo
+    Dado que un usuario solicitó recuperar su contraseña y recibió el email real
+    Cuando sigue el enlace, cae en /update-password con una sesión de recuperación válida, y confirma una contraseña nueva válida
+    Entonces su contraseña queda actualizada y puede volver a loguearse con la nueva
+    # No ejecutado de punta a punta -- requiere leer un inbox real (mismo
+    # bloqueo que los escenarios de OTP de registro progresivo, sin fixture
+    # de inbox en tests/) y es una acción irreversible sobre la cuenta QA
+    # compartida (cambiaría su contraseña real). Verificado en cambio: el
+    # formulario de /update-password renderiza y valida coincidencia +
+    # longitud mínima correctamente sin llegar a enviar nada al backend.
+
   # ==========================================================================
   # Onboarding y generación de menú (EPIC-FRESCO-4 / EPIC-FRESCO-6)
   # ==========================================================================
@@ -1081,6 +1136,300 @@ Característica: Flujo completo de usuario en Fresco
     # de link compartido.
 
   # ==========================================================================
+  # Suscripción Pro / Stripe — EPIC-FRESCO-227 / STORY-FRESCO-228/230/231/232
+  # ==========================================================================
+
+  # --- STORY-FRESCO-228: actualizar a Pro desde el perfil ---
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Iniciar checkout desde el perfil
+    Dado que Laura está en su perfil con plan Free
+    Cuando toca el botón de actualizar a Pro
+    Entonces es llevada a completar el pago de la suscripción Pro en Stripe Checkout real
+    # FRESCO-228. Verificado en producción real (fresco-pro.vercel.app),
+    # no simulado. Confirmado junto con el resto de la épica el
+    # 2026-08-19 tras encontrar y arreglar 2 bugs de infra que dejaban el
+    # webhook fallando en silencio desde que se shippeó (ver nota de
+    # infraestructura al final de este fichero).
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Trial sin tarjeta
+    Dado que Laura empieza el proceso de actualizar a Pro
+    Cuando llega a la pantalla de pago de Stripe Checkout
+    Entonces se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta
+    # FRESCO-228. Verificado en producción real: Checkout Session con
+    # trial_period_days: 7 y payment_method_collection: 'if_required'.
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Pago completado activa Pro
+    Dado que Laura completó el pago de la suscripción Pro
+    Cuando vuelve a la app
+    Entonces su perfil muestra el plan Pro activo
+    # FRESCO-228. Verificado en producción real vía checkout.session.completed.
+
+  # --- STORY-FRESCO-230: reflejar el estado real de la suscripción ---
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Pago exitoso activa Pro automáticamente
+    Dado que Laura completó el pago de su suscripción
+    Cuando el pago se confirma
+    Entonces su cuenta pasa a plan Pro sin que tenga que hacer nada más
+    # FRESCO-230. Mismo evento (checkout.session.completed) que el
+    # escenario "Pago completado activa Pro" de FRESCO-228 -- ya
+    # cubierto por ese handler, sin código nuevo. Verificado en el
+    # mismo pase en vivo del 2026-08-19.
+
+  @suscripcion @edge-case @verificado-manual-2026-08-19
+  Escenario: Renovación mensual mantiene Pro
+    Dado que Laura tiene una suscripción Pro activa
+    Cuando se renueva el cobro mensual
+    Entonces sigue teniendo plan Pro sin interrupción
+    # FRESCO-230. Confirmado indirecto: no se pudo forzar un ciclo de
+    # renovación real vía Stripe MCP (sin operación expuesta para
+    # invoice pay/retry), pero el mismo code path (customer.subscription.updated
+    # con status=active) se ejercitó de verdad al probar la cancelación
+    # de FRESCO-231 y al recuperar la suscripción tras el pago fallido
+    # de FRESCO-232. Cubierto también por tests unitarios del webhook.
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Cancelación revierte a Free al fin del periodo pagado
+    Dado que Laura canceló su suscripción Pro
+    Cuando termina el periodo que ya pagó (customer.subscription.deleted)
+    Entonces su cuenta pasa a plan Free
+    # FRESCO-230. Verificado con evento real de Stripe en producción.
+
+  # --- STORY-FRESCO-231: gestionar o cancelar la suscripción ---
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Acceder a gestión de suscripción
+    Dado que Laura tiene una suscripción Pro activa
+    Cuando entra a su perfil y pulsa "Gestionar suscripción"
+    Entonces puede abrir la gestión de su suscripción en el Billing Portal real de Stripe
+    # FRESCO-231. Verificado en producción real, portal hospedado por
+    # Stripe (ADR-0007: superficie hospedada de Stripe en vez de UI
+    # custom).
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Cancelar la suscripción
+    Dado que Laura está en la gestión de su suscripción (Billing Portal)
+    Cuando elige cancelarla
+    Entonces ve confirmado que seguirá teniendo Pro hasta el fin del periodo ya pagado
+    # FRESCO-231. Verificado en producción real: configuración de
+    # cancelación del portal en modo at_period_end.
+
+  @suscripcion @verificado-manual-2026-08-19
+  Escenario: Ver mi próximo cobro
+    Dado que Laura tiene una suscripción Pro activa
+    Cuando abre la gestión de su suscripción
+    Entonces ve la fecha y el monto de su próximo cobro
+    # FRESCO-231. Verificado en producción real, UI nativa del Billing
+    # Portal (invoice_history habilitado en la configuración del portal).
+
+  # --- STORY-FRESCO-232: saber si mi pago falló ---
+
+  @suscripcion @edge-case @verificado-manual-2026-08-19
+  Escenario: Pago fallido me avisa
+    Dado que la suscripción Pro de Laura intenta renovarse
+    Cuando el cobro falla (customer.subscription.updated con status past_due)
+    Entonces ve un aviso en su perfil explicando que el pago falló
+    # FRESCO-232. Verificado con tarjeta de prueba real de Stripe
+    # 4000000000000341 (se adjunta con éxito, decline en cada intento de
+    # cobro) vía el iframe real del Billing Portal, forzando
+    # trial_end=now para disparar el intento de cobro inmediato. Cierra
+    # el hueco que había quedado de la sesión de QA de la épica (antes
+    # solo sembrado en DB, no con tarjeta real).
+
+  @suscripcion @edge-case @verificado-manual-2026-08-19
+  Escenario: Reintento exitoso restaura Pro sin fricción
+    Dado que Laura tuvo un pago fallido (payment_failed_at con valor)
+    Cuando actualiza su método de pago y el reintento funciona (status vuelve a active)
+    Entonces su cuenta sigue en plan Pro sin interrupción visible
+    Y el aviso de pago fallido desaparece de su perfil
+    # FRESCO-232. Verificado en producción real: tarjeta reemplazada por
+    # una válida (4242424242424242) y la factura fallida se marcó
+    # incobrable vía PostInvoicesInvoiceMarkUncollectible, lo que forzó
+    # la transición real a active y disparó la rama "recuperado" del
+    # webhook.
+
+  @suscripcion @edge-case @pendiente
+  Escenario: Pago sigue fallando revierte a Free
+    Dado que el pago de Laura falló y no se resolvió
+    Cuando Stripe agota los reintentos y emite customer.subscription.updated con status unpaid
+    Entonces su cuenta pasa a plan Free
+    # FRESCO-232. Implementado en el webhook (rama `unpaid` -> downgrade
+    # directo a free, sin esperar customer.subscription.deleted que
+    # puede no llegar a disparar nunca en ese caso), pero NO verificado
+    # en vivo -- la sesión de QA del 2026-08-19 solo llegó hasta
+    # past_due y su recuperación (los dos escenarios anteriores), sin
+    # agotar los reintentos hasta unpaid. Cubierto por tests unitarios
+    # del webhook únicamente.
+
+  # ==========================================================================
+  # Favoritos (/favorites)
+  # ==========================================================================
+
+  @favoritos @verificado-manual-2026-08-19
+  Escenario: Ver la lista de recetas favoritas guardadas
+    Dado que Laura tiene al menos una receta marcada como favorita
+    Cuando abre /favorites
+    Entonces ve una tarjeta por cada receta favorita, con imagen, nombre, categoría y tiempo/coste
+
+  @favoritos @edge-case @verificado-manual-2026-08-19
+  Escenario: La lista de favoritos vacía muestra un estado vacío claro
+    Dado que Laura no tiene ninguna receta marcada como favorita
+    Cuando abre /favorites
+    Entonces ve un estado vacío ("Lista vacía... Guarda recetas para verlas aquí"), no una lista en blanco ni un error
+
+  @favoritos @verificado-manual-2026-08-19
+  Escenario: Quitar una receta de favoritos desde la propia pantalla de Favoritos
+    Dado que Laura está en /favorites con al menos una receta guardada
+    Cuando pulsa "Quitar de favoritos" en una de las tarjetas
+    Entonces la tarjeta desaparece inmediatamente de la lista
+    Y el cambio persiste tras recargar la página
+
+  @favoritos @verificado-manual-2026-08-19
+  Escenario: Marcar/desmarcar favorito se refleja en cualquier pantalla donde aparezca la misma receta
+    Dado que Laura marca una receta como favorita desde /menu o /notifications
+    Cuando visita /favorites, o el detalle de esa misma receta, o vuelve a la pantalla de origen
+    Entonces el estado de favorito (marcado o no) es el mismo en todas ellas
+    # Verificado en vivo cruzando /menu -> /favorites -> detalle de receta ->
+    # /notifications: el toggle optimista se refleja de inmediato y persiste
+    # tras recargar en las 4 pantallas.
+
+  @favoritos @verificado-manual-2026-08-19
+  Escenario: Abrir el detalle de una receta desde Favoritos
+    Dado que Laura está en /favorites
+    Cuando toca una tarjeta de receta favorita
+    Entonces ve el detalle completo de esa receta, con el botón de favorito ya marcado
+
+  @favoritos @edge-case @verificado-manual-2026-08-19
+  Escenario: El enlace "Volver a la Biblioteca" del detalle de receta no vuelve a Favoritos aunque se haya llegado desde ahí
+    Dado que Laura abre el detalle de una receta navegando desde /favorites
+    Cuando pulsa "Volver a la Biblioteca"
+    Entonces vuelve a /recipes (la Biblioteca), no a /favorites
+    # Causística real, no necesariamente un bug -- la pantalla de detalle es
+    # la misma para Biblioteca y Favoritos, y el enlace de vuelta siempre
+    # apunta a /recipes independientemente de la pantalla de origen.
+
+  # ==========================================================================
+  # Centro de Avisos (/notifications)
+  # ==========================================================================
+
+  @notificaciones @edge-case @verificado-manual-2026-08-19
+  Escenario: El "Centro de Avisos" no contiene avisos reales, solo recomendaciones de recetas
+    Dado que Laura abre /notifications
+    Entonces ve una sección "Recetas que te pueden gustar" con tarjetas de receta
+    Y no ve ningún aviso de sistema, recordatorio, ni notificación real (pago, semana sin menú, etc.)
+    # Causística real encontrada en el barrido QA 2026-08-19, sin ticket
+    # todavía: la pantalla se titula "Centro de Avisos" / "Tus notificaciones"
+    # pero el único contenido real es un carrusel de recomendaciones de
+    # recetas -- el mismo tipo de tarjeta que "Últimas recetas añadidas" de
+    # Inicio. No hay ningún aviso real (pago fallido, menú sin generar, etc.)
+    # enrutado aquí pese a que ya existen esos eventos en el sistema (ver
+    # aviso de pago fallido en /profile, FRESCO-232). Gap de producto, no
+    # bug de código -- documentado para decisión de negocio.
+    # ACTUALIZADO 2026-08-20 (FRESCO-234): el aviso de pago fallido ya está
+    # enrutado aquí -- ver el nuevo escenario "El aviso de pago fallido
+    # aparece..." más abajo. El resto de la afirmación sigue siendo cierta
+    # (menú sin generar y otros eventos reales todavía no tienen un tipo de
+    # aviso propio en /notifications).
+
+  @notificaciones @edge-case @verificado-manual-2026-08-19
+  Escenario: El icono de Notificaciones no muestra ningún contador de no leídos
+    Dado que Laura está en /menu
+    Cuando mira el icono de Notificaciones en la cabecera
+    Entonces no ve ningún badge ni contador, incluso si hay recomendaciones nuevas sin ver
+    # Consistente con el hallazgo anterior -- no existe concepto de
+    # "leído/no leído" en esta pantalla todavía.
+    # ACTUALIZADO 2026-08-20 (FRESCO-234): ya existe un badge -- un punto rojo
+    # binario, deliberadamente sin contador numérico -- ver los nuevos
+    # escenarios de badge más abajo. La ausencia de contador numérico sigue
+    # siendo intencional, no un gap.
+
+  @notificaciones @pago-fallido @pendiente
+  Escenario: El aviso de pago fallido aparece en el Centro de Avisos para una cuenta Pro con un cobro fallido
+    Dado que Laura tiene plan Pro y su último cobro de suscripción falló (payment_failed_at con valor)
+    Cuando abre /notifications
+    Entonces ve el aviso "Tu último pago falló" antes que cualquier otra sección
+    Y puede pulsar "Gestionar mi suscripción" para ir al Billing Portal de Stripe
+    # FRESCO-234: reutiliza el mismo dato ya persistido por el webhook de
+    # Stripe (FRESCO-232, ya mostrado en /profile) -- ninguna columna ni
+    # tabla nueva. Sin verificar en vivo todavía (requiere una cuenta Pro
+    # real con un cobro fallido real).
+
+  @notificaciones @pago-fallido @pendiente
+  Escenario: El badge del icono de Notificaciones aparece cuando hay avisos pendientes
+    Dado que Laura tiene al menos un aviso pendiente (bienvenida sin ver, rutas sin descartar, o pago fallido en Pro)
+    Cuando abre /menu
+    Entonces ve un punto rojo sobre el icono de Notificaciones de la cabecera, sin ningún número
+    # FRESCO-234: getHasUnseenNotifications() en lib/api/user-profile.ts hace
+    # un OR de las mismas 3 condiciones booleanas que ya gatean cada sección
+    # de /notifications -- ninguna columna "visto" nueva.
+
+  @notificaciones @pago-fallido @edge-case @pendiente
+  Escenario: El badge del icono de Notificaciones no aparece cuando no hay nada pendiente
+    Dado que Laura ya vio la bienvenida, ya descartó las rutas, y no tiene ningún pago fallido (o no es Pro)
+    Cuando abre /menu
+    Entonces el icono de Notificaciones se ve sin ningún punto rojo
+
+  @notificaciones @verificado-manual-2026-08-19
+  Escenario: Se puede marcar como favorita una receta recomendada directamente desde Notificaciones
+    Dado que Laura ve una receta recomendada en /notifications
+    Cuando pulsa "Guardar en favoritos" en esa tarjeta
+    Entonces la receta se añade a sus favoritos, visible en /favorites
+    # Mismo componente de tarjeta de receta reutilizado que en
+    # Inicio/Biblioteca -- el toggle de favorito funciona igual aquí.
+
+  @notificaciones @edge-case @pendiente
+  Escenario: Las recomendaciones de Notificaciones no excluyen recetas ya marcadas como favoritas
+    Dado que Laura ya tiene una receta marcada como favorita
+    Cuando abre /notifications
+    Entonces esa misma receta puede seguir apareciendo en "Recetas que te pueden gustar"
+    # Observado en vivo: tras marcar "Arroz con verduras..." como favorita,
+    # siguió apareciendo en la misma lista de recomendaciones al recargar.
+    # @pendiente en vez de @verificado-manual porque no se confirmó si es el
+    # comportamiento pretendido (recomendaciones fijas/deterministas, sin
+    # lógica de exclusión) o un gap real -- requiere decisión de producto,
+    # no solo verificación técnica.
+
+  # ==========================================================================
+  # Landing pública (/)
+  # ==========================================================================
+
+  @landing @verificado-manual-2026-08-19
+  Escenario: La landing pública muestra el value proposition, precios y FAQ sin necesidad de sesión
+    Dado que un visitante sin cuenta ni sesión visita /
+    Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Free y Pro) y FAQ
+    Y ambos CTA principales ("Generar mi primer menú", "Empezar gratis") llevan a /onboarding
+
+  @landing @verificado-manual-2026-08-19
+  Escenario: El acordeón de FAQ de la landing expande y colapsa cada pregunta de forma independiente
+    Dado que un visitante está en la sección FAQ de /
+    Cuando toca una pregunta
+    Entonces se expande mostrando su respuesta, sin afectar al resto de preguntas
+
+  @landing @edge-case @verificado-manual-2026-08-19
+  Escenario: Un usuario con sesión activa que visita / sigue viendo la landing pública, no su panel
+    Dado que Laura tiene sesión iniciada y un menú ya generado
+    Cuando visita / directamente
+    Entonces sigue viendo la landing de marketing (con "Ya tengo cuenta"/"Empezar gratis"), no es redirigida a /menu
+    # Causística real, no necesariamente un bug -- puede ser intencional (la
+    # landing sirve también de página de marketing pública para SEO/compartir),
+    # pero es una decisión de producto no documentada hasta ahora. Los CTA de
+    # esa pantalla ("Empezar gratis", "Generar mi primer menú") siguen
+    # apuntando a /onboarding incluso con sesión activa -- si Laura los pulsa
+    # con un menú ya generado, cae en el 409 ya cubierto por el escenario "Ya
+    # existe un plan para la semana solicitada".
+
+  @landing @edge-case @verificado-manual-2026-08-19
+  Escenario: El copyright del footer muestra un año desactualizado
+    Dado que cualquier visitante llega al final de /
+    Cuando lee el texto del footer
+    Entonces ve "© 2025 Fresco..." aunque el año real ya avanzó a 2026
+    # Bug cosmético real, menor severidad, sin ticket todavía -- el footer usa
+    # un año hardcodeado en vez de calcularlo dinámicamente.
+
+  # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
   # ==========================================================================
@@ -1116,3 +1465,23 @@ Característica: Flujo completo de usuario en Fresco
   #   4 casos reales (TypeError de red, UserProfileError, EdgeFunctionError
   #   422, EdgeFunctionError otro status) — si vuelve a pasar, el mensaje va
   #   a decir qué fue de verdad.
+  # - Variables de entorno añadidas a Vercel vía CLI/dashboard DESPUÉS de un
+  #   build no se aplican a deploys ya corriendo — hace falta un redeploy
+  #   explícito. Encontrado en 2026-08-19: STRIPE_WEBHOOK_SECRET y
+  #   SUPABASE_SERVICE_ROLE_KEY se añadieron a prod y staging pero el
+  #   webhook de Stripe siguió fallando hasta redesplegar ambos entornos.
+  # - El rol service_role de Postgres NO tiene privilegios de tabla por
+  #   defecto — necesita su propio GRANT (además de cualquier policy RLS),
+  #   igual que `authenticated`/`anon`. Encontrado en 2026-08-19:
+  #   service_role nunca tuvo GRANT SELECT/UPDATE sobre user_profiles, así
+  #   que el webhook de Stripe devolvía 200 a Stripe pero el UPDATE a
+  #   Supabase fallaba en silencio — la épica EPIC-FRESCO-227 entera nunca
+  #   funcionó de punta a punta en producción hasta arreglar esto
+  #   (migración 20260819124500_grant_service_role_user_profiles_privileges.sql).
+  # - `stripe_api_search` (Stripe MCP) no encuentra operaciones poco
+  #   comunes (attach de payment method, pay/retry de invoice, mark
+  #   uncollectible) — hay que adivinar el operation id y llamar
+  #   `stripe_api_details`/`stripe_api_write` directo. El formulario de
+  #   tarjeta hospedado por Stripe (Checkout y Billing Portal) es un
+  #   iframe anidado, accesible con refs normales de playwright-cli sin
+  #   tratamiento especial.
