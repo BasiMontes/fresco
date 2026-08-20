@@ -263,24 +263,20 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
       <h1 className="text-h2">Lista de la compra</h1>
 
       <Card className="mt-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-h5">Resumen</h2>
-            <p className="mt-1 flex items-center gap-1.5 text-body-sm text-tertiary">
-              <span className="inline-block size-2 rounded-full bg-secondary" aria-hidden="true" />
-              {pendientes}
-              {' '}
-              {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-caption uppercase tracking-wide text-tertiary">Total estimado</p>
-            <p className="text-h5 font-heading text-primary">
-              {list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}
-              –
-              {formatPrecio(list.resumen.coste_estimado_max)}
-            </p>
-          </div>
+        <div className="grid grid-cols-2 items-start gap-x-4 gap-y-1">
+          <h2 className="text-h5">Resumen</h2>
+          <p className="text-right text-caption uppercase tracking-wide text-tertiary">Total estimado</p>
+          <p className="flex items-center gap-1.5 text-body-sm text-tertiary">
+            <span className="inline-block size-2 rounded-full bg-secondary" aria-hidden="true" />
+            {pendientes}
+            {' '}
+            {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
+          </p>
+          <p className="text-right text-h5 font-heading text-primary">
+            {list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}
+            –
+            {formatPrecio(list.resumen.coste_estimado_max)}
+          </p>
         </div>
       </Card>
 
