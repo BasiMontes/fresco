@@ -52,6 +52,34 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
   const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isClosing = shouldRender && !open;
 
+  // Two-frame entrance commit (FRESCO-247 fix) — `06-modal.md`'s JS snippet
+  // assumes `.t-modal` is a permanently-present node and only ever toggles
+  // classes on it; this node is portal-mounted fresh on every open, so
+  // applying `.is-open` in the same commit that creates the node gives the
+  // browser no previously-painted frame to transition FROM (confirmed live
+  // via DOM-sampling: the modal was already at its final scale(1)/opacity:1
+  // on the very first sample). Splitting the mount into two commits — base
+  // classes first, `.is-open` only after the browser has actually painted
+  // that base frame — gives the transition a real starting point. A single
+  // `requestAnimationFrame` isn't reliable here (some browsers still batch
+  // it into the same paint as the mount), so this nests two.
+  const [hasEntered, setHasEntered] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    if (!shouldRender || !open) {
+      setHasEntered(false);
+      return;
+    }
+
+    let rafId = requestAnimationFrame(() => {
+      rafId = requestAnimationFrame(() => {
+        setHasEntered(true);
+      });
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [shouldRender, open]);
+
   React.useEffect(() => {
     // Cancel any pending unmount first — this is what makes rapid
     // open/close/open safe: re-opening mid-close always wins over a stale
@@ -146,7 +174,7 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
         onClick={event => event.stopPropagation()}
         className={cn(
           't-modal max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card bg-surface p-4 shadow-lg focus:outline-none sm:p-6',
-          open && 'is-open',
+          open && hasEntered && 'is-open',
           isClosing && 'is-closing',
           className,
         )}
