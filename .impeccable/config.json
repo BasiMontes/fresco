@@ -11,6 +11,15 @@
         ],
         "createdAt": "2026-08-13T16:06:11.043Z",
         "reason": "User-confirmed false positive on FRESCO-148: error-banner border-l-4 border-error is a recognized alert pattern (Material/GitHub flash banners), not a decorative side-tab."
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "*",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-08-21T11:07:13.247Z",
+        "reason": "transitions-dev vendored motion tokens (--ease-bounce, --ease-bounce-strong) — verbatim library values, not arbitrary design choices; user confirmed intentional"
       }
     ]
   }
