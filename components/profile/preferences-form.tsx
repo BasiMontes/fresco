@@ -3,13 +3,34 @@
 import type { DiaSemana, TipoPlatoSlot } from '@schemas';
 import type { FormEvent } from 'react';
 import type { OnboardingProfilePayload } from '@/lib/api/user-profile';
-import { useState } from 'react';
+import { Check } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 import { fromPlanningSelection, toPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/client';
+
+/**
+ * FRESCO-248 — reads a `--shake-*`/`--revert-*` CSS custom property off
+ * `:root` with a numeric fallback, same helper shape as
+ * `transitions-dev`'s own `12-error-state-shake.md` JS orchestration
+ * snippet. Mirrors `components/profile/nombre-form.tsx`'s copy — see that
+ * file's Save/error/success comment for why this stays local, not shared.
+ * `getComputedStyle` does NOT reliably keep the `ms` unit — Chromium
+ * serializes `--revert-hold: 3000ms` as `"3s"`, and a plain `parseFloat`
+ * reads that as `3` instead of `3000` (same quirk documented in
+ * `favorite-toggle-button.tsx`'s `readCssTimeMs`).
+ */
+function readMs(name: string, fallback: number): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return raw.endsWith('ms') ? value : value * 1000;
+}
 
 export interface PreferencesFormProps {
   /**
@@ -119,12 +140,68 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLButtonElement>(null);
+  const revertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // FRESCO-248 — same imperative classList replay as nombre-form.tsx; see
+  // that file's comment for why this can't be plain React state.
+  function showError() {
+    const wrap = wrapRef.current;
+    const input = inputRef.current;
+    if (!wrap || !input) {
+      return;
+    }
+
+    wrap.classList.add('is-error');
+    input.classList.add('is-error');
+
+    input.classList.remove('is-shaking');
+    void input.offsetWidth; // force reflow
+    input.classList.add('is-shaking');
+
+    const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
+    if (shakeTimerRef.current) {
+      clearTimeout(shakeTimerRef.current);
+    }
+    shakeTimerRef.current = setTimeout(() => input.classList.remove('is-shaking'), shakeMs + 20);
+
+    if (revertTimerRef.current) {
+      clearTimeout(revertTimerRef.current);
+    }
+    const hold = readMs('--revert-hold', 3000);
+    revertTimerRef.current = setTimeout(() => {
+      revertTimerRef.current = null;
+      wrap.classList.remove('is-error');
+      input.classList.remove('is-error');
+    }, shakeMs + hold);
+  }
+
+  function clearError() {
+    if (revertTimerRef.current) {
+      clearTimeout(revertTimerRef.current);
+      revertTimerRef.current = null;
+    }
+    if (shakeTimerRef.current) {
+      clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = null;
+    }
+    wrapRef.current?.classList.remove('is-error');
+    inputRef.current?.classList.remove('is-error', 'is-shaking');
+  }
+
+  useEffect(() => () => {
+    if (revertTimerRef.current) { clearTimeout(revertTimerRef.current); }
+    if (shakeTimerRef.current) { clearTimeout(shakeTimerRef.current); }
+  }, []);
 
   const isDirty = isPreferencesDirty(preferences, initialPreferences);
   const { days: selectedDays, meals: selectedMeals } = fromPlanningSelection(preferences.planning_selection ?? DEFAULT_PLANNING_SELECTION);
 
   function toggleDieta(key: DietaKey) {
     setSaved(false);
+    clearError();
     setPreferences((prev) => {
       // AC-2 (onboarding Step 1): "vegana" always implies "vegetariana" —
       // the vegetariano chip stays locked selected while vegano is active.
@@ -141,6 +218,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
 
   function toggleAlergeno(value: string) {
     setSaved(false);
+    clearError();
     setPreferences(prev => ({
       ...prev,
       alergenos: prev.alergenos.includes(value)
@@ -160,6 +238,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   // selection. Guard against that before shipping the picker.
   function toggleMeal(value: TipoPlatoSlot) {
     setSaved(false);
+    clearError();
     setPreferences((prev) => {
       const { days, meals } = fromPlanningSelection(prev.planning_selection ?? DEFAULT_PLANNING_SELECTION);
       const nextMeals = meals.includes(value) ? meals.filter(v => v !== value) : [...meals, value];
@@ -169,6 +248,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
 
   function toggleDay(value: DiaSemana) {
     setSaved(false);
+    clearError();
     setPreferences((prev) => {
       const { days, meals } = fromPlanningSelection(prev.planning_selection ?? DEFAULT_PLANNING_SELECTION);
       const nextDays = days.includes(value) ? days.filter(v => v !== value) : [...days, value];
@@ -189,6 +269,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
     catch (error) {
       console.error('[PreferencesForm] upsertUserProfile failed', error);
       setSaveError('No se pudieron guardar tus preferencias. Inténtalo de nuevo.');
+      showError();
     }
     finally {
       setIsSaving(false);
@@ -276,21 +357,24 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
         ))}
       </div>
 
-      {saveError && (
-        <p data-testid="preferencias_save_error_message" role="alert" aria-live="assertive" className="mt-3 text-body-sm text-error">
-          {saveError}
-        </p>
-      )}
       {saved && (
-        <p data-testid="preferencias_saved_message" role="status" aria-live="polite" className="mt-3 text-body-sm text-tertiary">
-          Preferencias guardadas.
-        </p>
+        <div className="mt-3 flex items-center gap-1.5">
+          <span className="t-success-check" data-state="in" aria-hidden="true" data-testid="preferencias_saved_check">
+            <Check className="size-4 text-success" strokeWidth={3} />
+          </span>
+          <p data-testid="preferencias_saved_message" role="status" aria-live="polite" className="text-body-sm text-tertiary">
+            Preferencias guardadas.
+          </p>
+        </div>
       )}
 
-      <div className="mt-4">
-        <Button type="submit" variant="action" disabled={isSaving || !isDirty} data-testid="actualizar_preferencias_button">
+      <div className="t-input-wrap mt-4" ref={wrapRef} data-testid="preferencias_save_wrap">
+        <Button type="submit" variant="action" disabled={isSaving || !isDirty} data-testid="actualizar_preferencias_button" className="t-input" ref={inputRef}>
           {isSaving ? 'Guardando…' : 'Actualizar Preferencias'}
         </Button>
+        <p data-testid="preferencias_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">
+          {saveError}
+        </p>
       </div>
     </form>
   );

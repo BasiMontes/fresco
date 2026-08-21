@@ -148,8 +148,22 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  // FRESCO-248 — AC-3: which single row shakes on a failed toggle (error
+  // state shake, `transitions-dev`'s `12-error-state-shake.md`). Holds only
+  // the most recent failing coordinate — acceptable given `errorMessage`
+  // above is also a single global string today, not a regression. `nonce`
+  // forces the shaking wrapper to remount (via `key`) so a second failure
+  // on the SAME item replays the animation: without it, the derived
+  // className string is identical across both renders, React skips the
+  // DOM write, and the CSS animation never restarts (caught in code review).
+  const [shakingItem, setShakingItem] = React.useState<{ pasilloIdx: number, itemIdx: number, nonce: number } | null>(null);
+  const shakeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
   const pasillosOriginales = React.useMemo(() => new Set(list.pasillos.map(p => p.nombre)), [list.pasillos]);
+
+  React.useEffect(() => () => {
+    if (shakeTimerRef.current) { clearTimeout(shakeTimerRef.current); }
+  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -215,6 +229,22 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
       console.error('[ShoppingListView] toggleShoppingListItem failed, reverting', error);
       setComprado(pasilloIdx, itemIdx, !nextComprado);
       setErrorMessage('No se pudo guardar el cambio. Vuelve a intentarlo.');
+
+      if (shakeTimerRef.current) {
+        clearTimeout(shakeTimerRef.current);
+      }
+      setShakingItem(current => ({ pasilloIdx, itemIdx, nonce: (current?.nonce ?? 0) + 1 }));
+      const cs = getComputedStyle(document.documentElement);
+      const readMs = (name: string, fallback: number) => {
+        const raw = cs.getPropertyValue(name).trim();
+        const value = Number.parseFloat(raw);
+        if (!Number.isFinite(value)) {
+          return fallback;
+        }
+        return raw.endsWith('ms') ? value : value * 1000;
+      };
+      const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
+      shakeTimerRef.current = setTimeout(() => setShakingItem(null), shakeMs + 20);
     }
   }
 
@@ -351,11 +381,33 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                     const usosLabel = formatUsos(item.usos);
                     return (
                       <li key={item.nombre} className="flex items-center gap-4 p-4">
-                        <Checkbox
-                          data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
-                          checked={item.comprado}
-                          onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
-                        />
+                        {/* FRESCO-248 — error state shake (12), retargeted from its
+                            documented `<input>` shape onto this checkbox row: outer
+                            `.t-input-wrap`, inner `.t-input` shakes when this exact
+                            [pasilloIdx, itemIdx] is the most recent failing toggle.
+                            `key` includes `nonce` so a second failure on the SAME
+                            item forces a fresh element — a className-only toggle
+                            would produce an identical string on repeat and React
+                            would skip the DOM write, so the CSS animation would
+                            never replay (see Decision 1: keyframes autoplay safely
+                            on fresh mount, same reasoning as the success-check). */}
+                        {(() => {
+                          const isShaking = shakingItem !== null && shakingItem.pasilloIdx === pasilloIdx && shakingItem.itemIdx === itemIdx;
+                          return (
+                            <div className="t-input-wrap">
+                              <div
+                                key={isShaking ? `shake-${shakingItem.nonce}` : 'idle'}
+                                className={cn('t-input', isShaking && 'is-shaking')}
+                              >
+                                <Checkbox
+                                  data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
+                                  checked={item.comprado}
+                                  onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
                         <div className="flex min-w-0 flex-1 flex-col">
                           <span
                             className={cn(
