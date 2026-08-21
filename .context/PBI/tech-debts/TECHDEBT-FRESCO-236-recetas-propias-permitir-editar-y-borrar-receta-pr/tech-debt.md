@@ -23,14 +23,14 @@
 
 ### customfield_10000
 
-{}
+{repository={count=2, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":2,"lastUpdated":"2026-08-21T10:58:19.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"},"GitHub":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 8/20/2026
-- **Updated:** 8/20/2026
+- **Updated:** 8/21/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

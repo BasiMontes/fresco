@@ -219,6 +219,71 @@ export async function createRecetaPropia(
   return data;
 }
 
+export type UpdateRecetaPropiaInput = CreateRecetaPropiaInput;
+
+/**
+ * Updates a personal recipe owned by the CURRENTLY authenticated user
+ * (FRESCO-236). Scoped by both `id` and `user_id` -- defense-in-depth on top
+ * of `recetas_propias_update_own`'s RLS `using`/`with check`, same pattern
+ * as `deleteMealPlan()` in `lib/api/meal-plan.ts`.
+ */
+export async function updateRecetaPropia(
+  client: SupabaseClient<Database>,
+  id: string,
+  input: UpdateRecetaPropiaInput,
+): Promise<RecetaPropia> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new RecipesError('No hay una sesión autenticada para editar esta receta.');
+  }
+
+  const { data, error } = await client
+    .from('recetas_propias')
+    .update(input)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select('*')
+    .single();
+
+  if (error) {
+    throw new RecipesError(`No se pudo actualizar tu receta: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Deletes a personal recipe owned by the CURRENTLY authenticated user
+ * (FRESCO-236). Scoped by both `id` and `user_id`, same defense-in-depth
+ * pattern as `deleteMealPlan()` in `lib/api/meal-plan.ts`.
+ */
+export async function deleteRecetaPropia(
+  client: SupabaseClient<Database>,
+  id: string,
+): Promise<void> {
+  const { data: { user }, error: userError } = await client.auth.getUser();
+
+  if (userError || !user) {
+    throw new RecipesError('No hay una sesión autenticada para eliminar esta receta.');
+  }
+
+  const { data, error } = await client
+    .from('recetas_propias')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select('id');
+
+  if (error) {
+    throw new RecipesError(`No se pudo eliminar tu receta: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new RecipesError('No se pudo eliminar tu receta: la receta no existe o no te pertenece.');
+  }
+}
+
 export type RecipeDetail
   = | { kind: 'catalogo', receta: Recipe }
     | { kind: 'propia', receta: RecetaPropia };

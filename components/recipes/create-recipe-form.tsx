@@ -2,11 +2,11 @@
 
 import type { RecetaPropia } from '@schemas';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { createRecetaPropia } from '@/lib/api/recipes';
+import { createRecetaPropia, updateRecetaPropia } from '@/lib/api/recipes';
 import { createClient } from '@/lib/supabase/client';
 
 /** One line per item — matches how a user naturally types a list in a plain textarea. */
@@ -14,23 +14,32 @@ function linesToItems(value: string): string[] {
   return value.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 }
 
+/** Inverse of `linesToItems` — pre-fills the textarea from a saved recipe's array. */
+function itemsToLines(items: string[]): string {
+  return items.join('\n');
+}
+
 export interface CreateRecipeFormProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreated: (receta: RecetaPropia) => void
+  /** Present → edit mode: pre-fills the fields and calls `updateRecetaPropia` instead of `createRecetaPropia` (FRESCO-236). */
+  receta?: RecetaPropia
 }
 
 /**
- * "Crear propia" dialog (FRESCO-68). Required-nombre validation mirrors
+ * "Crear propia" / "Editar receta" dialog (FRESCO-68, edit mode added
+ * FRESCO-236). Required-nombre validation mirrors
  * `components/profile/nombre-form.tsx` exactly — touched-gated, silent until
  * the field is dirtied, disabled submit while invalid or saving. No
  * textarea primitive exists yet in this design system (same gap `FilterSelect`
  * hit for `<select>` in FRESCO-67) — styled inline to match `Input`'s shape.
  */
-export function CreateRecipeForm({ open, onOpenChange, onCreated }: CreateRecipeFormProps) {
-  const [nombre, setNombre] = useState('');
-  const [ingredientesText, setIngredientesText] = useState('');
-  const [pasosText, setPasosText] = useState('');
+export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: CreateRecipeFormProps) {
+  const isEditMode = receta !== undefined;
+  const [nombre, setNombre] = useState(receta?.nombre ?? '');
+  const [ingredientesText, setIngredientesText] = useState(itemsToLines(receta?.ingredientes ?? []));
+  const [pasosText, setPasosText] = useState(itemsToLines(receta?.pasos ?? []));
   const [touched, setTouched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -39,12 +48,28 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated }: CreateRecipe
   const isValid = trimmedNombre.length > 0;
 
   function reset() {
-    setNombre('');
-    setIngredientesText('');
-    setPasosText('');
+    setNombre(receta?.nombre ?? '');
+    setIngredientesText(itemsToLines(receta?.ingredientes ?? []));
+    setPasosText(itemsToLines(receta?.pasos ?? []));
     setTouched(false);
     setSaveError(null);
   }
+
+  // `PersonalRecipeActions` keeps a single `CreateRecipeForm` instance
+  // mounted (the `Dialog` only hides it, doesn't unmount it), so the
+  // `useState(receta?.nombre ?? '')` initializers above only ever run once —
+  // they never pick up a reopened dialog or a `receta` prop that changed
+  // since first mount. Re-sync every time the dialog transitions to open, so
+  // a cancelled edit doesn't leave stale input for next time and a just-saved
+  // edit doesn't appear reverted (FRESCO-236 review fix).
+  // Deliberately omits `reset` from the dependency list: it's redefined every
+  // render from `receta`, so including it would re-run this effect (and wipe
+  // in-progress edits) on every keystroke while the dialog is open.
+  useEffect(() => {
+    if (open) {
+      reset();
+    }
+  }, [open, receta]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,17 +82,20 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated }: CreateRecipe
     setSaveError(null);
     try {
       const client = createClient();
-      const receta = await createRecetaPropia(client, {
+      const input = {
         nombre: trimmedNombre,
         ingredientes: linesToItems(ingredientesText),
         pasos: linesToItems(pasosText),
-      });
-      onCreated(receta);
+      };
+      const savedReceta = isEditMode
+        ? await updateRecetaPropia(client, receta.id, input)
+        : await createRecetaPropia(client, input);
+      onCreated(savedReceta);
       reset();
       onOpenChange(false);
     }
     catch (error) {
-      console.error('[CreateRecipeForm] createRecetaPropia failed', error);
+      console.error('[CreateRecipeForm] save failed', error);
       setSaveError('No se pudo guardar tu receta. Inténtalo de nuevo.');
     }
     finally {
@@ -79,10 +107,10 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated }: CreateRecipe
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      aria-label="Crear receta propia"
+      aria-label={isEditMode ? 'Editar receta' : 'Crear receta propia'}
       data-testid="create_recipe_dialog"
     >
-      <h2 className="text-h4">Crear receta propia</h2>
+      <h2 className="text-h4">{isEditMode ? 'Editar receta' : 'Crear receta propia'}</h2>
       <form
         onSubmit={(event) => {
           void handleSubmit(event);
@@ -143,7 +171,7 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated }: CreateRecipe
 
         <div>
           <Button type="submit" variant="action" disabled={!isValid || isSaving} data-testid="guardar_receta_button">
-            {isSaving ? 'Guardando…' : 'Guardar receta'}
+            {isSaving ? 'Guardando…' : (isEditMode ? 'Guardar cambios' : 'Guardar receta')}
           </Button>
         </div>
       </form>
