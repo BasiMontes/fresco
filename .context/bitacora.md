@@ -3831,3 +3831,55 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Que: verifique las 4 historias (228/230/231/232) tarjeta por tarjeta contra fresco-pro.vercel.app real, con checkout/portal/cancelacion de Stripe (test mode) via playwright-cli. Encontre que el webhook llevaba roto desde que se shippeo FRESCO-228: (1) STRIPE_WEBHOOK_SECRET y SUPABASE_SERVICE_ROLE_KEY se agregaron a Vercel despues del build, no toman efecto sin redeploy -- redesplegue prod y staging; (2) `service_role` nunca tuvo GRANT SELECT/UPDATE sobre user_profiles (solo `authenticated` lo tenia) -- migracion nueva. Tambien arregle la cuenta QA de PRE (email sin confirmar) y le cree su fila de user_profiles (nunca completo onboarding). Los 3 AC de cada historia confirmados en vivo salvo el escenario "renovacion mantiene Pro" de 230 (confirmado indirecto via el flujo de cancelacion de 231) y el escenario "pago fallido" de 232 (solo sembrado en DB, no con tarjeta declinada real, por alcance de tiempo). Las 4 historias -> Finalizada, EPIC-FRESCO-227 -> Finalizada.
 - Por que: el usuario pregunto si la epica estaba cerrada -- no lo estaba (todo en Control de calidad sin verificar), pidio arrancar la verificacion tarjeta por tarjeta.
 - Siguiente: EPIC-FRESCO-227 100% cerrada (dev + QA + prod). No queda deuda pendiente conocida en esta epica salvo: pago fallido con tarjeta real nunca probado end-to-end, y el split test/live-mode entre entornos sigue sin abordar (decision consciente de quedarse en test mode por ahora).
+
+## 2026-08-19 - Barrido QA sistematico de pantallas reales en staging
+
+- Que: recorri en vivo (playwright-cli, sesion autenticada contra fresco-pre.vercel.app) las pantallas de la app sin cobertura sistematica en regression.feature: /forgot-password, /update-password, /favorites, /notifications y la landing publica (/). Encontre y documente el gap real que motivo la sesion -- /favorites y /notifications solo tenian 1 mencion de pasada en las 112 escenarios previos, sin cubrir su contenido real. Anadi 20 escenarios Gherkin nuevos (secciones nuevas Favoritos, Centro de Avisos y Landing publica, mas 6 escenarios de recuperacion de password dentro de Autenticacion). 3 bugs reales encontrados sin ticket todavia: (1) en /update-password, un mensaje de error obsoleto ("no coinciden") queda en pantalla describiendo un problema que ya no es real cuando el segundo intento falla por longitud minima en vez de por mismatch (el minLength nativo bloquea el submit antes de que el JS revalide); (2) /notifications se llama "Centro de Avisos" pero solo contiene recomendaciones de recetas, cero avisos reales de sistema (pago fallido, semana sin menu), y el icono no tiene contador de no leidos; (3) el footer de la landing muestra copyright "2025" desactualizado. Tambien encontre y corregi drift preexistente independiente de esta sesion: 4 escenarios que ya existian en regression.feature desde 2026-08-14 (precio estimado en lista de compra, "Compra realizada", scroll tactil del calendario, sugerencias por favoritos) nunca se habian sincronizado a bitacora-tests.md. Ambos ficheros quedan reconciliados 1:1 (136 escenarios, mismos conteos de tags verificados por grep en ambos).
+- Por que: la cobertura de 112 escenarios era acumulacion organica por historia/bug, no un barrido sistematico pantalla por pantalla -- el usuario detecto el hueco al revisar cuantos tests cubrian realmente toda la app.
+- Siguiente: quedan @pendiente por bloqueo de infraestructura (sin fixture de inbox real): completar la recuperacion de password de punta a punta con el enlace real del correo, y si las recomendaciones de /notifications deberian excluir recetas ya favoritas (requiere decision de producto, no solo tecnica). Los 3 bugs reales encontrados no tienen ticket Jira todavia -- crearlos si se decide arreglarlos.
+
+## 2026-08-20 - FRESCO-233: nivelacion prod con staging (deploy)
+
+- Que: FRESCO-233 (mensaje de error obsoleto en /update-password) ya venia fixeado y mergeado a staging (PR #104, commit fd45ff9, 2026-08-19), solo pendiente de prod. Fast-forward de main a staging (ff-only, sin conflictos) y push directo a main confirmado por el usuario. Deploy verificado READY en Vercel produccion con vercel ls -m githubCommitSha, mismo commit fd45ff9 en ambos entornos.
+- Por que: usuario pidio explicitamente nivelar staging con produccion tras confirmar que el ticket seguia sin desplegar en main.
+- Siguiente: FRESCO-233 en main y prod, listo para verificacion QA final si aplica. Jira sigue en status Merged (no se transiciono, fuera de alcance de esta sesion).
+
+## 2026-08-20 - FRESCO-213: fix alineacion resumen /shopping-list
+
+- Que: root cause era el bloque "Resumen" de /shopping-list usando flex items-start con dos columnas, donde cada columna desplazaba su segunda linea segun la altura de SU propia primera linea (h2.text-h5 "Resumen" vs p.text-caption "Total estimado"), no segun una fila compartida -- desfase de ~7px reportado por QA con getBoundingClientRect. Cambie components/shopping-list/shopping-list-view.tsx a un grid de 2 filas (grid-cols-2) para que ambas columnas compartan alto de fila. Verificado visualmente en dev local con datos reales (38 articulos pendientes / 62,53-84,60E alineados). PR #104 -> corregido: PR #105 mergeado (squash) a staging, deploy READY verificado por commitSha, alias fresco-pre.vercel.app estaba apuntando a un build ~10min mas viejo (no incluia el merge) -- realiaseado manualmente al deploy correcto. Jira: WIP -> Control de calidad.
+- Por que: usuario pidio trabajar FRESCO-213 (defecto reabierto por QA en staging tras primer intento de fix) y luego "dejala en QA".
+- Siguiente: verificar en staging con una cuenta que tenga lista de compra generada (QA_PRE no tiene menu/lista activa, no se pudo comparar visualmente ahi mismo). Sin deuda de codigo pendiente.
+
+## 2026-08-20 - FRESCO-235: fix año de copyright en footer de la landing
+
+- Que: el footer de la landing publica (/) mostraba "© 2025 Fresco..." hardcodeado como string literal en components/landing/site-footer.tsx. Reemplazado por new Date().getFullYear(), verificado en el HTML renderizado tanto en dev local como en fresco-pre.vercel.app ("© 2026 Fresco..."). Ticket Jira estaba en status "Listo" (categoria new = Ready For Dev, no Done pese al nombre) -- no requirio reapertura, solo no se habia tomado todavia. PR #106 mergeado (squash) a staging, deploy READY verificado por commitSha, alias fresco-pre.vercel.app apuntaba a un build ~10min mas viejo (previo al merge) -- realiaseado manualmente. Jira: WIP -> Control de calidad.
+- Por que: usuario pidio trabajar FRESCO-235 y luego "dejala en QA".
+- Siguiente: sin deuda de codigo pendiente. Verificacion QA visual en staging.
+
+## 2026-08-20 - FRESCO-203 cerrado + FRESCO-234: aviso real de pago fallido + badge no-visto
+
+- Que: FRESCO-203 ("crear notificaciones, pensarlas") resulto ya absorbido por EPIC-FRESCO-223 (Centro de Avisos), cuyas 3 historias (224/225/226) estaban Finalizadas -- sin trabajo de codigo pendiente, transicionado a Finalizada con comentario explicando la absorcion. FRESCO-234 (defecto: /notifications solo mostraba recomendaciones de recetas, sin avisos reales ni badge) se encaro con el alcance acordado con el usuario: enrutar el aviso de pago fallido existente (FRESCO-232) a /notifications, y agregar un badge binario de no-visto en el icono de campana de /menu. Extraida isPaymentFailedAlertActive(plan, paymentFailedAt) a lib/api/user-profile.ts, compartida entre /profile, /notifications y el nuevo getHasUnseenNotifications -- corrigio un finding de code-review (misma logica duplicada en 3 sitios). Verificado en vivo (dev server local, cuenta PRO_TEST) el caso "badge ausente" contra estado real de DB. El caso "badge+aviso visibles" no se pudo reproducir en vivo: user_profiles.plan/payment_failed_at estan protegidos por trigger DB (prevent_client_subscription_writes, ADR-0007, solo escribe el webhook real de Stripe), la cuenta PRO_TEST no tiene stripe_customer_id real, y la cuenta QA con suscripcion Stripe real topo con un bloqueo del clasificador de seguridad de Claude Code al intentar leerla via API -- se corto ahi sin tocar nada (ni DB ni Stripe se modificaron). Aceptado igual por compartir exactamente el mismo dato y gate que /profile (ya verificado en vivo en el cierre de EPIC-FRESCO-227). PR #107 abierto contra staging, CI verde, Jira WIP -> Merged (transicion automatica de Jira no disparo, se hizo manual).
+- Por que: usuario pidio trabajar 203 y luego 234.
+- Siguiente: PR #107 pendiente de merge a staging (no se mergeo, usuario no dio la instruccion "dejala en QA" para este ticket todavia). Verificacion en vivo del caso "aviso visible" queda como seguimiento natural la proxima vez que una cuenta de QA tenga payment_failed_at genuinamente seteado.
+
+## 2026-08-20 - FRESCO-234: mergeado a staging y deployado
+
+- Que: PR #107 mergeado (squash) a staging (commit f417dfd), deploy READY verificado por commitSha, fresco-pre.vercel.app realiaseado (apuntaba a build 47min mas viejo). Jira: WIP -> Merged -> Control de calidad. Comentario de aviso QA posteado con checklist de verificacion (badge en /menu, aviso de pago fallido en /notifications) y la nota de que el caso "aviso visible" no se pudo reproducir en vivo esta sesion.
+- Por que: usuario dijo "dejala en QA".
+- Siguiente: verificacion QA en staging. Sin deuda de codigo pendiente mas alla de la reproduccion en vivo del caso "aviso visible" (ver review.md).
+
+## 2026-08-20 - Nivelacion staging -> main (FRESCO-213, FRESCO-234, FRESCO-235)
+
+- Que: fast-forward de main a staging (ff-only, sin conflictos, commit f417dfd) llevando los 3 tickets pendientes de nivelar (FRESCO-213 shopping-list alignment, FRESCO-234 aviso pago fallido + badge, FRESCO-235 footer copyright year). Push directo a main. Deploy produccion verificado READY por commitSha.
+- Por que: usuario pidio "nivela stg y prod".
+- Siguiente: ninguno de los 3 tickets tiene verificacion QA formal registrada todavia (se avisso al usuario antes de nivelar). Jira no se transiciono para ninguno (fuera de alcance, igual que en nivelaciones previas de esta sesion).
+
+## 2026-08-20 - FRESCO-208 fix real (overscroll-behavior)
+- Qué: fix anterior (#72) solo recoloreaba el hueco del rebote elástico de la sidebar; causa real seguía sin tocar. Añadido overscroll-behavior-y: none en html (app/globals.css) para bloquear el rebote de raíz. PR #108 mergeado a staging, deploy READY, fresco-pre realiased.
+- Por qué: usuario reprobó QA con video, hueco seguía apareciendo tras el fix cosmético previo.
+- Siguiente: reverificar con gesto físico de trackpad en fresco-pre.vercel.app (los eventos sintéticos no reproducen el rebote real).
+
+## 2026-08-20 - FRESCO-208 nivelado a prod
+- Qué: staging (c99d370, PR #108) niveló ff-only a main, deploy producción READY, fresco-pro.vercel.app confirmado. Jira -> Finalizada.
+- Por qué: usuario confirmó verificación en staging OK, pidió nivelar y cerrar.
+- Siguiente: ninguno, ticket cerrado.
