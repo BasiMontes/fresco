@@ -66,5 +66,18 @@ Decision needed before apply: No (resolved)
 
 ---
 
+### Basi Montes - 8/21/2026, 5:38:58 PM
+
+## QA Ready
+
+- PR: https://github.com/BasiMontes/fresco/pull/112 (merged to staging)
+- Branch: feat/FRESCO-236-editar-borrar-receta-propia (deleted post-merge)
+- Staging: https://fresco-dev.vercel.app — deploy READY (commit fbc816a)
+- Scope: edit/delete for personal recipes, detail page only (`/recipes/[id]`)
+- Known good test path: log in, open a personal ("Tu receta") recipe detail, use "Editar esta receta" / "Eliminar esta receta"
+
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

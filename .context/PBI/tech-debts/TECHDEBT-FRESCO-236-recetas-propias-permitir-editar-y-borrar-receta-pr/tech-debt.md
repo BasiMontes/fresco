@@ -1,7 +1,7 @@
 # Tarea: Recetas propias: permitir editar y borrar receta propia
 
 **Jira Key:** [FRESCO-236](https://basiliomontescastano.atlassian.net/browse/FRESCO-236)
-**Status:** Listo
+**Status:** Control de calidad
 **Type:** Tarea
 
 ---
@@ -23,7 +23,7 @@
 
 ### customfield_10000
 
-{repository={count=2, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":2,"lastUpdated":"2026-08-21T10:58:19.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"},"GitHub":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=4}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":4,"lastUpdated":"2026-08-21T17:36:46.000+0200","stateCount":4,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"},"GitHub":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
