@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { getUserNombre, getUserPlan } from '@/lib/api/user-profile';
+import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -29,7 +29,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
 
   if (!user) { redirect('/login'); }
 
-  const [nombre, plan] = await Promise.all([
+  const [nombre, plan, profileExists] = await Promise.all([
     getUserNombre(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] getUserNombre failed, defaulting to null', error);
       return null;
@@ -38,7 +38,24 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
       console.error('[AppGroupLayout] getUserPlan failed, defaulting to free', error);
       return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
     }),
+    // FRESCO-250: fails open (assumes onboarded) on a transient Supabase
+    // error, same conservative-default judgment call as the two reads above
+    // — the alternative (fail-closed) would bounce every already-onboarded
+    // user to /onboarding during an outage, which is worse than the fail-open
+    // exposure: Next.js's Client Router Cache can keep a bad "onboarded"
+    // verdict from a blip on a genuinely new user's first load for up to its
+    // stale-time window on client-side navigations within (app)/, but a full
+    // navigation or reload re-runs this check and self-corrects.
+    hasUserProfile(supabase, user.id).catch((error) => {
+      console.error('[AppGroupLayout] hasUserProfile failed, defaulting to true', error);
+      return true;
+    }),
   ]);
+
+  // FRESCO-250: an authenticated user with no `user_profiles` row never
+  // finished onboarding (e.g. landed here straight off the signup
+  // confirmation email) — steer them back instead of rendering the shell.
+  if (!profileExists) { redirect('/onboarding'); }
 
   return <AppShell user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}>{children}</AppShell>;
 }

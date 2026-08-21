@@ -98,6 +98,32 @@ export async function upsertUserProfile(
 }
 
 /**
+ * Whether the CURRENTLY authenticated user has completed onboarding — i.e. a
+ * `user_profiles` row exists for them (FRESCO-250). Row-existence is the only
+ * reliable signal: `upsertUserProfile()` is the sole writer, and every column
+ * it writes is legitimately nullable even on a fully-onboarded row (see
+ * `getUserNombre`'s `nombre` and `getUserPlan`'s DB-defaulted `plan`), so
+ * neither of those reads can distinguish "no row" from "row with a null/
+ * default field" — a dedicated existence check is required.
+ */
+export async function hasUserProfile(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo comprobar el perfil: ${error.message}`);
+  }
+
+  return data !== null;
+}
+
+/**
  * Onboarding defaults (mirrors `lib/store/onboarding-store.ts`'s
  * `initialState` for `adultos`/`ninos`) — used only as the fallback when no
  * `user_profiles` row exists yet, same conservative-default judgment call as
