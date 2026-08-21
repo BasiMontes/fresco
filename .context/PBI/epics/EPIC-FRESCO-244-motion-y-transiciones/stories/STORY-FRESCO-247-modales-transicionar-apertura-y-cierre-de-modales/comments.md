@@ -329,5 +329,11 @@ El desglose técnico de este plan (instalar `_root.css` una vez, añadir estado 
 
 ---
 
+### Basi Montes - 8/21/2026, 1:17:43 PM
+
+Corrección menor: el plan/comments de esta historia dice "6 puntos de llamada al modal", pero el conteo real es 6 archivos con 7 instancias de <Dialog> — ayuda-section.tsx renderiza el modal dos veces (configuracion y faq), cada una con estado independiente (sin condición de carrera). No afecta a la corrección de la implementación, solo al conteo documentado. Hallazgo MINOR de la revisión adversarial de PR #110, corregido junto al fix del BLOCKER (transición de apertura del modal).
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

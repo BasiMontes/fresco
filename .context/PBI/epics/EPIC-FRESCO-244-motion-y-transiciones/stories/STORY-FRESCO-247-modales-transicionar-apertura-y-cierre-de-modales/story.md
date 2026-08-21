@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-247](https://basiliomontescastano.atlassian.net/browse/FRESCO-247)
 **Epic:** [FRESCO-244](https://basiliomontescastano.atlassian.net/browse/FRESCO-244) (Motion y Transiciones)
 **Type:** Historia
-**Status:** WIP
+**Status:** Merged
 **Priority:** Medium
 **Story Points:** -
 
