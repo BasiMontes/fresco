@@ -21,16 +21,16 @@ Refinamiento de FRESCO-203.
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-224](https://basiliomontescastano.atlassian.net/browse/FRESCO-224) | Centro de Avisos | Ver mensaje de bienvenida al entrar por primera vez | - | Medium | Control de calidad |
-| [FRESCO-225](https://basiliomontescastano.atlassian.net/browse/FRESCO-225) | Centro de Avisos | Ver aviso con las rutas principales de la app | - | Medium | Control de calidad |
-| [FRESCO-226](https://basiliomontescastano.atlassian.net/browse/FRESCO-226) | Centro de Avisos | Ver recomendaciones de recetas que me pueden gustar | - | Medium | Control de calidad |
+| [FRESCO-224](https://basiliomontescastano.atlassian.net/browse/FRESCO-224) | Centro de Avisos | Ver mensaje de bienvenida al entrar por primera vez | - | Medium | Finalizada |
+| [FRESCO-225](https://basiliomontescastano.atlassian.net/browse/FRESCO-225) | Centro de Avisos | Ver aviso con las rutas principales de la app | - | Medium | Finalizada |
+| [FRESCO-226](https://basiliomontescastano.atlassian.net/browse/FRESCO-226) | Centro de Avisos | Ver recomendaciones de recetas que me pueden gustar | - | Medium | Finalizada |
 
 ---
 
 ## Metadata
 
 - **Created:** 8/17/2026
-- **Updated:** 8/17/2026
+- **Updated:** 8/18/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** post-mvp

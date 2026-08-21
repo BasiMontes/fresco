@@ -28,14 +28,14 @@ Resuelto, ya no es alcance pendiente: conectar foto*url a la UI real — RecipeC
 
 ### customfield_10000
 
-{deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-13T10:24:21.000+0000, id=0, position=0, title=Production, projectId=0, status=DEPLOYED}]}, repository={count=40, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":40,"lastUpdated":"2026-08-13T12:22:11.000+0200","dataType":"repository"},"byInstanceType":{"GitHub":{"count":40,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":40,"name":"GitHub"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-13T12:24:21.000+0200","topEnvironments":[{"lastUpdated":"2026-08-13T10:24:21.000+0000","id":0,"position":0,"title":"Production","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
+{deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-13T10:24:21.000+0000, id=0, position=0, title=Production, projectId=0, status=DEPLOYED}]}, repository={count=41, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":41,"lastUpdated":"2026-08-13T18:04:17.000+0200","dataType":"repository"},"byInstanceType":{"GitHub":{"count":41,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":41,"name":"GitHub"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-13T12:24:21.000+0200","topEnvironments":[{"lastUpdated":"2026-08-13T10:24:21.000+0000","id":0,"position":0,"title":"Production","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 8/1/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/20/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

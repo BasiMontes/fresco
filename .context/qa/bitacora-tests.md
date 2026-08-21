@@ -29,20 +29,20 @@ misma cabecera `# language: es` / `Característica:` que ya declara
 los grupos de sección (`# ====...====`) del `.feature` origen — útil como
 criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 
-**Última actualización:** 2026-08-08.
+**Última actualización:** 2026-08-19 (barrido QA en vivo de pantallas sin cobertura sistemática — recuperación de contraseña, Favoritos, Notificaciones, Landing pública).
 
 ## Resumen ejecutivo
 
 | Métrica | Valor |
 |---|---|
-| Escenarios totales | 100 |
-| `@automatizado` (tienen test Playwright real) | 17 |
-| `@pendiente` (escritos, sin verificar ni automatizar) | 7 |
+| Escenarios totales | 136 |
+| `@automatizado` (tienen test Playwright real) | 21 |
+| `@pendiente` (escritos, sin verificar ni automatizar) | 10 |
 | `@no-implementado` (comportamiento deseado, aún sin construir) | 0 — todo lo que estaba `@no-implementado` ya ha enviado (ver Nota) |
-| `@edge-case` (causística no-camino-feliz) | 54 |
-| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 93 |
+| `@edge-case` (causística no-camino-feliz) | 69 |
+| `@verificado-manual-YYYY-MM-DD` (probado en vivo, pasó) | 126 |
 | Ficheros de step definitions (`tests/steps/*.steps.ts`) | 12 |
-| Áreas / secciones | 13 |
+| Áreas / secciones | 17 |
 
 > **Nota sobre `@no-implementado`:** ahora mismo ningún escenario de
 > `regression.feature` lleva ese tag — todo lo que en su momento se documentó
@@ -53,19 +53,23 @@ criterio de carpeta/folder en AgileTest si la herramienta lo soporta.
 
 ## Índice de áreas
 
-1. Autenticación (5 escenarios)
+1. Autenticación (11 escenarios)
 2. Onboarding y generación de menú — EPIC-FRESCO-4 / EPIC-FRESCO-6 (11 escenarios)
 3. Modo Invitado y Registro Progresivo — EPIC-FRESCO-16 / EPIC-FRESCO-18 (10 escenarios)
 4. Panel de Inicio — saludo personalizado — EPIC-FRESCO-54 / STORY-FRESCO-55 (12 escenarios)
 5. Control del Menú Semanal — EPIC-FRESCO-60 / STORY-FRESCO-61/62/63 (9 escenarios)
-6. Calendario editable — EPIC-FRESCO-10 / STORY-FRESCO-11 (6 escenarios)
+6. Calendario editable — EPIC-FRESCO-10 / STORY-FRESCO-11 (7 escenarios)
 7. Aprendizaje Cocinado/Descartado — EPIC-FRESCO-14 / STORY-FRESCO-15 (6 escenarios)
-8. Lista de la compra — EPIC-FRESCO-12 / STORY-FRESCO-13 (4 escenarios)
+8. Lista de la compra — EPIC-FRESCO-12 / STORY-FRESCO-13 (7 escenarios)
 9. Guía de testeabilidad para QA (/qa) (2 escenarios)
 10. Seguridad — aislamiento de datos entre usuarios (3 escenarios)
 11. Biblioteca de Recetas — EPIC-FRESCO-64 / STORY-FRESCO-65 (24 escenarios)
 12. Perfil (7 escenarios)
 13. App Shell — metadatos globales (1 escenario)
+14. Suscripción Pro / Stripe — EPIC-FRESCO-227 / STORY-FRESCO-228/230/231/232 (12 escenarios)
+15. Favoritos (/favorites) (6 escenarios)
+16. Centro de Avisos (/notifications) (4 escenarios)
+17. Landing pública (/) (4 escenarios)
 
 ---
 
@@ -154,6 +158,99 @@ Escenario: Doble-click rápido en "Iniciar sesión" no dispara dos intentos de a
 > (FRESCO-106) — `lib/auth-errors.ts` traduce por `error.code`, con
 > fallback genérico en español. Re-verificado en vivo: "Email o
 > contraseña incorrectos." Mismo fix cubre 1.4 (signup).
+
+### 1.6 Solicitar el enlace de recuperación de contraseña
+
+**Tags:** `@login` `@recuperar-password` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Solicitar el enlace de recuperación de contraseña
+  Dado que un usuario visita /forgot-password
+  Cuando introduce su email registrado y confirma el formulario
+  Entonces ve un mensaje genérico confirmando que si la cuenta existe, recibirá un enlace
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 1.7 El mensaje de recuperación de contraseña no revela si el email existe (anti-enumeración)
+
+**Tags:** `@login` `@recuperar-password` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El mensaje de recuperación de contraseña no revela si el email existe (anti-enumeración)
+  Dado que un visitante introduce un email que no está registrado en /forgot-password
+  Cuando confirma el formulario
+  Entonces ve exactamente el mismo mensaje genérico que con un email real
+  # Mismo patrón anti-enumeración que signUp() (ver 1.4), aplicado también
+  # aquí por diseño de Supabase Auth. Verificado en vivo comparando ambos
+  # mensajes carácter a carácter.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 1.8 El campo de email en /forgot-password exige un formato válido antes de enviar
+
+**Tags:** `@login` `@recuperar-password` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El campo de email en /forgot-password exige un formato válido antes de enviar
+  Dado que un usuario deja vacío el campo de email en /forgot-password
+  Cuando intenta confirmar el formulario
+  Entonces el navegador bloquea el envío con la validación nativa del campo (required + type=email), sin llamar al backend
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 1.9 Confirmar la nueva contraseña detecta que no coincide con la anterior
+
+**Tags:** `@login` `@recuperar-password` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Confirmar la nueva contraseña detecta que no coincide con la anterior
+  Dado que un usuario está en /update-password
+  Cuando escribe una contraseña y una confirmación distintas y confirma
+  Entonces ve el mensaje "Las contraseñas no coinciden."
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 1.10 Un mensaje de error obsoleto puede confundir sobre el problema real de la contraseña
+
+**Tags:** `@login` `@recuperar-password` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Un mensaje de error obsoleto puede confundir sobre el problema real de la contraseña
+  Dado que un usuario en /update-password ya vio "Las contraseñas no coinciden." por un intento anterior
+  Cuando corrige la confirmación para que ambas coincidan, pero deja una contraseña de menos de 6 caracteres, y reenvía
+  Entonces el envío se bloquea por la validación nativa de longitud mínima (minLength=6)
+  Y el mensaje "Las contraseñas no coinciden." sigue visible en pantalla, describiendo un problema que ya no es real
+  # Bug real encontrado en vivo (barrido QA 2026-08-19), sin ticket todavía:
+  # el segundo intento nunca llega al handler de JS que limpia/actualiza el
+  # mensaje de error, porque minLength=6 bloquea el submit de forma
+  # silenciosa (sin popup visible en este navegador/CLI) antes de que se
+  # revalide el mismatch. Severidad: menor (edge-case de doble error, no
+  # bloquea el flujo feliz).
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 1.11 Completar la recuperación de contraseña de punta a punta con el enlace real del correo
+
+**Tags:** `@login` `@recuperar-password` `@pendiente`
+
+```gherkin
+Escenario: Completar la recuperación de contraseña de punta a punta con el enlace real del correo
+  Dado que un usuario solicitó recuperar su contraseña y recibió el email real
+  Cuando sigue el enlace, cae en /update-password con una sesión de recuperación válida, y confirma una contraseña nueva válida
+  Entonces su contraseña queda actualizada y puede volver a loguearse con la nueva
+  # No ejecutado de punta a punta -- requiere leer un inbox real (sin
+  # fixture en tests/) y es una acción irreversible sobre la cuenta QA
+  # compartida (cambiaría su contraseña real). Verificado en cambio: el
+  # formulario valida coincidencia + longitud mínima correctamente sin
+  # llegar a enviar nada al backend.
+```
+
+**Automatización:** Manual, no automatizado aún — `@pendiente`, bloqueado por falta de fixture de inbox real.
 
 ---
 
@@ -915,6 +1012,29 @@ Escenario: Dos arrastres simultáneos sobre huecos que se solapan
 
 **Automatización:** Manual, no automatizado aún.
 
+### 6.7 El grid del calendario responde a scroll táctil horizontal en mobile
+
+**Tags:** `@calendario` `@verificado-manual-2026-08-14` `@automatizado`
+
+```gherkin
+Escenario: El grid del calendario responde a scroll táctil horizontal en mobile
+  Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos, en un viewport mobile con touch
+  Cuando desliza el dedo horizontalmente sobre el grid
+  Entonces el grid se desplaza y muestra días más allá del lunes
+  # FRESCO-170 -- BLOCKER encontrado DOS veces (QA sweep 2026-08-10,
+  # re-confirmado 2026-08-11 tras un primer "fix" que solo tocó el label
+  # sticky, no el scroll táctil en sí, que seguía completamente muerto).
+  # Causa real: touch-action: none incondicional en el handle de arrastre +
+  # un PointerSensor compartido sin distinguir mouse de touch.
+```
+
+**Automatización:** `tests/steps/calendario.steps.ts` — contexto mobile-emulado dedicado, dispatch de eventos touch reales vía CDP (mouse-wheel/dragTo no detectan este bug, hace falta touch real).
+
+> **Nota de sincronización 2026-08-19:** este escenario y los 3 de la sección
+> 8 (8.5-8.7) ya existían en `regression.feature` desde una sesión previa
+> (2026-08-14) pero nunca se habían sincronizado a este fichero — drift
+> encontrado y corregido durante el barrido QA sistemático de esta sesión.
+
 ---
 
 ## 7. Aprendizaje Cocinado/Descartado (EPIC-FRESCO-14 / STORY-FRESCO-15)
@@ -1085,6 +1205,64 @@ Escenario: La consolidación de ingredientes no produce ningún resultado
 ```
 
 **Automatización:** Manual, no automatizado aún.
+
+### 8.5 Cada producto de la lista muestra su precio estimado
+
+**Tags:** `@lista-compra` `@verificado-manual-2026-08-14` `@automatizado`
+
+```gherkin
+Escenario: Cada producto de la lista muestra su precio estimado
+  Dado que el usuario tiene una lista de la compra generada
+  Entonces cada producto muestra su cantidad, unidad y precio estimado
+  Y el precio se conserva la próxima vez que abre la lista
+  # FRESCO-191 (segunda vuelta): aisle-pricing.ts ya calculaba un precio real
+  # por ingrediente para armar el total -- precio_estimado lo expone por
+  # producto en vez de perderlo en la suma.
+```
+
+**Automatización:** `tests/steps/shopping-list.steps.ts` — mismo patrón que 8.1/8.2, backend real sin mock.
+
+### 8.6 Compra realizada desmarca todos los productos marcados
+
+**Tags:** `@lista-compra` `@verificado-manual-2026-08-14` `@automatizado`
+
+```gherkin
+Escenario: Compra realizada desmarca todos los productos marcados
+  Dado que el usuario tiene una lista de la compra generada con un producto marcado como comprado
+  Cuando pulsa "Compra realizada"
+  Entonces todos los productos quedan desmarcados
+  Y el botón "Compra realizada" desaparece
+  # FRESCO-191 (QA rework): repurpose real del CTA "Completar compra" del
+  # mockup -- sin acción de "completar lista" en el backend, así que se
+  # convirtió en un desmarcado en bloque real vía toggleShoppingListItem.
+  # FRESCO-215: copy renombrada de "Vaciar comprados" a "Compra realizada"
+  # para comunicar la intención (fin de la compra) en vez de la mecánica.
+```
+
+**Automatización:** `tests/steps/shopping-list.steps.ts` — backend real sin mock.
+
+### 8.7 Sugerencias basadas en favoritos permiten añadir un producto a la lista
+
+**Tags:** `@lista-compra` `@verificado-manual-2026-08-14` `@automatizado`
+
+```gherkin
+Escenario: Sugerencias basadas en favoritos permiten añadir un producto a la lista
+  Dado que el usuario tiene una lista de la compra generada y una receta favorita con un ingrediente que no está en la lista
+  Cuando pulsa "Añadir" en esa sugerencia
+  Entonces el producto aparece en la lista, en su pasillo correspondiente
+  Y la sugerencia desaparece del carrusel
+  Y el producto se conserva la próxima vez que abre la lista
+  # FRESCO-194: única fuente de datos real disponible para "sugerencias"
+  # (favoritos -> ingredientes no presentes en la lista actual). "Nuevo"
+  # queda fuera -- sin tracking de recencia en shopping_lists.
+```
+
+**Automatización:** `tests/steps/shopping-list.steps.ts` — backend real sin mock.
+
+> **Nota de sincronización 2026-08-19:** 8.5-8.7 (y 6.7) ya existían en
+> `regression.feature` desde una sesión previa (2026-08-14) pero nunca se
+> habían sincronizado a este fichero — drift encontrado y corregido durante
+> el barrido QA sistemático de esta sesión.
 
 ---
 
@@ -1676,6 +1854,442 @@ Escenario: El title tag global no reclama un mecanismo de "IA" que ya no existe
 
 ---
 
+---
+
+## 14. Suscripción Pro / Stripe — EPIC-FRESCO-227 / STORY-FRESCO-228/230/231/232
+
+**STORY-FRESCO-228 — actualizar a Pro desde el perfil**
+
+### 14.1 Iniciar checkout desde el perfil
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Iniciar checkout desde el perfil
+  Dado que Laura está en su perfil con plan Free
+  Cuando toca el botón de actualizar a Pro
+  Entonces es llevada a completar el pago de la suscripción Pro en Stripe Checkout real
+  # FRESCO-228. Verificado en producción real (fresco-pro.vercel.app),
+  # no simulado. Confirmado junto con el resto de la épica el
+  # 2026-08-19 tras encontrar y arreglar 2 bugs de infra que dejaban el
+  # webhook fallando en silencio desde que se shippeó.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.2 Trial sin tarjeta
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Trial sin tarjeta
+  Dado que Laura empieza el proceso de actualizar a Pro
+  Cuando llega a la pantalla de pago de Stripe Checkout
+  Entonces se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta
+  # FRESCO-228. Verificado en producción real: Checkout Session con
+  # trial_period_days: 7 y payment_method_collection: 'if_required'.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.3 Pago completado activa Pro
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Pago completado activa Pro
+  Dado que Laura completó el pago de la suscripción Pro
+  Cuando vuelve a la app
+  Entonces su perfil muestra el plan Pro activo
+  # FRESCO-228. Verificado en producción real vía checkout.session.completed.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+**STORY-FRESCO-230 — reflejar el estado real de la suscripción**
+
+### 14.4 Pago exitoso activa Pro automáticamente
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Pago exitoso activa Pro automáticamente
+  Dado que Laura completó el pago de su suscripción
+  Cuando el pago se confirma
+  Entonces su cuenta pasa a plan Pro sin que tenga que hacer nada más
+  # FRESCO-230. Mismo evento (checkout.session.completed) que el
+  # escenario "Pago completado activa Pro" de FRESCO-228 -- ya cubierto
+  # por ese handler, sin código nuevo. Verificado en el mismo pase en
+  # vivo del 2026-08-19.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.5 Renovación mensual mantiene Pro
+
+**Tags:** `@suscripcion` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Renovación mensual mantiene Pro
+  Dado que Laura tiene una suscripción Pro activa
+  Cuando se renueva el cobro mensual
+  Entonces sigue teniendo plan Pro sin interrupción
+  # FRESCO-230. Confirmado indirecto: no se pudo forzar un ciclo de
+  # renovación real vía Stripe MCP (sin operación expuesta para
+  # invoice pay/retry), pero el mismo code path (customer.subscription.updated
+  # con status=active) se ejercitó de verdad al probar la cancelación
+  # de FRESCO-231 y al recuperar la suscripción tras el pago fallido de
+  # FRESCO-232. Cubierto también por tests unitarios del webhook.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.6 Cancelación revierte a Free al fin del periodo pagado
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Cancelación revierte a Free al fin del periodo pagado
+  Dado que Laura canceló su suscripción Pro
+  Cuando termina el periodo que ya pagó (customer.subscription.deleted)
+  Entonces su cuenta pasa a plan Free
+  # FRESCO-230. Verificado con evento real de Stripe en producción.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+**STORY-FRESCO-231 — gestionar o cancelar la suscripción**
+
+### 14.7 Acceder a gestión de suscripción
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Acceder a gestión de suscripción
+  Dado que Laura tiene una suscripción Pro activa
+  Cuando entra a su perfil y pulsa "Gestionar suscripción"
+  Entonces puede abrir la gestión de su suscripción en el Billing Portal real de Stripe
+  # FRESCO-231. Verificado en producción real, portal hospedado por
+  # Stripe (ADR-0007: superficie hospedada de Stripe en vez de UI
+  # custom).
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.8 Cancelar la suscripción
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Cancelar la suscripción
+  Dado que Laura está en la gestión de su suscripción (Billing Portal)
+  Cuando elige cancelarla
+  Entonces ve confirmado que seguirá teniendo Pro hasta el fin del periodo ya pagado
+  # FRESCO-231. Verificado en producción real: configuración de
+  # cancelación del portal en modo at_period_end.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.9 Ver mi próximo cobro
+
+**Tags:** `@suscripcion` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Ver mi próximo cobro
+  Dado que Laura tiene una suscripción Pro activa
+  Cuando abre la gestión de su suscripción
+  Entonces ve la fecha y el monto de su próximo cobro
+  # FRESCO-231. Verificado en producción real, UI nativa del Billing
+  # Portal (invoice_history habilitado en la configuración del portal).
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+**STORY-FRESCO-232 — saber si mi pago falló**
+
+### 14.10 Pago fallido me avisa
+
+**Tags:** `@suscripcion` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Pago fallido me avisa
+  Dado que la suscripción Pro de Laura intenta renovarse
+  Cuando el cobro falla (customer.subscription.updated con status past_due)
+  Entonces ve un aviso en su perfil explicando que el pago falló
+  # FRESCO-232. Verificado con tarjeta de prueba real de Stripe
+  # 4000000000000341 (se adjunta con éxito, decline en cada intento de
+  # cobro) vía el iframe real del Billing Portal, forzando
+  # trial_end=now para disparar el intento de cobro inmediato. Cierra
+  # el hueco que había quedado de la sesión de QA de la épica (antes
+  # solo sembrado en DB, no con tarjeta real).
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.11 Reintento exitoso restaura Pro sin fricción
+
+**Tags:** `@suscripcion` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Reintento exitoso restaura Pro sin fricción
+  Dado que Laura tuvo un pago fallido (payment_failed_at con valor)
+  Cuando actualiza su método de pago y el reintento funciona (status vuelve a active)
+  Entonces su cuenta sigue en plan Pro sin interrupción visible
+  Y el aviso de pago fallido desaparece de su perfil
+  # FRESCO-232. Verificado en producción real: tarjeta reemplazada por
+  # una válida (4242424242424242) y la factura fallida se marcó
+  # incobrable vía PostInvoicesInvoiceMarkUncollectible, lo que forzó
+  # la transición real a active y disparó la rama "recuperado" del
+  # webhook.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 14.12 Pago sigue fallando revierte a Free
+
+**Tags:** `@suscripcion` `@edge-case` `@pendiente`
+
+```gherkin
+Escenario: Pago sigue fallando revierte a Free
+  Dado que el pago de Laura falló y no se resolvió
+  Cuando Stripe agota los reintentos y emite customer.subscription.updated con status unpaid
+  Entonces su cuenta pasa a plan Free
+  # FRESCO-232. Implementado en el webhook (rama `unpaid` -> downgrade
+  # directo a free, sin esperar customer.subscription.deleted que puede
+  # no llegar a disparar nunca en ese caso), pero NO verificado en vivo
+  # -- la sesión de QA del 2026-08-19 solo llegó hasta past_due y su
+  # recuperación (escenarios 14.10/14.11), sin agotar los reintentos
+  # hasta unpaid. Cubierto por tests unitarios del webhook únicamente.
+```
+
+**Automatización:** Manual, no automatizado aún — y sin verificar en vivo (ver comentario arriba).
+
+---
+
+## 15. Favoritos (/favorites)
+
+### 15.1 Ver la lista de recetas favoritas guardadas
+
+**Tags:** `@favoritos` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Ver la lista de recetas favoritas guardadas
+  Dado que Laura tiene al menos una receta marcada como favorita
+  Cuando abre /favorites
+  Entonces ve una tarjeta por cada receta favorita, con imagen, nombre, categoría y tiempo/coste
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 15.2 La lista de favoritos vacía muestra un estado vacío claro
+
+**Tags:** `@favoritos` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: La lista de favoritos vacía muestra un estado vacío claro
+  Dado que Laura no tiene ninguna receta marcada como favorita
+  Cuando abre /favorites
+  Entonces ve un estado vacío ("Lista vacía... Guarda recetas para verlas aquí"), no una lista en blanco ni un error
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 15.3 Quitar una receta de favoritos desde la propia pantalla de Favoritos
+
+**Tags:** `@favoritos` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Quitar una receta de favoritos desde la propia pantalla de Favoritos
+  Dado que Laura está en /favorites con al menos una receta guardada
+  Cuando pulsa "Quitar de favoritos" en una de las tarjetas
+  Entonces la tarjeta desaparece inmediatamente de la lista
+  Y el cambio persiste tras recargar la página
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 15.4 Marcar/desmarcar favorito se refleja en cualquier pantalla donde aparezca la misma receta
+
+**Tags:** `@favoritos` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Marcar/desmarcar favorito se refleja en cualquier pantalla donde aparezca la misma receta
+  Dado que Laura marca una receta como favorita desde /menu o /notifications
+  Cuando visita /favorites, o el detalle de esa misma receta, o vuelve a la pantalla de origen
+  Entonces el estado de favorito (marcado o no) es el mismo en todas ellas
+  # Verificado en vivo cruzando /menu -> /favorites -> detalle de receta ->
+  # /notifications: el toggle optimista se refleja de inmediato y persiste
+  # tras recargar en las 4 pantallas.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 15.5 Abrir el detalle de una receta desde Favoritos
+
+**Tags:** `@favoritos` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Abrir el detalle de una receta desde Favoritos
+  Dado que Laura está en /favorites
+  Cuando toca una tarjeta de receta favorita
+  Entonces ve el detalle completo de esa receta, con el botón de favorito ya marcado
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 15.6 El enlace "Volver a la Biblioteca" del detalle de receta no vuelve a Favoritos aunque se haya llegado desde ahí
+
+**Tags:** `@favoritos` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El enlace "Volver a la Biblioteca" del detalle de receta no vuelve a Favoritos aunque se haya llegado desde ahí
+  Dado que Laura abre el detalle de una receta navegando desde /favorites
+  Cuando pulsa "Volver a la Biblioteca"
+  Entonces vuelve a /recipes (la Biblioteca), no a /favorites
+  # Causística real, no necesariamente un bug -- la pantalla de detalle es
+  # la misma para Biblioteca y Favoritos, y el enlace de vuelta siempre
+  # apunta a /recipes independientemente de la pantalla de origen.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+---
+
+## 16. Centro de Avisos (/notifications)
+
+### 16.1 El "Centro de Avisos" no contiene avisos reales, solo recomendaciones de recetas
+
+**Tags:** `@notificaciones` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El "Centro de Avisos" no contiene avisos reales, solo recomendaciones de recetas
+  Dado que Laura abre /notifications
+  Entonces ve una sección "Recetas que te pueden gustar" con tarjetas de receta
+  Y no ve ningún aviso de sistema, recordatorio, ni notificación real (pago, semana sin menú, etc.)
+  # Causística real encontrada en el barrido QA 2026-08-19, sin ticket
+  # todavía: la pantalla se titula "Centro de Avisos" / "Tus notificaciones"
+  # pero el único contenido real es un carrusel de recomendaciones de
+  # recetas -- el mismo tipo de tarjeta que "Últimas recetas añadidas" de
+  # Inicio. No hay ningún aviso real (pago fallido, menú sin generar, etc.)
+  # enrutado aquí pese a que ya existen esos eventos en el sistema (ver 14.10,
+  # aviso de pago fallido en /profile). Gap de producto, no bug de código.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 16.2 El icono de Notificaciones no muestra ningún contador de no leídos
+
+**Tags:** `@notificaciones` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El icono de Notificaciones no muestra ningún contador de no leídos
+  Dado que Laura está en /menu
+  Cuando mira el icono de Notificaciones en la cabecera
+  Entonces no ve ningún badge ni contador, incluso si hay recomendaciones nuevas sin ver
+  # Consistente con 16.1 -- no existe concepto de "leído/no leído" todavía.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 16.3 Se puede marcar como favorita una receta recomendada directamente desde Notificaciones
+
+**Tags:** `@notificaciones` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Se puede marcar como favorita una receta recomendada directamente desde Notificaciones
+  Dado que Laura ve una receta recomendada en /notifications
+  Cuando pulsa "Guardar en favoritos" en esa tarjeta
+  Entonces la receta se añade a sus favoritos, visible en /favorites
+  # Mismo componente de tarjeta de receta reutilizado que en
+  # Inicio/Biblioteca -- el toggle de favorito funciona igual aquí.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 16.4 Las recomendaciones de Notificaciones no excluyen recetas ya marcadas como favoritas
+
+**Tags:** `@notificaciones` `@edge-case` `@pendiente`
+
+```gherkin
+Escenario: Las recomendaciones de Notificaciones no excluyen recetas ya marcadas como favoritas
+  Dado que Laura ya tiene una receta marcada como favorita
+  Cuando abre /notifications
+  Entonces esa misma receta puede seguir apareciendo en "Recetas que te pueden gustar"
+  # Observado en vivo: tras marcar "Arroz con verduras..." como favorita,
+  # siguió apareciendo en la misma lista de recomendaciones al recargar.
+  # @pendiente porque no se confirmó si es el comportamiento pretendido
+  # (recomendaciones fijas/deterministas) o un gap real -- requiere decisión
+  # de producto, no solo verificación técnica.
+```
+
+**Automatización:** Manual, no automatizado aún — `@pendiente`, requiere decisión de producto.
+
+---
+
+## 17. Landing pública (/)
+
+### 17.1 La landing pública muestra el value proposition, precios y FAQ sin necesidad de sesión
+
+**Tags:** `@landing` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: La landing pública muestra el value proposition, precios y FAQ sin necesidad de sesión
+  Dado que un visitante sin cuenta ni sesión visita /
+  Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Free y Pro) y FAQ
+  Y ambos CTA principales ("Generar mi primer menú", "Empezar gratis") llevan a /onboarding
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 17.2 El acordeón de FAQ de la landing expande y colapsa cada pregunta de forma independiente
+
+**Tags:** `@landing` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El acordeón de FAQ de la landing expande y colapsa cada pregunta de forma independiente
+  Dado que un visitante está en la sección FAQ de /
+  Cuando toca una pregunta
+  Entonces se expande mostrando su respuesta, sin afectar al resto de preguntas
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 17.3 Un usuario con sesión activa que visita / sigue viendo la landing pública, no su panel
+
+**Tags:** `@landing` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: Un usuario con sesión activa que visita / sigue viendo la landing pública, no su panel
+  Dado que Laura tiene sesión iniciada y un menú ya generado
+  Cuando visita / directamente
+  Entonces sigue viendo la landing de marketing (con "Ya tengo cuenta"/"Empezar gratis"), no es redirigida a /menu
+  # Causística real, no necesariamente un bug -- puede ser intencional (la
+  # landing sirve también de página de marketing pública para SEO/compartir).
+  # Los CTA de esa pantalla siguen apuntando a /onboarding incluso con sesión
+  # activa -- si Laura los pulsa con un menú ya generado, cae en el 409 ya
+  # cubierto por el escenario 2.5.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+### 17.4 El copyright del footer muestra un año desactualizado
+
+**Tags:** `@landing` `@edge-case` `@verificado-manual-2026-08-19`
+
+```gherkin
+Escenario: El copyright del footer muestra un año desactualizado
+  Dado que cualquier visitante llega al final de /
+  Cuando lee el texto del footer
+  Entonces ve "© 2025 Fresco..." aunque el año real ya avanzó a 2026
+  # Bug cosmético real, menor severidad, sin ticket todavía -- el footer usa
+  # un año hardcodeado en vez de calcularlo dinámicamente.
+```
+
+**Automatización:** Manual, no automatizado aún.
+
+---
+
 ## Notas de infraestructura
 
 No son Gherkin ejecutable, pero son causística real encontrada en pruebas en vivo — checklist de regresión para no repetir el mismo hallazgo dos veces. Copiadas verbatim de la sección final de `regression.feature`:
@@ -1685,6 +2299,9 @@ No son Gherkin ejecutable, pero son causística real encontrada en pruebas en vi
 - Toda tabla nueva con RLS necesita, además de las policies, el GRANT de tabla para el rol `authenticated` (y `anon` si aplica) — RLS sin GRANT bloquea todo; GRANT sin política de rol correcto también bloquea todo.
 - El modelo de Gemini pineado en `supabase/functions/_shared/gemini.ts` puede quedar deprecado por Google sin aviso — verificar contra `ListModels` si un 404/"no longer available" aparece en vivo.
 - Un componente con handler de evento (`onClick`) SIN `'use client'`, renderizado directo desde una página Server Component, crashea toda la página ("Event handlers cannot be passed to Client Component props") — no basta con que compile/typecheck limpio, solo se ve en vivo en el navegador. Encontrado en `RecipeCard` (bug real desde FRESCO-69, 2026-08-03, sin detectar hasta esta sesión de pruebas en vivo).
+- Variables de entorno añadidas a Vercel vía CLI/dashboard DESPUÉS de un build no se aplican a deploys ya corriendo — hace falta un redeploy explícito. Encontrado en 2026-08-19: `STRIPE_WEBHOOK_SECRET` y `SUPABASE_SERVICE_ROLE_KEY` se añadieron a prod y staging pero el webhook de Stripe siguió fallando hasta redesplegar ambos entornos.
+- El rol `service_role` de Postgres NO tiene privilegios de tabla por defecto — necesita su propio GRANT (además de cualquier policy RLS), igual que `authenticated`/`anon`. Encontrado en 2026-08-19: `service_role` nunca tuvo GRANT SELECT/UPDATE sobre `user_profiles`, así que el webhook de Stripe devolvía 200 a Stripe pero el UPDATE a Supabase fallaba en silencio — la épica EPIC-FRESCO-227 entera nunca funcionó de punta a punta en producción hasta arreglar esto (migración `20260819124500_grant_service_role_user_profiles_privileges.sql`).
+- `stripe_api_search` (Stripe MCP) no encuentra operaciones poco comunes (attach de payment method, pay/retry de invoice, mark uncollectible) — hay que adivinar el operation id y llamar `stripe_api_details`/`stripe_api_write` directo. El formulario de tarjeta hospedado por Stripe (Checkout y Billing Portal) es un iframe anidado, accesible con refs normales de playwright-cli sin tratamiento especial.
 
 ---
 

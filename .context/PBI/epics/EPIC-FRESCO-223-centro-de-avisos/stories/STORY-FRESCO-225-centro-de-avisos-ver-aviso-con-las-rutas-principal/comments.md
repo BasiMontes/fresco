@@ -102,5 +102,17 @@ Decisión necesaria antes de aplicar: No
 
 ---
 
+### Basi Montes - 8/18/2026, 11:28:48 AM
+
+Desplegado en staging (https://fresco-git-staging-basi-montes-projects.vercel.app), PR #95 mergeada. AC verificada con Playwright CLI: aviso muestra los 3 enlaces, navega correctamente, se descarta y no reaparece tras recargar. Listo para QA.
+
+---
+
+### Basi Montes - 8/18/2026, 1:15:29 PM
+
+QA verificado en staging (fresco-pre.vercel.app): el aviso 'Explora Fresco' con enlaces a Menú, Calendario y Lista de la compra se muestra en /notifications, el botón 'Descartar aviso' lo oculta inmediatamente y la preferencia persiste en servidor (verificado recargando la página). Comportamiento conforme a los criterios de aceptación.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

@@ -82,5 +82,17 @@ FRESCO-203 (open-ended "pensar notificaciones: bienvenida, mini ruta, recetas") 
 
 ---
 
+### Basi Montes - 8/18/2026, 11:41:57 AM
+
+PR abierta contra staging: https://github.com/BasiMontes/fresco/pull/96
+
+---
+
+### Basi Montes - 8/18/2026, 1:15:33 PM
+
+QA verificado en staging (fresco-pre.vercel.app): la sección 'Recetas que te pueden gustar' se muestra en /notifications con 3 recetas recomendadas, y el botón de favorito de cada tarjeta funciona de verdad (cambia entre 'Guardar en favoritos' y 'Quitar de favoritos'). Comportamiento conforme a los criterios de aceptación.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_
