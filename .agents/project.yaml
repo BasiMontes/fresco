@@ -40,23 +40,34 @@ testing:
 # updater (bootstrapOnly), so each project keeps its own. Filled by git-flow-master, NOT by
 # `agents:setup`. These leaves are read directly (not {{VAR}} template vars) → skipped by vars:check.
 git_strategy:
-  strategy: main-integration # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow
+  strategy: enterprise # null until Strategy Setup runs; then one of: solo-main | main-integration | enterprise | trunk-based | gitflow | github-flow | gitlab-flow
   description: >
-    main (production, real Vercel Production deploy) + staging (integration, Vercel
-    Preview deploy). Every push so far had landed straight on Vercel Production with
-    no gate — staging now provides a real pre-production check before promoting.
-    Both branches share the same Supabase project (jdqemhewjrjuopssdurn); this split
-    is Vercel/branching only, not a database split. Set up 2026-08-08 (git-flow-master
+    Three-tier flow: main (production, real Vercel Production deploy) <- staging
+    (pre-production gate, Vercel Preview deploy) <- dev (day-to-day integration,
+    Vercel Preview deploy — feature/*/fix/* PRs land here). `branches.integration`
+    points at `dev` so all tooling (sprint-development, this skill's PR-base
+    default) targets it automatically; `staging` is a second, manually-promoted
+    gate ahead of `main`, not part of the base schema's single-integration slot —
+    documented here since the schema only names one. Both promotion hops
+    (dev->staging, staging->main) are ff-only, same discipline as the prior
+    two-branch setup. Environment URLs: use the auto-maintained
+    fresco-git-<branch>-basi-montes-projects.vercel.app domains (they always
+    track the branch's latest deploy) rather than the legacy short aliases
+    (fresco-dev/fresco-pre/fresco-pro.vercel.app) — those are hand-set and can
+    go stale (fresco-pre already had, confirmed 2026-08-21). All three branches
+    share the same Supabase project (jdqemhewjrjuopssdurn); this split is
+    Vercel/branching only, not a database split. Set up 2026-08-08
+    (main-integration), upgraded to three-tier 2026-08-21 (git-flow-master
     Strategy Setup, single-maintainer project).
   branches:
     production: main # release / default branch
-    integration: staging # long-lived integration branch name (e.g. staging), or null
+    integration: dev # long-lived integration branch name (e.g. staging), or null — PR base for feature/*/fix/*
     ephemeral_pattern: null # on-demand trunk pattern, or null
-  protected: [main, staging] # branches requiring explicit confirm before a direct push
+  protected: [main, staging, dev] # branches requiring explicit confirm before a direct push
   decisions: # captured by the Strategy Setup questionnaire (Q1/Q2/Q3)
-    promote_method: ff-only # ff-only | merge-commit | squash | n/a
-    feature_merge: merge-commit # merge-commit | squash | rebase-merge | n/a
-    hotfix_policy: branch-off-prod-backmerge # branch-off-prod-backmerge | via-integration | none | n/a
+    promote_method: ff-only # ff-only | merge-commit | squash | n/a — applies to BOTH hops: dev->staging and staging->main
+    feature_merge: merge-commit # merge-commit | squash | rebase-merge | n/a — feature/*/fix/* -> dev
+    hotfix_policy: branch-off-prod-backmerge # branch-off-prod-backmerge | via-integration | none | n/a — hotfix branches off main, PR to main, back-merge to BOTH staging and dev same day
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
     direct_push_to_protected: confirm # forbidden | confirm | allowed
     admin_bypass: false # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
@@ -66,9 +77,9 @@ git_strategy:
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
     naming_without_key: '{prefix}/{kebab-slug}'
   meta:
-    setup_version: 2
+    setup_version: 3
     created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
-    updated: 2026-08-08 # switched from solo-main to main-integration
+    updated: 2026-08-21 # upgraded main-integration -> enterprise (three-tier: dev -> staging -> main)
 
 # Variables declared above that are consumed OUTSIDE the {{TEMPLATE}} system
 # (env vars in scripts/, shell `yq` reads embedded in skill docs, etc.).
