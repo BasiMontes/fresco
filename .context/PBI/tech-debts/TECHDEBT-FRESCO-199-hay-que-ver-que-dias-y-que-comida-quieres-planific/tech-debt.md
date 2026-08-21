@@ -1,0 +1,38 @@
+# Tarea: Hay que ver qué días y qué comida quieres planificar, tal y como está si los martes tengo turno de mañana en el trabajo y no quiero planificarlo, quito el almuerzo de TODA la semana
+
+**Jira Key:** [FRESCO-199](https://basiliomontescastano.atlassian.net/browse/FRESCO-199)
+**Status:** Listo
+**Type:** Tarea
+
+---
+
+## Description
+
+- Onboarding 4/4. Hay que ver qué días y qué comida quieres planificar, tal y como está si los martes tengo turno de mañana en el trabajo y no quiero planificarlo, quito el almuerzo de TODA la semana
+
+
+
+---
+
+## Fields
+
+### Clasificación
+
+0|i0019r:
+
+### customfield_10000
+
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=4}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":4,"lastUpdated":"2026-08-17T16:28:14.000+0200","stateCount":4,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"GitHub":{"count":2,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
+
+---
+
+## Metadata
+
+- **Created:** 8/16/2026
+- **Updated:** 8/16/2026
+- **Reporter:** Basi Montes
+- **Assignee:** Basi Montes
+
+---
+
+_Synced from Jira by sync-jira-issues_

@@ -189,5 +189,45 @@ Reintento tras pausa: 3/30, cuota sigue agotada. Dejo de reintentar batches hast
 
 ---
 
+### Basi Montes - 8/14/2026, 5:18:25 PM
+
+Batch corrido esta sesión: 10/30 fotos aplicadas (hit rate bajando según lo esperado — quedan las recetas más difíciles, variantes filler-only de conceptos ya saturados, documentado en el propio script v9/v10). Progreso real 842/1000 (ni el título ni la descripción de este ticket estaban actualizados — decían 821 y 772 respectivamente). Cero duplicados verificados (foto_url agrupado, sin colisiones). Cortado por cuota: quedan 6 requests de las 50/hora del free tier de Unsplash. Quedan 158 recetas sin foto.
+
+---
+
+### Basi Montes - 8/14/2026, 9:45:06 PM
+
+2 batches corridos esta sesión: 6/30 + 3/30 aplicados. Progreso real 851/1000 (169 restantes), 0 duplicados verificados. Cortado por cuota de Unsplash (403 en la segunda tanda) — retomar cuando resetee la hora.
+
+---
+
+### Basi Montes - 8/18/2026, 1:52:23 PM
+
+## Actualización 2026-08-18
+
+Tanda corrida esta sesión: 5/30 aplicadas (856/1000, era 851). Mayoría de fallos fueron "no photo found" genuino sin cascada (pool de variantes filler-only ya conocido como difícil), no bloqueo de cuota — sin 403 esta vez. 0 duplicados verificados (`foto_url` único).
+
+Segunda tanda de 30 corriendo en background, resultado pendiente de aplicar.
+
+Quedan 144/1000 tras esta tanda.
+
+---
+
+### Basi Montes - 8/18/2026, 1:52:45 PM
+
+## Cierre de sesión 2026-08-18
+
+Segunda tanda: 1/30 — cuota horaria de Unsplash agotada, cascada de 403 hacia el final (patrón ya conocido). Pausado tandas hasta reset de cuota.
+
+Progreso real al cierre: ***857/1000*** (era 851 al empezar esta sesión). 0 duplicados verificados (`foto_url` único). Quedan 143.
+
+---
+
+### Basi Montes - 8/20/2026, 6:04:30 PM
+
+Batch — 2/30 hits (857→859). 0 duplicados verificados. Progreso real vía DB (cache local estaba desactualizada: decía 851, la BD ya iba en 857 antes de este batch). Pool restante (141) sigue dominado por variantes filler-only ya documentadas como difíciles (v9/v10) — sin cascada 403, cuota no fue el limitante esta vez, es escasez real de resultados en Unsplash para esos conceptos saturados.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

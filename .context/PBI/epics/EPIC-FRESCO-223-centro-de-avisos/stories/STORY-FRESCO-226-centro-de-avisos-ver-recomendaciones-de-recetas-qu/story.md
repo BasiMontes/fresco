@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-226](https://basiliomontescastano.atlassian.net/browse/FRESCO-226)
 **Epic:** [FRESCO-223](https://basiliomontescastano.atlassian.net/browse/FRESCO-223) (Centro de Avisos)
 **Type:** Historia
-**Status:** WIP
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -22,7 +22,7 @@
 ## Metadata
 
 - **Created:** 8/17/2026
-- **Updated:** 8/17/2026
+- **Updated:** 8/18/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** feature-extension, post-mvp

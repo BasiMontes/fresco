@@ -98,5 +98,17 @@ Decisión necesaria antes de aplicar: No
 
 ---
 
+### Basi Montes - 8/18/2026, 11:17:42 AM
+
+Desplegado en staging (https://fresco-git-staging-basi-montes-projects.vercel.app), PR #94 mergeada. AC verificada con Playwright CLI: bienvenida aparece una vez, no reaparece al recargar. Listo para QA.
+
+---
+
+### Basi Montes - 8/18/2026, 1:15:26 PM
+
+QA verificado en staging (fresco-pre.vercel.app): el aviso de bienvenida '¡Bienvenida al Centro de Avisos!' aparece la primera vez que se visita /notifications y no vuelve a aparecer tras recargar la página. Comportamiento conforme a los criterios de aceptación.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_
