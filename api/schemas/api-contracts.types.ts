@@ -98,6 +98,19 @@ export interface ApiErrorResponse {
   error: string
 }
 
+// POST /delete-catalog-recipe — admin-only catalog maintenance (FRESCO-237).
+// Caller must be in the ADMIN_USER_ID allowlist (_shared/admin.ts); the
+// actual delete runs through a service-role client since `recipes` has no
+// authenticated-role write RLS policy.
+export interface DeleteCatalogRecipeRequest {
+  recipe_id: string
+}
+
+export interface DeleteCatalogRecipeResponse {
+  id: string
+  slug: string
+}
+
 // POST /delete-account — `/profile` danger zone. No request body; the
 // caller is resolved from her own Authorization header and can only ever
 // delete her own account. Cascades through every user-owned table at the DB
