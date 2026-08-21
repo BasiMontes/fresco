@@ -24,9 +24,64 @@ export interface DialogProps {
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Reads a CSS time custom property as milliseconds. Not a plain
+ * `parseFloat(getPropertyValue(...))` — found live: Chromium can serialize
+ * a `150ms` custom property back out as `.15s` (shorter-form CSS time
+ * serialization), and `parseFloat('.15s')` silently reads `0.15`, which
+ * collapses the close transition to near-zero instead of 150ms. Unit-aware
+ * so it's correct whether the browser hands back `ms` or `s`.
+ */
+function readCssDurationMs(propertyName: string, fallbackMs: number): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(propertyName).trim();
+  const value = Number.parseFloat(raw);
+  if (!raw || Number.isNaN(value)) { return fallbackMs; }
+  return raw.endsWith('ms') ? value : value * 1000;
+}
+
 export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId }: DialogProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocused = React.useRef<HTMLElement | null>(null);
+
+  // Closing-state render model (FRESCO-247, transitions-dev 06-modal.md) —
+  // stay mounted through the close transition instead of hard-unmounting, so
+  // `.is-closing` actually gets a chance to play. `shouldRender` is the
+  // mount/unmount switch; `isClosing` derives from it rather than being its
+  // own state, so there's exactly one source of truth to race against.
+  const [shouldRender, setShouldRender] = React.useState(open);
+  const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isClosing = shouldRender && !open;
+
+  React.useEffect(() => {
+    // Cancel any pending unmount first — this is what makes rapid
+    // open/close/open safe: re-opening mid-close always wins over a stale
+    // timeout instead of racing it (found live: a bare `setTimeout` without
+    // this guard could unmount an already-reopened dialog).
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+
+    if (open) {
+      setShouldRender(true);
+      return;
+    }
+
+    if (!shouldRender) { return; }
+
+    const closeMs = readCssDurationMs('--modal-close-dur', 150);
+    closeTimeoutRef.current = setTimeout(() => {
+      setShouldRender(false);
+      closeTimeoutRef.current = null;
+    }, closeMs);
+
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
+  }, [open, shouldRender]);
 
   // Focus trap + Escape-to-close + body scroll lock while `open`. Keyed on
   // `open`, not `[]` — the caller keeps this component mounted across
@@ -74,7 +129,7 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
     };
   }, [open]);
 
-  if (!open) { return null; }
+  if (!shouldRender) { return null; }
 
   return createPortal(
     <div
@@ -90,7 +145,9 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
         data-testid={dataTestId}
         onClick={event => event.stopPropagation()}
         className={cn(
-          'max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card bg-surface p-4 shadow-lg focus:outline-none sm:p-6',
+          't-modal max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card bg-surface p-4 shadow-lg focus:outline-none sm:p-6',
+          open && 'is-open',
+          isClosing && 'is-closing',
           className,
         )}
       >
