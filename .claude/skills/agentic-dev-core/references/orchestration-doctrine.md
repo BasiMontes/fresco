@@ -6,6 +6,10 @@
 
 ## Orchestration Mode (Subagent Strategy)
 
+> **⚠️ EXCEPCIÓN DE TAREAS TRIVIALES (ANTI-BLOAT)**: 
+> El "6-COMPONENT BRIEFING" es MANDATORIO solo para operaciones complejas (multi-archivo, migraciones de DB, tests E2E, investigación web profunda). 
+> Para operaciones triviales (leer 1-2 archivos específicos, ejecutar un comando de lint/test, cambios de texto menores, formateo), ejecuta la acción directamente en la conversación principal o usa un dispatch de 1 sola línea. NO multipliques tokens en delegaciones innecesarias.
+
 **Core Principle**: Main conversation = command center. Subagents = executors.
 
 > **Sanctioned exceptions** (not violations of the doctrine): a skill MAY define an explicit, user-invoked all-inline (**Solo**) mode that dispatches no subagents, AND MAY pin a specific step to the session that owns a non-delegable resource (e.g. a browser/extension or user auth bound to the main session). Example: `/sprint-development` Solo mode, and its live-UI step when the chosen tool is the session-bound claude-in-chrome MCP.
