@@ -4,6 +4,7 @@ import type { Recipe } from '@schemas';
 
 import { Heart } from 'lucide-react';
 import Image from 'next/image';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
@@ -44,9 +45,61 @@ export interface RecipeCardProps {
   className?: string
 }
 
+const LIKE_PARTICLE_COUNT = 8;
+
+/**
+ * FRESCO-248 — reads a CSS `<time>` custom property as milliseconds.
+ * `getComputedStyle` does NOT reliably keep the `ms` unit: Chromium
+ * serializes some values as `s` (empirically confirmed live —
+ * `--like-particle-dur: 600ms` computes to `".6s"`, not `"600ms"`). A plain
+ * `parseFloat` on that string silently reads `0.6` and fires the cleanup
+ * timer ~20ms later instead of 600ms — caught by sampling the DOM during
+ * live verification, not by code-reading alone.
+ */
+function readCssTimeMs(name: string, fallback: number): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return raw.endsWith('ms') ? value : value * 1000;
+}
+
+/**
+ * FRESCO-248 — seeds each of the 8 particles' fling vector (45° increments)
+ * and replays the `.is-bursting` class for the CSS-driven burst
+ * (`transitions-dev`'s `23-like-button.md`, `t-like-particles`). Only
+ * called on a `false -> true` (liking) transition — unliking reverses the
+ * fill without a burst, per the snippet's own documented behavior. Kept
+ * local to this file (same shape as `favorite-toggle-button.tsx`'s copy) —
+ * both host the identical heart markup but never share a parent to lift a
+ * hook into.
+ */
+function triggerLikeBurst(button: HTMLButtonElement | null) {
+  if (!button) {
+    return;
+  }
+  const particles = button.querySelectorAll<HTMLElement>('.t-like-particles i');
+  particles.forEach((particle, index) => {
+    const angle = (360 / LIKE_PARTICLE_COUNT) * index;
+    const radians = (angle * Math.PI) / 180;
+    particle.style.setProperty('--px', `${Math.cos(radians) * 20}px`);
+    particle.style.setProperty('--py', `${Math.sin(radians) * 20}px`);
+    particle.style.setProperty('--pdelay', `${index * 15}ms`);
+  });
+
+  button.classList.remove('is-bursting');
+  void button.offsetWidth; // force reflow so a rapid re-like replays cleanly
+  button.classList.add('is-bursting');
+
+  const burstDur = readCssTimeMs('--like-particle-dur', 600);
+  window.setTimeout(() => button.classList.remove('is-bursting'), burstDur + 20);
+}
+
 export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: RecipeCardProps) {
   const dietaLabel = firstActiveDietaLabel(recipe.dieta);
   const CategoryIcon = getCategoryIcon(recipe.clasificacion?.categoria);
+  const favoriteButtonRef = React.useRef<HTMLButtonElement>(null);
 
   return (
     <div className={cn('flex h-full flex-col rounded-card bg-surface p-3 shadow-sm', className)}>
@@ -65,20 +118,36 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
               <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
             )}
         <Button
+          ref={favoriteButtonRef}
           variant="icon"
           size="sm"
           aria-label={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+          data-liked={Boolean(isFavorite)}
           onClick={(event) => {
             // FRESCO-69 — the card is now wrapped in a Link to the detail
             // page; without this the favorite button's click would bubble
             // into a navigation instead of toggling the favorite.
             event.preventDefault();
             event.stopPropagation();
+            // AC-1: `isFavorite` here is still the pre-click value (state
+            // update happens in the parent, after this handler returns), so
+            // a `false` value means this click is a like — the burst should
+            // only play on that transition, matching favorite-toggle-button.tsx.
+            if (!isFavorite) {
+              triggerLikeBurst(favoriteButtonRef.current);
+            }
             onToggleFavorite?.();
           }}
-          className="absolute right-2 top-2"
+          className="t-like absolute right-2 top-2"
         >
-          <Heart className={cn('size-6', isFavorite && 'fill-primary')} />
+          <span className="t-like-icon">
+            <Heart className="t-like-heart size-6" />
+          </span>
+          <span className="t-like-particles" aria-hidden="true" data-testid="recipe_card_favorite_particles">
+            {Array.from({ length: LIKE_PARTICLE_COUNT }, (_, index) => (
+              <i key={index} />
+            ))}
+          </span>
         </Button>
       </div>
       <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>

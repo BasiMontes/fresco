@@ -259,7 +259,10 @@
   --toast-scale: 0.97;
   --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
   /* Like button */
-  --like-color: #f40051;
+  /* FRESCO-248: overridden from the snippet's stock #f40051 to the app's
+     existing primary green so the celebration matches the `fill-primary`
+     heart treatment already live today (see Technical Decision 3). */
+  --like-color: var(--color-primary);
   --like-fill: 150ms;
   --like-pop: 350ms;
   --like-pop-ease: cubic-bezier(0.34, 1.96, 0.64, 1);
@@ -394,5 +397,260 @@
 @media (prefers-reduced-motion: reduce) {
   .t-modal {
     transition: none !important;
+  }
+}
+
+/*
+ * Success check (transitions-dev, 10-success-check.md) — FRESCO-248.
+ * Drives the checkmark shown by `components/profile/nombre-form.tsx` and
+ * `components/profile/preferences-form.tsx` on a successful save. The
+ * wrapper node is conditionally mounted (`{saved && <span data-state="in">}`)
+ * rather than toggled via attribute — safe here because this is a
+ * `@keyframes` animation, not a `transition`: it autoplays on fresh DOM
+ * insertion with no prior painted frame required (unlike FRESCO-247's
+ * `.t-modal` transition trap). `stroke-dasharray`/`stroke-dashoffset`
+ * calibrated to lucide's `Check` icon path (`M20 6 9 17l-5-5`),
+ * `getTotalLength()` ≈ 22.63 rounded up to 24.
+ */
+.t-success-check {
+  display: inline-block;
+  transform-origin: center;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+/* overflow: visible keeps the stroke from clipping while it
+   draws; display: block kills the inline whitespace under SVGs. */
+.t-success-check svg {
+  display: block;
+  overflow: visible;
+}
+/* Stroke-draw setup, calibrated for lucide's Check path (see comment
+   above) rather than the snippet's own `20` placeholder. */
+.t-success-check svg path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.t-success-check[data-state='in'] {
+  animation:
+    t-check-fade var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+    t-check-rotate var(--check-rotate-dur) var(--check-ease-rotate) forwards,
+    t-check-blur var(--check-blur-dur) var(--check-ease-out) forwards,
+    t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
+}
+.t-success-check[data-state='in'] svg path {
+  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms)
+    forwards;
+}
+
+@keyframes t-check-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes t-check-rotate {
+  from {
+    transform: rotate(var(--check-rotate-from));
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+@keyframes t-check-blur {
+  from {
+    filter: blur(var(--check-blur-from));
+  }
+  to {
+    filter: blur(0);
+  }
+}
+@keyframes t-check-bob {
+  from {
+    translate: 0 var(--check-y-amount);
+  }
+  to {
+    translate: 0 0;
+  }
+}
+@keyframes t-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-success-check {
+    animation: none !important;
+    opacity: 1;
+  }
+  .t-success-check svg path {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/*
+ * Like button (transitions-dev, 23-like-button.md) — FRESCO-248.
+ * Drives `components/recipe/favorite-toggle-button.tsx` and
+ * `components/recipe/recipe-card.tsx`'s heart toggle. `--like-color` is
+ * overridden above (in the `:root` token block) to `var(--color-primary)`
+ * so the celebration matches the app's existing green fill instead of the
+ * snippet's stock magenta (see Technical Decision 3).
+ */
+.t-like-heart {
+  color: currentColor;
+  transition: color var(--like-fill) var(--like-ease);
+}
+.t-like-heart path {
+  fill: transparent;
+  stroke: currentColor;
+  transition:
+    fill var(--like-fill) var(--like-ease),
+    stroke var(--like-fill) var(--like-ease);
+}
+.t-like[data-liked='true'] .t-like-heart {
+  color: var(--like-color);
+}
+.t-like[data-liked='true'] .t-like-heart path {
+  fill: currentColor;
+}
+/* Pop scale lives on an HTML wrapper, never the <svg> itself:
+   transforming an inline SVG makes Chromium rasterise it at 1×
+   (pixelated on hi-DPI). Wrapping keeps the vector crisp. */
+.t-like[data-liked='true'] .t-like-icon {
+  animation: t-like-pop var(--like-pop) var(--like-pop-ease);
+}
+@keyframes t-like-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.82);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Particle burst — 8 dots flung along per-particle vectors. */
+.t-like-particles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  color: var(--like-color);
+}
+.t-like-particles i {
+  position: absolute;
+  left: calc(var(--like-particle-size) * var(--psize, 1) / -2);
+  top: calc(var(--like-particle-size) * var(--psize, 1) / -2);
+  width: calc(var(--like-particle-size) * var(--psize, 1));
+  height: calc(var(--like-particle-size) * var(--psize, 1));
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+}
+@keyframes t-like-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(calc(var(--px) * 0.25), calc(var(--py) * 0.25)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(var(--p-end-scale, 0.6));
+  }
+}
+.t-like.is-bursting .t-like-particles i {
+  animation: t-like-burst var(--pdur, var(--like-particle-dur)) ease-out var(--pdelay, 0ms) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-like-icon,
+  .t-like-particles i {
+    animation: none !important;
+  }
+}
+
+/*
+ * Error state shake (transitions-dev, 12-error-state-shake.md) — FRESCO-248.
+ * Retargeted from its documented `<input>` shape onto the Guardar buttons in
+ * `components/profile/nombre-form.tsx`/`preferences-form.tsx` and the
+ * per-item checkbox row in `components/shopping-list/shopping-list-view.tsx`
+ * — CSS pasted verbatim, only the JSX host element differs (button/row
+ * instead of `<input>`).
+ */
+.t-input {
+  transition: border-color 150ms ease-out;
+  will-change: transform;
+}
+.t-input.is-error {
+  /* Error border auto-reverts on the hold timer, so the
+     fade-out uses the slower revert duration (matches the
+     message fade). */
+  transition: border-color var(--revert-dur, 280ms) ease-out;
+}
+
+/* Error message reveal. Visibility is delayed by --revert-dur
+   on hide so the message stays painted for the full opacity
+   fade-out. Entering .is-error drops the delay to 0 so the
+   message becomes visible immediately. */
+.t-error-msg {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--revert-dur, 280ms) ease-out,
+    visibility 0s linear var(--revert-dur, 280ms);
+}
+.t-input-wrap.is-error .t-error-msg {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--revert-dur, 280ms) ease-out,
+    visibility 0s linear 0s;
+}
+
+/* Multi-segment keyframe with per-stop easing so each leg
+   of the shake follows its own cubic-bezier independently.
+   %-stops are cumulative durations as a fraction of the
+   total (80, 60, 80, 60 = 280ms): 28.57%, 57.14%, 78.57%,
+   100%. Recompute if any segment duration changes. */
+.t-input.is-shaking {
+  animation: t-input-shake calc(var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2) linear;
+}
+@keyframes t-input-shake {
+  0% {
+    transform: translateX(0);
+    animation-timing-function: var(--shake-ease);
+  }
+  28.57% {
+    transform: translateX(var(--shake-distance));
+    animation-timing-function: var(--shake-ease);
+  }
+  57.14% {
+    transform: translateX(calc(var(--shake-distance) * -1));
+    animation-timing-function: var(--shake-ease);
+  }
+  78.57% {
+    transform: translateX(var(--shake-overshoot));
+    animation-timing-function: var(--shake-ease);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-input {
+    animation: none !important;
+    transform: none !important;
   }
 }

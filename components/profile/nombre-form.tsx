@@ -1,13 +1,33 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { updateNombre } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/client';
+
+/**
+ * FRESCO-248 — reads a `--shake-*`/`--revert-*` CSS custom property off
+ * `:root` with a numeric fallback, same helper shape as
+ * `transitions-dev`'s own `12-error-state-shake.md` JS orchestration
+ * snippet. `getComputedStyle` does NOT reliably keep the `ms` unit —
+ * Chromium serializes `--revert-hold: 3000ms` as `"3s"`, and a plain
+ * `parseFloat` reads that as `3` instead of `3000` (same quirk documented
+ * in `favorite-toggle-button.tsx`'s `readCssTimeMs`, caught live here via
+ * FRESCO-248's Stage 3 validation pass).
+ */
+function readMs(name: string, fallback: number): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return raw.endsWith('ms') ? value : value * 1000;
+}
 
 export interface NombreFormProps {
   /** The user's currently persisted `nombre` (server-side read), or `null` if never set. */
@@ -32,6 +52,63 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [touched, setTouched] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLButtonElement>(null);
+  const revertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // FRESCO-248 — imperative DOM classList toggling (not React state) is
+  // required here: the shake needs a remove -> reflow -> re-add sequence to
+  // replay on a second failed save, and two state updates in the same
+  // handler would batch into one render, never painting the removed class.
+  function showError() {
+    const wrap = wrapRef.current;
+    const input = inputRef.current;
+    if (!wrap || !input) {
+      return;
+    }
+
+    wrap.classList.add('is-error');
+    input.classList.add('is-error');
+
+    input.classList.remove('is-shaking');
+    void input.offsetWidth; // force reflow
+    input.classList.add('is-shaking');
+
+    const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
+    if (shakeTimerRef.current) {
+      clearTimeout(shakeTimerRef.current);
+    }
+    shakeTimerRef.current = setTimeout(() => input.classList.remove('is-shaking'), shakeMs + 20);
+
+    if (revertTimerRef.current) {
+      clearTimeout(revertTimerRef.current);
+    }
+    const hold = readMs('--revert-hold', 3000);
+    revertTimerRef.current = setTimeout(() => {
+      revertTimerRef.current = null;
+      wrap.classList.remove('is-error');
+      input.classList.remove('is-error');
+    }, shakeMs + hold);
+  }
+
+  function clearError() {
+    if (revertTimerRef.current) {
+      clearTimeout(revertTimerRef.current);
+      revertTimerRef.current = null;
+    }
+    if (shakeTimerRef.current) {
+      clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = null;
+    }
+    wrapRef.current?.classList.remove('is-error');
+    inputRef.current?.classList.remove('is-error', 'is-shaking');
+  }
+
+  useEffect(() => () => {
+    if (revertTimerRef.current) { clearTimeout(revertTimerRef.current); }
+    if (shakeTimerRef.current) { clearTimeout(shakeTimerRef.current); }
+  }, []);
 
   const trimmed = nombre.trim();
   const isValid = trimmed.length > 0;
@@ -63,6 +140,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
     catch (error) {
       console.error('[NombreForm] updateNombre failed', error);
       setSaveError('No se pudo guardar tu nombre. Inténtalo de nuevo.');
+      showError();
     }
     finally {
       setIsSaving(false);
@@ -90,6 +168,10 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
               setNombre(event.target.value);
               setSaved(false);
               setTouched(true);
+              // FRESCO-248: typing after a shown error cancels the
+              // auto-revert and clears it immediately, mirroring the
+              // snippet's own "typing cancels the auto-revert" note.
+              clearError();
             }}
             className={touched && !isValid ? 'border-error' : ''}
           />
@@ -98,20 +180,23 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
               Indica un nombre para guardar.
             </p>
           )}
-          {saveError && (
-            <p data-testid="nombre_save_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-              {saveError}
-            </p>
-          )}
           {saved && (
-            <p data-testid="nombre_saved_message" role="status" aria-live="polite" className="text-body-sm text-tertiary">
-              Nombre guardado.
-            </p>
+            <div className="flex items-center gap-1.5">
+              <span className="t-success-check" data-state="in" aria-hidden="true" data-testid="nombre_saved_check">
+                <Check className="size-4 text-success" strokeWidth={3} />
+              </span>
+              <p data-testid="nombre_saved_message" role="status" aria-live="polite" className="text-body-sm text-tertiary">
+                Nombre guardado.
+              </p>
+            </div>
           )}
-          <div>
-            <Button type="submit" variant="action" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button">
+          <div className="t-input-wrap" ref={wrapRef} data-testid="nombre_save_wrap">
+            <Button type="submit" variant="action" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button" className="t-input" ref={inputRef}>
               Guardar
             </Button>
+            <p data-testid="nombre_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">
+              {saveError}
+            </p>
           </div>
         </form>
       </CardContent>
