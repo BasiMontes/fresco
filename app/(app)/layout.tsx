@@ -40,8 +40,12 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     }),
     // FRESCO-250: fails open (assumes onboarded) on a transient Supabase
     // error, same conservative-default judgment call as the two reads above
-    // — the alternative would lock every already-onboarded user out during
-    // an outage.
+    // — the alternative (fail-closed) would bounce every already-onboarded
+    // user to /onboarding during an outage, which is worse than the fail-open
+    // exposure: Next.js's Client Router Cache can keep a bad "onboarded"
+    // verdict from a blip on a genuinely new user's first load for up to its
+    // stale-time window on client-side navigations within (app)/, but a full
+    // navigation or reload re-runs this check and self-corrects.
     hasUserProfile(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] hasUserProfile failed, defaulting to true', error);
       return true;

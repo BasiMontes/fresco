@@ -153,29 +153,36 @@ describe('getUserPlan', () => {
 
 /** Minimal mock client exposing `.select().eq().maybeSingle()` — all `hasUserProfile()` calls. */
 function createHasProfileMockClient(options: { profileRow?: { id: string } | null, dbErrorMessage?: string } = {}) {
+  const eqCalls: unknown[] = [];
+
   const mock = {
     from: () => ({
       select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({
-            data: options.dbErrorMessage ? null : (options.profileRow ?? null),
-            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
-          }),
-        }),
+        eq: (_column: string, value: unknown) => {
+          eqCalls.push(value);
+
+          return {
+            maybeSingle: async () => ({
+              data: options.dbErrorMessage ? null : (options.profileRow ?? null),
+              error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+            }),
+          };
+        },
       }),
     }),
   };
 
-  return { client: mock as unknown as SupabaseClient<Database> };
+  return { client: mock as unknown as SupabaseClient<Database>, eqCalls };
 }
 
 describe('hasUserProfile', () => {
   test('returns true when a profile row exists', async () => {
-    const { client } = createHasProfileMockClient({ profileRow: { id: 'user-123' } });
+    const { client, eqCalls } = createHasProfileMockClient({ profileRow: { id: 'user-123' } });
 
     const result = await hasUserProfile(client, 'user-123');
 
     expect(result).toBe(true);
+    expect(eqCalls).toEqual(['user-123']);
   });
 
   test('returns false when no profile row exists', async () => {
@@ -184,6 +191,14 @@ describe('hasUserProfile', () => {
     const result = await hasUserProfile(client, 'user-123');
 
     expect(result).toBe(false);
+  });
+
+  test('scopes the lookup to the given userId', async () => {
+    const { client, eqCalls } = createHasProfileMockClient({ profileRow: { id: 'user-456' } });
+
+    await hasUserProfile(client, 'user-456');
+
+    expect(eqCalls).toEqual(['user-456']);
   });
 
   test('throws UserProfileError on a real database error', async () => {
