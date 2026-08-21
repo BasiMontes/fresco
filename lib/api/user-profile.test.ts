@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
+import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, hasUserProfile, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
   num_personas: 3,
@@ -148,6 +148,48 @@ describe('getUserPlan', () => {
     const { client } = createPlanMockClient({});
 
     await expectRejection(getUserPlan(client));
+  });
+});
+
+/** Minimal mock client exposing `.select().eq().maybeSingle()` — all `hasUserProfile()` calls. */
+function createHasProfileMockClient(options: { profileRow?: { id: string } | null, dbErrorMessage?: string } = {}) {
+  const mock = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: options.dbErrorMessage ? null : (options.profileRow ?? null),
+            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+          }),
+        }),
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database> };
+}
+
+describe('hasUserProfile', () => {
+  test('returns true when a profile row exists', async () => {
+    const { client } = createHasProfileMockClient({ profileRow: { id: 'user-123' } });
+
+    const result = await hasUserProfile(client, 'user-123');
+
+    expect(result).toBe(true);
+  });
+
+  test('returns false when no profile row exists', async () => {
+    const { client } = createHasProfileMockClient({ profileRow: null });
+
+    const result = await hasUserProfile(client, 'user-123');
+
+    expect(result).toBe(false);
+  });
+
+  test('throws UserProfileError on a real database error', async () => {
+    const { client } = createHasProfileMockClient({ dbErrorMessage: 'connection reset' });
+
+    await expectRejection(hasUserProfile(client, 'user-123'));
   });
 });
 
