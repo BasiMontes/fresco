@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { createRecetaPropia, getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, getRecetasPropias, getRecipeDetail, RecipesError } from './recipes';
+import { createRecetaPropia, deleteRecetaPropia, getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, getRecetasPropias, getRecipeDetail, RecipesError, updateRecetaPropia } from './recipes';
 
 async function expectRejection(promise: Promise<unknown>): Promise<void> {
   let thrownError: unknown;
@@ -434,6 +434,148 @@ describe('createRecetaPropia', () => {
     const { client } = createInsertMockClient({});
 
     await expectRejection(createRecetaPropia(client, { nombre: 'x', ingredientes: [], pasos: [] }));
+  });
+});
+
+/** Minimal mock client exposing `.from('recetas_propias').update().eq().eq().select().single()` — all `updateRecetaPropia()` calls. */
+function createUpdateMockClient(options: { userId?: string, row?: unknown, dbErrorMessage?: string } = {}) {
+  const getUserCalls: unknown[] = [];
+  const updateCalls: unknown[] = [];
+  const eqCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => {
+        getUserCalls.push(undefined);
+        return options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null };
+      },
+    },
+    from: (table: string) => ({
+      update: (payload: unknown) => {
+        updateCalls.push({ table, payload });
+        return {
+          eq: (column: string, value: unknown) => {
+            eqCalls.push({ column, value });
+            return {
+              eq: (column2: string, value2: unknown) => {
+                eqCalls.push({ column: column2, value: value2 });
+                return {
+                  select: () => ({
+                    single: async () => ({
+                      data: options.dbErrorMessage ? null : (options.row ?? null),
+                      error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+                    }),
+                  }),
+                };
+              },
+            };
+          },
+        };
+      },
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, updateCalls, eqCalls };
+}
+
+describe('updateRecetaPropia', () => {
+  test('updates by id and user_id and returns the updated row', async () => {
+    const updatedReceta = { ...SAMPLE_RECETA_PROPIA, nombre: 'Tortilla mejorada' };
+    const { client, updateCalls, eqCalls } = createUpdateMockClient({ userId: 'user-123', row: updatedReceta });
+
+    const result = await updateRecetaPropia(client, 'receta-1', {
+      nombre: 'Tortilla mejorada',
+      ingredientes: ['huevo', 'patata'],
+      pasos: ['pelar patatas', 'batir huevos'],
+    });
+
+    expect(result).toEqual(updatedReceta);
+    expect(updateCalls).toEqual([{
+      table: 'recetas_propias',
+      payload: { nombre: 'Tortilla mejorada', ingredientes: ['huevo', 'patata'], pasos: ['pelar patatas', 'batir huevos'] },
+    }]);
+    expect(eqCalls).toEqual([
+      { column: 'id', value: 'receta-1' },
+      { column: 'user_id', value: 'user-123' },
+    ]);
+  });
+
+  test('throws RecipesError on a real database error', async () => {
+    const { client } = createUpdateMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(updateRecetaPropia(client, 'receta-1', { nombre: 'x', ingredientes: [], pasos: [] }));
+  });
+
+  test('throws RecipesError when there is no authenticated session', async () => {
+    const { client } = createUpdateMockClient({});
+
+    await expectRejection(updateRecetaPropia(client, 'receta-1', { nombre: 'x', ingredientes: [], pasos: [] }));
+  });
+});
+
+/** Minimal mock client exposing `.from('recetas_propias').delete().eq().eq()` — all `deleteRecetaPropia()` calls. */
+function createDeleteMockClient(options: { userId?: string, dbErrorMessage?: string } = {}) {
+  const getUserCalls: unknown[] = [];
+  const deleteCalls: unknown[] = [];
+  const eqCalls: unknown[] = [];
+
+  const mock = {
+    auth: {
+      getUser: async () => {
+        getUserCalls.push(undefined);
+        return options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null };
+      },
+    },
+    from: (table: string) => ({
+      delete: () => {
+        deleteCalls.push({ table });
+        return {
+          eq: (column: string, value: unknown) => {
+            eqCalls.push({ column, value });
+            return {
+              eq: async (column2: string, value2: unknown) => {
+                eqCalls.push({ column: column2, value: value2 });
+                return {
+                  error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+                };
+              },
+            };
+          },
+        };
+      },
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, deleteCalls, eqCalls };
+}
+
+describe('deleteRecetaPropia', () => {
+  test('deletes by id and user_id', async () => {
+    const { client, deleteCalls, eqCalls } = createDeleteMockClient({ userId: 'user-123' });
+
+    await deleteRecetaPropia(client, 'receta-1');
+
+    expect(deleteCalls).toEqual([{ table: 'recetas_propias' }]);
+    expect(eqCalls).toEqual([
+      { column: 'id', value: 'receta-1' },
+      { column: 'user_id', value: 'user-123' },
+    ]);
+  });
+
+  test('throws RecipesError on a real database error', async () => {
+    const { client } = createDeleteMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(deleteRecetaPropia(client, 'receta-1'));
+  });
+
+  test('throws RecipesError when there is no authenticated session', async () => {
+    const { client } = createDeleteMockClient({});
+
+    await expectRejection(deleteRecetaPropia(client, 'receta-1'));
   });
 });
 
