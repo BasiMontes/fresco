@@ -335,5 +335,21 @@ Corrección menor: el plan/comments de esta historia dice "6 puntos de llamada a
 
 ---
 
+### Basi Montes - 8/21/2026, 1:22:43 PM
+
+## Listo para QA
+
+Desplegado en staging: https://fresco-pre.vercel.app
+PR: https://github.com/BasiMontes/fresco/pull/110 (rama `feat/FRESCO-247-modal-transitions`, mergeada a `staging` en 9fe668e)
+
+Verificar los 3 escenarios de AC:
+1. Abrir el modal de aviso legal desde el footer de la landing (`/`) — transición suave de apertura y cierre.
+2. Abrir/cerrar el mismo modal varias veces seguido — sin estado visual inconsistente ni duplicado.
+3. Cerrar un modal y abrir otro distinto de inmediato (p. ej. ayuda -> crear receta) — transiciones independientes.
+
+Nota: 5 de los 6 modales (borrar cuenta, cerrar sesión invitado, crear receta, ayuda, vaciar semana) no se probaron en vivo esta sesión por estar detrás de login -- comparten el mismo componente base ya verificado, pero vale una pasada de QA igual.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

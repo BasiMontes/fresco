@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-247](https://basiliomontescastano.atlassian.net/browse/FRESCO-247)
 **Epic:** [FRESCO-244](https://basiliomontescastano.atlassian.net/browse/FRESCO-244) (Motion y Transiciones)
 **Type:** Historia
-**Status:** Merged
+**Status:** Control de calidad
 **Priority:** Medium
 **Story Points:** -
 
@@ -28,7 +28,7 @@ Como Laura, quiero que los modales de la app (como el aviso legal, la confirmaci
 - **Created:** 8/21/2026
 - **Updated:** 8/21/2026
 - **Reporter:** Basi Montes
-- **Assignee:** Basi Montes
+- **Assignee:** Unassigned
 - **Labels:** implementation-plan-ready
 
 ---
