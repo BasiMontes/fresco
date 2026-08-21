@@ -70,7 +70,11 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
     }
     try {
       const client = createClient();
-      const { data, error: signUpError } = await client.auth.signUp({ email, password });
+      const { data, error: signUpError } = await client.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+      });
       if (signUpError) {
         setError(translateAuthError(signUpError));
         return;
