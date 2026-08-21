@@ -50,11 +50,14 @@ git_strategy:
     gate ahead of `main`, not part of the base schema's single-integration slot —
     documented here since the schema only names one. Both promotion hops
     (dev->staging, staging->main) are ff-only, same discipline as the prior
-    two-branch setup. Environment URLs: use the auto-maintained
-    fresco-git-<branch>-basi-montes-projects.vercel.app domains (they always
-    track the branch's latest deploy) rather than the legacy short aliases
-    (fresco-dev/fresco-pre/fresco-pro.vercel.app) — those are hand-set and can
-    go stale (fresco-pre already had, confirmed 2026-08-21). All three branches
+    two-branch setup. Environment URLs: fresco-dev.vercel.app (dev),
+    fresco-pre.vercel.app (staging), fresco-pro.vercel.app (main/production) —
+    all three bound via Vercel Project Settings -> Domains -> Git Branch
+    (auto-tracks each branch's latest deploy, self-maintaining). Re-bound
+    2026-08-21 after fresco-pre was found stuck on an old ad-hoc alias
+    pointing at a stale production deploy (never went through the Git Branch
+    binding). The fresco-git-<branch>-basi-montes-projects.vercel.app domains
+    also always track latest-per-branch and remain a valid fallback. All three branches
     share the same Supabase project (jdqemhewjrjuopssdurn); this split is
     Vercel/branching only, not a database split. Set up 2026-08-08
     (main-integration), upgraded to three-tier 2026-08-21 (git-flow-master
