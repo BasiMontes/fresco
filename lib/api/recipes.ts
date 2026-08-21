@@ -268,14 +268,19 @@ export async function deleteRecetaPropia(
     throw new RecipesError('No hay una sesión autenticada para eliminar esta receta.');
   }
 
-  const { error } = await client
+  const { data, error } = await client
     .from('recetas_propias')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .select('id');
 
   if (error) {
     throw new RecipesError(`No se pudo eliminar tu receta: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    throw new RecipesError('No se pudo eliminar tu receta: la receta no existe o no te pertenece.');
   }
 }
 

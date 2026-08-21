@@ -515,8 +515,8 @@ describe('updateRecetaPropia', () => {
   });
 });
 
-/** Minimal mock client exposing `.from('recetas_propias').delete().eq().eq()` — all `deleteRecetaPropia()` calls. */
-function createDeleteMockClient(options: { userId?: string, dbErrorMessage?: string } = {}) {
+/** Minimal mock client exposing `.from('recetas_propias').delete().eq().eq().select()` — all `deleteRecetaPropia()` calls. */
+function createDeleteMockClient(options: { userId?: string, deletedRows?: unknown[], dbErrorMessage?: string } = {}) {
   const getUserCalls: unknown[] = [];
   const deleteCalls: unknown[] = [];
   const eqCalls: unknown[] = [];
@@ -537,10 +537,13 @@ function createDeleteMockClient(options: { userId?: string, dbErrorMessage?: str
           eq: (column: string, value: unknown) => {
             eqCalls.push({ column, value });
             return {
-              eq: async (column2: string, value2: unknown) => {
+              eq: (column2: string, value2: unknown) => {
                 eqCalls.push({ column: column2, value: value2 });
                 return {
-                  error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+                  select: async () => ({
+                    data: options.dbErrorMessage ? null : (options.deletedRows ?? [{ id: 'receta-1' }]),
+                    error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+                  }),
                 };
               },
             };
@@ -574,6 +577,12 @@ describe('deleteRecetaPropia', () => {
 
   test('throws RecipesError when there is no authenticated session', async () => {
     const { client } = createDeleteMockClient({});
+
+    await expectRejection(deleteRecetaPropia(client, 'receta-1'));
+  });
+
+  test('throws RecipesError when the delete affects 0 rows (RLS exclusion, already-deleted, or wrong id)', async () => {
+    const { client } = createDeleteMockClient({ userId: 'user-123', deletedRows: [] });
 
     await expectRejection(deleteRecetaPropia(client, 'receta-1'));
   });

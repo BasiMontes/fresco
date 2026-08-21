@@ -2,7 +2,7 @@
 
 import type { RecetaPropia } from '@schemas';
 import type { FormEvent } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,22 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: Crea
     setTouched(false);
     setSaveError(null);
   }
+
+  // `PersonalRecipeActions` keeps a single `CreateRecipeForm` instance
+  // mounted (the `Dialog` only hides it, doesn't unmount it), so the
+  // `useState(receta?.nombre ?? '')` initializers above only ever run once —
+  // they never pick up a reopened dialog or a `receta` prop that changed
+  // since first mount. Re-sync every time the dialog transitions to open, so
+  // a cancelled edit doesn't leave stale input for next time and a just-saved
+  // edit doesn't appear reverted (FRESCO-236 review fix).
+  // Deliberately omits `reset` from the dependency list: it's redefined every
+  // render from `receta`, so including it would re-run this effect (and wipe
+  // in-progress edits) on every keystroke while the dialog is open.
+  useEffect(() => {
+    if (open) {
+      reset();
+    }
+  }, [open, receta]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
