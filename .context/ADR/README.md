@@ -68,6 +68,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0005](./ADR-0005-deterministic-menu-slot-selection.md) | Deterministic algorithm fills the 21 menu slots; Gemini scoped to the Pro learning explanation only | Accepted | — | — |
 | [ADR-0007](./ADR-0007-stripe-checkout-hosted-webhook-driven-subscription.md) | Stripe Checkout (hosted) + webhook-driven subscription state | Accepted | — | — |
 | [ADR-0008](./ADR-0008-scorerecipe-personal-engagement-nudge-pro-only.md) | `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado` | Proposed | — | — |
+| [ADR-0009](./ADR-0009-sentry-error-tracking.md) | Sentry as the error-tracking vendor (client/server/edge) | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
