@@ -69,6 +69,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0007](./ADR-0007-stripe-checkout-hosted-webhook-driven-subscription.md) | Stripe Checkout (hosted) + webhook-driven subscription state | Accepted | — | — |
 | [ADR-0008](./ADR-0008-scorerecipe-personal-engagement-nudge-pro-only.md) | `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado` | Proposed | — | — |
 | [ADR-0009](./ADR-0009-sentry-error-tracking.md) | Sentry as the error-tracking vendor (client/server/edge) | Proposed | — | — |
+| [ADR-0010](./ADR-0010-postgres-atomic-counter-rate-limiting.md) | Rate limiting on Edge Functions via a Postgres atomic-counter table, no external dependency | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
