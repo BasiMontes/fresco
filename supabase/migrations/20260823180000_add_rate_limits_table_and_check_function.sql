@@ -23,11 +23,13 @@
 -- uuid, p_endpoint text, p_limit int, p_window_seconds int) returns
 -- boolean`) so future adopting endpoints can pass their own threshold, but
 -- this v1 implementation fixes the truncation granularity to the hour
--- boundary regardless of the value passed — callers should pass 3600 so the
--- parameter and the actual behavior agree. A future adopter that genuinely
--- needs a different window size is a new decision, not an automatic
--- extension of this migration (same "no automatic upgrade" stance the ADR
--- itself takes on fixed vs. sliding windows).
+-- boundary regardless of the value passed. Rather than silently ignoring a
+-- mismatched value, the function raises if `p_window_seconds <> 3600` — a
+-- future caller expecting a different window fails loudly at the RPC
+-- boundary instead of silently getting the wrong window. A future adopter
+-- that genuinely needs a different window size is a new decision, not an
+-- automatic extension of this migration (same "no automatic upgrade" stance
+-- the ADR itself takes on fixed vs. sliding windows).
 
 create table public.rate_limits (
   user_id      uuid        not null references auth.users(id) on delete cascade,
@@ -65,6 +67,10 @@ declare
   v_window_start timestamptz := date_trunc('hour', now());
   v_count        int;
 begin
+  if p_window_seconds <> 3600 then
+    raise exception 'check_and_increment_rate_limit: only 3600s windows supported in v1, got %', p_window_seconds;
+  end if;
+
   if p_user_id <> auth.uid() then
     raise exception 'check_and_increment_rate_limit: caller does not own user_id %', p_user_id;
   end if;
