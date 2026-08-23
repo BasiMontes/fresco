@@ -163,21 +163,24 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
 
       <div className="mt-6 flex flex-col gap-3">
         <Button
-          data-testid="onboarding_continue_as_guest_button"
-          variant="action"
-          onClick={() => void handleGuest()}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
-        </Button>
-        <Button
           data-testid="onboarding_create_account_button"
-          variant="secondary"
+          variant="action"
           onClick={() => setChoice('account')}
           disabled={isSubmitting}
         >
           Crear cuenta
         </Button>
+        <Button
+          data-testid="onboarding_continue_as_guest_button"
+          variant="secondary"
+          onClick={() => void handleGuest()}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
+        </Button>
+        <p data-testid="onboarding_guest_deletion_notice" className="text-center text-body-sm text-tertiary">
+          Como invitada, tu progreso se borra a los 3 días si no creas una cuenta.
+        </p>
       </div>
 
       {error && (
