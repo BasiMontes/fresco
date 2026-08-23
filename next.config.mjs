@@ -15,6 +15,10 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
+  // ADR-0009: force-expose VERCEL_ENV to the client, independent of Vercel's project toggle.
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV,
+  },
 };
 
 // ADR-0009: missing authToken (local dev) skips source-map upload, doesn't fail the build.
