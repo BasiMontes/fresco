@@ -48,11 +48,22 @@ export interface SelectMenuParams {
   /** Pro-tier last-2-weeks recipe ids to exclude (ADR-0001) — always `[]` for Free. */
   recentRecipeIds: string[]
   profile: UserProfile
+  /** Pro/Family personal cocinada/descartada counts per recipe, all-time (ADR-0008) — `undefined` for Free. */
+  userEngagement?: Map<string, { cocinada: number; descartada: number }>
 }
 
 export interface SelectedMenu {
   menu: Record<DiaSemana, Record<TipoPlatoSlot, string>>
   advertencias: string[]
+}
+
+interface ScoreRecipeParams {
+  recipe: Recipe
+  season: string
+  lastCategoria: string | null
+  lastContundente: boolean | null
+  /** This user's personal cocinada/descartada counts for this recipe (ADR-0008) — `undefined` for Free or no history. */
+  engagement?: { cocinada: number; descartada: number }
 }
 
 /**
@@ -61,7 +72,7 @@ export interface SelectedMenu {
  * to honor as best-effort preferences (FR-2.8) — now a fixed, auditable
  * heuristic instead of a natural-language instruction.
  */
-function scoreRecipe(recipe: Recipe, season: string, lastCategoria: string | null, lastContundente: boolean | null): number {
+function scoreRecipe({ recipe, season, lastCategoria, lastContundente, engagement }: ScoreRecipeParams): number {
   let score = 0
   const clasificacion = recipe.clasificacion
 
@@ -76,6 +87,14 @@ function scoreRecipe(recipe: Recipe, season: string, lastCategoria: string | nul
   score += Math.min(recipe.veces_cocinada, 10) * 0.3
   if (recipe.veces_descartada > 2) score -= 4
 
+  // ADR-0008: personal signal, Pro/Family only — weighted higher than the
+  // global nudge above, since one specific user marking a recipe is a
+  // stronger signal than the aggregate across the whole userbase.
+  if (engagement) {
+    score += Math.min(engagement.cocinada, 5) * 1.0
+    if (engagement.descartada > 0) score -= 6
+  }
+
   // Jitter: repeat generations for an identical profile shouldn't always
   // return the exact same week — real variety across regenerations.
   score += Math.random() * 2
@@ -84,7 +103,7 @@ function scoreRecipe(recipe: Recipe, season: string, lastCategoria: string | nul
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, profile }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, profile, userEngagement }: SelectMenuParams): SelectedMenu {
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
   const recipeById = new Map(candidates.map(r => [r.id, r]))
@@ -135,7 +154,7 @@ export function selectMenu({ candidates, recentRecipeIds, profile }: SelectMenuP
       let chosen = timeFiltered[0]
       let bestScore = -Infinity
       for (const recipe of timeFiltered) {
-        const score = scoreRecipe(recipe, season, lastCategoria, lastContundente)
+        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, engagement: userEngagement?.get(recipe.id) })
         if (score > bestScore) {
           bestScore = score
           chosen = recipe

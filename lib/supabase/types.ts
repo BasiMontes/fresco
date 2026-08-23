@@ -478,6 +478,14 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string[]
       }
+      get_user_recipe_engagement: {
+        Args: { p_user_id: string }
+        Returns: {
+          recipe_id: string
+          veces_cocinada_usuario: number
+          veces_descartada_usuario: number
+        }[]
+      }
       jsonb_add_item: {
         Args: { p_item: Json; p_list_id: string; p_pasillo_nombre: string }
         Returns: undefined
