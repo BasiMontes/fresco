@@ -99,6 +99,10 @@ Deno.serve(async (req: Request) => {
     let recentRecipeIds: string[] = []
     let cocinadasEvitadas = 0
     let descartadasEvitadas = 0
+    // ADR-0008: personal cocinada/descartada counts feeding scoreRecipe()'s
+    // nudge — Pro/Family only, reusing this same isPro gate. Stays
+    // `undefined` for Free, so scoreRecipe() applies zero personal nudge.
+    let userEngagement: Map<string, { cocinada: number; descartada: number }> | undefined
 
     if (isPro) {
       const { data: marks } = await supabase.rpc('get_recent_recipe_marks', {
@@ -112,6 +116,14 @@ Deno.serve(async (req: Request) => {
           else descartadasEvitadas++
         }
       }
+
+      const { data: engagement } = await supabase.rpc('get_user_recipe_engagement', { p_user_id: user.id })
+      userEngagement = new Map(
+        (engagement ?? []).map(row => [
+          row.recipe_id,
+          { cocinada: row.veces_cocinada_usuario, descartada: row.veces_descartada_usuario },
+        ]),
+      )
     }
 
     // 7. Select the 21 slots — deterministic, synchronous, cannot itself
@@ -119,7 +131,7 @@ Deno.serve(async (req: Request) => {
     // candidate becomes NO_SAFE_RECIPE_SENTINEL with a real advertencia,
     // same FR-8.2 / AC Scenario 4 contract as before.
     const recipeMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]))
-    const { menu, advertencias } = selectMenu({ candidates: recipes, recentRecipeIds, profile })
+    const { menu, advertencias } = selectMenu({ candidates: recipes, recentRecipeIds, profile, userEngagement })
 
     // 8. Pro learning explanation (FR-5.5) — deterministic, built from the
     // recipe stats already computed here. Cannot fail the way a Gemini call

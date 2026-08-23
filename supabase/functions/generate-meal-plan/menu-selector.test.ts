@@ -1,5 +1,5 @@
 import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
@@ -222,5 +222,60 @@ describe('selectMenu — planning_selection exclusions (FRESCO-199)', () => {
     const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile: allExcludedProfile })
 
     expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(false)
+  })
+})
+
+describe('selectMenu — personal engagement nudge (ADR-0008)', () => {
+  // Assertions below check only the FIRST slot filled (lunes): from the
+  // second slot onward, the breakfast-repeat cap and the comida/cena
+  // no-repeat set start excluding whichever candidate was already chosen —
+  // a real invariant (structural-guarantees describe block above), but it
+  // would make a multi-slot assertion here about the *scoring nudge* prove
+  // the repeat cap instead. Jitter (`Math.random() * 2`) is pinned to 0 so
+  // the nudge itself, not luck, decides the one comparison under test.
+  const randomSpy = spyOn(Math, 'random').mockReturnValue(0)
+  afterEach(() => randomSpy.mockClear())
+
+  test('a Pro user\'s personal cocinada history is favored over an identical candidate with no history', () => {
+    const favored = makeRecipe('desayuno-favored', 'desayuno')
+    const plain = makeRecipe('desayuno-plain', 'desayuno')
+    const userEngagement = new Map([[favored.id, { cocinada: 3, descartada: 0 }]])
+
+    const { menu } = selectMenu({
+      candidates: [favored, plain],
+      recentRecipeIds: [],
+      profile: makeProfile({ plan: 'pro' }),
+      userEngagement,
+    })
+
+    expect(menu.lunes.desayuno).toBe(favored.id)
+  })
+
+  test('a Pro user\'s personal descartada mark outweighs an otherwise-identical candidate', () => {
+    const discarded = makeRecipe('desayuno-discarded', 'desayuno')
+    const plain = makeRecipe('desayuno-plain', 'desayuno')
+    const userEngagement = new Map([[discarded.id, { cocinada: 0, descartada: 1 }]])
+
+    const { menu } = selectMenu({
+      candidates: [discarded, plain],
+      recentRecipeIds: [],
+      profile: makeProfile({ plan: 'pro' }),
+      userEngagement,
+    })
+
+    expect(menu.lunes.desayuno).toBe(plain.id)
+  })
+
+  test('Free tier (no userEngagement) scores unaffected — global rating alone decides', () => {
+    const higherRated = makeRecipe('desayuno-higher', 'desayuno', { rating_promedio: 5 })
+    const lowerRated = makeRecipe('desayuno-lower', 'desayuno', { rating_promedio: 1 })
+
+    const { menu } = selectMenu({
+      candidates: [higherRated, lowerRated],
+      recentRecipeIds: [],
+      profile: makeProfile({ plan: 'free' }),
+    })
+
+    expect(menu.lunes.desayuno).toBe(higherRated.id)
   })
 })
