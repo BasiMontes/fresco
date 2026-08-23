@@ -126,10 +126,17 @@ export async function subscribeToPush({ client, vapidPublicKey }: SubscribeToPus
 }
 
 /**
- * Full opt-out flow: unsubscribe the browser's `PushSubscription` (if any)
- * AND delete its row from `push_subscriptions` — symmetric with
- * `subscribeToPush`, neither the browser nor the DB is left with a stale
- * half of the pair.
+ * Full opt-out flow: delete the `push_subscriptions` row FIRST, then
+ * unsubscribe the browser's `PushSubscription`. Order matters — if this
+ * were reversed (browser first, DB second) a failure between the two steps
+ * would orphan the DB row: `getCurrentPushSubscription()` returns `null`
+ * once the browser subscription is gone, so a retry would short-circuit on
+ * the guard below and never reach `deletePushSubscription`, leaving a row
+ * no UI path can ever remove again. DB-first means the worst partial
+ * failure (delete succeeds, `unsubscribe()` throws) just leaves a stale
+ * browser subscription with no matching row — harmless (no send target,
+ * `23505` no-ops a future re-subscribe) and a retry still finds the
+ * browser subscription to finish unsubscribing.
  */
 export async function unsubscribeFromPush(client: SupabaseClient<Database>): Promise<void> {
   const subscription = await getCurrentPushSubscription();
@@ -137,7 +144,6 @@ export async function unsubscribeFromPush(client: SupabaseClient<Database>): Pro
     return;
   }
 
-  const { endpoint } = subscription;
+  await deletePushSubscription(client, subscription.endpoint);
   await subscription.unsubscribe();
-  await deletePushSubscription(client, endpoint);
 }
