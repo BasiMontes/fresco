@@ -1,7 +1,7 @@
 # Tarea: Monitoreo de errores en producción (error tracking)
 
 **Jira Key:** [FRESCO-242](https://basiliomontescastano.atlassian.net/browse/FRESCO-242)
-**Status:** Listo
+**Status:** WIP
 **Type:** Tarea
 
 ---
@@ -29,7 +29,7 @@
 ## Metadata
 
 - **Created:** 8/20/2026
-- **Updated:** 8/20/2026
+- **Updated:** 8/23/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 
