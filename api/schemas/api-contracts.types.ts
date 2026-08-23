@@ -107,3 +107,20 @@ export interface ApiErrorResponse {
 export interface DeleteAccountResponse {
   deleted: boolean
 }
+
+// POST /send-weekly-reengagement-push — FRESCO-241 PR3 (ADR-0011/ADR-0012).
+// No request body: triggered exclusively by pg_cron -> pg_net, never by a
+// client, so there is nothing for a caller to pass. Auth is a service_role
+// bearer check (see the function's own `requireServiceRoleCaller`), not a
+// per-user JWT -- this contract exists for observability (the cron job's
+// response is inspectable via Edge Function logs), not for a frontend caller.
+export interface SendWeeklyPushRemindersResponse {
+  /** ISO week the send ran for, e.g. '2026-W35'. */
+  semana_iso: string
+  /** Distinct users with >=1 push_subscriptions row and no meal_plans row for semana_iso. */
+  users_targeted: number
+  /** Individual webpush.sendNotification() calls that succeeded (one per subscription/device). */
+  notifications_sent: number
+  /** push_subscriptions rows deleted this run after a 404/410 from the push service (AC5). */
+  stale_subscriptions_removed: number
+}

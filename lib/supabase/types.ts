@@ -505,6 +505,24 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_push_subscriptions_without_current_plan: {
+        Args: { p_semana_iso: string }
+        Returns: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_used_at: string
+          p256dh: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "push_subscriptions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_recent_recipe_marks: {
         Args: { p_user_id: string; p_weeks?: number }
         Returns: {

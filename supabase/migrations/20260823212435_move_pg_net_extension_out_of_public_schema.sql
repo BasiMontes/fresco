@@ -1,0 +1,21 @@
+-- Follow-up to 20260823212400_schedule_weekly_push_reminders.sql:
+-- `create extension if not exists pg_net;` defaulted to the `public`
+-- schema, flagged by `get_advisors` (security, extension_in_public). This
+-- project already keeps every other extension with public-search-path
+-- objects under a dedicated `extensions` schema (pg_trgm -- see the
+-- 20260801151446_move_pg_trgm_out_of_public precedent for this exact fix
+-- shape -- plus pgcrypto, uuid-ossp, pg_stat_statements). Moving pg_net
+-- there for consistency and to clear the advisor warning.
+--
+-- `alter extension pg_net set schema extensions;` errors
+-- ("0A000: extension pg_net does not support SET SCHEMA") -- pg_net does
+-- not implement schema relocation post-install, so it must be dropped and
+-- recreated instead. No prior migration depends on any pg_net object (the
+-- cron job created by 20260823212400 stores its `net.http_post(...)` call
+-- as plain text, not a hard SQL dependency), and `net.http_post` itself
+-- lives in pg_net's own `net` schema regardless of which schema the
+-- extension's catalog entry is registered under -- confirmed via
+-- `pg_proc`/`pg_namespace` after applying this, `net.http_post` still
+-- resolves unchanged.
+drop extension pg_net;
+create extension pg_net with schema extensions;
