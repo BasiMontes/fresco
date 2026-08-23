@@ -17,9 +17,7 @@ const nextConfig = {
   },
 };
 
-// FRESCO-242 — wraps the config to upload production source maps to Sentry
-// (ADR-0009). `authToken` missing (e.g. local dev) makes the SDK skip the
-// upload instead of failing the build; `silent: true` keeps that skip quiet.
+// ADR-0009: missing authToken (local dev) skips source-map upload, doesn't fail the build.
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,

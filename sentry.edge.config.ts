@@ -1,10 +1,3 @@
-/**
- * FRESCO-242 — Sentry init for the Edge runtime (middleware). Imported from
- * `instrumentation.ts`'s `register()` when `process.env.NEXT_RUNTIME ===
- * 'edge'`, per `@sentry/nextjs` manual setup (ADR-0009). No-op when the DSN
- * is unset so local dev without Sentry credentials never crashes or spams
- * the console.
- */
 import * as Sentry from '@sentry/nextjs';
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
