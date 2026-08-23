@@ -4,6 +4,7 @@ import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
 import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
+import { PushNotificationsToggle } from '@/components/profile/push-notifications-toggle';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
@@ -140,6 +141,12 @@ export default async function ProfilePage() {
       </Card>
 
       <NombreForm nombreInicial={nombre} />
+
+      {/* FRESCO-241 PR2: browser-only state (Notification.permission,
+          PushSubscription), so this stays client-rendered rather than
+          server-read like the cards around it — same reasoning as why
+          NombreForm/PreferencesForm are themselves 'use client'. */}
+      <PushNotificationsToggle />
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card>
