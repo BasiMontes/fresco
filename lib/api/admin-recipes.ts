@@ -52,10 +52,7 @@ export async function searchCatalogRecipes(
   return data ?? [];
 }
 
-// TODO(FRESCO-237 PR3): wire delete Edge Function call — a
-// `deleteCatalogRecipe(client, recipeId)` here will call
-// `client.functions.invoke('delete-catalog-recipe', { body: { recipe_id } })`
-// against `supabase/functions/delete-catalog-recipe/index.ts` (PR1) and
-// surface its 409 "used in N meal plans" message inline, same shape as
-// `deleteRecetaPropia` above but via the Edge Function, not a direct table
-// delete (recipes has no authenticated-role write RLS policy).
+// PR3's delete call lives in `lib/api/edge-functions.ts`
+// (`deleteCatalogRecipe`), not here — every other Edge Function caller in
+// this codebase goes through that module's `callEdgeFunction()` helper
+// (raw `fetch` + `EdgeFunctionError`), not `client.functions.invoke()`.

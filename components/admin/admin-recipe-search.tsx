@@ -4,6 +4,7 @@ import type { CatalogRecipeSearchResult } from '@/lib/api/admin-recipes';
 import { ImageOff, Search } from 'lucide-react';
 import Image from 'next/image';
 import * as React from 'react';
+import { DeleteCatalogRecipeButton } from '@/components/admin/delete-catalog-recipe-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { searchCatalogRecipes } from '@/lib/api/admin-recipes';
@@ -13,16 +14,17 @@ import { createClient } from '@/lib/supabase/client';
 const SEARCH_DEBOUNCE_MS = 300;
 
 /**
- * Admin catalog search + list (FRESCO-237 PR2). Search-only — no delete
- * affordance here; PR3 adds the delete button per row once the Edge
- * Function has a caller. Client-side because the search itself is
- * interactive (debounced round trip per keystroke), same reason
- * `RecipeLibrary` (`components/recipes/recipe-library.tsx`) is a client
- * component, though that one filters an already-fetched list in memory
- * while this one queries `recipes` directly per FRESCO-237's comments.md
- * Task 5 — the catalog here is the full ~1000-row table, not one profile's
- * pre-filtered safe set, so client-side filtering the whole thing isn't the
- * right shape.
+ * Admin catalog search + list (FRESCO-237 PR2/PR3). Client-side because the
+ * search itself is interactive (debounced round trip per keystroke), same
+ * reason `RecipeLibrary` (`components/recipes/recipe-library.tsx`) is a
+ * client component, though that one filters an already-fetched list in
+ * memory while this one queries `recipes` directly per FRESCO-237's
+ * comments.md Task 5 — the catalog here is the full ~1000-row table, not one
+ * profile's pre-filtered safe set, so client-side filtering the whole thing
+ * isn't the right shape. Each result row carries a delete action (PR3);
+ * deleting removes the row from local `results` state directly rather than
+ * re-running the search — there's no server list to refetch from, this page
+ * has no "browse" mode.
  */
 export function AdminRecipeSearch() {
   const [query, setQuery] = React.useState('');
@@ -66,6 +68,10 @@ export function AdminRecipeSearch() {
   }, [query]);
 
   const trimmedQuery = query.trim();
+
+  function handleDeleted(deletedRecipeId: string) {
+    setResults(current => current.filter(recipe => recipe.id !== deletedRecipeId));
+  }
 
   return (
     <div data-testid="adminRecipeSearch">
@@ -131,6 +137,11 @@ export function AdminRecipeSearch() {
                 <p className="truncate text-body-md font-medium">{recipe.nombre}</p>
                 <p className="truncate text-body-sm text-tertiary">{recipe.slug}</p>
               </div>
+              <DeleteCatalogRecipeButton
+                recipeId={recipe.id}
+                recipeName={recipe.nombre}
+                onDeleted={handleDeleted}
+              />
             </li>
           ))}
         </ul>
