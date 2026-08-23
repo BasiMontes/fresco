@@ -1,5 +1,5 @@
 import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
-import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
@@ -233,8 +233,18 @@ describe('selectMenu — personal engagement nudge (ADR-0008)', () => {
   // would make a multi-slot assertion here about the *scoring nudge* prove
   // the repeat cap instead. Jitter (`Math.random() * 2`) is pinned to 0 so
   // the nudge itself, not luck, decides the one comparison under test.
-  const randomSpy = spyOn(Math, 'random').mockReturnValue(0)
-  afterEach(() => randomSpy.mockClear())
+  //
+  // Installed/restored in beforeAll/afterAll (not at describe-body scope,
+  // where it would patch Math.random for every other describe block in this
+  // file during test collection) and torn down with mockRestore (not
+  // mockClear, which only resets call history — it does not undo the
+  // monkey-patch, so Math.random would stay pinned to 0 for the rest of the
+  // process).
+  let randomSpy: ReturnType<typeof spyOn<typeof Math, 'random'>>
+  beforeAll(() => {
+    randomSpy = spyOn(Math, 'random').mockReturnValue(0)
+  })
+  afterAll(() => randomSpy.mockRestore())
 
   test('a Pro user\'s personal cocinada history is favored over an identical candidate with no history', () => {
     const favored = makeRecipe('desayuno-favored', 'desayuno')

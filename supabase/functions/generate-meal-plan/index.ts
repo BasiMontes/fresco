@@ -105,10 +105,12 @@ Deno.serve(async (req: Request) => {
     let userEngagement: Map<string, { cocinada: number; descartada: number }> | undefined
 
     if (isPro) {
-      const { data: marks } = await supabase.rpc('get_recent_recipe_marks', {
-        p_user_id: user.id,
-        p_weeks: 2,
-      })
+      // Independent reads (both only need user.id) — run concurrently rather
+      // than paying two sequential round-trips on every Pro generation.
+      const [{ data: marks }, { data: engagement }] = await Promise.all([
+        supabase.rpc('get_recent_recipe_marks', { p_user_id: user.id, p_weeks: 2 }),
+        supabase.rpc('get_user_recipe_engagement', { p_user_id: user.id }),
+      ])
       for (const mark of marks ?? []) {
         if (mark.estado === 'cocinada' || mark.estado === 'descartada') {
           recentRecipeIds.push(mark.recipe_id)
@@ -117,7 +119,6 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      const { data: engagement } = await supabase.rpc('get_user_recipe_engagement', { p_user_id: user.id })
       userEngagement = new Map(
         (engagement ?? []).map(row => [
           row.recipe_id,
