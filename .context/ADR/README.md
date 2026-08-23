@@ -69,6 +69,8 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0007](./ADR-0007-stripe-checkout-hosted-webhook-driven-subscription.md) | Stripe Checkout (hosted) + webhook-driven subscription state | Accepted | — | — |
 | [ADR-0008](./ADR-0008-scorerecipe-personal-engagement-nudge-pro-only.md) | `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado` | Proposed | — | — |
 | [ADR-0009](./ADR-0009-sentry-error-tracking.md) | Sentry as the error-tracking vendor (client/server/edge) | Proposed | — | — |
+| [ADR-0011](./ADR-0011-pg-cron-pg-net-scheduled-http-triggers.md) | `pg_cron` + `pg_net` for scheduled HTTP-triggered jobs (Edge Function invocation) | Proposed | — | — |
+| [ADR-0012](./ADR-0012-web-push-library-for-vapid-payload-encryption.md) | `web-push` npm library for VAPID signing + payload encryption | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
