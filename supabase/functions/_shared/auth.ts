@@ -28,29 +28,36 @@ export async function requireAuthenticatedUser(
 
 /**
  * Public method, fails fast: throws HttpError(401) unless the caller's
- * Authorization header is EXACTLY this project's own service_role key.
+ * `apikey` header is EXACTLY this project's own secret key.
  *
  * For Edge Functions invoked by pg_cron -> pg_net (ADR-0011), never by a
- * browser or a user's own session. Supabase's platform-level `verify_jwt`
- * gate (see the function's deployment config) only proves the bearer token
- * is SOME validly-signed Supabase JWT — an anon key, a user's own session,
- * or the service_role key would all pass it — it does NOT prove the caller
- * is the cron job specifically. This check narrows that to exactly the
- * service_role key, which only this project's own `net.http_post` call
- * (sourced from Supabase Vault in the scheduling migration, never
- * hardcoded) ever presents. A function that calls this must never also
- * accept a real user's JWT — it has no per-user data to scope a request to.
+ * browser or a user's own session. This project uses the new-style
+ * `sb_secret_...` key (not the legacy service_role JWT) — per Supabase's
+ * own migration guide, that key type can only be sent on the `apikey`
+ * header (`Authorization: Bearer` rejects it with "Invalid JWT", since it
+ * isn't a JWT), and the platform's `verify_jwt` gate doesn't understand it
+ * at all, so this function must be deployed with `verify_jwt: false` and do
+ * its own check here. This check narrows the caller to exactly the secret
+ * key, which only this project's own `net.http_post` call (sourced from
+ * Supabase Vault in the scheduling migration, never hardcoded) ever
+ * presents. A function that calls this must never also accept a real
+ * user's JWT — it has no per-user data to scope a request to.
  */
 export function requireServiceRoleCaller(req: Request): void {
-  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!expected) {
+  const secretKeysRaw = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (!secretKeysRaw) {
     // Missing on this project's own Edge Function runtime would be a
     // deployment misconfiguration, not a caller problem — 500, not 401.
     throw new HttpError('Error interno del servidor', 500)
   }
 
-  const authHeader = req.headers.get('Authorization')
-  if (authHeader !== `Bearer ${expected}`) {
+  const expected = (JSON.parse(secretKeysRaw) as Record<string, string>).default
+  if (!expected) {
+    throw new HttpError('Error interno del servidor', 500)
+  }
+
+  const apiKeyHeader = req.headers.get('apikey')
+  if (apiKeyHeader !== expected) {
     throw new HttpError('No autorizado', 401)
   }
 }
