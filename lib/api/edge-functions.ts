@@ -10,6 +10,8 @@
 
 import type {
   DeleteAccountResponse,
+  DeleteCatalogRecipeRequest,
+  DeleteCatalogRecipeResponse,
   GenerateMealPlanRequest,
   GenerateMealPlanResponse,
   ReassignGuestDataRequest,
@@ -154,6 +156,21 @@ export async function reassignGuestData(
  */
 export async function deleteAccount(accessToken: string): Promise<DeleteAccountResponse> {
   return callEdgeFunction<DeleteAccountResponse>('delete-account', {}, accessToken);
+}
+
+/**
+ * POST /delete-catalog-recipe — FRESCO-237 admin-only hard delete of a
+ * catalog recipe. Admin gating happens entirely server-side
+ * (`requireAdminUser()` inside the Edge Function, `ADMIN_USER_ID` allowlist)
+ * — this client call carries no client-side admin check, same reasoning as
+ * `deleteAccount` above. A recipe still referenced by a `meal_plan_recipes`
+ * row surfaces as a 409 here (`EdgeFunctionError.body.error`), not a delete.
+ */
+export async function deleteCatalogRecipe(
+  request: DeleteCatalogRecipeRequest,
+  accessToken: string | null,
+): Promise<DeleteCatalogRecipeResponse> {
+  return callEdgeFunction<DeleteCatalogRecipeResponse>('delete-catalog-recipe', request, accessToken);
 }
 
 export { EdgeFunctionError };
