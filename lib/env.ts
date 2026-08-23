@@ -27,6 +27,12 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL: z
     .string({ message: 'NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL is required — copy .env.example to .env and fill it in' })
     .url('NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL must be a valid URL (e.g. https://<project-ref>.functions.supabase.co)'),
+  // FRESCO-241 PR2: optional (not required) — the push opt-in toggle
+  // feature-detects its absence and disables itself rather than crashing.
+  // Same value as the server-only VAPID_PUBLIC_KEY (.env.example) — VAPID
+  // public keys aren't secret, they're just what pushManager.subscribe()
+  // needs client-side. Server keeps the private key.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
 });
 
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
@@ -36,6 +42,7 @@ function parseClientEnv(): ClientEnv {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL: process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL,
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   });
 
   if (!result.success) {
