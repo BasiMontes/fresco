@@ -15,6 +15,7 @@ import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { logger } from '../_shared/logger.ts'
 import { buildLearningExplanation } from './prompt.ts'
 import { selectMenu } from './menu-selector.ts'
+import { assertRateLimitAllowed } from './rate-limit.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 import type {
   DiaSemana,
@@ -40,6 +41,20 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')!
     const supabase = createRequestClient(authHeader)
     const user = await requireAuthenticatedUser(req, supabase)
+
+    // 1.5. Rate limit (ADR-0010, FRESCO-243): 5 generations/hour per user via
+    // a single atomic Postgres RPC, checked before any body parsing or DB
+    // work so a rate-limited caller gets a fast 429. Never a read-then-write
+    // check from here — that would race under concurrent requests from the
+    // same user, which the RPC itself is designed to close.
+    const { data: allowed, error: rateLimitError } = await supabase.rpc('check_and_increment_rate_limit', {
+      p_user_id: user.id,
+      p_endpoint: 'generate-meal-plan',
+      p_limit: 5,
+      p_window_seconds: 3600,
+    })
+    if (rateLimitError) throw new HttpError('Error verificando el límite de generación', 500)
+    assertRateLimitAllowed(allowed)
 
     // 2. Parse + validate body
     const body: GenerateMealPlanRequest = await req.json()
