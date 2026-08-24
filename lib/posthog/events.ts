@@ -54,3 +54,45 @@ export function identifyUser(userId: string): void {
     console.error('[lib/posthog/events] identifyUser failed', error);
   }
 }
+
+/**
+ * Merges a just-established distinct_id with the anonymous distinct_id that
+ * preceded it. ADR-0004's guest→registered reassignment path (`/signup`'s
+ * `handleReassign`) switches the session to a DIFFERENT, pre-existing
+ * account via `signInWithPassword()` — unlike the normal conversion path
+ * (`updateUser`), which keeps the same `auth.uid()` and so merges for free
+ * via `identifyUser`, this one changes distinct_id outright and needs an
+ * explicit alias so the guest's pre-reassignment event stream (including any
+ * menu she generated) isn't orphaned. Same fail-soft guard as `captureEvent`.
+ */
+export function aliasUser(newUserId: string, previousUserId: string): void {
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    return;
+  }
+  try {
+    posthog.alias(newUserId, previousUserId);
+  }
+  catch (error) {
+    console.error('[lib/posthog/events] aliasUser failed', error);
+  }
+}
+
+/**
+ * Reads the current browser's PostHog distinct_id. `aliasUser` callers need
+ * this captured BEFORE a session-switching auth call (e.g.
+ * `signInWithPassword`) resolves — once it does, the provider's
+ * `onAuthStateChange` has already re-identified under the new uid and the
+ * prior anonymous id is gone. Same fail-soft guard as `captureEvent`.
+ */
+export function getDistinctId(): string | null {
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    return null;
+  }
+  try {
+    return posthog.get_distinct_id();
+  }
+  catch (error) {
+    console.error('[lib/posthog/events] getDistinctId failed', error);
+    return null;
+  }
+}

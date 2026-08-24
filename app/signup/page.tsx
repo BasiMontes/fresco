@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
+import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 import { createClient } from '@/lib/supabase/client';
@@ -83,11 +84,26 @@ export default function SignupPage() {
 
       await reassignGuestData({ email, password: conflictPassword }, session.access_token);
 
-      const { error } = await client.auth.signInWithPassword({ email, password: conflictPassword });
+      // FRESCO-240 (ADR-0013): capture the anonymous distinct_id BEFORE
+      // signInWithPassword below switches the session to the pre-existing
+      // account's auth.uid() -- once it resolves, the provider's
+      // onAuthStateChange has already re-identified under the new uid and
+      // this anonymous id is gone.
+      const anonymousDistinctId = getDistinctId();
+
+      const { data: signInData, error } = await client.auth.signInWithPassword({ email, password: conflictPassword });
       if (error) {
         setReassignError(translateAuthError(error));
         return;
       }
+      // Merges the guest's pre-reassignment event stream (menu generation
+      // included) into the account she just proved she owns -- identify()
+      // alone can't do this, since the uid actually changes here, unlike the
+      // OTP conversion path below which keeps the same uid throughout.
+      if (anonymousDistinctId && signInData.user) {
+        aliasUser(signInData.user.id, anonymousDistinctId);
+      }
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'progressive_signup_reassign' });
       // FRESCO-204: she may have browsed /menu as the anonymous guest
       // earlier in this session — Next's client Router Cache can otherwise
       // serve that stale (is_anonymous: true) RSC payload instead of
@@ -149,6 +165,14 @@ export default function SignupPage() {
         setOtpError(translateAuthError(passwordError));
         return;
       }
+      // ADR-0013 (FRESCO-240): EPIC-FRESCO-7's Progressive Signup conversion
+      // completing — the OTP-based anonymous→registered path. Mutually
+      // exclusive with identity-step.tsx's own USER_SIGNED_UP capture (that
+      // one only fires for a brand-new visitor choosing "crear cuenta" at
+      // /onboarding, which never reaches /signup afterward), so no
+      // double-count guard is needed — `method` just distinguishes entry
+      // point for anyone reading the funnel later.
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'progressive_signup_otp' });
       // She already has a profile + generated menu — back to it, not onboarding.
       // FRESCO-204: same Router Cache staleness risk as `handleReassign`
       // above — bust it before returning to /menu.
