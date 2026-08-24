@@ -100,6 +100,26 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   const update = resolveProUpdateFromSession(session, subscription, priceId);
 
   const supabase = createServiceClient();
+
+  // FRESCO-240: Stripe retries checkout.session.completed on any non-2xx
+  // response (a transient network blip, a cold-start timeout) -- without
+  // this, a retry of an already-processed delivery re-fires
+  // subscription_started for the same subscription. If this exact
+  // subscription id is already on file, this delivery already ran to
+  // completion once; a genuinely new subscription always changes it (was
+  // null, or a prior, different subscription on resubscribe).
+  const { data: existingProfile, error: lookupError } = await supabase
+    .from('user_profiles')
+    .select('stripe_subscription_id')
+    .eq('id', update.userId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw lookupError;
+  }
+
+  const isNewSubscription = existingProfile?.stripe_subscription_id !== update.stripeSubscriptionId;
+
   const { error } = await supabase
     .from('user_profiles')
     .update({
@@ -118,13 +138,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
     throw error;
   }
 
-  // ADR-0013: server-side only — this webhook has no browser, so
-  // posthog-js structurally cannot fire here.
-  await captureServerEvent({
-    distinctId: update.userId,
-    event: POSTHOG_EVENTS.SUBSCRIPTION_STARTED,
-    properties: { stripeSubscriptionId: update.stripeSubscriptionId },
-  });
+  if (isNewSubscription) {
+    // ADR-0013: server-side only — this webhook has no browser, so
+    // posthog-js structurally cannot fire here.
+    await captureServerEvent({
+      distinctId: update.userId,
+      event: POSTHOG_EVENTS.SUBSCRIPTION_STARTED,
+      properties: { stripeSubscriptionId: update.stripeSubscriptionId },
+    });
+  }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription, eventId: string): Promise<void> {
