@@ -24,6 +24,7 @@ import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { MealPlanError, swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { createClient } from '@/lib/supabase/client';
@@ -285,6 +286,11 @@ export function CalendarGrid({
         session?.access_token ?? null,
       );
       setEstados(current => ({ ...current, [dia]: { ...current[dia], [tipo]: estado } }));
+      if (estado === 'cocinada') {
+        // "usados" half of the North-star KPI (ADR-0013) — deliberately not
+        // fired for 'descartada', which isn't a use signal.
+        captureEvent(POSTHOG_EVENTS.RECIPE_MARKED_COOKED);
+      }
     }
     catch (error) {
       console.error('[CalendarGrid] updateRecipeStatus failed', error);

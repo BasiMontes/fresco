@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Caprasimo, Figtree } from 'next/font/google';
+import { PostHogProvider } from '@/app/providers/posthog-provider';
 
 import './globals.css';
 
@@ -38,7 +39,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${caprasimo.variable} ${figtree.variable}`}>
-      <body>{children}</body>
+      <body>
+        <PostHogProvider>{children}</PostHogProvider>
+      </body>
     </html>
   );
 }

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { translateAuthError } from '@/lib/auth-errors';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
@@ -96,6 +97,9 @@ function LoginPageInner() {
       // draft left by a previous session in this same browser tab so it
       // doesn't leak into this account's onboarding.
       useOnboardingStore.getState().reset();
+      // ADR-0013: input to PostHog's native retention report — the reason
+      // this vendor was chosen over the alternatives.
+      captureEvent(POSTHOG_EVENTS.SESSION_STARTED);
       router.push('/menu');
     }
     finally {

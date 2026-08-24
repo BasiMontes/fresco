@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { EmailInput } from '@/components/ui/email-input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { translateAuthError } from '@/lib/auth-errors';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
 
 export interface IdentityStepProps {
@@ -49,6 +50,8 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         setError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
         return;
       }
+      // identify() fires independently, asynchronously, via the provider's onAuthStateChange — ordering vs. this capture is unguaranteed but safe (PostHog merges anonymous-device history on first identify regardless of order).
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'guest' });
       onResolved();
     }
     finally {
@@ -93,6 +96,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       // when email confirmation is required (the normal case here), it
       // won't have. Handle it as a real, expected state rather than a dead
       // end: same pattern as `/signup`'s `signupPendingConfirmation`.
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'account' });
       if (!data.session) {
         setPendingConfirmation(true);
         return;
