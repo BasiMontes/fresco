@@ -17,6 +17,7 @@ import { upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { toPlanningSelection } from '@/lib/planning-selection';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
@@ -229,6 +230,7 @@ export default function OnboardingPage() {
     setIsGenerating(true);
     setGenerateError(null);
     setGenerateSuccess(false);
+    captureEvent(POSTHOG_EVENTS.MENU_GENERATION_STARTED);
     try {
       const client = createClient();
       // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
@@ -272,6 +274,9 @@ export default function OnboardingPage() {
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
         session?.access_token ?? null,
       );
+      // "generados" half of the North-star KPI (ADR-0013) — fired only once
+      // generateMealPlan actually resolves OK, not on mere button press.
+      captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
       // FRESCO-152: brief explicit confirmation before leaving — the
       // redirect used to fire immediately with no acknowledgment that
       // the generation actually succeeded.
