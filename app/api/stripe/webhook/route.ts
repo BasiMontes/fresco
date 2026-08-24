@@ -1,5 +1,7 @@
 import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
+import { POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { captureServerEvent } from '@/lib/posthog/server';
 import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
@@ -115,6 +117,14 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   if (error) {
     throw error;
   }
+
+  // ADR-0013: server-side only — this webhook has no browser, so
+  // posthog-js structurally cannot fire here.
+  await captureServerEvent({
+    distinctId: update.userId,
+    event: POSTHOG_EVENTS.SUBSCRIPTION_STARTED,
+    properties: { stripeSubscriptionId: update.stripeSubscriptionId },
+  });
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription, eventId: string): Promise<void> {
