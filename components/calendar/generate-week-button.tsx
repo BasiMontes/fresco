@@ -6,6 +6,7 @@ import * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
 import { getIsoWeekMonday } from '@/lib/date/iso-week';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
 
 const PAST_WEEK_MESSAGE = 'No se pueden planificar semanas que ya han pasado.';
@@ -47,12 +48,20 @@ export function GenerateWeekButton({ semanaIso, fechaInicio }: { semanaIso: stri
     }
     setPending(true);
     setError(null);
+    // FRESCO-240: this is the button that fires for every week after the
+    // first (`app/onboarding/page.tsx`'s `handleGenerate` only covers the
+    // guest's very first menu) — the actual "menús generados semanalmente"
+    // the North-star KPI measures. Same event pair, same fail-soft guard.
+    captureEvent(POSTHOG_EVENTS.MENU_GENERATION_STARTED);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await generateMealPlan(
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
         session?.access_token ?? null,
       );
+      // Fired only once generateMealPlan actually resolves OK, not on mere
+      // button press — mirrors app/onboarding/page.tsx's handleGenerate.
+      captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
       router.refresh();
     }
     catch (caught) {
