@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import posthog from 'posthog-js';
 import { useEffect } from 'react';
-import { identifyUser } from '@/lib/posthog/events';
+import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
 
 // Module-level, not component state: React StrictMode double-invokes effects
@@ -30,6 +30,15 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
     if (key && !initialized) {
       posthog.init(key, {
         api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+        // FRESCO-240: PostHog's default DOM-click autocapture would scrape
+        // allergen/diet/health-adjacent UI text (e.g. "Vegano", "Sin
+        // gluten", "Halal" tags in app/onboarding/page.tsx) outside the
+        // reviewed event catalog in lib/posthog/events.ts — every event this
+        // app emits goes through that catalog deliberately, so autocapture
+        // is off. Pageview capture stays on default (URLs only, no DOM
+        // content) — no deliberate pageview event exists elsewhere to make
+        // it redundant.
+        autocapture: false,
       });
       initialized = true;
     }
@@ -39,9 +48,19 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
     }
 
     const client = createClient();
-    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
       if (session?.user?.id) {
         identifyUser(session.user.id);
+      }
+      // FRESCO-240: `/login`'s own SESSION_STARTED capture only fires on an
+      // explicit credential submission, missing a returning user whose
+      // persisted session is still valid and who never hits /login again.
+      // `INITIAL_SESSION` fires exactly once, on mount, and only ever
+      // carries a session when one was already persisted — a real
+      // credential submission fires `SIGNED_IN` instead, so this can't
+      // double-count against /login's own capture.
+      if (event === 'INITIAL_SESSION' && session?.user?.id) {
+        captureEvent(POSTHOG_EVENTS.SESSION_STARTED);
       }
     });
 

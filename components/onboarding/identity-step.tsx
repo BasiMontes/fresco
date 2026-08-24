@@ -50,6 +50,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         setError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
         return;
       }
+      // identify() fires independently, asynchronously, via the provider's onAuthStateChange — ordering vs. this capture is unguaranteed but safe (PostHog merges anonymous-device history on first identify regardless of order).
       captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'guest' });
       onResolved();
     }
