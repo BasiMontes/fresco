@@ -119,34 +119,63 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
 
   if (pendingConfirmation) {
     return (
-      <Card>
-        <h1 className="text-h3">Revisa tu correo</h1>
-        <p data-testid="onboarding_signup_pending_confirmation_message" role="status" aria-live="polite" className="mt-1 text-body-sm text-tertiary">
-          Te enviamos un enlace de confirmación a
-          {' '}
-          <strong>{email}</strong>
-          . Ábrelo para activar tu cuenta y luego inicia sesión.
-        </p>
-        <p className="mt-4 text-center text-body-sm text-tertiary">
-          <Link href="/login" className="text-primary">Ir a iniciar sesión</Link>
-        </p>
+      <Card className="p-6 md:p-8">
+        <div className={`t-stagger ${entered ? 'is-shown' : ''}`}>
+          <Image
+            src="/brand/logo-base.svg"
+            alt="Fresco"
+            width={100}
+            height={30}
+            priority
+            className="t-stagger-line t-stagger-line--1"
+          />
+
+          <div className="t-stagger-line t-stagger-line--2 mt-6">
+            <h1 className="text-h3">Revisa tu correo</h1>
+            <p data-testid="onboarding_signup_pending_confirmation_message" role="status" aria-live="polite" className="mt-2 text-body-sm text-tertiary">
+              Te enviamos un enlace de confirmación a
+              {' '}
+              <strong>{email}</strong>
+              . Ábrelo para activar tu cuenta y luego inicia sesión.
+            </p>
+          </div>
+
+          <p className="t-stagger-line t-stagger-line--3 mt-8 text-center text-body-sm text-tertiary">
+            <Link href="/login" className="text-primary">Ir a iniciar sesión</Link>
+          </p>
+        </div>
       </Card>
     );
   }
 
   if (choice === 'account') {
     return (
-      <Card>
-        <h1 className="text-h3">Crea tu cuenta</h1>
-        <p className="mt-1 text-body-sm text-tertiary">Así no pierdes tu progreso ni tu menú.</p>
+      <Card className="p-6 md:p-8">
+        <div className={`t-stagger ${entered ? 'is-shown' : ''}`}>
+          <Image
+            src="/brand/logo-base.svg"
+            alt="Fresco"
+            width={100}
+            height={30}
+            priority
+            className="t-stagger-line t-stagger-line--1"
+          />
 
-        <form onSubmit={event => void handleCreateAccount(event)} className="mt-6 flex flex-col gap-3">
-          <EmailInput value={email} onChange={setEmail} />
-          <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
-          <Button data-testid="onboarding_create_account_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
-            {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta y continuar'}
-          </Button>
-        </form>
+          <div className="t-stagger-line t-stagger-line--2 mt-6">
+            <h1 className="text-h3">Crea tu cuenta</h1>
+            <p className="mt-2 text-body-sm text-tertiary">Así no pierdes tu progreso ni tu menú.</p>
+          </div>
+
+          <div className="t-stagger-line t-stagger-line--3 mt-8">
+            <form onSubmit={event => void handleCreateAccount(event)} className="flex flex-col gap-3">
+              <EmailInput value={email} onChange={setEmail} />
+              <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
+              <Button data-testid="onboarding_create_account_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+                {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta y continuar'}
+              </Button>
+            </form>
+          </div>
+        </div>
 
         {error && (
           <p data-testid="onboarding_identity_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
