@@ -308,7 +308,7 @@ export default function SignupPage() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
-      <Card>
+      <Card className="p-6 md:p-8">
         {emailConflict
           ? (
               <>

@@ -60,7 +60,7 @@ function ForgotPasswordPageInner() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
-      <Card>
+      <Card className="p-6 md:p-8">
         <h1 className="text-h3">Recupera tu contraseña</h1>
         <p className="mt-1 text-body-sm text-tertiary">
           Te enviamos un enlace para elegir una nueva contraseña.
