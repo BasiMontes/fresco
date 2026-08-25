@@ -3,6 +3,7 @@
 import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import { useEffect, useRef, useState } from 'react';
@@ -114,6 +115,14 @@ export default function OnboardingPage() {
   // guest already carries a persisted Supabase session, so this only ever
   // surfaces the choice to an actual first-time, session-less visitor.
   const [identityResolved, setIdentityResolved] = useState<boolean | null>(null);
+  // FRESCO-255: plays the wizard's entrance stagger (logo -> step indicator
+  // -> card) once, the first time it mounts (i.e. once identity resolves) —
+  // not replayed on every step change, to avoid fighting the existing
+  // stepHeadingRef focus-management effect below.
+  const [wizardShown, setWizardShown] = useState(false);
+  useEffect(() => {
+    setWizardShown(true);
+  }, []);
 
   // FRESCO-201: resetting the store synchronously before router.push()
   // re-rendered this still-mounted page at step 1 for the ~1s the /menu
@@ -359,423 +368,438 @@ export default function OnboardingPage() {
 
   return (
     <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
-      <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
-        Paso
-        {' '}
-        {step}
-        {' '}
-        de 4
-      </p>
-      <div className="mt-2 flex gap-1">
-        {[1, 2, 3, 4].map(s => (
-          <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-surface'}`} />
-        ))}
-      </div>
+      <div className={`t-stagger ${wizardShown ? 'is-shown' : ''}`}>
+        <Image
+          src="/brand/logo-base.svg"
+          alt="Fresco"
+          width={100}
+          height={30}
+          priority
+          className="t-stagger-line t-stagger-line--1 mx-auto"
+        />
 
-      <Card className="mt-6">
-        {step === 1 && (
-          <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">Cuéntanos sobre ti</h1>
-            <p className="mt-1 text-body-sm text-tertiary">Nos ayuda a afinar las recomendaciones. Todo es opcional.</p>
+        <div className="t-stagger-line t-stagger-line--2 mt-6">
+          <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
+            Paso
+            {' '}
+            {step}
+            {' '}
+            de 4
+          </p>
+          <div className="mt-2 flex gap-1">
+            {[1, 2, 3, 4].map(s => (
+              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-surface'}`} />
+            ))}
+          </div>
+        </div>
 
-            <label className="mt-4 flex flex-col gap-1">
-              <span className="text-body-sm text-tertiary">Nombre</span>
-              <Input
-                data-testid="nombre_input"
-                type="text"
-                value={nombre}
-                onChange={e => setNombre(e.target.value)}
-                placeholder="¿Cómo te llamas?"
-              />
-            </label>
+        <div className="t-stagger-line t-stagger-line--3 mt-6">
+          <Card className="p-6 md:p-8">
+            {step === 1 && (
+              <>
+                <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">Cuéntanos sobre ti</h1>
+                <p className="mt-1 text-body-sm text-tertiary">Nos ayuda a afinar las recomendaciones. Todo es opcional.</p>
 
-            <label className="mt-4 flex flex-col gap-1">
-              <span className="text-body-sm text-tertiary">Sexo</span>
-              <Dropdown
-                data-testid="sexo_dropdown"
-                aria-label="Sexo"
-                options={SEXO_OPTIONS}
-                value={sexo}
-                onChange={value => setSexo(value as SexoUsuario)}
-                placeholder="Selecciona una opción"
-              />
-            </label>
+                <label className="mt-4 flex flex-col gap-1">
+                  <span className="text-body-sm text-tertiary">Nombre</span>
+                  <Input
+                    data-testid="nombre_input"
+                    type="text"
+                    value={nombre}
+                    onChange={e => setNombre(e.target.value)}
+                    placeholder="¿Cómo te llamas?"
+                  />
+                </label>
 
-            <label className="mt-4 flex flex-col gap-1">
-              <span className="text-body-sm text-tertiary">Objetivo</span>
-              <Dropdown
-                data-testid="objetivo_dropdown"
-                aria-label="Objetivo"
-                options={OBJETIVO_OPTIONS}
-                value={objetivo}
-                onChange={value => setObjetivo(value as ObjetivoUsuario)}
-                placeholder="¿Qué buscas conseguir?"
-              />
-            </label>
+                <label className="mt-4 flex flex-col gap-1">
+                  <span className="text-body-sm text-tertiary">Sexo</span>
+                  <Dropdown
+                    data-testid="sexo_dropdown"
+                    aria-label="Sexo"
+                    options={SEXO_OPTIONS}
+                    value={sexo}
+                    onChange={value => setSexo(value as SexoUsuario)}
+                    placeholder="Selecciona una opción"
+                  />
+                </label>
 
-            <label className="mt-4 flex flex-col gap-1">
-              <span className="text-body-sm text-tertiary">Nivel de experiencia culinaria</span>
-              <Dropdown
-                data-testid="nivel_experiencia_dropdown"
-                aria-label="Nivel de experiencia culinaria"
-                options={NIVEL_EXPERIENCIA_OPTIONS}
-                value={nivelExperiencia}
-                onChange={value => setNivelExperiencia(value as NivelExperienciaCulinaria)}
-                placeholder="¿Cuánto sabes cocinar?"
-              />
-            </label>
-          </>
-        )}
+                <label className="mt-4 flex flex-col gap-1">
+                  <span className="text-body-sm text-tertiary">Objetivo</span>
+                  <Dropdown
+                    data-testid="objetivo_dropdown"
+                    aria-label="Objetivo"
+                    options={OBJETIVO_OPTIONS}
+                    value={objetivo}
+                    onChange={value => setObjetivo(value as ObjetivoUsuario)}
+                    placeholder="¿Qué buscas conseguir?"
+                  />
+                </label>
 
-        {step === 2 && (
-          <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Qué dieta y restricciones sigue tu hogar?</h1>
-            <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              {DIETA_OPTIONS.map((option) => {
-                // AC-2: "vegana" always implies "vegetariana" — the
-                // vegetariano chip stays visually locked selected whenever
-                // vegano is active, and cannot be toggled off from here.
-                const isLocked = option.value === 'dietaVegetariano' && dietaVegano;
-                return (
-                  <span key={option.value} className="inline-flex items-center gap-1">
+                <label className="mt-4 flex flex-col gap-1">
+                  <span className="text-body-sm text-tertiary">Nivel de experiencia culinaria</span>
+                  <Dropdown
+                    data-testid="nivel_experiencia_dropdown"
+                    aria-label="Nivel de experiencia culinaria"
+                    options={NIVEL_EXPERIENCIA_OPTIONS}
+                    value={nivelExperiencia}
+                    onChange={value => setNivelExperiencia(value as NivelExperienciaCulinaria)}
+                    placeholder="¿Cuánto sabes cocinar?"
+                  />
+                </label>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Qué dieta y restricciones sigue tu hogar?</h1>
+                <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {DIETA_OPTIONS.map((option) => {
+                    // AC-2: "vegana" always implies "vegetariana" — the
+                    // vegetariano chip stays visually locked selected whenever
+                    // vegano is active, and cannot be toggled off from here.
+                    const isLocked = option.value === 'dietaVegetariano' && dietaVegano;
+                    return (
+                      <span key={option.value} className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          data-testid="dieta_option"
+                          disabled={isLocked}
+                          aria-pressed={dietaState[option.value]}
+                          onClick={() => toggleDieta(option.value)}
+                        >
+                          <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
+                            {option.label}
+                          </Tag>
+                        </button>
+                        {isLocked && (
+                          <span className="group relative inline-flex">
+                            <button
+                              type="button"
+                              data-testid="dieta_vegetariano_lock_info"
+                              aria-label="Por qué Vegetariano está bloqueado"
+                              aria-describedby="dieta_vegetariano_lock_tooltip"
+                              aria-expanded={vegetarianoLockTooltipOpen}
+                              className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
+                              onClick={() => setVegetarianoLockTooltipOpen(open => !open)}
+                            >
+                              i
+                            </button>
+                            <span
+                              id="dieta_vegetariano_lock_tooltip"
+                              role="tooltip"
+                              className={`absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background ${vegetarianoLockTooltipOpen ? '' : 'pointer-events-none opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100`}
+                            >
+                              Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas.
+                            </span>
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+                <Input
+                  data-testid="dieta_texto_libre_input"
+                  type="text"
+                  value={dietaTextoLibre}
+                  onChange={e => setDietaTextoLibre(e.target.value)}
+                  placeholder="¿Algo más que debamos saber?"
+                  aria-label="Dieta y restricciones — texto libre"
+                  className="mt-2"
+                />
+
+                <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {ALERGENO_OPTIONS.map(option => (
                     <button
+                      key={option.value}
                       type="button"
-                      data-testid="dieta_option"
-                      disabled={isLocked}
-                      aria-pressed={dietaState[option.value]}
-                      onClick={() => toggleDieta(option.value)}
+                      data-testid="alergeno_option"
+                      aria-pressed={alergenos.includes(option.value)}
+                      onClick={() => toggleAlergeno(option.value)}
                     >
-                      <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
+                      <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
                         {option.label}
                       </Tag>
                     </button>
-                    {isLocked && (
-                      <span className="group relative inline-flex">
-                        <button
-                          type="button"
-                          data-testid="dieta_vegetariano_lock_info"
-                          aria-label="Por qué Vegetariano está bloqueado"
-                          aria-describedby="dieta_vegetariano_lock_tooltip"
-                          aria-expanded={vegetarianoLockTooltipOpen}
-                          className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
-                          onClick={() => setVegetarianoLockTooltipOpen(open => !open)}
-                        >
-                          i
-                        </button>
-                        <span
-                          id="dieta_vegetariano_lock_tooltip"
-                          role="tooltip"
-                          className={`absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background ${vegetarianoLockTooltipOpen ? '' : 'pointer-events-none opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100`}
-                        >
-                          Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas.
-                        </span>
-                      </span>
-                    )}
-                  </span>
-                );
-              })}
-            </div>
-            <Input
-              data-testid="dieta_texto_libre_input"
-              type="text"
-              value={dietaTextoLibre}
-              onChange={e => setDietaTextoLibre(e.target.value)}
-              placeholder="¿Algo más que debamos saber?"
-              aria-label="Dieta y restricciones — texto libre"
-              className="mt-2"
-            />
-
-            <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {ALERGENO_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-testid="alergeno_option"
-                  aria-pressed={alergenos.includes(option.value)}
-                  onClick={() => toggleAlergeno(option.value)}
-                >
-                  <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
-                    {option.label}
-                  </Tag>
-                </button>
-              ))}
-            </div>
-            <Input
-              data-testid="alergenos_texto_libre_input"
-              type="text"
-              value={alergenosTextoLibre}
-              onChange={e => setAlergenosTextoLibre(e.target.value)}
-              placeholder="¿Algún otro alérgeno?"
-              aria-label="Alérgenos — texto libre"
-              className="mt-2"
-            />
-
-            <h2 className="mt-6 text-h5">¿Algún ingrediente que no te guste?</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {INGREDIENTE_ODIADO_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-testid="ingrediente_odiado_option"
-                  aria-pressed={ingredientesOdiados.includes(option.value)}
-                  onClick={() => toggleIngredienteOdiado(option.value)}
-                >
-                  <Tag variant={ingredientesOdiados.includes(option.value) ? 'selected' : 'outline'}>
-                    {option.label}
-                  </Tag>
-                </button>
-              ))}
-            </div>
-            <Input
-              data-testid="ingredientes_odiados_texto_libre_input"
-              type="text"
-              value={ingredientesOdiadosTextoLibre}
-              onChange={e => setIngredientesOdiadosTextoLibre(e.target.value)}
-              placeholder="¿Algún otro ingrediente que no te guste?"
-              aria-label="Ingredientes que no gustan — texto libre"
-              className="mt-2"
-            />
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Cuáles son tus cocinas favoritas?</h1>
-            <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {COCINA_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-testid="cocina_option"
-                  aria-pressed={cocinasFavoritas.includes(option.value)}
-                  onClick={() => toggleCocina(option.value)}
-                >
-                  <Tag variant={cocinasFavoritas.includes(option.value) ? 'selected' : 'outline'}>
-                    {option.label}
-                  </Tag>
-                </button>
-              ))}
-            </div>
-            <Input
-              data-testid="cocinas_texto_libre_input"
-              type="text"
-              value={cocinasTextoLibre}
-              onChange={e => setCocinasTextoLibre(e.target.value)}
-              placeholder="¿Alguna otra cocina que te guste?"
-              aria-label="Cocinas favoritas — texto libre"
-              className="mt-2"
-            />
-          </>
-        )}
-
-        {step === 4 && (
-          <>
-            <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Quiénes cocináis en casa?</h1>
-            <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
-            <div className="mt-4 flex gap-4">
-              <label className="flex flex-col gap-1">
-                <span className="text-body-sm text-tertiary">Adultos</span>
+                  ))}
+                </div>
                 <Input
-                  data-testid="adultos_input"
-                  type="number"
-                  min={0}
-                  max={10}
-                  value={adultos}
-                  onChange={e => setAdultos(Number(e.target.value))}
-                  className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
+                  data-testid="alergenos_texto_libre_input"
+                  type="text"
+                  value={alergenosTextoLibre}
+                  onChange={e => setAlergenosTextoLibre(e.target.value)}
+                  placeholder="¿Algún otro alérgeno?"
+                  aria-label="Alérgenos — texto libre"
+                  className="mt-2"
                 />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-body-sm text-tertiary">Niños</span>
+
+                <h2 className="mt-6 text-h5">¿Algún ingrediente que no te guste?</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {INGREDIENTE_ODIADO_OPTIONS.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      data-testid="ingrediente_odiado_option"
+                      aria-pressed={ingredientesOdiados.includes(option.value)}
+                      onClick={() => toggleIngredienteOdiado(option.value)}
+                    >
+                      <Tag variant={ingredientesOdiados.includes(option.value) ? 'selected' : 'outline'}>
+                        {option.label}
+                      </Tag>
+                    </button>
+                  ))}
+                </div>
                 <Input
-                  data-testid="ninos_input"
-                  type="number"
-                  min={0}
-                  max={10}
-                  value={ninos}
-                  onChange={e => setNinos(Number(e.target.value))}
-                  className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
+                  data-testid="ingredientes_odiados_texto_libre_input"
+                  type="text"
+                  value={ingredientesOdiadosTextoLibre}
+                  onChange={e => setIngredientesOdiadosTextoLibre(e.target.value)}
+                  placeholder="¿Algún otro ingrediente que no te guste?"
+                  aria-label="Ingredientes que no gustan — texto libre"
+                  className="mt-2"
                 />
-              </label>
-            </div>
-            {!household.valid && (
-              <p data-testid="household_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
-                {household.message}
-              </p>
+              </>
             )}
 
-            <label className="mt-4 flex flex-col gap-1">
-              <span className="text-body-sm text-tertiary">Presupuesto semanal (estimado)</span>
-              <Input
-                data-testid="presupuesto_input"
-                type="number"
-                min={1}
-                value={presupuestoSemanaEuros ?? ''}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setPresupuestoSemanaEuros(raw === '' ? null : Number(raw));
-                }}
-                placeholder="Ej. 80"
-                className={`max-w-32 ${!presupuestoValid ? 'border-error' : ''}`}
-              />
-            </label>
-            {!presupuestoValid && (
-              <p data-testid="presupuesto_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
-                El presupuesto debe ser mayor que 0.
-              </p>
+            {step === 3 && (
+              <>
+                <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Cuáles son tus cocinas favoritas?</h1>
+                <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {COCINA_OPTIONS.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      data-testid="cocina_option"
+                      aria-pressed={cocinasFavoritas.includes(option.value)}
+                      onClick={() => toggleCocina(option.value)}
+                    >
+                      <Tag variant={cocinasFavoritas.includes(option.value) ? 'selected' : 'outline'}>
+                        {option.label}
+                      </Tag>
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  data-testid="cocinas_texto_libre_input"
+                  type="text"
+                  value={cocinasTextoLibre}
+                  onChange={e => setCocinasTextoLibre(e.target.value)}
+                  placeholder="¿Alguna otra cocina que te guste?"
+                  aria-label="Cocinas favoritas — texto libre"
+                  className="mt-2"
+                />
+              </>
             )}
 
-            <h2 className="mt-6 text-h5">¿Qué comidas quieres planificar?</h2>
-            <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos las 3.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {MEAL_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-testid="meal_option"
-                  aria-pressed={planningMeals.includes(option.value)}
-                  onClick={() => toggleMeal(option.value)}
-                >
-                  <Tag variant={planningMeals.includes(option.value) ? 'selected' : 'outline'}>
-                    {option.label}
-                  </Tag>
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 flex gap-3">
-              <button type="button" data-testid="select_all_meals_button" className="text-caption font-sans text-primary" onClick={selectAllMeals}>
-                Todos
-              </button>
-              <button type="button" data-testid="select_no_meals_button" className="text-caption font-sans text-tertiary" onClick={selectNoMeals}>
-                Ninguno
-              </button>
-            </div>
+            {step === 4 && (
+              <>
+                <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Quiénes cocináis en casa?</h1>
+                <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
+                <div className="mt-4 flex gap-4">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-body-sm text-tertiary">Adultos</span>
+                    <Input
+                      data-testid="adultos_input"
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={adultos}
+                      onChange={e => setAdultos(Number(e.target.value))}
+                      className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-body-sm text-tertiary">Niños</span>
+                    <Input
+                      data-testid="ninos_input"
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={ninos}
+                      onChange={e => setNinos(Number(e.target.value))}
+                      className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
+                    />
+                  </label>
+                </div>
+                {!household.valid && (
+                  <p data-testid="household_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
+                    {household.message}
+                  </p>
+                )}
 
-            <h2 className="mt-6 text-h5">¿Qué días quieres planificar?</h2>
-            <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos los 7.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {DAY_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-testid="day_option"
-                  aria-pressed={planningDays.includes(option.value)}
-                  onClick={() => toggleDay(option.value)}
-                >
-                  <Tag variant={planningDays.includes(option.value) ? 'selected' : 'outline'}>
-                    {option.label}
-                  </Tag>
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 flex gap-3">
-              <button type="button" data-testid="select_all_days_button" className="text-caption font-sans text-primary" onClick={selectAllDays}>
-                Todos
-              </button>
-              <button type="button" data-testid="select_no_days_button" className="text-caption font-sans text-tertiary" onClick={selectNoDays}>
-                Ninguno
-              </button>
-            </div>
+                <label className="mt-4 flex flex-col gap-1">
+                  <span className="text-body-sm text-tertiary">Presupuesto semanal (estimado)</span>
+                  <Input
+                    data-testid="presupuesto_input"
+                    type="number"
+                    min={1}
+                    value={presupuestoSemanaEuros ?? ''}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setPresupuestoSemanaEuros(raw === '' ? null : Number(raw));
+                    }}
+                    placeholder="Ej. 80"
+                    className={`max-w-32 ${!presupuestoValid ? 'border-error' : ''}`}
+                  />
+                </label>
+                {!presupuestoValid && (
+                  <p data-testid="presupuesto_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
+                    El presupuesto debe ser mayor que 0.
+                  </p>
+                )}
 
-            {hasInvalidPlanning && (
-              <p data-testid="planning_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
-                Selecciona al menos un día y una comida para generar tu menú.
-              </p>
+                <h2 className="mt-6 text-h5">¿Qué comidas quieres planificar?</h2>
+                <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos las 3.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {MEAL_OPTIONS.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      data-testid="meal_option"
+                      aria-pressed={planningMeals.includes(option.value)}
+                      onClick={() => toggleMeal(option.value)}
+                    >
+                      <Tag variant={planningMeals.includes(option.value) ? 'selected' : 'outline'}>
+                        {option.label}
+                      </Tag>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 flex gap-3">
+                  <button type="button" data-testid="select_all_meals_button" className="text-caption font-sans text-primary" onClick={selectAllMeals}>
+                    Todos
+                  </button>
+                  <button type="button" data-testid="select_no_meals_button" className="text-caption font-sans text-tertiary" onClick={selectNoMeals}>
+                    Ninguno
+                  </button>
+                </div>
+
+                <h2 className="mt-6 text-h5">¿Qué días quieres planificar?</h2>
+                <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos los 7.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {DAY_OPTIONS.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      data-testid="day_option"
+                      aria-pressed={planningDays.includes(option.value)}
+                      onClick={() => toggleDay(option.value)}
+                    >
+                      <Tag variant={planningDays.includes(option.value) ? 'selected' : 'outline'}>
+                        {option.label}
+                      </Tag>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 flex gap-3">
+                  <button type="button" data-testid="select_all_days_button" className="text-caption font-sans text-primary" onClick={selectAllDays}>
+                    Todos
+                  </button>
+                  <button type="button" data-testid="select_no_days_button" className="text-caption font-sans text-tertiary" onClick={selectNoDays}>
+                    Ninguno
+                  </button>
+                </div>
+
+                {hasInvalidPlanning && (
+                  <p data-testid="planning_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
+                    Selecciona al menos un día y una comida para generar tu menú.
+                  </p>
+                )}
+              </>
             )}
-          </>
-        )}
 
-        {generateError && !hasExistingMenu && (
-          <div className="mt-4">
-            <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-              {generateError}
-            </p>
-          </div>
-        )}
+            {generateError && !hasExistingMenu && (
+              <div className="mt-4">
+                <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
+                  {generateError}
+                </p>
+              </div>
+            )}
 
-        {/* FRESCO-152: when a plan already exists, the error text stays
+            {/* FRESCO-152: when a plan already exists, the error text stays
             informational but the *action* moves into the primary CTA below
             ("Ver mi menú", de-emphasized) instead of also living here as a
             separate link — one action, not two competing ones. */}
-        {hasExistingMenu && (
-          <p data-testid="generate_error_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
-            {generateError}
-          </p>
-        )}
-
-        {generateSuccess
-          ? (
-              <p data-testid="generate_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
-                Se ha generado tu menú correctamente. Te llevamos a verlo…
+            {hasExistingMenu && (
+              <p data-testid="generate_error_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
+                {generateError}
               </p>
-            )
-          : isGenerating && (
-            // ADR-0005: menu-slot selection is now a deterministic algorithm
-            // (~2-3s observed live), not a per-call Gemini generation — the
-            // old "puede tardar hasta un minuto" copy overstated the real
-            // wait once that shipped. Kept the spinner + hint pattern itself
-            // (still reassuring during any wait, however short), just
-            // corrected what it claims.
-            <p data-testid="generating_hint" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
-              Preparando tu menú…
-            </p>
-          )}
+            )}
 
-        <div className="mt-6 flex justify-between">
-          <Button
-            data-testid="back_button"
-            variant="secondary"
-            onClick={() => setStep((step > 1 ? step - 1 : 1) as 1 | 2 | 3 | 4)}
-            disabled={step === 1}
-          >
-            Atrás
-          </Button>
-          {step < 4
-            ? (
-                <Button data-testid="next_button" onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4)}>
-                  Siguiente
-                </Button>
-              )
-            // FRESCO-152: once a plan already exists for this week,
-            // "Generar mi menú" can't succeed — the primary action becomes
-            // a de-emphasized "Ver mi menú" instead of repeating a CTA that
-            // structurally cannot work.
-            : hasExistingMenu
+            {generateSuccess
               ? (
-                  <Button
-                    data-testid="view_existing_menu_button"
-                    variant="ghost"
-                    onClick={() => router.push('/menu')}
-                  >
-                    Ver mi menú
-                  </Button>
+                  <p data-testid="generate_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
+                    Se ha generado tu menú correctamente. Te llevamos a verlo…
+                  </p>
                 )
-              : (
-                  <Button
-                    data-testid="generate_menu_button"
-                    variant="action"
-                    onClick={() => {
-                      void handleGenerate();
-                    }}
-                    disabled={isGenerating || !household.valid || !presupuestoValid || hasInvalidPlanning}
-                  >
-                    {isGenerating
-                      ? (
-                          <>
-                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                            {generateSuccess ? '¡Menú generado!' : 'Generando menú…'}
-                          </>
-                        )
-                      : (
-                          'Generar mi menú'
-                        )}
-                  </Button>
-                )}
+              : isGenerating && (
+              // ADR-0005: menu-slot selection is now a deterministic algorithm
+              // (~2-3s observed live), not a per-call Gemini generation — the
+              // old "puede tardar hasta un minuto" copy overstated the real
+              // wait once that shipped. Kept the spinner + hint pattern itself
+              // (still reassuring during any wait, however short), just
+              // corrected what it claims.
+                <p data-testid="generating_hint" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
+                  Preparando tu menú…
+                </p>
+              )}
+
+            <div className="mt-6 flex justify-between">
+              <Button
+                data-testid="back_button"
+                variant="secondary"
+                onClick={() => setStep((step > 1 ? step - 1 : 1) as 1 | 2 | 3 | 4)}
+                disabled={step === 1}
+              >
+                Atrás
+              </Button>
+              {step < 4
+                ? (
+                    <Button data-testid="next_button" onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4)}>
+                      Siguiente
+                    </Button>
+                  )
+              // FRESCO-152: once a plan already exists for this week,
+              // "Generar mi menú" can't succeed — the primary action becomes
+              // a de-emphasized "Ver mi menú" instead of repeating a CTA that
+              // structurally cannot work.
+                : hasExistingMenu
+                  ? (
+                      <Button
+                        data-testid="view_existing_menu_button"
+                        variant="ghost"
+                        onClick={() => router.push('/menu')}
+                      >
+                        Ver mi menú
+                      </Button>
+                    )
+                  : (
+                      <Button
+                        data-testid="generate_menu_button"
+                        variant="action"
+                        onClick={() => {
+                          void handleGenerate();
+                        }}
+                        disabled={isGenerating || !household.valid || !presupuestoValid || hasInvalidPlanning}
+                      >
+                        {isGenerating
+                          ? (
+                              <>
+                                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                                {generateSuccess ? '¡Menú generado!' : 'Generando menú…'}
+                              </>
+                            )
+                          : (
+                              'Generar mi menú'
+                            )}
+                      </Button>
+                    )}
+            </div>
+          </Card>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
