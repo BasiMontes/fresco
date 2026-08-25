@@ -17,7 +17,7 @@ const tagVariants = cva(
   {
     variants: {
       variant: {
-        'selected': 'bg-primary text-background',
+        'selected': 'border border-primary bg-primary text-background',
         'outline': 'border border-primary text-primary',
         'accent': 'bg-accent-200 text-accent-800',
         'accent-2': 'bg-accent-2-100 text-accent-2-800',
