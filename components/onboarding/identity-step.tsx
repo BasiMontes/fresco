@@ -1,8 +1,9 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmailInput } from '@/components/ui/email-input';
@@ -37,6 +38,14 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
+  // FRESCO-252: plays the entrance stagger (logo -> heading -> actions) once,
+  // on mount — `useEffect` fires after the first paint, so the CSS transition
+  // (see `.t-stagger` in globals.css) actually animates from its initial
+  // `opacity: 0` state instead of skipping straight to `is-shown`.
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    setEntered(true);
+  }, []);
 
   async function handleGuest() {
     setIsSubmitting(true);
@@ -161,30 +170,45 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
   }
 
   return (
-    <Card data-testid="onboarding_identity_step">
-      <h1 className="text-h3">¿Cómo quieres empezar?</h1>
-      <p className="mt-1 text-body-sm text-tertiary">Puedes probar Fresco sin registrarte, o crear una cuenta desde ya.</p>
+    <Card data-testid="onboarding_identity_step" className="p-6 md:p-8">
+      <div className={`t-stagger ${entered ? 'is-shown' : ''}`}>
+        <Image
+          src="/brand/logo-base.svg"
+          alt="Fresco"
+          width={100}
+          height={30}
+          priority
+          className="t-stagger-line t-stagger-line--1"
+        />
 
-      <div className="mt-6 flex flex-col gap-3">
-        <Button
-          data-testid="onboarding_create_account_button"
-          variant="action"
-          onClick={() => setChoice('account')}
-          disabled={isSubmitting}
-        >
-          Crear cuenta
-        </Button>
-        <Button
-          data-testid="onboarding_continue_as_guest_button"
-          variant="secondary"
-          onClick={() => void handleGuest()}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
-        </Button>
-        <p data-testid="onboarding_guest_deletion_notice" className="text-center text-body-sm text-tertiary">
-          Como invitada, tu progreso se borra a los 3 días si no creas una cuenta.
-        </p>
+        <div className="t-stagger-line t-stagger-line--2 mt-6">
+          <h1 className="text-h3">¿Cómo quieres empezar?</h1>
+          <p className="mt-2 text-body-sm text-tertiary">Puedes probar Fresco sin registrarte, o crear una cuenta desde ya.</p>
+        </div>
+
+        <div className="t-stagger-line t-stagger-line--3 mt-8">
+          <div className="flex flex-col gap-4">
+            <Button
+              data-testid="onboarding_create_account_button"
+              variant="action"
+              onClick={() => setChoice('account')}
+              disabled={isSubmitting}
+            >
+              Crear cuenta
+            </Button>
+            <Button
+              data-testid="onboarding_continue_as_guest_button"
+              variant="secondary"
+              onClick={() => void handleGuest()}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
+            </Button>
+            <p data-testid="onboarding_guest_deletion_notice" className="text-center text-body-sm text-tertiary">
+              Como invitada, tu progreso se borra a los 3 días si no creas una cuenta.
+            </p>
+          </div>
+        </div>
       </div>
 
       {error && (
