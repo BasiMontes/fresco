@@ -1,15 +1,17 @@
 'use client';
 
-import type { DiaSemana, TipoPlatoSlot } from '@schemas';
 import type { FormEvent } from 'react';
 import type { OnboardingProfilePayload } from '@/lib/api/user-profile';
+import type { PlanningSelection } from '@/lib/planning-selection';
 import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { PlanningSelectionGrid } from '@/components/onboarding/planning-selection-grid';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
-import { fromPlanningSelection, toPlanningSelection } from '@/lib/planning-selection';
+import { toPlanningSelection } from '@/lib/planning-selection';
+import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -53,29 +55,8 @@ const DIETA_FIELDS: { key: DietaKey, label: string }[] = [
   { key: 'dieta_halal', label: 'Halal' },
 ];
 
-// FRESCO-153: same option sets + labels as app/onboarding/page.tsx Step 4
-// (MEAL_OPTIONS/DAY_OPTIONS) — kept editable here so a choice made at
-// onboarding isn't locked in forever.
-const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
-  { value: 'desayuno', label: 'Desayuno' },
-  { value: 'comida', label: 'Almuerzo' },
-  { value: 'cena', label: 'Cena' },
-];
-
-const DAY_OPTIONS: { value: DiaSemana, label: string }[] = [
-  { value: 'lunes', label: 'Lun' },
-  { value: 'martes', label: 'Mar' },
-  { value: 'miercoles', label: 'Mié' },
-  { value: 'jueves', label: 'Jue' },
-  { value: 'viernes', label: 'Vie' },
-  { value: 'sabado', label: 'Sáb' },
-  { value: 'domingo', label: 'Dom' },
-];
-
-const ALL_MEALS: TipoPlatoSlot[] = MEAL_OPTIONS.map(option => option.value);
-const ALL_DAYS: DiaSemana[] = DAY_OPTIONS.map(option => option.value);
 // FRESCO-199: fallback for a profile read before `planning_selection` existed.
-const DEFAULT_PLANNING_SELECTION = toPlanningSelection(ALL_DAYS, ALL_MEALS);
+const DEFAULT_PLANNING_SELECTION = toPlanningSelection(ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT);
 
 /**
  * Order-independent equality — the toggle handlers below don't guarantee a
@@ -90,6 +71,17 @@ function sameValues(a: readonly string[], b: readonly string[]): boolean {
   const sortedA = [...a].sort();
   const sortedB = [...b].sort();
   return sortedA.every((value, index) => value === sortedB[index]);
+}
+
+/**
+ * FRESCO-259 — cell-by-cell comparison, now that `planning_selection` can be
+ * asymmetric (a day with a different meal set than the rest). Flattening to
+ * "which days"/"which meals" summaries first (the pre-FRESCO-259 approach)
+ * would miss a dirty state where the flattened summaries happen to match but
+ * the actual per-day assignment doesn't.
+ */
+function samePlanningSelection(a: PlanningSelection, b: PlanningSelection): boolean {
+  return ALL_DIAS_SEMANA.every(day => sameValues(a[day] ?? [], b[day] ?? []));
 }
 
 /**
@@ -110,13 +102,9 @@ function isPreferencesDirty(current: OnboardingProfilePayload, initial: Onboardi
     || current.dieta_keto !== initial.dieta_keto
     || current.dieta_halal !== initial.dieta_halal
     || !sameValues(current.alergenos, initial.alergenos)
-    || !sameValues(
-      fromPlanningSelection(current.planning_selection ?? DEFAULT_PLANNING_SELECTION).meals,
-      fromPlanningSelection(initial.planning_selection ?? DEFAULT_PLANNING_SELECTION).meals,
-    )
-    || !sameValues(
-      fromPlanningSelection(current.planning_selection ?? DEFAULT_PLANNING_SELECTION).days,
-      fromPlanningSelection(initial.planning_selection ?? DEFAULT_PLANNING_SELECTION).days,
+    || !samePlanningSelection(
+      current.planning_selection ?? DEFAULT_PLANNING_SELECTION,
+      initial.planning_selection ?? DEFAULT_PLANNING_SELECTION,
     )
   );
 }
@@ -197,7 +185,6 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   }, []);
 
   const isDirty = isPreferencesDirty(preferences, initialPreferences);
-  const { days: selectedDays, meals: selectedMeals } = fromPlanningSelection(preferences.planning_selection ?? DEFAULT_PLANNING_SELECTION);
 
   function toggleDieta(key: DietaKey) {
     setSaved(false);
@@ -227,33 +214,14 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
     }));
   }
 
-  // FRESCO-199: these two toggles still edit the "whole week" flat view —
-  // every included day gets every included meal — since the granular
-  // per-day picker is a separate follow-up. `toPlanningSelection`/
-  // `fromPlanningSelection` are the boundary conversion to/from the DB's
-  // day->meals matrix. WARNING for whoever builds the per-day picker: once
-  // `planning_selection` can be asymmetric (a day with a different meal set
-  // than the rest), touching EITHER toggle here re-flattens the whole week
-  // to `nextMeals`/`nextDays`, silently destroying that day's distinct
-  // selection. Guard against that before shipping the picker.
-  function toggleMeal(value: TipoPlatoSlot) {
+  // FRESCO-259: edits `planning_selection` directly, one day x meal cell at
+  // a time — replaces the old flat "which days"/"which meals" toggles that
+  // could only re-flatten the whole week (see git history for why that was
+  // a real limitation, not just an implementation detail).
+  function handlePlanningSelectionChange(next: PlanningSelection) {
     setSaved(false);
     clearError();
-    setPreferences((prev) => {
-      const { days, meals } = fromPlanningSelection(prev.planning_selection ?? DEFAULT_PLANNING_SELECTION);
-      const nextMeals = meals.includes(value) ? meals.filter(v => v !== value) : [...meals, value];
-      return { ...prev, planning_selection: toPlanningSelection(days, nextMeals) };
-    });
-  }
-
-  function toggleDay(value: DiaSemana) {
-    setSaved(false);
-    clearError();
-    setPreferences((prev) => {
-      const { days, meals } = fromPlanningSelection(prev.planning_selection ?? DEFAULT_PLANNING_SELECTION);
-      const nextDays = days.includes(value) ? days.filter(v => v !== value) : [...days, value];
-      return { ...prev, planning_selection: toPlanningSelection(nextDays, meals) };
-    });
+    setPreferences(prev => ({ ...prev, planning_selection: next }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -321,40 +289,17 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
         ))}
       </div>
 
-      {/* FRESCO-153: was set at onboarding (FRESCO-135/136) but never
-          editable afterward — same Tag-toggle pattern as onboarding Step 4. */}
+      {/* FRESCO-153/FRESCO-259: was set at onboarding but never editable
+          afterward until FRESCO-153; the grid (FRESCO-259) replaced the
+          separate "which meals"/"which days" toggle lists with direct
+          day x meal editing. */}
       <h4 className="mt-4 text-h6 uppercase text-tertiary">Comidas a planificar</h4>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {MEAL_OPTIONS.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            data-testid="preferencia_comida_option"
-            aria-pressed={selectedMeals.includes(option.value)}
-            onClick={() => toggleMeal(option.value)}
-          >
-            <Tag variant={selectedMeals.includes(option.value) ? 'selected' : 'outline'}>
-              {option.label}
-            </Tag>
-          </button>
-        ))}
-      </div>
-
-      <h4 className="mt-4 text-h6 uppercase text-tertiary">Días a planificar</h4>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {DAY_OPTIONS.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            data-testid="preferencia_dia_option"
-            aria-pressed={selectedDays.includes(option.value)}
-            onClick={() => toggleDay(option.value)}
-          >
-            <Tag variant={selectedDays.includes(option.value) ? 'selected' : 'outline'}>
-              {option.label}
-            </Tag>
-          </button>
-        ))}
+      <div className="mt-2">
+        <PlanningSelectionGrid
+          data-testid="preferencia_planning_grid"
+          value={preferences.planning_selection ?? DEFAULT_PLANNING_SELECTION}
+          onChange={handlePlanningSelectionChange}
+        />
       </div>
 
       {saved && (

@@ -1,6 +1,6 @@
 'use client';
 
-import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina } from '@schemas';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 
 import { useEffect, useRef, useState } from 'react';
 import { IdentityStep } from '@/components/onboarding/identity-step';
+import { PlanningSelectionGrid } from '@/components/onboarding/planning-selection-grid';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dropdown } from '@/components/ui/dropdown';
@@ -17,7 +18,6 @@ import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
 import { upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
-import { toPlanningSelection } from '@/lib/planning-selection';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
@@ -57,22 +57,6 @@ const NIVEL_EXPERIENCIA_OPTIONS: { value: NivelExperienciaCulinaria, label: stri
   { value: 'intermedio', label: 'Intermedio' },
   { value: 'chef', label: 'Chef' },
   { value: 'experto', label: 'Experto' },
-];
-
-const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
-  { value: 'desayuno', label: 'Desayuno' },
-  { value: 'comida', label: 'Almuerzo' },
-  { value: 'cena', label: 'Cena' },
-];
-
-const DAY_OPTIONS: { value: DiaSemana, label: string }[] = [
-  { value: 'lunes', label: 'Lun' },
-  { value: 'martes', label: 'Mar' },
-  { value: 'miercoles', label: 'Mié' },
-  { value: 'jueves', label: 'Jue' },
-  { value: 'viernes', label: 'Vie' },
-  { value: 'sabado', label: 'Sáb' },
-  { value: 'domingo', label: 'Dom' },
 ];
 
 const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [
@@ -174,8 +158,7 @@ export default function OnboardingPage() {
     ingredientesOdiadosTextoLibre,
     cocinasTextoLibre,
     presupuestoSemanaEuros,
-    planningMeals,
-    planningDays,
+    planningSelection,
     nivelExperiencia,
     setStep,
     setNombre,
@@ -192,12 +175,7 @@ export default function OnboardingPage() {
     setIngredientesOdiadosTextoLibre,
     setCocinasTextoLibre,
     setPresupuestoSemanaEuros,
-    toggleMeal,
-    toggleDay,
-    selectAllDays,
-    selectNoDays,
-    selectAllMeals,
-    selectNoMeals,
+    setPlanningSelection,
     setNivelExperiencia,
   } = useOnboardingStore();
 
@@ -225,7 +203,7 @@ export default function OnboardingPage() {
   // that (now-corrupted) preference, not from the real stored plan, so it
   // rendered with zero meal cards and no explanation. Blocking submission
   // here prevents the empty-preference profile write from ever happening.
-  const hasInvalidPlanning = planningDays.length === 0 || planningMeals.length === 0;
+  const hasInvalidPlanning = Object.values(planningSelection).every(meals => meals.length === 0);
 
   // A11y: the wizard swaps step content in place (single route) — without
   // this, a screen-reader/keyboard user gets no signal the content changed
@@ -269,7 +247,7 @@ export default function OnboardingPage() {
         // DB check constraint: presupuesto_semana_euros > 0 — 0/negative
         // rejected, only a genuine positive value or null is valid.
         presupuesto_semana_euros: presupuestoSemanaEuros,
-        planning_selection: toPlanningSelection(planningDays, planningMeals),
+        planning_selection: planningSelection,
         nivel_experiencia: nivelExperiencia,
       });
 
@@ -650,56 +628,14 @@ export default function OnboardingPage() {
                   </p>
                 )}
 
-                <h2 className="mt-6 text-h5">¿Qué comidas quieres planificar?</h2>
-                <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos las 3.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {MEAL_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      data-testid="meal_option"
-                      aria-pressed={planningMeals.includes(option.value)}
-                      onClick={() => toggleMeal(option.value)}
-                    >
-                      <Tag variant={planningMeals.includes(option.value) ? 'selected' : 'outline'}>
-                        {option.label}
-                      </Tag>
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-2 flex gap-3">
-                  <button type="button" data-testid="select_all_meals_button" className="text-caption font-sans text-primary" onClick={selectAllMeals}>
-                    Todos
-                  </button>
-                  <button type="button" data-testid="select_no_meals_button" className="text-caption font-sans text-tertiary" onClick={selectNoMeals}>
-                    Ninguno
-                  </button>
-                </div>
-
-                <h2 className="mt-6 text-h5">¿Qué días quieres planificar?</h2>
-                <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos los 7.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {DAY_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      data-testid="day_option"
-                      aria-pressed={planningDays.includes(option.value)}
-                      onClick={() => toggleDay(option.value)}
-                    >
-                      <Tag variant={planningDays.includes(option.value) ? 'selected' : 'outline'}>
-                        {option.label}
-                      </Tag>
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-2 flex gap-3">
-                  <button type="button" data-testid="select_all_days_button" className="text-caption font-sans text-primary" onClick={selectAllDays}>
-                    Todos
-                  </button>
-                  <button type="button" data-testid="select_no_days_button" className="text-caption font-sans text-tertiary" onClick={selectNoDays}>
-                    Ninguno
-                  </button>
+                <h2 className="mt-6 text-h5">¿Qué comidas quieres planificar y en qué días?</h2>
+                <p className="mt-1 text-body-sm text-tertiary">Por defecto planificamos las 3 comidas los 7 días — desmarca cualquier combinación que no necesites.</p>
+                <div className="mt-3">
+                  <PlanningSelectionGrid
+                    data-testid="planning_selection_grid"
+                    value={planningSelection}
+                    onChange={setPlanningSelection}
+                  />
                 </div>
 
                 {hasInvalidPlanning && (
