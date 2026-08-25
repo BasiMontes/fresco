@@ -75,11 +75,11 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
             <th scope="col" className="w-12" />
             {MEAL_OPTIONS.map(meal => (
               <th key={meal.value} scope="col" className="pb-2 text-center font-normal">
-                <span className="inline-flex gap-2 text-caption font-sans">
+                <span className="inline-flex gap-2 text-caption font-sans text-tertiary">
                   <button
                     type="button"
                     data-testid="planning_column_select_all"
-                    className="text-primary underline-offset-2 hover:underline"
+                    className="underline-offset-2 hover:text-primary hover:underline"
                     onClick={() => setColumn(meal.value, true)}
                   >
                     Todos
@@ -87,7 +87,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                   <button
                     type="button"
                     data-testid="planning_column_select_none"
-                    className="text-tertiary underline-offset-2 hover:underline"
+                    className="underline-offset-2 hover:text-primary hover:underline"
                     onClick={() => setColumn(meal.value, false)}
                   >
                     Ninguno
@@ -112,6 +112,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                       checked={checked}
                       onChange={() => toggleCell(day.value, meal.value)}
                       aria-label={`${meal.label} el ${day.label}`}
+                      className="rounded"
                     />
                   </td>
                 );
