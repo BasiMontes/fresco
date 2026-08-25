@@ -107,6 +107,11 @@ export default function OnboardingPage() {
   useEffect(() => {
     setWizardShown(true);
   }, []);
+  // FRESCO-263: presupuesto went from optional to required — gates the
+  // error styling/message so a fresh visitor doesn't see a red "required"
+  // field before she's had a chance to type anything. The submit button
+  // itself stays disabled while empty regardless of this flag.
+  const [presupuestoTouched, setPresupuestoTouched] = useState(false);
 
   // FRESCO-201: resetting the store synchronously before router.push()
   // re-rendered this still-mounted page at step 1 for the ~1s the /menu
@@ -190,9 +195,10 @@ export default function OnboardingPage() {
   };
 
   const household = validateHousehold({ adultos, ninos });
-  // DB check constraint: presupuesto_semana_euros > 0 — null (unset) is
-  // valid, only an explicit non-positive value is rejected.
-  const presupuestoValid = presupuestoSemanaEuros === null || presupuestoSemanaEuros > 0;
+  // FRESCO-263: presupuesto is now required (previously null/unset was
+  // valid — the DB's own check constraint still only rejects 0/negative,
+  // this is a stricter onboarding-only rule).
+  const presupuestoValid = presupuestoSemanaEuros !== null && presupuestoSemanaEuros > 0;
   // FRESCO-165/166 — QA sweep found "Ninguno" (days) left 0 days selected
   // with "Generar mi menú" still enabled: it generated a menu anyway. Worse,
   // deselecting all 3 meals didn't block generation either, and because
@@ -612,19 +618,21 @@ export default function OnboardingPage() {
                   <Input
                     data-testid="presupuesto_input"
                     type="number"
+                    required
                     min={1}
                     value={presupuestoSemanaEuros ?? ''}
                     onChange={(e) => {
                       const raw = e.target.value;
                       setPresupuestoSemanaEuros(raw === '' ? null : Number(raw));
                     }}
+                    onBlur={() => setPresupuestoTouched(true)}
                     placeholder="Ej. 80"
-                    className={`max-w-32 ${!presupuestoValid ? 'border-error' : ''}`}
+                    className={`max-w-32 ${!presupuestoValid && presupuestoTouched ? 'border-error' : ''}`}
                   />
                 </label>
-                {!presupuestoValid && (
+                {!presupuestoValid && presupuestoTouched && (
                   <p data-testid="presupuesto_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
-                    El presupuesto debe ser mayor que 0.
+                    {presupuestoSemanaEuros === null ? 'El presupuesto es obligatorio.' : 'El presupuesto debe ser mayor que 0.'}
                   </p>
                 )}
 
