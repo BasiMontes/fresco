@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-251](https://basiliomontescastano.atlassian.net/browse/FRESCO-251)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -37,7 +37,7 @@ This template lives in the Supabase Dashboard (Authentication → Emails → Con
 ## Metadata
 
 - **Created:** 8/21/2026
-- **Updated:** 8/21/2026
+- **Updated:** 8/23/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

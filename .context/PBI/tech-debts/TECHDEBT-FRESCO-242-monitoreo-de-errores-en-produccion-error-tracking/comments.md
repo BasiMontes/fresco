@@ -198,5 +198,17 @@ Este es third-party integration nuevo y toca múltiples runtimes (client/server/
 
 ---
 
+### Basi Montes - 8/23/2026, 6:38:03 PM
+
+QA ready — merged to `dev`, deployed to staging.
+
+PR: https://github.com/BasiMontes/fresco/pull/117
+Branch: feature/FRESCO-242-error-tracking-sentry (merged, deleted)
+Staging: https://fresco-dev.vercel.app
+
+Smoke suggestion: force one client error, one server error (throw in a route handler), one edge error (middleware) and confirm 3 separate events land in Sentry with environment=preview or development.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

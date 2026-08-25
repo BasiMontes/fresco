@@ -229,5 +229,37 @@ Batch — 2/30 hits (857→859). 0 duplicados verificados. Progreso real vía DB
 
 ---
 
+### Basi Montes - 8/24/2026, 12:01:28 PM
+
+## Batch update
+
+Tanda de `fetch-recipe-photos.ts` (30 recetas, batch size default): 9/30 hits (859 → 868). Aplicado vía Supabase MCP (`execute*sql`) directo. Verificado sin duplicados de `foto*url`.
+
+Restan 132 recetas sin foto. Hit rate bajo esperado — pool restante son variantes filler-only (modificadores tipo "versión ligera"/"con guarnición de temporada") que siguen colapsando al mismo query traducido incluso con el fallback amplio v10.
+
+---
+
+### Basi Montes - 8/24/2026, 12:06:16 PM
+
+## Batch update
+
+Tanda de `fetch-recipe-photos.ts` (30 recetas): 3/30 hits (868 → 871). Aplicado vía Supabase MCP (`execute*sql`) directo. Verificado sin duplicados de `foto*url`.
+
+Restan 129 recetas sin foto. Hit rate sigue cayendo (el pool restante son casi todas variantes filler-only que colapsan al mismo query).
+
+---
+
+### Basi Montes - 8/24/2026, 12:16:28 PM
+
+## Ajuste por auditoría FRESCO-192
+
+FRESCO-192 (auditoría de fotos ya aplicadas) confirmó 104 mismatches en batches 1-8 (foto no corresponde a la receta). Decisión del user: `foto_url = null` en esos 104 en vez de re-búsqueda manual — vuelven al pool pendiente de este ticket para regenerarse con el pipeline normal.
+
+`recipes.foto_url is not null`: 871 → 767. Restantes: 233 (antes 129).
+
+Detalle completo de los 104 IDs y el criterio de mismatch: ver comentario en FRESCO-192.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

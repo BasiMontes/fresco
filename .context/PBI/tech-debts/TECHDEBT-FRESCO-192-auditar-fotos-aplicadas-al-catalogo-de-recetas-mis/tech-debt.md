@@ -44,7 +44,7 @@ Depende de/relacionado con FRESCO-31 (backfill). Se linkea como "relates to".
 ## Metadata
 
 - **Created:** 8/13/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/24/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

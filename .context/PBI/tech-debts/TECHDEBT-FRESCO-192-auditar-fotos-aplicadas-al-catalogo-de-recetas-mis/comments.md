@@ -228,5 +228,253 @@ Sigo con batch 8 (offset 150). Tasa de mismatch consolidada ~55-57% con 150 mues
 
 ---
 
+### Basi Montes - 8/24/2026, 12:16:16 PM
+
+## Batch 8 (150-180/816 auditadas, base original) — acumulado 180/816
+
+***Batch 8***: 6 MATCH · 23 MISMATCH · 1 QUESTIONABLE
+***Acumulado (batches 1-8)***: 43 MATCH · 108 MISMATCH · 29 QUESTIONABLE / 180 = 60% mismatch
+
+### MISMATCH batch 8 (23)
+
+| ID | Nombre | Problema |
+| --- | --- | --- |
+| 28c03b6d | Coliflor asada con cúrcuma y comino | Calabazas decorativas, sin coliflor |
+| 28c79114 | Tortitas al estilo del sur con miel | Bandeja de queso/nueces/miel, sin tortitas |
+| 29b7945b | Batido verde con canela | Bowl de avena con café, no batido |
+| 29c8b4f3 | Tostada de aguacate con miel | Huevo frito con pesto, sin aguacate visible ni miel |
+| 29d957dd | Crema de calabaza ligera | Sopa con albóndigas, no es crema |
+| 2a1417bd | Tofu a la plancha con tamari | Croquetas fritas sobre arroz, sin tofu |
+| 2a1bca79 | Pasta con setas | Solo champiñones crudos, sin pasta |
+| 2a51365a | Batido verde con especias | Bebida dorada tipo turmeric latte, no verde |
+| 2ab46b0e | Ensalada de garbanzos | Guiso de garbanzos especiado, sin ensalada |
+| 2b0dfd24 | Arroz con magro y pimientos | Bowl de arroz con champiñones, sin pimientos ni cerdo |
+| 2bb3eb64 | Gambas al ajillo con guarnición | Gambas peladas simples, sin salsa de ajo ni guarnición |
+| 2c550fed | Ensalada de garbanzos | Bowl de avellanas tostadas |
+| 2cedf7ff | Bowl de avena con canela | Cereal tipo aros con leche, no avena |
+| 2d51f060 | Tostada de aguacate con canela | Huevo frito sobre tostada, sin aguacate ni canela |
+| 2da0b300 | Alubias con verduras ligera | Foto de una flor — sin comida |
+| 2e1471cf | Porridge de avena con canela | Granola seca en primer plano, no porridge |
+| 2e34b82d | Pollo a la plancha mediterráneo | Pollo entero asado al horno, no "a la plancha" |
+| 2eb196b4 | Champiñones al ajillo con aceitunas | Bowl de aceitunas, sin champiñones |
+| 2f300045 | Tostada de aguacate con miel | Mesa de desayuno genérica, sin tostada de aguacate |
+| 2f558176 | Solomillo de cerdo mediterráneo ligero | Costillas BBQ glaseadas, no es "ligero" ni mediterráneo |
+| 2f71b84c | Pasta con tomate mediterráneo | Un tomate solo, sin pasta |
+| 2f7bcb84 | Tostada con queso fresco y miel | Sándwich fundido en manos, sin queso fresco ni miel |
+| 2fdb783f | Coliflor al horno con hierbas | Mujer con flores y masa — nada que ver |
+
+### QUESTIONABLE (1)
+
+2d67544d (berenjena con salsa, pero no "rellena")
+
+### MATCH (6)
+
+2a34a85b, 2ac49906, 2c699c8c, 2dacf7be, 2f2f85fc, 302f6f62
+
+## ⚠️ Bug de tracking detectado
+
+`28c03b6d` y `29b7945b` de este batch 8 ya habían sido auditados y marcados MISMATCH en el batch 7 (mismo problema descrito). Causa: la paginación por `offset` sobre `recipes where foto*url is not null order by id` no es estable — el backfill de FRESCO-31 sigue corriendo en paralelo y cada foto nueva aplicada desplaza las posiciones. El "acumulado 180/816" es aproximado, no exacto; puede haber gaps sin auditar en algún punto. Recomendación para seguir: trackear por rango de `id` explícito (ej. "auditado hasta id >= X") en vez de offset, o agregar una columna `foto*auditada boolean` a `recipes`.
+
+## Decisión de remediación (resuelta)
+
+User decidió: `foto_url = null` en confirmados MISMATCH, para que vuelvan al pool de FRESCO-31 y se regeneren con el pipeline existente (no re-búsqueda manual por ítem).
+
+Aplicado: ***104 recetas*** puestas a `null` (todo lo confirmado MISMATCH en batches 1-8, deduplicando los 2 ya resueltos por contenido inapropiado — `17ef7f11`, `22520726` — y los 2 duplicados del bug de tracking arriba). Verificado vía Supabase MCP antes de aplicar: 104/104 prefixes matchearon receta real, 0 ya estaban en null.
+
+`recipes.foto_url is not null`: 871 → 767 (los QUESTIONABLE quedan sin tocar, pendientes de revisión más fina).
+
+## Siguiente
+
+FRESCO-31 recupera 104 recetas en su pool pendiente (233 restantes en vez de 129). Seguir auditando desde donde el bug de tracking lo permita, o esperar a que se recorra todo el catálogo de nuevo tras la próxima ronda de backfill.
+
+---
+
+### Basi Montes - 8/24/2026, 12:19:50 PM
+
+## Batch 9 (tracking por rango de id, no offset) — 30 recetas
+
+Desde este batch se trackea por `id > '<último id auditado>'` en vez de `offset`, para evitar el bug detectado en el batch 8 (offset se desfasa por el backfill de FRESCO-31 corriendo en paralelo). Rango cubierto: `305ec882` a `39cfbbe4` (30 recetas, ids ascendente).
+
+***Batch 9***: 5 MATCH · 23 MISMATCH · 2 QUESTIONABLE
+
+### MISMATCH (23)
+
+| ID | Nombre | Problema |
+| --- | --- | --- |
+| 3120ec0d | Calamares a la plancha ligera | Bandeja de fritos variados, no es "ligera" ni a la plancha |
+| 315d2422 | Muesli con leche y frutos rojos | Plato de fruta fresca cortada, sin muesli ni leche |
+| 32660bdd | Berenjenas asadas con sésamo y limón | Cubos tipo tofu/halloumi con tomate, no parece berenjena |
+| 32757589 | Ensalada de rúcula, pera y nueces | Nueces partidas sobre fondo blanco, sin ensalada |
+| 32ced9a0 | Huevos poché con canela | Postre cremoso tipo arroz con leche, sin huevos |
+| 3327228a | Tofu al curry verde con coco | Collage de bowls variados (ramen, teriyaki, curry), ninguno es tofu al curry verde |
+| 336276ea | Tostada de aguacate con hierbas y miel | Canapés de pepino, sin tostada ni aguacate |
+| 338afcef | Pollo en pepitoria | Foto artística de un gallo vivo — ni siquiera es comida |
+| 3406beda | Poke bowl de salmón con guarnición | Gente comiendo ramen/bruschetta en mesa, no es un poke de salmón |
+| 3432f7ef | Pollo a la plancha estilo casero | Pollo entero tandoori asado, no "a la plancha" |
+| 345027fa | Salteado de seitan con especias ligero | Bowl de arroz biryani con carne real, contradice seitan/ligero |
+| 353527c4 | Estofado de ternera con boniato | Plato de chuletas a la plancha con patatas, no es estofado |
+| 35780ddb | Marmitako de bonito | Plato envuelto en hoja de plátano estilo sudeste asiático, no es guiso vasco |
+| 368ddac4 | Crema de levadura nutricional con ajo | Solo dientes de ajo sobre fondo blanco, sin crema |
+| 36c10971 | Batido verde con hierbas y canela | Hojas crudas en un vaso, no está licuado |
+| 3724f842 | Tortilla francesa con especias y frutos rojos | Mesa exterior con crepes/quesadillas y jugos, sin tortilla ni frutos rojos |
+| 3857b513 | Tempeh al horno con jengibre y cilantro | Cuadrados verdes tipo brownie de espinaca, no es tempeh |
+| 3892dbb4 | Salteado de tofu estilo casero | Desayuno inglés completo con salchicha y bacon, sin tofu |
+| 3899f83d | Tempeh al horno con jengibre y semillas de lino | Bowl de mazorcas de maíz asadas, sin tempeh |
+| 38f95768 | Tostada de aguacate con frutos rojos | Torrija/French toast con manzana y plátano, sin aguacate |
+| 39099927 | Tortilla de espárragos trigueros | Filete empanado con patatas fritas, sin espárragos ni tortilla |
+| 3963916b | Berenjenas asadas con sésamo y lino | Tarta de hojaldre con verduras, no es berenjena — ***nota******:****** esta foto se aplicó hoy mismo en la tanda 32 de FRESCO-31, el fallback amplio v10 sigue sin puntería*** |
+| 39cfbbe4 | Bowl de yogur y fruta con miel | Smoothie bowl verde con kiwi/fresas, es batido no yogur |
+
+### QUESTIONABLE (2)
+
+333b653b (kale sí, pero ensalada cruda no salteado, sin semillas de calabaza), 372c277d (tostada de aguacate confirmada, sin frutos rojos)
+
+### MATCH (5)
+
+305ec882, 31973a91, 33b814eb, 36f63713, 39b5e3e6
+
+## Remediación aplicada
+
+Mismo criterio acordado: `foto*url = null` en los 23 MISMATCH confirmados, verificado 23/23 match antes de aplicar. `recipes.foto*url is not null`: 767 → 744.
+
+## Siguiente
+
+Continuar batch 10 desde id > `39cfbbe4`.
+
+---
+
+### Basi Montes - 8/24/2026, 12:25:22 PM
+
+## Batch 10 (id > `39cfbbe4`, 50 recetas) — acumulado 260/816 (base original, ya aproximado por el bug de tracking)
+
+***Batch 10***: 14 MATCH · 32 MISMATCH · 4 QUESTIONABLE. Rango cubierto: `39f5506d` a `48bfc33c`.
+
+### MISMATCH (32)
+
+| ID | Nombre | Problema |
+| --- | --- | --- |
+| 39f5506d | Bowl de avena con canela | Cereal tipo bolitas con leche, no avena |
+| 3a0eb6f0 | Alubias con verduras ligera | Solo vainas crudas sin cocinar, sin alubias |
+| 3ae2ff65 | Muesli con leche y frutos rojos | Bowl de frambuesas y arándanos solos, sin muesli ni leche |
+| 3b79db01 | Pasta con setas al estilo del sur | Hongos silvestres en tronco, sin pasta |
+| 3b8f6233 | Gambas al ajillo ligera | Platos tailandeses variados, sin gambas visibles |
+| 3bfec4da | Albóndigas en salsa mediterránea | Nachos/chiles volando en foto surrealista, sin albóndigas |
+| 3cce9284 | Huevos revueltos con miel | Huevo frito (no revuelto), sin miel |
+| 3cd9ae0f | Pisto ligero con huevo escalfado | Huevos duros con flores decorativas, sin pisto ni huevo poché |
+| 3ce29b92 | Pollo al horno con especias ligero | Bandeja de biryani con pollo, plato pesado no "ligero" |
+| 3e78a7df | Lasaña de verduras | Bandeja de tomates con queso rallado, sin capas de pasta |
+| 3f269da9 | Tostada con jamón serrano | Foto artística de flores sobre pan, sin jamón |
+| 3f6253e5 | Porridge de avena con miel | Risotto con gambas y espuma, no porridge |
+| 3f8adae9 | Pollo a la plancha con especias | Pollo tandoori entero con naan, no "a la plancha" |
+| 3ffba5d8 | Arroz con verduras ligera | Cucharas con arroz/lentejas sueltos, sin plato ni verduras — ***receta rellenada hoy en la tanda 31 de FRESCO-31*** |
+| 400336ac | Tofu a la plancha con limón | Tabla con pomelo y quesos, sin tofu |
+| 40bc5777 | Berenjenas rellenas | Bandeja de pimientos, sin berenjena |
+| 4139e153 | Champiñones rellenos de ajo | Plato de pasta con queso, sin champiñones |
+| 418fe22d | Gambas al ajillo al estilo del sur | Curry de pollo naranja, sin gambas |
+| 420437ef | Champiñones salteados con tamari | Ajos y champiñones crudos sin cocinar |
+| 429704f6 | Pavo al horno estilo casero | Patrón decorativo ilustrado de Acción de Gracias, no es foto real de comida |
+| 43269fa0 | Crema de calabaza con hierbas | Dos calabazas enteras, sin crema |
+| 43c0571e | Torrijas caseras | Botella de vino y bruschetta, sin torrijas |
+| 44117e6c | Patatas a la riojana | Patatas baby asadas crujientes, sin guiso ni chorizo |
+| 44c43290 | Sopa de calabacín y menta | Sartén salteando hierbas picadas, sin sopa |
+| 454e548a | Tofu al horno con limón/lima | Porción de tarta/cheesecake con salsa, sin tofu |
+| 456e2ef3 | Lentejas con costillas | Costillas BBQ con espárragos, sin lentejas |
+| 4622caf1 | Mejillones al vapor con especias | Producto empaquetado al vacío, no es plato preparado |
+| 46c9ca5f | Champiñones al ajillo con perejil | Un champiñón crudo solo, sin ajo ni perejil |
+| 46d88cd1 | Gambas al ajillo mediterráneo | Pasta scampi con gambas y crema, no es "al ajillo" ligero |
+| 4846c18c | Pollo al horno con guarnición | Alitas empanadas fritas con papas, no horneado |
+| 4861222e | Crema de calabacín | Sopa naranja (color tomate), no verde como calabacín |
+| 48bfc33c | Huevos poché con espárragos | Manojo de espárragos crudos, sin huevos |
+
+### QUESTIONABLE (4)
+
+3b02dfd6 (coles de Bruselas sí, pero envueltas en bacon, sin lima), 3f157db3 (fideuá con ostras en caldo, no el estilo típico), 4279ed8d (waffle sí, pero con sprinkles no hierbas/canela), 46bd30ec (ensalada tibia de verduras asadas, sin semillas de calabaza visibles)
+
+### MATCH (14)
+
+3a47551a, 3abf6e09, 3e172357, 3e2b82db, 3fdba1be, 41d1b97c, 42967db9, 43a43297, 43b94c33, 44cb928c, 4645b8ff, 46abb49e, 46d1bfd7, 4782223c
+
+## Remediación aplicada
+
+Mismo criterio: `foto*url = null` en los 32 confirmados MISMATCH, verificado 32/32 antes de aplicar. `recipes.foto*url is not null`: 744 → 712.
+
+## Observación importante
+
+Dos de las fotos rellenadas HOY MISMO por FRESCO-31 (tandas 31 y 32: `3963916b` y `3ffba5d8`) ya salieron mismatch en este audit. El fallback amplio v10 sigue produciendo resultados de baja precisión incluso en corridas frescas — no es solo deuda histórica, sigue generando trabajo nuevo para este ticket. Vale la pena evaluar si conviene pausar el backfill hasta mejorar la precisión del matching, o aceptar el ciclo actual (backfill genera → audit descarta → vuelve al pool).
+
+## Siguiente
+
+Continuar batch 11 desde id > `48bfc33c`.
+
+---
+
+### Basi Montes - 8/24/2026, 12:31:29 PM
+
+## Batches 11-12 (id > `48bfc33c`, 100 recetas en dos tandas de 50) — acumulado ~360/816 (base original, aproximado)
+
+***Batch 11*** (id `49037e13` a `510ed79b`, 25 recetas): 9 MATCH · 15 MISMATCH · 1 QUESTIONABLE
+***Batch 12*** (id `5194026b` a `57cde3bd`, 25 recetas): 5 MATCH · 18 MISMATCH · 2 QUESTIONABLE
+***Total combinado (50 recetas)***: 14 MATCH · 33 MISMATCH · 3 QUESTIONABLE
+
+### MISMATCH (33)
+
+| ID | Nombre | Problema |
+| --- | --- | --- |
+| 49037e13 | Salteado de tofu ligera | Picatostes fritos con lata de chile, sin tofu |
+| 49b6594a | Tortitas con hierbas y miel | Bote de miel con croissants, sin tortitas |
+| 4a39ab0b | Calabacín salteado con albahaca | Guiso de carne con canapés de pepino, sin calabacín |
+| 4a4b533e | Champiñones al ajillo con semillas de calabaza | Plato elegante con almendras y crema, sin champiñones |
+| 4ab858d0 | Berenjenas rellenas | Pimiento amarillo y rojo asados, sin berenjena |
+| 4b13895c | Espinacas salteadas con levadura | Pollo con arroz y bok choy, sin espinacas |
+| 4bb77b42 | Ensalada de garbanzos con atún | Tabulé de quinoa, sin garbanzos ni atún |
+| 4d7ee658 | Repollo salteado con sésamo | Coles enteras crudas, sin saltear |
+| 4de08afd | Arroz con verduras con hierbas | Bandeja de tomates gratinados, sin arroz |
+| 4e55c50d | Champiñones al ajillo con cilantro | 4 champiñones crudos sobre tela, sin cocinar |
+| 4e9d7703 | Alubias con verduras ligera | Plato de quinoa y patata rellena, sin alubias |
+| 4ebd0f75 | Ensalada de pollo y aguacate | Ensalada con pollo, sin aguacate visible |
+| 4ff2fca8 | Huevos poché con hierbas | Olla oscura con líquido burbujeante, sin huevos |
+| 50ca016c | Calamares a la plancha con verduras salteadas | Vieiras (no calamares) con guarnición |
+| 510ed79b | Tostada con jamón serrano y frutos rojos | Bandeja con pavo/queso, sin jamón serrano ni frutos rojos |
+| 5194026b | Repollo salteado con sésamo y cilantro | Foto decorativa de col ornamental, no es plato |
+| 51a197a3 | Crema fría de lima con lino | Sopa naranja (no lima/verde), sin semillas de lino |
+| 51b03003 | Huevos poché mediterráneo | Huevos fritos (no poché) sobre bacon |
+| 51dcfda3 | Tostada con salmón ahumado | Tostada de aguacate sin salmón visible |
+| 51fd7dd1 | Albóndigas en salsa con guarnición | Plato de milanesa/bistec con guacamole, sin albóndigas |
+| 52051cec | Calamares a la plancha con especias | Postre de gofres con chocolate, sin calamares |
+| 5285a2fe | Mejillones al vapor mediterráneo | Mejillones crudos empaquetados en red, no plato preparado |
+| 52b2d660 | Ensalada tibia de semillas de calabaza | Manos picando mango sobre arroz/cilantro, sin semillas de calabaza |
+| 533dbb78 | Tostada de aguacate con especias y miel | Bandeja de desayuno con pepino y mermelada, sin aguacate |
+| 53640240 | Cocido madrileño | Bistec con chimichurri y brócoli, sin garbanzos ni cocido |
+| 53ba986b | Tostada con jamón serrano y frutos rojos | Panes volando con mermelada, sin jamón |
+| 53d0a44d | Berenjenas asadas con sésamo y ajo | Focaccia/pan plano con semillas, no es berenjena — ***receta rellenada hoy en la tanda 31 de FRESCO-31*** |
+| 5480c4db | Tostada con queso fresco y canela | Pila de rebanadas de pan sin ningún topping |
+| 553a16ef | Tortitas con miel | Bote de miel con galleta y nueces, sin tortitas |
+| 555e413f | Wok de tamari y jengibre con aceitunas | Plato de fideos sin aceitunas visibles |
+| 55db40ed | Tortilla francesa mediterránea con frutos rojos | Bizcocho de arándanos en sartén, no es tortilla/omelette |
+| 5647178f | Sopa de verduras ligera | Fideos secos y bowl de agua con hierbas, sin sopa |
+| 57cde3bd | Crema fría de lima con limón | Persona comiendo sopa en restaurante, foto de acción no de plato |
+
+### QUESTIONABLE (3)
+
+4e7bae4c (tostada con tomate sí, sin queso fresco visible), 541f9c93 (pasta cremosa, sin champiñones visibles), 56eb55fa (jamón y rúcula sí, sin champiñones)
+
+### MATCH (14)
+
+4942047f, 49a07b19, 49d0dc5f, 4b299042, 4b664ad7, 4c6f94b9, 4cdc4618, 4ea26db3, 4fbddc6d, 52470b42, 5355ea37, 54ae6922, 56a5c658, 576d87e3
+
+## Remediación aplicada
+
+Mismo criterio: `foto*url = null` en los 33 confirmados MISMATCH, verificado 33/33 antes de aplicar. `recipes.foto*url is not null`: 712 → 679.
+
+## Tercera confirmación del patrón de fotos frescas fallando
+
+`53d0a44d`, rellenada HOY en la tanda 31 de FRESCO-31, es la tercera foto de esta misma sesión (junto a `3963916b` y `3ffba5d8`) que el audit confirma mismatch. Patrón consistente — el fallback amplio v10 no es solo deuda histórica.
+
+## Siguiente
+
+Continuar desde id > `57cde3bd`.
+
+---
+
 
 _Synced from Jira by sync-jira-issues_

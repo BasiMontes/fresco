@@ -1,7 +1,7 @@
 # Tarea: Monitoreo de errores en producción (error tracking)
 
 **Jira Key:** [FRESCO-242](https://basiliomontescastano.atlassian.net/browse/FRESCO-242)
-**Status:** WIP
+**Status:** Control de calidad
 **Type:** Tarea
 
 ---
@@ -22,7 +22,7 @@
 
 ### customfield_10000
 
-{}
+{repository={count=9, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":9,"lastUpdated":"2026-08-23T18:36:42.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":9,"name":"GitHub"},"GitHub":{"count":9,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
@@ -31,7 +31,7 @@
 - **Created:** 8/20/2026
 - **Updated:** 8/23/2026
 - **Reporter:** Basi Montes
-- **Assignee:** Basi Montes
+- **Assignee:** Unassigned
 
 ---
 
