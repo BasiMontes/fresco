@@ -46,6 +46,13 @@
       "headers": {
         "X-Goog-Api-Key": "${API_KEY_GOOGLE_STITCH}"
       }
+    },
+    "posthog": {
+      "type": "http",
+      "url": "https://mcp.posthog.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${POSTHOG_PERSONAL_API_KEY}"
+      }
     }
   }
 }
