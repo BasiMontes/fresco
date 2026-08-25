@@ -1,6 +1,8 @@
 import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { PlanningSelection } from '@/lib/planning-selection';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { toPlanningSelection } from '@/lib/planning-selection';
 
 /**
  * Client-side state for the 4-step onboarding flow (EPIC-FRESCO-1: name,
@@ -49,8 +51,7 @@ export interface OnboardingState {
   ingredientesOdiadosTextoLibre: string
   cocinasTextoLibre: string
   presupuestoSemanaEuros: number | null
-  planningMeals: TipoPlatoSlot[]
-  planningDays: DiaSemana[]
+  planningSelection: PlanningSelection
   nivelExperiencia: NivelExperienciaCulinaria | null
   setStep: (step: 1 | 2 | 3 | 4) => void
   setNombre: (value: string) => void
@@ -67,12 +68,7 @@ export interface OnboardingState {
   setIngredientesOdiadosTextoLibre: (value: string) => void
   setCocinasTextoLibre: (value: string) => void
   setPresupuestoSemanaEuros: (value: number | null) => void
-  toggleMeal: (value: TipoPlatoSlot) => void
-  toggleDay: (value: DiaSemana) => void
-  selectAllDays: () => void
-  selectNoDays: () => void
-  selectAllMeals: () => void
-  selectNoMeals: () => void
+  setPlanningSelection: (value: PlanningSelection) => void
   setNivelExperiencia: (value: NivelExperienciaCulinaria) => void
   reset: () => void
 }
@@ -99,8 +95,7 @@ const initialState = {
   ingredientesOdiadosTextoLibre: '',
   cocinasTextoLibre: '',
   presupuestoSemanaEuros: null as number | null,
-  planningMeals: ['desayuno', 'comida', 'cena'] as TipoPlatoSlot[],
-  planningDays: ALL_DIAS_SEMANA,
+  planningSelection: toPlanningSelection(ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT),
   nivelExperiencia: null as NivelExperienciaCulinaria | null,
 };
 
@@ -182,12 +177,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setIngredientesOdiadosTextoLibre: value => set({ ingredientesOdiadosTextoLibre: value }),
   setCocinasTextoLibre: value => set({ cocinasTextoLibre: value }),
   setPresupuestoSemanaEuros: value => set({ presupuestoSemanaEuros: value }),
-  toggleMeal: value => set(state => ({ planningMeals: toggleInArray(state.planningMeals, value) })),
-  toggleDay: value => set(state => ({ planningDays: toggleInArray(state.planningDays, value) })),
-  selectAllDays: () => set({ planningDays: ALL_DIAS_SEMANA }),
-  selectNoDays: () => set({ planningDays: [] }),
-  selectAllMeals: () => set({ planningMeals: ALL_TIPO_PLATO_SLOT }),
-  selectNoMeals: () => set({ planningMeals: [] }),
+  setPlanningSelection: value => set({ planningSelection: value }),
   setNivelExperiencia: value => set({ nivelExperiencia: value }),
   reset: () => set(initialState),
 }), {
@@ -220,8 +210,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     ingredientesOdiadosTextoLibre: state.ingredientesOdiadosTextoLibre,
     cocinasTextoLibre: state.cocinasTextoLibre,
     presupuestoSemanaEuros: state.presupuestoSemanaEuros,
-    planningMeals: state.planningMeals,
-    planningDays: state.planningDays,
+    planningSelection: state.planningSelection,
     nivelExperiencia: state.nivelExperiencia,
   }),
 }));
