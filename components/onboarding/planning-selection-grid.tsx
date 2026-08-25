@@ -41,6 +41,24 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
     onChange({ ...value, [day]: nextDayMeals });
   }
 
+  // FRESCO-260: bulk select/clear a whole meal column across every day —
+  // only touches that one meal per day, leaving the other two columns'
+  // selections for that day untouched.
+  function setColumn(meal: TipoPlatoSlot, included: boolean) {
+    const next = { ...value };
+    for (const day of DAY_OPTIONS) {
+      const dayMeals = value[day.value] ?? [];
+      const hasMeal = dayMeals.includes(meal);
+      if (included && !hasMeal) {
+        next[day.value] = [...dayMeals, meal];
+      }
+      else if (!included && hasMeal) {
+        next[day.value] = dayMeals.filter(item => item !== meal);
+      }
+    }
+    onChange(next);
+  }
+
   return (
     <div data-testid={dataTestId} className="overflow-x-auto">
       <table className="w-full border-collapse">
@@ -48,8 +66,33 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
           <tr>
             <th scope="col" className="w-12" />
             {MEAL_OPTIONS.map(meal => (
-              <th key={meal.value} scope="col" className="pb-2 text-center text-caption font-sans uppercase text-tertiary">
+              <th key={meal.value} scope="col" className="pb-1 text-center text-caption font-sans uppercase text-tertiary">
                 {meal.label}
+              </th>
+            ))}
+          </tr>
+          <tr>
+            <th scope="col" className="w-12" />
+            {MEAL_OPTIONS.map(meal => (
+              <th key={meal.value} scope="col" className="pb-2 text-center font-normal">
+                <span className="inline-flex gap-2 text-caption font-sans">
+                  <button
+                    type="button"
+                    data-testid="planning_column_select_all"
+                    className="text-primary underline-offset-2 hover:underline"
+                    onClick={() => setColumn(meal.value, true)}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="planning_column_select_none"
+                    className="text-tertiary underline-offset-2 hover:underline"
+                    onClick={() => setColumn(meal.value, false)}
+                  >
+                    Ninguno
+                  </button>
+                </span>
               </th>
             ))}
           </tr>
