@@ -168,8 +168,10 @@ export function Dropdown({
                 tabIndex={index === activeIndex ? 0 : -1}
                 aria-selected={option.value === value}
                 className={cn(
-                  'w-full rounded-full px-3 py-2 text-left text-body-md hover:bg-accent-100',
-                  option.value === value ? 'bg-accent-100 text-primary' : 'text-text',
+                  'w-full rounded-full px-3 py-2 text-left text-body-md',
+                  option.value === value
+                    ? 'bg-primary text-background'
+                    : 'text-text hover:bg-neutral-200',
                 )}
                 onClick={() => selectOption(option.value)}
               >
