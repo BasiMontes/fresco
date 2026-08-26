@@ -653,6 +653,7 @@ export default function OnboardingPage() {
 
                 <label className="mt-4 flex flex-col gap-1">
                   <span className="text-body-sm text-tertiary">Presupuesto semanal (estimado)</span>
+                  <span data-testid="presupuesto_required_hint" className="text-body-sm text-tertiary">* Campo obligatorio</span>
                   <Input
                     data-testid="presupuesto_input"
                     type="number"
