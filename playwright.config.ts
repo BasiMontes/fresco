@@ -25,6 +25,12 @@ const testDir = defineBddConfig({
   tags: '@automatizado',
 });
 
+// Defaults to local — override with `PLAYWRIGHT_BASE_URL` to point the suite
+// at staging (`https://fresco-pre.vercel.app`) or production
+// (`https://fresco-pro.vercel.app`), the same URLs `.agents/project.yaml`'s
+// `environments.<env>.web_url` already declares.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
+
 export default defineConfig({
   testDir,
   // @aprendizaje's scenarios all mutate the same shared, finite, real test
@@ -44,7 +50,7 @@ export default defineConfig({
   timeout: 90_000,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
   },
   projects: [
