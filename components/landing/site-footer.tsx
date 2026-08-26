@@ -33,7 +33,7 @@ export function SiteFooter() {
                 type="button"
                 data-testid={`site_footer_${linkSection}_link`}
                 onClick={() => openSection(linkSection)}
-                className="text-caption text-accent-300"
+                className="py-1.5 text-caption text-accent-300"
               >
                 {label}
               </button>

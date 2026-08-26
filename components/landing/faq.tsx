@@ -48,7 +48,7 @@ export function Faq() {
                 onClick={() => setOpenIndex(isOpen ? null : index)}
                 aria-expanded={isOpen}
                 aria-controls={`faq-answer-${index}`}
-                className="flex w-full items-start justify-between gap-4 text-left text-label text-text"
+                className="flex w-full items-start justify-between gap-4 py-2 text-left text-label text-text"
               >
                 {faq.question}
                 <Plus
