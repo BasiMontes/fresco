@@ -608,19 +608,20 @@ Característica: Flujo completo de usuario en Fresco
     # de tipo distinto — comida→cena preserva el mismo chequeo real
     # (tipo_plato distinto), con un origen que sigue siendo arrastrable.
 
-  @calendario @verificado-manual-2026-08-14 @automatizado
-  # Automatizado: tests/steps/calendario.steps.ts (contexto mobile-emulado dedicado, CDP touch dispatch)
-  Escenario: El grid del calendario responde a scroll táctil horizontal en mobile
-    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos, en un viewport mobile con touch
-    Cuando desliza el dedo horizontalmente sobre el grid
-    Entonces el grid se desplaza y muestra días más allá del lunes
-    # FRESCO-170 — BLOCKER encontrado DOS veces (QA sweep 2026-08-10, re-
-    # confirmado 2026-08-11 tras un primer "fix" que solo tocó el label
-    # sticky, no el scroll táctil en sí, que seguía completamente muerto).
-    # Causa real: touch-action: none incondicional en el handle de arrastre
-    # + un PointerSensor compartido sin distinguir mouse de touch. Cero
-    # cobertura de regresión existía para esto antes de este escenario —
-    # mouse-wheel/dragTo no lo detectan, hace falta touch real (CDP).
+  @calendario @verificado-manual-2026-08-26 @automatizado
+  # Automatizado: tests/steps/calendario.steps.ts
+  Escenario: El grid del calendario pagina día a día con flechas, no con scroll horizontal
+    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
+    Cuando pulsa la flecha de día siguiente
+    Entonces el grid muestra días más allá del lunes
+    # FRESCO-271 — reemplaza el escenario de scroll táctil (FRESCO-170/
+    # FRESCO-222): tercera vez que se reportaba el mismo síntoma (la columna
+    # DESAYUNO/COMIDA/CENA "se movía" durante el scroll) porque cada fix
+    # anterior solo resincronizaba la etiqueta contra un scrollLeft que
+    # seguía cambiando. FRESCO-271 quita el scroll horizontal del todo — el
+    # grid pagina de a un día por click de flecha, la etiqueta nunca vive
+    # dentro de nada que se mueva. Ya no hace falta touch real ni contexto
+    # mobile-emulado para probarlo.
 
   @calendario @edge-case @verificado-manual-2026-07-31
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
