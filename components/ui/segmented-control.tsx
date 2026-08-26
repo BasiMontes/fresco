@@ -10,6 +10,14 @@ import { cn } from '@/lib/utils';
  * "everything is pill-shaped"). The checked option flips to filled primary;
  * unchecked options stay transparent within the shared outlined container.
  * Example usage from DESIGN.md: spice-level ("Suave / Medio / Picante").
+ *
+ * FRESCO-272: the inner button's radius is the container's rounded-md (16px)
+ * minus its own p-1 padding (4.4px) = 11.6px, not rounded-md itself. At this
+ * container's actual rendered height, a plain rounded-md button auto-clamps
+ * to a full capsule (CSS shrinks corner radii to fit the box), which is
+ * MORE rounded than the container's literal 16px corner — the two curves
+ * don't nest, leaving a crescent gap when the selected option sits at
+ * either end. The explicit 11.6px keeps both curves concentric.
  */
 export interface SegmentedControlOption {
   value: string
@@ -71,7 +79,7 @@ export function SegmentedControl({
             onClick={() => onChange(option.value)}
             onKeyDown={event => handleKeyDown(event, index)}
             className={cn(
-              'rounded-md px-3 py-1 text-body-sm font-sans transition-colors',
+              'rounded-[11.6px] px-3 py-1 text-body-sm font-sans transition-colors',
               isSelected ? 'bg-primary text-background' : 'bg-transparent text-text',
             )}
           >
