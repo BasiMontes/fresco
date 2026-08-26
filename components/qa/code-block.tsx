@@ -1,6 +1,7 @@
 import { codeToHtml } from 'shiki';
 
 import { CopyButton } from '@/components/qa/copy-button';
+import { ScrollFadeWrapper } from '@/components/qa/scroll-fade-wrapper';
 import { cn } from '@/lib/utils';
 
 export interface CodeBlockProps {
@@ -34,11 +35,7 @@ export async function CodeBlock({ code, lang = 'bash', className }: CodeBlockPro
     <div className={cn('relative overflow-hidden rounded-md border border-border bg-surface', className)}>
       <CopyButton text={code} className="absolute right-2 top-2" />
       {/* Server-rendered Shiki output from our own literal code strings, never user input. */}
-      <div
-        data-testid="qa_code_block"
-        className="overflow-x-auto p-3 text-body-sm [&_pre]:!bg-transparent"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <ScrollFadeWrapper html={html} />
     </div>
   );
 }
