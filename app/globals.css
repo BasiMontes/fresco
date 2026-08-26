@@ -403,9 +403,11 @@
 /*
  * Filter drawer open / close (FRESCO-273) — same open/close/close-timeout
  * lifecycle as `.t-modal` (mirrors its --modal-open-dur/--modal-close-dur/
- * --modal-ease tokens rather than defining new ones), but slides up from the
- * bottom edge instead of scaling from center — drives
- * `components/ui/filter-drawer.tsx`'s `.t-drawer` content wrapper.
+ * --modal-ease tokens rather than defining new ones). Slides up from the
+ * bottom edge on mobile; from `sm:` (640px) up — where
+ * `components/ui/filter-drawer.tsx` repositions the panel to the right
+ * edge (FRESCO-274) — it slides in from the right instead, same breakpoint
+ * the rest of the app already uses for its layout switch.
  */
 .t-drawer {
   transform: translateY(100%);
@@ -428,6 +430,18 @@
   transition:
     transform var(--modal-close-dur) var(--modal-ease),
     opacity var(--modal-close-dur) var(--modal-ease);
+}
+
+@media (min-width: 640px) {
+  .t-drawer {
+    transform: translateX(100%);
+  }
+  .t-drawer.is-open {
+    transform: translateX(0);
+  }
+  .t-drawer.is-closing {
+    transform: translateX(100%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

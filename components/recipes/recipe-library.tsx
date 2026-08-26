@@ -128,7 +128,7 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
   return (
     <div>
       <div className="mt-6 flex items-center gap-2">
-        <div className="relative max-w-56 flex-1">
+        <div className="relative max-w-56 flex-1 sm:max-w-96">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-tertiary" aria-hidden="true" />
           <Input
             type="search"
