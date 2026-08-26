@@ -137,7 +137,7 @@ export default async function MenuPage() {
           <p className="mt-1 text-body-md text-tertiary">Tu menú de hoy, listo.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/favorites" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Favoritos" data-testid="favoritos_button">
+          <Link href="/favorites" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }))} aria-label="Favoritos" data-testid="favoritos_button">
             <Heart className="size-6" />
           </Link>
           <Link href="/notifications" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'relative')} aria-label="Notificaciones" data-testid="notificaciones_button">
