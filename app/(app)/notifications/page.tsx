@@ -10,6 +10,7 @@ import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getPaymentFailedAt, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserPlan, isPaymentFailedAlertActive, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
 import { createClient } from '@/lib/supabase/server';
+import { cn } from '@/lib/utils';
 
 /** FRESCO-226 AC's "número acotado" (Scope: "ej. 3"). */
 const RECOMMENDED_RECIPES_LIMIT = 3;
@@ -80,7 +81,7 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/menu" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Volver" data-testid="notifications_back_link">
+        <Link href="/menu" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }))} aria-label="Volver" data-testid="notifications_back_link">
           <ArrowLeft className="size-6" />
         </Link>
         <div>

@@ -4,6 +4,7 @@ import { FavoritesGrid } from '@/components/recipe/favorites-grid';
 import { buttonVariants } from '@/components/ui/button';
 import { getFavoriteRecipes } from '@/lib/api/favorites';
 import { createClient } from '@/lib/supabase/server';
+import { cn } from '@/lib/utils';
 
 /**
  * FRESCO-71 — mockup nav showed Despensa/Lista Compra, which don't exist
@@ -29,7 +30,7 @@ export default async function FavoritesPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/menu" className={buttonVariants({ variant: 'icon', size: 'sm' })} aria-label="Volver" data-testid="favorites_back_link">
+        <Link href="/menu" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }))} aria-label="Volver" data-testid="favorites_back_link">
           <ArrowLeft className="size-6" />
         </Link>
         <div>
