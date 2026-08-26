@@ -17,7 +17,15 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - run: bun run repo:check
+      - name: Restore .env from secret
+        run: printf '%s' "$ENV_FILE" > .env
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Run repo:check
+        run: |
+          set -a; . ./.env; set +a
+          bun run repo:check
 
   e2e:
     name: test:e2e
