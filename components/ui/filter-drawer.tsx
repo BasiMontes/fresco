@@ -143,6 +143,7 @@ export function FilterDrawer({ open, onOpenChange, title, onClearAll, footer, ch
         onClick={event => event.stopPropagation()}
         className={cn(
           't-drawer absolute inset-x-0 bottom-0 flex max-h-[92vh] w-full flex-col rounded-t-card bg-surface shadow-lg focus:outline-none',
+          'sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:w-full sm:max-w-md sm:rounded-l-card sm:rounded-t-none',
           open && hasEntered && 'is-open',
           isClosing && 'is-closing',
         )}
