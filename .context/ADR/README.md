@@ -72,6 +72,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0011](./ADR-0011-pg-cron-pg-net-scheduled-http-triggers.md) | `pg_cron` + `pg_net` for scheduled HTTP-triggered jobs (Edge Function invocation) | Proposed | — | — |
 | [ADR-0012](./ADR-0012-web-push-library-for-vapid-payload-encryption.md) | `web-push` npm library for VAPID signing + payload encryption | Proposed | — | — |
 | [ADR-0013](./ADR-0013-posthog-product-analytics.md) | PostHog as the product-analytics vendor (EU region, client + server capture) | Accepted | — | — |
+| [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
