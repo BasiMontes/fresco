@@ -20,10 +20,9 @@ jobs:
       - run: bun run repo:check
 
   e2e:
-    name: test:e2e (informational)
+    name: test:e2e
     runs-on: ubuntu-latest
     needs: repo-check
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
