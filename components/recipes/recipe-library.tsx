@@ -1,74 +1,39 @@
 'use client';
 
 import type { RecetaPropia, Recipe, RecipeDieta, TipoCocina } from '@schemas';
-import { BookOpen, Plus, Search } from 'lucide-react';
+import type { MealTab, RecipeFilterState } from '@/lib/recipes/recipe-filters';
+import { BookOpen, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
+import { FilterSection } from '@/components/recipes/filter-section';
 import { PersonalRecipeCard } from '@/components/recipes/personal-recipe-card';
 import { Button } from '@/components/ui/button';
-import { Dropdown } from '@/components/ui/dropdown';
 import { EmptyState } from '@/components/ui/empty-state';
+import { FilterDrawer } from '@/components/ui/filter-drawer';
 import { Input } from '@/components/ui/input';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 import { DIETA_LABELS } from '@/lib/recipes/labels';
+import { countActiveFilters, countWithOption, EMPTY_FILTER_STATE, matchesRecipeFilters } from '@/lib/recipes/recipe-filters';
 
-type MealTab = 'todo' | 'desayuno' | 'comida' | 'cena';
+/** FRESCO-187 — how many recipes render per page before "Ver más recetas" appends the next batch. */
+const RECIPE_PAGE_SIZE = 30;
 
-const MEAL_TABS: { value: MealTab, label: string }[] = [
-  { value: 'todo', label: 'Todo' },
+const COCINA_OPTIONS: TipoCocina[] = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'];
+const DIETA_OPTIONS = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
+const MEAL_TYPE_OPTIONS: { value: MealTab, label: string }[] = [
   { value: 'desayuno', label: 'Desayuno' },
   { value: 'comida', label: 'Comida' },
   { value: 'cena', label: 'Cena' },
 ];
 
-/** FRESCO-187 — how many recipes render per page before "Ver más recetas" appends the next batch. */
-const RECIPE_PAGE_SIZE = 30;
-
-const TODAS_LAS_COCINAS = 'todas' as const;
-const CUALQUIER_DIETA = 'cualquiera' as const;
-const NINGUN_ALERGENO = 'ninguno' as const;
-
-const COCINA_OPTIONS: TipoCocina[] = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'];
-const DIETA_OPTIONS = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
-
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-/**
- * FRESCO-160 — the 3 filters below used to be native `<select>` elements
- * (FRESCO-67's own doc comment: "no dropdown primitive exists in this
- * design system yet"). One does now (`components/ui/dropdown.tsx`, built
- * for onboarding's Sexo/Objetivo/Nivel pickers) — these option lists are
- * reshaped once here into that component's `{value, label}` shape rather
- * than inline at each call site.
- */
-const COCINA_DROPDOWN_OPTIONS = [
-  { value: TODAS_LAS_COCINAS, label: 'Todas las cocinas' },
-  ...COCINA_OPTIONS.map(option => ({ value: option, label: capitalize(option) })),
-];
-const DIETA_DROPDOWN_OPTIONS = [
-  { value: CUALQUIER_DIETA, label: 'Cualquier dieta' },
-  ...DIETA_OPTIONS.map(option => ({ value: option, label: DIETA_LABELS[option] ?? option })),
-];
-const ALERGENO_DROPDOWN_OPTIONS = [
-  { value: NINGUN_ALERGENO, label: 'Sin evitar ningún alérgeno' },
-  ...ALERGENO_OPTIONS,
-];
-
-/**
- * FRESCO-66 — a recipe with `clasificacion: null` (some seed rows are only
- * partially populated, per `RecipeCard`'s own doc comment) never matches a
- * specific meal tab but still shows under "Todo" — same optional-chaining
- * fallback already used elsewhere for `clasificacion`.
- */
-function matchesTab(recipe: Recipe, tab: MealTab): boolean {
-  if (tab === 'todo') { return true; }
-  return recipe.clasificacion?.tipo_plato === tab;
-}
+const COCINA_FILTER_OPTIONS = COCINA_OPTIONS.map(option => ({ value: option, label: capitalize(option) }));
+const DIETA_FILTER_OPTIONS = DIETA_OPTIONS.map(option => ({ value: option, label: DIETA_LABELS[option] ?? option }));
 
 /**
  * FRESCO-65 — client-side search over the safety-filtered catalog the page
@@ -90,46 +55,39 @@ function matchesQuery(recipe: Recipe, query: string): boolean {
   return ingredientes.some(ingrediente => ingrediente.toLowerCase().includes(needle));
 }
 
-function matchesCocina(recipe: Recipe, cocina: string): boolean {
-  if (cocina === TODAS_LAS_COCINAS) { return true; }
-  return recipe.clasificacion?.cocina === cocina;
-}
-
-function matchesDieta(recipe: Recipe, dieta: string): boolean {
-  if (dieta === CUALQUIER_DIETA) { return true; }
-  return recipe.dieta?.[dieta as keyof RecipeDieta] === true;
-}
-
-/**
- * FRESCO-67 — a temporary, session-only narrowing (per the story's own
- * Business Rules): never writes to `user_profiles`, never widens past what
- * the permanent profile already excludes. The catalog this filter runs
- * against is already the safety-filtered set from `getCatalogRecipes()` —
- * an allergen the profile permanently excludes never reaches this filter to
- * begin with.
- */
-function matchesAlergenoFilter(recipe: Recipe, alergeno: string): boolean {
-  if (alergeno === NINGUN_ALERGENO) { return true; }
-  const alergenos = recipe.alergenos ?? [];
-  return !alergenos.includes(alergeno);
+/** One removable chip per active filter value — flattened across all 4 sections for the drawer's "Filtros aplicados" row. */
+function activeFilterChips(filters: RecipeFilterState): { section: keyof RecipeFilterState, value: string, label: string }[] {
+  const chips: { section: keyof RecipeFilterState, value: string, label: string }[] = [];
+  for (const value of filters.mealTypes) {
+    chips.push({ section: 'mealTypes', value, label: capitalize(value) });
+  }
+  for (const value of filters.cocinas) {
+    chips.push({ section: 'cocinas', value, label: capitalize(value) });
+  }
+  for (const value of filters.dietas) {
+    chips.push({ section: 'dietas', value, label: DIETA_LABELS[value] ?? value });
+  }
+  for (const value of filters.alergenos) {
+    chips.push({ section: 'alergenos', value, label: ALERGENO_OPTIONS.find(option => option.value === value)?.label ?? value });
+  }
+  return chips;
 }
 
 export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { recipes: Recipe[], recetasPropias: RecetaPropia[], favoriteRecipeIds: Set<string> }) {
   const [query, setQuery] = React.useState('');
-  const [tab, setTab] = React.useState<MealTab>('todo');
-  const [cocina, setCocina] = React.useState<string>(TODAS_LAS_COCINAS);
-  const [dieta, setDieta] = React.useState<string>(CUALQUIER_DIETA);
-  const [alergeno, setAlergeno] = React.useState<string>(NINGUN_ALERGENO);
+  const [appliedFilters, setAppliedFilters] = React.useState<RecipeFilterState>(EMPTY_FILTER_STATE);
+  const [draftFilters, setDraftFilters] = React.useState<RecipeFilterState>(EMPTY_FILTER_STATE);
+  const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
   const [misRecetas, setMisRecetas] = React.useState(recetasPropias);
   const [createOpen, setCreateOpen] = React.useState(false);
+
+  const queryFiltered = React.useMemo(
+    () => recipes.filter(recipe => matchesQuery(recipe, query)),
+    [recipes, query],
+  );
   const filtered = React.useMemo(
-    () => recipes.filter(recipe =>
-      matchesQuery(recipe, query)
-      && matchesTab(recipe, tab)
-      && matchesCocina(recipe, cocina)
-      && matchesDieta(recipe, dieta)
-      && matchesAlergenoFilter(recipe, alergeno)),
-    [recipes, query, tab, cocina, dieta, alergeno],
+    () => queryFiltered.filter(recipe => matchesRecipeFilters(recipe, appliedFilters)),
+    [queryFiltered, appliedFilters],
   );
   // FRESCO-187 — the full catalog (hundreds of recipes) rendered into the
   // DOM in one shot with no cap. Filtering itself stays instant (still runs
@@ -144,10 +102,33 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
   }, [filtered]);
   const visible = filtered.slice(0, visibleCount);
 
+  const draftCount = React.useMemo(
+    () => queryFiltered.filter(recipe => matchesRecipeFilters(recipe, draftFilters)).length,
+    [queryFiltered, draftFilters],
+  );
+
+  function openFilterDrawer() {
+    setDraftFilters(appliedFilters);
+    setFilterDrawerOpen(true);
+  }
+
+  function toggleDraftValue(section: keyof RecipeFilterState, value: string) {
+    setDraftFilters((current) => {
+      const list = current[section] as string[];
+      const next = list.includes(value) ? list.filter(item => item !== value) : [...list, value];
+      return { ...current, [section]: next } as RecipeFilterState;
+    });
+  }
+
+  function applyDraftFilters() {
+    setAppliedFilters(draftFilters);
+    setFilterDrawerOpen(false);
+  }
+
   return (
     <div>
       <div className="mt-6 flex items-center gap-2">
-        <div className="relative flex-1">
+        <div className="relative max-w-56 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-tertiary" aria-hidden="true" />
           <Input
             type="search"
@@ -168,6 +149,20 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           <Plus className="size-4" aria-hidden="true" />
           Crear propia
         </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={openFilterDrawer}
+          data-testid="filtrar_y_ordenar_button"
+        >
+          <SlidersHorizontal className="size-4" aria-hidden="true" />
+          Filtrar y ordenar
+          {countActiveFilters(appliedFilters) > 0 && (
+            <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-primary text-caption text-background">
+              {countActiveFilters(appliedFilters)}
+            </span>
+          )}
+        </Button>
       </div>
 
       <CreateRecipeForm
@@ -175,6 +170,74 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
         onOpenChange={setCreateOpen}
         onCreated={receta => setMisRecetas(current => [receta, ...current])}
       />
+
+      <FilterDrawer
+        open={filterDrawerOpen}
+        onOpenChange={setFilterDrawerOpen}
+        title="Filtrar y ordenar"
+        onClearAll={() => setDraftFilters(EMPTY_FILTER_STATE)}
+        aria-label="Filtrar y ordenar recetas"
+        data-testid="recipe_filter_drawer"
+        footer={(
+          <Button
+            type="button"
+            className="w-full"
+            onClick={applyDraftFilters}
+            data-testid="recipe_filter_drawer_apply_button"
+          >
+            {draftCount === 1 ? 'Mostrar 1 receta' : `Mostrar ${draftCount} recetas`}
+          </Button>
+        )}
+      >
+        {activeFilterChips(draftFilters).length > 0 && (
+          <div className="flex flex-wrap gap-2 bg-neutral-100 p-4">
+            {activeFilterChips(draftFilters).map(chip => (
+              <button
+                key={`${chip.section}-${chip.value}`}
+                type="button"
+                onClick={() => toggleDraftValue(chip.section, chip.value)}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-body-sm text-text"
+              >
+                <span aria-hidden="true">×</span>
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <FilterSection
+          label="Comida"
+          options={MEAL_TYPE_OPTIONS}
+          selected={draftFilters.mealTypes}
+          onToggle={value => toggleDraftValue('mealTypes', value)}
+          countFor={value => countWithOption(queryFiltered, draftFilters, 'mealTypes', value as MealTab)}
+          data-testid="recipe_filter_section_comida"
+        />
+        <FilterSection
+          label="Cocina"
+          options={COCINA_FILTER_OPTIONS}
+          selected={draftFilters.cocinas}
+          onToggle={value => toggleDraftValue('cocinas', value)}
+          countFor={value => countWithOption(queryFiltered, draftFilters, 'cocinas', value)}
+          data-testid="recipe_filter_section_cocina"
+        />
+        <FilterSection
+          label="Dieta"
+          options={DIETA_FILTER_OPTIONS}
+          selected={draftFilters.dietas}
+          onToggle={value => toggleDraftValue('dietas', value)}
+          countFor={value => countWithOption(queryFiltered, draftFilters, 'dietas', value as keyof RecipeDieta)}
+          data-testid="recipe_filter_section_dieta"
+        />
+        <FilterSection
+          label="Alérgeno"
+          options={ALERGENO_OPTIONS}
+          selected={draftFilters.alergenos}
+          onToggle={value => toggleDraftValue('alergenos', value)}
+          countFor={value => countWithOption(queryFiltered, draftFilters, 'alergenos', value)}
+          data-testid="recipe_filter_section_alergeno"
+        />
+      </FilterDrawer>
 
       {misRecetas.length > 0 && (
         <div className="mt-6" data-testid="personal_recipes_section">
@@ -188,57 +251,6 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           </div>
         </div>
       )}
-
-      <h2 className="mt-4 text-h6 uppercase text-tertiary">Filtros</h2>
-      {/* FRESCO-211: the meal-type tab used to sit on its own row above this
-       * one, a different height than the dropdown filters below it. It now
-       * shares this row (`items-end` aligns every control's own baseline,
-       * same as the labeled dropdowns) and matches their `h-9` size. */}
-      <div className="mt-2 flex flex-wrap items-end gap-3" data-testid="recipe_library_filters">
-        <div className="flex flex-col gap-1">
-          <span className="text-caption uppercase text-tertiary">Comida</span>
-          <SegmentedControl
-            className="h-9 items-center"
-            aria-label="Filtrar por tipo de comida"
-            options={MEAL_TABS}
-            value={tab}
-            onChange={value => setTab(value as MealTab)}
-          />
-        </div>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-caption uppercase text-tertiary">Cocina</span>
-          <Dropdown
-            data-testid="cocina_filter_dropdown"
-            aria-label="Filtrar por cocina"
-            options={COCINA_DROPDOWN_OPTIONS}
-            value={cocina}
-            onChange={setCocina}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-caption uppercase text-tertiary">Dieta</span>
-          <Dropdown
-            data-testid="dieta_filter_dropdown"
-            aria-label="Filtrar por dieta"
-            options={DIETA_DROPDOWN_OPTIONS}
-            value={dieta}
-            onChange={setDieta}
-          />
-        </label>
-
-        <label className="flex flex-col gap-1">
-          <span className="text-caption uppercase text-tertiary">Alérgeno</span>
-          <Dropdown
-            data-testid="alergeno_filter_dropdown"
-            aria-label="Evitar un alérgeno puntual"
-            options={ALERGENO_DROPDOWN_OPTIONS}
-            value={alergeno}
-            onChange={setAlergeno}
-          />
-        </label>
-      </div>
 
       {filtered.length > 0 && (
         <p className="mt-4 text-body-sm text-tertiary" data-testid="recipe_library_count">

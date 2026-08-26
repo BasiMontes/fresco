@@ -401,6 +401,42 @@
 }
 
 /*
+ * Filter drawer open / close (FRESCO-273) — same open/close/close-timeout
+ * lifecycle as `.t-modal` (mirrors its --modal-open-dur/--modal-close-dur/
+ * --modal-ease tokens rather than defining new ones), but slides up from the
+ * bottom edge instead of scaling from center — drives
+ * `components/ui/filter-drawer.tsx`'s `.t-drawer` content wrapper.
+ */
+.t-drawer {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-drawer.is-open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-drawer.is-closing {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity var(--modal-close-dur) var(--modal-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-drawer {
+    transition: none !important;
+  }
+}
+
+/*
  * Success check (transitions-dev, 10-success-check.md) — FRESCO-248.
  * Drives the checkmark shown by `components/profile/nombre-form.tsx` and
  * `components/profile/preferences-form.tsx` on a successful save. The
