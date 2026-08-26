@@ -1142,7 +1142,7 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-228: actualizar a Pro desde el perfil ---
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @automatizado
   Escenario: Iniciar checkout desde el perfil
     Dado que Laura está en su perfil con plan Free
     Cuando toca el botón de actualizar a Pro
@@ -1152,16 +1152,35 @@ Característica: Flujo completo de usuario en Fresco
     # 2026-08-19 tras encontrar y arreglar 2 bugs de infra que dejaban el
     # webhook fallando en silencio desde que se shippeó (ver nota de
     # infraestructura al final de este fichero).
+    # Grupo B automatizado (FRESCO-277): click real en /profile, assert del
+    # redirect real a checkout.stripe.com -- sin llenar el formulario
+    # hospedado.
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @automatizado
   Escenario: Trial sin tarjeta
     Dado que Laura empieza el proceso de actualizar a Pro
     Cuando llega a la pantalla de pago de Stripe Checkout
     Entonces se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta
     # FRESCO-228. Verificado en producción real: Checkout Session con
     # trial_period_days: 7 y payment_method_collection: 'if_required'.
+    # Grupo C automatizado (FRESCO-277): llamada real a POST
+    # /api/stripe/checkout (autenticada vía cookies de sesión, no la UI
+    # entera), luego se lee la Checkout Session creada vía la API real de
+    # Stripe -- sin llenar el formulario hospedado.
+    # GAP conocido: `payment_method_collection: 'if_required'` sí se
+    # verifica (confirma "sin necesidad de tarjeta"), pero
+    # `trial_period_days: 7` NO -- confirmado empíricamente que Stripe no
+    # devuelve ese campo al leer una Checkout Session (solo existe como
+    # input en `SessionCreateParams`, nunca se refleja en la respuesta; la
+    # Subscription real tampoco existe todavía en este punto -- `session.
+    # subscription` es `null` hasta que el cliente completa el checkout
+    # hospedado). Verificar los 7 días exigiría completar el checkout real
+    # en el DOM de Stripe, fuera del límite que se puso Grupo B ("sin
+    # llenar el formulario hospedado") -- decisión consciente de dejarlo
+    # sin cobertura e2e antes que acoplar el test al DOM hospedado de
+    # Stripe.
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @automatizado
   Escenario: Pago completado activa Pro
     Dado que Laura completó el pago de la suscripción Pro
     Cuando vuelve a la app
@@ -1170,7 +1189,7 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-230: reflejar el estado real de la suscripción ---
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @automatizado
   Escenario: Pago exitoso activa Pro automáticamente
     Dado que Laura completó el pago de su suscripción
     Cuando el pago se confirma
@@ -1180,7 +1199,7 @@ Característica: Flujo completo de usuario en Fresco
     # cubierto por ese handler, sin código nuevo. Verificado en el
     # mismo pase en vivo del 2026-08-19.
 
-  @suscripcion @edge-case @verificado-manual-2026-08-19
+  @suscripcion @edge-case @verificado-manual-2026-08-19 @automatizado
   Escenario: Renovación mensual mantiene Pro
     Dado que Laura tiene una suscripción Pro activa
     Cuando se renueva el cobro mensual
@@ -1192,7 +1211,7 @@ Característica: Flujo completo de usuario en Fresco
     # de FRESCO-231 y al recuperar la suscripción tras el pago fallido
     # de FRESCO-232. Cubierto también por tests unitarios del webhook.
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @automatizado
   Escenario: Cancelación revierte a Free al fin del periodo pagado
     Dado que Laura canceló su suscripción Pro
     Cuando termina el periodo que ya pagó (customer.subscription.deleted)
@@ -1201,14 +1220,24 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-231: gestionar o cancelar la suscripción ---
 
-  @suscripcion @verificado-manual-2026-08-19
+  @suscripcion @verificado-manual-2026-08-19 @automatizado
   Escenario: Acceder a gestión de suscripción
     Dado que Laura tiene una suscripción Pro activa
+    Y su cliente de Stripe existe realmente
     Cuando entra a su perfil y pulsa "Gestionar suscripción"
     Entonces puede abrir la gestión de su suscripción en el Billing Portal real de Stripe
     # FRESCO-231. Verificado en producción real, portal hospedado por
     # Stripe (ADR-0007: superficie hospedada de Stripe en vez de UI
     # custom).
+    # Grupo B automatizado (FRESCO-277): click real en /profile, assert del
+    # redirect real a billing.stripe.com. El paso extra "su cliente de
+    # Stripe existe realmente" sustituye el customer id sintético de
+    # `seedProBaseline` por uno real -- POST /api/stripe/portal llama a
+    # `stripe.billingPortal.sessions.create({ customer: ... })` contra la
+    # API real de Stripe, que rechaza un id inventado. Los demás escenarios
+    # que comparten el Given "que Laura tiene una suscripción Pro activa"
+    # (Renovación, Ver mi próximo cobro) no llaman a la API de Stripe, así
+    # que su customer id sintético no se toca.
 
   @suscripcion @verificado-manual-2026-08-19
   Escenario: Cancelar la suscripción
@@ -1228,7 +1257,7 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-232: saber si mi pago falló ---
 
-  @suscripcion @edge-case @verificado-manual-2026-08-19
+  @suscripcion @edge-case @verificado-manual-2026-08-19 @automatizado
   Escenario: Pago fallido me avisa
     Dado que la suscripción Pro de Laura intenta renovarse
     Cuando el cobro falla (customer.subscription.updated con status past_due)
@@ -1240,7 +1269,7 @@ Característica: Flujo completo de usuario en Fresco
     # el hueco que había quedado de la sesión de QA de la épica (antes
     # solo sembrado en DB, no con tarjeta real).
 
-  @suscripcion @edge-case @verificado-manual-2026-08-19
+  @suscripcion @edge-case @verificado-manual-2026-08-19 @automatizado
   Escenario: Reintento exitoso restaura Pro sin fricción
     Dado que Laura tuvo un pago fallido (payment_failed_at con valor)
     Cuando actualiza su método de pago y el reintento funciona (status vuelve a active)
@@ -1252,18 +1281,19 @@ Característica: Flujo completo de usuario en Fresco
     # la transición real a active y disparó la rama "recuperado" del
     # webhook.
 
-  @suscripcion @edge-case @pendiente
+  @suscripcion @edge-case @automatizado
   Escenario: Pago sigue fallando revierte a Free
     Dado que el pago de Laura falló y no se resolvió
     Cuando Stripe agota los reintentos y emite customer.subscription.updated con status unpaid
     Entonces su cuenta pasa a plan Free
     # FRESCO-232. Implementado en el webhook (rama `unpaid` -> downgrade
     # directo a free, sin esperar customer.subscription.deleted que
-    # puede no llegar a disparar nunca en ese caso), pero NO verificado
-    # en vivo -- la sesión de QA del 2026-08-19 solo llegó hasta
-    # past_due y su recuperación (los dos escenarios anteriores), sin
-    # agotar los reintentos hasta unpaid. Cubierto por tests unitarios
-    # del webhook únicamente.
+    # puede no llegar a disparar nunca en ese caso). La sesión de QA del
+    # 2026-08-19 solo llegó hasta past_due y su recuperación (los dos
+    # escenarios anteriores), sin agotar los reintentos hasta unpaid --
+    # cubierto entonces solo por tests unitarios del webhook. Primera
+    # verificación real (evento unpaid firmado y posteado) via
+    # tests/steps/suscripcion.steps.ts (FRESCO-277).
 
   # ==========================================================================
   # Favoritos (/favorites)

@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import Stripe from 'stripe';
 
 /**
  * Shared REST/date helpers for `tests/steps/*.steps.ts` — extracted after
@@ -34,6 +35,24 @@ export function restHeaders(accessToken: string): Record<string, string> {
   };
 }
 
+/**
+ * Service-role REST headers — bypasses RLS, same key `lib/supabase/service.ts`
+ * uses for the Stripe webhook's own writes. Required for any test-baseline
+ * write to `user_profiles.plan`/`stripe_customer_id`/`stripe_subscription_id`/
+ * `plan_expires_at`: the `protect_subscription_columns` trigger
+ * (`supabase/migrations/20260818190000_...`, ADR-0007) hard-rejects those
+ * columns for any caller whose JWT role isn't `service_role`, including a
+ * normal user's own access token via `restHeaders`.
+ */
+export function serviceRoleHeaders(): Record<string, string> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return {
+    'apikey': key,
+    'Authorization': `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  };
+}
+
 export async function currentUserId(request: APIRequestContext, accessToken: string): Promise<string> {
   const res = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${accessToken}` },
@@ -65,4 +84,48 @@ export function mondayOfWeekContaining(date: Date): Date {
 export function currentWeekMonday(): { semanaIso: string, fechaInicio: string } {
   const monday = mondayOfWeekContaining(new Date());
   return { semanaIso: isoWeekOf(monday), fechaInicio: monday.toISOString().slice(0, 10) };
+}
+
+let cachedTestStripe: Stripe | undefined;
+
+function testStripe(): Stripe {
+  cachedTestStripe ??= new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+  return cachedTestStripe;
+}
+
+/**
+ * Signs a fabricated Stripe event payload with the real `STRIPE_WEBHOOK_SECRET`
+ * (via the SDK's own `generateTestHeaderString`, the mechanism Stripe
+ * documents for exercising webhook handlers without waiting on a real
+ * delivery) and POSTs it to `/api/stripe/webhook`, exactly as
+ * `tests/steps/suscripcion.steps.ts` scenarios need — no Stripe CLI
+ * (`stripe listen`) process required in CI.
+ *
+ * `data.object`'s ids should be REAL Stripe test-mode ids for
+ * `checkout.session.completed` (the handler re-fetches the subscription from
+ * Stripe's API) — `customer.subscription.updated`/`.deleted` handlers read
+ * `event.data.object` directly with no extra Stripe API call, so a
+ * synthetic-but-consistent object (matching ids already on the account's
+ * `user_profiles` row) is enough for those.
+ */
+export async function postSignedStripeEvent(
+  request: APIRequestContext,
+  type: string,
+  dataObject: Record<string, unknown>,
+): Promise<import('@playwright/test').APIResponse> {
+  const payload = JSON.stringify({
+    id: `evt_test_${crypto.randomUUID()}`,
+    object: 'event',
+    type,
+    data: { object: dataObject },
+  });
+  const signature = testStripe().webhooks.generateTestHeaderString({
+    payload,
+    secret: process.env.STRIPE_WEBHOOK_SECRET!,
+  });
+
+  return request.post('/api/stripe/webhook', {
+    headers: { 'Content-Type': 'application/json', 'stripe-signature': signature },
+    data: payload,
+  });
 }

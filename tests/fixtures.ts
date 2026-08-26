@@ -23,7 +23,11 @@ export interface AprendizajeCtx {
   slotPrefix: string
 }
 
-export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: AprendizajeCtx }>({
+export interface SuscripcionCtx {
+  checkoutSessionId: string
+}
+
+export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: AprendizajeCtx, suscripcionCtx: SuscripcionCtx }>({
   // eslint-disable-next-line no-empty-pattern
   signupCtx: async ({}, use) => {
     await use({} as SignupCtx);
@@ -31,5 +35,9 @@ export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: Aprendiz
   // eslint-disable-next-line no-empty-pattern
   aprendizajeCtx: async ({}, use) => {
     await use({} as AprendizajeCtx);
+  },
+  // eslint-disable-next-line no-empty-pattern
+  suscripcionCtx: async ({}, use) => {
+    await use({} as SuscripcionCtx);
   },
 });
