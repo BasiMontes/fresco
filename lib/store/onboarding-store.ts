@@ -2,6 +2,7 @@ import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { impliedAlergenos } from '@/lib/constants/dietary-options';
 import { toPlanningSelection } from '@/lib/planning-selection';
 
 /**
@@ -103,6 +104,13 @@ function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter(item => item !== value) : [...list, value];
 }
 
+/** Adds every implied alergeno to `alergenos` (union, never removes) — mirrors the `dietaVegetariano` lock's add-only behavior below. */
+function mergeImpliedAlergenos(alergenos: string[], flags: { vegano: boolean, vegetariano: boolean, sinGluten: boolean }): string[] {
+  const merged = new Set(alergenos);
+  impliedAlergenos(flags).forEach(value => merged.add(value));
+  return [...merged];
+}
+
 // SSR-safe: `sessionStorage` doesn't exist during Next.js server rendering.
 // `zustand/middleware`'s `createJSONStorage` calls this factory exactly
 // ONCE at module load and caches the result — so the `typeof window` check
@@ -143,16 +151,28 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
       }
       if (field === 'dietaVegano') {
         const nextVegano = !state.dietaVegano;
+        const nextVegetariano = nextVegano ? true : state.dietaVegetariano;
         return {
           dietaVegano: nextVegano,
-          dietaVegetariano: nextVegano ? true : state.dietaVegetariano,
+          dietaVegetariano: nextVegetariano,
+          alergenos: mergeImpliedAlergenos(state.alergenos, { vegano: nextVegano, vegetariano: nextVegetariano, sinGluten: state.dietaSinGluten }),
         };
       }
       switch (field) {
-        case 'dietaVegetariano':
-          return { dietaVegetariano: !state.dietaVegetariano };
-        case 'dietaSinGluten':
-          return { dietaSinGluten: !state.dietaSinGluten };
+        case 'dietaVegetariano': {
+          const next = !state.dietaVegetariano;
+          return {
+            dietaVegetariano: next,
+            alergenos: mergeImpliedAlergenos(state.alergenos, { vegano: state.dietaVegano, vegetariano: next, sinGluten: state.dietaSinGluten }),
+          };
+        }
+        case 'dietaSinGluten': {
+          const next = !state.dietaSinGluten;
+          return {
+            dietaSinGluten: next,
+            alergenos: mergeImpliedAlergenos(state.alergenos, { vegano: state.dietaVegano, vegetariano: state.dietaVegetariano, sinGluten: next }),
+          };
+        }
         case 'dietaSinLactosa':
           return { dietaSinLactosa: !state.dietaSinLactosa };
         case 'dietaSinHuevo':
@@ -165,7 +185,16 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
           return state;
       }
     }),
-  toggleAlergeno: value => set(state => ({ alergenos: toggleInArray(state.alergenos, value) })),
+  // FRESCO-275: locked alergenos (implied by the active dieta flags) refuse
+  // to un-toggle — same "no-op instead of partial state" shape as the
+  // dietaVegetariano lock above.
+  toggleAlergeno: value =>
+    set((state) => {
+      if (impliedAlergenos({ vegano: state.dietaVegano, vegetariano: state.dietaVegetariano, sinGluten: state.dietaSinGluten }).includes(value)) {
+        return state;
+      }
+      return { alergenos: toggleInArray(state.alergenos, value) };
+    }),
   toggleIngredienteOdiado: value =>
     set(state => ({ ingredientesOdiados: toggleInArray(state.ingredientesOdiados, value) })),
   toggleCocina: value =>

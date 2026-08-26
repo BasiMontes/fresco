@@ -42,3 +42,32 @@ export const INGREDIENTE_ODIADO_OPTIONS: TagOption[] = [
 
 export const ALERGENO_VALUES = new Set(ALERGENO_OPTIONS.map(option => option.value));
 export const INGREDIENTE_ODIADO_VALUES = new Set(INGREDIENTE_ODIADO_OPTIONS.map(option => option.value));
+
+export interface DietaFlagsForLocks {
+  vegano: boolean
+  vegetariano: boolean
+  sinGluten: boolean
+}
+
+/**
+ * FRESCO-275 — data-derived, not assumed: queried live against the recipes
+ * catalog (grouping every dieta flag x alergeno pair, counting recipes where
+ * the flag is true AND that alergeno is present) and kept only the pairs
+ * with zero co-occurrence. `vegetariano` deliberately excludes `huevo` —
+ * 118/625 vegetarian-tagged recipes DO list egg as an allergen, so real data
+ * contradicts the generic "vegetarians might not eat egg" assumption.
+ */
+export const DIETA_IMPLIED_ALERGENOS: Record<keyof DietaFlagsForLocks, string[]> = {
+  sinGluten: ['gluten'],
+  vegano: ['huevo', 'pescado', 'sulfitos'],
+  vegetariano: ['pescado', 'sulfitos'],
+};
+
+/** Union of every alergeno implied by the currently-active dieta flags — drives which chips render locked/pre-selected. */
+export function impliedAlergenos(flags: DietaFlagsForLocks): string[] {
+  const implied = new Set<string>();
+  if (flags.sinGluten) { DIETA_IMPLIED_ALERGENOS.sinGluten.forEach(value => implied.add(value)); }
+  if (flags.vegetariano) { DIETA_IMPLIED_ALERGENOS.vegetariano.forEach(value => implied.add(value)); }
+  if (flags.vegano) { DIETA_IMPLIED_ALERGENOS.vegano.forEach(value => implied.add(value)); }
+  return [...implied];
+}

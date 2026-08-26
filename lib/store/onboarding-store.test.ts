@@ -113,3 +113,55 @@ describe('useOnboardingStore — toggleDieta vegano/vegetariano lock (AC-2)', ()
     expect(useOnboardingStore.getState().dietaVegetariano).toBe(false);
   });
 });
+
+/**
+ * FRESCO-275 — data-derived locks (see lib/constants/dietary-options.ts):
+ * a dieta flag that never co-occurs with an alergeno in the real catalog
+ * auto-selects that alergeno, and toggleAlergeno refuses to un-toggle it.
+ */
+describe('useOnboardingStore — dieta implies alergeno locks (FRESCO-275)', () => {
+  beforeEach(() => {
+    useOnboardingStore.getState().reset();
+  });
+
+  test('toggling dietaVegano adds huevo, pescado, and sulfitos to alergenos', () => {
+    useOnboardingStore.getState().toggleDieta('dietaVegano');
+
+    expect(useOnboardingStore.getState().alergenos.sort()).toEqual(['huevo', 'pescado', 'sulfitos']);
+  });
+
+  test('toggling dietaVegetariano alone adds pescado and sulfitos, not huevo', () => {
+    useOnboardingStore.getState().toggleDieta('dietaVegetariano');
+
+    expect(useOnboardingStore.getState().alergenos.sort()).toEqual(['pescado', 'sulfitos']);
+  });
+
+  test('toggling dietaSinGluten adds gluten', () => {
+    useOnboardingStore.getState().toggleDieta('dietaSinGluten');
+
+    expect(useOnboardingStore.getState().alergenos).toEqual(['gluten']);
+  });
+
+  test('toggleAlergeno on a locked value is a no-op', () => {
+    useOnboardingStore.getState().toggleDieta('dietaVegano');
+    useOnboardingStore.getState().toggleAlergeno('pescado');
+
+    expect(useOnboardingStore.getState().alergenos).toContain('pescado');
+  });
+
+  test('untoggling the dieta does not remove the previously-implied alergeno', () => {
+    useOnboardingStore.getState().toggleDieta('dietaVegetariano');
+    useOnboardingStore.getState().toggleDieta('dietaVegetariano');
+
+    expect(useOnboardingStore.getState().dietaVegetariano).toBe(false);
+    expect(useOnboardingStore.getState().alergenos).toEqual(['pescado', 'sulfitos']);
+  });
+
+  test('a manually-added alergeno unrelated to any dieta stays freely toggleable', () => {
+    useOnboardingStore.getState().toggleDieta('dietaVegano');
+    useOnboardingStore.getState().toggleAlergeno('apio');
+    useOnboardingStore.getState().toggleAlergeno('apio');
+
+    expect(useOnboardingStore.getState().alergenos).not.toContain('apio');
+  });
+});
