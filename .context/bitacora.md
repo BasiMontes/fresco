@@ -4150,3 +4150,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Que: en la guia de marca (.dc.html, copia local del user + design/handoff/fresco/brand-guide.dc.html) se corrigieron 3 bugs: logo con ruta rota (src apuntaba a carpeta "uploads/" inexistente), tag "Sin gluten" con clase verde (tag-accent) en vez de naranja (tag-accent-2, ya prescrito en el propio DESIGN.md para flags de alergeno). Se revirtio ademas un cambio propio de esta sesion: DESIGN.md atribuia un icon-stroke de 3px a FRESCO-85/86/87, pero esos tickets fueron sobre tamano (24px/22px), no grosor -- grep real confirmo que el set general de iconos usa strokeWidth=2 en produccion (solo checkmarks chicos <=16px usan 3px). Canvas y DESIGN.md corregidos a 2px.
 - Por que: feedback visual del user sobre la guia de marca actualizada la sesion anterior (logo no se veia, tag sin contraste, iconos "gordisimos").
 - Siguiente: recipe-card (Desktop/Mobile) sigue marcado "Pendiente de definir" en el canvas -- diseno aun no decidido. Promocion dev->staging->main pedida explicitamente por el user.
+
+## 2026-08-26 - FRESCO-265: aviso campo obligatorio en presupuesto onboarding
+- Qué: Añadido span "* Campo obligatorio" junto al label de presupuesto semanal en paso 4 del onboarding (app/onboarding/page.tsx). Validación bloqueante ya existía (FRESCO-263, botón "Generar mi menú" disabled si vacío/<=0).
+- Por qué: Comentario del usuario en FRESCO-265 (ticket ya en Listo) pidiendo marcar visualmente el campo como obligatorio.
+- Siguiente: PR #141 (fix/FRESCO-265-onboarding-budget-required-hint -> dev) abierto, pendiente merge.
