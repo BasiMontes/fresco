@@ -85,7 +85,9 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       const { data, error: signUpError } = await client.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+        // FRESCO-264 — see app/signup/page.tsx for why this must be
+        // /auth/confirm, not a bare path.
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
       });
       if (signUpError) {
         setError(translateAuthError(signUpError));

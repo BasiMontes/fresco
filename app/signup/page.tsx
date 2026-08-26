@@ -258,7 +258,12 @@ export default function SignupPage() {
       const { data, error } = await client.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+        // FRESCO-264 — must route through /auth/confirm (this env's own
+        // domain), not a bare path. Supabase's mailer template builds the
+        // confirmation link's domain from this value ({{ .RedirectTo }}),
+        // not from Auth's global Site URL — which stays fixed to production
+        // even for staging signups. See app/auth/confirm/route.ts.
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
       });
       if (error) {
         setSignupError(translateAuthError(error));
