@@ -20,6 +20,78 @@
         ],
         "createdAt": "2026-08-21T11:07:13.247Z",
         "reason": "transitions-dev vendored motion tokens (--ease-bounce, --ease-bounce-strong) — verbatim library values, not arbitrary design choices; user confirmed intentional"
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "1.15)",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: calc(var(--radius-lg) * 1.15) card-radius multiplier from the original Claude Design canvas, already documented in DESIGN.md Shapes section as the deliberate card-family radius."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: guide-only presentation labels (color-ramp swatch step numbers, card-kicker), not a component reused in the live app."
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "17px",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: base .card-title size from the original Claude Design canvas, guide-only presentation chrome."
+      },
+      {
+        "rule": "design-system-radius",
+        "value": "12px",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: .swatch-chip radius, a guide-only presentation element for the color-ramp legend, not a reused app component."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(0, 0, 0, 0.06)",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: hairline border utility on swatch chips, not a brand-color choice."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(255, 255, 255, 0.85)",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: favorite/heart button-icon backdrop over the recipe-card photo, a contrast utility inside the section still marked \"Pendiente de definir\" — revisit if the recipe-card design changes."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#fff",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: matches DESIGN.md's own documented AA-bypass on button-action and the nav-sidebar active pill described as \"white/cream\" in DESIGN.md Components."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(255, 255, 255, 0.8)",
+        "files": [
+          "design/handoff/fresco/brand-guide.dc.html"
+        ],
+        "createdAt": "2026-08-26T00:00:00.000Z",
+        "reason": "User confirmed intentional: dimmed-white secondary text for inactive nav-sidebar links on the dark green background, standard opacity technique."
       }
     ]
   }
