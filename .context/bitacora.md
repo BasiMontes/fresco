@@ -4080,3 +4080,73 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Que: (1) Analizada auditoría externa de Ely (Dojo, 14 ago) sobre Fresco, cruzada contra el estado real del repo 12 días después; publicado artefacto de seguimiento. Creados 5 tickets (FRESCO-266 CI, FRESCO-267 áreas táctiles móviles, FRESCO-268 /qa scroll, FRESCO-269 login centrado, FRESCO-270 ADR BDD-vs-KATA) con contexto/solución/plan de acción, usando el patrón de comentario fallback para los campos de bug no presentes en la pantalla de creación de "Error" en este proyecto Jira. (2) User reportó bug de scroll en /calendar (columna DESAYUNO/COMIDA/CENA moviéndose) -- creado FRESCO-271, documentado que es el tercer intento sobre el mismo síntoma (FRESCO-170, FRESCO-222 ya lo atacaron), no reproducido en los frames extraídos del vídeo aportado; usuario confirmó luego que sí se reproduce de forma constante y propuso pivote arquitectónico (sacar la columna del scroll compartido + flechas de paginación en vez de scroll libre) -- anotado en el ticket, incluye la implicación de perder el ajuste automático de alto de fila de la CSS Grid compartida (FRESCO-159). (3) User reportó iconos de corazón/campana con tamaño/grosor distinto en /menu -- resultó ser el mismo FRESCO-85 (WIP desde el 6 y 16 de agosto, no bug nuevo). Iteración en vivo con Playwright + dev server local: encontrada una anomalía real sin explicar (getBoundingClientRect del corazón midió repetidamente ~9.6px de ancho pese a que las capturas del mismo momento se veían normales) -- documentada en el ticket, no se tocó código de producción. (4) Continuado el audit manual de fotos de FRESCO-192 en foreground (el fork en background fue bloqueado dos veces por el clasificador de permisos pese a autorización verbal del user) -- batch 13 (40 recetas, 23 mismatch) y batch 14 (59 recetas, 29 mismatch), foto_url puesto a null en los 52 confirmados tras verificar antes de aplicar. recipes.foto_url is not null: 679 -> 627.
 - Por que: pedido directo del user en cada punto (analizar la auditoría, crear los tickets, investigar los dos bugs reportados con capturas/vídeo, seguir con más tandas del audit de fotos).
 - Siguiente: FRESCO-192 sigue desde id > '748b1ab4' (quedan ~627 recetas con foto por revisar). FRESCO-271 pendiente de decidir el rediseño de la columna de etiquetas (subgrid vs. sincronización manual de alturas) antes de implementar. FRESCO-85 sigue sin fix aplicado -- la anomalía de medición encontrada merece una reproducción más profunda antes de intentar un tercer ajuste a ciegas. Los 5 tickets de la auditoría Dojo (266-270) y FRESCO-271 quedan sin trabajar todavía.
+
+## 2026-08-26 - Tanda de fotos FRESCO-31 (627->654)
+- Que: batch de fetch-recipe-photos.ts (30 recetas), 27/30 hits (627->654). Aplicado via Supabase MCP (execute_sql) directo, cero duplicados verificado. Descubierto conteo real desactualizado en Jira (decia 767, DB real 627) por las tandas de FRESCO-192 corridas hoy mismo (679->627) que no se habian reflejado en el summary de FRESCO-31. Comentario y summary actualizados en Jira.
+- Por que: continuacion directa del backfill FRESCO-31, pedido del user ("ponte con la 31").
+- Siguiente: quedan 346 recetas sin foto. FRESCO-192 (audit paralelo) sigue desde id > 748b1ab4.
+
+## 2026-08-26 - Tanda de fotos FRESCO-31 (654->677)
+- Que: batch de fetch-recipe-photos.ts (30 recetas), 23/30 hits (654->677). Aplicado via Supabase MCP (execute_sql), cero duplicados verificado. Jira summary y comentario actualizados con conteo real.
+- Por que: continuacion directa del backfill FRESCO-31, pedido del user ("ponte con la 31").
+- Siguiente: FRESCO-31 quedan 323 recetas sin foto. Cuota Unsplash aguanto esta tanda sin cascada de 403; seguir lanzando tandas de 30 hasta agotar cuota o llegar a 1000.
+
+## 2026-08-26 - Otra tanda de fotos FRESCO-31 (677->700)
+- Que: batch de fetch-recipe-photos.ts (30 recetas), 23/30 hits (677->700). Aplicado via Supabase MCP, cero duplicados verificado. Cuota Unsplash agotada al final de la corrida (403 en la ultima query).
+- Por que: continuacion directa del backfill FRESCO-31, pedido del user ("lanza otra").
+- Siguiente: FRESCO-31 quedan 300 recetas sin foto. Cuota agotada -- esperar reset horario (50/hora) antes de otra tanda, o pedir acceso production a Unsplash (alternativa ya documentada en el ticket).
+
+## 2026-08-26 - FRESCO-192 batches 15-17 (3 tandas paralelas, 150 recetas)
+- Que: 3 subagentes en paralelo, cada uno con rango de 50 ids fijo sin solape (748b1ab4->8248ab2f, 82672d44->8f8aa98c, 8fb25a72->a03d8e46). Cada uno bajo la foto, la vio con Read, comparo contra nombre/descripcion_corta/clasificacion. Totales: 37 MATCH / 99 MISMATCH / 14 QUESTIONABLE. foto_url = null aplicado en los 99 confirmados via Supabase MCP, verificado por cada subagente antes de aplicar. recipes.foto_url is not null: 700 -> 601 (verificado tras consolidar, cuadra exacto con 99 nulls). Jira FRESCO-192 (comentario con detalle + checkpoint) y FRESCO-31 (summary 601/1000 + comentario) actualizados.
+- Por que: pedido del user ("ponte con 3 tandas de 50 de la 192 en paralelo"), continuando el audit desde el checkpoint id > 748b1ab4 dejado en la sesion anterior.
+- Siguiente: FRESCO-192 sigue desde id > a03d8e46. FRESCO-31 vuelve a subir a 399 pendientes (301 nunca tuvieron foto + 99 liberadas por el audit). 14 QUESTIONABLE quedan sin tocar, listados en el comentario de FRESCO-192 para revision manual.
+
+## 2026-08-26 - FRESCO-272: hueco de esquina en SegmentedControl (fix + PR)
+- Que: usuario reporto un hueco en forma de media luna en el filtro Comida (Todo/Desayuno/Comida/Cena) cuando la opcion seleccionada esta en un extremo. Causa raiz: components/ui/segmented-control.tsx usaba rounded-md (16px) en contenedor y boton por igual; el boton (mas bajo) auto-clampea a capsula completa por CSS mientras el contenedor (mas alto) renderiza el radio literal, sin clamp -- las dos curvas no anidan. Fix: radio explicito 11.6px (16 - 4.4 de padding p-1) en el boton. Verificado en vivo con Playwright (login + /recipes, capturas Todo/Cena seleccionados): hueco desaparecido en ambos extremos. Jira FRESCO-272 creado, PR #134 (fix/FRESCO-272-segmented-control-corner-gap -> dev) abierta, transicionado a WIP.
+- Por que: feedback visual directo del user con capturas ("tiene delito UX"), pedido explicito de Jira + solucion.
+- Siguiente: mergear PR #134 cuando el user lo confirme. Pendiente decidir si seguir con FRESCO-192 (checkpoint id > a03d8e46) o retomar backfill FRESCO-31.
+
+## 2026-08-26 - FRESCO-272 mergeado a dev
+- Que: PR #134 mergeada (squash) a dev en 79c9151. FRESCO-272 transicionado a Merged.
+- Por que: pedido del user ("mergea y pushea en dev").
+- Siguiente: promocion dev->staging->main pendiente de pedido explicito del user. Decidir si seguir con FRESCO-192 (checkpoint id > a03d8e46) o retomar backfill FRESCO-31.
+
+## 2026-08-26 - FRESCO-272 promocionado dev->staging->main
+- Que: dev(79c9151) promocionado ff-only a staging y a main, ambos hops limpios sin conflictos. main/staging/dev sincronizados en 79c9151. FRESCO-272 transicionado a Finalizada.
+- Por que: pedido del user ("dale") tras el merge a dev.
+- Siguiente: fix de SegmentedControl en produccion. Decidir si seguir con FRESCO-192 (checkpoint id > a03d8e46) o retomar backfill FRESCO-31.
+
+## 2026-08-26 - FRESCO-273 mergeado a dev
+- Que: PR #135 (drawer Filtrar y ordenar, multi-select + contadores en vivo) mergeada (squash) a dev en 763450a. FRESCO-273 transicionado a Merged.
+- Por que: pedido del user ("mergea y pushea en dev").
+- Siguiente: promocion dev->staging->main pendiente de pedido explicito. Decidir si seguir con FRESCO-192 (checkpoint id > a03d8e46) o retomar backfill FRESCO-31.
+
+## 2026-08-26 - FRESCO-273 promocionado dev->staging->main
+- Que: dev(763450a) promocionado ff-only a staging y a main, ambos hops limpios sin conflictos. main/staging/dev sincronizados en 763450a. FRESCO-273 transicionado a Finalizada.
+- Por que: pedido del user ("dale, promueve a staging y main tambien").
+- Siguiente: drawer Filtrar y ordenar en produccion. Decidir si seguir con FRESCO-192 (checkpoint id > a03d8e46) o retomar backfill FRESCO-31.
+
+## 2026-08-26 - Tanda de fotos FRESCO-31 (601->626)
+- Que: batch de fetch-recipe-photos.ts (30 recetas), 25/30 hits (601->626). Aplicado via Supabase MCP, cero duplicados verificado.
+- Por que: continuacion directa del backfill FRESCO-31, pedido del user ("31").
+- Siguiente: quedan 374 recetas sin foto.
+
+## 2026-08-26 - FRESCO-274 mergeado a dev
+- Que: PR #136 (drawer lateral en desktop + buscador mas ancho) mergeada (squash) a dev en a69d07c. FRESCO-274 transicionado a Merged.
+- Por que: pedido del user ("mergea y pushea en dev").
+- Siguiente: promocion dev->staging->main pendiente de pedido explicito. FRESCO-192 checkpoint id > a03d8e46; FRESCO-31 en 626/1000.
+
+## 2026-08-26 - FRESCO-275 y FRESCO-276 mergeados a dev
+- Que: PR #137 (Dropdown hover accent-300) y PR #138 (lock dieta->alergeno data-derivado) mergeadas (squash) a dev, 8dc9e4e y 87e0135. Ambas transicionadas a Merged.
+- Por que: pedido del user ("mergea las dos y sigamos con los iconos").
+- Siguiente: FRESCO-85 reabierto (iconos favoritos/campana sin jerarquia visual, anomalia de medicion sin explicar de sesiones previas) -- retomar con iteracion en vivo. Promocion dev->staging->main pendiente de pedido explicito.
+
+## 2026-08-26 - FRESCO-85, FRESCO-275, FRESCO-276 promocionados a staging y main
+- Que: dev(2c7a4d6) promocionado ff-only a staging y a main, ambos hops limpios. main/staging/dev sincronizados en 2c7a4d6 (incluye FRESCO-273/274/275/276/85). FRESCO-85 transicionado a Finalizada con causa raiz real documentada (bare buttonVariants sin cn(), p-0 perdiendo contra px-3/py-1 por orden de hoja de estilos de Tailwind).
+- Por que: pedido del user ("mergea y luego propaga a pre y prod").
+- Siguiente: pendiente actualizar la guia de marca (archivo local del user) cuando lo pida. FRESCO-192 checkpoint id > a03d8e46; FRESCO-31 en 626/1000.
+
+## 2026-08-26 - Guia de marca: logo roto, tag Sin gluten, y correccion DESIGN.md
+- Que: en la guia de marca (.dc.html, copia local del user + design/handoff/fresco/brand-guide.dc.html) se corrigieron 3 bugs: logo con ruta rota (src apuntaba a carpeta "uploads/" inexistente), tag "Sin gluten" con clase verde (tag-accent) en vez de naranja (tag-accent-2, ya prescrito en el propio DESIGN.md para flags de alergeno). Se revirtio ademas un cambio propio de esta sesion: DESIGN.md atribuia un icon-stroke de 3px a FRESCO-85/86/87, pero esos tickets fueron sobre tamano (24px/22px), no grosor -- grep real confirmo que el set general de iconos usa strokeWidth=2 en produccion (solo checkmarks chicos <=16px usan 3px). Canvas y DESIGN.md corregidos a 2px.
+- Por que: feedback visual del user sobre la guia de marca actualizada la sesion anterior (logo no se veia, tag sin contraste, iconos "gordisimos").
+- Siguiente: recipe-card (Desktop/Mobile) sigue marcado "Pendiente de definir" en el canvas -- diseno aun no decidido. Promocion dev->staging->main pedida explicitamente por el user.
