@@ -48,10 +48,16 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
-      - name: Start dev server
+      - name: Build and start production server
+        # next dev compiles each route on first hit -- combined with real
+        # network round-trips (Gemini, Supabase), that on-demand compile
+        # latency blew past both the 90s per-test and 5s assertion timeouts
+        # in CI (never an issue locally against an already-warm dev server).
+        # A pre-compiled production build removes that variable entirely.
         run: |
           set -a; . ./.env; set +a
-          bun run dev &
+          bun run build
+          bun run start &
           npx --yes wait-on http://localhost:3000 --timeout 60000
 
       - run: bun run test:e2e
