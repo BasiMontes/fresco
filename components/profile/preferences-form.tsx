@@ -9,7 +9,7 @@ import { PlanningSelectionGrid } from '@/components/onboarding/planning-selectio
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/api/user-profile';
-import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, impliedAlergenos } from '@/lib/constants/dietary-options';
 import { toPlanningSelection } from '@/lib/planning-selection';
 import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
@@ -199,6 +199,11 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
       if (key === 'dieta_vegano' && next.dieta_vegano) {
         next.dieta_vegetariano = true;
       }
+      // FRESCO-275: same add-only merge as the onboarding store — never
+      // removes an alergeno the user (or a previous dieta toggle) already added.
+      const implied = new Set(next.alergenos);
+      impliedAlergenos({ vegano: next.dieta_vegano, vegetariano: next.dieta_vegetariano, sinGluten: next.dieta_sin_gluten }).forEach(value => implied.add(value));
+      next.alergenos = [...implied];
       return next;
     });
   }
@@ -206,12 +211,17 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   function toggleAlergeno(value: string) {
     setSaved(false);
     clearError();
-    setPreferences(prev => ({
-      ...prev,
-      alergenos: prev.alergenos.includes(value)
-        ? prev.alergenos.filter(v => v !== value)
-        : [...prev.alergenos, value],
-    }));
+    setPreferences((prev) => {
+      if (impliedAlergenos({ vegano: prev.dieta_vegano, vegetariano: prev.dieta_vegetariano, sinGluten: prev.dieta_sin_gluten }).includes(value)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        alergenos: prev.alergenos.includes(value)
+          ? prev.alergenos.filter(v => v !== value)
+          : [...prev.alergenos, value],
+      };
+    });
   }
 
   // FRESCO-259: edits `planning_selection` directly, one day x meal cell at
@@ -274,19 +284,23 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
 
       <h4 className="mt-4 text-h6 uppercase text-tertiary">Alérgenos a evitar</h4>
       <div className="mt-2 flex flex-wrap gap-2">
-        {ALERGENO_OPTIONS.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            data-testid="preferencia_alergeno_option"
-            aria-pressed={preferences.alergenos.includes(option.value)}
-            onClick={() => toggleAlergeno(option.value)}
-          >
-            <Tag variant={preferences.alergenos.includes(option.value) ? 'selected' : 'outline'}>
-              {option.label}
-            </Tag>
-          </button>
-        ))}
+        {ALERGENO_OPTIONS.map((option) => {
+          const isLocked = impliedAlergenos({ vegano: preferences.dieta_vegano, vegetariano: preferences.dieta_vegetariano, sinGluten: preferences.dieta_sin_gluten }).includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              data-testid="preferencia_alergeno_option"
+              disabled={isLocked}
+              aria-pressed={preferences.alergenos.includes(option.value)}
+              onClick={() => toggleAlergeno(option.value)}
+            >
+              <Tag variant={preferences.alergenos.includes(option.value) ? 'selected' : 'outline'}>
+                {option.label}
+              </Tag>
+            </button>
+          );
+        })}
       </div>
 
       {/* FRESCO-153/FRESCO-259: was set at onboarding but never editable

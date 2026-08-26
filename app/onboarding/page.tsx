@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
 import { upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
-import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, DIETA_IMPLIED_ALERGENOS, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
@@ -86,13 +86,55 @@ const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
 // 409 branch.
 const EXISTING_MENU_FOR_WEEK_MESSAGE = 'Ya existe un menú para esta semana.';
 
+const ALERGENO_LABELS: Record<string, string> = {
+  vegano: 'vegano',
+  vegetariano: 'vegetariano',
+  sinGluten: 'tu dieta sin gluten',
+};
+
+/**
+ * FRESCO-275 — one message per locked alergeno, naming every active dieta
+ * flag that implies it (a chip can be implied by more than one, e.g.
+ * "pescado" by both vegano and vegetariano at once).
+ */
+function alergenoLockMessage(value: string, flags: { vegano: boolean, vegetariano: boolean, sinGluten: boolean }): string {
+  const reasons = (Object.keys(flags) as (keyof typeof flags)[])
+    .filter(flag => flags[flag] && DIETA_IMPLIED_ALERGENOS[flag].includes(value))
+    .map(flag => ALERGENO_LABELS[flag]);
+  return `Ya excluido por ${reasons.join(' y ')} — ninguna receta de nuestro catálogo con esa etiqueta lo incluye.`;
+}
+
+/** Shared "why is this locked" disclosure — the vegano→vegetariano lock (AC-2) and the FRESCO-275 dieta→alérgeno locks share this same small info-button + tooltip shape. */
+function LockInfoTooltip({ message, testIdPrefix }: { message: string, testIdPrefix: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        data-testid={`${testIdPrefix}_lock_info`}
+        aria-label="Por qué está bloqueado"
+        aria-expanded={open}
+        className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
+        onClick={() => setOpen(current => !current)}
+      >
+        i
+      </button>
+      <span
+        role="tooltip"
+        className={`absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background ${open ? '' : 'pointer-events-none opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100`}
+      >
+        {message}
+      </span>
+    </span>
+  );
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateSuccess, setGenerateSuccess] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const hasExistingMenu = generateError === EXISTING_MENU_FOR_WEEK_MESSAGE;
-  const [vegetarianoLockTooltipOpen, setVegetarianoLockTooltipOpen] = useState(false);
   // FRESCO-197: `null` = still checking for an existing session, `false` =
   // no session — show the guest-vs-account choice, `true` = resolved
   // (wizard renders). A just-registered user from /signup or a returning
@@ -457,26 +499,10 @@ export default function OnboardingPage() {
                           </Tag>
                         </button>
                         {isLocked && (
-                          <span className="group relative inline-flex">
-                            <button
-                              type="button"
-                              data-testid="dieta_vegetariano_lock_info"
-                              aria-label="Por qué Vegetariano está bloqueado"
-                              aria-describedby="dieta_vegetariano_lock_tooltip"
-                              aria-expanded={vegetarianoLockTooltipOpen}
-                              className="flex size-4 items-center justify-center rounded-full border border-tertiary text-caption text-tertiary"
-                              onClick={() => setVegetarianoLockTooltipOpen(open => !open)}
-                            >
-                              i
-                            </button>
-                            <span
-                              id="dieta_vegetariano_lock_tooltip"
-                              role="tooltip"
-                              className={`absolute top-full left-1/2 z-10 mt-1 w-56 -translate-x-1/2 rounded-md bg-primary px-2 py-1.5 text-caption text-background ${vegetarianoLockTooltipOpen ? '' : 'pointer-events-none opacity-0'} group-hover:opacity-100 group-focus-within:opacity-100`}
-                            >
-                              Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas.
-                            </span>
-                          </span>
+                          <LockInfoTooltip
+                            testIdPrefix="dieta_vegetariano"
+                            message="Vegano incluye vegetariano — todas las recetas veganas son también vegetarianas."
+                          />
                         )}
                       </span>
                     );
@@ -493,20 +519,32 @@ export default function OnboardingPage() {
                 />
 
                 <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {ALERGENO_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      data-testid="alergeno_option"
-                      aria-pressed={alergenos.includes(option.value)}
-                      onClick={() => toggleAlergeno(option.value)}
-                    >
-                      <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
-                        {option.label}
-                      </Tag>
-                    </button>
-                  ))}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {ALERGENO_OPTIONS.map((option) => {
+                    const dietaFlags = { vegano: dietaVegano, vegetariano: dietaVegetariano, sinGluten: dietaSinGluten };
+                    const isLocked = impliedAlergenos(dietaFlags).includes(option.value);
+                    return (
+                      <span key={option.value} className="inline-flex items-center gap-1">
+                        <button
+                          type="button"
+                          data-testid="alergeno_option"
+                          disabled={isLocked}
+                          aria-pressed={alergenos.includes(option.value)}
+                          onClick={() => toggleAlergeno(option.value)}
+                        >
+                          <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
+                            {option.label}
+                          </Tag>
+                        </button>
+                        {isLocked && (
+                          <LockInfoTooltip
+                            testIdPrefix={`alergeno_${option.value}`}
+                            message={alergenoLockMessage(option.value, dietaFlags)}
+                          />
+                        )}
+                      </span>
+                    );
+                  })}
                 </div>
                 <Input
                   data-testid="alergenos_texto_libre_input"
