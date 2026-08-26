@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import Stripe from 'stripe';
 
 /**
  * Shared REST/date helpers for `tests/steps/*.steps.ts` — extracted after
@@ -65,4 +66,48 @@ export function mondayOfWeekContaining(date: Date): Date {
 export function currentWeekMonday(): { semanaIso: string, fechaInicio: string } {
   const monday = mondayOfWeekContaining(new Date());
   return { semanaIso: isoWeekOf(monday), fechaInicio: monday.toISOString().slice(0, 10) };
+}
+
+let cachedTestStripe: Stripe | undefined;
+
+function testStripe(): Stripe {
+  cachedTestStripe ??= new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+  return cachedTestStripe;
+}
+
+/**
+ * Signs a fabricated Stripe event payload with the real `STRIPE_WEBHOOK_SECRET`
+ * (via the SDK's own `generateTestHeaderString`, the mechanism Stripe
+ * documents for exercising webhook handlers without waiting on a real
+ * delivery) and POSTs it to `/api/stripe/webhook`, exactly as
+ * `tests/steps/suscripcion.steps.ts` scenarios need — no Stripe CLI
+ * (`stripe listen`) process required in CI.
+ *
+ * `data.object`'s ids should be REAL Stripe test-mode ids for
+ * `checkout.session.completed` (the handler re-fetches the subscription from
+ * Stripe's API) — `customer.subscription.updated`/`.deleted` handlers read
+ * `event.data.object` directly with no extra Stripe API call, so a
+ * synthetic-but-consistent object (matching ids already on the account's
+ * `user_profiles` row) is enough for those.
+ */
+export async function postSignedStripeEvent(
+  request: APIRequestContext,
+  type: string,
+  dataObject: Record<string, unknown>,
+): Promise<import('@playwright/test').APIResponse> {
+  const payload = JSON.stringify({
+    id: `evt_test_${crypto.randomUUID()}`,
+    object: 'event',
+    type,
+    data: { object: dataObject },
+  });
+  const signature = testStripe().webhooks.generateTestHeaderString({
+    payload,
+    secret: process.env.STRIPE_WEBHOOK_SECRET!,
+  });
+
+  return request.post('/api/stripe/webhook', {
+    headers: { 'Content-Type': 'application/json', 'stripe-signature': signature },
+    data: payload,
+  });
 }
