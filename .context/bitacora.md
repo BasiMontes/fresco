@@ -4155,3 +4155,13 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: Añadido span "* Campo obligatorio" junto al label de presupuesto semanal en paso 4 del onboarding (app/onboarding/page.tsx). Validación bloqueante ya existía (FRESCO-263, botón "Generar mi menú" disabled si vacío/<=0).
 - Por qué: Comentario del usuario en FRESCO-265 (ticket ya en Listo) pidiendo marcar visualmente el campo como obligatorio.
 - Siguiente: PR #141 (fix/FRESCO-265-onboarding-budget-required-hint -> dev) abierto, pendiente merge.
+
+## 2026-08-26 - FRESCO-267 tap targets fix, propagado a prod
+- Qué: Fix WCAG 2.5.8 (FAQ button py-2, footer links py-1.5), PR #142 mergeado a dev, propagado dev->staging->main (ff-only), Jira Finalizada.
+- Por qué: Auditoría Dojo detectó áreas táctiles móviles bajo 24x24px en landing.
+- Siguiente: nada pendiente, ticket cerrado.
+
+## 2026-08-26 - FRESCO-269: centrado vertical de la card en /login
+- Qué: Card de /login quedaba desviada ~19px del centro real del viewport (constante, no proporcional). Causa: logo (FRESCO-256) y LegalLinks compartían el mismo bloque justify-center que la Card, con distinto peso (logo ~98px vs footer ~30px). Fix: logo y LegalLinks pasan a position absolute alrededor de la Card, que ahora es el único elemento en el flujo justify-center.
+- Por qué: Auditoría Dojo (14 ago 2026) reportó desalineación visual; medido en vivo con Playwright (390px y 1440px) antes y después del fix, desvío confirmado en 18.7px -> 0px.
+- Siguiente: PR pendiente contra dev.
