@@ -15,7 +15,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, GripVertical, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -118,63 +118,44 @@ export function CalendarGrid({
   const [draggingTipo, setDraggingTipo] = React.useState<TipoPlato | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
 
-  // FRESCO-170 — the meal-type label column ("desayuno"/"comida"/"cena")
-  // used `position: sticky; left: 0` to stay pinned while the grid scrolls
-  // horizontally. That doesn't work here: `gridAutoFlow: 'column'` places
-  // each label in its own single-column grid cell (~90px, sized to content),
-  // and a sticky element's containing block is that cell — once scrolled
-  // past the cell's own width, the label has nowhere left to "stick" and
-  // scrolls away with the rest of the row (unlike a `<table>`'s sticky first
-  // column, whose containing block is the full-width `<tr>`). Fixed by
-  // manually counter-translating the labels by the scroll container's own
-  // `scrollLeft` on every `scroll` event — same visual result as sticky,
-  // without depending on a containing block CSS Grid doesn't give this
-  // layout. Direct DOM writes (not React state) keep this off the render
-  // path so it doesn't add a re-render per scroll frame.
-  const scrollerRef = React.useRef<HTMLDivElement>(null);
-  const labelRefs = React.useRef<(HTMLParagraphElement | null)[]>([]);
-  // FRESCO-184 — the grid's horizontal scroll had no visual affordance: the
-  // last visible day column just clipped mid-card at 768px/1280px with
-  // nothing suggesting more days exist to the right. Tracked in the same
-  // loop as the label sync above, since a viewport resize alone (no scroll)
-  // can flip whether the content overflows at all.
-  const [canScrollRight, setCanScrollRight] = React.useState(false);
+  // FRESCO-271 — replaces the FRESCO-170/FRESCO-222 approach entirely
+  // instead of patching it a third time: both prior fixes tried to keep the
+  // meal-type label column visually pinned while COUNTER-TRANSLATING it
+  // against a continuously-changing `scrollLeft` (first on the `scroll`
+  // event, then on every `requestAnimationFrame` when the `scroll` event
+  // proved too slow on mobile) — any sync mechanism against a continuously
+  // moving scroll position has more edge cases to reopen the same "se
+  // mueve" symptom (a new input path, a faster device, a drag-triggered
+  // auto-scroll). Removing the continuous scroll removes the entire class
+  // of bug: the grid no longer scrolls at all. Only `startIndex` (which day
+  // the visible window starts at) changes, and only on a discrete arrow
+  // click — the label column is simply never inside anything that moves.
+  const [startIndex, setStartIndex] = React.useState(0);
+  // How many day columns fit on screen at once — narrower on mobile so
+  // cards stay full-width readable, wider on desktop where there's room.
+  // Starts at the mobile default (1) so server and client render the same
+  // markup on hydration; the effect below corrects it to the real viewport
+  // right after mount.
+  const [visibleDayCount, setVisibleDayCount] = React.useState(1);
 
-  // FRESCO-222 — on mobile the labels visibly drifted/jumped away from
-  // their day column while swiping ("se mueve"). Root cause: the original
-  // fix (FRESCO-170, see above) re-synced the transform on the `scroll`
-  // event. During touch-driven momentum/inertial scrolling, mobile
-  // browsers dispatch `scroll` at a much lower, throttled rate than the
-  // compositor actually moves the content (desktop wheel/trackpad scroll
-  // doesn't have this gap, which is why it only ever showed up on mobile)
-  // — so the label visibly lagged a beat behind the cards, reads as the
-  // label "moving" on its own. `requestAnimationFrame` reads `scrollLeft`
-  // every paint frame instead of waiting on the `scroll` event, staying in
-  // lockstep with the compositor regardless of input device; it also
-  // subsumes the old resize-driven re-check for `canScrollRight` for free.
   React.useEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) {
-      return;
-    }
-
-    let frameId: number;
-
-    const syncLabelsToScroll = () => {
-      const translateX = `translateX(${scroller.scrollLeft}px)`;
-      labelRefs.current.forEach((label) => {
-        if (label) {
-          label.style.transform = translateX;
-        }
-      });
-      // 1px buffer for sub-pixel rounding at the exact scrolled-to-end position.
-      setCanScrollRight(scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1);
-      frameId = requestAnimationFrame(syncLabelsToScroll);
+    const lgQuery = window.matchMedia('(min-width: 1024px)');
+    const smQuery = window.matchMedia('(min-width: 640px)');
+    const updateVisibleDayCount = () => {
+      setVisibleDayCount(lgQuery.matches ? 3 : smQuery.matches ? 2 : 1);
     };
+    updateVisibleDayCount();
+    lgQuery.addEventListener('change', updateVisibleDayCount);
+    smQuery.addEventListener('change', updateVisibleDayCount);
+    return () => {
+      lgQuery.removeEventListener('change', updateVisibleDayCount);
+      smQuery.removeEventListener('change', updateVisibleDayCount);
+    };
+  }, []);
 
-    frameId = requestAnimationFrame(syncLabelsToScroll);
-    return () => cancelAnimationFrame(frameId);
-  }, [planningMeals.length, planningDays.length]);
+  const visibleDays = planningDays.slice(startIndex, startIndex + visibleDayCount);
+  const canGoPrevDay = startIndex > 0;
+  const canGoNextDay = startIndex < planningDays.length - 1;
 
   // FRESCO-170 — split mouse vs touch instead of one shared `PointerSensor`,
   // each with its own activation constraint, because the two inputs need
@@ -325,102 +306,102 @@ export function CalendarGrid({
         </p>
       )}
 
+      <div className="mb-2 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setStartIndex(i => i - 1)}
+          disabled={!canGoPrevDay}
+          aria-label="Día anterior"
+          data-testid="calendar_day_nav_prev"
+          className="grid size-8 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-surface"
+        >
+          <ChevronLeft className="size-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setStartIndex(i => i + 1)}
+          disabled={!canGoNextDay}
+          aria-label="Día siguiente"
+          data-testid="calendar_day_nav_next"
+          className="grid size-8 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-surface"
+        >
+          <ChevronRight className="size-4" />
+        </button>
+      </div>
+
       <DndContext id="calendar-grid" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         {/*
-          Widened from a 7-column CSS grid squeezed into an 840px min-width
-          (~120px/day — real recipe names wrapped into a near-unreadable
-          vertical word stack) to a horizontally-scrolling row of fixed-width
-          columns. Real per-column width beats cramming all 7 days into one
-          viewport.
-
           FRESCO-159 — CSS Grid (not flex) columns, plus a meal-type label
-          column pinned during horizontal scroll (FRESCO-170 — via JS
-          scroll-sync, not CSS `sticky`; see the label's own comment below):
-          replaces the old per-`SlotCell` "DESAYUNO"/"COMIDA"/"CENA" text,
-          which repeated identically across every day column
-          (a real "why does this say Desayuno 7 times" complaint, not just a
-          style nit). A flex-column day-stack next to an independent
-          flex-column label-stack would drift out of alignment the moment
-          any card's recipe title wraps to a different number of lines than
-          its neighbors — CSS Grid's shared row tracks size to the tallest
-          cell IN THAT ROW ACROSS EVERY COLUMN by construction, so the label
-          for "comida" always lines up with every day's comida card
-          regardless of how tall any of them render. `gridAutoFlow: column`
-          + an explicit `gridTemplateRows` of exactly `planningMeals.length +
-          1` tracks makes this work from plain DOM order: the label column
-          contributes 1 (spacer) + N (labels) items, each day column
-          contributes 1 (day header) + N (`SlotCell`s) items — every group
-          fills one column of the row template before wrapping to the next,
-          no manual row/column index bookkeeping needed.
-        */}
-        <div className="relative">
-          {canScrollRight && (
-            <div
-              aria-hidden="true"
-              data-testid="calendar_scroll_hint"
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-background to-transparent"
-            />
-          )}
-          <div ref={scrollerRef} data-testid="calendar_grid_scroller" className="overflow-x-auto pb-2">
-            <div
-              className="grid gap-3"
-              style={{
-                gridTemplateColumns: `auto repeat(${planningDays.length}, 15rem)`,
-                gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
-                gridAutoFlow: 'column',
-              }}
-            >
-              <div aria-hidden="true" />
-              {planningMeals.map((tipo, index) => (
-                <p
-                  key={tipo}
-                  ref={(el) => { labelRefs.current[index] = el; }}
-                  className="relative z-10 bg-background pr-3 pt-3 text-h6 uppercase text-tertiary"
-                >
-                  {tipo}
-                </p>
-              ))}
+          column shared with every day column in one grid: a flex-column
+          day-stack next to an independent flex-column label-stack would
+          drift out of alignment the moment any card's recipe title wraps to
+          a different number of lines than its neighbors — CSS Grid's shared
+          row tracks size to the tallest cell IN THAT ROW ACROSS EVERY COLUMN
+          by construction, so the label for "comida" always lines up with
+          every visible day's comida card regardless of how tall any of them
+          render. `gridAutoFlow: column` + an explicit `gridTemplateRows` of
+          exactly `planningMeals.length + 1` tracks makes this work from
+          plain DOM order: the label column contributes 1 (spacer) + N
+          (labels) items, each day column contributes 1 (day header) + N
+          (`SlotCell`s) items — every group fills one column of the row
+          template before wrapping to the next, no manual row/column index
+          bookkeeping needed.
 
-              {planningDays.map((dia, diaIndex) => {
-                const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
-                return (
-                  <React.Fragment key={dia}>
-                    <p
-                      className={cn(
-                        'text-label',
-                        isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-background',
-                      )}
-                    >
-                      {DIA_LABELS[dia]}
-                    </p>
-                    {planningMeals.map(tipo => (
-                      <SlotCell
-                        key={tipo}
-                        dia={dia}
-                        tipo={tipo}
-                        recipe={menu[dia][tipo]}
-                        estado={estados[dia][tipo]}
-                        dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
-                        pending={pendingSlots.has(slotId({ dia, tipo }))}
-                        onMark={estado => void handleMarkEstado(dia, tipo, estado)}
-                        // FRESCO-183: every slot card is the same size, so
-                        // Chrome's LCP candidate can be whichever equally-
-                        // sized image finishes painting LAST within the
-                        // visible (unscrolled) region of this horizontally
-                        // scrollable grid — confirmed live via getBoundingClientRect
-                        // (grid's own rendered width ~954px vs ~1858px
-                        // scrollWidth at a standard desktop viewport, fitting
-                        // ~3-4 day columns before the grid clips). Covering
-                        // the first 4 days is a safe margin without eager-
-                        // loading all ~21 images across every day.
-                        priority={diaIndex <= 3}
-                      />
-                    ))}
-                  </React.Fragment>
-                );
-              })}
-            </div>
-          </div>
+          FRESCO-271 — only `visibleDays` (a `startIndex`-based window, see
+          above) is ever rendered as actual day columns, not the full week.
+          There is nothing to scroll and nothing to keep pinned during a
+          scroll, so the label column just sits in column 1 like any other
+          grid column — no sticky, no transform, no scroll-sync of any kind.
+        */}
+        <div
+          className="grid gap-3"
+          style={{
+            gridTemplateColumns: `auto repeat(${visibleDays.length}, 15rem)`,
+            gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
+            gridAutoFlow: 'column',
+          }}
+        >
+          <div aria-hidden="true" />
+          {planningMeals.map(tipo => (
+            <p key={tipo} className="pr-3 pt-3 text-h6 uppercase text-tertiary">
+              {tipo}
+            </p>
+          ))}
+
+          {visibleDays.map((dia) => {
+            const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
+            return (
+              <React.Fragment key={dia}>
+                <p
+                  className={cn(
+                    'text-label',
+                    isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-background',
+                  )}
+                >
+                  {DIA_LABELS[dia]}
+                </p>
+                {planningMeals.map(tipo => (
+                  <SlotCell
+                    key={tipo}
+                    dia={dia}
+                    tipo={tipo}
+                    recipe={menu[dia][tipo]}
+                    estado={estados[dia][tipo]}
+                    dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
+                    pending={pendingSlots.has(slotId({ dia, tipo }))}
+                    onMark={estado => void handleMarkEstado(dia, tipo, estado)}
+                    // FRESCO-183/FRESCO-271: only the visible day window is
+                    // ever rendered now (see `visibleDays` above), so every
+                    // currently-rendered slot is by definition in the
+                    // unscrolled viewport — all of them are safe LCP
+                    // priority candidates, same order of magnitude as the
+                    // original "first 4 days" cap this replaces.
+                    priority
+                  />
+                ))}
+              </React.Fragment>
+            );
+          })}
         </div>
       </DndContext>
 
