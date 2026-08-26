@@ -35,6 +35,24 @@ export function restHeaders(accessToken: string): Record<string, string> {
   };
 }
 
+/**
+ * Service-role REST headers — bypasses RLS, same key `lib/supabase/service.ts`
+ * uses for the Stripe webhook's own writes. Required for any test-baseline
+ * write to `user_profiles.plan`/`stripe_customer_id`/`stripe_subscription_id`/
+ * `plan_expires_at`: the `protect_subscription_columns` trigger
+ * (`supabase/migrations/20260818190000_...`, ADR-0007) hard-rejects those
+ * columns for any caller whose JWT role isn't `service_role`, including a
+ * normal user's own access token via `restHeaders`.
+ */
+export function serviceRoleHeaders(): Record<string, string> {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return {
+    'apikey': key,
+    'Authorization': `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  };
+}
+
 export async function currentUserId(request: APIRequestContext, accessToken: string): Promise<string> {
   const res = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, {
     headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${accessToken}` },

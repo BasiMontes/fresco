@@ -1,7 +1,8 @@
+import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders } from '../test-helpers';
+import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — `@suscripcion`
@@ -40,6 +41,23 @@ import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders } fro
  * top of its own Given); `generacion-determinista.steps.ts` currently does
  * not. Not fixed here (out of scope) — same class of shared-mutable-state
  * trade-off ADR-0014 already documents for this suite.
+ *
+ * Grupo B (FRESCO-277): "Iniciar checkout desde el perfil" and "Acceder a
+ * gestión de suscripción" — real click in the app, asserting the full-page
+ * redirect lands on a real Stripe-hosted domain (checkout.stripe.com /
+ * billing.stripe.com), never filling in the hosted form itself.
+ *
+ * Grupo C (FRESCO-277): "Trial sin tarjeta" — real POST to
+ * `/api/stripe/checkout`, then reads the created Checkout Session back via
+ * Stripe's real API. Only `payment_method_collection` is verified this way —
+ * `trial_period_days` is a `SessionCreateParams`-only field, Stripe never
+ * echoes it back on a Session read, and no real Subscription exists yet at
+ * this point (`session.subscription` is `null` until the hosted checkout is
+ * actually completed). Deliberately left uncovered rather than driving the
+ * real hosted Stripe page's DOM.
+ *
+ * Grupo D (inside Stripe's own hosted Billing Portal) is out of this
+ * ticket's scope — exempt, not ours to test.
  */
 
 const { Given, When, Then } = createBdd(test);
@@ -57,15 +75,20 @@ function fakeStripeIds(userId: string): { stripeCustomerId: string, stripeSubscr
   return { stripeCustomerId: `cus_test_${suffix}`, stripeSubscriptionId: `sub_test_${suffix}` };
 }
 
-/** Seeds a known Pro-active baseline (plan + matching Stripe ids) directly via REST, bypassing the webhook — the starting state these scenarios' Given steps need, not what they're testing. */
+/**
+ * Seeds a known Pro-active baseline (plan + matching Stripe ids) directly via
+ * REST, bypassing the webhook — the starting state these scenarios' Given
+ * steps need, not what they're testing. Must use service-role headers: the
+ * `protect_subscription_columns` trigger (`supabase/migrations/20260818190000_...`,
+ * ADR-0007) rejects writes to these columns from any other role.
+ */
 async function seedProBaseline(
   request: Parameters<typeof getAccessToken>[0],
-  headers: Record<string, string>,
   userId: string,
 ): Promise<{ stripeCustomerId: string, stripeSubscriptionId: string }> {
   const ids = fakeStripeIds(userId);
   const res = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
-    headers,
+    headers: serviceRoleHeaders(),
     data: {
       plan: 'pro',
       stripe_customer_id: ids.stripeCustomerId,
@@ -97,12 +120,12 @@ for (const [givenText, thenText] of [
 ] as const) {
   Given(givenText, async ({ request }) => {
     const accessToken = await proAccessToken(request);
-    const headers = restHeaders(accessToken);
     const userId = await currentUserId(request, accessToken);
 
     // Clean slate: Free, no Stripe ids — this scenario is what GRANTS Pro.
+    // Service-role headers required: `protect_subscription_columns` (ADR-0007).
     const resetRes = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
-      headers,
+      headers: serviceRoleHeaders(),
       data: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, payment_failed_at: null },
     });
     if (!resetRes.ok()) { throw new Error(`Failed to reset to Free: ${resetRes.status()} ${await resetRes.text()}`); }
@@ -143,9 +166,8 @@ When(/^el pago se confirma$/, async () => { /* no-op — same as above, kept for
 
 Given(/^que Laura tiene una suscripción Pro activa$/, async ({ request }) => {
   const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
-  await seedProBaseline(request, headers, userId);
+  await seedProBaseline(request, userId);
 });
 
 When(/^se renueva el cobro mensual$/, async ({ request }) => {
@@ -175,9 +197,8 @@ Then(/^sigue teniendo plan Pro sin interrupción$/, async ({ request }) => {
 
 Given(/^que Laura canceló su suscripción Pro$/, async ({ request }) => {
   const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
-  await seedProBaseline(request, headers, userId);
+  await seedProBaseline(request, userId);
 });
 
 When(/^termina el periodo que ya pagó \(customer\.subscription\.deleted\)$/, async ({ request }) => {
@@ -204,9 +225,8 @@ Then(/^su cuenta pasa a plan Free$/, async ({ request }) => {
 
 Given(/^que la suscripción Pro de Laura intenta renovarse$/, async ({ request }) => {
   const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
-  await seedProBaseline(request, headers, userId);
+  await seedProBaseline(request, userId);
 });
 
 When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/, async ({ request }) => {
@@ -236,9 +256,8 @@ Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page }
 
 Given(/^que Laura tuvo un pago fallido \(payment_failed_at con valor\)$/, async ({ request }) => {
   const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, headers, userId);
+  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, userId);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
     id: stripeSubscriptionId,
@@ -285,9 +304,8 @@ Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page }) => {
 
 Given(/^que el pago de Laura falló y no se resolvió$/, async ({ request }) => {
   const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, headers, userId);
+  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, userId);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
     id: stripeSubscriptionId,
@@ -308,4 +326,93 @@ When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con s
     status: 'unpaid',
   });
   if (!res.ok()) { throw new Error(`Webhook rejected unpaid event: ${res.status()} ${await res.text()}`); }
+});
+
+// --- Grupo B (FRESCO-277) ---
+// --- STORY-FRESCO-228: "Iniciar checkout desde el perfil" ---
+
+async function loginAsProTestUser(page: Page): Promise<void> {
+  await page.goto('/login');
+  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('login_submit_button').click();
+  await page.waitForURL('**/menu');
+}
+
+Given(/^que Laura está en su perfil con plan Free$/, async ({ request, page }) => {
+  const accessToken = await proAccessToken(request);
+  const userId = await currentUserId(request, accessToken);
+
+  // Service-role headers required: `protect_subscription_columns` (ADR-0007).
+  const resetRes = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
+    headers: serviceRoleHeaders(),
+    data: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, payment_failed_at: null },
+  });
+  if (!resetRes.ok()) { throw new Error(`Failed to reset to Free: ${resetRes.status()} ${await resetRes.text()}`); }
+
+  await loginAsProTestUser(page);
+  await page.goto('/profile');
+});
+
+When(/^toca el botón de actualizar a Pro$/, async ({ page }) => {
+  await page.getByTestId('upgrade_to_pro_button').click();
+});
+
+Then(/^es llevada a completar el pago de la suscripción Pro en Stripe Checkout real$/, async ({ page }) => {
+  await page.waitForURL(/^https:\/\/checkout\.stripe\.com\//);
+});
+
+// --- STORY-FRESCO-231: "Acceder a gestión de suscripción" ---
+
+Given(/^su cliente de Stripe existe realmente$/, async ({ request }) => {
+  const accessToken = await proAccessToken(request);
+  const userId = await currentUserId(request, accessToken);
+
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+  const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
+
+  // Service-role headers required: `protect_subscription_columns` (ADR-0007).
+  const res = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
+    headers: serviceRoleHeaders(),
+    data: { stripe_customer_id: customer.id },
+  });
+  if (!res.ok()) { throw new Error(`Failed to attach real Stripe customer: ${res.status()} ${await res.text()}`); }
+});
+
+When(/^entra a su perfil y pulsa "Gestionar suscripción"$/, async ({ page }) => {
+  await loginAsProTestUser(page);
+  await page.goto('/profile');
+  await page.getByTestId('manage_subscription_button').click();
+});
+
+Then(/^puede abrir la gestión de su suscripción en el Billing Portal real de Stripe$/, async ({ page }) => {
+  await page.waitForURL(/^https:\/\/billing\.stripe\.com\//);
+});
+
+// --- Grupo C (FRESCO-277) ---
+// --- STORY-FRESCO-228: "Trial sin tarjeta" ---
+// GAP conocido (ver comentario en regression.feature): solo verifica
+// payment_method_collection, no trial_period_days -- Stripe no lo
+// devuelve al leer una Checkout Session, solo lo acepta como input.
+
+Given(/^que Laura empieza el proceso de actualizar a Pro$/, async ({ page }) => {
+  await loginAsProTestUser(page);
+});
+
+When(/^llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripcionCtx: ctx }) => {
+  const response = await page.request.post('/api/stripe/checkout');
+  const body = await response.json() as { url?: string, error?: string };
+  if (!response.ok() || !body.url) { throw new Error(`Checkout session creation failed: ${response.status()} ${JSON.stringify(body)}`); }
+
+  const sessionId = new URL(body.url).pathname.split('/').pop();
+  if (!sessionId) { throw new Error(`Could not extract session id from Checkout url: ${body.url}`); }
+  ctx.checkoutSessionId = sessionId;
+});
+
+Then(/^se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta$/, async ({ suscripcionCtx: ctx }) => {
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+  const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
+  expect(session.payment_method_collection).toBe('if_required');
 });
