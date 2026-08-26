@@ -1,0 +1,50 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [dev, staging, main]
+
+jobs:
+  repo-check:
+    name: repo:check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run repo:check
+
+  e2e:
+    name: test:e2e (informational)
+    runs-on: ubuntu-latest
+    needs: repo-check
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+
+      - run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Restore .env from secret
+        run: printf '%s' "$ENV_FILE" > .env
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Start dev server
+        run: |
+          set -a; . ./.env; set +a
+          bun run dev &
+          npx --yes wait-on http://localhost:3000 --timeout 60000
+
+      - run: bun run test:e2e
