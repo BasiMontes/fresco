@@ -4165,3 +4165,13 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: Card de /login quedaba desviada ~19px del centro real del viewport (constante, no proporcional). Causa: logo (FRESCO-256) y LegalLinks compartían el mismo bloque justify-center que la Card, con distinto peso (logo ~98px vs footer ~30px). Fix: logo y LegalLinks pasan a position absolute alrededor de la Card, que ahora es el único elemento en el flujo justify-center.
 - Por qué: Auditoría Dojo (14 ago 2026) reportó desalineación visual; medido en vivo con Playwright (390px y 1440px) antes y después del fix, desvío confirmado en 18.7px -> 0px.
 - Siguiente: PR pendiente contra dev.
+
+## 2026-08-26 - FRESCO-271: grid de calendario, scroll horizontal reemplazado por flechas dia a dia
+- Que: 3er reporte del mismo sintoma (label DESAYUNO/COMIDA/CENA "se mueve" al hacer scroll, tras FRESCO-170 y FRESCO-222). Causa raiz: el label vivia dentro del area que scrolleaba, por lo que cada fix parcheaba un nuevo edge-case del mismo mecanismo de sync en vez de la causa estructural. Decidido con el usuario: elimina el scroll/drag libre del todo, el grid pagina de a un dia por click de flecha; solo el dia visible se renderiza como columna, asi el sync de alto de fila (CSS Grid compartido) sigue funcionando gratis, sin subgrid ni transform. PR #144 contra dev, Jira WIP -> Control de calidad.
+- Por que: Usuario pidio trabajar la 271; el propio ticket ya traia la decision estructural en comentarios, solo quedaba resolver scroll-vs-flechas y el tamano del paso, confirmados con el usuario antes de tocar codigo.
+- Siguiente: mergear PR #144, propagar a staging para QA. Fixture de seed (PRO_TEST_USER_EMAIL) rota localmente con FK error no relacionado — pendiente fuera de este ticket.
+
+## 2026-08-26 - FRESCO-268: degradado de scroll en bloques de codigo de /qa
+- Que: 12 bloques de codigo en /qa desbordan su caja a 390px (uno de 783px en 300px) sin señal visual de que se pueden deslizar (Dojo audit, 14 ago). Portado el mismo patron de FRESCO-184 (calendar-grid.tsx) a un wrapper cliente nuevo (scroll-fade-wrapper.tsx): degradado en el borde derecho, condicionado a overflow real (scroll + ResizeObserver), oculto al llegar al final. calendar-grid.tsx ya no tiene ese patron (removido en FRESCO-271, que quito el scroll del todo), asi que se replico desde el historial git (commit 162b282) en vez de copiar del archivo actual. PR #145 contra dev, Jira Listo -> Control de calidad.
+- Por que: usuario pidio trabajar la 268; el propio defecto ya traia la solucion propuesta (reuso directo de un patron interno), solo quedaba verificar que el patron origen seguia vivo antes de portarlo.
+- Siguiente: mergear PR #145, propagar a staging para QA.
