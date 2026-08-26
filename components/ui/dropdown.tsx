@@ -171,7 +171,7 @@ export function Dropdown({
                   'w-full rounded-full px-3 py-2 text-left text-body-md',
                   option.value === value
                     ? 'bg-primary text-background'
-                    : 'text-text hover:bg-neutral-200',
+                    : 'text-text hover:bg-accent-300',
                 )}
                 onClick={() => selectOption(option.value)}
               >
