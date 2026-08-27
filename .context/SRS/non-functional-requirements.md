@@ -34,6 +34,11 @@
 **NFR-SEC-5 — Standard input validation and transport security.**
 - Server-side validation on every Edge Function input (request body shape, required fields) before any DB or LLM call — already present in each Edge Function draft's early-return error handling. HTTPS/TLS in transit is inherited from the Vercel + Supabase platforms; no source document calls for anything beyond platform defaults, and none is invented here.
 
+**NFR-SEC-6 — Abuse and cost control on the generation endpoints (rate limiting).** *(added 2026-08)*
+- `generate-meal-plan` and `generate-shopping-list` are callable on every authenticated request with no per-user or per-IP throttle. At concierge scale (8–10 users) this is low-risk, but it is a real cost- and abuse-exposure before any public, non-concierge cohort — already flagged in `.context/business/business-api-map.md` §7 (Discovery Gaps) and owned by tech-debt ticket `FRESCO-243`.
+- This NFR records rate limiting as a **required control before public launch**. Unlike the observability decisions in §7, there is deliberately **no ADR** for it yet — `FRESCO-243` is the owning ticket, and the mechanism (edge middleware token bucket vs. Postgres-backed counter vs. platform WAF) is undecided.
+- `[PLACEHOLDER]` — no source document sets a numeric request budget (requests/user/day, burst ceiling). Derive one from real usage once the analytics instrumentation in §7 (NFR-OBS-2) produces baseline traffic data; do not invent a limit here.
+
 ## 3. Scalability
 
 Deliberately scoped to the MVP's real, current scale — a solo, part-time founder with a concierge cohort of 8–10 users during validation (`market-context.md` — Validation Plan). No premature horizontal-scaling, sharding, or multi-region design belongs in this document.
@@ -76,6 +81,24 @@ Kept intentionally light — no source document specifies coverage targets, lint
 
 **NFR-MAINT-2 — Domain identifiers stay in Spanish, matching the schema.** Every founder source document — recipe fields, user-profile fields, prompt field names — uses Spanish identifiers (`alergenos`, `veces_cocinada`, `ingredientes_odiados`, …) consistently across the schema, the prompts, and the Edge Function types. Future code should preserve this vocabulary rather than silently translating it to English mid-stack, since the prompt text, the DB schema, and any UI copy sourced from `advertencias` all depend on the same literal strings matching.
 
-## 7. Out of scope for this NFR set
+## 7. Observability & Instrumentation *(added 2026-08)*
+
+The original NFR set predates the observability decisions (`ADR-0009` Sentry, `ADR-0013` PostHog) and the tech-debt tickets that motivated them (`FRESCO-242` — no production error tracking; `FRESCO-240` — no product analytics, so the North-star KPI was unmeasurable). Scoped, like the rest of this document, to a solo founder's MVP: free-tier vendors, low sampling, no enterprise SLA. Both are cross-cutting invariants (single sink per concern) — see the ADRs.
+
+**NFR-OBS-1 — Production error tracking across all three Next.js runtimes (client, server, edge).**
+- Source: `FRESCO-242` (tech-debt: `app/error.tsx` / `app/global-error.tsx` only cover client-side Next.js error boundaries; server, edge/middleware, and uncaught client errors went unreported) and `ADR-0009`.
+- Mechanism: `@sentry/nextjs` wired via `sentry.client.config.ts` / `sentry.server.config.ts` / `sentry.edge.config.ts` + `instrumentation.ts` (`register()` + `onRequestError`, the Next 16 App Router API). `next.config.ts` wrapped with `withSentryConfig` for source-map upload. Free tier (5k errors/month), `tracesSampleRate` low, session replay off.
+- **Invariant (`ADR-0009`):** Sentry is the single error-tracking sink. Any new runtime entry point (new middleware, new edge function, new API route) routes through the existing `instrumentation.ts` wiring, never a second parallel error-reporting path.
+- `[PLACEHOLDER]` — no error-rate budget or alert threshold is set, consistent with NFR-REL-3's position that enterprise SLA figures would misrepresent operational maturity at this stage.
+
+**NFR-OBS-2 — Product analytics for the North-star KPI and the repeat-usage MVP hypothesis.**
+- Source: `FRESCO-240` (tech-debt: no analytics tool existed, so `business-model.md`'s North-star KPI "weekly menus generated **and used**" and the "3 of 10 pay and repeat 3+ weeks" hypothesis were both unmeasurable) and `ADR-0013`.
+- Mechanism: PostHog Cloud (EU region — GDPR, founder and user base under EU jurisdiction), `posthog-js` (client provider in `app/layout.tsx`) + `posthog-node` (`lib/posthog/server.ts` singleton, used from API routes and the Stripe webhook where a browser `capture()` structurally cannot fire).
+- **Invariant (`ADR-0013`):** PostHog is the single product-analytics sink. Every `identify()` uses the Supabase `auth.uid()` as `distinct_id` — including anonymous/guest users (`ADR-0003`) — so a guest's pre-signup event stream merges losslessly into their post-upgrade stream (`ADR-0004`). No parallel identity scheme.
+
+**NFR-OBS-3 — Scheduled-job outcomes are observed via logs/Sentry, not a status table.**
+- The weekly re-engagement push job (`FRESCO-241`, `ADR-0011`) fires via `pg_cron` → `pg_net` `net.http_post()` into the `send-weekly-reengagement-push` Edge Function. `pg_net` calls are fire-and-forget: the cron row cannot assert the Edge Function succeeded. Job health is therefore observed through Edge Function logs and Sentry (NFR-OBS-1), which is the accepted trade-off recorded in `ADR-0011` — Consequences, not a gap to close with a bespoke cron-status table.
+
+## 8. Out of scope for this NFR set
 
 Per the Out-of-Scope Blacklist in `mvp-scope.md`, none of the following are addressed here and should not be retrofitted until the blacklist's own gate (MRR > €5,000 **and** 30-day retention > 50%) is met: multi-region deployment, formal disaster-recovery/RPO-RTO targets, load-testing benchmarks beyond the concierge cohort's scale, internationalization/localization beyond the Spain/Spanish-language baseline already implicit in every source document, and a native-app performance profile.

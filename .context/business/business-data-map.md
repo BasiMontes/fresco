@@ -450,4 +450,44 @@ This map feeds:
 
 ---
 
+## 9. Addendum — capabilities shipped since this map was frozen (FRESCO-284, 2026-08)
+
+> **This map's body above is frozen at 2026-07-25, pre-`/project-bootstrap`, "no application code exists" state — and that framing is now wrong.** The app is fully built (see `business-feature-map.md`, 2026-08-07, code-grounded: 8 Edge Functions, ~40 routes, 8+ Postgres tables with real rows, Gemini **removed** from production per `ADR-0005`). Sections 1–8 have NOT been rewritten here — that requires a full `/business-data-map` regen, which FRESCO-284 recommends and the main session gates. This addendum exists so the five August 2026 epics are at least *present* and traceable; it is not a substitute for the regen.
+
+### 9.1 New / changed entities
+
+| Entity | Status | Role | Source |
+|---|---|---|---|
+| `user_profiles` — subscription columns (`stripe_customer_id`, `stripe_subscription_id`, `plan_expires_at` repurposed, `payment_failed_at`) | **LIVE** — migrations `20260818180000`, `20260819120000` | Pro subscription state of record. Written **only** by the Stripe webhook (`POST /api/stripe/webhook`); client writes blocked by RLS (`20260818190000`, `20260819121500`). Do **not** add a parallel `subscriptions` table without superseding `ADR-0007`. | EPIC-FRESCO-227, `ADR-0007` |
+| `user_profiles` — aviso flags (`aviso_bienvenida_visto`, `aviso_rutas_descartado`) | **LIVE** — migrations `20260818090000`, `20260818100000` | Per-user dismissal state for the passive in-app notices shown on `/notifications`. | EPIC-FRESCO-223 |
+| `push_subscriptions` | **LIVE** — migration `20260823180041` | One row per opted-in browser/device (endpoint + `p256dh`/`auth` keys). RLS `own` for the user; read job-side via `get_push_subscriptions_without_current_plan()` (`20260823212347`). Stale rows deleted on `410`/`404` from the push service. | FRESCO-241, `ADR-0012` |
+
+### 9.2 New automatic processes (extends §5)
+
+| Process | Trigger | What it does | Source |
+|---|---|---|---|
+| `pg_cron` weekly re-engagement push | `pg_cron` schedule → `pg_net` `net.http_post()` into the `send-weekly-reengagement-push` Edge Function, service-role-authenticated (`20260823212400`) | Finds users with no `meal_plans` row for the current ISO week and sends one web-push reminder. Fire-and-forget: success is observed via Edge Function logs / Sentry, not a status table (`ADR-0011`). | FRESCO-241, `ADR-0011` |
+| `pg_cron` guest cleanup | `pg_cron` schedule, pure SQL (`20260823120000`, retention shortened `20260823160000`) | Deletes abandoned anonymous guest users after 3 days. Prior `pg_cron` precedent this project already had — noted here because §5 above claims "No cron jobs … are specified", which is stale. | FRESCO-238 |
+| Stripe webhook → `user_profiles` | Inbound `POST /api/stripe/webhook`, Stripe-signature-verified | The only writer of subscription state (activation, renewal, cancellation, payment failure — one handler, many event types). | EPIC-FRESCO-227, `ADR-0007` |
+
+### 9.3 New external integrations (extends §6)
+
+§6 above says "Gemini Flash … the only third-party service in the system" — **both halves are now wrong**: Gemini was removed (`ADR-0005`), and four vendors were added:
+
+| Service | Purpose | How it touches data | Source |
+|---|---|---|---|
+| **Stripe** | Pro subscription — hosted Checkout, Billing Portal, webhooks | Inbound webhook is the sole writer of `user_profiles` subscription columns | `ADR-0007` |
+| **PostHog** (EU Cloud) | Product analytics — North-star KPI, retention cohorts | No app-DB writes; consumes an event stream. `identify()` keyed on Supabase `auth.uid()` incl. guests (`ADR-0003`/`ADR-0004`) | `ADR-0013`, FRESCO-240 |
+| **Sentry** | Production error tracking (client/server/edge) | No app-DB writes; outbound error events only | `ADR-0009`, FRESCO-242 |
+| **Web Push services** (FCM / Mozilla / etc.) | Delivery endpoint for the weekly reminder | Outbound POST per `push_subscriptions` row; `410`/`404` responses drive row cleanup | `ADR-0012`, FRESCO-241 |
+
+### 9.4 Consequences for §7 Discovery Gaps
+
+- "No `production` environment defined" — still open (carried in `business-feature-map.md` §8 gap 4).
+- "No cron/webhook infrastructure is specified anywhere" — **resolved**: `pg_cron` + `pg_net` (`ADR-0011`) and the Stripe webhook are both live. §5's empty tables are stale.
+- New gap: **subscription state has no reconciliation job** — a missed Stripe webhook can leave `user_profiles` drifted from Stripe with no scheduled re-sync (`business-feature-map.md` §8 gap 12).
+- New gap: **no rate limiting** on the generation endpoints (SRS `NFR-SEC-6`, `FRESCO-243`).
+
+---
+
 <!-- human-notes: anything written below this comment is preserved across regenerations -->

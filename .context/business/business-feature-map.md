@@ -27,6 +27,8 @@ The prior version of this map (2026-07-25) was built entirely from PRD/SRS speci
 
 **61 total catalogued features**, up from 24 in the pre-code version — not because 37 features were "added" in the literal sense, but because a spec-level pass groups by epic (8 groups) while a code-level pass surfaces every real UI affordance and edge-case flow independently, per this command's own instruction to err toward more, smaller entries. Net new **capability** since the last code-grounded state of this app (which never existed until now): OTP-based guest→account conversion (FRESCO-89), guest logout confirmation (FRESCO-90), favorite-toggle on catalog recipes (FRESCO-108), full profile self-service (name, preferences, JSON export, account deletion — FRESCO-70), personal recipe library (FRESCO-68), and the entire deterministic-generation rewrite (ADR-0005).
 
+> **2026-08 additive patch (FRESCO-284):** the counts above predate the five August epics. Not yet folded into the totals — added as new catalogued entries below: **FEAT-062–065** (Subscription & Billing — EPIC-FRESCO-227 / `ADR-0007`), **FEAT-066** (Centro de Avisos content — EPIC-FRESCO-223), **FEAT-067** (weekly re-engagement web push — FRESCO-241 / `ADR-0011`/`ADR-0012`), **FEAT-068** (Sentry error tracking — FRESCO-242 / `ADR-0009`), **FEAT-069** (PostHog analytics — FRESCO-240 / `ADR-0013`). "Planned: self-serve Pro upgrade" and "Notifications — UI shell only" in the table above are both now superseded (see FEAT-062, FEAT-066). A full `/business-feature-map` regen should re-derive the summary counts.
+
 ---
 
 ## 2. Feature Catalog (by domain)
@@ -875,6 +877,80 @@ The prior version of this map (2026-07-25) was built entirely from PRD/SRS speci
 **Capabilities:**
 - [x] Honest "Próximamente" disabled button rather than a working-looking link with nowhere to go
 - [ ] Real self-serve upgrade/payment flow — explicitly deferred past MVP, handled manually by the founder's concierge process
+- **Superseded 2026-08** by the Subscription & Billing domain below (EPIC-FRESCO-227): the real self-serve flow now exists. FEAT-048's disabled "Próximamente" button is replaced by FEAT-062's live CTA.
+
+---
+
+### Domain: Subscription & Billing
+
+> Added 2026-08 — EPIC-FRESCO-227 (Suscripción Pro (Stripe)), which reverses the MVP-scope deferral of self-serve payment (`ADR-0007`, `.context/PRD/mvp-scope.md` — "Scope reversal"). Architecture invariant (`ADR-0007`): **the Stripe webhook is the only writer** of subscription state onto `user_profiles` — never the client, never the checkout-return page. New `user_profiles` columns: `stripe_customer_id`, `stripe_subscription_id`, `plan_expires_at` (repurposed), `payment_failed_at` — all protected from client writes by RLS (`20260818190000`, `20260819121500`).
+
+#### Feature: Self-Serve Pro Upgrade (Stripe Checkout)
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-062 |
+| **Status** | Stable |
+| **Endpoints** | `POST /api/stripe/checkout` (creates a `subscription`-mode Checkout Session, redirects to `session.url`) |
+| **UI** | `UpgradeToProButton` — `/profile` (replaces FEAT-048's disabled CTA) |
+| **Owners** | Free-tier user |
+| **Dependencies** | `stripe` SDK, `lib/stripe.ts`, `STRIPE_SECRET_KEY` / `STRIPE_PRICE_ID` |
+| **Evidence** | `app/api/stripe/checkout/route.ts`; `components/profile/upgrade-to-pro-button.tsx`; FRESCO-228 |
+
+**Capabilities:**
+- [x] Server-created Checkout Session with `client_reference_id` = the Supabase `auth.uid()` so the webhook maps the event back with no lookup table
+- [x] `trial_period_days: 7`, `payment_method_collection: 'if_required'` — no card requested until the trial converts
+- [x] Checkout-return page only re-reads `user_profiles.plan` server-side; it never writes plan state
+- [x] Price never below €4.99/mes (fixed `STRIPE_PRICE_ID`)
+
+#### Feature: Subscription State Reflection
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-063 |
+| **Status** | Stable |
+| **Endpoints** | `POST /api/stripe/webhook` (signature-verified against `STRIPE_WEBHOOK_SECRET`) |
+| **UI** | Indirect — plan tag on `/profile`, Pro-gated behaviour across `generate-meal-plan` |
+| **Owners** | Free, Pro |
+| **Dependencies** | FEAT-062, `user_profiles.plan` / `plan_expires_at` / `stripe_*` columns |
+| **Evidence** | `app/api/stripe/webhook/route.ts`; FRESCO-230 |
+
+**Capabilities:**
+- [x] Single write path for `plan`, `stripe_customer_id`, `stripe_subscription_id`, `plan_expires_at` — the webhook handler only (`ADR-0007` invariant)
+- [x] Handles the same event stream for activation, renewal, cancellation, and payment failure (different event types, one handler)
+- [x] Brief "still processing" fallback if Stripe's webhook lags the checkout redirect
+
+#### Feature: Manage / Cancel Subscription (Billing Portal)
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-064 |
+| **Status** | Stable |
+| **Endpoints** | `POST /api/stripe/portal` (creates a Stripe Billing Portal session, redirects) |
+| **UI** | `ManageSubscriptionButton` — `/profile` (Pro users only) |
+| **Owners** | Pro user |
+| **Dependencies** | FEAT-063 (`stripe_customer_id` must be set) |
+| **Evidence** | `app/api/stripe/portal/route.ts`; `components/profile/manage-subscription-button.tsx`; FRESCO-231 |
+
+**Capabilities:**
+- [x] Redirect to Stripe-hosted portal for payment-method update and cancellation
+- [x] Cancellation reflects back via the same webhook (FEAT-063), not a client write
+
+#### Feature: Payment-Failure Awareness
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-065 |
+| **Status** | Stable |
+| **Endpoints** | `POST /api/stripe/webhook` (invoice payment-failed event → `user_profiles.payment_failed_at`) |
+| **UI** | `PaymentFailedNotice` in the Centro de Avisos (`/notifications`) — see FEAT-066 |
+| **Owners** | Pro user with a failed renewal |
+| **Dependencies** | FEAT-063, `payment_failed_at` column (`20260819120000`) |
+| **Evidence** | `components/notifications/payment-failed-notice.tsx`; FRESCO-232 |
+
+**Capabilities:**
+- [x] Webhook records `payment_failed_at`; the app surfaces a non-blocking notice pointing the user to the billing portal (FEAT-064)
+- [x] Cleared when a subsequent successful payment event arrives
 
 ---
 
@@ -931,6 +1007,45 @@ The prior version of this map (2026-07-25) was built entirely from PRD/SRS speci
 **Capabilities:**
 - [x] Always renders the empty state, real nav wiring (bell icon on `/menu`)
 - [ ] Any real notification type — the mockup's "Productos por caducar" (pantry-expiration) implied a pantry-tracking feature that doesn't exist and was explicitly confirmed out of scope, not invented here
+- **Superseded 2026-08** by FEAT-066 (Centro de Avisos content, EPIC-FRESCO-223): the page now shows real passive notices, not only an empty state. The "Stub" status above applies to the pre-FRESCO-223 shell.
+
+#### Feature: Centro de Avisos — passive in-app notices
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-066 |
+| **Status** | Stable |
+| **Endpoints** | N/A — client-rendered from `user_profiles` flags + `get_filtered_recipes()` |
+| **UI** | `/notifications` — welcome message, main-routes guide, recommended-recipes list, payment-failed notice |
+| **Owners** | Guest (partial), Free, Pro |
+| **Dependencies** | `user_profiles` aviso flags (`aviso_bienvenida_visto` `20260818090000`, `aviso_rutas_descartado` `20260818100000`), FEAT-039/040 (recipe recs), FEAT-065 (payment-failed) |
+| **Evidence** | `app/(app)/notifications/page.tsx`; `components/notifications/{routes-notice,recommended-recipes-notice,payment-failed-notice}.tsx`; FRESCO-224/225/226 (Finalizada), FRESCO-232 |
+
+**Capabilities:**
+- [x] Welcome message on first entry, dismiss persisted to `user_profiles.aviso_bienvenida_visto` (FRESCO-224)
+- [x] Main-app-routes guide, dismissable, persisted to `aviso_rutas_descartado` (FRESCO-225)
+- [x] "Recetas que te pueden gustar" — recommendations drawn from the user's food-safety-filtered catalog (FRESCO-226)
+- [x] Payment-failure notice when `user_profiles.payment_failed_at` is set (FEAT-065)
+- [ ] **Not push, not email, not native notifications** — passive in-app content only, per EPIC-FRESCO-223 scope note and the `mvp-scope.md` blacklist. Proactive re-engagement is FEAT-067, a separate mechanism.
+
+#### Feature: Weekly Re-Engagement Web Push
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-067 |
+| **Status** | Stable (push channel); the email variant is **blocked** — Resend has no verified sending domain (`FRESCO-241`) |
+| **Endpoints** | `send-weekly-reengagement-push` Edge Function, triggered by `pg_cron` → `pg_net` `net.http_post()` (`schedule_weekly_push_reminders` migration `20260823212400`) |
+| **UI** | `PushNotificationsToggle` — `/profile` (per-device opt-in); a service worker at `/sw.js` |
+| **Owners** | Free, Pro |
+| **Dependencies** | `push_subscriptions` table (`20260823180041`), `get_push_subscriptions_without_current_plan()` RPC (`20260823212347`), `web-push` lib (`ADR-0012`), `pg_cron`+`pg_net` (`ADR-0011`), `VAPID_*` Edge Function secrets |
+| **Evidence** | `supabase/functions/send-weekly-reengagement-push/`; `lib/push/web-push-client.ts`; `lib/api/push-subscriptions.ts`; `components/profile/push-notifications-toggle.tsx`; FRESCO-241 |
+
+**Capabilities:**
+- [x] Per-device opt-in toggle; subscription persisted to `push_subscriptions`, gated on `PushManager`/service-worker support (no-op on iOS Safari where unsupported)
+- [x] Weekly `pg_cron` job finds users with no meal plan for the current ISO week and pushes one reminder (`get_push_subscriptions_without_current_plan()`)
+- [x] VAPID signing + `aes128gcm` payload encryption delegated to the `web-push` library, not hand-rolled (`ADR-0012`)
+- [x] Stale-subscription cleanup: `410 Gone` / `404` from the push service deletes the `push_subscriptions` row; other errors are logged and skipped, not fatal to the batch
+- [ ] Email reminder variant — deferred until a Resend sending domain is purchased (`FRESCO-241`, and the `Resend SMTP blocked` standing constraint)
 
 ---
 
@@ -1108,6 +1223,47 @@ The prior version of this map (2026-07-25) was built entirely from PRD/SRS speci
 
 ---
 
+### Domain: Observability & Instrumentation
+
+> Added 2026-08. Not user-facing, but real cross-cutting infra with its own invariants (`ADR-0009`, `ADR-0013`) — catalogued here per this map's "err toward more entries" convention. See also SRS `non-functional-requirements.md` §7 (NFR-OBS-1/2/3).
+
+#### Feature: Production Error Tracking (Sentry)
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-068 |
+| **Status** | Stable (infra) |
+| **Endpoints** | N/A — outbound to Sentry from all three Next.js runtimes |
+| **UI** | None |
+| **Owners** | Developer / operator |
+| **Dependencies** | `@sentry/nextjs`, `instrumentation.ts` (`onRequestError`), `sentry.{client,server,edge}.config.ts`, `NEXT_PUBLIC_SENTRY_DSN` + `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` |
+| **Evidence** | `instrumentation.ts`, `instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`; `ADR-0009`; FRESCO-242 |
+
+**Capabilities:**
+- [x] Client + server + edge unhandled-error capture (first time this coverage exists — `app/error.tsx`/`global-error.tsx` only covered client boundaries)
+- [x] Production source-map upload via `withSentryConfig`; free tier (5k errors/month), low `tracesSampleRate`, replay off
+- [x] **Invariant:** single error-tracking sink — new runtime entry points route through `instrumentation.ts`, never a parallel path
+
+#### Feature: Product Analytics (PostHog)
+
+| Aspect | Value |
+|---|---|
+| **ID** | FEAT-069 |
+| **Status** | Stable (infra) |
+| **Endpoints** | N/A — `posthog-js` (client) + `posthog-node` (server, incl. Stripe webhook) outbound to PostHog Cloud EU |
+| **UI** | Transparent provider in `app/layout.tsx` |
+| **Owners** | Founder (KPI measurement) |
+| **Dependencies** | `posthog-js`, `posthog-node`, `app/providers/posthog-provider.tsx`, `lib/posthog/{server,events}.ts`, `NEXT_PUBLIC_POSTHOG_KEY`/`NEXT_PUBLIC_POSTHOG_HOST` |
+| **Evidence** | `app/providers/posthog-provider.tsx`, `lib/posthog/server.ts`, `lib/posthog/events.ts`; `ADR-0013`; FRESCO-240 |
+
+**Capabilities:**
+- [x] Makes the North-star KPI ("menús generados Y usados") and the 3-week repeat-usage hypothesis measurable for the first time
+- [x] `identify()` keyed on Supabase `auth.uid()`, including guest/anonymous sessions — guest event streams merge losslessly into post-signup (`ADR-0003`/`ADR-0004`)
+- [x] Server-side capture from the Stripe webhook (no browser there) for payment/subscription events
+- [x] **Invariant:** single product-analytics sink — no ad-hoc tracking calls
+
+---
+
 ## 3. CRUD Matrix
 
 | Entity | Create | Read | Update | Delete | Evidence |
@@ -1119,6 +1275,8 @@ The prior version of this map (2026-07-25) was built entirely from PRD/SRS speci
 | `shopping_lists` | ✅ `generate-shopping-list` Edge Function | ✅ `getShoppingListForPlan()` | ✅ `jsonb_set_comprado()` RPC (item-level `comprado` toggle) | ❌ No standalone delete — only cascades with parent `meal_plans` delete | `lib/api/shopping-list.ts` |
 | `recetas_propias` | ✅ `createRecetaPropia()` | ✅ `getRecetasPropias()`, `getRecipeDetail()` | ❌ Not implemented — detail view explicitly documents this as out of scope | ❌ Not implemented — same OOS note; cascades only via `delete-account` | `lib/api/recipes.ts`; `components/recipes/recipe-detail.tsx:133` |
 | `favorites` | ✅ `addFavorite()` | ✅ `getFavoriteRecipeIds()`, `getFavoriteRecipes()` | ❌ N/A by design — toggle-only table, no update verb needed | ✅ `removeFavorite()` | `lib/api/favorites.ts` |
+| `push_subscriptions` *(2026-08, FRESCO-241)* | ✅ `lib/api/push-subscriptions.ts` (opt-in toggle) | ✅ `get_push_subscriptions_without_current_plan()` RPC (job-side, service role) | ❌ N/A by design — replace by delete + re-insert | ✅ opt-out toggle; job-side stale-subscription cleanup on `410`/`404` | `lib/api/push-subscriptions.ts`; `supabase/functions/send-weekly-reengagement-push/` |
+| `user_profiles` — subscription columns *(2026-08, FRESCO-227)* | — | ✅ read for plan tag + Pro branch | ⚠️ **webhook-only** — `stripe_customer_id`, `stripe_subscription_id`, `plan`, `plan_expires_at`, `payment_failed_at` written exclusively by `POST /api/stripe/webhook`; client writes blocked by RLS (`20260818190000`, `20260819121500`) | ✅ cascades via `delete-account` | `app/api/stripe/webhook/route.ts`; `ADR-0007` |
 | `auth.users` (Supabase-managed) | ✅ `signUp()`, `signInAnonymously()` | ✅ `getUser()`/`getSession()` | ✅ `updateUser()` (email/password) | ✅ `admin.deleteUser()` via `delete-account` Edge Fn | Multiple |
 
 Legend: ✅ Full, ⚠️ Partial/conditional, ❌ Not available.
@@ -1153,6 +1311,20 @@ The backend surface is 5 authenticated Supabase Edge Functions (Deno, `verify_jw
 |---|---|---|---|---|
 | `POST` | `/generate-shopping-list` | FEAT-026/027: deterministic consolidation + aisle classification | Bearer JWT | `supabase/functions/generate-shopping-list/index.ts` |
 
+### Subscription & Billing (Next.js Route Handlers, 2026-08 — FRESCO-227)
+
+| Method | Endpoint | Purpose | Auth | Handler |
+|---|---|---|---|---|
+| `POST` | `/api/stripe/checkout` | FEAT-062: create a `subscription`-mode Stripe Checkout Session, redirect to `session.url` | Server-side session | `app/api/stripe/checkout/route.ts` |
+| `POST` | `/api/stripe/portal` | FEAT-064: create a Stripe Billing Portal session (manage/cancel) | Server-side session (Pro only) | `app/api/stripe/portal/route.ts` |
+| `POST` | `/api/stripe/webhook` | FEAT-063/065: **the only writer** of subscription state onto `user_profiles` | Stripe signature (`STRIPE_WEBHOOK_SECRET`), no user session | `app/api/stripe/webhook/route.ts` |
+
+### Re-engagement (scheduled, 2026-08 — FRESCO-241)
+
+| Trigger | Target | Purpose | Auth | Evidence |
+|---|---|---|---|---|
+| `pg_cron` weekly → `pg_net` `net.http_post()` | `send-weekly-reengagement-push` Edge Function | FEAT-067: push a reminder to users with no meal plan this ISO week | service-role key in the `net.http_post` header (`ADR-0011`) | `supabase/migrations/20260823212400_schedule_weekly_push_reminders.sql` |
+
 ### Direct RPC / table calls (bypass Edge Functions)
 
 | Call | Purpose | Auth | Evidence |
@@ -1164,6 +1336,8 @@ The backend surface is 5 authenticated Supabase Edge Functions (Deno, `verify_jw
 | `recetas_propias` insert/select | FEAT-037/038 | RLS `own` policies | `lib/api/recipes.ts` |
 | `favorites` insert/delete/select | FEAT-041/042 | RLS `own` policies | `lib/api/favorites.ts` |
 | `meal_plans` delete | FEAT-021 | RLS `meal_plans_delete_own` | `lib/api/meal-plan.ts` |
+| `push_subscriptions` insert/delete | FEAT-067 — per-device push opt-in/out | RLS `own` policies | `lib/api/push-subscriptions.ts` |
+| `user_profiles` aviso-flag update | FEAT-066 — dismiss welcome / routes notice | RLS `own` policies | `app/(app)/notifications/page.tsx` |
 | Supabase Auth API (`signUp`, `signInWithPassword`, `signInAnonymously`, `signOut`, `updateUser`, `resetPasswordForEmail`, `verifyOtp`) | FEAT-001/002/003/005/006/007/009 | Supabase-managed | Multiple auth pages |
 
 **Error shape** (Edge Functions): every non-2xx response is `{ "error": string }`. Common statuses: `400`, `401`, `403`, `404`, `409`, `422`, `502`, `500`. `OPTIONS` preflight handled for CORS.
@@ -1233,6 +1407,10 @@ The backend surface is 5 authenticated Supabase Edge Functions (Deno, `verify_jw
 | ~~Google Gemini (`gemini-3.6-flash`)~~ | ~~Menu-slot selection, shopping-list aisle classification, learning-explanation text~~ | Raw `fetch()`, no SDK (never a package dependency) | **Removed** — fully killed 2026-08-01 (ADR-0005 + `ae3b560`). Zero external AI API calls remain anywhere in the production system. | None (formerly FEAT-016/017/026/027/031) |
 | `@dnd-kit/core` | Drag-and-drop calendar reordering | `@dnd-kit/core`, `@dnd-kit/utilities` | Active (library, not a network service) | FEAT-023 |
 | `boneyard-js` | Dev-only visual-regression skeleton capture | `boneyard-js` | Active — dev tooling only, no production runtime dependency | FEAT-057, FEAT-061 |
+| **Stripe** *(2026-08)* | Pro subscription — hosted Checkout + Billing Portal + webhooks | `stripe` (`^22`), `lib/stripe.ts` | **Active** — `ADR-0007` | FEAT-062/063/064/065 |
+| **Sentry** *(2026-08)* | Production error tracking (client/server/edge) | `@sentry/nextjs` (`^10`), `@sentry/cli` | **Active** — `ADR-0009`, free tier | FEAT-068 |
+| **PostHog** *(2026-08)* | Product analytics — North-star KPI + retention cohorts, EU region | `posthog-js`, `posthog-node` | **Active** — `ADR-0013` | FEAT-069 |
+| **`web-push`** *(2026-08)* | VAPID signing + `aes128gcm` payload encryption for the weekly reminder | `npm:web-push` (Edge Function `import`) | **Active** — `ADR-0012` (push channel live; email variant blocked on Resend domain) | FEAT-067 |
 
 **Dev-tooling MCP servers** (not runtime app integrations — configured in `.mcp.json` for the AI development workflow, not called by the app itself): Tavily (web search), Context7 (docs), Supabase MCP (this map's own data source), n8n, and 21st.dev (design/component sources, added most recently per `git log`). None of these are network dependencies of the deployed Fresco application.
 
@@ -1269,6 +1447,10 @@ No `FEATURE_`/`ENABLE_`/`BETA_`-prefixed flags exist anywhere in the codebase (`
 6. **Pro self-serve upgrade is a disabled button with no real flow behind it** (FEAT-048) — by design (concierge process, per `mvp-scope.md`), but worth keeping visible here since it's the one clearly-labeled "Próximamente" surface a user can actually see in production today.
 7. **`meal_plan_recipes` and `shopping_lists` have no standalone DELETE** — both only disappear via their parent `meal_plans` row's cascade delete (FEAT-021). This is consistent with the data model (a slot or a list without a parent plan is meaningless) rather than a gap, but is worth naming explicitly since the CRUD matrix's ❌ cells could otherwise read as an oversight.
 8. **Notifications (FEAT-051) is fully placeholder** — confirmed deliberate (the mockup's pantry-expiration framing doesn't match any real Fresco feature), but it does occupy a real nav slot (bell icon, `/notifications` route) that currently does nothing. Track as a genuine backlog item, not a defect.
+9. **[UPDATE 2026-08] Gap 8 is resolved by EPIC-FRESCO-223** — `/notifications` now renders real passive notices (FEAT-066: welcome, routes guide, recipe recs, payment-failed). FEAT-051's "Stub" catalog entry is retained as history; the gap-8 statement above reflects the pre-FRESCO-223 state.
+10. **Email re-engagement variant is blocked, not descoped** (FEAT-067) — the weekly reminder ships on the web-push channel only; the email variant waits on a verified Resend sending domain being purchased (`FRESCO-241`). Track as a blocked backlog item.
+11. **No production rate limiting on `generate-meal-plan` / `generate-shopping-list`** — carried over from `business-api-map.md` §7, now formalized as SRS `NFR-SEC-6` and owned by `FRESCO-243`. No ADR, no mechanism chosen yet.
+12. **Subscription state has no reconciliation job** — if a Stripe webhook is missed (delivery failure, downtime), `user_profiles` subscription columns can drift from Stripe's truth with no scheduled re-sync. `ADR-0007` accepts webhook-driven state as the single write path; a periodic reconcile against the Stripe API is not implemented. **Ask**: the founder — acceptable at concierge scale, or worth a `pg_cron` reconcile job?
 
 ---
 

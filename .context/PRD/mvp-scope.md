@@ -48,6 +48,10 @@ This is the product's core learning mechanism and its real moat — not a nice-t
 
 **This epic is explicitly excluded from the Out-of-Scope Blacklist below despite sharing surface similarity with blacklisted "AI/automation" features.** At the current, pre-code, concierge-validation stage it is enforced as a manual founder checklist run before every menu delivery — it does not wait for product code to exist (`.context/business/business-model.md` — Key Activities; `.context/business/market-context.md` — Risks). This document intentionally does not specify how the guarantee is technically enforced once code exists — that mechanism belongs to the SRS phase.
 
+## Scope reversal (2026-08, EPIC-FRESCO-227): self-serve Pro payment is now in MVP scope
+
+This document — and the "Success Criteria" section below — originally assumed Pro payment was collected **manually by the founder** during concierge validation, with self-serve payment deferred. That deferral has been **explicitly reversed** by the founder (confirmed in-session; not un-approved scope creep). EPIC-FRESCO-227 delivers a self-serve upgrade-to-Pro subscription flow from the profile screen, replacing the disabled "Próximamente" CTA that previously lived there. The binding architectural decision behind it is `ADR-0007` (hosted checkout + webhook-driven subscription state — the payment vendor is named there, not here, per this document's vendor-agnostic convention). Pricing is unchanged from `.context/business/business-model.md` — Free €0 vs Pro €4.99/mes, 7-day trial with **no card required at signup**, never below €4.99/mes. No P0 epic above changes; this replaces the manual-invoice step, not the product scope.
+
 ## Deferred to P1 (Not in MVP)
 
 - **Curated recipe library (50–100 recipes with photography).** Cut from the MVP for cost reasons, not product-priority reasons: with a solo, part-time founder and no budget, curating and photographing 100 recipes is not affordable in phase 0–1. MVP recipes instead come from AI generation plus the manual founder safety/sanity review described in EPIC-FRESCO-8. (`.context/business/business-model.md` — Scope Anchor, Cost Structure.)
@@ -83,6 +87,7 @@ The following are **explicitly excluded from the MVP and from all near-term road
 The MVP is considered successful when the concierge-validation bar defined in the Constitution phase is met, not by an internal feature-completeness checklist:
 
 - **Primary bar:** at least **3 of 10** concierge cohort users both **pay** and **repeat usage for 3+ consecutive weeks** (`.context/business/market-context.md` — Validation Plan, step 4).
+- **Payment mechanism (updated 2026-08, `ADR-0007` / EPIC-FRESCO-227):** "pay" in the primary bar is now satisfied by a real self-serve subscription (hosted checkout, 7-day no-card trial, €4.99/mes), not by the founder invoicing each concierge user by hand. The bar itself — 3 of 10 converting and repeating for 3+ weeks — is unchanged.
 - **Failure condition:** if this bar is not met, the explicit plan is to pivot or adjust the value proposition **before** writing further product code — not to press forward on an unvalidated thesis.
 - **Non-negotiable gate within the loop:** the food-safety checklist (EPIC-FRESCO-8) runs before every single menu delivered during validation, with no exceptions, regardless of cohort size or timeline pressure.
 
