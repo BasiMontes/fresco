@@ -346,7 +346,7 @@ Then read the materialized files under `.context/PBI/` — every per-field `.md`
 
 These two fields are option-type, have no 255-char limit, and are the currency of severity triage + defect-density JQL. On new work they must not stay blank.
 
-- If `{{jira.severity}}` is empty → set it now from observed impact, using the **SEVERITY → Priority Mapping** table below. Values: `critica | mayor | moderada | menor | trivial`.
+- If `{{jira.severity}}` is empty → set it now from observed impact, using the `### SEVERITY to Priority Mapping` table in the Reference section above. Values: `critica | mayor | moderada | menor | trivial`.
 - If `{{jira.error_type}}` is empty → set it now from the bug taxonomy. Values: `content | crash | data | functional | integration | performance | security | visual`.
 
 ```
