@@ -42,8 +42,8 @@ export function HowItWorks() {
             <CardHeader>
               <span
                 className={cn(
-                  'grid size-9 place-items-center rounded-full text-label text-background',
-                  step.highlighted ? 'bg-secondary' : 'bg-primary',
+                  'grid size-9 place-items-center rounded-full text-label',
+                  step.highlighted ? 'bg-secondary text-text' : 'bg-primary text-background',
                 )}
               >
                 {step.number}

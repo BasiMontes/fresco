@@ -35,7 +35,7 @@ function WeeklyMenuPreview() {
                 index === ACTIVE_DAY_INDEX ? 'bg-secondary' : 'bg-accent-600',
               )}
             >
-              <p className={cn('text-caption', index === ACTIVE_DAY_INDEX ? 'text-background' : 'text-accent-200')}>
+              <p className={cn('text-caption', index === ACTIVE_DAY_INDEX ? 'text-text' : 'text-accent-200')}>
                 {day}
               </p>
             </div>
@@ -94,14 +94,14 @@ export function Hero() {
     <section className="mx-auto max-w-5xl px-4 py-12 md:grid md:grid-cols-2 md:items-center md:gap-16 md:px-8 md:py-20">
       <div>
         <div className="mb-6 flex items-center gap-2">
-          <span className="h-0.5 w-6 rounded-full bg-secondary" />
-          <span className="text-h6 uppercase text-secondary">Menú semanal con IA</span>
+          <span className="h-0.5 w-6 rounded-full bg-accent-2-700" />
+          <span className="text-h6 uppercase text-accent-2-700">Menú semanal con IA</span>
         </div>
 
         <h1 className="text-h1 text-primary">
           Deja de improvisar en el
           {' '}
-          <span className="text-secondary">súper.</span>
+          <span className="text-accent-2-700">súper.</span>
         </h1>
 
         <p className="mt-4 max-w-md text-body-md text-tertiary">

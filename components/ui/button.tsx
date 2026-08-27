@@ -24,7 +24,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-primary text-background hover:bg-accent-600',
-        action: 'bg-secondary text-background hover:bg-accent-2-600',
+        action: 'bg-secondary text-text hover:bg-accent-2-400',
         secondary: 'border border-border bg-transparent text-text hover:bg-surface',
         ghost: 'bg-transparent text-primary hover:bg-accent-100',
         icon: 'size-9 rounded-full bg-surface text-primary hover:bg-neutral-200',
