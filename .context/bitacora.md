@@ -4310,3 +4310,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: generate-meal-plan desplegada (v26) con el check de rate-limit 5/hora/usuario. Pillado y arreglado: la suite e2e (blocking) hace ~12 llamadas/corrida -> habria dado 429 en cada PR. Migracion 20260827215620 (aplicada): check_and_increment_rate_limit exime los 4 UIDs de cuentas de test (array hardcoded, tech-debt anotado en ADR-0010). PR #172 mergeado -- su test:e2e PASO con el limite vivo + exencion. Promovido dev->staging->main (fdd0a4d).
 - Por qué: cerrar el ultimo paso de FRESCO-243 (deploy) tras el rehab de #168.
 - Siguiente: QA. FRESCO-243 -> Merged.
+
+## 2026-08-28 - Mapas de negocio regenerados (PR #173)
+- Qué: business-data-map + business-api-map reconstruidos desde el código actual (subagente #169, rebased + reconciliado contra los ~19 commits posteriores). Gemini fuera del narrativo (ADR-0005), rate_limits documentado como infra viva, columnas borradas quitadas, gaps de delete-catalog-recipe/lib/urls resueltos, reconciliación Stripe enlazada a FRESCO-301, 5 marcadores Stub del template eliminados. business-feature-map sin tocar (ya bueno). #169 cerrado, PR #173 mergeado + promovido (4b9589a).
+- Por qué: los mapas estaban congelados en 2026-07-25 con premisa "no hay código aún" (re-auditoría MEDIO Fundación).
+- Siguiente: FRESCO-302 (de-scope Gemini en PRD/SRS) sigue pendiente - los mapas ya están, PRD/SRS no.
