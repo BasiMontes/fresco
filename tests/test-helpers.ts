@@ -118,10 +118,15 @@ function resolveWebhookSecret(): string {
   }
 
   if (baseURL.includes('fresco-pro.vercel.app')) {
-    throw new Error('@suscripcion webhook scenarios are not wired to run against production — no STRIPE_WEBHOOK_SECRET_PRODUCTION support.');
+    throw new Error('@suscripcion webhook scenarios are not wired to run against production — no STRIPE_WEBHOOK_SECRET_PROD support here.');
   }
 
-  return process.env.STRIPE_WEBHOOK_SECRET!;
+  // local `bun run dev` — matches `lib/stripe.ts` resolveWebhookSecret()'s
+  // local branch: the DEV endpoint secret, or a `stripe listen` secret in the
+  // legacy unscoped var.
+  const local = process.env.STRIPE_WEBHOOK_SECRET_DEV ?? process.env.STRIPE_WEBHOOK_SECRET;
+  if (!local) { throw new Error('STRIPE_WEBHOOK_SECRET_DEV must be set in .env to run @suscripcion webhook scenarios locally.'); }
+  return local;
 }
 
 /**

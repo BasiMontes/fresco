@@ -2,14 +2,16 @@ import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { captureServerEvent } from '@/lib/posthog/server';
-import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, stripe } from '@/lib/stripe';
+import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
 /**
  * POST /api/stripe/webhook — the ONLY writer of `user_profiles.plan` /
  * `stripe_customer_id` / `stripe_subscription_id` / `plan_expires_at`
  * (ADR-0007). Never called from the client or from the Checkout return page
- * — Stripe calls this directly, signed with `STRIPE_WEBHOOK_SECRET`.
+ * — Stripe calls this directly, signed with the per-environment webhook
+ * secret (`resolveWebhookSecret()` in `lib/stripe.ts` — `_DEV` / `_PRE` /
+ * `_PROD` by `VERCEL_ENV` + branch).
  *
  * Reads the raw body via `request.text()` (App Router route handlers don't
  * parse the body automatically, unlike the old Pages Router — no extra
@@ -43,10 +45,10 @@ import { createServiceClient } from '@/lib/supabase/service';
  */
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = resolveWebhookSecret();
 
   if (!signature || !webhookSecret) {
-    console.error('[/api/stripe/webhook] missing signature header or STRIPE_WEBHOOK_SECRET');
+    console.error('[/api/stripe/webhook] missing signature header or webhook signing secret for this environment');
     return NextResponse.json({ error: 'Webhook no configurado.' }, { status: 400 });
   }
 

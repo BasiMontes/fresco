@@ -21,6 +21,41 @@ function requireStripeSecretKey(): string {
   return key;
 }
 
+/**
+ * The Stripe webhook signing secret for the endpoint registered against THIS
+ * deploy's URL. Stripe issues one signing secret per registered endpoint, so
+ * every environment verifies against a different secret.
+ *
+ * The env carries one secret per environment (set 2026-08-26), each paired
+ * with a `STRIPE_WEBHOOK_ID_DESTINO_*` endpoint id:
+ *   - `STRIPE_WEBHOOK_SECRET_DEV`  — `fresco-dev.vercel.app` + local `bun run dev`
+ *   - `STRIPE_WEBHOOK_SECRET_PRE`  — `fresco-pre.vercel.app` (also what the e2e
+ *                                    suite signs its fabricated events with,
+ *                                    `tests/test-helpers.ts`)
+ *   - `STRIPE_WEBHOOK_SECRET_PROD` — `fresco-pro.vercel.app`
+ *
+ * `VERCEL_ENV` is `production` | `preview` | undefined (local). Both Vercel
+ * Preview deploys (`fresco-dev`, `fresco-pre`) report `preview`, so the branch
+ * (`VERCEL_GIT_COMMIT_REF`) splits them. The legacy unscoped
+ * `STRIPE_WEBHOOK_SECRET` (still in the Vercel Production scope) is kept as a
+ * fallback so nothing breaks before/after the Vercel side is consolidated.
+ * Before this switch the route always read the unscoped var, so every Preview
+ * deploy returned "Webhook no configurado".
+ */
+export function resolveWebhookSecret(): string | undefined {
+  if (process.env.VERCEL_ENV === 'production') {
+    return process.env.STRIPE_WEBHOOK_SECRET_PROD ?? process.env.STRIPE_WEBHOOK_SECRET;
+  }
+  if (process.env.VERCEL_ENV === 'preview') {
+    return process.env.VERCEL_GIT_COMMIT_REF === 'dev'
+      ? process.env.STRIPE_WEBHOOK_SECRET_DEV
+      : process.env.STRIPE_WEBHOOK_SECRET_PRE;
+  }
+  // local `bun run dev` — the DEV endpoint's secret, or a `stripe listen`
+  // forwarding secret dropped into the legacy var.
+  return process.env.STRIPE_WEBHOOK_SECRET_DEV ?? process.env.STRIPE_WEBHOOK_SECRET;
+}
+
 let cachedStripe: Stripe | undefined;
 
 function getStripe(): Stripe {
