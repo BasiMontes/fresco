@@ -319,3 +319,49 @@ Gemini Flash is the only third-party service reached from this API (`business-fe
 4. **The four not-yet-created tables' column shape (typed relational vs. JSONB) is unresolved**, which means every journey traced above that touches `user_profiles`, `meal_plans`, `meal_plan_recipes`, or `shopping_lists` is tracing against a *contract*, not a committed schema — carried forward from both `business-data-map.md` and `business-feature-map.md`, restated here because it directly affects how literally the request/response shapes in `.context/SRS/api-contracts.md` will map to real Postgres columns once `/project-bootstrap` runs.
 5. **No `meal_plans` DELETE endpoint is documented**, yet the founder's own Edge Function error copy in `generate-meal-plan` implies one exists ("Ya existe un plan para la semana… Elimínalo antes de regenerar" — delete it before regenerating). This gap is already flagged in `business-feature-map.md` §8 and is restated here because it directly affects Journey 1/2's `409` branch: a user who hits that conflict currently has no documented API path to resolve it. **Ask**: the founder — should this be a fourth Edge Function, or a direct client call like the `comprado` toggle pattern?
 6. **CORS is dev-time-only (`Access-Control-Allow-Origin: *`) with no production scoping specified anywhere** (`api-contracts.md` §0). Not a blocker for the current concierge stage, but worth flagging before a public deploy, since it is presently undifferentiated between `local`/`staging`/a future `production` environment (`architecture.md` §6, which itself notes no `production` environment is yet defined in `.agents/project.yaml`).
+
+---
+
+## 8. Addendum — API surface added since this map was frozen (FRESCO-284, 2026-08)
+
+> **This map's body above is frozen at 2026-07-25, "pre-implementation … no application code exists", and treats `.context/SRS/api-contracts.md` as an OpenAPI substitute.** That framing is now wrong: the app is built, and `business-feature-map.md` (2026-08-07, code-grounded) is the current authority for the endpoint inventory. Sections 1–7 above have **not** been rewritten — that needs a full `/business-api-map` regen (recommended by FRESCO-284, gated by the main session). This addendum records only what the five August epics added to the API surface, so it is traceable in the meantime.
+
+Also stale in the body above, independent of the 5 epics: Gemini Flash was **removed** from production (`ADR-0005` + commit `ae3b560`) — §5's "Gemini Flash is the only third-party service reached from this API" and every Gemini row in §3/§5 no longer describe the running system.
+
+### 8.1 New endpoints — Subscription & Billing (EPIC-FRESCO-227, `ADR-0007`)
+
+Next.js **Route Handlers** (`app/api/stripe/*`), not Supabase Edge Functions — a surface class the body above says does not exist ("There is no conventional REST surface behind this").
+
+| Method | Endpoint | Purpose | Auth | Handler |
+|---|---|---|---|---|
+| `POST` | `/api/stripe/checkout` | Create a `subscription`-mode Checkout Session (`trial_period_days: 7`, `payment_method_collection: 'if_required'`, `client_reference_id` = `auth.uid()`), return `session.url` | Server-side Supabase session | `app/api/stripe/checkout/route.ts` |
+| `POST` | `/api/stripe/portal` | Create a Stripe Billing Portal session (manage / cancel) | Server-side session, Pro only | `app/api/stripe/portal/route.ts` |
+| `POST` | `/api/stripe/webhook` | **The only writer** of `user_profiles` subscription state (`plan`, `stripe_customer_id`, `stripe_subscription_id`, `plan_expires_at`, `payment_failed_at`). One handler for activation / renewal / cancellation / payment-failure event types. | **Stripe signature** (`STRIPE_WEBHOOK_SECRET`) — no user JWT; this is the system's first inbound-webhook auth scheme, which §2 says does not exist | `app/api/stripe/webhook/route.ts` |
+
+**New auth scheme:** Stripe webhook signature verification is a second inbound auth model alongside the Supabase JWT of §2. The invariant (`ADR-0007`): subscription state is never written from the client or the checkout-return page — webhook only.
+
+### 8.2 New scheduled trigger — weekly re-engagement push (FRESCO-241, `ADR-0011`/`ADR-0012`)
+
+| Trigger | Target | Auth | Source |
+|---|---|---|---|
+| `pg_cron` weekly → `pg_net` `net.http_post()` | `send-weekly-reengagement-push` Edge Function | service-role key in the `net.http_post` header | `supabase/migrations/20260823212400_schedule_weekly_push_reminders.sql` |
+
+First case of a database-scheduled, non-user-triggered call into an Edge Function — §5 ("All three system entry points … are synchronous, authenticated, request/response Edge Functions") is stale. The Edge Function reads `push_subscriptions` via `get_push_subscriptions_without_current_plan()` and POSTs an encrypted payload (`web-push`, `ADR-0012`) to each browser push service; `410`/`404` responses delete the stale row.
+
+### 8.3 New direct client calls
+
+| Call | Purpose | Auth |
+|---|---|---|
+| `push_subscriptions` insert / delete (`lib/api/push-subscriptions.ts`) | Per-device push opt-in / opt-out | RLS `own` |
+| `user_profiles` aviso-flag update (`/notifications`) | Dismiss the welcome / routes notices (EPIC-FRESCO-223) | RLS `own` |
+
+### 8.4 New external integrations (extends §5)
+
+Stripe (webhook is inbound; Checkout/Portal are outbound session creation), PostHog (EU Cloud, outbound events, `ADR-0013`), Sentry (outbound error events across client/server/edge, `ADR-0009`), and browser Web Push services (outbound per subscription, `ADR-0012`). None existed when §5 was written.
+
+### 8.5 Consequences for §7 Discovery Gaps
+
+- Gap 3 (**no rate limiting** on the generation endpoints) — still open, now formalized as SRS `NFR-SEC-6` and owned by `FRESCO-243`. Still no ADR, still no mechanism chosen.
+- Gap 5 (**no `meal_plans` DELETE endpoint**) — **resolved**: `deleteMealPlan()` direct client call, RLS `meal_plans_delete_own` (`business-feature-map.md` §4, FEAT-021).
+- Gap 6 (**CORS `*`**) — the `_shared/cors.ts` allowlist is now a hardcoded per-env `ALLOWED_ORIGINS` list requiring a manual redeploy per new environment; still not fully resolved, see the standing `Edge CORS allowlist is manual` note.
+- New gap: **subscription state has no reconciliation job** — a missed Stripe webhook drifts `user_profiles` from Stripe with no scheduled re-sync (`business-feature-map.md` §8 gap 12).

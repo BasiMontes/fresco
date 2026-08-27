@@ -54,6 +54,32 @@ Concepts introduced after the original 8 MVP epics (all Finalizada/Listo as of M
 
 ---
 
+## §2.6 — Post-MVP Subscription, Observability & Delivery Terms
+
+Terminology introduced by the five August 2026 epics — Suscripción Pro / Stripe (EPIC-FRESCO-227), Centro de Avisos (EPIC-FRESCO-223), product analytics (FRESCO-240), weekly re-engagement push (FRESCO-241), and production error tracking (FRESCO-242). Added as a catch-up per FRESCO-284 (the glossary had drifted behind these epics); from here forward the §5 Change Protocol applies — add the term in the same change that introduces it.
+
+**Suscripción (Pro)** — The paid plan state on `user_profiles` (`plan = 'pro'`, plus `plan_expires_at`, `stripe_customer_id`, `stripe_subscription_id`, `payment_failed_at`). Introduced by EPIC-FRESCO-227, which reverses the MVP-scope deferral of self-serve payment (`ADR-0007`; `.context/PRD/mvp-scope.md` — "Scope reversal"). Pricing is fixed: Free €0 vs Pro €4.99/mes, 7-day trial with no card at signup (`.context/business/business-model.md` — Revenue Streams). **Not an auth tier** — see the anti-glossary entry on "Free-tier access / Pro-tier permission" (§4); `plan` only branches application logic.
+
+**Stripe** — The payment vendor for the Pro subscription, fixed by `ADR-0007` (Stripe Checkout in `subscription` mode: Stripe-hosted page, server-created session, `client_reference_id` = the Supabase `auth.uid()`). The PRD stays vendor-agnostic and does not name it; the SRS/ADR layer does. Do **not** introduce a parallel `subscriptions` table without superseding `ADR-0007` — the `user_profiles` columns above are the subscription state of record.
+
+**trial** — The 7-day free-access window granted when a user starts a Pro subscription, with **no card required at signup** (`trial_period_days: 7`, `payment_method_collection: 'if_required'` — `ADR-0007`). A trial is a Pro subscription that has not yet converted to a paid period — distinct from the permanent €0 **Free plan**.
+
+**webhook** — In this system, the Stripe webhook handler (`POST /api/stripe/webhook`, verified against `STRIPE_WEBHOOK_SECRET`). It is the **only** write path into `user_profiles` for subscription state (`plan`, `stripe_customer_id`, `stripe_subscription_id`, `plan_expires_at`, `payment_failed_at`) — never written from the client or the checkout-return page (`ADR-0007` — the single-writer invariant, enforced by DB policy: `20260818190000_protect_subscription_columns_from_client_writes`). Stripe is the source of truth for subscription state; the webhook is the projection into our DB.
+
+**analytics (product analytics)** — Event-stream instrumentation for measuring the North-star KPI ("weekly menus generated **and used**") and the repeat-usage MVP hypothesis (`FRESCO-240`). Answers "what did users do". Not the same as error tracking (see "Sentry"). Vendor fixed by `ADR-0013`.
+
+**PostHog** — The product-analytics vendor (`ADR-0013`): PostHog Cloud, EU region, wired via `posthog-js` (client provider in `app/layout.tsx`) + `posthog-node` (`lib/posthog/server.ts`, for API routes and the Stripe webhook where a browser `capture()` cannot fire). Every `identify()` uses the Supabase `auth.uid()` as `distinct_id`, including guest/anonymous users (`ADR-0003`), so a guest's pre-signup events merge losslessly into the post-signup stream. The single product-analytics sink — no parallel tracking calls.
+
+**Sentry** — The error-tracking vendor (`ADR-0009`, `FRESCO-242`): `@sentry/nextjs` wired across all three Next.js runtimes (client / server / edge) via `sentry.*.config.ts` + `instrumentation.ts` (`onRequestError`). Answers "what broke". The single error-tracking sink — any new runtime entry point routes through the existing wiring, never a second parallel path.
+
+**push (web push)** — Browser Web Push notifications, used only by the weekly re-engagement reminder (`FRESCO-241`). **Distinct from Centro de Avisos** (passive in-app content) and from the blacklisted "aggressive push notifications" (`.context/PRD/mvp-scope.md`) — this is a single weekly opt-in reminder, not a briefing stream. Pipeline: a `pg_cron` + `pg_net` scheduled job (`ADR-0011`) invokes the `send-weekly-reengagement-push` Edge Function, which does VAPID signing + payload encryption via the `web-push` library (`ADR-0012`) against rows in `push_subscriptions`. Opt-in is a per-device toggle in `/profile`.
+
+**Centro de Avisos / aviso** — The in-app `/notifications` page and the passive notices it shows when the user opens it (EPIC-FRESCO-223): welcome message (FRESCO-224), main-app-routes guide (FRESCO-225), recipe recommendations (FRESCO-226), plus a payment-failure notice (FRESCO-232). **Explicitly not push, not email, not native notifications** — those are out of MVP scope. An `aviso` is content rendered inside the page, gated by flags on `user_profiles` (e.g. `aviso_bienvenida_visto`, `aviso_rutas_descartado`). Contrast with **push** (browser notification, proactive).
+
+**pg_cron / pg_net** — The database-native scheduler (`pg_cron`) and async-HTTP extension (`pg_net`) for all time-based jobs (`ADR-0011`). Pure-SQL jobs (e.g. `cleanup-abandoned-guest-users`, `FRESCO-238`) run inside the DB; a job that must reach an Edge Function uses a `pg_cron` entry whose body is a `net.http_post()` to the function URL, authenticated with the service-role key (Vault-backed, never a literal in the migration). No second scheduler (Vercel Cron, GitHub Actions cron) for database-adjacent work.
+
+---
+
 ## §3 — Product Entities
 
 Short-form definitions only — full column shapes, relationships, and status (live vs. designed) live in `.context/business/business-data-map.md` §2 (Entity Map).
