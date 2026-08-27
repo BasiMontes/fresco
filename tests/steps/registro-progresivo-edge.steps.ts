@@ -28,9 +28,17 @@ const { Given, When, Then } = createBdd(test);
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
 const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 
-/** Real anonymous session (FRESCO-17) — waits past the mount-effect race, see registro-progresivo.steps.ts. */
+/**
+ * Real anonymous session (FRESCO-17, ADR-0003).
+ *
+ * FRESCO-197: `/onboarding` now opens on the guest-vs-account choice
+ * (`IdentityStep`). The anonymous session is created by clicking "Continuar
+ * como invitada" (`signInAnonymously()`), not silently on mount — so click
+ * it first, then wait for the real session cookie to land.
+ */
 async function ensureAnonymousSession(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/onboarding');
+  await page.getByTestId('onboarding_continue_as_guest_button').click();
   await expect
     .poll(async () => {
       const cookies = await page.context().cookies();
@@ -48,6 +56,9 @@ async function generateRealGuestMenu(page: import('@playwright/test').Page): Pro
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
+  // FRESCO-263/265: the weekly budget on step 4 is now required and gates
+  // `generate_menu_button` (disabled while `!presupuestoValid`).
+  await page.getByTestId('presupuesto_input').fill('80');
   await page.getByTestId('generate_menu_button').click();
   await page.waitForURL('**/menu', { timeout: 200_000 });
 }

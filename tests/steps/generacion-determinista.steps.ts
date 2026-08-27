@@ -61,6 +61,10 @@ Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
+  // FRESCO-263/265: the weekly budget on step 4 is now required and gates
+  // `generate_menu_button` (disabled while `!presupuestoValid`). Filled here
+  // in the Given so the When step measures only the generation itself.
+  await page.getByTestId('presupuesto_input').fill('80');
 });
 
 When(/^pulsa "Generar mi menú"$/, async ({ page }) => {

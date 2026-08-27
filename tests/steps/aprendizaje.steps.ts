@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { currentWeekMonday, getAccessToken, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @aprendizaje,
@@ -26,6 +27,32 @@ import { test } from '../fixtures';
 
 const { Given, When, Then } = createBdd(test);
 
+/**
+ * A (dia, tipo) slot can never go back to `pendiente` once marked (Business
+ * Rules: "queda fijado"), so every prior run of these scenarios permanently
+ * consumes one of the current ISO week's 21 slots — after enough runs the
+ * week has zero `pendiente` slots left and the "pick whichever slot still
+ * shows its mark buttons" step below finds nothing. Delete + regenerate the
+ * current week's plan so all 21 slots are `pendiente` again. Deterministic,
+ * no Gemini call (ADR-0005) — same delete-then-generate pattern as
+ * `generacion-determinista.steps.ts` / `aprendizaje-pro.steps.ts`.
+ */
+async function reseedCurrentWeekPlan(request: import('@playwright/test').APIRequestContext): Promise<void> {
+  const accessToken = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+  const headers = restHeaders(accessToken);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const { semanaIso, fechaInicio } = currentWeekMonday();
+
+  await request.delete(`${url}/rest/v1/meal_plans?fecha_inicio=eq.${fechaInicio}`, { headers });
+
+  const genRes = await request.post(`${url}/functions/v1/generate-meal-plan`, {
+    headers,
+    data: { semana_iso: semanaIso, fecha_inicio: fechaInicio },
+    timeout: 120_000,
+  });
+  if (!genRes.ok()) { throw new Error(`generate-meal-plan failed: ${genRes.status()} ${await genRes.text()}`); }
+}
+
 async function loginAndGoToCalendar(page: import('@playwright/test').Page) {
   await page.goto('/login');
   await page.getByTestId('email_input').fill(process.env.LOCAL_USER_EMAIL!);
@@ -35,7 +62,8 @@ async function loginAndGoToCalendar(page: import('@playwright/test').Page) {
   await page.goto('/calendar');
 }
 
-Given(/^que el usuario tiene un menú semanal generado con un plato en estado pendiente$/, async ({ page, aprendizajeCtx: ctx }) => {
+Given(/^que el usuario tiene un menú semanal generado con un plato en estado pendiente$/, async ({ page, request, aprendizajeCtx: ctx }) => {
+  await reseedCurrentWeekPlan(request);
   await loginAndGoToCalendar(page);
 
   const pendingMark = page.locator('[data-testid$="_mark_cocinada"]').first();
@@ -68,7 +96,8 @@ Then(/^no puede volver a cambiar el estado de ese mismo plato$/, async ({ page, 
   await expect(page.getByTestId(`${ctx.slotPrefix}_mark_descartada`)).toHaveCount(0);
 });
 
-Given(/^que el usuario ya marcó un plato como cocinado o descartado$/, async ({ page, aprendizajeCtx: ctx }) => {
+Given(/^que el usuario ya marcó un plato como cocinado o descartado$/, async ({ page, request, aprendizajeCtx: ctx }) => {
+  await reseedCurrentWeekPlan(request);
   await loginAndGoToCalendar(page);
 
   const pendingMark = page.locator('[data-testid$="_mark_cocinada"]').first();
