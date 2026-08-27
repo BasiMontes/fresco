@@ -279,6 +279,8 @@ Read for guidance:
 
 Output: the plan is authored in-session, then **pushed to the Jira `spec_implementation_plan` field** (story-level) / `feature_implementation_plan` field (epic-level) via `[ISSUE_TRACKER_TOOL]` — or, if the field is absent, a `## Spec Implementation Plan (Dev)` / `## Feature Implementation Plan (Dev)` fallback comment per `.agents/jira-required.yaml`. Then run `bun run jira:sync-issues get <KEY> --include-comments` and read the materialized `implementation-plan.md` / `feature-implementation-plan.md` under the synced PBI tree (read-only cache). Transition Jira `Ready For Dev -> In Progress`.
 
+**Story Points (dev estimate — write to Jira).** As part of Stage 1, the dev team estimates the story and writes `{{jira.story_points}}` on the Story via `[ISSUE_TRACKER_TOOL]` (Fibonacci 1/2/3/5/8; a 13+ estimate is a smell → flag the story for a split before coding). This is the **building team's** estimate from the plan's effort breakdown — distinct from and allowed by `/product-management` anti-pattern `I16`, which only bars the PO/BA from estimating at refinement time. If `{{jira.story_points}}` already carries a value (someone opted into estimation earlier), reconcile: keep it if the plan agrees, otherwise overwrite with the dev estimate and note the change in the plan. Rationale + audit contract: FRESCO-281 (structured-QA-field population — velocity + defect-density-per-feature need this field queryable). Full step: `references/story-plan.md` § Estimated Effort.
+
 **Sprint report**: if batch mode is active, update the in-flight row for this ticket: Status PENDING → IN_PROGRESS; fill Owner, Path (A or B), Impl Plan link, Forecast Risk from the Workload Forecast block. See `references/sprint-report.md` §Part 2.
 
 Persistence: the canonical plan lives in the Jira `spec_implementation_plan` field and is materialized by the sync to `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md` with topic_key `pbi/{ticket}/implementation-plan`; macro feature plans live in the Jira `feature_implementation_plan` field, materialized to `feature-implementation-plan.md` with topic_key `pbi/{epic}/feature-implementation-plan`. Auto-generated, so `capture_prompt: false`. See `agentic-dev-core/references/topic-key-conventions.md`.
@@ -533,6 +535,7 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 10. **No automation tests in this skill**: E2E / integration test automation is out of scope. Unit tests live in Stage 2 via `/unit-testing`. Anything QA-side is out of scope here.
 11. **Language**: artifacts, code, and commit messages in English. Mirror the user's language only in conversation.
 12. **ADR-worthy decisions get recorded**: a decision that is architectural AND hard to reverse goes to `.context/ADR/` (append-only), not buried in the impl plan. Story-local trade-offs stay in the plan. Read existing ADRs before planning a cross-cutting story so you don't violate one. See `agentic-dev-core/references/adr-doctrine.md`.
+13. **Structured QA fields on new work** (FRESCO-281): a Story does not clear Stage 1 without `{{jira.story_points}}` written (dev estimate). A bug does not clear Stage 2 intake without `{{jira.severity}}` + `{{jira.error_type}}` set, nor Stage 3 close without `{{jira.root_cause}}` set (`references/bug-fix-workflow.md`). No backfill on the ~220 already-closed items — new work only. ATP/ATR stay deferred to the QA-repo phase.
 
 ---
 
@@ -545,6 +548,7 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 - [ ] Session Log entry appended for any blocking / aborting / sprint-spanning event
 - [ ] Epic precheck: `feature-plan.md` + `feature-implementation-plan.md` exist or user confirmed proceeding without
 - [ ] Stage 1 plan pushed to Jira `spec_implementation_plan` (or fallback comment), synced, and read back as `implementation-plan.md`; Jira transitioned to `In Progress`
+- [ ] **Story Points estimated by the dev team and written to `{{jira.story_points}}`** on the Story (Fibonacci; 13+ → flag for split) — FRESCO-281 structured-QA-field contract; distinct from `/product-management` `I16` (PO/BA still does not estimate at refinement)
 - [ ] ATP read via sync (jira-native: synced `acceptance-test-plan.md`; jira-xray: synced `test-plans/TESTPLAN-<KEY>-<slug>.md`; final fallback = `comments.md` / issue description) and mapped into the plan
 - [ ] Stage 2 verification (lint + types + tests) green; commits atomic
 - [ ] **Live-UI validation** run for any UI story — in the active flow mode (subagent if Orchestrated, inline if Solo) via `[AUTOMATION_TOOL]`; gaps fixed + re-validated; never via a production build

@@ -342,6 +342,28 @@ Then read the materialized files under `.context/PBI/` — every per-field `.md`
 - Related Bugs: [List or "None"]
 ```
 
+**Step 2b: Backfill Severity + Error Type if empty (FRESCO-281 structured-QA-field contract)**
+
+These two fields are option-type, have no 255-char limit, and are the currency of severity triage + defect-density JQL. On new work they must not stay blank.
+
+- If `{{jira.severity}}` is empty → set it now from observed impact, using the **SEVERITY → Priority Mapping** table below. Values: `critica | mayor | moderada | menor | trivial`.
+- If `{{jira.error_type}}` is empty → set it now from the bug taxonomy. Values: `content | crash | data | functional | integration | performance | security | visual`.
+
+```
+[ISSUE_TRACKER_TOOL] update_issue_field(
+  issue_key="[BUG_ID]",
+  field={{jira.severity}},
+  value={"value": "[severity]"}
+)
+[ISSUE_TRACKER_TOOL] update_issue_field(
+  issue_key="[BUG_ID]",
+  field={{jira.error_type}},
+  value={"value": "[error type]"}
+)
+```
+
+If either field is absent on the instance, write the value to its fallback comment per `.agents/jira-required.yaml`. Do NOT retro-fill bugs already closed — new work only. `{{jira.root_cause}}` stays empty here; it is set at close (Phase 7).
+
 **Step 3: Check for duplicates**
 
 ```
@@ -762,7 +784,7 @@ Next steps:
 
 > Before writing rich-text fields in Jira, read `.claude/skills/product-management/references/jira-publishing-gotchas.md` for the two known ADF bugs and their workarounds.
 
-**Step 1: Update Custom Fields (Root Cause)**
+**Step 1: Update Custom Fields (Root Cause + QA-field confirm)**
 
 ```
 [ISSUE_TRACKER_TOOL] update_issue_field(
@@ -777,6 +799,10 @@ Next steps:
   value={"value": "Bugfix"}  // or "Hotfix"
 )
 ```
+
+Values for `{{jira.root_cause}}`: `code_error | config_env_error | data_error | environment_error | integration_error | requirement_error | third_party_error | working_as_designed`.
+
+**Confirm Severity + Error Type are set** (FRESCO-281 contract). They should already be filled from Phase 1 Step 2b; if either is still empty, set it now before transitioning — a closed bug with a blank Severity or Error Type breaks the defect-density-per-feature dashboards this contract exists to enable.
 
 **Step 2: Add Fix Documentation Comment**
 
@@ -1493,7 +1519,8 @@ Before presenting the final report, verify:
 - [ ] Bug analyzed with full context
 - [ ] Reproduction documented
 - [ ] Triage decision made and documented
-- [ ] Root Cause custom fields updated
+- [ ] `{{jira.severity}}` + `{{jira.error_type}}` set (backfilled at intake if empty) — FRESCO-281
+- [ ] Root Cause custom fields updated (`{{jira.root_cause}}` + `{{jira.fix}}`)
 - [ ] Fix documentation comment added
 - [ ] Issue transitioned to Ready For QA
 - [ ] Assignee updated to original reporter/tester
