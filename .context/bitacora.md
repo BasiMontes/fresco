@@ -4275,3 +4275,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: parches aditivos en mvp-scope.md (reversión pago self-serve, ADR-0007), non-functional-requirements.md (NFR-SEC-6 rate-limiting, §7 Observability NFR-OBS-1/2/3), los 3 mapas de negocio (addendum) y glosario (§2.6, 11 términos append-only). PR #162 a dev.
 - Por qué: re-auditoría 27 ago hallazgo 06 (MEDIO) — PRD/SRS/mapas/glosario ciegos a Stripe/Avisos/PostHog/push/Sentry. Hijo de FRESCO-278.
 - Siguiente: business-data-map.md y business-api-map.md están congelados en 2026-07-25 con premisa "no hay código aún" (global falsa) - candidatos a regen completo con /business-data-map y /business-api-map. ADR-0010 citado en el ticket NO existe (rate-limiting sólo lo cubre FRESCO-243).
+
+## 2026-08-27 - Suite e2e restaurada a 31/31 en staging (3 fixes)
+- Qué: la verificación e2e pedida tras FRESCO-283/299/282/284 la encontró en 3/31 por deriva pre-existente. Tres PRs: #163 rename de vars de test-user en 11 step files + /qa + docs (LOCAL_USER_*->DEV_USER_*, PRO_TEST_USER_*->PRO_USER_*, USER_*_PRE->PRE_USER_*); #164 lib/stripe.ts resolveWebhookSecret() 3-way DEV/PRE/PROD por VERCEL_ENV+branch (el webhook leia el var sin scope, roto en Preview); #165 qa-page.steps.ts (rg lo saltó como binario por 2 NUL) + comentarios del .feature. Progresión 3->24->28->31. Promovido dev->staging->main (adb5df8).
+- Por qué: los cambios de las 4 historias NO rompieron nada; todo era deriva de un rename de .env y un split de secrets de Stripe hechos ad-hoc ~22h antes.
+- Siguiente: .env.example probablemente necesita el mismo rename (no verificable). Plan anual de Stripe (STRIPE_*_ANUAL) en .env pero sin cablear. STRIPE_WEBHOOK_SECRET_DEV sin usar (fresco-dev sin e2e).
