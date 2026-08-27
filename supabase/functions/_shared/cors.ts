@@ -1,19 +1,26 @@
 // Shared CORS headers for Edge Function calls. Originally a wildcard origin
 // ("dev-time convenience", api-contracts.md §0) — narrowed per FRESCO-33 to
-// the app's real origins now that they're known. `.agents/project.yaml`'s
-// `environments.production.web_url` (fresco-pro.vercel.app) and
-// `environments.staging.web_url` (fresco-staging.vercel.app) are both
-// listed, plus `fresco-pre.vercel.app` — a second alias of the same
-// production deployment (`solo-main`-style Vercel project, confirmed via
-// `vercel inspect`: both alias the same deployment id) that the team has
-// used interchangeably with `fresco-pro.vercel.app` for QA since 2026-08-04
-// but that was never added here, silently CORS-blocking every Edge Function
-// call made from it. `http://localhost:3000` covers local dev against real
-// Edge Functions.
+// the app's real origins now that they're known.
+//
+// One entry per real deployed environment (see `git_strategy.description`
+// in `.agents/project.yaml` for the three-tier URL map):
+//   - fresco-pro.vercel.app  — production (main)
+//   - fresco-pre.vercel.app  — staging
+//   - fresco-dev.vercel.app  — dev
+//   - http://localhost:3000  — local dev against real Edge Functions
+//
+// FRESCO-297: `fresco-dev.vercel.app` was missing — the three-tier upgrade
+// (2026-08-21) made dev a real environment but this list was never updated,
+// so every Edge Function call from dev got a preflight-200 with no
+// `Access-Control-Allow-Origin` header and the browser hard-blocked the
+// real request (`TypeError: Failed to fetch` — user saw "No pudimos
+// conectar con el servidor"). Same failure mode FRESCO-193 fixed for
+// `fresco-pre`. `fresco-staging.vercel.app` removed here: it is an old
+// stale alias (`.agents/project.yaml` — "do not use it").
 const ALLOWED_ORIGINS = new Set([
   'https://fresco-pro.vercel.app',
   'https://fresco-pre.vercel.app',
-  'https://fresco-staging.vercel.app',
+  'https://fresco-dev.vercel.app',
   'http://localhost:3000',
 ])
 
