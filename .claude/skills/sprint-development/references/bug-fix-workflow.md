@@ -35,7 +35,8 @@ Analyze, triage, and fix bugs/defects reported during exploratory testing or pro
 5. **Verify the fix** passes typecheck, lint, build, and manual testing
 6. **Create branch, commit, and PR** with proper documentation
 7. **Document in Jira** with root cause analysis and fix details
-8. **Provide educational feedback** to improve bug report quality (optional)
+8. **Link the defect to the affected story/epic + attach minimal evidence** (traceability contract — Phase 1 Step 2c, confirmed at close)
+9. **Provide educational feedback** to improve bug report quality (optional)
 
 **Prerequisites:**
 
@@ -363,6 +364,26 @@ These two fields are option-type, have no 255-char limit, and are the currency o
 ```
 
 If either field is absent on the instance, write the value to its fallback comment per `.agents/jira-required.yaml`. Do NOT retro-fill bugs already closed — new work only. `{{jira.root_cause}}` stays empty here; it is set at close (Phase 7).
+
+**Step 2c: Link the defect to the affected feature + attach minimal evidence (FRESCO-282 traceability contract)**
+
+A defect with no link to the story/epic it regressed is invisible to defect-density-per-feature JQL — the headline shift-left metric. On new work this is MANDATORY, not optional. Do it now if the affected feature is already obvious from the report; otherwise the latest it can happen is the moment root-cause analysis (Phase 4) names the file/feature — and it is a hard gate before close (Phase 7). No retroactive sweep of already-closed defects — new work only.
+
+1. **Link to the affected story/epic.** Identify the story or epic whose behavior this defect broke (from the report, the linked story, or — later — the root-cause file → owning feature). Then:
+   - Symmetric case (default) → `Relates` link between the defect and the affected story/epic.
+   - Clearly one epic's regression, no specific story → set the defect's `parent` to that epic instead.
+
+   ```
+   [ISSUE_TRACKER_TOOL] link create --type "Relates" [BUG_ID] <-> [AFFECTED-STORY-OR-EPIC]
+   ```
+   `Relates` is symmetric — flag order does not matter. For an asymmetric type (`Blocks`, `Causes`) mind the empirical `--out`/`--in` inversion and verify with `link list` — see `../acli/references/workitem.md` § Directionality. Resolve the link-type name via `{{jira.link_types.<slug>}}` against `.agents/jira-required.yaml` (`relates`, `blocks`, `causes`), never hardcode.
+
+2. **Attach minimal evidence.** A screenshot ALWAYS; additionally a HAR / network capture when the defect is a network or API defect (`error_type` ∈ `integration | data | performance`, or any 4xx/5xx / payload-shape symptom). Upload the file and populate `{{jira.evidence}}`:
+
+   ```
+   bun .claude/skills/acli/scripts/jira-attach-media.ts [BUG_ID] ./repro.png --caption "Repro — <state>" --publish
+   ```
+   Then record the evidence in `{{jira.evidence}}` (link/description of what was attached). If the field is absent on the instance, write it to the `## Evidence` fallback comment per `.agents/jira-required.yaml`. HAR files attach the same way (`--publish` posts the inline note; the `.har` rides in the Attachments panel).
 
 **Step 3: Check for duplicates**
 
@@ -803,6 +824,8 @@ Next steps:
 Values for `{{jira.root_cause}}`: `code_error | config_env_error | data_error | environment_error | integration_error | requirement_error | third_party_error | working_as_designed`.
 
 **Confirm Severity + Error Type are set** (FRESCO-281 contract). They should already be filled from Phase 1 Step 2b; if either is still empty, set it now before transitioning — a closed bug with a blank Severity or Error Type breaks the defect-density-per-feature dashboards this contract exists to enable.
+
+**Confirm the feature link + evidence are in place** (FRESCO-282 contract). The defect must carry a `Relates` link (or `parent`) to the story/epic it regressed, and `{{jira.evidence}}` (or its fallback comment) must hold at least a screenshot — plus a HAR for network/API defects. Root-cause analysis (Phase 4) has now named the affected file/feature, so if the link was deferred at intake, create it now — before transitioning. A closed defect with no feature link cannot be counted in defect-density-per-feature.
 
 **Step 2: Add Fix Documentation Comment**
 
@@ -1520,6 +1543,7 @@ Before presenting the final report, verify:
 - [ ] Reproduction documented
 - [ ] Triage decision made and documented
 - [ ] `{{jira.severity}}` + `{{jira.error_type}}` set (backfilled at intake if empty) — FRESCO-281
+- [ ] Defect linked (`Relates` or `parent`) to the affected story/epic + `{{jira.evidence}}` holds a screenshot (HAR too for network/API defects) — FRESCO-282
 - [ ] Root Cause custom fields updated (`{{jira.root_cause}}` + `{{jira.fix}}`)
 - [ ] Fix documentation comment added
 - [ ] Issue transitioned to Ready For QA

@@ -536,6 +536,7 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 11. **Language**: artifacts, code, and commit messages in English. Mirror the user's language only in conversation.
 12. **ADR-worthy decisions get recorded**: a decision that is architectural AND hard to reverse goes to `.context/ADR/` (append-only), not buried in the impl plan. Story-local trade-offs stay in the plan. Read existing ADRs before planning a cross-cutting story so you don't violate one. See `agentic-dev-core/references/adr-doctrine.md`.
 13. **Structured QA fields on new work** (FRESCO-281): a Story does not clear Stage 1 without `{{jira.story_points}}` written (dev estimate). A bug does not clear Stage 2 intake without `{{jira.severity}}` + `{{jira.error_type}}` set, nor Stage 3 close without `{{jira.root_cause}}` set (`references/bug-fix-workflow.md`). No backfill on the ~220 already-closed items — new work only. ATP/ATR stay deferred to the QA-repo phase.
+14. **Defect → feature link + evidence** (FRESCO-282): a bug/defect does not clear intake (`references/bug-fix-workflow.md` Phase 1 Step 2c) without a `Relates` link — or `parent`, when it is clearly one epic's regression — to the affected story/epic, AND `{{jira.evidence}}` (or its fallback comment) carrying at least a screenshot, plus a HAR for any network/API defect. If the affected feature is not yet known at intake, the link is created the moment root-cause analysis names it and is a hard gate before close (Phase 7). Forward-only — no retroactive sweep of already-closed defects.
 
 ---
 
@@ -549,6 +550,7 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 - [ ] Epic precheck: `feature-plan.md` + `feature-implementation-plan.md` exist or user confirmed proceeding without
 - [ ] Stage 1 plan pushed to Jira `spec_implementation_plan` (or fallback comment), synced, and read back as `implementation-plan.md`; Jira transitioned to `In Progress`
 - [ ] **Story Points estimated by the dev team and written to `{{jira.story_points}}`** on the Story (Fibonacci; 13+ → flag for split) — FRESCO-281 structured-QA-field contract; distinct from `/product-management` `I16` (PO/BA still does not estimate at refinement)
+- [ ] **Bug/defect linked to the affected story/epic** (`Relates`, or `parent` for a clear epic regression) + `{{jira.evidence}}` holds a screenshot (plus a HAR for network/API defects) — FRESCO-282 traceability contract; created at intake or as soon as root cause names the feature, hard gate before close
 - [ ] ATP read via sync (jira-native: synced `acceptance-test-plan.md`; jira-xray: synced `test-plans/TESTPLAN-<KEY>-<slug>.md`; final fallback = `comments.md` / issue description) and mapped into the plan
 - [ ] Stage 2 verification (lint + types + tests) green; commits atomic
 - [ ] **Live-UI validation** run for any UI story — in the active flow mode (subagent if Orchestrated, inline if Solo) via `[AUTOMATION_TOOL]`; gaps fixed + re-validated; never via a production build
@@ -580,6 +582,7 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 - **S14.** NEVER skip live-UI validation on a UI story by leaning on tests / types / lint alone — those are green while the rendered UI is wrong. Validate the RUNNING app, in the active flow mode, via the project's `[AUTOMATION_TOOL]`; never validate against a production build.
 - **S15.** NEVER auto-accept reviewer findings wholesale. Each finding is adjudicated (verify, or dismiss-with-reason); applying false positives is as much a defect as ignoring real ones.
 - **S16.** NEVER leave a Ready-For-QA story assigned to the developer. Re-assign to the shift-left QA owner, or leave unassigned if there was no shift-left phase. Verify the change (assignment gotchas in Stage 4).
+- **S17.** NEVER close a bug/defect that has no link to the story/epic it regressed and no evidence in `{{jira.evidence}}`. An orphan defect cannot be counted in defect-density-per-feature — the headline shift-left metric. Link via `Relates` (or `parent` for a clear epic regression) and attach a screenshot (plus a HAR for network/API defects) at intake, or the moment root cause names the feature. Forward-only — do not sweep already-closed defects (FRESCO-282).
 
 ---
 
