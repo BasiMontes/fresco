@@ -38,11 +38,18 @@ Given(/^que un visitante sin cuenta rellena email y contraseña en \/signup$/, a
   ctx.email = `qa-signup-${Date.now()}@example.com`;
   ctx.password = 'Qa-Signup-Password-123!';
 
+  // Match on a regex, not a `**/auth/v1/signup` glob: FRESCO-264's
+  // `emailRedirectTo` option makes supabase-js append `?redirect_to=...` to
+  // the signup URL, and a trailing-segment glob never matches a URL with a
+  // query string — the real call then slips past both the route mock and
+  // this wait.
+  const signupUrlPattern = /\/auth\/v1\/signup(\?|$)/;
+
   // Must be registered before the submit click (When step) fires the request.
-  ctx.signupRequest = page.waitForRequest('**/auth/v1/signup');
+  ctx.signupRequest = page.waitForRequest(signupUrlPattern);
 
   // Mock the network call to Supabase Auth — see file header for why.
-  await page.route('**/auth/v1/signup', async (route) => {
+  await page.route(signupUrlPattern, async (route) => {
     const fakeUserId = '00000000-0000-4000-8000-000000000000';
     const nowIso = new Date().toISOString();
     await route.fulfill({
