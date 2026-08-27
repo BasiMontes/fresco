@@ -58,8 +58,12 @@ Given(
     ctx.signupRequest = page.waitForRequest(request =>
       request.url().includes('/auth/v1/user') && request.method() === 'PUT');
 
-    // Mock only the conversion call — see file header for why.
-    await page.route('**/auth/v1/user', async (route) => {
+    // Mock only the conversion call — see file header for why. Regex, not a
+    // `**/auth/v1/user` glob: `updateUser({ email })` carries a
+    // `?redirect_to=...` query (secure email change), and a trailing-segment
+    // glob never matches a URL with a query string — the real call would
+    // slip past the mock (same trap as signup.steps.ts).
+    await page.route(/\/auth\/v1\/user(\?|$)/, async (route) => {
       if (route.request().method() !== 'PUT') {
         await route.continue();
         return;
