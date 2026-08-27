@@ -4260,3 +4260,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: fix híbrido del ámbar #DF8C26 que fallaba AA (2,40:1). Rellenos → texto oscuro #201E1D (~6,3:1) + hover aclara a accent-2-400; ámbar-como-texto sobre crema → accent-2-700 #8A5513 (~5,6:1). Token global intacto. DESIGN.md: retirada la nota "Documented AA bypass". PR #159 a dev, promovido ff-only dev→staging→main (2a1eb6d).
 - Por qué: re-auditoría 27 ago, hallazgo 05 (ALTO); contradecía un bypass autorizado a propósito en DESIGN.md.
 - Siguiente: QA en staging/pro. Fuera de scope (ticket aparte): text-warning en password-input + legal-modal, token de texto atenuado #847456.
+
+## 2026-08-27 - FRESCO-299: contraste WCAG AA (text-warning + token tertiary)
+- Qué: 3 hallazgos fuera del scope de 283. text-warning "Media"/aviso legal → text-accent-2-700 (4,88:1). Token --color-tertiary #847456→#6F5F43 (~4,9:1 surface / ~5,6:1 crema), desacoplado de --color-neutral-600 que sigue #847456. ~173 usos de text-tertiary arreglados con 1 línea. PR #160 a dev, promovido ff-only dev→staging→main (46666e5).
+- Por qué: deuda de contraste de la re-auditoría (eje Diseño), hijo de FRESCO-278.
+- Siguiente: QA. Pre-existente sin tocar: bg-warning/10 no pinta tinte (alpha de Tailwind sobre CSS var en hex).
