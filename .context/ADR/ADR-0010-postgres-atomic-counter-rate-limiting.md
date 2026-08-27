@@ -43,6 +43,7 @@ Concretely:
 - Retention IS handled here (added at acceptance, 2026-08-27): the migration schedules a `cleanup-expired-rate-limits` `pg_cron` job (daily `03:15`) that deletes rows whose `window_start` is more than 2 hours stale — reusing the exact `pg_cron` pattern from the guest-cleanup job (FRESCO-238). A window older than the current hour can never be re-hit, so the 2-hour margin is pure safety.
 - If a future Edge Function's legitimate traffic pattern genuinely needs sliding-window precision (not just "some abuse control"), that is a new decision to make at that time, not an automatic upgrade of this table — this ADR only commits to the fixed-window, single-table, atomic-RPC shape.
 - Threshold (5/hour) and window (fixed hour) are `generate-meal-plan`-specific product decisions, stored as RPC call parameters, not hardcoded into the shared mechanism — future adopting functions choose their own values.
+- **Test-account exemption (added 2026-08-27, `20260827215620_rate_limit_exempt_test_users.sql`):** the RPC short-circuits to `return true` for the 4 fixed e2e test-account UIDs. The blocking `test:e2e` CI check makes ~12 `generate-meal-plan` calls per run, several for the same shared account within the hour, which the 5/hour limit would 429 — reddening every PR. The exemption is a hardcoded UID array, not a config table: a config table + admin UI is the right long-term shape but disproportionate for 4 fixed rows on a single-maintainer project. Tech-debt to revisit if a real allow-list need emerges.
 
 ## Alternatives considered
 
