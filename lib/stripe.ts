@@ -21,6 +21,32 @@ function requireStripeSecretKey(): string {
   return key;
 }
 
+/**
+ * The Stripe webhook signing secret for the endpoint registered against THIS
+ * deploy's URL. Stripe issues one signing secret per registered endpoint, so
+ * the staging deploy and the production deploy verify against different
+ * secrets.
+ *
+ * Vercel scoping (set 2026-08-26): `STRIPE_WEBHOOK_SECRET` exists only in the
+ * Production scope; the Preview scope (both `fresco-dev` and `fresco-pre`
+ * deploys) instead carries `STRIPE_WEBHOOK_SECRET_PRE` — the secret for the
+ * endpoint registered against `fresco-pre.vercel.app`, which is also the one
+ * the e2e suite signs its fabricated events with (`tests/test-helpers.ts`).
+ * Before this switch the route always read the unscoped var, so every Preview
+ * deploy returned "Webhook no configurado" (FRESCO — e2e verification).
+ *
+ * `VERCEL_ENV` is `production` | `preview` | undefined (local `bun run dev`,
+ * where the value is the `stripe listen` forwarding secret) — mirrors
+ * `lib/urls.ts` `getEnvironment()`, which likewise collapses both Preview
+ * deploys to one non-local target.
+ */
+export function resolveWebhookSecret(): string | undefined {
+  if (process.env.VERCEL_ENV === 'preview') {
+    return process.env.STRIPE_WEBHOOK_SECRET_PRE ?? process.env.STRIPE_WEBHOOK_SECRET;
+  }
+  return process.env.STRIPE_WEBHOOK_SECRET;
+}
+
 let cachedStripe: Stripe | undefined;
 
 function getStripe(): Stripe {
