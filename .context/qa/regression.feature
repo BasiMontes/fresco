@@ -247,7 +247,7 @@ Característica: Flujo completo de usuario en Fresco
 
   @generacion-menu @edge-case @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/entrega-parcial.steps.ts (playwright-bdd,
-  # cuenta de test dedicada PRO_TEST_USER_EMAIL — fixture sembrado por REST,
+  # cuenta de test dedicada PRO_USER_EMAIL — fixture sembrado por REST,
   # sin mock; ver el archivo para por qué no usa la cuenta compartida)
   Escenario: El frontend muestra la franja sin receta segura
     Dado que un menú persistido tiene una franja con recipe_id null
@@ -335,7 +335,7 @@ Característica: Flujo completo de usuario en Fresco
 
   @registro-progresivo @edge-case @pendiente
   # NO automatizable con la infraestructura de test actual: verificado en
-  # vivo (dos veces, con USER_EMAIL_PRE y con la llamada updateUser({email,
+  # vivo (dos veces, con PRE_USER_EMAIL y con la llamada updateUser({email,
   # password}) original combinada) que Supabase encola el cambio con 200 sin
   # error — incluso cuando el email de destino ya pertenece a otra cuenta
   # confirmada — el mismo comportamiento anti-enumeración que este archivo ya
@@ -344,7 +344,7 @@ Característica: Flujo completo de usuario en Fresco
   # password }) posterior), que ahora lo captura y muestra esta misma
   # pantalla — pero confirmarlo de punta a punta requiere el código de 6
   # dígitos real, y no hay ningún fixture en `tests/` que lea un inbox real
-  # (ni siquiera para PRO_TEST_USER_EMAIL). Pendiente de QA manual con
+  # (ni siquiera para PRO_USER_EMAIL). Pendiente de QA manual con
   # inbox real.
   Escenario: El email de conversión ya pertenece a una cuenta real distinta
     Dado que una invitada intenta convertir su sesión con un email ya registrado
@@ -354,7 +354,7 @@ Característica: Flujo completo de usuario en Fresco
 
   @registro-progresivo @edge-case @pendiente
   # Depende de alcanzar la pantalla de conflicto de arriba — mismo bloqueo:
-  # requiere el código de 6 dígitos real de PRO_TEST_USER_EMAIL, sin fixture
+  # requiere el código de 6 dígitos real de PRO_USER_EMAIL, sin fixture
   # de lectura de inbox en tests/. El mecanismo de reasignación en sí
   # (`handleReassign`, `reassign_guest_data()`) no se tocó en FRESCO-89 y
   # sigue siendo el mismo verificado de punta a punta el 2026-07-31 — lo que
@@ -695,7 +695,7 @@ Característica: Flujo completo de usuario en Fresco
     # descartada excluyen) + get_user_cooked_recipe_ids() (historial
     # personal para destacadas) + buildLearningExplanation() ahora reporta
     # cocinadasEvitadas/descartadasEvitadas por separado. Verificado en
-    # vivo contra PRO_TEST_USER_EMAIL: 1 slot marcado cocinada + 1
+    # vivo contra PRO_USER_EMAIL: 1 slot marcado cocinada + 1
     # descartada + 19 pendientes → semana siguiente excluye exactamente
     # esos 2, el resto sigue disponible, texto separa "ya cocinaste"(1) de
     # "descartaste"(1). "la IA" ya no aplica — sigue siendo 100%
@@ -703,7 +703,7 @@ Característica: Flujo completo de usuario en Fresco
 
   @aprendizaje @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/aprendizaje-pro.steps.ts (playwright-bdd,
-  # cuenta de test dedicada PRO_TEST_USER_EMAIL, real Gemini call — sin mock)
+  # cuenta de test dedicada PRO_USER_EMAIL, real Gemini call — sin mock)
   Escenario: El usuario Pro ve la tarjeta de explicación en /menu
     Dado que un usuario Pro tiene explicacion_aprendizaje no nula en su menú
     Cuando visita /menu
