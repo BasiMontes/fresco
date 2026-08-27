@@ -80,12 +80,15 @@ export default function QaGuidePage() {
                 <CardTitle>PRE / staging</CardTitle>
               </div>
               <CardDescription>
-                https://fresco-pre.vercel.app y https://fresco-pro.vercel.app apuntan hoy al mismo
-                despliegue de producción (verificado por
+                https://fresco-pre.vercel.app sigue la rama
                 {' '}
-                <code>vercel inspect</code>
+                <code>staging</code>
                 {' '}
-                — mismo ID de deploy en ambos alias).
+                y https://fresco-pro.vercel.app la rama
+                {' '}
+                <code>main</code>
+                , cada una atada a su despliegue más reciente vía Vercel Git Branch. Son
+                entornos distintos, aunque a veces apunten al mismo commit tras una promoción.
               </CardDescription>
             </CardHeader>
           </Card>
