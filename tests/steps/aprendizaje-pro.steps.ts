@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restHeaders } from '../test-helpers';
+import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @aprendizaje,
@@ -36,9 +36,10 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
 
   // Real history requires a real Pro-tier profile — get_recent_recipe_marks()
   // (ADR-0006) is read unconditionally by index.ts once isPro is true
-  // server-side.
+  // server-side. Service-role headers required: `protect_subscription_columns`
+  // (ADR-0007) rejects `plan` writes from any other role.
   const patchRes = await request.patch(`${url}/rest/v1/user_profiles`, {
-    headers: { ...headers, Prefer: 'return=minimal' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=minimal' },
     params: { id: `eq.${userId}` },
     data: { plan: 'pro' },
   });

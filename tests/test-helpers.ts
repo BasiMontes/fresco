@@ -94,6 +94,37 @@ function testStripe(): Stripe {
 }
 
 /**
+ * Picks the Stripe webhook signing secret that matches whatever
+ * `PLAYWRIGHT_BASE_URL` (see `playwright.config.ts`) actually points at.
+ * Stripe issues one signing secret PER REGISTERED ENDPOINT — the local
+ * `.env` value is the `stripe listen --forward-to localhost:3000/...`
+ * forwarding secret, which is a different secret from the one Vercel holds
+ * for the real endpoint registered against the deployed staging URL. Signing
+ * with the wrong one makes `stripe.webhooks.constructEvent` reject with
+ * "Firma inválida" — confirmed empirically running the suite against
+ * staging (FRESCO-277 follow-up).
+ *
+ * No production case: Grupo A intentionally never targets
+ * `fresco-pro.vercel.app` — fabricating signed Stripe events against the
+ * real production webhook wasn't asked for and isn't wired.
+ */
+function resolveWebhookSecret(): string {
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? '';
+
+  if (baseURL.includes('fresco-pre.vercel.app')) {
+    const secret = process.env.STRIPE_WEBHOOK_SECRET_PRE;
+    if (!secret) { throw new Error('STRIPE_WEBHOOK_SECRET_PRE must be set in .env to run @suscripcion webhook scenarios against staging.'); }
+    return secret;
+  }
+
+  if (baseURL.includes('fresco-pro.vercel.app')) {
+    throw new Error('@suscripcion webhook scenarios are not wired to run against production — no STRIPE_WEBHOOK_SECRET_PRODUCTION support.');
+  }
+
+  return process.env.STRIPE_WEBHOOK_SECRET!;
+}
+
+/**
  * Signs a fabricated Stripe event payload with the real `STRIPE_WEBHOOK_SECRET`
  * (via the SDK's own `generateTestHeaderString`, the mechanism Stripe
  * documents for exercising webhook handlers without waiting on a real
@@ -121,7 +152,7 @@ export async function postSignedStripeEvent(
   });
   const signature = testStripe().webhooks.generateTestHeaderString({
     payload,
-    secret: process.env.STRIPE_WEBHOOK_SECRET!,
+    secret: resolveWebhookSecret(),
   });
 
   return request.post('/api/stripe/webhook', {

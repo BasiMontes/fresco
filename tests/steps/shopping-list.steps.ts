@@ -97,7 +97,10 @@ Then(/^ve un resumen con el total de productos y el coste estimado$/, async ({ p
   // pendientes count and a "Total estimado" figure in separate DOM nodes
   // (Resumen card), so a single cross-node text match no longer applies.
   await expect(page.getByText(/\d+ artículos? pendientes?/)).toBeVisible();
-  await expect(page.getByText(/\d+(\.\d+)?–\d+(\.\d+)? EUR/)).toBeVisible();
+  // The "Total estimado" figure renders as `min–max€` with a comma decimal and
+  // a trailing `€` (shopping-list-view.tsx `formatPrecio` — matches the app's
+  // "2,80€/persona" convention), not "Y-Z EUR".
+  await expect(page.getByText(/\d+(,\d+)?–\d+(,\d+)?€/)).toBeVisible();
 });
 
 Given(/^que el usuario tiene una lista de la compra generada$/, async ({ page, request }) => {
