@@ -38,14 +38,14 @@ Given(
   /^que dos cuentas reales y distintas existen, cada una con su propio perfil e historial de comidas$/,
   async ({ request }) => {
     if (
-      !process.env.LOCAL_USER_EMAIL || !process.env.LOCAL_USER_PASSWORD
-      || !process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD
+      !process.env.DEV_USER_EMAIL || !process.env.DEV_USER_PASSWORD
+      || !process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD
     ) {
-      throw new Error('LOCAL_USER_* / PRO_TEST_USER_* must be set in .env for this scenario.');
+      throw new Error('DEV_USER_* / PRO_USER_* must be set in .env for this scenario.');
     }
 
-    ctx.accessTokenA = await getAccessToken(request, process.env.LOCAL_USER_EMAIL, process.env.LOCAL_USER_PASSWORD);
-    const accessTokenB = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+    ctx.accessTokenA = await getAccessToken(request, process.env.DEV_USER_EMAIL, process.env.DEV_USER_PASSWORD);
+    const accessTokenB = await getAccessToken(request, process.env.PRO_USER_EMAIL, process.env.PRO_USER_PASSWORD);
     ctx.userIdB = await currentUserId(request, accessTokenB);
   },
 );
@@ -94,7 +94,7 @@ interface SwapCtx {
 const swapCtx: SwapCtx = { slotAId: '', slotBId: '', swapResponse: { status: 0, body: undefined } };
 
 Given(/^que otra cuenta real tiene un menú con dos franjas propias$/, async ({ request }) => {
-  const accessTokenB = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const accessTokenB = await getAccessToken(request, process.env.PRO_USER_EMAIL!, process.env.PRO_USER_PASSWORD!);
   const headersB = restHeaders(accessTokenB);
   const userIdB = await currentUserId(request, accessTokenB);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -123,7 +123,7 @@ Given(/^que otra cuenta real tiene un menú con dos franjas propias$/, async ({ 
 });
 
 When(/^intento intercambiar esas dos franjas ajenas desde mi propia sesión$/, async ({ request }) => {
-  const accessTokenA = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+  const accessTokenA = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
   const res = await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/swap_meal_plan_slots`, {
     headers: restHeaders(accessTokenA),
     data: { p_slot_a_id: swapCtx.slotAId, p_slot_b_id: swapCtx.slotBId },
@@ -148,7 +148,7 @@ interface ComprarCtx {
 const comprarCtx: ComprarCtx = { listId: '', setComprado: { status: 0 } };
 
 Given(/^que otra cuenta real tiene una lista de la compra con un ítem sin comprar$/, async ({ request }) => {
-  const accessTokenB = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const accessTokenB = await getAccessToken(request, process.env.PRO_USER_EMAIL!, process.env.PRO_USER_PASSWORD!);
   const headersB = restHeaders(accessTokenB);
   const userIdB = await currentUserId(request, accessTokenB);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -176,7 +176,7 @@ Given(/^que otra cuenta real tiene una lista de la compra con un ítem sin compr
 });
 
 When(/^intento marcar ese ítem ajeno como comprado desde mi propia sesión$/, async ({ request }) => {
-  const accessTokenA = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+  const accessTokenA = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
   const res = await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/jsonb_set_comprado`, {
     headers: restHeaders(accessTokenA),
     data: { p_list_id: comprarCtx.listId, p_pasillo_idx: 0, p_item_idx: 0, p_comprado: true },
@@ -187,7 +187,7 @@ When(/^intento marcar ese ítem ajeno como comprado desde mi propia sesión$/, a
 Then(/^la llamada no da error pero el ítem de la otra cuenta sigue sin comprar$/, async ({ request }) => {
   expect(comprarCtx.setComprado.status).toBe(204);
 
-  const accessTokenB = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const accessTokenB = await getAccessToken(request, process.env.PRO_USER_EMAIL!, process.env.PRO_USER_PASSWORD!);
   const res = await request.get(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/shopping_lists?id=eq.${comprarCtx.listId}&select=items`,
     { headers: restHeaders(accessTokenB) },

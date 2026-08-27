@@ -17,7 +17,7 @@ import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restH
  * anti-enumeration behavior this suite already works around for `signUp()`.
  * `email_exists` now only surfaces inside `handleVerifyOtp`
  * (`app/signup/page.tsx`), which requires the real 6-digit code sent to
- * `PRO_TEST_USER_EMAIL`'s inbox — this test suite has no fixture that reads
+ * `PRO_USER_EMAIL`'s inbox — this test suite has no fixture that reads
  * a real inbox, for this account or any other. Automating this again needs
  * that fixture built first; until then it's manual QA
  * (`.context/qa/regression.feature`).
@@ -64,13 +64,13 @@ async function generateRealGuestMenu(page: import('@playwright/test').Page): Pro
 }
 
 /**
- * Seeds `PRO_TEST_USER_EMAIL`'s CURRENT week plan with real recipes, so a
+ * Seeds `PRO_USER_EMAIL`'s CURRENT week plan with real recipes, so a
  * guest's own current-week generation genuinely conflicts with it — needed
  * for "la cuenta real conserva exactamente su plan original" to mean
  * anything (otherwise there's nothing on the real side to preserve).
  */
 async function seedProUserCurrentWeekPlan(request: import('@playwright/test').APIRequestContext): Promise<void> {
-  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const accessToken = await getAccessToken(request, process.env.PRO_USER_EMAIL!, process.env.PRO_USER_PASSWORD!);
   const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -91,18 +91,18 @@ async function seedProUserCurrentWeekPlan(request: import('@playwright/test').AP
       advertencias: [],
     },
   });
-  if (!planRes.ok()) { throw new Error(`Failed to seed PRO_TEST_USER's plan: ${planRes.status()} ${await planRes.text()}`); }
+  if (!planRes.ok()) { throw new Error(`Failed to seed PRO_USER's plan: ${planRes.status()} ${await planRes.text()}`); }
   const [plan] = await planRes.json() as { id: string }[];
 
   const slots = DIAS.flatMap(dia => TIPOS.map(tipo => ({ meal_plan_id: plan.id, recipe_id: recipe.id, dia, tipo_plato: tipo })));
   const slotsRes = await request.post(`${url}/rest/v1/meal_plan_recipes`, { headers, data: slots });
-  if (!slotsRes.ok()) { throw new Error(`Failed to seed PRO_TEST_USER's slots: ${slotsRes.status()} ${await slotsRes.text()}`); }
+  if (!slotsRes.ok()) { throw new Error(`Failed to seed PRO_USER's slots: ${slotsRes.status()} ${await slotsRes.text()}`); }
 }
 
-/** Drives the guest through /signup with PRO_TEST_USER_EMAIL until the conflict UI appears. */
+/** Drives the guest through /signup with PRO_USER_EMAIL until the conflict UI appears. */
 async function reachEmailConflict(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/signup');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
   await page.getByTestId('password_input').fill(`Qa-New-Password-${Date.now()}!`);
   await page.getByTestId('signup_submit_button').click();
   await expect(page.getByTestId('signup_email_conflict_message')).toBeVisible();
@@ -133,7 +133,7 @@ Given(/^que una invitada intenta convertir su sesión con un email ya registrado
   test.skip(true, 'FRESCO-89: email_exists now only surfaces after a real OTP verification — no inbox-reading fixture in this suite (see file header).');
   await ensureAnonymousSession(page);
   await page.goto('/signup');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
   await page.getByTestId('password_input').fill(`Qa-New-Password-${Date.now()}!`);
 });
 
@@ -157,8 +157,8 @@ Given(
   async ({ page, request }) => {
     test.skip(true, 'FRESCO-89: email_exists now only surfaces after a real OTP verification — no inbox-reading fixture in this suite (see file header).');
     test.setTimeout(240_000);
-    if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
-      throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
+    if (!process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD) {
+      throw new Error('PRO_USER_EMAIL / PRO_USER_PASSWORD must be set in .env for this scenario.');
     }
     await seedProUserCurrentWeekPlan(request);
     await generateRealGuestMenu(page); // same current week -> a genuine conflict for the reassignment RPC to resolve
@@ -167,7 +167,7 @@ Given(
 );
 
 When(/^la ingresa y confirma$/, async ({ page }) => {
-  await page.getByTestId('conflict_password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('conflict_password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('signup_reassign_button').click();
 });
 
@@ -184,7 +184,7 @@ Then(/^su sesión anónima y perfil huérfano se eliminan$/, async () => {
 });
 
 Then(/^la cuenta real conserva exactamente su plan original, sin duplicarse$/, async ({ request }) => {
-  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL!, process.env.PRO_TEST_USER_PASSWORD!);
+  const accessToken = await getAccessToken(request, process.env.PRO_USER_EMAIL!, process.env.PRO_USER_PASSWORD!);
   const headers = restHeaders(accessToken);
   const semanaIso = isoWeekOf(new Date());
   const res = await request.get(

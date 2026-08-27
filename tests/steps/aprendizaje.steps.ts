@@ -38,7 +38,7 @@ const { Given, When, Then } = createBdd(test);
  * `generacion-determinista.steps.ts` / `aprendizaje-pro.steps.ts`.
  */
 async function reseedCurrentWeekPlan(request: import('@playwright/test').APIRequestContext): Promise<void> {
-  const accessToken = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+  const accessToken = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
   const headers = restHeaders(accessToken);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const { semanaIso, fechaInicio } = currentWeekMonday();
@@ -55,8 +55,8 @@ async function reseedCurrentWeekPlan(request: import('@playwright/test').APIRequ
 
 async function loginAndGoToCalendar(page: import('@playwright/test').Page) {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.LOCAL_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.LOCAL_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.DEV_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.DEV_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/calendar');

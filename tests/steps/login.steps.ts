@@ -6,24 +6,24 @@ import { createBdd } from 'playwright-bdd';
  * "Inicio de sesión correcto con credenciales válidas".
  *
  * Credentials come from the QA test user provisioned in `.env`
- * (`LOCAL_USER_EMAIL` / `LOCAL_USER_PASSWORD`) — never hardcoded here.
+ * (`DEV_USER_EMAIL` / `DEV_USER_PASSWORD`) — never hardcoded here.
  */
 const { Given, When, Then } = createBdd();
 
 Given(/^que existe un usuario registrado con email y contraseña válidos$/, async () => {
   // Precondition only: the QA test user already exists in Supabase Auth,
   // provisioned out of band via .env. Fail fast if the fixture is missing.
-  if (!process.env.LOCAL_USER_EMAIL || !process.env.LOCAL_USER_PASSWORD) {
+  if (!process.env.DEV_USER_EMAIL || !process.env.DEV_USER_PASSWORD) {
     throw new Error(
-      'LOCAL_USER_EMAIL / LOCAL_USER_PASSWORD must be set in .env for this scenario.',
+      'DEV_USER_EMAIL / DEV_USER_PASSWORD must be set in .env for this scenario.',
     );
   }
 });
 
 When(/^introduce esas credenciales en \/login y confirma el formulario$/, async ({ page }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.LOCAL_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.LOCAL_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.DEV_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.DEV_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
 });
 

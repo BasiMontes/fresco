@@ -26,9 +26,9 @@ import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders, serv
  * call, so those use a synthetic-but-consistent object referencing whatever
  * ids are already on the account's `user_profiles` row.
  *
- * Dedicated account (`PRO_TEST_USER_EMAIL`) — same rationale as
+ * Dedicated account (`PRO_USER_EMAIL`) — same rationale as
  * `entrega-parcial.steps.ts`/`aprendizaje-pro.steps.ts`: doesn't collide
- * with `@aprendizaje`'s pendiente-slot fixture on `LOCAL_USER_EMAIL`. Only
+ * with `@aprendizaje`'s pendiente-slot fixture on `DEV_USER_EMAIL`. Only
  * touches `user_profiles.plan`/`stripe_customer_id`/`stripe_subscription_id`/
  * `payment_failed_at` — never `meal_plans`, so it doesn't disturb the
  * learning-history fixture other scenarios on this same account depend on.
@@ -63,10 +63,10 @@ import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders, serv
 const { Given, When, Then } = createBdd(test);
 
 async function proAccessToken(request: Parameters<typeof getAccessToken>[0]): Promise<string> {
-  if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
-    throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
+  if (!process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD) {
+    throw new Error('PRO_USER_EMAIL / PRO_USER_PASSWORD must be set in .env for this scenario.');
   }
-  return getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+  return getAccessToken(request, process.env.PRO_USER_EMAIL, process.env.PRO_USER_PASSWORD);
 }
 
 /** Deterministic-per-user fake Stripe ids for the events that never round-trip through Stripe's real API (updated/deleted). */
@@ -244,8 +244,8 @@ When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/,
 
 Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/profile');
@@ -292,8 +292,8 @@ Then(/^su cuenta sigue en plan Pro sin interrupción visible$/, async ({ request
 
 Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/profile');
@@ -333,8 +333,8 @@ When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con s
 
 async function loginAsProTestUser(page: Page): Promise<void> {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
 }

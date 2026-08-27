@@ -6,7 +6,7 @@
 
 ## 1. CRITICAL RULES — ALWAYS APPLY
 
-1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Example keys: `LOCAL_USER_EMAIL`, `STAGING_USER_PASSWORD`. Add `[Project-specific reminders]` per project (e.g. "SPA and API on different hosts — use correct base URLs").
+1. **CREDENTIALS**: ALWAYS read from `.env`. NEVER hardcode/guess. Example keys: `DEV_USER_EMAIL`, `PRE_USER_PASSWORD`, `PRO_USER_EMAIL` (per-env test users — `{DEV,PRE,PRO}_USER_{EMAIL,PASSWORD}`; renamed from `LOCAL_USER_*` / `PRO_TEST_USER_*` / `USER_*_PRE` on 2026-08-27). Add `[Project-specific reminders]` per project (e.g. "SPA and API on different hosts — use correct base URLs").
 2. **PLAN BEFORE CODING**: Produce impl plan (`implementation-plan.md` or skill-internal plan) BEFORE code. Flow: Plan → Code → Review.
 3. **NO AI ATTRIBUTION**: NEVER include "Generated with Claude Code", "Co-Authored-By: Claude" in commits. Commits look human-authored.
 4. **CONFIRM BEFORE PUSH TO MAIN**: NEVER push to `main` without explicit user confirmation.

@@ -8,8 +8,8 @@ import { currentUserId, currentWeekMonday, getAccessToken, restHeaders } from '.
  * "El frontend muestra la franja sin receta segura" (FR-8.2 / AC Scenario 4,
  * FRESCO-23).
  *
- * Uses a DEDICATED test account (`PRO_TEST_USER_EMAIL`/`_PASSWORD`), not the
- * shared `LOCAL_USER_EMAIL` one — that account's current-week plan is the
+ * Uses a DEDICATED test account (`PRO_USER_EMAIL`/`_PASSWORD`), not the
+ * shared `DEV_USER_EMAIL` one — that account's current-week plan is the
  * exact fixture `@aprendizaje`'s scenarios depend on for pendiente slots;
  * seeding a null-recipe row there collided for real once this session
  * already (see `.context/bitacora.md`, 2026-07-31 automation entry).
@@ -28,11 +28,11 @@ const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'do
 const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 
 Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ request }) => {
-  if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
-    throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
+  if (!process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD) {
+    throw new Error('PRO_USER_EMAIL / PRO_USER_PASSWORD must be set in .env for this scenario.');
   }
 
-  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+  const accessToken = await getAccessToken(request, process.env.PRO_USER_EMAIL, process.env.PRO_USER_PASSWORD);
   const headers = restHeaders(accessToken);
   const userId = await currentUserId(request, accessToken);
   const { semanaIso, fechaInicio } = currentWeekMonday();
@@ -101,8 +101,8 @@ Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ 
 
 When(/^el usuario visita \/menu o \/calendar$/, async ({ page }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
 });

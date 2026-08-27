@@ -112,17 +112,17 @@ export default function QaGuidePage() {
             <tbody className="divide-y divide-border">
               <tr>
                 <td className="px-3 py-2">Local (Free)</td>
-                <td className="px-3 py-2 font-mono text-caption">LOCAL_USER_EMAIL / LOCAL_USER_PASSWORD</td>
+                <td className="px-3 py-2 font-mono text-caption">DEV_USER_EMAIL / DEV_USER_PASSWORD</td>
                 <td className="px-3 py-2 text-tertiary">Cuenta de plan Free para el entorno local.</td>
               </tr>
               <tr>
                 <td className="px-3 py-2">PRE (Free)</td>
-                <td className="px-3 py-2 font-mono text-caption">USER_EMAIL_PRE / USER_PASSWORD_PRE</td>
+                <td className="px-3 py-2 font-mono text-caption">PRE_USER_EMAIL / PRE_USER_PASSWORD</td>
                 <td className="px-3 py-2 text-tertiary">Cuenta de plan Free en el entorno PRE/staging.</td>
               </tr>
               <tr>
                 <td className="px-3 py-2">Pro (dedicada)</td>
-                <td className="px-3 py-2 font-mono text-caption">PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD</td>
+                <td className="px-3 py-2 font-mono text-caption">PRO_USER_EMAIL / PRO_USER_PASSWORD</td>
                 <td className="px-3 py-2 text-tertiary">
                   Cuenta Pro con historial real, para probar el aprendizaje de Fresco (FRESCO-22 /
                   ADR-0001).
