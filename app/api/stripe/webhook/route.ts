@@ -10,8 +10,8 @@ import { createServiceClient } from '@/lib/supabase/service';
  * `stripe_customer_id` / `stripe_subscription_id` / `plan_expires_at`
  * (ADR-0007). Never called from the client or from the Checkout return page
  * — Stripe calls this directly, signed with the per-environment webhook
- * secret (`resolveWebhookSecret()` — Production reads `STRIPE_WEBHOOK_SECRET`,
- * Preview deploys read `STRIPE_WEBHOOK_SECRET_PRE`).
+ * secret (`resolveWebhookSecret()` in `lib/stripe.ts` — `_DEV` / `_PRE` /
+ * `_PROD` by `VERCEL_ENV` + branch).
  *
  * Reads the raw body via `request.text()` (App Router route handlers don't
  * parse the body automatically, unlike the old Pages Router — no extra
