@@ -11,7 +11,7 @@ import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restH
  * Same dedicated-account rationale as `entrega-parcial.steps.ts`: this
  * needs `plan = 'pro'` plus 2 weeks of real history on the account, which
  * would corrupt `@aprendizaje`'s own pendiente-slot fixture on the shared
- * `LOCAL_USER_EMAIL` account.
+ * `DEV_USER_EMAIL` account.
  *
  * Real generation (real isPro branch, real history read) — no mocking here,
  * same acceptance as @lista-compra: a network mock can't produce a real
@@ -25,11 +25,11 @@ const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'do
 const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 
 Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, async ({ request }) => {
-  if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
-    throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
+  if (!process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD) {
+    throw new Error('PRO_USER_EMAIL / PRO_USER_PASSWORD must be set in .env for this scenario.');
   }
 
-  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+  const accessToken = await getAccessToken(request, process.env.PRO_USER_EMAIL, process.env.PRO_USER_PASSWORD);
   const headers = restHeaders(accessToken);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const userId = await currentUserId(request, accessToken);
@@ -97,8 +97,8 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
 
 When(/^visita \/menu$/, async ({ page }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
 });

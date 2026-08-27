@@ -49,7 +49,7 @@ const { Given, When, Then } = createBdd(test);
  * satisfies PostgREST without narrowing what RLS already allows.
  */
 async function resetShoppingListFixture(request: import('@playwright/test').APIRequestContext): Promise<void> {
-  const accessToken = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+  const accessToken = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
   await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/shopping_lists?id=not.is.null`, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -60,8 +60,8 @@ async function resetShoppingListFixture(request: import('@playwright/test').APIR
 
 async function loginAndGoToShoppingList(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.LOCAL_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.LOCAL_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.DEV_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.DEV_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/shopping-list');
@@ -166,7 +166,7 @@ Given(
     await page.getByTestId('generate_shopping_list_button').click();
     await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
 
-    const accessToken = await getAccessToken(request, process.env.LOCAL_USER_EMAIL!, process.env.LOCAL_USER_PASSWORD!);
+    const accessToken = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
     const headers = restHeaders(accessToken);
     const userRes = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, { headers });
     const { id: userId } = await userRes.json() as { id: string };

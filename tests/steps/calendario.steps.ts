@@ -8,9 +8,9 @@ import { currentWeekMonday, getAccessToken, restHeaders } from '../test-helpers'
  * Step definitions for `.context/qa/regression.feature` — @calendario,
  * "El sistema rechaza un intercambio entre franjas de tipo distinto".
  *
- * Uses the dedicated `PRO_TEST_USER_EMAIL` account (same reset-and-reseed
+ * Uses the dedicated `PRO_USER_EMAIL` account (same reset-and-reseed
  * convention `entrega-parcial.steps.ts` and `aprendizaje-pro.steps.ts`
- * already use for it) rather than the shared `LOCAL_USER_EMAIL` — that
+ * already use for it) rather than the shared `DEV_USER_EMAIL` — that
  * account's current-week plan is the exact fixture `@aprendizaje`'s
  * cocinada/descartada scenarios depend on, and this scenario needs to
  * reset+reseed the whole week to know each slot's exact recipe name before
@@ -27,11 +27,11 @@ const ctx: Ctx = { comidaNombre: '', cenaNombre: '' };
 
 /** REST-only seeding, shared by both the desktop and mobile Given below — each does its own login/navigation on its own `page`. */
 async function seedFullWeek(request: APIRequestContext): Promise<void> {
-  if (!process.env.PRO_TEST_USER_EMAIL || !process.env.PRO_TEST_USER_PASSWORD) {
-    throw new Error('PRO_TEST_USER_EMAIL / PRO_TEST_USER_PASSWORD must be set in .env for this scenario.');
+  if (!process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD) {
+    throw new Error('PRO_USER_EMAIL / PRO_USER_PASSWORD must be set in .env for this scenario.');
   }
 
-  const accessToken = await getAccessToken(request, process.env.PRO_TEST_USER_EMAIL, process.env.PRO_TEST_USER_PASSWORD);
+  const accessToken = await getAccessToken(request, process.env.PRO_USER_EMAIL, process.env.PRO_USER_PASSWORD);
   const headers = restHeaders(accessToken);
   const userRes = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, { headers });
   const { id: userId } = await userRes.json() as { id: string };
@@ -73,8 +73,8 @@ async function seedFullWeek(request: APIRequestContext): Promise<void> {
 
 async function loginAndGoToCalendar(page: Page): Promise<void> {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_TEST_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_TEST_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
+  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/calendar');
