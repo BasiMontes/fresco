@@ -4305,3 +4305,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: no había cuenta de admin en auth.users. El usuario creó hola.frescoapp+admin@gmail.com (UID 3174e4d5-b4d6-4be9-968a-2372a52337b0). ADMIN_USER_ID puesto en secrets de la Edge Function + delete-catalog-recipe redesplegada (v2). Smoke test: 401 sin auth / 401 JWT inválido (routing OK).
 - Por qué: gap de PR #169 — la función estaba desplegada pero el allowlist vacío devolvía 403 a todo.
 - Siguiente: verificar el flujo completo de borrado desde /admin/recipes con la cuenta admin (requiere la contraseña, la tiene el usuario).
+
+## 2026-08-28 - FRESCO-243 rate limiting ACTIVO
+- Qué: generate-meal-plan desplegada (v26) con el check de rate-limit 5/hora/usuario. Pillado y arreglado: la suite e2e (blocking) hace ~12 llamadas/corrida -> habria dado 429 en cada PR. Migracion 20260827215620 (aplicada): check_and_increment_rate_limit exime los 4 UIDs de cuentas de test (array hardcoded, tech-debt anotado en ADR-0010). PR #172 mergeado -- su test:e2e PASO con el limite vivo + exencion. Promovido dev->staging->main (fdd0a4d).
+- Por qué: cerrar el ultimo paso de FRESCO-243 (deploy) tras el rehab de #168.
+- Siguiente: QA. FRESCO-243 -> Merged.
