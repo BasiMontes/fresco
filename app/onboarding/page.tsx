@@ -733,8 +733,10 @@ export default function OnboardingPage() {
               <Button
                 data-testid="back_button"
                 variant="secondary"
-                onClick={() => setStep((step > 1 ? step - 1 : 1) as 1 | 2 | 3 | 4)}
-                disabled={step === 1}
+                // FRESCO-296: on step 1 "Atrás" is no longer a dead end — it
+                // exits the wizard back to the landing page. Steps 2-4 keep
+                // walking back through the wizard.
+                onClick={() => (step > 1 ? setStep((step - 1) as 1 | 2 | 3 | 4) : router.push('/'))}
               >
                 Atrás
               </Button>
