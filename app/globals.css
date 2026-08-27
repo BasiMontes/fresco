@@ -10,7 +10,11 @@
 :root {
   --color-primary: #0f4e0e;
   --color-secondary: #df8c26;
-  --color-tertiary: #847456;
+  /* FRESCO-299: darkened from #847456 (shared with --color-neutral-600) to
+     clear WCAG AA as `text-tertiary` body copy — #847456 measured 3,59:1 on
+     surface / 4,12:1 on background; #6f5f43 measures ~4,9:1 / ~5,6:1. The
+     neutral-600 ramp step stays #847456. */
+  --color-tertiary: #6f5f43;
   --color-neutral: #a39372;
   --color-background: #faf3e3;
   --color-surface: #f1e3c6;

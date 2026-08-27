@@ -149,7 +149,7 @@ export function LegalModal({ open, onOpenChange, section }: LegalModalProps) {
       <div className="mt-4 text-body-md text-text">
         {(section === 'terminos' || section === 'privacidad') && (
           <div data-testid={`legal_modal_content_${section}`}>
-            <p className="mb-4 rounded-md bg-warning/10 p-2 text-caption text-warning">
+            <p className="mb-4 rounded-md bg-warning/10 p-2 text-caption text-accent-2-700">
               Borrador — pendiente de revisión legal antes de producción.
             </p>
             <div className="flex flex-col gap-4">
