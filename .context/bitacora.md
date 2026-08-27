@@ -4265,3 +4265,13 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: 3 hallazgos fuera del scope de 283. text-warning "Media"/aviso legal → text-accent-2-700 (4,88:1). Token --color-tertiary #847456→#6F5F43 (~4,9:1 surface / ~5,6:1 crema), desacoplado de --color-neutral-600 que sigue #847456. ~173 usos de text-tertiary arreglados con 1 línea. PR #160 a dev, promovido ff-only dev→staging→main (46666e5).
 - Por qué: deuda de contraste de la re-auditoría (eje Diseño), hijo de FRESCO-278.
 - Siguiente: QA. Pre-existente sin tocar: bg-warning/10 no pinta tinte (alpha de Tailwind sobre CSS var en hex).
+
+## 2026-08-27 - FRESCO-282: link defecto->feature + evidencia en el flujo de bugs
+- Qué: nuevo Step 2c en bug-fix-workflow.md (link Relates/parent a la story/épica regresada + evidencia: screenshot siempre, HAR para red/API en {{jira.evidence}}), confirmación en cierre, Gotcha #14, anti-patrón S17, pre-flight. Espejo de FRESCO-281. Forward-only. PR #161 a dev.
+- Por qué: re-auditoría 27 ago hallazgo 04 (ALTO) — 120/122 defectos huérfanos, densidad-por-feature no consultable. Hijo de FRESCO-278.
+- Siguiente: barrido retro opcional de 13 defectos Error abiertos (todos huérfanos).
+
+## 2026-08-27 - FRESCO-284: sync dirigido de docs de fundación con las 5 épicas de agosto
+- Qué: parches aditivos en mvp-scope.md (reversión pago self-serve, ADR-0007), non-functional-requirements.md (NFR-SEC-6 rate-limiting, §7 Observability NFR-OBS-1/2/3), los 3 mapas de negocio (addendum) y glosario (§2.6, 11 términos append-only). PR #162 a dev.
+- Por qué: re-auditoría 27 ago hallazgo 06 (MEDIO) — PRD/SRS/mapas/glosario ciegos a Stripe/Avisos/PostHog/push/Sentry. Hijo de FRESCO-278.
+- Siguiente: business-data-map.md y business-api-map.md están congelados en 2026-07-25 con premisa "no hay código aún" (global falsa) - candidatos a regen completo con /business-data-map y /business-api-map. ADR-0010 citado en el ticket NO existe (rate-limiting sólo lo cubre FRESCO-243).
