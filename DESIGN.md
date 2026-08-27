@@ -271,7 +271,7 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 
 **Buttons** — heading-font label, always pill-shaped (`rounded.full`):
 - `button` (primary): filled `{colors.primary}`, `{colors.background}`-colored text. Default action.
-- `button-action`: filled `{colors.secondary}` (orange), white text. Reserved for the single highest-intent CTA on a screen — observed usage: "Generar mi menú" (Generate my menu), a lightning-bolt-flagged action distinct from every other button on the same screen.
+- `button-action`: filled `{colors.secondary}` (orange), `{colors.text}` (near-black) label — dark text on the light-ish amber is the accessible pairing (~6,3:1; FRESCO-283 replaced the original cream-on-amber, which measured ~2,4:1). Hover lightens to `accent-2-400` rather than darkening, so the dark label keeps its contrast on hover. Reserved for the single highest-intent CTA on a screen — observed usage: "Generar mi menú" (Generate my menu), a lightning-bolt-flagged action distinct from every other button on the same screen.
 - `button-secondary`: outlined, `{colors.border}`-colored border, transparent fill.
 - `button-ghost`: text-only, `{colors.primary}` text, no border or fill.
 - `button-icon`: 36×36 circular, used for compact actions (e.g. the favorite/heart toggle on a recipe card).
@@ -299,7 +299,13 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 
 ## Do's and Don'ts
 
-**Documented AA bypass:** `button-action` (`{colors.background}` text on `{colors.secondary}` fill) measures ~2.4:1, below WCAG AA's 4.5:1 minimum for normal text — this is the canvas's own authored pairing (`background:var(--color-accent-2); color:#fff` in the source bundle), not an oversight. Because this variant is reserved for one short, heading-font, all-caps-weight label per screen (e.g. "Generar mi menú"), treat it as large/bold-text usage where the practical legibility risk is lower than the ratio alone suggests — but do not reuse this pairing for body copy or any text longer than a two-to-three-word button label, where the shortfall would actually hurt readability.
+**Amber (`{colors.secondary}` / `accent-2`) contrast rule (FRESCO-283):** the source canvas authored amber CTAs as cream-on-amber (`color:#fff` on `background:var(--color-accent-2)`), which measures ~2,4:1 — below WCAG AA. That "documented bypass" was retired. The rule now:
+
+- **Amber as a fill** (buttons, badges, the "Popular" pill, the calendar "today" pill, step-number circles): pair with `{colors.text}` (near-black), never cream/white. `{colors.text}` on `{colors.secondary}` ≈ 6,3:1. The `{colors.secondary}` hex is unchanged — only the text on top flips.
+- **Amber as text or an icon on the cream/surface canvas** (the `<h1>` accent "súper.", the "MENÚ SEMANAL CON IA" eyebrow, the impact-stats "." accent): use `accent-2-700` (`#8A5513`), not `{colors.secondary}` — `accent-2-500` as a foreground on cream is only ~2,4:1; `accent-2-700` is ~5,6:1.
+- Decorative-only amber (aria-hidden icons, the hero device-mockup illustration, tinted `accent-2-100` backgrounds behind dark text) is exempt.
+
+The vibrant `#DF8C26` stays the brand color everywhere it is a surface; it just never carries light text and is never itself small body text on the page canvas.
 
 **Do:**
 - Do reserve `button-action` (orange) for exactly one CTA per screen — the "Generar mi menú" pattern. Its whole effect depends on scarcity; treat it as a spotlight, not a secondary brand color.

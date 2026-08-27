@@ -34,7 +34,7 @@ export default function GlobalError({
             type="button"
             data-testid="global_error_retry_button"
             onClick={() => unstable_retry()}
-            className="mt-6 inline-flex items-center justify-center gap-2 self-center rounded-full bg-secondary px-6 py-3 text-label font-sans text-background transition-colors hover:bg-accent-2-600"
+            className="mt-6 inline-flex items-center justify-center gap-2 self-center rounded-full bg-secondary px-6 py-3 text-label font-sans text-text transition-colors hover:bg-accent-2-400"
           >
             Intentar de nuevo
           </button>

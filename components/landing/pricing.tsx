@@ -54,7 +54,7 @@ export function Pricing() {
           <div className="flex flex-col rounded-card border-2 border-secondary bg-background p-7 shadow-lg">
             <div className="mb-1 flex items-start justify-between">
               <p className="text-h6 uppercase text-primary">Pro</p>
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-caption uppercase text-background">
+              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-caption uppercase text-text">
                 Popular
               </span>
             </div>

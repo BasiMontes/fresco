@@ -375,7 +375,7 @@ export function CalendarGrid({
                 <p
                   className={cn(
                     'text-label',
-                    isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-background',
+                    isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-text',
                   )}
                 >
                   {DIA_LABELS[dia]}
