@@ -34,10 +34,9 @@ jobs:
       - run: bun test
 
   e2e:
-    name: test:e2e (informational)
+    name: test:e2e
     runs-on: ubuntu-latest
     needs: repo-check
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -55,10 +54,16 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
-      - name: Start dev server
+      - name: Build and start production server
+        # `next dev` compiles each route on first hit — combined with real
+        # network round-trips that on-demand latency blew past the 90s
+        # per-test and 5s assertion timeouts in CI (never an issue locally
+        # against an already-warm server). A pre-compiled production build
+        # removes that variable. (FRESCO-266)
         run: |
           set -a; . ./.env; set +a
-          bun run dev &
+          bun run build
+          bun run start &
           npx --yes wait-on http://localhost:3000 --timeout 60000
 
       - run: bun run test:e2e
