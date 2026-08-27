@@ -112,8 +112,14 @@ export default async function MenuPage() {
   if (!plan) {
     return (
       <div className="mx-auto max-w-3xl">
-        {/* FRESCO-56: banner shown regardless of plan state, per AC. */}
-        <CalendarSuggestionBanner />
+        {/* FRESCO-297: with no plan for this week, the empty state and its
+        "Generar mi menú" CTA are the primary action — they lead, above the
+        profile-based value indicators. The CalendarSuggestionBanner
+        ("Retoma la organización de tu semana" / "Ver mi plan semanal") is
+        deliberately NOT rendered in this branch: it implies a plan already
+        exists to resume, which is exactly the contradiction the user hit
+        ("estaba dentro sin menú"). It stays in the has-plan branch below. */}
+        <NoMenuEmptyState data-testid="menu_empty_state" />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {recetasDisponibles !== null && (
@@ -122,7 +128,6 @@ export default async function MenuPage() {
           <SavingsEstimateCards />
         </div>
         <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
-        <NoMenuEmptyState data-testid="menu_empty_state" />
       </div>
     );
   }
