@@ -36,7 +36,7 @@
 
 **NFR-SEC-6 — Abuse and cost control on the generation endpoints (rate limiting).** *(added 2026-08)*
 - `generate-meal-plan` and `generate-shopping-list` are callable on every authenticated request with no per-user or per-IP throttle. At concierge scale (8–10 users) this is low-risk, but it is a real cost- and abuse-exposure before any public, non-concierge cohort — already flagged in `.context/business/business-api-map.md` §7 (Discovery Gaps) and owned by tech-debt ticket `FRESCO-243`.
-- This NFR records rate limiting as a **required control before public launch**. Unlike the observability decisions in §7, there is deliberately **no ADR** for it yet — `FRESCO-243` is the owning ticket, and the mechanism (edge middleware token bucket vs. Postgres-backed counter vs. platform WAF) is undecided.
+- This NFR records rate limiting as a **required control before public launch**. `FRESCO-243` is the owning ticket; the mechanism is fixed by `ADR-0010` — a shared `rate_limits` table plus an atomic single-round-trip `check_and_increment_rate_limit` Postgres RPC, no external service. `generate-meal-plan` is the first adopter (5 req/user/hour, fixed window); any future abuse-prone Edge Function reuses the same RPC with its own `endpoint` string.
 - `[PLACEHOLDER]` — no source document sets a numeric request budget (requests/user/day, burst ceiling). Derive one from real usage once the analytics instrumentation in §7 (NFR-OBS-2) produces baseline traffic data; do not invent a limit here.
 
 ## 3. Scalability

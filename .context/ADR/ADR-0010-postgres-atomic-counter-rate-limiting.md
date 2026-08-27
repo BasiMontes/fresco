@@ -1,7 +1,7 @@
 # ADR-0010 — Rate limiting on Edge Functions via a Postgres atomic-counter table, no external dependency
 
-- **Status:** Proposed
-- **Date:** 2026-08-23
+- **Status:** Accepted
+- **Date:** 2026-08-23 (drafted), 2026-08-27 (accepted)
 - **Deciders:** Founder (product + technical decision, drafted by AI workflow for approval)
 - **Tags:** security, abuse-control, edge-functions, cross-cutting-invariant, database
 - **Supersedes:** —
@@ -37,10 +37,10 @@ Concretely:
 **Negative / trade-offs:**
 - Fixed-window rate limiting allows a burst-at-the-boundary pattern (e.g. 5 requests just before the hour rolls over, 5 more just after) that a sliding window would smooth out. Accepted as out of scope for this decision given the traffic pattern this endpoint actually sees (product-normal use is ~1 call/week per user).
 - Every Postgres-backed Edge Function invocation now costs one extra RPC round-trip (the atomic check) before doing its real work — a small, constant latency tax on every call, including legitimate ones under the limit.
-- The `rate_limits` table needs its own retention/cleanup story (old `window_start` rows accumulate indefinitely otherwise) — not solved by this ADR; see follow-ups.
+- The `rate_limits` table needs its own retention/cleanup story (old `window_start` rows accumulate indefinitely otherwise) — solved at acceptance by the `pg_cron` sweep in the migration (see follow-ups).
 
 **Neutral / follow-ups:**
-- No cleanup/retention job for expired `rate_limits` rows is defined by this decision — a follow-up tech-debt ticket should schedule one (the project already has a working `pg_cron` pattern from the guest-cleanup job, FRESCO-238, that a follow-up can reuse directly).
+- Retention IS handled here (added at acceptance, 2026-08-27): the migration schedules a `cleanup-expired-rate-limits` `pg_cron` job (daily `03:15`) that deletes rows whose `window_start` is more than 2 hours stale — reusing the exact `pg_cron` pattern from the guest-cleanup job (FRESCO-238). A window older than the current hour can never be re-hit, so the 2-hour margin is pure safety.
 - If a future Edge Function's legitimate traffic pattern genuinely needs sliding-window precision (not just "some abuse control"), that is a new decision to make at that time, not an automatic upgrade of this table — this ADR only commits to the fixed-window, single-table, atomic-RPC shape.
 - Threshold (5/hour) and window (fixed hour) are `generate-meal-plan`-specific product decisions, stored as RPC call parameters, not hardcoded into the shared mechanism — future adopting functions choose their own values.
 
@@ -55,4 +55,5 @@ Concretely:
 - `.context/PBI/tech-debts/TECHDEBT-FRESCO-243-rate-limiting-en-generacion-de-menu-semanal/` — the tech-debt ticket and Stage 1 implementation plan (posted as a Jira comment; the `spec_implementation_plan` field rejected the payload at its 255-char cap) this ADR was drafted alongside.
 - `.context/ADR/ADR-0005-deterministic-menu-slot-selection.md` — establishes both the "remove external hard-dependencies where possible" instinct and the "make invariants unreachable-by-construction" philosophy this ADR extends to rate limiting.
 - `supabase/functions/generate-meal-plan/index.ts` — the first adopting call site (`requireAuthenticatedUser` → rate-limit check → existing logic).
-- `supabase/migrations/20260823120000_enable_pg_cron_cleanup_abandoned_guest_users.sql` (FRESCO-238) — the existing `pg_cron` pattern a future retention-cleanup follow-up should reuse.
+- `supabase/migrations/20260827210808_add_rate_limits_table_and_check_function.sql` — the `rate_limits` table, the atomic RPC, and the `cleanup-expired-rate-limits` `pg_cron` sweep.
+- `supabase/migrations/20260823120000_enable_pg_cron_cleanup_abandoned_guest_users.sql` (FRESCO-238) — the `pg_cron` pattern the retention sweep reuses.

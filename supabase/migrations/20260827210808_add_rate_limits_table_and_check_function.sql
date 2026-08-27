@@ -101,3 +101,17 @@ $$;
 
 revoke execute on function public.check_and_increment_rate_limit(uuid, text, int, int) from public, anon;
 grant execute on function public.check_and_increment_rate_limit(uuid, text, int, int) to authenticated;
+
+-- Retention: the ADR flagged that `rate_limits` rows accumulate indefinitely
+-- (one per user per endpoint per hour) with no natural cleanup. A window is
+-- irrelevant the moment it is no longer `date_trunc('hour', now())`, so a
+-- daily sweep with a small safety margin is enough. Reuses the same
+-- `pg_cron` pattern as the guest-cleanup job
+-- (20260823120000_enable_pg_cron_cleanup_abandoned_guest_users.sql).
+create extension if not exists pg_cron with schema extensions;
+
+select cron.schedule(
+  'cleanup-expired-rate-limits',
+  '15 3 * * *',
+  $$ delete from public.rate_limits where window_start < date_trunc('hour', now()) - interval '2 hours' $$
+);
