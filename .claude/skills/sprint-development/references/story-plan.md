@@ -10,6 +10,7 @@ Las IDs numéricas de Jira (`customfield_NNNNN`) varían por workspace y NO vive
 
 - `{{jira.acceptance_test_plan}}` — Acceptance Test Plan (Story-level Textarea). Fuente de los escenarios de aceptación que la implementación debe cubrir. Solo lectura desde este flujo.
 - `{{jira.spec_implementation_plan}}` — Spec Implementation Plan (Story-level Textarea). Plan técnico generado por este flujo y publicado a la Story.
+- `{{jira.story_points}}` — Story Points (Story-level Number). **Escritura** desde este flujo: la estimación del equipo dev, derivada del desglose de esfuerzo del plan (ver § Estimated Effort). No lo escribe `/product-management` (anti-pattern `I16` — el PO/BA no estima en refinamiento); lo escribe el equipo dev en esta etapa. Contrato de auditoría: FRESCO-281 (campos de QA estructurada consultables para velocity + densidad de defectos por feature).
 
 **Operación → tool layer.** Toda escritura/lectura contra Jira se expresa como `[ISSUE_TRACKER_TOOL]` pseudo-código. El skill consumidor (AI runtime) resuelve la herramienta vía la tabla `CLAUDE.md` §6 (primary `/acli`, fallback Atlassian MCP, last resort REST). Para la matriz operación → capa de herramienta, ver `.claude/skills/product-management/references/jira-operations.md`. Para gotchas de publicación a campos rich-text (ADF), ver `.claude/skills/product-management/references/jira-publishing-gotchas.md`.
 
@@ -407,7 +408,9 @@ Textos que reflejan el contexto específico del proyecto, usando vocabulario del
 | ...            | ...              |
 | **Total**      | **[total time]** |
 
-**Story points:** [número] (debe match estimación en story.md)
+**Story points:** [número] — estimación del equipo dev. Fibonacci (1, 2, 3, 5, 8); un 13+ es un smell → marca la story para split antes de codear.
+
+**→ Escribir a Jira (obligatorio en Stage 1).** Publica el número a `{{jira.story_points}}` en la Story vía `[ISSUE_TRACKER_TOOL]` (campo Number, sin gotchas de ADF). Es la estimación del equipo que construye — permitida y esperada en esta etapa, distinta del anti-pattern `I16` de `/product-management` (que solo veda al PO/BA estimar en refinamiento). Si el campo ya trae valor: consérvalo si el plan coincide, en caso contrario sobrescríbelo con la estimación dev y anótalo. Sin este campo no hay velocity ni densidad de defectos por feature (contrato FRESCO-281).
 
 ---
 
@@ -509,5 +512,6 @@ Textos que reflejan el contexto específico del proyecto, usando vocabulario del
 ### Output Esperado
 
 - [ ] Cuerpo del plan publicado al campo `{{jira.spec_implementation_plan}}` de la Story (si el slug resuelve a un campo presente) o al comentario fallback `## Spec Implementation Plan (Dev)`
+- [ ] `{{jira.story_points}}` escrito en la Story con la estimación del equipo dev (§ Estimated Effort) — contrato FRESCO-281
 - [ ] Label `implementation-plan-ready` agregado a la Story
 - [ ] `bun run jira:sync-issues get <STORY_KEY> --include-comments` ejecutado; `implementation-plan.md` materializado y leído
