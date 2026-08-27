@@ -5,7 +5,7 @@ description: Menús semanales con IA que aprende de lo que realmente cocinas. Wa
 colors:
   primary: '#0F4E0E'
   secondary: '#DF8C26'
-  tertiary: '#847456'
+  tertiary: '#6F5F43' # FRESCO-299: darkened from #847456 for WCAG AA as text-tertiary body copy (~4,9:1 on surface, ~5,6:1 on background); the neutral-600 ramp step below keeps #847456
   neutral: '#A39372'
   background: '#FAF3E3'
   surface: '#F1E3C6'

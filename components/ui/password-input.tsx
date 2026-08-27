@@ -24,7 +24,9 @@ const STRENGTH_BAR_COLOR: Record<ReturnType<typeof getPasswordStrength>, string>
 
 const STRENGTH_TEXT_COLOR: Record<ReturnType<typeof getPasswordStrength>, string> = {
   weak: 'text-error',
-  medium: 'text-warning',
+  // Not text-warning (#df8c26): amber-on-cream is ~2,4:1, fails WCAG AA.
+  // accent-2-700 is the darker amber-as-text token (FRESCO-283 / FRESCO-299).
+  medium: 'text-accent-2-700',
   strong: 'text-success',
 };
 
