@@ -4300,3 +4300,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: secret ENV_FILE de GitHub actualizado con los nombres nuevos de test-user. PR #171 quitó continue-on-error del job e2e (su CI: test:e2e PASS con el secret nuevo, prod build). Mergeado + promovido (318d0c0). Branch protection en dev/staging/main: required_status_checks = [repo:check, test:unit, test:e2e], preservando lo existente (dev: PR review 0 approvals; todas: no force-push, no deletions). enforce_admins=false -> el owner sigue pudiendo hacer el ff-promote dev->staging->main; PRs de flujo normal quedan bloqueados si un check está rojo.
 - Por qué: re-auditoría hallazgo 01 (ALTO) — todos los checks eran advisory.
 - Siguiente: n/a para este gap. Pendientes de sesión: ADMIN_USER_ID en secrets Supabase, deploy generate-meal-plan, review PR #169.
+
+## 2026-08-27 - delete-catalog-recipe activada (ADMIN_USER_ID)
+- Qué: no había cuenta de admin en auth.users. El usuario creó hola.frescoapp+admin@gmail.com (UID 3174e4d5-b4d6-4be9-968a-2372a52337b0). ADMIN_USER_ID puesto en secrets de la Edge Function + delete-catalog-recipe redesplegada (v2). Smoke test: 401 sin auth / 401 JWT inválido (routing OK).
+- Por qué: gap de PR #169 — la función estaba desplegada pero el allowlist vacío devolvía 403 a todo.
+- Siguiente: verificar el flujo completo de borrado desde /admin/recipes con la cuenta admin (requiere la contraseña, la tiene el usuario).
