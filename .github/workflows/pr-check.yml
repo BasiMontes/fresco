@@ -34,9 +34,14 @@ jobs:
       - run: bun test
 
   e2e:
-    name: test:e2e
+    # Informational until `secrets.ENV_FILE` is updated to the renamed
+    # {DEV,PRE,PRO}_USER_* test-user keys (currently still LOCAL_USER_* /
+    # PRO_TEST_USER_*). Once the secret is fixed, drop `continue-on-error`
+    # and add this to the branch's required checks. (FRESCO-266)
+    name: test:e2e (informational)
     runs-on: ubuntu-latest
     needs: repo-check
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
