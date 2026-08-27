@@ -17,7 +17,6 @@ export interface MealPlan {
   semana_iso: string
   fecha_inicio: string
   advertencias: string[]
-  completado: boolean
 }
 
 /** One slot (day x meal-type) within a plan. 21 rows per meal_plan. */

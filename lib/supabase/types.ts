@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -104,7 +104,6 @@ export type Database = {
       meal_plans: {
         Row: {
           advertencias: string[]
-          completado: boolean
           created_at: string
           explicacion_aprendizaje: string | null
           fecha_inicio: string
@@ -115,7 +114,6 @@ export type Database = {
         }
         Insert: {
           advertencias?: string[]
-          completado?: boolean
           created_at?: string
           explicacion_aprendizaje?: string | null
           fecha_inicio: string
@@ -126,7 +124,6 @@ export type Database = {
         }
         Update: {
           advertencias?: string[]
-          completado?: boolean
           created_at?: string
           explicacion_aprendizaje?: string | null
           fecha_inicio?: string
@@ -182,6 +179,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limits: {
+        Row: {
+          count: number
+          endpoint: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          endpoint: string
+          updated_at?: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          endpoint?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
       }
       recetas_propias: {
         Row: {
@@ -342,8 +363,6 @@ export type Database = {
           alergenos_texto_libre: string | null
           aviso_bienvenida_visto: boolean
           aviso_rutas_descartado: boolean
-          centro_avisos_bienvenida_vista: boolean
-          centro_avisos_rutas_descartado: boolean
           cocinas_favoritas: Database["public"]["Enums"]["tipo_cocina"][]
           cocinas_texto_libre: string | null
           contundencia_preferida: Database["public"]["Enums"]["nivel_contundencia"]
@@ -386,8 +405,6 @@ export type Database = {
           alergenos_texto_libre?: string | null
           aviso_bienvenida_visto?: boolean
           aviso_rutas_descartado?: boolean
-          centro_avisos_bienvenida_vista?: boolean
-          centro_avisos_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
           cocinas_texto_libre?: string | null
           contundencia_preferida?: Database["public"]["Enums"]["nivel_contundencia"]
@@ -430,8 +447,6 @@ export type Database = {
           alergenos_texto_libre?: string | null
           aviso_bienvenida_visto?: boolean
           aviso_rutas_descartado?: boolean
-          centro_avisos_bienvenida_vista?: boolean
-          centro_avisos_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
           cocinas_texto_libre?: string | null
           contundencia_preferida?: Database["public"]["Enums"]["nivel_contundencia"]
@@ -475,6 +490,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_and_increment_rate_limit: {
+        Args: {
+          p_endpoint: string
+          p_limit: number
+          p_user_id: string
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       get_filtered_recipes: {
         Args: { p_recipe_id?: string; p_user_id: string }
         Returns: {
