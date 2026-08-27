@@ -32,6 +32,7 @@
     "skills:registry:check": "bun scripts/build-skill-registry.ts --check",
     "skills:registry": "bun scripts/build-skill-registry.ts",
     "start": "next start",
+    "test": "bun test",
     "test:e2e": "bash -c 'set -a; . ./.env; set +a; bddgen && exec playwright test'",
     "test:e2e:staging": "bash -c 'set -a; . ./.env; set +a; bddgen && PLAYWRIGHT_BASE_URL=https://fresco-pre.vercel.app exec playwright test'",
     "test:e2e:production": "bash -c 'set -a; . ./.env; set +a; bddgen && PLAYWRIGHT_BASE_URL=https://fresco-pro.vercel.app exec playwright test'",
