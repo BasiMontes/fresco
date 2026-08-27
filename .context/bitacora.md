@@ -4225,3 +4225,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Que: los 4 PRs (#151-#154) se fusionaron directo a `main` (bypass del flujo normal dev->staging->main de este repo). Reconciliado: ff-only push de `main` a `dev` y a `staging` (main iba estrictamente por delante, ff limpio). Los 3 branches en `d43ebb2`. Deploys Vercel verificados READY por commitSha: prod `fresco-194m3vdx3` (main), dev `fresco-5swewwepg`, staging `fresco-3zbdq8nit`. `fresco-pre.vercel.app` realiaseado a mano al deploy de staging (apuntaba a un build de ~11h antes; 4a vez confirmado que no auto-sigue). `fresco-dev`/`fresco-pro` si auto-siguieron.
 - Por que: usuario pregunto si pre y prod tenian el codigo de main; no se habia propagado.
 - Siguiente: si se retoma el flujo dev->staging->main como toca, apuntar los PRs a `dev` (merge-commit) y promover ff, no a `main` directo.
+
+## 2026-08-27 - Cierre: los 3 entornos en 20736e9 (bitacora incluida)
+- Que: tras la linea de bitacora `20736e9`, ff-only de `main` a `dev` y `staging` otra vez (los 3 en 20736e9). Deploys Vercel verificados READY por commitSha y los 3 aliases apuntando al deploy correcto: `fresco-pro` -> `fresco-ptpf5w9d4` (auto), `fresco-dev` -> `fresco-5e7ampkm6` (auto, siguio al terminar su build), `fresco-pre` -> `fresco-38cswaxea` (realiaseado a mano, 2a vez esta sesion). Todos los entornos sirviendo el ultimo commit.
+- Por que: usuario pidio que pre tuviera tambien el ultimo deploy, no solo el codigo de rama.
+- Siguiente: nada pendiente de esta tanda. Recordatorio: `fresco-pre` hay que realiasarlo a mano en cada movimiento de staging (auto-alias `fresco-git-staging-...` si se mantiene solo).
