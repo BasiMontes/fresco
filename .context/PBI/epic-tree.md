@@ -127,6 +127,20 @@ _Project: FRESCO_
 - [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231) Suscripción | Gestionar o cancelar mi suscripción desde el perfil _(- pts, Control de calidad)_
 - [FRESCO-232](https://basiliomontescastano.atlassian.net/browse/FRESCO-232) Suscripción | Saber si mi pago falló _(- pts, Control de calidad)_
 
+## [FRESCO-244](https://basiliomontescastano.atlassian.net/browse/FRESCO-244) - Motion y Transiciones
+
+**Status:** Listo | **Stories:** 5 | **Points:** 0
+
+- [FRESCO-245](https://basiliomontescastano.atlassian.net/browse/FRESCO-245) Transiciones de Página | Transicionar suavemente entre rutas principales al navegar _(- pts, Control de calidad)_
+- [FRESCO-246](https://basiliomontescastano.atlassian.net/browse/FRESCO-246) Listas y Tarjetas | Animar entrada y salida de tarjetas en listas y calendario _(- pts, Control de calidad)_
+- [FRESCO-247](https://basiliomontescastano.atlassian.net/browse/FRESCO-247) Modales | Transicionar apertura y cierre de modales _(- pts, Control de calidad)_
+- [FRESCO-248](https://basiliomontescastano.atlassian.net/browse/FRESCO-248) Micro-interacciones | Dar feedback visual inmediato en botones y acciones de guardado _(- pts, Finalizada)_
+- [FRESCO-249](https://basiliomontescastano.atlassian.net/browse/FRESCO-249) Accesibilidad de Movimiento | Respetar la preferencia de movimiento reducido del sistema _(- pts, Control de calidad)_
+
+## [FRESCO-278](https://basiliomontescastano.atlassian.net/browse/FRESCO-278) - Re-auditoría técnica agosto 2026 — remediación
+
+**Status:** Listo | **Stories:** 0 | **Points:** 0
+
 ---
 
 _Synced from Jira by sync-jira-issues_
