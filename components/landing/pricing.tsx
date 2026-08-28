@@ -19,7 +19,7 @@ function PlanFeature({ label, highlighted }: { label: string, highlighted?: bool
       <span
         className={cn(
           'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full text-caption font-bold',
-          highlighted ? 'bg-accent-100 text-primary' : 'bg-neutral-200 text-neutral-600',
+          highlighted ? 'bg-accent-100 text-primary' : 'bg-neutral-200 text-tertiary',
         )}
       >
         ✓
