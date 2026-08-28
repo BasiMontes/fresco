@@ -15,7 +15,7 @@ The gate is simple: **no row may sit at `uncovered` when the PR merges**. Anythi
 
 ## When the matrix is generated
 
-At the **end of Stage 3 (Code Review)**, after the static review checklist passes and before the PR is merged to `staging`. The reviewer subagent (or orchestrator, when reviewing inline) produces it. It lands in the PR description or as a comment on the PR; a copy persists at `.context/PBI/epics/EPIC-<KEY>-<epic>/stories/STORY-<KEY>-<slug>/compliance-matrix.md` with topic_key `pbi/{ticket}/compliance-matrix`.
+At the **end of Stage 3 (Code Review)**, after the static review checklist passes and before the PR is merged to `staging`. The reviewer subagent (or orchestrator, when reviewing inline) produces it. It lands in the PR description or as a comment on the PR — that is its only home (no in-repo file; see Persistence below).
 
 If the matrix exposes any `uncovered` row, the PR loops back to Stage 2 with a TODO list (add test, add manual evidence, or reclassify with a real reason). The matrix is never green-lit by hand-waving; the reviewer either edits one of the cells with a real evidence pointer or writes a concrete `exempt:<reason>`.
 
@@ -199,9 +199,6 @@ If the matrix exposes a scenario that nobody can figure out how to verify at all
 
 ## Persistence
 
-The matrix lives in two places:
+The matrix lives **in the PR only** — the description or a top-of-thread comment — as a required Stage 3 section, so reviewers see it without leaving GitHub. It is the merge gate.
 
-- **Inline in the PR** (description or top-of-thread comment) so reviewers see it without leaving GitHub.
-- **In the project repo** at `.context/PBI/epics/EPIC-<KEY>-<epic>/stories/STORY-<KEY>-<slug>/compliance-matrix.md`, topic_key `pbi/{ticket}/compliance-matrix`. Auto-generated, so `capture_prompt: false`. See `agentic-dev-core/references/topic-key-conventions.md`.
-
-Both copies must agree at merge time. If they drift, the in-repo copy is canonical.
+No `compliance-matrix.md` file is written under `.context/PBI/` (retired 2026-08-28, FRESCO-290, alongside `review.md` — the in-repo copy duplicated the PR and drifted). The `evidence/` directory referenced above is separate and stays: manual-evidence artifacts (screenshots, HAR, videos, session logs) still persist under `.context/PBI/epics/.../stories/.../evidence/` per the FRESCO-282 evidence contract — only the matrix document itself moved to the PR.

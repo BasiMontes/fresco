@@ -44,9 +44,7 @@ Session-state keys mirror the file layout under `.session/<skill-slug>/<scope>/{
 
 - `pbi/UPEX-123/spec` — refined story spec
 - `pbi/UPEX-123/implementation-plan` — implementation plan from `sprint-development` Stage 1
-- `pbi/UPEX-123/review` — code-review notes from `sprint-development` Stage 3
 - `pbi/UPEX-456/bug-fix` — bug fix plan + root-cause notes
-- `pbi/UPEX-789/compliance-matrix` — Stage 3 AC-vs-code coverage matrix
 
 ## Common artifact types
 
@@ -58,8 +56,6 @@ The vocabulary is open — pick whatever name the workflow naturally uses — bu
 | `epic`              | `product-management` (epic creation)              | Epic-level scope, child stories, traceability to PRD. Jira-synced. | `.context/PBI/epics/EPIC-<KEY>-<slug>/epic.md`              |
 | `implementation-plan` | `sprint-development` Stage 1                    | Story implementation plan (tasks mapped to AC). Jira-synced. | `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md`            |
 | `feature-implementation-plan` | `sprint-development` Stage 1 (macro)     | Feature-level implementation plan across multiple stories. Jira-synced. | `.context/PBI/epics/EPIC-<KEY>-<slug>/feature-implementation-plan.md` |
-| `review`            | `sprint-development` Stage 3                      | Code-review findings against AC + standards                 | `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/review.md`               |
-| `compliance-matrix` | `sprint-development` Stage 3                      | AC-vs-code coverage matrix (which AC each commit closes)    | `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/compliance-matrix.md`    |
 | `bug-fix`           | `sprint-development` Stage 2 (`bug-fix-workflow`) | Root-cause + fix plan + regression notes                    | `.context/PBI/bugs/BUG-<KEY>-<slug>/bug-fix.md`              |
 | `edge-cases`        | `product-management` (enumeration)                | Cataloged edge cases with criticality + AC-promote decision | `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/edge-cases.md`           |
 | `test-report`       | (out of scope here)                               | QA test execution report — referenced for traceability      | `.context/PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/test-report.md`          |
@@ -78,7 +74,6 @@ When **not** to UPSERT — start a new artifact name instead:
 
 | Situation                                                 | Wrong                                            | Right                                                |
 | --------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
-| Multiple distinct review rounds on the same ticket        | overwrite `review` each time, losing prior notes | `review-r1`, `review-r2`, … (or rely on git history) |
 | Spec for the **same ticket** in two different sprints     | reuse `spec`                                     | the ticket changed; UPSERT is fine                   |
 | Two completely unrelated bugs filed under the same ticket | reuse `bug-fix`                                  | (don't — file separate tickets)                      |
 

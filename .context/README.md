@@ -60,10 +60,10 @@ Every file in `.context/` has an owner. Do not edit auto-generated files by hand
 | `PBI/epics/EPIC-<KEY>-<slug>/epic.md`               | `/product-management` (epic creation)   | Topic key: `pbi/{epic-slug}/epic`                      |
 | `PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/spec.md`            | `/product-management` (AC refinement)   | Topic key: `pbi/{ticket}/spec`                         |
 | `PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/implementation-plan.md` | `/sprint-development` Stage 1                   | Topic key: `pbi/{ticket}/impl-plan`                    |
-| `PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/review.md`          | `/sprint-development` Stage 3                   | Topic key: `pbi/{ticket}/review`                       |
-| `PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/compliance-matrix.md` | `/sprint-development` Stage 3                   | Topic key: `pbi/{ticket}/compliance-matrix`            |
 | `PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/bug-fix.md`         | `/sprint-development` Stage 2 (bug-fix flow)    | Topic key: `pbi/{ticket}/bug-fix`                      |
 | `PBI/epics/EPIC-<KEY>-<slug>/stories/STORY-<KEY>-<slug>/edge-cases.md`      | `/product-management` (enumeration)     | Topic key: `pbi/{ticket}/edge-cases`                   |
+
+Retired 2026-08-28 (FRESCO-290): per-story `review.md` and `compliance-matrix.md`. The Stage 3 adversarial-review verdict table and the Spec Compliance Matrix now live only in the PR (description or a review comment); manual-evidence artifacts still persist under `stories/.../evidence/`.
 
 Full topic-key conventions: `.claude/skills/agentic-dev-core/references/topic-key-conventions.md`.
 
