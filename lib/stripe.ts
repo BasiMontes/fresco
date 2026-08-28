@@ -281,3 +281,61 @@ export function resolveCancellationCustomerId(subscription: Stripe.Subscription)
 
   return stripeCustomerId;
 }
+
+/**
+ * The subscription state a `user_profiles` row *should* be in, derived purely
+ * from the live Stripe subscription. Consumed by the reconciliation job
+ * (`GET /api/cron/stripe-reconcile`, ADR-0015) — the second, drift-correcting
+ * write path into subscription state, subordinate to the webhook (ADR-0007).
+ *
+ * - `'pro'` — the subscription still entitles Pro. `planExpiresAt` is the
+ *   period/trial end; `paymentFailed` is `true` only while Stripe is retrying
+ *   a failed charge (`past_due`), which the caller turns into a
+ *   `payment_failed_at` aviso without touching `plan`.
+ * - `'downgrade'` — the subscription is definitively over (`canceled` /
+ *   `unpaid` / `incomplete_expired`, or — decided by the caller — a Stripe
+ *   `resource_missing`). Caller sets `plan: 'free'` and clears both timestamps.
+ * - `'skip'` — no confident opinion (price is not the Pro price, a required
+ *   period field is absent, or a status this job was not designed for like
+ *   `incomplete` / `paused`). Caller leaves the row untouched and logs.
+ */
+export type ReconciledState
+  = | { action: 'pro', planExpiresAt: string, paymentFailed: boolean }
+    | { action: 'downgrade' }
+    | { action: 'skip', reason: string };
+
+export function resolveReconciledState(subscription: Stripe.Subscription, expectedPriceId: string): ReconciledState {
+  const { status } = subscription;
+
+  if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') {
+    return { action: 'downgrade' };
+  }
+
+  if (status === 'active' || status === 'trialing' || status === 'past_due') {
+    const item = subscription.items.data[0];
+
+    // Same guard the webhook's grant/renewal paths apply — never let a
+    // non-Pro subscription keep a `user_profiles` row on `plan: 'pro'`.
+    const actualPriceId = item?.price.id;
+    if (actualPriceId !== expectedPriceId) {
+      return { action: 'skip', reason: `subscription ${subscription.id} price ${actualPriceId ?? '(none)'} is not the Pro price ${expectedPriceId}` };
+    }
+
+    // `current_period_end` lives on the SubscriptionItem on the pinned API
+    // version (see `resolveRenewalUpdate`); `trial_end` on the Subscription.
+    const periodEndSeconds = status === 'trialing' ? subscription.trial_end : item?.current_period_end;
+    if (!periodEndSeconds) {
+      return { action: 'skip', reason: `subscription ${subscription.id} (${status}) is missing ${status === 'trialing' ? 'trial_end' : 'current_period_end'}` };
+    }
+
+    return {
+      action: 'pro',
+      planExpiresAt: new Date(periodEndSeconds * 1000).toISOString(),
+      paymentFailed: status === 'past_due',
+    };
+  }
+
+  // `incomplete`, `paused`, or any status added to Stripe later — this job
+  // has no designed behaviour, so it must not guess.
+  return { action: 'skip', reason: `subscription ${subscription.id} has out-of-scope status ${status}` };
+}
