@@ -4330,3 +4330,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: 8 archivos, `text-neutral-500` (`#a39372`, ~2,5:1 como texto) -> `text-tertiary` (`#6f5f43`, AA-safe). Landing (hero, how-it-works eyebrow, impact-stats caption, final-cta, learns-pro badges) + `ui/dropdown` + placeholders de `ui/input` y `create-recipe-form`. Sin tocar el token ni DESIGN.md - la rampa `neutral-*` queda para bordes/iconos. PR #175 -> dev -> staging -> main (09f07d9). Live-UI verificado en dev server local (3 capturas). FRESCO-285 -> Merged, parent EPIC-278, Relates FRESCO-299, evidencia adjunta.
 - Por qué: re-auditoria ago 2026 hallazgo 07 (MEDIO). FRESCO-299 solo oscurecio `--color-tertiary`; `neutral-500` como texto quedo sin tocar.
 - Siguiente: fuera de scope y anotado - chevron FAQ + iconos `neutral-400` (decorativos, exentos); `✓` de pricing con `neutral-600` (`#847456`, otro token, glifo casi decorativo) candidato a ticket aparte.
+
+## 2026-08-28 - FRESCO-303 contraste del ✓ en pricing (Free)
+- Qué: `components/landing/pricing.tsx` - variante no destacada de `PlanFeature`: `text-neutral-600` (`#847456`, ~3,6:1 sobre `bg-neutral-200`) -> `text-tertiary` (`#6f5f43`, ~4,6:1). Una línea. PR #176 -> dev -> staging -> main (f616974). Live-UI verificado. FRESCO-303 (tipo Error, Low, parent EPIC-278, Relates FRESCO-285) -> Merged.
+- Por qué: hallazgo lateral durante FRESCO-285 - otro token (`neutral-600`) que FRESCO-299 dejó sin tocar a propósito.
+- Siguiente: nada. Cierra la serie de contraste de la re-auditoría (283, 299, 285, 303).
