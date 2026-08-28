@@ -407,14 +407,16 @@ export default function SignupPage() {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                       />
-                      <label className="mt-1 flex items-start gap-2 text-body-sm text-tertiary">
-                        <input
-                          type="checkbox"
-                          data-testid="accept_terms_checkbox"
-                          checked={acceptedTerms}
-                          onChange={e => setAcceptedTerms(e.target.checked)}
-                          className="mt-0.5 size-4 shrink-0 accent-primary"
-                        />
+                      <label className="mt-1 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
+                        <span className="flex size-6 shrink-0 items-center justify-center">
+                          <input
+                            type="checkbox"
+                            data-testid="accept_terms_checkbox"
+                            checked={acceptedTerms}
+                            onChange={e => setAcceptedTerms(e.target.checked)}
+                            className="size-4 accent-primary"
+                          />
+                        </span>
                         <span>
                           Al crear una cuenta, aceptas nuestros
                           {' '}

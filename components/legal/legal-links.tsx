@@ -23,15 +23,15 @@ export function LegalLinks() {
   return (
     <>
       <p className="mt-4 text-center text-caption text-tertiary">
-        <button type="button" data-testid="legal_links_terms" onClick={() => openSection('terminos')} className="underline">
+        <button type="button" data-testid="legal_links_terms" onClick={() => openSection('terminos')} className="inline-block py-1.5 underline">
           Términos
         </button>
         {' · '}
-        <button type="button" data-testid="legal_links_privacy" onClick={() => openSection('privacidad')} className="underline">
+        <button type="button" data-testid="legal_links_privacy" onClick={() => openSection('privacidad')} className="inline-block py-1.5 underline">
           Privacidad
         </button>
         {' · '}
-        <button type="button" data-testid="legal_links_contact" onClick={() => openSection('contacto')} className="underline">
+        <button type="button" data-testid="legal_links_contact" onClick={() => openSection('contacto')} className="inline-block py-1.5 underline">
           Contacto
         </button>
       </p>
