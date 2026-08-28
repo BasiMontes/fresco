@@ -48,7 +48,7 @@ export function ImpactStats() {
           </div>
         ))}
       </div>
-      <p className="mt-8 text-caption italic text-neutral-500">
+      <p className="mt-8 text-caption italic text-tertiary">
         * Estimaciones orientativas. Los resultados varían según el hogar y los hábitos previos.
       </p>
     </section>

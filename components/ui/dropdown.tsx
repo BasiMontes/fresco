@@ -146,7 +146,7 @@ export function Dropdown({
           }
         }}
       >
-        <span className={selected ? '' : 'text-neutral-500'}>
+        <span className={selected ? '' : 'text-tertiary'}>
           {selected?.label ?? placeholder}
         </span>
         <span aria-hidden="true" className="ml-2 text-tertiary">▾</span>

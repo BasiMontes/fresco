@@ -27,7 +27,7 @@ export function FinalCta() {
           ¿Cómo funciona?
         </a>
       </div>
-      <p className="mt-4 text-caption text-neutral-500">
+      <p className="mt-4 text-caption text-tertiary">
         7 días de Pro gratis · Sin tarjeta · Cancela cuando quieras
       </p>
     </section>

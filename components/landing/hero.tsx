@@ -46,7 +46,7 @@ function WeeklyMenuPreview() {
       <div className="space-y-2 bg-background px-4 py-3">
         <div className="flex items-center justify-between text-label text-text">
           Martes
-          <span className="text-caption text-neutral-500">21 ene</span>
+          <span className="text-caption text-tertiary">21 ene</span>
         </div>
         {MEALS.map(meal => (
           <div key={meal.type} className="flex items-center gap-2 border-b border-border py-2 last:border-none">
@@ -54,9 +54,9 @@ function WeeklyMenuPreview() {
               {meal.emoji}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-caption uppercase text-neutral-500">{meal.type}</p>
+              <p className="text-caption uppercase text-tertiary">{meal.type}</p>
               <p className="truncate text-body-sm font-medium text-text">{meal.name}</p>
-              <p className="text-caption text-neutral-500">
+              <p className="text-caption text-tertiary">
                 ⏱
                 {meal.time}
               </p>
@@ -81,7 +81,7 @@ function WeeklyMenuPreview() {
         {SHOPPING_LIST.map(item => (
           <div key={item.label} className="flex items-center gap-2 py-0.5 text-caption">
             <span className={cn('size-1.5 shrink-0 rounded-full', item.struck ? 'bg-neutral-400' : 'bg-secondary')} />
-            <span className={cn(item.struck ? 'text-neutral-500 line-through' : 'text-text')}>{item.label}</span>
+            <span className={cn(item.struck ? 'text-tertiary line-through' : 'text-text')}>{item.label}</span>
           </div>
         ))}
       </div>
@@ -128,7 +128,7 @@ export function Hero() {
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
               <Clock className="size-4" strokeWidth={2} />
             </span>
-            <p className="text-caption text-neutral-500">
+            <p className="text-caption text-tertiary">
               <strong className="block text-body-sm font-bold text-text">30 min ahorrados</strong>
               cada domingo
             </p>
@@ -137,7 +137,7 @@ export function Hero() {
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
               <Leaf className="size-4" strokeWidth={2} />
             </span>
-            <p className="text-caption text-neutral-500">
+            <p className="text-caption text-tertiary">
               <strong className="block text-body-sm font-bold text-text">Menos comida tirada</strong>
               compras justo lo que necesitas
             </p>
@@ -146,7 +146,7 @@ export function Hero() {
       </div>
 
       <div className="mt-10 md:mt-0">
-        <p className="mb-3 text-center text-caption uppercase text-neutral-500 md:hidden">
+        <p className="mb-3 text-center text-caption uppercase text-tertiary md:hidden">
           Así se ve por dentro
         </p>
         <WeeklyMenuPreview />
