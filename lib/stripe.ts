@@ -294,7 +294,8 @@ export function resolveCancellationCustomerId(subscription: Stripe.Subscription)
  *   `payment_failed_at` aviso without touching `plan`.
  * - `'downgrade'` — the subscription is definitively over (`canceled` /
  *   `unpaid` / `incomplete_expired`, or — decided by the caller — a Stripe
- *   `resource_missing`). Caller sets `plan: 'free'` and clears both timestamps.
+ *   `resource_missing`). Caller sets `plan: 'free'` and clears
+ *   `payment_failed_at`, mirroring the webhook's `subscription.deleted` path.
  * - `'skip'` — no confident opinion (price is not the Pro price, a required
  *   period field is absent, or a status this job was not designed for like
  *   `incomplete` / `paused`). Caller leaves the row untouched and logs.

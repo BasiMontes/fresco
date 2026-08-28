@@ -104,24 +104,29 @@ export async function GET(request: Request): Promise<NextResponse> {
       continue;
     }
 
-    const desired = target.action === 'downgrade'
-      ? { plan: 'free' as const, plan_expires_at: null, payment_failed_at: null }
-      : {
-          plan: 'pro' as const,
-          plan_expires_at: target.planExpiresAt,
-          // Keep the original aviso timestamp if one is already set — only
-          // stamp a fresh one when the row has none (mirrors the webhook's
-          // `retrying` branch, which never overwrites an existing value).
-          payment_failed_at: target.paymentFailed
-            ? profile.payment_failed_at ?? new Date().toISOString()
-            : null,
-        };
+    // `plan_expires_at` is only asserted on the `pro` path. On downgrade the
+    // reconciler mirrors the webhook's `customer.subscription.deleted`
+    // handler exactly — it flips `plan` + clears the aviso and leaves
+    // `plan_expires_at` as-is, so the two writers never disagree.
+    const desired: { plan: 'free' | 'pro', payment_failed_at: string | null, plan_expires_at?: string }
+      = target.action === 'downgrade'
+        ? { plan: 'free', payment_failed_at: null }
+        : {
+            plan: 'pro',
+            plan_expires_at: target.planExpiresAt,
+            // Keep the original aviso timestamp if one is already set — only
+            // stamp a fresh one when the row has none (mirrors the webhook's
+            // `retrying` branch, which never overwrites an existing value).
+            payment_failed_at: target.paymentFailed
+              ? profile.payment_failed_at ?? new Date().toISOString()
+              : null,
+          };
 
     const changes: DriftEntry['changes'] = {};
     if (profile.plan !== desired.plan) {
       changes.plan = { from: profile.plan, to: desired.plan };
     }
-    if (!sameInstant(profile.plan_expires_at, desired.plan_expires_at)) {
+    if (desired.plan_expires_at !== undefined && !sameInstant(profile.plan_expires_at, desired.plan_expires_at)) {
       changes.plan_expires_at = { from: profile.plan_expires_at, to: desired.plan_expires_at };
     }
     if (!sameInstant(profile.payment_failed_at, desired.payment_failed_at)) {

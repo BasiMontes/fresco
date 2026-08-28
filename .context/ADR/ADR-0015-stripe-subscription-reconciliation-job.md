@@ -51,8 +51,9 @@ This is a **second write path into subscription state**, and it is deliberately 
   writes 0 rows.
 - It **upholds every invariant `ADR-0007` set**, including the price-id guard: it never
   grants `plan: 'pro'` for a subscription whose price is not the Pro price.
-- It **never rewrites** `stripe_customer_id` / `stripe_subscription_id` (matches the
-  webhook's `customer.subscription.deleted` handler, which keeps the ids for history).
+- It **never rewrites** `stripe_customer_id` / `stripe_subscription_id`, and on downgrade
+  it leaves `plan_expires_at` untouched — byte-for-byte the same column writes the webhook's
+  `customer.subscription.deleted` handler makes, so the two writers never disagree.
 
 `pg_cron` remains the only scheduler in the project (consistent with `ADR-0011`). What is
 new relative to `ADR-0011`: the `pg_net` call targets an **external Vercel URL**
