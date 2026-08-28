@@ -4340,3 +4340,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: el grueso ya estaba (PR #171, 27 ago). Verificación en vivo: PR #177 vs dev con test:unit rojo a propósito -> mergeStateStatus=BLOCKED, `gh pr merge` rechazado ("base branch policy prohibits the merge"). PR cerrado + rama borrada sin mergear. Comentario con evidencia en Jira; FRESCO-279 -> Finalizada.
 - Por qué: re-auditoría hallazgo 01 (ALTO), paso 3 del plan (verificar bloqueo real) faltaba; ticket seguía en Listo sin enlazar al trabajo.
 - Siguiente: rama local test/FRESCO-279-verify-required-checks quedó sin borrar (permiso denegado) — borrado manual trivial.
+
+## 2026-08-28 - FRESCO-288 accesibilidad: áreas táctiles footer auth + checkbox signup
+- Qué: FRESCO-267 subió a 24x24px el footer de landing + FAQ pero dejó fuera el footer del layout de auth (legal-links.tsx) y el checkbox de consentimiento de /signup. legal-links.tsx: inline-block py-1.5 en los 3 botones. signup/page.tsx: <input> envuelto en span size-6 centrado, checkbox visual sigue size-4, cursor-pointer al label. Verificado a 390px (Playwright): footer ~26,3px alto, checkbox target 26,4x26,4. PR #178 -> dev -> ff staging -> ff main (250c17a). Jira -> Finalizada.
+- Por qué: re-auditoría hallazgo 10 (MEDIO), eje Diseño. Regresión de cobertura WCAG 2.5.8.
+- Siguiente: n/a. OJO cabo suelto: el sync dejó un fichero mal ubicado .context/PBI/defects/DEFECT-FRESCO-288-.../defects/DEFECT-FRESCO-267-...md (defects/ anidado) que ya se mergeó a main — limpieza menor.
