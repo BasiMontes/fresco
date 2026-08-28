@@ -355,6 +355,8 @@ acli jira workitem search --jql "project = FRESCO AND issuetype in (Epic, Histor
 
 **New this pass (2026-08-21)**: EPIC-FRESCO-244 (Motion y Transiciones) — FRESCO-245/246/247/248/249, seeded via `/product-management` Workflow B Phase 2B (Full Epic), Level 2. Active dependency-discovery pass run per `dependency-linking.md`: `.context/PBI/epic-tree.md` re-read (19 epics before this pass), live `issuelinks` queried on all 5 new stories (`[]` on each, as expected for freshly created issues), and the four source-rule categories checked — no PRD/SRS FR backs this feature (explicit user request is the sole source, confirmed in the epic description), no `master-implementation-plan.md` or `business-data-map.md` mention of motion/transitions/animation (grepped, zero hits), no explicit `Blocked By`/`Blocks` author intent (none declared in the seeding brief). Result: **zero real dependencies**, matrix empty — mutually INVEST-independent among themselves and against the full existing backlog. No Jira link created. Pairwise Scope-overlap check also run across all 5 stories' Scope bullets (case-insensitive, trimmed): no duplicate bullets found — clean.
 
+**New this pass (2026-08-28)**: FRESCO-301 (Tarea / tech-debt, `auditoria-2`) — Stripe subscription reconciliation job, discovered during the PR #169 business-map regen. Not added to §3/§4: it is a standalone infra hardening task under EPIC-FRESCO-227, no hard blockers (228/230/231/232 all shipped). Being worked directly via `/sprint-development` Solo mode; `ADR-0015` drafted (Proposed). Logged here for traceability only.
+
 ---
 
 ## 7. Maintenance protocol

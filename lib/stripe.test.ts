@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { describe, expect, test } from 'bun:test';
-import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate } from './stripe';
+import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate } from './stripe';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -144,6 +144,65 @@ describe('resolvePaymentStatusUpdate', () => {
   test('throws when the subscription has no Stripe customer', () => {
     expect(() => resolvePaymentStatusUpdate(fakeSubscription({ status: 'past_due', customer: null as unknown as Stripe.Subscription['customer'] })))
       .toThrow('Stripe customer id');
+  });
+});
+
+describe('resolveReconciledState', () => {
+  test('active subscription on the Pro price → pro, expiry from current_period_end, no aviso', () => {
+    expect(resolveReconciledState(fakeSubscription({ status: 'active' }), PRO_PRICE_ID)).toEqual({
+      action: 'pro',
+      planExpiresAt: '2023-11-14T22:13:20.000Z',
+      paymentFailed: false,
+    });
+  });
+
+  test('trialing subscription → pro, expiry from trial_end', () => {
+    const sub = fakeSubscription({
+      status: 'trialing',
+      trial_end: 1_700_500_000,
+      items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'],
+    });
+    expect(resolveReconciledState(sub, PRO_PRICE_ID)).toEqual({
+      action: 'pro',
+      planExpiresAt: new Date(1_700_500_000 * 1000).toISOString(),
+      paymentFailed: false,
+    });
+  });
+
+  test('past_due subscription → still pro, but paymentFailed flag set', () => {
+    expect(resolveReconciledState(fakeSubscription({ status: 'past_due' }), PRO_PRICE_ID)).toEqual({
+      action: 'pro',
+      planExpiresAt: '2023-11-14T22:13:20.000Z',
+      paymentFailed: true,
+    });
+  });
+
+  test.each(['canceled', 'unpaid', 'incomplete_expired'] as const)('%s subscription → downgrade', (status) => {
+    expect(resolveReconciledState(fakeSubscription({ status }), PRO_PRICE_ID)).toEqual({ action: 'downgrade' });
+  });
+
+  test.each(['incomplete', 'paused'] as const)('%s subscription → skip (out-of-scope status)', (status) => {
+    const result = resolveReconciledState(fakeSubscription({ status }), PRO_PRICE_ID);
+    expect(result.action).toBe('skip');
+  });
+
+  test('active subscription on a non-Pro price → skip, never downgrades on the caller side', () => {
+    const sub = fakeSubscription({
+      status: 'active',
+      items: { data: [{ price: { id: 'price_other' }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'],
+    });
+    const result = resolveReconciledState(sub, PRO_PRICE_ID);
+    expect(result.action).toBe('skip');
+    if (result.action === 'skip') { expect(result.reason).toContain('is not the Pro price'); }
+  });
+
+  test('active subscription missing current_period_end → skip', () => {
+    const sub = fakeSubscription({
+      status: 'active',
+      items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: undefined }] } as unknown as Stripe.Subscription['items'],
+    });
+    const result = resolveReconciledState(sub, PRO_PRICE_ID);
+    expect(result.action).toBe('skip');
   });
 });
 
