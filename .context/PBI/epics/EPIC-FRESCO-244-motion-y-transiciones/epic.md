@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-244](https://basiliomontescastano.atlassian.net/browse/FRESCO-244)
 **Priority:** Medium
 **Status:** Listo
-**Total Story Points:** 0
+**Total Story Points:** 15
 
 ---
 
@@ -39,11 +39,11 @@ del sistema del usuario (historia dedicada, ver más abajo).
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-245](https://basiliomontescastano.atlassian.net/browse/FRESCO-245) | Transiciones de Página | Transicionar suavemente entre rutas principales al navegar | - | Medium | Control de calidad |
-| [FRESCO-246](https://basiliomontescastano.atlassian.net/browse/FRESCO-246) | Listas y Tarjetas | Animar entrada y salida de tarjetas en listas y calendario | - | Medium | Control de calidad |
-| [FRESCO-247](https://basiliomontescastano.atlassian.net/browse/FRESCO-247) | Modales | Transicionar apertura y cierre de modales | - | Medium | Control de calidad |
+| [FRESCO-245](https://basiliomontescastano.atlassian.net/browse/FRESCO-245) | Transiciones de Página | Transicionar suavemente entre rutas principales al navegar | 5 | Medium | Control de calidad |
+| [FRESCO-246](https://basiliomontescastano.atlassian.net/browse/FRESCO-246) | Listas y Tarjetas | Animar entrada y salida de tarjetas en listas y calendario | 5 | Medium | Control de calidad |
+| [FRESCO-247](https://basiliomontescastano.atlassian.net/browse/FRESCO-247) | Modales | Transicionar apertura y cierre de modales | 3 | Medium | Control de calidad |
 | [FRESCO-248](https://basiliomontescastano.atlassian.net/browse/FRESCO-248) | Micro-interacciones | Dar feedback visual inmediato en botones y acciones de guardado | - | Medium | Finalizada |
-| [FRESCO-249](https://basiliomontescastano.atlassian.net/browse/FRESCO-249) | Accesibilidad de Movimiento | Respetar la preferencia de movimiento reducido del sistema | - | Medium | Control de calidad |
+| [FRESCO-249](https://basiliomontescastano.atlassian.net/browse/FRESCO-249) | Accesibilidad de Movimiento | Respetar la preferencia de movimiento reducido del sistema | 2 | Medium | Control de calidad |
 
 ---
 

@@ -5,7 +5,7 @@
 **Type:** Historia
 **Status:** Control de calidad
 **Priority:** Medium
-**Story Points:** -
+**Story Points:** 2
 
 ---
 
@@ -30,7 +30,7 @@ molesto o mareante
 ## Metadata
 
 - **Created:** 8/21/2026
-- **Updated:** 8/21/2026
+- **Updated:** 8/28/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

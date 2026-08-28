@@ -5,7 +5,7 @@
 **Type:** Historia
 **Status:** Control de calidad
 **Priority:** Medium
-**Story Points:** -
+**Story Points:** 3
 
 ---
 
@@ -26,7 +26,7 @@ Como Laura, quiero que los modales de la app (como el aviso legal, la confirmaci
 ## Metadata
 
 - **Created:** 8/21/2026
-- **Updated:** 8/21/2026
+- **Updated:** 8/28/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Unassigned
 - **Labels:** implementation-plan-ready
