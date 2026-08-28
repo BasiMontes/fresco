@@ -31,7 +31,7 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section id="como-funciona" className="mx-auto max-w-5xl px-4 py-16 md:px-8">
-      <p className="mb-2 text-h6 uppercase text-neutral-500">Cómo funciona</p>
+      <p className="mb-2 text-h6 uppercase text-tertiary">Cómo funciona</p>
       <h2 className="mb-2 text-h2 text-text">Tres pasos. Un domingo sin agobios.</h2>
       <p className="mb-9 max-w-lg text-body-md text-tertiary">
         Menos de 2 minutos la primera vez. 30 segundos cada semana siguiente.

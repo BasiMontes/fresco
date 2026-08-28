@@ -147,7 +147,7 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: Crea
             rows={4}
             value={ingredientesText}
             onChange={event => setIngredientesText(event.target.value)}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-md text-text placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-md text-text placeholder:text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
 
@@ -159,7 +159,7 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: Crea
             rows={4}
             value={pasosText}
             onChange={event => setPasosText(event.target.value)}
-            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-md text-text placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-body-md text-text placeholder:text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         </div>
 

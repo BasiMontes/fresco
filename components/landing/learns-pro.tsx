@@ -48,7 +48,7 @@ export function LearnsPro() {
               <CardHeader>
                 <span
                   className={cn(
-                    'inline-block self-start rounded-sm bg-neutral-200 px-2 py-1 text-caption font-bold text-neutral-500',
+                    'inline-block self-start rounded-sm bg-neutral-200 px-2 py-1 text-caption font-bold text-tertiary',
                     item.highlighted && 'bg-accent-200 text-primary',
                   )}
                 >
