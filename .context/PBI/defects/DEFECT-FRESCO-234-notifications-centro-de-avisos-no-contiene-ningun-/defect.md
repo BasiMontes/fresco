@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-234](https://basiliomontescastano.atlassian.net/browse/FRESCO-234)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -41,7 +41,7 @@ Encontrado en vivo con Playwright CLI contra staging (`fresco-pre.vercel.app`) d
 ## Metadata
 
 - **Created:** 8/19/2026
-- **Updated:** 8/20/2026
+- **Updated:** 8/26/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

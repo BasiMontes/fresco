@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-267](https://basiliomontescastano.atlassian.net/browse/FRESCO-267)
 **Priority:** Low
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -37,10 +37,16 @@ Los campos `Actual Result`, `Expected Result`, `Error Type`, `Severity` y `Test 
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-288](https://basiliomontescastano.atlassian.net/browse/FRESCO-288) - Accesibilidad: el fix de áreas táctiles no llegó al footer de auth ni al checkbox de `/signup`
+
+---
+
 ## Metadata
 
 - **Created:** 8/26/2026
-- **Updated:** 8/26/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-dojo

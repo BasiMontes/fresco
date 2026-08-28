@@ -1,7 +1,7 @@
 # Tarea: Fix suite e2e: 8 escenarios rotos por drift + 4 escenarios nuevos (FRESCO-191/194/170)
 
 **Jira Key:** [FRESCO-195](https://basiliomontescastano.atlassian.net/browse/FRESCO-195)
-**Status:** Listo
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -46,14 +46,14 @@ Investigación pedida por el user ("algún escenario nuevo para automatizar" →
 
 ### customfield_10000
 
-{repository={count=3, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":3,"lastUpdated":"2026-08-14T20:36:47.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":3,"name":"GitHub"},"GitHub":{"count":3,"name":"GitHub"}}}}},"isStale":true}}
+{deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-14T18:40:06.000+0000, id=0, position=0, title=Production, projectId=0, status=DEPLOYED}]}, repository={count=3, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":3,"lastUpdated":"2026-08-14T20:36:47.000+0200","dataType":"repository"},"byInstanceType":{"GitHub":{"count":3,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":3,"name":"GitHub"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-14T20:40:06.000+0200","topEnvironments":[{"lastUpdated":"2026-08-14T18:40:06.000+0000","id":0,"position":0,"title":"Production","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 8/14/2026
-- **Updated:** 8/14/2026
+- **Updated:** 8/18/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

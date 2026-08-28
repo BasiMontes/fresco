@@ -46,14 +46,14 @@ Es el único hallazgo de la auditoría con retorno compuesto: cada día sin CI, 
 
 ### customfield_10000
 
-{pullrequest={dataType=pullrequest, state=MERGED, stateCount=2}, build={count=1, dataType=build, failedBuildCount=0, successfulBuildCount=1, unknownBuildCount=0}, deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-26T16:42:02.000+0000, id=0, position=0, title=Preview, projectId=0, status=DEPLOYED}]}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":2,"lastUpdated":"2026-08-26T18:40:43.000+0200","stateCount":2,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"oAuth-com.github.integration.production":{"count":1,"name":"GitHub"},"GitHub":{"count":1,"name":"GitHub"}}},"build":{"overall":{"count":1,"lastUpdated":"2026-08-26T18:38:04.000+0200","failedBuildCount":0,"successfulBuildCount":1,"unknownBuildCount":0,"dataType":"build"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-26T18:42:02.000+0200","topEnvironments":[{"lastUpdated":"2026-08-26T16:42:02.000+0000","id":0,"position":0,"title":"Preview","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=6}, build={count=1, dataType=build, failedBuildCount=0, successfulBuildCount=1, unknownBuildCount=0}, deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-26T16:42:02.000+0000, id=0, position=0, title=Preview, projectId=0, status=DEPLOYED}]}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":6,"lastUpdated":"2026-08-27T23:39:03.000+0200","stateCount":6,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"oAuth-com.github.integration.production":{"count":3,"name":"GitHub"},"GitHub":{"count":3,"name":"GitHub"}}},"build":{"overall":{"count":1,"lastUpdated":"2026-08-26T18:38:04.000+0200","failedBuildCount":0,"successfulBuildCount":1,"unknownBuildCount":0,"dataType":"build"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-26T18:42:02.000+0200","topEnvironments":[{"lastUpdated":"2026-08-26T16:42:02.000+0000","id":0,"position":0,"title":"Preview","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 8/26/2026
-- **Updated:** 8/26/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-dojo

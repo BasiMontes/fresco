@@ -1,7 +1,7 @@
 # Tarea: Fundación: sincronizar PRD, SRS, mapas de negocio y glosario con las 5 épicas de agosto
 
 **Jira Key:** [FRESCO-284](https://basiliomontescastano.atlassian.net/browse/FRESCO-284)
-**Status:** Listo
+**Status:** Merged
 **Type:** Tarea
 
 ---
@@ -44,7 +44,7 @@ El glosario y los mapas vuelven a ser fuente fiable para planificar y escribir A
 
 ### customfield_10000
 
-{}
+{repository={count=4, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":4,"lastUpdated":"2026-08-27T23:11:00.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":4,"name":"GitHub"},"GitHub":{"count":4,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 

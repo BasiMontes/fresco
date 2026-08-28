@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-285](https://basiliomontescastano.atlassian.net/browse/FRESCO-285)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -34,10 +34,17 @@ Un o dos valores de token. Cierra el fallo de contraste más extendido del sitio
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-299](https://basiliomontescastano.atlassian.net/browse/FRESCO-299) - Diseño: 3 hallazgos de contraste WCAG AA pendientes tras FRESCO-283 (text-warning ×2 + token text-tertiary #847456)
+- relates to: [FRESCO-303](https://basiliomontescastano.atlassian.net/browse/FRESCO-303) - Diseño: el ✓ de features en pricing (plan Free) usa text-neutral-600 (#847456) — falla contraste AA
+
+---
+
 ## Metadata
 
 - **Created:** 8/27/2026
-- **Updated:** 8/27/2026
+- **Updated:** 8/28/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-2

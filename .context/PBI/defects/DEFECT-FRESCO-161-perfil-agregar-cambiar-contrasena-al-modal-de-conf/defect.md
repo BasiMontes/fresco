@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-161](https://basiliomontescastano.atlassian.net/browse/FRESCO-161)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -28,7 +28,7 @@
 ## Metadata
 
 - **Created:** 8/10/2026
-- **Updated:** 8/10/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

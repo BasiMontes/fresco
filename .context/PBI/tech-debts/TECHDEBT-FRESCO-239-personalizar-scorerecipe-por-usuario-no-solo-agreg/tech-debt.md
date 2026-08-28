@@ -1,7 +1,7 @@
 # Tarea: Personalizar scoreRecipe() por usuario (no solo agregado global)
 
 **Jira Key:** [FRESCO-239](https://basiliomontescastano.atlassian.net/browse/FRESCO-239)
-**Status:** Listo
+**Status:** Control de calidad
 **Type:** Tarea
 
 ---
@@ -22,7 +22,7 @@
 
 ### customfield_10000
 
-{}
+{repository={count=7, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":7,"lastUpdated":"2026-08-23T17:53:23.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":7,"name":"GitHub"},"GitHub":{"count":7,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
@@ -31,7 +31,7 @@
 - **Created:** 8/20/2026
 - **Updated:** 8/23/2026
 - **Reporter:** Basi Montes
-- **Assignee:** Basi Montes
+- **Assignee:** Unassigned
 
 ---
 

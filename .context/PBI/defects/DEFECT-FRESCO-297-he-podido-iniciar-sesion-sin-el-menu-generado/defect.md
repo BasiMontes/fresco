@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-297](https://basiliomontescastano.atlassian.net/browse/FRESCO-297)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---

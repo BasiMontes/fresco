@@ -22,7 +22,7 @@
 
 ### customfield_10000
 
-{repository={count=9, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":9,"lastUpdated":"2026-08-23T18:36:42.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":9,"name":"GitHub"},"GitHub":{"count":9,"name":"GitHub"}}}}},"isStale":true}}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=4}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":4,"lastUpdated":"2026-08-27T21:51:07.000+0200","stateCount":4,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"},"GitHub":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 

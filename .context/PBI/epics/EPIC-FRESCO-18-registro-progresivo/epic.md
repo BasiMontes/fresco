@@ -31,7 +31,7 @@ Técnicamente, esta épica se apoya en la conversión de sesión que Supabase An
 ## Metadata
 
 - **Created:** 7/31/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** master-sprint-2, mvp

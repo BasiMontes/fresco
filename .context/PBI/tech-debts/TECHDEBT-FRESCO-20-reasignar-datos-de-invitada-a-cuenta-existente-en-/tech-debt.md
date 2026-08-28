@@ -26,7 +26,7 @@ Ver ADR-0003 (Consequences) — este riesgo ya estaba nombrado ahí como "not tr
 
 ### customfield_10000
 
-{}
+{repository={count=6, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":6,"lastUpdated":"2026-07-31T23:01:22.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":6,"name":"GitHub"},"GitHub":{"count":6,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 

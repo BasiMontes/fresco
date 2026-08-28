@@ -1,7 +1,7 @@
 # Tarea: CI: activar required status checks en `main`, `staging` y `dev`
 
 **Jira Key:** [FRESCO-279](https://basiliomontescastano.atlassian.net/browse/FRESCO-279)
-**Status:** Listo
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -45,14 +45,14 @@ Todos los checks que YA corren (format, lint, types, vars, skills) empiezan a pr
 
 ### customfield_10000
 
-{}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=2}, build={count=1, dataType=build, failedBuildCount=0, successfulBuildCount=0, unknownBuildCount=1}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":2,"lastUpdated":"2026-08-28T23:24:29.000+0200","stateCount":2,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"GitHub":{"count":1,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":1,"name":"GitHub"}}},"build":{"overall":{"count":1,"lastUpdated":"2026-08-28T23:09:40.000+0200","failedBuildCount":0,"successfulBuildCount":0,"unknownBuildCount":1,"dataType":"build"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 8/27/2026
-- **Updated:** 8/27/2026
+- **Updated:** 8/28/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-2

@@ -1,7 +1,7 @@
 # Tarea: Revisar diseño de lista de la compra vía Stitch MCP
 
 **Jira Key:** [FRESCO-191](https://basiliomontescastano.atlassian.net/browse/FRESCO-191)
-**Status:** Control de calidad
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -38,14 +38,14 @@ Diferido — se aborda después del batch de bugs en curso (FRESCO-181, 182, 148
 
 ### customfield_10000
 
-{pullrequest={dataType=pullrequest, state=MERGED, stateCount=2}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":2,"lastUpdated":"2026-08-13T18:23:28.000+0200","stateCount":2,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"GitHub":{"count":1,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":1,"name":"GitHub"}}}}},"isStale":true}}
+{deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-17T14:31:08.000+0000, id=0, position=0, title=Production, projectId=0, status=DEPLOYED}]}, repository={count=14, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":14,"lastUpdated":"2026-08-17T16:16:55.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":14,"name":"GitHub"},"GitHub":{"count":14,"name":"GitHub"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-17T16:31:08.000+0200","topEnvironments":[{"lastUpdated":"2026-08-17T14:31:08.000+0000","id":0,"position":0,"title":"Production","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 8/13/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

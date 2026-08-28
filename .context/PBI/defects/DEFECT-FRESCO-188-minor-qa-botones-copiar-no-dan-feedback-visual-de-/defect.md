@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-188](https://basiliomontescastano.atlassian.net/browse/FRESCO-188)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -24,7 +24,7 @@ Al hacer click no hay ningún estado de "¡copiado!"/checkmark — no se puede c
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

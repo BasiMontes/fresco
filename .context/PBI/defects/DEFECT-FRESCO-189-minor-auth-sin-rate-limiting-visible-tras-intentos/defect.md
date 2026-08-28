@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-189](https://basiliomontescastano.atlassian.net/browse/FRESCO-189)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -26,7 +26,7 @@ No confirmado como explotable (Supabase probablemente limita del lado servidor),
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-201](https://basiliomontescastano.atlassian.net/browse/FRESCO-201)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -18,7 +18,7 @@ Revisa las redirecciones, algo se está escapando ahí
 ## Metadata
 
 - **Created:** 8/16/2026
-- **Updated:** 8/16/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

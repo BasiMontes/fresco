@@ -24,7 +24,7 @@ Cubre el flujo de captura de perfil en 3 pasos (dieta y restricciones, cocinas f
 ## Metadata
 
 - **Created:** 7/26/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** mvp

@@ -29,7 +29,7 @@ Rediseña /recipes como una "Biblioteca" de descubrimiento: buscador, pestañas 
 ## Metadata
 
 - **Created:** 8/3/2026
-- **Updated:** 8/3/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** new-feature, post-mvp

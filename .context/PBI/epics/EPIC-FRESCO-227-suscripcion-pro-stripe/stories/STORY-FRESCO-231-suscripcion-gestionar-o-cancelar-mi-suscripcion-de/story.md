@@ -3,7 +3,7 @@
 **Jira Key:** [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231)
 **Epic:** [FRESCO-227](https://basiliomontescastano.atlassian.net/browse/FRESCO-227) (Suscripción Pro (Stripe))
 **Type:** Historia
-**Status:** WIP
+**Status:** Finalizada
 **Priority:** Medium
 **Story Points:** -
 
@@ -23,7 +23,7 @@
 
 ### Historia (1)
 
-- [FRESCO-228](https://basiliomontescastano.atlassian.net/browse/FRESCO-228): Suscripción | Actualizar a Pro desde el perfil _(Control de calidad)_
+- [FRESCO-228](https://basiliomontescastano.atlassian.net/browse/FRESCO-228): Suscripción | Actualizar a Pro desde el perfil _(Finalizada)_
 
 ---
 

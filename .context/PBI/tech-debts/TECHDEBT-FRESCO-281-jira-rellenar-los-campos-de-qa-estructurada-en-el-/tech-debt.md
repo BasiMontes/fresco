@@ -1,7 +1,7 @@
 # Tarea: Jira: rellenar los campos de QA estructurada en el trabajo nuevo
 
 **Jira Key:** [FRESCO-281](https://basiliomontescastano.atlassian.net/browse/FRESCO-281)
-**Status:** Listo
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -42,7 +42,7 @@ Desbloquea dashboards JQL y triaje por severidad. Coste casi cero por item. Sin 
 
 ### customfield_10000
 
-{}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=4}, build={count=1, dataType=build, failedBuildCount=0, successfulBuildCount=0, unknownBuildCount=1}, deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-27T15:39:43.000+0000, id=0, position=0, title=Preview, projectId=0, status=DEPLOYED}]}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":4,"lastUpdated":"2026-08-27T21:51:03.000+0200","stateCount":4,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"GitHub":{"count":2,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"}}},"build":{"overall":{"count":1,"lastUpdated":"2026-08-27T17:39:39.000+0200","failedBuildCount":0,"successfulBuildCount":0,"unknownBuildCount":1,"dataType":"build"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-27T17:39:43.000+0200","topEnvironments":[{"lastUpdated":"2026-08-27T15:39:43.000+0000","id":0,"position":0,"title":"Preview","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 

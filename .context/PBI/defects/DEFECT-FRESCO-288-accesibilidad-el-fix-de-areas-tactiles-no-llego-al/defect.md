@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-288](https://basiliomontescastano.atlassian.net/browse/FRESCO-288)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -40,7 +40,7 @@ Cierra el hallazgo BAJO del baseline de verdad, en todos los layouts.
 ## Metadata
 
 - **Created:** 8/27/2026
-- **Updated:** 8/27/2026
+- **Updated:** 8/28/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-2

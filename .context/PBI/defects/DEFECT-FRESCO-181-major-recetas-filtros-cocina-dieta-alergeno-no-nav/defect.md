@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-181](https://basiliomontescastano.atlassian.net/browse/FRESCO-181)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -41,7 +41,7 @@ Usuario de solo-teclado o lector de pantalla no puede operar los filtros eficien
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-269](https://basiliomontescastano.atlassian.net/browse/FRESCO-269)
 **Priority:** Low
-**Status:** Listo
+**Status:** Control de calidad
 **Components:** None
 
 ---
@@ -28,10 +28,17 @@ No asumir el fix por código. Inspeccionar la pantalla en vivo (390px y escritor
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-81](https://basiliomontescastano.atlassian.net/browse/FRESCO-81) - Cuenta y Sesión
+- relates to: [FRESCO-256](https://basiliomontescastano.atlassian.net/browse/FRESCO-256) - Auth (login/signup/recuperar contraseña/nueva contraseña): card sin padding, texto pegado arriba
+
+---
+
 ## Metadata
 
 - **Created:** 8/26/2026
-- **Updated:** 8/26/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-dojo

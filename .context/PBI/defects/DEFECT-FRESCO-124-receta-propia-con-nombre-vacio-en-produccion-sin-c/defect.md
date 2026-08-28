@@ -38,10 +38,17 @@ Ver Pasos para reproducir arriba — query directa a la tabla es suficiente para
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) - Biblioteca de Recetas
+- relates to: [FRESCO-118](https://basiliomontescastano.atlassian.net/browse/FRESCO-118) - Botón "Guardar receta" no se deshabilita con nombre vacío
+
+---
+
 ## Metadata
 
 - **Created:** 8/8/2026
-- **Updated:** 8/8/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** major, qa-sweep-2026-08-08

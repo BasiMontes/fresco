@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-185](https://basiliomontescastano.atlassian.net/browse/FRESCO-185)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -28,7 +28,7 @@ En conexión lenta el usuario puede pensar que el click no se registró.
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

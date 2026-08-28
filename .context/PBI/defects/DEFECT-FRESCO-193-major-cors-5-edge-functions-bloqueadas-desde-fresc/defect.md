@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-193](https://basiliomontescastano.atlassian.net/browse/FRESCO-193)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -26,7 +26,7 @@ Agregados los dos orígenes faltantes al Set. Redeployadas las 5 funciones afect
 ## Metadata
 
 - **Created:** 8/14/2026
-- **Updated:** 8/14/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

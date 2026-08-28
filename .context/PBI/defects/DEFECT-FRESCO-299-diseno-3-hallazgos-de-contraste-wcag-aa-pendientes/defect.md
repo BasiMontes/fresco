@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-299](https://basiliomontescastano.atlassian.net/browse/FRESCO-299)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Merged
 **Components:** None
 
 ---
@@ -43,13 +43,14 @@ Cierra la deuda de contraste de la re-auditoría en el eje Diseño. Los hallazgo
 ## Related Issues
 
 - relates to: [FRESCO-283](https://basiliomontescastano.atlassian.net/browse/FRESCO-283) - Diseño: el CTA primario ámbar falla contraste WCAG AA (2,40:1)
+- relates to: [FRESCO-285](https://basiliomontescastano.atlassian.net/browse/FRESCO-285) - Diseño: el token de texto atenuado (`#847456`) falla contraste AA en todo el sitio
 
 ---
 
 ## Metadata
 
 - **Created:** 8/27/2026
-- **Updated:** 8/27/2026
+- **Updated:** 8/28/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-2

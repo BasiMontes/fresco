@@ -1,7 +1,7 @@
 # Tarea: Catálogo de recetas casi sin cobertura de desayuno/cena — modelo sustituye con comida
 
 **Jira Key:** [FRESCO-24](https://basiliomontescastano.atlassian.net/browse/FRESCO-24)
-**Status:** Listo
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -38,14 +38,14 @@ No es un ticket de código — es contenido. Al founder: sembrar recetas `desayu
 
 ### customfield_10000
 
-{}
+{repository={count=2, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":2,"lastUpdated":"2026-08-01T00:29:32.000+0200","dataType":"repository"},"byInstanceType":{"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"},"GitHub":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
 ## Metadata
 
 - **Created:** 7/31/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/1/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** catalog-content, master-sprint-0, tech-debt

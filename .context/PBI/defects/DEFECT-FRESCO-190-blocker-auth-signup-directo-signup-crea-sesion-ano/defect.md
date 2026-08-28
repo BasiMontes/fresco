@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-190](https://basiliomontescastano.atlassian.net/browse/FRESCO-190)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -47,7 +47,7 @@ Distinto de FRESCO-89 (esa cubre la conversión invitado→cuenta vía `updateUs
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/12/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Unassigned
 

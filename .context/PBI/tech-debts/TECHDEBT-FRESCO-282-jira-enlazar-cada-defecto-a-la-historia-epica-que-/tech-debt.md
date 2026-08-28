@@ -1,7 +1,7 @@
 # Tarea: Jira: enlazar cada defecto a la historia/épica que rompió + adjuntar evidencia
 
 **Jira Key:** [FRESCO-282](https://basiliomontescastano.atlassian.net/browse/FRESCO-282)
-**Status:** Listo
+**Status:** Merged
 **Type:** Tarea
 
 ---
@@ -41,7 +41,7 @@ Un campo más por bug. A cambio: densidad de defectos por épica consultable, y 
 
 ### customfield_10000
 
-{}
+{repository={count=3, dataType=repository}, json={"cachedValue":{"errors":[],"summary":{"repository":{"overall":{"count":3,"lastUpdated":"2026-08-27T21:52:07.000+0200","dataType":"repository"},"byInstanceType":{"GitHub":{"count":3,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":3,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 

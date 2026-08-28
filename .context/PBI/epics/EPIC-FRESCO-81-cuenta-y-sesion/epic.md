@@ -27,7 +27,7 @@ Agrupa las historias de gestión de cuenta y sesión activa dentro de la app: ve
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/6/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** new-feature, post-mvp

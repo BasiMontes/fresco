@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-85](https://basiliomontescastano.atlassian.net/browse/FRESCO-85)
 **Priority:** Medium
-**Status:** WIP
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -41,7 +41,7 @@ Rompe la consistencia de un set de iconos que DESIGN.md describe como "single st
 ## Metadata
 
 - **Created:** 8/6/2026
-- **Updated:** 8/16/2026
+- **Updated:** 8/26/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

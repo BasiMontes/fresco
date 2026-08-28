@@ -28,7 +28,7 @@ Valor de negocio: permite a Laura adaptar el plan generado a lo que realmente en
 ## Metadata
 
 - **Created:** 7/27/2026
-- **Updated:** 7/31/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

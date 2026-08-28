@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-227](https://basiliomontescastano.atlassian.net/browse/FRESCO-227)
 **Priority:** High
-**Status:** Listo
+**Status:** Finalizada
 **Total Story Points:** 0
 
 ---
@@ -25,17 +25,17 @@ Refinamiento de FRESCO-219.
 
 | Key | Story | Points | Priority | Status |
 | --- | ----- | ------ | -------- | ------ |
-| [FRESCO-228](https://basiliomontescastano.atlassian.net/browse/FRESCO-228) | Suscripción | Actualizar a Pro desde el perfil | - | High | Control de calidad |
-| [FRESCO-230](https://basiliomontescastano.atlassian.net/browse/FRESCO-230) | Suscripción | Reflejar el estado real de mi suscripción | - | High | Control de calidad |
-| [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231) | Suscripción | Gestionar o cancelar mi suscripción desde el perfil | - | Medium | Control de calidad |
-| [FRESCO-232](https://basiliomontescastano.atlassian.net/browse/FRESCO-232) | Suscripción | Saber si mi pago falló | - | Medium | Control de calidad |
+| [FRESCO-228](https://basiliomontescastano.atlassian.net/browse/FRESCO-228) | Suscripción | Actualizar a Pro desde el perfil | - | High | Finalizada |
+| [FRESCO-230](https://basiliomontescastano.atlassian.net/browse/FRESCO-230) | Suscripción | Reflejar el estado real de mi suscripción | - | High | Finalizada |
+| [FRESCO-231](https://basiliomontescastano.atlassian.net/browse/FRESCO-231) | Suscripción | Gestionar o cancelar mi suscripción desde el perfil | - | Medium | Finalizada |
+| [FRESCO-232](https://basiliomontescastano.atlassian.net/browse/FRESCO-232) | Suscripción | Saber si mi pago falló | - | Medium | Finalizada |
 
 ---
 
 ## Metadata
 
 - **Created:** 8/17/2026
-- **Updated:** 8/17/2026
+- **Updated:** 8/19/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** mvp-scope-reversal, payments

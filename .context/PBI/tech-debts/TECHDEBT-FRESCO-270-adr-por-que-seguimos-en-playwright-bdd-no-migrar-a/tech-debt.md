@@ -41,7 +41,7 @@ Escribir el ADR con la decisión explícita "seguimos en playwright-bdd" y las s
 ## Metadata
 
 - **Created:** 8/26/2026
-- **Updated:** 8/26/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** auditoria-dojo

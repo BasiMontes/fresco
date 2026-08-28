@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-183](https://basiliomontescastano.atlassian.net/browse/FRESCO-183)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Rechazos
 **Components:** None
 
 ---
@@ -25,10 +25,16 @@ Perf smell real, afecta el LCP de la página `/calendar`.
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-10](https://basiliomontescastano.atlassian.net/browse/FRESCO-10) - Calendario Editable
+
+---
+
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

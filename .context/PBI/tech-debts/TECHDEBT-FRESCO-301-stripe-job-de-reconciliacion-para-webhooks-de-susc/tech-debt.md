@@ -1,7 +1,7 @@
 # Tarea: Stripe: job de reconciliación para webhooks de suscripción perdidos/fallidos
 
 **Jira Key:** [FRESCO-301](https://basiliomontescastano.atlassian.net/browse/FRESCO-301)
-**Status:** WIP
+**Status:** Finalizada
 **Type:** Tarea
 
 ---
@@ -42,7 +42,7 @@ El estado de suscripción deja de poder quedar desincronizado de forma indetecta
 
 ### customfield_10000
 
-{pullrequest={dataType=pullrequest, state=MERGED, stateCount=2}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":2,"lastUpdated":"2026-08-28T00:21:24.000+0200","stateCount":2,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"GitHub":{"count":1,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":1,"name":"GitHub"}}}}},"isStale":true}}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=4}, build={count=1, dataType=build, failedBuildCount=0, successfulBuildCount=1, unknownBuildCount=0}, deployment-environment={dataType=deployment-environment, successfulCount=1, topEnvironments=[{lastUpdated=2026-08-28T19:56:45.000+0000, id=0, position=0, title=Production, projectId=0, status=DEPLOYED}]}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":4,"lastUpdated":"2026-08-28T10:51:54.000+0200","stateCount":4,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"},"GitHub":{"count":2,"name":"GitHub"}}},"build":{"overall":{"count":1,"lastUpdated":"2026-08-28T10:51:36.000+0200","failedBuildCount":0,"successfulBuildCount":1,"unknownBuildCount":0,"dataType":"build"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}},"deployment-environment":{"overall":{"count":1,"lastUpdated":"2026-08-28T21:56:45.000+0200","topEnvironments":[{"lastUpdated":"2026-08-28T19:56:45.000+0000","id":0,"position":0,"title":"Production","projectId":0,"status":"DEPLOYED"}],"showProjects":false,"successfulCount":1,"dataType":"deployment-environment"},"byInstanceType":{"cloud-providers":{"count":1,"name":"Other providers"}}}}},"isStale":true}}
 
 ---
 

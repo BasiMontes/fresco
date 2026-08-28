@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-283](https://basiliomontescastano.atlassian.net/browse/FRESCO-283)
 **Priority:** High
-**Status:** Listo
+**Status:** Merged
 **Components:** None
 
 ---
@@ -36,6 +36,12 @@ Subir el ámbar a ~`#9a5b12` (≈4,7:1), o texto oscuro sobre el ámbar actual (
 ## Retorno esperado
 
 Un cambio hexadecimal desbloquea todos los CTA de conversión de trial de golpe. Es un fallo de accesibilidad real y del tipo exacto que se pide en las clases de QA.
+
+---
+
+## Related Issues
+
+- relates to: [FRESCO-299](https://basiliomontescastano.atlassian.net/browse/FRESCO-299) - Diseño: 3 hallazgos de contraste WCAG AA pendientes tras FRESCO-283 (text-warning ×2 + token text-tertiary #847456)
 
 ---
 

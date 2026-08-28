@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-182](https://basiliomontescastano.atlassian.net/browse/FRESCO-182)
 **Priority:** Medium
-**Status:** Control de calidad
+**Status:** Finalizada
 **Components:** None
 
 ---
@@ -36,7 +36,7 @@ Cualquier URL mal escrita, bookmark viejo, o link roto deja al usuario fuera del
 ## Metadata
 
 - **Created:** 8/11/2026
-- **Updated:** 8/13/2026
+- **Updated:** 8/17/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

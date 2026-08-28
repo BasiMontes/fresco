@@ -1,7 +1,7 @@
 # Tarea: Instrumentación de producto: analytics para medir el KPI norte
 
 **Jira Key:** [FRESCO-240](https://basiliomontescastano.atlassian.net/browse/FRESCO-240)
-**Status:** Listo
+**Status:** Control de calidad
 **Type:** Tarea
 
 ---
@@ -23,7 +23,7 @@
 
 ### customfield_10000
 
-{}
+{pullrequest={dataType=pullrequest, state=MERGED, stateCount=4}, json={"cachedValue":{"errors":[],"summary":{"pullrequest":{"overall":{"count":4,"lastUpdated":"2026-08-27T21:51:07.000+0200","stateCount":4,"state":"MERGED","dataType":"pullrequest","open":false},"byInstanceType":{"GitHub":{"count":2,"name":"GitHub"},"oAuth-com.github.integration.production":{"count":2,"name":"GitHub"}}}}},"isStale":true}}
 
 ---
 
@@ -32,7 +32,7 @@
 - **Created:** 8/20/2026
 - **Updated:** 8/24/2026
 - **Reporter:** Basi Montes
-- **Assignee:** Basi Montes
+- **Assignee:** Unassigned
 
 ---
 

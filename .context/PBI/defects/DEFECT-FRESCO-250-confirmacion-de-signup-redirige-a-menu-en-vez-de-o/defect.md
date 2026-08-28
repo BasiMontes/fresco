@@ -39,10 +39,17 @@ TEST*USER*EMAIL=basi_montes+fresco@hotmail.com
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-18](https://basiliomontescastano.atlassian.net/browse/FRESCO-18) - Registro Progresivo
+- relates to: [FRESCO-264](https://basiliomontescastano.atlassian.net/browse/FRESCO-264) - El enlace de confirmación de email siempre apunta a producción, aunque el registro sea en staging
+
+---
+
 ## Metadata
 
 - **Created:** 8/21/2026
-- **Updated:** 8/21/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 

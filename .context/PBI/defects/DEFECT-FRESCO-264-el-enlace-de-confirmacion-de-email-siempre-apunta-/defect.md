@@ -2,7 +2,7 @@
 
 **Jira Key:** [FRESCO-264](https://basiliomontescastano.atlassian.net/browse/FRESCO-264)
 **Priority:** Medium
-**Status:** Listo
+**Status:** Control de calidad
 **Components:** None
 
 ---
@@ -32,10 +32,17 @@ Nota: distinto de FRESCO-254 (que arregló la ruta `/auth/confirm` en sí) — a
 
 ---
 
+## Related Issues
+
+- relates to: [FRESCO-250](https://basiliomontescastano.atlassian.net/browse/FRESCO-250) - Confirmación de signup redirige a /menu en vez de /onboarding
+- relates to: [FRESCO-18](https://basiliomontescastano.atlassian.net/browse/FRESCO-18) - Registro Progresivo
+
+---
+
 ## Metadata
 
 - **Created:** 8/25/2026
-- **Updated:** 8/25/2026
+- **Updated:** 8/27/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** cross-environment, qa-exploratorio
