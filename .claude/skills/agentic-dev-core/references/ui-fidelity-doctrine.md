@@ -4,15 +4,17 @@
 
 ## Base contract
 
-Story has UI + `.context/design/master-design-plan.md` exists → look the story up in §8 (US→Screen map) → open §4 screen spec + §2 frozen tokens → build against the physical mockup in `.context/designs/<project-slug>/<batch-slug>/`. NEVER invent UI. Unratified divergence from the mockup = defect (review gate).
+Story has UI + `.context/design/master-design-plan.md` exists → look the story up in §8 (US→Screen map) → open §4 screen spec + §2 frozen tokens → build against any physical mockup in `.context/designs/<project-slug>/<batch-slug>/` (this project has none — its fidelity source is the live UI, see Live-UI-first below). NEVER invent UI. Unratified divergence from an agreed mockup = defect (review gate).
 
-Story missing from §8 → STOP and choose:
+**Story missing from §8, or a screen with no §8 row yet → do NOT hard-STOP.** Build LIVE-UI-FIRST against the current live UI + `DESIGN.md` tokens + any Jira mockup, then add the screen's §8 row (and a §5 divergence note if you departed from a mockup) as part of the story. This is the normal path for a project like Fresco that was mapped retroactively (FRESCO-294) — the map documents the shipped UI, and new/edited screens extend it in-flight.
+
+Hard-STOP and choose ONE of the below **only** when the screen is genuinely novel — no analog anywhere in the live UI AND no Jira mockup:
 
 - (a) just-in-time mockup via `/design-system` screen phase (generates a portable design brief, user takes it to Claude Design / Open Design, bundle returns to the drop zone)
 - (b) ratify a spec-only build in §5 (+ ADR if architectural)
 - (c) explicit user-approved DESIGN.md-only build
 
-No plan at all → DESIGN.md-only fidelity (tokens, no screen reference). AI NEVER generates mockups (design-system D7) — briefs out, human designs, bundles in.
+No plan file at all → DESIGN.md-only fidelity (tokens, no screen reference). AI NEVER generates mockups (design-system D7) — briefs out, human designs, bundles in.
 
 ## Live-UI-first (refines design fidelity)
 
