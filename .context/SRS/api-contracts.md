@@ -2,13 +2,15 @@
 
 > SRS output of `/project-foundation` Phase 3 (Architecture — Software side). Traces to `functional-requirements.md`. Primary source: `fresco-core-tecnico.md` §3–4, `fresco-edge-function-generate.md`, `fresco-shopping-list.md`, `fresco-aprendizaje.md`.
 >
-> **Format note, deliberate deviation from the SRS template default:** the template (`srs-api-contracts.md`) asks for an OpenAPI 3.0 `api-contracts.yaml`. Fresco's actual system surface is not a conventional public REST API — it is three authenticated Supabase Edge Functions, two of which are themselves thin orchestration wrappers around **LLM prompt contracts** (a system+user prompt in, a strict JSON schema out). Documenting those as bare OpenAPI request/response shapes would lose the part that actually matters: the *rules* governing what the model is allowed to return, which are the real interface contract here, more than HTTP verbs and status codes are. This document therefore treats each prompt as a contract in its own right (input shape → output schema → the rules constraining that output), nested inside the Edge Function that calls it, and summarizes each system prompt's rules as a specification rather than reproducing the full prompt text verbatim — this is a contract document, not a prompt-engineering document. All three Edge Functions are documented as conventional HTTP contracts first.
+> **Format note, deliberate deviation from the SRS template default:** the template (`srs-api-contracts.md`) asks for an OpenAPI 3.0 `api-contracts.yaml`. Fresco's actual system surface is not a conventional public REST API — it is three authenticated Supabase Edge Functions. This document treats each as an HTTP contract, and — for the two generation functions — documents the selection/classification logic as a contract in its own right (input shape → output schema → the rules constraining that output), nested inside the Edge Function that runs it.
+>
+> **Updated per `ADR-0005` (FRESCO-302, 2026-08-29):** when this document was written, `generate-meal-plan` and `generate-shopping-list` were thin orchestration wrappers around **Gemini Flash prompt contracts** (a system+user prompt in, a strict JSON schema out). Gemini was removed from production on 2026-08-01 — menu-slot selection is now a deterministic in-process algorithm (`menu-selector.ts`), shopping-list aisle classification a static map (`aisle-pricing.ts`), and the Pro learning explanation a template (`buildLearningExplanation()`). The nested contracts §1a and §2b are kept **verbatim as a superseded historical record** (banner-marked below); the deterministic rules that replaced them are the numbered FRs in `functional-requirements.md` (FR-2.3–FR-2.9, FR-4.1–FR-4.3) and the flows in `architecture.md` §3.
 
 ## 0. Conventions common to all three Edge Functions
 
 - **Transport**: `POST` to `https://<project>.functions.supabase.co/<function-name>`, `Content-Type: application/json`.
 - **Auth**: `Authorization: Bearer <supabase-jwt>` required on every call; missing/invalid → `401 { "error": "No autorizado" }`. (Guest-mode's auth path is unresolved — see `functional-requirements.md` FR-6.1.)
-- **Error shape**: every non-2xx response is `{ "error": string }` with an HTTP status carrying the semantic (`400` validation, `401` unauthorized, `403` forbidden, `404` not found, `409` conflict/already-exists, `422` unprocessable, `502` upstream/LLM failure, `500` internal).
+- **Error shape**: every non-2xx response is `{ "error": string }` with an HTTP status carrying the semantic (`400` validation, `401` unauthorized, `403` forbidden, `404` not found, `409` conflict/already-exists, `422` unprocessable, `429` rate-limited, `500` internal). *(The `502` "upstream/LLM failure" status is no longer emitted by any function — `ADR-0005`.)*
 - **CORS**: `OPTIONS` preflight returns `Access-Control-Allow-Origin: *` and the standard Supabase client headers (dev-time convenience; source docs do not scope this further for production).
 
 ## 1. `POST /generate-meal-plan`
@@ -44,10 +46,14 @@ interface GenerateResponse {
 | `404` | `user_profiles` row not found |
 | `409` | a plan for this `semana_iso` already exists for this user (no silent overwrite) |
 | `422` | fewer than 21 recipes survive the allergen/diet SQL pre-filter — catalog too small for this profile |
-| `422` | the model failed to produce a valid menu after `MAX_RETRIES = 2` attempts (AC-4, distinct from a genuine `502` upstream failure) |
+| `429` | per-user generation rate limit exceeded (`ADR-0010`) |
 | `500` | unexpected internal error |
 
+*(Updated per `ADR-0005`, FRESCO-302: the former second `422` row — "model failed after `MAX_RETRIES = 2`" — and the `502` upstream-failure row are removed. Slot selection is deterministic; there is no model call to fail.)*
+
 ### 1a. Nested contract — the menu-selection prompt
+
+> ⚠️ **SUPERSEDED by `ADR-0005` (removed from production 2026-08-01; noted here per FRESCO-302, 2026-08-29).** This subsection describes the original Gemini Flash prompt contract. Slot selection is now the deterministic algorithm `menu-selector.ts`: it consumes the same pre-filtered catalog and (Pro) history, removes the last-2-weeks recipe_ids from the pool as a hard exclusion, then scores each candidate per slot (time-fit, no-repeat-within-week, category/contundencia variety vs. the previous slot, seasonal + rating/history bonuses, `veces_descartada > 2` penalty, small jitter). No JSON parsing, no `temperature`, no `MAX_RETRIES`. The authoritative rules are `functional-requirements.md` FR-2.3–FR-2.9. Text below retained verbatim as the historical contract.
 
 **Input to the prompt** (built server-side, never sent verbatim by the client):
 - User profile: household size, active diet flags, allergens, disliked ingredients, favorite cuisines, weekday/weekend time budgets, spice tolerance, richness preference, weekly euro budget, target ISO week, current season.
@@ -79,7 +85,7 @@ interface GenerateResponse {
 
 `advertencias` is populated when: a slot had no suitable recipe (and what was substituted), the budget forced a variety trade-off, a mandatory filter could not be honored at all (P0, safety-critical — FR-8.2), or (Pro-only, real history) a learning explanation. Server-side model config: `temperature: 0.7` (variety without losing filter coherence), `responseMimeType: 'application/json'`, `maxOutputTokens: 1024`.
 
-**Server-side output validation** (the contract the backend enforces on the model's response before it is trusted — FR-2.9): valid JSON; `semana` matches the request; all 7×3 slots present; every `recipe_id` exists in the filtered catalog; no lunch/dinner repeat; breakfast repeats ≤ 3. Failing any check triggers a retry (max 2); exhausting retries returns `422` to the caller (AC-4 — a distinct condition from a genuine `502` upstream Gemini failure) — an invalid menu is never persisted.
+**Server-side output validation** (historical — the contract the backend enforced on the model's response before it was trusted): valid JSON; `semana` matches the request; all 7×3 slots present; every `recipe_id` exists in the filtered catalog; no lunch/dinner repeat; breakfast repeats ≤ 3. Failing any check triggered a retry (max 2); exhausting retries returned `422` to the caller. *(Superseded — `ADR-0005` / FRESCO-302: `menu-selector.ts` satisfies every one of these checks by construction, so there is no validation pass, no retry, and no model-failure `502`. See FR-2.9.)*
 
 ## 2. `POST /generate-shopping-list`
 
@@ -121,18 +127,21 @@ interface ShoppingListResponse {
 | `404` | plan not found, or does not belong to caller |
 | `409` | a shopping list already exists for this plan |
 | `422` | ingredient consolidation produced zero items |
-| `502` | model failed to produce a usable pasillo grouping after `MAX_RETRIES = 2` attempts |
 | `500` | unexpected internal error |
 
-### 2a. Nested contract — ingredient consolidation (pre-model, deterministic, no LLM involved)
+*(Updated per `ADR-0005`, FRESCO-302: the `502` "model failed after `MAX_RETRIES = 2`" row is removed. Aisle classification is a deterministic static map; there is no model call to fail.)*
+
+### 2a. Nested contract — ingredient consolidation (deterministic, no LLM involved)
 
 **Input**: all 21 slots' recipes for the plan, each recipe's `ingredientes_principales`, the household's `num_personas`, and each recipe's base `raciones`.
 
 **Processing** (pure application code, FR-4.1): normalize each ingredient name (lowercase, trim, accent-strip); look up a base quantity/unit per normalized name; scale by `num_personas / raciones`; merge duplicates by summing compatible units (`g`↔`kg`, `ml`↔`l` auto-convert; incompatible unit types are kept separate, logged as a rare edge case rather than silently merged).
 
-**Output**: `IngredienteConsolidado[]` — `{ nombre, cantidad, unidad }`, deduplicated, no recipe attribution retained. This consolidated list — never the raw per-recipe ingredient lists — is what gets sent to the model next.
+**Output**: `IngredienteConsolidado[]` — `{ nombre, cantidad, unidad }`, deduplicated, no recipe attribution retained. This consolidated list — never the raw per-recipe ingredient lists — is what the deterministic aisle classifier (`aisle-pricing.ts`) processes next. *(Originally sent to a Gemini prompt — `ADR-0005` / FRESCO-302.)*
 
 ### 2b. Nested contract — the shopping-list prompt
+
+> ⚠️ **SUPERSEDED by `ADR-0005` (removed from production 2026-08-01; noted here per FRESCO-302, 2026-08-29).** Aisle classification and unit normalization are now a deterministic static map (`aisle-pricing.ts` / `classifyShoppingList()`): each consolidated ingredient name (a controlled vocabulary from the recipe catalog) is looked up to a fixed aisle and a per-unit price range; unknown names fall to "Otros"; items are sorted alphabetically within each aisle. No prompt, no `temperature`, no retry. The authoritative rules are `functional-requirements.md` FR-4.1–FR-4.3. Text below retained verbatim as the historical contract.
 
 **Input to the prompt**: the consolidated ingredient list from §2a, plus `semana_iso`, `num_personas`, recipe count — for context only, not for recomputation. The model is explicitly told the list is already summed and deduplicated.
 

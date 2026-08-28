@@ -30,7 +30,7 @@ Traces to US 2.1, US 2.2. Primary source: `fresco-core-tecnico.md` §3 (menu-sel
 **FR-2.1 — The system must generate a full 21-meal weekly menu (7 days × breakfast/lunch/dinner) in a single request.**
 - **Related to:** EPIC-FRESCO-2, US 2.1
 - **Input:** the user's filtered recipe catalog, `user_profiles` record, and (Pro only) the last-2-weeks recipe history.
-- **Processing:** build a system + user prompt pair and call Gemini Flash with `responseMimeType: application/json`; validate and persist the result (see FR-2.9).
+- **Processing:** fill the 21 slots with the deterministic selection algorithm (`menu-selector.ts`, `ADR-0005`) — scored heuristic selection from the pre-filtered catalog — then persist the result (see FR-2.9). *Originally a single Gemini Flash call; the model was removed 2026-08-01 (updated per `ADR-0005`, FRESCO-302).*
 - **Output:** a `meal_plans` row plus 21 `meal_plan_recipes` rows (one per day × meal-type slot).
 - **Validations:** see FR-2.9.
 
@@ -40,24 +40,24 @@ Traces to US 2.1, US 2.2. Primary source: `fresco-core-tecnico.md` §3 (menu-sel
 
 **FR-2.3 — HARD CONSTRAINT: the system must never include a recipe containing any allergen declared by the user.**
 - **Related to:** EPIC-FRESCO-2 / EPIC-FRESCO-8, US 2.1, US 8.1
-- Enforced at two independent layers (defense in depth), formalized as its own cross-cutting requirement in FR-8.1: a SQL pre-filter (`get_filtered_recipes()`, excludes any recipe whose `alergenos` overlaps the user's declared `alergenos`) and the Gemini Flash system prompt's "REGLAS ABSOLUTAS" rule 1. Neither layer is trusted as sufficient on its own — see ADR-0001 and `architecture.md` §5.
+- Enforced structurally by the SQL pre-filter `get_filtered_recipes()` (excludes any recipe whose `alergenos` overlaps the user's declared `alergenos`), which fails closed, and reinforced by the deterministic selector, which can only ever pick from that pre-filtered pool. The earlier second layer — a Gemini system-prompt "REGLAS ABSOLUTAS" rule re-checking the same exclusion semantically — was removed with Gemini on 2026-08-01 (`ADR-0005`); see FR-8.1 for the full current picture, plus ADR-0001 and `architecture.md` §5.
 - This is the single highest-priority signal in the system (see the priority table in FR-5.4).
 
 **FR-2.4 — HARD CONSTRAINT: the system must never include a recipe containing an ingredient on the user's disliked-ingredients list.**
 - **Related to:** EPIC-FRESCO-2 / EPIC-FRESCO-8, US 2.1, US 8.1
-- Same two-layer enforcement as FR-2.3 (SQL pre-filter + system-prompt rule 2), one priority level below allergen exclusion.
+- Same enforcement as FR-2.3 (SQL pre-filter, reinforced by construction in the deterministic selector), one priority level below allergen exclusion.
 
 **FR-2.5 — HARD CONSTRAINT (Pro tier only): the system must never repeat a recipe that appeared in the user's meal plans over the prior 2 weeks.**
 - **Related to:** EPIC-FRESCO-2 / EPIC-FRESCO-5, US 2.1, US 5.2
-- Free tier: no history is passed to the prompt at all (`historial_semanas` is omitted; `recentRecipeIds = []`), so this constraint does not — and structurally cannot — apply. Every Free-tier week is generated from zero. This is a deliberate pricing-model boundary encoded directly in the prompt-building code, not an accidental gap (see `business-model.md` Revenue Streams; ADR-0001).
+- Free tier: no history is read at all (`recentRecipeIds = []` is passed to `menu-selector.ts`), so this constraint does not — and structurally cannot — apply. Every Free-tier week is generated from zero. This is a deliberate pricing-model boundary encoded directly in the generation code, not an accidental gap (see `business-model.md` Revenue Streams; ADR-0001).
 
 **FR-2.6 — HARD CONSTRAINT: the system must never exceed the user's declared weekly budget.**
 - **Related to:** EPIC-FRESCO-2, US 2.1
 - Computed as the sum of each selected recipe's `coste_estimado` bucket (`muy_bajo` < 2€/person, `bajo` 2–4€, `medio` 4–7€, `alto` > 7€) across all 21 slots, implicitly scaled by household size. Compared against `presupuesto_semana_euros`.
 
-**FR-2.7 — The generation response must be structured JSON only, matching the documented schema exactly.**
+**FR-2.7 — The generation response must match the documented schema exactly.**
 - **Related to:** EPIC-FRESCO-2, US 2.1
-- Fields: `semana` (`YYYY-WXX`), `menu` (7 days × 3 meal-type slots, each a `recipe_id`), `advertencias` (array of strings). No explanatory prose, no markdown code fences — enforced by `responseMimeType: application/json` at the Gemini API level plus JSON-parse validation on receipt. Full schema: `api-contracts.md` §1.
+- Fields: `semana` (`YYYY-WXX`), `menu` (7 days × 3 meal-type slots, each a `recipe_id`), `advertencias` (array of strings). The response object is assembled directly by the Edge Function from the selector's output (`ADR-0005` — there is no model response to parse or sanitize), so the shape is guaranteed by construction. Full schema: `api-contracts.md` §1.
 
 **FR-2.8 — Quality rules apply on a best-effort basis (soft constraints, not hard-blocking):**
 - **Related to:** EPIC-FRESCO-2, US 2.1
@@ -69,16 +69,16 @@ Traces to US 2.1, US 2.2. Primary source: `fresco-core-tecnico.md` §3 (menu-sel
 - Weekday slots (Mon–Fri) respect `tiempo_max_semana_min`; weekend slots (Sat–Sun) may use the longer `tiempo_max_finde_min`.
 - Breakfast may repeat up to 3 times per week; lunch and dinner must never repeat within the same week (hard-validated — see FR-2.9).
 
-**FR-2.9 — The backend must validate every generated `recipe_id` against the filtered catalog before persisting, and retry on failure.**
+**FR-2.9 — The 21 selected slots are valid by construction; there is no model-output validation or retry loop.** *(updated per `ADR-0005`, FRESCO-302, 2026-08-29)*
 - **Related to:** EPIC-FRESCO-2, US 2.1
-- **Input:** raw model output (untrusted).
-- **Processing:** parse as JSON; verify `semana` matches the requested ISO week; verify all 7 days × 3 slots are present; verify every `recipe_id` exists in the pre-filtered catalog; verify no lunch/dinner recipe repeats within the week; verify breakfast repeat count ≤ 3. Retry up to 2 additional times (`MAX_RETRIES = 2`) on invalid JSON or a failed validation pass.
-- **Output:** a validated menu object ready to persist, or an error surfaced to the caller once retries are exhausted.
-- **Validations:** see the rule set above; a menu that still fails validation after all retries must not be silently accepted.
+- **Input:** the output of the deterministic selector (`menu-selector.ts`) — trusted, not untrusted model text.
+- **Processing:** the algorithm fills every slot only from the pre-filtered catalog, enforces "no lunch/dinner repeat within the week" and "breakfast repeats ≤ 3" by construction, and sets `semana` from the request. The checks the old model-output validator ran (JSON parse, `semana` match, slot completeness, `recipe_id` membership, repeat rules) can therefore no longer fail. A slot with no safe candidate is assigned `NO_SAFE_RECIPE_SENTINEL` with a templated `advertencias` entry rather than triggering a retry.
+- **Output:** a menu object ready to persist.
+- **Validations:** the structural rules above hold by construction; there is no `MAX_RETRIES` and no retry-exhaustion error path. `generate-meal-plan` still returns `422` when fewer than 21 recipes survive the SQL pre-filter (FR-8.1 Layer 1 / `api-contracts.md` §1).
 
 **FR-2.10 — The `advertencias` (warnings) field must be read by the backend and surfaced to the user whenever non-empty.**
 - **Related to:** EPIC-FRESCO-2, US 2.1
-- The model populates `advertencias` only when: no suitable recipe existed for a given slot (and what was substituted instead), the budget was too tight to preserve variety, or — the critical case — no available recipe satisfied a mandatory filter at all. The backend must not silently discard this array. A non-empty `advertencias` array indicating a mandatory-filter failure is a P0 signal, not a log line — see FR-8.2 for the safety-critical escalation this feeds.
+- The selector populates `advertencias` only when: no suitable recipe existed for a given slot (`NO_SAFE_RECIPE_SENTINEL`), the budget was too tight to preserve variety, or — the critical case — no available recipe satisfied a mandatory filter at all. The backend must not silently discard this array. A non-empty `advertencias` array indicating a mandatory-filter failure is a P0 signal, not a log line — see FR-8.2 for the safety-critical escalation this feeds.
 
 ## EPIC-FRESCO-3: Editable Calendar
 
@@ -105,9 +105,9 @@ Traces to US 4.1, US 4.2. Source: `fresco-shopping-list.md`.
 **FR-4.1 — The system must generate a shopping list automatically from the 21 recipes in a meal plan.**
 - **Related to:** EPIC-FRESCO-4, US 4.1
 - **Input:** `meal_plan_id`.
-- **Processing:** (1) load all 21 slots' recipes and their `ingredientes_principales`; (2) consolidate — deduplicate ingredient names (accent/case-normalized) and sum quantities, scaled per recipe by `raciones_usuario / raciones_receta`, using a base-quantity lookup table; (3) send only the already-consolidated ingredient list to Gemini Flash for aisle classification and unit normalization. The model never estimates or invents quantities — that arithmetic happens in the consolidation step, before the model is ever called.
+- **Processing:** (1) load all 21 slots' recipes and their `ingredientes_principales`; (2) consolidate (`consolidator.ts`) — deduplicate ingredient names (accent/case-normalized) and sum quantities, scaled per recipe by `raciones_usuario / raciones_receta`, using a base-quantity lookup table; (3) classify the consolidated ingredients into aisles and normalize units with a deterministic static map (`aisle-pricing.ts`, `ADR-0005`). Ingredient names are a controlled vocabulary drawn from the recipe catalog itself; no model is involved. Quantities are never estimated — that arithmetic happens entirely in step (2). *Step (3) was originally a Gemini Flash call; removed 2026-08-01 (updated per `ADR-0005`, FRESCO-302).*
 - **Output:** a `shopping_lists` row with `items` (jsonb, grouped by aisle) plus a cost-estimate summary.
-- **Validations:** the model's response must account for at least 90% of the consolidated ingredient count, or the backend retries (up to `MAX_RETRIES = 2`); an ingredient must never be silently dropped or invented.
+- **Validations:** every consolidated ingredient is classified (an unrecognized name falls to the "Otros" aisle); the classifier only assigns aisles and units — it never drops or invents an ingredient, so no retention check or retry is needed.
 
 **FR-4.2 — The shopping list must be grouped by supermarket aisle, in a fixed logical walking order.**
 - **Related to:** EPIC-FRESCO-4, US 4.2
@@ -157,7 +157,7 @@ Traces to US 5.1, US 5.2, US 5.3 — **the product's core moat** (see ADR-0001).
 
 **FR-5.5 — HARD GATE (Pro only): a visible, specific explanation of what changed must accompany a history-informed menu.**
 - **Related to:** EPIC-FRESCO-5, US 5.3
-- The `advertencias` field must carry 2–3 first-person-plural sentences (e.g. *"Vimos que descartaste las recetas con berenjena, así que las hemos evitado"*) — warm, concrete, never condescending or robotic — generated only when `isPro = true` **and** real history exists (i.e. not on a Pro user's first week). This is the direct in-product answer to the Constitution's "learning must be visible" risk mitigation (`market-context.md` — Risks) and is what `DESIGN.md`'s `card-insight` component is built to render.
+- The explanation must carry 2–3 first-person-plural sentences (e.g. *"Vimos que descartaste las recetas con berenjena, así que las hemos evitado"*) — warm, concrete, never condescending or robotic — produced only when `isPro = true` **and** real history exists (i.e. not on a Pro user's first week). It is assembled by a deterministic template (`buildLearningExplanation()` in `prompt.ts`) directly from the recipe stats the Edge Function already computes (`destacadas`, recently-avoided recipes) — originally a Gemini Flash call, removed 2026-08-01 (updated per `ADR-0005`, FRESCO-302). This is the direct in-product answer to the Constitution's "learning must be visible" risk mitigation (`market-context.md` — Risks) and is what `DESIGN.md`'s `card-insight` component is built to render.
 
 **FR-5.6 — Free-tier users must be shown an explicit, non-silent signal that history-based learning is Pro-only.**
 - **Related to:** EPIC-FRESCO-5, US 5.1 (Edge Case 2, `user-journeys.md`)
@@ -186,15 +186,15 @@ Traces to US 7.1.
 
 Traces to US 8.1. This epic does not introduce new mechanics beyond FR-2.3 / FR-2.4 / FR-2.10 — it **elevates their enforcement to a system-level invariant** every other epic must respect, per `mvp-scope.md`'s explicit "P0 regardless of the MRR/retention blacklist gate" status.
 
-**FR-8.1 — Allergen and hated-ingredient exclusion must be enforced at two independent layers, and neither layer may be silently disabled by a future change.**
+**FR-8.1 — Allergen and hated-ingredient exclusion is enforced structurally in the SQL pre-filter, and that enforcement must not be silently disabled, bypassed, or weakened by a future change.** *(updated per `ADR-0005`, FRESCO-302, 2026-08-29 — was a two-layer requirement)*
 - **Related to:** EPIC-FRESCO-8, US 8.1
-- **Layer 1 (structural, cheap):** `get_filtered_recipes()` excludes any recipe whose `alergenos` overlaps the user's declared `alergenos`, and any recipe whose `ingredientes_principales` overlaps `ingredientes_odiados`, before the catalog ever reaches the model.
-- **Layer 2 (semantic, model-level):** the Gemini Flash system prompt repeats the same exclusion as "REGLAS ABSOLUTAS" 1–2, so the model itself refuses to select an unsafe recipe even if Layer 1 were ever bypassed or misconfigured.
-- This two-layer design is the ADR-worthy architectural invariant behind the product's safety guarantee — see ADR-0001 and `architecture.md` §5.
+- **Layer 1 (structural, cheap — now the sole structural enforcement point):** `get_filtered_recipes()` excludes any recipe whose `alergenos` overlaps the user's declared `alergenos`, and any recipe whose `ingredientes_principales` overlaps `ingredientes_odiados`, before the catalog ever reaches the selector. It fails closed: fewer than 21 safe recipes → `422`, never a fallback to an unfiltered selection.
+- **Layer 2 — originally a Gemini system-prompt rule ("REGLAS ABSOLUTAS" 1–2) re-checking the same exclusion semantically. Removed with Gemini on 2026-08-01 (`ADR-0005`).** The deterministic selector (`menu-selector.ts`) that replaced the model builds the week exclusively from `get_filtered_recipes()` output and has no code path that can reach an unfiltered recipe — but this is a property of construction, not an independent semantic re-check. The compensating controls are the standing manual food-safety review (FR-8.3) and the `advertencias` escalation (FR-8.2).
+- The requirement that the filter and its invocation may never be silently weakened is the ADR-worthy architectural invariant behind the product's safety guarantee — see ADR-0001 and `architecture.md` §5.
 
 **FR-8.2 — A non-empty `advertencias` array indicating an unmet mandatory filter must trigger a prominent, blocking-style warning to the user — never a silently logged event.**
 - **Related to:** EPIC-FRESCO-8, US 8.1
-- This is the safety-critical instance of the general warnings-surfacing behavior defined in FR-2.10: if the model reports it could not honor an allergen or hated-ingredient constraint for any slot, that is a P0 incident-level signal, and the affected menu must not be presented to the user as safe-by-default.
+- This is the safety-critical instance of the general warnings-surfacing behavior defined in FR-2.10: if the selector could not fill a slot with any safe recipe (`NO_SAFE_RECIPE_SENTINEL`), that is a P0 incident-level signal, and the affected menu must not be presented to the user as safe-by-default.
 
 **FR-8.3 — Manual review remains the standing backstop during the pre-launch/concierge validation phase, independent of code-level enforcement.**
 - **Related to:** EPIC-FRESCO-8, US 8.1

@@ -19,6 +19,8 @@ flowchart TD
         GenMenu[generate-meal-plan]
         GenList[generate-shopping-list]
         UpdStatus[update-recipe-status]
+        Selector{{menu-selector.ts\ndeterministic slot scoring}}
+        Classifier{{aisle-pricing.ts\ndeterministic aisle classifier}}
     end
 
     subgraph DB["Supabase Postgres"]
@@ -31,8 +33,6 @@ flowchart TD
         LearnTrigger{{recipe_learning_trigger}}
     end
 
-    Gemini[[Gemini Flash]]
-
     User --> Onboard
     Onboard -->|persist profile| Profiles
     Onboard -->|request menu| GenMenu
@@ -41,9 +41,9 @@ flowchart TD
     GenMenu -->|call, SQL pre-filter by allergen/diet| FilterFn
     FilterFn --> Recipes
     GenMenu -->|Pro only: read last 2 weeks| FilterFn
-    GenMenu -->|system + user prompt| Gemini
-    Gemini -->|21 recipe_ids + advertencias| GenMenu
-    GenMenu -->|validate ids, persist| Plans
+    GenMenu -->|filtered catalog + profile + Pro history| Selector
+    Selector -->|21 recipe_ids + advertencias| GenMenu
+    GenMenu -->|persist| Plans
     GenMenu --> PlanRecipes
 
     Plans --> Calendar
@@ -52,8 +52,8 @@ flowchart TD
 
     Calendar -->|request list| GenList
     GenList -->|load 21 recipes, consolidate ingredients in code| PlanRecipes
-    GenList -->|classify + normalize units only| Gemini
-    Gemini -->|pasillos JSON| GenList
+    GenList -->|consolidated ingredient list| Classifier
+    Classifier -->|pasillos + cost estimate| GenList
     GenList --> Lists
     Lists --> ShopList
     ShopList --> User
@@ -65,7 +65,9 @@ flowchart TD
     LearnTrigger -->|veces_cocinada / veces_descartada / rating_promedio, global| Recipes
 ```
 
-**Reading the diagram**: the cooked/discarded *recording* path (bottom) is universal — every tier writes to `meal_plan_recipes` and fires the same trigger. The *learning application* is what forks by tier: only when `GenMenu` builds next week's prompt does the `isPro` flag decide whether `get_recent_recipe_ids()` output is included at all (FR-5.4). Free-tier generation always takes the top path (Profiles → FilterFn → Gemini) with an empty history section.
+**Reading the diagram**: the cooked/discarded *recording* path (bottom) is universal — every tier writes to `meal_plan_recipes` and fires the same trigger. The *learning application* is what forks by tier: only when `GenMenu` assembles the input to `menu-selector.ts` does the `isPro` flag decide whether `get_recent_recipe_ids()` output is included at all (FR-5.4). Free-tier generation always takes the top path (Profiles → FilterFn → Selector) with an empty history list.
+
+> **Updated per `ADR-0005` (FRESCO-302, 2026-08-29):** menu-slot selection and shopping-list aisle classification were originally single Gemini Flash (`gemini-1.5-flash`) calls, and the Pro learning-explanation text was a fourth Gemini call. All were replaced with deterministic in-process algorithms on 2026-08-01 (`menu-selector.ts`, `aisle-pricing.ts`, `buildLearningExplanation()` in `prompt.ts`). **There is no external LLM call anywhere in production.** The diagram above, §2's tech-stack table, the §3 data flows, and §5 have been corrected here; `functional-requirements.md` (FR-2.1, FR-2.3, FR-2.7, FR-2.9, FR-4.1, FR-8.1) and `non-functional-requirements.md` (NFR-PERF-1/2, NFR-SEC-3, NFR-REL-1) carry the matching corrections. `api-contracts.md` §1a / §2b retain the original prompt-contract text as a superseded historical record, banner-marked.
 
 ## 2. Tech Stack Justification
 
@@ -74,7 +76,7 @@ flowchart TD
 | **Frontend: Next.js** | Founder's existing choice (`.agents/project.yaml`); no source document explains the reasoning beyond it being the assumed stack. | ❌ Because the actual backend logic lives in Supabase Edge Functions rather than Next.js API routes, this is a **split backend topology**: two runtimes (see below), not the more common "Next.js does everything" full-stack pattern. Worth naming explicitly so it isn't assumed away during scaffolding. |
 | **Hosting: Vercel** | Native pairing with Next.js; matches `.agents/project.yaml` environments (`local`, `staging`, both pointing at `fresco-pro.vercel.app`). | ❌ No `production` environment block is yet defined in `.agents/project.yaml` — only `local` and `staging` exist (`[PLACEHOLDER]`, flagged for `/project-bootstrap` or a later env-setup pass). |
 | **Backend: Supabase (Postgres + Auth + Edge Functions + RLS)** | One integrated platform covering database, auth, serverless functions, and row-level security — matches the founder-time constraint named explicitly in `business-model.md` (Key Resources: "Founder time and attention, currently the primary constraint"). A single vendor for data + auth + compute minimizes the ops surface a solo founder has to run. | ❌ Edge Functions execute on **Deno**, a different runtime from the Next.js app's Node/Vercel environment — two module systems and standard libraries to keep straight (see NFR-MAINT-1). ❌ RLS correctness becomes a single point of security failure across every user table (see NFR-SEC-2's flagged `recipes` policy discrepancy). |
-| **AI model: Gemini Flash** | Explicit founder choice, reasoned directly in the source docs: `responseMimeType: 'application/json'` forces native JSON output, which the founder notes "rara vez devuelve JSON malformado" — directly reducing the retry/parse-failure surface the 30-second budget (NFR-PERF-1) depends on. Cost/speed profile fits the sub-30-second generation target. | ❌ Real vendor lock-in to Google's Generative Language API; the source code pins a specific model string (`gemini-1.5-flash`), which is itself a versioning risk if Google deprecates or silently changes that model's behavior. ❌ `temperature: 0.7` for menu generation is a tuned trade-off (enough variety week-to-week without losing filter coherence) that would need re-validation against any model swap. |
+| **Menu selection + shopping-list classification: deterministic in-process algorithms** (`menu-selector.ts`, `aisle-pricing.ts`) — *updated per `ADR-0005`, FRESCO-302* | The original design used Gemini Flash for both; both calls (and the Pro learning-explanation call) were removed on 2026-08-01. Rationale (`ADR-0005`): the ~1000-recipe catalog carries enough structured metadata (`dieta`, `alergenos`, `meta.tiempo_total_min`, `clasificacion.categoria/es_contundente/es_ligero`, `veces_cocinada`/`veces_descartada`/`rating_promedio`) that filling 21 slots is a constrained-selection problem, not a task needing a language model; ingredient names are a controlled vocabulary, so aisle classification is a static map. Removes all external-LLM vendor lock-in, API-key handling, per-call latency (~20–110s for the thinking model → sub-second), and the JSON parse/retry surface. | ❌ The "soft quality rules" (category variety, seasonal preference, contundencia balance) are now exactly what the scoring function encodes — a fixed, auditable heuristic rather than an LLM's flexible inference; tuning it is an ongoing engineering task, not a prompt tweak (`ADR-0005` — Consequences). ❌ The "IA que aprende" product positioning is now literally true only for the Pro history-exclusion mechanism and the explanation text, not for moment-to-moment slot choice (`ADR-0005` — flagged for revisit before public copy). |
 | **Postgres extensions:** `uuid-ossp` / `gen_random_uuid()`, `pg_trgm` | UUID primary keys throughout; `pg_trgm` enables fuzzy `ILIKE`/typo-tolerant search on `recipes.nombre` (`schema_supabase.sql` §5). | ❌ None material at this scale — standard Postgres extensions, no lock-in beyond Postgres itself. |
 
 ## 3. Data Flow
@@ -86,9 +88,9 @@ flowchart TD
 3. Loads the caller's `user_profiles` row.
 4. Checks a plan doesn't already exist for the requested `semana_iso` (`409` if it does — no silent overwrite).
 5. Calls `get_filtered_recipes(user_id)` — a SQL pre-filter that excludes any recipe conflicting with declared allergens, active diet flags, or disliked ingredients (cheap, structural safety layer — FR-8.1 Layer 1). Errors if fewer than 21 recipes remain (`422`, "Catálogo insuficiente").
-6. **Pro tier only:** calls `get_recent_recipe_ids(user_id, weeks=2)` to fetch the last-2-weeks cooked/discarded history.
-7. Builds the system prompt (fixed) and user prompt (profile + filtered catalog + history section, dynamically built) and calls Gemini Flash.
-8. Parses and validates the response (recipe IDs exist, no lunch/dinner repeats, breakfast ≤ 3 repeats, `semana` matches); retries up to 2 times on failure.
+6. **Pro tier only:** calls `get_recent_recipe_ids(user_id, weeks=2)` to fetch the last-2-weeks cooked/discarded history; those ids are removed from the candidate pool before scoring (a hard exclusion, not an instruction — `ADR-0005`).
+7. Runs the deterministic slot-selection algorithm (`menu-selector.ts`): for each of the 21 slots it scores the filtered candidates (weekday/weekend time-fit, no lunch/dinner repeat within the week, category and contundencia variety against the previous slot, seasonal-match and rating/history bonuses, a `veces_descartada > 2` penalty, and a small randomization jitter) and picks the best. No lunch/dinner repeat and the breakfast-repeat cap of 3 are enforced by construction.
+8. No parse-and-retry step — the algorithm cannot emit an invalid `recipe_id` or a malformed shape. A slot with no safe candidate is assigned `NO_SAFE_RECIPE_SENTINEL` plus a templated `advertencias` entry.
 9. Persists a `meal_plans` row, then 21 `meal_plan_recipes` rows (one manual compensating delete of the `meal_plans` row if the second insert fails — see NFR-REL-2).
 10. Returns an enriched response (full recipe objects per slot, not just IDs) to the frontend, which renders the calendar.
 
@@ -105,9 +107,9 @@ flowchart TD
 1. User requests the shopping list for an existing `meal_plan_id` (typically right after generation, or on first tap of "Ver lista de la compra").
 2. `generate-shopping-list` verifies the plan belongs to the caller and that no list already exists for it (`409` otherwise).
 3. Loads all 21 slots' recipes and their `ingredientes_principales`.
-4. **Consolidates in application code** — not in the model: deduplicates ingredient names, sums quantities scaled by household size using a base-quantity lookup table, unifies compatible units (e.g. `g`↔`kg`).
-5. Sends the already-consolidated list to Gemini Flash (`temperature: 0.2` — classification, not creative generation) to assign aisles and normalize display units.
-6. Validates that ≥ 90% of the consolidated ingredient count survived classification; retries up to 2 times otherwise.
+4. **Consolidates in application code** (`consolidator.ts`): deduplicates ingredient names, sums quantities scaled by household size using a base-quantity lookup table, unifies compatible units (e.g. `g`↔`kg`).
+5. Classifies each consolidated ingredient into one of the 13 fixed aisles and estimates a cost range via a deterministic static map (`aisle-pricing.ts` / `classifyShoppingList()`) — ingredient names are a controlled vocabulary (the recipe catalog's own ingredient list), so no model is involved (`ADR-0005`).
+6. No validation-and-retry step — every consolidated ingredient is classified by construction (an unrecognized name falls to the "Otros" aisle); an ingredient is never dropped or invented.
 7. Persists to `shopping_lists.items` (jsonb) and returns the aisle-grouped list to the frontend.
 
 ## 4. Data Model
@@ -184,7 +186,7 @@ erDiagram
 
 **RBAC**: not role-based in the traditional sense — authorization is row-ownership-based (RLS keyed to `auth.uid()`), plus a `service_role` vs `authenticated` split for the one genuinely privileged operation (writing to the shared `recipes` catalog during the batch-generation pipeline). There is no `admin`/`user` role distinction anywhere in the source material.
 
-**Data protection**: HTTPS/TLS inherited from Vercel + Supabase platform defaults; `GEMINI_API_KEY` isolated to the Edge Function secret store (NFR-SEC-3); input validation performed server-side in each Edge Function before any DB or LLM call.
+**Data protection**: HTTPS/TLS inherited from Vercel + Supabase platform defaults; input validation performed server-side in each Edge Function before any DB write. There is no third-party AI/API credential in the system — `GEMINI_API_KEY` was removed with Gemini on 2026-08-01 (NFR-SEC-3, `ADR-0005`).
 
 **The two-layer food-safety invariant** (FR-8.1) is the one architectural decision in this document promoted to a standalone ADR — see ADR-0001, which frames not just the safety mechanism but the deeper structural bet it sits inside: the behavioral-learning data model this same allergen/hated-ingredient filtering pipeline feeds is the product's core moat.
 
