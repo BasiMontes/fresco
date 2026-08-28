@@ -4335,3 +4335,8 @@ Referencias a "Cocinar ya" como ejemplo canónico del variant `button-action` en
 - Qué: `components/landing/pricing.tsx` - variante no destacada de `PlanFeature`: `text-neutral-600` (`#847456`, ~3,6:1 sobre `bg-neutral-200`) -> `text-tertiary` (`#6f5f43`, ~4,6:1). Una línea. PR #176 -> dev -> staging -> main (f616974). Live-UI verificado. FRESCO-303 (tipo Error, Low, parent EPIC-278, Relates FRESCO-285) -> Merged.
 - Por qué: hallazgo lateral durante FRESCO-285 - otro token (`neutral-600`) que FRESCO-299 dejó sin tocar a propósito.
 - Siguiente: nada. Cierra la serie de contraste de la re-auditoría (283, 299, 285, 303).
+
+## 2026-08-28 - FRESCO-279 verificado y cerrado: required status checks
+- Qué: el grueso ya estaba (PR #171, 27 ago). Verificación en vivo: PR #177 vs dev con test:unit rojo a propósito -> mergeStateStatus=BLOCKED, `gh pr merge` rechazado ("base branch policy prohibits the merge"). PR cerrado + rama borrada sin mergear. Comentario con evidencia en Jira; FRESCO-279 -> Finalizada.
+- Por qué: re-auditoría hallazgo 01 (ALTO), paso 3 del plan (verificar bloqueo real) faltaba; ticket seguía en Listo sin enlazar al trabajo.
+- Siguiente: rama local test/FRESCO-279-verify-required-checks quedó sin borrar (permiso denegado) — borrado manual trivial.
