@@ -9,8 +9,6 @@
 # Convención de tags:
 #   @verificado-manual-YYYY-MM-DD  → probado en vivo (Playwright CLI) esa fecha, pasó
 #   @pendiente                     → escrito, todavía no verificado ni automatizado
-#   @no-implementado               → describe comportamiento deseado que AÚN no existe
-#                                     en el código (mock, TODO, o feature sin construir)
 #   @edge-case                     → causística además del camino feliz
 #
 # Al automatizar un escenario, añadir @automatizado y el fichero de test que lo cubre.
