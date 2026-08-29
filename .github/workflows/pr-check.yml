@@ -37,6 +37,24 @@ jobs:
     name: test:e2e
     runs-on: ubuntu-latest
     needs: repo-check
+    # All PRs' e2e runs share the same single Supabase backend
+    # (jdqemhewjrjuopssdurn) via secrets.ENV_FILE — there is no per-PR or
+    # ephemeral backend. Concurrent runs mutate the same rows (e.g.
+    # reseedCurrentWeekPlan() deletes+regenerates the QA user's meal_plans;
+    # @suscripcion steps do service-role writes to user_profiles.plan),
+    # so two overlapping PR runs race on shared state. `workers: 1` in
+    # playwright.config.ts only serializes tests *within* one run — it does
+    # nothing for two *different* CI jobs running at the same time.
+    # This group is a single fixed string (not scoped to ref/PR), so every
+    # e2e job across every PR queues behind the previous one instead of
+    # running concurrently. cancel-in-progress stays false: a queued run
+    # should wait, never cancel a run that's mid-mutation against the
+    # shared backend (that would leave it half-seeded for the next run).
+    # This is a stopgap (FRESCO-289) — the real fix is per-run test
+    # factories or an ephemeral Supabase project, tracked as a follow-up.
+    concurrency:
+      group: e2e-shared-supabase-backend
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
 
