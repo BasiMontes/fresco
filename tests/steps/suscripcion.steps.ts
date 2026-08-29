@@ -1,8 +1,9 @@
 import type { Page } from '@playwright/test';
+import type { TestUser, TestUserFactory } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — `@suscripcion`
@@ -26,21 +27,18 @@ import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders, serv
  * call, so those use a synthetic-but-consistent object referencing whatever
  * ids are already on the account's `user_profiles` row.
  *
- * Dedicated account (`PRO_USER_EMAIL`) — same rationale as
- * `entrega-parcial.steps.ts`/`aprendizaje-pro.steps.ts`: doesn't collide
- * with `@aprendizaje`'s pendiente-slot fixture on `DEV_USER_EMAIL`. Only
- * touches `user_profiles.plan`/`stripe_customer_id`/`stripe_subscription_id`/
- * `payment_failed_at` — never `meal_plans`, so it doesn't disturb the
- * learning-history fixture other scenarios on this same account depend on.
- *
- * Known limitation: the last scenario in this file ("Pago sigue fallando
- * revierte a Free") deliberately leaves the account on `plan: 'free'`. Any
- * OTHER scenario on this account that implicitly assumes `plan: 'pro'`
- * without setting it itself would need to run before this file, or reset it
- * — `aprendizaje-pro.steps.ts` already does (force-sets `plan: 'pro'` at the
- * top of its own Given); `generacion-determinista.steps.ts` currently does
- * not. Not fixed here (out of scope) — same class of shared-mutable-state
- * trade-off ADR-0014 already documents for this suite.
+ * FRESCO-308: used to run every scenario against the single shared
+ * `PRO_USER_EMAIL` account — a real risk given how many of these scenarios
+ * mutate `user_profiles.plan`/`stripe_customer_id`/`stripe_subscription_id`/
+ * `payment_failed_at` on it (the file's own comment used to note the last
+ * scenario here deliberately leaves that account on `plan: 'free'`, which
+ * any other scenario assuming `plan: 'pro'` would need to work around).
+ * Each scenario now creates its OWN throwaway "Laura" via `testUserFactory`
+ * (`tests/test-user-factory.ts`), stored in the shared `suscripcionCtx`
+ * fixture (`tests/fixtures.ts`) so every Given/When/Then step within that
+ * SAME scenario reuses it — never `meal_plans`, so this still doesn't
+ * disturb the learning-history fixtures other files seed on their own
+ * factory users.
  *
  * Grupo B (FRESCO-277): "Iniciar checkout desde el perfil" and "Acceder a
  * gestión de suscripción" — real click in the app, asserting the full-page
@@ -62,11 +60,9 @@ import { currentUserId, getAccessToken, postSignedStripeEvent, restHeaders, serv
 
 const { Given, When, Then } = createBdd(test);
 
-async function proAccessToken(request: Parameters<typeof getAccessToken>[0]): Promise<string> {
-  if (!process.env.PRO_USER_EMAIL || !process.env.PRO_USER_PASSWORD) {
-    throw new Error('PRO_USER_EMAIL / PRO_USER_PASSWORD must be set in .env for this scenario.');
-  }
-  return getAccessToken(request, process.env.PRO_USER_EMAIL, process.env.PRO_USER_PASSWORD);
+/** Creates this scenario's own throwaway "Laura" and stores it on `suscripcionCtx` — every later Given/When/Then step in the SAME scenario reads it back from there instead of creating another one. */
+async function createLaura(testUserFactory: TestUserFactory): Promise<TestUser> {
+  return testUserFactory();
 }
 
 /** Deterministic-per-user fake Stripe ids for the events that never round-trip through Stripe's real API (updated/deleted). */
@@ -83,7 +79,7 @@ function fakeStripeIds(userId: string): { stripeCustomerId: string, stripeSubscr
  * ADR-0007) rejects writes to these columns from any other role.
  */
 async function seedProBaseline(
-  request: Parameters<typeof getAccessToken>[0],
+  request: Parameters<typeof postSignedStripeEvent>[0],
   userId: string,
 ): Promise<{ stripeCustomerId: string, stripeSubscriptionId: string }> {
   const ids = fakeStripeIds(userId);
@@ -100,7 +96,7 @@ async function seedProBaseline(
   return ids;
 }
 
-async function readProfile(request: Parameters<typeof getAccessToken>[0], headers: Record<string, string>, userId: string) {
+async function readProfile(request: Parameters<typeof postSignedStripeEvent>[0], headers: Record<string, string>, userId: string) {
   const res = await request.get(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}&select=plan,payment_failed_at`,
     { headers },
@@ -118,20 +114,14 @@ for (const [givenText, thenText] of [
   [/^que Laura completó el pago de la suscripción Pro$/, /^su perfil muestra el plan Pro activo$/],
   [/^que Laura completó el pago de su suscripción$/, /^su cuenta pasa a plan Pro sin que tenga que hacer nada más$/],
 ] as const) {
-  Given(givenText, async ({ request }) => {
-    const accessToken = await proAccessToken(request);
-    const userId = await currentUserId(request, accessToken);
-
-    // Clean slate: Free, no Stripe ids — this scenario is what GRANTS Pro.
-    // Service-role headers required: `protect_subscription_columns` (ADR-0007).
-    const resetRes = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
-      headers: serviceRoleHeaders(),
-      data: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, payment_failed_at: null },
-    });
-    if (!resetRes.ok()) { throw new Error(`Failed to reset to Free: ${resetRes.status()} ${await resetRes.text()}`); }
+  Given(givenText, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
+    const testUser = await createLaura(testUserFactory);
+    ctx.testUser = testUser;
+    const userId = testUser.id;
 
     // A REAL Stripe test-mode Customer + Subscription — the webhook handler
-    // re-fetches this subscription from Stripe's actual API.
+    // re-fetches this subscription from Stripe's actual API. No reset to
+    // Free needed first: this is a brand-new factory user, already Free.
     const StripeModule = (await import('stripe')).default;
     const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
     const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH!;
@@ -150,11 +140,9 @@ for (const [givenText, thenText] of [
     if (!checkoutRes.ok()) { throw new Error(`Webhook rejected checkout.session.completed: ${checkoutRes.status()} ${await checkoutRes.text()}`); }
   });
 
-  Then(thenText, async ({ request }) => {
-    const accessToken = await proAccessToken(request);
-    const headers = restHeaders(accessToken);
-    const userId = await currentUserId(request, accessToken);
-    const profile = await readProfile(request, headers, userId);
+  Then(thenText, async ({ request, suscripcionCtx: ctx }) => {
+    const headers = restHeaders(ctx.testUser.accessToken);
+    const profile = await readProfile(request, headers, ctx.testUser.id);
     expect(profile.plan).toBe('pro');
   });
 }
@@ -164,15 +152,14 @@ When(/^el pago se confirma$/, async () => { /* no-op — same as above, kept for
 
 // --- STORY-FRESCO-230: "Renovación mensual mantiene Pro" ---
 
-Given(/^que Laura tiene una suscripción Pro activa$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  await seedProBaseline(request, userId);
+Given(/^que Laura tiene una suscripción Pro activa$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+  await seedProBaseline(request, testUser.id);
 });
 
-When(/^se renueva el cobro mensual$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
+When(/^se renueva el cobro mensual$/, async ({ request, suscripcionCtx: ctx }) => {
+  const userId = ctx.testUser.id;
   const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(userId);
   const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH!;
 
@@ -185,26 +172,22 @@ When(/^se renueva el cobro mensual$/, async ({ request }) => {
   if (!res.ok()) { throw new Error(`Webhook rejected renewal event: ${res.status()} ${await res.text()}`); }
 });
 
-Then(/^sigue teniendo plan Pro sin interrupción$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
-  const userId = await currentUserId(request, accessToken);
-  const profile = await readProfile(request, headers, userId);
+Then(/^sigue teniendo plan Pro sin interrupción$/, async ({ request, suscripcionCtx: ctx }) => {
+  const headers = restHeaders(ctx.testUser.accessToken);
+  const profile = await readProfile(request, headers, ctx.testUser.id);
   expect(profile.plan).toBe('pro');
 });
 
 // --- STORY-FRESCO-230: "Cancelación revierte a Free al fin del periodo pagado" ---
 
-Given(/^que Laura canceló su suscripción Pro$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  await seedProBaseline(request, userId);
+Given(/^que Laura canceló su suscripción Pro$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+  await seedProBaseline(request, testUser.id);
 });
 
-When(/^termina el periodo que ya pagó \(customer\.subscription\.deleted\)$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(userId);
+When(/^termina el periodo que ya pagó \(customer\.subscription\.deleted\)$/, async ({ request, suscripcionCtx: ctx }) => {
+  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.deleted', {
     id: stripeSubscriptionId,
@@ -213,26 +196,22 @@ When(/^termina el periodo que ya pagó \(customer\.subscription\.deleted\)$/, as
   if (!res.ok()) { throw new Error(`Webhook rejected deleted event: ${res.status()} ${await res.text()}`); }
 });
 
-Then(/^su cuenta pasa a plan Free$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
-  const userId = await currentUserId(request, accessToken);
-  const profile = await readProfile(request, headers, userId);
+Then(/^su cuenta pasa a plan Free$/, async ({ request, suscripcionCtx: ctx }) => {
+  const headers = restHeaders(ctx.testUser.accessToken);
+  const profile = await readProfile(request, headers, ctx.testUser.id);
   expect(profile.plan).toBe('free');
 });
 
 // --- STORY-FRESCO-232: "Pago fallido me avisa" ---
 
-Given(/^que la suscripción Pro de Laura intenta renovarse$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  await seedProBaseline(request, userId);
+Given(/^que la suscripción Pro de Laura intenta renovarse$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+  await seedProBaseline(request, testUser.id);
 });
 
-When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(userId);
+When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/, async ({ request, suscripcionCtx: ctx }) => {
+  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
     id: stripeSubscriptionId,
@@ -242,10 +221,10 @@ When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/,
   if (!res.ok()) { throw new Error(`Webhook rejected past_due event: ${res.status()} ${await res.text()}`); }
 });
 
-Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page }) => {
+Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page, suscripcionCtx: ctx }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(ctx.testUser.email);
+  await page.getByTestId('password_input').fill(ctx.testUser.password);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/profile');
@@ -254,10 +233,10 @@ Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page }
 
 // --- STORY-FRESCO-232: "Reintento exitoso restaura Pro sin fricción" ---
 
-Given(/^que Laura tuvo un pago fallido \(payment_failed_at con valor\)$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, userId);
+Given(/^que Laura tuvo un pago fallido \(payment_failed_at con valor\)$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, testUser.id);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
     id: stripeSubscriptionId,
@@ -267,10 +246,8 @@ Given(/^que Laura tuvo un pago fallido \(payment_failed_at con valor\)$/, async 
   if (!res.ok()) { throw new Error(`Failed to seed payment-failed baseline: ${res.status()} ${await res.text()}`); }
 });
 
-When(/^actualiza su método de pago y el reintento funciona \(status vuelve a active\)$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(userId);
+When(/^actualiza su método de pago y el reintento funciona \(status vuelve a active\)$/, async ({ request, suscripcionCtx: ctx }) => {
+  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
   const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH!;
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
@@ -282,18 +259,16 @@ When(/^actualiza su método de pago y el reintento funciona \(status vuelve a ac
   if (!res.ok()) { throw new Error(`Webhook rejected recovery event: ${res.status()} ${await res.text()}`); }
 });
 
-Then(/^su cuenta sigue en plan Pro sin interrupción visible$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const headers = restHeaders(accessToken);
-  const userId = await currentUserId(request, accessToken);
-  const profile = await readProfile(request, headers, userId);
+Then(/^su cuenta sigue en plan Pro sin interrupción visible$/, async ({ request, suscripcionCtx: ctx }) => {
+  const headers = restHeaders(ctx.testUser.accessToken);
+  const profile = await readProfile(request, headers, ctx.testUser.id);
   expect(profile.plan).toBe('pro');
 });
 
-Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page }) => {
+Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page, suscripcionCtx: ctx }) => {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(ctx.testUser.email);
+  await page.getByTestId('password_input').fill(ctx.testUser.password);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/profile');
@@ -302,10 +277,10 @@ Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page }) => {
 
 // --- STORY-FRESCO-232: "Pago sigue fallando revierte a Free" (@pendiente — never verified before this) ---
 
-Given(/^que el pago de Laura falló y no se resolvió$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, userId);
+Given(/^que el pago de Laura falló y no se resolvió$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, testUser.id);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
     id: stripeSubscriptionId,
@@ -315,10 +290,8 @@ Given(/^que el pago de Laura falló y no se resolvió$/, async ({ request }) => 
   if (!res.ok()) { throw new Error(`Failed to seed payment-failed baseline: ${res.status()} ${await res.text()}`); }
 });
 
-When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con status unpaid$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(userId);
+When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con status unpaid$/, async ({ request, suscripcionCtx: ctx }) => {
+  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
     id: stripeSubscriptionId,
@@ -331,26 +304,28 @@ When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con s
 // --- Grupo B (FRESCO-277) ---
 // --- STORY-FRESCO-228: "Iniciar checkout desde el perfil" ---
 
-async function loginAsProTestUser(page: Page): Promise<void> {
+async function loginAsTestUser(page: Page, testUser: TestUser): Promise<void> {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.PRO_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.PRO_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(testUser.email);
+  await page.getByTestId('password_input').fill(testUser.password);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
 }
 
-Given(/^que Laura está en su perfil con plan Free$/, async ({ request, page }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
+Given(/^que Laura está en su perfil con plan Free$/, async ({ request, page, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
 
-  // Service-role headers required: `protect_subscription_columns` (ADR-0007).
-  const resetRes = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
+  // Belt-and-braces: a brand-new factory user is already Free with no
+  // Stripe ids, but resetting explicitly keeps this step correct even if
+  // that default ever changes.
+  const resetRes = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}`, {
     headers: serviceRoleHeaders(),
     data: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, payment_failed_at: null },
   });
   if (!resetRes.ok()) { throw new Error(`Failed to reset to Free: ${resetRes.status()} ${await resetRes.text()}`); }
 
-  await loginAsProTestUser(page);
+  await loginAsTestUser(page, testUser);
   await page.goto('/profile');
 });
 
@@ -364,9 +339,8 @@ Then(/^es llevada a completar el pago de la suscripción Pro en Stripe Checkout 
 
 // --- STORY-FRESCO-231: "Acceder a gestión de suscripción" ---
 
-Given(/^su cliente de Stripe existe realmente$/, async ({ request }) => {
-  const accessToken = await proAccessToken(request);
-  const userId = await currentUserId(request, accessToken);
+Given(/^su cliente de Stripe existe realmente$/, async ({ request, suscripcionCtx: ctx }) => {
+  const userId = ctx.testUser.id;
 
   const StripeModule = (await import('stripe')).default;
   const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
@@ -380,8 +354,8 @@ Given(/^su cliente de Stripe existe realmente$/, async ({ request }) => {
   if (!res.ok()) { throw new Error(`Failed to attach real Stripe customer: ${res.status()} ${await res.text()}`); }
 });
 
-When(/^entra a su perfil y pulsa "Gestionar suscripción"$/, async ({ page }) => {
-  await loginAsProTestUser(page);
+When(/^entra a su perfil y pulsa "Gestionar suscripción"$/, async ({ page, suscripcionCtx: ctx }) => {
+  await loginAsTestUser(page, ctx.testUser);
   await page.goto('/profile');
   await page.getByTestId('manage_subscription_button').click();
 });
@@ -396,8 +370,10 @@ Then(/^puede abrir la gestión de su suscripción en el Billing Portal real de S
 // payment_method_collection, no trial_period_days -- Stripe no lo
 // devuelve al leer una Checkout Session, solo lo acepta como input.
 
-Given(/^que Laura empieza el proceso de actualizar a Pro$/, async ({ page }) => {
-  await loginAsProTestUser(page);
+Given(/^que Laura empieza el proceso de actualizar a Pro$/, async ({ page, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+  await loginAsTestUser(page, testUser);
 });
 
 When(/^llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripcionCtx: ctx }) => {
