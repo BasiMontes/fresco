@@ -17,10 +17,38 @@ The directory has two roles:
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- |
 | `project.yaml`        | Human-edited project config: project name, repo paths, URLs, MCP server names, issue-tracker metadata, default env. ALSO holds the `git_strategy:` block (this repo's git workflow — read by `git-flow-master`; see §"`git_strategy`" below). | You (project owner) / `git-flow-master` | Edit by hand. The `git_strategy:` block is filled by `git-flow-master` Strategy Setup, NOT by `agents:setup`. |
 | `jira-fields.json`    | Auto-generated catalog of every custom field in your Jira workspace, keyed by canonical slug. Each entry has `id`, `type`, optional `name`, `options`, `system`, `provider`.     | Generated only — **do not edit by hand** | `bun run jira:sync-fields`                                                   |
-| `jira-workflows.json` | Auto-generated catalog of work-type workflows, statuses, and transitions resolved against your Jira workspace. Companion to `jira-fields.json` for the work_types substrate.     | Generated only — **do not edit by hand** | `bun run jira:sync-workflows`                                                |
+| `jira-workflows.json` | Auto-generated catalog of work-type workflows, statuses, and transitions resolved against your Jira workspace. Companion to `jira-fields.json` for the work_types substrate. **Many canonical slugs in here are LOCAL ALIASES that collapse onto the same real Jira status/transition — see "Canonical slugs are LOCAL ALIASES" below before treating every slug as a distinct Jira state.** | Generated only — **do not edit by hand** | `bun run jira:sync-workflows`                                                |
 | `jira-link-types.json` | Auto-generated catalog of every issue link type in your Jira workspace (e.g. `blocks`, `relates`, `is caused by`), keyed by canonical slug. Each entry has `id`, `name`, `outward`, `inward`, `exists_in_workspace`. | Generated only — **do not edit by hand** | `bun run jira:sync-link-types`                                               |
 | `jira-required.yaml`  | Declarative manifest of the custom fields the methodology requires (with expected types, option lists, and consumers). The contract between skills/commands and the user's Jira. | Methodology maintainers                  | Updated when a skill or command adds or drops a `{{jira.<slug>}}` reference. |
 | `README.md`           | This file.                                                                                                                                                                       | Methodology maintainers                  | —                                                                            |
+
+## Canonical slugs are LOCAL ALIASES, not proof of extra Jira states
+
+`jira-required.yaml` declares a **methodology-level** vocabulary of canonical slugs (`shift_left_qa`, `ready_for_qa`, `qa_approved`, `ready_for_release`, `deployed_to_production`, `in_test`, `in_automation`, …) that is intentionally more granular than any single project's real Jira workflow — the methodology names every plausible phase up front so it fits teams with a finely-instrumented pipeline. **This does not mean your Jira workflow has a distinct physical status or transition for every slug.**
+
+`bun run jira:sync-workflows` resolves each declared slug against your workspace's *actual* statuses/transitions and records the result in `jira-workflows.json`. When your real workflow is flatter than the methodology's vocabulary, **multiple canonical slugs resolve to the same physical Jira status or transition** — this is visible directly in the catalog: several `statuses.<slug>` entries share the same `id`/`name`, and every `transitions.<slug>` entry carries a `to_canonical` pointer that names which status bucket it actually lands in.
+
+**How to tell an alias from a real distinct state**: group a work type's `statuses` entries in `jira-workflows.json` by `id`. Every slug sharing an `id` is a local shorthand name for the *same* physical Jira status, not a separate one. Do the same for `transitions` by grouping on `to_status_id` (or just reading `to_canonical`).
+
+### Fresco's resolved mapping (project key `FRESCO`)
+
+Fresco's Jira workflow (still literally named "Software workflow for project KAN" in Jira — see follow-up note below) implements exactly **7 physical statuses** — confirmed via `acli jira workitem search --jql "project = FRESCO" --json --paginate | jq -r '.[].fields.status.name' | sort -u`. Every canonical slug in `jira-workflows.json` collapses onto one of these seven:
+
+| Real Jira status (`id`) | category | Canonical slug aliases seen across work types (`story` shown in full; `bug`/`defect`/`improvement`/`epic`/`test_case`/`tech_story`/`tech_debt` reuse the same 7 buckets with domain-flavored slug names) |
+|---|---|---|
+| **Listo** (`10004`) | new | `listo`, `backlog`, `ready_for_dev`, `open` (bug/defect/improvement), `to_do` (tech_story/tech_debt), `draft` / `ready` / `candidate` / `manual` (test_case) |
+| **WIP** (`10005`) | indeterminate | `wip`, `estimation`, `in_progress`, `in_design` / `in_automation` (test_case) |
+| **Control de calidad** (`10006`) | indeterminate | `control_de_calidad`, `shift_left_qa`, `ready_for_qa`, `in_test` |
+| **Merged** (`10007`) | indeterminate | `merged`, `in_review`, `pull_request` (test_case), `fixed` (tech_story/tech_debt) |
+| **Blocked** (`10041`) | new | `blocked`, `deferred` (bug/defect/improvement) |
+| **Rechazos** (`10042`) | new | `rechazos`, `aborted`, `cannot_reproduce`, `duplicated`, `rejected`, `enhancement` (bug/defect/improvement), `deprecated` (test_case), `abort` (tech_story/tech_debt) |
+| **Finalizada** (`10008`) | done | `finalizada`, `done` (epic), `closed` (bug/defect/improvement), `qa_approved`, `ready_for_release`, `deployed_to_production`, `automated` / `completed` (test_case/tech_story/tech_debt) |
+
+The same collapsing applies to `transitions`: 30+ canonical transition slugs resolve to only **8 real Jira transitions** (`Create`=1, `Ready`=11, `WIP`=21, `QA`=31, `Merged`=41, `Done`=51, `Blocked`=2, `Rechazos`=3) — read `to_canonical` on any `transitions.<slug>` entry to find which one a given slug actually fires.
+
+**Do not** read `jira-workflows.json`'s ~17 status keys or ~30 transition keys per work type as evidence that Fresco's Jira has 17 or 30 distinct states — they are a vocabulary of *local aliases* the methodology uses to reason about workflow phases, layered over a much flatter real workflow. This table is a snapshot at time of writing; the catalog (`jira-workflows.json`) is the live source of truth if the two ever disagree.
+
+> **Manual follow-up (not automatable by `acli` or the Atlassian MCP tools available here)**: the underlying Jira workflow is still literally named "Software workflow for project KAN" and the board is still "KAN board" — leftover names from before this project was branded Fresco. Renaming either is a Jira **admin** action (Project Settings → Workflows for the workflow name; Project Settings → board name) with no `acli` or MCP surface — `acli` has no workflow-management commands at all (confirmed limitation, see `.claude/skills/acli/SKILL.md`). A human must do this in the Jira web UI.
 
 ## `git_strategy` (block inside `project.yaml`)
 
