@@ -1,7 +1,9 @@
+import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { getAccessToken, restHeaders } from '../test-helpers';
+import { restHeaders } from '../test-helpers';
+import { generateCurrentWeekPlan } from '../test-user-factory';
 
 /** Mirrors `supabase/functions/_shared/normalize.ts` — can't import across the Deno/Node boundary, small enough to duplicate for test-only overlap checks. */
 function normalizeNombre(nombre: string): string {
@@ -30,46 +32,38 @@ function normalizeNombre(nombre: string): string {
  * can't produce an observable pass here the way it did for signup. Both
  * scenarios hit the real backend (real Gemini call, real Supabase writes).
  *
- * Business Rules: at most one shopping list per plan, and the app exposes
- * no "delete list" affordance — but the RLS policy backing it
- * (`shopping_delete_own`) already lets the owning user delete their own row,
- * so each scenario resets that fixture via a direct REST call (test
- * hygiene, not a feature under test) before generating for real, keeping
- * both scenarios independently repeatable instead of one relying on a
- * previous scenario's side effect.
+ * FRESCO-308: used to run against the shared `DEV_USER_EMAIL` account,
+ * resetting its existing shopping list before each scenario (a live timeout
+ * waiting on shopping-list items was observed here, racing against another
+ * scenario's writes to that same account). Each scenario now creates its own
+ * throwaway user via `testUserFactory` (`tests/test-user-factory.ts`) and
+ * generates that user's own real current-week menu first — `/shopping-list`
+ * only offers "Generar lista de la compra" once a menu exists
+ * (`ShoppingListGenerator`'s `mealPlanId` prop) — so there's no shared
+ * account left to reset, and no fixture reset step needed at all.
  */
 
 const { Given, When, Then } = createBdd(test);
 
-/**
- * Fixture reset — deletes this user's existing real shopping list, if any.
- * PostgREST rejects an unfiltered DELETE ("DELETE requires a WHERE
- * clause", confirmed live) even though RLS already scopes it to the
- * caller's own rows — `id=not.is.null` is an always-true filter that
- * satisfies PostgREST without narrowing what RLS already allows.
- */
-async function resetShoppingListFixture(request: import('@playwright/test').APIRequestContext): Promise<void> {
-  const accessToken = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
-  await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/shopping_lists?id=not.is.null`, {
-    headers: {
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-}
+async function seedMenuAndLoginToShoppingList(
+  page: import('@playwright/test').Page,
+  request: import('@playwright/test').APIRequestContext,
+  testUserFactory: () => Promise<TestUser>,
+): Promise<TestUser> {
+  const testUser = await testUserFactory();
+  await generateCurrentWeekPlan(request, testUser);
 
-async function loginAndGoToShoppingList(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/login');
-  await page.getByTestId('email_input').fill(process.env.DEV_USER_EMAIL!);
-  await page.getByTestId('password_input').fill(process.env.DEV_USER_PASSWORD!);
+  await page.getByTestId('email_input').fill(testUser.email);
+  await page.getByTestId('password_input').fill(testUser.password);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
   await page.goto('/shopping-list');
+  return testUser;
 }
 
-Given(/^que el usuario tiene un menú semanal generado$/, async ({ page, request }) => {
-  await resetShoppingListFixture(request);
-  await loginAndGoToShoppingList(page);
+Given(/^que el usuario tiene un menú semanal generado$/, async ({ page, request, testUserFactory }) => {
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
   await expect(page.getByTestId('generate_shopping_list_button')).toBeVisible();
 });
 
@@ -103,9 +97,8 @@ Then(/^ve un resumen con el total de productos y el coste estimado$/, async ({ p
   await expect(page.getByText(/\d+(,\d+)?–\d+(,\d+)?€/)).toBeVisible();
 });
 
-Given(/^que el usuario tiene una lista de la compra generada$/, async ({ page, request }) => {
-  await resetShoppingListFixture(request);
-  await loginAndGoToShoppingList(page);
+Given(/^que el usuario tiene una lista de la compra generada$/, async ({ page, request, testUserFactory }) => {
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
   await page.getByTestId('generate_shopping_list_button').click();
   // Real Gemini generation timing varies (~10-30s observed live, retries
   // possible) — generous timeout, not tuned to a specific fast run.
@@ -135,9 +128,8 @@ Then(/^el precio se conserva la próxima vez que abre la lista$/, async ({ page 
 
 // ── Compra realizada (FRESCO-191, QA rework; copy per FRESCO-215) ──────────
 
-Given(/^que el usuario tiene una lista de la compra generada con un producto marcado como comprado$/, async ({ page, request }) => {
-  await resetShoppingListFixture(request);
-  await loginAndGoToShoppingList(page);
+Given(/^que el usuario tiene una lista de la compra generada con un producto marcado como comprado$/, async ({ page, request, testUserFactory }) => {
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
   await page.getByTestId('generate_shopping_list_button').click();
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
   await page.getByTestId('shopping_list_item_0_0').check();
@@ -160,16 +152,13 @@ Then(/^el botón "Compra realizada" desaparece$/, async ({ page }) => {
 
 Given(
   /^que el usuario tiene una lista de la compra generada y una receta favorita con un ingrediente que no está en la lista$/,
-  async ({ page, request }) => {
-    await resetShoppingListFixture(request);
-    await loginAndGoToShoppingList(page);
+  async ({ page, request, testUserFactory }) => {
+    const testUser = await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
     await page.getByTestId('generate_shopping_list_button').click();
     await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
 
-    const accessToken = await getAccessToken(request, process.env.DEV_USER_EMAIL!, process.env.DEV_USER_PASSWORD!);
-    const headers = restHeaders(accessToken);
-    const userRes = await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`, { headers });
-    const { id: userId } = await userRes.json() as { id: string };
+    const headers = restHeaders(testUser.accessToken);
+    const userId = testUser.id;
 
     // Real ingredient names already on the just-generated list, normalized
     // the same way get-shopping-list-suggestions excludes against.
@@ -198,8 +187,9 @@ Given(
       throw new Error('No se encontró ninguna receta del catálogo con ingredientes fuera de la lista generada — no se pudo sembrar el fixture.');
     }
 
-    // Reset favorites so only this seeded recipe drives the carousel —
-    // same reset-before-seed hygiene as resetShoppingListFixture.
+    // Belt-and-braces: this is a brand-new factory user with no prior
+    // favorites, but deleting first keeps this step correct even if that
+    // ever stops being true (e.g. a future factory option pre-seeds one).
     await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites?user_id=eq.${userId}`, { headers });
     await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites`, {
       headers,
