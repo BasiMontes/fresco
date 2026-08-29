@@ -42,6 +42,10 @@ export default defineConfig({
   // is small enough that it doesn't matter yet.
   fullyParallel: false,
   workers: 1,
+  // Without this, `retries` defaults to 0 and `trace: 'on-first-retry'`
+  // (below) never fires — a CI failure left no trace to debug from. One
+  // retry in CI is enough to produce a trace on the failure that persists.
+  retries: process.env.CI ? 1 : 0,
   // Playwright's own per-test timeout (default 30s) cuts a test short
   // before a longer `expect(...).toBeVisible({ timeout })` override even
   // gets to finish waiting. Kept generous even after generate-shopping-list
