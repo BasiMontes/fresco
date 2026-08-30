@@ -94,13 +94,12 @@ These are **not optional** for the workflow — each one is required by a specif
 
 ### MCP credentials (`.env` keys)
 
-`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Ten keys back the 5 canonical MCPs (context7 needs none):
+`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Eight keys back the 4 canonical MCPs (context7 needs none):
 
 ```
 TAVILY_API_KEY
 ATLASSIAN_URL · ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
 SUPABASE_ACCESS_TOKEN · SUPABASE_URL · SUPABASE_ANON_KEY · SUPABASE_SERVICE_ROLE_KEY
-N8N_API_URL · N8N_API_KEY
 ```
 
 `.env.example` has the full template with per-var comments. Run `bun run setup:doctor` at any time to see which are still missing — it prints `pending_actions[].where` URLs for every credential.
@@ -160,7 +159,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — gentle-ai (Engram only), community skills, `.env` wiring for the 5 MCPs (context7, tavily, atlassian, supabase, n8n), direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — gentle-ai (Engram only), community skills, `.env` wiring for the 4 MCPs (context7, tavily, atlassian, supabase), direnv autoload, optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-dev/README.md`](packages/create-agentic-dev/README.md)):
 

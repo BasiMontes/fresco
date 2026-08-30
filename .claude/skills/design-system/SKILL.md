@@ -271,7 +271,7 @@ On successful completion (all verification items pass), the orchestrator runs Ar
 
 - **Schema status: alpha** (Google Labs). Drift risk is mitigated by always validating with the latest `@google/design.md` via `npx` (no version pin). If the schema changes substantially, update `assets/design-md-spec-summary.md` accordingly.
 - **Multi-platform out of scope (v1)**: today `DESIGN.md` assumes web. Mobile (React Native, Flutter) can be added later as a variant (`DESIGN.mobile.md`) without breaking the v1 contract.
-- **No `designmd-mcp` in `.mcp.example.json`**: the canonical MCP set stays `[tavily, context7, supabase, n8n]`. If the runtime catalog browse is needed, shell out to `npx designmd search` instead — keeps the token overhead at zero.
+- **No `designmd-mcp` in `.mcp.example.json`**: the canonical MCP set stays `[tavily, context7, supabase]`. If the runtime catalog browse is needed, shell out to `npx designmd search` instead — keeps the token overhead at zero.
 - **Brownfield mode**: the skill detects repos without Constitution / PRD and drops into Q&A mode (five questions: industry, tone, target, competitors, keywords) before matching. Same flow works for projects mid-pivot.
 - **Config consumed**: `design_md_path` (optional) from `.agents/project.yaml`. Default `./DESIGN.md`.
 - The references are written in mixed ES/EN (mirroring the rest of the repo). The orchestrator file (this one) stays in English for cross-team readability.

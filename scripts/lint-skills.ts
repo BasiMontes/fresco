@@ -282,7 +282,7 @@ function extractInstallTsSkills(): { t2: Set<string>, t3: Set<string>, t4: Set<s
   const userMatch = src.match(/const USER_LEVEL_SKILLS[^=]*=\s*\[([\s\S]*?)\];/);
   if (userMatch) {
     for (const m of userMatch[1].matchAll(/skill:\s*['"]([a-z][a-z0-9-]+)['"]/g)) { t4.add(m[1]); }
-    // also catch entries with only `package` (whole-repo installs like n8n-skills)
+    // also catch entries with only `package` (whole-repo installs)
     for (const m of userMatch[1].matchAll(/package:\s*['"]([^'"]*)['"]\s*\}/g)) {
       const pkg = m[1];
       const last = pkg.split('/').pop()?.replace(/\.git$/, '');

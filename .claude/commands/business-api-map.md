@@ -54,7 +54,7 @@ Exhaust every source. Prefer existing context files over re-deriving from code.
 
 **Golden rule**: This is a _narrative_ document. If OpenAPI already expresses a fact as a schema, link to it — do NOT restate it in prose.
 
-**Stack hints**: `bun run api:sync` syncs the OpenAPI spec and regenerates types under `api/schemas/`. Run it (or ask the user to run it) before reading routes if the spec is stale or missing. Supabase / Context7 / Tavily / n8n MCPs are available for cross-checks (DB schema, library docs, integration patterns) but should not replace reading the codebase first.
+**Stack hints**: `bun run api:sync` syncs the OpenAPI spec and regenerates types under `api/schemas/`. Run it (or ask the user to run it) before reading routes if the spec is stale or missing. Supabase / Context7 / Tavily MCPs are available for cross-checks (DB schema, library docs, integration patterns) but should not replace reading the codebase first.
 
 ---
 

@@ -108,7 +108,7 @@ const ALL_SCOPES: VarScope[] = ['production', 'preview', 'development'];
  *
  * Sourced from §2 (DEV table) of the handoff and reconciled against the EXACT
  * var names in `.env.example`, `cli/doctor.ts` `PROJECT_BOUND_VARS`
- * (the 7 POSTGRES_* names + the Supabase set), and `N8N_API_URL` / `N8N_API_KEY`.
+ * (the 7 POSTGRES_* names + the Supabase set).
  */
 export const VAR_MANIFEST: VarSpec[] = [
   // --- CRITICAL tool credentials (project-independent; prompted at install) ---
@@ -292,25 +292,6 @@ export const VAR_MANIFEST: VarSpec[] = [
     obtainHint: 'Auto-provisioned by Supabase↔Vercel — pull with `vercel env pull` via `bun run setup --variables`. Defaults to http://localhost:3000 locally.',
     note: 'Base URL for auth redirects, OAuth callbacks, email links. Referenced in code; previously untracked by installer AND doctor.',
   },
-  // --- n8n automation (non-critical, local only, set when you adopt n8n) ---
-  {
-    name: 'N8N_API_URL',
-    destinations: ['local'],
-    secret: false,
-    required: false,
-    critical: false,
-    obtainHint: 'Your n8n instance → Settings → API (e.g. https://n8n.yourapp.com/api/v1). Only needed if you use the n8n MCP server.',
-    note: 'n8n instance API URL for the n8n MCP server (project-bound). Local only.',
-  },
-  {
-    name: 'N8N_API_KEY',
-    destinations: ['local'],
-    secret: true,
-    required: false,
-    critical: false,
-    obtainHint: 'Your n8n instance → Settings → API. Only needed if you use the n8n MCP server.',
-    note: 'n8n API key for the n8n MCP server. Local only.',
-  },
 ];
 
 /**
@@ -330,6 +311,14 @@ export const DEPRECATED_VARS: DeprecatedVar[] = [
   {
     name: 'JIRA_API_TOKEN',
     reason: 'Replaced by ATLASSIAN_API_TOKEN (DRY Atlassian credential family). Nothing reads JIRA_API_TOKEN anymore.',
+  },
+  {
+    name: 'N8N_API_URL',
+    reason: 'The n8n MCP server was removed (FRESCO-318). Nothing reads N8N_API_URL anymore.',
+  },
+  {
+    name: 'N8N_API_KEY',
+    reason: 'The n8n MCP server was removed (FRESCO-318). Nothing reads N8N_API_KEY anymore.',
   },
   // NOTE: the legacy Supabase keys (SUPABASE_ANON_KEY,
   // NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) are deliberately

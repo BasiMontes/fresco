@@ -52,18 +52,17 @@ Each entry is required by one or more skills; install them as you need them.
 
 > **Windows users**: skip direnv. PowerShell support is experimental and needs direnv 2.37+; Git Bash works but the `bun claude` wrapper is simpler everywhere. Decline the installer's direnv prompt — the wrappers already load `.env`.
 
-### MCP credentials — 10 env vars filled into `.env`
+### MCP credentials — 8 env vars filled into `.env`
 
-`.mcp.json` (Claude Code) and `opencode.jsonc` (OpenCode) ship with `${VAR}` / `{env:VAR}` placeholders. The installer resolves required vars by scanning the committed configs (`discoverRequiredEnvVars()`, `install.ts:743-749`) — current list backs the 5 canonical MCPs (context7 needs none):
+`.mcp.json` (Claude Code) and `opencode.jsonc` (OpenCode) ship with `${VAR}` / `{env:VAR}` placeholders. The installer resolves required vars by scanning the committed configs (`discoverRequiredEnvVars()`, `install.ts:743-749`) — current list backs the 4 canonical MCPs (context7 needs none):
 
 ```
 TAVILY_API_KEY
 ATLASSIAN_URL · ATLASSIAN_EMAIL · ATLASSIAN_API_TOKEN
 SUPABASE_ACCESS_TOKEN · SUPABASE_URL · SUPABASE_ANON_KEY · SUPABASE_SERVICE_ROLE_KEY
-N8N_API_URL · N8N_API_KEY
 ```
 
-Generation is interactive (web logins + 2FA), so the installer cannot do it for you. `.env.example` has the full template with per-var comments. Run `bun run setup:doctor` at any time to see which are still missing — every pending credential carries a `where` URL (Tavily dashboard, Atlassian token page, Supabase project settings, n8n API panel).
+Generation is interactive (web logins + 2FA), so the installer cannot do it for you. `.env.example` has the full template with per-var comments. Run `bun run setup:doctor` at any time to see which are still missing — every pending credential carries a `where` URL (Tavily dashboard, Atlassian token page, Supabase project settings).
 
 ### Where to verify your status
 
@@ -92,10 +91,10 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
   "platform": "linux",
   "shell": "/usr/bin/bash",
   "is_tty": true,
-  "env_vars": { "TAVILY_API_KEY": "set", "N8N_API_KEY": "missing", ... },
+  "env_vars": { "TAVILY_API_KEY": "set", "SUPABASE_ACCESS_TOKEN": "missing", ... },
   "direnv": { "installed": true, "version": "2.25.2", "envrc_allowed": true, "hook_in_rc": true, "rc_file": "/home/user/.bashrc" },
   "pending_actions": [
-    { "type": "credential", "target": "N8N_API_KEY", "hint": "n8n API key for the n8n MCP server", "where": "n8n instance → Settings → API" },
+    { "type": "credential", "target": "SUPABASE_ACCESS_TOKEN", "hint": "Supabase personal access token for the Supabase MCP server", "where": "Supabase dashboard → Account → Access Tokens" },
     { "type": "shell_hook", "target": "~/.bashrc", "hint": "Add direnv hook ...", "where": "eval \"$(direnv hook bash)\"" }
   ]
 }
@@ -112,8 +111,8 @@ Exit code: `0` when everything is green, `1` when any pending action remains. JS
 
 ### What an AI **cannot** do (hard limits)
 
-- **Generate API tokens** — Tavily / Atlassian / Supabase / n8n keys all require an interactive web login + 2FA. The user creates and pastes them; the AI never sees the generation flow.
-- **Decide business config** — e.g. which Supabase project to target, which n8n instance to use, etc. The AI suggests; the user decides.
+- **Generate API tokens** — Tavily / Atlassian / Supabase keys all require an interactive web login + 2FA. The user creates and pastes them; the AI never sees the generation flow.
+- **Decide business config** — e.g. which Supabase project to target. The AI suggests; the user decides.
 - **Execute privileged installs cleanly** — `brew install`, `winget install`, `apt install` may show a sudo/admin prompt that lives outside the agent's terminal. The AI runs the command but the user clicks "allow".
 
 ### `bun run setup --non-interactive` (or just `bun run setup` without a TTY)
@@ -141,7 +140,7 @@ Then `bun run setup:doctor --json` to confirm.
 
 ## Launching the agent after setup
 
-`bun run setup` finishes with two recommended ways to start an agent so MCP env vars (e.g. `TAVILY_API_KEY`, `ATLASSIAN_API_TOKEN`, `SUPABASE_ACCESS_TOKEN`, `N8N_API_KEY`) get loaded from `.env`:
+`bun run setup` finishes with two recommended ways to start an agent so MCP env vars (e.g. `TAVILY_API_KEY`, `ATLASSIAN_API_TOKEN`, `SUPABASE_ACCESS_TOKEN`) get loaded from `.env`:
 
 | Method                                      | Platform                                                                                      | One-time setup                                                                                                                                          | Usage                                                 |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -327,7 +326,7 @@ What you lose:
 
 - **Persistent memory (Engram)** — no cross-session recall, no `mem_save` / `mem_search`. Each session starts blind.
 
-What you keep: every workflow skill committed in this repo (`/sprint-development`, `/project-foundation`, etc.) and the canonical MCPs (Tavily, Context7, Supabase, n8n). The repo is fully usable without gentle-ai — the integration is additive.
+What you keep: every workflow skill committed in this repo (`/sprint-development`, `/project-foundation`, etc.) and the canonical MCPs (Tavily, Context7, Supabase). The repo is fully usable without gentle-ai — the integration is additive.
 
 ---
 

@@ -35,7 +35,7 @@ This boilerplate's `.env.example` declares ~15 keys. Every key listed MUST exist
 | `POSTGRES_URL_NON_POOLING`         | production + preview | Direct URL (port 5432)                                                                                                                                  |
 | `POSTGRES_PRISMA_URL`              | production + preview | Pooled + `pgbouncer=true` — required if using Prisma                                                                                                    |
 | `TAVILY_API_KEY`                   | production + preview *(optional)* | Only if app code calls Tavily at runtime. Devtime MCP-only usage does NOT need this in Vercel.                                                          |
-| `ATLASSIAN_*`, `N8N_*`             | (skip)            | Devtime / agent-side only. Do NOT push these to Vercel scopes unless app code reads them at runtime.                                                    |
+| `ATLASSIAN_*`                       | (skip)            | Devtime / agent-side only. Do NOT push these to Vercel scopes unless app code reads them at runtime.                                                    |
 | `SUPABASE_ACCESS_TOKEN`            | (skip)            | Supabase MCP admin-scope PAT — devtime only.                                                                                                            |
 
 > **Shortcut:** Vercel + Supabase have a first-party integration that auto-injects ALL `SUPABASE_*`, `NEXT_PUBLIC_SUPABASE_*`, and `POSTGRES_*` vars into both scopes at once. See `.env.example` lines 95–99 (the "Copy Snippet" tip). When that integration is wired, `vercel env pull` is the source of truth — your local `.env` mirrors Vercel, not the other way around.
@@ -105,7 +105,7 @@ Env mutations do NOT automatically redeploy. To pick up new values:
 
 - **NEVER commit `.env.local`** produced by `vercel env pull`. It's in `.gitignore` for a reason.
 - **NEVER put service-role / secret keys in `NEXT_PUBLIC_*` names.** Anything `NEXT_PUBLIC_` is bundled into the browser JS. The boilerplate's `NEXT_PUBLIC_SUPABASE_*` keys are deliberately the public anon key only.
-- **NEVER push `ATLASSIAN_*`, `N8N_*`, `SUPABASE_ACCESS_TOKEN` to Vercel scopes** unless runtime app code reads them. These are devtime/agent-side credentials; they have no business sitting in production runtime env.
+- **NEVER push `ATLASSIAN_*`, `SUPABASE_ACCESS_TOKEN` to Vercel scopes** unless runtime app code reads them. These are devtime/agent-side credentials; they have no business sitting in production runtime env.
 - **Always re-run `vercel whoami` and check `.vercel/project.json` `orgId`** before bulk-pushing. A misrouted push to the wrong team's project is the most common foot-gun.
 
 ## Reference

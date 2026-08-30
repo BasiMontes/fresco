@@ -22,17 +22,6 @@
         "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SECRET_KEY}"
       }
     },
-    "n8n": {
-      "command": "npx",
-      "args": ["-y", "n8n-mcp"],
-      "env": {
-        "MCP_MODE": "stdio",
-        "LOG_LEVEL": "error",
-        "DISABLE_CONSOLE_OUTPUT": "true",
-        "N8N_API_URL": "${N8N_API_URL}",
-        "N8N_API_KEY": "${N8N_API_KEY}"
-      }
-    },
     "21st": {
       "type": "http",
       "url": "https://21st.dev/api/mcp",
