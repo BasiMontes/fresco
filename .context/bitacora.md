@@ -164,3 +164,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: backfill de Severity/Error Type/Root Cause via comentario en los 6 defectos abiertos que faltaban (276/265/250/220/183/124). Nueva regla en bug-fix-workflow.md + SKILL.md: sin pasos de repro ni razon de rechazo documentada, un defecto no pasa a estado terminal (Gotcha 15, S18). Commit 37d3b80 dev->staging->main. Runbook de admin de Jira (partes 1/2/4) posteado en el ticket.
 - Por que: audit-3 HALLAZGO MEDIO D - Jira no puede responder "que severidad tiene lo abierto".
 - Siguiente: FRESCO-313 en Blocked. Owner debe anadir Severity/Evidence/Root Cause a la pantalla Error, marcarlos obligatorios y anadir validador de workflow (no hay acceso admin por API). Revisar FRESCO-183 (Rechazos sin razon). Epic FRESCO-309: 8 cerradas + 313 en curso.
+
+## 2026-08-30 - FRESCO-320 gate de testabilidad en /product-management
+- Qué: anti-patrón I22 en /product-management (SKILL.md + story-refinement.md + acceptance-criteria.md) — ninguna historia pasa a Listo con un Then cualificador en vez de valor observable, ni sin escenario cero/vacío/error. Pasada de testabilidad sobre las 6 historias abiertas documentada como comentario en FRESCO-320 (no hay historias en refinamiento; 249 pasa, 247 parcial, 245/246 fallan pero están en QA con código enviado — no se reescriben). PR #198 squash a dev (7e37fa5), promovido a staging.
+- Por qué: HALLAZGO MEDIO auditoría-3 (eje Backlog 3,8) — una AC no testable no bloquea en refinamiento, el defecto sale en QA o producción.
+- Siguiente: confirmar push a main; FRESCO-320 -> Finalizada. Quedan en epic 309: 321, 322, 325, 313 (bloqueada en owner).
