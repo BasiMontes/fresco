@@ -179,3 +179,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: sacados @generacion-menu (guard perf ADR-0005) y @lista-compra (llamada real a Gemini) del set @smoke — siguen @automatizado en test:e2e. @aprendizaje se queda con timeout 20s. Paso de warm-up en post-deploy-smoke.yml. @smoke = 4 escenarios liveness (login/qa/suscripcion/aprendizaje). PR #200.
 - Por que: primera ejecucion real del smoke fue 3/6 roja por cold-start, no regresion.
 - Siguiente: verificar verde estable en el proximo deploy de produccion.
+
+## 2026-08-30 - FRESCO-323 CONTEXT.md reconciliado con el filesystem
+- Que: pase completo a CONTEXT.md §2 (solo doc). Conteos 11->12 skills, 5->6 commands. Anadido todo el arbol de codigo de la app (app/ components/ lib/ api/ supabase/ tests/ bones/ design/ .github/). docs/ y .context/ completados. Root fresco/ -> fresco-app/. Refs muertas §5 (compliance-matrix.md, bun up) corregidas. PR #201.
+- Por que: HALLAZGO BAJO auditoria-3, familia documentado-vs-real. CONTEXT.md nunca tuvo un pase tras convertirse el repo en Fresco.
+- Siguiente: epic 309 solo queda FRESCO-313 (Blocked, necesita admin de Jira del owner).
