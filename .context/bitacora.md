@@ -189,3 +189,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: token Administer Jira -> confirmado que FRESCO es team-managed (sin screens/field-config/workflow API). Partes 1/2 hechas por UI (Severity+Evidence+RootCause+ErrorType en el tipo Error; Severity+Evidence required, verificado por createmeta/editmeta). Parte 3 (backfill) ya estaba. Parte 4 (validador workflow) cubierta por el gate del repo (S18 / bug-fix-workflow Phase 3) — TMP no expone la regla. EPIC FRESCO-309 (3a auditoria) 13/13 hijos Finalizada -> epic cerrado.
 - Por que: HALLAZGO MEDIO D auditoria-3 — disciplina Severity/Evidence en el tipo Error.
 - Siguiente: auditoria-3 completa. Queda auditoria-3 suelto ninguno. Migrar los valores de severity de comentario a campo real al tocar cada defecto (no forzado).
+
+## 2026-08-30 - FRESCO-194 badge "Nuevo" en lista de la compra
+- Qué: badge "Nuevo" junto a ítems que no estaban en la lista de la semana anterior. lib/api/shopping-list.ts (normalizeNombre + diffNombresNuevos pura + getNombresNuevos wrapper fail-soft), page.tsx wiring, shopping-list-view.tsx pill, +5 unit tests. Sin migración ni Edge Function. Resto de FRESCO-194 (carrusel sugerencias + Añadir) ya estaba en prod. PR #202.
+- Por qué: última pieza de FRESCO-194, viable sin persistencia nueva (la lista previa vive en shopping_lists por meal_plan/semana).
+- Siguiente: badge honesto "no estaba la semana pasada"; si sale ruidoso en datos reales, 2a vuelta (solo pasillos nuevos). Backlog de dev vacío tras esto.
