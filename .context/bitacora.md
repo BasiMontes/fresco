@@ -104,3 +104,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: Cerradas FRESCO-293 (micro-fixes UI: boton Copiar /qa, titulos /onboarding+/update-password, --color-error #b8422e->#b03d2b global), FRESCO-295 (ADR-0014: umbral falsable en senal #2, senal #3 marcada disparada), FRESCO-307 (sync business-api-map), FRESCO-311 (gate CI: trigger push staging/main + workflow post-deploy-smoke on deployment_status). Promovido dev->staging->main (los 3 en 5f2c49f), prod desplegado y sano.
 - Por que: remediacion de re-auditoria (epics FRESCO-278 y FRESCO-309).
 - Siguiente: FRESCO-322 (creada) - el @smoke post-deploy salio 3/6 rojo en su primera corrida real (cold-start flake, no regresion): sacar @generacion-menu del set y hacer @aprendizaje/@lista-compra self-contained. Pendiente: ticket de limpieza del alias fresco-pre (project.yaml:112 obsoleto).
+
+## 2026-08-30 - FRESCO-318: limpieza documentado vs real (+ des-integración n8n)
+- Qué: cerrados 9/10 puntos del hallazgo BAJO audit-3. Comentario service.ts, conteo ADRs en glossary, header+meta.created de project.yaml, bloque `dev` en environments, untrack .impeccable/config.json, borrados 62 review.md/compliance-matrix.md, gate NODE_ENV en /dev/skeleton-capture, 6 ADRs Proposed->Accepted + fila ADR-0006. Punto 6 escaló a des-integración completa de n8n (MCP + 15 skills + install.ts/doctor.ts/manifest/.env.example/docs). PR #191 -> dev.
+- Por qué: FRESCO-318, drift acumulado; n8n no se usa y su MCP fallaba al conectar.
+- Siguiente: revisar+mergear #191, promocionar dev->staging->main, borrar 11 ramas remotas mergeadas (punto 8, bloqueado por classifier esta sesión).
