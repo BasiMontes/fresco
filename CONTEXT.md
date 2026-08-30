@@ -287,6 +287,10 @@ Every file under `.context/` is owned by either a manual editor, a script, or a 
 
 **Exception — `.context/ADR/` (append-only, no generator).** Architecture Decision Records are the one `.context/` artifact that is **authored, never regenerated**. A human architect (or an AI workflow drafting for human approval — `/project-foundation` SRS phase, `/sprint-development` Stage 1) writes one per important, hard-to-reverse decision. They are append-only: superseded by a newer ADR that links back, never overwritten or deleted. Do not "re-run an owner" to refresh an ADR — supersede it. See `.context/ADR/README.md` for the when-to-write rule, status lifecycle, and template.
 
+### Skills are a local fork — `bun run up` is not routine
+
+`.claude/skills/` was scaffolded from the upstream `agentic-dev-boilerplate` and comes with a `bun run up` updater. We do **not** run it as maintenance: the skills have been edited in place since 2026-08-17 and diverged from upstream on purpose (token trimming + doctrine changes). Treat every skill as Fresco-owned source — edit it, review the diff, ship it through a PR. Rationale, the re-sync order if we ever reverse this, and the revisit triggers: **ADR-0016**.
+
 ---
 
 ## 7. Operational Rules (DO's and DON'Ts)
