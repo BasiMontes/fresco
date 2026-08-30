@@ -6,6 +6,18 @@
 
 ---
 
+> ⚠️ **Este documento es didáctico, no la política operativa.** Describe el
+> modelo `main ← staging ← feature/*` con PRs aprobados como enseñanza general
+> de GitFlow. La estrategia real de Fresco es **`solo-main`**: `dev`, `staging` y
+> `main` se mantienen idénticos por _fast-forward_, todo PR entra por **squash**
+> (único método habilitado en GitHub), y no hay ramas `hotfix/*`.
+>
+> Fuente de verdad: el bloque `git_strategy:` en `.agents/project.yaml`.
+> Fix de emergencia: [`hotfix.md`](./hotfix.md). Operación git día a día: skill
+> `/git-flow-master`.
+
+---
+
 ## Filosofía del Flujo
 
 Este proyecto usa un GitFlow adaptado para trabajar con inteligencia artificial. La AI genera código y lo commitea inteligentemente, pero **tú mantienes el control** en los puntos clave.

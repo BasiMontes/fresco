@@ -67,25 +67,34 @@ git_strategy:
     (jdqemhewjrjuopssdurn) — Vercel/branching split only, not a database
     split. Set up 2026-08-08 (main-integration), upgraded to three-tier
     2026-08-21, downgraded back to solo-main 2026-08-29 (FRESCO-286).
+    2026-08-30 (FRESCO-314) made the remaining intent mechanical: GitHub
+    repo settings now allow ONLY squash merges (merge-commit + rebase
+    disabled, delete_branch_on_merge on), so every PR lands as exactly
+    one commit on the target branch; the dev/staging/main mirror is kept
+    byte-identical by ff-only pushes (no `--no-ff`, no squash on the
+    mirror hop). docs/** direct-to-main is now an explicit policy, not a
+    tolerated habit (see policy.docs_changes). Hotfix runbook:
+    docs/workflows/hotfix.md.
   branches:
     production: main # release / default branch
     integration: null # no disciplined integration tier in practice — dev/staging are env mirrors, not a promotion hop (see protected: below)
     ephemeral_pattern: null # on-demand trunk pattern, or null
   protected: [main, staging, dev] # all three carry GitHub branch protection (FRESCO-279) even though solo-main's base schema names only `main`
-  decisions: # captured by the Strategy Setup questionnaire (Q1/Q2/Q3) — n/a for solo-main (no integration branch, no promotion, no hotfix ceremony)
-    promote_method: n/a # ff-only | merge-commit | squash | n/a
-    feature_merge: n/a # merge-commit | squash | rebase-merge | n/a — observed both merge-commit and squash, no enforced method
-    hotfix_policy: n/a # branch-off-prod-backmerge | via-integration | none | n/a — a hotfix is just another direct change to main
+  decisions: # captured by the Strategy Setup questionnaire (Q1/Q2/Q3); made mechanical 2026-08-30 (FRESCO-314)
+    promote_method: ff-only # dev/staging/main are kept byte-identical by fast-forward-only mirror pushes (`git push origin origin/dev:refs/heads/staging` etc.); never `--no-ff`, never squash on the mirror hop — this is what keeps the three branches identical, not a promotion pipeline
+    feature_merge: squash # ENFORCED at the GitHub repo level 2026-08-30: allow_merge_commit=false, allow_rebase_merge=false, allow_squash_merge=true, delete_branch_on_merge=true. Every PR lands as exactly one commit on its target branch
+    hotfix_policy: none # solo-main: an emergency fix is a normal direct change to `main` (via the dev->ff->staging->ff->main mirror) — no hotfix/* branch, no back-merge ceremony. Runbook: docs/workflows/hotfix.md
   policy: # how strictly protected branches are guarded (set by Strategy Setup Q4; defaults are safe)
     direct_push_to_protected: allowed # forbidden | confirm | allowed — matches observed practice: direct pushes to main happen routinely, no confirm ceremony
     admin_bypass: false # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
     require_pr_reviews: 0 # null | 0 | N — min approvals before merge to a protected branch (informational) — solo maintainer, no reviewers
+    docs_changes: direct-to-main-ok # FRESCO-314: docs-only changes (docs/**, .context/**, root *.md, .agents/*.md) MAY land on `main` directly through the dev->ff->main mirror, no PR required. A doc that documents a specific code change SHOULD ride in that change's PR instead (sprint-development gotcha #6). Session logs (.context/bitacora.md), ADRs, and business/PBI cache updates are the standing direct-to-main case
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
     naming_without_key: '{prefix}/{kebab-slug}'
   meta:
-    setup_version: 3
+    setup_version: 4 # v4 2026-08-30 (FRESCO-314): squash-only enforced on GitHub, docs_changes policy added, hotfix runbook written
     created: 2026-07-24 # YYYY-MM-DD — first commit of this repo (6271533); the git_strategy block has existed since project bootstrap
     updated: 2026-08-29 # downgraded enterprise (three-tier) -> solo-main per re-audit finding 08 (declared strategy didn't match actual direct-push-heavy, single-maintainer practice)
 
