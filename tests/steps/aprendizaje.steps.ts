@@ -28,6 +28,17 @@ import { currentWeekMonday, getAccessToken, restHeaders } from '../test-helpers'
 const { Given, When, Then } = createBdd(test);
 
 /**
+ * The state badge only updates after `update-recipe-status` (Edge Function)
+ * round-trips. Playwright's default `expect` timeout (5s) is fine warm, but
+ * this scenario is in the `@smoke` set that runs against a just-published
+ * production deploy where that Edge Function can be cold on the first hit —
+ * a cold invocation was observed taking >5s and failing the run (FRESCO-322).
+ * The post-deploy-smoke workflow does a warm-up pass first; this is the belt
+ * to that braces.
+ */
+const MARK_RESULT_TIMEOUT_MS = 20_000;
+
+/**
  * A (dia, tipo) slot can never go back to `pendiente` once marked (Business
  * Rules: "queda fijado"), so every prior run of these scenarios permanently
  * consumes one of the current ISO week's 21 slots — after enough runs the
@@ -84,11 +95,11 @@ When(/^marca ese plato como descartado$/, async ({ page, aprendizajeCtx: ctx }) 
 });
 
 Then(/^el plato se muestra como cocinado$/, async ({ page, aprendizajeCtx: ctx }) => {
-  await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveText('Cocinado');
+  await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveText('Cocinado', { timeout: MARK_RESULT_TIMEOUT_MS });
 });
 
 Then(/^el plato se muestra como descartado$/, async ({ page, aprendizajeCtx: ctx }) => {
-  await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveText('Descartado');
+  await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveText('Descartado', { timeout: MARK_RESULT_TIMEOUT_MS });
 });
 
 Then(/^no puede volver a cambiar el estado de ese mismo plato$/, async ({ page, aprendizajeCtx: ctx }) => {

@@ -10,10 +10,15 @@
 #   @verificado-manual-YYYY-MM-DD  → probado en vivo (Playwright CLI) esa fecha, pasó
 #   @pendiente                     → escrito, todavía no verificado ni automatizado
 #   @edge-case                     → causística además del camino feliz
-#   @smoke                         → subconjunto mínimo (5-6) de happy paths ya
+#   @smoke                         → subconjunto mínimo de happy paths ya
 #                                    @automatizado que corre tras cada deploy de
 #                                    producción, contra la URL del propio deploy
-#                                    (.github/workflows/post-deploy-smoke.yml)
+#                                    (.github/workflows/post-deploy-smoke.yml).
+#                                    Solo escenarios rápidos, self-contained y
+#                                    de baja flakiness: check de VIDA del deploy,
+#                                    no de rendimiento ni de flujos con IA. Hoy:
+#                                    @login, @qa, @suscripcion, @aprendizaje
+#                                    (marcar cocinado). FRESCO-322.
 #
 # Al automatizar un escenario, añadir @automatizado y el fichero de test que lo cubre.
 
@@ -177,11 +182,13 @@ Característica: Flujo completo de usuario en Fresco
     # verificó directamente contra `get_filtered_recipes()` vía SQL con el
     # perfil real que lo disparó.
 
-  @generacion-menu @verificado-manual-2026-08-01 @automatizado @smoke
+  @generacion-menu @verificado-manual-2026-08-01 @automatizado
   # Automatizado: tests/steps/generacion-determinista.steps.ts
-  # @smoke: canario post-deploy — generación de menú de punta a punta
-  # (Edge Function generate-meal-plan + selección determinista + la única
-  # llamada real a Gemini que queda, la explicación Pro).
+  # NO es @smoke (FRESCO-322): el umbral <10s es un guard de REGRESIÓN DE
+  # RENDIMIENTO de ADR-0005, no un check de vida. Contra la infra fría de un
+  # deploy recién publicado (serverless de Vercel + Edge Function en frío) el
+  # cold-start lo revienta sin que nada esté roto. Corre en test:e2e (build
+  # prod local, caliente), que es donde el guard de perf tiene sentido.
   Escenario: La generación de menú es rápida y no depende de una llamada de IA por franja (ADR-0005)
     Dado que un usuario Pro con historial real completa el onboarding
     Cuando pulsa "Generar mi menú"
@@ -645,7 +652,11 @@ Característica: Flujo completo de usuario en Fresco
   @aprendizaje @verificado-manual-2026-07-31 @automatizado @smoke
   # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
   # @smoke: canario post-deploy — escritura real y terminal en DB
-  # (update-recipe-status) desde la UI del calendario.
+  # (update-recipe-status) desde la UI del calendario. Self-contained: siembra
+  # su propio plan de la semana (delete + generate-meal-plan determinista, sin
+  # Gemini). FRESCO-322: el paso "Entonces el plato se muestra como cocinado"
+  # usa un timeout ampliado para absorber el cold-start de update-recipe-status
+  # en el primer hit post-deploy; el workflow hace un warm-up previo.
   Escenario: Marcar un plato como cocinado
     Dado que el usuario tiene un menú semanal generado con un plato en estado pendiente
     Cuando marca ese plato como cocinado
@@ -722,10 +733,13 @@ Característica: Flujo completo de usuario en Fresco
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
   # ==========================================================================
 
-  @lista-compra @verificado-manual-2026-07-31 @automatizado @smoke
+  @lista-compra @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
-  # @smoke: canario post-deploy — Edge Function generate-shopping-list
-  # sobre un usuario factory recién creado (aislado, sin estado compartido).
+  # NO es @smoke (FRESCO-322): generate-shopping-list hace una llamada real a
+  # Gemini (~10-30s inherentes, con reintentos posibles) — demasiado lento y
+  # flaky para un smoke post-deploy contra infra fría. Ya es self-contained
+  # (usuario factory + su propio menú, FRESCO-308); el problema no es estado
+  # compartido, es la latencia de la IA. Corre en test:e2e (caliente).
   Escenario: Generar la lista de la compra a partir de un menú
     Dado que el usuario tiene un menú semanal generado
     Cuando solicita generar la lista de la compra

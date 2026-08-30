@@ -17,7 +17,7 @@ If the scope ever outgrows a single file, split by area (`login.feature`, `calen
 | `@no-implementado` | Describes desired behavior for a feature that does not exist in code yet (mock, TODO stub, or unbuilt) |
 | `@edge-case` | Non-happy-path causística in addition to the golden path |
 | `@automatizado` | Once wired to a real Playwright test, add this tag plus a comment pointing at the spec file that covers it |
-| `@smoke` | A minimal 5-6 scenario subset of `@automatizado` happy paths, run after each **Production** deploy against that deployment's own URL by `.github/workflows/post-deploy-smoke.yml` (`bun run test:e2e:smoke`). Add only to fast, low-flake, high-signal scenarios that already pass in CI; keep the set small |
+| `@smoke` | A minimal subset of `@automatizado` happy paths, run after each **Production** deploy against that deployment's own URL by `.github/workflows/post-deploy-smoke.yml` (`bun run test:e2e:smoke`). It is a **liveness** check of the deployed artifact — NOT a performance guard and NOT an AI-flow test. Add only fast, self-contained, low-flake scenarios; the workflow warms the app + Edge Functions first, but a scenario that leans on a real Gemini call or a tight latency assertion does not belong here (FRESCO-322). Current set: `@login`, `@qa`, `@suscripcion`, `@aprendizaje` (marcar cocinado). |
 
 ## What the file contains
 
