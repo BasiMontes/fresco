@@ -1,0 +1,88 @@
+name: Post-Deploy Smoke
+
+# Runs a tiny @smoke subset of the e2e suite against a deployment the moment
+# Vercel reports it live. Complements pr-check.yml: that gate proves the
+# commit builds and its tests pass in CI; this proves the *deployed artifact*
+# actually serves the core happy paths (auth, menu generation, shopping list,
+# subscription management, the public /qa page).
+#
+# GitHub only runs `deployment_status` workflows from the file on the DEFAULT
+# branch (main). Until this file reaches main via dev -> staging -> main, it
+# triggers nothing — expected. Once on main it fires for every Vercel
+# deployment (Preview branch deploys AND Production).
+#
+# Non-blocking: this workflow does not gate the dev -> staging -> main
+# promotion (that is a manual fast-forward push with no required check wired
+# to this job). A red smoke run is a visible signal to investigate / roll
+# back, not an automatic stop. (FRESCO-311)
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: smoke (@smoke)
+    # Vercel posts several deployment_status updates per deploy (pending,
+    # in_progress, success, and sometimes error). Only act on the terminal
+    # success. `inactive` (Vercel "skipped - not affected" builds) is
+    # intentionally NOT covered: nothing new was deployed.
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    # Same shared single Supabase backend (jdqemhewjrjuopssdurn) as the e2e
+    # job in pr-check.yml. Reuse that job's concurrency group so a smoke run
+    # and a PR e2e run never mutate the shared rows concurrently. Queue,
+    # never cancel: a mid-mutation run must finish.
+    concurrency:
+      group: e2e-shared-supabase-backend
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+
+      - run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Restore .env from secret
+        # The @smoke scenarios log in as the DEV/PRO test users and create
+        # throwaway factory users — all of which need the Supabase + Stripe
+        # creds that live in secrets.ENV_FILE (same secret pr-check.yml's
+        # e2e job uses).
+        run: printf '%s' "$ENV_FILE" > .env
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Report target
+        run: |
+          echo "Deployment environment: ${{ github.event.deployment_status.environment }}"
+          echo "Target URL: ${{ github.event.deployment_status.target_url }}"
+          echo "Environment URL: ${{ github.event.deployment_status.environment_url }}"
+
+      - name: Run @smoke suite against the deployed URL
+        # playwright.config.ts reads PLAYWRIGHT_BASE_URL and points the whole
+        # suite at it. Vercel's deployment_status payload carries the
+        # immutable deployment URL in target_url, with environment_url as the
+        # documented fallback when target_url is empty. Do NOT use the
+        # fresco-pre / fresco-pro aliases here - fresco-pre in particular
+        # gets silently reclaimed onto the production deploy (see
+        # .agents/project.yaml). The deployment's own URL is the only
+        # reliable target.
+        run: bun run test:e2e:smoke
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url || github.event.deployment_status.environment_url }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

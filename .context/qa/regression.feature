@@ -10,6 +10,9 @@
 #   @verificado-manual-YYYY-MM-DD  → probado en vivo (Playwright CLI) esa fecha, pasó
 #   @pendiente                     → escrito, todavía no verificado ni automatizado
 #   @edge-case                     → causística además del camino feliz
+#   @smoke                         → subconjunto mínimo (5-6) de happy paths ya
+#                                    @automatizado que corre post-deploy contra la
+#                                    URL desplegada (.github/workflows/post-deploy-smoke.yml)
 #
 # Al automatizar un escenario, añadir @automatizado y el fichero de test que lo cubre.
 
@@ -22,8 +25,9 @@ Característica: Flujo completo de usuario en Fresco
   # Autenticación
   # ==========================================================================
 
-  @login @verificado-manual-2026-07-29 @automatizado
+  @login @verificado-manual-2026-07-29 @automatizado @smoke
   # Automatizado: tests/steps/login.steps.ts (playwright-bdd)
+  # @smoke: canario post-deploy — auth + conectividad con Supabase.
   Escenario: Inicio de sesión correcto con credenciales válidas
     Dado que existe un usuario registrado con email y contraseña válidos
     Cuando introduce esas credenciales en /login y confirma el formulario
@@ -172,8 +176,11 @@ Característica: Flujo completo de usuario en Fresco
     # verificó directamente contra `get_filtered_recipes()` vía SQL con el
     # perfil real que lo disparó.
 
-  @generacion-menu @verificado-manual-2026-08-01 @automatizado
+  @generacion-menu @verificado-manual-2026-08-01 @automatizado @smoke
   # Automatizado: tests/steps/generacion-determinista.steps.ts
+  # @smoke: canario post-deploy — generación de menú de punta a punta
+  # (Edge Function generate-meal-plan + selección determinista + la única
+  # llamada real a Gemini que queda, la explicación Pro).
   Escenario: La generación de menú es rápida y no depende de una llamada de IA por franja (ADR-0005)
     Dado que un usuario Pro con historial real completa el onboarding
     Cuando pulsa "Generar mi menú"
@@ -634,8 +641,10 @@ Característica: Flujo completo de usuario en Fresco
   # Aprendizaje Cocinado/Descartado (EPIC-FRESCO-14 / STORY-FRESCO-15)
   # ==========================================================================
 
-  @aprendizaje @verificado-manual-2026-07-31 @automatizado
+  @aprendizaje @verificado-manual-2026-07-31 @automatizado @smoke
   # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
+  # @smoke: canario post-deploy — escritura real y terminal en DB
+  # (update-recipe-status) desde la UI del calendario.
   Escenario: Marcar un plato como cocinado
     Dado que el usuario tiene un menú semanal generado con un plato en estado pendiente
     Cuando marca ese plato como cocinado
@@ -712,8 +721,10 @@ Característica: Flujo completo de usuario en Fresco
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
   # ==========================================================================
 
-  @lista-compra @verificado-manual-2026-07-31 @automatizado
+  @lista-compra @verificado-manual-2026-07-31 @automatizado @smoke
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
+  # @smoke: canario post-deploy — Edge Function generate-shopping-list
+  # sobre un usuario factory recién creado (aislado, sin estado compartido).
   Escenario: Generar la lista de la compra a partir de un menú
     Dado que el usuario tiene un menú semanal generado
     Cuando solicita generar la lista de la compra
@@ -782,8 +793,10 @@ Característica: Flujo completo de usuario en Fresco
   # Guía de testeabilidad para QA (/qa)
   # ==========================================================================
 
-  @qa @verificado-manual-2026-08-01 @automatizado
+  @qa @verificado-manual-2026-08-01 @automatizado @smoke
   # Automatizado: tests/steps/qa-page.steps.ts
+  # @smoke: canario post-deploy — página pública sin auth ni fixtures,
+  # detecta un deploy totalmente roto (SSR/routing) antes que nada más.
   Escenario: La guía de testeabilidad en /qa es pública y muestra las 4 Edge Functions reales
     Dado que un visitante sin sesión visita /qa
     Entonces ve la arquitectura, los usuarios demo y las secciones de testing DB/API/UI
@@ -1218,7 +1231,9 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-231: gestionar o cancelar la suscripción ---
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @smoke
+  # @smoke: canario post-deploy — /profile renderiza y POST /api/stripe/portal
+  # llega a la API real de Stripe (valida el wiring de claves Stripe del deploy).
   Escenario: Acceder a gestión de suscripción
     Dado que Laura tiene una suscripción Pro activa
     Y su cliente de Stripe existe realmente
