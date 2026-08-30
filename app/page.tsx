@@ -20,14 +20,19 @@ export default function GuestLandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteNav />
-      <Hero />
-      <PainPoints />
-      <HowItWorks />
-      <LearnsPro />
-      <ImpactStats />
-      <Pricing />
-      <Faq />
-      <FinalCta />
+      {/* FRESCO-315: `<main>` wraps only the content sections — SiteNav
+          (`<header>`) and SiteFooter (`<footer>`) stay siblings so the
+          landmark structure is header / main / contentinfo. */}
+      <main>
+        <Hero />
+        <PainPoints />
+        <HowItWorks />
+        <LearnsPro />
+        <ImpactStats />
+        <Pricing />
+        <Faq />
+        <FinalCta />
+      </main>
       <SiteFooter />
     </div>
   );
