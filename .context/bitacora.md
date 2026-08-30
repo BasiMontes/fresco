@@ -169,3 +169,13 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: anti-patrón I22 en /product-management (SKILL.md + story-refinement.md + acceptance-criteria.md) — ninguna historia pasa a Listo con un Then cualificador en vez de valor observable, ni sin escenario cero/vacío/error. Pasada de testabilidad sobre las 6 historias abiertas documentada como comentario en FRESCO-320 (no hay historias en refinamiento; 249 pasa, 247 parcial, 245/246 fallan pero están en QA con código enviado — no se reescriben). PR #198 squash a dev (7e37fa5), promovido a staging.
 - Por qué: HALLAZGO MEDIO auditoría-3 (eje Backlog 3,8) — una AC no testable no bloquea en refinamiento, el defecto sale en QA o producción.
 - Siguiente: confirmar push a main; FRESCO-320 -> Finalizada. Quedan en epic 309: 321, 322, 325, 313 (bloqueada en owner).
+
+## 2026-08-30 - FRESCO-321 ratio de automatizacion Gherkin: regla + ratchet
+- Que: /sprint-development Gotcha 16 + S19 — historia con AC Gherkin automatiza sus escenarios en el mismo PR (clausula presupuesto ADR-0014). .context/qa/README.md: seccion Automation ratchet (+6-8 escenarios/sprint, flujos nucleo, no el 100%). Baseline ~31/139 (~23%). PR #199.
+- Por que: HALLAZGO MEDIO auditoria-3 eje Verificacion (4,0) — cada release se apoya en 23% de la especificacion ejecutable.
+- Siguiente: el ratchet se ejecuta por sprint. Epic 309: quedan 325, 313 (bloqueada en owner).
+
+## 2026-08-30 - FRESCO-322 estabilizar el set @smoke post-deploy
+- Que: sacados @generacion-menu (guard perf ADR-0005) y @lista-compra (llamada real a Gemini) del set @smoke — siguen @automatizado en test:e2e. @aprendizaje se queda con timeout 20s. Paso de warm-up en post-deploy-smoke.yml. @smoke = 4 escenarios liveness (login/qa/suscripcion/aprendizaje). PR #200.
+- Por que: primera ejecucion real del smoke fue 3/6 roja por cold-start, no regresion.
+- Siguiente: verificar verde estable en el proximo deploy de produccion.
