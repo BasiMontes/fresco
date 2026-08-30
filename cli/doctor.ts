@@ -64,9 +64,8 @@ const MIN_BUN: readonly [number, number, number] = [1, 0, 0];
 //
 // Split into two tiers:
 //   - DAY_ZERO_VARS — collectable on a fresh clone. Installer also prompts.
-//   - PROJECT_BOUND_VARS — require an existing Supabase project / n8n
-//     instance / Postgres connection. Deferred by the installer; doctor
-//     reports them as pending.
+//   - PROJECT_BOUND_VARS — require an existing Supabase project / Postgres
+//     connection. Deferred by the installer; doctor reports them as pending.
 //
 // Legacy Supabase keys (SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY) are
 // intentionally NOT listed — `.mcp.json` / `opencode.jsonc` map the new-style
@@ -84,7 +83,7 @@ const DAY_ZERO_VARS = [
 // Project-bound vars are derived from the canonical VAR_MANIFEST (single source
 // of truth — kills the prior install/doctor drift where doctor knew 13 vars and
 // the installer 5). They are the manifest's NON-critical vars (Supabase /
-// Postgres / app-runtime / n8n). The CRITICAL tool credentials (TAVILY_API_KEY,
+// Postgres / app-runtime). The CRITICAL tool credentials (TAVILY_API_KEY,
 // ATLASSIAN_*, RESEND_API_KEY) also live in the manifest now but are day-zero
 // (prompted at install), so they are excluded here to avoid double-listing with
 // DAY_ZERO_VARS. SUPABASE_ACCESS_TOKEN stays day-zero (not in the manifest).
@@ -177,14 +176,6 @@ const VAR_HINTS: Record<string, { hint: string, where: string }> = {
   NEXT_PUBLIC_APP_URL: {
     hint: 'Base URL for auth redirects, OAuth callbacks, and email links',
     where: 'e.g. http://localhost:3000 (local) or your deployed Vercel URL',
-  },
-  N8N_API_URL: {
-    hint: 'n8n instance API URL for the n8n MCP server (project-bound)',
-    where: 'e.g. https://n8n.yourapp.com/api/v1',
-  },
-  N8N_API_KEY: {
-    hint: 'n8n API key for the n8n MCP server',
-    where: 'n8n instance → Settings → API',
   },
 };
 

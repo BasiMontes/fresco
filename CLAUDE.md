@@ -175,7 +175,6 @@
 | Tavily   | Web search, troubleshooting community solutions, non-doc research | `[WEB_SEARCH_TOOL]` primary. **MANDATORY** for any general web search — community fixes, error message lookups, "how to solve X". PREFER OVER built-in `WebSearch` / `WebFetch` — Tavily returns ranked + summarized results; built-in is shallower. |
 | Context7 | Library / framework / SDK / API / CLI official docs ("how to use X") | `[DOCS_TOOL]` primary. **MANDATORY** for any library / framework / SDK / API / CLI doc lookup (React, Next, Prisma, Tailwind, Express, etc.). PREFER OVER built-in `WebSearch` / `WebFetch` — Context7 returns current versioned docs; built-in returns stale blog posts. |
 | Supabase | DB queries, schema, project state               | `[DB_TOOL]` primary                     |
-| n8n      | Workflow automation, integrations               | `[AUTOMATION_FLOWS_TOOL]`               |
 
 ---
 

@@ -2,10 +2,11 @@
 # when they encounter {{VAR_NAME}} references in prompts and docs.
 # Variable names are snake_case; the AI maps {{PROJECT_NAME}} -> project.project_name lexically.
 # Edit values manually.
-# Every unfilled field is `null` plus a TODO comment with a concrete example.
+# Every unfilled field carries a TODO comment with a concrete example.
 #
-# NOTE: This is the project-starter TEMPLATE. All values are intentionally `null`.
-# Each downstream project that uses this starter must fill in the real values.
+# NOTE: This file is the Fresco project's live config — values are filled in.
+# The upstream boilerplate ships it as a template with every value `null`;
+# `bun run update` freezes this file (bootstrapOnlyPaths) so the real values survive.
 
 project:
   project_name: fresco # fill per project — Project name (e.g. MyProject)
@@ -85,7 +86,7 @@ git_strategy:
     naming_without_key: '{prefix}/{kebab-slug}'
   meta:
     setup_version: 3
-    created: 2026-06-20 # YYYY-MM-DD stamped by Strategy Setup
+    created: 2026-07-24 # YYYY-MM-DD — first commit of this repo (6271533); the git_strategy block has existed since project bootstrap
     updated: 2026-08-29 # downgraded enterprise (three-tier) -> solo-main per re-audit finding 08 (declared strategy didn't match actual direct-push-heavy, single-maintainer practice)
 
 # Variables declared above that are consumed OUTSIDE the {{TEMPLATE}} system
@@ -108,6 +109,10 @@ environments:
     web_url: 'http://localhost:3000' # fill per project — Frontend URL for local env (e.g. http://localhost:3000)
     api_url: 'http://localhost:3000/api' # fill per project — API base URL for local env (e.g. http://localhost:3000/api)
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for local — Fresco project (eu-west-1)
+  dev:
+    web_url: 'https://fresco-dev.vercel.app' # Auto-following Vercel domain bound to the `dev` branch (Git Branch binding — tracks branch HEAD, no manual `vercel alias set`). `dev` is where feature PRs land before promotion `dev` -> `staging` -> `main`. Listed here so the Edge CORS allowlist (`supabase/functions/_shared/cors.ts`) and any tooling that iterates `environments:` stops missing it (root cause of FRESCO-297).
+    api_url: 'https://fresco-dev.vercel.app/api'
+    db_project_ref: jdqemhewjrjuopssdurn # SAME Supabase project as local/staging/production — shared DB, deliberate (no isolation split).
   staging:
     web_url: 'https://fresco-pre.vercel.app' # Manually-aliased to the latest `staging`-branch Preview deploy. NOT auto-following: `vercel alias set` targets one specific deployment. WORSE — gets silently RECLAIMED by Vercel onto the *production* deployment every time `main` deploys (observed twice same day, 2026-08-17), so it can point to prod even without anyone touching it; always verify with `vercel inspect fresco-pre.vercel.app` before trusting it, and re-run `vercel alias set <new-staging-preview-url> fresco-pre.vercel.app` after every main AND staging deploy. The alternative, the auto-generated branch domain `fresco-git-staging-basi-montes-projects.vercel.app`, was tried 2026-08-17 and rejected: it always tracks the right deployment but returns HTTP 302 to Vercel SSO login (Deployment Protection) — unusable for QA/stakeholders without a Vercel account. `fresco-staging.vercel.app` is a separate, older stale alias — do not use it.
     api_url: 'https://fresco-pre.vercel.app/api'

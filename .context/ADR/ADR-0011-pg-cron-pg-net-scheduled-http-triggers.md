@@ -1,6 +1,6 @@
 # ADR-0011 — pg_cron + pg_net for scheduled HTTP-triggered jobs
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-23
 - **Deciders:** Basi Montes
 - **Tags:** scheduling, edge-functions, cross-cutting-invariant, infrastructure

@@ -390,7 +390,7 @@ Validated via `bun run vars:check`, `bun run jira:sync-fields`, and `bun run jir
 
 ### Live sources of truth
 
-Static documentation is only half the picture. Before every meaningful action, the AI also pulls from **live** sources: the frontend codebase, backend routes, the Supabase database (via `[DB_TOOL]`), the OpenAPI spec (via `[API_TOOL]`), the Jira tracker (via `acli`), engram memory, and the official documentation MCPs (`context7`, `tavily`, `n8n`). Operational decision rules for which one to reach for — when to pick `context7` vs `tavily` vs `engram`, CLI-first vs MCP-fallback — live in [onboarding.html §12 MCPs available](onboarding.html). The Tool Resolution table in `CLAUDE.md` is the canonical mapping from each `[TAG_TOOL]` pseudocode tag to its concrete implementation.
+Static documentation is only half the picture. Before every meaningful action, the AI also pulls from **live** sources: the frontend codebase, backend routes, the Supabase database (via `[DB_TOOL]`), the OpenAPI spec (via `[API_TOOL]`), the Jira tracker (via `acli`), engram memory, and the official documentation MCPs (`context7`, `tavily`). Operational decision rules for which one to reach for — when to pick `context7` vs `tavily` vs `engram`, CLI-first vs MCP-fallback — live in [onboarding.html §12 MCPs available](onboarding.html). The Tool Resolution table in `CLAUDE.md` is the canonical mapping from each `[TAG_TOOL]` pseudocode tag to its concrete implementation.
 
 ### Why it matters
 
@@ -707,7 +707,7 @@ These hooks are documented but not implemented. Reopen when there is concrete de
 - **A roster of phase-aware AI skills** — auto-triggered by user intent, orchestrated with human-in-the-loop checkpoints. Each tier of the lifecycle has its own skill. The current roster is enumerated in [onboarding.html §9 Skills catalog](onboarding.html).
 - **The SDD meta-skill bloque** — explore → propose → spec → design → tasks → apply → verify → archive for any substantial change.
 - **A library of utility slash commands** — deterministic, single-purpose, invoked with `/<name>`. The current library is enumerated in [onboarding.html §10 Commands & Scripts](onboarding.html).
-- **Live system integrations** — MCPs for the database (Supabase), library docs (context7), web search (tavily), workflow automation (n8n), persistent memory (engram); first-party CLIs for Jira (acli), GitHub (gh), deploys (vercel, supabase), browser automation (playwright).
+- **Live system integrations** — MCPs for the database (Supabase), library docs (context7), web search (tavily), persistent memory (engram); first-party CLIs for Jira (acli), GitHub (gh), deploys (vercel, supabase), browser automation (playwright).
 - **A structured context layer** — project, module, and story-level knowledge, on disk and version-controlled. Contains product specs, design tokens, discovery docs, per-ticket memory, and team guidelines.
 - **A portable design system (`DESIGN.md`)** — Apache-2.0 Google Labs spec at the project root. Consumed by `/project-bootstrap` and any AI agent reading the repo.
 - **Project variable contract** — `.agents/project.yaml` + `.agents/jira-required.yaml` + auto-generated catalogs, validated by `bun run vars:check` and `bun run jira:check`.

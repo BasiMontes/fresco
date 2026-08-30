@@ -1931,7 +1931,7 @@ git clone … &amp;&amp; bun install &amp;&amp; bun run setup</pre
                       <code>sync-jira-fields</code>, <code>check-jira-setup</code>) wired into
                       <code>package.json</code>, the workspace catalog at
                       <code>.agents/jira-fields.json</code> (custom field IDs), and the
-                      <code>.mcp.json</code> with credentials for Tavily, Context7, Supabase, n8n,
+                      <code>.mcp.json</code> with credentials for Tavily, Context7, Supabase,
                       Atlassian.
                     </dd>
                     <dt>When to repeat</dt>
@@ -2612,7 +2612,7 @@ bun run vars:check           # validate placeholders</code></pre>
                     <th>Consumers</th>
                     <td>
                       Next.js runtime (<code>next dev</code>, route handlers, server actions),
-                      Supabase client, MCP servers (Tavily, Supabase, n8n), test runners (Vitest,
+                      Supabase client, MCP servers (Tavily, Supabase), test runners (Vitest,
                       Playwright), Atlassian CLI (<code>acli</code>).
                     </td>
                     <td>
@@ -3532,7 +3532,7 @@ bun run vars:check           # validate placeholders</code></pre>
                     <code>bun run setup</code>
                     <span class="muted"
                       >Interactive installer — gentle-ai (Engram via --preset minimal) + 5 canonical
-                      MCPs (Tavily, Context7, Supabase, n8n, Atlassian) + external CLI verification
+                      MCPs (Tavily, Context7, Supabase, Atlassian) + external CLI verification
                       (vercel, supabase, acli, playwright, resend).</span
                     >
                   </li>
@@ -3857,11 +3857,6 @@ bun run vars:check           # validate placeholders</code></pre>
                     <td>Database queries, schema inspection, migrations, project state</td>
                     <td>App-level business logic — that's the application code</td>
                   </tr>
-                  <tr>
-                    <td><strong>n8n</strong></td>
-                    <td>Workflow automation, scheduled triggers, third-party integrations</td>
-                    <td>Synchronous user-facing API logic</td>
-                  </tr>
                 </tbody>
               </table>
             </div>
@@ -3878,7 +3873,6 @@ bun run vars:check           # validate placeholders</code></pre>
               <li>Context7 for "how to use X" (official docs)</li>
               <li>Tavily for "how to solve X" (community solutions)</li>
               <li>Supabase for database / project state</li>
-              <li>n8n for workflow automation</li>
             </ul>
           </section>
 
@@ -4037,7 +4031,7 @@ bun run vars:check           # validate placeholders</code></pre>
                   rel="noopener"
                   ><code>docs/setup/mcp/</code></a
                 >
-                — per-MCP setup notes (Context7, Tavily, Supabase, n8n).
+                — per-MCP setup notes (Context7, Tavily, Supabase).
               </li>
             </ul>
 

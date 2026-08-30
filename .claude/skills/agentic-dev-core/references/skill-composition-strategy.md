@@ -21,7 +21,7 @@
 
 The repo ships with **11 project-owned workflow skills** (`.claude/skills/`). The installer (`cli/install.ts`) also installs:
 
-- **21 community skills (project-level)**: `next-best-practices`, `next-cache-components`, `next-upgrade`, `deploy-to-vercel`, `tailwind-css-patterns`, `shadcn`, `react-hook-form`, `zod`, `typescript-advanced-types`, `supabase`, `supabase-postgres-best-practices`, `resend-cli`, `accessibility`, `seo`, `frontend-design`, `n8n-skills`, `emil-design-eng`, `ui-ux-pro-max`, `impeccable`, `design-taste-frontend`, `redesign-existing-projects`.
+- **20 community skills (project-level)**: `next-best-practices`, `next-cache-components`, `next-upgrade`, `deploy-to-vercel`, `tailwind-css-patterns`, `shadcn`, `react-hook-form`, `zod`, `typescript-advanced-types`, `supabase`, `supabase-postgres-best-practices`, `resend-cli`, `accessibility`, `seo`, `frontend-design`, `emil-design-eng`, `ui-ux-pro-max`, `impeccable`, `design-taste-frontend`, `redesign-existing-projects`.
 - **7 community skills (user-level / global)**: `skill-creator`, `find-skills`, `github-actions-docs`, `brainstorming`, `html-ppt`, `bun`, `playwright-cli`.
 - **Engram (persistent memory)**: installed via `gentle-ai install --preset minimal`. Not a workflow skill — it is the persistent-memory MCP referenced from CLAUDE.md §12 (proactive memory triggers).
 
@@ -117,7 +117,6 @@ Project-owned skills are named explicitly. Community skills (T3, T4) are matched
 | `issue-tracker`      | (acli is T1)                                                                                                                                                  | `sprint-development`, `product-management`                                            |
 | `creativity`         | `brainstorming`                                                                                                                                               | `project-foundation`, `product-management`                                            |
 | `meta-skill`         | `skill-creator`, `find-skills`                                                                                                                                | only on user request (find-skills auto-invoked per §6.2 as last-resort)               |
-| `automation`         | `n8n-skills`                                                                                                                                                  | only on user request                                                                  |
 | `presentation`       | `html-ppt`, `presentation-designer`                                                                                                                           | only on user request (HTML decks, slideshows)                                         |
 
 ### 4.2 Matching rule

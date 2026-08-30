@@ -1312,7 +1312,7 @@ Legend: ✅ Full, ⚠️ Partial/conditional, ❌ Not available.
 | `transitions-dev` (skill) | CSS motion tokens + `.t-*` classes in `globals.css` | none (build-time only) | **Active** — no runtime animation library | FEAT-066…070 |
 | ~~Google Gemini~~ | ~~Menu selection, aisle classification, learning-explanation text~~ | Raw `fetch()`, never a package | **Removed** 2026-08-01 (`ADR-0005`, `c5dd2fc` / `ae3b560`) — **zero external AI API dependency in production** | None |
 
-**Dev-tooling MCP servers** (configured in `.mcp.json` for the AI dev workflow, not called by the app): Tavily, Context7, Supabase MCP, n8n, 21st.dev, PostHog MCP. None are runtime dependencies of the deployed app.
+**Dev-tooling MCP servers** (configured in `.mcp.json` for the AI dev workflow, not called by the app): Tavily, Context7, Supabase MCP, 21st.dev, PostHog MCP. None are runtime dependencies of the deployed app.
 
 ---
 

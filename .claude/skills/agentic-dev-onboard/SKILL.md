@@ -1,6 +1,6 @@
 ---
 name: agentic-dev-onboard
-description: "Walks new users through this repo's dev flow — Next.js + Supabase stack, Jira workflow (Ready For Dev → In Progress → In Review → Ready For QA), /sprint-development for ticket-driven work, MCPs available (Tavily, Context7, Supabase, n8n, Atlassian), critical env vars, Critical Rule #12 (READ package.json DIRECTLY). Triggers on: `onboard me`, `explain this repo`, `first time using this`, `primer vez en este repo`, `/agentic-dev-onboard`. Do NOT use for: feature implementation (use /sprint-development), test design (use /unit-testing), backlog refinement (use /product-management)."
+description: "Walks new users through this repo's dev flow — Next.js + Supabase stack, Jira workflow (Ready For Dev → In Progress → In Review → Ready For QA), /sprint-development for ticket-driven work, MCPs available (Tavily, Context7, Supabase, Atlassian), critical env vars, Critical Rule #12 (READ package.json DIRECTLY). Triggers on: `onboard me`, `explain this repo`, `first time using this`, `primer vez en este repo`, `/agentic-dev-onboard`. Do NOT use for: feature implementation (use /sprint-development), test design (use /unit-testing), backlog refinement (use /product-management)."
 license: MIT
 compatibility: [claude-code, opencode]
 phase: foundation
@@ -72,7 +72,7 @@ Run the interactive installer once after cloning:
 bun run setup
 ```
 
-This bootstraps `.agents/`, installs Engram (persistent memory) via gentle-ai `--preset minimal`, configures the 5 canonical MCPs (Tavily, Context7, Supabase, n8n, Atlassian), and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
+This bootstraps `.agents/`, installs Engram (persistent memory) via gentle-ai `--preset minimal`, configures the 4 canonical MCPs (Tavily, Context7, Supabase, Atlassian), and writes `.mcp.json`. Full details in [`INSTALLER.md`](../../../INSTALLER.md).
 
 After setup, fill `.env` with the credentials the rest of the workflow expects (see "Critical env vars" below).
 
@@ -128,14 +128,13 @@ optional: without a master design plan, UI fidelity degrades gracefully to `DESI
 
 ## MCPs available
 
-Five canonical MCPs ship with the boilerplate:
+Four canonical MCPs ship with the boilerplate:
 
 | MCP       | Use it for                                        |
 | --------- | ------------------------------------------------- |
 | Tavily    | Web search, troubleshooting community Q&A         |
 | Context7  | Official library docs (Next.js, Supabase…)        |
 | Supabase  | DB queries, migrations, type generation           |
-| n8n       | Workflow automation, scheduled jobs               |
 | Atlassian | Jira/Confluence fallback when `/acli` unavailable |
 
 **Decision rule:**

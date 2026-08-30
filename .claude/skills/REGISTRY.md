@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-08-17T14:15:59.602Z`
+> Generated: `2026-08-30T10:18:18.947Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.claude/skills/agentic-dev-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 30
+Skills indexed: 29
 
 ---
 ## Skill: accessibility
@@ -764,34 +764,6 @@ Skills indexed: 30
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
 > Source: `.claude/skills/unit-testing/SKILL.md` · phase: `implementation` · extraction strategy: B
-
----
-
-## Skill: using-n8n-mcp-skills
-
-**Purpose**: Use when building, editing, validating, testing, or debugging an n8n workflow through the n8n-mcp MCP server — designing a flow, configur...
-
-**Compact Rules**:
-- **Invoke the relevant skill before any n8n action** — not just before MCP calls.
-- **Validate AND verify before activating.** Run `validate_workflow` (or
-- **Secrets never go in text fields.** Tokens, API keys, and passwords always go through
-- **The Code node is a last resort.** Expression first, then an arrow function inside Edit
-- **A Set node feeding 0–1 consumers is almost always wrong.** Inline the expression at
-- **Per-item iteration is automatic.** Don't add a Loop Over Items node to "make it loop"
-- **Configure from the live schema, never from memory.** `get_node` before you set
-- `tools_documentation` — meta-docs for every tool; `{topic:"ai_agents_guide", depth:"full"}` for the agent guide.
-- `search_nodes` — find nodes by keyword.
-- `get_node` — node info. Takes a single **SHORT-form** `nodeType` (`nodes-base.httpRequest`, `nodes-langchain.agent`), plus `detail` (minimal/standard/full) and `mode` (info/docs/search_properties/versions).
-- `validate_node` — validate one node's config in isolation (profiles: minimal/runtime/ai-friendly/strict).
-- `search_templates` / `get_template` — the template library (by keyword, nodes, task, metadata).
-- `n8n_create_workflow` — create from full workflow JSON.
-- `n8n_update_partial_workflow` — incremental diff ops (`{id, operations:[…]}`): addNode, updateNode, patchNodeField, addConnection, activateWorkflow, etc. Preferred for edits.
-- `n8n_update_full_workflow` — full replacement.
-- (truncated — read full SKILL.md for the rest)
-
-**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
-
-> Source: `.claude/skills/using-n8n-mcp-skills/SKILL.md` · phase: `unknown` · extraction strategy: B
 
 ---
 

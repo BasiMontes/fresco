@@ -53,18 +53,6 @@
         "SUPABASE_SERVICE_ROLE_KEY": "{env:SUPABASE_SECRET_KEY}",
       },
     },
-    "n8n": {
-      "type": "local",
-      "command": ["npx", "-y", "n8n-mcp"],
-      "enabled": true,
-      "environment": {
-        "MCP_MODE": "stdio",
-        "LOG_LEVEL": "error",
-        "DISABLE_CONSOLE_OUTPUT": "true",
-        "N8N_API_URL": "{env:N8N_API_URL}",
-        "N8N_API_KEY": "{env:N8N_API_KEY}",
-      },
-    },
   },
 
   // Permissions — mirrors .claude/settings.json 1:1.

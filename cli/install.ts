@@ -106,7 +106,7 @@ const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
 
 const ENGRAM_COMPONENT = 'engram';
 
-const CANONICAL_MCPS = ['context7', 'tavily', 'supabase', 'n8n'] as const;
+const CANONICAL_MCPS = ['context7', 'tavily', 'supabase'] as const;
 
 interface CommunitySkill {
   package: string
@@ -134,7 +134,6 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/wshobson/agents', skill: 'typescript-advanced-types' },
   { package: 'https://github.com/addyosmani/web-quality-skills', skill: 'accessibility' },
   { package: 'https://github.com/addyosmani/web-quality-skills', skill: 'seo' },
-  { package: 'czlonkowski/n8n-skills' }, // whole repo (n8n MCP toolkit)
   { package: 'https://github.com/emilkowalski/skill', skill: 'emil-design-eng' },
   { package: 'https://github.com/nextlevelbuilder/ui-ux-pro-max-skill', skill: 'ui-ux-pro-max' },
   { package: 'https://github.com/pbakaus/impeccable', skill: 'impeccable' },
@@ -246,18 +245,15 @@ const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
     'SUPABASE_PUBLISHABLE_KEY',
     'SUPABASE_SECRET_KEY',
   ],
-  n8n: ['N8N_API_URL', 'N8N_API_KEY'],
 };
 
 // Vars discovered from committed MCP configs that the installer should NOT
 // prompt for at install time — they require an existing Supabase project /
-// n8n instance / backend. Surfaced later by `bun run doctor`.
+// backend. Surfaced later by `bun run doctor`.
 const INSTALLER_DEFERRED_VARS = new Set<string>([
   'NEXT_PUBLIC_SUPABASE_URL',
   'SUPABASE_PUBLISHABLE_KEY',
   'SUPABASE_SECRET_KEY',
-  'N8N_API_URL',
-  'N8N_API_KEY',
 ]);
 
 // ============================================================================
@@ -837,7 +833,7 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
     if (INSTALLER_DEFERRED_VARS.has(name)) {
       // Non-critical project-bound / infra var: NOT prompted and NOT a blocking
       // "pending" warning. Supabase/Postgres/app vars are auto-provisioned and
-      // pulled later via `bun run setup --variables`; n8n vars are optional.
+      // pulled later via `bun run setup --variables`.
       // Surfaced only in the closing "Next steps — finish later" section.
       log.dim(`  ${name}: deferred (non-critical — auto-provisioned / optional; see closing Next steps).`);
       continue;
@@ -888,7 +884,7 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
 // required). Promoted out of the acli auth loop (formerly Step 12.4) so the
 // user is asked even if they later skip Jira bootstrap.
 //
-// Project-bound vars (SUPABASE_URL + new-style keys, POSTGRES_*, N8N_*) are
+// Project-bound vars (SUPABASE_URL + new-style keys, POSTGRES_*) are
 // deferred to `bun run doctor` — see INSTALLER_DEFERRED_VARS above.
 
 const DAY_ZERO_ATLASSIAN_VARS = ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;

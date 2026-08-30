@@ -77,7 +77,6 @@ Exhaust every source before writing. Cite paths/files for every claim.
 | **Existing context**           | PRD, SRS, domain glossary, prior maps                                      | `.context/PRD/`, `.context/SRS/`, `.context/business/` (incl. `.context/business/domain-glossary.md`)                                                              |
 | **Package dependencies**       | External integrations (Stripe, SendGrid, Auth0, Resend, etc.)              | `package.json`, `requirements.txt`, `Gemfile`, etc. — match names against known SaaS services.                                                                      |
 | **Library docs (when needed)** | Confirm how an external SDK shapes data flow                               | Context7 MCP for library docs; Tavily MCP for community patterns.                                                                                                   |
-| **Workflow automation**        | n8n flows that touch the domain                                            | n8n MCP (only if relevant — most projects will not have it).                                                                                                        |
 
 **Golden rule**: synthesize, don't extract. The DB MCP gives you schema on demand at any time — your job here is to write the layer that connects schema + code + business intent into a story a developer can act on.
 

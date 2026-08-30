@@ -1,6 +1,6 @@
 # ADR-0001 — Behavioral-learning moat as the Free/Pro pricing boundary
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-25
 - **Deciders:** Founder (product + technical decision, drafted by AI workflow for approval)
 - **Tags:** pricing-model, data-model, cross-cutting-invariant, personalization
