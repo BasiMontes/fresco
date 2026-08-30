@@ -124,3 +124,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: nuevo `.context/audits/` con los 3 informes (14-ago, 21-ago, 29-ago) + `branch-protection.md` (snapshot `gh api` de main/staging/dev) + README índice. Commit 06fd147 a dev, points=1, Listo->WIP. Comentario en el ticket con instrucciones para #1 (acceso Jira) y #2 (credenciales PRE por canal privado) — acción del owner, no automatizable.
 - Por qué: los puntos 3 y 4 de FRESCO-319 (auditoria-3) — dar baseline estable y visibilidad de required checks para la 4ª pasada.
 - Siguiente: owner concede acceso Jira al auditor + pasa PRE_USER_* por canal privado; luego cerrar FRESCO-319. Opcional promover dev->staging->main.
+
+## 2026-08-30 - FRESCO-317: ADR-0016 fork local de skills
+- Qué: ADR-0016 (Proposed) documentando que .claude/skills/ es un fork local y `bun run up` no es mantenimiento de rutina. Fila en el índice de ADR + subsección en CONTEXT.md §6 con backlink. Commit a935faa, promovido dev->staging->main. points=1, Listo->WIP.
+- Por qué: audit-3 HALLAZGO BAJO H — convertir la congelación del boilerplate en decisión escrita antes de que se olvide si fue elección o inercia.
+- Siguiente: owner decide si flipar ADR-0016 Proposed->Accepted; cerrar FRESCO-317 WIP->Finalizada.
