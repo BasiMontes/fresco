@@ -500,6 +500,8 @@ Which would you prefer?
 | Cannot reproduce              | Request more info or close | → Need Info / Cannot Reproduce |
 | Deferred (low priority/risk)  | Document and defer         | → Deferred                     |
 
+**Reproduction-or-rejection gate (FRESCO-313, HALLAZGO MEDIO D).** A defect does not reach ANY terminal status (`Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate`) until it carries EITHER numbered reproduction steps (in the description or a comment) OR a documented reason it cannot/should not be reproduced (env difference, WAD with the code cited, duplicate link, deferred rationale). A one-line defect with no repro and no rejection rationale is not closable — add the missing half first. This is the agent-side reinforcement of the Jira workflow validator the owner configures on the Error workflow; apply it even where the validator is not yet in place.
+
 **For "Real Bug" - Check if Hotfix needed:**
 
 ```markdown
@@ -826,6 +828,8 @@ Values for `{{jira.root_cause}}`: `code_error | config_env_error | data_error | 
 **Confirm Severity + Error Type are set** (FRESCO-281 contract). They should already be filled from Phase 1 Step 2b; if either is still empty, set it now before transitioning — a closed bug with a blank Severity or Error Type breaks the defect-density-per-feature dashboards this contract exists to enable.
 
 **Confirm the feature link + evidence are in place** (FRESCO-282 contract). The defect must carry a `Relates` link (or `parent`) to the story/epic it regressed, and `{{jira.evidence}}` (or its fallback comment) must hold at least a screenshot — plus a HAR for network/API defects. Root-cause analysis (Phase 4) has now named the affected file/feature, so if the link was deferred at intake, create it now — before transitioning. A closed defect with no feature link cannot be counted in defect-density-per-feature.
+
+**Confirm reproduction steps or a rejection rationale exist** (FRESCO-313 contract). Do not transition to `Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate` unless the defect carries numbered reproduction steps OR a documented reason it cannot/should not be reproduced (see the reproduction-or-rejection gate in Phase 3). A bare one-line defect is not closable.
 
 **Step 2: Add Fix Documentation Comment**
 
@@ -1544,6 +1548,7 @@ Before presenting the final report, verify:
 - [ ] Triage decision made and documented
 - [ ] `{{jira.severity}}` + `{{jira.error_type}}` set (backfilled at intake if empty) — FRESCO-281
 - [ ] Defect linked (`Relates` or `parent`) to the affected story/epic + `{{jira.evidence}}` holds a screenshot (HAR too for network/API defects) — FRESCO-282
+- [ ] Reproduction steps OR a documented rejection rationale present before any terminal transition — FRESCO-313
 - [ ] Root Cause custom fields updated (`{{jira.root_cause}}` + `{{jira.fix}}`)
 - [ ] Fix documentation comment added
 - [ ] Issue transitioned to Ready For QA
