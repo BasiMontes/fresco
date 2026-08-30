@@ -13,7 +13,7 @@ colors:
   border: 'color-mix(in srgb, #201E1D 16%, transparent)'
   success: '#0F4E0E'
   warning: '#DF8C26'
-  error: '#B8422E'
+  error: '#B03D2B' # FRESCO-293: darkened from #B8422E (4,29:1 on surface, below WCAG AA) to #B03D2B (~4,66:1 on surface, ~5,92:1 white-on-token)
   accent-100: '#E1E8E0'
   accent-200: '#BFCFBD'
   accent-300: '#8FAB8D'
@@ -230,7 +230,7 @@ The palette is two hand-picked corporate hues — "verde corporativo" and "naran
 - **Border/Divider:** `color-mix(in srgb, #201E1D 16%, transparent)` — text color at 16% opacity rather than a separate hardcoded gray. Guarantees dividers always sit in visual harmony with body text regardless of future text-color tuning.
 - **Success — `#0F4E0E`:** reuses primary. The brand canvas defines no separate success color, and inventing one would fragment a two-hue system; "success" and "trust" are the same signal in this product (a generated menu succeeding *is* the primary action).
 - **Warning — `#DF8C26`:** reuses secondary/accent-2. Dietary-flag tags (e.g. "Sin gluten") use accent-2 tinted backgrounds — warmth as attention, not alarm.
-- **Error — `#B8422E`:** the one token in this file with no direct source in the brand canvas (the canvas defines no destructive/error color). Chosen as a warm clay-red in the same desaturated family as the rest of the palette rather than a stock saturated red, so a validation error never looks like it belongs to a different app. Flagged here per the spec's conflict-resolution discipline (§8 `llm-authored.md`) — this is the one extension beyond the bundle, not a silent override.
+- **Error — `#B03D2B`:** the one token in this file with no direct source in the brand canvas (the canvas defines no destructive/error color). Chosen as a warm clay-red in the same desaturated family as the rest of the palette rather than a stock saturated red, so a validation error never looks like it belongs to a different app. Flagged here per the spec's conflict-resolution discipline (§8 `llm-authored.md`) — this is the one extension beyond the bundle, not a silent override. FRESCO-293: darkened from the original `#B8422E`, which measured 4,29:1 as error text on the `#F1E3C6` cream surface — below the WCAG AA 4,5:1 threshold for normal text. `#B03D2B` measures ≈4,66:1 on cream and ≈5,92:1 for white text on the token itself (destructive buttons), clearing WCAG AA 4,5:1 for both uses while staying in the same warm-clay family. Darkened as the single global token — there is one error red for the whole system, no local overrides.
 - **Neutral scale (100–900):** warm/cream-toned, *not* pure gray (`#FBF6EC` → `#2F281C`). Backs the tag-neutral component and any chrome that needs to recede without going cold.
 - **Accent / Accent-2 100–900 ramps:** in the source canvas these are authored as CSS `color-mix(in oklch, white/black N%, <base> N%)` expressions around the 500 base (100–400 mixed toward white, 600–900 toward black). The DESIGN.md spec's `Color` type is hex-sRGB only (§3 of the spec card), so the frontmatter above stores each step as the exact flattened hex the browser would compute from that same `color-mix()` formula (OKLCH-space interpolation, matching CSS Color 4 semantics) — same color, valid token type, zero drift from the canvas. `design/handoff/fresco/brand-guide.dc.html` remains the reference if the live `color-mix()` expressions are ever needed for a CSS export target. Ramp usage: tinted surfaces (100), the insight-card treatment (100 background / 800 text), and tag variants.
 

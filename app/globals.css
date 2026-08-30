@@ -22,7 +22,11 @@
   --color-border: color-mix(in srgb, #201e1d 16%, transparent);
   --color-success: #0f4e0e;
   --color-warning: #df8c26;
-  --color-error: #b8422e;
+  /* FRESCO-293: darkened from #b8422e (measured 4,29:1 as text on the
+     #f1e3c6 cream surface — below WCAG AA 4,5:1). #b03d2b measures ~4,66:1
+     on cream and ~5,92:1 for white text on the token itself (destructive
+     buttons). Same warm-clay family, one global error red. */
+  --color-error: #b03d2b;
 
   --color-accent-100: #e1e8e0;
   --color-accent-200: #bfcfbd;
