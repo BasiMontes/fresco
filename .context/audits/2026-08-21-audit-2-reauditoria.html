@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Re-auditoría Fresco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Libre+Franklin:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bg: #f6f4ef;
+    --surface: #fffdf7;
+    --surface-2: #efece2;
+    --ink: #1b1915;
+    --ink-soft: #55504a;
+    --ink-faint: #7c756a;
+    --rule: #ddd6c9;
+    --accent: #0f5661;
+    --accent-ink: #0c454e;
+    --accent-soft: #e2ece9;
+    --pass: #2c6b2f;
+    --warn: #995810;
+    --fail: #a81f16;
+    --pass-bg: #e6efe3;
+    --warn-bg: #f4ead9;
+    --fail-bg: #f5e2de;
+    --shadow: 0 1px 2px rgba(27,25,21,.05), 0 12px 32px -16px rgba(27,25,21,.16);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14130f;
+      --surface: #1d1b15;
+      --surface-2: #26231a;
+      --ink: #ece6da;
+      --ink-soft: #a99f8e;
+      --ink-faint: #8a8170;
+      --rule: #35312a;
+      --accent: #6cc3b4;
+      --accent-ink: #8fd4c7;
+      --accent-soft: #1e2f2c;
+      --pass: #84c98c;
+      --warn: #e0a552;
+      --fail: #ec8b81;
+      --pass-bg: #1c2a1d;
+      --warn-bg: #2e2716;
+      --fail-bg: #2f211e;
+      --shadow: 0 1px 2px rgba(0,0,0,.32), 0 14px 36px -18px rgba(0,0,0,.66);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #14130f;
+    --surface: #1d1b15;
+    --surface-2: #26231a;
+    --ink: #ece6da;
+    --ink-soft: #a99f8e;
+    --ink-faint: #8a8170;
+    --rule: #35312a;
+    --accent: #6cc3b4;
+    --accent-ink: #8fd4c7;
+    --accent-soft: #1e2f2c;
+    --pass: #84c98c;
+    --warn: #e0a552;
+    --fail: #ec8b81;
+    --pass-bg: #1c2a1d;
+    --warn-bg: #2e2716;
+    --fail-bg: #2f211e;
+    --shadow: 0 1px 2px rgba(0,0,0,.32), 0 14px 36px -18px rgba(0,0,0,.66);
+  }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Libre Franklin", ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.02rem;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .sheet {
+    max-width: 47rem;
+    margin: 0 auto;
+    padding: clamp(1.4rem, 4vw, 3.5rem) clamp(1.15rem, 4vw, 2.2rem) 5rem;
+  }
+
+  section { margin-top: 3.6rem; }
+
+  h1, h2, h3 { font-family: "Fraunces", Georgia, "Times New Roman", serif; font-weight: 600; line-height: 1.16; text-wrap: balance; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .74rem;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 1rem;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 8vw, 3.7rem);
+    font-weight: 500;
+    letter-spacing: -.015em;
+    margin: 0 0 1.1rem;
+  }
+
+  .lede {
+    font-size: 1.16rem;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 34em;
+  }
+
+  .section-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .76rem;
+    font-weight: 500;
+    letter-spacing: .12em;
+    color: var(--ink-faint);
+    display: block;
+    margin-bottom: .5rem;
+  }
+
+  h2 { font-size: clamp(1.55rem, 4.5vw, 2rem); margin: 0 0 1rem; }
+  h3 { font-size: 1.12rem; font-weight: 600; margin: 2rem 0 .5rem; font-family: "Libre Franklin", sans-serif; letter-spacing: -.005em; }
+
+  p { margin: 0 0 1.05rem; }
+  a { color: var(--accent-ink); text-underline-offset: 2px; }
+  strong { font-weight: 600; }
+
+  .meta {
+    margin: 2.4rem 0 0;
+    border-top: 1px solid var(--rule);
+    display: grid;
+    gap: 0;
+  }
+  .meta div {
+    display: grid;
+    grid-template-columns: 8.5rem 1fr;
+    gap: 1rem;
+    padding: .78rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: .92rem;
+  }
+  .meta dt {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: .16rem;
+  }
+  .meta dd { margin: 0; color: var(--ink-soft); }
+
+  /* verdict */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: clamp(1.5rem, 5vw, 2.4rem);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .4rem 1.4rem;
+  }
+  .score {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: clamp(3.6rem, 15vw, 5.6rem);
+    line-height: .9;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .score span { color: var(--ink-faint); font-size: .42em; }
+  .score-prev {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .9rem;
+    color: var(--warn);
+    letter-spacing: .02em;
+  }
+  .score-prev s { color: var(--ink-faint); text-decoration-thickness: 1px; }
+
+  /* toc */
+  .toc {
+    list-style: none;
+    margin: 1.8rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+  .toc a {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .78rem;
+    text-decoration: none;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: .28rem .7rem;
+    background: var(--surface);
+  }
+  .toc a:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+  /* scorecard */
+  .scorecard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .axis { background: var(--surface); padding: 1.15rem 1.15rem 1.25rem; }
+  .axis-name {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .78rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: .55rem;
+  }
+  .axis-nums {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    font-family: "Fraunces", serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .axis-nums .was { font-size: 1rem; color: var(--ink-faint); }
+  .axis-nums .arr { color: var(--ink-faint); font-family: "IBM Plex Mono", monospace; font-size: .85rem; }
+  .axis-nums .now { font-size: 2rem; font-weight: 500; color: var(--ink); line-height: 1; }
+  .axis-nums .d { font-family: "IBM Plex Mono", monospace; font-size: .74rem; color: var(--warn); margin-left: auto; }
+  .axis-note { font-size: .88rem; color: var(--ink-soft); margin: .6rem 0 0; line-height: 1.5; }
+
+  /* callout */
+  .note {
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 1.05rem 1.2rem;
+    font-size: .94rem;
+    color: var(--ink-soft);
+    margin: 1.4rem 0 0;
+  }
+  .note strong { color: var(--ink); }
+
+  /* good list */
+  .good { list-style: none; margin: 1.4rem 0 0; padding: 0; display: grid; gap: .95rem; }
+  .good li { padding-left: 1.5rem; position: relative; font-size: .96rem; }
+  .good li::before {
+    content: "+";
+    position: absolute;
+    left: 0; top: .05rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+    color: var(--pass);
+  }
+  .good b { font-weight: 600; color: var(--ink); }
+
+  /* findings */
+  .sevhead {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .8rem;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin: 2.6rem 0 1.1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sevhead.alto { color: var(--fail); }
+  .sevhead.medio { color: var(--warn); }
+  .sevhead.bajo { color: var(--ink-faint); }
+
+  .finding {
+    border-left: 3px solid var(--rule);
+    padding: .1rem 0 .1rem 1.15rem;
+    margin: 1.5rem 0;
+  }
+  .finding[data-sev="alto"] { border-left-color: var(--fail); }
+  .finding[data-sev="medio"] { border-left-color: var(--warn); }
+  .finding[data-sev="bajo"] { border-left-color: var(--ink-faint); }
+
+  .finding h4 {
+    margin: 0 0 .5rem;
+    font-size: 1.04rem;
+    font-weight: 600;
+    font-family: "Libre Franklin", sans-serif;
+    line-height: 1.4;
+  }
+  .finding h4 .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .82rem;
+    color: var(--ink-faint);
+    margin-right: .5rem;
+  }
+  .finding p { font-size: .95rem; margin-bottom: .7rem; }
+  .finding .fix {
+    font-size: .9rem;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: .6rem .8rem;
+  }
+  .finding .fix b {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    display: inline-block;
+    margin-right: .4rem;
+  }
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+    background: var(--surface-2);
+    padding: .08em .34em;
+    border-radius: 4px;
+  }
+
+  /* steps */
+  .steps { counter-reset: step; list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 1.1rem; }
+  .steps li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    gap: .9rem;
+    align-items: start;
+    font-size: .96rem;
+  }
+  .steps li::before {
+    content: counter(step);
+    font-family: "Fraunces", serif;
+    font-size: 1.35rem;
+    font-weight: 500;
+    color: var(--accent-ink);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .steps b { font-weight: 600; }
+  .steps .cost {
+    display: block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .74rem;
+    color: var(--ink-faint);
+    margin-top: .15rem;
+  }
+
+  /* stat row for jira */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+  }
+  .stats div { background: var(--surface); padding: .9rem 1rem; }
+  .stats .k { font-family: "Fraunces", serif; font-size: 1.5rem; font-weight: 500; font-variant-numeric: tabular-nums; display: block; }
+  .stats .l { font-size: .8rem; color: var(--ink-faint); }
+
+  /* ledger table */
+  .tablewrap { overflow-x: auto; margin: 1.5rem 0 0; border: 1px solid var(--rule); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 34rem; }
+  thead th {
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: .7rem .85rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  tbody td { padding: .72rem .85rem; border-bottom: 1px solid var(--rule); color: var(--ink-soft); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { color: var(--ink); }
+
+  .pill {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem;
+    font-weight: 500;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: .16rem .5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    color: var(--ink);
+    border: 1px solid transparent;
+  }
+  .pill.ok { background: var(--pass-bg); border-color: var(--pass); }
+  .pill.part { background: var(--warn-bg); border-color: var(--warn); }
+  .pill.no { background: var(--fail-bg); border-color: var(--fail); }
+  .pill.new { background: var(--accent-soft); border-color: var(--accent); }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--rule);
+    font-size: .86rem;
+    color: var(--ink-faint);
+  }
+  footer p { margin-bottom: .7rem; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(12px); animation: rise .6s cubic-bezier(.2,.7,.3,1) forwards; }
+    .reveal:nth-child(2) { animation-delay: .05s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+  @media (max-width: 460px) {
+    .meta div { grid-template-columns: 1fr; gap: .15rem; }
+    .verdict { gap: .8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <p class="eyebrow reveal">Re-auditoría técnica · segunda pasada</p>
+    <h1 class="reveal">Fresco, otra vez a fondo</h1>
+    <p class="lede reveal">El 14 de agosto, Dojo auditó Fresco y le puso un 4,7. Pediste repetirla &mdash; más agresiva, y con acceso al tablero de Jira que la primera vez no tuvo. Esto es lo que sale trece días después.</p>
+
+    <dl class="meta">
+      <div><dt>Fecha</dt><dd>27 de agosto de 2026</dd></div>
+      <div><dt>Baseline</dt><dd>14 de agosto de 2026 &middot; Dojo / Ely &middot; 4,7 / 5</dd></div>
+      <div><dt>Alcance</dt><dd>Repositorio, backlog, instancia de Jira, app en producción (<span class="mono">fresco-pro.vercel.app</span>)</dd></div>
+      <div><dt>Método</dt><dd>Cuatro frentes en paralelo (ver &sect;02). Todo de solo lectura: cero commits, cero transiciones de Jira, cero envíos de formulario.</dd></div>
+      <div><dt>No cubierto</dt><dd>Áreas autenticadas de la app (calendario, menú, recetas, lista de la compra, perfil, admin) &mdash; requieren login, fuera de esta pasada</dd></div>
+    </dl>
+  </header>
+
+  <section id="s1">
+    <span class="section-label">01 &nbsp;/&nbsp; Veredicto</span>
+    <div class="verdict">
+      <div class="score">3,7<span>&thinsp;/&thinsp;5</span></div>
+      <div>
+        <div class="score-prev">antes <s>4,7</s> &nbsp;&middot;&nbsp; &minus;1,0</div>
+      </div>
+    </div>
+
+    <p style="margin-top:1.6rem">Los diez hallazgos del baseline no se quedaron en un documento. Seis tickets (<span class="mono">FRESCO-266</span> a <span class="mono">271</span>), cinco cerrados en trece días: la CI existe, la accesibilidad móvil está arreglada, el ADR de testing está escrito. Esa parte es de sobresaliente y hay que decirlo primero.</p>
+
+    <p>La nota baja por dos motivos, y conviene separarlos. <strong>Uno:</strong> esta pasada apretó más y llegó a sitios que la primera no tocó &mdash; el tablero de Jira por dentro, el contraste real de los tokens de color, la configuración de <span class="mono">branch protection</span>. <strong>Dos:</strong> en trece días entraron cinco épicas grandes (Stripe, centro de avisos, analytics, push, Sentry) y los documentos de contexto no las siguieron.</p>
+
+    <p>El patrón que se repite en los tres hallazgos ALTO nuevos es el mismo: <strong>algo construido que todavía no muerde.</strong> La CI corre en cada PR pero ninguna rama exige sus checks. Los campos de QA estructurada de Jira existen y están al 0%. El token primario ámbar está en la hoja de estilos y falla el contraste AA justo en el botón de conversión de la landing. No es deuda de ejecución &mdash; es el último tramo, el de activar lo que ya está puesto.</p>
+
+    <ul class="toc">
+      <li><a href="#s2">02 Qué miré</a></li>
+      <li><a href="#s3">03 Puntuación</a></li>
+      <li><a href="#s4">04 Por encima de la media</a></li>
+      <li><a href="#s5">05 Hallazgos</a></li>
+      <li><a href="#s6">06 Jira</a></li>
+      <li><a href="#s7">07 Arquitectura</a></li>
+      <li><a href="#s8">08 Siguiente movimiento</a></li>
+      <li><a href="#s9">Delta vs baseline</a></li>
+    </ul>
+  </section>
+
+  <section id="s2">
+    <span class="section-label">02 &nbsp;/&nbsp; Qué miré</span>
+    <h2>Cuatro frentes, sin caja negra</h2>
+    <p>A diferencia del 14 de agosto, esta vez sí entré al tablero de Jira (<span class="mono">acli</span> autenticado). La sección 06 es nueva &mdash; el baseline la infirió desde los catálogos sincronizados del repo, y algunas de esas inferencias no sobreviven al contacto con la instancia real.</p>
+
+    <h3>Frente A &mdash; Fundación, trazabilidad, uso del agente</h3>
+    <p>Historial git completo (784 commits), <span class="mono">.context/</span> entero (PRD, SRS, mapas de negocio, glosario, 14 ADRs, roadmaps, 37 carpetas de historia), <span class="mono">.husky/</span>, <span class="mono">package.json</span>, escaneo de secretos sobre árbol e historia, y verificación de 3 ADRs contra el código real.</p>
+
+    <h3>Frente B &mdash; Backlog y Jira</h3>
+    <p>Los 262 work items del proyecto vía <span class="mono">acli</span>, changelog de transiciones de estado de todos ellos, y conteo board-wide del relleno de los 11 campos personalizados. Cruce con el cache local <span class="mono">.context/PBI/</span>.</p>
+
+    <h3>Frente C &mdash; Suite de tests y CI</h3>
+    <p><span class="mono">regression.feature</span> (139 escenarios), 13 ficheros de steps, 21 de tests unitarios, <span class="mono">playwright.config.ts</span>, el workflow de GitHub Actions, la rama <span class="mono">ci/FRESCO-266</span> en curso, y <span class="mono">gh api</span> sobre la protección de las tres ramas. La suite no se ejecutó (muta datos compartidos).</p>
+
+    <h3>Frente D &mdash; App en vivo</h3>
+    <p>Playwright headless contra <span class="mono">fresco-pro.vercel.app</span> a 390&nbsp;px y 1280&nbsp;px, sobre 7 rutas públicas. Medición real con <span class="mono">getBoundingClientRect</span> / <span class="mono">getComputedStyle</span>: consola, red, jerarquía de encabezados, <span class="mono">alt</span>, <span class="mono">lang</span>, tamaños de área táctil, desbordamientos y contraste calculado token a token. 14 capturas.</p>
+  </section>
+
+  <section id="s3">
+    <span class="section-label">03 &nbsp;/&nbsp; Puntuación</span>
+    <h2>Seis ejes, todos a la baja</h2>
+
+    <div class="scorecard">
+      <div class="axis">
+        <div class="axis-name">Fundación</div>
+        <div class="axis-nums"><span class="was">5,0</span><span class="arr">&rarr;</span><span class="now">3,5</span><span class="d">&minus;1,5</span></div>
+        <p class="axis-note">Los 14 ADRs siguen siendo lo mejor del repo. PRD, SRS, mapas y glosario no siguen a cinco épicas de agosto.</p>
+      </div>
+      <div class="axis">
+        <div class="axis-name">Backlog</div>
+        <div class="axis-nums"><span class="was">5,0</span><span class="arr">&rarr;</span><span class="now">3,5</span><span class="d">&minus;1,5</span></div>
+        <p class="axis-note">La puerta de QA es real. Pero los campos de QA estructurada están al 0% y no hay estimación en ningún sitio.</p>
+      </div>
+      <div class="axis">
+        <div class="axis-name">Trazabilidad</div>
+        <div class="axis-nums"><span class="was">5,0</span><span class="arr">&rarr;</span><span class="now">4,0</span><span class="d">&minus;1,0</span></div>
+        <p class="axis-note">784 commits, 98,6% convencionales, reflog limpio. Pero la estrategia de git declarada no se respeta y la CI no bloquea nada.</p>
+      </div>
+      <div class="axis">
+        <div class="axis-name">Diseño</div>
+        <div class="axis-nums"><span class="was">4,0</span><span class="arr">&rarr;</span><span class="now">3,5</span><span class="d">&minus;0,5</span></div>
+        <p class="axis-note">Tres de cuatro hallazgos móviles arreglados. Pero el primario ámbar falla contraste AA de forma sistemática.</p>
+      </div>
+      <div class="axis">
+        <div class="axis-name">Testabilidad</div>
+        <div class="axis-nums"><span class="was">4,0</span><span class="arr">&rarr;</span><span class="now">3,5</span><span class="d">&minus;0,5</span></div>
+        <p class="axis-note">ADR-0014 y la calidad de los step files, muy bien. Pero la CI no tiene dientes y los tests unitarios no corren en ningún sitio.</p>
+      </div>
+      <div class="axis">
+        <div class="axis-name">Uso del agente</div>
+        <div class="axis-nums"><span class="was">5,0</span><span class="arr">&rarr;</span><span class="now">4,3</span><span class="d">&minus;0,7</span></div>
+        <p class="axis-note">Bitácora honesta y densa, baseline accionado en 13 días. Pero los <span class="mono">review.md</span> por historia se cortaron el 21 de agosto.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Cómo leer la caída.</strong> No es que el proyecto haya empeorado &mdash; 232 commits en trece días, a 18 por día, operados con criterio. Es que la primera auditoría puntuó algún eje sobre premisas que no sobreviven al contacto con la instancia real (el &laquo;flujo de QA completo configurado&raquo; es un tablero genérico de 7 estados; los &laquo;41 defectos con evidencia de red&raquo; tienen cero capturas de red), y agosto añadió deriva nueva. La media de los seis ejes da <strong>3,7</strong>.
+    </div>
+  </section>
+
+  <section id="s4">
+    <span class="section-label">04 &nbsp;/&nbsp; Por encima de la media</span>
+    <h2>Lo que hay que no perder</h2>
+    <ul class="good">
+      <li><b>El baseline se accionó de verdad.</b> Seis tickets etiquetados <span class="mono">auditoria-dojo</span>, cinco cerrados en trece días. La mayoría de la gente archiva el informe.</li>
+      <li><b>Los ADRs.</b> Catorce, todos con ticket, 3 de 3 verificados contra el código, y los follow-ups se convierten en tickets de tech-debt (<span class="mono">TECHDEBT-FRESCO-238</span>). El mejor artefacto del proyecto, sin discusión.</li>
+      <li><b>QA es una puerta real.</b> El 86&ndash;89% de historias y bugs pasan por Control de calidad, 33 rebotes documentados de QA a desarrollo, y solo 2 reaperturas después de Finalizada. El desarrollador se está rechazando su propio trabajo.</li>
+      <li><b>La bitácora no miente.</b> Admite sus propios bypasses de flujo, las ramas equivocadas, el trabajo sin commitear. Raro y valioso.</li>
+      <li><b>Los step files.</b> Cero <span class="mono">waitForTimeout</span>, cero <span class="mono">networkidle</span>, re-lectura tras <span class="mono">reload()</span> para probar persistencia real en BD, skips honestos con ticket y motivo.</li>
+      <li><b>Higiene de secretos.</b> Árbol e historia limpios, y una barrera nueva desde el baseline (<span class="mono">.env*</span> en <span class="mono">.gitignore</span>).</li>
+    </ul>
+  </section>
+
+  <section id="s5">
+    <span class="section-label">05 &nbsp;/&nbsp; Hallazgos</span>
+    <h2>Ordenados por retorno</h2>
+
+    <p class="sevhead alto">Alto</p>
+
+    <div class="finding" data-sev="alto">
+      <h4><span class="n">01</span>La CI existe pero ninguna rama la exige</h4>
+      <p><span class="mono">gh api .../branches/&lt;rama&gt;/protection</span> devuelve <span class="mono">404 Required status checks not enabled</span> en <span class="mono">main</span>, <span class="mono">staging</span> y <span class="mono">dev</span>. <span class="mono">rulesets: []</span>, <span class="mono">enforce_admins: false</span>. Incluso <span class="mono">repo:check</span> &mdash; el job &laquo;bloqueante&raquo; &mdash; no bloquea un merge, porque ninguna rama lo pide como required check. Flipear el e2e a bloqueante (<span class="mono">FRESCO-266</span>) cambia el exit code del workflow pero no gatea nada hasta que esto cambie.</p>
+      <p class="fix"><b>Arreglo</b>Un toggle en Settings por rama, o una llamada a <span class="mono">gh api</span>. Diez minutos. Es el mayor retorno por hora de toda la auditoría.</p>
+    </div>
+
+    <div class="finding" data-sev="alto">
+      <h4><span class="n">02</span>Los tests unitarios no se ejecutan en ningún sitio</h4>
+      <p>21 ficheros <span class="mono">*.test.ts</span> (el doble que en el baseline). No hay script <span class="mono">test</span> en <span class="mono">package.json</span> de <span class="mono">main</span>, no están en los hooks de Husky, no están en la CI. Solo se cablean en la rama <span class="mono">ci/FRESCO-266</span>, que está parada. La mitad de la suite &mdash; la barata, la de segundos &mdash; no protege nada.</p>
+      <p class="fix"><b>Arreglo</b><span class="mono">"test": "bun test"</span> + un job bloqueante o meterlo en <span class="mono">pre-push</span>. Segundos, sin navegador, sin <span class="mono">.env</span>.</p>
+    </div>
+
+    <div class="finding" data-sev="alto">
+      <h4><span class="n">03</span>El aparato de QA estructurada de Jira está sin usar</h4>
+      <p>Board-wide, sobre los 262 items: Acceptance Test Plan, Acceptance Test Results, Severity, Root Cause, Error Type, Actual/Expected Result, Evidence, Story Points &mdash; <strong>0 rellenos cada uno</strong>. Solo Business Rules tiene un valor (<span class="mono">FRESCO-82</span>). Todo &mdash; AC, alcance, plan de pruebas, resultado de QA &mdash; vive en comentarios de texto libre. El límite de 255 caracteres excusa a AC/Scope/OOS/Rules; <strong>no</strong> excusa a ATP/ATR/Severity/Story Points, que son campos de opción o número sin ese límite. Para un proyecto cuya tesis es shift-left QA, los artefactos que harían QA medible no existen en forma consultable.</p>
+      <p class="fix"><b>Arreglo</b>Empezar a rellenar cuatro campos sin límite (Severity, Root Cause, Error Type, Story Points) solo en el trabajo nuevo. Coste casi cero, desbloquea dashboards JQL y triaje.</p>
+    </div>
+
+    <div class="finding" data-sev="alto">
+      <h4><span class="n">04</span>120 de 122 defectos están huérfanos</h4>
+      <p>Sin enlace a la historia o épica que rompieron, y en su mayoría sin enlace a nada. 21 de 122 (17%) tienen alguna captura; <strong>cero</strong> tienen captura de red (HAR). La densidad de defectos por feature &mdash; la métrica de cabecera del shift-left &mdash; no se puede consultar desde Jira. El baseline dijo &laquo;41 defectos con evidencia de red&raquo;; esa caracterización no sobrevive al contacto con la instancia.</p>
+      <p class="fix"><b>Arreglo</b>Un enlace <span class="mono">Relates</span>/<span class="mono">Blocks</span> (o <span class="mono">parent</span>) al crear el bug. Un campo más por defecto.</p>
+    </div>
+
+    <div class="finding" data-sev="alto">
+      <h4><span class="n">05</span>El CTA primario ámbar falla contraste WCAG AA</h4>
+      <p><span class="mono">#df8c26</span> sobre <span class="mono">#faf3e3</span> = <strong>2,40:1</strong> (texto normal necesita 4,5:1). Afecta al botón de conversión de mayor intención de la landing (&laquo;Empezar 7 días gratis&raquo;), al badge &laquo;Popular&raquo;, al primario &laquo;Crear cuenta&raquo; de <span class="mono">/onboarding</span> y a &laquo;Ver credenciales reales&raquo; de <span class="mono">/qa</span>. La variante <em>verde</em> del primario (<span class="mono">#0f4e0e</span>) pasa a 8,97:1 &mdash; el ámbar es un segundo estilo primario inconsistente, y es el que falla.</p>
+      <p class="fix"><b>Arreglo</b>Subir el ámbar a ~<span class="mono">#9a5b12</span>, o texto oscuro sobre el ámbar actual (<span class="mono">#201e1d</span> da 6,3:1). Un valor de token.</p>
+    </div>
+
+    <p class="sevhead medio">Medio</p>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">06</span>Deriva de la fundación</h4>
+      <p>PRD, SRS, mapas de negocio y glosario congelados a mediados de agosto, ciegos a cinco épicas (Stripe 227, avisos 223, analytics 240, push 241, Sentry 242). <span class="mono">mvp-scope.md</span> sigue describiendo el pago como &laquo;concierge manual&raquo; cuando ADR-0007 dice literalmente que lo revierte. El glosario tiene 0 términos de suscripción, webhook, analytics o push &mdash; y CLAUDE.md dice que se consulta antes de escribir AC.</p>
+      <p class="fix"><b>Arreglo</b>Correr <span class="mono">/business-*-map</span> y actualizar <span class="mono">mvp-scope.md</span> + NFRs al cerrar cada épica (ya lo pide la Regla 16). Añadir términos de glosario &mdash; append-only, barato.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">07</span>El token de texto atenuado falla AA en todo el sitio</h4>
+      <p><span class="mono">#847456</span> da <strong>3,59:1</strong> sobre superficie y <strong>4,12:1</strong> sobre fondo de página. Subtítulos de tarjeta en 5 páginas, intro de <span class="mono">/qa</span>, copy del hero de la landing. La variante más clara <span class="mono">#a39372</span> baja a 2,47&ndash;2,72:1.</p>
+      <p class="fix"><b>Arreglo</b>Oscurecer el token a ~<span class="mono">#6b5f47</span> (&ge;4,5:1 sobre ambas superficies). Un valor.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">08</span>La estrategia de git declarada no se respeta</h4>
+      <p><span class="mono">project.yaml</span> declara <span class="mono">enterprise</span> de tres niveles (<span class="mono">main &larr; staging &larr; dev</span>, <span class="mono">promote: ff-only</span>, <span class="mono">feature_merge: merge-commit</span>) con fecha 21 de agosto. Desde entonces: 73 commits en <span class="mono">main</span> por first-parent &rarr; 22 merges, <strong>51 commits directos</strong>. Varios PRs llegaron como squash. La propia bitácora admite que <span class="mono">#151&ndash;154</span> se fusionaron directo a <span class="mono">main</span> saltándose el flujo.</p>
+      <p class="fix"><b>Arreglo</b>Decidir cuál es el flujo real. Si es &laquo;todo a <span class="mono">main</span> + ff a dev/staging&raquo;, volver <span class="mono">project.yaml</span> a <span class="mono">solo-main</span>. No sostener un doc que no se sigue.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">09</span>El tablero es un Kanban genérico de 7 estados</h4>
+      <p>Un solo workflow para todos los tipos, todavía llamado &laquo;Software workflow for project KAN&raquo;, tablero todavía &laquo;KAN board&raquo;. <span class="mono">Control de calidad</span> mezcla esperando-QA / pasó-QA / aparcado (<span class="mono">FRESCO-239&ndash;243</span> aparcados ahí). <span class="mono">Merged</span> es un dead-letter (<span class="mono">FRESCO-204/211/214/220</span>, ~10 días). Estados de épica sin mantener (<span class="mono">FRESCO-81/223/244</span> en Listo con hijos terminados). El vocabulario rico de QA solo vive en <span class="mono">.agents/</span>.</p>
+      <p class="fix"><b>Arreglo</b>O añadir estados reales (Ready-for-QA, QA-Passed, In-Review, Backlog), o dejar de reclamarlos en <span class="mono">.agents/</span>. Renombrar el tablero de paso.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">10</span>El fix de área táctil no llegó al layout de auth ni al checkbox de signup</h4>
+      <p>El footer de <span class="mono">/login</span> y <span class="mono">/signup</span> (&laquo;Términos · Privacidad · Contacto&raquo;) sigue en <strong>14,3&nbsp;px</strong> de alto &mdash; <span class="mono">FRESCO-267</span> arregló el footer de la landing, no este layout. El checkbox de consentimiento de <span class="mono">/signup</span> mide <strong>17,6&nbsp;&times;&nbsp;17,6&nbsp;px</strong> sin área expandida, y es gate obligatorio para crear cuenta. Ambos fallan WCAG 2.5.8. Regresión de cobertura, no de código.</p>
+      <p class="fix"><b>Arreglo</b><span class="mono">padding-block</span> en el footer de auth (como el de la landing); envolver el checkbox en un target de 24&nbsp;px.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">11</span>El e2e de CI muta un backend Supabase compartido</h4>
+      <p>El job no fija <span class="mono">PLAYWRIGHT_BASE_URL</span> (corre contra un <span class="mono">next dev</span> local) pero los servicios salen de un único proyecto Supabase. Los steps mutan ese backend (<span class="mono">meal_plans</span> delete/regen, writes service-role a <span class="mono">user_profiles.plan</span>). Dos PRs con runs solapados compiten por las mismas filas &mdash; exactamente la clase de bug que <span class="mono">workers:1</span> se introdujo para matar, recreada a nivel de job.</p>
+      <p class="fix"><b>Arreglo</b>Factorías de datos por test, o un proyecto Supabase efímero por run. Ver &sect;07.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">12</span>Cache PBI y disciplina de review desincronizados</h4>
+      <p>El cache local <span class="mono">.context/PBI/</span> lleva 6 días y 232 commits atrás (107 carpetas de defecto vs 122 bugs; 37 de historia vs 43). Los <span class="mono">review.md</span> por historia se cortaron el 21 de agosto (28/37 historias, ninguna épica reciente). Dos races de merge perdieron contenido de docs de contexto, recuperado del historial.</p>
+      <p class="fix"><b>Arreglo</b>Un <span class="mono">jira:sync-issues</span>. Decidir si el <span class="mono">review.md</span> por historia sigue siendo parte del flujo o se retira formalmente.</p>
+    </div>
+
+    <div class="finding" data-sev="medio">
+      <h4><span class="n">13</span>Docs de planificación caducados; cero estimación</h4>
+      <p><span class="mono">master-implementation-plan.md</span> lleva 19 días (le faltan 3 épicas + todo Stripe); <span class="mono">epic-tree.md</span> no tiene la épica Motion. Story Points: <strong>0 / 262</strong>. No hay velocidad, ni forecast, ni señal de &laquo;esta épica es más grande que aquella&raquo;.</p>
+      <p class="fix"><b>Arreglo</b>Una pasada de <span class="mono">/master-implementation-plan</span>. Estimar solo historias nuevas &mdash; no rellenar 220 items terminados.</p>
+    </div>
+
+    <p class="sevhead bajo">Bajo</p>
+
+    <div class="finding" data-sev="bajo">
+      <h4><span class="n">14</span>La bitácora no se ha rotado</h4>
+      <p>373 entradas / 666&nbsp;KB / 4.232 líneas, contra la regla propia del fichero de rotar a las 50. La calidad de las entradas es alta &mdash; el problema es volumen, y la IA &laquo;lo lee primero&raquo; cada sesión (~170K tokens).</p>
+      <p class="fix"><b>Arreglo</b><span class="mono">mv</span> a <span class="mono">bitacora-2026-07-08.md</span>, dejar las últimas ~15 + un índice.</p>
+    </div>
+
+    <div class="finding" data-sev="bajo">
+      <h4><span class="n">15</span><span class="mono">master-design-plan.md</span> sigue sin existir</h4>
+      <p>El baseline lo marcó. Ahora además contradice la Regla 14 de CLAUDE.md, que dice que toda historia de UI debe buscarlo y hacer STOP si falta. En la práctica se resuelve LIVE-UI-FIRST y contra el mockup de Jira &mdash; funciona, pero cada historia de UI técnicamente dispara el STOP. <span class="mono">DESIGN.md</span> sí está mantenido; la deriva es solo el mapa de pantallas.</p>
+      <p class="fix"><b>Arreglo</b>Correr la fase opt-in de screen-mapping de <span class="mono">/design-system</span>, o suavizar la Regla 14 a &laquo;si existe, úsalo&raquo;.</p>
+    </div>
+
+    <div class="finding" data-sev="bajo">
+      <h4><span class="n">16</span>Hueco de ADR-0010 en <span class="mono">main</span></h4>
+      <p>ADR-0010 (rate-limiting) vive en una rama sin mergear mientras 0011&ndash;0013 se mergearon por delante. Si otra sesión redacta un ADR nuevo mirando <span class="mono">main</span> y toma el 0010, colisión al mergear <span class="mono">FRESCO-243</span>.</p>
+      <p class="fix"><b>Arreglo</b>Reservar el número explícitamente, o un check de numeración en la doctrina de ADRs.</p>
+    </div>
+
+    <div class="finding" data-sev="bajo">
+      <h4><span class="n">17</span><span class="mono">trace: 'on-first-retry'</span> con <span class="mono">retries: 0</span></h4>
+      <p>La config de trace-on-retry nunca dispara porque los reintentos están sin fijar (default 0). Los fallos de CI no dejan traza.</p>
+      <p class="fix"><b>Arreglo</b><span class="mono">retries: 1</span> solo en CI, o <span class="mono">trace: 'retain-on-failure'</span>.</p>
+    </div>
+
+    <div class="finding" data-sev="bajo">
+      <h4><span class="n">18</span>Detalles de UI menores</h4>
+      <p>Los botones &laquo;Copiar&raquo; opacos de <span class="mono">/qa</span> tapan la primera línea de código en móvil (solape de 14&ndash;452&nbsp;px según longitud). <span class="mono">&lt;title&gt;</span> genérico en <span class="mono">/onboarding</span> y <span class="mono">/update-password</span> (las demás páginas sí tienen título específico). Mensaje de error de <span class="mono">/update-password</span> a 4,29:1.</p>
+      <p class="fix"><b>Arreglo</b>Mover el botón &laquo;Copiar&raquo; fuera del área de la primera línea; <span class="mono">generateMetadata</span> en las dos rutas sin título.</p>
+    </div>
+  </section>
+
+  <section id="s6">
+    <span class="section-label">06 &nbsp;/&nbsp; Jira</span>
+    <h2>La parte que el baseline no pudo ver</h2>
+
+    <div class="stats">
+      <div><span class="k">262</span><span class="l">work items (FRESCO-4&hellip;277)</span></div>
+      <div><span class="k">84%</span><span class="l">en Finalizada &mdash; ~26 vivos</span></div>
+      <div><span class="k">122</span><span class="l">defectos &middot; 43 historias &middot; 19 épicas</span></div>
+      <div><span class="k">0%</span><span class="l">relleno de campos de QA estructurada</span></div>
+      <div><span class="k">40/43</span><span class="l">historias con AC (Gherkin real) en comentarios</span></div>
+      <div><span class="k">33</span><span class="l">rebotes documentados de QA a desarrollo</span></div>
+    </div>
+
+    <p>El titular es el hallazgo 03: el 84% del tablero está terminado, la puerta de QA funciona de verdad, pero <strong>nada de eso es medible</strong>. No hay velocidad, no hay densidad de defectos por épica, no hay triaje de severidad &mdash; porque los campos que lo capturarían están vacíos y todo vive en prosa de comentarios.</p>
+
+    <p>Lo que sí es sólido, para que el ranking de arriba no se lea como una demolición: la calidad de AC donde existe es Gherkin real con nota de cobertura por escenario, mejor que muchos equipos con un BA dedicado. Las descripciones de defecto llevan pasos de reproducción, análisis de impacto y punteros al código aunque los campos estructurados estén vacíos. <span class="mono">dev-roadmap.md</span> es uno de los docs de planificación más autoconscientes que se ven &mdash; documenta su propia caducidad. Y la épica abandonada de migración de Food.com está limpiamente en <span class="mono">Rechazos</span>, no pudriéndose en el backlog.</p>
+
+    <p>El baseline dijo &laquo;8 tipos de trabajo mapeados, flujo de QA completo incluido shift-left&raquo;. La realidad: los 8 tipos comparten un workflow de 7 estados físicos, y los alias ricos (<span class="mono">shift_left_qa</span>, <span class="mono">qa_approved</span>, <span class="mono">ready_for_release</span>&hellip;) colapsan todos sobre esos 7. Es un catálogo local, no configuración del tablero.</p>
+  </section>
+
+  <section id="s7">
+    <span class="section-label">07 &nbsp;/&nbsp; Arquitectura</span>
+    <h2>Esta decisión ya la tomaste</h2>
+    <p>El baseline pedía un ADR sobre <span class="mono">playwright-bdd</span> vs KATA. <span class="mono">ADR-0014</span> existe (<span class="mono">FRESCO-270</span>) y es bueno: condición de expiración explícita (&laquo;mientras <span class="mono">fresco-app</span> sea el único dueño y consumidor de su suite&raquo;), tres señales de revisión, alternativas rechazadas con motivo. No es un sello de goma.</p>
+
+    <p>Dos afilados que le faltan:</p>
+
+    <p><strong>La señal de revisión &#35;2 no tiene umbral.</strong> Dice &laquo;cuando el número de escenarios haga que la CI de un solo worker sea un cuello de botella&raquo;. Ponle un número &mdash; &laquo;&gt; ~8 min de reloj&raquo; o &laquo;&gt; 60 escenarios automatizados&raquo; &mdash; o el trigger no es falsable. La suite ya va por 31 automatizados / 139 catalogados.</p>
+
+    <p><strong>Hay una cuarta señal escondida a plena vista</strong> (hallazgo 11): los jobs de CI en paralelo ya chocan con el problema de estado compartido de <span class="mono">@aprendizaje</span> que <span class="mono">workers:1</span> supuestamente retiró. Factorías de datos por test matan las dos cosas a la vez &mdash; el <span class="mono">workers:1</span> local y la race entre jobs de CI. Eso es lo que inclinaría la balanza hacia migrar, y ya está pasando.</p>
+
+    <p class="note" style="margin-top:1.4rem">Menor: el ADR cita al auditor del baseline tres veces. La lógica es sólida, pero el ADR sería más fuerte si se apropiara de la decisión sin apoyarse en la autoridad de un tercero.</p>
+  </section>
+
+  <section id="s8">
+    <span class="section-label">08 &nbsp;/&nbsp; Siguiente movimiento</span>
+    <h2>Lo más barato primero</h2>
+    <ol class="steps">
+      <li><span><b>Activar required status checks</b> en <span class="mono">main</span>, <span class="mono">staging</span> y <span class="mono">dev</span>. Hace que todos los checks que ya corren empiecen a morder.<span class="cost">~10 min &middot; hallazgo 01</span></span></li>
+      <li><span><b>Cablear los tests unitarios</b> &mdash; <span class="mono">"test": "bun test"</span> + job bloqueante.<span class="cost">~30 min &middot; hallazgo 02</span></span></li>
+      <li><span><b>Mergear <span class="mono">dev</span> en <span class="mono">ci/FRESCO-266</span>, re-correr, aterrizarlo.</b> Los 6 fallos rojos de esa rama ya están arreglados aguas arriba (PRs #151&ndash;154); solo le faltan los 22 commits.<span class="cost">~20 min &middot; hallazgo 02</span></span></li>
+      <li><span><b>Rellenar 4 campos de Jira</b> (Severity, Root Cause, Error Type, Story Points) solo en trabajo nuevo. Enlazar cada bug nuevo a su épica.<span class="cost">continuo &middot; hallazgos 03, 04</span></span></li>
+      <li><span><b>Arreglar el token ámbar</b> &mdash; un valor hexadecimal, desbloquea todos los CTA de trial de golpe. De paso el token de texto atenuado.<span class="cost">~15 min &middot; hallazgos 05, 07</span></span></li>
+      <li><span><b>Rotar la bitácora</b>; correr <span class="mono">/business-*-map</span>; actualizar <span class="mono">mvp-scope.md</span> + NFRs; añadir términos de glosario de las épicas de agosto.<span class="cost">~1 h &middot; hallazgos 06, 14</span></span></li>
+      <li><span><b>Decidir la estrategia de git de verdad</b> &mdash; hacer cumplir los tres niveles, o volver a <span class="mono">solo-main</span> en <span class="mono">project.yaml</span>.<span class="cost">decisión &middot; hallazgo 08</span></span></li>
+      <li><span><b>Afilar ADR-0014</b>: número al trigger &#35;2, la race de CI como trigger &#35;4.<span class="cost">~15 min &middot; hallazgo 11, &sect;07</span></span></li>
+    </ol>
+  </section>
+
+  <section id="s9">
+    <span class="section-label">Delta &nbsp;/&nbsp; vs baseline 14 ago</span>
+    <h2>Cada hallazgo del baseline, contrastado</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Hallazgo baseline</th><th>Sev.</th><th>Estado</th><th>Evidencia</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>No hay CI; la suite no protege nada</td><td>Alto</td><td><span class="pill part">Parcial</span></td><td><span class="mono">pr-check.yml</span> creado (FRESCO-266). Pero tests unitarios sin runner, e2e informativo, ninguna rama con required check.</td></tr>
+          <tr><td>Cobertura declarada vs ejecutada (18%)</td><td>Medio</td><td><span class="pill part">Parcial</span></td><td>100&rarr;139 escenarios, 18&rarr;31 automatizados = 22,3%. Número ahora documentado en ADR-0014; ratio casi plano.</td></tr>
+          <tr><td>Boilerplate congelado en versión de arranque</td><td>Medio</td><td><span class="pill no">Sin tocar</span></td><td>Cero <span class="mono">bun run up</span>. Primer commit 2026-07-24 (baseline decía 27 jul). Decisión del usuario, per baseline.</td></tr>
+          <tr><td><span class="mono">master-design-plan.md</span> ausente</td><td>Medio</td><td><span class="pill no">Sin tocar</span></td><td>No existe. Ahora en conflicto con la Regla 14 de CLAUDE.md. <span class="mono">DESIGN.md</span> sí mantenido.</td></tr>
+          <tr><td>Áreas táctiles móviles &lt; 24&times;24 (menú, FAQ, footer)</td><td>Bajo</td><td><span class="pill part">Parcial</span></td><td>FRESCO-267: FAQ (20&rarr;37,6&nbsp;px) y footer de landing (14&rarr;26,3&nbsp;px) arreglados. Footer de auth (14,3&nbsp;px) y checkbox de signup (17,6&nbsp;px), no.</td></tr>
+          <tr><td><span class="mono">/qa</span>: bloques de código desbordan sin señal de scroll</td><td>Bajo</td><td><span class="pill ok">Resuelto</span></td><td>FRESCO-268: <span class="mono">scroll-fade-wrapper.tsx</span>, <span class="mono">ResizeObserver</span> + gradiente de 48&nbsp;px condicional. Fix real.</td></tr>
+          <tr><td>Login: tarjeta no centrada verticalmente</td><td>Bajo</td><td><span class="pill ok">Resuelto</span></td><td>FRESCO-269: 248&nbsp;px arriba / 248&nbsp;px abajo a 390&nbsp;px. Centrado exacto.</td></tr>
+          <tr><td>Campos Jira ATP/ATR creados y vacíos</td><td>Medio</td><td><span class="pill no">Sin tocar</span></td><td>Peor de lo reportado: no 2 campos vacíos sino 10, board-wide, sobre 262 items.</td></tr>
+          <tr><td>&laquo;8 tipos mapeados, flujo de QA completo configurado&raquo;</td><td>&mdash;</td><td><span class="pill no">Engañoso</span></td><td>Tablero genérico de 7 estados, un workflow para todo, todavía &laquo;KAN board&raquo;. El flujo rico es un catálogo en <span class="mono">.agents/</span>.</td></tr>
+          <tr><td>&laquo;41 defectos con evidencia de red&raquo;</td><td>&mdash;</td><td><span class="pill no">Corregido</span></td><td>122 defectos; cero capturas de red en Jira; 17% con alguna captura. Se infirió de carpetas del repo, no de Jira.</td></tr>
+          <tr><td>Decidir BDD vs KATA; escribir un ADR</td><td>&mdash;</td><td><span class="pill ok">Resuelto</span></td><td>ADR-0014 (FRESCO-270): razonamiento real, condición de expiración, 3 señales de revisión. Draft&rarr;Accepted en la misma sesión.</td></tr>
+          <tr><td>Higiene de secretos limpia</td><td>&mdash;</td><td><span class="pill ok">Se mantiene</span></td><td>Árbol e historia limpios + barrera nueva <span class="mono">.env*</span> en <span class="mono">.gitignore</span>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Nuevo desde el baseline</h3>
+    <p>Deriva de fundación (5 épicas de agosto sin reflejar). Estrategia de git de tres niveles que la práctica no respeta. Cache PBI desincronizada y <span class="mono">review.md</span> parado. Bitácora sin rotar (373 entradas). Dos races de merge con pérdida de docs. Contraste: el baseline no lo midió &mdash; ahora es el tema dominante de diseño. En positivo: defectos registrados 41&rarr;107, señal fuerte de auto-QA.</p>
+  </section>
+
+  <footer>
+    <p><strong>Cierre.</strong> La trayectoria es la correcta: los hallazgos reciben ticket, los tickets se cierran, la bitácora cuenta la verdad. La distancia entre &laquo;construido&raquo; y &laquo;activado&raquo; es donde viven las próximas dos semanas. Tres toggles de branch protection y un valor de color se llevan por delante casi toda la lista ALTO. El resto &mdash; fundación, flujo de git, campos de Jira &mdash; es media hora aquí y allá, sin código.</p>
+    <p>Esta re-auditoría la ejecutó Claude en cuatro subagentes paralelos el 27 de agosto de 2026, sobre la misma checklist del baseline del 14 de agosto, con más profundidad y con acceso al tablero de Jira. No es un informe de Dojo. Toda la evidencia sale de lectura directa del repo, del tablero vía <span class="mono">acli</span>, y de medición con Playwright sobre producción. Contrastes calculados recorriendo fondos hasta el primer ancestro opaco &mdash; los valores a &lt; 0,25 del umbral (4,29 / 4,12 / 3,96) conviene confirmarlos contra los tokens del repo.</p>
+  </footer>
+
+</div>
+</body>
+</html>
