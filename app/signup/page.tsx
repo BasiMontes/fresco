@@ -16,8 +16,9 @@ import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-
 import { createClient } from '@/lib/supabase/client';
+
+import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
  * `/signup` — EPIC-FRESCO-7 (Progressive Signup, US 7.1): a guest is asked
@@ -222,6 +223,15 @@ export default function SignupPage() {
     }
     isSubmittingRef.current = true;
     setIsSubmitting(true);
+    // FRESCO-32: reject a known-breached password before the real signUp /
+    // anonymous-conversion call. Runs with the button disabled (the HIBP
+    // request can take up to 3s). Fail-open — a HIBP outage never blocks.
+    if (await isPasswordPwned(password)) {
+      setSignupError(PWNED_PASSWORD_MESSAGE);
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+      return;
+    }
     setEmailConflict(false);
     try {
       const client = createClient();

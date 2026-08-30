@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
+import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
  * `/update-password` — FRESCO-52 step 2. Only reachable with a real
@@ -53,6 +54,13 @@ export default function UpdatePasswordPage() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // FRESCO-32: reject a known-breached password before the update. Runs
+      // with the button disabled (the HIBP request can take up to 3s).
+      // Fail-open — a HIBP outage never blocks.
+      if (await isPasswordPwned(password)) {
+        setError(PWNED_PASSWORD_MESSAGE);
+        return;
+      }
       const client = createClient();
       const { error: updateError } = await client.auth.updateUser({ password });
       if (updateError) {

@@ -11,6 +11,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { translateAuthError } from '@/lib/auth-errors';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
+import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 export interface IdentityStepProps {
   /** Called once a real Supabase session exists (guest or freshly-created account). */
@@ -77,6 +78,12 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
     // maps from Supabase's own `weak_password` error.
     if (password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres.');
+      setIsSubmitting(false);
+      return;
+    }
+    // FRESCO-32: reject a known-breached password before signUp. Fail-open.
+    if (await isPasswordPwned(password)) {
+      setError(PWNED_PASSWORD_MESSAGE);
       setIsSubmitting(false);
       return;
     }

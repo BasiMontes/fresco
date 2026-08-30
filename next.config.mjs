@@ -78,6 +78,8 @@ const connectSrc = [
   ...posthogHosts,
   sentryIngestOrigin,
   ...sentryHosts,
+  // FRESCO-32: client-side leaked-password check (lib/validation/pwned-password.ts).
+  'https://api.pwnedpasswords.com',
 ];
 
 const tokens = list => [...new Set(list.filter(Boolean))].join(' ');
