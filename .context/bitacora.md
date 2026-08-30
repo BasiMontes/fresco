@@ -144,3 +144,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: el job e2e de CI ahora levanta un stack Supabase local efimero (supabase start + db reset + seed por-run) dentro del job; PR e2e ya no toca el proyecto de prod jdqemhewjrjuopssdurn. 2 migraciones baseline reconstruyen public.recipes + rls_auto_enable (creados a mano fuera de migraciones); nueva tabla rate_limit_exempt_users saca los 4 UUIDs de test de prod del cuerpo de la funcion security-definer. PR #195 squash a dev (9569aac), 31/31 e2e verde en runner GitHub.
 - Por que: audit-3 HALLAZGO ALTO A — un step e2e sin filtro id=eq. = UPDATE masivo en prod disparado por cualquier PR.
 - Siguiente: promover dev->staging->main; runbook manual de prod (migration repair de las baseline + db push del rate-limit); cerrar FRESCO-310. ADR-0017 pendiente de aceptar.
+
+## 2026-08-30 - FRESCO-310: migracion rate-limit aplicada a prod + drift descubierto
+- Que: aplicada 20260830142702 a prod jdqemhewjrjuopssdurn via MCP apply_migration (idempotente). Verificado: rate_limit_exempt_users con 4 filas, check_and_increment_rate_limit sin UUIDs literales. 2 baseline marcadas migration repair --status applied. ADR-0017 aceptado (2c95e5e, promovido a main). Descubierto drift severo del ledger (54 local-only / 49 remote-only) -> FRESCO-325.
+- Por que: cerrar el hallazgo ALTO A end-to-end (la funcion en prod tenia los 4 UUIDs hardcodeados hasta ahora).
+- Siguiente: cerrar FRESCO-310. FRESCO-325 (reconciliacion del ledger) queda en el epic audit-3.
