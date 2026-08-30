@@ -94,3 +94,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: PR #185 (commit 78ea171) mergeado a dev. Nueva `tests/test-user-factory.ts` (factory de usuarios efímeros vía GoTrue admin API, teardown garantizado por fixture, ON DELETE CASCADE verificado). 4 step files migrados de cuentas compartidas `DEV/PRO_USER_EMAIL` a usuario propio por escenario. Jira -> Finalizada.
 - Por qué: fix de raíz del race del backend Supabase compartido — FRESCO-289 solo lo serializó con `concurrency`. Race producía RLS 403 / 500 "Error guardando el plan" / timeouts de shopping-list en vivo.
 - Siguiente: la 310 (Supabase local en CI) elimina la escritura a producción que la factory todavía hace; los usuarios `hola.frescoapp+e2e-*` huérfanos (si el teardown falla) desaparecen entonces.
+
+## 2026-08-30 - FRESCO-293: arreglos UI menores a 390px
+- Qué: 3 sub-fixes en PR #188 -> dev. (1) Botón "Copiar" de /qa movido a barra de cabecera propia (ya no solapa la 1a línea del snippet) + foco de teclado visible. (2) <title> propio en /onboarding ("Completa tu perfil · Fresco") y /update-password ("Nueva contraseña · Fresco") vía layout.tsx de servidor. (3) Token global --color-error #b8422e -> #b03d2b (contraste 4,29:1 -> 4,66:1 sobre crema, 5,92:1 blanco-sobre-token); actualizado globals.css + DESIGN.md.
+- Por qué: hallazgo 18 de la re-auditoría de agosto (eje Diseño, BAJO, epic FRESCO-278); WCAG 2.4.2 + AA de contraste.
+- Siguiente: merge PR #188 a dev -> Jira a Merged -> QA verifica en staging -> Finalizada.
