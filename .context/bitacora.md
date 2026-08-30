@@ -194,3 +194,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: badge "Nuevo" junto a ítems que no estaban en la lista de la semana anterior. lib/api/shopping-list.ts (normalizeNombre + diffNombresNuevos pura + getNombresNuevos wrapper fail-soft), page.tsx wiring, shopping-list-view.tsx pill, +5 unit tests. Sin migración ni Edge Function. Resto de FRESCO-194 (carrusel sugerencias + Añadir) ya estaba en prod. PR #202.
 - Por qué: última pieza de FRESCO-194, viable sin persistencia nueva (la lista previa vive en shopping_lists por meal_plan/semana).
 - Siguiente: badge honesto "no estaba la semana pasada"; si sale ruidoso en datos reales, 2a vuelta (solo pasillos nuevos). Backlog de dev vacío tras esto.
+
+## 2026-08-30 - FRESCO-32 check anti-contraseñas-filtradas (DIY, Pwned Passwords)
+- Qué: la feature nativa de Supabase (leaked_password_protection) está capada a plan Pro y la org está en Free. Implementado client-side contra la API pública de Pwned Passwords (k-anonymity: solo 5 chars del hash SHA-1 salen del navegador). lib/validation/pwned-password.ts + check en 3 handlers (signup, onboarding identity-step, update-password). Fail-open (si HIBP no responde en 3s, no bloquea). next.config.mjs connect-src += api.pwnedpasswords.com. 6 unit tests + 1 escenario e2e @registro. Live-verificado contra la API real. PR #203.
+- Por qué: FRESCO-32 (auditoría Supabase Advisors, no audit-3) llevaba Blocked desde el 1 ago por ser feature de pago.
+- Siguiente: reversible — si se sube a Pro, borrar helper + 3 llamadas y activar el toggle.
