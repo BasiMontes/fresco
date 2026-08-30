@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: 'Inicia sesión · Fresco',
 };
 
+// FRESCO-315: `<main>` landmark for the auth route (the public pages had none).
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <main>{children}</main>;
 }

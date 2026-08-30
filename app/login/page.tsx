@@ -167,21 +167,26 @@ function LoginPageInner() {
           )}
 
           <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+            {/* FRESCO-315: real <label for> — the accessible name was carried
+                only by aria-label duplicating the placeholder (WCAG 3.3.2 /
+                4.1.2). sr-only keeps the minimalist card design unchanged. */}
+            <label htmlFor="login-email" className="sr-only">Correo electrónico</label>
             <Input
+              id="login-email"
               data-testid="email_input"
               type="email"
               placeholder="Correo electrónico"
-              aria-label="Correo electrónico"
               required
               autoComplete="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
             />
+            <label htmlFor="login-password" className="sr-only">Contraseña</label>
             <Input
+              id="login-password"
               data-testid="password_input"
               type="password"
               placeholder="Contraseña"
-              aria-label="Contraseña"
               required
               autoComplete="current-password"
               value={password}

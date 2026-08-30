@@ -46,7 +46,11 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/login" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+          <Link
+            href="/login"
+            // FRESCO-315: 44px comfortable tap target on mobile (was ~26px).
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'min-h-[44px]')}
+          >
             Ya tengo cuenta
           </Link>
           <Link
@@ -58,7 +62,8 @@ export function SiteNav() {
           <Button
             variant="secondary"
             size="sm"
-            className="rounded-sm px-2 sm:hidden"
+            // FRESCO-315: 44x44 comfortable tap target on mobile (was ~40x31).
+            className="min-h-[44px] min-w-[44px] rounded-sm px-2 sm:hidden"
             aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={isOpen}
             onClick={() => setIsOpen(open => !open)}

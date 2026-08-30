@@ -48,7 +48,8 @@ export function Faq() {
                 onClick={() => setOpenIndex(isOpen ? null : index)}
                 aria-expanded={isOpen}
                 aria-controls={`faq-answer-${index}`}
-                className="flex w-full items-start justify-between gap-4 py-2 text-left text-label text-text"
+                // FRESCO-315: 44px comfortable tap target (was ~38px) — text/icon unchanged.
+                className="flex min-h-[44px] w-full items-start justify-between gap-4 py-2 text-left text-label text-text"
               >
                 {faq.question}
                 <Plus

@@ -41,7 +41,8 @@ export default function QaGuidePage() {
   const credentialsUrl = process.env.NEXT_PUBLIC_QA_CREDENTIALS_URL;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-12">
+    // FRESCO-315: `<main>` landmark so a screen reader can skip to content.
+    <main className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-12">
       {/* 1. Header */}
       <header>
         <h1 className="text-h2">Guía de testeabilidad para QA</h1>
@@ -270,6 +271,6 @@ export default function QaGuidePage() {
         <code>testability-guide</code>
         .
       </footer>
-    </div>
+    </main>
   );
 }

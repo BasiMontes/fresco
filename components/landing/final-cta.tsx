@@ -9,8 +9,12 @@ import { buttonVariants } from '@/components/ui/button';
 export function FinalCta() {
   return (
     <section className="border-t border-border bg-surface px-4 py-20 text-center md:px-8">
+      {/* FRESCO-315: the space before <br /> is load-bearing — without it
+          textContent collapses to "domingosin agobios." for screen readers
+          and text search. */}
       <h2 className="text-h1 text-text">
         El próximo domingo
+        {' '}
         <br />
         sin agobios.
       </h2>

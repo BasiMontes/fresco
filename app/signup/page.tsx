@@ -328,11 +328,12 @@ export default function SignupPage() {
                   }}
                   className="mt-6 flex flex-col gap-3"
                 >
+                  <label htmlFor="conflict-password" className="sr-only">Contraseña de esa cuenta</label>
                   <Input
+                    id="conflict-password"
                     data-testid="conflict_password_input"
                     type="password"
                     placeholder="Contraseña de esa cuenta"
-                    aria-label="Contraseña de esa cuenta"
                     autoComplete="current-password"
                     value={conflictPassword}
                     onChange={e => setConflictPassword(e.target.value)}
@@ -386,21 +387,26 @@ export default function SignupPage() {
                     </p>
 
                     <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+                      {/* FRESCO-315: real <label for> instead of an aria-label
+                          that only duplicated the placeholder (WCAG 3.3.2 /
+                          4.1.2). sr-only keeps the card design unchanged. */}
+                      <label htmlFor="signup-email" className="sr-only">Correo electrónico</label>
                       <Input
+                        id="signup-email"
                         data-testid="email_input"
                         type="email"
                         placeholder="Correo electrónico"
-                        aria-label="Correo electrónico"
                         required
                         autoComplete="email"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                       />
+                      <label htmlFor="signup-password" className="sr-only">Contraseña</label>
                       <Input
+                        id="signup-password"
                         data-testid="password_input"
                         type="password"
                         placeholder="Contraseña"
-                        aria-label="Contraseña"
                         required
                         minLength={6}
                         autoComplete="new-password"

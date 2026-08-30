@@ -33,7 +33,8 @@ export function SiteFooter() {
                 type="button"
                 data-testid={`site_footer_${linkSection}_link`}
                 onClick={() => openSection(linkSection)}
-                className="py-1.5 text-caption text-accent-300"
+                // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
+                className="inline-flex min-h-[44px] items-center text-caption text-accent-300"
               >
                 {label}
               </button>

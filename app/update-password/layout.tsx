@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: 'Nueva contraseña · Fresco',
 };
 
+// FRESCO-315: `<main>` landmark for the auth route (the public pages had none).
 export default function UpdatePasswordLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <main>{children}</main>;
 }

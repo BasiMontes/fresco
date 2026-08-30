@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Crea tu cuenta · Fresco',
 };
 
+// FRESCO-315: `<main>` landmark for the auth route (the public pages had none).
 export default function SignupLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <main>{children}</main>;
 }

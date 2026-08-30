@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: 'Completa tu perfil · Fresco',
 };
 
+// FRESCO-315: `<main>` landmark for the onboarding route (the public pages had none).
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <main>{children}</main>;
 }
