@@ -140,3 +140,6 @@ dbhub.local.toml
 !skills.lock.json
 !**/skills.lock.json
 .env*
+# FRESCO-310: committed CI overlay of Supabase local-dev demo constants
+# (no real secrets — see the file header). Must be tracked.
+!.env.ci

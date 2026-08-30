@@ -7,9 +7,9 @@ on:
   # never a PR, so `pull_request` alone leaves the exact commit Vercel
   # deploys to staging / production ungated. `push` runs the fast,
   # secret-free jobs (repo-check + unit) on that commit. The `e2e` job stays
-  # PR-only via an `if:` guard below — it needs secrets.ENV_FILE and the
-  # shared-backend concurrency dance, neither of which belongs on a
-  # post-merge push. (FRESCO-311)
+  # PR-only via an `if:` guard below - it needs secrets.ENV_FILE and boots a
+  # full ephemeral local Supabase stack (FRESCO-310), neither of which earns
+  # its cost on a post-merge push. (FRESCO-311)
   push:
     branches: [staging, main]
 
@@ -47,26 +47,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: repo-check
     # PR-only: `push` runs (staging / main promotion) skip e2e entirely.
-    # e2e needs secrets.ENV_FILE and serializes on the shared Supabase
-    # backend — running it again post-merge adds latency and shared-state
-    # churn without gating anything the pre-merge PR run did not already
-    # gate. A skipped job with `needs: repo-check` does not fail the run.
+    # e2e needs secrets.ENV_FILE and stands up a full local Supabase stack -
+    # running it again post-merge adds latency without gating anything the
+    # pre-merge PR run did not already gate. A skipped job with
+    # `needs: repo-check` does not fail the run. (FRESCO-311)
     if: github.event_name == 'pull_request'
-    # All PRs' e2e runs share the same single Supabase backend
-    # (jdqemhewjrjuopssdurn) via secrets.ENV_FILE — there is no per-PR or
-    # ephemeral backend. Concurrent runs mutate the same rows (e.g.
-    # reseedCurrentWeekPlan() deletes+regenerates the QA user's meal_plans;
-    # @suscripcion steps do service-role writes to user_profiles.plan),
-    # so two overlapping PR runs race on shared state. `workers: 1` in
-    # playwright.config.ts only serializes tests *within* one run — it does
-    # nothing for two *different* CI jobs running at the same time.
-    # This group is a single fixed string (not scoped to ref/PR), so every
-    # e2e job across every PR queues behind the previous one instead of
-    # running concurrently. cancel-in-progress stays false: a queued run
-    # should wait, never cancel a run that's mid-mutation against the
-    # shared backend (that would leave it half-seeded for the next run).
-    # This is a stopgap (FRESCO-289) — the real fix is per-run test
-    # factories or an ephemeral Supabase project, tracked as a follow-up.
+    # This job used to run against the shared production Supabase project
+    # (jdqemhewjrjuopssdurn) via secrets.ENV_FILE: every PR's e2e run mutated
+    # the same rows (reseedCurrentWeekPlan() deletes+regenerates meal_plans;
+    # @suscripcion does service-role writes to user_profiles.plan), so runs
+    # had to queue one-behind-another on a single fixed concurrency group.
+    # As of FRESCO-310 each run boots its OWN ephemeral local stack
+    # (`supabase start` + `supabase db reset` + a fresh per-run seed), so PR
+    # e2e runs no longer touch production and no longer share mutable state.
+    # The `e2e-shared-supabase-backend` group is retained ONLY because
+    # post-deploy-smoke.yml still shares it (that workflow runs @smoke
+    # against the real prod backend and must not overlap a mutation). Now
+    # that PR runs are isolated, dropping the group from THIS job is safe and
+    # is tracked as a follow-up. cancel-in-progress stays false so a queued
+    # run never cancels one post-deploy-smoke may be serializing behind.
     concurrency:
       group: e2e-shared-supabase-backend
       cancel-in-progress: false
@@ -82,10 +81,67 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
-      - name: Restore .env from secret
-        run: printf '%s' "$ENV_FILE" > .env
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.109.1
+
+      - name: Start local Supabase
+        # Docker is preinstalled on ubuntu-latest. This serves Postgres, Auth
+        # (GoTrue), PostgREST and the Edge Runtime on 127.0.0.1 - the whole
+        # backend the app and the e2e suite talk to, with zero production
+        # credentials in play.
+        run: supabase start
+
+      - name: Apply migrations + seed
+        # `supabase db reset` drops the database, re-runs every migration
+        # from empty, then loads supabase/seed.sql (recipe catalog + the
+        # rate-limit exemption rows). Any migration or seed failure fails the
+        # job here - this is also the only CI coverage the repo has that its
+        # migrations still apply cleanly from scratch.
+        run: supabase db reset
+
+      - name: Restore .env from secret and apply CI overlay
+        # `test:e2e` re-sources `.env` itself
+        # (`bash -c 'set -a; . ./.env; set +a; ...'`), so the local-stack
+        # overrides must live IN `.env`, not only in $GITHUB_ENV which that
+        # subshell never sees. `.env.ci` (committed - Supabase's public
+        # local-dev demo constants, no real project access) is appended last
+        # so its NEXT_PUBLIC_SUPABASE_URL / SUPABASE_* / *_USER_* values win
+        # over the production ones in the restored secret.
+        run: |
+          printf '%s\n' "$ENV_FILE" > .env
+          cat .env.ci >> .env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Seed e2e users
+        # Creates the two fixed accounts the suite logs in as
+        # (DEV_USER_* / PRO_USER_*) against the local GoTrue admin API, plus
+        # their user_profiles and rate_limit_exempt_users rows. The script
+        # hard-refuses any non-localhost SUPABASE_URL, so it cannot touch
+        # production even if the overlay above regressed.
+        run: bun scripts/seed-e2e-users.ts
+
+      - name: Assert e2e is isolated from the prod Supabase project
+        # Last line of defence before we spend build time: if any Supabase
+        # var still points at a hosted project, fail loudly here rather than
+        # silently mutating production from a PR.
+        run: |
+          set -a; . ./.env; set +a
+          fail=0
+          for v in NEXT_PUBLIC_SUPABASE_URL SUPABASE_URL NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            val="${!v}"
+            case "$val" in
+              *jdqemhewjrjuopssdurn*|*supabase.co*|*supabase.in*)
+                echo "::error::$v points at a hosted Supabase project: $val"; fail=1;;
+            esac
+          done
+          case "$NEXT_PUBLIC_SUPABASE_URL" in
+            http://127.0.0.1:54321*|http://localhost:54321*) ;;
+            *) echo "::error::NEXT_PUBLIC_SUPABASE_URL is not the local stack: $NEXT_PUBLIC_SUPABASE_URL"; fail=1;;
+          esac
+          [ "$fail" = 0 ] || { echo "e2e is NOT isolated from production - aborting"; exit 1; }
+          echo "OK: e2e backend is the local stack"
 
       - name: Build and start production server
         # `next dev` compiles each route on first hit — combined with real
@@ -100,3 +156,7 @@ jobs:
           npx --yes wait-on http://localhost:3000 --timeout 60000
 
       - run: bun run test:e2e
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
