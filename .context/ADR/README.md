@@ -76,7 +76,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0013](./ADR-0013-posthog-product-analytics.md) | PostHog as the product-analytics vendor (EU region, client + server capture) | Accepted | — | — |
 | [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Accepted | — | — |
 | [ADR-0015](./ADR-0015-stripe-subscription-reconciliation-job.md) | Daily `pg_cron`→`pg_net`→Next.js route reconciles `user_profiles` subscription state against Stripe | Accepted | — | — |
-| [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Proposed | — | — |
+| [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
