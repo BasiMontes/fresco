@@ -1,6 +1,6 @@
 # ADR-0017 — CI e2e runs against an ephemeral local Supabase stack, not the prod project
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-08-30
 - **Deciders:** Basi Montes
 - **Tags:** testing, e2e, ci, infrastructure, cross-cutting-invariant

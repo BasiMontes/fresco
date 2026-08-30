@@ -77,7 +77,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Accepted | — | — |
 | [ADR-0015](./ADR-0015-stripe-subscription-reconciliation-job.md) | Daily `pg_cron`→`pg_net`→Next.js route reconciles `user_profiles` subscription state against Stripe | Accepted | — | — |
 | [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Accepted | — | — |
-| [ADR-0017](./ADR-0017-ci-e2e-local-supabase-stack.md) | CI e2e runs against an ephemeral local Supabase stack, not the prod project | Proposed | — | — |
+| [ADR-0017](./ADR-0017-ci-e2e-local-supabase-stack.md) | CI e2e runs against an ephemeral local Supabase stack, not the prod project | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
