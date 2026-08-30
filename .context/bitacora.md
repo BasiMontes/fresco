@@ -184,3 +184,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: pase completo a CONTEXT.md §2 (solo doc). Conteos 11->12 skills, 5->6 commands. Anadido todo el arbol de codigo de la app (app/ components/ lib/ api/ supabase/ tests/ bones/ design/ .github/). docs/ y .context/ completados. Root fresco/ -> fresco-app/. Refs muertas §5 (compliance-matrix.md, bun up) corregidas. PR #201.
 - Por que: HALLAZGO BAJO auditoria-3, familia documentado-vs-real. CONTEXT.md nunca tuvo un pase tras convertirse el repo en Fresco.
 - Siguiente: epic 309 solo queda FRESCO-313 (Blocked, necesita admin de Jira del owner).
+
+## 2026-08-30 - FRESCO-313 cerrada + EPIC FRESCO-309 completo
+- Que: token Administer Jira -> confirmado que FRESCO es team-managed (sin screens/field-config/workflow API). Partes 1/2 hechas por UI (Severity+Evidence+RootCause+ErrorType en el tipo Error; Severity+Evidence required, verificado por createmeta/editmeta). Parte 3 (backfill) ya estaba. Parte 4 (validador workflow) cubierta por el gate del repo (S18 / bug-fix-workflow Phase 3) — TMP no expone la regla. EPIC FRESCO-309 (3a auditoria) 13/13 hijos Finalizada -> epic cerrado.
+- Por que: HALLAZGO MEDIO D auditoria-3 — disciplina Severity/Evidence en el tipo Error.
+- Siguiente: auditoria-3 completa. Queda auditoria-3 suelto ninguno. Migrar los valores de severity de comentario a campo real al tocar cada defecto (no forzado).
