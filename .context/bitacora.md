@@ -109,3 +109,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: cerrados 9/10 puntos del hallazgo BAJO audit-3. Comentario service.ts, conteo ADRs en glossary, header+meta.created de project.yaml, bloque `dev` en environments, untrack .impeccable/config.json, borrados 62 review.md/compliance-matrix.md, gate NODE_ENV en /dev/skeleton-capture, 6 ADRs Proposed->Accepted + fila ADR-0006. Punto 6 escaló a des-integración completa de n8n (MCP + 15 skills + install.ts/doctor.ts/manifest/.env.example/docs). PR #191 -> dev.
 - Por qué: FRESCO-318, drift acumulado; n8n no se usa y su MCP fallaba al conectar.
 - Siguiente: revisar+mergear #191, promocionar dev->staging->main, borrar 11 ramas remotas mergeadas (punto 8, bloqueado por classifier esta sesión).
+
+## 2026-08-30 - FRESCO-316: README propio de Fresco
+- Qué: README.md reescrito Frescofirst (qué es Fresco, 3 entornos dev/pre/pro, arranque local, `bun test` + `test:e2e` y variantes, mapa de docs). Texto del boilerplate movido a docs/boilerplate.md con links relativos repunteados. CONTEXT.md reencuadrado (intro + árbol) como Fresco-sobre-boilerplate. INSTALLER.md: 3 links README -> docs/boilerplate.md. PR #192 squash a dev, promovido dev->staging->main (los 3 en 11d4c43), prod+pre 200.
+- Por qué: hallazgo G (BAJO, auditoria-3, FRESCO-316) - el README seguía siendo el boilerplate "AGENTIC ENGINEERING", cero mención al producto.
+- Siguiente: ninguno; ticket Finalizada. Drift preexistente en CONTEXT.md ("11 workflow skills"/"5 slash commands" vs 12/6 reales) queda fuera de alcance.
