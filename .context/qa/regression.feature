@@ -11,8 +11,9 @@
 #   @pendiente                     → escrito, todavía no verificado ni automatizado
 #   @edge-case                     → causística además del camino feliz
 #   @smoke                         → subconjunto mínimo (5-6) de happy paths ya
-#                                    @automatizado que corre post-deploy contra la
-#                                    URL desplegada (.github/workflows/post-deploy-smoke.yml)
+#                                    @automatizado que corre tras cada deploy de
+#                                    producción, contra la URL del propio deploy
+#                                    (.github/workflows/post-deploy-smoke.yml)
 #
 # Al automatizar un escenario, añadir @automatizado y el fichero de test que lo cubre.
 

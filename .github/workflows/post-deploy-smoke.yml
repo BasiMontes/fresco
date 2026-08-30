@@ -1,20 +1,27 @@
 name: Post-Deploy Smoke
 
-# Runs a tiny @smoke subset of the e2e suite against a deployment the moment
-# Vercel reports it live. Complements pr-check.yml: that gate proves the
-# commit builds and its tests pass in CI; this proves the *deployed artifact*
-# actually serves the core happy paths (auth, menu generation, shopping list,
-# subscription management, the public /qa page).
+# Runs a tiny @smoke subset of the e2e suite against the PRODUCTION
+# deployment the moment Vercel reports it live. Complements pr-check.yml:
+# that gate proves the commit builds and its tests pass in CI; this proves
+# the *deployed production artifact* actually serves the core happy paths
+# (auth, menu generation, shopping list, subscription management, the
+# public /qa page).
 #
-# GitHub only runs `deployment_status` workflows from the file on the DEFAULT
-# branch (main). Until this file reaches main via dev -> staging -> main, it
-# triggers nothing — expected. Once on main it fires for every Vercel
-# deployment (Preview branch deploys AND Production).
+# Scope = Production deploys only (see the job `if:`). Vercel's GitHub
+# deployment payload only distinguishes "Preview" vs "Production" — it does
+# NOT tell a staging-branch preview apart from a PR-branch preview (`ref` is
+# the commit SHA, `payload` is empty), so a per-branch staging filter is not
+# possible here. Every dev -> staging -> main promotion is a fast-forward of
+# the same commit, so the Production run covers the exact code staging ran.
 #
-# Non-blocking: this workflow does not gate the dev -> staging -> main
-# promotion (that is a manual fast-forward push with no required check wired
-# to this job). A red smoke run is a visible signal to investigate / roll
-# back, not an automatic stop. (FRESCO-311)
+# `deployment_status` workflows run from the workflow file on the branch
+# that owns the deployed commit (observed: this fired from the PR branch
+# before merge), so it keeps working once merged to main.
+#
+# Non-blocking: no required status check is wired to this job, and
+# `deployment_status` fires AFTER the deploy is already live, so it cannot
+# gate the promotion. A red smoke run is a signal to investigate / roll
+# back (`vercel rollback`), not an automatic stop. (FRESCO-311)
 
 on:
   deployment_status:
@@ -27,14 +34,23 @@ jobs:
     name: smoke (@smoke)
     # Vercel posts several deployment_status updates per deploy (pending,
     # in_progress, success, and sometimes error). Only act on the terminal
-    # success. `inactive` (Vercel "skipped - not affected" builds) is
-    # intentionally NOT covered: nothing new was deployed.
-    if: github.event.deployment_status.state == 'success'
+    # success of a PRODUCTION deploy. Preview deploys (PR branches, dev,
+    # staging) are already covered by the full @automatizado e2e suite in
+    # pr-check.yml and would only add noise + shared-backend contention.
+    # `inactive` (Vercel "skipped - not affected") is not covered either:
+    # nothing new was deployed.
+    # Vercel names the env "Production" (bare) here; startsWith() also covers
+    # the "Production - <project>" form Vercel uses when a project slug is set.
+    if: >-
+      github.event.deployment_status.state == 'success'
+      && startsWith(github.event.deployment_status.environment, 'Production')
     runs-on: ubuntu-latest
     # Same shared single Supabase backend (jdqemhewjrjuopssdurn) as the e2e
-    # job in pr-check.yml. Reuse that job's concurrency group so a smoke run
-    # and a PR e2e run never mutate the shared rows concurrently. Queue,
-    # never cancel: a mid-mutation run must finish.
+    # job in pr-check.yml. Reuse that job's concurrency group so this run and
+    # a concurrent PR e2e run never mutate the shared rows at the same time.
+    # cancel-in-progress: false — a queued run waits; it never cancels a run
+    # mid-mutation. (A pending smoke run CAN still be superseded by a newer
+    # request in the group; that is acceptable for a non-blocking check.)
     concurrency:
       group: e2e-shared-supabase-backend
       cancel-in-progress: false
