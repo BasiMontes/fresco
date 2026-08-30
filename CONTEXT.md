@@ -1,9 +1,9 @@
 # CONTEXT.md — Context Engineering in This Repo
 
-> **Last update**: 2026-05-19
-> **Purpose**: Canonical, operational explanation of how `agentic-dev-boilerplate` structures context so AI agents work effectively against it.
+> **Last update**: 2026-08-30
+> **Purpose**: Canonical, operational explanation of how the **Fresco** repo structures context so AI agents work effectively against it. Fresco is built on the `agentic-dev-boilerplate` framework (see `docs/boilerplate.md`), so the structure below is the boilerplate's — the product itself lives in `.context/PRD/` and `.context/business/`.
 > **Audience**: Humans onboarding the repo, and AI agents that need to understand "where things live and why".
-> **Companion files**: `README.md` (overview for humans), `CLAUDE.md` (operational rules loaded each session), `docs/agentic-development-engineering.md` (methodology deep dive).
+> **Companion files**: `README.md` (Fresco overview + how to run the app), `CLAUDE.md` (operational rules loaded each session), `docs/agentic-development-engineering.md` (methodology deep dive), `docs/boilerplate.md` (the upstream framework).
 
 ---
 
@@ -30,11 +30,12 @@ For the theory behind these principles and the broader Agentic Development Engin
 ## 2. Directory Structure (This Project)
 
 ```
-agentic-dev-boilerplate/
+fresco/                             (repo root — Fresco, on the agentic-dev-boilerplate framework)
 │
 ├── CLAUDE.md                       Operational context loaded every Claude Code session
-├── README.md                       Project overview (humans)
+├── README.md                       Fresco overview + how to run the app (humans)
 ├── CONTEXT.md                      This file — Context Engineering in this repo
+├── docs/boilerplate.md             The upstream agentic-dev-boilerplate overview
 │
 ├── .claude/
 │   ├── skills/                     11 workflow skills (executable workflows)
@@ -99,7 +100,8 @@ These files have stable names and locations. Any skill, command, or doc can refe
 | ------------------------------------------- | ------------------------------------------------------------------------ |
 | `CLAUDE.md`                                 | Project memory, loaded every Claude Code session                         |
 | `CONTEXT.md`                                | This file — Context Engineering canonical map                            |
-| `README.md`                                 | Project overview for humans                                              |
+| `README.md`                                 | Fresco overview + how to run the app (humans)                            |
+| `docs/boilerplate.md`                       | The upstream `agentic-dev-boilerplate` framework overview                |
 | `.agents/project.yaml`                      | Project variable values (single source of truth for `{{VAR_NAME}}`)      |
 | `.agents/jira-required.yaml`                | Required Jira custom field manifest                                      |
 | `.agents/jira-fields.json`                  | Workspace-resolved Jira field IDs                                        |
@@ -339,7 +341,8 @@ Use this table to decide what to re-generate after what kind of change.
 
 | File                                                                                         | What you get there                                                                         |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `README.md`                                                                                  | Project overview for humans (start here for visitors)                                      |
+| `README.md`                                                                                  | Fresco overview + how to run the app (start here for visitors)                             |
+| `docs/boilerplate.md`                                                                         | The upstream `agentic-dev-boilerplate` framework this repo is built on                     |
 | `CLAUDE.md`                                                                                  | Operational context loaded each Claude Code session                                        |
 | `docs/agentic-development-engineering.md`                                                    | Deep dive on the Agentic Development Engineering philosophy                                |
 | `docs/onboarding.html`                                                                       | Onboarding for new contributors (single-file HTML, served by `bun run onboarding`)         |

@@ -8,7 +8,7 @@ This doc is the **contract that `cli/install.ts` implements**. It covers the fou
 
 ## Before you run setup — prerequisites
 
-`bun run setup` assumes a few tools already exist on `PATH` and that you've already installed **at least one** AI agent CLI (Claude Code or OpenCode). The unified front-of-house checklist lives in [README → Prerequisites](README.md#prerequisites); this is the same list with installer-flavored detail (exact check location, exact failure message, exact code reference).
+`bun run setup` assumes a few tools already exist on `PATH` and that you've already installed **at least one** AI agent CLI (Claude Code or OpenCode). The unified front-of-house checklist lives in [docs/boilerplate.md → Prerequisites](docs/boilerplate.md#prerequisites); this is the same list with installer-flavored detail (exact check location, exact failure message, exact code reference).
 
 ### Hard blockers — installer exits 1 if missing
 
@@ -334,9 +334,9 @@ What you keep: every workflow skill committed in this repo (`/sprint-development
 
 - [.scratch/plans/GENTLE-AI-RESEARCH.md](./.scratch/plans/GENTLE-AI-RESEARCH.md) — full research doc on the gentle-ai ecosystem (commands, components, agent matrix)
 - [CLAUDE.md § Onboarding](./CLAUDE.md) — quick-start entry point for `bun run setup`
-- [README.md](./README.md) — project overview and Quick Start
+- [docs/boilerplate.md](./docs/boilerplate.md) — boilerplate framework overview and Quick Start
 - [docs/setup/README.md](./docs/setup/README.md) — index of remaining setup guides (Jira, MCPs)
 
 ---
 
-> **You are here**: What `bun run setup` configures. **Read time**: 10 min. **Next**: `bun run setup:doctor` to verify your install, or [`README.md`](README.md) to navigate the rest.
+> **You are here**: What `bun run setup` configures. **Read time**: 10 min. **Next**: `bun run setup:doctor` to verify your install, or [`docs/boilerplate.md`](docs/boilerplate.md) to navigate the rest.
