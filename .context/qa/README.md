@@ -17,6 +17,7 @@ If the scope ever outgrows a single file, split by area (`login.feature`, `calen
 | `@no-implementado` | Describes desired behavior for a feature that does not exist in code yet (mock, TODO stub, or unbuilt) |
 | `@edge-case` | Non-happy-path causística in addition to the golden path |
 | `@automatizado` | Once wired to a real Playwright test, add this tag plus a comment pointing at the spec file that covers it |
+| `@smoke` | A minimal 5-6 scenario subset of `@automatizado` happy paths, run after each **Production** deploy against that deployment's own URL by `.github/workflows/post-deploy-smoke.yml` (`bun run test:e2e:smoke`). Add only to fast, low-flake, high-signal scenarios that already pass in CI; keep the set small |
 
 ## What the file contains
 

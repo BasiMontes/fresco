@@ -3,6 +3,15 @@ name: PR Check
 on:
   pull_request:
     branches: [dev, staging, main]
+  # The dev -> staging -> main promotion is a manual fast-forward `git push`,
+  # never a PR, so `pull_request` alone leaves the exact commit Vercel
+  # deploys to staging / production ungated. `push` runs the fast,
+  # secret-free jobs (repo-check + unit) on that commit. The `e2e` job stays
+  # PR-only via an `if:` guard below — it needs secrets.ENV_FILE and the
+  # shared-backend concurrency dance, neither of which belongs on a
+  # post-merge push. (FRESCO-311)
+  push:
+    branches: [staging, main]
 
 jobs:
   repo-check:
@@ -37,6 +46,12 @@ jobs:
     name: test:e2e
     runs-on: ubuntu-latest
     needs: repo-check
+    # PR-only: `push` runs (staging / main promotion) skip e2e entirely.
+    # e2e needs secrets.ENV_FILE and serializes on the shared Supabase
+    # backend — running it again post-merge adds latency and shared-state
+    # churn without gating anything the pre-merge PR run did not already
+    # gate. A skipped job with `needs: repo-check` does not fail the run.
+    if: github.event_name == 'pull_request'
     # All PRs' e2e runs share the same single Supabase backend
     # (jdqemhewjrjuopssdurn) via secrets.ENV_FILE — there is no per-PR or
     # ephemeral backend. Concurrent runs mutate the same rows (e.g.
