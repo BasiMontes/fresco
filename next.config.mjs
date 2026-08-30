@@ -54,19 +54,30 @@ const cspReportUri = sentryCspReportUri(process.env.NEXT_PUBLIC_SENTRY_DSN);
 // Third parties the browser actually talks to. Stripe is intentionally absent:
 // checkout is a server-side call + full-page redirect to Stripe's hosted page,
 // so the browser never loads Stripe.js.
-const scriptSrc = ['\'self\'', '\'unsafe-inline\'', posthogOrigin, 'https://*.posthog.com'];
-const imgSrc = ['\'self\'', 'data:', 'blob:', 'https://images.unsplash.com', posthogOrigin];
+//
+// PostHog and Sentry are pinned as static wildcard hosts, not derived from the
+// NEXT_PUBLIC_* vars — those aren't populated in every Vercel build scope, and
+// the allowlist for well-known third parties must not silently degrade per
+// environment. `posthogOrigin` / `sentryIngestOrigin` stay in the lists as an
+// exact-match bonus when the var is present (deduped away otherwise).
+const posthogHosts = ['https://*.posthog.com', 'https://*.i.posthog.com'];
+const sentryHosts = [
+  'https://*.sentry.io',
+  'https://*.ingest.sentry.io',
+  'https://*.ingest.us.sentry.io',
+  'https://*.ingest.de.sentry.io',
+];
+const scriptSrc = ['\'self\'', '\'unsafe-inline\'', posthogOrigin, ...posthogHosts];
+const imgSrc = ['\'self\'', 'data:', 'blob:', 'https://images.unsplash.com', posthogOrigin, ...posthogHosts];
 const connectSrc = [
   '\'self\'',
   supabaseOrigin,
   supabaseRealtimeOrigin,
   supabaseFunctionsOrigin,
   posthogOrigin,
-  'https://*.posthog.com',
+  ...posthogHosts,
   sentryIngestOrigin,
-  'https://*.ingest.sentry.io',
-  'https://*.ingest.us.sentry.io',
-  'https://*.ingest.de.sentry.io',
+  ...sentryHosts,
 ];
 
 const tokens = list => [...new Set(list.filter(Boolean))].join(' ');
