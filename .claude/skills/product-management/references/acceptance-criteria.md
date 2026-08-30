@@ -12,8 +12,10 @@ When refining EXISTING acceptance criteria (not a first-time write), run this ga
 2. Scan for **voice violations** (anti-pattern `I15` in `SKILL.md`): endpoint paths, HTTP status codes, DB table/column names, framework/library names, error-code identifiers, transaction or locking patterns, internal algorithms.
 3. Scan for **format violations** (anti-pattern `I17`): scenarios that are NOT wrapped in a ` ```gherkin ` fenced code block (plain text Given/When/Then is non-compliant).
 4. Scan for **persona violations** (anti-pattern `I19`): generic actors ("the user", "the system") inside scenarios; the persona must match `.context/PRD/user-personas.md`.
-5. If ANY violation is detected → do NOT do a surgical edit. Perform a FULL rewrite of the field from persona POV, with every scenario fenced as `gherkin`, and surface the before/after delta to the user before publishing the new value.
-6. Apply the heuristic: a criterion that breaks under a stack swap is implementation, not behavior — rewrite it as something the persona observes.
+5. Scan for **testability violations** (anti-pattern `I22`): a `Then` with a qualifier instead of an observable value ("respeta mis restricciones", "mensaje claro", "rápido"); no zero/empty/error scenario in the set.
+6. If ANY voice / format / persona violation is detected → do NOT do a surgical edit. Perform a FULL rewrite of the field from persona POV, with every scenario fenced as `gherkin`, and surface the before/after delta to the user before publishing the new value.
+7. A testability violation is handled differently: it usually needs a value the field does not contain (a count, a message string, a threshold). Surface it as a `gap` and get the value from the user — do not invent it to make the scan pass.
+8. Apply the heuristic: a criterion that breaks under a stack swap is implementation, not behavior — rewrite it as something the persona observes.
 
 A clean field (no violations on the scan) proceeds to the standard refinement workflow below.
 
@@ -132,6 +134,19 @@ For each edge case found:
 - **Action required** — promote to AC, leave as test-only, or ask the PO
 
 > **Decision rule**: If the edge case is high-criticality _and_ you can name a clear expected behavior, promote it to AC. Otherwise, document it as a test-level concern (out of scope of this skill — see the QA boilerplate).
+
+### The failing-test question (headline gate — anti-pattern `I22`)
+
+Before anything else on this list, run one question against every scenario:
+
+> **Could a tester write the test that fails from this `Then` alone, without asking the PO anything?**
+
+If the answer is no, the AC is not testable and the story is not Ready — no matter how polished the prose looks. Two failure shapes:
+
+- **Qualifier instead of value.** "recetas recomendadas que respetan mis restricciones" (how many? which restrictions? what counts as respecting them?), "un mensaje de error claro" (what text?), "carga rápido" (under what number?). Fix: name the exact count, the exact message string, the exact threshold.
+- **No zero / empty / error case.** The scenario set only describes the happy path. Fix: add a scenario for what the persona sees when the result set is empty, the action fails, or a required input is blank — each as its own `Scenario:` block, not an `And` bolted onto the happy path.
+
+An untestable AC blocks nothing at refinement — that is exactly why it is dangerous. The defect it hides surfaces in QA or in production instead, where it costs more to find (FRESCO-320).
 
 ### Clarity & Specificity Validation
 
@@ -260,6 +275,8 @@ Walk through INVEST one more time after writing scenarios. Common failures:
 Use this checklist as the gate from refinement → sprint:
 
 - [ ] Every AC follows Given–When–Then with concrete data
+- [ ] **The failing-test question passes for every scenario** — a tester could write the failing test from the `Then` alone, no PO input needed (anti-pattern `I22`)
+- [ ] **The zero / empty / error case is its own scenario** — not folded into the happy path as an `And`
 - [ ] Happy path, at least one error scenario, and known edge cases are covered
 - [ ] No AC depends on undocumented context
 - [ ] All ambiguities and gaps from analysis are resolved (or explicitly deferred)
