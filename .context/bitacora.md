@@ -139,3 +139,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: 4/4 resueltos. #3+#4 en repo (.context/audits/). #1: Ely ya era Viewer en proyecto FRESCO (verificado API), nada que conceder. #2: credenciales PRE enviadas a Ely por Slack. WIP->Finalizada.
 - Por que: audit-3 — dar baseline estable + acceso real para la 4a pasada.
 - Siguiente: nada. Epic FRESCO-309: 7/13 (311,314,315,316,317,318,319).
+
+## 2026-08-30 - FRESCO-310: aislar backend e2e de CI de produccion
+- Que: el job e2e de CI ahora levanta un stack Supabase local efimero (supabase start + db reset + seed por-run) dentro del job; PR e2e ya no toca el proyecto de prod jdqemhewjrjuopssdurn. 2 migraciones baseline reconstruyen public.recipes + rls_auto_enable (creados a mano fuera de migraciones); nueva tabla rate_limit_exempt_users saca los 4 UUIDs de test de prod del cuerpo de la funcion security-definer. PR #195 squash a dev (9569aac), 31/31 e2e verde en runner GitHub.
+- Por que: audit-3 HALLAZGO ALTO A — un step e2e sin filtro id=eq. = UPDATE masivo en prod disparado por cualquier PR.
+- Siguiente: promover dev->staging->main; runbook manual de prod (migration repair de las baseline + db push del rate-limit); cerrar FRESCO-310. ADR-0017 pendiente de aceptar.
