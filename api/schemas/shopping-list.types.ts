@@ -1,4 +1,4 @@
-import type { DiaSemana } from './meal-plan.types';
+import type { DiaSemana } from './meal-plan.types.ts';
 
 // Row shape of `public.shopping_lists` (fresco-schema-sql.md Block 6).
 // `items` is the jsonb aisle-grouped structure documented in api-contracts.md §2.

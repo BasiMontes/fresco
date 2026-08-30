@@ -23,6 +23,14 @@
 --     `20260726010000_drop_broken_admin_write_policy_on_recipes.sql` and
 --     `20260729130000_allow_authenticated_read_recipes.sql` have something to
 --     DROP / ALTER;
+--   * the base `GRANT SELECT` to `anon` + `authenticated` that the hand-run
+--     `schema_supabase.sql` issued (verified live on prod). RLS restricts
+--     rows, never substitutes for the table-level GRANT Postgres still
+--     requires — and with `config.toml`'s `auto_expose_new_tables` unset
+--     (the current cloud default) a migration-created table gets no implicit
+--     grant, so without this every RLS-context read of `recipes` fails with
+--     `permission denied for table recipes` on a fresh local / CI database
+--     while prod (where the grant already exists) is unaffected;
 --   * `pg_trgm` in the `public` schema (moved to `extensions` later by
 --     `20260801030000_move_pg_trgm_out_of_public.sql`);
 --   * `public.handle_updated_at()` + the `recipes` BEFORE UPDATE trigger
@@ -102,6 +110,14 @@ begin
       for all to authenticated using (true) with check (true);
   end if;
 end $$;
+
+-- ── Base table privileges ───────────────────────────────────────────────────
+-- Reissue the catalog-read GRANT the pre-migration `schema_supabase.sql` set
+-- (prod: anon + authenticated both hold SELECT). Idempotent. Never runs on
+-- prod (this migration is `migration repair`'d as already-applied there); it
+-- exists so a fresh local / CI `db reset` matches prod instead of 500ing
+-- every `recipes` read with `permission denied for table recipes`.
+grant select on public.recipes to anon, authenticated;
 
 -- ── Indexes (6 original GIN indexes) ────────────────────────────────────────
 create index if not exists idx_recipes_alergenos     on public.recipes using gin (alergenos);
