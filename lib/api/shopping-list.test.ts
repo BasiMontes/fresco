@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerateShoppingListResponse } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { getShoppingListForPlan, ShoppingListError, toggleShoppingListItem } from './shopping-list';
+import { diffNombresNuevos, getShoppingListForPlan, normalizeNombre, ShoppingListError, toggleShoppingListItem } from './shopping-list';
 
 const MEAL_PLAN_ID = 'plan-1';
 
@@ -119,6 +119,54 @@ describe('getShoppingListForPlan', () => {
 
     expect(result?.pasillos).toEqual([]);
     expect(result?.resumen.total_items).toBe(0);
+  });
+});
+
+describe('normalizeNombre', () => {
+  test('lowercases, trims, collapses whitespace and strips accents', () => {
+    expect(normalizeNombre('  Tomate   Frito ')).toBe('tomate frito');
+    expect(normalizeNombre('JAMÓN')).toBe('jamon');
+    expect(normalizeNombre('Piña')).toBe('pina');
+    expect(normalizeNombre('Aceite de OliVÁ')).toBe('aceite de oliva');
+  });
+});
+
+describe('diffNombresNuevos', () => {
+  const semana = (nombres: string[]): GenerateShoppingListResponse['pasillos'] => [
+    {
+      nombre: 'Varios',
+      orden: 1,
+      items: nombres.map(nombre => ({ nombre, cantidad: 1, unidad: 'ud', comprado: false })),
+    },
+  ];
+
+  test('flags items on the current list that were not on the prior list', () => {
+    const nuevos = diffNombresNuevos(semana(['Tomate', 'Lentejas', 'Pan']), semana(['Tomate', 'Arroz']));
+
+    expect([...nuevos].sort()).toEqual(['lentejas', 'pan']);
+  });
+
+  test('does not flag an item present on both weeks, ignoring case and accents', () => {
+    const nuevos = diffNombresNuevos(semana(['Jamón', 'Piña']), semana(['jamon', '  PIÑA ']));
+
+    expect(nuevos.size).toBe(0);
+  });
+
+  test('returns an empty set when there is no prior list (never flags everything)', () => {
+    const nuevos = diffNombresNuevos(semana(['Tomate', 'Pan']), []);
+
+    expect(nuevos.size).toBe(0);
+  });
+
+  test('dedupes a name that appears in more than one aisle of the current list', () => {
+    const actuales: GenerateShoppingListResponse['pasillos'] = [
+      { nombre: 'A', orden: 1, items: [{ nombre: 'Sal', cantidad: 1, unidad: 'ud', comprado: false }] },
+      { nombre: 'B', orden: 2, items: [{ nombre: 'sal', cantidad: 1, unidad: 'ud', comprado: false }] },
+    ];
+
+    const nuevos = diffNombresNuevos(actuales, semana(['Azúcar']));
+
+    expect([...nuevos]).toEqual(['sal']);
   });
 });
 
