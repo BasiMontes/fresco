@@ -61,20 +61,21 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 
 | ADR | Title | Status | Supersedes | Superseded by |
 | --- | ----- | ------ | ---------- | ------------- |
-| [ADR-0001](./ADR-0001-behavioral-learning-moat.md) | Behavioral-learning moat as the Free/Pro pricing boundary | Proposed | — | — |
+| [ADR-0001](./ADR-0001-behavioral-learning-moat.md) | Behavioral-learning moat as the Free/Pro pricing boundary | Accepted | — | — |
 | [ADR-0002](./ADR-0002-position-swaps-bypass-learning-trigger.md) | Slot-position swaps must bypass `recipe_learning_trigger` | Accepted | — | — |
 | [ADR-0003](./ADR-0003-guest-auth-anonymous-sign-in.md) | Guest-mode authentication via Supabase Anonymous Sign-In | Accepted | — | — |
 | [ADR-0004](./ADR-0004-guest-data-reassignment-on-email-conflict.md) | Guest-data reassignment on email conflict: password-verified, service-role-only RPC | Accepted | — | — |
 | [ADR-0005](./ADR-0005-deterministic-menu-slot-selection.md) | Deterministic algorithm fills the 21 menu slots; Gemini scoped to the Pro learning explanation only | Accepted | — | — |
+| [ADR-0006](./ADR-0006-pro-learning-loop-driven-by-personal-marks.md) | Pro learning loop keyed off personal cocinada/descartada marks, not raw calendar presence | Accepted | — | — |
 | [ADR-0007](./ADR-0007-stripe-checkout-hosted-webhook-driven-subscription.md) | Stripe Checkout (hosted) + webhook-driven subscription state | Accepted | — | — |
-| [ADR-0008](./ADR-0008-scorerecipe-personal-engagement-nudge-pro-only.md) | `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado` | Proposed | — | — |
-| [ADR-0009](./ADR-0009-sentry-error-tracking.md) | Sentry as the error-tracking vendor (client/server/edge) | Proposed | — | — |
+| [ADR-0008](./ADR-0008-scorerecipe-personal-engagement-nudge-pro-only.md) | `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado` | Accepted | — | — |
+| [ADR-0009](./ADR-0009-sentry-error-tracking.md) | Sentry as the error-tracking vendor (client/server/edge) | Accepted | — | — |
 | [ADR-0010](./ADR-0010-postgres-atomic-counter-rate-limiting.md) | Rate limiting on Edge Functions via a Postgres atomic-counter table, no external dependency | Accepted | — | — |
-| [ADR-0011](./ADR-0011-pg-cron-pg-net-scheduled-http-triggers.md) | `pg_cron` + `pg_net` for scheduled HTTP-triggered jobs (Edge Function invocation) | Proposed | — | — |
-| [ADR-0012](./ADR-0012-web-push-library-for-vapid-payload-encryption.md) | `web-push` npm library for VAPID signing + payload encryption | Proposed | — | — |
+| [ADR-0011](./ADR-0011-pg-cron-pg-net-scheduled-http-triggers.md) | `pg_cron` + `pg_net` for scheduled HTTP-triggered jobs (Edge Function invocation) | Accepted | — | — |
+| [ADR-0012](./ADR-0012-web-push-library-for-vapid-payload-encryption.md) | `web-push` npm library for VAPID signing + payload encryption | Accepted | — | — |
 | [ADR-0013](./ADR-0013-posthog-product-analytics.md) | PostHog as the product-analytics vendor (EU region, client + server capture) | Accepted | — | — |
 | [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Accepted | — | — |
-| [ADR-0015](./ADR-0015-stripe-subscription-reconciliation-job.md) | Daily `pg_cron`→`pg_net`→Next.js route reconciles `user_profiles` subscription state against Stripe | Proposed | — | — |
+| [ADR-0015](./ADR-0015-stripe-subscription-reconciliation-job.md) | Daily `pg_cron`→`pg_net`→Next.js route reconciles `user_profiles` subscription state against Stripe | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

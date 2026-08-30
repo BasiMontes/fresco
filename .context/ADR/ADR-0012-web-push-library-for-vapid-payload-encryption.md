@@ -1,6 +1,6 @@
 # ADR-0012 — `web-push` npm library for VAPID signing + payload encryption
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-23
 - **Deciders:** Basi Montes
 - **Tags:** web-push, cryptography, edge-functions, dependency

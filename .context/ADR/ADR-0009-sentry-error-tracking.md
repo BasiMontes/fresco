@@ -1,6 +1,6 @@
 # ADR-0009 — Sentry as the error-tracking vendor (client/server/edge)
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-23
 - **Deciders:** Basi Montes
 - **Tags:** observability, error-tracking, cross-cutting-invariant, third-party-vendor

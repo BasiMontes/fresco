@@ -1,6 +1,6 @@
 # ADR-0015 — Stripe subscription reconciliation job
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-28
 - **Deciders:** Basi Montes
 - **Tags:** payments, stripe, subscription, scheduling, cross-cutting-invariant

@@ -1,6 +1,6 @@
 # ADR-0008 — `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-23
 - **Deciders:** Founder (approved live in-session, FRESCO-239)
 - **Tags:** data-model, security-definer-function, pro-tier-differentiation, generation-pipeline
