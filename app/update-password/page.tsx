@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
+import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
  * `/update-password` — FRESCO-52 step 2. Only reachable with a real
@@ -46,6 +47,11 @@ export default function UpdatePasswordPage() {
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
+      return;
+    }
+    // FRESCO-32: reject a known-breached password before the update. Fail-open.
+    if (await isPasswordPwned(password)) {
+      setError(PWNED_PASSWORD_MESSAGE);
       return;
     }
 

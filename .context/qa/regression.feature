@@ -74,6 +74,18 @@ Característica: Flujo completo de usuario en Fresco
     Entonces se crea la cuenta en Supabase Auth
     Y el sistema le redirige a /onboarding
 
+  @registro @edge-case @automatizado
+  # Automatizado: tests/steps/signup.steps.ts (route-mock de api.pwnedpasswords.com
+  # + guard que falla si se llega a signUp). FRESCO-32.
+  Escenario: El alta rechaza una contraseña que aparece en filtraciones conocidas
+    Dado que un visitante introduce una contraseña filtrada conocida en /signup
+    Cuando confirma el formulario
+    Entonces ve un aviso de que esa contraseña apareció en filtraciones y la cuenta no se crea
+    # Supabase capa esta protección al plan Pro; la org está en Free, así que
+    # se hace client-side contra la API pública de Pwned Passwords (k-anonymity,
+    # solo salen 5 chars del hash SHA-1). Fail-open: si HIBP no responde, no
+    # bloquea el alta.
+
   @registro @edge-case @verificado-manual-2026-07-31
   Escenario: Alta falla porque el email ya está registrado
     Dado que un visitante intenta darse de alta con un email ya existente

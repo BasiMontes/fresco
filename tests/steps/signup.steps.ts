@@ -119,3 +119,39 @@ Then(/^se crea la cuenta en Supabase Auth$/, async ({ signupCtx: ctx }) => {
 Then(/^el sistema le redirige a \/onboarding$/, async ({ page }) => {
   await page.waitForURL('**/onboarding');
 });
+
+// ── FRESCO-32: leaked-password rejection ────────────────────────────────────
+
+const BREACHED_PASSWORD = 'password';
+
+async function sha1Suffix(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(input));
+  const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return hex.slice(5);
+}
+
+Given(/^que un visitante introduce una contraseña filtrada conocida en \/signup$/, async ({ page }) => {
+  await page.goto('/signup');
+
+  // A real request to Supabase Auth signup fails the test — the leaked-password
+  // check must block before it. (No canned fulfill: reaching here IS the bug.)
+  await page.route(/\/auth\/v1\/signup(\?|$)/, async () => {
+    throw new Error('signUp was reached — the leaked-password check did not block it');
+  });
+
+  // Stub the Pwned Passwords range API so the test never depends on the real
+  // HIBP dataset: return this password's own SHA-1 suffix with a real hit count.
+  const suffix = await sha1Suffix(BREACHED_PASSWORD);
+  await page.route('**/api.pwnedpasswords.com/range/**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/plain', body: `${suffix}:98765\r\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:1` });
+  });
+
+  await page.getByTestId('email_input').fill(`qa-pwned-${Date.now()}@example.com`);
+  await page.getByTestId('password_input').fill(BREACHED_PASSWORD);
+  await page.getByTestId('accept_terms_checkbox').check();
+});
+
+Then(/^ve un aviso de que esa contraseña apareció en filtraciones y la cuenta no se crea$/, async ({ page }) => {
+  await expect(page.getByTestId('signup_error_message')).toContainText('filtraciones');
+  await expect(page).toHaveURL(/\/signup$/);
+});
