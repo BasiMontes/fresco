@@ -99,3 +99,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: 3 sub-fixes en PR #188 -> dev. (1) Botón "Copiar" de /qa movido a barra de cabecera propia (ya no solapa la 1a línea del snippet) + foco de teclado visible. (2) <title> propio en /onboarding ("Completa tu perfil · Fresco") y /update-password ("Nueva contraseña · Fresco") vía layout.tsx de servidor. (3) Token global --color-error #b8422e -> #b03d2b (contraste 4,29:1 -> 4,66:1 sobre crema, 5,92:1 blanco-sobre-token); actualizado globals.css + DESIGN.md.
 - Por qué: hallazgo 18 de la re-auditoría de agosto (eje Diseño, BAJO, epic FRESCO-278); WCAG 2.4.2 + AA de contraste.
 - Siguiente: merge PR #188 a dev -> Jira a Merged -> QA verifica en staging -> Finalizada.
+
+## 2026-08-30 - Batch auditoria 293/295/307/311 + promo a produccion
+- Que: Cerradas FRESCO-293 (micro-fixes UI: boton Copiar /qa, titulos /onboarding+/update-password, --color-error #b8422e->#b03d2b global), FRESCO-295 (ADR-0014: umbral falsable en senal #2, senal #3 marcada disparada), FRESCO-307 (sync business-api-map), FRESCO-311 (gate CI: trigger push staging/main + workflow post-deploy-smoke on deployment_status). Promovido dev->staging->main (los 3 en 5f2c49f), prod desplegado y sano.
+- Por que: remediacion de re-auditoria (epics FRESCO-278 y FRESCO-309).
+- Siguiente: FRESCO-322 (creada) - el @smoke post-deploy salio 3/6 rojo en su primera corrida real (cold-start flake, no regresion): sacar @generacion-menu del set y hacer @aprendizaje/@lista-compra self-contained. Pendiente: ticket de limpieza del alias fresco-pre (project.yaml:112 obsoleto).
