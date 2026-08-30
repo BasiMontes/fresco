@@ -159,3 +159,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: `next.config.mjs` gana `async headers()` sobre `/(.*)` con las 6 cabeceras que faltaban (HSTS explicita, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy, CSP Report-Only + Reporting-Endpoints). CSP sin nonce; allowlist Supabase/PostHog/Sentry (wildcard estatico + env exacto); reportes a Sentry via report-uri del DSN. Stripe no necesita entrada (checkout server-side). PR #197 squash a dev (61a21b8), promovido ff dev->staging->main (3 ramas en 61a21b8).
 - Por que: audit-3 HALLAZGO MEDIO C - prod solo servia HSTS (inyectado por Vercel), sin clickjacking ni referrer protection.
 - Siguiente: ticket aparte para pasar CSP a bloqueante + nonce cuando Sentry no muestre ruido. Epic FRESCO-309: 8/13 (311,312,314,315,316,317,318,319).
+
+## 2026-08-30 - FRESCO-313: disciplina de campos QA en defectos (parcial, opcion B)
+- Que: backfill de Severity/Error Type/Root Cause via comentario en los 6 defectos abiertos que faltaban (276/265/250/220/183/124). Nueva regla en bug-fix-workflow.md + SKILL.md: sin pasos de repro ni razon de rechazo documentada, un defecto no pasa a estado terminal (Gotcha 15, S18). Commit 37d3b80 dev->staging->main. Runbook de admin de Jira (partes 1/2/4) posteado en el ticket.
+- Por que: audit-3 HALLAZGO MEDIO D - Jira no puede responder "que severidad tiene lo abierto".
+- Siguiente: FRESCO-313 en Blocked. Owner debe anadir Severity/Evidence/Root Cause a la pantalla Error, marcarlos obligatorios y anadir validador de workflow (no hay acceso admin por API). Revisar FRESCO-183 (Rechazos sin razon). Epic FRESCO-309: 8 cerradas + 313 en curso.
