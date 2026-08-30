@@ -149,3 +149,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: aplicada 20260830142702 a prod jdqemhewjrjuopssdurn via MCP apply_migration (idempotente). Verificado: rate_limit_exempt_users con 4 filas, check_and_increment_rate_limit sin UUIDs literales. 2 baseline marcadas migration repair --status applied. ADR-0017 aceptado (2c95e5e, promovido a main). Descubierto drift severo del ledger (54 local-only / 49 remote-only) -> FRESCO-325.
 - Por que: cerrar el hallazgo ALTO A end-to-end (la funcion en prod tenia los 4 UUIDs hardcodeados hasta ahora).
 - Siguiente: cerrar FRESCO-310. FRESCO-325 (reconciliacion del ledger) queda en el epic audit-3.
+
+## 2026-08-30 - FRESCO-325: reconciliar ledger de migraciones Supabase con prod
+- Que: `migration repair` contra prod jdqemhewjrjuopssdurn - 52 archivos locales-only a `--status applied`, 50 entradas remote-only a `--status reverted`. `migration list --linked` pasa de 54/49/8 a 0/0/62; `db push --dry-run` = "Remote database is up to date". Solo tocó el ledger (schema_migrations), cero DDL - `db diff --linked` vacio lo respalda. Nuevo `scripts/check-migration-drift.ts` + workflow cron semanal `.github/workflows/migration-drift-check.yml` que abre issue si reaparece drift (fuera del pipeline de PR para no meter credenciales de prod ahi, ADR-0017). ADR-0017 actualizado con la seccion "Update 2026-08-30".
+- Por que: audit-3 - `supabase db push` estaba inutilizable (reaplicaria 54 migraciones ya en prod); descubierto al cerrar FRESCO-310.
+- Siguiente: anadir secrets SUPABASE_ACCESS_TOKEN + SUPABASE_DB_PASSWORD al repo para que el cron corra. Epic FRESCO-309 audit-3.

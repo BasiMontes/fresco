@@ -122,10 +122,10 @@ tracked as a follow-up.
     an open sub-task — this ADR isolates *CI*, not the `fresco-pre` deploy.
   - Drop `e2e-shared-supabase-backend` from the PR `e2e` job once
     `post-deploy-smoke.yml` no longer needs a shared serialization point.
-  - Post-merge manual step: `supabase migration repair --status applied
+  - ~~Post-merge manual step: `supabase migration repair --status applied
     20260725110000 20260725110001` and `supabase db push` for the rate-limit
-    rework migration against prod; then confirm `post-deploy-smoke` `@smoke`
-    stays green and `public.rate_limit_exempt_users` on prod holds the 4 UUIDs.
+    rework migration against prod~~ — done in FRESCO-310; the wider ledger
+    reconciliation it exposed is done in FRESCO-325 (see "Update — 2026-08-30").
   - Two pre-existing defects had to be fixed for the suite to boot against the
     local Edge Runtime and local Postgres: an extensionless
     `./meal-plan.types` import in `api/schemas/shopping-list.types.ts` (Deno
@@ -148,9 +148,48 @@ tracked as a follow-up.
   per-test *data* isolation but PRs would still write to production and still
   need the serialization group; it does not address "CI mutates prod".
 
+## Update — 2026-08-30 (FRESCO-325): prod ledger reconciled
+
+The "two schema realities" trade-off above surfaced as real drift the moment
+FRESCO-310's rate-limit migration was applied to prod:
+`supabase migration list --linked` showed **54 local-only / 49 remote-only / 8
+synced**. The prod *schema* was correct (`supabase db diff --linked` →
+`No schema changes found`, and the full 62-migration chain replays to an
+identical schema) — only the ledger was fiction, because local files use round
+timestamps (`20260725120000`) and the remote `schema_migrations` rows use real
+apply timestamps (`20260726083124`). `supabase db push` was unusable: it would
+try to replay ~54 migrations already present in prod.
+
+FRESCO-325 reconciled it, ledger-only, no DDL:
+
+- **52 local-only files → `supabase migration repair --linked --status applied`**
+  (the 51 pre-`20260830142702` files whose effect the empty `db diff` proves is
+  already in prod, plus `20260830142702` itself — its ledger entry had been
+  written by MCP `apply_migration` under the real timestamp `20260830152350`, so
+  the file was orphaned like the rest).
+- **50 remote-only entries → `supabase migration repair --linked --status
+  reverted`.** These are the real-timestamp duplicates of local migrations plus
+  a handful of genuinely file-less historical applies. Their schema effect stays
+  in prod; they are **accepted as lost history** and deliberately marked
+  reverted so `db push` ignores them (it hard-errors on unknown remote entries,
+  it does not skip them).
+
+After reconciliation: `migration list --linked` = **0 / 0 / 62**, and
+`supabase db push --linked --dry-run` = `Remote database is up to date`.
+**`supabase db push` is the supported path for prod schema changes again** —
+MCP `apply_migration` / `execute_sql` against prod should be a last resort, and
+each use re-introduces a remote-only ledger entry.
+
+Prevention: `scripts/check-migration-drift.ts` +
+`.github/workflows/migration-drift-check.yml` — a weekly scheduled job (not in
+the PR pipeline, to keep prod credentials off that path) that fails and opens a
+`migration-drift` issue if `migration list --linked` shows any local-only or
+remote-only entry.
+
 ## References
 
 - FRESCO-307 / FRESCO-310 — "CI e2e writes to prod Supabase with real keys" tech debt
+- FRESCO-325 — prod migration ledger reconciliation (see "Update — 2026-08-30" above); `scripts/check-migration-drift.ts`, `.github/workflows/migration-drift-check.yml`
 - FRESCO-289 — the `e2e-shared-supabase-backend` concurrency group (stop-gap this supersedes for PR runs)
 - FRESCO-308 — per-test Supabase Auth user factories (`tests/test-user-factory.ts`)
 - FRESCO-311 — why the `e2e` job stays PR-only (`push`-trigger gate)
