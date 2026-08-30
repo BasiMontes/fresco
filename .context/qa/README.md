@@ -31,7 +31,21 @@ If the scope ever outgrows a single file, split by area (`login.feature`, `calen
 | **Created** | 2026-07-29, first live end-to-end testing session (login → onboarding → menu → calendar) | Dev + AI pairing session |
 | **Updated** | Any time a new scenario is tested live, a new edge case is found, or a previously `@no-implementado` scenario ships | Whoever runs the test |
 | **Promoted** | When a scenario gets a real Playwright spec, tag it `@automatizado` and reference the spec file — never delete the Gherkin scenario, it stays as the human-readable source of truth | Whoever wires the automation |
+| **Promoted (same-PR rule)** | A scenario added here **as a Story's AC** is automated in the **same PR** that ships the story — `@automatizado` + a `tests/steps/*.ts` step file, `bun run test:e2e` green. Deferring is allowed only under the ADR-0014 budget clause and must be stated in the PR's Spec Compliance Matrix (`manual:<reason — ADR-0014 budget>`). See `/sprint-development` SKILL Gotcha 16 + S19 (FRESCO-321). | Story dev in `/sprint-development` Stage 3 |
 | **Retained** | Never deleted — append-only in spirit, same as `.context/bitacora.md` | — |
+
+## Automation ratchet (FRESCO-321)
+
+Baseline 2026-08-30: **~31 / 139 scenarios `@automatizado` (~23%)**. The audit's eje Verificación (4,0) traced the score to this gap — a change that breaks a non-automated core flow is invisible to CI.
+
+Policy — incremental, not a big-bang backfill:
+
+1. **New work pays as it goes.** Every new Story with Gherkin AC automates those scenarios in the same PR (same-PR rule above). This alone stops the ratio decaying.
+2. **Backlog ratchet.** Each development sprint, automate **+6–8** of the existing manual-only scenarios, prioritising happy paths of the core flows: `@login`, `@onboarding`, `@generacion-menu`, `@calendario`, `@lista-compra`, `@aprendizaje`, `@suscripcion`. Target is **core-flow happy paths at 100% automated**, not the whole 139.
+3. **ADR-0014 ceiling.** `@automatizado` crossing **~60** or `test:e2e` crossing **~8 min** fires an ADR-0014 revisit (test-architecture: parallelism / data factories). Treat it as a checkpoint, not a stop — but do open the ADR revisit rather than pushing through silently.
+4. **`@smoke` set** is governed separately (this file's tag table + FRESCO-322), not by this ratchet.
+
+Progress is read live: `rg -c '@automatizado' .context/qa/regression.feature` vs `rg -c '^\s*Escenario:' .context/qa/regression.feature`.
 
 ## How to consume
 

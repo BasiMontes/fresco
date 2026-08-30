@@ -58,6 +58,8 @@ test:e2e/checkout.spec.ts:cart-empty
 
 The reviewer checks: does this test actually exercise the scenario, or is it a different code path that happens to pass? If the test name and assertions don't map back to the Gherkin Given/When/Then, the row is NOT `test:` — it's `uncovered`.
 
+**Default for scenarios added to `.context/qa/regression.feature`** (FRESCO-321, SKILL Gotcha 16): the row is `test:<tests/steps/*.ts>` and the step file ships in the SAME PR (`@automatizado` tag added, `bun run test:e2e` green). `manual:` / `exempt:` for one of these rows requires a one-line reason. Over the ADR-0014 budget (~60 `@automatizado` scenarios / ~8 min `test:e2e`) → automate the happy path, mark edge-case rows `manual:<reason — ADR-0014 budget>`, note it in the PR.
+
 ### `manual:<evidence-path>`
 
 Manual verification was performed and recorded. The path points to a markdown file, screenshot, video, or session log captured during exploratory testing or smoke check. Plain "I tried it" is not enough — there must be a persisted artifact.
