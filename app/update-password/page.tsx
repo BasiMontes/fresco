@@ -49,16 +49,18 @@ export default function UpdatePasswordPage() {
       setError('Las contraseñas no coinciden.');
       return;
     }
-    // FRESCO-32: reject a known-breached password before the update. Fail-open.
-    if (await isPasswordPwned(password)) {
-      setError(PWNED_PASSWORD_MESSAGE);
-      return;
-    }
 
     if (isSubmittingRef.current) { return; }
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
+      // FRESCO-32: reject a known-breached password before the update. Runs
+      // with the button disabled (the HIBP request can take up to 3s).
+      // Fail-open — a HIBP outage never blocks.
+      if (await isPasswordPwned(password)) {
+        setError(PWNED_PASSWORD_MESSAGE);
+        return;
+      }
       const client = createClient();
       const { error: updateError } = await client.auth.updateUser({ password });
       if (updateError) {

@@ -221,14 +221,17 @@ export default function SignupPage() {
       setSignupError('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
-    // FRESCO-32: reject a known-breached password before the real signUp /
-    // anonymous-conversion call. Fail-open (a HIBP outage never blocks).
-    if (await isPasswordPwned(password)) {
-      setSignupError(PWNED_PASSWORD_MESSAGE);
-      return;
-    }
     isSubmittingRef.current = true;
     setIsSubmitting(true);
+    // FRESCO-32: reject a known-breached password before the real signUp /
+    // anonymous-conversion call. Runs with the button disabled (the HIBP
+    // request can take up to 3s). Fail-open — a HIBP outage never blocks.
+    if (await isPasswordPwned(password)) {
+      setSignupError(PWNED_PASSWORD_MESSAGE);
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+      return;
+    }
     setEmailConflict(false);
     try {
       const client = createClient();
