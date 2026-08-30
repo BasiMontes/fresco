@@ -134,3 +134,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: GitHub repo settings a squash-only (merge-commit + rebase off, delete_branch_on_merge on). git_strategy en project.yaml: feature_merge=squash, promote_method=ff-only, hotfix_policy=none, nueva policy.docs_changes. Nuevo docs/workflows/hotfix.md (runbook solo-main, ejemplo real FRESCO-297). Nota en git-flow.md. PR #194 squash a dev (0436af0).
 - Por que: audit-3 HALLAZGO MEDIO E — hacer mecanico lo que FRESCO-286 dejo como intencion; el historial contradecia los docs.
 - Siguiente: promover dev->staging->main; cerrar FRESCO-314.
+
+## 2026-08-30 - FRESCO-319: puntos ciegos auditoria cerrados
+- Que: 4/4 resueltos. #3+#4 en repo (.context/audits/). #1: Ely ya era Viewer en proyecto FRESCO (verificado API), nada que conceder. #2: credenciales PRE enviadas a Ely por Slack. WIP->Finalizada.
+- Por que: audit-3 — dar baseline estable + acceso real para la 4a pasada.
+- Siguiente: nada. Epic FRESCO-309: 7/13 (311,314,315,316,317,318,319).
