@@ -1,7 +1,7 @@
 # CONTEXT.md — Context Engineering in This Repo
 
-> **Last update**: 2026-08-30
-> **Purpose**: Canonical, operational explanation of how the **Fresco** repo structures context so AI agents work effectively against it. Fresco is built on the `agentic-dev-boilerplate` framework (see `docs/boilerplate.md`), so the structure below is the boilerplate's — the product itself lives in `.context/PRD/` and `.context/business/`.
+> **Last update**: 2026-08-30 (full filesystem reconciliation pass — FRESCO-323)
+> **Purpose**: Canonical, operational explanation of how the **Fresco** repo structures context so AI agents work effectively against it. Fresco is built on the `agentic-dev-boilerplate` framework (see `docs/boilerplate.md`): §2 below shows both the Fresco application code and the framework's context/skills/docs layout. The product spec lives in `.context/PRD/` and `.context/business/`.
 > **Audience**: Humans onboarding the repo, and AI agents that need to understand "where things live and why".
 > **Companion files**: `README.md` (Fresco overview + how to run the app), `CLAUDE.md` (operational rules loaded each session), `docs/agentic-development-engineering.md` (methodology deep dive), `docs/boilerplate.md` (the upstream framework).
 
@@ -30,16 +30,36 @@ For the theory behind these principles and the broader Agentic Development Engin
 ## 2. Directory Structure (This Project)
 
 ```
-fresco/                             (repo root — Fresco, on the agentic-dev-boilerplate framework)
+fresco-app/                         (git repo root — the Fresco app, on the agentic-dev-boilerplate framework)
 │
 ├── CLAUDE.md                       Operational context loaded every Claude Code session
 ├── README.md                       Fresco overview + how to run the app (humans)
 ├── CONTEXT.md                      This file — Context Engineering in this repo
-├── docs/boilerplate.md             The upstream agentic-dev-boilerplate overview
+├── INSTALLER.md                    What `bun run setup` configures (gentle-ai, community skills, MCPs, CLIs)
 │
+│   ── Fresco application code (Next.js + Supabase) ──
+├── app/                            Next.js App Router — routes + API handlers
+│   ├── (app)/                      Authenticated app shell (menu, calendar, recipes, shopping-list, profile, notifications)
+│   ├── api/                        Route handlers (Stripe, auth callbacks)
+│   ├── auth/ · login/ · signup/ · onboarding/ · forgot-password/ · update-password/
+│   └── qa/                         Public "Software Testability Guide" page
+├── components/                     React components by domain (calendar, menu, recipes, shopping-list, onboarding, profile, ui, …)
+├── lib/                            Client/server helpers (supabase, store, validation, date, recipes, push, posthog, …)
+├── api/
+│   ├── schemas/                    OpenAPI type facades (`@schemas/*` — single source of truth for API types)
+│   └── config/
+├── supabase/
+│   ├── functions/                  Edge Functions (generate-meal-plan, generate-shopping-list, update-recipe-status, …)
+│   └── migrations/                 SQL migrations
+├── tests/                          Playwright + playwright-bdd E2E (steps/, fixtures.ts, test-user-factory.ts)
+├── bones/                          Page-skeleton specs (`*.bones.json` + `registry.ts`)
+├── design/handoff/fresco/          Brand asset handoff (logos, tokens)
+├── public/                         Static assets
+│
+│   ── Framework: context, skills, docs ──
 ├── .claude/
-│   ├── skills/                     11 workflow skills (executable workflows)
-│   └── commands/                   5 utility slash commands
+│   ├── skills/                     12 skills — 11 workflow + `agentic-dev-core` (passive reference host); + REGISTRY.md (auto-generated)
+│   └── commands/                   6 utility slash commands
 │
 ├── .agents/                        Project variable contract (SOT for project values)
 │   ├── project.yaml                {{VAR_NAME}} resolution
@@ -53,28 +73,39 @@ fresco/                             (repo root — Fresco, on the agentic-dev-bo
 │   ├── business/                   Single source of business knowledge (Constitution + Maps)
 │   │   ├── business-model.md       /project-foundation Phase 1 — Business Model Canvas
 │   │   ├── market-context.md       /project-foundation Phase 1 — Industry, competitors
-│   │   ├── legacy-analysis.md      /project-foundation Phase 1 (optional, legacy projects)
 │   │   ├── business-data-map.md    Generated on demand by /business-data-map
 │   │   ├── business-feature-map.md Generated on demand by /business-feature-map
 │   │   ├── business-api-map.md     Generated on demand by /business-api-map
+│   │   ├── project-dev-guide.md    /project-foundation Discovery — stack + TS conventions
 │   │   └── domain-glossary.md      /project-foundation Phase 4 Step 6 — hand-maintained, append-only
 │   ├── PRD/                        /project-foundation Phase 2 — Product Requirements
 │   ├── SRS/                        /project-foundation Phase 2 — Software Requirements
 │   ├── ADR/                        Architecture Decision Records (human + skill authored, append-only)
-│   └── PBI/                        Per-epic / per-ticket backlog artifacts
+│   ├── design/master-design-plan.md   Per-screen fidelity specs + US→Screen map (opt-in)
+│   ├── qa/                         `regression.feature` (cross-story Gherkin log) + README + bitacora-tests.md
+│   ├── PBI/                        Per-epic / per-ticket backlog artifacts (read-only cache, synced from Jira)
+│   ├── reports/                    Per-sprint cross-ticket dev trackers
+│   ├── audits/                     External + internal audit reports (HTML) + findings
+│   ├── master-implementation-plan.md   EPIC/strategy roadmap (/master-implementation-plan)
+│   ├── dev-roadmap.md              TICKET/sequence roadmap (/dev-roadmap)
+│   └── bitacora.md                 Append-only session log (+ rotated bitacora-*.md)
 │
 ├── docs/                           Human-facing documentation
-│   ├── onboarding.html             Single-file HTML onboarding artifact (served by `bun run onboarding`)
+│   ├── README.md                   docs index
+│   ├── boilerplate.md              The upstream agentic-dev-boilerplate framework overview
 │   ├── agentic-development-engineering.md   Methodology deep dive
-│   ├── architectures/              Stack-specific guides (e.g. supabase-nextjs)
+│   ├── ai-personality.md           AI mirror + personality-evolution protocol (kept in sync with CLAUDE.md §2)
+│   ├── onboarding.html             Single-file HTML onboarding artifact (served by `bun run onboarding`)
+│   ├── architectures/              Stack-specific guides (supabase-nextjs)
 │   ├── methodology/                IQL, Jira platform, early/mid/late-game testing notes
-│   ├── setup/                      MCP, Jira, gentle-ai setup
-│   └── workflows/                  git-flow, environments, OpenAPI sync, template updates
+│   ├── mcp/                        MCP config templates + configuration guide
+│   ├── setup/                      Jira + MCP + gentle-ai setup
+│   └── workflows/                  git-flow, environments, hotfix, OpenAPI sync
 │
-├── scripts/                        Build/sync scripts (skill registry, OpenAPI, env validation)
-├── cli/                            Installer + template updater
-├── templates/                      Templated files copied by the installer
-└── package.json                    Bun runtime + npm scripts (lint, format, api:sync, etc.)
+├── .github/workflows/              CI — pr-check, post-deploy-smoke, migration-drift-check
+├── scripts/                        Build/sync scripts (skill registry, OpenAPI, env + jira-vars validation, jira sync)
+├── cli/                            Installer + template updater (`bun run setup`, `bun run up`)
+└── package.json                    Bun runtime + npm scripts (READ this file directly — never quote scripts from docs)
 ```
 
 ### The `.context/` vs `.claude/` split
@@ -212,7 +243,7 @@ The agent should load only what the current step needs. Use this table to decide
 | **Understand system** | `business-data-map.md` + `PRD/*`            | `SRS/*`, `docs/architectures/`                   |
 | **Use an MCP tool**   | `CLAUDE.md` § Tool Resolution               | Specific MCP doc in `docs/setup/`                |
 | **Define project**    | `/project-foundation`                       | `/design-system`, `/project-bootstrap`           |
-| **Code review**       | `/sprint-development` (Stage 3) + PR diff   | `compliance-matrix.md` if exists                 |
+| **Code review**       | `/sprint-development` (Stage 3) + PR diff   | Spec Compliance Matrix — a required section of the PR description (no in-repo file; retired 2026-08-28) |
 
 ### By Role
 
@@ -221,7 +252,7 @@ The agent should load only what the current step needs. Use this table to decide
 | **Developer**           | `/sprint-development` (+ optional `/unit-testing`); `.context/business/business-data-map.md` |
 | **Product / PM**        | `/product-management`, `/project-foundation`; `.context/PRD/`, `.context/business/`          |
 | **Architect / Founder** | `/project-foundation`; `.context/business/`, `.context/PRD/`, `.context/SRS/`                |
-| **DevOps / Infra**      | `/project-bootstrap`; `bun up --help`, `docs/setup/mcp/`                                     |
+| **DevOps / Infra**      | `/project-bootstrap`, `/vercel-cli`; `docs/setup/mcp/`, `docs/workflows/environments.md`     |
 | **New contributor**     | `/agentic-dev-onboard`; `docs/onboarding.html` (via `bun run onboarding`)                    |
 
 ---
