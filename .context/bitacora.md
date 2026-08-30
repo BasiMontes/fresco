@@ -129,3 +129,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: ADR-0016 (Proposed) documentando que .claude/skills/ es un fork local y `bun run up` no es mantenimiento de rutina. Fila en el índice de ADR + subsección en CONTEXT.md §6 con backlink. Commit a935faa, promovido dev->staging->main. points=1, Listo->WIP.
 - Por qué: audit-3 HALLAZGO BAJO H — convertir la congelación del boilerplate en decisión escrita antes de que se olvide si fue elección o inercia.
 - Siguiente: owner decide si flipar ADR-0016 Proposed->Accepted; cerrar FRESCO-317 WIP->Finalizada.
+
+## 2026-08-30 - FRESCO-314: estrategia git mecanica
+- Que: GitHub repo settings a squash-only (merge-commit + rebase off, delete_branch_on_merge on). git_strategy en project.yaml: feature_merge=squash, promote_method=ff-only, hotfix_policy=none, nueva policy.docs_changes. Nuevo docs/workflows/hotfix.md (runbook solo-main, ejemplo real FRESCO-297). Nota en git-flow.md. PR #194 squash a dev (0436af0).
+- Por que: audit-3 HALLAZGO MEDIO E — hacer mecanico lo que FRESCO-286 dejo como intencion; el historial contradecia los docs.
+- Siguiente: promover dev->staging->main; cerrar FRESCO-314.
