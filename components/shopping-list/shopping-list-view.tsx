@@ -25,13 +25,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
-import { addShoppingListItem, toggleShoppingListItem } from '@/lib/api/shopping-list';
+import { addShoppingListItem, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 export interface ShoppingListViewProps {
   list: ShoppingListPersistido
+  /**
+   * FRESCO-194 — normalized names of items that weren't on last week's list.
+   * Optional: absent (or empty) means no "Nuevo" badges this render.
+   */
+  nuevosNombres?: ReadonlySet<string>
 }
+
+const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
 
 /**
  * FRESCO-180 — `unidad` is free text from the shopping-list Edge Function
@@ -138,13 +145,17 @@ function getPasilloIcon(nombre: string): LucideIcon {
  *
  * FRESCO-194 — "Sugerencias para ti" carousel, real data only: ingredients
  * from the caller's own favorited recipes not already in this list
- * (`get-shopping-list-suggestions` Edge Function — no suggestion/recency
- * data exists anywhere else in this app, so favorites is the only real
- * signal; "Nuevo" stays out, it needs recency tracking this app doesn't
- * have). "+ Añadir" uses the same optimistic-update-with-revert pattern as
- * the checkbox toggle, via the new `jsonb_add_item` RPC.
+ * (`get-shopping-list-suggestions` Edge Function — favorites is the only real
+ * signal for a suggestion). "+ Añadir" uses the same
+ * optimistic-update-with-revert pattern as the checkbox toggle, via the
+ * `jsonb_add_item` RPC.
+ *
+ * FRESCO-194 (2nd pass) — "Nuevo" badge: an item is flagged when its name
+ * wasn't on the immediately-prior week's list (`nuevosNombres`, computed
+ * server-side in the page by diffing against the previous meal plan's list).
+ * No recency column is persisted — the prior list already exists.
  */
-export function ShoppingListView({ list }: ShoppingListViewProps) {
+export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -409,14 +420,28 @@ export function ShoppingListView({ list }: ShoppingListViewProps) {
                           );
                         })()}
                         <div className="flex min-w-0 flex-1 flex-col">
-                          <span
-                            className={cn(
-                              'truncate text-body-lg',
-                              item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              className={cn(
+                                'truncate text-body-lg',
+                                item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
+                              )}
+                            >
+                              {capitalize(item.nombre)}
+                            </span>
+                            {/* FRESCO-194 — flagged when this item wasn't on
+                                last week's list. Same pill convention as
+                                `landing/pricing.tsx`. Hidden once bought so a
+                                struck-through row doesn't shout "Nuevo". */}
+                            {!item.comprado && nuevosNombres.has(normalizeNombre(item.nombre)) && (
+                              <span
+                                data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_nuevo`}
+                                className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-caption uppercase tracking-wide text-text"
+                              >
+                                Nuevo
+                              </span>
                             )}
-                          >
-                            {capitalize(item.nombre)}
-                          </span>
+                          </div>
                           <span className="text-caption text-tertiary">
                             {item.cantidad}
                             {' '}

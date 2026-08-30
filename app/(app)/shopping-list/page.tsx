@@ -4,7 +4,7 @@ import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { ShoppingListGenerator } from '@/components/shopping-list/shopping-list-generator';
 import { ShoppingListView } from '@/components/shopping-list/shopping-list-view';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
-import { getShoppingListForPlan } from '@/lib/api/shopping-list';
+import { getNombresNuevos, getShoppingListForPlan } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -51,7 +51,12 @@ export default async function ShoppingListPage() {
       );
     }
 
-    return <ShoppingListView list={list} />;
+    // FRESCO-194 — "Nuevo" badge: which items weren't on last week's list.
+    // `getNombresNuevos` is fail-soft (empty set on any error), so no extra
+    // try/catch here.
+    const nuevosNombres = await getNombresNuevos(supabase, plan.semanaIso, list.pasillos);
+
+    return <ShoppingListView list={list} nuevosNombres={nuevosNombres} />;
   }
   catch (error) {
     console.error('[/shopping-list] getShoppingListForPlan failed, falling back to generator', error);

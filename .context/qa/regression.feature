@@ -804,6 +804,24 @@ Característica: Flujo completo de usuario en Fresco
     Cuando solicita la lista de la compra
     Entonces ve un mensaje claro de que la lista no se pudo generar, nunca una lista vacía presentada como válida
 
+  @lista-compra @edge-case @pendiente
+  # FRESCO-194 (2ª pasada). NO @automatizado: montar dos semanas de historial de
+  # menú + lista para un usuario factory es desproporcionado para un badge
+  # cosmético — la lógica de diff (diffNombresNuevos) está cubierta por
+  # lib/api/shopping-list.test.ts. Candidato a verificación manual periódica.
+  Escenario: El badge "Nuevo" marca solo los ingredientes que no estaban la semana pasada
+    Dado que el usuario tuvo una lista de la compra la semana anterior con "tomate" y "arroz"
+    Y su lista de esta semana tiene "tomate", "lentejas" y "pan"
+    Cuando abre /shopping-list
+    Entonces ve el badge "Nuevo" junto a "lentejas" y "pan"
+    Y no ve el badge junto a "tomate"
+
+  @lista-compra @edge-case @pendiente
+  Escenario: Sin lista la semana anterior, ningún ingrediente se marca como nuevo
+    Dado que el usuario nunca generó una lista de la compra antes de esta semana
+    Cuando abre /shopping-list con su primera lista generada
+    Entonces no ve el badge "Nuevo" en ningún ingrediente
+
   # ==========================================================================
   # Guía de testeabilidad para QA (/qa)
   # ==========================================================================

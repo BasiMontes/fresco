@@ -1,6 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerateShoppingListResponse, ShoppingListItem } from '@/lib/api/types';
 import type { Database, Json } from '@/lib/supabase/types';
+import { getMealPlanForWeek } from '@/lib/api/meal-plan';
+import { addIsoWeeks } from '@/lib/date/iso-week';
+
+type Pasillos = GenerateShoppingListResponse['pasillos'];
 
 export class ShoppingListError extends Error {
   constructor(message: string) {
@@ -120,5 +124,85 @@ export async function addShoppingListItem(
 
   if (error) {
     throw new ShoppingListError(`No se pudo añadir el producto: ${error.message}`);
+  }
+}
+
+/**
+ * App-side copy of `supabase/functions/_shared/normalize.ts` — can't import
+ * across the Deno/Node boundary (same reason `tests/steps/shopping-list.steps.ts`
+ * keeps its own copy). Lowercase, trim, collapse whitespace, strip accents:
+ * the canonical form ingredient names are compared/keyed by.
+ */
+export function normalizeNombre(nombre: string): string {
+  return nombre
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[áàä]/g, 'a')
+    .replace(/[éèë]/g, 'e')
+    .replace(/[íìï]/g, 'i')
+    .replace(/[óòö]/g, 'o')
+    .replace(/[úùü]/g, 'u')
+    .replace(/ñ/g, 'n');
+}
+
+/**
+ * Pure diff (FRESCO-194 "Nuevo" badge): normalized item names present in
+ * `actuales` but not in `previos`. An empty `previos` yields an empty set —
+ * a generated shopping list always has items, so "no prior items" means
+ * "no prior list", and a first-ever list must never flag every item as new.
+ */
+export function diffNombresNuevos(actuales: Pasillos, previos: Pasillos): Set<string> {
+  const anteriores = new Set(
+    previos.flatMap(pasillo => pasillo.items).map(item => normalizeNombre(item.nombre)),
+  );
+
+  if (anteriores.size === 0) {
+    return new Set();
+  }
+
+  const nuevos = new Set<string>();
+  for (const pasillo of actuales) {
+    for (const item of pasillo.items) {
+      const clave = normalizeNombre(item.nombre);
+      if (!anteriores.has(clave)) {
+        nuevos.add(clave);
+      }
+    }
+  }
+  return nuevos;
+}
+
+/**
+ * "Nuevo" badge data (FRESCO-194): the normalized names of items on the
+ * current week's list that were NOT on the immediately-prior week's list for
+ * the same user.
+ *
+ * Fail-soft by design — the badge is cosmetic and must never break the page
+ * (same posture as the suggestions carousel). Any read error, a missing
+ * prior week, or a prior week with no generated list all return an empty set.
+ */
+export async function getNombresNuevos(
+  client: SupabaseClient<Database>,
+  semanaIsoActual: string,
+  pasillosActuales: Pasillos,
+): Promise<Set<string>> {
+  try {
+    const semanaPrevia = addIsoWeeks(semanaIsoActual, -1);
+    const planPrevio = await getMealPlanForWeek(client, semanaPrevia);
+    if (!planPrevio) {
+      return new Set();
+    }
+
+    const listaPrevia = await getShoppingListForPlan(client, planPrevio.mealPlanId);
+    if (!listaPrevia) {
+      return new Set();
+    }
+
+    return diffNombresNuevos(pasillosActuales, listaPrevia.pasillos);
+  }
+  catch (error) {
+    console.error('[getNombresNuevos] failed — no "Nuevo" badges this render', error);
+    return new Set();
   }
 }
