@@ -114,3 +114,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: README.md reescrito Frescofirst (qué es Fresco, 3 entornos dev/pre/pro, arranque local, `bun test` + `test:e2e` y variantes, mapa de docs). Texto del boilerplate movido a docs/boilerplate.md con links relativos repunteados. CONTEXT.md reencuadrado (intro + árbol) como Fresco-sobre-boilerplate. INSTALLER.md: 3 links README -> docs/boilerplate.md. PR #192 squash a dev, promovido dev->staging->main (los 3 en 11d4c43), prod+pre 200.
 - Por qué: hallazgo G (BAJO, auditoria-3, FRESCO-316) - el README seguía siendo el boilerplate "AGENTIC ENGINEERING", cero mención al producto.
 - Siguiente: ninguno; ticket Finalizada. Drift preexistente en CONTEXT.md ("11 workflow skills"/"5 slash commands" vs 12/6 reales) queda fuera de alcance.
+
+## 2026-08-30 - FRESCO-315: accesibilidad en páginas públicas
+- Qué: 5 arreglos a11y en rutas fuera de `(app)/` — `<main>` en landing/`/qa`/layouts de auth+onboarding, `<label>` real (sr-only) en inputs de `/login` y `/signup`, tap targets a 44px (footer legal, nav "Ya tengo cuenta", hamburguesa, 6 FAQ), `app/robots.ts` (`/robots.txt` daba 404), y espacio en el H2 roto de final-cta ("domingosin"→"domingo sin"). PR #193 squash a dev (306d5e2), promovido dev→staging→main.
+- Por qué: hallazgo F (BAJO, auditoria-3, FRESCO-315), medido en vivo a 390/1280px. WCAG 2.4.1 / 3.3.2 / 4.1.2 / 2.5.8. El shell `(app)/` ya tenía `<main>`; las públicas nunca lo recibieron.
+- Siguiente: nada pendiente. FRESCO-315 → Finalizada.
