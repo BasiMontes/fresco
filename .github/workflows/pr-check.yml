@@ -13,6 +13,10 @@ on:
   push:
     branches: [staging, main]
 
+env:
+  BUN_VERSION: '1.3.14'
+  SUPABASE_CLI_VERSION: '2.109.1'
+
 jobs:
   repo-check:
     name: repo:check
@@ -22,7 +26,18 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.3.14'
+          bun-version: ${{ env.BUN_VERSION }}
+
+      # FRESCO-357: cache bun's global install cache + node_modules keyed on
+      # the lockfile. `bun install` still runs (to validate --frozen-lockfile
+      # and link), but against a warm cache it is near-instant.
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - run: bun install --frozen-lockfile
 
@@ -36,7 +51,15 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.3.14'
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - run: bun install --frozen-lockfile
 
@@ -52,80 +75,124 @@ jobs:
     # pre-merge PR run did not already gate. A skipped job with
     # `needs: repo-check` does not fail the run. (FRESCO-311)
     if: github.event_name == 'pull_request'
-    # This job used to run against the shared production Supabase project
-    # (jdqemhewjrjuopssdurn) via secrets.ENV_FILE: every PR's e2e run mutated
-    # the same rows (reseedCurrentWeekPlan() deletes+regenerates meal_plans;
-    # @suscripcion does service-role writes to user_profiles.plan), so runs
-    # had to queue one-behind-another on a single fixed concurrency group.
-    # As of FRESCO-310 each run boots its OWN ephemeral local stack
-    # (`supabase start` + `supabase db reset` + a fresh per-run seed), so PR
-    # e2e runs no longer touch production and no longer share mutable state.
-    # The `e2e-shared-supabase-backend` group is retained ONLY because
-    # post-deploy-smoke.yml still shares it (that workflow runs @smoke
-    # against the real prod backend and must not overlap a mutation). Now
-    # that PR runs are isolated, dropping the group from THIS job is safe and
-    # is tracked as a follow-up. cancel-in-progress stays false so a queued
-    # run never cancels one post-deploy-smoke may be serializing behind.
-    concurrency:
-      group: e2e-shared-supabase-backend
-      cancel-in-progress: false
+    # FRESCO-357 (follow-up of FRESCO-289): the `e2e-shared-supabase-backend`
+    # concurrency group is gone from this job. It only ever existed because
+    # PR e2e runs used to mutate the shared production Supabase project; as
+    # of FRESCO-310 each run boots its OWN ephemeral local stack, so parallel
+    # PR runs are fully isolated. `post-deploy-smoke.yml` keeps the group -
+    # it still runs @smoke against the real prod backend.
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.3.14'
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - run: bun install --frozen-lockfile
 
+      # FRESCO-357: cache the downloaded Playwright browser binaries
+      # (~/.cache/ms-playwright, ~150MB) keyed on the resolved @playwright/test
+      # version. On a hit, `playwright install` only re-checks the apt system
+      # deps (fast); on a miss it downloads chromium as before.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
       - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            bunx playwright install-deps chromium
+          else
+            bunx playwright install --with-deps chromium
+          fi
+
+      # FRESCO-357: cache the Next.js build compilation cache. Paired with the
+      # background-build step below (which overlaps `bun run build` with the
+      # Supabase stack bring-up), a warm `.next/cache` keeps the build fully
+      # hidden behind the ~2 min of stack setup - the "Wait for the background
+      # build" step then costs ~12 s instead of a ~60-90 s sequential build.
+      # The key is over the lockfile + a hash of every source file, so any
+      # real change busts it; `restore-keys` still gives a partial (per-file
+      # incremental) hit when only some files changed. Manual bust: bump `v1`.
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextcache-v1-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx', '!node_modules/**', '!.next/**') }}
+          restore-keys: |
+            nextcache-v1-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
 
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.109.1
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
-      - name: Start local Supabase
-        # Docker is preinstalled on ubuntu-latest. This serves Postgres, Auth
-        # (GoTrue), PostgREST and the Edge Runtime on 127.0.0.1 - the whole
-        # backend the app and the e2e suite talk to, with zero production
-        # credentials in play.
-        run: supabase start
-
-      - name: Apply migrations + seed
-        # `supabase db reset` drops the database, re-runs every migration
-        # from empty, then loads supabase/seed.sql (recipe catalog + the
-        # rate-limit exemption rows). Any migration or seed failure fails the
-        # job here - this is also the only CI coverage the repo has that its
-        # migrations still apply cleanly from scratch.
-        run: supabase db reset
-
+      # FRESCO-357: a `docker save`/`docker load` cache of the Supabase
+      # local-stack images (~1 GB) was tried and removed - measured net zero.
+      # The `docker load` of the tarball (~70 s) plus its cache download
+      # (~17 s) costs as much as the fresh `ghcr.io` pull it replaces (the
+      # GitHub-hosted runners have fast registry egress). `supabase start`
+      # pulls the images itself on every run - left as-is.
       - name: Restore .env from secret and apply CI overlay
         # `test:e2e` re-sources `.env` itself
         # (`bash -c 'set -a; . ./.env; set +a; ...'`), so the local-stack
-        # overrides must live IN `.env`, not only in $GITHUB_ENV which that
-        # subshell never sees. `.env.ci` (committed - Supabase's public
-        # local-dev demo constants, no real project access) is appended last
-        # so its NEXT_PUBLIC_SUPABASE_URL / SUPABASE_* / *_USER_* values win
-        # over the production ones in the restored secret.
+        # overrides must live IN `.env`. `.env.ci` (committed - Supabase's
+        # public local-dev demo constants) is appended last so its
+        # NEXT_PUBLIC_SUPABASE_URL / SUPABASE_* / *_USER_* values win over the
+        # production ones in the restored secret.
         run: |
           printf '%s\n' "$ENV_FILE" > .env
           cat .env.ci >> .env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
+      # FRESCO-357: `bun run build` does not need the database - kick it off
+      # in the background now and let it overlap the Supabase stack bring-up
+      # (start + reset + seed), then `wait` for it before starting the server.
+      # Turns the sum of the two into roughly the max.
+      - name: Build the app (background, overlaps the stack setup)
+        run: |
+          set -a; . ./.env; set +a
+          rm -f "$RUNNER_TEMP/build.exit"
+          nohup bash -c "bun run build > '$RUNNER_TEMP/build.log' 2>&1; echo \$? > '$RUNNER_TEMP/build.exit'" >/dev/null 2>&1 &
+
+      - name: Start local Supabase
+        # Serves Postgres, Auth (GoTrue), PostgREST and the Edge Runtime on
+        # 127.0.0.1 - zero production credentials in play.
+        # FRESCO-357: `-x` skips the containers the e2e suite never touches
+        # (Realtime, Storage, imgproxy, Studio, Inbucket, Logflare, Vector) -
+        # `supabase start` was the single biggest step (~90 s) and none of
+        # these are on any tested path (no storage/realtime refs in tests/,
+        # recipe photos are external URLs, email confirmations are off).
+        run: supabase start -x realtime,storage-api,imgproxy,studio,inbucket,logflare,vector
+
+      - name: Apply migrations + seed
+        # `supabase db reset` drops the database, re-runs every migration from
+        # empty, then loads supabase/seed.sql (recipe catalog + rate-limit
+        # exemption rows). Any migration or seed failure fails the job here -
+        # also the only CI coverage that the migrations still apply cleanly
+        # from scratch.
+        run: supabase db reset
+
       - name: Seed e2e users
         # Creates the two fixed accounts the suite logs in as
-        # (DEV_USER_* / PRO_USER_*) against the local GoTrue admin API, plus
-        # their user_profiles and rate_limit_exempt_users rows. The script
-        # hard-refuses any non-localhost SUPABASE_URL, so it cannot touch
-        # production even if the overlay above regressed.
+        # (DEV_USER_* / PRO_USER_*) against the local GoTrue admin API. The
+        # script hard-refuses any non-localhost SUPABASE_URL.
         run: bun scripts/seed-e2e-users.ts
 
       - name: Assert e2e is isolated from the prod Supabase project
-        # Last line of defence before we spend build time: if any Supabase
-        # var still points at a hosted project, fail loudly here rather than
-        # silently mutating production from a PR.
+        # Last line of defence: if any Supabase var still points at a hosted
+        # project, fail loudly here rather than silently mutating production.
         run: |
           set -a; . ./.env; set +a
           fail=0
@@ -143,15 +210,25 @@ jobs:
           [ "$fail" = 0 ] || { echo "e2e is NOT isolated from production - aborting"; exit 1; }
           echo "OK: e2e backend is the local stack"
 
-      - name: Build and start production server
-        # `next dev` compiles each route on first hit — combined with real
-        # network round-trips that on-demand latency blew past the 90s
-        # per-test and 5s assertion timeouts in CI (never an issue locally
-        # against an already-warm server). A pre-compiled production build
-        # removes that variable. (FRESCO-266)
+      - name: Wait for the background build + start the production server
+        # `next dev` compiles each route on first hit - on-demand latency blew
+        # past the per-test timeouts in CI. A pre-compiled production build
+        # removes that variable. (FRESCO-266). The build runs in a separate
+        # step's shell, so this polls for its sentinel file rather than
+        # `wait`-ing on a PID it doesn't own.
         run: |
           set -a; . ./.env; set +a
-          bun run build
+          for _ in $(seq 1 180); do
+            [ -f "$RUNNER_TEMP/build.exit" ] && break
+            sleep 2
+          done
+          ec=$(cat "$RUNNER_TEMP/build.exit" 2>/dev/null || echo "timeout")
+          if [ "$ec" != "0" ]; then
+            echo "::error::bun run build did not finish cleanly ($ec)"
+            cat "$RUNNER_TEMP/build.log" || true
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/build.log"
           bun run start &
           npx --yes wait-on http://localhost:3000 --timeout 60000
 
