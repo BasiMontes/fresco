@@ -101,7 +101,8 @@ Característica: Flujo completo de usuario en Fresco
     # Fix: app/signup/page.tsx ahora detecta `identities.length === 0` y
     # muestra el error real.
 
-  @login @recuperar-password @verificado-manual-2026-08-19
+  @login @recuperar-password @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-352)
   Escenario: Solicitar el enlace de recuperación de contraseña
     Dado que un usuario visita /forgot-password
     Cuando introduce su email registrado y confirma el formulario
@@ -160,7 +161,9 @@ Característica: Flujo completo de usuario en Fresco
   # Onboarding y generación de menú (EPIC-FRESCO-4 / EPIC-FRESCO-6)
   # ==========================================================================
 
-  @onboarding @generacion-menu @verificado-manual-2026-07-29
+  @onboarding @generacion-menu @verificado-manual-2026-07-29 @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-352). Reutiliza el
+  # step "pulsa \"Generar mi menú\"" de generacion-determinista.steps.ts.
   Escenario: Un usuario logueado completa el onboarding y genera su menú semanal
     Dado que el usuario tiene sesión iniciada
     Y no tiene todavía un menú generado para la semana actual
@@ -517,13 +520,15 @@ Característica: Flujo completo de usuario en Fresco
   # Control del Menú Semanal (EPIC-FRESCO-60 / STORY-FRESCO-61/62/63)
   # ==========================================================================
 
-  @calendario @verificado-manual-2026-08-03
+  @calendario @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-352)
   Escenario: Ver la semana siguiente desde el Calendario
     Dado que el usuario está en /calendar viendo la semana actual
     Cuando toca el control de semana siguiente
     Entonces ve el menú de la semana siguiente si existe, o el estado vacío si todavía no se generó ninguno
 
-  @calendario @verificado-manual-2026-08-03
+  @calendario @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-352)
   Escenario: Ver la semana anterior desde el Calendario
     Dado que el usuario está en /calendar viendo la semana actual
     Cuando toca el control de semana anterior
@@ -555,7 +560,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando la página carga
     Entonces ve la semana actual, sin ningún error
 
-  @calendario @verificado-manual-2026-08-03
+  @calendario @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-352)
   Escenario: El usuario elimina el menú de la semana que está viendo
     Dado que el usuario ve un menú generado para la semana actual
     Cuando toca el botón de eliminar
@@ -567,7 +573,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando mira los controles disponibles
     Entonces no se le ofrece la opción de eliminar
 
-  @calendario @verificado-manual-2026-08-03
+  @calendario @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-352)
   Escenario: Generar un menú nuevo directamente desde el Calendario
     Dado que el usuario está viendo una semana sin menú generado todavía
     Cuando toca "Generar mi menú"
@@ -586,14 +593,16 @@ Característica: Flujo completo de usuario en Fresco
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
   # ==========================================================================
 
-  @calendario @verificado-manual-2026-07-29
+  @calendario @verificado-manual-2026-07-29 @automatizado
+  # Automatizado: tests/steps/calendario-reordenar.steps.ts (FRESCO-352)
   Escenario: El usuario reordena su menú arrastrando un plato a otro hueco
     Dado que el usuario tiene un menú generado con los 21 huecos llenos
     Cuando arrastra el plato de un día/tipo a otro hueco distinto
     Entonces ambos huecos intercambian su receta inmediatamente en pantalla
     Y el cambio queda persistido en base de datos sin acción adicional
 
-  @calendario @verificado-manual-2026-07-29
+  @calendario @verificado-manual-2026-07-29 @automatizado
+  # Automatizado: tests/steps/calendario-reordenar.steps.ts (FRESCO-352)
   Escenario: El orden reordenado sobrevive a recargar la página
     Dado que el usuario reordenó su menú previamente
     Cuando recarga /calendar
