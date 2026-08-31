@@ -33,24 +33,22 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
   testDir,
-  // @aprendizaje / @entrega-parcial / @generacion-determinista / the
-  // aislamiento-datos @seguridad scenarios still mutate the same shared,
-  // finite backend test plan on the PRO_USER/DEV_USER accounts (each picks
-  // "the first still-pendiente slot") — running them in parallel workers
-  // raced two scenarios onto the same slot (found live: a "mark cocinado"
-  // test's own reload-check saw "Descartado", clobbered by a concurrent
-  // "mark descartado" scenario). Single worker trades speed for correctness
-  // against that shared mutable state.
+  // FRESCO-356 (ADR-0018 early-warning fired at 6m40s / 75 scenarios): the
+  // four racer step files (@aprendizaje, @entrega-parcial,
+  // @generacion-determinista, the aislamiento-datos @seguridad scenarios)
+  // were migrated off the shared PRO_USER/DEV_USER accounts to
+  // `testUserFactory` (FRESCO-308). Every scenario now provisions its own
+  // throwaway user and seeds its own data, so nothing is shared and the
+  // suite is safe to parallelise. `regression.feature` carries the
+  // `@mode:parallel` playwright-bdd tag.
   //
-  // ADR-0018 (supersedes ADR-0014): the revisit trigger for turning this on
-  // is the CI `test:e2e` job wall-clock, NOT the scenario count. Early-
-  // warning at ~6m30s sustained → migrate those four racer step files to
-  // `testUserFactory` (FRESCO-308), add `@mode:parallel` to
-  // regression.feature's Feature line, and bump `workers` to 2–4 with
-  // `fullyParallel: true`. As of FRESCO-353 the job is ~5m27s at 52
-  // scenarios — headroom remains.
-  fullyParallel: false,
-  workers: 1,
+  // The previous history (why this was `workers: 1` until now): running the
+  // racers in parallel workers raced two scenarios onto the same finite
+  // meal-plan slot — a "mark cocinado" test's own reload-check saw
+  // "Descartado", clobbered by a concurrent "mark descartado" scenario
+  // (ADR-0014). Factory isolation removes that class of race.
+  fullyParallel: true,
+  workers: process.env.CI ? 4 : 2,
   // Without this, `retries` defaults to 0 and `trace: 'on-first-retry'`
   // (below) never fires — a CI failure left no trace to debug from. One
   // retry in CI is enough to produce a trace on the failure that persists.

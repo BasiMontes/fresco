@@ -23,6 +23,8 @@ export interface SignupCtx {
 
 export interface AprendizajeCtx {
   slotPrefix: string
+  /** FRESCO-356: the scenario's own throwaway factory user, so @aprendizaje no longer shares the DEV_USER meal plan (which blocked parallel execution). */
+  testUser: TestUser
 }
 
 export interface SuscripcionCtx {

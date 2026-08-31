@@ -23,7 +23,15 @@
 #                                    infra recién publicada, falló 2/2 en prod).
 #
 # Al automatizar un escenario, añadir @automatizado y el fichero de test que lo cubre.
+#
+# @mode:parallel (playwright-bdd, FRESCO-356 / ADR-0018): los escenarios
+# @automatizado corren en paralelo. Todos los step files usan testUserFactory
+# (FRESCO-308) — cada escenario provisiona su propio usuario throwaway y
+# siembra SUS datos, así que no hay estado compartido entre escenarios. Al
+# añadir un escenario nuevo, seguir ese patrón; nunca reutilizar una cuenta
+# fija compartida (DEV_USER/PRO_USER) para un escenario que escribe.
 
+@mode:parallel
 Característica: Flujo completo de usuario en Fresco
   Como equipo de producto, queremos un registro único de todos los escenarios
   de prueba y sus posibles causísticas, para tener trazabilidad end-to-end del
