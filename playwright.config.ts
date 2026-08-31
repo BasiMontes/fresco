@@ -33,13 +33,22 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
   testDir,
-  // @aprendizaje's scenarios all mutate the same shared, finite, real test
-  // plan (each picks "the first still-pendiente slot") — running them in
-  // parallel workers raced two scenarios onto the same slot (found live: a
-  // "mark cocinado" test's own reload-check saw "Descartado", clobbered by
-  // a concurrent "mark descartado" scenario). Single worker trades a bit of
-  // speed for correctness against shared mutable backend state; this suite
-  // is small enough that it doesn't matter yet.
+  // @aprendizaje / @entrega-parcial / @generacion-determinista / the
+  // aislamiento-datos @seguridad scenarios still mutate the same shared,
+  // finite backend test plan on the PRO_USER/DEV_USER accounts (each picks
+  // "the first still-pendiente slot") — running them in parallel workers
+  // raced two scenarios onto the same slot (found live: a "mark cocinado"
+  // test's own reload-check saw "Descartado", clobbered by a concurrent
+  // "mark descartado" scenario). Single worker trades speed for correctness
+  // against that shared mutable state.
+  //
+  // ADR-0018 (supersedes ADR-0014): the revisit trigger for turning this on
+  // is the CI `test:e2e` job wall-clock, NOT the scenario count. Early-
+  // warning at ~6m30s sustained → migrate those four racer step files to
+  // `testUserFactory` (FRESCO-308), add `@mode:parallel` to
+  // regression.feature's Feature line, and bump `workers` to 2–4 with
+  // `fullyParallel: true`. As of FRESCO-353 the job is ~5m27s at 52
+  // scenarios — headroom remains.
   fullyParallel: false,
   workers: 1,
   // Without this, `retries` defaults to 0 and `trace: 'on-first-retry'`
