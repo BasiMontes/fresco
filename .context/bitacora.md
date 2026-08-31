@@ -214,3 +214,18 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: tanda de fotos 23/30 (694 -> 717/1000, 0 dup). Regenerado supabase/seed.sql vía `supabase db dump --linked --data-only` (1000 filas, 717 con foto). Commit propagado dev -> staging -> main.
 - Por qué: mantener el fixture de CI (test:e2e) al día + copia fría del catálogo en el repo (backup pre-lanzamiento; descartado duplicar la BD en otra plataforma, ya está en git).
 - Siguiente: seguir tandas tras reset de cuota Unsplash. Refrescar seed.sql tras cada tanda grande.
+
+## 2026-08-31 - FRESCO-352 automatizar 8 happy paths e2e core
+- Qué: 4 step files nuevos (onboarding, calendario-semana, calendario-reordenar, recuperar-password). @automatizado 32 -> 40. Flujos core: @onboarding 0->1/4, @calendario 2->8/16, @login recuperar-password 0->1/1. PR #205 squash a dev (4005d81), ff a staging y main.
+- Por qué: catch-up del ratchet de FRESCO-321 (eje Verificación). Los flujos core no estaban al 100% de camino feliz.
+- Siguiente: quedan @onboarding edge-cases y @calendario edge-cases manuales por diseño. Gotchas documentadas en el PR: dnd-kit MouseSensor 8px (dragTo no sirve, mouse manual), grid de 3 días (21 huecos se asserta contra BD).
+
+## 2026-08-31 - FRESCO-353 2o batch e2e (guest, aprendizaje Pro, Biblioteca)
+- Qué: 3 step files nuevos (biblioteca 10 escenarios, invitado 1, aprendizaje-generacion 1). @automatizado 40 -> 52. @biblioteca 0->10/13, @invitado 0->1/1, @aprendizaje 5->6/6 (FR-5.4/5.5, el moat). PR #206 squash a dev (a37dad0), ff a staging y main.
+- Por qué: 2o batch del ratchet de FRESCO-321.
+- Siguiente: "invitada convierte sesión anónima" queda manual (OTP con inbox real, FRESCO-89). 52 @automatizado roza el techo ADR-0014 (~60) - abrir el revisit antes del 3er batch (@panel-inicio, @favoritos, @perfil, @landing).
+
+## 2026-08-31 - FRESCO-354 ADR-0018 (revisit de arquitectura de tests e2e)
+- Qué: ADR-0018 Accepted, supersede a ADR-0014. Retira el trigger de conteo (~60 escenarios); el trigger vinculante es el wall-clock del job test:e2e en CI (early-warning ~6m30s -> migrar 4 racer step files a testUserFactory + @mode:parallel + workers 2-4; hard ~8m). Sanciona el batch 3. NO KATA. ADR-0014 -> Superseded. playwright.config.ts + qa/README.md actualizados. PR #207 squash a dev (2041a88), ff a staging y main.
+- Por qué: el ratchet de FRESCO-321 (352->40, 353->52) cruza el trigger de conteo de ADR-0014 con el batch 3.
+- Siguiente: FRESCO-355 (batch 3) creado pero APARCADO — ratchet cumplió objetivo (flujos core cubiertos), esas pantallas son secundarias. Prioridad real: sign-off legal + cohorte. Retomar batch 3 solo si una regresión ahí duele.

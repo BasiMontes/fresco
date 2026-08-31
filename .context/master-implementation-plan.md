@@ -262,6 +262,20 @@ This document sequences **what** to build and **why it's next**, not **how**. Th
 
 This plan (body dated 2026-08-28) predates the audit-3 remediation epic **FRESCO-309** entirely — it only tracks the audit-2 epic FRESCO-278. A full regen should fold FRESCO-309 and its children in. Closures worth recording now:
 
+#### Audit-3 (EPIC-FRESCO-309) — CLOSED
+
+The third external Dojo audit (2026-08-29) spawned EPIC-FRESCO-309. As of 2026-08-31 it is **done: 21 of 22 `auditoria-3` tickets `Finalizada`**, the sole open one being FRESCO-355 (the final e2e-automation batch, in flight this session). The audit's five axes are addressed:
+
+- **Aislamiento (ALTO):** FRESCO-310 / ADR-0017 — CI e2e runs against an ephemeral local Supabase stack, never the hosted project. FRESCO-311 — deploy gate covers the exact prod commit + post-deploy `@smoke`. FRESCO-328 — prod-isolation decision recorded (`gated-pro`, revisit at launch).
+- **Seguridad (MEDIO):** FRESCO-312 — 6 security response headers + Report-Only CSP live on prod. FRESCO-315 — public-page a11y (`<main>`, `/login` labels).
+- **Verificación (MEDIO):** FRESCO-320 — testability gate in `/product-management`. FRESCO-321 — the automation ratchet: `@automatizado` **31 → 40 (FRESCO-352) → 52 (FRESCO-353) → ~70 (FRESCO-355)**, core-flow happy paths covered. FRESCO-322 / FRESCO-329 — post-deploy `@smoke` stabilised to 3 self-contained canaries. **ADR-0018** (supersedes ADR-0014) — retires the scenario-count trigger; CI `test:e2e` wall-clock (~6m30s early-warning) is now the binding trigger for the parallelism migration.
+- **Trazabilidad (MEDIO):** FRESCO-313 — Severity/Evidence on the Error type + a reproduction-or-rejection gate. FRESCO-314 — squash-only solo-main made mechanical in GitHub settings. FRESCO-323 — `CONTEXT.md` reconciled with the filesystem.
+- **Documentado-vs-real (BAJO):** FRESCO-316 (README/CONTEXT de-boilerplated), FRESCO-317 (ADR-0016, skills fork), FRESCO-318 (10 minor mismatches), FRESCO-325 (prod Supabase migration ledger reconciled + drift-check cron), FRESCO-319 (audit blind-spots).
+
+Overall audit score moved from ~3.7/5 (post-audit-2) toward ~4.5/5. Residual accepted debt: `fresco-pre` / `fresco-dev` deploys still share the prod Supabase DB (FRESCO-328, revisit at launch).
+
+#### Other closures:
+
 - **FRESCO-328 — Supabase production isolation → `Finalizada` (decision recorded, not built).** Ratifies the "single Supabase project for all envs" posture in §1. Isolation is `gated-pro`: do nothing until real launch (Stripe live + first paying users), when the org is on Supabase Pro + Vercel Pro anyway. Extra technical reason: Free projects pause after 7 days of inactivity — the shared project stays warm (4 envs hit it), an isolated pre-launch prod project would not. Acute risk (CI ↔ prod DB) already closed by FRESCO-310 / ADR-0017; residual accepted = `fresco-pre`/`fresco-dev` deploys share the prod DB. Reopen path: Option A (isolate prod) + Option C (Supabase branching for previews) at Pro; Option B (3 projects / 2nd org) only if the team grows.
 - **FRESCO-329 — post-deploy `@smoke` set trimmed → `Finalizada`.** Follow-up of FRESCO-322. Dropped `@aprendizaje` "marcar cocinado" from `@smoke` after it failed 2/2 on the first real prod smoke runs (chain too heavy for a liveness canary vs cold infra). `@smoke` set is now `@login`, `@qa`, `@suscripcion` (3 canaries); the scenario stays `@automatizado` in the full `test:e2e` suite. Also trimmed the workflow warm-up (dropped `/calendar` + `update-recipe-status`/`generate-meal-plan`). PR #204 → all 3 branches at `1deca18`.
 - Context: FRESCO-289 (§2 / §12 "CI shared-backend isolation" spike) was effectively resolved by **FRESCO-310 / ADR-0017** — the `test:e2e` job now runs against an ephemeral local Supabase stack in the runner, never the hosted project. The §12 spike wording is stale.
