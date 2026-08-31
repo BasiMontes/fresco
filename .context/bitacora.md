@@ -199,3 +199,13 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: la feature nativa de Supabase (leaked_password_protection) está capada a plan Pro y la org está en Free. Implementado client-side contra la API pública de Pwned Passwords (k-anonymity: solo 5 chars del hash SHA-1 salen del navegador). lib/validation/pwned-password.ts + check en 3 handlers (signup, onboarding identity-step, update-password). Fail-open (si HIBP no responde en 3s, no bloquea). next.config.mjs connect-src += api.pwnedpasswords.com. 6 unit tests + 1 escenario e2e @registro. Live-verificado contra la API real. PR #203.
 - Por qué: FRESCO-32 (auditoría Supabase Advisors, no audit-3) llevaba Blocked desde el 1 ago por ser feature de pago.
 - Siguiente: reversible — si se sube a Pro, borrar helper + 3 llamadas y activar el toggle.
+
+## 2026-08-31 - FRESCO-31 tanda de fotos (2 batches)
+- Qué: 2 tandas de fetch-recipe-photos.ts (23/30 + 21/30), aplicadas vía Supabase MCP. 650 -> 694/1000 con foto, 0 duplicados. 306 restantes.
+- Por qué: backfill continuo de foto_url en recipes vía Unsplash.
+- Siguiente: pool restante = variantes filler-only difíciles (v9/v10). Retomar tras reset de cuota Unsplash; 403 empezaron al final de la 2a tanda.
+
+## 2026-08-31 - FRESCO-329 sacar @aprendizaje del set @smoke post-deploy
+- Qué: quitado @smoke del escenario "Marcar un plato como cocinado" (sigue @automatizado). Set @smoke = @login, @qa, @suscripcion. Limpiado warm-up de post-deploy-smoke.yml (fuera /calendar + Edge Functions update-recipe-status/generate-meal-plan). PR #204 squash a dev (1deca18), ff a staging y main.
+- Por qué: follow-up FRESCO-322; @aprendizaje falló 2/2 en las primeras corridas reales post-deploy (cadena reseed+marca+render >20s contra infra fría).
+- Siguiente: verificar próxima corrida de post-deploy-smoke en prod en verde (3 canarios).
