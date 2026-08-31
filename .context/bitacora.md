@@ -244,3 +244,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: migrados los 4 racer step files (aprendizaje, entrega-parcial, generacion-determinista, aislamiento-datos) de cuentas compartidas DEV_USER/PRO_USER a testUserFactory por escenario. @mode:parallel en regression.feature, workers 4 (CI) / 2 (local). 3 corridas paralelas locales 75/75 verde, 0 carreras. PR #210 squash a dev (e267a05), ff a staging y main.
 - Por qué: se disparó el early-warning de wall-clock de ADR-0018 (6m40s).
 - Siguiente: CI test:e2e 6m40s -> 5m55s (solo -45s). La paralelización aceleró la parte de tests, pero el wall-clock del job lo dominan supabase start + bun run build (~4 min de overhead fijo). Valor real: aislamiento por factory - todo escenario nuevo es seguro, sin footguns de estado compartido. Si se quiere CI mas rapida, la palanca es cachear el build / imagen de supabase, no mas paralelismo.
+
+## 2026-08-31 - FRESCO-357 abierto (backlog) + master-plan actualizado
+- Qué: creado FRESCO-357 (CI: cachear el pipeline del job test:e2e — .next/cache, Playwright, deps bun, imagenes Supabase, solapar build+stack, quitar concurrency group). sp3, Relates FRESCO-356. master-implementation-plan.md actualizado con FRESCO-356 (migracion a paralelo) y FRESCO-357.
+- Por qué: FRESCO-356 solo bajo el job -45s; el wall-clock lo domina el overhead de setup (~4 min: supabase start + bun run build), no los tests. La palanca es caching.
+- Siguiente: FRESCO-357 en backlog. Objetivo test:e2e < 3 min (baseline 5m55s). No urgente (un committer).
