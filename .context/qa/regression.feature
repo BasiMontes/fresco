@@ -17,8 +17,10 @@
 #                                    Solo escenarios rápidos, self-contained y
 #                                    de baja flakiness: check de VIDA del deploy,
 #                                    no de rendimiento ni de flujos con IA. Hoy:
-#                                    @login, @qa, @suscripcion, @aprendizaje
-#                                    (marcar cocinado). FRESCO-322.
+#                                    @login, @qa, @suscripcion. FRESCO-322,
+#                                    FRESCO-329 (se sacó @aprendizaje: la cadena
+#                                    reseed + marca + render tardaba >20s contra
+#                                    infra recién publicada, falló 2/2 en prod).
 #
 # Al automatizar un escenario, añadir @automatizado y el fichero de test que lo cubre.
 
@@ -661,14 +663,13 @@ Característica: Flujo completo de usuario en Fresco
   # Aprendizaje Cocinado/Descartado (EPIC-FRESCO-14 / STORY-FRESCO-15)
   # ==========================================================================
 
-  @aprendizaje @verificado-manual-2026-07-31 @automatizado @smoke
+  @aprendizaje @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
-  # @smoke: canario post-deploy — escritura real y terminal en DB
-  # (update-recipe-status) desde la UI del calendario. Self-contained: siembra
-  # su propio plan de la semana (delete + generate-meal-plan determinista, sin
-  # Gemini). FRESCO-322: el paso "Entonces el plato se muestra como cocinado"
-  # usa un timeout ampliado para absorber el cold-start de update-recipe-status
-  # en el primer hit post-deploy; el workflow hace un warm-up previo.
+  # FRESCO-329: sacado de @smoke. La cadena que ejecuta este escenario (reseed
+  # del plan de la semana + login + navegación a /calendar + marca + escritura
+  # update-recipe-status + render del badge) tarda >20s o falla en silencio
+  # contra infra recién publicada — falló 2/2 en las primeras corridas reales
+  # post-deploy. Sigue en @automatizado (corre en test:e2e contra infra caliente).
   Escenario: Marcar un plato como cocinado
     Dado que el usuario tiene un menú semanal generado con un plato en estado pendiente
     Cuando marca ese plato como cocinado
