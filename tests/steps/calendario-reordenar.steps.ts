@@ -126,7 +126,11 @@ Given(/^que el usuario reordenó su menú previamente$/, async ({ page, request,
   await seedTwoDistinctLunches(request, testUser);
   await loginAndGoToCalendar(page, testUser);
   await dragLunesOntoMartes(page);
-  await expect.poll(async () => dbRecipeNameAt(request, testUser, 'lunes')).toBe(ctx.recetaB);
+  // Confirm the optimistic swap rendered (the drag registered) BEFORE
+  // polling the DB — a failed drag otherwise shows only as a slow poll
+  // timeout. Flaked once under full-suite load without this guard.
+  await expect(page.getByTestId('calendar_slot_lunes_comida')).toContainText(ctx.recetaB);
+  await expect.poll(async () => dbRecipeNameAt(request, testUser, 'lunes'), { timeout: 15_000 }).toBe(ctx.recetaB);
 });
 
 When(/^recarga \/calendar$/, async ({ page }) => {

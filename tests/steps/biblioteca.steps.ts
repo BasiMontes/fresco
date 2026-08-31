@@ -3,6 +3,8 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { currentWeekMonday, restHeaders } from '../test-helpers';
+import { generateCurrentWeekPlan } from '../test-user-factory';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @biblioteca, the
@@ -25,6 +27,7 @@ interface Ctx {
   createdRecipeName: string
 }
 const ctx: Ctx = { testUser: null, totalCount: 0, createdRecipeName: '' };
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void> {
   await page.goto('/login');
@@ -190,4 +193,103 @@ Then(/^ve su nombre, ingredientes, pasos, tiempo, dificultad y tags de dieta\/al
   await expect(page.getByTestId('recipe_detail_ingredientes')).toBeVisible();
   await expect(page.getByTestId('recipe_detail_pasos')).toBeVisible();
   await expect(page.getByTestId('recipe_detail_tags')).toBeVisible();
+});
+
+// ── FRESCO-355 mini-batch: personal recipes + validation + back link ──────
+
+async function createOwnRecipe(page: Page, name: string): Promise<void> {
+  await page.getByTestId('crear_propia_button').click();
+  await expect(page.getByTestId('create_recipe_dialog')).toBeVisible();
+  await page.getByTestId('receta_nombre_input').fill(name);
+  await page.getByTestId('receta_ingredientes_input').fill('Tomate\nPan');
+  await page.getByTestId('receta_pasos_input').fill('Tostar el pan\nAñadir tomate');
+  await page.getByTestId('guardar_receta_button').click();
+  await expect(page.getByTestId('create_recipe_dialog')).toBeHidden();
+}
+
+Given(/^que Laura abre el formulario de "Crear propia" sin completar el nombre$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToLibrary(page, testUser);
+  await page.getByTestId('crear_propia_button').click();
+  await expect(page.getByTestId('create_recipe_dialog')).toBeVisible();
+});
+
+Given(/^que Laura tiene una receta propia en su Biblioteca$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToLibrary(page, testUser);
+  ctx.createdRecipeName = `Mi receta e2e ${Date.now()}`;
+  await createOwnRecipe(page, ctx.createdRecipeName);
+});
+
+Given(/^que Laura tiene una receta propia guardada$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToLibrary(page, testUser);
+  ctx.createdRecipeName = `Receta propia e2e ${Date.now()}`;
+  await createOwnRecipe(page, ctx.createdRecipeName);
+});
+
+Given(/^que Laura está viendo el detalle de una receta$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToLibrary(page, testUser);
+  await page.getByTestId('recipe_library_grid').getByRole('link').first().click();
+  await page.waitForURL('**/recipes/**');
+});
+
+When(/^intenta guardar$/, async ({ page }) => {
+  // The submit button stays disabled while the name is empty; typing then
+  // clearing marks the field touched so the inline validation renders.
+  await page.getByTestId('receta_nombre_input').fill('x');
+  await page.getByTestId('receta_nombre_input').fill('');
+});
+
+When(/^la abre$/, async ({ page }) => {
+  await page.getByTestId('personal_recipes_section').getByRole('link').first().click();
+  await page.waitForURL('**/recipes/**');
+});
+
+When(/^elige volver$/, async ({ page }) => {
+  await page.getByTestId('recipe_detail_back_link').click();
+});
+
+When(/^genera un menú semanal nuevo$/, async ({ request }) => {
+  await generateCurrentWeekPlan(request, ctx.testUser!);
+});
+
+Then(/^ve un mensaje claro pidiéndole completar el nombre antes de guardar$/, async ({ page }) => {
+  await expect(page.getByTestId('receta_nombre_validation_message')).toBeVisible();
+  await expect(page.getByTestId('guardar_receta_button')).toBeDisabled();
+});
+
+Then(/^ve su nombre, ingredientes y pasos, distinguible como receta propia$/, async ({ page }) => {
+  await expect(page.getByText('Tu receta')).toBeVisible();
+  await expect(page.getByTestId('recipe_detail_ingredientes')).toBeVisible();
+  await expect(page.getByTestId('recipe_detail_pasos')).toBeVisible();
+});
+
+Then(/^regresa a la Biblioteca$/, async ({ page }) => {
+  await expect(page).toHaveURL(/\/recipes$/);
+});
+
+Then(/^esa receta propia nunca aparece en el menú generado por la IA$/, async ({ request }) => {
+  const testUser = ctx.testUser!;
+  const { semanaIso } = currentWeekMonday();
+  const headers = restHeaders(testUser.accessToken);
+  const planRes = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plans?select=id&user_id=eq.${testUser.id}&semana_iso=eq.${semanaIso}`,
+    { headers },
+  );
+  const [plan] = await planRes.json() as { id: string }[];
+  const slotsRes = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?select=recipes(nombre)&meal_plan_id=eq.${plan.id}`,
+    { headers },
+  );
+  const names = (await slotsRes.json() as { recipes: { nombre: string } | null }[])
+    .map(r => r.recipes?.nombre)
+    .filter(Boolean);
+  expect(names).not.toContain(ctx.createdRecipeName);
+  expect(names.length).toBe(21);
 });

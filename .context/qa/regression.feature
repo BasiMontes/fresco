@@ -1013,7 +1013,8 @@ Característica: Flujo completo de usuario en Fresco
     # como defensa independiente. Verificado en vivo: card clamped a 2
     # líneas, grilla sin distorsión.
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-355 mini-batch)
   Escenario: Campos obligatorios al crear una receta propia
     Dado que Laura abre el formulario de "Crear propia" sin completar el nombre
     Cuando intenta guardar
@@ -1029,7 +1030,8 @@ Característica: Flujo completo de usuario en Fresco
     # Playwright: deshabilitado con nombre vacío/solo espacios, habilitado
     # al escribir un nombre real.
 
-  @biblioteca @pendiente
+  @biblioteca @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-355 mini-batch)
   Escenario: Receta propia no participa en la generación de menú
     Dado que Laura tiene una receta propia guardada
     Cuando genera un menú semanal nuevo
@@ -1125,13 +1127,15 @@ Característica: Flujo completo de usuario en Fresco
     # opción marcada tiene tabindex="0", ArrowRight/ArrowLeft mueven foco y
     # selección, wrap correcto en ambos extremos.
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-355 mini-batch)
   Escenario: Ver detalle de una receta propia
     Dado que Laura tiene una receta propia en su Biblioteca
     Cuando la abre
     Entonces ve su nombre, ingredientes y pasos, distinguible como receta propia
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-355 mini-batch)
   Escenario: Volver a la Biblioteca desde el detalle
     Dado que Laura está viendo el detalle de una receta
     Cuando elige volver
@@ -1190,7 +1194,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando escribe su propio email exacto
     Entonces el botón de confirmación se habilita
 
-  @perfil @pendiente
+  @perfil @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355 mini-batch)
   Escenario: Borrar cuenta definitivamente elimina la cuenta y todos sus datos
     Dado que Laura confirma el borrado con su email exacto
     Cuando el sistema ejecuta la Edge Function delete-account
@@ -1501,7 +1506,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /menu
     Entonces el icono de Notificaciones se ve sin ningún punto rojo
 
-  @notificaciones @verificado-manual-2026-08-19
+  @notificaciones @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/notificaciones.steps.ts (FRESCO-355 mini-batch)
   Escenario: Se puede marcar como favorita una receta recomendada directamente desde Notificaciones
     Dado que Laura ve una receta recomendada en /notifications
     Cuando pulsa "Guardar en favoritos" en esa tarjeta
