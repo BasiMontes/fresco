@@ -167,9 +167,14 @@ jobs:
           nohup bash -c "bun run build > '$RUNNER_TEMP/build.log' 2>&1; echo \$? > '$RUNNER_TEMP/build.exit'" >/dev/null 2>&1 &
 
       - name: Start local Supabase
-        # Serves Postgres, Auth (GoTrue), PostgREST, Realtime, Storage and the
-        # Edge Runtime on 127.0.0.1 - zero production credentials in play.
-        run: supabase start
+        # Serves Postgres, Auth (GoTrue), PostgREST and the Edge Runtime on
+        # 127.0.0.1 - zero production credentials in play.
+        # FRESCO-357: `-x` skips the containers the e2e suite never touches
+        # (Realtime, Storage, imgproxy, Studio, Inbucket, Logflare, Vector) -
+        # `supabase start` was the single biggest step (~90 s) and none of
+        # these are on any tested path (no storage/realtime refs in tests/,
+        # recipe photos are external URLs, email confirmations are off).
+        run: supabase start -x realtime,storage-api,imgproxy,studio,inbucket,logflare,vector
 
       - name: Apply migrations + seed
         # `supabase db reset` drops the database, re-runs every migration from
