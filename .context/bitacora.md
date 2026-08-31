@@ -229,3 +229,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: ADR-0018 Accepted, supersede a ADR-0014. Retira el trigger de conteo (~60 escenarios); el trigger vinculante es el wall-clock del job test:e2e en CI (early-warning ~6m30s -> migrar 4 racer step files a testUserFactory + @mode:parallel + workers 2-4; hard ~8m). Sanciona el batch 3. NO KATA. ADR-0014 -> Superseded. playwright.config.ts + qa/README.md actualizados. PR #207 squash a dev (2041a88), ff a staging y main.
 - Por qué: el ratchet de FRESCO-321 (352->40, 353->52) cruza el trigger de conteo de ADR-0014 con el batch 3.
 - Siguiente: FRESCO-355 (batch 3) creado pero APARCADO — ratchet cumplió objetivo (flujos core cubiertos), esas pantallas son secundarias. Prioridad real: sign-off legal + cohorte. Retomar batch 3 solo si una regresión ahí duele.
+
+## 2026-08-31 - FRESCO-355 3er batch e2e (home, favoritos, perfil, landing)
+- Qué: 4 step files nuevos (panel-inicio 8, favoritos 4, perfil 3, landing 2). @automatizado 52 -> 69. @panel-inicio 0->8/9, @favoritos 0->4/4, @perfil 0->3/3, @landing 0->2/2. PR #208 squash a dev (93b72ba), ff a staging y main. CI test:e2e 5m55s (bajo el early-warning de ADR-0018 de ~6m30s).
+- Por qué: 3er y ultimo batch del ratchet de FRESCO-321. Sancionado por ADR-0018.
+- Siguiente: ratchet COMPLETO para happy paths de flujos core + secundarios. Unico manual: "invitada convierte sesion anonima" (OTP inbox real, FRESCO-89). Migracion a paralelo sigue diferida (5m55s < 6m30s).
