@@ -81,26 +81,22 @@ jobs:
           echo "Target URL: ${{ github.event.deployment_status.target_url }}"
           echo "Environment URL: ${{ github.event.deployment_status.environment_url }}"
 
-      - name: Warm up the deployed app + Edge Functions
+      - name: Warm up the deployed app
         # FRESCO-322: the first real run of this workflow went 3/6 red purely
-        # on cold-start — Vercel's serverless functions and the Supabase Edge
-        # Functions spin up lazily on first hit, and the @smoke assertions are
-        # tight. Touch the routes + functions the remaining @smoke scenarios
-        # exercise so the suite runs against warm infra. Best-effort: a warm-up
-        # failure never fails the job (the suite itself is the real signal).
+        # on cold-start — Vercel's serverless functions spin up lazily on first
+        # hit and the @smoke assertions are tight. Touch the routes the
+        # remaining @smoke scenarios exercise so the suite runs against warm
+        # infra. Best-effort: a warm-up failure never fails the job (the suite
+        # itself is the real signal).
+        # FRESCO-329: dropped the /calendar route + the update-recipe-status /
+        # generate-meal-plan Edge Function warm-up — the only @smoke scenario
+        # that touched them (@aprendizaje "marcar cocinado") was removed from
+        # the set.
         continue-on-error: true
         run: |
-          set -a; . ./.env; set +a
           APP="${{ github.event.deployment_status.target_url || github.event.deployment_status.environment_url }}"
-          for path in / /login /qa /calendar /profile; do
+          for path in / /login /qa /profile; do
             curl -sS -o /dev/null -w "warm app %{http_code} $path (%{time_total}s)\n" --max-time 30 "$APP$path" || echo "warm app FAILED $path"
-          done
-          # Edge Functions cold-start on first invoke regardless of the auth
-          # outcome — an unauthenticated POST that 401s still spins the worker.
-          for fn in update-recipe-status generate-meal-plan; do
-            curl -sS -o /dev/null -w "warm fn %{http_code} $fn (%{time_total}s)\n" --max-time 30 \
-              -X POST "$NEXT_PUBLIC_SUPABASE_URL/functions/v1/$fn" \
-              -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" || echo "warm fn FAILED $fn"
           done
 
       - name: Run @smoke suite against the deployed URL
