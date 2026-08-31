@@ -1,11 +1,12 @@
 # ADR-0014 — Testing architecture stays `playwright-bdd`; do not migrate to KATA
 
-- **Status:** Accepted
-- **Date:** 2026-08-26
+- **Status:** Superseded by ADR-0018
+- **Date:** 2026-08-26 <!-- superseded 2026-08-31 -->
 - **Deciders:** Basi Montes
 - **Tags:** testing, e2e, cross-cutting-invariant
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0018 <!-- revisit signal #2 fired (scenario count crossed ~60 via the FRESCO-321 ratchet); ADR-0018 keeps every decision here and changes only the revisit trigger to CI wall-clock -->
+
 
 ---
 

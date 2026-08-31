@@ -41,9 +41,9 @@ Baseline 2026-08-30: **~31 / 139 scenarios `@automatizado` (~23%)**. The audit's
 Policy — incremental, not a big-bang backfill:
 
 1. **New work pays as it goes.** Every new Story with Gherkin AC automates those scenarios in the same PR (same-PR rule above). This alone stops the ratio decaying.
-2. **Backlog ratchet.** Each development sprint, automate **+6–8** of the existing manual-only scenarios, prioritising happy paths of the core flows: `@login`, `@onboarding`, `@generacion-menu`, `@calendario`, `@lista-compra`, `@aprendizaje`, `@suscripcion`. Target is **core-flow happy paths at 100% automated**, not the whole 139.
-3. **ADR-0014 ceiling.** `@automatizado` crossing **~60** or `test:e2e` crossing **~8 min** fires an ADR-0014 revisit (test-architecture: parallelism / data factories). Treat it as a checkpoint, not a stop — but do open the ADR revisit rather than pushing through silently.
-4. **`@smoke` set** is governed separately (this file's tag table + FRESCO-322), not by this ratchet.
+2. **Backlog ratchet.** Each development sprint, automate a batch of the existing manual-only scenarios, prioritising happy paths of the core flows: `@login`, `@onboarding`, `@generacion-menu`, `@calendario`, `@lista-compra`, `@aprendizaje`, `@suscripcion`, `@invitado`, `@biblioteca`, `@panel-inicio`, `@favoritos`, `@perfil`. Target is **core-flow happy paths at 100% automated**, not the whole 142. Batches so far: FRESCO-352 (→40), FRESCO-353 (→52), FRESCO-355 (→~70).
+3. **Test-architecture trigger (ADR-0018, supersedes ADR-0014).** The scenario-count number is retired. The binding trigger is the CI `test:e2e` job wall-clock: **early-warning at ~6m30s sustained** → start the parallelism migration (four racer step files → `testUserFactory`, `@mode:parallel`, `workers` 2–4); **hard trigger at ~8m sustained** → the migration lands before any further `@automatizado` additions. Not a KATA migration — see ADR-0018.
+4. **`@smoke` set** is governed separately (this file's tag table + FRESCO-322 / FRESCO-329), not by this ratchet.
 
 Progress is read live: `rg -c '@automatizado' .context/qa/regression.feature` vs `rg -c '^\s*Escenario:' .context/qa/regression.feature`.
 

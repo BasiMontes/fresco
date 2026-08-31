@@ -74,10 +74,11 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0011](./ADR-0011-pg-cron-pg-net-scheduled-http-triggers.md) | `pg_cron` + `pg_net` for scheduled HTTP-triggered jobs (Edge Function invocation) | Accepted | — | — |
 | [ADR-0012](./ADR-0012-web-push-library-for-vapid-payload-encryption.md) | `web-push` npm library for VAPID signing + payload encryption | Accepted | — | — |
 | [ADR-0013](./ADR-0013-posthog-product-analytics.md) | PostHog as the product-analytics vendor (EU region, client + server capture) | Accepted | — | — |
-| [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Accepted | — | — |
+| [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Superseded | — | ADR-0018 |
 | [ADR-0015](./ADR-0015-stripe-subscription-reconciliation-job.md) | Daily `pg_cron`→`pg_net`→Next.js route reconciles `user_profiles` subscription state against Stripe | Accepted | — | — |
 | [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Accepted | — | — |
 | [ADR-0017](./ADR-0017-ci-e2e-local-supabase-stack.md) | CI e2e runs against an ephemeral local Supabase stack, not the prod project | Accepted | — | — |
+| [ADR-0018](./ADR-0018-e2e-test-architecture-revisit-threshold.md) | E2E test architecture revisit: CI wall-clock is the binding revisit trigger, not scenario count | Accepted | ADR-0014 | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
