@@ -426,7 +426,8 @@ Característica: Flujo completo de usuario en Fresco
   # Panel de Inicio — saludo personalizado (EPIC-FRESCO-54 / STORY-FRESCO-55)
   # ==========================================================================
 
-  @panel-inicio @verificado-manual-2026-08-02
+  @panel-inicio @verificado-manual-2026-08-02 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: El saludo de Inicio muestra el nombre real cuando el perfil lo tiene guardado
     Dado que el usuario guardó su nombre en /profile
     Cuando abre /menu (Inicio)
@@ -440,7 +441,8 @@ Característica: Flujo completo de usuario en Fresco
     # Verificado en vivo por la vía de sesión invitada/anónima (ADR-0003):
     # sin nombre guardado, /menu renderiza el saludo genérico sin fallo.
 
-  @panel-inicio @verificado-manual-2026-08-06
+  @panel-inicio @verificado-manual-2026-08-06 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: Los iconos de favoritos y notificaciones de Inicio navegan a sus pantallas reales
     Dado que el usuario está en /menu (Inicio)
     Cuando toca el icono de favoritos o el de notificaciones de la cabecera
@@ -474,7 +476,8 @@ Característica: Flujo completo de usuario en Fresco
     # (horizontal-scroll-row.tsx), renombrada a "Ver recetas siguientes"
     # por claridad/simetría con "Ver recetas anteriores".
 
-  @panel-inicio @verificado-manual-2026-08-03
+  @panel-inicio @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: La sugerencia de Calendario en Inicio lleva directo al plan semanal
     Dado que el usuario está en /menu (Inicio) y ve el banner de sugerencia
     Cuando toca el botón "Ver mi plan semanal"
@@ -486,19 +489,22 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /menu (Inicio)
     Entonces ve el banner de sugerencia de todas formas, junto al estado vacío
 
-  @panel-inicio @verificado-manual-2026-08-03
+  @panel-inicio @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: Inicio muestra el número real de recetas disponibles para el perfil del usuario
     Dado que el usuario tiene alérgenos e ingredientes marcados en su perfil
     Cuando abre /menu (Inicio)
     Entonces ve el número de recetas disponibles que respetan esas restricciones
 
-  @panel-inicio @verificado-manual-2026-08-03
+  @panel-inicio @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: Tocar la card de recetas disponibles lleva al catálogo
     Dado que el usuario ve la card de recetas disponibles en Inicio
     Cuando toca la card
     Entonces es llevado a la pantalla de Recetas
 
-  @panel-inicio @verificado-manual-2026-08-03
+  @panel-inicio @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: Inicio muestra las tres estimaciones orientativas
     Dado que Laura abre Inicio
     Cuando mira las cards de estimación
@@ -508,13 +514,15 @@ Característica: Flujo completo de usuario en Fresco
     # en la propia UI ("Cifras de referencia general, pendientes de validar
     # con datos reales de mercado").
 
-  @panel-inicio @verificado-manual-2026-08-03
+  @panel-inicio @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: Inicio muestra las últimas recetas añadidas al catálogo, dentro del perfil del usuario
     Dado que Laura abre Inicio
     Cuando mira la sección de últimas recetas
     Entonces ve las recetas agregadas más recientemente al catálogo, dentro de las que puede comer según su perfil
 
-  @panel-inicio @verificado-manual-2026-08-03
+  @panel-inicio @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
   Escenario: Tocar "Ver todas" en últimas recetas lleva al catálogo
     Dado que Laura ve la sección de últimas recetas en Inicio
     Cuando toca "Ver todas"
@@ -1153,19 +1161,22 @@ Característica: Flujo completo de usuario en Fresco
     # por los 3 agentes del QA sweep del 2026-08-08. Reescrito. Verificado
     # en vivo: cero menciones a "gemini" en el texto renderizado.
 
-  @perfil @verificado-manual-2026-08-04
+  @perfil @verificado-manual-2026-08-04 @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
   Escenario: Editar preferencias de dieta y alérgenos desde el perfil
     Dado que Laura está en /profile
     Cuando activa un chip de dieta y confirma "Actualizar Preferencias"
     Entonces la preferencia queda guardada y sigue activa tras recargar la página
 
-  @perfil @verificado-manual-2026-08-04
+  @perfil @verificado-manual-2026-08-04 @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
   Escenario: Descargar un backup de los propios datos en JSON
     Dado que Laura está en /profile
     Cuando pulsa "Descargar" en Backup JSON
     Entonces recibe un fichero con su perfil, menús, listas de la compra y recetas propias reales
 
-  @perfil @verificado-manual-2026-08-04
+  @perfil @verificado-manual-2026-08-04 @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
   Escenario: Cerrar sesión desde el perfil
     Dado que Laura está en /profile con sesión activa
     Cuando pulsa "Salir"
@@ -1382,7 +1393,8 @@ Característica: Flujo completo de usuario en Fresco
   # Favoritos (/favorites)
   # ==========================================================================
 
-  @favoritos @verificado-manual-2026-08-19
+  @favoritos @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/favoritos.steps.ts (FRESCO-355)
   Escenario: Ver la lista de recetas favoritas guardadas
     Dado que Laura tiene al menos una receta marcada como favorita
     Cuando abre /favorites
@@ -1394,14 +1406,16 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /favorites
     Entonces ve un estado vacío ("Lista vacía... Guarda recetas para verlas aquí"), no una lista en blanco ni un error
 
-  @favoritos @verificado-manual-2026-08-19
+  @favoritos @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/favoritos.steps.ts (FRESCO-355)
   Escenario: Quitar una receta de favoritos desde la propia pantalla de Favoritos
     Dado que Laura está en /favorites con al menos una receta guardada
     Cuando pulsa "Quitar de favoritos" en una de las tarjetas
     Entonces la tarjeta desaparece inmediatamente de la lista
     Y el cambio persiste tras recargar la página
 
-  @favoritos @verificado-manual-2026-08-19
+  @favoritos @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/favoritos.steps.ts (FRESCO-355)
   Escenario: Marcar/desmarcar favorito se refleja en cualquier pantalla donde aparezca la misma receta
     Dado que Laura marca una receta como favorita desde /menu o /notifications
     Cuando visita /favorites, o el detalle de esa misma receta, o vuelve a la pantalla de origen
@@ -1410,7 +1424,8 @@ Característica: Flujo completo de usuario en Fresco
     # /notifications: el toggle optimista se refleja de inmediato y persiste
     # tras recargar en las 4 pantallas.
 
-  @favoritos @verificado-manual-2026-08-19
+  @favoritos @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/favoritos.steps.ts (FRESCO-355)
   Escenario: Abrir el detalle de una receta desde Favoritos
     Dado que Laura está en /favorites
     Cuando toca una tarjeta de receta favorita
@@ -1510,13 +1525,15 @@ Característica: Flujo completo de usuario en Fresco
   # Landing pública (/)
   # ==========================================================================
 
-  @landing @verificado-manual-2026-08-19
+  @landing @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/landing.steps.ts (FRESCO-355)
   Escenario: La landing pública muestra el value proposition, precios y FAQ sin necesidad de sesión
     Dado que un visitante sin cuenta ni sesión visita /
     Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Free y Pro) y FAQ
     Y ambos CTA principales ("Generar mi primer menú", "Empezar gratis") llevan a /onboarding
 
-  @landing @verificado-manual-2026-08-19
+  @landing @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/landing.steps.ts (FRESCO-355)
   Escenario: El acordeón de FAQ de la landing expande y colapsa cada pregunta de forma independiente
     Dado que un visitante está en la sección FAQ de /
     Cuando toca una pregunta
