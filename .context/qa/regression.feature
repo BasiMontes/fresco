@@ -289,7 +289,8 @@ Característica: Flujo completo de usuario en Fresco
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
   # ==========================================================================
 
-  @invitado @verificado-manual-2026-07-31
+  @invitado @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/invitado.steps.ts (FRESCO-353)
   Escenario: Una visitante nueva genera un menú sin crear cuenta
     Dado que una visitante sin cuenta ni sesión visita la landing
     Cuando completa el onboarding de 3 pasos y genera su menú
@@ -306,6 +307,9 @@ Característica: Flujo completo de usuario en Fresco
     Y un enlace a /signup
 
   @registro-progresivo @verificado-manual-2026-08-07
+  # FRESCO-353: NO automatizado — la conversión es un flujo de 2 pasos con
+  # verificación de código OTP de 6 dígitos (FRESCO-89); el camino feliz
+  # completo necesita un inbox real. Queda manual.
   # FRESCO-89 (arreglado 2026-08-07): la conversión ahora es un flujo de dos
   # pasos — updateUser({ email }) primero, luego (tras verificar el código de
   # 6 dígitos enviado al correo) verifyOtp() + updateUser({ password }). Es
@@ -718,7 +722,8 @@ Característica: Flujo completo de usuario en Fresco
     # sería regresión), y el aprendizaje real (Pro) no está implementado
     # todavía. Step + regex actualizados en aprendizaje.steps.ts.
 
-  @aprendizaje @verificado-manual-2026-08-08
+  @aprendizaje @verificado-manual-2026-08-08 @automatizado
+  # Automatizado: tests/steps/aprendizaje-generacion.steps.ts (FRESCO-353)
   Escenario: La generación pesa el historial real de un usuario Pro y produce una explicación (FR-5.4/5.5)
     Dado que un usuario Pro tiene al menos 2 semanas de historial cocinado/descartado real
     Cuando se genera su menú de la semana siguiente
@@ -895,13 +900,15 @@ Característica: Flujo completo de usuario en Fresco
   # Biblioteca de Recetas (EPIC-FRESCO-64 / STORY-FRESCO-65)
   # ==========================================================================
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Buscar una receta por nombre en la Biblioteca
     Dado que Laura está en la Biblioteca de recetas
     Cuando escribe el nombre de una receta en el buscador
     Entonces ve solo las recetas del catálogo que coinciden con ese nombre
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Buscar una receta por ingrediente en la Biblioteca
     Dado que Laura está en la Biblioteca de recetas
     Cuando escribe un ingrediente en el buscador
@@ -927,13 +934,15 @@ Característica: Flujo completo de usuario en Fresco
     # restrictivo; revisado solo en código (misma rama `length === 0` que el
     # resto de estados vacíos de esta familia de páginas).
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Filtrar la Biblioteca por tipo de comida
     Dado que Laura está en la Biblioteca
     Cuando toca la pestaña "Cena"
     Entonces ve solo recetas de cena del catálogo
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Volver a ver todo el catálogo en la Biblioteca
     Dado que Laura tiene una pestaña de tipo de comida activa
     Cuando toca "Todo"
@@ -951,31 +960,36 @@ Característica: Flujo completo de usuario en Fresco
     # catálogo para tu búsqueda... tus recetas propias no se filtran
     # aquí"). "Tus recetas" sigue sin filtrarse, por diseño.
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Buscador y pestaña de tipo de comida combinados en la Biblioteca
     Dado que Laura tiene la pestaña "Cena" activa
     Cuando escribe algo en el buscador
     Entonces los resultados respetan ambos filtros a la vez
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Filtrar la Biblioteca por cocina
     Dado que Laura está en la Biblioteca
     Cuando selecciona un filtro de cocina, por ejemplo "Italiana"
     Entonces ve solo recetas de esa cocina
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Filtrar la Biblioteca por dieta
     Dado que Laura está en la Biblioteca
     Cuando selecciona un filtro de dieta, por ejemplo "Vegano"
     Entonces ve solo recetas que cumplen esa restricción
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Filtrar la Biblioteca por un alérgeno puntual
     Dado que Laura quiere evitar un ingrediente puntual que no tiene declarado en su perfil
     Cuando activa ese filtro de alérgeno en la Biblioteca
     Entonces no ve ninguna receta que lo contenga, sin que cambie su perfil permanente
 
-  @biblioteca @verificado-manual-2026-08-03
+  @biblioteca @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Crear una receta propia
     Dado que Laura está en la Biblioteca
     Cuando completa el formulario "Crear propia" con nombre, ingredientes y pasos, y confirma
@@ -1016,7 +1030,8 @@ Característica: Flujo completo de usuario en Fresco
     # confirmada por code review (get_filtered_recipes()/generate-meal-plan
     # nunca referencian recetas_propias), no por prueba en vivo.
 
-  @biblioteca @verificado-manual-2026-08-07
+  @biblioteca @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
   Escenario: Ver detalle de una receta del catálogo
     Dado que Laura está en la Biblioteca
     Cuando abre una receta del catálogo
