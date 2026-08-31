@@ -1,6 +1,6 @@
 # ADR-0018 — E2E test architecture revisit: wall-clock is the binding trigger, not scenario count
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-08-31
 - **Deciders:** Basi Montes
 - **Tags:** testing, e2e, cross-cutting-invariant
