@@ -117,12 +117,14 @@ jobs:
             bunx playwright install --with-deps chromium
           fi
 
-      # FRESCO-357: cache the Next.js build compilation cache. This is the
-      # single biggest lever on the job wall-clock - a warm `.next/cache`
-      # turns `bun run build` from ~1-2 min into ~30-45 s. The key is over the
-      # lockfile + a hash of every source file, so any real change busts it;
-      # `restore-keys` still gives a partial (per-file incremental) hit when
-      # only some files changed. Manual bust: bump the `v1` suffix.
+      # FRESCO-357: cache the Next.js build compilation cache. Paired with the
+      # background-build step below (which overlaps `bun run build` with the
+      # Supabase stack bring-up), a warm `.next/cache` keeps the build fully
+      # hidden behind the ~2 min of stack setup - the "Wait for the background
+      # build" step then costs ~12 s instead of a ~60-90 s sequential build.
+      # The key is over the lockfile + a hash of every source file, so any
+      # real change busts it; `restore-keys` still gives a partial (per-file
+      # incremental) hit when only some files changed. Manual bust: bump `v1`.
       - name: Cache Next.js build cache
         uses: actions/cache@v4
         with:
@@ -135,25 +137,12 @@ jobs:
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
-      # FRESCO-357: cache the Supabase local-stack Docker images
-      # (postgres/gotrue/postgrest/kong/realtime/storage/imgproxy/edge-runtime
-      # - ~1 GB, pulled cold on every run). Keyed on the CLI version (which
-      # pins the image tags). On a hit `docker load` restores them in ~20-30 s
-      # instead of a ~1-2 min pull; on a miss they are pulled by
-      # `supabase start` and saved by the step after it.
-      - name: Restore Supabase Docker images
-        id: supabase-images
-        uses: actions/cache@v4
-        with:
-          path: ~/supabase-images.tar
-          key: supabase-images-${{ runner.os }}-cli${{ env.SUPABASE_CLI_VERSION }}
-
-      - name: Load cached Supabase images
-        # Best-effort: a bad tarball just means `supabase start` pulls fresh.
-        if: steps.supabase-images.outputs.cache-hit == 'true'
-        continue-on-error: true
-        run: docker load --input ~/supabase-images.tar
-
+      # FRESCO-357: a `docker save`/`docker load` cache of the Supabase
+      # local-stack images (~1 GB) was tried and removed - measured net zero.
+      # The `docker load` of the tarball (~70 s) plus its cache download
+      # (~17 s) costs as much as the fresh `ghcr.io` pull it replaces (the
+      # GitHub-hosted runners have fast registry egress). `supabase start`
+      # pulls the images itself on every run - left as-is.
       - name: Restore .env from secret and apply CI overlay
         # `test:e2e` re-sources `.env` itself
         # (`bash -c 'set -a; . ./.env; set +a; ...'`), so the local-stack
@@ -181,20 +170,6 @@ jobs:
         # Serves Postgres, Auth (GoTrue), PostgREST, Realtime, Storage and the
         # Edge Runtime on 127.0.0.1 - zero production credentials in play.
         run: supabase start
-
-      - name: Save Supabase images to cache (on a cache miss)
-        # Best-effort: a failure here must never break the job — worst case the
-        # next run pulls the images again. The Supabase CLI resolves images
-        # from ghcr.io on CI (SUPABASE_INTERNAL_IMAGE_REGISTRY) but from
-        # public.ecr.aws locally, so match by image name, not registry.
-        if: steps.supabase-images.outputs.cache-hit != 'true'
-        continue-on-error: true
-        run: |
-          images=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '/supabase/[a-z-]+:' || true)
-          echo "$images"
-          if [ -n "$images" ]; then
-            echo "$images" | xargs docker save -o ~/supabase-images.tar
-          fi
 
       - name: Apply migrations + seed
         # `supabase db reset` drops the database, re-runs every migration from
