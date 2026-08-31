@@ -209,3 +209,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: quitado @smoke del escenario "Marcar un plato como cocinado" (sigue @automatizado). Set @smoke = @login, @qa, @suscripcion. Limpiado warm-up de post-deploy-smoke.yml (fuera /calendar + Edge Functions update-recipe-status/generate-meal-plan). PR #204 squash a dev (1deca18), ff a staging y main.
 - Por qué: follow-up FRESCO-322; @aprendizaje falló 2/2 en las primeras corridas reales post-deploy (cadena reseed+marca+render >20s contra infra fría).
 - Siguiente: verificar próxima corrida de post-deploy-smoke en prod en verde (3 canarios).
+
+## 2026-08-31 - FRESCO-31 tanda + regen de seed.sql
+- Qué: tanda de fotos 23/30 (694 -> 717/1000, 0 dup). Regenerado supabase/seed.sql vía `supabase db dump --linked --data-only` (1000 filas, 717 con foto). Commit propagado dev -> staging -> main.
+- Por qué: mantener el fixture de CI (test:e2e) al día + copia fría del catálogo en el repo (backup pre-lanzamiento; descartado duplicar la BD en otra plataforma, ya está en git).
+- Siguiente: seguir tandas tras reset de cuota Unsplash. Refrescar seed.sql tras cada tanda grande.
