@@ -234,3 +234,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: 4 step files nuevos (panel-inicio 8, favoritos 4, perfil 3, landing 2). @automatizado 52 -> 69. @panel-inicio 0->8/9, @favoritos 0->4/4, @perfil 0->3/3, @landing 0->2/2. PR #208 squash a dev (93b72ba), ff a staging y main. CI test:e2e 5m55s (bajo el early-warning de ADR-0018 de ~6m30s).
 - Por qué: 3er y ultimo batch del ratchet de FRESCO-321. Sancionado por ADR-0018.
 - Siguiente: ratchet COMPLETO para happy paths de flujos core + secundarios. Unico manual: "invitada convierte sesion anonima" (OTP inbox real, FRESCO-89). Migracion a paralelo sigue diferida (5m55s < 6m30s).
+
+## 2026-08-31 - FRESCO-355 pase final e2e (todo lo automatizable)
+- Qué: +6 escenarios (validacion crear receta, detalle receta propia, volver a biblioteca, receta propia no genera, borrar cuenta de punta a punta, favorito desde Notificaciones). @automatizado 69 -> 75/142. Arreglado flake de "orden reordenado sobrevive a recargar" (asertar swap optimista antes de pollear BD). test-user-factory tolera 404. PR #209 squash a dev (d156a53), ff a staging y main.
+- Por qué: user pidio automatizar todo lo automatizable. Cerrado el ratchet de FRESCO-321.
+- Siguiente: CI test:e2e 6m40s > early-warning de ADR-0018 (~6m30s) -> DISPARA la migracion a paralelo (4 racer files -> testUserFactory + @mode:parallel + workers). Manual definitivo: OTP guest->cuenta (config local != prod) + 2 escenarios dentro del Billing Portal de Stripe.
