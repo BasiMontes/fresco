@@ -149,7 +149,9 @@ jobs:
           key: supabase-images-${{ runner.os }}-cli${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Load cached Supabase images
+        # Best-effort: a bad tarball just means `supabase start` pulls fresh.
         if: steps.supabase-images.outputs.cache-hit == 'true'
+        continue-on-error: true
         run: docker load --input ~/supabase-images.tar
 
       - name: Restore .env from secret and apply CI overlay
@@ -181,11 +183,18 @@ jobs:
         run: supabase start
 
       - name: Save Supabase images to cache (on a cache miss)
+        # Best-effort: a failure here must never break the job — worst case the
+        # next run pulls the images again. The Supabase CLI resolves images
+        # from ghcr.io on CI (SUPABASE_INTERNAL_IMAGE_REGISTRY) but from
+        # public.ecr.aws locally, so match by image name, not registry.
         if: steps.supabase-images.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
-          docker images --filter=reference='public.ecr.aws/supabase/*' --format '{{.Repository}}:{{.Tag}}' \
-            | tee /dev/stderr \
-            | xargs docker save -o ~/supabase-images.tar
+          images=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '/supabase/[a-z-]+:' || true)
+          echo "$images"
+          if [ -n "$images" ]; then
+            echo "$images" | xargs docker save -o ~/supabase-images.tar
+          fi
 
       - name: Apply migrations + seed
         # `supabase db reset` drops the database, re-runs every migration from
