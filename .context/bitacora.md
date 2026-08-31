@@ -249,3 +249,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: creado FRESCO-357 (CI: cachear el pipeline del job test:e2e — .next/cache, Playwright, deps bun, imagenes Supabase, solapar build+stack, quitar concurrency group). sp3, Relates FRESCO-356. master-implementation-plan.md actualizado con FRESCO-356 (migracion a paralelo) y FRESCO-357.
 - Por qué: FRESCO-356 solo bajo el job -45s; el wall-clock lo domina el overhead de setup (~4 min: supabase start + bun run build), no los tests. La palanca es caching.
 - Siguiente: FRESCO-357 en backlog. Objetivo test:e2e < 3 min (baseline 5m55s). No urgente (un committer).
+
+## 2026-08-31 - FRESCO-357 CI test:e2e caching cerrado
+- Qué: PR #211 mergeado + promovido dev/staging/main (6913075). Caché deps bun + navegadores Playwright + .next/cache + build en background solapado con el stack + `supabase start -x` sin contenedores no usados. Quitado el concurrency group del job e2e. Descartada la caché docker save/load de imágenes Supabase (net-zero: docker load del tar ~1GB cuesta igual que el pull de ghcr.io).
+- Por qué: FRESCO-357 pedía test:e2e < 3 min (baseline 5m55s). Resultado: ~5m28s warm (-27s, ~8%). El reloj lo dominan supabase start (90-104s) + test:e2e (126-131s) + db reset+seed (22-31s), nada cacheable.
+- Siguiente: FRESCO-358 creado para el rediseño del ciclo de vida del stack (no reset+seed por run / Postgres-only / sharding). Ese es el único camino a sub-3min.
