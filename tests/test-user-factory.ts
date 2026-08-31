@@ -82,9 +82,12 @@ async function deleteAuthUser(request: APIRequestContext, userId: string): Promi
   const res = await request.delete(`${supabaseUrl()}/auth/v1/admin/users/${userId}`, {
     headers: serviceRoleHeaders(),
   });
-  // `!res.ok()` also true for a 404 (already gone) — not worth failing
-  // teardown over, hence the caller wraps this in its own `.catch`.
-  if (!res.ok()) { throw new Error(`[test-user-factory] Failed to delete test user ${userId}: ${res.status()} ${await res.text()}`); }
+  // 404 = already gone: a normal outcome now that a scenario can delete its
+  // own factory user mid-test (@perfil "Borrar cuenta definitivamente",
+  // FRESCO-355). Only a real failure (403/500/network) is worth surfacing.
+  if (!res.ok() && res.status() !== 404) {
+    throw new Error(`[test-user-factory] Failed to delete test user ${userId}: ${res.status()} ${await res.text()}`);
+  }
 }
 
 async function createUserProfileRow(request: APIRequestContext, userId: string, accessToken: string, plan: NonNullable<CreateTestUserOptions['plan']>): Promise<void> {

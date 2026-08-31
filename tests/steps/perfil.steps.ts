@@ -77,3 +77,34 @@ Then(/^la cookie de sesión se elimina y vuelve a \/login$/, async ({ page }) =>
   const hasAuthCookie = cookies.some(c => c.name.startsWith('sb-') && c.name.includes('-auth-token') && c.value.length > 0);
   expect(hasAuthCookie).toBe(false);
 });
+
+// ── FRESCO-355 mini-batch: delete account ────────────────────────────────
+
+Given(/^que Laura confirma el borrado con su email exacto$/, async ({ page, testUserFactory }) => {
+  test.setTimeout(60_000);
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToProfile(page, testUser);
+  await page.getByTestId('delete_account_open_button').click();
+  await expect(page.getByTestId('delete_account_dialog')).toBeVisible();
+  await page.getByTestId('delete_account_email_input').fill(testUser.email);
+});
+
+When(/^el sistema ejecuta la Edge Function delete-account$/, async ({ page }) => {
+  await page.getByTestId('delete_account_confirm_button').click();
+});
+
+Then(/^su auth\.users se elimina y el cascade de FK limpia user_profiles\/meal_plans\/shopping_lists\/recetas_propias$/, async ({ request }) => {
+  const testUser = ctx.testUser!;
+  const adminHeaders = { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` };
+  // delete-account runs async (Edge Function + sign-out + redirect) — poll.
+  await expect.poll(
+    async () => (await request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${testUser.id}`, { headers: adminHeaders })).status(),
+    { timeout: 15_000 },
+  ).toBe(404);
+});
+
+Then(/^la sesión se cierra y es redirigida a \/login con un mensaje de despedida$/, async ({ page }) => {
+  await page.waitForURL(/\/login\?account_deleted=1/);
+  await expect(page.getByTestId('account_deleted_message')).toBeVisible();
+});
