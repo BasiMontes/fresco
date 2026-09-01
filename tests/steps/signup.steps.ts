@@ -122,7 +122,10 @@ Then(/^el sistema le redirige a \/onboarding$/, async ({ page }) => {
 
 // ── FRESCO-32: leaked-password rejection ────────────────────────────────────
 
-const BREACHED_PASSWORD = 'password';
+// >= MIN_PASSWORD_LENGTH (10, FRESCO-363) so the length pre-check doesn't fire
+// first — the HIBP range API is route-stubbed below with this string's own
+// SHA-1 suffix, so any value reads as "breached".
+const BREACHED_PASSWORD = 'breached-passw0rd';
 
 async function sha1Suffix(input: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(input));

@@ -1,9 +1,9 @@
 /**
  * Password-strength scoring for the onboarding "create account" branch
- * (FRESCO-198). Pure function, independently testable — no dependency on
- * Supabase's own `weak_password` threshold (`lib/auth-errors.ts`, min 6
- * chars): this is a UX signal shown live as she types, not a hard gate —
- * the actual submit-time gate stays whatever Supabase enforces server-side.
+ * (FRESCO-198). Pure function, independently testable — independent of the
+ * length gate (`lib/validation/password-policy.ts`, `MIN_PASSWORD_LENGTH`):
+ * this is a UX signal shown live as she types, not a hard gate — the actual
+ * submit-time gate stays whatever Supabase enforces server-side.
  *
  * Scoring is intentionally simple (length + character-class variety), not a
  * dictionary/entropy library (no such dependency exists in this repo) —

@@ -141,12 +141,12 @@ Característica: Flujo completo de usuario en Fresco
   @login @recuperar-password @edge-case @verificado-manual-2026-08-19
   Escenario: Un mensaje de error obsoleto puede confundir sobre el problema real de la contraseña
     Dado que un usuario en /update-password ya vio "Las contraseñas no coinciden." por un intento anterior
-    Cuando corrige la confirmación para que ambas coincidan, pero deja una contraseña de menos de 6 caracteres, y reenvía
-    Entonces el envío se bloquea por la validación nativa de longitud mínima (minLength=6)
+    Cuando corrige la confirmación para que ambas coincidan, pero deja una contraseña de menos de 10 caracteres, y reenvía
+    Entonces el envío se bloquea por la validación nativa de longitud mínima (minLength=10)
     Y el mensaje "Las contraseñas no coinciden." sigue visible en pantalla, describiendo un problema que ya no es real
     # Bug real encontrado en vivo (barrido QA 2026-08-19), sin ticket todavía:
     # el segundo intento nunca llega al handler de JS que limpia/actualiza el
-    # mensaje de error, porque el atributo minLength=6 del input bloquea el
+    # mensaje de error, porque el atributo minLength=10 del input bloquea el
     # submit de forma silenciosa (sin popup visible en este navegador/CLI)
     # antes de que se revalide el mismatch. El usuario se queda viendo un
     # error que ya no describe la causa real del bloqueo (contraseña corta,

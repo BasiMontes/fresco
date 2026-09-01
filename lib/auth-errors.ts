@@ -1,4 +1,5 @@
 import { isAuthError } from '@supabase/supabase-js';
+import { MIN_PASSWORD_LENGTH } from '@/lib/validation/password-policy';
 
 /**
  * FRESCO-106 — Supabase Auth errors were shown raw in English
@@ -16,6 +17,11 @@ import { isAuthError } from '@supabase/supabase-js';
  * characters."}` — `isAuthApiError` was silently swallowing the mapped
  * case into the generic fallback.
  *
+ * FRESCO-363 (A4-H8): `weak_password` now also fires for a breached password
+ * (server-side leaked-password protection), not only a short one, so the
+ * mapped copy covers both reasons. The client forms pre-check length and
+ * HIBP before submit, so this is a fallback.
+ *
  * Unmapped Auth errors, and non-Auth errors entirely (network failures,
  * CORS, rate-limiting — none of which carry an `error.code`), fall
  * through to one generic Spanish message rather than leaking the
@@ -23,7 +29,7 @@ import { isAuthError } from '@supabase/supabase-js';
  */
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: 'Email o contraseña incorrectos.',
-  weak_password: 'La contraseña debe tener al menos 6 caracteres.',
+  weak_password: `La contraseña es demasiado débil: usa al menos ${MIN_PASSWORD_LENGTH} caracteres y evita contraseñas comunes o filtradas.`,
   user_already_exists: 'Ya existe una cuenta con ese email.',
   email_exists: 'Ya existe una cuenta con ese email.',
   email_not_confirmed: 'Confirma tu email antes de iniciar sesión.',

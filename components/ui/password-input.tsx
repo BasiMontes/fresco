@@ -3,6 +3,7 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { MIN_PASSWORD_LENGTH } from '@/lib/validation/password-policy';
 import { getPasswordStrength, PASSWORD_STRENGTH_LABELS } from '@/lib/validation/password-strength';
 
 export interface PasswordInputProps {
@@ -57,7 +58,7 @@ export function PasswordInput({
           placeholder={placeholder}
           aria-label={placeholder}
           required
-          minLength={6}
+          minLength={MIN_PASSWORD_LENGTH}
           autoComplete={autoComplete}
           value={value}
           disabled={disabled}
