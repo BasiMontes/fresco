@@ -294,3 +294,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: 3 PRs a dev (#217/#218/#219). Reverse-proxy /ingest de PostHog, person properties (plan/is_guest/signup_method), catalogo lib/posthog/event-names.ts. Eventos server-side de Stripe (trial_started/converted/renewed/cancelled) + menu_generation_completed con semana_iso/tier. Funnel cliente: landing_cta_clicked, onboarding_started/step/completed, checkout_started, shopping_list_generated, recipe_discarded. Amplia ADR-0013.
 - Por que: audit-4 ola 1 (A4-B4, BLOCKER) - la metrica del MVP no era medible; sin eventos de conversion, sin person properties, ~15 etapas de funnel sin instrumentar, sin reverse-proxy.
 - Siguiente: crear los embudos en la UI de PostHog (sin codigo). Promocion dev->staging->main pendiente. Seguir ola 1: FRESCO-367..379.
+
+## 2026-09-01 - FRESCO-367 (A4-H10) lista de la compra automatica
+- Que: al abrir /shopping-list sin lista, ShoppingListGenerator la genera solo (autoGenerate, client-side on-mount), sin boton manual. Instrumentada: shopping_list_generated {auto, n_items, coste_min, coste_max}. generate-meal-plan NO tocado. PR #220 (2 rondas de CI: 1a version generaba server-side en el RSC y bloqueaba la respuesta 30-90s con la Edge Function fria).
+- Por que: audit-4 ola 1 (A4-H10, ALTO) - el PRD prometia lista automatica; era un boton manual, solo 2/38 planes tenian lista.
+- Siguiente: seguir ola 1 (368+). dev=staging=main en bc87410.
