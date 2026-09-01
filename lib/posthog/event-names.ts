@@ -34,10 +34,6 @@ export const POSTHOG_EVENTS = {
   // webhook — the one place a browser capture structurally cannot run and
   // where ad-blocker loss on a business-critical event is unacceptable.
   CHECKOUT_STARTED: 'checkout_started',
-  // Superseded by TRIAL_STARTED in PR2 of FRESCO-366 (every checkout opens a
-  // 7-day trial, so "subscription started" is really "trial started"). Kept
-  // until the webhook is migrated so this PR touches no call sites.
-  SUBSCRIPTION_STARTED: 'subscription_started',
   TRIAL_STARTED: 'trial_started',
   TRIAL_CONVERTED_TO_PAID: 'trial_converted_to_paid',
   SUBSCRIPTION_RENEWED: 'subscription_renewed',

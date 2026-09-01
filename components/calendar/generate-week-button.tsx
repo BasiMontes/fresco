@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
+import { getPlanTierForAnalytics } from '@/lib/api/user-profile';
 import { getIsoWeekMonday } from '@/lib/date/iso-week';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
@@ -61,7 +62,11 @@ export function GenerateWeekButton({ semanaIso, fechaInicio }: { semanaIso: stri
       );
       // Fired only once generateMealPlan actually resolves OK, not on mere
       // button press — mirrors app/onboarding/page.tsx's handleGenerate.
-      captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
+      // FRESCO-366: `semana_iso` + `tier` slice the funnel by week and plan.
+      const tier = session?.user?.id
+        ? await getPlanTierForAnalytics(supabase, session.user.id)
+        : 'free';
+      captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
       router.refresh();
     }
     catch (caught) {

@@ -1,9 +1,9 @@
 /**
  * Server-side PostHog capture (`posthog-node`) — ADR-0013's payment-event
- * carve-out: `app/api/stripe/webhook/route.ts` has no browser, so
- * `posthog-js` structurally cannot fire `subscription_started` there, and a
- * server-side capture also survives ad-blockers on the one event this ticket
- * treats as business-critical.
+ * carve-out: `app/api/stripe/webhook/route.ts` has no browser, so `posthog-js`
+ * structurally cannot fire the `trial_*` / `subscription_*` funnel events
+ * there, and a server-side capture also survives ad-blockers on the events
+ * this app treats as business-critical (FRESCO-366).
  */
 
 import { PostHog } from 'posthog-node';
