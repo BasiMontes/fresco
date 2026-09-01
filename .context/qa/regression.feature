@@ -836,11 +836,12 @@ Característica: Flujo completo de usuario en Fresco
 
   @lista-compra @verificado-manual-2026-09-01 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
-  # FRESCO-367 (A4-H10): la lista ya no se genera con un botón manual — se
-  # genera sola, server-side, en el primer acceso a /shopping-list
-  # (ensureShoppingListForPlan). generate-shopping-list es determinista (sin
-  # Gemini: consolidación + mapa estático de pasillos), pero sigue sin ser
-  # @smoke (FRESCO-322) por la escritura one-time contra infra fría.
+  # FRESCO-367 (A4-H10): la lista ya no se genera con un botón manual — al
+  # abrir /shopping-list sin lista, ShoppingListGenerator arranca la
+  # generación solo (autoGenerate, on-mount). generate-shopping-list es
+  # determinista (sin Gemini: consolidación + mapa estático de pasillos),
+  # pero sigue sin ser @smoke (FRESCO-322) por la escritura one-time contra
+  # infra fría.
   Escenario: La lista de la compra se genera automáticamente al abrir /shopping-list
     Dado que el usuario tiene un menú semanal generado
     Cuando abre la lista de la compra
@@ -897,10 +898,10 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
     Cuando intenta generar la lista de nuevo
     Entonces ve la lista ya existente en lugar de una segunda lista duplicada
-    # FRESCO-367: el flujo automático de /shopping-list nunca vuelve a
-    # generar si ya hay lista (ensureShoppingListForPlan lee primero). El
-    # backstop de backend sigue vigente: segunda llamada directa a la API →
-    # 409, y ensureShoppingListForPlan lo trata como "ya existe → re-lee".
+    # FRESCO-367: la página solo monta ShoppingListGenerator (y su
+    # auto-generación) cuando NO hay lista, así que nunca regenera una
+    # existente. El backstop de backend sigue vigente: segunda llamada
+    # directa a la API → 409, tratado como "ya existe → re-lee".
 
   @lista-compra @edge-case @verificado-manual-2026-07-31
   Escenario: La consolidación de ingredientes no produce ningún resultado

@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { restHeaders } from '../test-helpers';
-import { generateCurrentWeekPlan } from '../test-user-factory';
+import { generateCurrentWeekPlan, seedShoppingListForCurrentPlan } from '../test-user-factory';
 
 /** Mirrors `supabase/functions/_shared/normalize.ts` — can't import across the Deno/Node boundary, small enough to duplicate for test-only overlap checks. */
 function normalizeNombre(nombre: string): string {
@@ -45,9 +45,16 @@ async function seedMenuAndLoginToShoppingList(
   page: import('@playwright/test').Page,
   request: import('@playwright/test').APIRequestContext,
   testUserFactory: () => Promise<TestUser>,
+  opts: { seedList?: boolean } = {},
 ): Promise<TestUser> {
   const testUser = await testUserFactory();
   await generateCurrentWeekPlan(request, testUser);
+  // Scenarios that only need "a list exists" seed it via the API here, so
+  // they don't wait on the UI's automatic first-visit generation (FRESCO-367)
+  // — that path has its own dedicated scenario.
+  if (opts.seedList) {
+    await seedShoppingListForCurrentPlan(request, testUser);
+  }
 
   await page.goto('/login');
   await page.getByTestId('email_input').fill(testUser.email);
@@ -64,10 +71,10 @@ Given(/^que el usuario tiene un menú semanal generado$/, async ({ page, request
 
 When(/^abre la lista de la compra$/, async ({ page }) => {
   await page.goto('/shopping-list');
-  // FRESCO-367: the list is generated server-side on this visit — no button
-  // click. Deterministic (no LLM), but a generous timeout for a cold CI
-  // backend + the one-time consolidation write.
-  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
+  // FRESCO-367: no button — the list generates automatically on this visit
+  // (client-side, on mount). Deterministic (no LLM) but a generous timeout
+  // for a cold CI Edge Function + the one-time consolidation write.
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 90_000 });
 });
 
 Then(/^el sistema consolida los ingredientes y los clasifica por pasillo$/, async ({ page }) => {
@@ -92,8 +99,7 @@ Then(/^ve un resumen con el total de productos y el coste estimado$/, async ({ p
 });
 
 Given(/^que el usuario tiene una lista de la compra generada$/, async ({ page, request, testUserFactory }) => {
-  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
-  // FRESCO-367: generated automatically on the /shopping-list visit above.
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { seedList: true });
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
 });
 
@@ -121,7 +127,7 @@ Then(/^el precio se conserva la próxima vez que abre la lista$/, async ({ page 
 // ── Compra realizada (FRESCO-191, QA rework; copy per FRESCO-215) ──────────
 
 Given(/^que el usuario tiene una lista de la compra generada con un producto marcado como comprado$/, async ({ page, request, testUserFactory }) => {
-  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { seedList: true });
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('shopping_list_item_0_0').check();
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
@@ -144,7 +150,7 @@ Then(/^el botón "Compra realizada" desaparece$/, async ({ page }) => {
 Given(
   /^que el usuario tiene una lista de la compra generada y una receta favorita con un ingrediente que no está en la lista$/,
   async ({ page, request, testUserFactory }) => {
-    const testUser = await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
+    const testUser = await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { seedList: true });
     await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
 
     const headers = restHeaders(testUser.accessToken);

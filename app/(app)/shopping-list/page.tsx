@@ -4,24 +4,22 @@ import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { ShoppingListGenerator } from '@/components/shopping-list/shopping-list-generator';
 import { ShoppingListView } from '@/components/shopping-list/shopping-list-view';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
-import { ensureShoppingListForPlan, getNombresNuevos } from '@/lib/api/shopping-list';
-import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
-import { captureServerEvent } from '@/lib/posthog/server';
+import { getNombresNuevos, getShoppingListForPlan } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/server';
 
 /**
  * `/shopping-list` — EPIC-FRESCO-12 (STORY-FRESCO-13). Reads the current
  * week's menu, then the shopping list generated from it.
  *
- * FRESCO-367 (A4-H10): the list is now generated **automatically** on this
- * first visit (`ensureShoppingListForPlan`) rather than behind a manual
- * "Generar" button — the PRD always promised an automatic list, and only
- * 2/38 plans had one. `ShoppingListGenerator` (the button) survives as the
- * fallback for the rare case where that lazy generation fails.
+ * FRESCO-367 (A4-H10): the list is now generated **automatically** — when
+ * none exists yet, `ShoppingListGenerator` renders in `autoGenerate` mode and
+ * fires the generation itself on mount (no manual "Generar" click). The PRD
+ * always promised an automatic list and only 2/38 plans had one. The button
+ * survives inside that component as the manual retry when the automatic
+ * attempt fails.
  *
- * Three states: no menu yet (`NoMenuEmptyState`), menu exists (list is
- * generated here if missing → `ShoppingListView`), generation failed
- * (`ShoppingListGenerator` fallback).
+ * Three states: no menu yet (`NoMenuEmptyState`), menu exists (list shown, or
+ * auto-generated then shown), read error (manual `ShoppingListGenerator`).
  */
 export default async function ShoppingListPage() {
   const supabase = await createClient();
@@ -46,36 +44,15 @@ export default async function ShoppingListPage() {
   }
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const { list, generated } = await ensureShoppingListForPlan(
-      supabase,
-      plan.mealPlanId,
-      session?.access_token ?? null,
-    );
+    const list = await getShoppingListForPlan(supabase, plan.mealPlanId);
 
     if (!list) {
-      // Lazy generation failed — offer the manual retry (unchanged UX).
+      // FRESCO-367: generate automatically on this first visit.
       return (
         <div className="mx-auto max-w-2xl">
-          <ShoppingListGenerator mealPlanId={plan.mealPlanId} />
+          <ShoppingListGenerator mealPlanId={plan.mealPlanId} autoGenerate />
         </div>
       );
-    }
-
-    if (generated && session?.user?.id) {
-      // FRESCO-367 AC: the automatic generation is instrumented (item count +
-      // cost estimate). Server-side so it isn't lost to ad-blockers, one-time
-      // per plan. Fail-soft — `captureServerEvent` swallows its own errors.
-      await captureServerEvent({
-        distinctId: session.user.id,
-        event: POSTHOG_EVENTS.SHOPPING_LIST_GENERATED,
-        properties: {
-          auto: true,
-          n_items: list.resumen.total_items,
-          coste_estimado_min: list.resumen.coste_estimado_min,
-          coste_estimado_max: list.resumen.coste_estimado_max,
-        },
-      });
     }
 
     // FRESCO-194 — "Nuevo" badge: which items weren't on last week's list.
@@ -86,7 +63,7 @@ export default async function ShoppingListPage() {
     return <ShoppingListView list={list} nuevosNombres={nuevosNombres} />;
   }
   catch (error) {
-    console.error('[/shopping-list] shopping list read/generate failed, falling back to generator', error);
+    console.error('[/shopping-list] getShoppingListForPlan failed, falling back to generator', error);
     return (
       <div className="mx-auto max-w-2xl">
         <ShoppingListGenerator mealPlanId={plan.mealPlanId} />

@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerateShoppingListResponse } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
-import { afterEach, describe, expect, test } from 'bun:test';
-import { diffNombresNuevos, ensureShoppingListForPlan, getShoppingListForPlan, normalizeNombre, ShoppingListError, toggleShoppingListItem } from './shopping-list';
+import { describe, expect, test } from 'bun:test';
+import { diffNombresNuevos, getShoppingListForPlan, normalizeNombre, ShoppingListError, toggleShoppingListItem } from './shopping-list';
 
 const MEAL_PLAN_ID = 'plan-1';
 
@@ -46,25 +46,6 @@ function createMockClient(options: { listRow?: unknown | null, dbErrorMessage?: 
     }),
   };
 
-  return { client: mock as unknown as SupabaseClient<Database> };
-}
-
-/**
- * `getShoppingListForPlan` reads via `.select().eq().maybeSingle()`; this
- * client returns a different row per successive call, so a test can model
- * "no list yet" → (generate) → "list now exists".
- */
-function createSequencedMockClient(rows: (unknown | null)[]) {
-  let call = 0;
-  const mock = {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({ data: rows[Math.min(call++, rows.length - 1)] ?? null, error: null }),
-        }),
-      }),
-    }),
-  };
   return { client: mock as unknown as SupabaseClient<Database> };
 }
 
@@ -208,63 +189,5 @@ describe('toggleShoppingListItem', () => {
     const { client } = createRpcMockClient({ errorMessage: 'row not found' });
 
     await expectRejection(toggleShoppingListItem(client, 'list-1', 0, 1, true));
-  });
-});
-
-describe('ensureShoppingListForPlan (FRESCO-367 — lazy auto-generation)', () => {
-  const realFetch = globalThis.fetch;
-  afterEach(() => {
-    globalThis.fetch = realFetch;
-  });
-
-  function stubFetch(status: number) {
-    globalThis.fetch = (async () => new Response(
-      JSON.stringify(status === 200
-        ? { shopping_list_id: 'list-1', pasillos: SAMPLE_PASILLOS, resumen: { total_items: 3, coste_estimado_min: 12.5, coste_estimado_max: 18.9, moneda: 'EUR' } }
-        : { error: 'x' }),
-      { status },
-    )) as unknown as typeof fetch;
-  }
-
-  test('an existing list is returned without calling the Edge Function', async () => {
-    let called = false;
-    globalThis.fetch = (async () => { called = true; return new Response('{}'); }) as unknown as typeof fetch;
-    const { client } = createSequencedMockClient([SAMPLE_LIST_ROW]);
-
-    const result = await ensureShoppingListForPlan(client, MEAL_PLAN_ID, 'token');
-
-    expect(result.generated).toBe(false);
-    expect(result.list?.id).toBe('list-1');
-    expect(called).toBe(false);
-  });
-
-  test('no list yet → generates, then re-reads the persisted list (generated: true)', async () => {
-    stubFetch(200);
-    const { client } = createSequencedMockClient([null, SAMPLE_LIST_ROW]);
-
-    const result = await ensureShoppingListForPlan(client, MEAL_PLAN_ID, 'token');
-
-    expect(result.generated).toBe(true);
-    expect(result.list?.resumen.total_items).toBe(3);
-  });
-
-  test('409 from a concurrent render → re-reads, generated: false', async () => {
-    stubFetch(409);
-    const { client } = createSequencedMockClient([null, SAMPLE_LIST_ROW]);
-
-    const result = await ensureShoppingListForPlan(client, MEAL_PLAN_ID, 'token');
-
-    expect(result.list?.id).toBe('list-1');
-    expect(result.generated).toBe(false);
-  });
-
-  test('a non-409 generation failure returns { list: null } so the page can fall back', async () => {
-    stubFetch(500);
-    const { client } = createSequencedMockClient([null, null]);
-
-    const result = await ensureShoppingListForPlan(client, MEAL_PLAN_ID, 'token');
-
-    expect(result.list).toBeNull();
-    expect(result.generated).toBe(false);
   });
 });
