@@ -7,7 +7,7 @@ import { currentWeekMonday, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @generacion-menu,
- * "El frontend muestra la franja sin receta segura" (FR-8.2 / AC Scenario 4,
+ * "El frontend muestra la franja sin receta" (FR-8.2 / AC Scenario 4,
  * FRESCO-23).
  *
  * FRESCO-356: migrated off the shared `PRO_USER` account to a throwaway
@@ -39,7 +39,7 @@ async function seedPlanWithNullSlot(request: APIRequestContext, testUser: TestUs
       user_id: testUser.id,
       semana_iso: semanaIso,
       fecha_inicio: fechaInicio,
-      advertencias: ['No hay ninguna receta segura para el desayuno del lunes con tus restricciones declaradas.'],
+      advertencias: ['No hay ninguna receta de desayuno compatible con tus alergias y tu dieta. Revisa tus restricciones o añade recetas propias.'],
     },
   });
   const [plan] = await planRes.json() as { id: string }[];
@@ -69,7 +69,7 @@ When(/^el usuario visita \/menu o \/calendar$/, async ({ page }) => {
   await page.goto('/menu');
 });
 
-Then(/^ve esa franja marcada como "Sin receta segura", sin crashear$/, async ({ page }) => {
+Then(/^ve esa franja marcada como "Sin receta", sin crashear$/, async ({ page }) => {
   await expect(page.getByTestId('menu_slot_desayuno_sin_receta')).toBeVisible();
   await expect(page.getByTestId('menu_advertencias_banner')).toBeVisible();
 });

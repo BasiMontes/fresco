@@ -287,11 +287,43 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/entrega-parcial.steps.ts (playwright-bdd,
   # cuenta de test dedicada PRO_USER_EMAIL — fixture sembrado por REST,
   # sin mock; ver el archivo para por qué no usa la cuenta compartida)
-  Escenario: El frontend muestra la franja sin receta segura
+  Escenario: El frontend muestra la franja sin receta
     Dado que un menú persistido tiene una franja con recipe_id null
     Cuando el usuario visita /menu o /calendar
-    Entonces ve esa franja marcada como "Sin receta segura", sin crashear
+    Entonces ve esa franja marcada como "Sin receta", sin crashear
     Y no puede arrastrarla ni marcarla como cocinada/descartada
+    # FRESCO-361 (A4-M3): la etiqueta de la franja es neutral ("Sin receta");
+    # el motivo (sin receta compatible con tus alergias, o sin variedad
+    # suficiente sin repetir plato) lo explica el banner de advertencias.
+
+  # ==========================================================================
+  # Seguridad alimentaria — red de tests del filtro de alérgenos (A4-B2)
+  # ==========================================================================
+  # FRESCO-361: `get_filtered_recipes()` es el ÚNICO punto de enforcement
+  # estructural de seguridad alimentaria (ADR-0001, NFR-SEC-3). Estos
+  # escenarios trazan un alérgeno declarado desde el perfil hasta el plato y
+  # asertan su ausencia. Gateados en CI vía `bun run test:e2e`.
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts
+  Escenario: Una receta con un alérgeno declarado nunca llega al menú generado
+    Dado que un perfil declara alergia a "gluten" y "lactosa"
+    Cuando se genera su menú semanal completo
+    Entonces ninguna de las 21 recetas del menú contiene "gluten" ni "lactosa"
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts
+  Escenario: El filtro de alérgenos no depende de mayúsculas o minúsculas
+    Dado que un perfil declara su alergia como "GLUTEN" en mayúsculas
+    Cuando se pide su catálogo filtrado de recetas
+    Entonces ninguna receta del catálogo filtrado contiene el alérgeno "gluten"
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts
+  Escenario: Cada uno de los alérgenos declarables filtra recetas de verdad
+    Dado que el catálogo etiqueta recetas con cada alérgeno declarable
+    Cuando un perfil declara alergia a cada uno de ellos por separado
+    Entonces el catálogo filtrado excluye toda receta que contenga ese alérgeno
 
   # ==========================================================================
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)

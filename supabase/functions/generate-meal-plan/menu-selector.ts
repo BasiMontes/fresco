@@ -116,6 +116,7 @@ export function selectMenu({ candidates, recentRecipeIds, profile, userEngagemen
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)
+  const warnedNoCandidates = new Set<TipoPlatoSlot>() // dedupes the empty-slot advertencia per tipo (A4-M3)
   const menu = {} as Record<DiaSemana, Record<TipoPlatoSlot, string>>
   const advertencias: string[] = []
   let lastCategoria: string | null = null
@@ -143,7 +144,20 @@ export function selectMenu({ candidates, recentRecipeIds, profile, userEngagemen
 
       if (available.length === 0) {
         menu[dia][tipo] = NO_SAFE_RECIPE_SENTINEL
-        advertencias.push(`No hay ninguna receta segura para ${tipo} del ${dia} con tus restricciones declaradas.`)
+        // A4-M3: distinguish a real food-safety dead end (no recipe of this
+        // tipo is compatible with the user's allergies/diet at all) from a
+        // variety dead end (compatible recipes exist but were all already
+        // placed earlier in the week and lunch/dinner never repeat). The
+        // former is a trust-and-safety signal; the latter is not — reusing
+        // safety language for it erodes the safety message.
+        if (!warnedNoCandidates.has(tipo)) {
+          warnedNoCandidates.add(tipo)
+          advertencias.push(
+            basePool.length === 0
+              ? `No hay ninguna receta de ${tipo} compatible con tus alergias y tu dieta. Revisa tus restricciones o añade recetas propias.`
+              : `Se agotaron las recetas de ${tipo} distintas para llenar la semana sin repetir plato; algún día se ha quedado sin ${tipo} asignado.`,
+          )
+        }
         continue
       }
 

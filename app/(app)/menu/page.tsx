@@ -226,11 +226,13 @@ export default async function MenuPage() {
                     </Card>
                   )
                 : (
-                    // FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for
-                    // this slot — `AlertBanner` above already surfaces why.
+                    // FR-8.2 / AC Scenario 4 (FRESCO-23): this slot could not
+                    // be filled — the `AlertBanner` above says whether it was a
+                    // food-safety dead end or a variety one (A4-M3), so the
+                    // label itself stays neutral.
                     <Card data-testid={`menu_slot_${slot}_sin_receta`} className="flex-1">
                       <CardContent className="text-body-sm italic text-tertiary">
-                        Sin receta segura
+                        Sin receta
                       </CardContent>
                     </Card>
                   )}
