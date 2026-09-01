@@ -329,3 +329,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: El opt-in a notificaciones push ahora aparece en /menu justo tras generar el primer menú (banner one-shot gateado por señal sessionStorage + Notification.permission default), no solo enterrado en /profile. Copy del push semanal reescrito a español de España ("armaste/hacelo" -> "has planificado/hazlo"). 4 eventos nuevos: push_prompt_shown, push_permission_granted (cliente), push_sent (Edge Function via _shared/posthog.ts), push_opened (SW añade ?push_opened=1, tracker cliente lo captura). PR #226 squash -> dev (3db7de6) -> ff staging + main. SP 5. CI verde incl. test:e2e.
 - Por qué: Auditoría 4 (ALTO A4-H15). 0 suscripciones a la fecha; sin re-enganche efectivo la cohorte de pago no retiene.
 - Siguiente: OWNER debe correr `supabase link` + `supabase secrets set POSTHOG_API_KEY POSTHOG_HOST` + `supabase functions deploy send-weekly-reengagement-push` (classifier bloqueó config de prod) para que push_sent dispare. Sigue la ola 1: quedan 365 (legal), 374-379.
+
+## 2026-09-01 - FRESCO-374 · Analytics de invitados: guest_started (A4-M24)
+- Qué: "Continuar como invitada" en el onboarding ahora dispara un evento propio `guest_started`, no `user_signed_up {method:"guest"}`. Nuevo `GUEST_STARTED` en lib/posthog/event-names.ts; identity-step.tsx emite el evento correcto. El funnel deja de contar invitados como altas reales. PR #227 squash -> dev (12d36b7). SP 2.
+- Por qué: Auditoría 4 (MEDIO A4-M24). El registro de invitado contaminaba la métrica de signup y la person property quedaba mal atribuida.
+- Siguiente: Promoción a staging + main en batch. Sigue la ola 1 de FRESCO-359: quedan 365 (legal), 375-379.
