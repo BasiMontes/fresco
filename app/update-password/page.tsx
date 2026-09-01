@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
+import { isPasswordTooShort, MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
@@ -47,6 +48,13 @@ export default function UpdatePasswordPage() {
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    // FRESCO-363 (A4-H8): mirror the server-side minimum so the caller sees a
+    // clear Spanish message instead of the raw Supabase `weak_password` error.
+    if (isPasswordTooShort(password)) {
+      setError(PASSWORD_TOO_SHORT_MESSAGE);
       return;
     }
 
@@ -110,7 +118,7 @@ export default function UpdatePasswordPage() {
               placeholder="Nueva contraseña"
               aria-label="Nueva contraseña"
               required
-              minLength={6}
+              minLength={MIN_PASSWORD_LENGTH}
               autoComplete="new-password"
               value={password}
               onChange={(e) => {

@@ -18,6 +18,7 @@ import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/po
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
+import { isPasswordTooShort, MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
@@ -215,10 +216,11 @@ export default function SignupPage() {
     // FRESCO-123: reject a weak password before the anonymous-conversion
     // branch fires its real OTP email — without this, she pays the full
     // email round-trip only to discover the password was rejected all
-    // along. Mirrors Supabase's own `weak_password` threshold (see
-    // `lib/auth-errors.ts`) so the message is never a surprise later.
-    if (password.length < 6) {
-      setSignupError('La contraseña debe tener al menos 6 caracteres.');
+    // along. Mirrors the server-side `minimum_password_length` (FRESCO-363 /
+    // A4-H8, `lib/validation/password-policy.ts`) so the message is never a
+    // surprise later.
+    if (isPasswordTooShort(password)) {
+      setSignupError(PASSWORD_TOO_SHORT_MESSAGE);
       return;
     }
     isSubmittingRef.current = true;
@@ -418,7 +420,7 @@ export default function SignupPage() {
                         type="password"
                         placeholder="Contraseña"
                         required
-                        minLength={6}
+                        minLength={MIN_PASSWORD_LENGTH}
                         autoComplete="new-password"
                         value={password}
                         onChange={e => setPassword(e.target.value)}

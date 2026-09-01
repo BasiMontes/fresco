@@ -11,6 +11,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { translateAuthError } from '@/lib/auth-errors';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
+import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 export interface IdentityStepProps {
@@ -74,10 +75,10 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
     setIsSubmitting(true);
     setError(null);
     // Mirrors /signup's own pre-check (FRESCO-123): reject a weak password
-    // before hitting the network — same 6-char threshold `lib/auth-errors.ts`
-    // maps from Supabase's own `weak_password` error.
-    if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
+    // before hitting the network — same threshold the server enforces
+    // (FRESCO-363 / A4-H8, `lib/validation/password-policy.ts`).
+    if (isPasswordTooShort(password)) {
+      setError(PASSWORD_TOO_SHORT_MESSAGE);
       setIsSubmitting(false);
       return;
     }
