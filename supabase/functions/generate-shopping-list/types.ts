@@ -5,7 +5,7 @@ import type {
 import type { DiaSemana } from '../../../api/schemas/meal-plan.types.ts'
 import type { ShoppingListPasillo } from '../../../api/schemas/shopping-list.types.ts'
 
-export type { GenerateShoppingListRequest, GenerateShoppingListResponse, ShoppingListPasillo }
+export type { DiaSemana, GenerateShoppingListRequest, GenerateShoppingListResponse, ShoppingListPasillo }
 
 /** Ingredient before consolidation — one entry per ingredient per recipe slot. */
 export interface RawIngrediente {

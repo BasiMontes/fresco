@@ -7,7 +7,7 @@
 // generate-meal-plan predates this file and keeps its own local copy
 // (generate-meal-plan/rate-limit.ts); new call sites use this one.
 
-import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { HttpError } from './http.ts'
 
 /**

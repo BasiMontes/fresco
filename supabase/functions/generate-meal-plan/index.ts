@@ -22,8 +22,10 @@ import type {
   GenerateMealPlanRequest,
   GenerateMealPlanResponse,
   Recipe,
+  RecentRecipeMark,
   TipoPlatoSlot,
   UserProfile,
+  UserRecipeEngagementRow,
 } from './types.ts'
 
 const FN_NAME = 'generate-meal-plan'
@@ -87,14 +89,18 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // 5. FR-8.1 Layer 1: SQL pre-filter by allergen/diet/disliked-ingredient
-    const { data: recipes, error: recipesError } = await supabase
-      .rpc('get_filtered_recipes', { p_user_id: user.id })
-      .returns<Recipe[]>()
+    // 5. FR-8.1 Layer 1: SQL pre-filter by allergen/diet/disliked-ingredient.
+    // FRESCO-375: the Deno client is untyped (no `Database` generic), so
+    // postgrest-js infers this SETOF RPC as a single object and its type
+    // guard rejects the array cast — assert the row shape at the boundary.
+    const { data: recipesData, error: recipesError } = await supabase.rpc('get_filtered_recipes', {
+      p_user_id: user.id,
+    })
+    const recipes = (recipesData ?? []) as Recipe[]
 
-    if (recipesError || !recipes || recipes.length < MIN_CATALOG_SIZE) {
+    if (recipesError || recipes.length < MIN_CATALOG_SIZE) {
       throw new HttpError(
-        `Catálogo insuficiente: ${recipes?.length ?? 0} recetas disponibles (mínimo ${MIN_CATALOG_SIZE})`,
+        `Catálogo insuficiente: ${recipes.length} recetas disponibles (mínimo ${MIN_CATALOG_SIZE})`,
         422
       )
     }
@@ -111,7 +117,7 @@ Deno.serve(async (req: Request) => {
     // one who diligently marked everything — the mechanism didn't actually
     // depend on the marks the product copy promises it learns from.
     const isPro = profile.plan === 'pro' || profile.plan === 'family'
-    let recentRecipeIds: string[] = []
+    const recentRecipeIds: string[] = []
     let cocinadasEvitadas = 0
     let descartadasEvitadas = 0
     // ADR-0008: personal cocinada/descartada counts feeding scoreRecipe()'s
@@ -122,11 +128,14 @@ Deno.serve(async (req: Request) => {
     if (isPro) {
       // Independent reads (both only need user.id) — run concurrently rather
       // than paying two sequential round-trips on every Pro generation.
-      const [{ data: marks }, { data: engagement }] = await Promise.all([
+      const [{ data: marksData }, { data: engagementData }] = await Promise.all([
         supabase.rpc('get_recent_recipe_marks', { p_user_id: user.id, p_weeks: 2 }),
         supabase.rpc('get_user_recipe_engagement', { p_user_id: user.id }),
       ])
-      for (const mark of marks ?? []) {
+      // FRESCO-375: untyped Deno client — assert the row shapes at the boundary.
+      const marks = (marksData ?? []) as RecentRecipeMark[]
+      const engagement = (engagementData ?? []) as UserRecipeEngagementRow[]
+      for (const mark of marks) {
         if (mark.estado === 'cocinada' || mark.estado === 'descartada') {
           recentRecipeIds.push(mark.recipe_id)
           if (mark.estado === 'cocinada') cocinadasEvitadas++
@@ -135,7 +144,7 @@ Deno.serve(async (req: Request) => {
       }
 
       userEngagement = new Map(
-        (engagement ?? []).map(row => [
+        engagement.map(row => [
           row.recipe_id,
           { cocinada: row.veces_cocinada_usuario, descartada: row.veces_descartada_usuario },
         ]),

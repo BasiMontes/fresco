@@ -79,7 +79,11 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, engagemen
   if (clasificacion?.categoria && clasificacion.categoria === lastCategoria) score -= 5
   if (lastContundente !== null && clasificacion?.es_contundente === lastContundente) score -= 2
 
-  const temporada = recipe.temporada ?? []
+  // FRESCO-375: the seeded `recipes.temporada` values are ASCII ('otono',
+  // 'todo_el_ano') and do NOT match the accented `Temporada` union (see
+  // getCurrentSeasonAscii above + its L36 note). Compare as plain strings —
+  // reconciling the type vs the data is tracked as a separate defect.
+  const temporada: string[] = recipe.temporada ?? []
   if (temporada.includes(season)) score += 3
   else if (temporada.includes('todo_el_ano')) score += 1
 

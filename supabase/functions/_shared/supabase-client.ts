@@ -4,7 +4,7 @@
 // founder drafts (fresco-edge-function-generate.md, etc.) used the older
 // `https://esm.sh/@supabase/supabase-js@2` URL-import pattern; `npm:` is the
 // more current, more reliable specifier and is used here instead.
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Builds a Supabase client scoped to the calling user's JWT, so every query

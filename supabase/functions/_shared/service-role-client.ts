@@ -6,7 +6,7 @@
 // powerful credential. Never use this client to satisfy a request on the
 // caller's behalf without an independent authorization check first (see
 // `reassign-guest-data/index.ts`'s password-verification step).
-import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 export function createServiceRoleClient(): SupabaseClient {
   return createClient(

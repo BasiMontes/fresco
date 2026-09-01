@@ -29,3 +29,21 @@ export const NO_SAFE_RECIPE_SENTINEL = 'SIN_RECETA_SEGURA'
  * with `estado: 'excluida'` instead of `'pendiente'`.
  */
 export const SLOT_EXCLUDED_SENTINEL = 'FRANJA_EXCLUIDA'
+
+/**
+ * FRESCO-375: local row shapes for the two Pro-only RPCs read in `index.ts`.
+ * The Deno client is untyped (`SupabaseClient` with no `Database` generic),
+ * so `.rpc()` returns `any` — these annotate the `.overrideTypes()` calls.
+ * Mirror `public.get_recent_recipe_marks` / `get_user_recipe_engagement`
+ * (see `lib/supabase/types.ts`).
+ */
+export interface RecentRecipeMark {
+  estado: string
+  recipe_id: string
+}
+
+export interface UserRecipeEngagementRow {
+  recipe_id: string
+  veces_cocinada_usuario: number
+  veces_descartada_usuario: number
+}

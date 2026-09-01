@@ -6,7 +6,7 @@
 // Doesn't touch `recipes`' JSONB vs. typed-relational question at all — it
 // only consumes plain ingredient-name strings.
 
-import type { IngredienteConsolidado, RawIngrediente } from './types.ts'
+import type { DiaSemana, IngredienteConsolidado, RawIngrediente } from './types.ts'
 import { logger } from '../_shared/logger.ts'
 import { normalizeNombre } from '../_shared/normalize.ts'
 
@@ -277,7 +277,7 @@ export function consolidateIngredientes(
   // summing skips (unreachable in practice, since units are looked up from
   // the same BASE_QUANTITIES table and can never actually diverge — see
   // consolidator.test.ts).
-  const usosMap = new Map<string, { receta: string; dia: string }[]>()
+  const usosMap = new Map<string, { receta: string; dia: DiaSemana }[]>()
   // FRESCO-196: `key` below is accent-stripped on purpose (it's the lookup
   // key into BASE_QUANTITIES/INGREDIENT_AISLE/PRICE_OVERRIDE), but it must
   // never be shown to the user — keep the first accented `raw.nombre` seen

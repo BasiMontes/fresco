@@ -3,7 +3,7 @@
 // belongs to that account (FRESCO-19's `email_exists` edge case). See the
 // ADR for the full mechanism and why each step exists.
 
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
