@@ -47,3 +47,11 @@ Then(/^se expande mostrando su respuesta, sin afectar al resto de preguntas$/, a
   const openCount = await page.locator('#faq button[aria-expanded="true"]').count();
   expect(openCount).toBe(1);
 });
+
+Then(/^el texto de la página no dice "con IA" ni menciona "ChatGPT"$/, async ({ page }) => {
+  // FRESCO-370 (A4-H13): the engine is 100% deterministic — the landing must
+  // not sell it as AI-powered nor compare it to ChatGPT.
+  const bodyText = (await page.locator('body').textContent()) ?? '';
+  expect(bodyText).not.toMatch(/con IA\b/i);
+  expect(bodyText).not.toMatch(/ChatGPT/i);
+});

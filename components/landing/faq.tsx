@@ -12,7 +12,7 @@ const FAQS = [
   },
   {
     question: '¿Qué pasa con mis alergias?',
-    answer: 'Los filtros de alergias son absolutos. La IA nunca incluye un alérgeno declarado, bajo ninguna circunstancia.',
+    answer: 'Los filtros de alergias son absolutos. El sistema nunca incluye un alérgeno declarado, bajo ninguna circunstancia.',
   },
   {
     question: '¿Puedo cambiar recetas del menú?',

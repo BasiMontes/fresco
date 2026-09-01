@@ -1649,6 +1649,15 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca una pregunta
     Entonces se expande mostrando su respuesta, sin afectar al resto de preguntas
 
+  @landing @automatizado
+  # Automatizado: tests/steps/landing.steps.ts (FRESCO-370)
+  Escenario: La landing no reclama "IA" ni se compara con ChatGPT como mecanismo del producto
+    Dado que un visitante sin cuenta ni sesión visita /
+    Entonces el texto de la página no dice "con IA" ni menciona "ChatGPT"
+    # FRESCO-370 (A4-H13): el motor es 100% determinista. La landing decía
+    # "Menú semanal con IA" y "a diferencia de ChatGPT" — publicidad engañosa.
+    # Mismo criterio que los escenarios FRESCO-128 de /profile más arriba.
+
   @landing @edge-case @verificado-manual-2026-08-19
   Escenario: Un usuario con sesión activa que visita / sigue viendo la landing pública, no su panel
     Dado que Laura tiene sesión iniciada y un menú ya generado
