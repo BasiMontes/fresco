@@ -34,7 +34,7 @@ Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({
   await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
 
   await page.goto('/onboarding');
-  await page.getByTestId('next_button').click();
+  // FRESCO-371: 3-step wizard — 2 clicks reaches the final step.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('presupuesto_input').fill('80');

@@ -47,18 +47,16 @@ async function ensureAnonymousSession(page: import('@playwright/test').Page): Pr
     .toBe(true);
 }
 
-/** Completes the 4-step onboarding + a REAL Gemini generation as the current anonymous guest. */
+/** Completes the 3-step onboarding + a REAL Gemini generation as the current anonymous guest. */
 async function generateRealGuestMenu(page: import('@playwright/test').Page): Promise<void> {
   await ensureAnonymousSession(page);
-  // 3 clicks reaches step 4 ("Paso 4 de 4"), where "Generar mi menú" lives
-  // — onboarding gained a step (cocinas favoritas split out on its own)
-  // since this was 2 clicks/3 steps.
+  // FRESCO-371: back to a 3-step wizard ("Paso 3 de 3") — cuisines folded
+  // into the diet step. 2 clicks reaches the final step where "Generar mi
+  // menú" lives.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
-  await page.getByTestId('next_button').click();
-  // FRESCO-263/265: the weekly budget on step 4 is now required and gates
-  // `generate_menu_button` (disabled while `!presupuestoValid`).
-  await page.getByTestId('presupuesto_input').fill('80');
+  // FRESCO-371: the weekly budget is optional again and no longer gates
+  // `generate_menu_button` — left blank here.
   await page.getByTestId('generate_menu_button').click();
   await page.waitForURL('**/menu', { timeout: 200_000 });
 }

@@ -24,15 +24,18 @@ import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
 
 /**
- * `/onboarding` — EPIC-FRESCO-1 (US 1.1/1.2: 4-step onboarding, kept short
+ * `/onboarding` — EPIC-FRESCO-1 (US 1.1/1.2: 3-step onboarding, kept short
  * so a guest doesn't abandon before reaching any value — user-journeys.md
- * Journey 1, Step 2). Single route driving all 4 steps internally (judgment
+ * Journey 1, Step 2). Single route driving all 3 steps internally (judgment
  * call, see report) rather than separate routes.
  *
  * FRESCO-5 extends this scaffold with the full FR-1.1 profile (diet,
  * allergens, disliked ingredients, favorite cuisines, household size) and
  * persists it to `user_profiles` before continuing on to menu generation.
  * FRESCO-132 adds step 1 (name, sex, goal) — more signal for recommendations.
+ * FRESCO-371 cuts the wizard from 4 steps back to 3 (PRD hard limit): cuisines
+ * fold into the diet step, and the weekly budget goes optional again (the
+ * engine only soft-warns on it — see the note at the budget input).
  */
 
 const SEXO_OPTIONS: { value: SexoUsuario, label: string }[] = [
@@ -149,10 +152,9 @@ export default function OnboardingPage() {
   useEffect(() => {
     setWizardShown(true);
   }, []);
-  // FRESCO-263: presupuesto went from optional to required — gates the
-  // error styling/message so a fresh visitor doesn't see a red "required"
-  // field before she's had a chance to type anything. The submit button
-  // itself stays disabled while empty regardless of this flag.
+  // FRESCO-371: presupuesto is optional again, but a typed-in 0/negative is
+  // still invalid — this flag gates the "> 0" error styling/message so it
+  // only shows after the field has been touched, never on a pristine visit.
   const [presupuestoTouched, setPresupuestoTouched] = useState(false);
 
   // FRESCO-201: resetting the store synchronously before router.push()
@@ -161,10 +163,27 @@ export default function OnboardingPage() {
   // Deferring the reset to actual unmount (post-navigation) removes the
   // flash while preserving FRESCO-94's intent below.
   const resetOnUnmount = useRef(false);
+  // FRESCO-366: whether the `onboarding` funnel step has opened (wizard shown).
+  const onboardingStarted = useRef(false);
+  // FRESCO-371: last wizard step reached — feeds `onboarding_abandoned` so the
+  // funnel can see WHERE people drop.
+  const lastStepRef = useRef<1 | 2 | 3>(1);
+  // FRESCO-371: `resetOnUnmount` flips to true only on the success path (right
+  // before router.push('/menu')). Any other unmount once the wizard was
+  // actually shown — closed the tab's route, hit "Atrás" off step 1,
+  // navigated away — is an abandonment. `onboardingStarted` gates it so a
+  // bounce off the IdentityStep, before `onboarding_started` ever fired, is
+  // not counted.
   useEffect(() => {
     return () => {
       if (resetOnUnmount.current) {
         useOnboardingStore.getState().reset();
+      }
+      else if (onboardingStarted.current) {
+        captureEvent(POSTHOG_EVENTS.ONBOARDING_ABANDONED, {
+          step: lastStepRef.current,
+          total_steps: 3,
+        });
       }
     };
   }, []);
@@ -187,11 +206,10 @@ export default function OnboardingPage() {
   // FRESCO-366: the `onboarding` funnel step opens the moment the wizard is
   // actually shown (a resolved session, or right after IdentityStep). Fires
   // once — `identityResolved` only ever settles on `true` from here.
-  const onboardingStarted = useRef(false);
   useEffect(() => {
     if (identityResolved === true && !onboardingStarted.current) {
       onboardingStarted.current = true;
-      captureEvent(POSTHOG_EVENTS.ONBOARDING_STARTED);
+      captureEvent(POSTHOG_EVENTS.ONBOARDING_STARTED, { total_steps: 3 });
     }
   }, [identityResolved]);
   const {
@@ -246,10 +264,9 @@ export default function OnboardingPage() {
   };
 
   const household = validateHousehold({ adultos, ninos });
-  // FRESCO-263: presupuesto is now required (previously null/unset was
-  // valid — the DB's own check constraint still only rejects 0/negative,
-  // this is a stricter onboarding-only rule).
-  const presupuestoValid = presupuestoSemanaEuros !== null && presupuestoSemanaEuros > 0;
+  // FRESCO-371: presupuesto is optional again (A4-H14). Null/unset is valid;
+  // a typed-in value still has to be > 0 (matches the DB check constraint).
+  const presupuestoValid = presupuestoSemanaEuros === null || presupuestoSemanaEuros > 0;
   // FRESCO-165/166 — QA sweep found "Ninguno" (days) left 0 days selected
   // with "Generar mi menú" still enabled: it generated a menu anyway. Worse,
   // deselecting all 3 meals didn't block generation either, and because
@@ -268,6 +285,8 @@ export default function OnboardingPage() {
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     stepHeadingRef.current?.focus();
+    // FRESCO-371: keep the abandonment tracker in sync with the live step.
+    lastStepRef.current = step;
   }, [step]);
 
   async function handleGenerate() {
@@ -276,7 +295,7 @@ export default function OnboardingPage() {
     setGenerateSuccess(false);
     // FRESCO-366: the wizard's last step is done and she committed to
     // generating — the `onboarding` funnel step between signup and first menu.
-    captureEvent(POSTHOG_EVENTS.ONBOARDING_COMPLETED);
+    captureEvent(POSTHOG_EVENTS.ONBOARDING_COMPLETED, { total_steps: 3 });
     captureEvent(POSTHOG_EVENTS.MENU_GENERATION_STARTED);
     try {
       const client = createClient();
@@ -426,10 +445,10 @@ export default function OnboardingPage() {
             {' '}
             {step}
             {' '}
-            de 4
+            de 3
           </p>
           <div className="mt-2 flex gap-1">
-            {[1, 2, 3, 4].map(s => (
+            {[1, 2, 3].map(s => (
               <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-surface'}`} />
             ))}
           </div>
@@ -588,14 +607,12 @@ export default function OnboardingPage() {
                   aria-label="Ingredientes que no gustan — texto libre"
                   className="mt-2"
                 />
-              </>
-            )}
 
-            {step === 3 && (
-              <>
-                <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Cuáles son tus cocinas favoritas?</h1>
-                <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                {/* FRESCO-371: cuisines folded in from the old standalone step 3
+                    so the wizard fits the PRD's 3-step limit — it's the same
+                    kind of low-friction chip input as the rows above. */}
+                <h2 className="mt-6 text-h5">¿Cuáles son tus cocinas favoritas?</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
                   {COCINA_OPTIONS.map(option => (
                     <button
                       key={option.value}
@@ -622,7 +639,7 @@ export default function OnboardingPage() {
               </>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <>
                 <h1 ref={stepHeadingRef} tabIndex={-1} className="text-h3 outline-none">¿Quiénes cocináis en casa?</h1>
                 <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
@@ -658,13 +675,17 @@ export default function OnboardingPage() {
                   </p>
                 )}
 
+                {/* FRESCO-371 (A4-H14): budget is optional again. The engine
+                    never gates on it — `generate-meal-plan/menu-selector.ts`
+                    only appends one advisory string to `advertencias` if the
+                    finished plan's summed price exceeds it, and tolerates
+                    null. Making it required (FRESCO-263) cost a wizard step
+                    the PRD does not allow. */}
                 <label className="mt-4 flex flex-col gap-1">
-                  <span className="text-body-sm text-tertiary">Presupuesto semanal (estimado)</span>
-                  <span data-testid="presupuesto_required_hint" className="text-body-sm text-tertiary">* Campo obligatorio</span>
+                  <span className="text-body-sm text-tertiary">Presupuesto semanal (opcional)</span>
                   <Input
                     data-testid="presupuesto_input"
                     type="number"
-                    required
                     min={1}
                     value={presupuestoSemanaEuros ?? ''}
                     onChange={(e) => {
@@ -678,7 +699,7 @@ export default function OnboardingPage() {
                 </label>
                 {!presupuestoValid && presupuestoTouched && (
                   <p data-testid="presupuesto_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
-                    {presupuestoSemanaEuros === null ? 'El presupuesto es obligatorio.' : 'El presupuesto debe ser mayor que 0.'}
+                    El presupuesto debe ser mayor que 0.
                   </p>
                 )}
 
@@ -741,20 +762,20 @@ export default function OnboardingPage() {
                 data-testid="back_button"
                 variant="secondary"
                 // FRESCO-296: on step 1 "Atrás" is no longer a dead end — it
-                // exits the wizard back to the landing page. Steps 2-4 keep
+                // exits the wizard back to the landing page. Steps 2-3 keep
                 // walking back through the wizard.
-                onClick={() => (step > 1 ? setStep((step - 1) as 1 | 2 | 3 | 4) : router.push('/'))}
+                onClick={() => (step > 1 ? setStep((step - 1) as 1 | 2 | 3) : router.push('/'))}
               >
                 Atrás
               </Button>
-              {step < 4
+              {step < 3
                 ? (
                     <Button
                       data-testid="next_button"
                       onClick={() => {
-                        // FRESCO-366: which wizard steps get abandoned.
-                        captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step });
-                        setStep((step + 1) as 1 | 2 | 3 | 4);
+                        // FRESCO-366 / FRESCO-371: which wizard steps get abandoned.
+                        captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
+                        setStep((step + 1) as 1 | 2 | 3);
                       }}
                     >
                       Siguiente
