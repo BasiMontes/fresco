@@ -183,6 +183,17 @@ export default function OnboardingPage() {
     }
     void checkSession();
   }, []);
+
+  // FRESCO-366: the `onboarding` funnel step opens the moment the wizard is
+  // actually shown (a resolved session, or right after IdentityStep). Fires
+  // once — `identityResolved` only ever settles on `true` from here.
+  const onboardingStarted = useRef(false);
+  useEffect(() => {
+    if (identityResolved === true && !onboardingStarted.current) {
+      onboardingStarted.current = true;
+      captureEvent(POSTHOG_EVENTS.ONBOARDING_STARTED);
+    }
+  }, [identityResolved]);
   const {
     step,
     nombre,
@@ -263,6 +274,9 @@ export default function OnboardingPage() {
     setIsGenerating(true);
     setGenerateError(null);
     setGenerateSuccess(false);
+    // FRESCO-366: the wizard's last step is done and she committed to
+    // generating — the `onboarding` funnel step between signup and first menu.
+    captureEvent(POSTHOG_EVENTS.ONBOARDING_COMPLETED);
     captureEvent(POSTHOG_EVENTS.MENU_GENERATION_STARTED);
     try {
       const client = createClient();
@@ -735,7 +749,14 @@ export default function OnboardingPage() {
               </Button>
               {step < 4
                 ? (
-                    <Button data-testid="next_button" onClick={() => setStep((step + 1) as 1 | 2 | 3 | 4)}>
+                    <Button
+                      data-testid="next_button"
+                      onClick={() => {
+                        // FRESCO-366: which wizard steps get abandoned.
+                        captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step });
+                        setStep((step + 1) as 1 | 2 | 3 | 4);
+                      }}
+                    >
                       Siguiente
                     </Button>
                   )

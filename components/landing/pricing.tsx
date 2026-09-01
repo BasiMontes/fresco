@@ -1,7 +1,6 @@
-import Link from 'next/link';
-
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LandingCtaLink } from './landing-cta-link';
 
 const FREE_FEATURES = ['1 menú semanal', 'Lista de la compra', 'Filtros de dieta y alergias'];
 
@@ -46,9 +45,9 @@ export function Pricing() {
             <div className="flex-1 space-y-2.5">
               {FREE_FEATURES.map(label => <PlanFeature key={label} label={label} />)}
             </div>
-            <Link href="/onboarding" className={cn(buttonVariants({ size: 'lg' }), 'mt-6')}>
+            <LandingCtaLink location="pricing_free" className={cn(buttonVariants({ size: 'lg' }), 'mt-6')}>
               Empezar gratis
-            </Link>
+            </LandingCtaLink>
           </div>
 
           <div className="flex flex-col rounded-card border-2 border-secondary bg-background p-7 shadow-lg">
@@ -68,9 +67,9 @@ export function Pricing() {
             <div className="flex-1 space-y-2.5">
               {PRO_FEATURES.map(label => <PlanFeature key={label} label={label} highlighted />)}
             </div>
-            <Link href="/onboarding" className={cn(buttonVariants({ variant: 'action', size: 'lg' }), 'mt-6')}>
+            <LandingCtaLink location="pricing_pro" className={cn(buttonVariants({ variant: 'action', size: 'lg' }), 'mt-6')}>
               Empezar 7 días gratis →
-            </Link>
+            </LandingCtaLink>
           </div>
         </div>
       </div>

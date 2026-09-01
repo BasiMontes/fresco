@@ -1,6 +1,5 @@
-import Link from 'next/link';
-
 import { buttonVariants } from '@/components/ui/button';
+import { LandingCtaLink } from './landing-cta-link';
 
 /**
  * No logo here — `SiteFooter` right below already shows one, a second mark
@@ -24,9 +23,9 @@ export function FinalCta() {
         Si te convence, sigue por 4,99€ al mes.
       </p>
       <div className="mx-auto mt-9 flex max-w-sm flex-col gap-3">
-        <Link href="/onboarding" className={buttonVariants({ size: 'lg' })}>
+        <LandingCtaLink location="final_cta" className={buttonVariants({ size: 'lg' })}>
           Generar mi primer menú →
-        </Link>
+        </LandingCtaLink>
         <a href="#como-funciona" className={buttonVariants({ variant: 'ghost', size: 'lg' })}>
           ¿Cómo funciona?
         </a>
