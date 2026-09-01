@@ -2,14 +2,23 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
-const FREE_FEATURES = ['1 menú semanal', 'Lista de la compra', 'Filtros de dieta y alergias'];
+// FRESCO-368 (A4-H11): honest pricing. Only the four `isPro` gates in
+// supabase/functions/generate-meal-plan/index.ts are real Pro differences —
+// no menu-count limit exists on either tier (5 generations/hour for both,
+// one plan per ISO week), and there is no "history" feature. Free keeps
+// everything except the learning loop.
+const FREE_FEATURES = [
+  'Menú semanal completo',
+  'Lista de la compra automática',
+  'Filtros de dieta y alergias',
+  'Cambia cualquier receta y regenera el slot',
+];
 
 const PRO_FEATURES = [
-  'Menús ilimitados',
-  'Aprendizaje real de tus gustos',
-  'Sin repetir lo de semanas anteriores',
-  'Historial de menús',
-  'Personalización avanzada',
+  'Aprende de lo que cocinas y lo que descartas',
+  'No repite las recetas de las últimas semanas',
+  'Te explica por qué eligió cada receta',
+  'Te recuerda marcar lo que cocinaste',
 ];
 
 function PlanFeature({ label, highlighted }: { label: string, highlighted?: boolean }) {
