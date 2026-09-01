@@ -319,3 +319,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: Quitados los claims sin respaldo de la landing pública: "Menú semanal con IA" y "a diferencia de ChatGPT" (motor 100% determinista, sin IA), y las 3 cifras inventadas de la sección "Tu impacto" (~300€, 25%, 30 min) presentadas como estimaciones investigadas. Sustituidas por 3 tarjetas de mecánica real del producto. FAQ: "La IA nunca incluye" → "El sistema nunca incluye". Nuevo escenario e2e @landing @automatizado que veta claims de IA. PR #224 squash → dev (1bfa710) → ff a staging + main. SP 2.
 - Por qué: Auditoría 4 (ALTO A4-H13 + A4-H16). Publicidad engañosa en dos frentes; con cohorte de pago es riesgo reputacional y legal.
 - Siguiente: Verificar en fresco-pro. Barrido de onboarding/emails: limpio (sin plantillas propias). Sigue la ola 1 de la remediación (FRESCO-359).
+
+## 2026-09-01 - FRESCO-371 · Onboarding a 3 pasos, presupuesto opcional (A4-H14)
+- Qué: Wizard de onboarding pasa de 4 a 3 pasos (límite duro del PRD): "cocinas favoritas" se pliega dentro del paso de dieta/alérgenos. El presupuesto semanal vuelve a ser opcional (el motor solo lanza un aviso blando si el menú lo supera, nunca filtra). Nuevo evento `onboarding_abandoned` + `total_steps` en los eventos existentes del funnel. PR #225 squash → dev (1012c0d) → ff staging + main. SP 3. CI verde incl. test:e2e.
+- Por qué: Auditoría 4 (ALTO A4-H14). El PRD exige 3 pasos; cada paso extra cuesta conversión; el presupuesto obligatorio no aportaba nada al motor.
+- Siguiente: Sigue la ola 1 de FRESCO-359. Quedan 365 (legal), 372, 374-379.
