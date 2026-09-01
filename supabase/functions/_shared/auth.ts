@@ -1,4 +1,4 @@
-import type { SupabaseClient, User } from 'npm:@supabase/supabase-js@2'
+import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { HttpError } from './http.ts'
 
 /**

@@ -6,7 +6,7 @@
 // allowlist IS the authorization boundary — `recipes` has zero authenticated
 // -role write policy, so callers that pass this check still need a
 // service-role client to actually write (see service-role-client.ts).
-import type { User } from 'npm:@supabase/supabase-js@2'
+import type { User } from '@supabase/supabase-js'
 import { HttpError } from './http.ts'
 
 /**

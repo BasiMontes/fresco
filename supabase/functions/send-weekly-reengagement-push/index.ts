@@ -17,7 +17,7 @@
 // logged and skipped — not evidence the subscription itself is bad, and one
 // bad send must never abort the rest of the batch.
 
-import webpush from 'npm:web-push@3'
+import webpush from 'web-push'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { requireServiceRoleCaller } from '../_shared/auth.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
@@ -67,9 +67,11 @@ Deno.serve(async (req: Request) => {
     // every ordinary role, granted only to service_role.
     const semanaIso = getCurrentIsoWeek()
     const serviceClient = createServiceRoleClient()
-    const { data: subscriptions, error: queryError } = await serviceClient
-      .rpc('get_push_subscriptions_without_current_plan', { p_semana_iso: semanaIso })
-      .returns<PushSubscriptionRow[]>()
+    // FRESCO-375: untyped Deno client — assert the row shape at the boundary.
+    const { data: subscriptionsData, error: queryError } = await serviceClient.rpc(
+      'get_push_subscriptions_without_current_plan',
+      { p_semana_iso: semanaIso },
+    )
 
     if (queryError) {
       logger.error('Failed to query push_subscriptions without a current-week plan', {
@@ -79,7 +81,7 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('Error consultando las suscripciones a notificar', 500)
     }
 
-    const targets = subscriptions ?? []
+    const targets = (subscriptionsData ?? []) as PushSubscriptionRow[]
     const usersTargeted = new Set(targets.map(sub => sub.user_id)).size
 
     // 4. Send, per subscription. One bad subscription must never abort the

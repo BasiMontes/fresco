@@ -89,15 +89,18 @@ Deno.serve(async (req: Request) => {
     // does not exist. Then reject a recipe already placed elsewhere in the
     // same week's plan.
     if (estado === 'sustituida') {
-      const { data: safeRows, error: filterError } = await supabase
-        .rpc('get_filtered_recipes', { p_user_id: user.id, p_recipe_id: nueva_recipe_id })
-        .returns<{ id: string }[]>()
+      // FRESCO-375: untyped Deno client — assert the row shape at the boundary.
+      const { data: safeRowsData, error: filterError } = await supabase.rpc('get_filtered_recipes', {
+        p_user_id: user.id,
+        p_recipe_id: nueva_recipe_id,
+      })
+      const safeRows = (safeRowsData ?? []) as { id: string }[]
 
       if (filterError) {
         logger.error('get_filtered_recipes failed during substitution', { fn: FN_NAME, error: filterError.message })
         throw new HttpError('Error validando la receta de sustitución', 500)
       }
-      if (!safeRows || safeRows.length === 0) {
+      if (safeRows.length === 0) {
         throw new HttpError(
           'La receta de sustitución no es válida para tu perfil (alérgeno, dieta o ingrediente excluido) o no existe',
           422
