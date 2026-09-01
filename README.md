@@ -51,6 +51,19 @@ cp .env.example .env    # then fill in the values — see .env.example comments
 bun run dev             # Next.js dev server on http://localhost:3000
 ```
 
+Anything that calls an **Edge Function from the browser** (menu generation,
+marking a recipe, deleting an account, guest reassignment) must run against a
+**local Supabase stack**, not the hosted project — the hosted CORS allowlist
+does not include `localhost` (FRESCO-364 / A4-L2). Start it and point `.env`
+at it, the same way CI does:
+
+```bash
+supabase start
+supabase db reset                 # migrations + seed.sql
+bun scripts/seed-e2e-users.ts     # the fixed DEV_USER / PRO_USER accounts
+cat .env.ci >> .env               # local-stack URLs + keys win over the hosted ones
+```
+
 ### Tests
 
 ```bash
