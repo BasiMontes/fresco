@@ -314,3 +314,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: components/calendar/learning-bridge-card.tsx - tarjeta (card variant pro) en /calendar con el mecanismo real del aprendizaje + ejemplo trabajado + CTA a /profile para Free. Free siempre; Pro solo hasta su primera marca. CalendarGrid pierde el prop userPlan + el aviso plano. master-design-plan §5-J. Approach A (DESIGN.md-first sin mockup).
 - Por que: audit-4 ola 1 (A4-H12, ALTO) - el moat no da payoff hasta la semana 2 y solo Pro; el usuario paga en la semana 1 sin ver el valor diferencial. CI vuelta 1 rompio 2 escenarios de drag (@calendario) por altura de la tarjeta -> compactada + scrollIntoView en el helper.
 - Siguiente: 370 (marketing honesto, quitar claims de IA + cifras inventadas). dev=staging=main en f80c7d4.
+
+## 2026-09-01 - FRESCO-370 · Marketing honesto en la landing (A4-H13/H16)
+- Qué: Quitados los claims sin respaldo de la landing pública: "Menú semanal con IA" y "a diferencia de ChatGPT" (motor 100% determinista, sin IA), y las 3 cifras inventadas de la sección "Tu impacto" (~300€, 25%, 30 min) presentadas como estimaciones investigadas. Sustituidas por 3 tarjetas de mecánica real del producto. FAQ: "La IA nunca incluye" → "El sistema nunca incluye". Nuevo escenario e2e @landing @automatizado que veta claims de IA. PR #224 squash → dev (1bfa710) → ff a staging + main. SP 2.
+- Por qué: Auditoría 4 (ALTO A4-H13 + A4-H16). Publicidad engañosa en dos frentes; con cohorte de pago es riesgo reputacional y legal.
+- Siguiente: Verificar en fresco-pro. Barrido de onboarding/emails: limpio (sin plantillas propias). Sigue la ola 1 de la remediación (FRESCO-359).
