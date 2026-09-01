@@ -304,3 +304,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: components/landing/pricing.tsx - quitadas las claims falsas de Pro ("Menús ilimitados", "Historial de menús", "Personalización avanzada"). PRO ahora lista solo los 4 gates reales de isPro en generate-meal-plan/index.ts (aprendizaje aplicado, no repite recetas recientes, explicación FR-5.5, nudge ADR-0008). FREE concreto: menú semanal completo, lista automática, filtros, cambio de receta. Decision AC: opción B (copy honesto, no gatear).
 - Por que: audit-4 ola 1 (A4-H11, ALTO) - la landing vendía features Pro que no están gateadas; Free y Pro tienen el mismo límite (5 gen/hora, 1 plan/semana ISO).
 - Siguiente: 373 (M27 toggle usable) desbloquea 369. dev=staging=main en 31243d6.
+
+## 2026-09-01 - FRESCO-373 (A4-M27) toggle cocinado/descartado usable
+- Que: calendar-grid.tsx - botones de marcado a >=44px (etiquetados, ancho completo) + ventana de deshacer de 5s (snackbar, commit diferido client-side, flush en pagehide/unmount). Instrumentado: recipe_marked_cooked / recipe_marked_discarded al commit, recipe_mark_undone al cancelar.
+- Por que: audit-4 ola 1 (A4-M27) - la marca era un icono de 16px irreversible; unica interaccion de la que depende el tier Pro. Sin cambio de backend.
+- Siguiente: 369 (puente del moat), desbloqueada. dev=staging=main en 8441aae.
