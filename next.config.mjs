@@ -48,6 +48,16 @@ const supabaseOrigin = toOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const supabaseFunctionsOrigin = toOrigin(process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL);
 const supabaseRealtimeOrigin = supabaseOrigin?.replace(/^https:/, 'wss:') ?? null;
 const posthogOrigin = toOrigin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
+
+// FRESCO-366 / A4-B4: PostHog reverse proxy. `posthog-js` posts to the
+// same-origin `/ingest` path (see app/providers/posthog-provider.tsx) and
+// these rewrites forward it to PostHog's ingestion + static-asset hosts, so
+// an ad-blocker filtering `*.posthog.com` can't drop client events. Region
+// follows NEXT_PUBLIC_POSTHOG_HOST (`https://eu.i.posthog.com` →
+// `https://eu-assets.i.posthog.com`); the rewrites are skipped entirely when
+// the host is unset (local dev without a PostHog project).
+const posthogIngestHost = posthogOrigin;
+const posthogAssetsHost = posthogIngestHost?.replace('.i.posthog.com', '-assets.i.posthog.com') ?? null;
 const sentryIngestOrigin = toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
 const cspReportUri = sentryCspReportUri(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
@@ -135,9 +145,22 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV,
   },
+  // FRESCO-366: PostHog sends `/ingest/...` with no trailing slash — without
+  // this Next would 308-redirect those requests and the SDK would follow to
+  // a URL PostHog rejects.
+  skipTrailingSlashRedirect: true,
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },
+    ];
+  },
+  async rewrites() {
+    if (!posthogIngestHost || !posthogAssetsHost) {
+      return [];
+    }
+    return [
+      { source: '/ingest/static/:path*', destination: `${posthogAssetsHost}/static/:path*` },
+      { source: '/ingest/:path*', destination: `${posthogIngestHost}/:path*` },
     ];
   },
 };

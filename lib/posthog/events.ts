@@ -1,23 +1,17 @@
 /**
- * ADR-0013 / FRESCO-240: single source of truth for every PostHog event this
- * app emits — avoids event-name drift across the ~6 capture points (onboarding,
- * calendar, login, signup, Stripe webhook). Any new user-facing flow that
- * should count toward the North-star KPI or a funnel/retention report must
- * add its event here rather than a magic string at the call site.
+ * ADR-0013 / FRESCO-240: client-side PostHog capture helpers. Event NAMES
+ * live in `./event-names.ts` (zero-dependency, server-safe) and are
+ * re-exported here so existing `@/lib/posthog/events` importers keep working.
+ * Any new user-facing flow that should count toward the North-star KPI or a
+ * funnel/retention report adds its event to `event-names.ts`, never a magic
+ * string at the call site.
  */
 
+import type { PosthogEventName } from './event-names';
 import posthog from 'posthog-js';
 
-export const POSTHOG_EVENTS = {
-  MENU_GENERATION_STARTED: 'menu_generation_started',
-  MENU_GENERATION_COMPLETED: 'menu_generation_completed',
-  RECIPE_MARKED_COOKED: 'recipe_marked_cooked',
-  USER_SIGNED_UP: 'user_signed_up',
-  SESSION_STARTED: 'session_started',
-  SUBSCRIPTION_STARTED: 'subscription_started',
-} as const;
-
-export type PosthogEventName = (typeof POSTHOG_EVENTS)[keyof typeof POSTHOG_EVENTS];
+export { POSTHOG_EVENTS } from './event-names';
+export type { PosthogEventName } from './event-names';
 
 /**
  * Client-side capture — silent no-op when `NEXT_PUBLIC_POSTHOG_KEY` is unset
@@ -42,13 +36,18 @@ export function captureEvent(name: PosthogEventName, properties?: Record<string,
  * `auth.uid()` — including a guest's anonymous id (ADR-0003), so her
  * pre-signup event stream merges into her post-upgrade one once she
  * registers (ADR-0004). Same fail-soft guard as `captureEvent`.
+ *
+ * FRESCO-366 / A4-B4: `personProperties` are `$set` on the person on every
+ * call (`plan`, `is_guest`, `signup_method`) so PostHog funnels/retention
+ * reports can segment by them without a custom cohort. Passing `undefined`
+ * is equivalent to the old single-argument call.
  */
-export function identifyUser(userId: string): void {
+export function identifyUser(userId: string, personProperties?: Record<string, unknown>): void {
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     return;
   }
   try {
-    posthog.identify(userId);
+    posthog.identify(userId, personProperties);
   }
   catch (error) {
     console.error('[lib/posthog/events] identifyUser failed', error);
