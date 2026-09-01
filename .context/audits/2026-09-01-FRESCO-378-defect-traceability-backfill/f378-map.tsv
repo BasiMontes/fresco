@@ -1,0 +1,36 @@
+key	relates	severity	class	origin
+315		moderada	closed	a11y — parent FRESCO-309 (auditoría 3)
+312		mayor	closed	cabeceras de seguridad — parent FRESCO-309 (auditoría 3)
+303		trivial	closed	pricing UI — parent FRESCO-278 (re-auditoría)
+299		menor	closed	contraste WCAG — parent FRESCO-278 (re-auditoría)
+298	278	trivial	closed	grosor de trazo de iconos, regla CSS global — hallazgo re-auditoría
+297	16	moderada	closed	Modo Invitado: sesión sin menú generado, no se puede regenerar
+296	4	menor	closed	Onboarding: botón Atrás no vuelve a la landing
+293		trivial	closed	detalles UI <390px — parent FRESCO-278
+288		menor	closed	áreas táctiles a11y — parent FRESCO-278
+285		menor	closed	token de texto atenuado, contraste — parent FRESCO-278
+283		menor	closed	CTA ámbar, contraste WCAG AA — parent FRESCO-278
+276	278	menor	closed	Dropdown: hover vs seleccionado — componente compartido, hallazgo re-auditoría
+272	278	trivial	closed	SegmentedControl: hueco en esquinas — componente compartido
+271	10	menor	closed	Calendario Editable: la columna de franja se mueve con el scroll
+269	81	menor	open	Cuenta y Sesión: centrado vertical de la card de /login
+268	25	trivial	closed	QA (/qa): bloques de código sin señal de scroll en móvil
+267	49	menor	closed	Información Legal y Contacto: áreas táctiles FAQ + footer bajo 24px
+265	4	moderada	open	Onboarding: presupuesto vacío no bloquea el envío (regresión de FRESCO-263)
+264	18	mayor	open	Registro Progresivo: enlace de confirmación de email siempre a producción
+263	4	moderada	closed	Onboarding: el presupuesto semanal debe ser obligatorio
+262	278	menor	closed	Dropdown: accent-100 mal usado — componente compartido
+259	10	moderada	closed	Calendario Editable: no se puede planificar por día suelto
+258	278	trivial	closed	Tag/pills: cambio de tamaño al seleccionar — componente compartido
+257	278	menor	closed	Dropdown: hover/seleccionado no pintan — componente compartido
+256	81	menor	closed	Cuenta y Sesión: card de auth sin padding
+255		menor	closed	Onboarding spacing/logo — parent FRESCO-4
+254	18	moderada	closed	Registro Progresivo: confirmación de signup por fragment se pierde
+253	18	moderada	closed	Registro Progresivo: botón del email de confirmación no lleva a ningún lado
+252		menor	closed	login/onboarding apretado — parent FRESCO-4
+250	18	moderada	open	Registro Progresivo: confirmación de signup redirige a /menu en vez de /onboarding
+235	49	trivial	closed	Información Legal y Contacto: año de copyright hardcodeado en el footer
+234	223	moderada	closed	Centro de Avisos: /notifications sin ningún aviso real
+233	50	menor	closed	Recuperación de Contraseña: mensaje de error obsoleto en /update-password
+183	10	trivial	open	Calendario Editable: imagen LCP sin loading=eager (ya en Rechazos)
+124	64	moderada	open	Biblioteca de Recetas: nombre de receta vacío en prod, sin CHECK constraint (ya en Rechazos)

@@ -1,0 +1,72 @@
+/**
+ * FRESCO-378 (A4-H17) — defect traceability backfill.
+ * Jira-only. Reads f378-map.tsv, and per defect:
+ *   - creates a `Relates` link to its origin epic (if `relates` col set)
+ *   - sets Severity 🚩 (customfield_10194)
+ *   - posts an Evidence backfill comment
+ * Run:  bun f378-backfill.ts --dry-run   then   bun f378-backfill.ts
+ */
+const BASE = process.env.ATLASSIAN_URL!;
+const AUTH = 'Basic ' + Buffer.from(`${process.env.ATLASSIAN_EMAIL}:${process.env.ATLASSIAN_API_TOKEN}`).toString('base64');
+const DRY = process.argv.includes('--dry-run');
+const SEVERITY_FIELD = 'customfield_10194';
+
+const tsv = await Bun.file(new URL('./f378-map.tsv', import.meta.url)).text();
+const rows = tsv.trim().split('\n').slice(1).map((l) => {
+  const [key, relates, severity, cls, origin] = l.split('\t');
+  return { key: `FRESCO-${key}`, relates: relates?.trim(), severity, cls, origin };
+});
+
+async function api(path: string, method: string, body?: unknown) {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: { Authorization: AUTH, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return { ok: res.ok, status: res.status, text: res.ok ? '' : await res.text() };
+}
+
+function adf(text: string) {
+  return { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] };
+}
+
+let linkOk = 0, linkSkip = 0, sevOk = 0, cmtOk = 0, errs = 0;
+
+for (const r of rows) {
+  console.log(`\n${r.key}  sev=${r.severity}  relates=${r.relates || '(parent already)'}  [${r.cls}]`);
+
+  // 1. Relates link
+  if (r.relates) {
+    if (DRY) { console.log(`  would link: ${r.key} Relates FRESCO-${r.relates}`); linkOk++; }
+    else {
+      const res = await api('/rest/api/3/issueLink', 'POST', {
+        type: { name: 'Relates' },
+        inwardIssue: { key: r.key },
+        outwardIssue: { key: `FRESCO-${r.relates}` },
+      });
+      if (res.ok) { console.log(`  linked -> FRESCO-${r.relates}`); linkOk++; }
+      else { console.log(`  LINK FAIL ${res.status}: ${res.text.slice(0, 200)}`); errs++; }
+    }
+  } else { linkSkip++; console.log('  link: skipped (parent already set)'); }
+
+  // 2. Severity
+  if (DRY) { console.log(`  would set ${SEVERITY_FIELD} = ${r.severity}`); sevOk++; }
+  else {
+    const res = await api(`/rest/api/3/issue/${r.key}`, 'PUT', { fields: { [SEVERITY_FIELD]: { value: r.severity } } });
+    if (res.ok) { console.log(`  severity = ${r.severity}`); sevOk++; }
+    else { console.log(`  SEVERITY FAIL ${res.status}: ${res.text.slice(0, 200)}`); errs++; }
+  }
+
+  // 3. Evidence comment
+  const note = r.cls === 'open'
+    ? `Evidence / trazabilidad (backfill A4-H17, 2026-09-01). Defecto aún abierto. Origen: ${r.origin}. Sin artefacto de evidencia adjunto — los pasos de reproducción viven en la descripción; pendiente de re-verificación contra el estado actual del código antes de cerrar (gate FRESCO-313). Severity fijado a "${r.severity}" por impacto.`
+    : `Evidence / trazabilidad (backfill A4-H17, 2026-09-01). Defecto ya cerrado; sin artefacto de evidencia original (anterior a FRESCO-282). Trazabilidad reconstruida: origen = ${r.origin}. Severity fijado a "${r.severity}" por impacto descrito. Forward-only: no se reabre.`;
+  if (DRY) { console.log(`  would comment: ${note.slice(0, 90)}...`); cmtOk++; }
+  else {
+    const res = await api(`/rest/api/3/issue/${r.key}/comment`, 'POST', { body: adf(note) });
+    if (res.ok) { console.log('  commented'); cmtOk++; }
+    else { console.log(`  COMMENT FAIL ${res.status}: ${res.text.slice(0, 200)}`); errs++; }
+  }
+}
+
+console.log(`\n=== ${DRY ? 'DRY-RUN' : 'DONE'}: ${rows.length} defects | links ${linkOk} (+${linkSkip} skipped) | severity ${sevOk} | comments ${cmtOk} | errors ${errs} ===`);
