@@ -5,17 +5,25 @@
 ║ "What you need to know to work here"                                         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
+> **Corrected 2026-09-01 (FRESCO-379, A4-H18):** de-Gemini pass per `ADR-0005` —
+> every "menu selection / aisle classification / learning text is a Gemini call"
+> statement and the whole `GEMINI_API_KEY` story are stale as of 2026-08-01 and
+> have been rewritten here. Also flipped the doc's original "nothing is built yet"
+> framing to present tense. This pass is **partial** — the §3 state machine still
+> misses the `excluida` state and several shipped flows (progressive signup /
+> guest-data reassignment, favourites, own-recipes, weekly re-engagement push) are
+> not covered here yet; a full `/project-foundation` discovery regeneration is
+> tracked as a follow-up.
+
 > This document assumes you've already read `.context/business/business-data-map.md`
 > to understand the business flows. Here I'll walk you through what to consider
-> once you start building.
+> when you touch each part of the system.
 >
-> **One thing before we start: there is no code yet.** Fresco is pre-`/project-bootstrap`.
-> The only thing that's actually live is the `recipes` table in Supabase, seeded with
-> ~35 recipes by a manual founder process. Everything else you're about to read —
-> the four other tables, the three Edge Functions, the learning trigger — is a
-> confirmed, detailed *design*, not running code. Think of this guide as "here's how
-> it's meant to work and what will bite you once it's built," not "here's how the
-> existing code is organized."
+> **One thing before we start:** Fresco is built and in production. The `recipes`
+> catalog (~1000 rows), the four other core tables (`user_profiles`, `meal_plans`,
+> `meal_plan_recipes`, `shopping_lists`), the Edge Functions, and the learning
+> trigger are all live. Read this guide as "here's how it works and what will bite
+> you," alongside the code itself.
 
 ---
 
@@ -31,8 +39,10 @@
 
 Fresco is a split-runtime system, not a "Next.js does everything" app, and that's a
 deliberate choice worth internalizing before you write a single line. The frontend
-(Next.js on Vercel) only ever talks to the backend through Supabase Edge Functions —
-there are no Next.js API routes doing business logic. The Edge Functions run on Deno,
+(Next.js on Vercel) talks to the backend for all product logic through Supabase Edge
+Functions — the menu, shopping-list, and learning paths have no Next.js API route in
+them (the only `app/api/*` routes are the Stripe cron/webhook glue). The Edge Functions
+run on Deno,
 a genuinely different runtime from the Node/Vercel environment the frontend lives in.
 Two module systems, two deploy pipelines, two places to think about when something
 breaks.
@@ -43,15 +53,18 @@ which minimizes the number of moving pieces a solo, part-time founder has to ope
 (`.context/SRS/architecture.md` §2). The trade-off is that you, the developer, absorb
 the complexity the founder saved: you have to keep two runtimes straight in your head.
 
-Everything in this system funnels through three narrow surfaces: three Edge Functions
-(`generate-meal-plan`, `generate-shopping-list`, `update-recipe-status`) plus two
+The core product loop funnels through three narrow surfaces: the Edge Functions
+`generate-meal-plan`, `generate-shopping-list`, and `update-recipe-status`, plus a few
 direct-to-Postgres client calls that bypass the Edge Function layer entirely for pure
-state toggles (the shopping-list `comprado` checkbox, for instance). If you're looking
-for "where does business logic live," the answer is always: inside one of those three
-Edge Functions, never in the client, never in a raw RPC call
+state toggles (the shopping-list `comprado` checkbox, for instance). A handful of other
+Edge Functions handle account and catalog lifecycle rather than the generation loop
+(`delete-account`, `delete-catalog-recipe`, `reassign-guest-data`,
+`get-shopping-list-suggestions`, `send-weekly-reengagement-push`). If you're looking
+for "where does the generation business logic live," the answer is always: inside one
+of those three core Edge Functions, never in the client, never in a raw RPC call
 (`.context/business/business-api-map.md` §4).
 
-## Architecture diagram (as specified — not yet built)
+## Architecture diagram
 
     ┌───────────────────────────┐
     │  Client — Next.js/Vercel   │   holds the JWT, calls Edge Functions
@@ -67,36 +80,37 @@ Edge Functions, never in the client, never in a raw RPC call
     └──────┬───────────────────────────────┬──────────┘
            │                               │
            ▼                               ▼
-    ┌──────────────────┐          ┌──────────────────────┐
-    │  SQL pre-filter /  │          │  Gemini Flash          │
-    │  aggregate reads   │          │  (menu selection,      │
-    │  (get_filtered_    │          │   aisle classify,       │
-    │  recipes, get_     │          │   batch recipe gen)     │
-    │  recent_recipe_ids)│          └──────────────────────┘
-    └─────────┬──────────┘
+    ┌───────────────────┐        ┌───────────────────────────────┐
+    │  SQL pre-filter /  │        │  Deterministic in-process     │
+    │  aggregate reads   │        │  algorithms (Deno):           │
+    │  (get_filtered_    │        │  menu-selector.ts (slot       │
+    │  recipes, cooked/  │        │  scoring) · aisle-pricing.ts  │
+    │  discarded marks)  │        │  (13-aisle static map)        │
+    └─────────┬─────────┘        └───────────────────────────────┘
               ▼
     ┌──────────────────────────────────────────────┐
     │  Supabase Postgres + RLS                       │
-    │  recipes (LIVE) · user_profiles · meal_plans · │
+    │  recipes · user_profiles · meal_plans ·        │
     │  meal_plan_recipes · shopping_lists            │
     │  + recipe_learning_trigger (AFTER UPDATE)       │
     └──────────────────────────────────────────────┘
 
-Every arrow in that diagram is a specified contract today, not a running call — worth
-repeating because it changes how you should read the rest of this guide. When you
-scaffold the real thing, the shape above is what you're building toward.
+There is **no external LLM call anywhere in production** (`ADR-0005`, 2026-08-01). Menu
+selection and shopping-list aisle classification are deterministic in-process algorithms;
+the Pro learning-explanation text is templated in TypeScript, not model-generated. The
+diagram's original "Gemini Flash" box was removed here for that reason.
 
 ## The general flow of data
 
 When a request lands, the pattern is always the same: the Edge Function authenticates
 the caller via a Supabase Auth JWT first (`401` if missing or invalid — there is no
-unauthenticated path through any of these three functions today, which is itself one
-of the sharpest points of attention below), then does whatever cheap, structural
-Postgres work it can before ever calling Gemini Flash, then calls the model only with
-an already-filtered or already-consolidated payload, validates what comes back, and
-only then persists. Nothing gets written to the database in a partial or unvalidated
-state — a failure anywhere in that chain surfaces as an explicit error to the caller,
-never a silently degraded result.
+unauthenticated path through any of these three functions, which is itself one of the
+sharpest points of attention below), then does whatever cheap, structural Postgres work
+it can (the SQL pre-filter, the aggregate reads), then runs the deterministic
+selection / consolidation algorithm on the already-filtered payload, and only then
+persists. Nothing gets written to the database in a partial or unvalidated state — a
+failure anywhere in that chain surfaces as an explicit error to the caller, never a
+silently degraded result.
 
 ---
 
@@ -112,11 +126,11 @@ never a silently degraded result.
 
 ## Flow: Weekly Menu Generation
 
-    User ──▶ generate-meal-plan ──▶ SQL pre-filter ──▶ Gemini Flash ──▶ persist ──▶ calendar
+    User ──▶ generate-meal-plan ──▶ SQL pre-filter ──▶ menu-selector.ts ──▶ persist ──▶ calendar
                     │                     │                  │
-                 auth + 409          allergen/diet/       validates,
-              (no silent          hated-ingredient       retries ≤2,
-                overwrite)           exclusion            502 on exhaustion
+                 auth + 409          allergen/diet/    deterministic slot
+              (no silent          hated-ingredient      scoring; 422 if
+                overwrite)           exclusion          <21 safe recipes
 
 ### Context
 
@@ -130,21 +144,24 @@ for the €4.99/month tier.
 ### What to keep in mind
 
 - The allergen and hated-ingredient exclusion happens in **two layers**, and neither
-  one is trusted alone: a cheap SQL pre-filter (`get_filtered_recipes()`) runs before
-  the model ever sees a recipe, and the same exclusion rules are repeated inside
-  Gemini's own system-prompt instructions as "REGLAS ABSOLUTAS." Don't assume shipping
-  one layer covers you — this two-layer redundancy is itself the architectural
-  invariant (promoted to `ADR-0001` for exactly this reason). If you ever touch the
-  filtering logic, touch both layers or neither.
+  one is trusted alone: a cheap SQL pre-filter (`get_filtered_recipes()`) runs first,
+  and the same exclusion rules are re-applied in-code as a safety net before persist
+  (`20260901073555_allergen_filter_safety_net.sql` plus the Edge Function re-filter
+  hardened in FRESCO-361 / FRESCO-362). Don't assume shipping one layer covers you —
+  this two-layer redundancy is itself the architectural invariant (promoted to
+  `ADR-0001` for exactly this reason). If you ever touch the filtering logic, touch
+  both layers or neither.
 - A `409` on regeneration isn't a bug you should "fix away" — a user's existing plan
   for the week is deliberately never silently overwritten.
 - If fewer than 21 recipes survive the SQL pre-filter, the call fails closed with
   `422` rather than proceeding with a degraded-safety catalog. That's a feature, not
   an edge case to route around.
-- The Free/Pro fork lives entirely upstream of prompt-building: for Free, the
-  last-2-weeks history function (`get_recent_recipe_ids()`) is never *called* at all —
-  not toggled off, never invoked. If you're debugging "why doesn't Free see history,"
-  the answer is structural, not a flag you flip.
+- The Free/Pro fork lives entirely upstream of slot scoring: for Free, the
+  last-2-weeks cooked/discarded history is never *read* at all — not toggled off,
+  never queried. For Pro, those recipe ids are removed from the candidate pool
+  **before** scoring — a hard exclusion filter, not an instruction a model might not
+  follow (`ADR-0005`). If you're debugging "why doesn't Free see history," the answer
+  is structural, not a flag you flip.
 - Because Supabase Edge Functions have no native multi-table transaction, persisting
   a plan is a two-step insert (`meal_plans` then 21 `meal_plan_recipes` rows) with a
   manual compensating delete if the second insert fails. This is a documented
@@ -177,8 +194,8 @@ This is the learning mechanism the whole Pro tier is sold on. A user marks a cal
 slot as cooked, discarded, or swapped; the raw signal is recorded unconditionally for
 every tier; only *application* of that signal back into generation is Pro-gated (see
 Flow 1 above). It's the cheapest possible feature to build — one toggle, one trigger,
-one prompt-building conditional — which is exactly why `ADR-0001` calls it out as the
-single hardest-to-reverse bet in the whole architecture.
+one candidate-pool exclusion for Pro — which is exactly why `ADR-0001` calls it out as
+the single hardest-to-reverse bet in the whole architecture.
 
 ### What to keep in mind
 
@@ -196,7 +213,7 @@ single hardest-to-reverse bet in the whole architecture.
   Edge Function, an admin tool, or a future migration script is what performs the
   `UPDATE`. If you're tempted to move this logic into the Edge Function for
   readability, don't — the whole point is that it fires regardless of the caller.
-- Recording is universal across every tier; only the *next generation's prompt build*
+- Recording is universal across every tier; only the *next generation's candidate pool*
   is where Free/Pro actually diverges. Don't assume "Free users don't get tracked" —
   they do, identically to Pro. What differs is only whether that history is ever read
   back in.
@@ -212,29 +229,29 @@ single hardest-to-reverse bet in the whole architecture.
 
 ## Flow: Shopping List Generation
 
-    Calendar ──▶ generate-shopping-list ──▶ consolidate (app code, no LLM) ──▶ Gemini (aisle + units only) ──▶ persist
-                        │                            │                                  │
-                  404/409 checks              scale by household size,           validate ≥90% item
-                                               sum compatible units                retention, retry ≤2
+    Calendar ──▶ generate-shopping-list ──▶ consolidate (app code) ──▶ aisle-pricing.ts (static map) ──▶ persist
+                        │                            │                              │
+                  404/409 checks              scale by household size,      classify into 13 aisles
+                                               sum compatible units          + cost range, no model
 
 ### Context
 
 A separate, on-demand Edge Function — not a side effect of menu generation. It's
 requested explicitly by the user (typically right after the menu, or on first tap of
-"Ver lista de la compra"), and it has its own independent failure/retry posture.
+"Ver lista de la compra"), and it has its own independent failure posture.
 
 ### What to keep in mind
 
-- Quantity math is **deterministic application code**, never something the model
-  guesses. Ingredient consolidation — normalizing names, scaling by household size,
-  summing compatible units — happens entirely before Gemini is ever called. The model
-  is only ever handed an already-consolidated list and asked to classify aisles and
-  normalize display units, at a low temperature (0.2, classification not creative
-  generation). If you're tempted to let the model "help" with quantities, don't — that
-  was an explicit design decision, not an oversight.
-- The 90% item-retention check on the model's output exists specifically to catch the
-  model silently dropping or inventing items — it isn't a cosmetic validation, it's
-  the actual safety net for "did the list stay complete."
+- The whole flow is **deterministic application code** — no model anywhere. Ingredient
+  consolidation (normalizing names, scaling by household size, summing compatible
+  units) runs first, then `aisle-pricing.ts` classifies each consolidated ingredient
+  into one of 13 fixed aisles and attaches a cost range via a static map. Ingredient
+  names are a controlled vocabulary (the recipe catalog's own ingredient list), so
+  aisle classification never needed a language model (`ADR-0005`). Aisle classification
+  and the Pro learning text used to be Gemini calls; both were removed 2026-08-01.
+- Because the classification is a static map, there's no "did the model drop or invent
+  items" failure mode to guard against — the old ≥90% item-retention check existed
+  only because a model was in the loop, and it went away with the model.
 - One list per plan is enforced (`409` if one already exists) — this flow is
   idempotent-by-rejection, not idempotent-by-overwrite.
 - The individual "mark as purchased" toggle on a shopping-list item bypasses the Edge
@@ -254,14 +271,17 @@ requested explicitly by the user (typically right after the menu, or on first ta
 
 ## Flow: Batch Recipe-Catalog Seeding
 
-    Founder ──▶ batch prompt ──▶ Gemini Flash ──▶ manual 8-point review ──▶ service_role insert ──▶ recipes
+    Founder ──▶ offline batch drafting ──▶ manual 8-point review ──▶ service_role insert ──▶ recipes
 
 ### Context
 
-This is the one flow that's already real — it's exactly what produced the ~35 live
-seeded recipes. It's founder-operated and offline, not a live API endpoint, and it
-exists because curated/photographed recipe content was explicitly cut from MVP scope
-for cost reasons. This batch-plus-manual-review process is the deliberate substitute.
+This flow produced the ~1000-recipe live catalog. It's founder-operated and **entirely
+offline** — not a live API endpoint, and **not a runtime dependency of anything**. It
+exists because curated/photographed recipe content was cut from MVP scope for cost
+reasons; this batch-plus-manual-review process is the deliberate substitute. The
+drafting step was historically Gemini-assisted, but that is an offline authoring
+convenience, not part of the running system — there is no LLM call in production
+(`ADR-0005`; `business-data-map.md` §11).
 
 ### What to keep in mind
 
@@ -352,10 +372,13 @@ either double-counts or silently drops data.
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-There's exactly one automatic process worth knowing deeply in this system — everything
-else is routine `updated_at` housekeeping. No cron jobs, no scheduled tasks, no
-background workers, no incoming webhooks exist anywhere in the design. Every entry
-point is a synchronous, on-demand, request/response call.
+There's exactly one automatic process worth knowing deeply in the core generation loop:
+the `recipe_learning_trigger`. Everything else in that loop is a synchronous, on-demand,
+request/response call. Outside the core loop there are a few scheduled / event-driven
+pieces — a Vercel cron that reconciles Stripe subscription state
+(`app/api/cron/stripe-reconcile/route.ts`), the Stripe billing webhooks, and the
+`send-weekly-reengagement-push` Edge Function — but none of them touch the menu /
+shopping-list / learning data path.
 
 ## `recipe_learning_trigger`
 
@@ -396,52 +419,44 @@ anywhere to tell you.
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Gemini Flash
+## No external AI / LLM dependency (`ADR-0005`)
 
-### What it does in the system
+**There is no Gemini, no `GEMINI_API_KEY`, and no `generativelanguage.googleapis.com`
+call anywhere in the production system.** Menu-slot selection, shopping-list aisle
+classification, and the Pro learning-explanation text were all originally single Gemini
+Flash calls; all three were replaced with deterministic in-process code on 2026-08-01
+(`menu-selector.ts`, `aisle-pricing.ts`, `buildLearningExplanation()` in `prompt.ts`)
+and the API key was removed with them (`ADR-0005`; SRS `non-functional-requirements.md`
+NFR-SEC-3). The retry loop, the `responseMimeType: 'application/json'` JSON-mode
+handling, the `502`-on-non-2xx / `MAX_RETRIES` behaviour, and the temperature tuning
+that older versions of this section described are all gone — a deterministic algorithm
+has none of those failure modes. If you see `GEMINI_API_KEY` referenced anywhere in
+the codebase today, it is dead config to delete, not a secret to protect.
 
-The only third-party service anywhere in Fresco. No payment, email, analytics, or
-monitoring SDK is integrated at the API boundary — Supabase Auth is treated as core
-platform, not an external line item.
+Historical prompt contracts are retained, banner-marked as superseded, in
+`api-contracts.md` §1a / §2b for anyone tracing why the code looks the way it does.
 
-### Points of contact
+## Third-party services actually in use
 
-    Fresco backend (Supabase Edge Functions)
-        │                │                │
-        │                │                │
-    generate-        generate-        batch recipe
-    meal-plan        shopping-        generation
-    (menu            list             (founder-operated,
-    selection,       (aisle           offline, not a
-    temp 0.7)        classify,        live Edge Function)
-                      temp 0.2)
-        │                │                │
-        ▼                ▼                ▼
-              Gemini Flash
-              generativelanguage.googleapis.com
+    Client (Next.js / Vercel)                 Backend (Supabase Edge Functions)
+        │                                          │
+        ├─▶ Stripe        checkout + billing       │
+        │   (Pro tier — server-side session;       │
+        │    webhooks + cron reconcile)            │
+        ├─▶ PostHog       product analytics /      │
+        │   funnel (reverse-proxied via /ingest,   │
+        │    FRESCO-366)                           │
+        ├─▶ Sentry        error monitoring +       ├─▶ Sentry (Edge runtime)
+        │   CSP reporting                          │
+        └─▶ Unsplash      recipe photography       └─▶ (no AI/LLM call)
+            (images.unsplash.com, FRESCO-31)
 
-### What to consider
-
-- `responseMimeType: 'application/json'` is a deliberate choice, not a default —
-  it's specifically why the model "rarely returns malformed JSON," which is what
-  makes the 30-second generation budget realistic in the first place. Don't assume
-  you can drop JSON mode for some future call without re-validating that budget.
-- The model string is pinned to a specific version. That's a real versioning risk —
-  if Google deprecates or silently changes that model's behavior, nothing in the
-  current design detects it automatically. If you're the one who eventually bumps
-  the model version, budget time to re-validate output shape and the 0.7/0.2
-  temperature tuning, not just swap the string.
-- Failure handling differs by failure type: a non-2xx HTTP response from Gemini fails
-  immediately with `502`, no retry of the transport failure itself. Malformed or
-  invalid JSON output, on the other hand, gets retried up to `MAX_RETRIES = 2` before
-  giving up. Know which failure mode you're looking at before you "fix" a retry loop
-  that was never meant to retry that case.
-- No rate-limiting or abuse-prevention mechanism exists anywhere for the two
-  LLM-calling endpoints. Fine at concierge scale (8–10 users); a real, currently
-  undocumented cost and abuse exposure the moment this goes past a private cohort.
-- The `GEMINI_API_KEY` lives exclusively as a Supabase Edge Function secret — it must
-  never be reachable from the client. If you ever see this key referenced anywhere in
-  frontend code, that's a security incident, not a convenience.
+Supabase (database, auth, Edge compute, RLS) is treated as core platform, not an
+external line item. Per-integration detail — auth model, webhook contracts, env-var
+scoping — lives in `.context/business/business-api-map.md` and `.context/SRS/`; this
+guide does not duplicate it. (This subsection is a corrected stub — a full write-up of
+each integration's "what will bite you" is part of the deferred `/project-foundation`
+regeneration noted in the banner at the top.)
 
 ---
 
@@ -455,16 +470,17 @@ platform, not an external line item.
 
 ## Things that could bite you
 
-- **The guest-mode gap is real, and you will hit it.** The PRD promises a first-time
-  visitor can generate a full menu with zero signup (EPIC-FRESCO-6). But every
-  documented Edge Function — including `generate-meal-plan`, the one this promise
-  depends on — hard-requires a Supabase Auth Bearer JWT and returns `401` when it's
-  absent. No source document (not the PRD, not the SRS, not the founder's own Edge
-  Function draft) says whether a guest gets an anonymous Supabase session, a
-  client-side-only path that bypasses this API entirely, or a guest-scoped token.
-  Whoever picks up the guest-mode story needs to resolve this *before* writing code,
-  not discover it mid-implementation — it's flagged as the top unresolved gap in both
-  the data map and the API map.
+- **Guest mode runs on an anonymous Supabase session — know this before you touch
+  auth.** The PRD promises a first-time visitor can generate a full menu with zero
+  signup (EPIC-FRESCO-6). Every Edge Function hard-requires a Supabase Auth Bearer JWT
+  and returns `401` without one, so a guest gets a real JWT via
+  `supabase.auth.signInAnonymously()` (`ADR-0003`) — a fully-formed session with a real
+  `auth.uid()`, which means every RLS policy (all keyed to `auth.uid()`, never a role
+  check) works unmodified for a guest. When a guest later signs up, their data is
+  migrated to the permanent account by the `reassign-guest-data` Edge Function
+  (`20260731140000_create_reassign_guest_data_function.sql`). Don't add a
+  client-side-only bypass path or a custom guest token — the anonymous-session model
+  is the decided one.
 
 - **The split-runtime gotcha will trip you if you're not deliberate about it.** The
   frontend runs on Node/Vercel; the backend runs on Deno inside Supabase Edge
@@ -475,17 +491,15 @@ platform, not an external line item.
   will work inside an Edge Function, and don't assume a frontend build failure means
   the backend is also broken.
 
-- **The schema-shape gap is not a bug — it's the current, confirmed state.** Today,
-  only `recipes` is live (JSONB-shaped, ~35 seeded rows). `user_profiles`,
-  `meal_plans`, `meal_plan_recipes`, and `shopping_lists` don't exist as tables yet.
-  Even more pointedly: the `aprendizaje` learning columns (`veces_cocinada`,
-  `veces_descartada`, `rating_promedio`, `ultima_vez_en_menu`) — the entire technical
-  basis for the Pro tier — are **not present on the live `recipes` table**. That means
-  the learning moat, as designed, literally cannot function yet. This isn't something
-  to "fix" as a bug you found; it's the expected pre-`/project-bootstrap` state, and
-  the required migration is explicitly deferred to that phase. Don't be alarmed when
-  you query the live table and the columns aren't there — and don't build against
-  them as if they already exist.
+- **The `recipes` table is JSONB-shaped — the other core tables are typed.** `recipes`
+  stores each recipe as a JSONB document (~1000 rows). `user_profiles`, `meal_plans`,
+  `meal_plan_recipes`, and `shopping_lists` are typed relational tables
+  (`20260725120100_create_fresco_core_tables.sql`), and the `aprendizaje` learning
+  columns (`veces_cocinada`, `veces_descartada`, `rating_promedio`, `ultima_vez_en_menu`)
+  are flat top-level columns on `recipes`, updated by `recipe_learning_trigger`
+  (`20260725120000`, `20260725120200`). When you query a recipe you're reading JSONB;
+  when you query a plan or a profile you're reading columns. Don't assume one shape
+  across the schema.
 
 - **The Free-tier-cannibalization risk is a UI risk as much as a backend one.**
   `ADR-0001` names it directly: if the "we adjusted your menu because..." explanation
@@ -557,13 +571,18 @@ It's always worth taking a moment to:
 - `.context/business/business-feature-map.md` — the full feature inventory, CRUD
   matrix, and endpoint catalog, if you need to know what's specified versus what's
   actually built.
-- `.context/business/business-api-map.md` — the auth model, the four critical
-  business journeys, and the unresolved guest-mode gap in full detail.
+- `.context/business/business-api-map.md` — the auth model and the critical business
+  journeys in full detail.
 - `.context/SRS/architecture.md` — tech-stack rationale, the full data model, the
   security architecture, and the deployment topology.
 - `.context/ADR/ADR-0001-behavioral-learning-moat.md` — the single most important
   "why does this exist" story in the system; read this before touching anything in
   the cooked/discarded or menu-generation paths.
+- `.context/ADR/ADR-0005-deterministic-menu-slot-selection.md` — why menu selection,
+  aisle classification, and the Pro learning text are deterministic in-process code
+  and not LLM calls; read this before touching `menu-selector.ts` or `aisle-pricing.ts`.
+- `.context/ADR/ADR-0003-guest-auth-anonymous-sign-in.md` — the anonymous-session
+  guest-mode mechanism; read before touching auth or the guest→account migration.
 - `DESIGN.md` — the visual system and component vocabulary (colors, typography,
   spacing, the shared `card-insight` component the Pro-tier explanation and the
   generation-warnings surfacing both rely on).
