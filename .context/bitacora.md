@@ -366,3 +366,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: `update_recipe_learning()` promediaba `rating_promedio` sobre `veces_cocinada` (cuenta todos los cocinados); cada cocinado sin puntuar hundía la media hacia 0. Fix: columna nueva `recipes.veces_calificada` (solo cocinados puntuados), el trigger promedia sobre ella, + backfill desde `meal_plan_recipes` que corrige la deriva histórica. Primer test pgTAP del repo (`supabase/tests/`) + step `supabase test db` en el job e2e de CI. PR #232 squash a dev, SP 3.
 - Por qué: audit-4 A4-M2. `menu-selector.ts` puntúa con `rating_promedio*2`, así que las recetas bien valoradas estaban penalizadas por el ruido de los cocinados sin puntuar; datos de producción ya sesgados.
 - Siguiente: ff staging; main en espera. Luego FRESCO-380 (A4-M1, determinismo del motor).
+
+## 2026-09-01 - FRESCO-380: determinismo real del motor de menú (A4-M1)
+- Qué: el jitter `Math.random()*2` de `scoreRecipe` (rango = peso por estrella del rating) podía voltear un 5★ vs 4★; `get_filtered_recipes` sin `ORDER BY`. Fix: PRNG sembrado por `${user.id}:${semana_iso}` capado a `rng()*0.5` (solo desempata, no voltea una estrella); migración `20260901160000` añade `order by r.id`; tests asertan reproducibilidad en vez de fijar `Math.random` a 0; nota de update en ADR-0005. PR #233 squash a dev, SP 3.
+- Por qué: audit-4 A4-M1. ADR-0005 decía "determinista" pero ningún menú era reproducible.
+- Siguiente: ff staging; main en espera con 2 migraciones (FRESCO-381 + 380) que necesitan `supabase db push`. Luego ola-2 sigue (FRESCO-382+).
