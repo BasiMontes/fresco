@@ -7,7 +7,6 @@
 //   - fresco-pro.vercel.app  — production (main)
 //   - fresco-pre.vercel.app  — staging
 //   - fresco-dev.vercel.app  — dev
-//   - http://localhost:3000  — local dev against real Edge Functions
 //
 // FRESCO-297: `fresco-dev.vercel.app` was missing — the three-tier upgrade
 // (2026-08-21) made dev a real environment but this list was never updated,
@@ -17,12 +16,51 @@
 // conectar con el servidor"). Same failure mode FRESCO-193 fixed for
 // `fresco-pre`. `fresco-staging.vercel.app` removed here: it is an old
 // stale alias (`.agents/project.yaml` — "do not use it").
-const ALLOWED_ORIGINS = new Set([
+const DEPLOYED_ORIGINS = [
   'https://fresco-pro.vercel.app',
   'https://fresco-pre.vercel.app',
   'https://fresco-dev.vercel.app',
-  'http://localhost:3000',
-])
+]
+
+const LOCAL_DEV_ORIGIN = 'http://localhost:3000'
+
+/**
+ * FRESCO-364 (audit-4 A4-L2): `http://localhost:3000` must never be an
+ * allowed origin on the HOSTED deployment — a page served from localhost
+ * could otherwise make credentialed calls to the production backend.
+ *
+ * The Edge Functions are a single deployment shared by every environment,
+ * so the per-environment signal is `SUPABASE_URL` (platform-injected):
+ *   - hosted   → `https://<ref>.supabase.co`
+ *   - local stack (`supabase start`, incl. CI) → `http://kong:8000`
+ *
+ * Local development that needs to call Edge Functions from a browser must
+ * therefore run against the local Supabase stack (`supabase start`), not
+ * the hosted project — the same setup CI uses.
+ */
+export function isHostedSupabase(supabaseUrl: string): boolean {
+  return /^https:\/\/[a-z0-9-]+\.supabase\.(co|in)\b/i.test(supabaseUrl)
+}
+
+/**
+ * The one origin to echo back in `Access-Control-Allow-Origin` for this
+ * request, or `null` when the origin is not allowed (browsers treat a
+ * missing ACAO as a hard CORS block). Pure — the caller passes the
+ * platform `SUPABASE_URL` so this stays unit-testable without `Deno`.
+ */
+export function resolveAllowedOrigin(requestOrigin: string | null, supabaseUrl: string): string | null {
+  if (!requestOrigin) {
+    return null
+  }
+  const allowed = isHostedSupabase(supabaseUrl)
+    ? DEPLOYED_ORIGINS
+    : [...DEPLOYED_ORIGINS, LOCAL_DEV_ORIGIN]
+  return allowed.includes(requestOrigin) ? requestOrigin : null
+}
+
+function supabaseUrl(): string {
+  return (typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_URL') : undefined) ?? ''
+}
 
 /**
  * Origin-aware CORS headers. `Access-Control-Allow-Origin` can only ever
@@ -30,12 +68,12 @@ const ALLOWED_ORIGINS = new Set([
  * gets no ACAO header at all, which browsers treat as a hard CORS block.
  */
 export function getCorsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('origin')
   const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
-    headers['Access-Control-Allow-Origin'] = origin
+  const allowedOrigin = resolveAllowedOrigin(req.headers.get('origin'), supabaseUrl())
+  if (allowedOrigin) {
+    headers['Access-Control-Allow-Origin'] = allowedOrigin
   }
   return headers
 }
