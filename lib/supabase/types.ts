@@ -261,6 +261,7 @@ export type Database = {
           temporada: Json | null
           ultima_vez_en_menu: string | null
           updated_at: string
+          veces_calificada: number
           veces_cocinada: number
           veces_descartada: number
         }
@@ -282,6 +283,7 @@ export type Database = {
           temporada?: Json | null
           ultima_vez_en_menu?: string | null
           updated_at?: string
+          veces_calificada?: number
           veces_cocinada?: number
           veces_descartada?: number
         }
@@ -303,6 +305,7 @@ export type Database = {
           temporada?: Json | null
           ultima_vez_en_menu?: string | null
           updated_at?: string
+          veces_calificada?: number
           veces_cocinada?: number
           veces_descartada?: number
         }
@@ -519,6 +522,7 @@ export type Database = {
           temporada: Json | null
           ultima_vez_en_menu: string | null
           updated_at: string
+          veces_calificada: number
           veces_cocinada: number
           veces_descartada: number
         }[]
