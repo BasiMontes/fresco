@@ -64,7 +64,7 @@ Deno.serve(async (req: Request) => {
     // that can call reassign_guest_data() (ADR-0004: EXECUTE is revoked from
     // every ordinary role at the DB level).
     const serviceClient = createServiceRoleClient()
-    const { error: reassignError } = await serviceClient.rpc('reassign_guest_data', {
+    const { data: neutralizedSlots, error: reassignError } = await serviceClient.rpc('reassign_guest_data', {
       p_from_user_id: guestUser.id,
       p_to_user_id: targetUserId,
     })
@@ -72,6 +72,16 @@ Deno.serve(async (req: Request) => {
     if (reassignError) {
       logger.error('reassign_guest_data RPC failed', { fn: FN_NAME, error: reassignError.message })
       throw new HttpError('Error reasignando los datos de invitada.', 500)
+    }
+
+    // A4-H2: the RPC re-filters the moved plans against the target account's
+    // allergen profile and returns how many slots it had to neutralize.
+    if (typeof neutralizedSlots === 'number' && neutralizedSlots > 0) {
+      logger.info('reassignment neutralized slots with a target-profile allergen', {
+        fn: FN_NAME,
+        targetUserId,
+        neutralizedSlots,
+      })
     }
 
     // 4. Clean up the now-orphaned anonymous identity (ADR-0003's named,

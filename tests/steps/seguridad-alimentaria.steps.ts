@@ -1,10 +1,10 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
 import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { restHeaders, serviceRoleHeaders } from '../test-helpers';
-import { generateCurrentWeekPlan } from '../test-user-factory';
+import { currentWeekMonday, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { generateCurrentWeekPlan, seedFullWeekMenu } from '../test-user-factory';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @seguridad-alimentaria,
@@ -158,4 +158,163 @@ Then(/^el catálogo filtrado excluye toda receta que contenga ese alérgeno$/, (
     expect(result.leaked, `${result.allergen} leaked into the filtered catalog`).toBe(0);
     expect(result.excluded, `${result.allergen} excluded nothing — is it tagged in the catalog at all?`).toBeGreaterThan(0);
   }
+});
+
+// ── FRESCO-362 helpers ────────────────────────────────────────────────────
+
+const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
+// PostgREST `cs` (jsonb contains) filter for a recipe carrying "gluten", and
+// its negation for one that does not.
+const CONTAINS_GLUTEN = 'alergenos=cs.%5B%22gluten%22%5D';
+const NOT_CONTAINS_GLUTEN = 'alergenos=not.cs.%5B%22gluten%22%5D';
+
+async function firstRecipeId(request: APIRequestContext, user: TestUser, filter: string): Promise<string> {
+  const res = await request.get(`${SUPABASE_URL}/rest/v1/recipes?select=id&${filter}&limit=1`, {
+    headers: restHeaders(user.accessToken),
+  });
+  const [recipe] = await res.json() as { id: string }[];
+  if (!recipe) { throw new Error(`[seguridad-alimentaria] no catalog recipe for filter: ${filter}`); }
+  return recipe.id;
+}
+
+// ── Scenario 4: substitution rejects an allergen recipe (A4-H1) ────────────
+
+interface SubCtx {
+  user: TestUser | null
+  slotId: string
+  originalRecipeId: string
+  glutenRecipeId: string
+  response: APIResponse | null
+}
+const subCtx: SubCtx = { user: null, slotId: '', originalRecipeId: '', glutenRecipeId: '', response: null };
+
+Given(/^que un perfil declara alergia a "gluten" y tiene un menú sembrado$/, async ({ testUserFactory, request }) => {
+  subCtx.user = await testUserFactory();
+  await setProfileAllergens(request, subCtx.user.id, ['gluten']);
+  await seedFullWeekMenu(request, subCtx.user);
+
+  const headers = restHeaders(subCtx.user.accessToken);
+  const planRes = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plans?select=id&user_id=eq.${subCtx.user.id}&limit=1`,
+    { headers },
+  );
+  const [plan] = await planRes.json() as { id: string }[];
+  const slotRes = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?select=id,recipe_id&meal_plan_id=eq.${plan.id}&limit=1`,
+    { headers },
+  );
+  const [slot] = await slotRes.json() as { id: string, recipe_id: string }[];
+  subCtx.slotId = slot.id;
+  subCtx.originalRecipeId = slot.recipe_id;
+  subCtx.glutenRecipeId = await firstRecipeId(request, subCtx.user, CONTAINS_GLUTEN);
+});
+
+When(/^intenta sustituir un plato por una receta que contiene "gluten"$/, async ({ request }) => {
+  subCtx.response = await request.post(`${FUNCTIONS_URL}/update-recipe-status`, {
+    headers: restHeaders(subCtx.user!.accessToken),
+    data: { meal_plan_recipe_id: subCtx.slotId, estado: 'sustituida', nueva_recipe_id: subCtx.glutenRecipeId },
+  });
+});
+
+Then(/^la petición se rechaza con 422 y el plato no cambia$/, async ({ request }) => {
+  expect(subCtx.response!.status()).toBe(422);
+  const res = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?select=recipe_id,estado&id=eq.${subCtx.slotId}`,
+    { headers: restHeaders(subCtx.user!.accessToken) },
+  );
+  const [row] = await res.json() as { recipe_id: string, estado: string }[];
+  expect(row.recipe_id).toBe(subCtx.originalRecipeId);
+  expect(row.estado).toBe('pendiente');
+});
+
+// ── Scenario 5: estado whitelist (A4-L7) ──────────────────────────────────
+
+const whitelistCtx: { user: TestUser | null, response: APIResponse | null } = { user: null, response: null };
+
+Given(/^que un usuario autenticado sin menú$/, async ({ testUserFactory }) => {
+  whitelistCtx.user = await testUserFactory();
+});
+
+When(/^envía un estado que no es "cocinada", "descartada" ni "sustituida"$/, async ({ request }) => {
+  whitelistCtx.response = await request.post(`${FUNCTIONS_URL}/update-recipe-status`, {
+    headers: restHeaders(whitelistCtx.user!.accessToken),
+    // `pendiente` is a real enum value but system-assigned only — the
+    // whitelist must reject it, not defer to the DB enum.
+    data: { meal_plan_recipe_id: crypto.randomUUID(), estado: 'pendiente' },
+  });
+});
+
+Then(/^la petición se rechaza con 400$/, () => {
+  expect(whitelistCtx.response!.status()).toBe(400);
+});
+
+// ── Scenario 6: reassignment re-filters against the target (A4-H2) ─────────
+
+interface ReassignCtx {
+  from: TestUser | null
+  to: TestUser | null
+  glutenSlotId: string
+  cleanSlotId: string
+  cleanRecipeId: string
+}
+const reassignCtx: ReassignCtx = { from: null, to: null, glutenSlotId: '', cleanSlotId: '', cleanRecipeId: '' };
+
+Given(/^que la cuenta destino declara alergia a "gluten"$/, async ({ testUserFactory, request }) => {
+  reassignCtx.to = await testUserFactory();
+  await setProfileAllergens(request, reassignCtx.to.id, ['gluten']);
+});
+
+Given(/^una invitada tiene un menú con una receta que contiene "gluten" y otra que no$/, async ({ testUserFactory, request }) => {
+  reassignCtx.from = await testUserFactory();
+  const headers = restHeaders(reassignCtx.from.accessToken);
+
+  const glutenRecipeId = await firstRecipeId(request, reassignCtx.from, CONTAINS_GLUTEN);
+  reassignCtx.cleanRecipeId = await firstRecipeId(request, reassignCtx.from, NOT_CONTAINS_GLUTEN);
+
+  const { semanaIso, fechaInicio } = currentWeekMonday();
+  const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
+    headers: { ...headers, Prefer: 'return=representation' },
+    data: { user_id: reassignCtx.from.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
+  });
+  if (!planRes.ok()) { throw new Error(`[seguridad-alimentaria] seed plan failed: ${planRes.status()} ${await planRes.text()}`); }
+  const [plan] = await planRes.json() as { id: string }[];
+
+  const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, {
+    headers: { ...headers, Prefer: 'return=representation' },
+    data: [
+      { meal_plan_id: plan.id, recipe_id: glutenRecipeId, dia: 'lunes', tipo_plato: 'comida' },
+      { meal_plan_id: plan.id, recipe_id: reassignCtx.cleanRecipeId, dia: 'lunes', tipo_plato: 'cena' },
+    ],
+  });
+  if (!slotsRes.ok()) { throw new Error(`[seguridad-alimentaria] seed slots failed: ${slotsRes.status()} ${await slotsRes.text()}`); }
+  const slots = await slotsRes.json() as { id: string, tipo_plato: string }[];
+  reassignCtx.glutenSlotId = slots.find(s => s.tipo_plato === 'comida')!.id;
+  reassignCtx.cleanSlotId = slots.find(s => s.tipo_plato === 'cena')!.id;
+});
+
+When(/^se reasignan los datos de la invitada a la cuenta destino$/, async ({ request }) => {
+  const res = await request.post(`${SUPABASE_URL}/rest/v1/rpc/reassign_guest_data`, {
+    headers: serviceRoleHeaders(),
+    data: { p_from_user_id: reassignCtx.from!.id, p_to_user_id: reassignCtx.to!.id },
+  });
+  if (!res.ok()) { throw new Error(`[seguridad-alimentaria] reassign_guest_data failed: ${res.status()} ${await res.text()}`); }
+});
+
+Then(/^el plato con "gluten" queda excluido y el plato sin alérgeno se conserva$/, async ({ request }) => {
+  const headers = restHeaders(reassignCtx.to!.accessToken);
+
+  const gRes = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?select=estado,recipe_id&id=eq.${reassignCtx.glutenSlotId}`,
+    { headers },
+  );
+  const [gRow] = await gRes.json() as { estado: string, recipe_id: string | null }[];
+  expect(gRow.estado).toBe('excluida');
+  expect(gRow.recipe_id).toBeNull();
+
+  const cRes = await request.get(
+    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?select=estado,recipe_id&id=eq.${reassignCtx.cleanSlotId}`,
+    { headers },
+  );
+  const [cRow] = await cRes.json() as { estado: string, recipe_id: string | null }[];
+  expect(cRow.recipe_id).toBe(reassignCtx.cleanRecipeId);
 });

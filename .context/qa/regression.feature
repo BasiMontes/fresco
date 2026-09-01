@@ -325,6 +325,32 @@ Característica: Flujo completo de usuario en Fresco
     Cuando un perfil declara alergia a cada uno de ellos por separado
     Entonces el catálogo filtrado excluye toda receta que contenga ese alérgeno
 
+  # FRESCO-362 (audit-4 A4-H1 + A4-H2): las otras dos rutas por las que una
+  # receta podía entrar en el plan sin pasar por get_filtered_recipes — la
+  # sustitución de un plato y la reasignación del menú de una invitada.
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts (FRESCO-362)
+  Escenario: La sustitución de un plato rechaza una receta con un alérgeno del perfil
+    Dado que un perfil declara alergia a "gluten" y tiene un menú sembrado
+    Cuando intenta sustituir un plato por una receta que contiene "gluten"
+    Entonces la petición se rechaza con 422 y el plato no cambia
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts (FRESCO-362)
+  Escenario: update-recipe-status solo acepta estados de la whitelist
+    Dado que un usuario autenticado sin menú
+    Cuando envía un estado que no es "cocinada", "descartada" ni "sustituida"
+    Entonces la petición se rechaza con 400
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts (FRESCO-362)
+  Escenario: Reasignar los datos de una invitada re-filtra el menú contra el perfil destino
+    Dado que la cuenta destino declara alergia a "gluten"
+    Y una invitada tiene un menú con una receta que contiene "gluten" y otra que no
+    Cuando se reasignan los datos de la invitada a la cuenta destino
+    Entonces el plato con "gluten" queda excluido y el plato sin alérgeno se conserva
+
   # ==========================================================================
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
   # ==========================================================================
