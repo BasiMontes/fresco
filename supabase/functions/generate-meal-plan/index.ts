@@ -156,7 +156,14 @@ Deno.serve(async (req: Request) => {
     // candidate becomes NO_SAFE_RECIPE_SENTINEL with a real advertencia,
     // same FR-8.2 / AC Scenario 4 contract as before.
     const recipeMap = new Map<string, Recipe>(recipes.map(r => [r.id, r]))
-    const { menu, advertencias } = selectMenu({ candidates: recipes, recentRecipeIds, profile, userEngagement })
+    const { menu, advertencias } = selectMenu({
+      candidates: recipes,
+      recentRecipeIds,
+      profile,
+      // FRESCO-380 (A4-M1): same user + same week => same menu.
+      seed: `${user.id}:${semana_iso}`,
+      userEngagement,
+    })
 
     // 8. Pro learning explanation (FR-5.5) — deterministic, built from the
     // recipe stats already computed here. Cannot fail the way a Gemini call

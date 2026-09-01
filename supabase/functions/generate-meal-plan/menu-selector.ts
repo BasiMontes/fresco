@@ -13,6 +13,13 @@
 // exclusion step, since Free always passes `recentRecipeIds: []`), and a
 // slot with zero real candidates gets `NO_SAFE_RECIPE_SENTINEL` with a
 // real, specific advertencia — never silent (FR-8.2 / AC Scenario 4).
+//
+// FRESCO-380 (A4-M1): selection is genuinely deterministic. The tie-break
+// jitter is a PRNG seeded by (user, semana_iso) — same profile + same week =
+// same menu, every time — and its magnitude (< 0.25 effective) can only
+// reorder near-equal candidates, never overturn a rating-point gap. The
+// SQL pre-filter (`get_filtered_recipes`) carries a stable `ORDER BY id`
+// so the candidate array itself is not a source of run-to-run variance.
 
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
@@ -33,6 +40,26 @@ const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
   alto: 8,
 }
 
+/**
+ * Deterministic PRNG seeded from a string (xmur3 hash → mulberry32). Same
+ * seed always yields the same sequence, so a given (user, semana_iso) always
+ * produces the same menu. FRESCO-380 (A4-M1) — replaces `Math.random()`.
+ */
+function makeSeededRng(seed: string): () => number {
+  let h = 1779033703 ^ seed.length
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353)
+    h = (h << 13) | (h >>> 19)
+  }
+  let a = (h ^= h >>> 16) >>> 0
+  return () => {
+    a = (a + 0x6D2B79F5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 /** ASCII to match the real seeded `recipes.temporada` values (no accents live in the data — confirmed live, 2026-08-01). */
 function getCurrentSeasonAscii(): string {
   const month = new Date().getMonth() // 0-11
@@ -48,6 +75,11 @@ export interface SelectMenuParams {
   /** Pro-tier last-2-weeks recipe ids to exclude (ADR-0001) — always `[]` for Free. */
   recentRecipeIds: string[]
   profile: UserProfile
+  /**
+   * Tie-break seed — the caller passes `${user.id}:${semana_iso}` so the same
+   * user regenerating the same week gets the same menu (FRESCO-380 / A4-M1).
+   */
+  seed: string
   /** Pro/Family personal cocinada/descartada counts per recipe, all-time (ADR-0008) — `undefined` for Free. */
   userEngagement?: Map<string, { cocinada: number; descartada: number }>
 }
@@ -62,6 +94,8 @@ interface ScoreRecipeParams {
   season: string
   lastCategoria: string | null
   lastContundente: boolean | null
+  /** Seeded PRNG for the tie-break jitter (FRESCO-380). */
+  rng: () => number
   /** This user's personal cocinada/descartada counts for this recipe (ADR-0008) — `undefined` for Free or no history. */
   engagement?: { cocinada: number; descartada: number }
 }
@@ -72,7 +106,7 @@ interface ScoreRecipeParams {
  * to honor as best-effort preferences (FR-2.8) — now a fixed, auditable
  * heuristic instead of a natural-language instruction.
  */
-function scoreRecipe({ recipe, season, lastCategoria, lastContundente, engagement }: ScoreRecipeParams): number {
+function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement }: ScoreRecipeParams): number {
   let score = 0
   const clasificacion = recipe.clasificacion
 
@@ -99,15 +133,20 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, engagemen
     if (engagement.descartada > 0) score -= 6
   }
 
-  // Jitter: repeat generations for an identical profile shouldn't always
-  // return the exact same week — real variety across regenerations.
-  score += Math.random() * 2
+  // Tie-break jitter (FRESCO-380 / A4-M1): seeded so the same (user, week)
+  // is reproducible, and small enough (< 0.25 effective) that it can only
+  // reorder candidates already within a rating-point of each other — never
+  // overturn a genuine rating gap (`rating_promedio * 2` = 2.0 per star) or
+  // the ADR-0008 personal nudge (+1.0). Was `Math.random() * 2`, which could
+  // do exactly that.
+  score += rng() * 0.5
 
   return score
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, profile, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEngagement }: SelectMenuParams): SelectedMenu {
+  const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
   const recipeById = new Map(candidates.map(r => [r.id, r]))
@@ -172,7 +211,7 @@ export function selectMenu({ candidates, recentRecipeIds, profile, userEngagemen
       let chosen = timeFiltered[0]
       let bestScore = -Infinity
       for (const recipe of timeFiltered) {
-        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, engagement: userEngagement?.get(recipe.id) })
+        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id) })
         if (score > bestScore) {
           bestScore = score
           chosen = recipe

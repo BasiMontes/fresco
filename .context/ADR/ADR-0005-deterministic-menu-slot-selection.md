@@ -9,6 +9,22 @@
 
 ---
 
+> **Update — 2026-09-01 (FRESCO-380, audit-4 A4-M1):** the original implementation
+> undersold "deterministic". `scoreRecipe` added a `Math.random() * 2` tie-break
+> jitter whose range (0–2) equalled the per-star weight of the rating signal
+> (`rating_promedio * 2`), so a 4-star recipe could beat a 5-star one on noise, and
+> `get_filtered_recipes` had no `ORDER BY` so the candidate feed order could vary
+> between calls. Both are fixed: the jitter is now a PRNG **seeded by
+> `${user_id}:${semana_iso}`** (same user + same week ⇒ identical menu) and capped
+> at `rng() * 0.5` so it can only reorder candidates already within a rating-point
+> of each other; `get_filtered_recipes` now carries `ORDER BY id`
+> (`20260901160000_stable_order_get_filtered_recipes.sql`). Tests assert
+> reproducibility directly instead of pinning `Math.random` to 0. The Pro-tier
+> learning-explanation Gemini call named below was also removed in a later pass
+> (all LLM spend stopped 2026-08-01) — see `project-dev-guide.md` §5 / FRESCO-379.
+
+---
+
 ## Context
 
 `generate-meal-plan` originally asked Gemini (`gemini-3.6-flash`) to pick all 21 recipe_ids for the week in one call, given the full SQL-filtered candidate catalog serialized into the prompt. That made sense when the catalog was ~35–55 recipes: too small and too sparsely tagged for a plain scoring algorithm to reliably fill 21 slots while respecting the soft quality rules (category variety, seasonal preference, contundencia balance, rating/history weighting).
