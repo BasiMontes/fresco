@@ -46,21 +46,16 @@ export function LearningBridgeCard({ plan, hasMarks }: LearningBridgeCardProps) 
     >
       <CardContent className="text-body-sm">
         <p className="text-h6 uppercase">Cómo aprenden tus menús</p>
-        <p className="mt-2">
-          En cuanto marques algún plato como cocinado o descartado, tus próximos menús empiezan a tenerlo en cuenta:
+        <p className="mt-1.5">
+          En cuanto marques platos como cocinados o descartados, tus menús se adaptan: lo que marcas no vuelve a salir durante 2 semanas, los platos que sueles cocinar ganan peso, y los que descartas bajan mucho.
         </p>
-        <ul className="mt-2 list-disc space-y-1 pl-5">
-          <li>Lo que marcas no vuelve a salir durante 2 semanas.</li>
-          <li>Los platos que sueles cocinar ganan peso en las semanas siguientes.</li>
-          <li>Los que descartas bajan mucho y tardan en volver.</li>
-        </ul>
-        <p className="mt-3">
+        <p className="mt-1.5">
           <span className="font-medium">Ejemplo:</span>
           {' '}
-          marcas «Lentejas estofadas» como cocinada y «Ensalada de quinoa» como descartada. La semana que viene no sale ninguno de los dos; en las siguientes, las lentejas vuelven antes que la ensalada y los platos que ya cocinaste tienen prioridad.
+          si marcas «Lentejas estofadas» como cocinada y «Ensalada de quinoa» como descartada, la semana que viene no sale ninguna de las dos y luego las lentejas vuelven antes.
         </p>
         {isFree && (
-          <p className="mt-3">
+          <p className="mt-1.5">
             En Free tus marcas se guardan igual, pero no se aplican a tus menús.
             {' '}
             <Link href="/profile" data-testid="learning_bridge_cta" className="font-semibold underline">
