@@ -16,8 +16,10 @@
  *   - `user_profiles` / `rate_limit_exempt_users` are then written straight to
  *     Postgres via `Bun.sql` (running as the `postgres` superuser, so RLS and
  *     the locked-down grants on `rate_limit_exempt_users` are not in the way).
- *     The `protect_subscription_columns` trigger (ADR-0007) is BEFORE UPDATE
- *     only, so setting `plan` on the initial INSERT is allowed.
+ *     The `protect_subscription_columns` trigger (ADR-0007) rejects a
+ *     client-role write to `plan` on INSERT as well as UPDATE (FRESCO-360),
+ *     but its `session_user` allowlist lets this superuser connection set
+ *     `plan` on the seed INSERT.
  *
  * Idempotent: every run first deletes any existing account with these emails
  * (FK `ON DELETE CASCADE` from every user-owned table cleans the rest), then
@@ -140,8 +142,9 @@ async function main(): Promise<void> {
       // 2. Fresh GoTrue user (valid identity + hashed password).
       const id = await createAuthUser(user.email, user.password);
 
-      // 3. Profile row. `plan` is settable on INSERT (ADR-0007 trigger is
-      //    BEFORE UPDATE only). Runs as `postgres` → RLS bypassed.
+      // 3. Profile row. Runs as `postgres` → RLS bypassed, and on the
+      //    `protect_subscription_columns` `session_user` allowlist (FRESCO-360)
+      //    so `plan` is settable here on INSERT / upsert.
       await sql`
         insert into public.user_profiles (id, plan)
         values (${id}, ${user.plan})

@@ -912,6 +912,32 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intento marcar ese ítem ajeno como comprado desde mi propia sesión
     Entonces la llamada no da error pero el ítem de la otra cuenta sigue sin comprar
 
+  # --- FRESCO-360 (auditoría-4, A4-B1): bypass de pago por el camino INSERT ---
+
+  @seguridad @edge-case @automatizado
+  # Automatizado: tests/steps/suscripcion-seguridad.steps.ts
+  # Antes del fix, el trigger protect_subscription_columns era solo BEFORE
+  # UPDATE: una cuenta anónima podía autoconcederse Pro permanente con un
+  # único INSERT en user_profiles, sin pasar por Stripe (ADR-0007).
+  Escenario: Un cliente no puede autoconcederse Pro con un INSERT directo en su perfil
+    Dado que una cuenta recién creada todavía no tiene fila de perfil
+    Cuando intenta crear su perfil con plan Pro y sin suscripción de Stripe
+    Entonces la base de datos rechaza el INSERT
+    Y su perfil sigue sin conceder Pro
+
+  @seguridad @edge-case @no-implementado
+  # La segunda red de seguridad (el cron de reconciliación degrada cualquier
+  # fila Pro/Family sin stripe_subscription_id) está cubierta por el test
+  # unitario `sweepOrphanPaidPlans` en app/api/cron/stripe-reconcile/route.test.ts,
+  # gateado por `bun test` en CI. No se automatiza como e2e a propósito:
+  # llamar al endpoint real dispara el bucle global de reconciliación contra
+  # todas las filas de user_profiles y podría degradar el fixture Pro de otro
+  # escenario e2e en paralelo.
+  Escenario: El cron de reconciliación degrada perfiles Pro huérfanos sin suscripción
+    Dado que existe una fila de perfil con plan Pro y sin suscripción de Stripe
+    Cuando se ejecuta el job de reconciliación de suscripciones
+    Entonces esa fila queda degradada a plan Free
+
   # ==========================================================================
   # Biblioteca de Recetas (EPIC-FRESCO-64 / STORY-FRESCO-65)
   # ==========================================================================

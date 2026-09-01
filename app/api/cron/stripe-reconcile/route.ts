@@ -152,5 +152,50 @@ export async function GET(request: Request): Promise<NextResponse> {
     console.warn(`[/api/cron/stripe-reconcile] reconciled user ${profile.id}`, JSON.stringify(changes));
   }
 
-  return NextResponse.json({ checked, reconciled, drifted });
+  const sweptOrphans = await sweepOrphanPaidPlans(supabase);
+
+  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
+}
+
+/**
+ * FRESCO-360: the second safety net behind the `protect_subscription_columns`
+ * INSERT guard. Any `user_profiles` row that claims a paid plan but carries no
+ * `stripe_subscription_id` was never created by the Stripe webhook (the only
+ * writer of subscription state, ADR-0007) — most likely a row planted by the
+ * A4-B1 client-INSERT bypass. Downgrade it to `free`. Shape mirrors the
+ * webhook's `customer.subscription.deleted` handler: flip `plan`, clear the
+ * payment-failed aviso, leave `plan_expires_at` as-is. Returns the row count.
+ *
+ * The main reconcile loop above filters on `stripe_subscription_id IS NOT NULL`
+ * and never sees these rows.
+ */
+export async function sweepOrphanPaidPlans(supabase: ReturnType<typeof createServiceClient>): Promise<number> {
+  const { data: orphans, error } = await supabase
+    .from('user_profiles')
+    .select('id, plan')
+    .in('plan', ['pro', 'family'])
+    .is('stripe_subscription_id', null);
+
+  if (error) {
+    console.error('[/api/cron/stripe-reconcile] failed to load orphan pro/family rows', error);
+    return 0;
+  }
+
+  let swept = 0;
+  for (const orphan of orphans ?? []) {
+    const { error: downgradeError } = await supabase
+      .from('user_profiles')
+      .update({ plan: 'free', payment_failed_at: null })
+      .eq('id', orphan.id);
+
+    if (downgradeError) {
+      console.error(`[/api/cron/stripe-reconcile] failed to sweep orphan row ${orphan.id}`, downgradeError);
+      continue;
+    }
+
+    swept++;
+    console.warn(`[/api/cron/stripe-reconcile] swept orphan ${orphan.plan} row with no Stripe subscription`, orphan.id);
+  }
+
+  return swept;
 }
