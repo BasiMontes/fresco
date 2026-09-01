@@ -834,18 +834,20 @@ Característica: Flujo completo de usuario en Fresco
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
   # ==========================================================================
 
-  @lista-compra @verificado-manual-2026-07-31 @automatizado
+  @lista-compra @verificado-manual-2026-09-01 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
-  # NO es @smoke (FRESCO-322): generate-shopping-list hace una llamada real a
-  # Gemini (~10-30s inherentes, con reintentos posibles) — demasiado lento y
-  # flaky para un smoke post-deploy contra infra fría. Ya es self-contained
-  # (usuario factory + su propio menú, FRESCO-308); el problema no es estado
-  # compartido, es la latencia de la IA. Corre en test:e2e (caliente).
-  Escenario: Generar la lista de la compra a partir de un menú
+  # FRESCO-367 (A4-H10): la lista ya no se genera con un botón manual — se
+  # genera sola, server-side, en el primer acceso a /shopping-list
+  # (ensureShoppingListForPlan). generate-shopping-list es determinista (sin
+  # Gemini: consolidación + mapa estático de pasillos), pero sigue sin ser
+  # @smoke (FRESCO-322) por la escritura one-time contra infra fría.
+  Escenario: La lista de la compra se genera automáticamente al abrir /shopping-list
     Dado que el usuario tiene un menú semanal generado
-    Cuando solicita generar la lista de la compra
+    Cuando abre la lista de la compra
     Entonces el sistema consolida los ingredientes y los clasifica por pasillo
     Y ve un resumen con el total de productos y el coste estimado
+    # AC FRESCO-367: todo plan nuevo tiene lista sin acción manual; los planes
+    # antiguos sin lista hacen backfill perezoso en el mismo path.
 
   @lista-compra @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
@@ -895,9 +897,10 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el usuario ya generó una lista de la compra para su menú semanal actual
     Cuando intenta generar la lista de nuevo
     Entonces ve la lista ya existente en lugar de una segunda lista duplicada
-    # El propio flujo de /shopping-list ya previene esto en la práctica (solo
-    # ofrece "Generar" cuando no hay lista todavía) — verificado el backstop
-    # de backend directamente por API: segunda llamada → 409.
+    # FRESCO-367: el flujo automático de /shopping-list nunca vuelve a
+    # generar si ya hay lista (ensureShoppingListForPlan lee primero). El
+    # backstop de backend sigue vigente: segunda llamada directa a la API →
+    # 409, y ensureShoppingListForPlan lo trata como "ya existe → re-lee".
 
   @lista-compra @edge-case @verificado-manual-2026-07-31
   Escenario: La consolidación de ingredientes no produce ningún resultado

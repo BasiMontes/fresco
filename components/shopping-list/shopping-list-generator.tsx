@@ -14,9 +14,13 @@ export interface ShoppingListGeneratorProps {
 }
 
 /**
- * "No shopping list yet for this plan" state (STORY-FRESCO-13) — distinct
- * from `NoMenuEmptyState` (which means "no menu at all"): here a menu
- * already exists, just no list generated from it yet.
+ * Manual shopping-list generation (STORY-FRESCO-13). FRESCO-367 (A4-H10) made
+ * generation automatic on the first `/shopping-list` visit, so this now only
+ * renders as the **fallback** when that lazy generation failed — the button
+ * is a manual retry, not the primary flow.
+ *
+ * Distinct from `NoMenuEmptyState` (which means "no menu at all"): here a
+ * menu exists, the list just isn't there yet.
  *
  * On success, `router.refresh()` re-runs `/shopping-list/page.tsx`'s server
  * fetch rather than holding the generated list in local client state — the
@@ -37,10 +41,17 @@ export function ShoppingListGenerator({ mealPlanId }: ShoppingListGeneratorProps
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      await generateShoppingList({ meal_plan_id: mealPlanId }, session?.access_token ?? null);
-      // FRESCO-366: the list is one of the "aha" moments the retention report
-      // correlates against — fired only on a real success, not on button press.
-      captureEvent(POSTHOG_EVENTS.SHOPPING_LIST_GENERATED);
+      const result = await generateShoppingList({ meal_plan_id: mealPlanId }, session?.access_token ?? null);
+      // FRESCO-366 / FRESCO-367: fired only on a real success. `auto: false`
+      // marks this as the manual-fallback path (the page normally generates
+      // the list automatically on first visit); item count + cost estimate
+      // are the AC-required instrumentation.
+      captureEvent(POSTHOG_EVENTS.SHOPPING_LIST_GENERATED, {
+        auto: false,
+        n_items: result.resumen.total_items,
+        coste_estimado_min: result.resumen.coste_estimado_min,
+        coste_estimado_max: result.resumen.coste_estimado_max,
+      });
       router.refresh();
     }
     catch (error) {
@@ -70,8 +81,8 @@ export function ShoppingListGenerator({ mealPlanId }: ShoppingListGeneratorProps
     <EmptyState
       data-testid="shopping_list_empty_state"
       icon={<ShoppingCart className="size-8 text-tertiary" aria-hidden="true" />}
-      title="Todavía no tienes una lista de la compra para este menú"
-      description="Genera tu lista, consolidada y agrupada por pasillo, en unos segundos."
+      title="No pudimos preparar tu lista automáticamente"
+      description="Genera tu lista de la compra, consolidada y agrupada por pasillo, en unos segundos."
       action={(
         <div className="flex flex-col items-center gap-2">
           <Button
