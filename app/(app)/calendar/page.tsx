@@ -3,6 +3,7 @@ import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { DeleteWeekButton } from '@/components/calendar/delete-week-button';
 import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
+import { LearningBridgeCard } from '@/components/calendar/learning-bridge-card';
 import { WeekNavigation } from '@/components/calendar/week-navigation';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
@@ -117,6 +118,13 @@ export default async function CalendarPage({
         className="mt-4"
       />
 
+      {/* FRESCO-369: the week-1 moat bridge — replaces CalendarGrid's flat
+          Free notice. `hasMarks` gates the Pro variant off once they engage. */}
+      <LearningBridgeCard
+        plan={userPlan}
+        hasMarks={Object.values(plan.estados).some(dia => Object.values(dia).some(estado => estado === 'cocinada' || estado === 'descartada'))}
+      />
+
       {/* FRESCO-199: `planning_selection` is per-day now — `CalendarGrid`
           still takes a whole-week days/meals pair (the union across every
           included day) until it's updated to render per-slot exclusions
@@ -126,7 +134,6 @@ export default async function CalendarPage({
           initialMenu={plan.menu}
           slotIds={plan.slotIds}
           initialEstados={plan.estados}
-          userPlan={userPlan}
           planningDays={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).days : undefined}
           planningMeals={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).meals : undefined}
         />

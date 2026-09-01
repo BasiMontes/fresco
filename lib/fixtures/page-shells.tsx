@@ -124,7 +124,7 @@ export function CalendarPageFixture() {
       <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
 
       <div className="mt-6">
-        <CalendarGrid initialMenu={menu} slotIds={slotIds} initialEstados={estados} userPlan="pro" />
+        <CalendarGrid initialMenu={menu} slotIds={slotIds} initialEstados={estados} />
       </div>
     </div>
   );

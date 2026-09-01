@@ -74,6 +74,10 @@ async function dragLunesOntoMartes(page: Page): Promise<void> {
   // activates. Manual mouse steps with an intermediate move past 8px do.
   const source = page.getByTestId('calendar_slot_lunes_comida').getByRole('button', { name: 'Arrastrar para reordenar' });
   const target = page.getByTestId('calendar_slot_martes_comida').getByRole('button', { name: 'Arrastrar para reordenar' });
+  // FRESCO-369: the calendar page now carries a variable-height card above the
+  // grid — bring the source into view first so the drag STARTS on-screen (the
+  // pointer's anchor); dnd-kit's own autoscroll carries it to the target.
+  await source.scrollIntoViewIfNeeded();
   const sb = await source.boundingBox();
   const tb = await target.boundingBox();
   if (!sb || !tb) { throw new Error('drag handles not visible'); }

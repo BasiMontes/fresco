@@ -60,8 +60,6 @@ export interface CalendarGridProps {
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
   /** STORY-FRESCO-15 — per-slot cocinado/descartado state, keyed the same as `initialMenu`. */
   initialEstados: EstadosGrid
-  /** STORY-FRESCO-15 — gates the Free-tier "esto es una función Pro" notice. */
-  userPlan: 'free' | 'pro' | 'family'
   /**
    * FRESCO-153 — the user's onboarding/profile day and meal-type choices.
    * Every one of the 21 `meal_plan_recipes` rows still exists in the DB
@@ -96,7 +94,6 @@ export function CalendarGrid({
   initialMenu,
   slotIds,
   initialEstados,
-  userPlan,
   planningDays = DIAS,
   planningMeals = SLOTS,
 }: CalendarGridProps) {
@@ -380,15 +377,9 @@ export function CalendarGrid({
 
   return (
     <div>
-      {userPlan === 'free' && (
-        <p
-          data-testid="learning_free_tier_notice"
-          className="mb-4 rounded-md bg-surface p-3 text-body-sm text-tertiary"
-        >
-          Marcar un plato como cocinado o descartado se guarda igual en el plan Free. Lo exclusivo de Pro es que tu próximo menú aprenda de esos marcados.
-        </p>
-      )}
-
+      {/* FRESCO-369: the Free-tier learning notice moved up to
+          `LearningBridgeCard` in the page, expanded with the mechanism preview
+          + a `/profile` CTA. */}
       <div className="mb-2 flex items-center justify-end gap-2">
         <button
           type="button"
