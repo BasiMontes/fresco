@@ -1,5 +1,4 @@
 import type { APIRequestContext } from '@playwright/test';
-import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
@@ -10,15 +9,15 @@ import { getAccessToken, restHeaders, serviceRoleHeaders } from '../test-helpers
  * FRESCO-360 (audit-4 A4-B1): the payment bypass on the `user_profiles`
  * INSERT path.
  *
- * Scenario 1 reproduces the exploit itself — a brand-new auth user with no
- * profile row `POST`s `{ plan: 'pro' }` with its own token and must be
- * rejected by the `protect_subscription_columns` trigger (now
- * BEFORE INSERT OR UPDATE) — then confirms the legitimate no-plan INSERT
- * onboarding actually does still succeeds at `plan = 'free'`.
+ * Reproduces the exploit itself — a brand-new auth user with no profile row
+ * `POST`s `{ plan: 'pro' }` with its own token and must be rejected by the
+ * `protect_subscription_columns` trigger (now BEFORE INSERT OR UPDATE) — then
+ * confirms the legitimate no-plan INSERT onboarding actually does still
+ * succeeds at `plan = 'free'`.
  *
- * Scenario 2 covers the second safety net: the stripe-reconcile cron sweeps
- * any `plan IN ('pro','family')` row that carries no `stripe_subscription_id`
- * and downgrades it to `free`.
+ * The reconcile-cron sweep (second safety net) is covered by the
+ * `sweepOrphanPaidPlans` unit test, not here — see that scenario's note in
+ * the feature file.
  *
  * Pure REST, no browser, no Gemini.
  */
@@ -51,8 +50,6 @@ async function readPlan(request: APIRequestContext, headers: Record<string, stri
   const [row] = await res.json() as { plan: string }[];
   return row?.plan;
 }
-
-// ── Scenario 1: a client cannot self-grant Pro via a direct INSERT ──────────
 
 interface BypassCtx {
   userId: string
@@ -97,32 +94,4 @@ Then(/^su perfil sigue sin conceder Pro$/, async ({ request }) => {
   expect(await readPlan(request, headers, bypassCtx.userId)).toBe('free');
 
   await deleteRawAuthUser(request, bypassCtx.userId);
-});
-
-// ── Scenario 2: the reconcile cron sweeps orphan Pro rows ──────────────────
-
-interface SweepCtx {
-  user: TestUser | null
-}
-const sweepCtx: SweepCtx = { user: null };
-
-Given(/^que existe una fila de perfil con plan Pro y sin suscripción de Stripe$/, async ({ testUserFactory }) => {
-  // The factory seeds `plan:'pro'` via a service-role PATCH and never sets a
-  // `stripe_subscription_id` — exactly the orphan shape the sweep targets.
-  sweepCtx.user = await testUserFactory({ plan: 'pro' });
-});
-
-When(/^se ejecuta el job de reconciliación de suscripciones$/, async ({ request }) => {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) { throw new Error('CRON_SECRET must be set in .env to run the @seguridad reconcile sweep scenario.'); }
-
-  const res = await request.get('/api/cron/stripe-reconcile', {
-    headers: { Authorization: `Bearer ${cronSecret}` },
-  });
-  expect(res.ok()).toBe(true);
-});
-
-Then(/^esa fila queda degradada a plan Free$/, async ({ request }) => {
-  const plan = await readPlan(request, restHeaders(sweepCtx.user!.accessToken), sweepCtx.user!.id);
-  expect(plan).toBe('free');
 });

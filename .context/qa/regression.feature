@@ -925,10 +925,14 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la base de datos rechaza el INSERT
     Y su perfil sigue sin conceder Pro
 
-  @seguridad @edge-case @automatizado
-  # Automatizado: tests/steps/suscripcion-seguridad.steps.ts
-  # Segunda red de seguridad: el cron de reconciliación degrada cualquier fila
-  # Pro/Family que haya quedado sin stripe_subscription_id.
+  @seguridad @edge-case @no-implementado
+  # La segunda red de seguridad (el cron de reconciliación degrada cualquier
+  # fila Pro/Family sin stripe_subscription_id) está cubierta por el test
+  # unitario `sweepOrphanPaidPlans` en app/api/cron/stripe-reconcile/route.test.ts,
+  # gateado por `bun test` en CI. No se automatiza como e2e a propósito:
+  # llamar al endpoint real dispara el bucle global de reconciliación contra
+  # todas las filas de user_profiles y podría degradar el fixture Pro de otro
+  # escenario e2e en paralelo.
   Escenario: El cron de reconciliación degrada perfiles Pro huérfanos sin suscripción
     Dado que existe una fila de perfil con plan Pro y sin suscripción de Stripe
     Cuando se ejecuta el job de reconciliación de suscripciones

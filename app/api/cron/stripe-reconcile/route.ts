@@ -152,38 +152,50 @@ export async function GET(request: Request): Promise<NextResponse> {
     console.warn(`[/api/cron/stripe-reconcile] reconciled user ${profile.id}`, JSON.stringify(changes));
   }
 
-  // FRESCO-360: sweep rows that claim a paid plan but carry no Stripe
-  // subscription id. The `.not('stripe_subscription_id', 'is', null)` filter
-  // above never sees these, so a `plan:'pro'` row planted by a client INSERT
-  // (the A4-B1 bypass) would otherwise persist forever. Downgrade shape
-  // mirrors the webhook's `customer.subscription.deleted` handler — flip
-  // `plan`, clear the aviso, leave `plan_expires_at` as-is.
-  let sweptOrphans = 0;
-  const { data: orphans, error: orphanError } = await supabase
+  const sweptOrphans = await sweepOrphanPaidPlans(supabase);
+
+  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
+}
+
+/**
+ * FRESCO-360: the second safety net behind the `protect_subscription_columns`
+ * INSERT guard. Any `user_profiles` row that claims a paid plan but carries no
+ * `stripe_subscription_id` was never created by the Stripe webhook (the only
+ * writer of subscription state, ADR-0007) — most likely a row planted by the
+ * A4-B1 client-INSERT bypass. Downgrade it to `free`. Shape mirrors the
+ * webhook's `customer.subscription.deleted` handler: flip `plan`, clear the
+ * payment-failed aviso, leave `plan_expires_at` as-is. Returns the row count.
+ *
+ * The main reconcile loop above filters on `stripe_subscription_id IS NOT NULL`
+ * and never sees these rows.
+ */
+export async function sweepOrphanPaidPlans(supabase: ReturnType<typeof createServiceClient>): Promise<number> {
+  const { data: orphans, error } = await supabase
     .from('user_profiles')
     .select('id, plan')
     .in('plan', ['pro', 'family'])
     .is('stripe_subscription_id', null);
 
-  if (orphanError) {
-    console.error('[/api/cron/stripe-reconcile] failed to load orphan pro/family rows', orphanError);
+  if (error) {
+    console.error('[/api/cron/stripe-reconcile] failed to load orphan pro/family rows', error);
+    return 0;
   }
-  else {
-    for (const orphan of orphans ?? []) {
-      const { error: downgradeError } = await supabase
-        .from('user_profiles')
-        .update({ plan: 'free', payment_failed_at: null })
-        .eq('id', orphan.id);
 
-      if (downgradeError) {
-        console.error(`[/api/cron/stripe-reconcile] failed to sweep orphan row ${orphan.id}`, downgradeError);
-        continue;
-      }
+  let swept = 0;
+  for (const orphan of orphans ?? []) {
+    const { error: downgradeError } = await supabase
+      .from('user_profiles')
+      .update({ plan: 'free', payment_failed_at: null })
+      .eq('id', orphan.id);
 
-      sweptOrphans++;
-      console.warn(`[/api/cron/stripe-reconcile] swept orphan ${orphan.plan} row with no Stripe subscription`, orphan.id);
+    if (downgradeError) {
+      console.error(`[/api/cron/stripe-reconcile] failed to sweep orphan row ${orphan.id}`, downgradeError);
+      continue;
     }
+
+    swept++;
+    console.warn(`[/api/cron/stripe-reconcile] swept orphan ${orphan.plan} row with no Stripe subscription`, orphan.id);
   }
 
-  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
+  return swept;
 }
