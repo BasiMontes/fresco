@@ -142,10 +142,15 @@ const nextConfig = {
   },
 };
 
-// ADR-0009: missing authToken (local dev) skips source-map upload, doesn't fail the build.
+// ADR-0009: source-map upload is a PRODUCTION concern (Vercel builds). Gate the
+// auth token on `VERCEL` so only a Vercel build uploads — a missing token is a
+// silent no-op, not a build failure. Without this gate the GitHub Actions e2e
+// build (whose `.env` carries the token) runs the upload inside
+// `runAfterProductionCompile` on the critical path, where a slow or hanging
+// Sentry API stalls the whole job past its build-wait timeout (FRESCO-361).
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
+  authToken: process.env.VERCEL ? process.env.SENTRY_AUTH_TOKEN : undefined,
   silent: true,
 });

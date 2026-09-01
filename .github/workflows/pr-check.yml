@@ -161,16 +161,8 @@ jobs:
       # (start + reset + seed), then `wait` for it before starting the server.
       # Turns the sum of the two into roughly the max.
       - name: Build the app (background, overlaps the stack setup)
-        # SENTRY_AUTH_TOKEN is cleared for this build only: `next.config.mjs`
-        # then skips the Sentry source-map upload (ADR-0009 — missing token is
-        # a no-op, not a failure). This is a throwaway build for running the
-        # e2e suite, never a release, so its source maps serve no purpose — and
-        # the upload sits in `runAfterProductionCompile` on the critical path,
-        # where a slow/hanging Sentry API stalls the whole job past the 6-min
-        # wait below (observed twice on FRESCO-361).
         run: |
           set -a; . ./.env; set +a
-          unset SENTRY_AUTH_TOKEN
           rm -f "$RUNNER_TEMP/build.exit"
           nohup bash -c "bun run build > '$RUNNER_TEMP/build.log' 2>&1; echo \$? > '$RUNNER_TEMP/build.exit'" >/dev/null 2>&1 &
 
