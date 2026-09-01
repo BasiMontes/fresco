@@ -284,3 +284,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: password min length 6->10 (config.toml + proyecto hosted via Management API + cliente, nuevo lib/validation/password-policy.ts); migración 20260901140000 borra los 4 UUID de cuentas de prod de rate_limit_exempt_users (tabla ahora vacía).
 - Por qué: creds de esas cuentas en .env/CI/épica pública de /qa = generación ilimitada; password mínima débil. HIBP server-side diferido (requiere Supabase Pro), ya mitigado client-side.
 - Siguiente: FRESCO-364 (A4-L1/L2/L3 minor sec), última de wave 0.
+
+## 2026-09-01 - FRESCO-364: 3 fixes menores de seguridad (audit-4 A4-L1/L2/L3) — cierra ola 0
+- Qué: A4-L1 guard de next reescrito (lib/auth/safe-next-path.ts, rechaza backslash); A4-L2 cors.ts gatea localhost por SUPABASE_URL (hosted .supabase.co vs stack local kong:8000) — prod sin localhost, verificado en vivo; A4-L3 toCsvValue prefija comilla a celdas = + - @ y anade CR al quote-wrap RFC4180 (lib/csv/export-csv.ts).
+- Por qué: open redirect, localhost en CORS de prod, CSV/formula injection en el export de backup.
+- Siguiente: ola 0 del epic FRESCO-359 completa (360-364). Ola 1 pendiente.
