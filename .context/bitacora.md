@@ -289,3 +289,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: A4-L1 guard de next reescrito (lib/auth/safe-next-path.ts, rechaza backslash); A4-L2 cors.ts gatea localhost por SUPABASE_URL (hosted .supabase.co vs stack local kong:8000) — prod sin localhost, verificado en vivo; A4-L3 toCsvValue prefija comilla a celdas = + - @ y anade CR al quote-wrap RFC4180 (lib/csv/export-csv.ts).
 - Por qué: open redirect, localhost en CORS de prod, CSV/formula injection en el export de backup.
 - Siguiente: ola 0 del epic FRESCO-359 completa (360-364). Ola 1 pendiente.
+
+## 2026-09-01 - FRESCO-366 (A4-B4) instrumentacion del funnel completo del MVP
+- Que: 3 PRs a dev (#217/#218/#219). Reverse-proxy /ingest de PostHog, person properties (plan/is_guest/signup_method), catalogo lib/posthog/event-names.ts. Eventos server-side de Stripe (trial_started/converted/renewed/cancelled) + menu_generation_completed con semana_iso/tier. Funnel cliente: landing_cta_clicked, onboarding_started/step/completed, checkout_started, shopping_list_generated, recipe_discarded. Amplia ADR-0013.
+- Por que: audit-4 ola 1 (A4-B4, BLOCKER) - la metrica del MVP no era medible; sin eventos de conversion, sin person properties, ~15 etapas de funnel sin instrumentar, sin reverse-proxy.
+- Siguiente: crear los embudos en la UI de PostHog (sin codigo). Promocion dev->staging->main pendiente. Seguir ola 1: FRESCO-367..379.
