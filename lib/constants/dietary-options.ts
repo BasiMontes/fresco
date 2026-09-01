@@ -3,20 +3,30 @@ export interface TagOption {
   label: string
 }
 
-// Sourced from the seeded `recipes.alergenos` vocabulary (spot-checked
-// directly against the DB, per STORY-FRESCO-5's implementation plan Risk 1
-// mitigation) so a declared allergen actually matches what
-// `get_filtered_recipes` filters on — not invented labels that would
-// silently fail to protect Laura. Single source of truth for both the
-// onboarding UI (label + value) and `upsertUserProfile`'s allow-list
-// validation (value only) — a value entering `user_profiles.alergenos` that
-// isn't in this list would silently fail to filter anything (see
-// STORY-FRESCO-5's Technical Decision 1).
+// The full canonical `recipes.alergenos` vocabulary (verified live against
+// the catalog — FRESCO-361 / A4-B2, and now pinned by a CHECK constraint on
+// `recipes.alergenos`). Single source of truth for both the onboarding UI
+// (label + value) and `upsertUserProfile`'s allow-list validation (value
+// only) — a value entering `user_profiles.alergenos` that isn't in this list
+// would silently fail to filter anything.
+//
+// Before FRESCO-361 this list held only 6 of the catalog's tags, so a user
+// allergic to e.g. peanuts or soy literally could not declare it and got
+// served those recipes. `frutos_secos` was merged into `frutos_de_cascara`
+// in that same migration. Known gap: `mostaza` and `altramuces` (2 of the
+// EU-14) are not in the catalog — no source data to re-tag 1000 recipes;
+// tracked separately.
 export const ALERGENO_OPTIONS: TagOption[] = [
   { value: 'gluten', label: 'Gluten' },
+  { value: 'lactosa', label: 'Lactosa' },
   { value: 'huevo', label: 'Huevo' },
-  { value: 'pescado', label: 'Pescado' },
   { value: 'frutos_de_cascara', label: 'Frutos de cáscara' },
+  { value: 'cacahuetes', label: 'Cacahuetes' },
+  { value: 'soja', label: 'Soja' },
+  { value: 'pescado', label: 'Pescado' },
+  { value: 'crustaceos', label: 'Crustáceos' },
+  { value: 'moluscos', label: 'Moluscos' },
+  { value: 'sesamo', label: 'Sésamo' },
   { value: 'apio', label: 'Apio' },
   { value: 'sulfitos', label: 'Sulfitos' },
 ];
