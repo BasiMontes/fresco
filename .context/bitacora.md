@@ -279,3 +279,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: whitelist de estado + rating entero + re-filtro de alérgeno (get_filtered_recipes) + no-duplicado + rate limit 60/h en update-recipe-status; reassign_guest_data re-filtra los slots movidos contra el perfil de alérgenos destino (estado excluida, recipe_id null) y devuelve el conteo. Migración 20260901130000, helper _shared/rate-limit.ts, 3 escenarios @seguridad-alimentaria nuevos.
 - Por qué: dos rutas metían una receta con alérgeno en el plan sin pasar por el único punto de seguridad alimentaria (ADR-0001/NFR-SEC-3).
 - Siguiente: FRESCO-363 (A4-H8/H9 auth), FRESCO-364 (A4-L1/L2/L3).
+
+## 2026-09-01 - FRESCO-363: auth hardening (audit-4 A4-H8/H9)
+- Qué: password min length 6->10 (config.toml + proyecto hosted via Management API + cliente, nuevo lib/validation/password-policy.ts); migración 20260901140000 borra los 4 UUID de cuentas de prod de rate_limit_exempt_users (tabla ahora vacía).
+- Por qué: creds de esas cuentas en .env/CI/épica pública de /qa = generación ilimitada; password mínima débil. HIBP server-side diferido (requiere Supabase Pro), ya mitigado client-side.
+- Siguiente: FRESCO-364 (A4-L1/L2/L3 minor sec), última de wave 0.
