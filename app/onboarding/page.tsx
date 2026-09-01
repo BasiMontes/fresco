@@ -19,6 +19,7 @@ import { getPlanTierForAnalytics, upsertUserProfile, UserProfileError } from '@/
 import { ALERGENO_OPTIONS, DIETA_IMPLIED_ALERGENOS, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { markFirstMenuGenerated } from '@/lib/push/first-menu-signal';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 import { validateHousehold } from '@/lib/validation/onboarding';
@@ -357,6 +358,10 @@ export default function OnboardingPage() {
       // doesn't resurface this run's stale answers (deferred to unmount,
       // see resetOnUnmount above — FRESCO-201).
       resetOnUnmount.current = true;
+      // FRESCO-372 (A4-H15): mark the moment of value for PushPromptBanner —
+      // the FIRST menu, generated seconds ago, not a settings toggle buried
+      // in /profile.
+      markFirstMenuGenerated();
       router.push('/menu');
     }
     catch (error) {

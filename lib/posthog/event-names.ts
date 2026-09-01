@@ -35,6 +35,14 @@ export const POSTHOG_EVENTS = {
   // generated menu — the `abandoned` leg of the per-step funnel (A4-H14).
   ONBOARDING_ABANDONED: 'onboarding_abandoned',
 
+  // FRESCO-372 (A4-H15): the weekly re-engagement push loop, end to end.
+  // PUSH_SENT fires server-side from the Deno edge function (no browser
+  // there) — see `supabase/functions/send-weekly-reengagement-push/index.ts`.
+  PUSH_PROMPT_SHOWN: 'push_prompt_shown',
+  PUSH_PERMISSION_GRANTED: 'push_permission_granted',
+  PUSH_SENT: 'push_sent',
+  PUSH_OPENED: 'push_opened',
+
   // Monetisation funnel (checkout → trial → paid → renewal / churn).
   // The subscription_* / trial_* events fire server-side from the Stripe
   // webhook — the one place a browser capture structurally cannot run and

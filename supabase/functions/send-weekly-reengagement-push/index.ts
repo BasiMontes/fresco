@@ -22,6 +22,7 @@ import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { requireServiceRoleCaller } from '../_shared/auth.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
+import { captureServerEvent } from '../_shared/posthog.ts'
 import { getCurrentIsoWeek } from './iso-week.ts'
 import type { PushSubscriptionRow, SendWeeklyPushRemindersResponse } from './types.ts'
 
@@ -31,8 +32,11 @@ const FN_NAME = 'send-weekly-reengagement-push'
 // el domingo") — matches `public/sw.js`'s payload contract
 // (`{ title, body, url }`) exactly; `url` lands on `/menu`, the same
 // default `sw.js` itself falls back to for a malformed/empty push.
+// FRESCO-372 (A4-H15): body was rioplatense ("armaste" + the vos imperative
+// "hacelo") — rewritten to español de España, matching the title's own
+// "planificaste".
 const RE_ENGAGEMENT_TITLE = '¿Ya planificaste esta semana?'
-const RE_ENGAGEMENT_BODY = 'Todavía no armaste tu menú semanal — hacelo en un par de minutos.'
+const RE_ENGAGEMENT_BODY = 'Todavía no has planificado tu menú semanal — hazlo en un par de minutos.'
 const RE_ENGAGEMENT_URL = '/menu'
 
 Deno.serve(async (req: Request) => {
@@ -94,6 +98,18 @@ Deno.serve(async (req: Request) => {
           JSON.stringify({ title: RE_ENGAGEMENT_TITLE, body: RE_ENGAGEMENT_BODY, url: RE_ENGAGEMENT_URL })
         )
         notificationsSent++
+
+        // FRESCO-372 (A4-H15): fire-and-forget, never blocks/fails the send
+        // loop (captureServerEvent silent-fails on its own — see
+        // _shared/posthog.ts). `'push_sent'` is a literal, not an import from
+        // `lib/posthog/event-names.ts` — this Deno runtime can't reach the
+        // Next.js app's module tree. Keep it in sync with
+        // `POSTHOG_EVENTS.PUSH_SENT` by hand.
+        await captureServerEvent({
+          distinctId: sub.user_id,
+          event: 'push_sent',
+          properties: { semana_iso: semanaIso },
+        })
 
         const { error: touchError } = await serviceClient
           .from('push_subscriptions')
