@@ -790,22 +790,19 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el plato vuelve a estado pendiente con sus controles de marcado
     Y al recargar la página el plato sigue pendiente
 
-  @aprendizaje @edge-case @verificado-manual-2026-08-07 @automatizado
+  @aprendizaje @verificado-manual-2026-09-01 @automatizado
   # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
-  Escenario: Usuaria de nivel gratuito ve el aviso de marcado en Free
+  # FRESCO-369 (A4-H12): el aviso plano de Free se convierte en el "puente del
+  # moat" — una tarjeta con el mecanismo real (no repetir 2 semanas, subir lo
+  # cocinado, bajar lo descartado), un ejemplo trabajado, y para Free un CTA a
+  # Pro. La usuaria ve la propuesta diferencial ANTES del payoff de la semana 2.
+  # FRESCO-103 (2026-08-07): el aviso ya no miente — el marcado siempre
+  # persiste igual en Free, solo que no se aplica a sus menús.
+  Escenario: Usuaria de nivel gratuito ve el puente del moat en /calendar
     Dado que el usuario es de nivel gratuito (Free)
     Cuando visita /calendar
-    Entonces ve un aviso sobre marcar cocinado/descartado en el plan Free
-    Y ese aviso aclara que el marcado se guarda igual, y que lo exclusivo de Pro es el aprendizaje
-    # FRESCO-103 (arreglado 2026-08-07, decisión del user con recomendación):
-    # el aviso original decía "es función Pro... tu menú actual no se ve
-    # afectado", pero el marcado siempre persistía igual en Free (sin check
-    # de userPlan en handleMarkEstado, confirmado en código) — una usuaria
-    # Free que confiara en el aviso terminaba con un cambio irreversible que
-    # creía sin efecto. Se corrigió el aviso en vez de bloquear el marcado:
-    # ya persiste para usuarias Free reales en producción (bloquearlo ahora
-    # sería regresión), y el aprendizaje real (Pro) no está implementado
-    # todavía. Step + regex actualizados en aprendizaje.steps.ts.
+    Entonces ve la propuesta del aprendizaje con el mecanismo explicado
+    Y ve que en Free las marcas no cambian sus menús, con un CTA a Pro
 
   @aprendizaje @verificado-manual-2026-08-08 @automatizado
   # Automatizado: tests/steps/aprendizaje-generacion.steps.ts (FRESCO-353)

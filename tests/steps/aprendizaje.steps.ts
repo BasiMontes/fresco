@@ -99,12 +99,18 @@ When(/^visita \/calendar$/, async ({ page, aprendizajeCtx: ctx }) => {
   await loginAndGoToCalendar(page, ctx.testUser.email, ctx.testUser.password);
 });
 
-Then(/^ve un aviso sobre marcar cocinado\/descartado en el plan Free$/, async ({ page }) => {
-  await expect(page.getByTestId('learning_free_tier_notice')).toBeVisible();
+Then(/^ve la propuesta del aprendizaje con el mecanismo explicado$/, async ({ page }) => {
+  const card = page.getByTestId('learning_free_tier_notice');
+  await expect(card).toBeVisible();
+  // FRESCO-369: not an empty card — the real mechanism + a worked example.
+  await expect(card).toContainText('no vuelve a salir durante 2 semanas');
+  await expect(card).toContainText('Ejemplo:');
 });
 
-Then(/^ese aviso aclara que el marcado se guarda igual, y que lo exclusivo de Pro es el aprendizaje$/, async ({ page }) => {
-  await expect(page.getByTestId('learning_free_tier_notice')).toContainText('se guarda igual en el plan Free');
+Then(/^ve que en Free las marcas no cambian sus menús, con un CTA a Pro$/, async ({ page }) => {
+  const card = page.getByTestId('learning_free_tier_notice');
+  await expect(card).toContainText('se guardan igual, pero no se aplican a tus menús');
+  await expect(card.getByTestId('learning_bridge_cta')).toHaveAttribute('href', '/profile');
 });
 
 // ── FRESCO-373 (A4-M27): undo window ────────────────────────────────────────
