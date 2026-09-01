@@ -15,7 +15,7 @@ import { Dropdown } from '@/components/ui/dropdown';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
-import { upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
+import { getPlanTierForAnalytics, upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
 import { ALERGENO_OPTIONS, DIETA_IMPLIED_ALERGENOS, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
@@ -308,7 +308,12 @@ export default function OnboardingPage() {
       );
       // "generados" half of the North-star KPI (ADR-0013) — fired only once
       // generateMealPlan actually resolves OK, not on mere button press.
-      captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED);
+      // FRESCO-366: `semana_iso` + `tier` let the funnel/retention reports
+      // slice "primer menú generado" by week and by plan.
+      const tier = session?.user?.id
+        ? await getPlanTierForAnalytics(client, session.user.id)
+        : 'free';
+      captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
       // FRESCO-152: brief explicit confirmation before leaving — the
       // redirect used to fire immediately with no acknowledgment that
       // the generation actually succeeded.

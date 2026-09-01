@@ -1,7 +1,8 @@
 import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-import { POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
+import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent, resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
 import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
         await handleCheckoutSessionCompleted(event.data.object);
         break;
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object, event.id);
+        await handleSubscriptionUpdated(event.data.object, event.data.previous_attributes, event.id);
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object, event.id);
@@ -105,9 +106,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 
   // FRESCO-240: Stripe retries checkout.session.completed on any non-2xx
   // response (a transient network blip, a cold-start timeout) -- without
-  // this, a retry of an already-processed delivery re-fires
-  // subscription_started for the same subscription. If this exact
-  // subscription id is already on file, this delivery already ran to
+  // this, a retry of an already-processed delivery re-fires the
+  // trial_started / trial_converted_to_paid event for the same subscription.
+  // If this exact subscription id is already on file, this delivery ran to
   // completion once; a genuinely new subscription always changes it (was
   // null, or a prior, different subscription on resubscribe).
   const { data: existingProfile, error: lookupError } = await supabase
@@ -141,17 +142,22 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   }
 
   if (isNewSubscription) {
-    // ADR-0013: server-side only — this webhook has no browser, so
-    // posthog-js structurally cannot fire here.
+    // ADR-0013 / FRESCO-366: server-side only — this webhook has no browser,
+    // so posthog-js structurally cannot fire here. Checkout always opens a
+    // 7-day trial, so the normal event is `trial_started`; a non-trialing
+    // status means the trial was skipped and it's paid from day one.
     await captureServerEvent({
       distinctId: update.userId,
-      event: POSTHOG_EVENTS.SUBSCRIPTION_STARTED,
-      properties: { stripeSubscriptionId: update.stripeSubscriptionId },
+      event: resolveCheckoutFunnelEvent(subscription.status),
+      properties: {
+        stripe_subscription_id: update.stripeSubscriptionId,
+        $set: { plan: 'pro' },
+      },
     });
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription, eventId: string): Promise<void> {
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string): Promise<void> {
   const paymentStatus = resolvePaymentStatusUpdate(subscription);
   if (!paymentStatus) {
     // Status outside {past_due, unpaid, active} (e.g. `canceled`,
@@ -213,6 +219,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, even
     if (updateError) {
       throw updateError;
     }
+    // FRESCO-366: no subscription_cancelled here — this row keeps its
+    // stripe_subscription_id, so the `customer.subscription.deleted` that
+    // Stripe sends next (its dunning default) still matches and fires the
+    // single cancellation event, with `reason: 'payment_failed'`. Emitting
+    // one here too would double-count the same involuntary churn.
     return;
   }
 
@@ -232,6 +243,22 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, even
 
   if (updateError) {
     throw updateError;
+  }
+
+  // FRESCO-366: distinguish the trial converting to its first paid period
+  // (`previous_attributes.status === 'trialing'`) from a later renewal / period
+  // roll on an already-paying subscription. A recovery from `past_due` is
+  // neither — `resolveActiveUpdateFunnelEvent` returns null there.
+  const funnelEvent = resolveActiveUpdateFunnelEvent(previousSubscriptionStatus(previousAttributes));
+  if (funnelEvent) {
+    await captureServerEvent({
+      distinctId: profile.id,
+      event: funnelEvent,
+      properties: {
+        stripe_subscription_id: subscription.id,
+        $set: { plan: 'pro' },
+      },
+    });
   }
 }
 
@@ -267,4 +294,16 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   if (updateError) {
     throw updateError;
   }
+
+  // FRESCO-366: the paid period actually ended (voluntary cancellation that
+  // reached term, or Stripe ended it). `cancellation_details.reason` is
+  // `cancellation_requested` | `payment_disputed` | `payment_failed` | null.
+  await captureServerEvent({
+    distinctId: profile.id,
+    event: POSTHOG_EVENTS.SUBSCRIPTION_CANCELLED,
+    properties: {
+      reason: subscription.cancellation_details?.reason ?? 'unknown',
+      $set: { plan: 'free' },
+    },
+  });
 }

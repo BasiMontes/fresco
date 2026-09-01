@@ -247,6 +247,31 @@ export const getUserPlan = cache(async (
 });
 
 /**
+ * FRESCO-366 / A4-B4: the plan tier for an analytics property (the `tier` on
+ * `menu_generation_completed`, `is_guest`/`plan` person properties). Unlike
+ * `getUserPlan` this NEVER throws and is NOT `React.cache`-wrapped, so it is
+ * safe to call from a client component or event handler: any failure (no
+ * session, RLS blip, no profile row) returns `'free'`, because an analytics
+ * property must never be the thing that breaks a menu-generation flow.
+ */
+export async function getPlanTierForAnalytics(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<UserProfile['plan']> {
+  try {
+    const { data } = await client
+      .from('user_profiles')
+      .select('plan')
+      .eq('id', userId)
+      .maybeSingle();
+    return data?.plan ?? 'free';
+  }
+  catch {
+    return 'free';
+  }
+}
+
+/**
  * Reads the CURRENTLY authenticated user's failed-payment aviso timestamp
  * (`/profile`'s Pro banner, FRESCO-232) — set by the Stripe webhook when a
  * renewal charge fails, cleared on a successful retry or a final downgrade to
