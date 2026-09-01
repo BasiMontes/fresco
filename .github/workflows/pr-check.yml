@@ -229,6 +229,13 @@ jobs:
         # from scratch.
         run: supabase db reset
 
+      - name: SQL tests (pgTAP)
+        # Runs supabase/tests/*.sql against the freshly-reset local stack via
+        # pg_prove. Currently: recipe_learning_trigger.test.sql (FRESCO-381 -
+        # the rating-average-denominator regression). Reuses the stack that is
+        # already up; no extra services, no secrets.
+        run: supabase test db
+
       - name: Seed e2e users
         # Creates the two fixed accounts the suite logs in as
         # (DEV_USER_* / PRO_USER_*) against the local GoTrue admin API. The
