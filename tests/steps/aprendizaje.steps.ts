@@ -70,6 +70,9 @@ Given(/^que el usuario ya marcó un plato como cocinado o descartado$/, async ({
   ctx.slotPrefix = 'calendar_slot_lunes_comida';
   await page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`).click();
   await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveText('Cocinado', { timeout: MARK_RESULT_TIMEOUT_MS });
+  // FRESCO-373: the mark commits to the backend after a 5s undo window — wait
+  // for that to land before a scenario reloads / checks persistence.
+  await expect(page.getByTestId('mark_undo_snackbar')).toHaveCount(0, { timeout: 15_000 });
 });
 
 When(/^recarga la página y observa ese mismo plato$/, async ({ page }) => {
@@ -102,4 +105,26 @@ Then(/^ve un aviso sobre marcar cocinado\/descartado en el plan Free$/, async ({
 
 Then(/^ese aviso aclara que el marcado se guarda igual, y que lo exclusivo de Pro es el aprendizaje$/, async ({ page }) => {
   await expect(page.getByTestId('learning_free_tier_notice')).toContainText('se guarda igual en el plan Free');
+});
+
+// ── FRESCO-373 (A4-M27): undo window ────────────────────────────────────────
+
+When(/^marca ese plato como cocinado y pulsa "Deshacer" en el snackbar$/, async ({ page, aprendizajeCtx: ctx }) => {
+  await page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`).click();
+  await page.getByTestId('mark_undo_button').click();
+});
+
+Then(/^el plato vuelve a estado pendiente con sus controles de marcado$/, async ({ page, aprendizajeCtx: ctx }) => {
+  await expect(page.getByTestId('mark_undo_snackbar')).toHaveCount(0);
+  await expect(page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`)).toBeVisible();
+  await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveCount(0);
+});
+
+Then(/^al recargar la página el plato sigue pendiente$/, async ({ page, aprendizajeCtx: ctx }) => {
+  // The undo cancelled the deferred write, so nothing was persisted. A short
+  // settle first, so a beforeunload/pagehide flush (if any) would have fired.
+  await page.waitForTimeout(1_000);
+  await page.reload();
+  await expect(page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`)).toBeVisible({ timeout: MARK_RESULT_TIMEOUT_MS });
+  await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveCount(0);
 });
