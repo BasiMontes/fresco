@@ -377,6 +377,20 @@ Característica: Flujo completo de usuario en Fresco
     Y ve su menú completo de 21 comidas en /menu, sin ningún prompt de registro
     # Confirmado en vivo: JWT decodificado con is_anonymous: true.
 
+  @invitado @notificaciones @verificado-manual-2026-09-01
+  Escenario: Tras generar su primer menú, se le pide permiso de notificaciones push en un momento de valor
+    Dado que una visitante sin cuenta ni sesión completa el onboarding y genera su primer menú
+    Cuando llega a /menu
+    Entonces ve una sola vez el aviso "Te avisamos cuando sea buen momento para planificar tu próximo menú"
+    Y "Activar" lanza el permiso nativo del navegador; "Ahora no" lo descarta sin que vuelva a aparecer
+    # FRESCO-372 (A4-H15): el único opt-in vivía enterrado en /profile (0
+    # suscripciones a la fecha). NO @automatizado: el aviso está gateado por
+    # `Notification.permission === 'default'`, y Chromium headless (CI)
+    # reporta 'denied' por defecto — igual que el PushNotificationsToggle de
+    # /profile (FRESCO-241), que tampoco se automatiza. Verificado en vivo
+    # con playwright-cli headed: aparece tras la 1ª generación, "Ahora no" lo
+    # cierra, un reload no lo resucita (señal sessionStorage one-shot).
+
   @registro-progresivo @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
   Escenario: La invitada ve una invitación a guardar su menú

@@ -7,6 +7,8 @@ import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
 import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
+import { PushOpenedTracker } from '@/components/menu/push-opened-tracker';
+import { PushPromptBanner } from '@/components/menu/push-prompt-banner';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
@@ -112,6 +114,10 @@ export default async function MenuPage() {
   if (!plan) {
     return (
       <div className="mx-auto max-w-3xl">
+        {/* FRESCO-372: a re-engagement notification click can land here
+        (she hasn't generated this week's plan yet) just as easily as the
+        has-plan branch below — the tracker runs regardless of plan state. */}
+        <PushOpenedTracker />
         {/* FRESCO-297: with no plan for this week, the empty state and its
         "Generar mi menú" CTA are the primary action — they lead, above the
         profile-based value indicators. The CalendarSuggestionBanner
@@ -136,6 +142,7 @@ export default async function MenuPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
+      <PushOpenedTracker />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-h2">{nombre ? `¡Hola, ${nombre}!` : '¡Hola!'}</h1>
@@ -159,6 +166,7 @@ export default async function MenuPage() {
       </div>
 
       <CalendarSuggestionBanner />
+      <PushPromptBanner />
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {recetasDisponibles !== null && (
