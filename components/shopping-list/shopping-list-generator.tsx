@@ -6,6 +6,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EdgeFunctionError, generateShoppingList } from '@/lib/api/edge-functions';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
 
 export interface ShoppingListGeneratorProps {
@@ -37,6 +38,9 @@ export function ShoppingListGenerator({ mealPlanId }: ShoppingListGeneratorProps
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       await generateShoppingList({ meal_plan_id: mealPlanId }, session?.access_token ?? null);
+      // FRESCO-366: the list is one of the "aha" moments the retention report
+      // correlates against — fired only on a real success, not on button press.
+      captureEvent(POSTHOG_EVENTS.SHOPPING_LIST_GENERATED);
       router.refresh();
     }
     catch (error) {

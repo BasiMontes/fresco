@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 
 interface CheckoutResponse {
   url?: string
@@ -28,6 +29,9 @@ export function UpgradeToProButton() {
   async function handleClick() {
     setIsRedirecting(true);
     setError(null);
+    // FRESCO-366: the `checkout` funnel step — fired before the redirect so it
+    // lands even though the Stripe-hosted page is a full navigation away.
+    captureEvent(POSTHOG_EVENTS.CHECKOUT_STARTED);
     try {
       const response = await fetch('/api/stripe/checkout', { method: 'POST' });
       const data = await response.json() as CheckoutResponse;

@@ -1,8 +1,8 @@
 import { Check, Clock, Leaf } from 'lucide-react';
-import Link from 'next/link';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LandingCtaLink } from './landing-cta-link';
 
 const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'] as const;
 const ACTIVE_DAY_INDEX = 1;
@@ -115,9 +115,9 @@ export function Hero() {
         </p>
 
         <div className="mt-8 flex max-w-sm flex-col gap-3">
-          <Link href="/onboarding" className={buttonVariants({ size: 'lg' })}>
+          <LandingCtaLink location="hero" className={buttonVariants({ size: 'lg' })}>
             Generar mi primer menú →
-          </Link>
+          </LandingCtaLink>
           <a href="#como-funciona" className={buttonVariants({ variant: 'secondary', size: 'lg' })}>
             ¿Cómo funciona? Ver demo
           </a>

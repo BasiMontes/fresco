@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LandingCtaLink } from './landing-cta-link';
 
 const NAV_LINKS = [
   { href: '#como-funciona', label: '¿Cómo funciona?' },
@@ -53,12 +54,12 @@ export function SiteNav() {
           >
             Ya tengo cuenta
           </Link>
-          <Link
-            href="/onboarding"
+          <LandingCtaLink
+            location="site_nav"
             className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
           >
             Empezar gratis
-          </Link>
+          </LandingCtaLink>
           <Button
             variant="secondary"
             size="sm"

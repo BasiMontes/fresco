@@ -268,9 +268,13 @@ export function CalendarGrid({
       );
       setEstados(current => ({ ...current, [dia]: { ...current[dia], [tipo]: estado } }));
       if (estado === 'cocinada') {
-        // "usados" half of the North-star KPI (ADR-0013) — deliberately not
-        // fired for 'descartada', which isn't a use signal.
+        // "usados" half of the North-star KPI (ADR-0013).
         captureEvent(POSTHOG_EVENTS.RECIPE_MARKED_COOKED);
+      }
+      else {
+        // FRESCO-366: a discard is not a use signal, but the discard rate per
+        // menu is a product-quality metric (are the suggestions any good?).
+        captureEvent(POSTHOG_EVENTS.RECIPE_DISCARDED);
       }
     }
     catch (error) {

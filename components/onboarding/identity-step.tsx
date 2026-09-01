@@ -62,7 +62,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         return;
       }
       // identify() fires independently, asynchronously, via the provider's onAuthStateChange — ordering vs. this capture is unguaranteed but safe (PostHog merges anonymous-device history on first identify regardless of order).
-      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'guest' });
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'guest', $set_once: { signup_method: 'guest' } });
       onResolved();
     }
     finally {
@@ -115,7 +115,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       // when email confirmation is required (the normal case here), it
       // won't have. Handle it as a real, expected state rather than a dead
       // end: same pattern as `/signup`'s `signupPendingConfirmation`.
-      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'account' });
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'account', $set_once: { signup_method: 'account' } });
       if (!data.session) {
         setPendingConfirmation(true);
         return;

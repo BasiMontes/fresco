@@ -105,7 +105,7 @@ export default function SignupPage() {
       if (anonymousDistinctId && signInData.user) {
         aliasUser(signInData.user.id, anonymousDistinctId);
       }
-      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'progressive_signup_reassign' });
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'progressive_signup_reassign', $set_once: { signup_method: 'progressive_signup_reassign' } });
       // FRESCO-204: she may have browsed /menu as the anonymous guest
       // earlier in this session — Next's client Router Cache can otherwise
       // serve that stale (is_anonymous: true) RSC payload instead of
@@ -174,7 +174,7 @@ export default function SignupPage() {
       // /onboarding, which never reaches /signup afterward), so no
       // double-count guard is needed — `method` just distinguishes entry
       // point for anyone reading the funnel later.
-      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'progressive_signup_otp' });
+      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'progressive_signup_otp', $set_once: { signup_method: 'progressive_signup_otp' } });
       // She already has a profile + generated menu — back to it, not onboarding.
       // FRESCO-204: same Router Cache staleness risk as `handleReassign`
       // above — bust it before returning to /menu.
