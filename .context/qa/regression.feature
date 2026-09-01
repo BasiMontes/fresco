@@ -1370,7 +1370,7 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-228: actualizar a Pro desde el perfil ---
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Iniciar checkout desde el perfil
     Dado que Laura está en su perfil con plan Free
     Cuando toca el botón de actualizar a Pro
@@ -1384,7 +1384,7 @@ Característica: Flujo completo de usuario en Fresco
     # redirect real a checkout.stripe.com -- sin llenar el formulario
     # hospedado.
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Trial sin tarjeta
     Dado que Laura empieza el proceso de actualizar a Pro
     Cuando llega a la pantalla de pago de Stripe Checkout
@@ -1408,7 +1408,7 @@ Característica: Flujo completo de usuario en Fresco
     # sin cobertura e2e antes que acoplar el test al DOM hospedado de
     # Stripe.
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Pago completado activa Pro
     Dado que Laura completó el pago de la suscripción Pro
     Cuando vuelve a la app
@@ -1417,7 +1417,7 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-230: reflejar el estado real de la suscripción ---
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Pago exitoso activa Pro automáticamente
     Dado que Laura completó el pago de su suscripción
     Cuando el pago se confirma
@@ -1448,9 +1448,12 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-231: gestionar o cancelar la suscripción ---
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado @smoke
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @smoke @requiere-stripe-real
   # @smoke: canario post-deploy — /profile renderiza y POST /api/stripe/portal
   # llega a la API real de Stripe (valida el wiring de claves Stripe del deploy).
+  # @requiere-stripe-real: crea un Stripe customer real + POST /api/stripe/portal
+  # contra la API real — excluido de `bun run test:e2e` (creds Stripe dummy en
+  # .env.ci), pero `--tags @smoke` lo sigue incluyendo contra el deploy real.
   Escenario: Acceder a gestión de suscripción
     Dado que Laura tiene una suscripción Pro activa
     Y su cliente de Stripe existe realmente

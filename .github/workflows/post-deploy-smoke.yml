@@ -71,6 +71,17 @@ jobs:
         # throwaway factory users — all of which need the Supabase + Stripe
         # creds that live in secrets.ENV_FILE (same secret pr-check.yml's
         # e2e job uses).
+        #
+        # FRESCO-376: no `.env.ci` third-party overlay here, and none is
+        # possible. This job drives a browser against the REAL production
+        # deployment, whose bundle already has the prod PostHog key / Sentry
+        # DSN compiled in at build time — the CI env cannot suppress the
+        # analytics/error events the deployed app fires under test. That
+        # residual (~a handful of events per prod deploy, from @login / @qa /
+        # @suscripcion) is inherent to smoke-testing the real artifact. What
+        # IS isolated: the `@suscripcion @requiere-stripe-real` scenario's
+        # Stripe Customer is created fresh and torn down by the
+        # `suscripcionCtx` fixture (tests/fixtures.ts), so it never lingers.
         run: printf '%s' "$ENV_FILE" > .env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}

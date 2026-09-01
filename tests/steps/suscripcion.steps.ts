@@ -126,6 +126,7 @@ for (const [givenText, thenText] of [
     const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
     const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH!;
     const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
+    ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{ price: priceId }],
@@ -345,6 +346,7 @@ Given(/^su cliente de Stripe existe realmente$/, async ({ request, suscripcionCt
   const StripeModule = (await import('stripe')).default;
   const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
   const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
+  ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
 
   // Service-role headers required: `protect_subscription_columns` (ADR-0007).
   const res = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {

@@ -31,6 +31,8 @@ export interface SuscripcionCtx {
   checkoutSessionId: string
   /** FRESCO-308: the scenario's own throwaway test user ("Laura"), created by its first Given step and reused by every later Given/When/Then in the same scenario — replaces the shared `PRO_USER_EMAIL` account. */
   testUser: TestUser
+  /** FRESCO-376: every real Stripe test-mode Customer a `@requiere-stripe-real` step creates — the `suscripcionCtx` fixture teardown deletes them so CI/staging runs don't accumulate orphan customers on the Stripe account. Stays empty (no-op teardown) for the webhook-only scenarios and for `bun run test:e2e`, which excludes `@requiere-stripe-real`. */
+  stripeCustomerIds: string[]
 }
 
 export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: AprendizajeCtx, suscripcionCtx: SuscripcionCtx, testUserFactory: TestUserFactory }>({
@@ -44,7 +46,19 @@ export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: Aprendiz
   },
   // eslint-disable-next-line no-empty-pattern
   suscripcionCtx: async ({}, use) => {
-    await use({} as SuscripcionCtx);
+    const ctx = { stripeCustomerIds: [] } as unknown as SuscripcionCtx;
+    await use(ctx);
+    // FRESCO-376: teardown runs pass or fail (Playwright fixture guarantee).
+    // Empty for webhook-only scenarios and for `bun run test:e2e` (which
+    // excludes `@requiere-stripe-real`), so this is a no-op there — the
+    // Stripe client is only constructed when there is something to delete.
+    if (ctx.stripeCustomerIds.length > 0) {
+      const Stripe = (await import('stripe')).default;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+      for (const id of ctx.stripeCustomerIds) {
+        await stripe.customers.del(id).catch(() => { /* best-effort cleanup — a failed delete must not fail the run */ });
+      }
+    }
   },
   // FRESCO-308: per-test data factory (`tests/test-user-factory.ts`) —
   // replaces the shared `DEV_USER_EMAIL`/`PRO_USER_EMAIL` accounts for
