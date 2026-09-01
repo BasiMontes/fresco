@@ -18,7 +18,10 @@ export const POSTHOG_EVENTS = {
   MENU_GENERATION_STARTED: 'menu_generation_started',
   MENU_GENERATION_COMPLETED: 'menu_generation_completed',
   RECIPE_MARKED_COOKED: 'recipe_marked_cooked',
-  RECIPE_DISCARDED: 'recipe_discarded',
+  RECIPE_MARKED_DISCARDED: 'recipe_marked_discarded',
+  // FRESCO-373: the mark is committed after a 5s undo window — this fires
+  // when the user cancels within it.
+  RECIPE_MARK_UNDONE: 'recipe_mark_undone',
   SHOPPING_LIST_GENERATED: 'shopping_list_generated',
 
   // Acquisition + activation funnel (landing → signup → onboarding → menu).

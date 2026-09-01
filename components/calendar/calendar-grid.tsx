@@ -50,6 +50,9 @@ function slotId(slot: SlotKey): string {
   return `${slot.dia}:${slot.tipo}`;
 }
 
+/** FRESCO-373 (A4-M27): how long the "Deshacer" snackbar stays before the mark commits. */
+const UNDO_WINDOW_MS = 5000;
+
 type EstadosGrid = Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
 
 export interface CalendarGridProps {
@@ -116,7 +119,21 @@ export function CalendarGrid({
   // enforcement in `swap_meal_plan_slots()`). `null` when nothing is being
   // dragged.
   const [draggingTipo, setDraggingTipo] = React.useState<TipoPlato | null>(null);
+  // FRESCO-373 (A4-M27): a just-made mark waiting out its 5s undo window
+  // before it commits to the backend. `prevEstado` is what to restore on
+  // undo (always `'pendiente'` in practice — the mark buttons only render
+  // for pending slots). Only one mark can be pending at a time; marking a
+  // second slot flushes the first immediately.
+  const [pendingMark, setPendingMark] = React.useState<
+    { dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada', prevEstado: EstadoRecetaSlot } | null
+  >(null);
+  const commitTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMarkRef = React.useRef(pendingMark);
   const supabase = React.useMemo(() => createClient(), []);
+
+  React.useEffect(() => {
+    pendingMarkRef.current = pendingMark;
+  }, [pendingMark]);
 
   // FRESCO-271 — replaces the FRESCO-170/FRESCO-222 approach entirely
   // instead of patching it a third time: both prior fixes tried to keep the
@@ -245,45 +262,36 @@ export function CalendarGrid({
   }
 
   /**
-   * STORY-FRESCO-15: marks a pending slot as cocinada/descartada — a
-   * terminal, one-way state (Business Rules: "queda fijado — no puede volver
-   * a cambiarse"), so unlike the swap above there is no optimistic-then-
-   * revert dance: the button only re-enables on a real failure, never
-   * flips back to a state the user already committed successfully.
+   * FRESCO-373 (A4-M27): commits a pending mark to the backend. The mark is
+   * still terminal server-side (FR-5.1) — this only defers the write by the
+   * 5s undo window, it doesn't make the state reversible after it lands.
    */
-  async function handleMarkEstado(dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada') {
-    const id = slotId({ dia, tipo });
-    if (pendingSlots.has(id)) {
-      return;
-    }
-
-    setErrorMessage(null);
+  const commitMark = React.useCallback(async (mark: NonNullable<typeof pendingMark>) => {
+    const id = slotId({ dia: mark.dia, tipo: mark.tipo });
     setPendingSlots(current => new Set(current).add(id));
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       await updateRecipeStatus(
-        { meal_plan_recipe_id: slotIds[dia][tipo], estado },
+        { meal_plan_recipe_id: slotIds[mark.dia][mark.tipo], estado: mark.estado },
         session?.access_token ?? null,
       );
-      setEstados(current => ({ ...current, [dia]: { ...current[dia], [tipo]: estado } }));
-      if (estado === 'cocinada') {
-        // "usados" half of the North-star KPI (ADR-0013).
-        captureEvent(POSTHOG_EVENTS.RECIPE_MARKED_COOKED);
-      }
-      else {
-        // FRESCO-366: a discard is not a use signal, but the discard rate per
-        // menu is a product-quality metric (are the suggestions any good?).
-        captureEvent(POSTHOG_EVENTS.RECIPE_DISCARDED);
-      }
+      captureEvent(
+        mark.estado === 'cocinada'
+          // "usados" half of the North-star KPI (ADR-0013).
+          ? POSTHOG_EVENTS.RECIPE_MARKED_COOKED
+          // FRESCO-366: discard rate per menu is a product-quality metric.
+          : POSTHOG_EVENTS.RECIPE_MARKED_DISCARDED,
+      );
     }
     catch (error) {
       console.error('[CalendarGrid] updateRecipeStatus failed', error);
-      // FRESCO-47: 409 is the terminal-state guard in `update-recipe-status`
-      // (FR-5.1 — a slot already marked cocinada/descartada can't be
-      // re-patched) firing on a real race — another tab/device got there
-      // first. That's a distinct, expected case, not the same as a bare
-      // network/500 failure.
+      // Revert the optimistic mark — the write never landed.
+      setEstados(current => ({
+        ...current,
+        [mark.dia]: { ...current[mark.dia], [mark.tipo]: mark.prevEstado },
+      }));
+      // FRESCO-47: 409 is the terminal-state guard firing on a real race
+      // (another tab/device got there first) — a distinct, expected case.
       setErrorMessage(
         error instanceof EdgeFunctionError && error.status === 409
           ? 'Este plato ya fue marcado. Actualiza la página para ver su estado actual.'
@@ -297,6 +305,77 @@ export function CalendarGrid({
         return next;
       });
     }
+  }, [supabase, slotIds]);
+
+  const flushPendingMark = React.useCallback(() => {
+    if (commitTimerRef.current) {
+      clearTimeout(commitTimerRef.current);
+      commitTimerRef.current = null;
+    }
+    const mark = pendingMarkRef.current;
+    if (mark) {
+      pendingMarkRef.current = null;
+      setPendingMark(null);
+      void commitMark(mark);
+    }
+  }, [commitMark]);
+
+  // FRESCO-373: a mark still in its undo window when the user leaves the
+  // page must not be lost — commit it. `pagehide` covers a real navigation /
+  // reload (React's unmount cleanup does not run reliably then); the return
+  // cleanup covers a client-side route change.
+  React.useEffect(() => {
+    const onPageHide = () => flushPendingMark();
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      flushPendingMark();
+    };
+  }, [flushPendingMark]);
+
+  /**
+   * STORY-FRESCO-15 / FRESCO-373: marks a pending slot cocinada/descartada.
+   * The UI updates optimistically; the backend write is deferred by a 5s
+   * undo window (snackbar). Marking a second slot flushes the first.
+   */
+  function handleMarkEstado(dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada') {
+    const id = slotId({ dia, tipo });
+    if (pendingSlots.has(id)) {
+      return;
+    }
+    setErrorMessage(null);
+    // Only one undo window at a time — commit whatever is already pending.
+    flushPendingMark();
+
+    const prevEstado = estados[dia][tipo];
+    setEstados(current => ({ ...current, [dia]: { ...current[dia], [tipo]: estado } }));
+    const mark = { dia, tipo, estado, prevEstado };
+    setPendingMark(mark);
+    pendingMarkRef.current = mark;
+    commitTimerRef.current = setTimeout(() => {
+      commitTimerRef.current = null;
+      pendingMarkRef.current = null;
+      setPendingMark(null);
+      void commitMark(mark);
+    }, UNDO_WINDOW_MS);
+  }
+
+  function handleUndoMark() {
+    const mark = pendingMarkRef.current;
+    if (!mark) {
+      return;
+    }
+    if (commitTimerRef.current) {
+      clearTimeout(commitTimerRef.current);
+      commitTimerRef.current = null;
+    }
+    setEstados(current => ({
+      ...current,
+      [mark.dia]: { ...current[mark.dia], [mark.tipo]: mark.prevEstado },
+    }));
+    captureEvent(POSTHOG_EVENTS.RECIPE_MARK_UNDONE, { estado: mark.estado });
+    pendingMarkRef.current = null;
+    setPendingMark(null);
   }
 
   return (
@@ -425,6 +504,27 @@ export function CalendarGrid({
           >
             Cerrar
           </Button>
+        </div>
+      )}
+
+      {pendingMark && (
+        <div
+          data-testid="mark_undo_snackbar"
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-lg bg-primary px-4 py-2.5 text-body-sm text-background shadow-lg"
+        >
+          <span>
+            {pendingMark.estado === 'cocinada' ? 'Marcado como cocinado' : 'Marcado como descartado'}
+          </span>
+          <button
+            type="button"
+            data-testid="mark_undo_button"
+            onClick={handleUndoMark}
+            className="-my-1 flex min-h-11 shrink-0 items-center px-2 font-semibold underline"
+          >
+            Deshacer
+          </button>
         </div>
       )}
     </div>
@@ -635,7 +735,10 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
             )}
 
       {recipe && estado === 'pendiente' && (
-        <div className="mt-auto flex justify-end gap-1 pt-2">
+        // FRESCO-373 (A4-M27): was a pair of ~24px icon-only buttons pinned
+        // bottom-right — the single interaction the paid tier depends on.
+        // Now two full-width labelled buttons, ≥44px tall (WCAG 2.5.5).
+        <div className="mt-auto flex gap-2 pt-3">
           <button
             type="button"
             data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
@@ -645,9 +748,10 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
               event.stopPropagation();
               onMark('cocinada');
             }}
-            className="rounded-full p-1 text-tertiary hover:bg-primary hover:text-background disabled:pointer-events-none"
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-primary hover:bg-primary hover:text-background disabled:pointer-events-none disabled:opacity-50"
           >
-            <Check className="size-4" />
+            <Check className="size-4 shrink-0" />
+            Cocinado
           </button>
           <button
             type="button"
@@ -658,9 +762,10 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
               event.stopPropagation();
               onMark('descartada');
             }}
-            className="rounded-full p-1 text-tertiary hover:bg-error hover:text-background disabled:pointer-events-none"
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-error hover:bg-error hover:text-background disabled:pointer-events-none disabled:opacity-50"
           >
-            <X className="size-4" />
+            <X className="size-4 shrink-0" />
+            Descartar
           </button>
         </div>
       )}

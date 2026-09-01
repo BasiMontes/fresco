@@ -779,6 +779,17 @@ Característica: Flujo completo de usuario en Fresco
     Entonces no ve ningún control para volver a marcarlo
     Y el plato queda fijado en su estado actual
 
+  @aprendizaje @verificado-manual-2026-09-01 @automatizado
+  # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
+  # FRESCO-373 (A4-M27): la marca es la única interacción de la que depende
+  # el tier de pago. Ahora tiene ventana de deshacer de 5s (snackbar) antes
+  # de escribir en el backend, y el objetivo táctil pasa a >= 44px.
+  Escenario: Deshacer un marcado dentro de la ventana de 5 segundos
+    Dado que el usuario tiene un menú semanal generado con un plato en estado pendiente
+    Cuando marca ese plato como cocinado y pulsa "Deshacer" en el snackbar
+    Entonces el plato vuelve a estado pendiente con sus controles de marcado
+    Y al recargar la página el plato sigue pendiente
+
   @aprendizaje @edge-case @verificado-manual-2026-08-07 @automatizado
   # Automatizado: tests/steps/aprendizaje.steps.ts (playwright-bdd, backend real)
   Escenario: Usuaria de nivel gratuito ve el aviso de marcado en Free
