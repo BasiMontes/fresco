@@ -25,10 +25,13 @@ interface FaqItem {
  *   Pro-upsell `Card` below, quoted verbatim so this never contradicts it.
  * - Data deletion: the real, working `AccountActions`/`DangerZone` actions on
  *   this same page (`/api/profile/export`, `DeleteAccountDialog`).
- * - Allergen filtering: `get_filtered_recipes()`
- *   (`supabase/migrations/20260725120100_create_fresco_core_tables.sql`) —
- *   `not (coalesce(r.alergenos, '[]'::jsonb) ?| v_profile.alergenos)` excludes
- *   matching recipes structurally, at the SQL layer, before any menu is built.
+ * - Allergen filtering: `get_filtered_recipes()` (latest definition in
+ *   `supabase/migrations/20260901073555_allergen_filter_safety_net.sql`) —
+ *   excludes any recipe whose `alergenos` overlaps the user's declared
+ *   allergens (case-insensitive on both sides, FRESCO-361) structurally, at
+ *   the SQL layer, before any menu is built. This is the ONLY structural
+ *   food-safety enforcement point since the Gemini prompt-rule layer was
+ *   removed (ADR-0005) — there is no "Layer 2".
  */
 const FAQ_ITEMS: FaqItem[] = [
   {

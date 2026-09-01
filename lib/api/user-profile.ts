@@ -27,8 +27,10 @@ export type OnboardingProfilePayload = Pick<
   | 'alergenos'
   | 'ingredientes_odiados'
   | 'cocinas_favoritas'
-// `nombre`/`sexo`/`objetivo` (FRESCO-132), the 4 `*_texto_libre` fields
-// (FRESCO-133), `presupuesto_semana_euros` (FRESCO-134),
+// `nombre`/`sexo`/`objetivo` (FRESCO-132), the 3 remaining `*_texto_libre`
+// fields (FRESCO-133; `alergenos_texto_libre` was dropped from the flow in
+// FRESCO-361 — it invited allergens nothing read; the column is kept but
+// unused), `presupuesto_semana_euros` (FRESCO-134),
 // `planning_selection` (FRESCO-135/136/199), and
 // `nivel_experiencia` (FRESCO-137) are optional here — `/profile`'s
 // preferences editor (FRESCO-70) round-trips this same type through
@@ -42,7 +44,6 @@ export type OnboardingProfilePayload = Pick<
   | 'sexo'
   | 'objetivo'
   | 'dieta_texto_libre'
-  | 'alergenos_texto_libre'
   | 'ingredientes_odiados_texto_libre'
   | 'cocinas_texto_libre'
   | 'presupuesto_semana_euros'

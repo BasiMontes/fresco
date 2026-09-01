@@ -129,14 +129,32 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     }
   })
 
-  test('a tipo_plato with zero real candidates gets the sentinel with a specific, non-silent advertencia', () => {
+  test('a tipo_plato with zero compatible recipes gets the sentinel and one food-safety-framed advertencia (A4-M3)', () => {
     const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'cena')
     const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile: makeProfile() })
 
     for (const dia of DIAS) {
       expect(menu[dia].cena).toBe(NO_SAFE_RECIPE_SENTINEL)
     }
-    expect(advertencias.some(a => a.includes('cena') && a.includes('lunes'))).toBe(true)
+    // No safe recipe of this tipo exists at all → the message names allergies
+    // and diet, and is deduped to one line per tipo (not one per day).
+    const cenaWarnings = advertencias.filter(a => a.includes('cena') && a.includes('compatible con tus alergias'))
+    expect(cenaWarnings).toHaveLength(1)
+  })
+
+  test('a tipo_plato that runs out of DISTINCT recipes mid-week warns about variety, not food safety (A4-M3)', () => {
+    // Only 3 distinct cena recipes exist → days 4-7 cannot be filled without
+    // repeating a lunch/dinner. The message must not use food-safety language.
+    const ample = buildAmpleCatalog()
+    const threeCenas = ample.filter(r => r.clasificacion?.tipo_plato === 'cena').slice(0, 3)
+    const candidates = [...ample.filter(r => r.clasificacion?.tipo_plato !== 'cena'), ...threeCenas]
+
+    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile: makeProfile() })
+
+    const cenaWarnings = advertencias.filter(a => a.includes('cena'))
+    expect(cenaWarnings).toHaveLength(1)
+    expect(cenaWarnings[0]).toContain('sin repetir plato')
+    expect(cenaWarnings[0]).not.toContain('alergias')
   })
 
   test('relaxes the time limit (never drops the slot) when no candidate fits, with one deduped advertencia', () => {

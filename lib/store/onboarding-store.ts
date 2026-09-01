@@ -48,7 +48,6 @@ export interface OnboardingState {
   adultos: number
   ninos: number
   dietaTextoLibre: string
-  alergenosTextoLibre: string
   ingredientesOdiadosTextoLibre: string
   cocinasTextoLibre: string
   presupuestoSemanaEuros: number | null
@@ -65,7 +64,6 @@ export interface OnboardingState {
   setAdultos: (value: number) => void
   setNinos: (value: number) => void
   setDietaTextoLibre: (value: string) => void
-  setAlergenosTextoLibre: (value: string) => void
   setIngredientesOdiadosTextoLibre: (value: string) => void
   setCocinasTextoLibre: (value: string) => void
   setPresupuestoSemanaEuros: (value: number | null) => void
@@ -92,7 +90,6 @@ const initialState = {
   adultos: 2,
   ninos: 0,
   dietaTextoLibre: '',
-  alergenosTextoLibre: '',
   ingredientesOdiadosTextoLibre: '',
   cocinasTextoLibre: '',
   presupuestoSemanaEuros: null as number | null,
@@ -202,7 +199,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setAdultos: value => set({ adultos: value }),
   setNinos: value => set({ ninos: value }),
   setDietaTextoLibre: value => set({ dietaTextoLibre: value }),
-  setAlergenosTextoLibre: value => set({ alergenosTextoLibre: value }),
   setIngredientesOdiadosTextoLibre: value => set({ ingredientesOdiadosTextoLibre: value }),
   setCocinasTextoLibre: value => set({ cocinasTextoLibre: value }),
   setPresupuestoSemanaEuros: value => set({ presupuestoSemanaEuros: value }),
@@ -235,7 +231,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     adultos: state.adultos,
     ninos: state.ninos,
     dietaTextoLibre: state.dietaTextoLibre,
-    alergenosTextoLibre: state.alergenosTextoLibre,
     ingredientesOdiadosTextoLibre: state.ingredientesOdiadosTextoLibre,
     cocinasTextoLibre: state.cocinasTextoLibre,
     presupuestoSemanaEuros: state.presupuestoSemanaEuros,

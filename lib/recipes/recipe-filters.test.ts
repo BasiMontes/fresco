@@ -64,6 +64,16 @@ describe('lib/recipes/recipe-filters', () => {
     expect(matchesRecipeFilters(withoutGluten, filters)).toBe(true);
   });
 
+  test('alergenos match is case-insensitive on both sides (FRESCO-361 / A4-B2)', () => {
+    const taggedUpper = makeRecipe({ alergenos: ['GLUTEN'] as Recipe['alergenos'] });
+    const declaredLower = { ...EMPTY_FILTER_STATE, alergenos: ['gluten'] };
+    expect(matchesRecipeFilters(taggedUpper, declaredLower)).toBe(false);
+
+    const taggedLower = makeRecipe({ alergenos: ['gluten'] as Recipe['alergenos'] });
+    const declaredUpper = { ...EMPTY_FILTER_STATE, alergenos: ['Gluten'] };
+    expect(matchesRecipeFilters(taggedLower, declaredUpper)).toBe(false);
+  });
+
   test('countWithOption previews one value in a section, ignoring the section\'s own current selection', () => {
     const italiana = makeRecipe({ clasificacion: { tipo_plato: 'cena', cocina: 'italiana' } as Recipe['clasificacion'] });
     const mexicana = makeRecipe({ clasificacion: { tipo_plato: 'cena', cocina: 'mexicana' } as Recipe['clasificacion'] });

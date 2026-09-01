@@ -201,7 +201,6 @@ export default function OnboardingPage() {
     adultos,
     ninos,
     dietaTextoLibre,
-    alergenosTextoLibre,
     ingredientesOdiadosTextoLibre,
     cocinasTextoLibre,
     presupuestoSemanaEuros,
@@ -218,7 +217,6 @@ export default function OnboardingPage() {
     setAdultos,
     setNinos,
     setDietaTextoLibre,
-    setAlergenosTextoLibre,
     setIngredientesOdiadosTextoLibre,
     setCocinasTextoLibre,
     setPresupuestoSemanaEuros,
@@ -289,7 +287,6 @@ export default function OnboardingPage() {
         ingredientes_odiados: ingredientesOdiados,
         cocinas_favoritas: cocinasFavoritas,
         dieta_texto_libre: dietaTextoLibre,
-        alergenos_texto_libre: alergenosTextoLibre,
         ingredientes_odiados_texto_libre: ingredientesOdiadosTextoLibre,
         cocinas_texto_libre: cocinasTextoLibre,
         // DB check constraint: presupuesto_semana_euros > 0 — 0/negative
@@ -546,15 +543,6 @@ export default function OnboardingPage() {
                     );
                   })}
                 </div>
-                <Input
-                  data-testid="alergenos_texto_libre_input"
-                  type="text"
-                  value={alergenosTextoLibre}
-                  onChange={e => setAlergenosTextoLibre(e.target.value)}
-                  placeholder="¿Algún otro alérgeno?"
-                  aria-label="Alérgenos — texto libre"
-                  className="mt-2"
-                />
 
                 <h2 className="mt-6 text-h5">¿Algún ingrediente que no te guste?</h2>
                 <div className="mt-3 flex flex-wrap gap-2">

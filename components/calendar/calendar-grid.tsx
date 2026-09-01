@@ -626,7 +626,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
             )
           : (
               <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
-                Sin receta segura
+                Sin receta
               </p>
             )}
 

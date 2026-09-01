@@ -41,8 +41,12 @@ function matchesDietas(recipe: Recipe, dietas: (keyof RecipeDieta)[]): boolean {
 
 function matchesAlergenos(recipe: Recipe, alergenos: string[]): boolean {
   if (alergenos.length === 0) { return true; }
-  const recipeAlergenos = recipe.alergenos ?? [];
-  return !alergenos.some(alergeno => recipeAlergenos.includes(alergeno));
+  // Case-insensitive both sides (FRESCO-361 / A4-B2): an allergen match is
+  // food-safety critical and must not depend on the casing a recipe was
+  // tagged with. Mirrors the same `lower()` comparison `get_filtered_recipes`
+  // now does server-side.
+  const recipeAlergenos = new Set((recipe.alergenos ?? []).map(value => value.toLowerCase()));
+  return !alergenos.some(alergeno => recipeAlergenos.has(alergeno.toLowerCase()));
 }
 
 export function matchesRecipeFilters(recipe: Recipe, filters: RecipeFilterState): boolean {
