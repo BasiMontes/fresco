@@ -142,15 +142,18 @@ const nextConfig = {
   },
 };
 
-// ADR-0009: source-map upload is a PRODUCTION concern (Vercel builds). Gate the
-// auth token on `VERCEL` so only a Vercel build uploads — a missing token is a
-// silent no-op, not a build failure. Without this gate the GitHub Actions e2e
-// build (whose `.env` carries the token) runs the upload inside
-// `runAfterProductionCompile` on the critical path, where a slow or hanging
-// Sentry API stalls the whole job past its build-wait timeout (FRESCO-361).
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.VERCEL ? process.env.SENTRY_AUTH_TOKEN : undefined,
-  silent: true,
-});
+// ADR-0009: `withSentryConfig` is BUILD-time tooling only (source-map upload,
+// release injection, the debug-id post-compile pass). Runtime error reporting
+// lives in `instrumentation*.ts` + `sentry.*.config.ts` and does not depend on
+// this wrapper. Apply it only on Vercel: the GitHub Actions e2e build (whose
+// `.env` carries the Sentry vars) was hanging in `runAfterProductionCompile`
+// past the job's build-wait timeout (FRESCO-361), and that build is a
+// throwaway that never needs source maps or a release.
+export default process.env.VERCEL
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+    })
+  : nextConfig;
