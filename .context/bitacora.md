@@ -269,3 +269,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: trigger `protect_subscription_columns` pasa a `BEFORE INSERT OR UPDATE` (rechaza que un rol cliente se autoconceda plan Pro con un INSERT directo); allowlist `session_user` para el seed de CI; barrido de huérfanos en `stripe-reconcile` + test unitario; factory de tests siembra plan pro vía PATCH service-role; e2e `@seguridad` del exploit. Drive-by: fix de ventana de fechas en test de FRESCO-353. Migración aplicada en vivo. PR #212 -> dev -> staging.
 - Por qué: BLOCKER A4-B1 de la auditoría-4, explotable en producción con dos llamadas HTTP.
 - Siguiente: promover a main (pendiente de confirmación), transicionar FRESCO-360 a Finalizada.
+
+## 2026-09-01 - FRESCO-361: red de tests del filtro de alergenos (A4-B2)
+- Que: get_filtered_recipes case-insensitive (lower en ambos lados); CHECK de vocabulario en recipes.alergenos; frutos_secos->frutos_de_cascara; ALERGENO_OPTIONS 6->12; input free-text de alergenos eliminado; A4-M3 mensaje de slot agotado separa seguridad de variedad; suite e2e dedicada (seguridad-alimentaria.steps.ts, 3 escenarios). Extra: ledger de migraciones reconciliado; withSentryConfig solo en Vercel (colgaba el build de e2e). Migracion aplicada en vivo. PR #213 -> dev/staging/main (2a6910e).
+- Por que: BLOCKER A4-B2 de auditoria-4; el filtro era el unico enforcement de seguridad alimentaria y no tenia ni un test de comportamiento.
+- Siguiente: FRESCO-362 (A4-H1-H2, endurecer Edge Functions).
