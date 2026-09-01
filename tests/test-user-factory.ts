@@ -257,3 +257,32 @@ export async function generateCurrentWeekPlan(request: APIRequestContext, testUs
   });
   if (!genRes.ok()) { throw new Error(`generate-meal-plan failed: ${genRes.status()} ${await genRes.text()}`); }
 }
+
+/**
+ * FRESCO-367: seeds the shopping list for `testUser`'s current-week plan via
+ * the real Edge Function (deterministic — no LLM). Used by the `@lista-compra`
+ * scenarios that need "a list already exists" without paying that generation
+ * cost through the UI's automatic first-visit path (which those scenarios
+ * aren't testing). `unique_user_semana` guarantees one plan per user, so the
+ * plain `user_id` lookup is unambiguous.
+ */
+export async function seedShoppingListForCurrentPlan(request: APIRequestContext, testUser: TestUser): Promise<void> {
+  const headers = restHeaders(testUser.accessToken);
+
+  const planRes = await request.get(
+    `${supabaseUrl()}/rest/v1/meal_plans?user_id=eq.${testUser.id}&select=id&limit=1`,
+    { headers },
+  );
+  const [plan] = await planRes.json() as { id: string }[];
+  if (!plan) { throw new Error('seedShoppingListForCurrentPlan: no meal plan found — call generateCurrentWeekPlan first.'); }
+
+  const genRes = await request.post(`${supabaseUrl()}/functions/v1/generate-shopping-list`, {
+    headers,
+    data: { meal_plan_id: plan.id },
+    timeout: 120_000,
+  });
+  // 409 = list already exists — fine, the scenario just needs one to be there.
+  if (!genRes.ok() && genRes.status() !== 409) {
+    throw new Error(`generate-shopping-list failed: ${genRes.status()} ${await genRes.text()}`);
+  }
+}

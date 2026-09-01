@@ -11,67 +11,96 @@ import { createClient } from '@/lib/supabase/client';
 
 export interface ShoppingListGeneratorProps {
   mealPlanId: string
+  /**
+   * FRESCO-367: when `true` the list generation fires automatically on mount
+   * (the page renders this the first time `/shopping-list` is opened without a
+   * list). The manual button only reappears if that automatic attempt fails.
+   */
+  autoGenerate?: boolean
 }
 
 /**
- * "No shopping list yet for this plan" state (STORY-FRESCO-13) — distinct
- * from `NoMenuEmptyState` (which means "no menu at all"): here a menu
- * already exists, just no list generated from it yet.
+ * Shopping-list generation (STORY-FRESCO-13). FRESCO-367 (A4-H10): the list
+ * is generated automatically on the first `/shopping-list` visit — this
+ * component, in `autoGenerate` mode, fires the generation itself on mount and
+ * shows a "preparing" state instead of a button. The button is the manual
+ * retry shown only after an automatic attempt fails, or when the page renders
+ * this as a plain read-error fallback (`autoGenerate` unset).
  *
  * On success, `router.refresh()` re-runs `/shopping-list/page.tsx`'s server
- * fetch rather than holding the generated list in local client state — the
- * page already reads `getShoppingListForPlan()` fresh on every render, so
- * this is the same "one read path, not two" precedent `/onboarding`'s
- * `handleGenerate()` → `router.push('/menu')` established (there, a full
- * navigation; here, a refresh of the same route, since the shape of the
- * page doesn't change, only which branch it renders).
+ * fetch — the page always re-reads the persisted list, so there is one read
+ * path, not two (same precedent as `/onboarding`'s `handleGenerate()`).
  */
-export function ShoppingListGenerator({ mealPlanId }: ShoppingListGeneratorProps) {
+export function ShoppingListGenerator({ mealPlanId, autoGenerate = false }: ShoppingListGeneratorProps) {
   const router = useRouter();
-  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(autoGenerate);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  // Once an automatic attempt has failed, drop to the manual button — don't
+  // keep re-firing on every re-render.
+  const [autoAttempted, setAutoAttempted] = React.useState(false);
 
-  async function handleGenerate() {
+  const handleGenerate = React.useCallback(async (auto: boolean) => {
     setIsGenerating(true);
     setErrorMessage(null);
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      await generateShoppingList({ meal_plan_id: mealPlanId }, session?.access_token ?? null);
-      // FRESCO-366: the list is one of the "aha" moments the retention report
-      // correlates against — fired only on a real success, not on button press.
-      captureEvent(POSTHOG_EVENTS.SHOPPING_LIST_GENERATED);
+      const result = await generateShoppingList({ meal_plan_id: mealPlanId }, session?.access_token ?? null);
+      // FRESCO-366 / FRESCO-367: fired only on a real success. `auto`
+      // distinguishes the automatic first-visit generation from a manual
+      // retry; item count + cost estimate are the AC-required instrumentation.
+      captureEvent(POSTHOG_EVENTS.SHOPPING_LIST_GENERATED, {
+        auto,
+        n_items: result.resumen.total_items,
+        coste_estimado_min: result.resumen.coste_estimado_min,
+        coste_estimado_max: result.resumen.coste_estimado_max,
+      });
       router.refresh();
     }
     catch (error) {
-      // AC Scenario 4: "la lista no se pudo generar" (422, ingredientes no
-      // consolidables) gets its own clear message, distinct from a generic
-      // failure — same narrowing precedent as onboarding's 422 vs 502 split.
-      if (error instanceof EdgeFunctionError && error.status === 422) {
-        setErrorMessage('No pudimos generar una lista de la compra a partir de este menú.');
-      }
-      else if (error instanceof EdgeFunctionError && error.status === 409) {
-        // Race condition backstop (Business Rules: at most one list per
-        // plan) — the page's own read path is the primary defense; this
-        // covers the rare case of a concurrent generate elsewhere.
+      if (error instanceof EdgeFunctionError && error.status === 409) {
+        // Another generation (a concurrent tab, or a retry after a slow
+        // response that did land) already created the list — just re-read.
         router.refresh();
         return;
+      }
+      if (error instanceof EdgeFunctionError && error.status === 422) {
+        // "la lista no se pudo generar" (422, ingredientes no consolidables).
+        setErrorMessage('No pudimos generar una lista de la compra a partir de este menú.');
       }
       else {
         setErrorMessage('No pudimos generar la lista de la compra. Intenta de nuevo.');
       }
-    }
-    finally {
       setIsGenerating(false);
     }
+  }, [mealPlanId, router]);
+
+  React.useEffect(() => {
+    if (autoGenerate && !autoAttempted) {
+      setAutoAttempted(true);
+      void handleGenerate(true);
+    }
+  }, [autoGenerate, autoAttempted, handleGenerate]);
+
+  // Automatic generation still in flight (or just failed and about to show the
+  // button) — a calm "preparing" state, no button to click.
+  if (isGenerating) {
+    return (
+      <EmptyState
+        data-testid="shopping_list_empty_state"
+        icon={<Loader2 className="size-8 animate-spin text-tertiary" aria-hidden="true" />}
+        title="Preparando tu lista de la compra"
+        description="Consolidamos los ingredientes de tu menú y los agrupamos por pasillo. Un momento…"
+      />
+    );
   }
 
   return (
     <EmptyState
       data-testid="shopping_list_empty_state"
       icon={<ShoppingCart className="size-8 text-tertiary" aria-hidden="true" />}
-      title="Todavía no tienes una lista de la compra para este menú"
-      description="Genera tu lista, consolidada y agrupada por pasillo, en unos segundos."
+      title={autoAttempted ? 'No pudimos preparar tu lista automáticamente' : 'Todavía no tienes una lista de la compra para este menú'}
+      description="Genera tu lista de la compra, consolidada y agrupada por pasillo, en unos segundos."
       action={(
         <div className="flex flex-col items-center gap-2">
           <Button
@@ -79,18 +108,9 @@ export function ShoppingListGenerator({ mealPlanId }: ShoppingListGeneratorProps
             variant="action"
             size="lg"
             disabled={isGenerating}
-            onClick={() => void handleGenerate()}
+            onClick={() => void handleGenerate(false)}
           >
-            {isGenerating
-              ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    Generando lista…
-                  </>
-                )
-              : (
-                  'Generar lista de la compra'
-                )}
+            Generar lista de la compra
           </Button>
           {errorMessage && (
             <p data-testid="shopping_list_generate_error_message" className="text-body-sm text-error">

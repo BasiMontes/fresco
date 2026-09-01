@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { restHeaders } from '../test-helpers';
-import { generateCurrentWeekPlan } from '../test-user-factory';
+import { generateCurrentWeekPlan, seedShoppingListForCurrentPlan } from '../test-user-factory';
 
 /** Mirrors `supabase/functions/_shared/normalize.ts` — can't import across the Deno/Node boundary, small enough to duplicate for test-only overlap checks. */
 function normalizeNombre(nombre: string): string {
@@ -23,24 +23,20 @@ function normalizeNombre(nombre: string): string {
  * Step definitions for `.context/qa/regression.feature` — @lista-compra,
  * STORY-FRESCO-13.
  *
- * No network mocking here, unlike @registro (signup). `ShoppingListGenerator`
- * deliberately does `router.refresh()` on a successful generate call rather
- * than trusting the client-received response body — the page always
- * re-reads the persisted list from the server as the single source of
- * truth. Mocking the wire call would leave nothing in the real DB for that
- * refresh to find, so the UI would just show the generator again — mocking
- * can't produce an observable pass here the way it did for signup. Both
- * scenarios hit the real backend (real Gemini call, real Supabase writes).
+ * No network mocking here, unlike @registro (signup). The whole flow hits
+ * the real backend (real Supabase writes; the shopping-list generation is
+ * fully deterministic — consolidation + a static aisle map, no LLM, see
+ * `supabase/functions/generate-shopping-list/index.ts`).
  *
- * FRESCO-308: used to run against the shared `DEV_USER_EMAIL` account,
- * resetting its existing shopping list before each scenario (a live timeout
- * waiting on shopping-list items was observed here, racing against another
- * scenario's writes to that same account). Each scenario now creates its own
- * throwaway user via `testUserFactory` (`tests/test-user-factory.ts`) and
- * generates that user's own real current-week menu first — `/shopping-list`
- * only offers "Generar lista de la compra" once a menu exists
- * (`ShoppingListGenerator`'s `mealPlanId` prop) — so there's no shared
- * account left to reset, and no fixture reset step needed at all.
+ * FRESCO-367 (A4-H10): `/shopping-list` now generates the list AUTOMATICALLY
+ * on the first visit (server-side, `ensureShoppingListForPlan`) — there is no
+ * manual "Generar" step in the happy path anymore. `ShoppingListGenerator`
+ * (the button) only renders as a fallback if that lazy generation failed, so
+ * these steps just navigate and wait for the list to appear.
+ *
+ * FRESCO-308: each scenario creates its own throwaway user via
+ * `testUserFactory` (`tests/test-user-factory.ts`) and generates that user's
+ * own real current-week menu first — no shared account to reset.
  */
 
 const { Given, When, Then } = createBdd(test);
@@ -49,9 +45,16 @@ async function seedMenuAndLoginToShoppingList(
   page: import('@playwright/test').Page,
   request: import('@playwright/test').APIRequestContext,
   testUserFactory: () => Promise<TestUser>,
+  opts: { seedList?: boolean } = {},
 ): Promise<TestUser> {
   const testUser = await testUserFactory();
   await generateCurrentWeekPlan(request, testUser);
+  // Scenarios that only need "a list exists" seed it via the API here, so
+  // they don't wait on the UI's automatic first-visit generation (FRESCO-367)
+  // — that path has its own dedicated scenario.
+  if (opts.seedList) {
+    await seedShoppingListForCurrentPlan(request, testUser);
+  }
 
   await page.goto('/login');
   await page.getByTestId('email_input').fill(testUser.email);
@@ -64,16 +67,14 @@ async function seedMenuAndLoginToShoppingList(
 
 Given(/^que el usuario tiene un menú semanal generado$/, async ({ page, request, testUserFactory }) => {
   await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
-  await expect(page.getByTestId('generate_shopping_list_button')).toBeVisible();
 });
 
-When(/^solicita generar la lista de la compra$/, async ({ page }) => {
-  await page.getByTestId('generate_shopping_list_button').click();
-  // Real Gemini call + persistence — generous timeout, no network mock (see
-  // file header for why mocking this specific flow doesn't work).
-  // Real Gemini generation timing varies (~10-30s observed live, retries
-  // possible) — generous timeout, not tuned to a specific fast run.
-  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
+When(/^abre la lista de la compra$/, async ({ page }) => {
+  await page.goto('/shopping-list');
+  // FRESCO-367: no button — the list generates automatically on this visit
+  // (client-side, on mount). Deterministic (no LLM) but a generous timeout
+  // for a cold CI Edge Function + the one-time consolidation write.
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 90_000 });
 });
 
 Then(/^el sistema consolida los ingredientes y los clasifica por pasillo$/, async ({ page }) => {
@@ -98,11 +99,8 @@ Then(/^ve un resumen con el total de productos y el coste estimado$/, async ({ p
 });
 
 Given(/^que el usuario tiene una lista de la compra generada$/, async ({ page, request, testUserFactory }) => {
-  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
-  await page.getByTestId('generate_shopping_list_button').click();
-  // Real Gemini generation timing varies (~10-30s observed live, retries
-  // possible) — generous timeout, not tuned to a specific fast run.
-  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { seedList: true });
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
 });
 
 When(/^marca un producto como comprado$/, async ({ page }) => {
@@ -129,9 +127,8 @@ Then(/^el precio se conserva la próxima vez que abre la lista$/, async ({ page 
 // ── Compra realizada (FRESCO-191, QA rework; copy per FRESCO-215) ──────────
 
 Given(/^que el usuario tiene una lista de la compra generada con un producto marcado como comprado$/, async ({ page, request, testUserFactory }) => {
-  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
-  await page.getByTestId('generate_shopping_list_button').click();
-  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { seedList: true });
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('shopping_list_item_0_0').check();
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
 });
@@ -153,9 +150,8 @@ Then(/^el botón "Compra realizada" desaparece$/, async ({ page }) => {
 Given(
   /^que el usuario tiene una lista de la compra generada y una receta favorita con un ingrediente que no está en la lista$/,
   async ({ page, request, testUserFactory }) => {
-    const testUser = await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
-    await page.getByTestId('generate_shopping_list_button').click();
-    await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 60_000 });
+    const testUser = await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { seedList: true });
+    await expect(page.getByTestId('shopping_list_item_0_0')).toBeVisible({ timeout: 30_000 });
 
     const headers = restHeaders(testUser.accessToken);
     const userId = testUser.id;

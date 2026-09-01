@@ -8,15 +8,18 @@ import { getNombresNuevos, getShoppingListForPlan } from '@/lib/api/shopping-lis
 import { createClient } from '@/lib/supabase/server';
 
 /**
- * `/shopping-list` — EPIC-FRESCO-12 (STORY-FRESCO-13). Real data, replacing
- * the `MOCK_SHOPPING_LIST` shell: reads the current week's menu (STORY-FRESCO-7's
- * `getMealPlanForWeek()`, same read path `/menu`/`/calendar` already use),
- * then the shopping list generated from it, if any.
+ * `/shopping-list` — EPIC-FRESCO-12 (STORY-FRESCO-13). Reads the current
+ * week's menu, then the shopping list generated from it.
  *
- * Three states, same shape as `/menu`/`/calendar`'s own three-state pattern:
- * no menu yet (`NoMenuEmptyState`, shared — generating a menu is a different
- * story's job), menu exists but no list yet (`ShoppingListGenerator`), list
- * already generated (`ShoppingListView`, the real thing).
+ * FRESCO-367 (A4-H10): the list is now generated **automatically** — when
+ * none exists yet, `ShoppingListGenerator` renders in `autoGenerate` mode and
+ * fires the generation itself on mount (no manual "Generar" click). The PRD
+ * always promised an automatic list and only 2/38 plans had one. The button
+ * survives inside that component as the manual retry when the automatic
+ * attempt fails.
+ *
+ * Three states: no menu yet (`NoMenuEmptyState`), menu exists (list shown, or
+ * auto-generated then shown), read error (manual `ShoppingListGenerator`).
  */
 export default async function ShoppingListPage() {
   const supabase = await createClient();
@@ -44,9 +47,10 @@ export default async function ShoppingListPage() {
     const list = await getShoppingListForPlan(supabase, plan.mealPlanId);
 
     if (!list) {
+      // FRESCO-367: generate automatically on this first visit.
       return (
         <div className="mx-auto max-w-2xl">
-          <ShoppingListGenerator mealPlanId={plan.mealPlanId} />
+          <ShoppingListGenerator mealPlanId={plan.mealPlanId} autoGenerate />
         </div>
       );
     }
