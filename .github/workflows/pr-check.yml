@@ -6,10 +6,16 @@ on:
   # The dev -> staging -> main promotion is a manual fast-forward `git push`,
   # never a PR, so `pull_request` alone leaves the exact commit Vercel
   # deploys to staging / production ungated. `push` runs the fast,
-  # secret-free jobs (repo-check + unit) on that commit. The `e2e` job stays
-  # PR-only via an `if:` guard below - it needs secrets.ENV_FILE and boots a
-  # full ephemeral local Supabase stack (FRESCO-310), neither of which earns
-  # its cost on a post-merge push. (FRESCO-311)
+  # secret-free jobs (repo-check + unit) on that commit.
+  #
+  # FRESCO-377 (A4-M12): `e2e` ALSO runs on push to `staging` (the `if:`
+  # guard on the job). The commit that lands on `dev` is a NEW squash SHA
+  # the PR run never executed e2e against; `staging` is the last hop before
+  # the `staging -> main` ff, so gating that SHA here is what makes "the
+  # promoted commit passed e2e" true. It is NOT added to push:[main] -
+  # `main` is a byte-identical ff of the same staging SHA, so a second run
+  # would only burn ~4 min. (Supersedes the FRESCO-311 decision to keep
+  # e2e PR-only.)
   push:
     branches: [staging, main]
 
@@ -101,12 +107,19 @@ jobs:
     name: test:e2e
     runs-on: ubuntu-latest
     needs: repo-check
-    # PR-only: `push` runs (staging / main promotion) skip e2e entirely.
-    # e2e needs secrets.ENV_FILE and stands up a full local Supabase stack -
-    # running it again post-merge adds latency without gating anything the
-    # pre-merge PR run did not already gate. A skipped job with
-    # `needs: repo-check` does not fail the run. (FRESCO-311)
-    if: github.event_name == 'pull_request'
+    # Runs on every PR, AND on push to `staging` (FRESCO-377 / A4-M12): the
+    # squash SHA that lands on `dev` and mirrors to `staging`/`main` is a
+    # commit the PR run never executed e2e against, and `strict: false`
+    # branch protection lets a stale PR branch merge. `staging` is the last
+    # hop before the `staging -> main` ff, so its e2e run is the gate on the
+    # exact commit that reaches production. NOT run on push to `main` - that
+    # is a byte-identical ff of the same staging SHA. e2e needs
+    # secrets.ENV_FILE + a full ephemeral local Supabase stack (FRESCO-310),
+    # so it stays off the other push targets. A skipped job with
+    # `needs: repo-check` does not fail the run.
+    if: >-
+      github.event_name == 'pull_request'
+      || (github.event_name == 'push' && github.ref == 'refs/heads/staging')
     # FRESCO-357 (follow-up of FRESCO-289): the `e2e-shared-supabase-backend`
     # concurrency group is gone from this job. It only ever existed because
     # PR e2e runs used to mutate the shared production Supabase project; as
