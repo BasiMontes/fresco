@@ -37,7 +37,7 @@ export function LearnsPro() {
         </span>
         <h2 className="mb-2 text-h2 text-text">No te pregunta. Aprende.</h2>
         <p className="mb-9 max-w-lg text-body-md text-tertiary">
-          A diferencia de ChatGPT, Fresco recuerda lo que cocinas de verdad — no lo que dices que te gusta.
+          Fresco recuerda lo que cocinas de verdad, no lo que dices que te gusta.
         </p>
         <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-4">
           {TIMELINE.map(item => (

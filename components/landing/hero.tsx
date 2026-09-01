@@ -95,7 +95,7 @@ export function Hero() {
       <div>
         <div className="mb-6 flex items-center gap-2">
           <span className="h-0.5 w-6 rounded-full bg-accent-2-700" />
-          <span className="text-h6 uppercase text-accent-2-700">Menú semanal con IA</span>
+          <span className="text-h6 uppercase text-accent-2-700">Tu menú semanal, listo en 30 segundos</span>
         </div>
 
         <h1 className="text-h1 text-primary">
@@ -129,8 +129,8 @@ export function Hero() {
               <Clock className="size-4" strokeWidth={2} />
             </span>
             <p className="text-caption text-tertiary">
-              <strong className="block text-body-sm font-bold text-text">30 min ahorrados</strong>
-              cada domingo
+              <strong className="block text-body-sm font-bold text-text">Menos tiempo decidiendo</strong>
+              qué cocinar cada semana
             </p>
           </div>
           <div className="flex items-center gap-2">
