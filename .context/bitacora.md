@@ -274,3 +274,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: get_filtered_recipes case-insensitive (lower en ambos lados); CHECK de vocabulario en recipes.alergenos; frutos_secos->frutos_de_cascara; ALERGENO_OPTIONS 6->12; input free-text de alergenos eliminado; A4-M3 mensaje de slot agotado separa seguridad de variedad; suite e2e dedicada (seguridad-alimentaria.steps.ts, 3 escenarios). Extra: ledger de migraciones reconciliado; withSentryConfig solo en Vercel (colgaba el build de e2e). Migracion aplicada en vivo. PR #213 -> dev/staging/main (2a6910e).
 - Por que: BLOCKER A4-B2 de auditoria-4; el filtro era el unico enforcement de seguridad alimentaria y no tenia ni un test de comportamiento.
 - Siguiente: FRESCO-362 (A4-H1-H2, endurecer Edge Functions).
+
+## 2026-09-01 - FRESCO-362: endurecer update-recipe-status y reassign_guest_data (audit-4 A4-H1/H2/L7)
+- Qué: whitelist de estado + rating entero + re-filtro de alérgeno (get_filtered_recipes) + no-duplicado + rate limit 60/h en update-recipe-status; reassign_guest_data re-filtra los slots movidos contra el perfil de alérgenos destino (estado excluida, recipe_id null) y devuelve el conteo. Migración 20260901130000, helper _shared/rate-limit.ts, 3 escenarios @seguridad-alimentaria nuevos.
+- Por qué: dos rutas metían una receta con alérgeno en el plan sin pasar por el único punto de seguridad alimentaria (ADR-0001/NFR-SEC-3).
+- Siguiente: FRESCO-363 (A4-H8/H9 auth), FRESCO-364 (A4-L1/L2/L3).
