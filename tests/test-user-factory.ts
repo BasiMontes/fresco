@@ -91,21 +91,29 @@ async function deleteAuthUser(request: APIRequestContext, userId: string): Promi
 }
 
 async function createUserProfileRow(request: APIRequestContext, userId: string, accessToken: string, plan: NonNullable<CreateTestUserOptions['plan']>): Promise<void> {
-  // The new user's OWN token, not service-role — confirmed live against this
-  // project (`service_role` has no INSERT grant on `public.user_profiles`,
-  // only UPDATE/SELECT; every other service-role write in this suite is an
-  // UPDATE, so this factory is the first caller to ever need INSERT here).
-  // This is also the semantically correct path anyway: it's exactly how the
-  // real app creates this row (`upsertUserProfile`, as the signed-in user),
-  // and `profiles_insert_own`'s RLS policy only checks `auth.uid() = id` —
-  // no column restriction — so `plan` can be set on this very first INSERT
-  // even though `protect_subscription_columns` (ADR-0007) would block a
-  // later non-service-role UPDATE to it.
+  // Two-step seed (FRESCO-360): the row is INSERTed exactly how the real app
+  // does it — the signed-in user's own token, no `plan` override, so it
+  // DB-defaults to `'free'`. `protect_subscription_columns` (ADR-0007) is now
+  // BEFORE INSERT OR UPDATE and rejects any non-`service_role` INSERT that
+  // sets `plan` (or a Stripe column) away from its default, closing the
+  // self-grant-Pro bypass — which also means this factory can no longer set
+  // `plan` on the INSERT itself.
   const res = await request.post(`${supabaseUrl()}/rest/v1/user_profiles`, {
     headers: { ...restHeaders(accessToken), Prefer: 'return=minimal' },
-    data: { id: userId, plan },
+    data: { id: userId },
   });
   if (!res.ok()) { throw new Error(`[test-user-factory] Failed to seed user_profiles for ${userId}: ${res.status()} ${await res.text()}`); }
+
+  if (plan === 'free') { return; }
+
+  // A paid plan is applied as a second write with service-role headers — the
+  // same mechanism `suscripcion.steps.ts` `seedProBaseline` uses, and the
+  // only role the trigger lets touch subscription columns.
+  const patchRes = await request.patch(`${supabaseUrl()}/rest/v1/user_profiles?id=eq.${userId}`, {
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=minimal' },
+    data: { plan },
+  });
+  if (!patchRes.ok()) { throw new Error(`[test-user-factory] Failed to set plan=${plan} for ${userId}: ${patchRes.status()} ${await patchRes.text()}`); }
 }
 
 /**

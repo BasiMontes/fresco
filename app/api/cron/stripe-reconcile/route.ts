@@ -152,5 +152,38 @@ export async function GET(request: Request): Promise<NextResponse> {
     console.warn(`[/api/cron/stripe-reconcile] reconciled user ${profile.id}`, JSON.stringify(changes));
   }
 
-  return NextResponse.json({ checked, reconciled, drifted });
+  // FRESCO-360: sweep rows that claim a paid plan but carry no Stripe
+  // subscription id. The `.not('stripe_subscription_id', 'is', null)` filter
+  // above never sees these, so a `plan:'pro'` row planted by a client INSERT
+  // (the A4-B1 bypass) would otherwise persist forever. Downgrade shape
+  // mirrors the webhook's `customer.subscription.deleted` handler — flip
+  // `plan`, clear the aviso, leave `plan_expires_at` as-is.
+  let sweptOrphans = 0;
+  const { data: orphans, error: orphanError } = await supabase
+    .from('user_profiles')
+    .select('id, plan')
+    .in('plan', ['pro', 'family'])
+    .is('stripe_subscription_id', null);
+
+  if (orphanError) {
+    console.error('[/api/cron/stripe-reconcile] failed to load orphan pro/family rows', orphanError);
+  }
+  else {
+    for (const orphan of orphans ?? []) {
+      const { error: downgradeError } = await supabase
+        .from('user_profiles')
+        .update({ plan: 'free', payment_failed_at: null })
+        .eq('id', orphan.id);
+
+      if (downgradeError) {
+        console.error(`[/api/cron/stripe-reconcile] failed to sweep orphan row ${orphan.id}`, downgradeError);
+        continue;
+      }
+
+      sweptOrphans++;
+      console.warn(`[/api/cron/stripe-reconcile] swept orphan ${orphan.plan} row with no Stripe subscription`, orphan.id);
+    }
+  }
+
+  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
 }
