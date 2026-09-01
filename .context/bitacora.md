@@ -254,3 +254,18 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: PR #211 mergeado + promovido dev/staging/main (6913075). Caché deps bun + navegadores Playwright + .next/cache + build en background solapado con el stack + `supabase start -x` sin contenedores no usados. Quitado el concurrency group del job e2e. Descartada la caché docker save/load de imágenes Supabase (net-zero: docker load del tar ~1GB cuesta igual que el pull de ghcr.io).
 - Por qué: FRESCO-357 pedía test:e2e < 3 min (baseline 5m55s). Resultado: ~5m28s warm (-27s, ~8%). El reloj lo dominan supabase start (90-104s) + test:e2e (126-131s) + db reset+seed (22-31s), nada cacheable.
 - Siguiente: FRESCO-358 creado para el rediseño del ciclo de vida del stack (no reset+seed por run / Postgres-only / sharding). Ese es el único camino a sub-3min.
+
+## 2026-08-31 - Auditoria 4 (la mas dura hasta ahora)
+- Que: 4a pasada tecnica, 6 subagentes en paralelo (construccion de exploit, RLS politica a politica contra la DB viva, traza de seguridad alimentaria del input al plato, mapa del funnel de PostHog evento a evento, Jira en vivo via acli, lente de product engineer). Informe en .context/audits/2026-08-31-audit-4.html. README de audits actualizado (fila nueva + corregido el error del "3.7" de la auditoria-3, que era la nota de la auditoria-2; la 3 saco 4.3).
+- Por que: el usuario pidio una auditoria igual o mas dura que las tres anteriores, mas exigente tecnicamente y con vision de product engineer.
+- Siguiente: nota 3.5/5 (desde 4.3). 71 hallazgos, 4 BLOCKER: (1) auto-concederse Pro via hueco RLS en INSERT (verificado, explotable incluso por invitado anonimo); (2) guardrail de seguridad alimentaria = punto unico sin cobertura de comportamiento + campo alergenos_texto_libre que el filtro no lee; (3) banner legal borrador sigue vivo en prod; (4) la metrica del MVP no es medible (sin eventos trial->pago/renovacion/cancelacion). Falta decidir con el usuario si se crea epica de remediacion. §10 del informe tiene los 6 primeros movimientos.
+
+## 2026-09-01 - Epica de remediacion auditoria 4 (FRESCO-359)
+- Que: Creada EPIC FRESCO-359 "Remediacion auditoria tecnica 4 - camino al 5/5" + 41 tarjetas hijas (FRESCO-360..400) via acli. Etiquetadas auditoria-4 + ola-0/1/2/3 (= Sprint A/B/C/D del plan-a-5.md). Cada una con comentario AC (esfuerzo + eje + rutas). FRESCO-360/361 (los 2 BLOCKER tecnicos) prioridad Highest + link Blocks a la epica. Relates epica->FRESCO-330. 33 hallazgos agrupados en 20 tarjetas multi-id, 8 solas.
+- Por que: reflejar el plan de accion completo de la auditoria 4 en Jira, trackeable. Usuario: "crea todas las tarjetas necesarias, quiero el 5/5 pronto".
+- Siguiente: M11 (proyecto Supabase unico) diferido a Supabase Pro (FRESCO-328), solo ADR-0020 dentro de FRESCO-389. FRESCO-328/320 se reclasifican dentro de FRESCO-378 (H17). Empezar por Ola 0: FRESCO-360 (bypass de pago) y 361 (seguridad alimentaria). Gotcha: acli workitem view cachea - verificar estado real via REST GET.
+
+## 2026-09-01 - FRESCO-360: cerrado bypass de pago por INSERT en user_profiles
+- Qué: trigger `protect_subscription_columns` pasa a `BEFORE INSERT OR UPDATE` (rechaza que un rol cliente se autoconceda plan Pro con un INSERT directo); allowlist `session_user` para el seed de CI; barrido de huérfanos en `stripe-reconcile` + test unitario; factory de tests siembra plan pro vía PATCH service-role; e2e `@seguridad` del exploit. Drive-by: fix de ventana de fechas en test de FRESCO-353. Migración aplicada en vivo. PR #212 -> dev -> staging.
+- Por qué: BLOCKER A4-B1 de la auditoría-4, explotable en producción con dos llamadas HTTP.
+- Siguiente: promover a main (pendiente de confirmación), transicionar FRESCO-360 a Finalizada.
