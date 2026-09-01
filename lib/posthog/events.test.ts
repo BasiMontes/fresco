@@ -47,6 +47,13 @@ describe('lib/posthog/events', () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
     const identifySpy = spyOn(posthog, 'identify').mockImplementation(() => {});
     identifyUser('user-123');
-    expect(identifySpy).toHaveBeenCalledWith('user-123');
+    expect(identifySpy).toHaveBeenCalledWith('user-123', undefined);
+  });
+
+  test('identifyUser forwards person properties to posthog.identify (FRESCO-366)', () => {
+    process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
+    const identifySpy = spyOn(posthog, 'identify').mockImplementation(() => {});
+    identifyUser('user-123', { plan: 'pro', is_guest: false, signup_method: 'account' });
+    expect(identifySpy).toHaveBeenCalledWith('user-123', { plan: 'pro', is_guest: false, signup_method: 'account' });
   });
 });

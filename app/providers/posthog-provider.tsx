@@ -1,9 +1,12 @@
 'use client';
 
+import type { PlanUsuario } from '@schemas';
+import type { User } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import posthog from 'posthog-js';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { derivePersonProperties } from '@/lib/posthog/person-properties';
 import { createClient } from '@/lib/supabase/client';
 
 // Module-level, not component state: React StrictMode double-invokes effects
@@ -23,21 +26,39 @@ let initialized = false;
  * `reassignGuestData`/`updateUser` (ADR-0004) carries forward on upgrade —
  * so one listener covers guest, login, and signup identity linkage without
  * drift between call sites.
+ *
+ * FRESCO-366 / A4-B4: each identify also `$set`s the person properties
+ * (`plan`, `is_guest`, `signup_method`) that PostHog funnels segment by.
+ * `plan` needs one lightweight `user_profiles` read; it is skipped for
+ * guests (never have a row) and de-duped per `auth.uid()` for the lifetime
+ * of this provider (a Pro upgrade re-`$set`s `plan` server-side from the
+ * Stripe webhook, so a stale client value self-heals).
  */
 export function PostHogProvider({ children }: { children: ReactNode }) {
+  // Keyed on uid + anonymity, not uid alone: ADR-0004's OTP conversion keeps
+  // the same auth.uid() while flipping is_anonymous, and that transition must
+  // re-`$set` `is_guest` / `plan`.
+  const identifiedKey = useRef<string | null>(null);
+
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     if (key && !initialized) {
       posthog.init(key, {
-        api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+        // FRESCO-366 / A4-B4: route ingestion through the same-origin
+        // `/ingest` reverse proxy (Next rewrites in `next.config.mjs`) so
+        // ad-blockers that filter `*.posthog.com` don't silently drop
+        // 15-30% of client events. `ui_host` keeps "open in PostHog" links
+        // and the toolbar pointing at the real app host.
+        api_host: '/ingest',
+        ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST?.replace('.i.posthog.com', '.posthog.com'),
         // FRESCO-240: PostHog's default DOM-click autocapture would scrape
         // allergen/diet/health-adjacent UI text (e.g. "Vegano", "Sin
         // gluten", "Halal" tags in app/onboarding/page.tsx) outside the
-        // reviewed event catalog in lib/posthog/events.ts — every event this
-        // app emits goes through that catalog deliberately, so autocapture
-        // is off. Pageview capture stays on default (URLs only, no DOM
-        // content) — no deliberate pageview event exists elsewhere to make
-        // it redundant.
+        // reviewed event catalog in lib/posthog/event-names.ts — every event
+        // this app emits goes through that catalog deliberately, so
+        // autocapture is off. Pageview capture stays on default (URLs only,
+        // no DOM content) — the landing→signup→onboarding funnel builds on
+        // those plus the explicit events.
         autocapture: false,
       });
       initialized = true;
@@ -48,9 +69,40 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
     }
 
     const client = createClient();
+
+    async function identifyWithProperties(user: User): Promise<void> {
+      const key = `${user.id}:${user.is_anonymous === true}`;
+      if (identifiedKey.current === key) {
+        return;
+      }
+      identifiedKey.current = key;
+
+      let plan: PlanUsuario = 'free';
+      if (user.is_anonymous !== true) {
+        try {
+          const { data } = await client
+            .from('user_profiles')
+            .select('plan')
+            .eq('id', user.id)
+            .maybeSingle();
+          plan = data?.plan ?? 'free';
+        }
+        catch {
+          // Fail-soft (§10 Errors) — a profile-read blip must never break
+          // identity linkage; `plan` just stays at its 'free' default.
+        }
+      }
+
+      identifyUser(user.id, derivePersonProperties(user, plan));
+    }
+
     const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      if (session?.user?.id) {
-        identifyUser(session.user.id);
+      const user = session?.user;
+      if (user?.id) {
+        void identifyWithProperties(user);
+      }
+      if (event === 'SIGNED_OUT') {
+        identifiedKey.current = null;
       }
       // FRESCO-240: `/login`'s own SESSION_STARTED capture only fires on an
       // explicit credential submission, missing a returning user whose
