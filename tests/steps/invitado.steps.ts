@@ -29,10 +29,10 @@ When(/^completa el onboarding de 3 pasos y genera su menú$/, async ({ page }) =
   // the IdentityStep ("Continuar como invitada"), not a silent mount effect.
   await page.getByTestId('onboarding_continue_as_guest_button').click();
   await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  // FRESCO-371: 3-step wizard — 2 clicks reach the final step. Budget is
+  // optional now, so this guest flow leaves it blank on purpose.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
-  await page.getByTestId('next_button').click();
-  await page.getByTestId('presupuesto_input').fill('80');
   await page.getByTestId('generate_menu_button').click();
   await page.waitForURL('**/menu', { timeout: 30_000 });
 });

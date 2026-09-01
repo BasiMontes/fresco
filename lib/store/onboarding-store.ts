@@ -6,9 +6,10 @@ import { impliedAlergenos } from '@/lib/constants/dietary-options';
 import { toPlanningSelection } from '@/lib/planning-selection';
 
 /**
- * Client-side state for the 4-step onboarding flow (EPIC-FRESCO-1: name,
+ * Client-side state for the 3-step onboarding flow (EPIC-FRESCO-1: name,
  * sex, goal, diet, allergens, disliked ingredients, favorite cuisines,
- * household size — step 1, name/sex/goal, added by FRESCO-132). A single
+ * household size — step 1, name/sex/goal, added by FRESCO-132; cut from 4
+ * steps to 3 in FRESCO-371, cuisines folded into the diet step). A single
  * route (`/onboarding`) drives all steps internally rather than separate
  * routes — judgment call, see report: keeps the flow legible as one
  * continuous journey instead of full-page navigations between steps.
@@ -31,7 +32,7 @@ export type DietaFlag
     | 'dietaHalal';
 
 export interface OnboardingState {
-  step: 1 | 2 | 3 | 4
+  step: 1 | 2 | 3
   nombre: string
   sexo: SexoUsuario | null
   objetivo: ObjetivoUsuario | null
@@ -53,7 +54,7 @@ export interface OnboardingState {
   presupuestoSemanaEuros: number | null
   planningSelection: PlanningSelection
   nivelExperiencia: NivelExperienciaCulinaria | null
-  setStep: (step: 1 | 2 | 3 | 4) => void
+  setStep: (step: 1 | 2 | 3) => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
   setObjetivo: (value: ObjetivoUsuario) => void

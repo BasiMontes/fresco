@@ -179,11 +179,15 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Purpose.** First-run capture of household + diet + cuisine + planning scope, then trigger the
   first menu generation. Also the guest-vs-account fork (`IdentityStep`).
 - **Layout.** `IdentityStep` (guest or create account) → step 1 identity (name + sex dropdown,
-  TECHDEBT-FRESCO-132) → step 2 diet / allergens / cuisine (chips, no free-text — TECHDEBT-FRESCO-133;
-  allergen locking implied by diet — FRESCO-275/TECHDEBT-FRESCO-131) → step 3 household (adults/children,
-  bounded — DEFECT-FRESCO-110) + weekly budget (required — DEFECT-FRESCO-263/265) → step 4 planning
-  selection grid (which meals × which days — TECHDEBT-FRESCO-135/136, `PlanningSelectionGrid`; "ninguno"
-  blocks generation — DEFECT-FRESCO-165/172). "Atrás" button between steps (DEFECT-FRESCO-296).
+  TECHDEBT-FRESCO-132) → step 2 diet / allergens / disliked ingredients / cuisine (chips —
+  TECHDEBT-FRESCO-133; allergen locking implied by diet — FRESCO-275/TECHDEBT-FRESCO-131; cuisines
+  folded in here from a former standalone step — FRESCO-371) → step 3 household (adults/children,
+  bounded — DEFECT-FRESCO-110) + weekly budget (**optional** — FRESCO-371, was required under
+  DEFECT-FRESCO-263/265) + planning selection grid (which meals × which days — TECHDEBT-FRESCO-135/136,
+  `PlanningSelectionGrid`; "ninguno" blocks generation — DEFECT-FRESCO-165/172). 3-step wizard
+  (FRESCO-371 / A4-H14 — PRD hard limit; per-step funnel events `onboarding_started` /
+  `onboarding_step_completed` / `onboarding_completed` / `onboarding_abandoned`). "Atrás" button
+  between steps (DEFECT-FRESCO-296).
 - **Tokens.** `segmented-control` + `tag`/`tag-selected`/`tag-outline` for chips; `input` (pill);
   `dropdown` (`components/ui/dropdown.tsx`); `button` primary "continuar" / `button-action` on the
   final "Generar mi menú"; `card` per step; heading focus moves to step title on change

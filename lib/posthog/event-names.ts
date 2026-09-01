@@ -31,6 +31,9 @@ export const POSTHOG_EVENTS = {
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  // FRESCO-371: fired when the wizard unmounts without the user reaching a
+  // generated menu — the `abandoned` leg of the per-step funnel (A4-H14).
+  ONBOARDING_ABANDONED: 'onboarding_abandoned',
 
   // Monetisation funnel (checkout → trial → paid → renewal / churn).
   // The subscription_* / trial_* events fire server-side from the Stripe

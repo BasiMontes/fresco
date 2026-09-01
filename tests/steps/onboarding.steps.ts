@@ -12,10 +12,10 @@ import { currentWeekMonday, restHeaders } from '../test-helpers';
  * FRESCO-352 (ratchet de FRESCO-321). The core happy path the whole product
  * hangs on: onboarding → first generated week. Uses a throwaway factory user
  * (FRESCO-308) with no prior plan. The onboarding store's defaults
- * (`adultos: 2`, full `planning_selection`) already make steps 2–3 valid, so
- * only the required weekly budget on step 4 needs filling — same as
- * `generacion-determinista.steps.ts`, whose `pulsa "Generar mi menú"` step
- * this scenario reuses.
+ * (`adultos: 2`, full `planning_selection`) already make every step valid, so
+ * with FRESCO-371 (budget optional) nothing needs filling to reach "Generar
+ * mi menú" — same as `generacion-determinista.steps.ts`, whose `pulsa
+ * "Generar mi menú"` step this scenario reuses.
  */
 
 const { Given, When, Then } = createBdd(test);
@@ -49,12 +49,25 @@ Given(/^no tiene todavía un menú generado para la semana actual$/, async ({ re
 When(/^completa los 3 pasos del onboarding \(dieta\/alérgenos, cocinas favoritas, hogar\)$/, async ({ page }) => {
   await page.goto('/onboarding');
   await expect(page.getByTestId('step_indicator_label')).toBeVisible();
-  // 4-step wizard (identity split out since generacion-determinista.steps.ts
-  // was written); 3 clicks reaches step 4 where the budget + generate live.
-  await page.getByTestId('next_button').click();
+  // FRESCO-371: 3-step wizard (cuisines folded into the diet step). 2 clicks
+  // reaches step 3 where household + planning + the (now optional) budget +
+  // generate live. Budget filled here to exercise the value path.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await page.getByTestId('presupuesto_input').fill('80');
+});
+
+Then(/^el indicador de pasos del onboarding dice "Paso 1 de 3"$/, async ({ page }) => {
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+1\s+de\s+3/);
+});
+
+When(/^llega al último paso sin rellenar el presupuesto y pulsa "Generar mi menú"$/, async ({ page }) => {
+  // FRESCO-371: 2 clicks reach step 3; budget left blank (optional).
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('next_button').click();
+  await expect(page.getByTestId('presupuesto_input')).toHaveValue('');
+  await page.getByTestId('generate_menu_button').click();
 });
 
 Then(/^la IA genera un menú de 21 huecos \(7 días x desayuno\/comida\/cena\)$/, async ({ page, request }) => {

@@ -181,6 +181,19 @@ Característica: Flujo completo de usuario en Fresco
     Y el menú queda persistido en base de datos
     Y es redirigido a /menu, donde ve el menú completo
 
+  @onboarding @generacion-menu @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-371)
+  Escenario: El onboarding tiene 3 pasos y el presupuesto semanal es opcional
+    Dado que el usuario tiene sesión iniciada
+    Y no tiene todavía un menú generado para la semana actual
+    Entonces el indicador de pasos del onboarding dice "Paso 1 de 3"
+    Cuando llega al último paso sin rellenar el presupuesto y pulsa "Generar mi menú"
+    Entonces la IA genera un menú de 21 huecos (7 días x desayuno/comida/cena)
+    Y es redirigido a /menu, donde ve el menú completo
+    # FRESCO-371 (A4-H14): el PRD exige 3 pasos y el motor apenas usa el
+    # presupuesto (solo un aviso blando post-generación en menu-selector.ts,
+    # nunca filtra). Cocinas favoritas se pliega dentro del paso de dieta.
+
   @generacion-menu @edge-case @verificado-manual-2026-07-29
   Escenario: El catálogo filtrado no tiene recetas específicas para todos los huecos
     Dado que las restricciones del usuario dejan un catálogo con recetas insuficientes para desayuno o cena
