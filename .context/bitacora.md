@@ -299,3 +299,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Que: al abrir /shopping-list sin lista, ShoppingListGenerator la genera solo (autoGenerate, client-side on-mount), sin boton manual. Instrumentada: shopping_list_generated {auto, n_items, coste_min, coste_max}. generate-meal-plan NO tocado. PR #220 (2 rondas de CI: 1a version generaba server-side en el RSC y bloqueaba la respuesta 30-90s con la Edge Function fria).
 - Por que: audit-4 ola 1 (A4-H10, ALTO) - el PRD prometia lista automatica; era un boton manual, solo 2/38 planes tenian lista.
 - Siguiente: seguir ola 1 (368+). dev=staging=main en bc87410.
+
+## 2026-09-01 - FRESCO-368 (A4-H11) pricing card honesto
+- Que: components/landing/pricing.tsx - quitadas las claims falsas de Pro ("Menús ilimitados", "Historial de menús", "Personalización avanzada"). PRO ahora lista solo los 4 gates reales de isPro en generate-meal-plan/index.ts (aprendizaje aplicado, no repite recetas recientes, explicación FR-5.5, nudge ADR-0008). FREE concreto: menú semanal completo, lista automática, filtros, cambio de receta. Decision AC: opción B (copy honesto, no gatear).
+- Por que: audit-4 ola 1 (A4-H11, ALTO) - la landing vendía features Pro que no están gateadas; Free y Pro tienen el mismo límite (5 gen/hora, 1 plan/semana ISO).
+- Siguiente: 373 (M27 toggle usable) desbloquea 369. dev=staging=main en 31243d6.
