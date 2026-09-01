@@ -28,11 +28,20 @@
 -- DB-defaults to `'free'`), so legitimate callers are unaffected. Upholds the
 -- ADR-0007 invariant: the Stripe webhook is the ONLY writer of subscription
 -- state.
+--
+-- The `session_user` allowlist keeps direct superuser connections (the
+-- `scripts/seed-e2e-users.ts` CI/local seed, which writes via `Bun.sql` as
+-- `postgres`, and any admin tooling) able to set `plan` on the seed INSERT.
+-- `session_user` is the login role and is NOT changed by `SET ROLE`, so a
+-- PostgREST request is always `authenticator` here regardless of the JWT
+-- role — the `service_role` case still goes through `auth.role()`.
 
 create or replace function public.prevent_client_subscription_writes()
 returns trigger as $$
 begin
-  if auth.role() = 'service_role' then
+  if auth.role() = 'service_role'
+    or session_user in ('postgres', 'supabase_admin', 'supabase_auth_admin')
+  then
     return new;
   end if;
 
