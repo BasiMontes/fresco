@@ -1,38 +1,6 @@
 import { NextResponse } from 'next/server';
+import { rowsToCsv } from '@/lib/csv/export-csv';
 import { createClient } from '@/lib/supabase/server';
-
-/**
- * Escapes one CSV field per RFC 4180: wrap in double quotes and double up
- * any embedded quote whenever the value contains a comma, quote, or
- * newline. `null`/`undefined` become an empty field rather than the
- * literal string "null". Nested objects/arrays (this app's several jsonb
- * columns — `alergenos`, `ingredientes_odiados`, `cocinas_favoritas`, etc.)
- * are JSON-stringified so they still fit in one cell instead of breaking
- * the row shape.
- */
-function toCsvValue(value: unknown): string {
-  if (value === null || value === undefined) { return ''; }
-  const raw = typeof value === 'object' ? JSON.stringify(value) : String(value);
-  return /[",\n]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
-}
-
-/**
- * One table's rows -> a CSV block (header line + one line per row). Columns
- * are derived from the union of every row's own keys rather than a
- * hardcoded list, so this never drifts out of sync with the real Supabase
- * schema. Returns `null` for an empty table — the caller skips the section
- * entirely instead of emitting a header with zero data rows.
- */
-function rowsToCsv(rows: Record<string, unknown>[]): string | null {
-  if (rows.length === 0) { return null; }
-
-  const columns = [...new Set(rows.flatMap(row => Object.keys(row)))];
-  const lines = [
-    columns.map(toCsvValue).join(','),
-    ...rows.map(row => columns.map(column => toCsvValue(row[column])).join(',')),
-  ];
-  return lines.join('\n');
-}
 
 interface MealPlanRow extends Record<string, unknown> {
   id: string

@@ -1,6 +1,7 @@
 import type { EmailOtpType } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { safeNextPath } from '@/lib/auth/safe-next-path';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -16,13 +17,11 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
-  const rawNext = searchParams.get('next');
-  // `next` is attacker-controllable (it's a query param) — without this
-  // guard, `next=https://evil.com` (or the protocol-relative `next=//evil.com`)
-  // would make `new URL(next, request.url)` resolve to that external origin,
-  // an open redirect fired right after a real, successful auth verification.
-  // Only an in-app relative path is ever a valid destination here.
-  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+  // `next` is attacker-controllable (it's a query param) — `safeNextPath`
+  // collapses it to a same-origin relative path or `/`, closing the open
+  // redirect that would otherwise fire right after a successful auth verify
+  // (A4-L1: `//evil.com`, `\evil.com`, `/\evil.com`, `https://evil.com`).
+  const next = safeNextPath(searchParams.get('next'));
 
   if (tokenHash && type) {
     const supabase = await createClient();
