@@ -35,7 +35,10 @@ let initialized = false;
  * Stripe webhook, so a stale client value self-heals).
  */
 export function PostHogProvider({ children }: { children: ReactNode }) {
-  const identifiedUserId = useRef<string | null>(null);
+  // Keyed on uid + anonymity, not uid alone: ADR-0004's OTP conversion keeps
+  // the same auth.uid() while flipping is_anonymous, and that transition must
+  // re-`$set` `is_guest` / `plan`.
+  const identifiedKey = useRef<string | null>(null);
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
@@ -68,10 +71,11 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
     const client = createClient();
 
     async function identifyWithProperties(user: User): Promise<void> {
-      if (identifiedUserId.current === user.id) {
+      const key = `${user.id}:${user.is_anonymous === true}`;
+      if (identifiedKey.current === key) {
         return;
       }
-      identifiedUserId.current = user.id;
+      identifiedKey.current = key;
 
       let plan: PlanUsuario = 'free';
       if (user.is_anonymous !== true) {
@@ -98,7 +102,7 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
         void identifyWithProperties(user);
       }
       if (event === 'SIGNED_OUT') {
-        identifiedUserId.current = null;
+        identifiedKey.current = null;
       }
       // FRESCO-240: `/login`'s own SESSION_STARTED capture only fires on an
       // explicit credential submission, missing a returning user whose
