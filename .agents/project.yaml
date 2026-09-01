@@ -74,7 +74,12 @@ git_strategy:
     byte-identical by ff-only pushes (no `--no-ff`, no squash on the
     mirror hop). docs/** direct-to-main is now an explicit policy, not a
     tolerated habit (see policy.docs_changes). Hotfix runbook:
-    docs/workflows/hotfix.md.
+    docs/workflows/hotfix.md. 2026-09-01 (FRESCO-377 / A4-M12): the
+    promotion gate — `test:e2e` runs on push to `staging` (not just on
+    PRs), so the squash SHA that mirrors to `main`/production has been
+    e2e'd; before `git push origin main`, confirm that `staging` push's
+    `test:e2e` run is green (`strict` stays `false`, so a stale-branch
+    squash is still possible — this run is what catches it).
   branches:
     production: main # release / default branch
     integration: null # no disciplined integration tier in practice — dev/staging are env mirrors, not a promotion hop (see protected: below)
