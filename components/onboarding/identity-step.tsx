@@ -62,7 +62,11 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         return;
       }
       // identify() fires independently, asynchronously, via the provider's onAuthStateChange — ordering vs. this capture is unguaranteed but safe (PostHog merges anonymous-device history on first identify regardless of order).
-      captureEvent(POSTHOG_EVENTS.USER_SIGNED_UP, { method: 'guest', $set_once: { signup_method: 'guest' } });
+      // FRESCO-374 (A4-M24): a guest entry is `guest_started`, NOT
+      // `user_signed_up` — that event is reserved for real account creation
+      // so the signup metric isn't inflated by everyone who tries guest mode.
+      // If she converts later, `/signup` fires `user_signed_up` then.
+      captureEvent(POSTHOG_EVENTS.GUEST_STARTED, { $set_once: { signup_method: 'guest' } });
       onResolved();
     }
     finally {
