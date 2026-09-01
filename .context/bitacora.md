@@ -361,3 +361,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: quitadas todas las menciones a Gemini Flash como dependencia viva del `project-dev-guide.md` (diagramas, flujos, sección "## Gemini Flash", GEMINI_API_KEY) + corregido el framing "todavía no hay código / las tablas no existen". Banner ADR-0005 al estilo FRESCO-302. PR #231 squash a dev, SP 3.
 - Por qué: audit-4 A4-H18 (ALTO). FRESCO-302 limpió PRD/SRS y se saltó este fichero; un doc de fundación que miente sobre la arquitectura desorienta a humano y agente.
 - Siguiente: ff staging; main en espera (promote en lote). Follow-up ticket pendiente para la deriva diferida: §3 sin el estado `excluida`, flujos nuevos sin documentar (signup progresivo, favoritos, recetas propias, push semanal), write-ups por integración (Stripe/PostHog/Sentry).
+
+## 2026-09-01 - FRESCO-381: bug de la media movil de rating (A4-M2)
+- Qué: `update_recipe_learning()` promediaba `rating_promedio` sobre `veces_cocinada` (cuenta todos los cocinados); cada cocinado sin puntuar hundía la media hacia 0. Fix: columna nueva `recipes.veces_calificada` (solo cocinados puntuados), el trigger promedia sobre ella, + backfill desde `meal_plan_recipes` que corrige la deriva histórica. Primer test pgTAP del repo (`supabase/tests/`) + step `supabase test db` en el job e2e de CI. PR #232 squash a dev, SP 3.
+- Por qué: audit-4 A4-M2. `menu-selector.ts` puntúa con `rating_promedio*2`, así que las recetas bien valoradas estaban penalizadas por el ruido de los cocinados sin puntuar; datos de producción ya sesgados.
+- Siguiente: ff staging; main en espera. Luego FRESCO-380 (A4-M1, determinismo del motor).
