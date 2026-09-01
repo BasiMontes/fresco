@@ -11,6 +11,7 @@
     "claude": "bash -c 'set -a; . ./.env; set +a; exec claude \"$@\"' --",
     "db:types": "bunx supabase gen types typescript --project-id jdqemhewjrjuopssdurn > lib/supabase/types.ts",
     "dev": "next dev",
+    "deno:check": "cd supabase/functions && deno lint && deno check '**/*.ts'",
     "env": "set -a; source .env; set +a",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
     "format:fix": "prettier --write '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",

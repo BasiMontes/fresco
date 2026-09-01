@@ -16,6 +16,7 @@ on:
 env:
   BUN_VERSION: '1.3.14'
   SUPABASE_CLI_VERSION: '2.109.1'
+  DENO_VERSION: '2.9.6'
 
 jobs:
   repo-check:
@@ -64,6 +65,37 @@ jobs:
       - run: bun install --frozen-lockfile
 
       - run: bun test
+
+  deno:
+    name: deno:check
+    runs-on: ubuntu-latest
+    # FRESCO-375 (A4-H4): supabase/functions/ is excluded from the app's tsc
+    # and ESLint, so `repo:check` green never meant the Edge Functions
+    # compile. This job type-checks (`deno check`) and lints (`deno lint`)
+    # them with Deno 2 (matches `deno_version = 2` in supabase/config.toml).
+    # Config + import map: supabase/functions/deno.json. No secrets, no
+    # node_modules, no Supabase stack - runs on `push` too (FRESCO-311).
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: ${{ env.DENO_VERSION }}
+
+      # Cache Deno's resolved npm/remote deps keyed on the import map.
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: deno-${{ runner.os }}-${{ hashFiles('supabase/functions/deno.lock', 'supabase/functions/deno.json') }}
+
+      - name: deno lint
+        working-directory: supabase/functions
+        run: deno lint
+
+      - name: deno check
+        working-directory: supabase/functions
+        run: deno check "**/*.ts"
 
   e2e:
     name: test:e2e

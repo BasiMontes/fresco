@@ -44,6 +44,10 @@
     "packages/*/node_modules",
     "packages/*/dist",
     ".next",
+    // Supabase Edge Functions run on Deno, not this project's Bun/Node TS
+    // program. Type-checked + linted separately by `bun run deno:check`
+    // (config: supabase/functions/deno.json), enforced as the mandatory
+    // `deno:check` CI job — FRESCO-375 / A4-H4.
     "supabase/functions"
   ]
 }

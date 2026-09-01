@@ -55,8 +55,10 @@ export default antfu({
     // project's Bun/Node TypeScript project (tsconfig.json excludes this
     // directory for the same reason — `npm:`-specifier imports and Deno
     // globals like `Deno.serve`/`Deno.env` aren't resolvable by this
-    // project's typescript-eslint project service). Lint these with `deno
-    // lint` / `deno fmt` instead, not this project's ESLint config.
+    // project's typescript-eslint project service). Lint + type-check these
+    // with `bun run deno:check` (config: supabase/functions/deno.json), run
+    // as the mandatory `deno:check` CI job (FRESCO-375 / A4-H4) — not this
+    // project's ESLint config.
     'supabase/functions/**',
     // Impeccable design-hook cache — local-only (ignored via
     // .git/info/exclude, not the shared .gitignore), machine-written on
