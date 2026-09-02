@@ -1341,26 +1341,37 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la cookie de sesión se elimina y vuelve a /login
 
   @perfil @edge-case @verificado-manual-2026-08-04
-  Escenario: Borrar cuenta exige escribir el email exacto para habilitarse
+  Escenario: Borrar cuenta exige escribir el email exacto y la contraseña para habilitarse
     Dado que Laura abre el diálogo "Borrar cuenta definitivamente"
     Cuando escribe un email distinto al suyo
     Entonces el botón de confirmación sigue deshabilitado
-    Cuando escribe su propio email exacto
+    Cuando escribe su propio email exacto pero deja la contraseña vacía
+    Entonces el botón de confirmación sigue deshabilitado
+    Cuando escribe también su contraseña
     Entonces el botón de confirmación se habilita
 
   @perfil @automatizado
-  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355 mini-batch)
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355 mini-batch, FRESCO-397)
   Escenario: Borrar cuenta definitivamente elimina la cuenta y todos sus datos
-    Dado que Laura confirma el borrado con su email exacto
+    Dado que Laura confirma el borrado con su email exacto y su contraseña
     Cuando el sistema ejecuta la Edge Function delete-account
     Entonces su auth.users se elimina y el cascade de FK limpia user_profiles/meal_plans/shopping_lists/recetas_propias
     Y la sesión se cierra y es redirigida a /login con un mensaje de despedida
     # No verificado con una ejecución real de punta a punta -- destructivo e
     # irreversible, no ejecutado contra ninguna cuenta sin confirmación
     # explícita separada. Verificado sí: el gating del diálogo (ver escenario
-    # anterior), que la Edge Function está deployada y ACTIVE, y que el
-    # cascade de FK (user_profiles/meal_plans/shopping_lists/recetas_propias
-    # -> auth.users, todos ON DELETE CASCADE) está confirmado por migración.
+    # anterior), que la Edge Function está deployada y ACTIVE, la
+    # re-autenticación server-side (FRESCO-397 / A4-L11), y que el cascade de
+    # FK (user_profiles/meal_plans/shopping_lists/recetas_propias -> auth.users,
+    # todos ON DELETE CASCADE) está confirmado por migración.
+
+  @perfil @edge-case @no-implementado
+  # FRESCO-397 (A4-L11): re-autenticación server-side. Candidato a @automatizado
+  # cuando haya un flujo e2e no destructivo (mock del admin.deleteUser).
+  Escenario: delete-account rechaza una petición sin re-autenticación reciente
+    Dado que Laura tiene una sesión válida pero no ha vuelto a introducir su contraseña
+    Cuando llama directamente a la Edge Function delete-account sin reauthToken
+    Entonces responde 401 y la cuenta no se elimina
 
   # ==========================================================================
   # QA y herramientas de desarrollo

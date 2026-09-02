@@ -113,12 +113,26 @@ export interface DeleteCatalogRecipeResponse {
   slug: string
 }
 
-// POST /delete-account — `/profile` danger zone. No request body; the
-// caller is resolved from her own Authorization header and can only ever
-// delete her own account. Cascades through every user-owned table at the DB
-// level (`user_profiles.id -> auth.users.id ON DELETE CASCADE`, migration
+// POST /delete-account — `/profile` danger zone. The caller is resolved from
+// her own Authorization header and can only ever delete her own account.
+// Cascades through every user-owned table at the DB level
+// (`user_profiles.id -> auth.users.id ON DELETE CASCADE`, migration
 // 20260725120100), so the Edge Function itself needs no RPC, unlike
 // `reassign-guest-data`.
+//
+// FRESCO-397 (A4-L11): a registered caller must prove a RECENT
+// re-authentication — the client re-logs via native Supabase Auth
+// (`signInWithPassword`) and passes the resulting access token as
+// `reauthToken`; the function only verifies it (same user id + `iat` inside
+// the freshness window), never a password, mirroring ADR-0022. An anonymous
+// (guest) caller has no password to re-enter, so `reauthToken` is omitted
+// for guests and the function relies on the per-user rate limit alone —
+// guest data is disposable and the identity itself is deleted here anyway.
+export interface DeleteAccountRequest {
+  /** Fresh Supabase access token from a re-login. Required for a registered caller, omitted for a guest. */
+  reauthToken?: string
+}
+
 export interface DeleteAccountResponse {
   deleted: boolean
 }

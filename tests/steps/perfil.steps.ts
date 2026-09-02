@@ -80,7 +80,7 @@ Then(/^la cookie de sesión se elimina y vuelve a \/login$/, async ({ page }) =>
 
 // ── FRESCO-355 mini-batch: delete account ────────────────────────────────
 
-Given(/^que Laura confirma el borrado con su email exacto$/, async ({ page, testUserFactory }) => {
+Given(/^que Laura confirma el borrado con su email exacto y su contraseña$/, async ({ page, testUserFactory }) => {
   test.setTimeout(60_000);
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
@@ -88,6 +88,9 @@ Given(/^que Laura confirma el borrado con su email exacto$/, async ({ page, test
   await page.getByTestId('delete_account_open_button').click();
   await expect(page.getByTestId('delete_account_dialog')).toBeVisible();
   await page.getByTestId('delete_account_email_input').fill(testUser.email);
+  // FRESCO-397 (A4-L11): the Edge Function now requires a fresh
+  // re-authentication; the dialog re-logs with this password.
+  await page.getByTestId('delete_account_password_input').fill(testUser.password);
 });
 
 When(/^el sistema ejecuta la Edge Function delete-account$/, async ({ page }) => {
