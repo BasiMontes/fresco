@@ -50,4 +50,9 @@ Then(/^no ve ningún valor real de credencial, solo nombres de variables de ento
   expect(bodyText).toContain('PRO_USER_EMAIL');
   expect(bodyText).not.toMatch(/@fresco\.qa/);
   expect(bodyText).not.toContain(process.env.PRO_USER_PASSWORD ?? 'never-matches');
+  // FRESCO-395 (A4-L5): the Supabase project ref / Studio URL must be a
+  // placeholder — never a real ~20-char ref — in this public page.
+  expect(bodyText).toContain('<PROJECT_REF>');
+  expect(bodyText).not.toMatch(/[a-z0-9]{20}\.(?:functions\.)?supabase\.co/);
+  expect(bodyText).not.toMatch(/dashboard\/project\/[a-z0-9]{16,}/);
 });

@@ -21,10 +21,17 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 export const metadata: Metadata = {
   title: 'Guía de testeabilidad para QA — Fresco',
   description: 'Cómo probar Fresco a nivel de base de datos, API y UI.',
+  // FRESCO-395 (A4-L5): la página es útil para un evaluador con acceso al
+  // repo/entorno, pero no debe estar en el índice de Google ni servir el
+  // mapa de la API a un crawler.
+  robots: { index: false, follow: false },
 };
 
-const SUPABASE_PROJECT_REF = 'jdqemhewjrjuopssdurn';
-const FUNCTIONS_BASE_URL = `https://${SUPABASE_PROJECT_REF}.functions.supabase.co`;
+// FRESCO-395 (A4-L5): nunca renderizar el project ref real en HTML público.
+// Quien pruebe con acceso al entorno lo obtiene de `NEXT_PUBLIC_SUPABASE_URL`
+// (`https://<PROJECT_REF>.supabase.co`).
+const PROJECT_REF_PLACEHOLDER = '<PROJECT_REF>';
+const FUNCTIONS_BASE_URL = `https://${PROJECT_REF_PLACEHOLDER}.functions.supabase.co`;
 
 const architectureDiagram = `Navegador
   |
@@ -180,17 +187,21 @@ export default function QaGuidePage() {
             o
             {' '}
             <code>get_logs</code>
-            , siempre scopeado al proyecto
-            {' '}
-            <code>{SUPABASE_PROJECT_REF}</code>
-            .
+            , siempre scopeado al proyecto de Supabase de este entorno.
           </p>
         </div>
         <p className="mt-3 text-body-sm text-tertiary">
           Para un tester humano (sin agente), Supabase Studio expone el mismo proyecto con la clave
-          publishable/anon del lado cliente (RLS activo — nunca la service role key):
+          publishable/anon del lado cliente (RLS activo — nunca la service role key). Sustituye
+          {' '}
+          <code>{PROJECT_REF_PLACEHOLDER}</code>
+          {' '}
+          por el ref de tu proyecto (lo tienes en
+          {' '}
+          <code>NEXT_PUBLIC_SUPABASE_URL</code>
+          ):
         </p>
-        <CodeBlock code={`https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}`} lang="text" className="mt-2" />
+        <CodeBlock code={`https://supabase.com/dashboard/project/${PROJECT_REF_PLACEHOLDER}`} lang="text" className="mt-2" />
       </section>
 
       {/* 5. Testing a nivel API */}
@@ -224,10 +235,10 @@ export default function QaGuidePage() {
           />
           <RequestCard
             name="reassign-guest-data"
-            description="Reasigna los datos de una sesión de invitado (guest) a una cuenta real ya existente."
+            description="Reasigna los datos de una sesión de invitado (guest) a una cuenta real ya existente. El header Authorization lleva el token de la sesión de invitado; targetAccessToken es un token de sesión de la cuenta destino, obtenido antes con un login normal (ADR-0022)."
             method="POST"
             path={`${FUNCTIONS_BASE_URL}/reassign-guest-data`}
-            body={{ email: 'usuario@ejemplo.com', password: 'contraseña-de-ejemplo' }}
+            body={{ targetAccessToken: '<token-de-sesion-de-la-cuenta-destino>' }}
           />
           <RequestCard
             name="update-recipe-status"
