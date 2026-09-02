@@ -285,6 +285,21 @@ export function consolidateIngredientes(
   const displayNombreMap = new Map<string, string>()
 
   for (const raw of rawIngredientes) {
+    // FRESCO-382 (A4-M5): `raciones_receta` feeds a division below
+    // (`raciones_usuario / raciones_receta`). A 0 / negative / NaN value —
+    // `recipe.meta?.raciones ?? 4` in index.ts does NOT catch a literal 0 —
+    // makes `factor` Infinity/NaN, which poisons `coste_estimado` for the
+    // whole list. Skip the row and log rather than emit a broken total.
+    if (!(raw.raciones_receta > 0)) {
+      logger.warn('raciones_receta no positivo, fila saltada', {
+        fn: 'generate-shopping-list',
+        ingrediente: raw.nombre,
+        receta: raw.receta_nombre,
+        raciones_receta: raw.raciones_receta,
+      })
+      continue
+    }
+
     const key = normalizeNombre(raw.nombre)
     if (!displayNombreMap.has(key)) {
       displayNombreMap.set(key, raw.nombre.trim())

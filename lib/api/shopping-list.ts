@@ -3,6 +3,7 @@ import type { GenerateShoppingListResponse, ShoppingListItem } from '@/lib/api/t
 import type { Database, Json } from '@/lib/supabase/types';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { addIsoWeeks } from '@/lib/date/iso-week';
+import { normalizeNombre } from '@/lib/text/normalize-nombre';
 
 type Pasillos = GenerateShoppingListResponse['pasillos'];
 
@@ -127,24 +128,9 @@ export async function addShoppingListItem(
   }
 }
 
-/**
- * App-side copy of `supabase/functions/_shared/normalize.ts` — can't import
- * across the Deno/Node boundary (same reason `tests/steps/shopping-list.steps.ts`
- * keeps its own copy). Lowercase, trim, collapse whitespace, strip accents:
- * the canonical form ingredient names are compared/keyed by.
- */
-export function normalizeNombre(nombre: string): string {
-  return nombre
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[áàä]/g, 'a')
-    .replace(/[éèë]/g, 'e')
-    .replace(/[íìï]/g, 'i')
-    .replace(/[óòö]/g, 'o')
-    .replace(/[úùü]/g, 'u')
-    .replace(/ñ/g, 'n');
-}
+// Re-exported for `components/shopping-list/shopping-list-view.tsx`, which
+// imports it from here. Single source lives in `lib/text/normalize-nombre.ts`.
+export { normalizeNombre };
 
 /**
  * Pure diff (FRESCO-194 "Nuevo" badge): normalized item names present in
