@@ -7,8 +7,19 @@
 # fichero cruza historias: el recorrido completo del usuario real.
 #
 # Convención de tags:
-#   @verificado-manual-YYYY-MM-DD  → probado en vivo (Playwright CLI) esa fecha, pasó
-#   @pendiente                     → escrito, todavía no verificado ni automatizado
+#   @verificado-manual-YYYY-MM-DD  → probado en vivo (Playwright CLI) esa fecha, pasó.
+#                                    Caduca: una etiqueta de > 6 semanas ya no cuenta
+#                                    como garantía vigente para el reporte de cobertura
+#                                    — re-verificar antes de fiarse. Receta en README.md
+#                                    (FRESCO-399 / A4-L15).
+#   @pendiente                     → escrito, todavía no verificado ni automatizado.
+#                                    Es un TODO real: cada @pendiente lleva una nota de
+#                                    QUÉ falta para cerrarlo (automatizar / decidir).
+#   @solo-manual                   → verificación manual DELIBERADA, no un TODO:
+#                                    automatizar no compensa (setup desproporcionado,
+#                                    lógica ya cubierta en unit tests, o falta infra de
+#                                    test estructural — p.ej. lectura de inbox real).
+#                                    Lleva la razón en un comentario. (FRESCO-399 / A4-L14)
 #   @edge-case                     → causística además del camino feliz
 #   @smoke                         → subconjunto mínimo de happy paths ya
 #                                    @automatizado que corre tras cada deploy de
@@ -153,7 +164,11 @@ Característica: Flujo completo de usuario en Fresco
     # no contraseñas distintas). Severidad: menor (edge-case de doble error,
     # no bloquea el flujo feliz — el usuario puede seguir corrigiendo).
 
-  @login @recuperar-password @pendiente
+  @login @recuperar-password @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14): sin fixture de lectura de inbox real
+  # en tests/ (mismo bloqueo que los OTP de registro progresivo) y la acción
+  # es irreversible sobre la cuenta QA compartida. El formulario en sí
+  # (render + validación cliente) sí está cubierto — ver comentario abajo.
   Escenario: Completar la recuperación de contraseña de punta a punta con el enlace real del correo
     Dado que un usuario solicitó recuperar su contraseña y recibió el email real
     Cuando sigue el enlace, cae en /update-password con una sesión de recuperación válida, y confirma una contraseña nueva válida
@@ -220,13 +235,17 @@ Característica: Flujo completo de usuario en Fresco
     # verificó directamente contra `get_filtered_recipes()` vía SQL con el
     # perfil real que lo disparó.
 
-  @generacion-menu @verificado-manual-2026-08-01 @automatizado
+  @generacion-menu @verificado-manual-2026-08-01 @automatizado @retries:0
   # Automatizado: tests/steps/generacion-determinista.steps.ts
   # NO es @smoke (FRESCO-322): el umbral <10s es un guard de REGRESIÓN DE
   # RENDIMIENTO de ADR-0005, no un check de vida. Contra la infra fría de un
   # deploy recién publicado (serverless de Vercel + Edge Function en frío) el
   # cold-start lo revienta sin que nada esté roto. Corre en test:e2e (build
   # prod local, caliente), que es donde el guard de perf tiene sentido.
+  # @retries:0 (FRESCO-399 / A4-L17): playwright.config.ts da retries:1 en CI.
+  # Para un assert de RENDIMIENTO eso es una trampa — una corrida lenta (11s)
+  # falla, reintenta, pasa a 8s, y la regresión de latencia intermitente
+  # queda enmascarada. Este escenario mide una sola vez y esa medición manda.
   Escenario: La generación de menú es rápida y no depende de una llamada de IA por franja (ADR-0005)
     Dado que un usuario Pro con historial real completa el onboarding
     Cuando pulsa "Generar mi menú"
@@ -460,8 +479,9 @@ Característica: Flujo completo de usuario en Fresco
     # traducido, sin fuga de error crudo). Fix: gate por
     # otpCode.length === 6 + maxLength/pattern en el input.
 
-  @registro-progresivo @edge-case @pendiente
-  # NO automatizable con la infraestructura de test actual: verificado en
+  @registro-progresivo @edge-case @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14): NO automatizable con la infra de test
+  # actual — no hay fixture que lea un inbox real para el OTP. Verificado en
   # vivo (dos veces, con PRE_USER_EMAIL y con la llamada updateUser({email,
   # password}) original combinada) que Supabase encola el cambio con 200 sin
   # error — incluso cuando el email de destino ya pertenece a otra cuenta
@@ -479,8 +499,9 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve un mensaje claro explicando el conflicto
     Y se le ofrece continuar con la cuenta existente ingresando su contraseña
 
-  @registro-progresivo @edge-case @pendiente
-  # Depende de alcanzar la pantalla de conflicto de arriba — mismo bloqueo:
+  @registro-progresivo @edge-case @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14). Depende de alcanzar la pantalla de
+  # conflicto de arriba — mismo bloqueo (OTP real, sin fixture de inbox):
   # requiere el código de 6 dígitos real de PRO_USER_EMAIL, sin fixture
   # de lectura de inbox en tests/. El mecanismo de reasignación en sí
   # (`handleReassign`, `reassign_guest_data()`) no se tocó en FRESCO-89 y
@@ -496,8 +517,9 @@ Característica: Flujo completo de usuario en Fresco
     # Verificado de punta a punta con casos reales el 2026-07-31, cuando
     # todavía se llegaba a esta pantalla sin pasar por OTP (ver nota arriba).
 
-  @registro-progresivo @edge-case @pendiente
-  # Mismo bloqueo que los dos escenarios anteriores.
+  @registro-progresivo @edge-case @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14): mismo bloqueo que los dos escenarios
+  # anteriores (OTP real, sin fixture de inbox).
   Escenario: La invitada ingresa una contraseña incorrecta al intentar reasignar
     Dado que la invitada ve el conflicto de email
     Cuando ingresa una contraseña incorrecta para esa cuenta
@@ -690,9 +712,11 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el usuario está viendo una semana que ya tiene un menú generado
     Cuando mira los controles disponibles
     Entonces no puede generar uno nuevo directamente — primero tiene que eliminar el existente
-    # Verificado estructuralmente (el botón nunca se renderiza en esa rama),
-    # no como acción bloqueada explícita — @pendiente hasta un intento real
-    # de re-generar sobre una semana con plan (caso defensivo 409).
+    # Verificado estructuralmente (el botón nunca se renderiza en esa rama).
+    # TODO automatizar (FRESCO-399 / A4-L14 lo dejó como candidato del próximo
+    # batch del ratchet): seedFullWeekMenu(request, testUser) → ir a /menu →
+    # aserción de que generate_menu_button NO está presente. XS. Ver README
+    # § "Batch de automatización pendiente".
 
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)
@@ -952,11 +976,11 @@ Característica: Flujo completo de usuario en Fresco
     Cuando solicita la lista de la compra
     Entonces ve un mensaje claro de que la lista no se pudo generar, nunca una lista vacía presentada como válida
 
-  @lista-compra @edge-case @pendiente
-  # FRESCO-194 (2ª pasada). NO @automatizado: montar dos semanas de historial de
-  # menú + lista para un usuario factory es desproporcionado para un badge
-  # cosmético — la lógica de diff (diffNombresNuevos) está cubierta por
-  # lib/api/shopping-list.test.ts. Candidato a verificación manual periódica.
+  @lista-compra @edge-case @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14). FRESCO-194 (2ª pasada): montar dos
+  # semanas de historial de menú + lista para un usuario factory es
+  # desproporcionado para un badge cosmético — la lógica de diff
+  # (diffNombresNuevos) está cubierta por lib/api/shopping-list.test.ts.
   Escenario: El badge "Nuevo" marca solo los ingredientes que no estaban la semana pasada
     Dado que el usuario tuvo una lista de la compra la semana anterior con "tomate" y "arroz"
     Y su lista de esta semana tiene "tomate", "lentejas" y "pan"
@@ -964,7 +988,8 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve el badge "Nuevo" junto a "lentejas" y "pan"
     Y no ve el badge junto a "tomate"
 
-  @lista-compra @edge-case @pendiente
+  @lista-compra @edge-case @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14): pareja del anterior, misma razón.
   Escenario: Sin lista la semana anterior, ningún ingrediente se marca como nuevo
     Dado que el usuario nunca generó una lista de la compra antes de esta semana
     Cuando abre /shopping-list con su primera lista generada
@@ -1072,14 +1097,14 @@ Característica: Flujo completo de usuario en Fresco
     Cuando mira los resultados
     Entonces ve un estado vacío claro y distinto al de "sin recetas en el catálogo"
 
-  @biblioteca @edge-case @pendiente
+  @biblioteca @edge-case @solo-manual
+  # @solo-manual (FRESCO-399 / A4-L14): requeriría un perfil artificialmente
+  # restrictivo; es la misma rama `length === 0` que el resto de estados
+  # vacíos de esta familia de páginas, ya cubiertos.
   Escenario: El catálogo de la Biblioteca está vacío para el perfil de Laura
     Dado que el perfil de Laura excluye todas las recetas del catálogo
     Cuando abre la Biblioteca
     Entonces ve un estado vacío que la orienta a revisar su perfil, no su búsqueda
-    # No verificado en vivo — requeriría un perfil de prueba artificialmente
-    # restrictivo; revisado solo en código (misma rama `length === 0` que el
-    # resto de estados vacíos de esta familia de páginas).
 
   @biblioteca @verificado-manual-2026-08-03 @automatizado
   # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-353)
@@ -1648,29 +1673,31 @@ Característica: Flujo completo de usuario en Fresco
     # escenarios de badge más abajo. La ausencia de contador numérico sigue
     # siendo intencional, no un gap.
 
-  @notificaciones @pago-fallido @pendiente
+  @notificaciones @pago-fallido @automatizado
+  # Automatizado: tests/steps/notificaciones.steps.ts (FRESCO-399 / A4-L14).
+  # FRESCO-234: reutiliza el dato ya persistido por el webhook de Stripe
+  # (FRESCO-232, ya mostrado en /profile) -- ninguna columna ni tabla nueva.
+  # El fixture siembra payment_failed_at con service-role (columna protegida
+  # por el trigger de ADR-0007); no toca la API real de Stripe.
   Escenario: El aviso de pago fallido aparece en el Centro de Avisos para una cuenta Pro con un cobro fallido
-    Dado que Laura tiene plan Pro y su último cobro de suscripción falló (payment_failed_at con valor)
+    Dado que Laura tiene plan Pro y su último cobro de suscripción falló
     Cuando abre /notifications
-    Entonces ve el aviso "Tu último pago falló" antes que cualquier otra sección
-    Y puede pulsar "Gestionar mi suscripción" para ir al Billing Portal de Stripe
-    # FRESCO-234: reutiliza el mismo dato ya persistido por el webhook de
-    # Stripe (FRESCO-232, ya mostrado en /profile) -- ninguna columna ni
-    # tabla nueva. Sin verificar en vivo todavía (requiere una cuenta Pro
-    # real con un cobro fallido real).
+    Entonces ve el aviso "Tu último pago falló" en primer lugar, antes que el resto de secciones
+    Y ve el botón "Gestionar mi suscripción" para ir al Billing Portal de Stripe
 
-  @notificaciones @pago-fallido @pendiente
+  @notificaciones @pago-fallido @automatizado
+  # Automatizado: tests/steps/notificaciones.steps.ts (FRESCO-399 / A4-L14).
+  # FRESCO-234: getHasUnseenNotifications() hace un OR de las 3 condiciones
+  # booleanas que ya gatean cada sección de /notifications.
   Escenario: El badge del icono de Notificaciones aparece cuando hay avisos pendientes
-    Dado que Laura tiene al menos un aviso pendiente (bienvenida sin ver, rutas sin descartar, o pago fallido en Pro)
+    Dado que Laura tiene un aviso de bienvenida sin ver y su menú de la semana generado
     Cuando abre /menu
     Entonces ve un punto rojo sobre el icono de Notificaciones de la cabecera, sin ningún número
-    # FRESCO-234: getHasUnseenNotifications() en lib/api/user-profile.ts hace
-    # un OR de las mismas 3 condiciones booleanas que ya gatean cada sección
-    # de /notifications -- ninguna columna "visto" nueva.
 
-  @notificaciones @pago-fallido @edge-case @pendiente
+  @notificaciones @pago-fallido @edge-case @automatizado
+  # Automatizado: tests/steps/notificaciones.steps.ts (FRESCO-399 / A4-L14).
   Escenario: El badge del icono de Notificaciones no aparece cuando no hay nada pendiente
-    Dado que Laura ya vio la bienvenida, ya descartó las rutas, y no tiene ningún pago fallido (o no es Pro)
+    Dado que Laura ya vio la bienvenida, ya descartó las rutas y no tiene pagos fallidos, con su menú de la semana generado
     Cuando abre /menu
     Entonces el icono de Notificaciones se ve sin ningún punto rojo
 
@@ -1690,10 +1717,10 @@ Característica: Flujo completo de usuario en Fresco
     Entonces esa misma receta puede seguir apareciendo en "Recetas que te pueden gustar"
     # Observado en vivo: tras marcar "Arroz con verduras..." como favorita,
     # siguió apareciendo en la misma lista de recomendaciones al recargar.
-    # @pendiente en vez de @verificado-manual porque no se confirmó si es el
-    # comportamiento pretendido (recomendaciones fijas/deterministas, sin
-    # lógica de exclusión) o un gap real -- requiere decisión de producto,
-    # no solo verificación técnica.
+    # Sigue @pendiente (FRESCO-399 / A4-L14 lo revisó): NO es un gap de
+    # verificación sino una pregunta de PRODUCTO sin resolver — ¿las
+    # recomendaciones deben excluir favoritas o no? Necesita un ticket de
+    # decisión de producto, no una automatización. Marcado para spin-off.
 
   # ==========================================================================
   # Landing pública (/)

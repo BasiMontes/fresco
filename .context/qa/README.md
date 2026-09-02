@@ -12,8 +12,9 @@ If the scope ever outgrows a single file, split by area (`login.feature`, `calen
 
 | Tag | Meaning |
 |---|---|
-| `@verificado-manual-YYYY-MM-DD` | Exercised live (Playwright CLI or equivalent) on that date, passed |
-| `@pendiente` | Written, not yet manually verified nor automated |
+| `@verificado-manual-YYYY-MM-DD` | Exercised live (Playwright CLI or equivalent) on that date, passed. **Staleness (FRESCO-399 / A4-L15):** a label older than **6 weeks** no longer counts as a current guarantee for coverage reporting — re-verify (and re-date the tag) before relying on it. Recipe below. A scenario that is *also* `@automatizado` is exempt: the spec is the live guarantee, the date is just provenance. |
+| `@pendiente` | Written, not yet manually verified nor automated — **a real TODO**. Every `@pendiente` carries a comment stating what closes it: which fixture/step to write, or which decision is blocked. Not a resting place: triage to `@automatizado`, `@solo-manual`, or `@no-implementado`. |
+| `@solo-manual` | **Deliberately** manual-only, not a TODO (FRESCO-399 / A4-L14). Use when automating does not pay: setup is disproportionate to the risk, the logic is already covered by unit tests, or the structural test infra is missing (e.g. reading a real email inbox for an OTP). Carries a one-line reason in a comment. Re-check the reason each audit — infra gaps get filled. |
 | `@no-implementado` | Describes desired behavior for a feature that does not exist in code yet (mock, TODO stub, or unbuilt) |
 | `@edge-case` | Non-happy-path causística in addition to the golden path |
 | `@requiere-stripe-real` | Scenario calls Stripe's real API (creates a Checkout/Portal session, a Customer or a Subscription). **Excluded from `bun run test:e2e`** — the CI e2e job + local runs use the dummy Stripe creds in `.env.ci` (FRESCO-376), so these would fail or hit the shared test account. Still runs in `bun run test:e2e:stripe`, `test:e2e:staging`, `test:e2e:production`, and (via `--tags @smoke`) `post-deploy-smoke.yml` against real deploys. Any Customer such a scenario creates is torn down by the `suscripcionCtx` fixture. |
@@ -42,11 +43,32 @@ Baseline 2026-08-30: **~31 / 139 scenarios `@automatizado` (~23%)**. The audit's
 Policy — incremental, not a big-bang backfill:
 
 1. **New work pays as it goes.** Every new Story with Gherkin AC automates those scenarios in the same PR (same-PR rule above). This alone stops the ratio decaying.
-2. **Backlog ratchet.** Each development sprint, automate a batch of the existing manual-only scenarios, prioritising happy paths of the core flows: `@login`, `@onboarding`, `@generacion-menu`, `@calendario`, `@lista-compra`, `@aprendizaje`, `@suscripcion`, `@invitado`, `@biblioteca`, `@panel-inicio`, `@favoritos`, `@perfil`. Target is **core-flow happy paths at 100% automated**, not the whole 142. Batches so far: FRESCO-352 (→40), FRESCO-353 (→52), FRESCO-355 (→~70).
+2. **Backlog ratchet.** Each development sprint, automate a batch of the existing manual-only scenarios, prioritising happy paths of the core flows: `@login`, `@onboarding`, `@generacion-menu`, `@calendario`, `@lista-compra`, `@aprendizaje`, `@suscripcion`, `@invitado`, `@biblioteca`, `@panel-inicio`, `@favoritos`, `@perfil`. Target is **core-flow happy paths at 100% automated**, not the whole 142. Batches so far: FRESCO-352 (→40), FRESCO-353 (→52), FRESCO-355 (→~70), FRESCO-399 (notificaciones payment-failed + bell-badge trio).
 3. **Test-architecture trigger (ADR-0018, supersedes ADR-0014).** The scenario-count number is retired; the binding trigger is the CI `test:e2e` job wall-clock. The early-warning (~6m30s) fired at 75 scenarios / 6m40s and the parallelism migration **landed** (FRESCO-356): the four racer step files (`aprendizaje`, `entrega-parcial`, `generacion-determinista`, `aislamiento-datos`) now use `testUserFactory` per scenario, `regression.feature` carries `@mode:parallel`, and `playwright.config.ts` runs `workers` 4 (CI) / 2 (local). **Every new automated scenario MUST use `testUserFactory` and seed its own data** — never reuse a fixed shared account (`DEV_USER`/`PRO_USER`) for a scenario that writes, or it will race under parallel execution.
 4. **`@smoke` set** is governed separately (this file's tag table + FRESCO-322 / FRESCO-329), not by this ratchet.
 
 Progress is read live: `rg -c '@automatizado' .context/qa/regression.feature` vs `rg -c '^\s*Escenario:' .context/qa/regression.feature`.
+
+### Batch de automatización pendiente (FRESCO-399 / A4-L14)
+
+The `@pendiente` triage of 2026-09-02 left exactly two:
+
+- **`@calendario` "No se puede generar sobre una semana que ya tiene menú"** — XS. `seedFullWeekMenu(request, testUser)` → `/menu` → assert `generate_menu_button` absent. Next batch candidate.
+- **`@notificaciones` "Las recomendaciones no excluyen recetas ya marcadas como favoritas"** — **not** an automation gap: an unresolved product question (should recs exclude favourites?). Needs a product-decision ticket, not a spec.
+
+Everything else `@pendiente` was either automated in FRESCO-399 (the notificaciones trio) or reclassified `@solo-manual` with a documented reason.
+
+### Staleness recipe (`@verificado-manual` > 6 weeks — A4-L15)
+
+```sh
+# manual-only scenarios whose last live check is now stale (>6 weeks):
+CUTOFF=$(date -v-6w +%Y-%m-%d 2>/dev/null || date -d '-6 weeks' +%Y-%m-%d)
+rg -o '@verificado-manual-[0-9-]+' .context/qa/regression.feature \
+  | sed 's/@verificado-manual-//' | sort -u \
+  | awk -v c="$CUTOFF" '$0 < c { print $0 "  ← re-verify" }'
+```
+
+A hit is not a failure — it means "the last human check of this manual-only path predates the cutoff; re-run it (or automate it) before quoting it as covered." `@automatizado` scenarios are exempt.
 
 ## How to consume
 
