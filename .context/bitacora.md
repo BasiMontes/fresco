@@ -143,3 +143,8 @@ Historia archivada:
 - Que: animacion de entrada + stagger para cards de listas/grids. Hook `components/ui/use-list-enter-animation.ts` + keyframe en globals.css (bajo `prefers-reduced-motion: no-preference`). Cableado en lista de la compra + biblioteca de recetas. Mergeado dev+staging (31d24e3, PR #256).
 - Por que: EPIC-FRESCO-244 (Motion y Transiciones), AC A4-M18. Divergencia §5-L: escenario 2 (salida) exento (sin flujo de borrado in-place en la UI viva) + calendario excluido (grid ventaneado, riesgo dnd-kit).
 - Siguiente: QA en staging. main en hold (batch audit-4). Quedan FRESCO-249 (accesibilidad de movimiento) para cerrar el epic.
+
+## 2026-09-02 - FRESCO-249 Accesibilidad de Movimiento (cierra EPIC-FRESCO-244)
+- Que: guard global `@media (prefers-reduced-motion: reduce)` en app/globals.css (animation/transition-duration 0.01ms !important, scroll-behavior auto, .animate-spin re-exento) + matchMedia en horizontal-scroll-row.tsx. Auditoria: 5 huecos encontrados y cerrados. Mergeado dev+staging (4d9e8d7, PR #257).
+- Por que: EPIC-FRESCO-244 A4-M18, WCAG 2.3.3/2.2.2. Guard transversal de las historias de motion. Sin divergencia §5 (nada recortado); nota en design plan §4.19.
+- Siguiente: QA en staging del epic completo (245/246/247/248/249 dev-done). main en hold (batch audit-4). Vercel Preview de #257 quedo rate-limited (cap 100/dia) - redeploy tras reset 24h.
