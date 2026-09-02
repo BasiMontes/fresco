@@ -24,6 +24,7 @@ import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
@@ -171,6 +172,9 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
   const shakeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const supabase = React.useMemo(() => createClient(), []);
   const pasillosOriginales = React.useMemo(() => new Set(list.pasillos.map(p => p.nombre)), [list.pasillos]);
+  // FRESCO-246 — item enter animation. A flat index across every aisle so the
+  // first-render stagger runs down the whole list, not per aisle.
+  const getItemEnterProps = useListEnterAnimation();
 
   React.useEffect(() => () => {
     if (shakeTimerRef.current) { clearTimeout(shakeTimerRef.current); }
@@ -390,8 +394,14 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                 <ul className="flex flex-col divide-y divide-border">
                   {pasillo.items.map((item, itemIdx) => {
                     const usosLabel = formatUsos(item.usos);
+                    const flatIndex
+                      = pasillos.slice(0, pasilloIdx).reduce((n, p) => n + p.items.length, 0) + itemIdx;
                     return (
-                      <li key={item.nombre} className="flex items-center gap-4 p-4">
+                      <li
+                        key={item.nombre}
+                        className="flex items-center gap-4 p-4"
+                        {...getItemEnterProps(`${pasillo.nombre}::${item.nombre}`, flatIndex)}
+                      >
                         {/* FRESCO-248 — error state shake (12), retargeted from its
                             documented `<input>` shape onto this checkbox row: outer
                             `.t-input-wrap`, inner `.t-input` shakes when this exact

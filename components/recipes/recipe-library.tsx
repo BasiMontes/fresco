@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FilterDrawer } from '@/components/ui/filter-drawer';
 import { Input } from '@/components/ui/input';
+import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 import { DIETA_LABELS } from '@/lib/recipes/labels';
 import { countActiveFilters, EMPTY_FILTER_STATE } from '@/lib/recipes/recipe-filters';
@@ -113,6 +114,9 @@ export function RecipeLibrary({
   const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
   const [misRecetas, setMisRecetas] = React.useState(recetasPropias);
   const [createOpen, setCreateOpen] = React.useState(false);
+  // FRESCO-246 — one instance covers both grids; recipe ids are unique across
+  // "Tus recetas" and the catalogue, so a card only ever animates once.
+  const getCardEnterProps = useListEnterAnimation();
 
   // Keep the input aligned with the URL when navigation comes from elsewhere
   // (back/forward, a removed chip).
@@ -297,8 +301,8 @@ export function RecipeLibrary({
         <div className="mt-6" data-testid="personal_recipes_section">
           <h2 className="text-h6 uppercase text-tertiary">Tus recetas</h2>
           <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {misRecetas.map(receta => (
-              <Link key={receta.id} href={`/recipes/${receta.id}`}>
+            {misRecetas.map((receta, index) => (
+              <Link key={receta.id} href={`/recipes/${receta.id}`} {...getCardEnterProps(receta.id, index)}>
                 <PersonalRecipeCard receta={receta} />
               </Link>
             ))}
@@ -332,8 +336,12 @@ export function RecipeLibrary({
             className={`mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4${isPending ? ' opacity-60' : ''}`}
             data-testid="recipe_library_grid"
           >
-            {recipes.map(recipe => (
-              <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
+            {recipes.map((recipe, index) => (
+              <Link
+                key={recipe.id}
+                href={`/recipes/${recipe.id}`}
+                {...getCardEnterProps(recipe.id, index)}
+              >
                 <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
               </Link>
             ))}
