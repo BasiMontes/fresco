@@ -22,7 +22,7 @@
 // so the candidate array itself is not a source of run-to-run variance.
 
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
-import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
+import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
@@ -60,8 +60,9 @@ function makeSeededRng(seed: string): () => number {
   }
 }
 
-/** ASCII to match the real seeded `recipes.temporada` values (no accents live in the data — confirmed live, 2026-08-01). */
-function getCurrentSeasonAscii(): string {
+/** Current season as a `Temporada` — the union is ASCII (FRESCO-401), matching
+ * the seeded `recipes.temporada` values, so this returns the typed value directly. */
+function getCurrentSeason(): Temporada {
   const month = new Date().getMonth() // 0-11
   if (month === 11 || month === 0 || month === 1) return 'invierno'
   if (month >= 2 && month <= 4) return 'primavera'
@@ -91,7 +92,7 @@ export interface SelectedMenu {
 
 interface ScoreRecipeParams {
   recipe: Recipe
-  season: string
+  season: Temporada
   lastCategoria: string | null
   lastContundente: boolean | null
   /** Seeded PRNG for the tie-break jitter (FRESCO-380). */
@@ -113,11 +114,9 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
   if (clasificacion?.categoria && clasificacion.categoria === lastCategoria) score -= 5
   if (lastContundente !== null && clasificacion?.es_contundente === lastContundente) score -= 2
 
-  // FRESCO-375: the seeded `recipes.temporada` values are ASCII ('otono',
-  // 'todo_el_ano') and do NOT match the accented `Temporada` union (see
-  // getCurrentSeasonAscii above + its L36 note). Compare as plain strings —
-  // reconciling the type vs the data is tracked as a separate defect.
-  const temporada: string[] = recipe.temporada ?? []
+  // FRESCO-401: `Temporada` is now ASCII (matches the seeded data), so this
+  // compares against the type — the `string[]` workaround from FRESCO-375 is gone.
+  const temporada = recipe.temporada ?? []
   if (temporada.includes(season)) score += 3
   else if (temporada.includes('todo_el_ano')) score += 1
 
@@ -155,7 +154,7 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
     TIPOS.map(tipo => [tipo, pool.filter(r => r.clasificacion?.tipo_plato === tipo)]),
   )
 
-  const season = getCurrentSeasonAscii()
+  const season = getCurrentSeason()
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)

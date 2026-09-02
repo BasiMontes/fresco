@@ -50,7 +50,7 @@ export function makeFixtureRecipe(overrides: Partial<Recipe> = {}): Recipe {
     alergenos: [],
     ingredientes_principales: ['pollo', 'pimiento', 'calabacín'],
     ingredientes_que_puede_desagradar: [],
-    temporada: ['todo_el_año'],
+    temporada: ['todo_el_ano'],
     pasos_resumen: ['Cortar las verduras.', 'Cocinar el pollo a la plancha.', 'Saltear todo junto.'],
     veces_cocinada: 0,
     veces_descartada: 0,

@@ -22,7 +22,11 @@ export type Alergeno = string;
 
 export type CosteEstimado = 'muy_bajo' | 'bajo' | 'medio' | 'alto';
 export type DificultadReceta = 'muy_facil' | 'facil' | 'media' | 'avanzada';
-export type Temporada = 'primavera' | 'verano' | 'otoño' | 'invierno' | 'todo_el_año';
+// FRESCO-401: ASCII, matching the values actually seeded in `recipes.temporada`
+// (`otono`, `todo_el_ano` — no accents live in the data, confirmed against
+// `supabase/seed.sql`). The accented form the type used before never existed
+// in a row, so every `Temporada`-typed comparison against it was dead code.
+export type Temporada = 'primavera' | 'verano' | 'otono' | 'invierno' | 'todo_el_ano';
 export type TipoPlato = 'desayuno' | 'comida' | 'cena' | 'snack';
 export type CategoriaReceta
   = | 'pasta' | 'arroz' | 'legumbres' | 'carne' | 'pescado' | 'verdura'
