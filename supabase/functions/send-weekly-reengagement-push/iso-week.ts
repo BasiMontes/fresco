@@ -26,11 +26,12 @@ function getIsoWeekday(date: Date): number {
 }
 
 /**
- * Normalizes `date` to a UTC midnight `Date` built from its local
- * year/month/day components — calendar-day arithmetic is only safe in UTC.
+ * Normalizes `date` to a UTC-midnight `Date` built from its UTC
+ * year/month/day components (FRESCO-397 / A4-L12 — all-UTC frame, matching
+ * `lib/date/iso-week.ts`). Calendar-day arithmetic is only safe in UTC.
  */
 function toUtcDateOnly(date: Date): Date {
-  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
 }
 
 /**

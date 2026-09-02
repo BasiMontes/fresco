@@ -23,38 +23,67 @@ export interface DeleteAccountDialogProps {
 
 /**
  * `/profile` danger zone — the irreversible one (FRESCO-70). `Dialog` usage
- * mirrors `components/recipes/create-recipe-form.tsx` (FRESCO-68). The only
- * safety mechanism in this flow: the confirm button stays disabled until the
- * user has typed her own email exactly, a deliberate click-through guard
- * against a misclick on an action that cannot be undone (cascades through
- * every user-owned table at the DB level, see `deleteAccount`'s doc comment).
+ * mirrors `components/recipes/create-recipe-form.tsx` (FRESCO-68). The confirm
+ * button stays disabled until the user has typed her own email exactly, a
+ * deliberate click-through guard against a misclick on an action that cannot
+ * be undone (cascades through every user-owned table at the DB level, see
+ * `deleteAccount`'s doc comment).
  *
  * FRESCO-168: a guest session's `email` is always `''` (no real email exists
  * to type), so the confirmation target switches to a fixed phrase
  * (`GUEST_CONFIRMATION_PHRASE`) for `isAnonymous` sessions — otherwise the
  * gate is mathematically impossible to pass (`'' === ''` is never reachable
  * because the guard also requires a non-empty input).
+ *
+ * FRESCO-397 (A4-L11): the click-through gate is client-side only, so a
+ * registered user must additionally re-enter her password here. That
+ * password drives a fresh `signInWithPassword`, and the resulting access
+ * token is passed to the Edge Function as proof of a recent
+ * re-authentication (verified server-side). A guest has no password, so the
+ * phrase gate + the server-side rate limit are the whole story for that path.
  */
 export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: DeleteAccountDialogProps) {
   const router = useRouter();
   const [typedConfirmation, setTypedConfirmation] = useState('');
+  const [password, setPassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const confirmationTarget = isAnonymous ? GUEST_CONFIRMATION_PHRASE : email;
-  const isConfirmed = typedConfirmation.trim().length > 0 && typedConfirmation.trim() === confirmationTarget;
+  const phraseMatches = typedConfirmation.trim().length > 0 && typedConfirmation.trim() === confirmationTarget;
+  const isConfirmed = phraseMatches && (isAnonymous || password.length > 0);
 
   async function handleDelete() {
     setIsDeleting(true);
     setDeleteError(null);
     try {
       const client = createClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        setDeleteError('No hay una sesión activa. Recarga la página e inténtalo de nuevo.');
-        return;
+
+      let accessToken: string;
+      let reauthToken: string | undefined;
+
+      if (isAnonymous) {
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+          setDeleteError('No hay una sesión activa. Recarga la página e inténtalo de nuevo.');
+          return;
+        }
+        accessToken = session.access_token;
       }
-      await deleteAccount(session.access_token);
+      else {
+        // A4-L11: re-authenticate through native Supabase Auth. The fresh
+        // token both authenticates this request and proves recency to the
+        // Edge Function.
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        if (error || !data.session) {
+          setDeleteError('La contraseña no es correcta.');
+          return;
+        }
+        accessToken = data.session.access_token;
+        reauthToken = data.session.access_token;
+      }
+
+      await deleteAccount(accessToken, reauthToken);
       await client.auth.signOut();
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
       // onboarding draft so it doesn't leak into whoever logs in next on
@@ -87,8 +116,7 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
         compra y tus recetas propias. Escribe
         {' '}
         <strong className="text-text">{confirmationTarget}</strong>
-        {' '}
-        para confirmar.
+        {isAnonymous ? ' para confirmar.' : ' y tu contraseña para confirmar.'}
       </p>
 
       <Input
@@ -101,6 +129,19 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
         value={typedConfirmation}
         onChange={event => setTypedConfirmation(event.target.value)}
       />
+
+      {!isAnonymous && (
+        <Input
+          className="mt-3"
+          data-testid="delete_account_password_input"
+          type="password"
+          placeholder="Tu contraseña"
+          aria-label="Introduce tu contraseña para confirmar"
+          autoComplete="current-password"
+          value={password}
+          onChange={event => setPassword(event.target.value)}
+        />
+      )}
 
       {deleteError && (
         <p data-testid="delete_account_error_message" role="alert" aria-live="assertive" className="mt-3 text-body-sm text-error">

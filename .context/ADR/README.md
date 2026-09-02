@@ -83,6 +83,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0020](./ADR-0020-single-supabase-project-until-pro.md) | One Supabase project for all environments until Supabase Pro; explicit reopen triggers | Accepted | — | — |
 | [ADR-0021](./ADR-0021-progressive-signup-otp-deliverability.md) | Keep the Gmail-SMTP email OTP for progressive signup through the early cohort; deliverability now measured | Accepted | — | — |
 | [ADR-0022](./ADR-0022-guest-reassignment-verify-via-session-token.md) | Guest-data reassignment verifies target ownership via a session token + rate limit, not a server-side password sign-in | Proposed | ADR-0004 (verification step only) | — |
+| [ADR-0023](./ADR-0023-delete-account-recent-reauth.md) | `delete-account` requires a recent re-authentication (verified as a token, per ADR-0022) + a per-user rate limit | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

@@ -9,6 +9,7 @@
  */
 
 import type {
+  DeleteAccountRequest,
   DeleteAccountResponse,
   DeleteCatalogRecipeRequest,
   DeleteCatalogRecipeResponse,
@@ -153,12 +154,21 @@ export async function reassignGuestData(
 
 /**
  * POST /delete-account — `/profile` danger zone (FRESCO-70). Irreversible;
- * permanently deletes the CURRENTLY authenticated user's account. No request
- * body — the caller is resolved server-side from `accessToken` alone, same
- * shape as every other call here, just an empty body.
+ * permanently deletes the CURRENTLY authenticated user's account. The caller
+ * is resolved server-side from `accessToken`.
+ *
+ * FRESCO-397 (A4-L11): a registered caller must also pass `reauthToken` — a
+ * fresh access token from an immediately-preceding `signInWithPassword`,
+ * which the Edge Function verifies for recency. Guests have no password, so
+ * they call with `reauthToken` undefined and the server falls back to the
+ * per-user rate limit.
  */
-export async function deleteAccount(accessToken: string): Promise<DeleteAccountResponse> {
-  return callEdgeFunction<DeleteAccountResponse>('delete-account', {}, accessToken);
+export async function deleteAccount(
+  accessToken: string,
+  reauthToken?: string,
+): Promise<DeleteAccountResponse> {
+  const body: DeleteAccountRequest = reauthToken ? { reauthToken } : {};
+  return callEdgeFunction<DeleteAccountResponse>('delete-account', body, accessToken);
 }
 
 /**
