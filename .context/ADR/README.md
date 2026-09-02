@@ -65,7 +65,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0002](./ADR-0002-position-swaps-bypass-learning-trigger.md) | Slot-position swaps must bypass `recipe_learning_trigger` | Accepted | — | — |
 | [ADR-0003](./ADR-0003-guest-auth-anonymous-sign-in.md) | Guest-mode authentication via Supabase Anonymous Sign-In | Accepted | — | — |
 | [ADR-0004](./ADR-0004-guest-data-reassignment-on-email-conflict.md) | Guest-data reassignment on email conflict: password-verified, service-role-only RPC | Accepted | — | — |
-| [ADR-0005](./ADR-0005-deterministic-menu-slot-selection.md) | Deterministic algorithm fills the 21 menu slots; Gemini scoped to the Pro learning explanation only | Accepted | — | — |
+| [ADR-0005](./ADR-0005-deterministic-menu-slot-selection.md) | Deterministic algorithm fills the 21 menu slots (title's "Gemini for the Pro explanation" clause is now historical — pipeline is 100% LLM-free, see the ADR's 2026-09-02 status note) | Accepted | — | — |
 | [ADR-0006](./ADR-0006-pro-learning-loop-driven-by-personal-marks.md) | Pro learning loop keyed off personal cocinada/descartada marks, not raw calendar presence | Accepted | — | — |
 | [ADR-0007](./ADR-0007-stripe-checkout-hosted-webhook-driven-subscription.md) | Stripe Checkout (hosted) + webhook-driven subscription state | Accepted | — | — |
 | [ADR-0008](./ADR-0008-scorerecipe-personal-engagement-nudge-pro-only.md) | `scoreRecipe()` personal engagement nudge, Pro/Family-only, sourced from `meal_plan_recipes.estado` | Accepted | — | — |
@@ -79,6 +79,8 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Accepted | — | — |
 | [ADR-0017](./ADR-0017-ci-e2e-local-supabase-stack.md) | CI e2e runs against an ephemeral local Supabase stack, not the prod project | Accepted | — | — |
 | [ADR-0018](./ADR-0018-e2e-test-architecture-revisit-threshold.md) | E2E test architecture revisit: CI wall-clock is the binding revisit trigger, not scenario count | Accepted | ADR-0014 | — |
+| [ADR-0019](./ADR-0019-security-response-headers-and-csp.md) | Explicit security response headers + enforcing nonce-based Content-Security-Policy | Accepted | — | — |
+| [ADR-0020](./ADR-0020-single-supabase-project-until-pro.md) | One Supabase project for all environments until Supabase Pro; explicit reopen triggers | Accepted | — | — |
 | [ADR-0021](./ADR-0021-progressive-signup-otp-deliverability.md) | Keep the Gmail-SMTP email OTP for progressive signup through the early cohort; deliverability now measured | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
