@@ -155,6 +155,10 @@ export default function SignupPage() {
           setEmailConflict(true);
           return;
         }
+        // FRESCO-390 (A4-M25): a genuine verification failure (wrong / expired
+        // code) — NOT the email_exists conflict above, which is a different
+        // funnel. `reason` is the Supabase error code (e.g. `otp_expired`).
+        captureEvent(POSTHOG_EVENTS.OTP_FAILED, { reason: verifyError.code });
         setOtpError(translateAuthError(verifyError));
         return;
       }
@@ -167,6 +171,11 @@ export default function SignupPage() {
         setOtpError(translateAuthError(passwordError));
         return;
       }
+      // FRESCO-390 (A4-M25): the code was valid and the email is now linked —
+      // the funnel step that closes `otp_sent`. Fired alongside
+      // `user_signed_up` below (not instead of it): this one is the granular
+      // OTP-deliverability metric, that one is "a real account exists".
+      captureEvent(POSTHOG_EVENTS.OTP_VERIFIED);
       // ADR-0013 (FRESCO-240): EPIC-FRESCO-7's Progressive Signup conversion
       // completing — the OTP-based anonymous→registered path. Mutually
       // exclusive with identity-step.tsx's own USER_SIGNED_UP capture (that
@@ -197,6 +206,9 @@ export default function SignupPage() {
         setOtpError(translateAuthError(error));
         return;
       }
+      // FRESCO-390 (A4-M25): a resend is another delivery attempt — a high
+      // `resend` rate is itself a deliverability signal (first email lost).
+      captureEvent(POSTHOG_EVENTS.OTP_SENT, { context: 'resend' });
       setResendMessage('Te enviamos un nuevo código.');
     }
     finally {
@@ -263,6 +275,10 @@ export default function SignupPage() {
           }
           return;
         }
+        // FRESCO-390 (A4-M25): the OTP email is on its way — first send of
+        // the conversion funnel. `otp_verified / otp_sent` measures the
+        // Gmail-SMTP deliverability the audit flagged (ADR-0021).
+        captureEvent(POSTHOG_EVENTS.OTP_SENT, { context: 'initial' });
         setStep('otp');
         return;
       }
