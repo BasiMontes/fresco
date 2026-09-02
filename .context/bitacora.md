@@ -371,3 +371,13 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: el jitter `Math.random()*2` de `scoreRecipe` (rango = peso por estrella del rating) podía voltear un 5★ vs 4★; `get_filtered_recipes` sin `ORDER BY`. Fix: PRNG sembrado por `${user.id}:${semana_iso}` capado a `rng()*0.5` (solo desempata, no voltea una estrella); migración `20260901160000` añade `order by r.id`; tests asertan reproducibilidad en vez de fijar `Math.random` a 0; nota de update en ADR-0005. PR #233 squash a dev, SP 3.
 - Por qué: audit-4 A4-M1. ADR-0005 decía "determinista" pero ningún menú era reproducible.
 - Siguiente: ff staging; main en espera con 2 migraciones (FRESCO-381 + 380) que necesitan `supabase db push`. Luego ola-2 sigue (FRESCO-382+).
+
+## 2026-09-02 - FRESCO-31 batch + seed.sql regen (774/1000)
+- Qué: 2 tandas de fetch-recipe-photos.ts (18+18 hits), recipes.foto_url 738 -> 774/1000, 0 duplicados. Regenerado supabase/seed.sql desde dump de prod (frutos_secos deviation retirada, migración 20260901073555 ya en prod). supabase db reset verificado. Commit ef99df0 -> dev + ff staging.
+- Por qué: chore recurrente de backfill de fotos vía Unsplash free tier; seed.sql es el fixture de CI para test:e2e.
+- Siguiente: 226 recetas sin foto (variantes filler-only difíciles). main sin promover (15 commits de audit-4 wave por detrás, batch promote pendiente de decisión del owner).
+
+## 2026-09-02 - FRESCO-382 planner correctness + DRY (A4-M4/M5/M8)
+- Qué: M4 cotas de tamaño de hogar (migración 20260902120000 CHECK <=10 en num_personas/adultos/ninos + clamp server-side en generate-shopping-list). M5 guardia raciones_receta>0 en consolidateIngredientes (evita coste_estimado NaN/null). M8 normalizeNombre 3 copias Node -> 1 (lib/text/normalize-nombre.ts) + test de deriva Deno<->Node (lib/text/runtime-parity.test.ts) para normalizeNombre y getIsoWeek. PR #234 -> dev, SP 3.
+- Por qué: audit-4 ola-2, 3 hallazgos MEDIO de correctitud/DRY del planificador.
+- Siguiente: CI verde -> squash a dev + ff staging. main HELD (migración nueva pendiente de supabase db push al promover, igual que FRESCO-380/381).
