@@ -148,4 +148,45 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
     expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
   })
+
+  // FRESCO-382 (A4-M5): a non-positive `raciones_receta` makes
+  // `raciones_usuario / raciones_receta` Infinity or NaN, which poisons every
+  // downstream cost. The guard skips the row and logs instead.
+  describe('non-positive raciones_receta guard', () => {
+    test.each([
+      ['zero', 0],
+      ['negative', -4],
+      ['NaN', Number.NaN],
+    ])('skips the row and warns when raciones_receta is %s', (_label, raciones) => {
+      const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'patata', raciones_receta: raciones as number }),
+        makeRaw({ nombre: 'tomate', raciones_receta: 4, raciones_usuario: 4 }),
+      ])
+
+      // Bad row dropped; the healthy row still consolidates normally.
+      expect(result).toEqual([{
+        nombre: 'tomate',
+        cantidad: 300,
+        unidad: 'g',
+        usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+      }])
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      warnSpy.mockRestore()
+    })
+
+    test('no ingredient survives when every row has a bad raciones_receta', () => {
+      const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'patata', raciones_receta: 0 }),
+        makeRaw({ nombre: 'tomate', raciones_receta: 0 }),
+      ])
+
+      expect(result).toEqual([])
+      expect(warnSpy).toHaveBeenCalledTimes(2)
+      warnSpy.mockRestore()
+    })
+  })
 })
