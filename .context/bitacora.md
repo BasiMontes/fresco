@@ -108,3 +108,8 @@ Historia archivada:
 - Qué: reassign-guest-data verifica propiedad con token de sesión (no signInWithPassword sobre credenciales del llamante) + rate limit 5/h; contrato -> { targetAccessToken }; ADR-0022. /qa: noindex + Disallow + project ref -> placeholder.
 - Por qué: audit-4 ola-3 Seguridad, A4-L4 + A4-L5 (BAJO). PR #248 -> dev 60f478b, ff staging. SP 3.
 - Siguiente: ola-3 FRESCO-359. main en espera.
+
+## 2026-09-02 - FRESCO-396 A4-L6..L10 correctitud menor del motor
+- Qué: 5 hallazgos BAJO de auditoría-4 ola-3 (eje Arquitectura). L6: `.or()` de admin-recipes escapado+entrecomillado (patrón PostgREST, verificado live). L7: `buildUpdatePayload` limita recipe_id a `sustituida` y rating fuera de `sustituida` (whitelist estado/rating ya venía de FRESCO-362). L8: `isProEntitlementActive` — el gate de Pro comprueba `plan_expires_at` + respeta la gracia de dunning `past_due` de Stripe. L9: migración 20260902150000 — `swap_meal_plan_slots` rechaza slots `excluida`. L10: bucket de coste desconocido ya no genera `NaN` (el aviso de presupuesto desaparecía); consolidator conserva cantidad de unidad incompatible en grupo aparte.
+- Por qué: remediación auditoría-4 (epic FRESCO-359), correctitud del motor de menús / Edge Functions.
+- Siguiente: PR #249 squash en dev (0c949bb), ff a staging. main HELD (lote auditoría-4). Jira → Control de calidad. Pendiente resto de ola-3.
