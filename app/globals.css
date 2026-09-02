@@ -802,3 +802,34 @@
     animation-delay: calc(var(--enter-index, 0) * var(--duration-stagger));
   }
 }
+
+/*
+ * Reduced-motion global guard (FRESCO-249, WCAG 2.3.3 / 2.2.2) — the
+ * transversal counterpart to every animation this epic (and the rest of the
+ * app) introduces. The per-component `@media (prefers-reduced-motion: reduce)`
+ * blocks above still win by specificity where they exist; this catches
+ * everything else, including the ~30 Tailwind `transition` / `transition-colors`
+ * / `transition-transform` utilities in components that have no counterpart of
+ * their own. `.01ms` (not `0`) so `transitionend` / `animationend` handlers
+ * still fire and state machines that wait on them don't stall.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /*
+   * Essential loading indicators keep spinning (AC: "los indicadores de carga
+   * esenciales pueden seguir girando"). Tailwind's `animate-spin` is the only
+   * infinite decorative-free loop in the app.
+   */
+  .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
+}

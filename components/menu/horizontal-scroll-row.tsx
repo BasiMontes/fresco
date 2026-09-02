@@ -38,7 +38,14 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
   }, [updateArrows]);
 
   function scrollByCard(direction: 1 | -1) {
-    scrollerRef.current?.scrollBy({ left: direction * 272, behavior: 'smooth' });
+    // FRESCO-249 — a JS `behavior: 'smooth'` overrides the CSS
+    // `scroll-behavior: auto` that the reduced-motion guard sets, so honour
+    // the preference explicitly here.
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    scrollerRef.current?.scrollBy({
+      left: direction * 272,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
   }
 
   return (
