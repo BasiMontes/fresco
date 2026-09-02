@@ -411,3 +411,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: eventos PostHog otp_sent (context initial/resend) / otp_verified / otp_failed (reason) en app/signup/page.tsx + lib/posthog/event-names.ts. ADR-0021: mantener OTP Gmail SMTP para la cohorte, diferir dominio+Resend, con triggers de reapertura (verify/sent <80% sobre >=50 eventos, primer report de spam, usuario de pago afectado). Fork B. PR #240 -> dev + ff staging, SP 2.
 - Por qué: audit-4 A4-M25 (producto) — la conversion de registro progresivo depende de entregabilidad Gmail SMTP fragil.
 - Siguiente: medir el funnel sobre la cohorte real. main HELD.
+
+## 2026-09-02 - FRESCO-388 higiene de backlog (A4-M16/M17/M18)
+- Qué: M16 12 tickets de Control de calidad -> Finalizada + 2 epicas cerradas (FRESCO-223, 81). M17 .context/backlog/estimation-and-tracking-model.md — decision: throughput tracking (tickets/semana), no velocidad; DRAFT epics 330/331/332 sin estimar hasta tirar de ellas. M18 AC Gherkin testeable para FRESCO-245/246/249 (274/275 ya Finalizada, forward-only). Fork C. PR #242 -> dev + ff staging, SP 3.
+- Por qué: audit-4 A4-M16/M17/M18 (backlog).
+- Siguiente: main HELD. Tally semanal opcional en bitacora.
