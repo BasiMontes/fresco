@@ -1,21 +1,26 @@
 import { fileURLToPath } from 'node:url';
 import { withSentryConfig } from '@sentry/nextjs';
 
-// --- FRESCO-312: security response headers ---------------------------------
-// Production previously served only `Strict-Transport-Security`, and only
-// because Vercel auto-injects it on `*.vercel.app`. This block adds the rest
-// (and makes HSTS explicit so a future custom domain keeps it) plus a
-// Content-Security-Policy in Report-Only mode.
-//
-// CSP is Report-Only and nonce-less on purpose: a nonce forces every page
-// into dynamic rendering (no CDN caching — see the Next.js CSP guide), which
-// is not warranted for a medium-severity finding. `script-src`/`style-src`
-// therefore keep `'unsafe-inline'` — without a nonce there is no other way to
-// allow Next.js's own inline bootstrap, and Report-Only blocks nothing
-// anyway. The follow-up (separate ticket) is: add a nonce and flip CSP to
-// enforcing once Sentry shows the report stream is quiet.
+// --- FRESCO-312 / FRESCO-386: security response headers -------------------
+// The request-independent headers live here as a static block. The
+// Content-Security-Policy moved to `proxy.ts` (FRESCO-386 / A4-M10): it is
+// now enforcing with a per-request nonce, which a static config header
+// cannot carry. `lib/security/csp.ts` builds it.
+const securityHeaders = [
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+];
 
-/** `https://host[:port]` of a URL string, or null when unparseable/unset. */
+// FRESCO-366 / A4-B4: PostHog reverse proxy. `posthog-js` posts to the
+// same-origin `/ingest` path (see app/providers/posthog-provider.tsx) and
+// these rewrites forward it to PostHog's ingestion + static-asset hosts, so
+// an ad-blocker filtering `*.posthog.com` can't drop client events. Region
+// follows NEXT_PUBLIC_POSTHOG_HOST (`https://eu.i.posthog.com` →
+// `https://eu-assets.i.posthog.com`); the rewrites are skipped entirely when
+// the host is unset (local dev without a PostHog project).
 function toOrigin(url) {
   try {
     return new URL(url).origin;
@@ -25,107 +30,8 @@ function toOrigin(url) {
   }
 }
 
-/**
- * Sentry's Security Header (CSP) report endpoint, derived from the public
- * DSN `https://<key>@<host>/<projectId>`:
- * `https://<host>/api/<projectId>/security/?sentry_key=<key>`.
- */
-function sentryCspReportUri(dsn) {
-  try {
-    const url = new URL(dsn);
-    const projectId = url.pathname.replace(/\//g, '');
-    if (!projectId || !url.username) {
-      return null;
-    }
-    return `${url.protocol}//${url.host}/api/${projectId}/security/?sentry_key=${url.username}`;
-  }
-  catch {
-    return null;
-  }
-}
-
-const supabaseOrigin = toOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
-const supabaseFunctionsOrigin = toOrigin(process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL);
-const supabaseRealtimeOrigin = supabaseOrigin?.replace(/^https:/, 'wss:') ?? null;
-const posthogOrigin = toOrigin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
-
-// FRESCO-366 / A4-B4: PostHog reverse proxy. `posthog-js` posts to the
-// same-origin `/ingest` path (see app/providers/posthog-provider.tsx) and
-// these rewrites forward it to PostHog's ingestion + static-asset hosts, so
-// an ad-blocker filtering `*.posthog.com` can't drop client events. Region
-// follows NEXT_PUBLIC_POSTHOG_HOST (`https://eu.i.posthog.com` →
-// `https://eu-assets.i.posthog.com`); the rewrites are skipped entirely when
-// the host is unset (local dev without a PostHog project).
-const posthogIngestHost = posthogOrigin;
+const posthogIngestHost = toOrigin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
 const posthogAssetsHost = posthogIngestHost?.replace('.i.posthog.com', '-assets.i.posthog.com') ?? null;
-const sentryIngestOrigin = toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
-const cspReportUri = sentryCspReportUri(process.env.NEXT_PUBLIC_SENTRY_DSN);
-
-// Third parties the browser actually talks to. Stripe is intentionally absent:
-// checkout is a server-side call + full-page redirect to Stripe's hosted page,
-// so the browser never loads Stripe.js.
-//
-// PostHog and Sentry are pinned as static wildcard hosts, not derived from the
-// NEXT_PUBLIC_* vars — those aren't populated in every Vercel build scope, and
-// the allowlist for well-known third parties must not silently degrade per
-// environment. `posthogOrigin` / `sentryIngestOrigin` stay in the lists as an
-// exact-match bonus when the var is present (deduped away otherwise).
-const posthogHosts = ['https://*.posthog.com', 'https://*.i.posthog.com'];
-const sentryHosts = [
-  'https://*.sentry.io',
-  'https://*.ingest.sentry.io',
-  'https://*.ingest.us.sentry.io',
-  'https://*.ingest.de.sentry.io',
-];
-const scriptSrc = ['\'self\'', '\'unsafe-inline\'', posthogOrigin, ...posthogHosts];
-const imgSrc = ['\'self\'', 'data:', 'blob:', 'https://images.unsplash.com', posthogOrigin, ...posthogHosts];
-const connectSrc = [
-  '\'self\'',
-  supabaseOrigin,
-  supabaseRealtimeOrigin,
-  supabaseFunctionsOrigin,
-  posthogOrigin,
-  ...posthogHosts,
-  sentryIngestOrigin,
-  ...sentryHosts,
-  // FRESCO-32: client-side leaked-password check (lib/validation/pwned-password.ts).
-  'https://api.pwnedpasswords.com',
-];
-
-const tokens = list => [...new Set(list.filter(Boolean))].join(' ');
-
-const contentSecurityPolicy = [
-  'default-src \'self\'',
-  'base-uri \'self\'',
-  'object-src \'none\'',
-  'frame-ancestors \'none\'',
-  'form-action \'self\'',
-  'frame-src \'self\'',
-  'manifest-src \'self\'',
-  'worker-src \'self\' blob:',
-  'font-src \'self\'',
-  'style-src \'self\' \'unsafe-inline\'',
-  `script-src ${tokens(scriptSrc)}`,
-  `img-src ${tokens(imgSrc)}`,
-  `connect-src ${tokens(connectSrc)}`,
-  'upgrade-insecure-requests',
-  cspReportUri && `report-uri ${cspReportUri}`,
-  cspReportUri && 'report-to csp-endpoint',
-]
-  .filter(Boolean)
-  .join('; ');
-
-const securityHeaders = [
-  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-  { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-  { key: 'Content-Security-Policy-Report-Only', value: contentSecurityPolicy },
-  ...(cspReportUri
-    ? [{ key: 'Reporting-Endpoints', value: `csp-endpoint="${cspReportUri}"` }]
-    : []),
-];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
