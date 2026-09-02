@@ -103,3 +103,8 @@ Historia archivada:
 - Qué: nuevo `.context/backlog/definition-of-done.md` — principio "cerrar sobre la metrica, no sobre el mecanismo"; tabla de gates de cierre por tipo de ticket (defecto / tarea datos-backlog / historia feature / decision-deferral / tarea proceso-docs); escape hatch de residuo aceptado (nombrado + ticket de seguimiento concreto + linkeado); puntos de enganche; revisit triggers. Wiring: audit-process.md §3 apunta al doc (ya no "once it lands"); gate FRESCO-313 de bug-fix-workflow.md enmarcado como la instancia defecto de la DoD; nuevo Gotcha 17 en /sprint-development. Home = .context/backlog/ sibling de estimation-and-tracking-model.md (no ADR — un close-gate no es arquitectonico hard-to-reverse). Sin edicion de CLAUDE.md. PR #247 squash -> dev (0d40368). SP 2. SOLO.
 - Por qué: auditoria 4 ola-3, A4-PROC, delegado desde FRESCO-394 §3. Origen: FRESCO-392 tuvo que reabrir y reverificar FRESCO-282/313/320/328, todos cerrados forward-only ("el mecanismo existe" != "hecho").
 - Siguiente: resto de hijos ola-3 de FRESCO-359 (395-400). Promocion a prod del batch audit-4 sigue en HOLD (main en espera).
+
+## 2026-09-02 - FRESCO-395: A4-L4 oráculo de fuerza bruta + A4-L5 /qa noindex
+- Qué: reassign-guest-data verifica propiedad con token de sesión (no signInWithPassword sobre credenciales del llamante) + rate limit 5/h; contrato -> { targetAccessToken }; ADR-0022. /qa: noindex + Disallow + project ref -> placeholder.
+- Por qué: audit-4 ola-3 Seguridad, A4-L4 + A4-L5 (BAJO). PR #248 -> dev 60f478b, ff staging. SP 3.
+- Siguiente: ola-3 FRESCO-359. main en espera.
