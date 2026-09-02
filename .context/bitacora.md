@@ -138,3 +138,8 @@ Historia archivada:
 - Que: fundido de entrada (~250ms) al navegar entre secciones de `(app)`. Nuevo `components/layout/page-transition.tsx` (wrapper cliente keyed por usePathname) + keyframe en globals.css + opt-out de prefers-reduced-motion. Mergeado dev+staging (a1e8692, PR #255).
 - Por que: EPIC-FRESCO-244 (Motion y Transiciones), AC A4-M18. El primer intento con `experimental.viewTransition` rompio el drag&drop del calendario (STORY-FRESCO-11) en e2e; revertido. Divergencia §5-K: fundido de entrada, no cross-fade saliente+entrante.
 - Siguiente: QA en staging (fresco-pre). main en hold (batch audit-4). Revisar cross-fade real cuando la View Transitions API sea estable en Next.
+
+## 2026-09-02 - FRESCO-246 Listas y Tarjetas
+- Que: animacion de entrada + stagger para cards de listas/grids. Hook `components/ui/use-list-enter-animation.ts` + keyframe en globals.css (bajo `prefers-reduced-motion: no-preference`). Cableado en lista de la compra + biblioteca de recetas. Mergeado dev+staging (31d24e3, PR #256).
+- Por que: EPIC-FRESCO-244 (Motion y Transiciones), AC A4-M18. Divergencia §5-L: escenario 2 (salida) exento (sin flujo de borrado in-place en la UI viva) + calendario excluido (grid ventaneado, riesgo dnd-kit).
+- Siguiente: QA en staging. main en hold (batch audit-4). Quedan FRESCO-249 (accesibilidad de movimiento) para cerrar el epic.
