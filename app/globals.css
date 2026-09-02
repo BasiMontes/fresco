@@ -742,3 +742,38 @@
     transform: none !important;
   }
 }
+
+/*
+ * Page transitions (FRESCO-245) — soft-fade the incoming view when Laura
+ * navigates between the sidebar destinations (Inicio / Calendario / Recetas /
+ * Lista / Perfil). `components/layout/page-transition.tsx` re-keys this
+ * wrapper by pathname, so the animation replays on every route change
+ * (browser back/forward included) and never on in-page state updates.
+ *
+ * Fade-in only — the outgoing view is replaced immediately. A true
+ * outgoing+incoming cross-fade needs the browser View Transitions API
+ * (`experimental.viewTransition`), which destabilised the calendar reorder
+ * flow; recorded as a §5 divergence on the story, revisit when the API is
+ * stable in Next. Opacity only, no transform — no layout shift (AC: "no hay
+ * salto de scroll ni layout shift visible ... CLS ~ 0"). 250ms sits inside
+ * the AC's 300ms budget. Reuses the --page-fade-* tokens installed by
+ * transitions-dev; defines no new motion tokens (DESIGN.md §4.19).
+ */
+.page-transition {
+  animation: fresco-page-transition-in var(--page-fade-dur) var(--page-fade-ease);
+}
+@keyframes fresco-page-transition-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Reduced-motion: the view swaps instantly, no fade (AC: "el cambio de vista
+ * es inmediato, sin fundido ni desplazamiento").
+ */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
+}

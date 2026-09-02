@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { AccountUser } from '@/components/layout/sidebar-account';
 
 import { BottomTabBar } from '@/components/layout/bottom-tab-bar';
+import { PageTransition } from '@/components/layout/page-transition';
 import { Sidebar } from '@/components/layout/sidebar';
 
 export interface AppShellProps {
@@ -31,7 +32,15 @@ export function AppShell({ children, user }: AppShellProps) {
         whole page (sidebar included, since it's a sibling flex item, not
         fixed-position) into horizontal scroll along with it.
       */}
-      <main className="min-w-0 flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">{children}</main>
+      {/*
+        FRESCO-245: `PageTransition` fades the incoming view in on every route
+        change (it re-keys by pathname). It only wraps `{children}` — the
+        sidebar and bottom tab bar stay put, so there is no layout shift and
+        the user keeps a fixed spatial anchor.
+      */}
+      <main className="min-w-0 flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">
+        <PageTransition>{children}</PageTransition>
+      </main>
       <BottomTabBar />
     </div>
   );
