@@ -36,6 +36,14 @@ export const metadata: Metadata = {
     'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
 };
 
+// FRESCO-386 (A4-M10): the enforcing, nonce-based CSP (see `proxy.ts`) needs
+// a per-request nonce stamped onto Next's inline bootstrap script. A page
+// prerendered at build time has no request and therefore no nonce, so its
+// bootstrap would be blocked by `script-src` (no `'unsafe-inline'`). Forcing
+// dynamic rendering app-wide is the documented tradeoff of nonce CSP — no
+// CDN caching, no PPR.
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${caprasimo.variable} ${figtree.variable}`}>
