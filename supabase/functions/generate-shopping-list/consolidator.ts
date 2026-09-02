@@ -270,13 +270,15 @@ function fromBaseUnit(cantidad: number, unidad: string): { cantidad: number; uni
 export function consolidateIngredientes(
   rawIngredientes: RawIngrediente[]
 ): IngredienteConsolidado[] {
-  const map = new Map<string, { cantidad: number; unidad: string }>()
+  // One key can hold more than one quantity group: same-unit additions merge,
+  // but a unit that `canSumUnits` rejects opens a NEW group rather than being
+  // dropped (A4-L10). In practice units come from the same BASE_QUANTITIES
+  // table and never diverge, so this stays single-group — the array only
+  // guarantees no quantity is ever silently lost if that assumption breaks.
+  const map = new Map<string, { cantidad: number; unidad: string }[]>()
   // FRESCO-212: every distinct (recipe, day) an ingredient was pulled from,
   // tracked independently of quantity summing — a staple is still "used in"
-  // a recipe even on the `canSumUnits` else-branch below, which quantity
-  // summing skips (unreachable in practice, since units are looked up from
-  // the same BASE_QUANTITIES table and can never actually diverge — see
-  // consolidator.test.ts).
+  // a recipe even on the `canSumUnits` else-branch below.
   const usosMap = new Map<string, { receta: string; dia: DiaSemana }[]>()
   // FRESCO-196: `key` below is accent-stripped on purpose (it's the lookup
   // key into BASE_QUANTITIES/INGREDIENT_AISLE/PRICE_OVERRIDE), but it must
@@ -320,26 +322,37 @@ export function consolidateIngredientes(
     }
     usosMap.set(key, usos)
 
-    if (map.has(key)) {
-      const existing = map.get(key)!
-      const { cantidad: existBase, unidad: existUnit } = toBaseUnit(existing.cantidad, existing.unidad)
-
-      if (canSumUnits(existUnit, unitBase)) {
+    const groups = map.get(key)
+    if (groups) {
+      const compatible = groups.find(g => canSumUnits(toBaseUnit(g.cantidad, g.unidad).unidad, unitBase))
+      if (compatible) {
+        const { cantidad: existBase, unidad: existUnit } = toBaseUnit(compatible.cantidad, compatible.unidad)
         const { cantidad: total, unidad: totalUnit } = fromBaseUnit(existBase + cantBase, existUnit)
-        map.set(key, { cantidad: total, unidad: totalUnit })
+        compatible.cantidad = total
+        compatible.unidad = totalUnit
       } else {
-        logger.warn('Unidades incompatibles', { fn: 'generate-shopping-list', ingrediente: key, existUnit, unitBase })
+        // A4-L10: no group this quantity can be added to — keep it as its own
+        // group instead of discarding it. `canSumUnits` never actually
+        // rejects in practice (units come from BASE_QUANTITIES), so this is a
+        // safety net, not an expected path — hence the warn.
+        logger.warn('Unidades incompatibles, cantidad conservada en grupo aparte', {
+          fn: 'generate-shopping-list', ingrediente: key, unitBase,
+        })
+        const { cantidad, unidad } = fromBaseUnit(cantBase, unitBase)
+        groups.push({ cantidad, unidad })
       }
     } else {
       const { cantidad, unidad } = fromBaseUnit(cantBase, unitBase)
-      map.set(key, { cantidad, unidad })
+      map.set(key, [{ cantidad, unidad }])
     }
   }
 
-  return Array.from(map.entries()).map(([key, { cantidad, unidad }]) => ({
-    nombre: displayNombreMap.get(key) ?? key,
-    cantidad,
-    unidad,
-    usos: usosMap.get(key) ?? [],
-  }))
+  return Array.from(map.entries()).flatMap(([key, groups]) =>
+    groups.map(({ cantidad, unidad }) => ({
+      nombre: displayNombreMap.get(key) ?? key,
+      cantidad,
+      unidad,
+      usos: usosMap.get(key) ?? [],
+    }))
+  )
 }

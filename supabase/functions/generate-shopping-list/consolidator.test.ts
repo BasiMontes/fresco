@@ -139,13 +139,18 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
   test('never logs "Unidades incompatibles" while merging the same real ingredient across recipes', () => {
     const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
 
-    consolidateIngredientes([
+    const result = consolidateIngredientes([
       makeRaw({ nombre: 'Tomate', receta_id: 'r1' }),
       makeRaw({ nombre: 'tomate', receta_id: 'r2' }),
       makeRaw({ nombre: 'TOMATE', receta_id: 'r3' }),
     ])
 
     expect(warnSpy).not.toHaveBeenCalled()
+    // A4-L10: the compatible-units path still collapses to ONE line — the
+    // multi-group map (added so an incompatible unit opens a new group
+    // instead of being dropped) must not fragment the normal case.
+    expect(result).toHaveLength(1)
+    expect(result[0].nombre).toBe('Tomate')
     warnSpy.mockRestore()
   })
 

@@ -246,17 +246,35 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
   // never a hard-fail/retry gate, same as before this ADR).
   if (profile.presupuesto_semana_euros != null) {
     let totalEuros = 0
+    let costeDesconocido = 0
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
         const recipeId = menu[dia][tipo]
         if (recipeId === NO_SAFE_RECIPE_SENTINEL || recipeId === SLOT_EXCLUDED_SENTINEL) continue
         const coste = recipeById.get(recipeId)?.meta?.coste_estimado
-        if (coste) totalEuros += BUCKET_MIDPOINT_EUROS[coste]
+        // A4-L10: `BUCKET_MIDPOINT_EUROS[coste]` is `undefined` for a missing
+        // bucket OR a value outside the 4-key enum (bad/new data). Adding
+        // that turns `totalEuros` into `NaN`, `NaN > budget` is `false`, and
+        // the over-budget warning silently vanishes. Look the midpoint up
+        // explicitly; count an unknown slot as the cheapest bucket (keeps the
+        // total a lower bound) and surface the imprecision.
+        const midpoint = coste ? BUCKET_MIDPOINT_EUROS[coste] : undefined
+        if (midpoint != null) {
+          totalEuros += midpoint
+        } else {
+          totalEuros += BUCKET_MIDPOINT_EUROS.muy_bajo
+          costeDesconocido++
+        }
       }
     }
     if (totalEuros > profile.presupuesto_semana_euros) {
       const overage = totalEuros - profile.presupuesto_semana_euros
       advertencias.push(`El menú supera tu presupuesto semanal en aproximadamente ${overage.toFixed(2)}€`)
+    }
+    if (costeDesconocido > 0) {
+      advertencias.push(
+        `El cálculo de presupuesto es aproximado: ${costeDesconocido} ${costeDesconocido === 1 ? 'receta no tiene' : 'recetas no tienen'} coste estimado.`,
+      )
     }
   }
 

@@ -21,7 +21,7 @@ import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { logger } from '../_shared/logger.ts'
-import { assertEstadoValido, assertRatingValido } from './validation.ts'
+import { assertEstadoValido, assertRatingValido, buildUpdatePayload } from './validation.ts'
 import type { SlotOwnershipRow, UpdateRecipeStatusRequest, UpdateRecipeStatusResponse } from './types.ts'
 
 const FN_NAME = 'update-recipe-status'
@@ -125,10 +125,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 7. Apply the update — recipe_learning_trigger reacts to this in the DB
-    const updatePayload: Record<string, unknown> = { estado }
-    if (rating !== undefined) updatePayload.rating = rating
-    if (nueva_recipe_id !== undefined) updatePayload.recipe_id = nueva_recipe_id
+    // 7. Apply the update — recipe_learning_trigger reacts to this in the DB.
+    // A4-L7: buildUpdatePayload writes only the fields the target estado
+    // permits (recipe_id on `sustituida` only, rating off `sustituida`).
+    const updatePayload = buildUpdatePayload(estado, rating, nueva_recipe_id)
 
     const { error: updateError } = await supabase
       .from('meal_plan_recipes')
