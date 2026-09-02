@@ -4,10 +4,10 @@ import type {
   TipoPlatoSlot,
 } from '../../../api/schemas/api-contracts.types.ts'
 import type { DiaSemana } from '../../../api/schemas/meal-plan.types.ts'
-import type { Recipe } from '../../../api/schemas/recipe.types.ts'
+import type { Recipe, Temporada } from '../../../api/schemas/recipe.types.ts'
 import type { UserProfile } from '../../../api/schemas/user-profile.types.ts'
 
-export type { GenerateMealPlanRequest, GenerateMealPlanResponse, TipoPlatoSlot, DiaSemana, Recipe, UserProfile }
+export type { GenerateMealPlanRequest, GenerateMealPlanResponse, TipoPlatoSlot, DiaSemana, Recipe, Temporada, UserProfile }
 
 /**
  * FR-8.2 / AC Scenario 4 (FRESCO-23): the value `menu-selector.ts` assigns

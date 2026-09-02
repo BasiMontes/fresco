@@ -3,6 +3,9 @@ import type { TipoPlato } from './recipe.types.ts';
 // Row shapes of `public.meal_plans` and `public.meal_plan_recipes`
 // (fresco-schema-sql.md Blocks 4-5), the other two newly-migrated tables.
 
+// ASCII already — verified against `meal_plan_recipes.dia` seed values
+// (FRESCO-401 checked this for the same accent-mismatch pattern `Temporada`
+// had; `dia` was already clean).
 export type DiaSemana
   = | 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo';
 
