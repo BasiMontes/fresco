@@ -2,9 +2,10 @@
 
 import type { FormEvent } from 'react';
 import type { LegalSection } from '@/components/legal/legal-modal';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import Image from 'next/image';
-import Link from 'next/link';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { LegalLinks } from '@/components/legal/legal-links';
@@ -14,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
+import { clientEnv } from '@/lib/env';
 import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
@@ -68,10 +70,14 @@ export default function SignupPage() {
   const isSubmittingRef = useRef(false);
 
   /**
-   * ADR-0004 (FRESCO-20): the guest proves she owns the conflicting account
-   * by its real password (verified server-side, never trusted client-side),
-   * then her generated data moves to it. Runs on the STILL-anonymous
-   * session's access token — that identity is what gets reassigned away.
+   * ADR-0004 (FRESCO-20) + ADR-0022 (FRESCO-395 / A4-L4): the guest proves
+   * she owns the conflicting account by authenticating to it through native
+   * Supabase Auth; `reassign-guest-data` then only verifies the resulting
+   * session token, never a password. The proof sign-in runs on a throwaway
+   * in-memory client (`persistSession: false`) so the guest session on the
+   * main client stays live until the data move is done — that anonymous
+   * identity is what gets reassigned away — and only then is the main client
+   * switched over to the real account.
    */
   async function handleReassign() {
     setIsReassigning(true);
@@ -84,7 +90,27 @@ export default function SignupPage() {
         return;
       }
 
-      await reassignGuestData({ email, password: conflictPassword }, session.access_token);
+      // Ownership proof against native Supabase Auth (its own rate limiting +
+      // leaked-password protection) on a client kept out of storage, so the
+      // guest session above is untouched.
+      const proofClient = createSupabaseClient(
+        clientEnv.NEXT_PUBLIC_SUPABASE_URL,
+        clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        { auth: { persistSession: false, autoRefreshToken: false } },
+      );
+      const { data: proofData, error: proofError } = await proofClient.auth.signInWithPassword({
+        email,
+        password: conflictPassword,
+      });
+      if (proofError || !proofData.session) {
+        setReassignError(translateAuthError(proofError));
+        return;
+      }
+
+      await reassignGuestData(
+        { targetAccessToken: proofData.session.access_token },
+        session.access_token,
+      );
 
       // FRESCO-240 (ADR-0013): capture the anonymous distinct_id BEFORE
       // signInWithPassword below switches the session to the pre-existing

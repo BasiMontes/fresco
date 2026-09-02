@@ -183,12 +183,11 @@ describe('updateRecipeStatus', () => {
 });
 
 const SAMPLE_REASSIGN_REQUEST: ReassignGuestDataRequest = {
-  email: 'user@example.com',
-  password: 'secret123',
+  targetAccessToken: 'target-session-token',
 };
 
 describe('reassignGuestData', () => {
-  test('POSTs to /reassign-guest-data with the guest access token', async () => {
+  test('POSTs the target token in the body, on the guest access token (ADR-0022)', async () => {
     const body: ReassignGuestDataResponse = { reassigned: true };
     stubFetch({ ok: true, status: 200, body });
 
@@ -197,6 +196,7 @@ describe('reassignGuestData', () => {
     expect(lastFetchCall?.url).toBe(`${FUNCTIONS_URL}/reassign-guest-data`);
     const headers = lastFetchCall?.init.headers as Record<string, string>;
     expect(headers.Authorization).toBe('Bearer guest-token');
+    expect(lastFetchCall?.init.body).toBe(JSON.stringify({ targetAccessToken: 'target-session-token' }));
     expect(result).toEqual(body);
   });
 

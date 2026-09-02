@@ -30,13 +30,15 @@ export interface GenerateMealPlanResponse {
   explicacion_aprendizaje: string | null
 }
 
-// POST /reassign-guest-data — ADR-0004 (FRESCO-20). Caller must hold an
-// active anonymous session; `email`/`password` identify the real, existing
-// account the guest's data should move to (verified server-side, never
-// trusted as-is).
+// POST /reassign-guest-data — ADR-0004 (FRESCO-20), verification step revised
+// by ADR-0022 (FRESCO-395 / A4-L4). Caller's `Authorization` header holds the
+// guest's still-active anonymous session; `targetAccessToken` is a real
+// (non-anonymous) session token the caller obtained by authenticating to the
+// target account through native Supabase Auth. The function verifies that
+// token — it never receives or checks a password, so it can't be used as a
+// brute-force oracle.
 export interface ReassignGuestDataRequest {
-  email: string
-  password: string
+  targetAccessToken: string
 }
 
 export interface ReassignGuestDataResponse {
