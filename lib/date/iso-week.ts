@@ -7,6 +7,19 @@
  * `'YYYY-WXX'`) and by `meal_plans.semana_iso`'s read path. No ISO-week
  * utility existed anywhere in the repo before this (verified via `rg` for
  * `isoWeek`/`getWeek`/`WXX`).
+ *
+ * FRESCO-397 (A4-L12): every function here reads its input `Date` in the
+ * **UTC frame** — `getUTC*` getters throughout, never the local-time getters.
+ * The previous code mixed the two (`toUtcDateOnly` read `getFullYear/Month/Date`
+ * while everything else used `getUTC*`), so `addIsoWeeks()` — which feeds a
+ * UTC-anchored `Date` from `getDateFromIsoWeek()` back through `getIsoWeek()` —
+ * landed on the wrong week for any runtime in a negative UTC offset (e.g.
+ * `America/Los_Angeles`: a Monday 00:00Z `Date` read as the previous Sunday).
+ * Spain (UTC+1/+2) never hit it. Consequence of the all-UTC frame: the
+ * no-argument calls (`getIsoWeek()`, `getIsoWeekMonday()`) now resolve "the
+ * current ISO week" against UTC rather than the caller's wall clock — for a
+ * browser in Spain that differs only during the 00:00–01:00/02:00 local
+ * window, an accepted low-severity trade-off for a single consistent frame.
  */
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -20,13 +33,14 @@ function getIsoWeekday(date: Date): number {
 }
 
 /**
- * Normalizes `date` to a UTC midnight `Date` built from its local
- * year/month/day components. Calendar-day arithmetic (adding/subtracting
- * whole days) is only safe to do in UTC — otherwise DST transitions can
- * silently shift the result by a day.
+ * Normalizes `date` to a UTC-midnight `Date` built from its UTC
+ * year/month/day components (FRESCO-397 — same frame as every other getter
+ * in this module). Calendar-day arithmetic (adding/subtracting whole days)
+ * is only safe to do in UTC — otherwise DST transitions can silently shift
+ * the result by a day.
  */
 function toUtcDateOnly(date: Date): Date {
-  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 /**

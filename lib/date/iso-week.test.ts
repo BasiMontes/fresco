@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { addIsoWeeks, formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from './iso-week';
 
 function utc(year: number, month: number, day: number): Date {
@@ -113,5 +113,59 @@ describe('formatWeekRangeLabel', () => {
   test('a week crossing a year boundary shows both months', () => {
     // Monday 2026-12-28 -> Sunday 2027-01-03.
     expect(formatWeekRangeLabel('2026-12-28')).toBe('28 dic – 3 ene');
+  });
+});
+
+// FRESCO-397 (A4-L12): before the fix, `toUtcDateOnly` read local-time
+// getters while the rest of the module read `getUTC*`. Any runtime in a
+// negative UTC offset then computed the wrong week whenever a `Date` whose
+// UTC and local calendar days differ flowed through `getIsoWeek()` — most
+// visibly via `addIsoWeeks()`, which round-trips a UTC-anchored `Date` from
+// `getDateFromIsoWeek()`. CI runs in UTC, so the bug was invisible without
+// pinning a negative-offset zone here. Spain (UTC+1/+2) was never affected.
+describe('negative-UTC-offset runtime (America/Los_Angeles)', () => {
+  const originalTz = process.env.TZ;
+
+  beforeAll(() => {
+    process.env.TZ = 'America/Los_Angeles';
+  });
+
+  afterAll(() => {
+    if (originalTz === undefined) {
+      delete process.env.TZ;
+    }
+    else {
+      process.env.TZ = originalTz;
+    }
+  });
+
+  test('getIsoWeek reads a Monday-00:00Z date as that Monday, not the previous Sunday', () => {
+    // 2026-01-05T00:00:00Z is a Monday (ISO 2026-W02). In UTC-8 the local
+    // clock reads Sunday 2026-01-04 16:00 — the exact split the old code
+    // tripped on.
+    expect(getIsoWeek(new Date(Date.UTC(2026, 0, 5)))).toBe('2026-W02');
+  });
+
+  test('addIsoWeeks round-trips (the reported break: prev/next week navigation)', () => {
+    const original = '2026-W02';
+    expect(addIsoWeeks(original, 1)).toBe('2026-W03');
+    expect(addIsoWeeks(original, -1)).toBe('2026-W01');
+    expect(addIsoWeeks(addIsoWeeks(original, 5), -5)).toBe(original);
+  });
+
+  test('addIsoWeeks across a year boundary stays correct', () => {
+    // 2026-W53 is the ISO leap week; +1 lands in 2027-W01.
+    expect(addIsoWeeks('2026-W53', 1)).toBe('2027-W01');
+    expect(addIsoWeeks('2027-W01', -1)).toBe('2026-W53');
+  });
+
+  test('getIsoWeekMonday still returns a real Monday in YYYY-MM-DD', () => {
+    const monday = getIsoWeekMonday(new Date(Date.UTC(2026, 1, 12)));
+    expect(monday).toBe('2026-02-09');
+    expect(new Date(`${monday}T00:00:00.000Z`).getUTCDay()).toBe(1);
+  });
+
+  test('getDateFromIsoWeek is unaffected (already all-UTC)', () => {
+    expect(getDateFromIsoWeek('2026-W02').toISOString().slice(0, 10)).toBe('2026-01-05');
   });
 });
