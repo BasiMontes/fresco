@@ -401,3 +401,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: CSP pasa de Report-Only+unsafe-inline a enforcing con nonce por request. proxy.ts genera el nonce y pone la CSP (req+resp headers). script-src sin unsafe-inline/unsafe-eval, con strict-dynamic + wasm-unsafe-eval (A4-L21). lib/security/csp.ts (builder puro). next.config.mjs sin CSP (5 headers estáticos quedan). app/layout.tsx force-dynamic (nonce obliga render dinámico en todo). style-src mantiene unsafe-inline. report-uri a Sentry se mantiene. PR #238 -> dev + ff staging, SP 5.
 - Por qué: audit-4 A4-M10 + A4-L21. La CSP Report-Only no protegía de XSS.
 - Siguiente: main HELD. Verificado: build prod local walk completo + preview de Vercel + e2e, cero violaciones. Tradeoff aceptado: todas las páginas dinámicas, sin cache CDN.
+
+## 2026-09-02 - FRESCO-387 limpieza de verificacion (A4-M13/M14/M15)
+- Qué: M13 scripts/check-seed-drift.ts (IDs de seed.sql vs prod via psql, umbral 25) + job hermano en migration-drift-check.yml. M14 playwright reporter [list,html,blob] en CI + upload-artifact if:always de playwright-report/blob-report/test-results. M15 el e2e del moat asserta exclusion de cocinadas+descartadas (antes solo descartadas) + assertion determinista del boost via RPC. PR #239 -> dev + ff staging, SP 3.
+- Por qué: audit-4 ola-2, 3 hallazgos MEDIO del plano de verificacion.
+- Siguiente: main HELD. Gotcha: assertar el output del menu-selector es flaky, assertar los inputs/senales que consume.
