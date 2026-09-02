@@ -837,8 +837,16 @@ Característica: Flujo completo de usuario en Fresco
     Dado que un usuario Pro tiene al menos 2 semanas de historial cocinado/descartado real
     Cuando se genera su menú de la semana siguiente
     Entonces el algoritmo determinista evita repetir recetas marcadas cocinada o descartada, sin tocar las pendientes
+    Y el historial personal de esa receta cuenta como señal de preferencia y no queda excluida por recencia
     Y genera una explicación cálida en "explicacion_aprendizaje", separada de "advertencias", que menciona cocinadas y descartadas por separado
     Y queda persistida en su propio campo, no mezclada con las advertencias de seguridad
+    # FRESCO-387 (A4-M15): antes solo se comprobaba la exclusión de
+    # DESCARTADAS — la mitad "cocinada" del historial nunca se comparaba.
+    # Ahora el step asserta ambas exclusiones, y que una receta cocinada
+    # varias veces fuera de la ventana de recencia cuenta como señal de
+    # preferencia (get_user_recipe_engagement = 5, +5.0 en scoreRecipe /
+    # ADR-0008) sin quedar excluida por recencia — el mecanismo del boost,
+    # de forma determinista (no el resultado estocástico de si gana un hueco).
     # FRESCO-120 (arreglado 2026-08-08, ADR-0006): root cause encontrado en
     # el QA sweep del 2026-08-08 — get_recent_recipe_ids() excluía TODO lo
     # reciente sin mirar estado, así que un Pro que nunca marcaba nada

@@ -59,7 +59,13 @@ export default defineConfig({
   // went fully deterministic (no more Gemini call) — other flows still do
   // real network round-trips worth headroom past the default.
   timeout: 90_000,
-  reporter: 'list',
+  // FRESCO-387 (A4-M14): `list` for the live log; on CI also emit an `html`
+  // report and a `blob` bundle so the pr-check job can upload them as an
+  // artifact — otherwise the `trace: 'on-first-retry'` zip is destroyed with
+  // the runner and a flaky failure leaves nothing to debug from.
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never' }], ['blob']]
+    : 'list',
   use: {
     baseURL,
     trace: 'on-first-retry',
