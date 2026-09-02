@@ -1,23 +1,10 @@
 import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { normalizeNombre } from '../../lib/text/normalize-nombre';
 import { test } from '../fixtures';
 import { restHeaders } from '../test-helpers';
 import { generateCurrentWeekPlan, seedShoppingListForCurrentPlan } from '../test-user-factory';
-
-/** Mirrors `supabase/functions/_shared/normalize.ts` — can't import across the Deno/Node boundary, small enough to duplicate for test-only overlap checks. */
-function normalizeNombre(nombre: string): string {
-  return nombre
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[áàä]/g, 'a')
-    .replace(/[éèë]/g, 'e')
-    .replace(/[íìï]/g, 'i')
-    .replace(/[óòö]/g, 'o')
-    .replace(/[úùü]/g, 'u')
-    .replace(/ñ/g, 'n');
-}
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @lista-compra,
