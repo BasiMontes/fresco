@@ -1272,6 +1272,21 @@ Característica: Flujo completo de usuario en Fresco
     Cuando elige volver
     Entonces regresa a la Biblioteca
 
+  @biblioteca @verificado-manual-2026-09-02
+  Escenario: El estado de la Biblioteca (búsqueda, filtros, página) vive en la URL
+    Dado que Laura busca y aplica filtros en la Biblioteca
+    Cuando comparte o recarga la URL resultante
+    Entonces la Biblioteca vuelve exactamente al mismo estado de búsqueda, filtros y páginas cargadas
+    # FRESCO-384 (audit-4 A4-M7): search/filtros/facetas/paginación pasaron a
+    # server-side (RPC get_catalog). /recipes es URL-driven — ?q, ?page,
+    # ?meal, ?cocina, ?dieta, ?alergeno. Payload inicial ~26 KB (antes ~1,1
+    # MB: mandaba las ~1000 filas del catálogo). Facetas calculadas en el
+    # servidor para el estado APLICADO; al togglear filtros en el cajón se
+    # refrescan al pulsar "Aplicar", no por click. "Ver más" pide ?page=N y
+    # anexa (limit acumulativo N*30). Verificado en vivo 2026-09-02: grid 30
+    # → 60 al "Ver más", search "pollo" → 78, filtro Cena → 330, badge, URL
+    # actualizada, estado vacío de búsqueda distinto del de catálogo vacío.
+
   # ==========================================================================
   # Perfil
   # ==========================================================================
