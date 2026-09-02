@@ -52,20 +52,35 @@ function activeFilterChips(filters: RecipeFilterState): { section: keyof RecipeF
   return chips;
 }
 
-/** Serialize search + page + filter state into a `/recipes` URL. Empty parts are omitted so a bare catalog stays `/recipes`. */
-function buildCatalogUrl(
-  pathname: string,
-  params: { query: string, page: number, filters: RecipeFilterState },
-): string {
-  const search = new URLSearchParams();
-  if (params.query) { search.set('q', params.query); }
-  if (params.page > 1) { search.set('page', String(params.page)); }
-  if (params.filters.mealTypes.length > 0) { search.set('meal', params.filters.mealTypes.join(',')); }
-  if (params.filters.cocinas.length > 0) { search.set('cocina', params.filters.cocinas.join(',')); }
-  if (params.filters.dietas.length > 0) { search.set('dieta', params.filters.dietas.join(',')); }
-  if (params.filters.alergenos.length > 0) { search.set('alergeno', params.filters.alergenos.join(',')); }
+const FILTER_PARAM: Record<keyof RecipeFilterState, string> = {
+  mealTypes: 'meal',
+  cocinas: 'cocina',
+  dietas: 'dieta',
+  alergenos: 'alergeno',
+};
+
+/**
+ * The live URL query, read at call time — NOT from a React prop. Navigation
+ * runs inside a transition, so between an action and the RSC re-render the
+ * `appliedFilters` / `query` props are stale; building the next URL off a
+ * stale prop drops whatever the previous action set (e.g. filter-then-type
+ * losing the filter). `window.location.search` is always current.
+ */
+function currentSearchParams(): URLSearchParams {
+  return new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+}
+
+function withSearchParams(pathname: string, search: URLSearchParams): string {
   const qs = search.toString();
   return qs ? `${pathname}?${qs}` : pathname;
+}
+
+function applyFilterParams(search: URLSearchParams, filters: RecipeFilterState): void {
+  for (const [section, param] of Object.entries(FILTER_PARAM) as [keyof RecipeFilterState, string][]) {
+    const values = filters[section];
+    if (values.length > 0) { search.set(param, values.join(',')); }
+    else { search.delete(param); }
+  }
 }
 
 export interface RecipeLibraryProps {
@@ -105,19 +120,24 @@ export function RecipeLibrary({
     setSearchInput(query);
   }, [query]);
 
-  const navigate = React.useCallback((url: string) => {
-    startTransition(() => router.push(url));
-  }, [router]);
+  const navigate = React.useCallback((search: URLSearchParams) => {
+    startTransition(() => router.push(withSearchParams(pathname, search)));
+  }, [router, pathname]);
 
-  // Debounced search → URL. Resets to page 1; keeps the applied filters.
+  // Debounced search → URL. Resets to page 1; preserves whatever filters the
+  // live URL already carries.
   React.useEffect(() => {
     const trimmed = searchInput.trim();
     if (trimmed === query) { return; }
     const timer = setTimeout(() => {
-      navigate(buildCatalogUrl(pathname, { query: trimmed, page: 1, filters: appliedFilters }));
+      const search = currentSearchParams();
+      search.delete('page');
+      if (trimmed) { search.set('q', trimmed); }
+      else { search.delete('q'); }
+      navigate(search);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchInput, query, pathname, appliedFilters, navigate]);
+  }, [searchInput, query, navigate]);
 
   function openFilterDrawer() {
     setDraftFilters(appliedFilters);
@@ -134,13 +154,21 @@ export function RecipeLibrary({
 
   function applyDraftFilters() {
     setFilterDrawerOpen(false);
+    const search = currentSearchParams();
+    search.delete('page');
+    applyFilterParams(search, draftFilters);
     // Carry whatever is typed right now, even if the search debounce has not
     // fired yet — otherwise applying a filter mid-type would drop the query.
-    navigate(buildCatalogUrl(pathname, { query: searchInput.trim(), page: 1, filters: draftFilters }));
+    const typed = searchInput.trim();
+    if (typed) { search.set('q', typed); }
+    else { search.delete('q'); }
+    navigate(search);
   }
 
   function loadMore() {
-    navigate(buildCatalogUrl(pathname, { query: searchInput.trim(), page: page + 1, filters: appliedFilters }));
+    const search = currentSearchParams();
+    search.set('page', String(page + 1));
+    navigate(search);
   }
 
   const activeCount = countActiveFilters(appliedFilters);
