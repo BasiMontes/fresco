@@ -421,3 +421,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: ADR-0019 (cabeceras de seguridad + CSP enforcing con nonce, invariante transversal; follow-up FRESCO-386 marcado hecho), ADR-0020 (un solo proyecto Supabase para todos los entornos hasta Supabase Pro; invariante + 5 triggers de reapertura), nota de estado en ADR-0005 (la explicacion Pro es 100% determinista desde el 1 ago, model ids inventados). README con las filas de indice. Solo docs. PR #241 -> dev + ff staging, SP 3.
 - Por qué: audit-4 A4-M21/M22 + A4-M11 como ADR: decisiones hard-to-reverse sin registrar.
 - Siguiente: main HELD.
+
+## 2026-09-02 - FRESCO-391 conteo canonico del catalogo (A4-M26)
+- Qué: business-data-map.md §2 ancla "Canonical catalog size" (1000, select count(*) from public.recipes) + hechos de completitud (fotos 774, dificultad 0 en blanco). glosario "~35/~230" -> 1000. project-dev-guide 3x ~1000 -> 1000. business/README tabla de figuras canonicas. Solo docs. PR #243 -> dev + ff staging, SP 3.
+- Por qué: audit-4 A4-M26 — 5 conteos distintos en los docs. El hallazgo estaba parcialmente obsoleto (dificultad ya hecha, fotos 774).
+- Siguiente: main HELD.
