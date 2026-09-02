@@ -1,37 +1,68 @@
-import { EmptyCatalogState, RecipeLibrary } from '@/components/recipes/recipe-library';
+import type { RecipeDieta } from '@schemas';
+import type { RecipeFilterState } from '@/lib/recipes/recipe-filters';
+import { RecipeLibrary } from '@/components/recipes/recipe-library';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
-import { getCatalogRecipes, getRecetasPropias } from '@/lib/api/recipes';
+import { getCatalog, getRecetasPropias } from '@/lib/api/recipes';
+import { RECIPE_PAGE_SIZE } from '@/lib/recipes/recipe-filters';
 import { createClient } from '@/lib/supabase/server';
 
 /**
- * `/recipes` — nav item 3, "Biblioteca" (EPIC-FRESCO-64, FRESCO-65). Reframed
- * from "recipes Fresco has served this household" (`getUserRecipes()`, the
- * original scaffold) to the full catalog available to Laura's own
- * food-safety profile, via the same `get_filtered_recipes()` pre-filter
- * FRESCO-9/ADR-0001 already applies before generating a menu — a household
- * should be able to discover recipes before ever cooking them, not only
- * browse what they've already been served.
+ * `/recipes` — nav item 3, "Biblioteca" (EPIC-FRESCO-64, FRESCO-65). The full
+ * catalog available to Laura's own food-safety profile, via the same
+ * `get_filtered_recipes()` pre-filter FRESCO-9/ADR-0001 applies before
+ * generating a menu.
  *
- * Two distinct empty states: the catalog itself coming back empty (a very
- * restrictive profile — rare) vs. a search matching nothing (common, and a
- * completely different fix — clear the search, not the profile). See
- * `components/recipes/recipe-library.tsx`.
+ * FRESCO-384 (audit-4 A4-M7): search, four-section filtering, facet counts,
+ * and pagination are all server-side now (`get_catalog` RPC). The page is
+ * driven entirely by the URL — `?q=`, `?page=`, `?meal=`, `?cocina=`,
+ * `?dieta=`, `?alergeno=` — so a filtered view is shareable and the back
+ * button works. `?page=N` returns the first N pages' worth of rows, so the
+ * client's "Ver más" stays an append.
  */
-export default async function RecipesPage() {
+
+function parseList(value: string | string[] | undefined): string[] {
+  const raw = Array.isArray(value) ? value.join(',') : (value ?? '');
+  return raw.split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function parsePage(value: string | string[] | undefined): number {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number.parseInt(raw ?? '1', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+export default async function RecipesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
 
-  // The two reads below are mutually independent — run them concurrently
-  // rather than paying for 2 sequential round trips. Each keeps its own
-  // fallback via `.catch()` (same judgment calls as before) so one call's
-  // rejection can't take the other down with it.
-  const [recipes, recetasPropias, favoriteIds] = await Promise.all([
-    getCatalogRecipes(supabase).catch((error) => {
-      // Same judgment call as every other read on this page family: a real
-      // read failure falls back to the empty state rather than crashing the
-      // page — logged so a real outage stays visible in server logs instead
-      // of looking like a profile with zero eligible recipes.
-      console.error('[/recipes] getCatalogRecipes failed, falling back to empty state', error);
-      return [] as Awaited<ReturnType<typeof getCatalogRecipes>>;
+  const query = (Array.isArray(params.q) ? params.q[0] : params.q ?? '').trim();
+  const page = parsePage(params.page);
+  const appliedFilters: RecipeFilterState = {
+    mealTypes: parseList(params.meal) as RecipeFilterState['mealTypes'],
+    cocinas: parseList(params.cocina),
+    dietas: parseList(params.dieta) as (keyof RecipeDieta)[],
+    alergenos: parseList(params.alergeno),
+  };
+
+  // The three reads below are mutually independent — run them concurrently.
+  // Each keeps its own fallback via `.catch()` so one call's rejection can't
+  // take the others down with it.
+  const [catalog, recetasPropias, favoriteIds] = await Promise.all([
+    getCatalog(supabase, {
+      search: query || undefined,
+      mealTypes: appliedFilters.mealTypes,
+      cocinas: appliedFilters.cocinas,
+      dietas: appliedFilters.dietas,
+      alergenos: appliedFilters.alergenos,
+      limit: page * RECIPE_PAGE_SIZE,
+      offset: 0,
+    }).catch((error) => {
+      console.error('[/recipes] getCatalog failed, falling back to empty state', error);
+      return { recipes: [], total: 0, facets: { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} } };
     }),
     getRecetasPropias(supabase).catch((error) => {
       console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
@@ -51,9 +82,16 @@ export default async function RecipesPage() {
       </p>
 
       <h2 className="sr-only">Recetas del catálogo</h2>
-      {recipes.length === 0
-        ? <EmptyCatalogState />
-        : <RecipeLibrary recipes={recipes} recetasPropias={recetasPropias} favoriteRecipeIds={favoriteIds} />}
+      <RecipeLibrary
+        recipes={catalog.recipes}
+        total={catalog.total}
+        page={page}
+        facets={catalog.facets}
+        appliedFilters={appliedFilters}
+        query={query}
+        recetasPropias={recetasPropias}
+        favoriteRecipeIds={favoriteIds}
+      />
     </div>
   );
 }
