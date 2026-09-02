@@ -446,8 +446,11 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Tokens.** No new colour/space tokens — motion durations/curves live with the transitions
   implementation, not `DESIGN.md` (`DESIGN.md` §Layout note: no motion tokens defined). Uses the
   `transitions-dev` / `animate` skill conventions.
-- **Checklist.** [ ] every animation has a reduced-motion path · [ ] no layout shift from enter/exit
-  · [ ] modal transitions do not trap focus mid-animation.
+- **Checklist.** [x] every animation has a reduced-motion path — enforced globally by the
+  `@media (prefers-reduced-motion: reduce)` guard in `app/globals.css` (FRESCO-249: universal
+  `animation-duration`/`transition-duration` → `0.01ms`, `scroll-behavior: auto`, `.animate-spin`
+  re-exempted; per-component blocks still win by specificity where they exist) · [ ] no layout shift
+  from enter/exit · [ ] modal transitions do not trap focus mid-animation.
 - **Provenance.** EPIC-FRESCO-244. No mockup — motion spec is behavioural, defined in the epic AC.
 
 ### 4.20 Error & not-found screens — `error.tsx` / `global-error.tsx` / `not-found.tsx`
