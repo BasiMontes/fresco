@@ -416,3 +416,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: M16 12 tickets de Control de calidad -> Finalizada + 2 epicas cerradas (FRESCO-223, 81). M17 .context/backlog/estimation-and-tracking-model.md — decision: throughput tracking (tickets/semana), no velocidad; DRAFT epics 330/331/332 sin estimar hasta tirar de ellas. M18 AC Gherkin testeable para FRESCO-245/246/249 (274/275 ya Finalizada, forward-only). Fork C. PR #242 -> dev + ff staging, SP 3.
 - Por qué: audit-4 A4-M16/M17/M18 (backlog).
 - Siguiente: main HELD. Tally semanal opcional en bitacora.
+
+## 2026-09-02 - FRESCO-389 ADRs pendientes (A4-M21/M22)
+- Qué: ADR-0019 (cabeceras de seguridad + CSP enforcing con nonce, invariante transversal; follow-up FRESCO-386 marcado hecho), ADR-0020 (un solo proyecto Supabase para todos los entornos hasta Supabase Pro; invariante + 5 triggers de reapertura), nota de estado en ADR-0005 (la explicacion Pro es 100% determinista desde el 1 ago, model ids inventados). README con las filas de indice. Solo docs. PR #241 -> dev + ff staging, SP 3.
+- Por qué: audit-4 A4-M21/M22 + A4-M11 como ADR: decisiones hard-to-reverse sin registrar.
+- Siguiente: main HELD.
