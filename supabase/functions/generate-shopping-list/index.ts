@@ -66,7 +66,11 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
       .maybeSingle()
 
-    const numPersonas = profile?.num_personas ?? 2
+    // FRESCO-382 (A4-M4): `num_personas` scales every quantity below. The DB
+    // now caps it (migration `..._household_size_upper_bounds`), but clamp
+    // defensively here too — an out-of-range stored value must never produce
+    // an unusable list. Range mirrors the onboarding client cap (1..10).
+    const numPersonas = Math.min(Math.max(profile?.num_personas ?? 2, 1), 10)
 
     // 6. Load the 21 slots with their recipes' ingredients. `recipes` is the
     // live JSONB-shaped table — servings live at meta.raciones, not a
