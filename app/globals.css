@@ -777,3 +777,28 @@
     animation: none;
   }
 }
+
+/*
+ * List / card enter animation (FRESCO-246) — a new card fades in with a slight
+ * upward shift; on first render of a long list the items enter staggered
+ * (~--duration-stagger apart). `components/ui/use-list-enter-animation.ts`
+ * owns which items are marked and their `--enter-index`.
+ *
+ * Gated by `prefers-reduced-motion: no-preference` so that under reduced
+ * motion the rule does not exist at all and items appear instantly (AC:
+ * "el cambio es inmediato ... sin fade ni desplazamiento"). Reuses the
+ * --duration-fast / --duration-stagger / --ease-smooth-out tokens installed
+ * by transitions-dev; defines no new motion tokens (DESIGN.md §4.19).
+ */
+@keyframes fresco-list-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-list-enter] {
+    animation: fresco-list-enter var(--duration-fast) var(--ease-smooth-out) both;
+    animation-delay: calc(var(--enter-index, 0) * var(--duration-stagger));
+  }
+}
