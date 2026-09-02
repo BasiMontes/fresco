@@ -1,10 +1,11 @@
 # Filtro 'Filtrar y ordenar': drawer lateral en desktop + buscador más ancho
 
 **Jira Key:** [FRESCO-274](https://basiliomontescastano.atlassian.net/browse/FRESCO-274)
+**Epic:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) (Biblioteca de Recetas)
 **Type:** Historia
-**Status:** Merged
+**Status:** Finalizada
 **Priority:** Medium
-**Story Points:** -
+**Story Points:** 2
 
 ---
 
@@ -17,7 +18,7 @@ Ajuste post-lanzamiento de FRESCO-273: en desktop (>= sm, 640px) el drawer sale 
 ## Metadata
 
 - **Created:** 8/26/2026
-- **Updated:** 8/26/2026
+- **Updated:** 8/30/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** ui-redesign
