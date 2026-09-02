@@ -396,3 +396,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: _shared/sentry.ts nuevo — captureEdgeException postea un envelope de Sentry v7 vía fetch (sin SDK). No-op salvo SENTRY_DSN seteado Y proyecto hosted (CI/local nunca envían). toErrorResponse (catch único) ahora async: genera errorId, saca el sub del JWT, reporta. Cero cambio en los 9 index.ts. PR #237 -> dev + ff staging, SP 3.
 - Por qué: audit-4 A4-M9 (observabilidad) — errores inesperados de Edge Function no generaban alerta.
 - Siguiente: activar con supabase secrets set SENTRY_DSN por entorno. main HELD.
+
+## 2026-09-02 - FRESCO-386 CSP enforcing + nonce (A4-M10)
+- Qué: CSP pasa de Report-Only+unsafe-inline a enforcing con nonce por request. proxy.ts genera el nonce y pone la CSP (req+resp headers). script-src sin unsafe-inline/unsafe-eval, con strict-dynamic + wasm-unsafe-eval (A4-L21). lib/security/csp.ts (builder puro). next.config.mjs sin CSP (5 headers estáticos quedan). app/layout.tsx force-dynamic (nonce obliga render dinámico en todo). style-src mantiene unsafe-inline. report-uri a Sentry se mantiene. PR #238 -> dev + ff staging, SP 5.
+- Por qué: audit-4 A4-M10 + A4-L21. La CSP Report-Only no protegía de XSS.
+- Siguiente: main HELD. Verificado: build prod local walk completo + preview de Vercel + e2e, cero violaciones. Tradeoff aceptado: todas las páginas dinámicas, sin cache CDN.
