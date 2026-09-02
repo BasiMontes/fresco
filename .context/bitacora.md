@@ -406,3 +406,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: M13 scripts/check-seed-drift.ts (IDs de seed.sql vs prod via psql, umbral 25) + job hermano en migration-drift-check.yml. M14 playwright reporter [list,html,blob] en CI + upload-artifact if:always de playwright-report/blob-report/test-results. M15 el e2e del moat asserta exclusion de cocinadas+descartadas (antes solo descartadas) + assertion determinista del boost via RPC. PR #239 -> dev + ff staging, SP 3.
 - Por qué: audit-4 ola-2, 3 hallazgos MEDIO del plano de verificacion.
 - Siguiente: main HELD. Gotcha: assertar el output del menu-selector es flaky, assertar los inputs/senales que consume.
+
+## 2026-09-02 - FRESCO-390 instrumentacion del funnel OTP (A4-M25)
+- Qué: eventos PostHog otp_sent (context initial/resend) / otp_verified / otp_failed (reason) en app/signup/page.tsx + lib/posthog/event-names.ts. ADR-0021: mantener OTP Gmail SMTP para la cohorte, diferir dominio+Resend, con triggers de reapertura (verify/sent <80% sobre >=50 eventos, primer report de spam, usuario de pago afectado). Fork B. PR #240 -> dev + ff staging, SP 2.
+- Por qué: audit-4 A4-M25 (producto) — la conversion de registro progresivo depende de entregabilidad Gmail SMTP fragil.
+- Siguiente: medir el funnel sobre la cohorte real. main HELD.
