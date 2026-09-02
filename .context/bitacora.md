@@ -381,3 +381,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: M4 cotas de tamaño de hogar (migración 20260902120000 CHECK <=10 en num_personas/adultos/ninos + clamp server-side en generate-shopping-list). M5 guardia raciones_receta>0 en consolidateIngredientes (evita coste_estimado NaN/null). M8 normalizeNombre 3 copias Node -> 1 (lib/text/normalize-nombre.ts) + test de deriva Deno<->Node (lib/text/runtime-parity.test.ts) para normalizeNombre y getIsoWeek. PR #234 -> dev, SP 3.
 - Por qué: audit-4 ola-2, 3 hallazgos MEDIO de correctitud/DRY del planificador.
 - Siguiente: CI verde -> squash a dev + ff staging. main HELD (migración nueva pendiente de supabase db push al promover, igual que FRESCO-380/381).
+
+## 2026-09-02 - FRESCO-383 swap_meal_plan_slots sin lock de tabla (A4-M6)
+- Qué: migración 20260902130000. update_recipe_learning() respeta un GUC app.skip_recipe_learning; swap_meal_plan_slots() lo setea transaction-local (set_config is_local + reset explícito) en vez de ALTER TABLE ... DISABLE TRIGGER (que tomaba ACCESS EXCLUSIVE de meal_plan_recipes en cada swap). Rate limit 120/h vía check_and_increment_rate_limit (ADR-0010). Firma sin cambios, cero cambio en app. PR #235 -> dev + ff staging, SP 3.
+- Por qué: audit-4 A4-M6 (arquitectura/rendimiento).
+- Siguiente: CI verde. main HELD (migración pendiente de supabase db push al promover, con 380/381/382).
