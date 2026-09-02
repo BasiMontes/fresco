@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { HttpError } from '../_shared/http.ts'
-import { assertEstadoValido, assertRatingValido, CLIENT_SETTABLE_ESTADOS } from './validation.ts'
+import { assertEstadoValido, assertRatingValido, buildUpdatePayload, CLIENT_SETTABLE_ESTADOS } from './validation.ts'
 
 function statusOf(fn: () => void): number | undefined {
   try {
@@ -63,5 +63,31 @@ describe('assertRatingValido (A4-L7)', () => {
   test('rejects out-of-range integers (0 and 6)', () => {
     expect(statusOf(() => assertRatingValido(0))).toBe(400)
     expect(statusOf(() => assertRatingValido(6))).toBe(400)
+  })
+})
+
+describe('buildUpdatePayload (A4-L7 — fields gated by estado)', () => {
+  test('sustituida: applies recipe_id, ignores rating', () => {
+    expect(buildUpdatePayload('sustituida', 5, 'recipe-x')).toEqual({
+      estado: 'sustituida',
+      recipe_id: 'recipe-x',
+    })
+  })
+
+  test('cocinada: applies rating, ignores nueva_recipe_id', () => {
+    expect(buildUpdatePayload('cocinada', 4, 'recipe-x')).toEqual({
+      estado: 'cocinada',
+      rating: 4,
+    })
+  })
+
+  test('descartada with a stray nueva_recipe_id: recipe_id never written', () => {
+    expect(buildUpdatePayload('descartada', undefined, 'recipe-x')).toEqual({
+      estado: 'descartada',
+    })
+  })
+
+  test('omits both optional fields when neither is supplied', () => {
+    expect(buildUpdatePayload('cocinada', undefined, undefined)).toEqual({ estado: 'cocinada' })
   })
 })

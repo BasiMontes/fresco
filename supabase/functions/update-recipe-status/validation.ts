@@ -32,3 +32,24 @@ export function assertRatingValido(rating: unknown): void {
     throw new HttpError('El rating debe ser un entero entre 1 y 5', 400)
   }
 }
+
+/**
+ * A4-L7 (audit-4): the update payload for meal_plan_recipes, holding only the
+ * fields the target `estado` actually permits.
+ *
+ * - `recipe_id` moves ONLY on `sustituida` — the one path that runs the
+ *   allergen/diet re-filter + duplicate check in index.ts step 6. Letting it
+ *   through on `cocinada`/`descartada` would persist an unvetted recipe.
+ * - `rating` is a signal about a dish the user cooked, so it is dropped for
+ *   `sustituida` (nothing was cooked).
+ */
+export function buildUpdatePayload(
+  estado: ClientSettableEstado,
+  rating: number | undefined,
+  nuevaRecipeId: string | undefined,
+): Record<string, unknown> {
+  const payload: Record<string, unknown> = { estado }
+  if (rating !== undefined && estado !== 'sustituida') payload.rating = rating
+  if (nuevaRecipeId !== undefined && estado === 'sustituida') payload.recipe_id = nuevaRecipeId
+  return payload
+}

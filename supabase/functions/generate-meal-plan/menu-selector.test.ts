@@ -208,6 +208,24 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
 
     expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(false)
   })
+
+  test('an unknown coste bucket does not turn the budget total into NaN — the over-budget warning still fires (A4-L10)', () => {
+    // Bad/legacy data: a coste_estimado outside the 4-value enum. Before the
+    // fix `BUCKET_MIDPOINT_EUROS[coste]` was undefined, totalEuros went NaN,
+    // `NaN > budget` was false, and the over-budget warning vanished.
+    const candidates = buildAmpleCatalog().map(r => ({
+      ...r,
+      meta: { ...r.meta!, coste_estimado: 'carisimo' as unknown as 'alto' },
+    }))
+    const { advertencias } = selectMenu({
+      candidates,
+      recentRecipeIds: [], seed: SEED,
+      profile: makeProfile({ presupuesto_semana_euros: 1 }),
+    })
+
+    expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(true)
+    expect(advertencias.some(a => a.includes('cálculo de presupuesto es aproximado'))).toBe(true)
+  })
 })
 
 describe('selectMenu — seeded determinism (FRESCO-380 / A4-M1)', () => {

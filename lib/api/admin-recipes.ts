@@ -38,10 +38,19 @@ export async function searchCatalogRecipes(
   const needle = query.trim();
   if (needle.length === 0) { return []; }
 
+  // A4-L6 (audit-4): `.or()` parses `,` as a term separator and `.`/`()` as
+  // operator syntax, so a raw needle like `x,id.eq.<uuid>` injects an extra
+  // OR term. PostgREST's fix for reserved characters in a value is to wrap it
+  // in double quotes, escaping any embedded `"`/`\` first (see
+  // https://docs.postgrest.org/en/v14/references/api/url_grammar.html). The
+  // `%` wildcards stay outside the quotes' influence — they reach the ilike
+  // operator literally.
+  const escaped = needle.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
   const { data, error } = await client
     .from('recipes')
     .select('id, slug, nombre, foto_url')
-    .or(`nombre.ilike.%${needle}%,slug.ilike.%${needle}%`)
+    .or(`nombre.ilike."%${escaped}%",slug.ilike."%${escaped}%"`)
     .order('nombre', { ascending: true })
     .limit(50);
 

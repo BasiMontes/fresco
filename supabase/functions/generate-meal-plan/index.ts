@@ -16,6 +16,7 @@ import { logger } from '../_shared/logger.ts'
 import { buildLearningExplanation } from './prompt.ts'
 import { selectMenu } from './menu-selector.ts'
 import { assertRateLimitAllowed } from './rate-limit.ts'
+import { isProEntitlementActive } from './entitlement.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 import type {
   DiaSemana,
@@ -116,7 +117,9 @@ Deno.serve(async (req: Request) => {
     // who never marked anything got the identical no-repeat behavior as
     // one who diligently marked everything — the mechanism didn't actually
     // depend on the marks the product copy promises it learns from.
-    const isPro = profile.plan === 'pro' || profile.plan === 'family'
+    // A4-L8: paid tier AND the entitlement has not lapsed (defence in depth
+    // against a lost subscription-deleted webhook). See entitlement.ts.
+    const isPro = isProEntitlementActive(profile)
     const recentRecipeIds: string[] = []
     let cocinadasEvitadas = 0
     let descartadasEvitadas = 0
