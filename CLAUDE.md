@@ -27,7 +27,8 @@
       `echo "## 2026-08-17 - [Título corto]\n- Qué: ...\n- Por qué: ...\n- Siguiente: ..." >> fresco-app/.context/bitacora.md`
     - **PROHIBICIÓN ABSOLUTA**: NUNCA uses `read_file`, `cat` o herramientas de lectura en `bitacora.md` antes de escribir. El formato es fijo y no requiere validación previa.
     - **EXCEPCIÓN DE LECTURA**: Si necesitas verificar el último entry, usa SOLO `tail -n 10 fresco-app/.context/bitacora.md` (limita la lectura a 10 líneas máx., ~50 tokens).
-    - **ROTACIÓN AUTOMÁTICA**: Si el archivo supera las 50 entradas, el agente debe proponer: `mv fresco-app/.context/bitacora.md fresco-app/.context/bitacora-2026-08.md` y crear uno nuevo vacío.
+    - **ROTACIÓN AUTOMÁTICA**: Si el archivo supera las 50 entradas, archivar: `mv fresco-app/.context/bitacora.md fresco-app/.context/bitacora-<rango>.md` (ej. `bitacora-2026-08-to-09.md`) y arrancar `bitacora.md` de nuevo con el header + las últimas ~15 entradas (no vacío — el arranque en frío necesita contexto reciente).
+    - **DOCS PADRE ALINEADOS (FRESCO-393, A4-M19)**: `/Users/basimontes/fresco/CLAUDE.md` y `/Users/basimontes/fresco/AGENTS.md` (sección "Session logging") apuntan a esta Regla 15 como fuente de verdad del trigger. Si algún doc padre vuelve a decir "every session", es drift — corregirlo hacia esta regla, no al revés.
 
 16. **FEATURE MAP SYNC — MODO OPTIMIZADO**:
     - **TRIGGER**: SOLO al finalizar un Epic completo o añadir una nueva capacidad de negocio mayor (no por bugs, refactorizaciones o ajustes de UI).
