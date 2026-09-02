@@ -23,6 +23,24 @@
 > learning-explanation Gemini call named below was also removed in a later pass
 > (all LLM spend stopped 2026-08-01) — see `project-dev-guide.md` §5 / FRESCO-379.
 
+> **Status note — 2026-09-02 (FRESCO-389, audit-4 A4-M22):** everything below
+> that describes Gemini *generating* the Pro learning explanation
+> (`explicacion_aprendizaje`, FR-5.5) is now **historical only**. There is no
+> LLM call anywhere in `generate-meal-plan` — `_shared/gemini.ts` was deleted,
+> and `buildLearningExplanation()` in `prompt.ts` builds the 2–3 warm
+> sentences deterministically from the recipe stats the function already
+> computes (`destacadas`, `cocinadasEvitadas`, `descartadasEvitadas`). Read
+> the Decision/Consequences "Gemini is still called, but only for
+> `explicacion_aprendizaje`" clauses as *what was true on 2026-08-01, not
+> now*. **The model ids cited in Context and Alternatives** —
+> `gemini-3.6-flash`, `gemini-2.5-flash`, `gemini-1.5-flash` — were never a
+> reliable record: Google's flash line is `1.5` / `2.0` / `2.5` (and later
+> `3` naming), there is no `3.6-flash`; the exact id the original code used is
+> not worth reconstructing since the dependency is gone. The **title** of
+> this ADR ("Gemini scoped to the Pro learning explanation only") likewise
+> describes the 2026-08-01 decision, not the current state — the menu
+> pipeline is now 100% LLM-free end to end.
+
 ---
 
 ## Context
