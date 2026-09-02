@@ -744,47 +744,36 @@
 }
 
 /*
- * Page transitions (FRESCO-245) — cross-fade the main content when Laura
+ * Page transitions (FRESCO-245) — soft-fade the incoming view when Laura
  * navigates between the sidebar destinations (Inicio / Calendario / Recetas /
- * Lista / Perfil). The `<ViewTransition name="app-page">` wrapper is in
- * components/layout/app-shell.tsx; it only wraps the `<main>` content, so the
- * sidebar/tab-bar never animate. Opacity only — no transform — so there is no
- * layout shift (AC: "no hay salto de scroll ni layout shift visible ... CLS ~ 0").
- * 250ms sits inside the AC's 300ms budget. Reuses the --page-fade-* tokens
- * installed by transitions-dev; defines no new motion tokens (DESIGN.md §4.19).
+ * Lista / Perfil). `components/layout/page-transition.tsx` re-keys this
+ * wrapper by pathname, so the animation replays on every route change
+ * (browser back/forward included) and never on in-page state updates.
+ *
+ * Fade-in only — the outgoing view is replaced immediately. A true
+ * outgoing+incoming cross-fade needs the browser View Transitions API
+ * (`experimental.viewTransition`), which destabilised the calendar reorder
+ * flow; recorded as a §5 divergence on the story, revisit when the API is
+ * stable in Next. Opacity only, no transform — no layout shift (AC: "no hay
+ * salto de scroll ni layout shift visible ... CLS ~ 0"). 250ms sits inside
+ * the AC's 300ms budget. Reuses the --page-fade-* tokens installed by
+ * transitions-dev; defines no new motion tokens (DESIGN.md §4.19).
  */
-/*
- * Retime the browser's default cross-fade for the main content. Keeping the
- * UA animation (rather than custom keyframes) preserves its `mix-blend-mode:
- * plus-lighter` pairing, so the outgoing and incoming views sum to constant
- * luminance — no mid-transition dip to blank.
- */
-::view-transition-group(app-page),
-::view-transition-old(app-page),
-::view-transition-new(app-page) {
-  animation-duration: var(--page-fade-dur);
-  animation-timing-function: var(--page-fade-ease);
+.page-transition {
+  animation: fresco-page-transition-in var(--page-fade-dur) var(--page-fade-ease);
 }
-/*
- * The sidebar and bottom tab bar sit outside the `app-page` group and are
- * identical across these navigations — skip the implicit `root` snapshot
- * animation entirely so only the main content moves.
- */
-::view-transition-group(root) {
-  animation: none;
+@keyframes fresco-page-transition-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /*
- * Reduced-motion: swap views instantly, no fade or movement — the browser's
- * default no-View-Transition behaviour (AC: "el cambio de vista es inmediato,
- * sin fundido ni desplazamiento"). Wildcard covers the `app-page` group plus
- * any future named transition and the implicit `root`.
+ * Reduced-motion: the view swaps instantly, no fade (AC: "el cambio de vista
+ * es inmediato, sin fundido ni desplazamiento").
  */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(*),
-  ::view-transition-new(*),
-  ::view-transition-group(*) {
-    animation-duration: 0s !important;
-    animation-delay: 0s !important;
+  .page-transition {
+    animation: none;
   }
 }

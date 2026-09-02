@@ -36,15 +36,6 @@ const posthogAssetsHost = posthogIngestHost?.replace('.i.posthog.com', '-assets.
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // FRESCO-245: enable React's <ViewTransition> integration so route
-  // navigations under `(app)/` cross-fade instead of hard-cutting. The
-  // browser View Transitions API degrades to an instant swap where it is
-  // unsupported, and browser-initiated back/forward navigations are covered
-  // natively. Opt-in per subtree via the `<ViewTransition>` wrapper in
-  // `components/layout/app-shell.tsx`; the CSS lives in `app/globals.css`.
-  experimental: {
-    viewTransition: true,
-  },
   // Pin the workspace root to this repo — a stray lockfile one level up
   // (/Users/basimontes/fresco/package-lock.json, outside this project) would
   // otherwise make Next.js/Turbopack infer the wrong root.
