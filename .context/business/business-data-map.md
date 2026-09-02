@@ -42,6 +42,15 @@ Fresco turns "what do I cook this week?" into a generated 21-slot weekly menu (7
 
 ## 2. Entity Map
 
+### Canonical catalog size (FRESCO-391 / A4-M26)
+
+**The `recipes` catalog holds exactly `1000` rows.** `select count(*) from public.recipes` is the single source of truth. Every other doc (README, the other `business-*-map.md` files, `project-dev-guide.md`, `domain-glossary.md`) must state **1000** and, where practical, point here rather than restate a number — a per-doc count drifts (this ticket found the range `~35` → `~230` → `717` → `1000` across the docs). Row-count churn in the *catalog itself* is guarded by `scripts/check-seed-drift.ts` (FRESCO-387).
+
+Two catalog-completeness facts, current as of 2026-09-02:
+
+- **Photos** (`recipes.foto_url`): `774 / 1000` populated, rising — the backfill is the ongoing FRESCO-31 (Unsplash, 50 req/h free tier). A recipe with `foto_url IS NULL` is **never excluded**: the menu engine does not read `foto_url`, and `RecipeCard` renders a per-category icon placeholder (FRESCO-31), so there is no "mark or hide" work — the fallback *is* the handling A4-M26 asked for.
+- **Difficulty** (`recipes.meta->>'dificultad'`): populated on **all 1000** rows (`muy_facil | facil | media | avanzada`). The audit's "228 blank" is stale — resolved before this ticket.
+
 ```
                         auth.users  (Supabase-managed, 47 rows; 43 is_anonymous)
                              │  1

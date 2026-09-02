@@ -20,7 +20,7 @@
 > when you touch each part of the system.
 >
 > **One thing before we start:** Fresco is built and in production. The `recipes`
-> catalog (~1000 rows), the four other core tables (`user_profiles`, `meal_plans`,
+> catalog (1000 rows — see `.context/business/business-data-map.md` §2), the four other core tables (`user_profiles`, `meal_plans`,
 > `meal_plan_recipes`, `shopping_lists`), the Edge Functions, and the learning
 > trigger are all live. Read this guide as "here's how it works and what will bite
 > you," alongside the code itself.
@@ -275,7 +275,7 @@ requested explicitly by the user (typically right after the menu, or on first ta
 
 ### Context
 
-This flow produced the ~1000-recipe live catalog. It's founder-operated and **entirely
+This flow produced the 1000-recipe live catalog (canonical count: `business-data-map.md` §2). It's founder-operated and **entirely
 offline** — not a live API endpoint, and **not a runtime dependency of anything**. It
 exists because curated/photographed recipe content was cut from MVP scope for cost
 reasons; this batch-plus-manual-review process is the deliberate substitute. The
@@ -492,7 +492,7 @@ regeneration noted in the banner at the top.)
   the backend is also broken.
 
 - **The `recipes` table is JSONB-shaped — the other core tables are typed.** `recipes`
-  stores each recipe as a JSONB document (~1000 rows). `user_profiles`, `meal_plans`,
+  stores each recipe as a JSONB document (1000 rows). `user_profiles`, `meal_plans`,
   `meal_plan_recipes`, and `shopping_lists` are typed relational tables
   (`20260725120100_create_fresco_core_tables.sql`), and the `aprendizaje` learning
   columns (`veces_cocinada`, `veces_descartada`, `rating_promedio`, `ultima_vez_en_menu`)

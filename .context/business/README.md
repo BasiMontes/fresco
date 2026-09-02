@@ -19,6 +19,14 @@ All "understand the business" outputs live here. Two layers in one folder:
 | `business-api-map.md`     | `/business-api-map`                      | Auth model, critical journeys      |
 | `project-dev-guide.md`    | `/project-foundation` Phase 4 Step 4     | How to build features here         |
 
+## Canonical figures
+
+Numbers that appear in more than one file are defined **once** and referenced, never restated:
+
+| Figure | Canonical source |
+| ------ | ---------------- |
+| Catalog size (`recipes` row count) | `business-data-map.md` §2 — **1000** (`select count(*) from public.recipes`); FRESCO-391 / A4-M26 |
+
 ## When to refresh
 
 - Constitution files (`business-model.md` / `market-context.md` / `legacy-analysis.md`):
