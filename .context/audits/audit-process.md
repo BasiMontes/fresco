@@ -58,11 +58,12 @@ Shapes this takes:
 | Data / backlog task | the verification query returns 0 |
 | Decision / deferral | goes to `Rechazos` with an ADR or a process note — **not** `Finalizada` |
 
-The **full DoD document** — worked examples, the intake and close gates, where it
-plugs into `/sprint-development` and `bug-fix-workflow.md` — is owned by
-**[FRESCO-404](https://basiliomontescastano.atlassian.net/browse/FRESCO-404)**
-(A4-PROC, spawned from FRESCO-392). This section is the summary; FRESCO-404 is the
-source of truth once it lands.
+The **full DoD document** — close gates per ticket kind, the accepted-residue
+escape hatch, and where it plugs into `/sprint-development` and
+`bug-fix-workflow.md` — lives in
+[`../backlog/definition-of-done.md`](../backlog/definition-of-done.md)
+(FRESCO-404, A4-PROC, spawned from FRESCO-392). This section is the summary; that
+document is the source of truth.
 
 Origin: FRESCO-392 (A4-FWD-ONLY) closed four tickets (FRESCO-282 / 313 / 320 / 328)
 that had been marked `Finalizada` while the finding's metric was still non-zero.
