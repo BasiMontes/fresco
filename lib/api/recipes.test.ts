@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { createRecetaPropia, deleteRecetaPropia, getAvailableRecipesCount, getCatalogRecipes, getLatestAvailableRecipes, getRecetasPropias, getRecipeDetail, RecipesError, updateRecetaPropia } from './recipes';
+import { createRecetaPropia, deleteRecetaPropia, getAvailableRecipesCount, getCatalog, getLatestAvailableRecipes, getRecetasPropias, getRecipeDetail, RecipesError, updateRecetaPropia } from './recipes';
 
 async function expectRejection(promise: Promise<unknown>): Promise<void> {
   let thrownError: unknown;
@@ -220,10 +220,10 @@ describe('getLatestAvailableRecipes', () => {
   });
 });
 
-/** Minimal mock client exposing a plain `.rpc()` — all `getCatalogRecipes()` calls. */
-function createCatalogMockClient(options: { userId?: string, rows?: unknown[], dbErrorMessage?: string } = {}) {
+/** Minimal mock client exposing a plain `.rpc()` — all `getCatalog()` calls. */
+function createCatalogMockClient(options: { userId?: string, page?: unknown, dbErrorMessage?: string } = {}) {
   const getUserCalls: unknown[] = [];
-  const rpcCalls: unknown[] = [];
+  const rpcCalls: { fn: string, args: unknown }[] = [];
 
   const mock = {
     auth: {
@@ -237,7 +237,7 @@ function createCatalogMockClient(options: { userId?: string, rows?: unknown[], d
     rpc: async (fn: string, args: unknown) => {
       rpcCalls.push({ fn, args });
       return {
-        data: options.dbErrorMessage ? null : (options.rows ?? []),
+        data: options.dbErrorMessage ? null : (options.page ?? { recipes: [], total: 0, facets: { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} } }),
         error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
       };
     },
@@ -246,53 +246,79 @@ function createCatalogMockClient(options: { userId?: string, rows?: unknown[], d
   return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, rpcCalls };
 }
 
-describe('getCatalogRecipes', () => {
-  test('maps each row to the @schemas Recipe shape', async () => {
-    const { client } = createCatalogMockClient({ userId: 'user-123', rows: [SAMPLE_ROW] });
+describe('getCatalog', () => {
+  const SAMPLE_PAGE = {
+    recipes: [{ id: 'recipe-1', nombre: 'Risotto de setas', foto_url: null, dieta: null, clasificacion: null, meta: null }],
+    total: 1,
+    facets: { mealTypes: { comida: 1 }, cocinas: {}, dietas: {}, alergenos: {} },
+  };
 
-    const result = await getCatalogRecipes(client);
+  test('returns the page, total and facets from the RPC', async () => {
+    const { client } = createCatalogMockClient({ userId: 'user-123', page: SAMPLE_PAGE });
 
-    expect(result).toHaveLength(1);
-    expect(result[0]?.id).toBe('recipe-1');
-    expect(result[0]?.nombre).toBe('Risotto de setas');
+    const result = await getCatalog(client);
+
+    expect(result.total).toBe(1);
+    expect(result.recipes[0]?.nombre).toBe('Risotto de setas');
+    expect(result.facets.mealTypes.comida).toBe(1);
   });
 
-  test('returns an empty array when there are no rows', async () => {
-    const { client } = createCatalogMockClient({ userId: 'user-123', rows: [] });
+  test('normalizes a missing/partial RPC payload to empty defaults', async () => {
+    const { client } = createCatalogMockClient({ userId: 'user-123', page: {} });
 
-    const result = await getCatalogRecipes(client);
+    const result = await getCatalog(client);
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ recipes: [], total: 0, facets: { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} } });
   });
 
   test('throws RecipesError on a real database error', async () => {
     const { client } = createCatalogMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
 
-    await expectRejection(getCatalogRecipes(client));
+    await expectRejection(getCatalog(client));
   });
 
   test('throws RecipesError when there is no authenticated session', async () => {
     const { client } = createCatalogMockClient({});
 
-    await expectRejection(getCatalogRecipes(client));
+    await expectRejection(getCatalog(client));
   });
 
-  test('without a userId argument, resolves the user via an internal auth.getUser() call', async () => {
-    const { client, getUserCalls, rpcCalls } = createCatalogMockClient({ userId: 'user-123', rows: [] });
+  test('forwards search, filter arrays and pagination to the RPC', async () => {
+    const { client, getUserCalls, rpcCalls } = createCatalogMockClient({ userId: 'user-123' });
 
-    await getCatalogRecipes(client);
+    await getCatalog(client, {
+      search: 'pollo',
+      mealTypes: ['comida'],
+      cocinas: ['española'],
+      dietas: ['vegetariano'],
+      alergenos: ['gluten'],
+      limit: 60,
+      offset: 30,
+    });
 
     expect(getUserCalls).toHaveLength(1);
-    expect(rpcCalls).toEqual([{ fn: 'get_filtered_recipes', args: { p_user_id: 'user-123' } }]);
+    expect(rpcCalls).toEqual([{
+      fn: 'get_catalog',
+      args: {
+        p_user_id: 'user-123',
+        p_search: 'pollo',
+        p_meal_types: ['comida'],
+        p_cocinas: ['española'],
+        p_dietas: ['vegetariano'],
+        p_alergenos: ['gluten'],
+        p_limit: 60,
+        p_offset: 30,
+      },
+    }]);
   });
 
-  test('with a userId argument, skips the internal auth.getUser() call and queries by the given id', async () => {
-    const { client, getUserCalls, rpcCalls } = createCatalogMockClient({ rows: [] });
+  test('with a userId argument, skips the internal auth.getUser() call', async () => {
+    const { client, getUserCalls, rpcCalls } = createCatalogMockClient({});
 
-    await getCatalogRecipes(client, 'user-456');
+    await getCatalog(client, {}, 'user-456');
 
     expect(getUserCalls).toHaveLength(0);
-    expect(rpcCalls).toEqual([{ fn: 'get_filtered_recipes', args: { p_user_id: 'user-456' } }]);
+    expect((rpcCalls[0]?.args as { p_user_id: string }).p_user_id).toBe('user-456');
   });
 });
 

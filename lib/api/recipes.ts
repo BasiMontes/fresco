@@ -117,17 +117,50 @@ export async function getLatestAvailableRecipes(
   return (data ?? []).map(toRecipe);
 }
 
+/** Card-sized projection of a catalog recipe — everything the browse grid renders, nothing the detail page fetches separately. */
+export type CatalogCard = Pick<Recipe, 'id' | 'nombre' | 'foto_url' | 'dieta' | 'clasificacion' | 'meta'>;
+
+/** Per-option counts for one filter drawer render, keyed the same way the client's `RecipeFilterState` sections are. */
+export interface CatalogFacets {
+  mealTypes: Record<string, number>
+  cocinas: Record<string, number>
+  dietas: Record<string, number>
+  alergenos: Record<string, number>
+}
+
+export interface CatalogPage {
+  recipes: CatalogCard[]
+  total: number
+  facets: CatalogFacets
+}
+
+export interface GetCatalogParams {
+  search?: string
+  mealTypes?: string[]
+  cocinas?: string[]
+  dietas?: string[]
+  alergenos?: string[]
+  limit?: number
+  offset?: number
+}
+
+const EMPTY_FACETS: CatalogFacets = { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} };
+
 /**
- * The full catalog available to the CURRENTLY authenticated user's profile
- * (FRESCO-65, `/recipes` "Biblioteca" browse grid). Same `get_filtered_recipes()`
- * safety pre-filter as its siblings — no `.order()`/`.limit()` here: unlike
- * `getLatestAvailableRecipes()`, this is meant to be the whole browsable set,
- * not a recency-biased slice.
+ * One page of the catalog available to the CURRENTLY authenticated user's
+ * profile plus the filter facet counts, both computed server-side by the
+ * `get_catalog` RPC (FRESCO-384 / audit-4 A4-M7). Replaces the old
+ * `getCatalogRecipes`, which shipped the whole ~1000-row safety-filtered set
+ * to the client to search, filter, and count in memory.
+ *
+ * The RPC reads `get_filtered_recipes()` for the food-safety base set, so the
+ * allergen/diet/disliked-ingredient boundary still has exactly one definition.
  */
-export async function getCatalogRecipes(
+export async function getCatalog(
   client: SupabaseClient<Database>,
+  params: GetCatalogParams = {},
   userId?: string,
-): Promise<Recipe[]> {
+): Promise<CatalogPage> {
   let resolvedUserId = userId;
 
   if (!resolvedUserId) {
@@ -140,14 +173,27 @@ export async function getCatalogRecipes(
     resolvedUserId = user.id;
   }
 
-  const { data, error } = await client
-    .rpc('get_filtered_recipes', { p_user_id: resolvedUserId });
+  const { data, error } = await client.rpc('get_catalog', {
+    p_user_id: resolvedUserId,
+    p_search: params.search ?? undefined,
+    p_meal_types: params.mealTypes ?? [],
+    p_cocinas: params.cocinas ?? [],
+    p_dietas: params.dietas ?? [],
+    p_alergenos: params.alergenos ?? [],
+    p_limit: params.limit ?? 30,
+    p_offset: params.offset ?? 0,
+  });
 
   if (error) {
     throw new RecipesError(`No se pudo leer el catálogo de recetas: ${error.message}`);
   }
 
-  return (data ?? []).map(toRecipe);
+  const page = (data ?? {}) as Partial<CatalogPage>;
+  return {
+    recipes: page.recipes ?? [],
+    total: page.total ?? 0,
+    facets: page.facets ?? EMPTY_FACETS,
+  };
 }
 
 /**
