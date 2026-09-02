@@ -1,11 +1,9 @@
 /**
  * Thin, typed client for this project's Supabase Edge Functions
  * (`.context/SRS/api-contracts.md` §0-§4 plus `reassign-guest-data`,
- * ADR-0004). The real Edge Functions are being scaffolded in parallel by the
- * backend-setup agent — these calls are stubs (they hit a real fetch, but
- * there is nothing live to respond yet). Swap the `mock` fallback for a real
- * network round-trip once the functions are deployed; the request/response
- * types are already final.
+ * ADR-0004). Every function this module calls is deployed and live
+ * (`supabase/functions/*`); each call is a real network round-trip to
+ * `NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL` — there is no mock or stub fallback.
  */
 
 import type {

@@ -1,10 +1,11 @@
 # Bloquear alérgenos ya implícitos por la dieta seleccionada (onboarding + perfil)
 
 **Jira Key:** [FRESCO-275](https://basiliomontescastano.atlassian.net/browse/FRESCO-275)
+**Epic:** [FRESCO-64](https://basiliomontescastano.atlassian.net/browse/FRESCO-64) (Biblioteca de Recetas)
 **Type:** Historia
-**Status:** Merged
+**Status:** Finalizada
 **Priority:** Medium
-**Story Points:** -
+**Story Points:** 3
 
 ---
 
@@ -17,7 +18,7 @@ Extiende el patron existente de FRESCO-132/AC-2 (Vegano bloquea Vegetariano como
 ## Metadata
 
 - **Created:** 8/26/2026
-- **Updated:** 8/26/2026
+- **Updated:** 8/30/2026
 - **Reporter:** Basi Montes
 - **Assignee:** Basi Montes
 - **Labels:** ux

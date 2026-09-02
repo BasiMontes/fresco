@@ -2089,6 +2089,7 @@ async function discoverCoverage(
   folder: string,
   options: SyncOptions,
   result: SyncResult,
+  coveredSlug?: string,
 ): Promise<void> {
   const reg = loadRegistry();
   const { atp, atr, defects } = classifyCoverageLinks(issue, reg);
@@ -2132,7 +2133,13 @@ async function discoverCoverage(
   }
 
   // --- Defects: nested under defects/ (skipped with --no-defects) ---
-  if (defects.length > 0 && !options.noDefects) {
+  // A4-L20 (FRESCO-398): only nest linked Defects under a Story/Bug/Improvement/
+  // Tech Story/Tech Debt — i.e. a "this feature regressed" relationship. A
+  // Defect that links ANOTHER Defect (`Relates`, near-always bidirectional) is
+  // a see-also, not containment: nesting a full defect body under each side
+  // duplicates the folder and recurses. That link already shows in the
+  // "Related Issues" section of the defect's own `defect.md`.
+  if (defects.length > 0 && !options.noDefects && coveredSlug !== 'defect') {
     const defDir = join(folder, 'defects');
     if (!options.dryRun) { ensureDir(defDir); }
     for (const d of defects) {
@@ -2845,7 +2852,7 @@ async function syncCoverableStandalone(
   const contentFile = `${entry.slug.replace(/_/g, '-')}.md`;
   bumpFile(writeIndexFile(join(folder, contentFile), renderCoverableContent(entry, issue, config), options.dryRun).status, result);
 
-  await discoverCoverage(config, issue, folder, options, result);
+  await discoverCoverage(config, issue, folder, options, result, entry.slug);
 
   if (options.includeComments) {
     const comments = await fetchComments(config, key);
