@@ -31,6 +31,15 @@ export const POSTHOG_EVENTS = {
   // only — a guest converting later still fires `user_signed_up`.
   GUEST_STARTED: 'guest_started',
   USER_SIGNED_UP: 'user_signed_up',
+  // FRESCO-390 (A4-M25): the progressive-signup OTP conversion funnel. The
+  // OTP is emailed by a Gmail SMTP sender (no owned domain yet — see
+  // ADR-0021), so its deliverability is the risk being measured:
+  // `otp_verified` / `otp_sent` is the completion rate, `otp_failed.reason`
+  // the failure breakdown. `user_signed_up{method:progressive_signup_otp}`
+  // still fires alongside `otp_verified` — this is the granular step.
+  OTP_SENT: 'otp_sent',
+  OTP_VERIFIED: 'otp_verified',
+  OTP_FAILED: 'otp_failed',
   SESSION_STARTED: 'session_started',
   ONBOARDING_STARTED: 'onboarding_started',
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
