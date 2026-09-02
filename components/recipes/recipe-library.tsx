@@ -1,9 +1,11 @@
 'use client';
 
-import type { RecetaPropia, Recipe, RecipeDieta, TipoCocina } from '@schemas';
+import type { RecetaPropia, RecipeDieta, TipoCocina } from '@schemas';
+import type { CatalogCard, CatalogFacets } from '@/lib/api/recipes';
 import type { MealTab, RecipeFilterState } from '@/lib/recipes/recipe-filters';
 import { BookOpen, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
@@ -15,10 +17,7 @@ import { FilterDrawer } from '@/components/ui/filter-drawer';
 import { Input } from '@/components/ui/input';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 import { DIETA_LABELS } from '@/lib/recipes/labels';
-import { countActiveFilters, countWithOption, EMPTY_FILTER_STATE, matchesRecipeFilters } from '@/lib/recipes/recipe-filters';
-
-/** FRESCO-187 — how many recipes render per page before "Ver más recetas" appends the next batch. */
-const RECIPE_PAGE_SIZE = 30;
+import { countActiveFilters, EMPTY_FILTER_STATE } from '@/lib/recipes/recipe-filters';
 
 const COCINA_OPTIONS: TipoCocina[] = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'];
 const DIETA_OPTIONS = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
@@ -34,26 +33,6 @@ function capitalize(value: string): string {
 
 const COCINA_FILTER_OPTIONS = COCINA_OPTIONS.map(option => ({ value: option, label: capitalize(option) }));
 const DIETA_FILTER_OPTIONS = DIETA_OPTIONS.map(option => ({ value: option, label: DIETA_LABELS[option] ?? option }));
-
-/**
- * FRESCO-65 — client-side search over the safety-filtered catalog the page
- * already fetched (`getCatalogRecipes()`). Client-side, not a server round
- * trip per keystroke: the catalog is already bounded to one profile's safe
- * set (hundreds of rows, not the full ~1000-row table).
- *
- * Matches `nombre` OR any entry of `ingredientes_principales`,
- * case-insensitive substring (no accent-folding — a v1 gap, not silently
- * hidden: searching "piña" won't match a name typed "pina").
- */
-function matchesQuery(recipe: Recipe, query: string): boolean {
-  const needle = query.trim().toLowerCase();
-  if (needle.length === 0) { return true; }
-
-  if (recipe.nombre.toLowerCase().includes(needle)) { return true; }
-
-  const ingredientes = recipe.ingredientes_principales ?? [];
-  return ingredientes.some(ingrediente => ingrediente.toLowerCase().includes(needle));
-}
 
 /** One removable chip per active filter value — flattened across all 4 sections for the drawer's "Filtros aplicados" row. */
 function activeFilterChips(filters: RecipeFilterState): { section: keyof RecipeFilterState, value: string, label: string }[] {
@@ -73,39 +52,92 @@ function activeFilterChips(filters: RecipeFilterState): { section: keyof RecipeF
   return chips;
 }
 
-export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { recipes: Recipe[], recetasPropias: RecetaPropia[], favoriteRecipeIds: Set<string> }) {
-  const [query, setQuery] = React.useState('');
-  const [appliedFilters, setAppliedFilters] = React.useState<RecipeFilterState>(EMPTY_FILTER_STATE);
-  const [draftFilters, setDraftFilters] = React.useState<RecipeFilterState>(EMPTY_FILTER_STATE);
+const FILTER_PARAM: Record<keyof RecipeFilterState, string> = {
+  mealTypes: 'meal',
+  cocinas: 'cocina',
+  dietas: 'dieta',
+  alergenos: 'alergeno',
+};
+
+/**
+ * The live URL query, read at call time — NOT from a React prop. Navigation
+ * runs inside a transition, so between an action and the RSC re-render the
+ * `appliedFilters` / `query` props are stale; building the next URL off a
+ * stale prop drops whatever the previous action set (e.g. filter-then-type
+ * losing the filter). `window.location.search` is always current.
+ */
+function currentSearchParams(): URLSearchParams {
+  return new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+}
+
+function withSearchParams(pathname: string, search: URLSearchParams): string {
+  const qs = search.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
+function applyFilterParams(search: URLSearchParams, filters: RecipeFilterState): void {
+  for (const [section, param] of Object.entries(FILTER_PARAM) as [keyof RecipeFilterState, string][]) {
+    const values = filters[section];
+    if (values.length > 0) { search.set(param, values.join(',')); }
+    else { search.delete(param); }
+  }
+}
+
+export interface RecipeLibraryProps {
+  recipes: CatalogCard[]
+  total: number
+  page: number
+  facets: CatalogFacets
+  appliedFilters: RecipeFilterState
+  query: string
+  recetasPropias: RecetaPropia[]
+  favoriteRecipeIds: Set<string>
+}
+
+export function RecipeLibrary({
+  recipes,
+  total,
+  page,
+  facets,
+  appliedFilters,
+  query,
+  recetasPropias,
+  favoriteRecipeIds,
+}: RecipeLibraryProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = React.useTransition();
+
+  const [searchInput, setSearchInput] = React.useState(query);
+  const [draftFilters, setDraftFilters] = React.useState<RecipeFilterState>(appliedFilters);
   const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
   const [misRecetas, setMisRecetas] = React.useState(recetasPropias);
   const [createOpen, setCreateOpen] = React.useState(false);
 
-  const queryFiltered = React.useMemo(
-    () => recipes.filter(recipe => matchesQuery(recipe, query)),
-    [recipes, query],
-  );
-  const filtered = React.useMemo(
-    () => queryFiltered.filter(recipe => matchesRecipeFilters(recipe, appliedFilters)),
-    [queryFiltered, appliedFilters],
-  );
-  // FRESCO-187 — the full catalog (hundreds of recipes) rendered into the
-  // DOM in one shot with no cap. Filtering itself stays instant (still runs
-  // client-side over the full `recipes` array above — that's not what was
-  // slow), only the RENDER is paginated. Resets to one page whenever the
-  // filtered set changes, so switching filters after loading more pages
-  // never leaves a stale, oversized render or hides genuine results below
-  // an already-scrolled-past page boundary.
-  const [visibleCount, setVisibleCount] = React.useState(RECIPE_PAGE_SIZE);
+  // Keep the input aligned with the URL when navigation comes from elsewhere
+  // (back/forward, a removed chip).
   React.useEffect(() => {
-    setVisibleCount(RECIPE_PAGE_SIZE);
-  }, [filtered]);
-  const visible = filtered.slice(0, visibleCount);
+    setSearchInput(query);
+  }, [query]);
 
-  const draftCount = React.useMemo(
-    () => queryFiltered.filter(recipe => matchesRecipeFilters(recipe, draftFilters)).length,
-    [queryFiltered, draftFilters],
-  );
+  const navigate = React.useCallback((search: URLSearchParams) => {
+    startTransition(() => router.push(withSearchParams(pathname, search)));
+  }, [router, pathname]);
+
+  // Debounced search → URL. Resets to page 1; preserves whatever filters the
+  // live URL already carries.
+  React.useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (trimmed === query) { return; }
+    const timer = setTimeout(() => {
+      const search = currentSearchParams();
+      search.delete('page');
+      if (trimmed) { search.set('q', trimmed); }
+      else { search.delete('q'); }
+      navigate(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, query, navigate]);
 
   function openFilterDrawer() {
     setDraftFilters(appliedFilters);
@@ -121,9 +153,27 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
   }
 
   function applyDraftFilters() {
-    setAppliedFilters(draftFilters);
     setFilterDrawerOpen(false);
+    const search = currentSearchParams();
+    search.delete('page');
+    applyFilterParams(search, draftFilters);
+    // Carry whatever is typed right now, even if the search debounce has not
+    // fired yet — otherwise applying a filter mid-type would drop the query.
+    const typed = searchInput.trim();
+    if (typed) { search.set('q', typed); }
+    else { search.delete('q'); }
+    navigate(search);
   }
+
+  function loadMore() {
+    const search = currentSearchParams();
+    search.set('page', String(page + 1));
+    navigate(search);
+  }
+
+  const activeCount = countActiveFilters(appliedFilters);
+  const noNarrowing = activeCount === 0 && query === '';
+  const hasMore = recipes.length < total;
 
   return (
     <div>
@@ -133,8 +183,8 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           <Input
             type="search"
             placeholder="Buscar receta, ingrediente..."
-            value={query}
-            onChange={event => setQuery(event.target.value)}
+            value={searchInput}
+            onChange={event => setSearchInput(event.target.value)}
             className="truncate pl-9"
             data-testid="recipe_search_input"
             aria-label="Buscar receta o ingrediente"
@@ -157,9 +207,9 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
         >
           <SlidersHorizontal className="size-4" aria-hidden="true" />
           Filtrar y ordenar
-          {countActiveFilters(appliedFilters) > 0 && (
+          {activeCount > 0 && (
             <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-primary text-caption text-background">
-              {countActiveFilters(appliedFilters)}
+              {activeCount}
             </span>
           )}
         </Button>
@@ -185,7 +235,7 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
             onClick={applyDraftFilters}
             data-testid="recipe_filter_drawer_apply_button"
           >
-            {draftCount === 1 ? 'Mostrar 1 receta' : `Mostrar ${draftCount} recetas`}
+            Aplicar filtros
           </Button>
         )}
       >
@@ -205,12 +255,16 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           </div>
         )}
 
+        {/* Facet counts are computed server-side by `get_catalog` for the
+            APPLIED filter state (FRESCO-384). A number next to an unchecked
+            box is "how many recipes if you also checked this"; after toggling
+            draft boxes the counts refresh on Apply, not per click. */}
         <FilterSection
           label="Comida"
           options={MEAL_TYPE_OPTIONS}
           selected={draftFilters.mealTypes}
           onToggle={value => toggleDraftValue('mealTypes', value)}
-          countFor={value => countWithOption(queryFiltered, draftFilters, 'mealTypes', value as MealTab)}
+          countFor={value => facets.mealTypes[value] ?? 0}
           data-testid="recipe_filter_section_comida"
         />
         <FilterSection
@@ -218,7 +272,7 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           options={COCINA_FILTER_OPTIONS}
           selected={draftFilters.cocinas}
           onToggle={value => toggleDraftValue('cocinas', value)}
-          countFor={value => countWithOption(queryFiltered, draftFilters, 'cocinas', value)}
+          countFor={value => facets.cocinas[value] ?? 0}
           data-testid="recipe_filter_section_cocina"
         />
         <FilterSection
@@ -226,7 +280,7 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           options={DIETA_FILTER_OPTIONS}
           selected={draftFilters.dietas}
           onToggle={value => toggleDraftValue('dietas', value)}
-          countFor={value => countWithOption(queryFiltered, draftFilters, 'dietas', value as keyof RecipeDieta)}
+          countFor={value => facets.dietas[value] ?? 0}
           data-testid="recipe_filter_section_dieta"
         />
         <FilterSection
@@ -234,7 +288,7 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
           options={ALERGENO_OPTIONS}
           selected={draftFilters.alergenos}
           onToggle={value => toggleDraftValue('alergenos', value)}
-          countFor={value => countWithOption(queryFiltered, draftFilters, 'alergenos', value)}
+          countFor={value => facets.alergenos[value] ?? 0}
           data-testid="recipe_filter_section_alergeno"
         />
       </FilterDrawer>
@@ -252,47 +306,53 @@ export function RecipeLibrary({ recipes, recetasPropias, favoriteRecipeIds }: { 
         </div>
       )}
 
-      {filtered.length > 0 && (
+      {total > 0 && (
         <p className="mt-4 text-body-sm text-tertiary" data-testid="recipe_library_count">
-          {filtered.length}
+          {total}
           {' '}
-          {filtered.length === 1 ? 'receta encontrada' : 'recetas encontradas'}
+          {total === 1 ? 'receta encontrada' : 'recetas encontradas'}
         </p>
       )}
 
-      {filtered.length === 0
-        ? (
-            <EmptyState
-              data-testid="recipe_search_empty_state"
-              className="mt-6"
-              icon={<Search className="size-8 text-tertiary" aria-hidden="true" />}
-              title="No encontramos nada en el catálogo para tu búsqueda"
-              description="Prueba con otro nombre o ingrediente. La búsqueda y los filtros no aplican a tus recetas propias, que siguen visibles arriba."
-            />
-          )
-        : (
-            <>
-              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="recipe_library_grid">
-                {visible.map(recipe => (
-                  <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
-                    <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
-                  </Link>
-                ))}
-              </div>
-              {visibleCount < filtered.length && (
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    data-testid="recipe_library_load_more_button"
-                    onClick={() => setVisibleCount(count => count + RECIPE_PAGE_SIZE)}
-                  >
-                    Ver más recetas
-                  </Button>
-                </div>
-              )}
-            </>
+      {total === 0 && noNarrowing && <EmptyCatalogState />}
+
+      {total === 0 && !noNarrowing && (
+        <EmptyState
+          data-testid="recipe_search_empty_state"
+          className="mt-6"
+          icon={<Search className="size-8 text-tertiary" aria-hidden="true" />}
+          title="No encontramos nada en el catálogo para tu búsqueda"
+          description="Prueba con otro nombre, ingrediente o filtro. La búsqueda y los filtros no aplican a tus recetas propias, que siguen visibles arriba."
+        />
+      )}
+
+      {total > 0 && (
+        <>
+          <div
+            className={`mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4${isPending ? ' opacity-60' : ''}`}
+            data-testid="recipe_library_grid"
+          >
+            {recipes.map(recipe => (
+              <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
+                <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
+              </Link>
+            ))}
+          </div>
+          {hasMore && (
+            <div className="mt-6 flex justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                data-testid="recipe_library_load_more_button"
+                disabled={isPending}
+                onClick={loadMore}
+              >
+                Ver más recetas
+              </Button>
+            </div>
           )}
+        </>
+      )}
     </div>
   );
 }

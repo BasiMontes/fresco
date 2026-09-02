@@ -55,6 +55,9 @@ async function applyDrawerFilter(page: Page, sectionTestId: string, optionLabel:
   await page.locator('label').filter({ hasText: optionLabel }).click();
   await page.getByTestId('recipe_filter_drawer_apply_button').click();
   await expect(page.getByTestId('recipe_filter_drawer')).toBeHidden();
+  // FRESCO-384: filtering is URL-driven and navigates in a transition — wait
+  // for the filter param to land before asserting on the re-rendered list.
+  await page.waitForURL(/[?&](meal|cocina|dieta|alergeno)=/);
 }
 
 // ── Given: en la Biblioteca ───────────────────────────────────────────────
@@ -73,7 +76,7 @@ Given(/^que Laura tiene una pestaña de tipo de comida activa$/, async ({ page, 
   await loginAndGoToLibrary(page, testUser);
   ctx.totalCount = await shownCount(page);
   await applyDrawerFilter(page, 'recipe_filter_section_comida', 'Cena');
-  expect(await shownCount(page)).toBeLessThan(ctx.totalCount);
+  await expect.poll(async () => shownCount(page)).toBeLessThan(ctx.totalCount);
 });
 
 Given(/^que Laura tiene la pestaña "Cena" activa$/, async ({ page, testUserFactory }) => {

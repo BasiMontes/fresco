@@ -502,6 +502,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_catalog: {
+        Args: {
+          p_alergenos?: string[]
+          p_cocinas?: string[]
+          p_dietas?: string[]
+          p_limit?: number
+          p_meal_types?: string[]
+          p_offset?: number
+          p_search?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_filtered_recipes: {
         Args: { p_recipe_id?: string; p_user_id: string }
         Returns: {

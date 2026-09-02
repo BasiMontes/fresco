@@ -38,8 +38,15 @@ import { cn } from '@/lib/utils';
  * precedence over `height:100%` from `h-full` here, so the two compose
  * correctly rather than fighting.
  */
+/**
+ * Everything `RecipeCard` actually reads off a recipe. A full `@schemas`
+ * `Recipe` satisfies it; so does the card-sized `get_catalog` projection
+ * (`CatalogCard`, FRESCO-384) — the browse grid no longer needs the whole row.
+ */
+export type RecipeCardData = Pick<Recipe, 'id' | 'nombre' | 'foto_url' | 'dieta' | 'clasificacion' | 'meta'>;
+
 export interface RecipeCardProps {
-  recipe: Recipe
+  recipe: RecipeCardData
   isFavorite?: boolean
   onToggleFavorite?: () => void
   className?: string

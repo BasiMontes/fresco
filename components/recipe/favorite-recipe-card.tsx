@@ -1,13 +1,13 @@
 'use client';
 
-import type { Recipe } from '@schemas';
+import type { RecipeCardData } from '@/components/recipe/recipe-card';
 import * as React from 'react';
 import { RecipeCard } from '@/components/recipe/recipe-card';
 import { addFavorite, removeFavorite } from '@/lib/api/favorites';
 import { createClient } from '@/lib/supabase/client';
 
 export interface FavoriteRecipeCardProps {
-  recipe: Recipe
+  recipe: RecipeCardData
   initialIsFavorite: boolean
   className?: string
   onToggleFavorite?: (recipeId: string, isFavorite: boolean) => void
