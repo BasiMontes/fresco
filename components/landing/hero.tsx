@@ -25,7 +25,9 @@ function WeeklyMenuPreview() {
     <div className="overflow-hidden rounded-card border border-border bg-surface shadow-lg">
       <div className="bg-primary px-4 pb-4 pt-4">
         <p className="text-caption text-accent-200">Tu semana</p>
-        <p className="text-label text-background">Semana del 20 al 26 enero</p>
+        {/* Mock week — real 2026 calendar: Mon 19 → Sun 25 Jan (was "20 al 26",
+            off by one, FRESCO-400 / A4-L18). Martes below is the 20th. */}
+        <p className="text-label text-background">Semana del 19 al 25 enero</p>
         <div className="mt-3 grid grid-cols-7 gap-1">
           {WEEK_DAYS.map((day, index) => (
             <div
@@ -46,7 +48,7 @@ function WeeklyMenuPreview() {
       <div className="space-y-2 bg-background px-4 py-3">
         <div className="flex items-center justify-between text-label text-text">
           Martes
-          <span className="text-caption text-tertiary">21 ene</span>
+          <span className="text-caption text-tertiary">20 ene</span>
         </div>
         {MEALS.map(meal => (
           <div key={meal.type} className="flex items-center gap-2 border-b border-border py-2 last:border-none">
@@ -119,7 +121,7 @@ export function Hero() {
             Generar mi primer menú →
           </LandingCtaLink>
           <a href="#como-funciona" className={buttonVariants({ variant: 'secondary', size: 'lg' })}>
-            ¿Cómo funciona? Ver demo
+            ¿Cómo funciona?
           </a>
         </div>
 

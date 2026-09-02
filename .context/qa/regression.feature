@@ -1719,8 +1719,9 @@ Característica: Flujo completo de usuario en Fresco
     # siguió apareciendo en la misma lista de recomendaciones al recargar.
     # Sigue @pendiente (FRESCO-399 / A4-L14 lo revisó): NO es un gap de
     # verificación sino una pregunta de PRODUCTO sin resolver — ¿las
-    # recomendaciones deben excluir favoritas o no? Necesita un ticket de
-    # decisión de producto, no una automatización. Marcado para spin-off.
+    # recomendaciones deben excluir favoritas o no? Rastreado en FRESCO-405
+    # (decisión de producto); este @pendiente se cierra cuando esa decisión
+    # se registre.
 
   # ==========================================================================
   # Landing pública (/)
