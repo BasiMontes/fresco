@@ -1,11 +1,11 @@
 # ADR-0004 — Guest-data reassignment on email conflict: password-verified, service-role-only RPC
 
-- **Status:** Accepted
+- **Status:** Accepted — verification step revised by ADR-0022 (2026-09-02)
 - **Date:** 2026-07-31
 - **Deciders:** Founder (product + technical decision, drafted by AI workflow for approval)
 - **Tags:** authentication, data-model, cross-cutting-invariant, guest-mode, service-role, master-sprint-2-unblock
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0022 (ownership-verification step only — the service-role RPC, its grant boundary, and the orphan-anon cleanup all still stand)
 
 ---
 

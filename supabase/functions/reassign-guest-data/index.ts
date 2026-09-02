@@ -2,17 +2,28 @@
 // pre-existing account when she tries to convert with an email that already
 // belongs to that account (FRESCO-19's `email_exists` edge case). See the
 // ADR for the full mechanism and why each step exists.
+//
+// ADR-0022 (FRESCO-395 / A4-L4): the ownership proof no longer runs a
+// server-side `signInWithPassword` on caller-supplied credentials (that made
+// this endpoint a password brute-force oracle). The caller authenticates to
+// the target account via native Supabase Auth and passes the resulting
+// session token, which this function only verifies. Plus a per-guest rate
+// limit.
 
-import { createClient } from '@supabase/supabase-js'
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
+import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
 import type { ReassignGuestDataRequest, ReassignGuestDataResponse } from './types.ts'
 
 const FN_NAME = 'reassign-guest-data'
+
+// A4-L4: a genuine guest hits this at most once per conversion. 5/h leaves
+// room for a retry after a transient failure without being a useful oracle.
+const RATE_LIMIT_PER_HOUR = 5
 
 Deno.serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req)
@@ -29,30 +40,38 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('Esta operación es solo para sesiones de invitada.', 400)
     }
 
-    const body: ReassignGuestDataRequest = await req.json()
-    const { email, password } = body
-    if (!email || !password) {
-      throw new HttpError('Faltan campos: email, password', 400)
-    }
-
-    // 2. Ownership proof: verify the target account's REAL password via a
-    // fresh, unauthenticated client — never trust the caller's word that an
-    // account is "hers". A generic 401 either way avoids leaking whether the
-    // email exists at all.
-    const anonClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-    )
-    const { data: signInData, error: signInError } = await anonClient.auth.signInWithPassword({
-      email,
-      password,
+    // A4-L4 (ADR-0022): rate-limit on the guest identity before doing any
+    // token work, so this endpoint can't be hammered even with valid tokens.
+    await enforceRateLimit(supabase, {
+      userId: guestUser.id,
+      endpoint: FN_NAME,
+      limit: RATE_LIMIT_PER_HOUR,
     })
 
-    if (signInError || !signInData.user) {
+    const body: ReassignGuestDataRequest = await req.json()
+    const { targetAccessToken } = body
+    if (!targetAccessToken) {
+      throw new HttpError('Falta campo: targetAccessToken', 400)
+    }
+
+    // 2. Ownership proof (ADR-0022, revises ADR-0004): the caller authenticated
+    // to the target account through native Supabase Auth and hands us that
+    // session token — we only VERIFY it here, never a password. Brute-forcing
+    // now happens against Supabase Auth's own hardened login (rate limit,
+    // leaked-password protection, optional captcha), not this function. A
+    // generic 401 avoids leaking anything about the target account.
+    const targetClient = createRequestClient(`Bearer ${targetAccessToken}`)
+    const { data: targetData, error: targetError } = await targetClient.auth.getUser()
+
+    if (targetError || !targetData.user) {
       throw new HttpError('Credenciales inválidas para esa cuenta.', 401)
     }
 
-    const targetUserId = signInData.user.id
+    if (targetData.user.is_anonymous) {
+      throw new HttpError('La cuenta destino debe ser una cuenta registrada.', 400)
+    }
+
+    const targetUserId = targetData.user.id
 
     if (targetUserId === guestUser.id) {
       // Should not happen in practice (FRESCO-19 only reaches this flow on

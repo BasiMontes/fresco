@@ -137,9 +137,12 @@ export async function updateRecipeStatus(
 }
 
 /**
- * POST /reassign-guest-data — ADR-0004 (FRESCO-20). Called with the guest's
- * own (still-anonymous) access token; the request body's email/password
- * identify the real account to reassign her generated data to.
+ * POST /reassign-guest-data — ADR-0004 (FRESCO-20), verification revised by
+ * ADR-0022 (FRESCO-395 / A4-L4). `accessToken` is the guest's own
+ * (still-anonymous) session token; `request.targetAccessToken` is a real
+ * session token the caller already obtained by authenticating to the target
+ * account through native Supabase Auth — the function verifies it, never a
+ * password.
  */
 export async function reassignGuestData(
   request: ReassignGuestDataRequest,
