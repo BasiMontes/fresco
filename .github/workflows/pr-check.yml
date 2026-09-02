@@ -286,6 +286,21 @@ jobs:
 
       - run: bun run test:e2e
 
+      - name: Upload Playwright report + traces
+        # FRESCO-387 (A4-M14): `retries: 1` + `trace: 'on-first-retry'` produce
+        # a trace zip under `test-results/` on the retried failure — keep it
+        # (and the html/blob reports) so a flaky CI failure is debuggable.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            blob-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Stop Supabase
         if: always()
         run: supabase stop
