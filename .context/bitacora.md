@@ -426,3 +426,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: business-data-map.md §2 ancla "Canonical catalog size" (1000, select count(*) from public.recipes) + hechos de completitud (fotos 774, dificultad 0 en blanco). glosario "~35/~230" -> 1000. project-dev-guide 3x ~1000 -> 1000. business/README tabla de figuras canonicas. Solo docs. PR #243 -> dev + ff staging, SP 3.
 - Por qué: audit-4 A4-M26 — 5 conteos distintos en los docs. El hallazgo estaba parcialmente obsoleto (dificultad ya hecha, fotos 774).
 - Siguiente: main HELD.
+
+## 2026-09-02 - FRESCO-392 cierre real de los 4 forward-only (A4-FWD-ONLY)
+- Qué: verificados los 4 cierres forward-only (FRESCO-282/313/320/328). 282 cumplido por FRESCO-378 (35 defectos con enlace+Severity+Evidence, verificado REST); 320 cumplido por FRESCO-388/M18 (Gherkin observable en 245/246/249); 313 gate vivo; 328 ya en Rechazos, añadido puntero a ADR-0020. Comentarios de constancia en los 4 + comentario paraguas en 392. Creado FRESCO-404 (ticket de proceso Ola-3: DoD dura de "Finalizada"). Rastro en .context/audits/2026-09-02-FRESCO-392-forward-only-closeout/.
+- Por qué: auditoría 4 A4-FWD-ONLY, epic FRESCO-359 ola-3. Los 4 tickets figuraban cerrados sin que la métrica del hallazgo fuera cero.
+- Siguiente: implementar FRESCO-404 (documentar la DoD dura). Promoción a prod del batch audit-4 ola-2 sigue en HOLD (~36 commits, migraciones 380-384 pendientes de push).

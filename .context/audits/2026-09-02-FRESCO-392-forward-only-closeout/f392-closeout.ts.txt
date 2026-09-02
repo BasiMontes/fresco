@@ -1,0 +1,114 @@
+/**
+ * FRESCO-392 (A4-FWD-ONLY) — close out the 4 forward-only closures.
+ * Jira-only. No product code.
+ *
+ * Per the umbrella ticket, the concrete work already landed in H17 (FRESCO-378)
+ * and M16-M18 (FRESCO-388). This script only records the verification and adds
+ * the one thing still missing: the ADR-0020 pointer on FRESCO-328.
+ *
+ *   1. FRESCO-328 — comment pointing to ADR-0020
+ *   2. FRESCO-282 — constancia: condition met by FRESCO-378
+ *   3. FRESCO-320 — constancia: gap closed by FRESCO-388 / M18
+ *   4. FRESCO-313 — constancia: gate live + backfill done
+ *   5. FRESCO-392 — umbrella close-out summary
+ *   6. create the Ola-3 DoD process ticket (child of FRESCO-359)
+ *
+ * Run:  bun f392-closeout.ts --dry-run   then   bun f392-closeout.ts
+ * Idempotency: NOT re-runnable (would duplicate comments / create a 2nd ticket).
+ */
+const BASE = (process.env.ATLASSIAN_URL ?? '').replace(/\/$/, '');
+const AUTH = 'Basic ' + Buffer.from(`${process.env.ATLASSIAN_EMAIL}:${process.env.ATLASSIAN_API_TOKEN}`).toString('base64');
+const DRY = process.argv.includes('--dry-run');
+
+async function api(path: string, method: string, body?: unknown) {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: { Authorization: AUTH, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return { ok: res.ok, status: res.status, json: res.ok ? await res.json().catch(() => ({})) : {}, text: res.ok ? '' : await res.text() };
+}
+
+function adf(paragraphs: string[]) {
+  return {
+    type: 'doc',
+    version: 1,
+    content: paragraphs.map((t) => ({ type: 'paragraph', content: [{ type: 'text', text: t }] })),
+  };
+}
+
+async function comment(key: string, paragraphs: string[]) {
+  if (DRY) { console.log(`\n[dry] comment -> ${key}\n  ${paragraphs[0].slice(0, 120)}...`); return; }
+  const res = await api(`/rest/api/3/issue/${key}/comment`, 'POST', { body: adf(paragraphs) });
+  console.log(res.ok ? `  ${key}: commented` : `  ${key}: COMMENT FAIL ${res.status} ${res.text.slice(0, 200)}`);
+}
+
+// 1. FRESCO-328
+await comment('FRESCO-328', [
+  'Constancia FRESCO-392 (2026-09-02).',
+  'El comentario de reclasificacion (A4-H17, 2026-09-01) apuntaba al §08 del informe de auditoria 4. La decision ya esta formalizada como ADR: .context/ADR/ADR-0020-single-supabase-project-until-pro.md (creada en FRESCO-389).',
+  'Este ticket queda correctamente en Rechazos como decision registrada, no como trabajo pendiente. Disparadores de reapertura (en el ADR): subida a plan Pro, necesidad de un segundo entorno aislado, o un incidente de datos cruzados entre entornos.',
+]);
+
+// 2. FRESCO-282
+await comment('FRESCO-282', [
+  'Constancia FRESCO-392 (2026-09-02).',
+  'La condicion de cierre real de esta tarjeta era que A4-H17 demostrara los ~40 defectos abiertos/recientes con enlace a historia + Severity + Evidence.',
+  'FRESCO-378 (A4-H17, Merged 2026-09-01) lo completo: 35 defectos (Error no-Finalizada o creados >= 2026-08-19) con Relates a su epica de origen (o parent ya presente), Severity por impacto y comentario de evidencia. Verificado via REST — p. ej. FRESCO-315 -> parent FRESCO-309 + sev moderada; FRESCO-264 -> Relates FRESCO-18 + sev mayor.',
+  'Forward-only ratificado para los defectos historicos previos a FRESCO-282: no se reabren. Cierre confirmado.',
+]);
+
+// 3. FRESCO-320
+await comment('FRESCO-320', [
+  'Constancia FRESCO-392 (2026-09-02).',
+  'La nota A4-H17 (2026-09-01) dejo esta tarjeta como Finalizada con la deuda abierta: las AC de las historias sin cerrar seguian sin ser testeables (Gherkin con valores observables).',
+  'FRESCO-388 (A4-M18, Merged 2026-09-02) cerro el gap: FRESCO-245, FRESCO-246 y FRESCO-249 tienen ahora AC en Gherkin con valores observables. FRESCO-274 y FRESCO-275 ya estaban Finalizada.',
+  'Condicion de FRESCO-392 cumplida. Cierre confirmado.',
+]);
+
+// 4. FRESCO-313
+await comment('FRESCO-313', [
+  'Constancia FRESCO-392 (2026-09-02).',
+  'Gate de Severity/Evidence en la pantalla de creacion de Error verificado en vivo por A4-H17 (comentario 2026-09-01) y re-confirmado al crear FRESCO-401. Backfill acotado completado en FRESCO-378.',
+  'Condicion de FRESCO-392 cumplida. Cierre confirmado.',
+]);
+
+// 6. DoD process ticket (create BEFORE the umbrella comment so we can cite its key)
+let dodKey = '(dry-run)';
+if (DRY) {
+  console.log('\n[dry] create ticket: child of FRESCO-359, type Tarea, labels [auditoria-4, ola-3]');
+} else {
+  const res = await api('/rest/api/3/issue', 'POST', {
+    fields: {
+      project: { key: 'FRESCO' },
+      parent: { key: 'FRESCO-359' },
+      issuetype: { name: 'Tarea' },
+      labels: ['auditoria-4', 'ola-3'],
+      summary: 'A4-PROC · Definicion dura de "Finalizada" (DoD): un ticket no se cierra hasta que el problema es medible-mente cero',
+      description: adf([
+        'Contexto',
+        'FRESCO-392 (A4-FWD-ONLY) cerro los 4 cierres forward-only (FRESCO-282 / 313 / 320 / 328) verificando que el trabajo concreto habia aterrizado en H17 y M16-M18. Al hacerlo quedo claro el patron que causo el problema: tarjetas marcadas Finalizada mientras la metrica del hallazgo seguia sin ser cero (defectos sin trazar, AC no testeables, "aislamiento" que en realidad era un deferral).',
+        'Objetivo',
+        'Escribir y adoptar una Definition of Done dura para el proyecto: un ticket no pasa a Finalizada hasta que el problema que lo origino es medible-mente cero (o el residuo esta explicitamente aceptado y con ticket de seguimiento). Casos: defecto -> repro reproducido y luego no reproducible + evidencia; tarea de datos/backlog -> la consulta de verificacion da 0; decision/deferral -> va a Rechazos con ADR, no a Finalizada.',
+        'Alcance',
+        'Documentar la DoD (candidatos: .context/ADR/ nuevo ADR de proceso, o seccion en el project-dev-guide / CLAUDE.md). Sin cambio de codigo. Esfuerzo: S.',
+        'Origen',
+        'Auditoria 4, epic FRESCO-359, ola-3. Referenciado desde el AC de FRESCO-392.',
+      ]),
+    },
+  });
+  if (res.ok) { dodKey = res.json.key; console.log(`\n  DoD ticket created: ${dodKey}`); }
+  else { console.log(`\n  DoD CREATE FAIL ${res.status} ${res.text.slice(0, 300)}`); }
+}
+
+// 5. FRESCO-392 umbrella
+await comment('FRESCO-392', [
+  `Cierre FRESCO-392 (2026-09-02). Resumen del estado de los 4 cierres forward-only:`,
+  `FRESCO-282 — Finalizada correcta. Condicion cumplida por FRESCO-378 (A4-H17): 35 defectos abiertos/recientes con enlace + Severity + Evidence, verificado via REST. Forward-only para los historicos.`,
+  `FRESCO-313 — Finalizada correcta. Gate de Severity/Evidence en la pantalla de Error vivo y verificado (A4-H17, re-confirmado con FRESCO-401). Backfill en FRESCO-378.`,
+  `FRESCO-320 — Finalizada correcta. AC no testeables cerradas por FRESCO-388 (A4-M18): Gherkin observable en FRESCO-245/246/249; 274/275 ya cerradas.`,
+  `FRESCO-328 — Rechazos (correcto, no Finalizada). Reclasificado en A4-H17; comentario con puntero a ADR-0020 anadido en este cierre.`,
+  `Definicion dura de "Finalizada" (DoD): ticket de proceso creado en Ola 3 -> ${dodKey}.`,
+]);
+
+console.log(`\n=== ${DRY ? 'DRY-RUN' : 'DONE'} ===`);
