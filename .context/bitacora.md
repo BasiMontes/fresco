@@ -391,3 +391,8 @@ Historia anterior a 2026-08-27 (383 entradas, 2026-07-25 → 2026-08-27) archiva
 - Qué: RPC get_catalog(...) devuelve jsonb {recipes: página, total, facets} reutilizando get_filtered_recipes como base de seguridad. /recipes URL-driven (?q ?page ?meal ?cocina ?dieta ?alergeno), payload inicial ~26 KB (era ~1,1 MB). RecipeLibrary sin filtrado/facetas en memoria. pgTAP get_catalog.test.sql (12 asserts). PR #236 (4 commits + 1 fix de carrera e2e) -> dev + ff staging, SP 5.
 - Por qué: audit-4 A4-M7 (arquitectura/rendimiento).
 - Siguiente: main HELD. Gotcha: RECIPE_PAGE_SIZE importado de un módulo use-client a un RSC = stub -> NaN limit -> página vacía (FRESCO-117). Carrera de navegación en transición -> construir URLs desde window.location, no props.
+
+## 2026-09-02 - FRESCO-385 sink de Sentry para Edge Functions (A4-M9)
+- Qué: _shared/sentry.ts nuevo — captureEdgeException postea un envelope de Sentry v7 vía fetch (sin SDK). No-op salvo SENTRY_DSN seteado Y proyecto hosted (CI/local nunca envían). toErrorResponse (catch único) ahora async: genera errorId, saca el sub del JWT, reporta. Cero cambio en los 9 index.ts. PR #237 -> dev + ff staging, SP 3.
+- Por qué: audit-4 A4-M9 (observabilidad) — errores inesperados de Edge Function no generaban alerta.
+- Siguiente: activar con supabase secrets set SENTRY_DSN por entorno. main HELD.
