@@ -214,3 +214,8 @@ Historia archivada:
 - Qué: `supabase migration repair --status reverted 20260901100401 20260901103915`. Las 2 entradas huérfanas eran duplicados exactos de 20260901130000 (FRESCO-362) y 20260901140000 (FRESCO-363) - aplicadas out-of-band vía MCP el 1-sep ~10am durante audit-4 ola-3, luego re-commiteadas. Ledger: 72 migraciones, 0 drift. Workflow Drift checks verde. Issue #269 cerrada. FRESCO-413 -> Finalizada.
 - Por qué: el gate de FRESCO-413 (ya con pipefail arreglado) destapó el drift real; era seguro revertir porque el efecto vive en los ficheros commiteados.
 - Siguiente: FRESCO-421 (flake e2e). staging->main ya no bloqueado por drift.
+
+## 2026-09-03 - FRESCO-421: timeout 90s para los steps e2e de generate-meal-plan
+- Qué: 30_000 -> 90_000 en calendario-semana.steps.ts (toHaveCount calendar_empty_state) y onboarding.steps.ts (waitForURL /menu). Cold-start del Edge Runtime de Deno local (ADR-0017) en el primer invoke de un worker de CI pasaba de 30s -> flake en 4 PRs. Mismo margen que generate-shopping-list. PR #270 squash -> dev (096dc92), ff staging. Jira -> Control de calidad.
+- Por qué: 4 PRs seguidos necesitaron re-run manual del escenario de generación desde /calendar.
+- Siguiente: confirmar 3 runs verdes de test:e2e en los proximos PRs (este ya cuenta como 1, sin re-run).
