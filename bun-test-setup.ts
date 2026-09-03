@@ -1,4 +1,10 @@
-import { mock } from 'bun:test';
+import { cleanup } from '@testing-library/react';
+import { afterEach, mock } from 'bun:test';
+import '@testing-library/jest-dom';
+
+// happy-dom's globals are registered by `tests/happy-dom-setup.ts`, which
+// `bunfig.toml` preloads BEFORE this file — the `@testing-library` imports
+// above bind `document` at eval time and would throw otherwise.
 
 /**
  * `lib/env.ts` validates the NEXT_PUBLIC_* client env at first read and
@@ -29,3 +35,12 @@ void mock.module('posthog-js', () => ({
     init: () => {},
   },
 }));
+
+/**
+ * RTL does not auto-clean under `bun test` (the runner wires no afterEach of
+ * its own), so unmount between tests to keep the shared happy-dom document
+ * from accumulating rendered trees across cases.
+ */
+afterEach(() => {
+  cleanup();
+});

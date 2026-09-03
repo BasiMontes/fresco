@@ -1,2 +1,5 @@
 [test]
-preload = [ "./bun-test-setup.ts" ]
+preload = [
+  "./tests/happy-dom-setup.ts",
+  "./bun-test-setup.ts",
+]
