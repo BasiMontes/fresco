@@ -5,6 +5,9 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
+    # dev is the integration branch (dev -> staging -> main); PRs to main
+    # bypass that flow. Default target is the repo default branch, so pin it.
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
