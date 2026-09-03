@@ -21,7 +21,10 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
-# ===== Playwright Test Artifacts =====
+# ===== Test Artifacts =====
+# `bun test --coverage` output. FRESCO-412's `scripts/check-coverage.ts`
+# writes to a tmpdir, but a bare `bun test --coverage` lands here.
+/coverage/
 /test-results/
 /playwright-report/
 /blob-report/

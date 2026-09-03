@@ -70,7 +70,11 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - run: bun test
+      # FRESCO-412: `bun test` + a ratchet floor on total line-weighted
+      # coverage. `scripts/check-coverage.ts` runs the suite, then fails the
+      # job if coverage drops below the committed floor (never if it rises).
+      # `--coverage` instrumentation is ~free here (<50 ms on ~1 s of tests).
+      - run: bun run test:coverage
 
   deno:
     name: deno:check
