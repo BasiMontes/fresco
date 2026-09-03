@@ -1,10 +1,27 @@
-import { cleanup } from '@testing-library/react';
+import { GlobalRegistrator } from '@happy-dom/global-registrator';
 import { afterEach, mock } from 'bun:test';
-import '@testing-library/jest-dom';
 
-// happy-dom's globals are registered by `tests/happy-dom-setup.ts`, which
-// `bunfig.toml` preloads BEFORE this file — the `@testing-library` imports
-// above bind `document` at eval time and would throw otherwise.
+/**
+ * FRESCO-409 — component tests (`*.test.tsx`) need a DOM. Bun has no
+ * per-file test environment like Vitest, so happy-dom is registered once,
+ * here, for every test file. See ADR-0024.
+ *
+ * This MUST happen before anything that touches `document` is evaluated.
+ * `@testing-library/*` binds `document.body` at import-eval time, and ESM
+ * `import` statements hoist above executable code — so testing-library is
+ * pulled in via `require()` further down, AFTER this call, not via a
+ * top-level import. The only hoisted imports here (`GlobalRegistrator`,
+ * `bun:test`) do not touch the DOM.
+ *
+ * `url` gives `window.location` a real origin so `lib` code that branches on
+ * `typeof window` takes the browser path under test, same as the app.
+ */
+if (typeof globalThis.window === 'undefined') {
+  GlobalRegistrator.register({ url: 'https://test.fresco.local/' });
+}
+if (typeof globalThis.window === 'undefined') {
+  throw new TypeError('bun-test-setup: happy-dom GlobalRegistrator.register() did not install a window');
+}
 
 /**
  * `lib/env.ts` validates the NEXT_PUBLIC_* client env at first read and
@@ -35,6 +52,33 @@ void mock.module('posthog-js', () => ({
     init: () => {},
   },
 }));
+
+/**
+ * `@/lib/supabase/client` pulls `@supabase/ssr` + `@supabase/supabase-js`
+ * (a large graph). Mocking it ONCE here — rather than per component-test
+ * file — avoids bun re-invalidating and re-transpiling that whole graph on
+ * every file that needs a stub client, which turned a <1s suite into a 75s
+ * one. No non-component test imports this module. Component tests that need
+ * to assert on client calls `spyOn` the specific `@/lib/api/*` function
+ * instead; the ones that never reach a network call just get this inert
+ * client (its reads resolve to "no session", which is a real branch).
+ */
+void mock.module('@/lib/supabase/client', () => ({
+  createClient: () => ({
+    auth: {
+      getSession: async () => ({ data: { session: null } }),
+      getUser: async () => ({ data: { user: null } }),
+      signInWithPassword: async () => ({ data: { session: null }, error: new Error('no test backend') }),
+      signOut: async () => ({ error: null }),
+    },
+  }),
+}));
+
+// Pulled in AFTER GlobalRegistrator.register() — see the header note.
+// eslint-disable-next-line ts/no-require-imports
+const { cleanup } = require('@testing-library/react') as typeof import('@testing-library/react');
+// eslint-disable-next-line ts/no-require-imports
+require('@testing-library/jest-dom');
 
 /**
  * RTL does not auto-clean under `bun test` (the runner wires no afterEach of
