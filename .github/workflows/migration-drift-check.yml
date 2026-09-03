@@ -85,6 +85,9 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
+          # pipefail — without it the pipeline exits with `tee`'s status (0),
+          # so a real drift (script exits 1) would leave this step green.
+          set -o pipefail
           bun scripts/check-migration-drift.ts | tee drift-report.txt
 
       - name: Open an issue on drift
@@ -151,7 +154,10 @@ jobs:
         env:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         # `psql` is preinstalled on ubuntu-latest runners.
-        run: bun scripts/check-seed-drift.ts | tee seed-drift-report.txt
+        # `set -o pipefail` so the step fails on the script's exit, not `tee`'s.
+        run: |
+          set -o pipefail
+          bun scripts/check-seed-drift.ts | tee seed-drift-report.txt
 
       - name: Open an issue on drift
         if: failure() && steps.seed.outcome == 'failure'
