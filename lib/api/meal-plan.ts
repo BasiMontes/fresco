@@ -4,7 +4,7 @@ import type { RecipeRow } from '@/lib/api/recipes';
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
 import { toRecipe } from '@/lib/api/recipes';
-import { getIsoWeek } from '@/lib/date/iso-week';
+import { getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const TIPOS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
@@ -182,6 +182,83 @@ export async function getMealPlanForWeek(
     advertencias: row.advertencias,
     explicacionAprendizaje: row.explicacion_aprendizaje,
   };
+}
+
+/** One row in the "Histórico de menús" list (FRESCO-425). */
+export interface PastMealPlanWeek {
+  mealPlanId: string
+  semanaIso: string
+  /** `YYYY-MM-DD` Monday of the week — for date formatting and sorting. */
+  mondayIso: string
+  /** Count of the 21 slots marked `cocinada`. */
+  cocinadas: number
+  /** Count of the 21 slots marked `descartada`. */
+  descartadas: number
+}
+
+/**
+ * Lists the CURRENTLY authenticated user's meal plans for weeks BEFORE the
+ * current ISO week, newest first (FRESCO-425 "Histórico de menús").
+ *
+ * The current week is excluded on purpose — it lives on `/calendar`, not in
+ * the "anterior" history — and future weeks (a plan generated ahead of time)
+ * are excluded too. The comparison is by real Monday date via
+ * `getDateFromIsoWeek`, never a lexical compare on `semana_iso`: `'2026-W52'`
+ * < `'2027-W01'` holds lexically only by luck, and breaks for any pair that
+ * straddles a year boundary.
+ *
+ * The `cocinada` / `descartada` balance per week is counted here from the
+ * embedded `meal_plan_recipes.estado` values rather than via a SQL aggregate
+ * view — the row count is small (a handful of past weeks × 21 slots) and a
+ * view would need its own migration + RLS policy for a read this cheap.
+ *
+ * Public method — fails fast (throws `MealPlanError`) on a real read error,
+ * same convention as `getMealPlanForWeek()`. Returns `[]` (not a throw) when
+ * the user has no past weeks: a household on its first week is a normal
+ * state, not a failure.
+ */
+export async function listPastMealPlanWeeks(
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<PastMealPlanWeek[]> {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new MealPlanError('No hay una sesión autenticada para leer el histórico de menús.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('meal_plans')
+    .select('id, semana_iso, meal_plan_recipes(estado)')
+    .eq('user_id', resolvedUserId);
+
+  if (error) {
+    throw new MealPlanError(`No se pudo leer el histórico de menús: ${error.message}`);
+  }
+
+  const currentMondayMs = new Date(`${getIsoWeekMonday()}T00:00:00.000Z`).getTime();
+
+  return (data ?? [])
+    .map((row) => {
+      const mondayIso = getDateFromIsoWeek(row.semana_iso).toISOString().slice(0, 10);
+      const slots = (row.meal_plan_recipes ?? []) as { estado: EstadoRecetaSlot }[];
+
+      return {
+        mealPlanId: row.id,
+        semanaIso: row.semana_iso,
+        mondayIso,
+        cocinadas: slots.filter(slot => slot.estado === 'cocinada').length,
+        descartadas: slots.filter(slot => slot.estado === 'descartada').length,
+      };
+    })
+    .filter(week => new Date(`${week.mondayIso}T00:00:00.000Z`).getTime() < currentMondayMs)
+    .sort((a, b) => b.mondayIso.localeCompare(a.mondayIso));
 }
 
 /**
