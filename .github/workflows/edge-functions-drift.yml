@@ -53,19 +53,24 @@ jobs:
       group: e2e-shared-supabase-backend
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      # Third-party actions pinned by commit SHA, not a mutable tag (FRESCO-417 /
+      # A4-L16). Bump the SHA + trailing version comment together when upgrading
+      # (Dependabot does this — see .github/dependabot.yml).
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # deploy-changed-functions.ts diffs github.event.before..github.sha to
           # decide which functions changed — needs full history.
           fetch-depth: 0
+          # Local git diff/rev-parse only — no authenticated git op follows.
+          persist-credentials: false
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.3.14'
 
       - run: bun install --frozen-lockfile
 
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: 2.109.1
 
@@ -90,18 +95,19 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           # check-functions-drift.ts reads `git log` timestamps per function dir.
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.3.14'
 
       - run: bun install --frozen-lockfile
 
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: 2.109.1
 
