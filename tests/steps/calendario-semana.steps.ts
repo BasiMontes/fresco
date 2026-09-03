@@ -12,9 +12,11 @@ import { seedFullWeekMenu } from '../test-user-factory';
  *   - "Ver la semana anterior desde el Calendario"
  *   - "El usuario elimina el menú de la semana que está viendo"
  *   - "Generar un menú nuevo directamente desde el Calendario"
+ *   - "No se puede generar sobre una semana que ya tiene menú"
  *
- * FRESCO-352 (ratchet de FRESCO-321). Each scenario gets its own throwaway
- * factory user (FRESCO-308). Week navigation is plain `<Link>` navigation
+ * FRESCO-352 (ratchet de FRESCO-321); "No se puede generar sobre una semana
+ * que ya tiene menú" añadido después como el último escenario @pendiente del
+ * ratchet. Each scenario gets its own throwaway factory user (FRESCO-308). Week navigation is plain `<Link>` navigation
  * (`?semana=YYYY-Www`); the ±2-week window (FRESCO-158) always allows ±1.
  */
 
@@ -121,4 +123,25 @@ Then(/^recibe un menú semanal completo para esa semana sin salir de \/calendar$
     { headers },
   );
   expect((await slotsRes.json() as unknown[]).length).toBe(21);
+});
+
+// ── No se puede regenerar sobre una semana que ya tiene menú ──────────────
+
+Given(/^que el usuario está viendo una semana que ya tiene un menú generado$/, async ({ page, request, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await seedFullWeekMenu(request, testUser);
+  await loginAndGoToCalendar(page, testUser);
+  await expect(page.getByTestId('calendar_slot_lunes_comida')).toBeVisible();
+});
+
+When(/^mira los controles disponibles$/, async () => {
+  // Pure observation step — the assertions live in the Then. `calendar/page.tsx`
+  // only mounts `GenerateWeekButton` on the `!plan` branch, so there is no
+  // control to interact with here.
+});
+
+Then(/^no puede generar uno nuevo directamente — primero tiene que eliminar el existente$/, async ({ page }) => {
+  await expect(page.getByTestId('generate_week_button')).toHaveCount(0);
+  await expect(page.getByTestId('delete_week_button')).toBeVisible();
 });

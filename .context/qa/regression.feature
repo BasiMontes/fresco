@@ -707,16 +707,16 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca "Generar mi menú"
     Entonces recibe un menú semanal completo para esa semana sin salir de /calendar
 
-  @calendario @edge-case @pendiente
+  @calendario @edge-case @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-321 ratchet,
+  # último escenario @pendiente del proyecto). seedFullWeekMenu → /calendar →
+  # generate_week_button count 0 + delete_week_button visible. Verificado
+  # estructuralmente en app/(app)/calendar/page.tsx: GenerateWeekButton solo
+  # se monta en la rama !plan.
   Escenario: No se puede generar sobre una semana que ya tiene menú
     Dado que el usuario está viendo una semana que ya tiene un menú generado
     Cuando mira los controles disponibles
     Entonces no puede generar uno nuevo directamente — primero tiene que eliminar el existente
-    # Verificado estructuralmente (el botón nunca se renderiza en esa rama).
-    # TODO automatizar (FRESCO-399 / A4-L14 lo dejó como candidato del próximo
-    # batch del ratchet): seedFullWeekMenu(request, testUser) → ir a /menu →
-    # aserción de que generate_menu_button NO está presente. XS. Ver README
-    # § "Batch de automatización pendiente".
 
   # ==========================================================================
   # Calendario editable (EPIC-FRESCO-10 / STORY-FRESCO-11)

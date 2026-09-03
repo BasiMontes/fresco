@@ -49,11 +49,11 @@ Policy — incremental, not a big-bang backfill:
 
 Progress is read live: `rg -c '@automatizado' .context/qa/regression.feature` vs `rg -c '^\s*Escenario:' .context/qa/regression.feature`.
 
-### Batch de automatización pendiente (FRESCO-399 / A4-L14)
+### Batch de automatización pendiente (FRESCO-399 / A4-L14) — CERRADO
 
-The `@pendiente` triage of 2026-09-02 left two; FRESCO-405 closed one, leaving one:
+The `@pendiente` triage of 2026-09-02 left two; both closed by 2026-09-03. **Cero `@pendiente` en `regression.feature`.**
 
-- **`@calendario` "No se puede generar sobre una semana que ya tiene menú"** — XS. `seedFullWeekMenu(request, testUser)` → `/menu` → assert `generate_menu_button` absent. Next batch candidate.
+- ~~**`@calendario` "No se puede generar sobre una semana que ya tiene menú"**~~ — AUTOMATIZADO 2026-09-03 (FRESCO-321 ratchet): `tests/steps/calendario-semana.steps.ts`, `seedFullWeekMenu` → `/calendar` → assert `generate_week_button` absent + `delete_week_button` visible.
 - ~~**`@notificaciones` "Las recomendaciones no excluyen recetas ya marcadas como favoritas"**~~ — RESUELTO FRESCO-405 (2026-09-03): decisión de producto Opción A (las recomendaciones NO excluyen favoritas, coherente con `/menu`). Escenario re-tag `@pendiente` → `@solo-manual`.
 
 Everything else `@pendiente` was either automated in FRESCO-399 (the notificaciones trio) or reclassified `@solo-manual` with a documented reason.
