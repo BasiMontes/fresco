@@ -233,3 +233,7 @@ Historia archivada:
 - Qué: `pr-check.yml`, `migration-drift-check.yml`, `edge-functions-drift.yml` con todas las `uses:` ancladas por SHA de 40 hex + comentario `# vX.Y.Z` (mismas versiones, sin cambio de comportamiento). `persist-credentials: false` en los 2 workflows de drift. Nuevo `.github/dependabot.yml` (github-actions, semanal, agrupado). PR #272 squash -> dev 17f273d -> ff staging -> ff main. Staging verde con los workflows ya pinneados.
 - Por qué: FRESCO-399 (A4-L16) solo pinneó post-deploy-smoke.yml; un tag móvil deja que un compromiso de la cuenta del publisher inyecte código en el pipeline sin cambio visible en el repo.
 - Siguiente: los bumps de SHA llegarán como PR de Dependabot.
+## 2026-09-03 - FRESCO-418: refrescar business-data-map + business-api-map
+- Qué: Flow 6 del data-map reescrito al contrato `{targetAccessToken}` (ADR-0022); api-map §1/§2/§4/§5/§7 al día (rate limits compartidos, sink de Sentry/PostHog en edge functions, counts en vivo); feature-map FEAT-004 corregido; nota de deriva del banner de project-dev-guide.md quitada. Refresh dirigido, no regen completa. PR #274 squash -> dev e2afb4d -> ff staging -> ff main.
+- Por qué: FRESCO-403 detectó ambos mapas base desfasados desde el sync del 2026-08-30.
+- Siguiente: ADR-0022 y ADR-0015 siguen `Proposed` con código en prod - pasada de aceptación del founder. Regen completa de los mapas cuando aterrice el próximo epic.
