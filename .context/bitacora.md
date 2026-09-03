@@ -219,3 +219,9 @@ Historia archivada:
 - Qué: 30_000 -> 90_000 en calendario-semana.steps.ts (toHaveCount calendar_empty_state) y onboarding.steps.ts (waitForURL /menu). Cold-start del Edge Runtime de Deno local (ADR-0017) en el primer invoke de un worker de CI pasaba de 30s -> flake en 4 PRs. Mismo margen que generate-shopping-list. PR #270 squash -> dev (096dc92), ff staging. Jira -> Control de calidad.
 - Por qué: 4 PRs seguidos necesitaron re-run manual del escenario de generación desde /calendar.
 - Siguiente: confirmar 3 runs verdes de test:e2e en los proximos PRs (este ya cuenta como 1, sin re-run).
+
+## 2026-09-03 - Deploy: staging -> main (c943b30)
+- Qué: promoción ff-only de staging a main. 20 commits: EPIC-FRESCO-408 completo (409/410/411/412 cobertura de tests unitarios), FRESCO-413 (gate de drift de migraciones + pipefail + rotación de secrets + reparación del ledger), 419 (tests de Dialog), 421 (timeout e2e), 403/405/416. **0 cambios de código de app** - 45 ficheros, todos *.test.tsx / .context/ / .github/ / config. 0 migraciones nuevas.
+- Por qué: cerrar el epic de cobertura + los follow-ups; staging estaba desbloqueado (drift limpio, token rotado, CI verde en c943b30).
+- Verificado: deploy de prod READY (fresco-pro.vercel.app), smoke curl (/ 200, /login 200, /recipes 307), workflow post-deploy @smoke verde (50s), PR Check en main verde. bun test verde en el pre-push hook (536).
+- Siguiente: FRESCO-421 sigue en Control de calidad (AC = 3 runs verdes de test:e2e en próximos PRs).
