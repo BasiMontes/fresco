@@ -1,12 +1,17 @@
 <!doctype html>
 <!--
-  impeccable-disable design-system-font-size design-system-font design-system-color design-system-spacing design-system-radius
+  impeccable-disable design-system-font-size design-system-font design-system-color design-system-spacing design-system-radius side-tab bounce-easing
   Reason: this is a standalone, printable brand-manual document, not an app design surface.
   It deliberately renders type specimens at every ramp step, uses documentation chrome
   (10-12px captions/labels, 17px lede) and a monospace face for token code blocks — none of
   which are declared in DESIGN.md because the app itself has no such surfaces. The brand
   tokens the guide *presents* are all sourced verbatim from DESIGN.md. Waiver travels with
   the file because it is published/exported outside the repo (FRESCO-424).
+  - side-tab: the §12 "Firma de email" mock — a left rule on a signature block is the
+    real email-signature convention being illustrated, not an accent rail on a content card.
+  - bounce-easing: the §9 "Movimiento" table documents the shipped app/globals.css motion
+    tokens (--ease-bounce / --ease-bounce-strong, FRESCO-247) verbatim as reference text;
+    they are listed, not applied, and cannot diverge from the source of truth.
 -->
 <html lang="es">
   <head>
