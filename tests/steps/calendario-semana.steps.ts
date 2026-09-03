@@ -107,7 +107,16 @@ Then(/^recibe un menú semanal completo para esa semana sin salir de \/calendar$
   // The grid only renders a 3-day window at a time (calendar-grid.tsx), so
   // "21 huecos" is asserted against the DB, not the DOM. On screen: the
   // empty state is gone and the visible slots render.
-  await expect(page.getByTestId('calendar_empty_state')).toHaveCount(0, { timeout: 30_000 });
+  //
+  // FRESCO-421: 90s, not 30s. The menu engine is deterministic and well
+  // under ADR-0005's 10s budget, but the first `generate-meal-plan` call a
+  // CI worker makes cold-starts the local Deno Edge Runtime (ADR-0017's
+  // ephemeral stack) on a resource-constrained runner — that boot pushed
+  // past 30s and flaked this scenario on 4 consecutive PRs. Same
+  // cold-start allowance `generate-shopping-list` already carries
+  // (shopping-list.steps.ts). Bounded by playwright.config.ts's 90s
+  // per-test timeout.
+  await expect(page.getByTestId('calendar_empty_state')).toHaveCount(0, { timeout: 90_000 });
   await expect(page.getByTestId('calendar_slot_lunes_comida')).toBeVisible();
   await expect(page).toHaveURL(/\/calendar/);
 

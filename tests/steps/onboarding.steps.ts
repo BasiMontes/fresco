@@ -71,7 +71,12 @@ When(/^llega al último paso sin rellenar el presupuesto y pulsa "Generar mi men
 });
 
 Then(/^la IA genera un menú de 21 huecos \(7 días x desayuno\/comida\/cena\)$/, async ({ page, request }) => {
-  await page.waitForURL('**/menu', { timeout: 30_000 });
+  // FRESCO-421: 90s for the same cold-start reason as the `/calendar`
+  // generation step (calendario-semana.steps.ts) — the first
+  // `generate-meal-plan` call on a CI worker boots the local Deno Edge
+  // Runtime and can exceed 30s. Bounded by playwright.config.ts's 90s
+  // per-test timeout.
+  await page.waitForURL('**/menu', { timeout: 90_000 });
   const testUser = ctx.testUser!;
   const { semanaIso } = currentWeekMonday();
   const headers = restHeaders(testUser.accessToken);
