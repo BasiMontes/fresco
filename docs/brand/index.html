@@ -1,0 +1,2647 @@
+<!doctype html>
+<!--
+  impeccable-disable design-system-font-size design-system-font design-system-color design-system-spacing design-system-radius side-tab bounce-easing
+  Reason: this is a standalone, printable brand-manual document, not an app design surface.
+  It deliberately renders type specimens at every ramp step, uses documentation chrome
+  (10-12px captions/labels, 17px lede) and a monospace face for token code blocks — none of
+  which are declared in DESIGN.md because the app itself has no such surfaces. The brand
+  tokens the guide *presents* are all sourced verbatim from DESIGN.md. Waiver travels with
+  the file because it is published/exported outside the repo (FRESCO-424).
+  - side-tab: the §12 "Firma de email" mock — a left rule on a signature block is the
+    real email-signature convention being illustrated, not an accent rail on a content card.
+  - bounce-easing: the §9 "Movimiento" table documents the shipped app/globals.css motion
+    tokens (--ease-bounce / --ease-bounce-strong, FRESCO-247) verbatim as reference text;
+    they are listed, not applied, and cannot diverge from the source of truth.
+-->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fresco — Manual de marca</title>
+    <meta
+      name="description"
+      content="Manual de marca de Fresco: logo, color, tipografía, voz, movimiento y aplicaciones. Documento presentacional; la fuente de verdad de los tokens es DESIGN.md."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' rx='24' fill='%23FAF3E3'/%3E%3Cg transform='translate(11.52 11.52) scale(0.82)'%3E%3Cpath fill='%230F4E0E' d='M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z'/%3E%3C/g%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ============================================================
+         Fresco — Manual de marca
+         Todos los valores salen de DESIGN.md (raíz del repo).
+         Este documento los PRESENTA; no los define.
+         ============================================================ */
+      :root {
+        /* Núcleo */
+        --primary: #0f4e0e;
+        --secondary: #df8c26;
+        --tertiary: #6f5f43;
+        --neutral: #a39372;
+        --background: #faf3e3;
+        --surface: #f1e3c6;
+        --text: #201e1d;
+        --border: color-mix(in srgb, #201e1d 16%, transparent);
+        --error: #b03d2b;
+
+        /* Rampa accent (verde) — hex aplanado de los color-mix(oklch) del canvas */
+        --accent-100: #e1e8e0;
+        --accent-200: #bfcfbd;
+        --accent-300: #8fab8d;
+        --accent-400: #547d51;
+        --accent-500: #0f4e0e;
+        --accent-600: #0a3e09;
+        --accent-700: #052d05;
+        --accent-800: #031f03;
+        --accent-900: #011101;
+
+        /* Rampa accent-2 (naranja) */
+        --accent-2-100: #fcf1e8;
+        --accent-2-200: #f9e2cc;
+        --accent-2-300: #f3cba5;
+        --accent-2-400: #eaad70;
+        --accent-2-500: #df8c26;
+        --accent-2-600: #b6721d;
+        --accent-2-700: #8a5513;
+        --accent-2-800: #653d0b;
+        --accent-2-900: #422605;
+
+        /* Rampa neutral (crema, no gris) */
+        --neutral-100: #fbf6ec;
+        --neutral-200: #f0e8d8;
+        --neutral-300: #ded2b8;
+        --neutral-400: #c2b393;
+        --neutral-500: #a39372;
+        --neutral-600: #847456;
+        --neutral-700: #66593f;
+        --neutral-800: #493f2c;
+        --neutral-900: #2f281c;
+
+        /* Tipografía */
+        --font-display: 'Caprasimo', 'Baloo 2', cursive;
+        --font-body: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+        /* Espaciado — unidad base 4.4px, multiplicador fijo */
+        --space-1: 4.4px;
+        --space-2: 8.8px;
+        --space-3: 13.2px;
+        --space-4: 17.6px;
+        --space-6: 26.4px;
+        --space-8: 35.2px;
+
+        /* Radios */
+        --radius-sm: 8px;
+        --radius-md: 16px;
+        --radius-lg: 28px;
+        --radius-card: 32px;
+        --radius-full: 999px;
+
+        /* Elevación — base cálida #2F281C, nunca negro puro */
+        --shadow-sm: 0 1px 2px color-mix(in srgb, #2f281c 14%, transparent);
+        --shadow-md: 0 3px 10px color-mix(in srgb, #2f281c 16%, transparent);
+        --shadow-lg: 0 12px 32px color-mix(in srgb, #2f281c 22%, transparent);
+
+        /* Movimiento — tokens de app/globals.css (transitions-dev, FRESCO-247) */
+        --duration-quick: 150ms;
+        --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: var(--space-6);
+      }
+
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 15px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family: var(--font-display);
+        font-weight: 400;
+        line-height: 1.12;
+        letter-spacing: -0.015em;
+        margin: 0 0 var(--space-3);
+      }
+      h1 {
+        font-size: clamp(38px, 6vw, 42px);
+      }
+      h2 {
+        font-size: 30px;
+      }
+      h3 {
+        font-size: 22px;
+      }
+      h4 {
+        font-size: 18px;
+      }
+      h5 {
+        font-size: 15px;
+      }
+      h6 {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      p {
+        margin: 0 0 var(--space-3);
+        max-width: 68ch;
+      }
+      a {
+        color: var(--primary);
+        text-underline-offset: 3px;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+        font-size: 0.88em;
+        background: var(--neutral-200);
+        padding: 1px 5px;
+        border-radius: var(--radius-sm);
+      }
+      hr {
+        height: 1px;
+        border: 0;
+        background: var(--border);
+        margin: var(--space-6) 0;
+      }
+      strong {
+        font-weight: 700;
+      }
+
+      /* ---------- Layout ---------- */
+      .layout {
+        display: grid;
+        grid-template-columns: 248px minmax(0, 1fr);
+        gap: var(--space-8);
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 0 var(--space-6);
+      }
+
+      .toc {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow-y: auto;
+        padding: var(--space-8) 0;
+      }
+      .toc-brand {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        margin-bottom: var(--space-6);
+      }
+      .toc-brand svg {
+        height: 22px;
+        width: auto;
+      }
+      .toc ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        counter-reset: toc;
+      }
+      .toc li {
+        counter-increment: toc;
+      }
+      .toc a {
+        display: block;
+        padding: 7px 12px 7px 34px;
+        position: relative;
+        font-size: 13px;
+        color: color-mix(in srgb, var(--text) 68%, transparent);
+        text-decoration: none;
+        border-radius: var(--radius-full);
+        transition: background var(--duration-quick) var(--ease-smooth-out);
+      }
+      .toc a::before {
+        content: counter(toc);
+        position: absolute;
+        left: 12px;
+        font-family: var(--font-display);
+        font-size: 11px;
+        color: var(--secondary);
+      }
+      .toc a:hover {
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .content {
+        padding: var(--space-8) 0 120px;
+        min-width: 0;
+      }
+
+      section {
+        padding-top: var(--space-8);
+        margin-top: var(--space-8);
+        border-top: 1px solid var(--border);
+      }
+      section:first-of-type {
+        border-top: 0;
+        margin-top: 0;
+      }
+      .kicker {
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent-2-700);
+        margin: 0 0 var(--space-2);
+      }
+      .lede {
+        font-size: 17px;
+        color: color-mix(in srgb, var(--text) 82%, transparent);
+      }
+
+      /* ---------- Cover ---------- */
+      .cover {
+        min-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: var(--space-4);
+        padding: var(--space-8) 0;
+      }
+      .cover .wordmark {
+        width: min(420px, 78%);
+        height: auto;
+      }
+      .cover .tagline {
+        font-family: var(--font-display);
+        font-size: clamp(22px, 4vw, 30px);
+        max-width: 20ch;
+        line-height: 1.15;
+      }
+      .cover .tagline .accent {
+        color: var(--accent-2-700);
+      }
+      .cover .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        margin-top: var(--space-4);
+      }
+
+      /* ---------- Reusable bits ---------- */
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius-card);
+        padding: var(--space-4);
+        box-shadow: var(--shadow-sm);
+      }
+      .grid {
+        display: grid;
+        gap: var(--space-3);
+      }
+      .cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .cols-4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 4px 11px;
+        border-radius: var(--radius-full);
+        background: var(--neutral-100);
+        color: var(--neutral-800);
+      }
+      .pill-accent {
+        background: var(--accent-100);
+        color: var(--accent-800);
+      }
+      .pill-accent-2 {
+        background: var(--accent-2-100);
+        color: var(--accent-2-800);
+      }
+      .pill-outline {
+        background: transparent;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+      }
+      .pill-solid {
+        background: var(--primary);
+        color: var(--background);
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 1.2;
+        padding: var(--space-2) var(--space-4);
+        border-radius: var(--radius-full);
+        border: 1px solid transparent;
+        cursor: default;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: var(--background);
+      }
+      .btn-action {
+        background: var(--secondary);
+        color: var(--text);
+      }
+      .btn-secondary {
+        border-color: var(--border);
+        color: var(--text);
+      }
+      .btn-ghost {
+        color: var(--primary);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--text) 60%, transparent);
+      }
+      .verdict-aaa {
+        color: var(--primary);
+        font-weight: 700;
+      }
+      .verdict-aa {
+        color: var(--accent-2-700);
+        font-weight: 700;
+      }
+      .verdict-fail {
+        color: var(--error);
+        font-weight: 700;
+      }
+
+      /* Swatches */
+      .swatch {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .swatch .chip {
+        height: 68px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+      }
+      .swatch .chip.sm {
+        height: 42px;
+      }
+      .swatch .name {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .swatch .hex {
+        font-size: 11px;
+        color: color-mix(in srgb, var(--text) 55%, transparent);
+        font-family: ui-monospace, Menlo, monospace;
+      }
+      .ramp {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        gap: 6px;
+      }
+      .ramp .step {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .ramp .bar {
+        height: 46px;
+        border-radius: var(--radius-sm);
+      }
+      .ramp .n {
+        font-size: 10px;
+        color: color-mix(in srgb, var(--text) 55%, transparent);
+        text-align: center;
+      }
+
+      /* Logo boards */
+      .logo-board {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 132px;
+        padding: var(--space-6);
+        border-radius: var(--radius-card);
+        border: 1px solid var(--border);
+      }
+      .logo-board svg {
+        height: 34px;
+        width: auto;
+      }
+      .bg-cream {
+        background: var(--background);
+      }
+      .bg-surface {
+        background: var(--surface);
+      }
+      .bg-green {
+        background: var(--primary);
+        border-color: transparent;
+      }
+      .bg-photo {
+        background: linear-gradient(135deg, var(--neutral-500), var(--neutral-700));
+        border-color: transparent;
+      }
+
+      /* Misuse gallery */
+      .misuse {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 118px;
+        padding: var(--space-4);
+        border-radius: var(--radius-card);
+        background: var(--surface);
+        overflow: hidden;
+      }
+      .misuse svg {
+        height: 30px;
+        width: auto;
+      }
+      .misuse::after {
+        content: '✕';
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--background);
+        background: var(--error);
+        border-radius: var(--radius-full);
+      }
+      .misuse .cap {
+        position: absolute;
+        bottom: 8px;
+        left: 12px;
+        font-size: 11px;
+        color: color-mix(in srgb, var(--text) 62%, transparent);
+      }
+      .m-stretch svg {
+        transform: scaleX(1.9);
+      }
+      .m-rotate svg {
+        transform: rotate(-11deg);
+      }
+      .m-recolor svg {
+        filter: hue-rotate(190deg) saturate(1.7);
+      }
+      .m-shadow svg {
+        filter: drop-shadow(3px 5px 3px rgba(0, 0, 0, 0.5));
+      }
+      .m-lowcontrast {
+        background: var(--accent-400);
+      }
+      .m-squish svg {
+        transform: scaleY(0.55);
+      }
+
+      /* Type specimens */
+      .specimen {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-4);
+        padding: var(--space-3) 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .specimen:last-child {
+        border-bottom: 0;
+      }
+      .specimen .tag {
+        flex: 0 0 128px;
+        font-family: ui-monospace, Menlo, monospace;
+        font-size: 11px;
+        color: color-mix(in srgb, var(--text) 55%, transparent);
+      }
+      .specimen .sample {
+        font-family: var(--font-display);
+        font-weight: 400;
+        line-height: 1.12;
+        letter-spacing: -0.015em;
+      }
+
+      /* Clear space diagram */
+      .clearspace {
+        position: relative;
+        display: inline-block;
+        padding: 34px;
+        background: repeating-linear-gradient(
+          45deg,
+          var(--accent-2-300) 0 6px,
+          var(--accent-2-100) 6px 12px
+        );
+        border-radius: var(--radius-md);
+      }
+      .clearspace .inner {
+        background: var(--background);
+        padding: 16px 20px;
+        border-radius: var(--radius-sm);
+      }
+      .clearspace svg {
+        height: 30px;
+        display: block;
+      }
+
+      /* Do / Don't */
+      .dd {
+        border-radius: var(--radius-card);
+        padding: var(--space-4);
+      }
+      .dd h4 {
+        margin-bottom: var(--space-2);
+      }
+      .dd.do {
+        background: var(--accent-100);
+        color: var(--accent-800);
+      }
+      .dd.dont {
+        background: color-mix(in srgb, var(--error) 12%, var(--background));
+        color: color-mix(in srgb, var(--error) 88%, black);
+      }
+      .dd ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .dd li {
+        margin-bottom: 6px;
+        font-size: 13px;
+      }
+
+      /* Icon grid */
+      .icons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-6);
+        align-items: flex-start;
+      }
+      .icons figure {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 66px;
+      }
+      .icons svg {
+        width: 24px;
+        height: 24px;
+      }
+      .icons figcaption {
+        font-size: 10px;
+        color: color-mix(in srgb, var(--text) 55%, transparent);
+        text-align: center;
+      }
+
+      /* Insight card (componente de marca) */
+      .insight {
+        background: var(--accent-100);
+        color: var(--accent-800);
+        border-radius: var(--radius-card);
+        padding: var(--space-4);
+        box-shadow: var(--shadow-md);
+        max-width: 320px;
+      }
+      .insight .k {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .insight .t {
+        font-family: var(--font-display);
+        font-size: 18px;
+        line-height: 1.2;
+        margin-bottom: 4px;
+      }
+
+      /* App / email / social mockups */
+      .device {
+        width: 260px;
+        border-radius: 26px;
+        border: 8px solid var(--neutral-900);
+        background: var(--background);
+        overflow: hidden;
+      }
+      .device .bar {
+        background: var(--primary);
+        color: var(--background);
+        font-family: var(--font-display);
+        font-size: 13px;
+        padding: 10px 14px;
+      }
+      .device .body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .mini-recipe {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+      .mini-recipe .title {
+        font-family: var(--font-display);
+        font-size: 13px;
+      }
+      .mini-recipe .meta {
+        color: color-mix(in srgb, var(--text) 52%, transparent);
+        font-size: 10px;
+      }
+
+      .email {
+        width: 300px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: var(--background);
+      }
+      .email .head {
+        background: var(--primary);
+        padding: 18px;
+        text-align: center;
+      }
+      .email .head svg {
+        height: 20px;
+      }
+      .email .inner {
+        padding: 18px;
+        text-align: center;
+      }
+      .email .inner h4 {
+        margin-bottom: 8px;
+      }
+
+      .social {
+        width: 300px;
+        aspect-ratio: 4 / 5;
+        border-radius: var(--radius-md);
+        background: var(--primary);
+        color: var(--background);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 22px;
+      }
+      .social svg {
+        height: 18px;
+      }
+      .social .big {
+        font-family: var(--font-display);
+        font-size: 26px;
+        line-height: 1.1;
+      }
+      .social .big em {
+        font-style: normal;
+        color: var(--secondary);
+      }
+
+      .favicons {
+        display: flex;
+        gap: var(--space-3);
+        align-items: flex-end;
+      }
+      .favicons .fav {
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: 22%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .favicons .fav.s64 {
+        width: 64px;
+        height: 64px;
+      }
+      .favicons .fav.s32 {
+        width: 32px;
+        height: 32px;
+      }
+      .favicons .fav.s16 {
+        width: 16px;
+        height: 16px;
+      }
+      .favicons .fav svg {
+        width: 62%;
+        height: 62%;
+      }
+
+      .signature {
+        border-left: 3px solid var(--secondary);
+        padding: 4px 0 4px 14px;
+        font-size: 13px;
+      }
+      .signature .n {
+        font-family: var(--font-display);
+      }
+
+      pre.copyblock {
+        background: var(--neutral-900);
+        color: var(--neutral-100);
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        overflow-x: auto;
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      .foot {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: var(--space-8) var(--space-6) var(--space-8);
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: color-mix(in srgb, var(--text) 55%, transparent);
+      }
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        .toc {
+          position: static;
+          height: auto;
+          padding: var(--space-6) 0 0;
+        }
+        .toc ol {
+          columns: 2;
+        }
+        .cols-3,
+        .cols-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .ramp {
+          grid-template-columns: repeat(9, 1fr);
+        }
+        .specimen {
+          flex-direction: column;
+          gap: 4px;
+        }
+      }
+      @media (max-width: 560px) {
+        .cols-2,
+        .cols-3,
+        .cols-4 {
+          grid-template-columns: 1fr;
+        }
+        .toc ol {
+          columns: 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        * {
+          transition: none !important;
+        }
+      }
+
+      /* ---------- Print (imprimible a PDF) ---------- */
+      @media print {
+        @page {
+          margin: 16mm 14mm;
+        }
+        body {
+          background: #fff;
+        }
+        .toc {
+          display: none;
+        }
+        .layout {
+          display: block;
+          max-width: none;
+          padding: 0;
+        }
+        .content {
+          padding: 0;
+        }
+        .cover {
+          min-height: auto;
+          padding: 0 0 12mm;
+        }
+        section {
+          break-inside: auto;
+          page-break-before: always;
+          border-top: 0;
+          margin-top: 0;
+          padding-top: 6mm;
+        }
+        section#portada {
+          page-break-before: avoid;
+        }
+        .card,
+        .logo-board,
+        .misuse,
+        .insight,
+        .dd,
+        .swatch .chip,
+        .ramp .bar,
+        table,
+        .device,
+        .email,
+        .social,
+        pre.copyblock {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .grid,
+        .specimen,
+        tr,
+        .dd,
+        .swatch {
+          break-inside: avoid;
+        }
+        a {
+          text-decoration: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <!-- ============ TOC ============ -->
+      <nav class="toc" aria-label="Índice">
+        <div class="toc-brand">
+          <!-- marca Fresco (isotipo) -->
+          <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path
+              d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+              fill="#0F4E0E"
+            />
+          </svg>
+          <strong style="font-family: var(--font-display); font-weight: 400">Fresco</strong>
+        </div>
+        <ol>
+          <li><a href="#portada">Portada</a></li>
+          <li><a href="#marca">La marca</a></li>
+          <li><a href="#logo">Logo</a></li>
+          <li><a href="#color">Color</a></li>
+          <li><a href="#tipografia">Tipografía</a></li>
+          <li><a href="#voz">Voz y tono</a></li>
+          <li><a href="#iconografia">Iconografía</a></li>
+          <li><a href="#fotografia">Fotografía e imagen</a></li>
+          <li><a href="#movimiento">Movimiento</a></li>
+          <li><a href="#layout">Layout y grid</a></li>
+          <li><a href="#componentes">Componentes de marca</a></li>
+          <li><a href="#aplicaciones">Aplicaciones</a></li>
+          <li><a href="#descargas">Descargas</a></li>
+        </ol>
+      </nav>
+
+      <main class="content">
+        <!-- ============ 1 · PORTADA ============ -->
+        <section id="portada" class="cover" style="border: 0">
+          <svg
+            class="wordmark"
+            viewBox="0 0 420 128"
+            xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="Fresco"
+          >
+            <path
+              d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+              fill="#0F4E0E"
+            />
+            <path
+              d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+              fill="#0F4E0E"
+            />
+            <circle cx="414" cy="89" r="6" fill="#DF8C26" />
+          </svg>
+          <p class="tagline">
+            Menús semanales con IA que aprende de lo que
+            <span class="accent">realmente</span> cocinas.
+          </p>
+          <p class="lede" style="max-width: 52ch">
+            Manual de marca. Cálido, redondeado, verde + naranja. Cubre logo, color, tipografía,
+            voz, movimiento y aplicaciones — cada decisión con su porqué.
+          </p>
+          <div class="meta">
+            <span class="pill">Versión alpha</span>
+            <span class="pill">Actualizado 2026-09-03</span>
+            <span class="pill pill-accent">Fuente de verdad: DESIGN.md</span>
+          </div>
+          <p
+            style="
+              font-size: 13px;
+              color: color-mix(in srgb, var(--text) 55%, transparent);
+              margin-top: var(--space-4);
+            "
+          >
+            Este documento es <strong>presentacional</strong>. No sustituye a
+            <code>DESIGN.md</code> (spec de tokens) ni a
+            <code>design/handoff/fresco/brand-guide.dc.html</code> (canvas de Claude Design). Si
+            algún valor de aquí discrepa de <code>DESIGN.md</code>, gana <code>DESIGN.md</code>.
+          </p>
+        </section>
+
+        <!-- ============ 2 · LA MARCA ============ -->
+        <section id="marca">
+          <p class="kicker">02 — La marca</p>
+          <h2>Qué es Fresco, y qué no es</h2>
+          <p class="lede">
+            Fresco resuelve un problema de <strong>fatiga de decisión</strong>, no de descubrimiento
+            de recetas. La pregunta "¿qué cocino esta semana?" vuelve cada domingo por la tarde, 52
+            veces al año, y ninguna herramienta actual mejora con el uso. Fresco sí.
+          </p>
+
+          <div class="grid cols-2" style="margin: var(--space-4) 0">
+            <div class="card">
+              <h4>Misión</h4>
+              <p style="margin: 0; font-size: 14px">
+                Quitar de encima la decisión semanal del menú. Un menú de 21 comidas y su lista de
+                la compra en 30 segundos, y cada semana acierta más porque aprende de lo que el
+                hogar <em>cocina de verdad</em> — no de lo que dice que le gusta.
+              </p>
+            </div>
+            <div class="card">
+              <h4>Personalidad</h4>
+              <p style="margin: 0; font-size: 14px">
+                Cálido, redondeado, verde + naranja. La diferencia entre una hoja de cálculo y la
+                encimera de una cocina. Nunca clínico, nunca "app de utilidad fría".
+              </p>
+            </div>
+          </div>
+
+          <div class="grid cols-2">
+            <div class="dd do">
+              <h4>Fresco ES</h4>
+              <ul>
+                <li>Un planificador de menús que mejora con el uso.</li>
+                <li>Una lista de la compra inteligente, agrupada por pasillo.</li>
+                <li>Reducción de carga mental, no una conveniencia periférica.</li>
+              </ul>
+            </div>
+            <div class="dd dont">
+              <h4>Fresco NO es</h4>
+              <ul>
+                <li>Un recetario ni una base de datos de recetas.</li>
+                <li>Un gestor de despensa o inventario.</li>
+                <li>Un comparador de precios entre supermercados.</li>
+              </ul>
+            </div>
+          </div>
+
+          <hr />
+
+          <h3>La persona: Laura, la planificadora agotada</h3>
+          <div class="grid cols-2">
+            <p style="font-size: 14px">
+              30–40 años, cocina 5+ días por semana, trabaja fuera de casa, con o sin hijos. Su
+              punto de dolor es el <strong>domingo por la tarde</strong>: planificar la semana con
+              notas del móvil, el grupo de la familia o la memoria. Pagará solo si el método es más
+              rápido que no hacer nada (menú completo en menos de 60 s) y le ahorra al menos 30
+              minutos de planificación a la semana.
+            </p>
+            <div class="insight" style="max-width: none">
+              <div class="k">Cita representativa</div>
+              <div class="t" style="font-size: 16px">
+                "Cada domingo empiezo de cero. Nada de lo que uso se vuelve más listo."
+              </div>
+              <p style="margin: 0; font-size: 12px">
+                (Reconstrucción de la hipótesis de fundador; pendiente de validación con el MVP
+                concierge.)
+              </p>
+            </div>
+          </div>
+
+          <hr />
+
+          <h3>El moat: aprendizaje percibido</h3>
+          <p style="font-size: 14px">
+            La defensa del producto no es "guardar preferencias" — cualquier chat de IA lo hace. Es
+            el <strong>aprendizaje conductual</strong>: seguir semana a semana qué recetas se
+            marcaron como <code>cocinada</code> vs <code>descartada</code> y ajustar los menús
+            futuros con esa señal. Matiz que la marca debe respetar al comunicarlo:
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Registro</th>
+                <th>Aplicación</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  Universal. La señal <code>cocinada/descartada</code> se captura igual para todos
+                  los planes.
+                </td>
+                <td>
+                  Solo Pro. Únicamente la generación Pro <em>lee</em> ese historial en el siguiente
+                  menú.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="font-size: 13px; color: color-mix(in srgb, var(--text) 62%, transparent)">
+            Nunca digas "los usuarios Free no tienen aprendizaje" — su conducta sí se registra,
+            simplemente no se aplica a sus propios menús. El diseño existe para hacer ese
+            aprendizaje <strong>visible</strong> (ver §11, la insight card).
+          </p>
+        </section>
+
+        <!-- ============ 3 · LOGO ============ -->
+        <section id="logo">
+          <p class="kicker">03 — Logo</p>
+          <h2>Un isotipo de cuatro pétalos y una gota naranja</h2>
+          <p class="lede">
+            Cuatro cuartos de círculo que se cierran hacia dentro: una hoja, un brote, algo que
+            crece. El punto naranja sobre la "o" es el único momento de color secundario del lockup
+            — la misma regla que rige toda la marca: el naranja aparece una vez.
+          </p>
+
+          <h3>Lockups canónicos</h3>
+          <p style="font-size: 14px">
+            Tres versiones. No se redibujan: los ficheros viven en
+            <code>public/brand/</code> y <code>design/handoff/fresco/assets/</code>.
+          </p>
+          <div class="grid cols-3">
+            <div class="logo-board bg-cream">
+              <svg viewBox="0 0 420 128" xmlns="http://www.w3.org/2000/svg" aria-label="Logo base">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+                <path
+                  d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                  fill="#0F4E0E"
+                />
+                <circle cx="414" cy="89" r="6" fill="#DF8C26" />
+              </svg>
+            </div>
+            <div class="logo-board bg-green">
+              <svg
+                viewBox="0 0 420 128"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-label="Logo negativo"
+              >
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="white"
+                />
+                <path
+                  d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                  fill="white"
+                />
+                <circle cx="414" cy="89" r="6" fill="white" />
+              </svg>
+            </div>
+            <div class="logo-board bg-cream">
+              <svg
+                viewBox="0 0 420 128"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-label="Logo naranja"
+              >
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#DF8C26"
+                />
+                <path
+                  d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                  fill="#DF8C26"
+                />
+                <circle cx="414" cy="89" r="6" fill="#0F4E0E" />
+              </svg>
+            </div>
+          </div>
+          <div
+            class="grid cols-3"
+            style="
+              margin-top: var(--space-2);
+              font-size: 12px;
+              color: color-mix(in srgb, var(--text) 55%, transparent);
+            "
+          >
+            <div><strong>Base.</strong> Fondos claros / crema. La versión por defecto.</div>
+            <div>
+              <strong>Negativo.</strong> Fondos verdes o oscuros (p. ej. la sidebar). ~9,9:1 sobre
+              <code>#0F4E0E</code>.
+            </div>
+            <div>
+              <strong>Naranja.</strong> Solo contextos secundarios o celebratorios. Nunca como marca
+              por defecto.
+            </div>
+          </div>
+
+          <hr />
+
+          <div class="grid cols-2">
+            <div>
+              <h3>Área de protección</h3>
+              <p style="font-size: 14px">
+                Deja libre alrededor del lockup, como mínimo, el ancho de un pétalo del isotipo (¼
+                de su altura). Nada — texto, otro logo, un borde — invade esa zona.
+              </p>
+              <div class="clearspace">
+                <div class="inner">
+                  <svg
+                    viewBox="0 0 420 128"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-label="Área de protección"
+                  >
+                    <path
+                      d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                      fill="#0F4E0E"
+                    />
+                    <path
+                      d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                      fill="#0F4E0E"
+                    />
+                    <circle cx="414" cy="89" r="6" fill="#DF8C26" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3>Tamaño mínimo</h3>
+              <p style="font-size: 14px">
+                No reproduzcas el lockup completo por debajo de <strong>96&nbsp;px</strong> de ancho
+                en pantalla (~24&nbsp;mm impreso). Por debajo de ese umbral usa solo el isotipo.
+              </p>
+              <div class="card" style="display: flex; align-items: flex-end; gap: var(--space-4)">
+                <svg
+                  viewBox="0 0 420 128"
+                  style="width: 96px"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                    fill="#0F4E0E"
+                  />
+                  <path
+                    d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                    fill="#0F4E0E"
+                  />
+                  <circle cx="414" cy="89" r="6" fill="#DF8C26" />
+                </svg>
+                <svg
+                  viewBox="0 0 128 128"
+                  style="width: 22px"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                    fill="#0F4E0E"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <hr />
+
+          <h3>Usos incorrectos</h3>
+          <p style="font-size: 14px">Si aparece cualquiera de estos, es un defecto de marca.</p>
+          <div class="grid cols-3">
+            <div class="misuse m-stretch">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+              </svg>
+              <span class="cap">No deformar / estirar</span>
+            </div>
+            <div class="misuse m-squish">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+              </svg>
+              <span class="cap">No comprimir en vertical</span>
+            </div>
+            <div class="misuse m-rotate">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+              </svg>
+              <span class="cap">No rotar</span>
+            </div>
+            <div class="misuse m-recolor">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+              </svg>
+              <span class="cap">No recolorear fuera de paleta</span>
+            </div>
+            <div class="misuse m-shadow">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+              </svg>
+              <span class="cap">No añadir sombra dura</span>
+            </div>
+            <div class="misuse m-lowcontrast">
+              <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path
+                  d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                  fill="#0F4E0E"
+                />
+              </svg>
+              <span class="cap">No sobre fondo sin contraste</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 4 · COLOR ============ -->
+        <section id="color">
+          <p class="kicker">04 — Color</p>
+          <h2>Dos hues corporativos sobre crema, nunca gris</h2>
+          <p class="lede">
+            Ningún hex es un default de librería. Verde = confianza y estructura. Naranja = una sola
+            CTA de máxima intención por pantalla; su rareza es lo que lo hace funcionar. Los neutros
+            son cremas cálidas — un gris frío junto a <code>#FAF3E3</code> parece un error.
+          </p>
+
+          <h3>Núcleo</h3>
+          <div class="grid cols-4">
+            <div class="swatch">
+              <div class="chip" style="background: #0f4e0e"></div>
+              <span class="name">Verde corporativo</span><span class="hex">#0F4E0E</span>
+              <span style="font-size: 11px"
+                >Botón primario, nav activa, foco, iconos, enlaces. "El plan está listo."</span
+              >
+            </div>
+            <div class="swatch">
+              <div class="chip" style="background: #df8c26"></div>
+              <span class="name">Naranja corporativo</span><span class="hex">#DF8C26</span>
+              <span style="font-size: 11px"
+                >Una CTA a la vez. Tags tipo alérgeno. Alto en volumen, a propósito.</span
+              >
+            </div>
+            <div class="swatch">
+              <div class="chip" style="background: #faf3e3"></div>
+              <span class="name">Crema — fondo</span><span class="hex">#FAF3E3</span>
+              <span style="font-size: 11px"
+                >El lienzo de la página. Encimera de cocina, no dashboard.</span
+              >
+            </div>
+            <div class="swatch">
+              <div class="chip" style="background: #f1e3c6"></div>
+              <span class="name">Crema — superficie</span><span class="hex">#F1E3C6</span>
+              <span style="font-size: 11px"
+                >Un paso más oscura. Tarjetas, inputs — sin sombra dura.</span
+              >
+            </div>
+            <div class="swatch">
+              <div class="chip" style="background: #201e1d"></div>
+              <span class="name">Texto</span><span class="hex">#201E1D</span>
+              <span style="font-size: 11px">Casi negro, cálido, no <code>#000</code>.</span>
+            </div>
+            <div class="swatch">
+              <div class="chip" style="background: #6f5f43"></div>
+              <span class="name">Terciario</span><span class="hex">#6F5F43</span>
+              <span style="font-size: 11px"
+                >Texto terciario (FRESCO-299). ~4,9:1 sobre superficie. No es
+                <code>neutral-600</code>.</span
+              >
+            </div>
+            <div class="swatch">
+              <div class="chip" style="background: #b03d2b"></div>
+              <span class="name">Error — clay red</span><span class="hex">#B03D2B</span>
+              <span style="font-size: 11px"
+                >Único token sin origen en el canvas. Rojo arcilla desaturado, misma familia cálida
+                (FRESCO-293).</span
+              >
+            </div>
+            <div class="swatch">
+              <div
+                class="chip"
+                style="background: color-mix(in srgb, #201e1d 16%, transparent)"
+              ></div>
+              <span class="name">Borde / divisor</span><span class="hex">texto @ 16%</span>
+              <span style="font-size: 11px"
+                >Nunca un gris aparte. Siempre en armonía con el texto.</span
+              >
+            </div>
+          </div>
+
+          <hr />
+
+          <h3>Rampa accent — verde (100–900)</h3>
+          <p style="font-size: 13px">
+            Superficies tintadas (100), la insight card (100 fondo / 800 texto), variantes de tag.
+          </p>
+          <div class="ramp">
+            <div class="step">
+              <div class="bar" style="background: #e1e8e0"></div>
+              <span class="n">100</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #bfcfbd"></div>
+              <span class="n">200</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #8fab8d"></div>
+              <span class="n">300</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #547d51"></div>
+              <span class="n">400</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #0f4e0e"></div>
+              <span class="n">500</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #0a3e09"></div>
+              <span class="n">600</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #052d05"></div>
+              <span class="n">700</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #031f03"></div>
+              <span class="n">800</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #011101"></div>
+              <span class="n">900</span>
+            </div>
+          </div>
+
+          <h3 style="margin-top: var(--space-4)">Rampa accent-2 — naranja (100–900)</h3>
+          <p style="font-size: 13px">
+            Flags dietéticos (100/800), la píldora "hoy" del calendario, círculos de número de paso.
+            <strong>700</strong> (<code>#8A5513</code>) es el naranja usable como
+            <em>texto</em> sobre crema.
+          </p>
+          <div class="ramp">
+            <div class="step">
+              <div class="bar" style="background: #fcf1e8"></div>
+              <span class="n">100</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #f9e2cc"></div>
+              <span class="n">200</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #f3cba5"></div>
+              <span class="n">300</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #eaad70"></div>
+              <span class="n">400</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #df8c26"></div>
+              <span class="n">500</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #b6721d"></div>
+              <span class="n">600</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #8a5513"></div>
+              <span class="n">700</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #653d0b"></div>
+              <span class="n">800</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #422605"></div>
+              <span class="n">900</span>
+            </div>
+          </div>
+
+          <h3 style="margin-top: var(--space-4)">Rampa neutral — crema cálida (100–900)</h3>
+          <p style="font-size: 13px">
+            Cualquier chrome que deba retroceder sin volverse frío. <code>#FBF6EC</code> →
+            <code>#2F281C</code>.
+          </p>
+          <div class="ramp">
+            <div class="step">
+              <div class="bar" style="background: #fbf6ec"></div>
+              <span class="n">100</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #f0e8d8"></div>
+              <span class="n">200</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #ded2b8"></div>
+              <span class="n">300</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #c2b393"></div>
+              <span class="n">400</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #a39372"></div>
+              <span class="n">500</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #847456"></div>
+              <span class="n">600</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #66593f"></div>
+              <span class="n">700</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #493f2c"></div>
+              <span class="n">800</span>
+            </div>
+            <div class="step">
+              <div class="bar" style="background: #2f281c"></div>
+              <span class="n">900</span>
+            </div>
+          </div>
+
+          <hr />
+
+          <h3>Contraste WCAG — pairings reales</h3>
+          <p style="font-size: 13px">
+            Ratio calculado en sRGB. Umbral AA para texto normal = 4,5:1; AAA = 7:1.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Primer plano</th>
+                <th>Fondo</th>
+                <th>Ratio</th>
+                <th>Verdicto</th>
+                <th>Uso</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>texto <code>#201E1D</code></td>
+                <td>crema <code>#FAF3E3</code></td>
+                <td>15,0:1</td>
+                <td class="verdict-aaa">AAA</td>
+                <td>Cuerpo sobre página</td>
+              </tr>
+              <tr>
+                <td>texto <code>#201E1D</code></td>
+                <td>superficie <code>#F1E3C6</code></td>
+                <td>13,1:1</td>
+                <td class="verdict-aaa">AAA</td>
+                <td>Cuerpo sobre tarjeta</td>
+              </tr>
+              <tr>
+                <td>verde <code>#0F4E0E</code></td>
+                <td>crema</td>
+                <td>9,0:1</td>
+                <td class="verdict-aaa">AAA</td>
+                <td>Enlaces, iconos, nav</td>
+              </tr>
+              <tr>
+                <td>verde <code>#0F4E0E</code></td>
+                <td>superficie</td>
+                <td>7,8:1</td>
+                <td class="verdict-aaa">AAA</td>
+                <td>Iconos sobre tarjeta</td>
+              </tr>
+              <tr>
+                <td>crema <code>#FAF3E3</code></td>
+                <td>verde (botón)</td>
+                <td>9,0:1</td>
+                <td class="verdict-aaa">AAA</td>
+                <td>Label de botón primario</td>
+              </tr>
+              <tr>
+                <td>texto <code>#201E1D</code></td>
+                <td>naranja <code>#DF8C26</code> (relleno)</td>
+                <td>6,3:1</td>
+                <td class="verdict-aa">AA</td>
+                <td><code>button-action</code>, píldoras naranjas</td>
+              </tr>
+              <tr>
+                <td>blanco</td>
+                <td>naranja <code>#DF8C26</code></td>
+                <td>2,6:1</td>
+                <td class="verdict-fail">FALLA</td>
+                <td>Nunca. El naranja no lleva texto claro.</td>
+              </tr>
+              <tr>
+                <td>naranja-texto <code>#8A5513</code></td>
+                <td>crema</td>
+                <td>5,6:1</td>
+                <td class="verdict-aa">AA</td>
+                <td>Naranja como texto o icono sobre el lienzo</td>
+              </tr>
+              <tr>
+                <td>terciario <code>#6F5F43</code></td>
+                <td>crema</td>
+                <td>5,6:1</td>
+                <td class="verdict-aa">AA</td>
+                <td>Texto terciario sobre página</td>
+              </tr>
+              <tr>
+                <td>terciario <code>#6F5F43</code></td>
+                <td>superficie</td>
+                <td>4,9:1</td>
+                <td class="verdict-aa">AA</td>
+                <td>Texto terciario sobre tarjeta</td>
+              </tr>
+              <tr>
+                <td>error <code>#B03D2B</code></td>
+                <td>crema</td>
+                <td>5,3:1</td>
+                <td class="verdict-aa">AA</td>
+                <td>Texto de error sobre página</td>
+              </tr>
+              <tr>
+                <td>error <code>#B03D2B</code></td>
+                <td>superficie</td>
+                <td>4,7:1</td>
+                <td class="verdict-aa">AA</td>
+                <td>Texto de error sobre input / tarjeta</td>
+              </tr>
+              <tr>
+                <td>blanco</td>
+                <td>error <code>#B03D2B</code></td>
+                <td>5,9:1</td>
+                <td class="verdict-aa">AA</td>
+                <td>Label de botón destructivo</td>
+              </tr>
+              <tr>
+                <td>logo negativo (blanco)</td>
+                <td>verde <code>#0F4E0E</code></td>
+                <td>9,9:1</td>
+                <td class="verdict-aaa">AAA</td>
+                <td>Lockup en la sidebar</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="grid cols-2" style="margin-top: var(--space-3)">
+            <div class="dd do">
+              <h4>Regla del ámbar (FRESCO-283)</h4>
+              <ul>
+                <li>
+                  Ámbar como <strong>relleno</strong> → texto <code>#201E1D</code>, nunca
+                  crema/blanco.
+                </li>
+                <li>
+                  Ámbar como <strong>texto o icono</strong> sobre crema → <code>accent-2-700</code>,
+                  no <code>#DF8C26</code>.
+                </li>
+                <li>
+                  Ámbar decorativo (iconos aria-hidden, fondos <code>accent-2-100</code>) → exento.
+                </li>
+              </ul>
+            </div>
+            <div class="dd dont">
+              <h4>No</h4>
+              <ul>
+                <li>Un gris puro para chrome neutro — siempre de la rampa cálida.</li>
+                <li>Dos botones naranjas en la misma pantalla — es un problema de jerarquía.</li>
+                <li>El tinte de la insight card en tarjetas normales por variedad visual.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 5 · TIPOGRAFÍA ============ -->
+        <section id="tipografia">
+          <p class="kicker">05 — Tipografía</p>
+          <h2>Caprasimo manda, Figtree acompaña</h2>
+          <p class="lede">
+            Dos familias, emparejadas con disciplina. Caprasimo (display, peso 400 único) es un
+            señal de marca por sí sola, antes incluso de que entre el color. Figtree (cuerpo,
+            400/600/700) es para todo lo que se lee rápido y a menudo — pasos de receta, ítems de
+            lista, labels.
+          </p>
+
+          <div class="grid cols-2" style="margin-bottom: var(--space-4)">
+            <div class="card">
+              <h6 style="color: var(--accent-2-700)">Titulares — Caprasimo</h6>
+              <div
+                style="
+                  font-family: var(--font-display);
+                  font-size: 44px;
+                  line-height: 1.12;
+                  letter-spacing: -0.015em;
+                "
+              >
+                Aa Bb Cc
+              </div>
+              <p style="margin: var(--space-2) 0 0; font-size: 12px">
+                Fallback: <code>Caprasimo, "Baloo 2", cursive</code>. Un solo peso — nunca simular
+                bold.
+              </p>
+            </div>
+            <div class="card">
+              <h6 style="color: var(--accent-2-700)">Cuerpo — Figtree</h6>
+              <p style="margin: 0; font-size: 16px">
+                Fresco genera tu menú semanal y la lista de la compra en 30 segundos, y cada semana
+                acierta más porque aprende de lo que realmente cocinas.
+              </p>
+              <p style="margin: var(--space-2) 0 0; font-size: 12px">
+                Fallback: <code>Figtree, -apple-system, BlinkMacSystemFont, sans-serif</code>. Pesos
+                400 / 600 / 700.
+              </p>
+            </div>
+          </div>
+
+          <h3>Escala</h3>
+          <div class="card">
+            <div class="specimen">
+              <span class="tag">h1 · 42 / 1.12</span
+              ><span class="sample" style="font-size: 42px">El menú de tu semana</span>
+            </div>
+            <div class="specimen">
+              <span class="tag">h2 · 30 / 1.12</span
+              ><span class="sample" style="font-size: 30px">Aprende de lo que cocinas</span>
+            </div>
+            <div class="specimen">
+              <span class="tag">h3 · 22 / 1.12</span
+              ><span class="sample" style="font-size: 22px">Lista de la compra por pasillo</span>
+            </div>
+            <div class="specimen">
+              <span class="tag">h4 · 18 / 1.12</span
+              ><span class="sample" style="font-size: 18px">Lentejas estofadas con chorizo</span>
+            </div>
+            <div class="specimen">
+              <span class="tag">h5 · 15 / 1.12</span
+              ><span class="sample" style="font-size: 15px">Título de tarjeta de receta</span>
+            </div>
+            <div class="specimen">
+              <span class="tag">h6 · 12 / 0.08em</span
+              ><span
+                class="sample"
+                style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em"
+                >Fresco aprendió</span
+              >
+            </div>
+            <div class="specimen">
+              <span class="tag">body-md · 15 / 1.55</span
+              ><span style="font-family: var(--font-body); font-size: 15px"
+                >Sofríe la cebolla a fuego medio hasta que quede transparente, unos 8 minutos.</span
+              >
+            </div>
+            <div class="specimen">
+              <span class="tag">body-sm · 13 / 1.55</span
+              ><span style="font-family: var(--font-body); font-size: 13px"
+                >400 g de lentejas pardinas · 1 cebolla · 2 zanahorias</span
+              >
+            </div>
+            <div class="specimen">
+              <span class="tag">label · 14 / 600</span
+              ><span style="font-family: var(--font-body); font-size: 14px; font-weight: 600"
+                >Tamaño del hogar</span
+              >
+            </div>
+            <div class="specimen">
+              <span class="tag">caption · 11 / 1.3</span
+              ><span style="font-family: var(--font-body); font-size: 11px"
+                >50 min · fácil · 2,80 €/persona</span
+              >
+            </div>
+          </div>
+          <div class="grid cols-2" style="margin-top: var(--space-3)">
+            <div class="dd do">
+              <h4>Hazlo</h4>
+              <ul>
+                <li>
+                  h6 en mayúsculas con <code>0.08em</code> — es la única cabecera que se comporta
+                  como label (los kickers tipo "Fresco aprendió").
+                </li>
+                <li>Cuerpo a 15 px como mínimo para lo que se lee cocinando.</li>
+                <li>
+                  Todos los titulares comparten <code>line-height 1.12</code> y
+                  <code>-0.015em</code>.
+                </li>
+              </ul>
+            </div>
+            <div class="dd dont">
+              <h4>No</h4>
+              <ul>
+                <li>
+                  Bajar el cuerpo de 15 px para ganar densidad — el usuario mira el móvil desde el
+                  otro lado de la encimera.
+                </li>
+                <li>Un segundo display face — rompe la señal de Caprasimo.</li>
+                <li>Caprasimo para párrafos largos — es display, no lectura.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 6 · VOZ Y TONO ============ -->
+        <section id="voz">
+          <p class="kicker">06 — Voz y tono</p>
+          <h2>Cercano, sin drama, español de España</h2>
+          <p class="lede">
+            Fresco habla como alguien que ya te ha quitado un problema de encima: tranquilo, un
+            punto cálido, cero jerga. Nunca alarmista, nunca "asistente entusiasta". El copy real
+            del producto es la referencia.
+          </p>
+
+          <div class="grid cols-2">
+            <div class="card">
+              <h6 style="color: var(--accent-2-700)">Email de confirmación — vivo</h6>
+              <p style="font-size: 14px; margin-bottom: 4px">
+                <strong>Que no se te pase el punto.</strong>
+              </p>
+              <p style="font-size: 13px; margin: 0">
+                Un clic y tu cuenta queda tan fresca como nuestras recetas — lista para guardar tu
+                menú y planificar la semana sin dramas.
+              </p>
+            </div>
+            <div class="card">
+              <h6 style="color: var(--accent-2-700)">Email de recuperación — vivo</h6>
+              <p style="font-size: 14px; margin-bottom: 4px">
+                <strong>Restablece tu contraseña.</strong>
+              </p>
+              <p style="font-size: 13px; margin: 0">
+                Pediste restablecer tu contraseña de Fresco. Sigue el enlace para elegir una nueva —
+                solo te llevará un momento. ¿No has pedido esto? Ignora este correo, tu cuenta está
+                a salvo.
+              </p>
+            </div>
+            <div class="card">
+              <h6 style="color: var(--accent-2-700)">Aviso de notificación — vivo</h6>
+              <p style="font-size: 13px; margin: 0">
+                Recibe un aviso cuando sea buen momento para planificar tu menú de la semana.
+              </p>
+            </div>
+            <div class="card">
+              <h6 style="color: var(--accent-2-700)">Aprendizaje — la insight card</h6>
+              <p style="font-size: 13px; margin: 0">
+                <strong>Fresco aprendió.</strong> Menos pimentón picante — bajamos el nivel la
+                próxima semana.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top: var(--space-3)">
+            <div class="dd do">
+              <h4>Registro</h4>
+              <ul>
+                <li>Tuteo peninsular. "Sigue el enlace", no "seguí el enlace".</li>
+                <li>Frases cortas. Un guion largo para el matiz, no una subordinada.</li>
+                <li>
+                  Humor seco y ligero ("sin dramas", "que no se te pase el punto"), nunca chiste
+                  forzado.
+                </li>
+                <li>
+                  Cuando el producto ajusta algo, se dice en primera persona: "Fresco aprendió",
+                  "bajamos el nivel".
+                </li>
+              </ul>
+            </div>
+            <div class="dd dont">
+              <h4>No</h4>
+              <ul>
+                <li>Voseo ni español rioplatense.</li>
+                <li>
+                  "¡Genial!", "¡Estamos encantados de ayudarte!" — nada de asistente eufórico.
+                </li>
+                <li>Jerga de producto: "onboarding", "engagement", "tu journey".</li>
+                <li>
+                  Llamar "aprendizaje" al filtrado dietético declarado — son cosas distintas (ver
+                  §2).
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 7 · ICONOGRAFÍA ============ -->
+        <section id="iconografia">
+          <p class="kicker">07 — Iconografía</p>
+          <h2>Un set, trazo de 2 px, todo verde</h2>
+          <p class="lede">
+            Line-icons de trazo único. Un solo grosor y un solo color en todo el set — sin
+            excepciones por icono. La única variación de grosor permitida es el check de ≤16 px, que
+            usa 3 px por legibilidad a ese tamaño (FRESCO-298), y es una excepción por tamaño, no
+            del sistema.
+          </p>
+          <div class="card icons">
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 11l9-8 9 8" />
+                <path d="M6 10v10h5v-6h2v6h5V10" />
+              </svg>
+              <figcaption>Inicio</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 10h18" />
+              </svg>
+              <figcaption>Calendario</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 6.5c-2-1.5-5-2-8-1v13c3-1 6-.5 8 1 2-1.5 5-2 8-1V5.5c-3-1-6-.5-8 1z" />
+                <path d="M12 6.5v13" />
+              </svg>
+              <figcaption>Recetas</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M6 8h12l-1 12H7L6 8z" />
+                <path d="M9 8V6a3 3 0 0 1 6 0v2" />
+              </svg>
+              <figcaption>Lista</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+              </svg>
+              <figcaption>Perfil</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M20.8 8.6c0 4.4-8.8 10.4-8.8 10.4S3.2 13 3.2 8.6a4.8 4.8 0 0 1 8.8-2.7A4.8 4.8 0 0 1 20.8 8.6z"
+                />
+              </svg>
+              <figcaption>Guardar</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 10h18" />
+                <path d="M12 13.5v5M9.5 16h5" />
+              </svg>
+              <figcaption>Añadir</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z" />
+                <path d="M9.5 18a2.5 2.5 0 0 0 5 0" />
+              </svg>
+              <figcaption>Avisos</figcaption>
+            </figure>
+            <figure>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F4E0E"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
+              </svg>
+              <figcaption>Cocinar ya</figcaption>
+            </figure>
+            <figure>
+              <svg viewBox="0 0 24 24" fill="#0F4E0E" stroke="none">
+                <circle cx="9" cy="6" r="1.6" />
+                <circle cx="15" cy="6" r="1.6" />
+                <circle cx="9" cy="12" r="1.6" />
+                <circle cx="15" cy="12" r="1.6" />
+                <circle cx="9" cy="18" r="1.6" />
+                <circle cx="15" cy="18" r="1.6" />
+              </svg>
+              <figcaption>Arrastrar</figcaption>
+            </figure>
+          </div>
+          <table style="margin-top: var(--space-3)">
+            <tbody>
+              <tr>
+                <td>Tamaño base</td>
+                <td>24 px (nav / UI). Variante compacta 22 px.</td>
+              </tr>
+              <tr>
+                <td>Trazo</td>
+                <td>
+                  2 px, token <code>components.icon.strokeWidth</code>. Sin overrides globales.
+                </td>
+              </tr>
+              <tr>
+                <td>Color</td>
+                <td>Siempre <code>#0F4E0E</code>. Cero excepciones de color por icono.</td>
+              </tr>
+              <tr>
+                <td>Excepción</td>
+                <td>Checks ≤16 px → 3 px de trazo (legibilidad). Solo ahí.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- ============ 8 · FOTOGRAFÍA ============ -->
+        <section id="fotografia">
+          <p class="kicker">08 — Fotografía e imagen</p>
+          <h2>Cocina real y cálida, nunca stock frío</h2>
+          <p class="lede">
+            La imagen refuerza la misma idea que el color: encimera, no dashboard. Si una foto
+            parece de "app de utilidad" — luz azulada, plato perfecto de estudio, manos de modelo —
+            está mal para Fresco.
+          </p>
+          <div class="grid cols-2">
+            <div class="dd do">
+              <h4>Dirección</h4>
+              <ul>
+                <li>Luz cálida, natural, de tarde.</li>
+                <li>Comida real: una olla a medio servir, una tabla con recortes, un táper.</li>
+                <li>Cocina doméstica española, no un set. Se permite el desorden honesto.</li>
+                <li>Encuadres cercanos, textura de la comida por delante del emplatado.</li>
+                <li>
+                  Cuando haya personas: gesto cotidiano (remover, servir), nunca pose a cámara.
+                </li>
+              </ul>
+            </div>
+            <div class="dd dont">
+              <h4>Evita</h4>
+              <ul>
+                <li>Stock genérico con marca de agua mental de "app sana".</li>
+                <li>Luz fría / blanca de estudio, fondos grises.</li>
+                <li>Superalimentos de catálogo, bowls perfectos, aguacate obligatorio.</li>
+                <li>Sobreedición: HDR, saturación alta, viñeteado.</li>
+              </ul>
+            </div>
+          </div>
+          <p
+            style="
+              font-size: 13px;
+              color: color-mix(in srgb, var(--text) 60%, transparent);
+              margin-top: var(--space-3);
+            "
+          >
+            Mientras no exista librería fotográfica propia (cortada del scope P1 por coste), los
+            placeholders de receta usan un patrón lavado — trama diagonal <code>accent-200</code> /
+            <code>neutral-200</code> con <code>saturate(0.6)</code> — no una foto de stock.
+          </p>
+          <div class="card" style="max-width: 220px; padding: 0; overflow: hidden">
+            <div
+              style="
+                height: 110px;
+                background-image: repeating-linear-gradient(
+                  135deg,
+                  #bfcfbd 0 10px,
+                  #f0e8d8 10px 20px
+                );
+                filter: saturate(0.6) contrast(0.85) brightness(1.1);
+              "
+            ></div>
+            <div style="padding: 12px">
+              <div style="font-family: var(--font-display); font-size: 13px">
+                Placeholder de receta
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 9 · MOVIMIENTO ============ -->
+        <section id="movimiento">
+          <p class="kicker">09 — Movimiento</p>
+          <h2>Rápido, suave, y respeta a quien pide menos</h2>
+          <p class="lede">
+            El movimiento confirma acciones, nunca decora. Tokens instalados una vez
+            (<code>transitions-dev</code>, FRESCO-247) en <code>app/globals.css</code>. Todo lo que
+            se mueva debe apagarse bajo <code>prefers-reduced-motion: reduce</code> — se enlaza con
+            EPIC-FRESCO-244.
+          </p>
+          <div class="grid cols-2">
+            <div class="card">
+              <h4>Duraciones</h4>
+              <table>
+                <tbody>
+                  <tr>
+                    <td><code>--duration-stagger</code></td>
+                    <td>40 ms</td>
+                    <td>Offset por ítem</td>
+                  </tr>
+                  <tr>
+                    <td><code>--duration-micro</code></td>
+                    <td>80 ms</td>
+                    <td>Tooltip delay, segmento de shake</td>
+                  </tr>
+                  <tr>
+                    <td><code>--duration-quick</code></td>
+                    <td>150 ms</td>
+                    <td>Cierre de modal/dropdown, text swap</td>
+                  </tr>
+                  <tr>
+                    <td><code>--duration-fast</code></td>
+                    <td>250 ms</td>
+                    <td>Icon swap, apertura de dropdown/modal, tabs</td>
+                  </tr>
+                  <tr>
+                    <td><code>--duration-medium</code></td>
+                    <td>350 ms</td>
+                    <td>Cierre de panel, cierre de toast</td>
+                  </tr>
+                  <tr>
+                    <td><code>--duration-slow</code></td>
+                    <td>400 ms</td>
+                    <td>Apertura de panel, reveal de skeleton</td>
+                  </tr>
+                  <tr>
+                    <td><code>--duration-very-slow</code></td>
+                    <td>500 ms</td>
+                    <td>Momentos de énfasis, success check</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card">
+              <h4>Curvas</h4>
+              <table>
+                <tbody>
+                  <tr>
+                    <td><code>--ease-smooth-out</code></td>
+                    <td>cubic-bezier(0.22, 1, 0.36, 1)</td>
+                  </tr>
+                  <tr>
+                    <td><code>--ease-in-out</code></td>
+                    <td>Icon / text swap, reveals</td>
+                  </tr>
+                  <tr>
+                    <td><code>--ease-out</code></td>
+                    <td>Tooltip open / close</td>
+                  </tr>
+                  <tr>
+                    <td><code>--ease-linear</code></td>
+                    <td>Shimmer, skeleton pulse, spinner</td>
+                  </tr>
+                  <tr>
+                    <td><code>--ease-bounce</code></td>
+                    <td>cubic-bezier(0.34, 1.36, 0.64, 1) — badge pop</td>
+                  </tr>
+                  <tr>
+                    <td><code>--ease-bounce-strong</code></td>
+                    <td>cubic-bezier(0.34, 3.85, 0.64, 1) — hover-out</td>
+                  </tr>
+                </tbody>
+              </table>
+              <p style="font-size: 12px; margin: var(--space-2) 0 0">
+                Distancias 4 / 6 / 8 / 12 / 30 px · escalas 0.96–0.99 · blur 2 / 3 / 8 px.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 10 · LAYOUT ============ -->
+        <section id="layout">
+          <p class="kicker">10 — Layout y grid</p>
+          <h2>Unidad de 4.4 px y esquinas que se redondean por jerarquía</h2>
+          <p class="lede">
+            La base de espaciado es <strong>4.4 px</strong>, no un 4 u 8 "más limpio" — la escala se
+            afinó como sistema. Trátala como multiplicador fijo: si hace falta un paso nuevo,
+            <code>4.4px × n</code>, nunca interpolar a ojo.
+          </p>
+          <div class="grid cols-2">
+            <div class="card">
+              <h4>Espaciado</h4>
+              <table>
+                <tbody>
+                  <tr>
+                    <td><code>space-1</code></td>
+                    <td>4.4 px</td>
+                  </tr>
+                  <tr>
+                    <td><code>space-2</code></td>
+                    <td>8.8 px — gaps internos apretados</td>
+                  </tr>
+                  <tr>
+                    <td><code>space-3</code></td>
+                    <td>13.2 px — padding de tarjeta, padding-x de botón</td>
+                  </tr>
+                  <tr>
+                    <td><code>space-4</code></td>
+                    <td>17.6 px — divisores de sección</td>
+                  </tr>
+                  <tr>
+                    <td><code>space-6</code></td>
+                    <td>26.4 px — ritmo de página</td>
+                  </tr>
+                  <tr>
+                    <td><code>space-8</code></td>
+                    <td>35.2 px — ritmo entre bloques grandes</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card">
+              <h4>Radios — jerarquía</h4>
+              <table>
+                <tbody>
+                  <tr>
+                    <td><code>sm</code> 8 px</td>
+                    <td>Chips pequeños, previews de swatch</td>
+                  </tr>
+                  <tr>
+                    <td><code>md</code> 16 px</td>
+                    <td>Segmented control, grupos de campo</td>
+                  </tr>
+                  <tr>
+                    <td><code>lg</code> 28 px</td>
+                    <td>Área de imagen dentro de la card</td>
+                  </tr>
+                  <tr>
+                    <td><code>card</code> 32 px</td>
+                    <td>Todas las tarjetas (lg × 1.15). Más redondas que un botón, a propósito.</td>
+                  </tr>
+                  <tr>
+                    <td><code>full</code> 999 px</td>
+                    <td>Todos los botones y todos los tags. Sin excepción.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="grid cols-3" style="margin-top: var(--space-3)">
+            <div
+              style="
+                background: var(--surface);
+                border-radius: 8px;
+                padding: 14px;
+                text-align: center;
+                font-size: 12px;
+              "
+            >
+              radius sm · 8
+            </div>
+            <div
+              style="
+                background: var(--surface);
+                border-radius: 16px;
+                padding: 14px;
+                text-align: center;
+                font-size: 12px;
+              "
+            >
+              radius md · 16
+            </div>
+            <div
+              style="
+                background: var(--surface);
+                border-radius: 32px;
+                padding: 14px;
+                text-align: center;
+                font-size: 12px;
+              "
+            >
+              radius card · 32
+            </div>
+          </div>
+          <hr />
+          <h3>Elevación</h3>
+          <p style="font-size: 14px">
+            Tres niveles, todos contra la misma base cálida <code>#2F281C</code> — las sombras se
+            quedan en la familia cálida, nunca un drop-shadow gris. La superficie descansa sin
+            sombra dura.
+          </p>
+          <div class="grid cols-3">
+            <div class="card" style="box-shadow: var(--shadow-sm)">
+              <strong style="font-size: 13px">sm</strong><br /><span style="font-size: 12px"
+                >0 1px 2px · 14%. Card en reposo.</span
+              >
+            </div>
+            <div class="card" style="box-shadow: var(--shadow-md)">
+              <strong style="font-size: 13px">md</strong><br /><span style="font-size: 12px"
+                >0 3px 10px · 16%. Insight card, card Pro.</span
+              >
+            </div>
+            <div class="card" style="box-shadow: var(--shadow-lg)">
+              <strong style="font-size: 13px">lg</strong><br /><span style="font-size: 12px"
+                >0 12px 32px · 22%. Solo overlays reales.</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 11 · COMPONENTES DE MARCA ============ -->
+        <section id="componentes">
+          <p class="kicker">11 — Componentes de marca</p>
+          <h2>Los tres sitios donde la marca habla en voz alta</h2>
+          <p class="lede">
+            La mayoría de componentes son chrome neutro. Tres cargan significado de marca y no se
+            diluyen en uso decorativo.
+          </p>
+
+          <div class="grid cols-2">
+            <div>
+              <h4>La insight card — "Fresco aprendió"</h4>
+              <p style="font-size: 13px">
+                Fondo <code>accent-100</code>, texto <code>accent-800</code>,
+                <code>shadow-md</code>, radio de card. Es donde el producto dice, con el color
+                primario, "ajusté por ti". Es la prueba visible del moat Pro — usarla para
+                highlights genéricos erosiona la única señal que justifica el upgrade.
+              </p>
+              <div class="insight">
+                <div class="k">Fresco aprendió</div>
+                <div class="t">Menos pimentón picante</div>
+                <p style="margin: 0; font-size: 12px">Bajamos el nivel la próxima semana.</p>
+              </div>
+            </div>
+            <div>
+              <h4>El botón-acción — la única CTA naranja</h4>
+              <p style="font-size: 13px">
+                Relleno <code>#DF8C26</code>, label <code>#201E1D</code> (~6,3:1). Hover
+                <em>aclara</em> a <code>accent-2-400</code>, no oscurece, para que el label mantenga
+                contraste. Una por pantalla — el patrón "Generar mi menú". Su efecto depende de la
+                escasez.
+              </p>
+              <div
+                style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start"
+              >
+                <button class="btn btn-action">⚡ Generar mi menú</button>
+                <div style="display: flex; gap: 8px">
+                  <button class="btn btn-primary">Continuar</button>
+                  <button class="btn btn-secondary">Atrás</button>
+                  <button class="btn btn-ghost">Ver más</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4>Los tags de alérgeno</h4>
+              <p style="font-size: 13px">
+                El filtrado dietético declarado (siempre activo, ambos planes) se muestra con tags.
+                <code>tag-accent-2</code> (naranja tintado) es el hogar natural de los flags tipo
+                alérgeno que merecen más peso visual que un tag neutro.
+              </p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <span class="pill pill-solid">Seleccionado</span>
+                <span class="pill pill-outline">Sin seleccionar</span>
+                <span class="pill pill-accent-2">Sin gluten</span>
+                <span class="pill pill-accent-2">Frutos secos</span>
+                <span class="pill">Healthy</span>
+              </div>
+            </div>
+            <div>
+              <h4>La sidebar — primary como fondo</h4>
+              <p style="font-size: 13px">
+                La única superficie del sistema donde <code>primary</code> es fondo y no solo
+                texto/icono/borde (FRESCO-70). Ítem activo: píldora blanca. Lockup: siempre
+                <code>Logo negativo</code>.
+              </p>
+              <div
+                style="
+                  width: 190px;
+                  background: var(--primary);
+                  border-radius: var(--radius-md);
+                  padding: 14px;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 4px;
+                "
+              >
+                <span
+                  style="
+                    background: #fff;
+                    color: var(--primary);
+                    font-weight: 700;
+                    font-size: 12px;
+                    padding: 8px 12px;
+                    border-radius: var(--radius-full);
+                  "
+                  >Inicio</span
+                >
+                <span style="color: rgba(255, 255, 255, 0.8); font-size: 12px; padding: 8px 12px"
+                  >Calendario</span
+                >
+                <span style="color: rgba(255, 255, 255, 0.8); font-size: 12px; padding: 8px 12px"
+                  >Recetas</span
+                >
+                <span style="color: rgba(255, 255, 255, 0.8); font-size: 12px; padding: 8px 12px"
+                  >Perfil</span
+                >
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 12 · APLICACIONES ============ -->
+        <section id="aplicaciones">
+          <p class="kicker">12 — Aplicaciones</p>
+          <h2>La marca en contexto</h2>
+          <p class="lede">
+            Todo lo de abajo está construido con los mismos tokens de este documento — ninguna
+            imagen externa. Es la marca aplicada, no una recreación.
+          </p>
+
+          <div class="grid cols-3" style="align-items: start">
+            <div>
+              <h6 style="color: var(--accent-2-700)">Pantalla de app</h6>
+              <div class="device">
+                <div class="bar">Tu menú · semana 12</div>
+                <div class="body">
+                  <div class="mini-recipe">
+                    <div class="title">Lentejas estofadas</div>
+                    <div class="meta">50 min · fácil · 2,80 €</div>
+                  </div>
+                  <div class="mini-recipe">
+                    <div class="title">Merluza al horno</div>
+                    <div class="meta">30 min · fácil · 3,40 €</div>
+                  </div>
+                  <div class="insight" style="max-width: none; padding: var(--space-3)">
+                    <div class="k">Fresco aprendió</div>
+                    <div class="t" style="font-size: 15px">Menos picante</div>
+                  </div>
+                  <button class="btn btn-action" style="align-self: stretch">
+                    ⚡ Generar mi menú
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h6 style="color: var(--accent-2-700)">Plantilla de email</h6>
+              <div class="email">
+                <div class="head">
+                  <svg viewBox="0 0 420 128" xmlns="http://www.w3.org/2000/svg" aria-label="Fresco">
+                    <path
+                      d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                      fill="white"
+                    />
+                    <path
+                      d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                      fill="white"
+                    />
+                    <circle cx="414" cy="89" r="6" fill="white" />
+                  </svg>
+                </div>
+                <div class="inner">
+                  <h4>Que no se te pase el punto</h4>
+                  <p style="font-size: 12px">
+                    Un clic y tu cuenta queda tan fresca como nuestras recetas.
+                  </p>
+                  <button class="btn btn-primary">Confirmar mi cuenta</button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h6 style="color: var(--accent-2-700)">Tarjeta para redes</h6>
+              <div class="social">
+                <svg viewBox="0 0 420 128" xmlns="http://www.w3.org/2000/svg" aria-label="Fresco">
+                  <path
+                    d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                    fill="white"
+                  />
+                  <path
+                    d="M191.92 71.88H171.12V95H158.16V35.8H195.84V47.8H171.12V60.2H191.92V71.88ZM228.301 55V66.6H224.381C216.861 66.6 213.101 70.28 213.101 77.64V95H200.781V55.08H212.381L213.021 61C214.887 56.6267 218.407 54.44 223.581 54.44C225.181 54.44 226.754 54.6267 228.301 55ZM251.919 96.04C245.892 96.04 240.932 94.0667 237.039 90.12C233.145 86.12 231.199 81.0533 231.199 74.92C231.199 68.68 233.092 63.5867 236.879 59.64C240.719 55.6933 245.652 53.72 251.679 53.72C257.972 53.72 262.932 55.64 266.559 59.48C270.239 63.32 272.079 68.4933 272.079 75V78.12L243.039 78.28C243.732 83.4533 246.772 86.04 252.159 86.04C254.505 86.04 256.452 85.64 257.999 84.84C259.545 84.04 260.532 82.92 260.959 81.48H272.239C271.492 85.9067 269.279 89.4533 265.599 92.12C261.972 94.7333 257.412 96.04 251.919 96.04ZM251.759 63.72C246.959 63.72 244.105 66.04 243.199 70.68H259.839C259.839 68.5467 259.092 66.8667 257.599 65.64C256.159 64.36 254.212 63.72 251.759 63.72ZM276.494 82.36H288.174C288.334 85.3467 290.334 86.84 294.174 86.84C297.908 86.84 299.774 85.6933 299.774 83.4C299.774 81.8533 298.574 80.8133 296.174 80.28L288.814 78.68C285.028 77.88 282.254 76.5733 280.494 74.76C278.734 72.8933 277.854 70.2533 277.854 66.84C277.854 62.7867 279.401 59.5867 282.494 57.24C285.641 54.8933 289.668 53.72 294.574 53.72C299.214 53.72 303.001 54.9733 305.934 57.48C308.868 59.9867 310.334 63.24 310.334 67.24H298.654C298.654 65.8533 298.228 64.76 297.374 63.96C296.574 63.1067 295.454 62.68 294.014 62.68C292.628 62.68 291.508 63.0267 290.654 63.72C289.854 64.36 289.454 65.2133 289.454 66.28C289.454 67.9867 290.894 69.16 293.774 69.8L301.214 71.4C304.628 72.1467 307.161 73.3733 308.814 75.08C310.521 76.7867 311.374 79.1867 311.374 82.28C311.374 86.4933 309.748 89.8533 306.494 92.36C303.241 94.8133 298.974 96.04 293.694 96.04C288.468 96.04 284.281 94.7867 281.134 92.28C278.041 89.72 276.494 86.4133 276.494 82.36ZM315.652 74.84C315.652 68.6533 317.572 63.5867 321.412 59.64C325.252 55.6933 330.159 53.72 336.132 53.72C342.052 53.72 346.852 55.24 350.532 58.28C354.212 61.32 356.239 65.4533 356.612 70.68H344.212C343.359 66.7333 340.825 64.76 336.612 64.76C333.999 64.76 331.919 65.6667 330.372 67.48C328.825 69.2933 328.052 71.7467 328.052 74.84C328.052 78.04 328.772 80.5467 330.212 82.36C331.705 84.12 333.785 85 336.452 85C340.825 85 343.412 83.0267 344.212 79.08H356.612C356.185 84.1467 354.105 88.2533 350.372 91.4C346.692 94.4933 342.052 96.04 336.452 96.04C330.159 96.04 325.119 94.12 321.332 90.28C317.545 86.3867 315.652 81.24 315.652 74.84ZM367.359 90.2C363.252 86.3067 361.199 81.2133 361.199 74.92C361.199 68.6267 363.252 63.5333 367.359 59.64C371.519 55.7467 376.825 53.8 383.279 53.8C389.679 53.8 394.932 55.7467 399.039 59.64C403.199 63.5333 405.279 68.6267 405.279 74.92C405.279 81.16 403.199 86.2267 399.039 90.12C394.932 94.0133 389.679 95.96 383.279 95.96C376.825 95.96 371.519 94.04 367.359 90.2ZM373.599 74.84C373.599 77.88 374.479 80.3333 376.239 82.2C378.052 84.0133 380.399 84.92 383.279 84.92C386.105 84.92 388.399 84.0133 390.159 82.2C391.972 80.3333 392.879 77.88 392.879 74.84C392.879 71.8533 391.972 69.4533 390.159 67.64C388.399 65.7733 386.105 64.84 383.279 64.84C380.399 64.84 378.052 65.7733 376.239 67.64C374.479 69.4533 373.599 71.8533 373.599 74.84Z"
+                    fill="white"
+                  />
+                  <circle cx="414" cy="89" r="6" fill="#DF8C26" />
+                </svg>
+                <div class="big">Tu semana, resuelta en <em>30 segundos</em>.</div>
+                <div style="font-size: 12px; opacity: 0.85">
+                  menús con IA que aprende de lo que cocinas
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid cols-2" style="margin-top: var(--space-4)">
+            <div>
+              <h6 style="color: var(--accent-2-700)">Favicon</h6>
+              <div class="favicons">
+                <div class="fav s64">
+                  <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path
+                      d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                      fill="#0F4E0E"
+                    />
+                  </svg>
+                </div>
+                <div class="fav s32">
+                  <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path
+                      d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                      fill="#0F4E0E"
+                    />
+                  </svg>
+                </div>
+                <div class="fav s16">
+                  <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path
+                      d="M32 64C32 81.673 46.327 96 64 96V128C28.654 128 0 99.346 0 64H32ZM96 64C96 81.673 110.327 96 128 96V128C92.654 128 64 99.346 64 64H96ZM32 0C32 17.673 46.327 32 64 32V64C28.654 64 0 35.346 0 0H32ZM96 0C96 17.673 110.327 32 128 32V64C92.654 64 64 35.346 64 0H96Z"
+                      fill="#0F4E0E"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <p style="font-size: 12px; margin-top: 8px">
+                Solo el isotipo, verde sólido sobre crema. El punto naranja se pierde por debajo de
+                32 px — se omite.
+              </p>
+            </div>
+            <div>
+              <h6 style="color: var(--accent-2-700)">Firma de email</h6>
+              <div class="signature">
+                <div class="n">Basi · Fresco</div>
+                <div style="color: color-mix(in srgb, var(--text) 60%, transparent)">
+                  Menús semanales pensados para ti
+                </div>
+                <div style="margin-top: 4px"><a href="#">fresco.app</a></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 13 · DESCARGAS ============ -->
+        <section id="descargas">
+          <p class="kicker">13 — Descargas</p>
+          <h2>Assets y tokens</h2>
+          <p class="lede">
+            Los logos no se redibujan — se descargan. La paleta se copia del bloque de abajo. Para
+            cualquier valor que no esté aquí, la fuente es <code>DESIGN.md</code>.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Ruta en el repo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Logo base (SVG / PNG)</td>
+                <td>
+                  <code>public/brand/logo-base.svg</code> ·
+                  <code>design/handoff/fresco/assets/Logo base.png</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Logo negativo</td>
+                <td>
+                  <code>public/brand/logo-negativo.svg</code> · <code>logo-negativo-email.png</code>
+                </td>
+              </tr>
+              <tr>
+                <td>Logo naranja</td>
+                <td><code>public/brand/logo-naranja.svg</code></td>
+              </tr>
+              <tr>
+                <td>Spec de tokens (fuente de verdad)</td>
+                <td><code>DESIGN.md</code> (raíz)</td>
+              </tr>
+              <tr>
+                <td>Canvas de Claude Design</td>
+                <td><code>design/handoff/fresco/brand-guide.dc.html</code></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style="margin-top: var(--space-4)">Paleta — bloque copiable</h3>
+          <pre class="copyblock">
+/* Fresco — núcleo */
+--primary:      #0F4E0E;  /* verde corporativo */
+--secondary:    #DF8C26;  /* naranja corporativo */
+--tertiary:     #6F5F43;  /* texto terciario (FRESCO-299) */
+--neutral:      #A39372;
+--background:   #FAF3E3;  /* crema */
+--surface:      #F1E3C6;  /* crema superficie */
+--text:         #201E1D;
+--border:       color-mix(in srgb, #201E1D 16%, transparent);
+--error:        #B03D2B;  /* clay red (FRESCO-293) */
+
+/* accent (verde) 100-900 */
+#E1E8E0 #BFCFBD #8FAB8D #547D51 #0F4E0E #0A3E09 #052D05 #031F03 #011101
+
+/* accent-2 (naranja) 100-900 */
+#FCF1E8 #F9E2CC #F3CBA5 #EAAD70 #DF8C26 #B6721D #8A5513 #653D0B #422605
+
+/* neutral (crema) 100-900 */
+#FBF6EC #F0E8D8 #DED2B8 #C2B393 #A39372 #847456 #66593F #493F2C #2F281C
+
+/* tipografía */
+display: Caprasimo 400        body: Figtree 400/600/700
+h1 42  h2 30  h3 22  h4 18  h5 15  h6 12(upper .08em)
+body-md 15/1.55   line-height titulares 1.12   letter-spacing -0.015em
+
+/* espaciado — base 4.4px */
+4.4  8.8  13.2  17.6  26.4  35.2
+
+/* radios */
+sm 8   md 16   lg 28   card 32   full 999</pre
+          >
+        </section>
+      </main>
+    </div>
+
+    <footer class="foot">
+      Fresco — Manual de marca · documento presentacional generado en FRESCO-424. La fuente de
+      verdad de los tokens es <code>DESIGN.md</code>. Ni este fichero ni el canvas
+      <code>brand-guide.dc.html</code> definen valores — los presentan.
+    </footer>
+  </body>
+</html>
