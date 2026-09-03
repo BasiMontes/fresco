@@ -1710,18 +1710,22 @@ Característica: Flujo completo de usuario en Fresco
     # Mismo componente de tarjeta de receta reutilizado que en
     # Inicio/Biblioteca -- el toggle de favorito funciona igual aquí.
 
-  @notificaciones @edge-case @pendiente
+  @notificaciones @edge-case @solo-manual
+  # Decisión de producto FRESCO-405 (2026-09-03): Opción A — las
+  # recomendaciones NO excluyen favoritas. Es un feed de recencia (las
+  # recetas más nuevas filtradas por seguridad alimentaria), no un motor
+  # de recomendación personalizado; /menu "Últimas recetas añadidas" se
+  # comporta igual (mismo componente FavoriteRecipeCard, misma fuente
+  # getLatestAvailableRecipes). El corazón de la tarjeta ya pinta
+  # initialIsFavorite, así que la usuaria ve que ya la tiene guardada.
+  # @solo-manual: aserción no determinista ("puede seguir apareciendo"),
+  # comportamiento esperado y ratificado — no un gap de automatización.
   Escenario: Las recomendaciones de Notificaciones no excluyen recetas ya marcadas como favoritas
     Dado que Laura ya tiene una receta marcada como favorita
     Cuando abre /notifications
     Entonces esa misma receta puede seguir apareciendo en "Recetas que te pueden gustar"
     # Observado en vivo: tras marcar "Arroz con verduras..." como favorita,
     # siguió apareciendo en la misma lista de recomendaciones al recargar.
-    # Sigue @pendiente (FRESCO-399 / A4-L14 lo revisó): NO es un gap de
-    # verificación sino una pregunta de PRODUCTO sin resolver — ¿las
-    # recomendaciones deben excluir favoritas o no? Rastreado en FRESCO-405
-    # (decisión de producto); este @pendiente se cierra cuando esa decisión
-    # se registre.
 
   # ==========================================================================
   # Landing pública (/)

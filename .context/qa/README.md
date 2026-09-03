@@ -51,10 +51,10 @@ Progress is read live: `rg -c '@automatizado' .context/qa/regression.feature` vs
 
 ### Batch de automatización pendiente (FRESCO-399 / A4-L14)
 
-The `@pendiente` triage of 2026-09-02 left exactly two:
+The `@pendiente` triage of 2026-09-02 left two; FRESCO-405 closed one, leaving one:
 
 - **`@calendario` "No se puede generar sobre una semana que ya tiene menú"** — XS. `seedFullWeekMenu(request, testUser)` → `/menu` → assert `generate_menu_button` absent. Next batch candidate.
-- **`@notificaciones` "Las recomendaciones no excluyen recetas ya marcadas como favoritas"** — **not** an automation gap: an unresolved product question (should recs exclude favourites?). Needs a product-decision ticket, not a spec.
+- ~~**`@notificaciones` "Las recomendaciones no excluyen recetas ya marcadas como favoritas"**~~ — RESUELTO FRESCO-405 (2026-09-03): decisión de producto Opción A (las recomendaciones NO excluyen favoritas, coherente con `/menu`). Escenario re-tag `@pendiente` → `@solo-manual`.
 
 Everything else `@pendiente` was either automated in FRESCO-399 (the notificaciones trio) or reclassified `@solo-manual` with a documented reason.
 
