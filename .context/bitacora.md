@@ -229,3 +229,7 @@ Historia archivada:
 - Qué: nuevo `scripts/check-functions-drift.ts` (heurística git-mtime: repo vs `updated_at` desplegado, excluye `*.test.ts`/`*.md`) + `scripts/deploy-changed-functions.ts` (`--use-api --import-map`, `--no-verify-jwt` solo send-weekly) + workflow `edge-functions-drift.yml` (deploy en push:staging + drift-check + cron semanal con issue). PR #271 squash -> dev f7b6b3d -> ff staging. Primera corrida real en staging verde: deploy "nothing to deploy", drift-check "8 in sync, 0 drift".
 - Por qué: audit-4 ola-3 promovió `supabase/functions/*` a main sin redesplegar; reassign-guest-data sirvió v19 explotable ~24h. Hermano de FRESCO-413 (drift de migraciones).
 - Siguiente: QA cierra FRESCO-414 -> Finalizada; promover staging->main cuando toque.
+## 2026-09-03 - FRESCO-417: anclar GitHub Actions por SHA
+- Qué: `pr-check.yml`, `migration-drift-check.yml`, `edge-functions-drift.yml` con todas las `uses:` ancladas por SHA de 40 hex + comentario `# vX.Y.Z` (mismas versiones, sin cambio de comportamiento). `persist-credentials: false` en los 2 workflows de drift. Nuevo `.github/dependabot.yml` (github-actions, semanal, agrupado). PR #272 squash -> dev 17f273d -> ff staging -> ff main. Staging verde con los workflows ya pinneados.
+- Por qué: FRESCO-399 (A4-L16) solo pinneó post-deploy-smoke.yml; un tag móvil deja que un compromiso de la cuenta del publisher inyecte código en el pipeline sin cambio visible en el repo.
+- Siguiente: los bumps de SHA llegarán como PR de Dependabot.
