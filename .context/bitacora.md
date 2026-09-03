@@ -209,3 +209,8 @@ Historia archivada:
 - Qué: rotados los secrets SUPABASE_ACCESS_TOKEN + SUPABASE_DB_PASSWORD del repo desde .env (gh secret set). Arreglado bug pre-existente (desde FRESCO-325) en migration-drift-check.yml: el pipe `| tee` sin `set -o pipefail` bajo `bash -e` tragaba el exit code -> el job pasaba en verde aunque hubiera drift. PR #268 squash -> dev (c3e9b3c), ff staging.
 - Por qué: el gate de push:[staging] de FRESCO-413 era inofensivo. El smoke tras rotar el token lo destapó.
 - Siguiente: **drift real pendiente de arreglar a mano contra prod** - 2 entradas en el ledger sin fichero local (20260901100401, 20260901103915, del 1-sep, out-of-band, no de esta sesión). Issue #269 abierta. `supabase db pull` o `migration repair --status reverted`. Bloquea staging->main limpio. FRESCO-421 sigue abierta (flake e2e).
+
+## 2026-09-03 - Ledger de migraciones reparado + FRESCO-413 Finalizada
+- Qué: `supabase migration repair --status reverted 20260901100401 20260901103915`. Las 2 entradas huérfanas eran duplicados exactos de 20260901130000 (FRESCO-362) y 20260901140000 (FRESCO-363) - aplicadas out-of-band vía MCP el 1-sep ~10am durante audit-4 ola-3, luego re-commiteadas. Ledger: 72 migraciones, 0 drift. Workflow Drift checks verde. Issue #269 cerrada. FRESCO-413 -> Finalizada.
+- Por qué: el gate de FRESCO-413 (ya con pipefail arreglado) destapó el drift real; era seguro revertir porque el efecto vive en los ficheros commiteados.
+- Siguiente: FRESCO-421 (flake e2e). staging->main ya no bloqueado por drift.
