@@ -148,3 +148,34 @@ Historia archivada:
 - Que: guard global `@media (prefers-reduced-motion: reduce)` en app/globals.css (animation/transition-duration 0.01ms !important, scroll-behavior auto, .animate-spin re-exento) + matchMedia en horizontal-scroll-row.tsx. Auditoria: 5 huecos encontrados y cerrados. Mergeado dev+staging (4d9e8d7, PR #257).
 - Por que: EPIC-FRESCO-244 A4-M18, WCAG 2.3.3/2.2.2. Guard transversal de las historias de motion. Sin divergencia §5 (nada recortado); nota en design plan §4.19.
 - Siguiente: QA en staging del epic completo (245/246/247/248/249 dev-done). main en hold (batch audit-4). Vercel Preview de #257 quedo rate-limited (cap 100/dia) - redeploy tras reset 24h.
+
+## 2026-09-02 - Promoción a main + fix migraciones prod + QA EPIC-244
+- Qué: `main` 24542f5->a59fe28 (audit-4 ola-3 FRESCO-374..401 + EPIC-FRESCO-244). Aplicadas 6 migraciones que estaban en el repo sin correr en la DB compartida de Supabase (jdqemhewjrjuopssdurn): fix_rating_average_denominator (381), stable_order_get_filtered_recipes (380), household_size_upper_bounds (382), swap_slots_skip_learning_guc (383), catalog_pagination_and_facets (384), swap_slots_reject_excluida (396). Ledger reconciliado a versiones canónicas del repo + 2 re-datadas (130000/140000). QA de FRESCO-245/246/249 -> las 3 a Finalizada.
+- Por qué: limite de deploys de Vercel obligaba a consolidar; get_catalog (384) no existia en prod -> /recipes vacio para todos los usuarios. audit-4 tickets cerrados con codigo mergeado pero migracion sin aplicar.
+- Siguiente: verificar /recipes en prod tras propagacion; considerar gate CI que compruebe repo migrations == ledger (relacionado FRESCO-325).
+  - Follow-up: creada **FRESCO-413** (Tarea, `Listo`) — gate CI que verifica `supabase/migrations/*` del repo == ledger `schema_migrations` de la DB (match por slug para tolerar re-datado). Relates FRESCO-325.
+
+## 2026-09-03 - FRESCO-395: oráculo de fuerza bruta seguía vivo en prod (edge function sin redesplegar)
+- Qué: QA de FRESCO-395 (A4-L4/L5). A4-L5 (/qa noindex) OK en vivo. A4-L4: código mergeado en las 3 ramas desde 9/2 pero la edge function reassign-guest-data nunca se redesplegó a Supabase (v19, contrato viejo {email,password} con signInWithPassword server-side = oráculo de fuerza bruta explotable por cualquier anónimo). Desplegada ahora (v20) con `supabase functions deploy reassign-guest-data --import-map supabase/functions/deno.json`. Re-verificado en vivo: contrato nuevo {targetAccessToken} activo, sin signInWithPassword, rate limit 5/h. FRESCO-395 -> Finalizada.
+- Por qué: la ola-3 de audit-4 promovió código a main sin redesplegar las edge functions (mismo patrón que las 6 migraciones sin aplicar). Vulnerabilidad de seguridad marcada por el audit seguía viva en producción ~24h después de cerrar el ticket en el papel.
+- Siguiente: sweep completo `supabase functions deploy` desde main (FRESCO-385/396/397 y _shared de 375/385 sin desplegar); gate CI "repo functions == deployed" hermano de FRESCO-413; con Docker apagado el deploy necesita --import-map explícito o el bundler remoto no resuelve @supabase/supabase-js.
+
+## 2026-09-03 - Sweep redespliegue de las 8 edge functions + FRESCO-414
+- Qué: redesplegadas las 8 edge functions a Supabase (jdqemhewjrjuopssdurn) desde el estado de main. Versiones: generate-meal-plan v31, update-recipe-status v21, generate-shopping-list v31, delete-account v14, get-shopping-list-suggestions v13, delete-catalog-recipe v8, send-weekly-reengagement-push v12 (--no-verify-jwt preservado), reassign-guest-data v20 (ya en la entrada previa). Smoke: todas responden 4xx de negocio, cero errores de bundle. Creada FRESCO-414 (gate CI edge functions repo == desplegado; Relates 413/359/311).
+- Por qué: la ola-3 de audit-4 dejó FRESCO-385/396/397/375 sin desplegar (cambios en _shared afectan a las 8). Detectado en el QA de FRESCO-395.
+- Siguiente: implementar FRESCO-414. Revisar delete-account: {} con token anónimo devolvió 200 (borró el usuario anónimo de prueba) - verificar que el re-auth de A4-L11/FRESCO-397 aplica también a sesiones anónimas.
+
+## 2026-09-03 - QA ola-3 audit-4 completa + reconciliación bloque Merged
+- Qué: cerradas 393-400 + 404 (Control de calidad -> Finalizada) tras QA en vivo contra prod/staging. Reconciliadas 374-392 (19 tickets atascados en Merged -> Finalizada, código verificado en main). Épica FRESCO-359: 39 Finalizada, 0 en QA, quedan 365 (Listo, revisión legal), 366+372 (Blocked, instrumentación funnel/push).
+- Por qué: vaciar la columna de QA. FRESCO-395 destapó el gap de despliegue de edge functions de toda la ola-3 -> sweep de las 8 + FRESCO-414 (gate CI). FRESCO-398 ejecutó el podado de 24 ramas. FRESCO-399 generó FRESCO-416/417 de seguimiento.
+- Siguiente: 365/366/372 para poder cerrar la épica FRESCO-359 (regla "una épica de remediación abierta a la vez", audit-process.md §2). Follow-ups: FRESCO-414 (gate edge fns), 416 (automatizar @pendiente calendario), 417 (SHA-pin workflows).
+
+## 2026-09-03 - FRESCO-403: regeneración de project-dev-guide.md
+- Qué: completada la pasada parcial de-Gemini de FRESCO-379. project-dev-guide.md +324/-40: estado excluida en §3, 4 flujos nuevos en §2 (guest onboarding+conversión, Pro lifecycle, weekly push, curación de recetas), los 4 cron jobs en §4, write-ups por integración en §5. PR #258 squash a dev (ab9950d) + ff staging.
+- Por qué: audit-4, deriva de fundación tras el de-Gemini parcial. El doc no mentía sobre Gemini pero le faltaban trozos.
+- Siguiente: QA. main en espera. FRESCO-418 creada para el refresh de business-data-map (Flow 6 contrato ADR-0022) + business-api-map (sync 08-30 desfasado).
+
+## 2026-09-03 - FRESCO-409: infra de test de componentes (happy-dom + RTL) + 10 componentes
+- Qué: Fase 1 del epic FRESCO-408. Infra de test de componentes en bun test + 10 componentes de riesgo (43 tests). ADR-0024. PR #262 -> dev (d1bfea2), ff staging. Jira -> Control de calidad.
+- Por qué: components/ tenia 0 tests unitarios.
+- Siguiente: FRESCO-419 (Dialog components), FRESCO-410/411/412.
