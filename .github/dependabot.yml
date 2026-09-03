@@ -1,0 +1,15 @@
+# Keeps the SHA-pinned GitHub Actions (FRESCO-399 / FRESCO-417) fresh: Dependabot
+# opens a PR when a pinned action publishes a new release, bumping the SHA and the
+# trailing `# vX.Y.Z` comment together. Without this, a pin silently goes stale.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
