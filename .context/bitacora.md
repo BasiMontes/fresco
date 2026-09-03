@@ -225,3 +225,7 @@ Historia archivada:
 - Por qué: cerrar el epic de cobertura + los follow-ups; staging estaba desbloqueado (drift limpio, token rotado, CI verde en c943b30).
 - Verificado: deploy de prod READY (fresco-pro.vercel.app), smoke curl (/ 200, /login 200, /recipes 307), workflow post-deploy @smoke verde (50s), PR Check en main verde. bun test verde en el pre-push hook (536).
 - Siguiente: FRESCO-421 sigue en Control de calidad (AC = 3 runs verdes de test:e2e en próximos PRs).
+## 2026-09-03 - FRESCO-414: gate de CI para drift de edge functions + auto-deploy
+- Qué: nuevo `scripts/check-functions-drift.ts` (heurística git-mtime: repo vs `updated_at` desplegado, excluye `*.test.ts`/`*.md`) + `scripts/deploy-changed-functions.ts` (`--use-api --import-map`, `--no-verify-jwt` solo send-weekly) + workflow `edge-functions-drift.yml` (deploy en push:staging + drift-check + cron semanal con issue). PR #271 squash -> dev f7b6b3d -> ff staging. Primera corrida real en staging verde: deploy "nothing to deploy", drift-check "8 in sync, 0 drift".
+- Por qué: audit-4 ola-3 promovió `supabase/functions/*` a main sin redesplegar; reassign-guest-data sirvió v19 explotable ~24h. Hermano de FRESCO-413 (drift de migraciones).
+- Siguiente: QA cierra FRESCO-414 -> Finalizada; promover staging->main cuando toque.
