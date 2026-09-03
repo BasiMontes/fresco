@@ -204,3 +204,8 @@ Historia archivada:
 - Qué: 14 tests para 3 componentes con Dialog (delete-week-button, delete-account-dialog, create-recipe-form). El "CPU-spin de Dialog" de FRESCO-409 era misdiagnóstico — el trap real es waitFor/findBy sobre un setTimeout de happy-dom que no avanza en el loop. Reglas documentadas en ADR-0024 §11 (reescrito). Sin shim de rAF. Suelo de cobertura bajado 83/85 -> 82/84 (dip one-off documentado). PR #267 squash -> dev (f5286c8), ff staging. Jira -> Finalizada.
 - Por qué: cerrar el follow-up de FRESCO-409; los componentes con Dialog quedaron fuera del epic FRESCO-408.
 - Siguiente: FRESCO-421 (flake e2e de generación de menú desde /calendar). Rotar SUPABASE_ACCESS_TOKEN (secret del repo, pendiente).
+
+## 2026-09-03 - FRESCO-413 follow-up: pipefail del gate de drift + drift real encontrado
+- Qué: rotados los secrets SUPABASE_ACCESS_TOKEN + SUPABASE_DB_PASSWORD del repo desde .env (gh secret set). Arreglado bug pre-existente (desde FRESCO-325) en migration-drift-check.yml: el pipe `| tee` sin `set -o pipefail` bajo `bash -e` tragaba el exit code -> el job pasaba en verde aunque hubiera drift. PR #268 squash -> dev (c3e9b3c), ff staging.
+- Por qué: el gate de push:[staging] de FRESCO-413 era inofensivo. El smoke tras rotar el token lo destapó.
+- Siguiente: **drift real pendiente de arreglar a mano contra prod** - 2 entradas en el ledger sin fichero local (20260901100401, 20260901103915, del 1-sep, out-of-band, no de esta sesión). Issue #269 abierta. `supabase db pull` o `migration repair --status reverted`. Bloquea staging->main limpio. FRESCO-421 sigue abierta (flake e2e).
