@@ -1,27 +1,51 @@
 import { GlobalRegistrator } from '@happy-dom/global-registrator';
-import { afterEach, mock } from 'bun:test';
+import { afterEach, beforeEach, mock } from 'bun:test';
 
 /**
  * FRESCO-409 — component tests (`*.test.tsx`) need a DOM. Bun has no
- * per-file test environment like Vitest, so happy-dom is registered once,
- * here, for every test file. See ADR-0024.
+ * per-file test environment like Vitest, so happy-dom is registered here in
+ * the preload. See ADR-0024.
  *
- * This MUST happen before anything that touches `document` is evaluated.
- * `@testing-library/*` binds `document.body` at import-eval time, and ESM
- * `import` statements hoist above executable code — so testing-library is
- * pulled in via `require()` further down, AFTER this call, not via a
- * top-level import. The only hoisted imports here (`GlobalRegistrator`,
- * `bun:test`) do not touch the DOM.
+ * `@testing-library/*` binds `document.body` at import-eval time and ESM
+ * `import` hoists above executable code, so testing-library is pulled in
+ * via `require()` further down, AFTER the first register call — never a
+ * top-level import here.
+ *
+ * The `beforeEach` re-check is the CI fix: on the GitHub Actions runner the
+ * preload's global `window` did not survive to test-file execution
+ * (`ReferenceError: window is not defined` from react-dom), though it does
+ * locally. Re-asserting the DOM before every test makes it deterministic
+ * regardless of what bun does to globals between the preload and each file.
+ * `tests/component-render.tsx` exports a `screen` that re-derives from the
+ * live `document.body` each access, so it survives a re-register too.
  *
  * `url` gives `window.location` a real origin so `lib` code that branches on
  * `typeof window` takes the browser path under test, same as the app.
  */
+const HAPPY_DOM_URL = 'https://test.fresco.local/';
+
+// First registration — window is definitely absent and the registrator's
+// flag is unset here, so a plain sync call is enough.
+GlobalRegistrator.register({ url: HAPPY_DOM_URL });
 if (typeof globalThis.window === 'undefined') {
-  GlobalRegistrator.register({ url: 'https://test.fresco.local/' });
+  throw new TypeError('bun-test-setup: happy-dom did not install a window global');
 }
-if (typeof globalThis.window === 'undefined') {
-  throw new TypeError('bun-test-setup: happy-dom GlobalRegistrator.register() did not install a window');
-}
+
+// Re-assert the DOM before every test. On the GitHub Actions runner the
+// preload's global `window` did not survive to test-file execution, though
+// it does locally — this makes it deterministic regardless of what bun does
+// to globals between the preload and each file. The registrator's static
+// "registered" flag can stay set while the global is gone, and `register()`
+// throws in that state, so unregister first.
+beforeEach(async () => {
+  if (typeof globalThis.window !== 'undefined') {
+    return;
+  }
+  if (GlobalRegistrator.isRegistered) {
+    await GlobalRegistrator.unregister();
+  }
+  GlobalRegistrator.register({ url: HAPPY_DOM_URL });
+});
 
 /**
  * `lib/env.ts` validates the NEXT_PUBLIC_* client env at first read and
