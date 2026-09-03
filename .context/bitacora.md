@@ -199,3 +199,8 @@ Historia archivada:
 - Qué: cerradas 409/410/411/412 (Control de calidad -> Finalizada) tras QA en dev/staging 03240fb; epic FRESCO-408 -> Finalizada. Resultado: bun test 522 pass / 0 fail (415 base + 107 nuevos), cobertura total 83.85% functions / 85.78% lines, gate de cobertura vivo en CI (test:unit 13s). Infra nueva: happy-dom+RTL para componentes (ADR-0024), tests/mocks/{next-navigation,supabase-query-builder,edge-function}.ts, scripts/check-coverage.ts.
 - Por qué: components/ 0 tests, app/ 1 test, index.ts de Edge Functions solo e2e; nada impedia que la cobertura decayera.
 - Siguiente: FRESCO-419 (componentes con Dialog - shim de rAF). Rotar SUPABASE_ACCESS_TOKEN (gate de FRESCO-413 rojo por token caducado, no por el cambio).
+
+## 2026-09-03 - FRESCO-419: tests de componentes con Dialog + corrección del diagnóstico de ADR-0024
+- Qué: 14 tests para 3 componentes con Dialog (delete-week-button, delete-account-dialog, create-recipe-form). El "CPU-spin de Dialog" de FRESCO-409 era misdiagnóstico — el trap real es waitFor/findBy sobre un setTimeout de happy-dom que no avanza en el loop. Reglas documentadas en ADR-0024 §11 (reescrito). Sin shim de rAF. Suelo de cobertura bajado 83/85 -> 82/84 (dip one-off documentado). PR #267 squash -> dev (f5286c8), ff staging. Jira -> Finalizada.
+- Por qué: cerrar el follow-up de FRESCO-409; los componentes con Dialog quedaron fuera del epic FRESCO-408.
+- Siguiente: FRESCO-421 (flake e2e de generación de menú desde /calendar). Rotar SUPABASE_ACCESS_TOKEN (secret del repo, pendiente).
