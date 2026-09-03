@@ -1,5 +1,7 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 
+import { History } from 'lucide-react';
+import Link from 'next/link';
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { DeleteWeekButton } from '@/components/calendar/delete-week-button';
 import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
@@ -91,6 +93,14 @@ export default async function CalendarPage({
           <h1 className="text-h2">Calendario semanal</h1>
           <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
         </div>
+        <Link
+          href="/historial"
+          data-testid="calendar_historial_link"
+          className="mt-1 inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+        >
+          <History className="size-4" aria-hidden="true" />
+          Ver semanas anteriores
+        </Link>
         <div className="mt-6">
           <NoMenuEmptyState
             data-testid="calendar_empty_state"
@@ -111,6 +121,14 @@ export default async function CalendarPage({
         </div>
       </div>
       <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
+      <Link
+        href="/historial"
+        data-testid="calendar_historial_link"
+        className="mt-1 inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+      >
+        <History className="size-4" aria-hidden="true" />
+        Ver semanas anteriores
+      </Link>
 
       <AlertBanner
         advertencias={plan.advertencias}

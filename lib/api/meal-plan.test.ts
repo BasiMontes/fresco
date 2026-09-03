@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { deleteMealPlan, getMealPlanForWeek, MealPlanError, swapMealPlanSlots } from './meal-plan';
+import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
+import { deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
 
@@ -283,5 +284,87 @@ describe('deleteMealPlan', () => {
     const { client } = createDeleteMockClient({});
 
     await expectRejection(deleteMealPlan(client, 'plan-1'));
+  });
+});
+
+/**
+ * Mock for `listPastMealPlanWeeks`' query shape:
+ * `.from('meal_plans').select(...).eq('user_id', X)` resolving `{ data, error }`.
+ */
+function createListMockClient(options: {
+  userId?: string
+  rows?: { id: string, semana_iso: string, meal_plan_recipes: { estado: string }[] }[]
+  errorMessage?: string
+} = {}) {
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      select: () => ({
+        eq: async () => ({
+          data: options.errorMessage ? null : (options.rows ?? []),
+          error: options.errorMessage ? { message: options.errorMessage } : null,
+        }),
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database> };
+}
+
+function slots(cocinadas: number, descartadas: number) {
+  const out: { estado: string }[] = [];
+  for (let i = 0; i < cocinadas; i++) { out.push({ estado: 'cocinada' }); }
+  for (let i = 0; i < descartadas; i++) { out.push({ estado: 'descartada' }); }
+  while (out.length < 21) { out.push({ estado: 'pendiente' }); }
+  return out;
+}
+
+describe('listPastMealPlanWeeks', () => {
+  const pastA = addIsoWeeks(getIsoWeek(), -1);
+  const pastB = addIsoWeeks(getIsoWeek(), -3);
+  const current = getIsoWeek();
+  const future = addIsoWeeks(getIsoWeek(), 2);
+
+  test('returns only weeks before the current one, newest first, with the cocinada/descartada balance', async () => {
+    const { client } = createListMockClient({
+      userId: 'user-123',
+      rows: [
+        { id: 'p-current', semana_iso: current, meal_plan_recipes: slots(5, 2) },
+        { id: 'p-future', semana_iso: future, meal_plan_recipes: slots(0, 0) },
+        { id: 'p-a', semana_iso: pastA, meal_plan_recipes: slots(4, 1) },
+        { id: 'p-b', semana_iso: pastB, meal_plan_recipes: slots(7, 3) },
+      ],
+    });
+
+    const result = await listPastMealPlanWeeks(client);
+
+    expect(result.map(w => w.semanaIso)).toEqual([pastA, pastB]);
+    expect(result[0]).toMatchObject({ mealPlanId: 'p-a', cocinadas: 4, descartadas: 1 });
+    expect(result[1]).toMatchObject({ mealPlanId: 'p-b', cocinadas: 7, descartadas: 3 });
+    expect(result[0].mondayIso).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test('returns an empty array when the user has no past weeks', async () => {
+    const { client } = createListMockClient({ userId: 'user-123', rows: [{ id: 'p-current', semana_iso: current, meal_plan_recipes: slots(1, 0) }] });
+
+    expect(await listPastMealPlanWeeks(client)).toEqual([]);
+  });
+
+  test('throws MealPlanError when the read fails', async () => {
+    const { client } = createListMockClient({ userId: 'user-123', errorMessage: 'rls denied' });
+
+    await expectRejection(listPastMealPlanWeeks(client));
+  });
+
+  test('throws MealPlanError when there is no authenticated session', async () => {
+    const { client } = createListMockClient({});
+
+    await expectRejection(listPastMealPlanWeeks(client));
   });
 });
