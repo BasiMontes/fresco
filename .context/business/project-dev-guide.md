@@ -5,15 +5,17 @@
 ║ "What you need to know to work here"                                         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-> **Corrected 2026-09-01 (FRESCO-379, A4-H18):** de-Gemini pass per `ADR-0005` —
-> every "menu selection / aisle classification / learning text is a Gemini call"
-> statement and the whole `GEMINI_API_KEY` story are stale as of 2026-08-01 and
-> have been rewritten here. Also flipped the doc's original "nothing is built yet"
-> framing to present tense. This pass is **partial** — the §3 state machine still
-> misses the `excluida` state and several shipped flows (progressive signup /
-> guest-data reassignment, favourites, own-recipes, weekly re-engagement push) are
-> not covered here yet; a full `/project-foundation` discovery regeneration is
-> tracked as a follow-up.
+> **Regenerated 2026-09-03 (FRESCO-403):** completes the partial de-Gemini pass of
+> 2026-09-01 (FRESCO-379, A4-H18). Every "menu selection / aisle classification /
+> learning text is a Gemini call" statement and the whole `GEMINI_API_KEY` story
+> are stale as of 2026-08-01 (`ADR-0005`) and stay rewritten. This pass adds the
+> `excluida` state to §3, four shipped flows to §2 (guest onboarding + account
+> conversion, Pro subscription lifecycle, weekly re-engagement push, user recipe
+> curation), the scheduled jobs to §4, and a real per-integration "what will bite
+> you" write-up to §5. Base map note: `business-data-map.md` Flow 6 still shows the
+> pre-`ADR-0022` reassign contract (`{email, password}`) — this guide uses the
+> current one (`{targetAccessToken}`, FRESCO-395); `business-api-map.md` is a few
+> days behind (last full sync 2026-08-30) and is a separate refresh.
 
 > This document assumes you've already read `.context/business/business-data-map.md`
 > to understand the business flows. Here I'll walk you through what to consider
@@ -308,6 +310,191 @@ convenience, not part of the running system — there is no LLM call in producti
 
 ---
 
+## Flow: Guest Onboarding & Account Conversion
+
+    Visitor ──▶ /onboarding ──▶ signInAnonymously() ──▶ real anon JWT ──▶ profile + menu
+                                                             │
+    later: /signup ──▶ updateUser({email}) + verifyOtp ──────┤ same auth.uid() kept
+                          │                                   │
+                          └─ email_exists ──▶ reassign-guest-data ──▶ move plans to target acct
+
+### Context
+
+The PRD promises a first-time visitor generates a full week with zero signup
+(EPIC-FRESCO-6). Every landing CTA routes to `/onboarding`, not `/signup` — `/signup`
+is only the returning-user escape hatch. On mount, `ensureGuestSession()` calls
+`supabase.auth.signInAnonymously()` and gets a **real Supabase Auth JWT** with
+`is_anonymous = true` and a real `auth.uid()` (`ADR-0003`). This is the single most
+important thing to internalize about auth here: there is no separate guest code path.
+Every RLS policy is keyed to `auth.uid()` (never a role check), so an anonymous
+session satisfies `requireAuthenticatedUser()` and every policy unmodified.
+
+### What to keep in mind
+
+- **A guest's anonymous session *is* her account.** Logging out destroys her menu
+  with no recovery, which is why `GuestLogoutDialog` gates a guest logout with an
+  explicit confirmation (FRESCO-90) while a registered logout stays one click. Don't
+  add a "save your progress later" affordance that implies the data is recoverable.
+- **Anonymous sign-in is rate-limited** (`rate_limit_anonymous_users`, ~30/hour on
+  this project) and it *does* get hit — surface it inline, never as a silent hang.
+- **Abandoned guests are GC'd by a daily cron** after 3 days (`is_anonymous = true AND
+  created_at < now() - 3 days`, see §4). An upgraded guest flips `is_anonymous =
+  false` and is never a candidate again.
+- **Conversion has two paths.** Happy path: `updateUser({ email })` → `verifyOtp`
+  (`email_change`) → `updateUser({ password })`, all keeping the same `auth.uid()`, so
+  `user_profiles` + `meal_plans` survive untouched. Conflict path (`email_exists` — the
+  email already belongs to a *different* real account): the client posts to
+  `reassign-guest-data` with `{ targetAccessToken }` — a session token the client got
+  by logging into the target account through native Supabase Auth (`ADR-0022` /
+  FRESCO-395; the function verifies the token, never a password, so it can't be a
+  brute-force oracle — the pre-`ADR-0022` `{email, password}` contract is gone).
+- **`reassign_guest_data()` is the project's only cross-user write.** `EXECUTE` is
+  revoked from every ordinary role and granted only to `service_role`; the Edge
+  Function is its sole caller. It moves `meal_plans` (skipping any `semana_iso` the
+  target already has — the conflicting week is silently dropped, a documented
+  data-loss trade-off), mirrors onto `shopping_lists`, deletes the orphaned guest
+  profile, then `admin.deleteUser()`s the guest. The target's own allergen/diet
+  profile is **never** merged — a food-safety call.
+
+### Dependencies
+
+    Guest Onboarding & Account Conversion
+         │
+         ├──► issues ──────► the anon JWT every other flow's auth check accepts
+         ├──► feeds ───────► Weekly Menu Generation (step 6 of onboarding)
+         └──► gated by ────► anonymous-sign-in staying enabled in Supabase Auth
+                              (external_anonymous_users_enabled — ADR-0003)
+
+---
+
+## Flow: Pro Subscription Lifecycle
+
+    /profile ──▶ POST /api/stripe/checkout ──▶ Stripe-hosted page ──▶ (events, signed)
+                                                                          │
+    POST /api/stripe/webhook ◀────────────────────────────────────────────┘
+         │  service_role UPDATE user_profiles (plan / expires_at / failed_at / ids)
+         │
+    GET /api/cron/stripe-reconcile  (daily 04:17 UTC) ──▶ same columns, drift-correcting
+
+### Context
+
+The entire €4.99/month tier is `user_profiles.plan` plus four supporting columns.
+There is **no `subscriptions` table** and `ADR-0007` says do not add one without
+superseding it. Checkout is Stripe-hosted (`subscription` mode, 7-day trial, no card
+at signup); the webhook projects Stripe's state into `user_profiles`; and since
+2026-08-28 a daily cron (`ADR-0015`, still `Proposed`) re-derives the same state from
+`stripe.subscriptions.retrieve()` to self-heal a lost webhook.
+
+### What to keep in mind
+
+- **Only `service_role` can write subscription columns** (`plan`, `plan_expires_at`,
+  `stripe_customer_id`, `stripe_subscription_id`, `payment_failed_at`). A
+  `prevent_client_subscription_writes()` BEFORE UPDATE trigger raises unless
+  `auth.role() = 'service_role'` — RLS is row-scoped, not column-scoped, so a plain
+  policy could not stop an authenticated user self-granting Pro (`ADR-0007`).
+- **The webhook re-verifies the price** (`== STRIPE_PRICE_ID_PRO_MONTH`) on every
+  activation and renewal — any non-Pro subscription is refused a Pro grant.
+- **`past_due` keeps Pro; `unpaid` / `deleted` drop to Free.** `past_due` only stamps
+  `payment_failed_at = now()` — Stripe's own retry window is the grace period, and
+  the payment-failed notice in `/notifications` reads that column. Cancellation takes
+  effect only when the paid period ends, not when the user clicks cancel.
+- **After signature verification, a downstream failure logs and still returns `200`.**
+  Returning non-2xx makes Stripe retry a bug forever; the recovery path is a manual
+  replay from the Stripe dashboard.
+- **Webhook secrets are per-environment** (`STRIPE_WEBHOOK_SECRET_{DEV,PRE,PROD}`,
+  resolved by `resolveWebhookSecret()`) because one Stripe account serves all three
+  deploys. The reconcile cron and its `CRON_SECRET` (Vercel Production + a matching
+  Supabase Vault secret) are manually provisioned — absent either, the job runs on
+  schedule but every call `401`s and silently no-ops.
+
+### Dependencies
+
+    Pro Subscription Lifecycle
+         │
+         ├──► written by ──► the Stripe webhook (primary) + the reconcile cron (daily)
+         ├──► read by ─────► Weekly Menu Generation (the isPro fork), the /notifications payment-failed notice
+         └──► never by ────► client code — the BEFORE UPDATE trigger blocks it
+
+---
+
+## Flow: Weekly Re-Engagement Push
+
+    pg_cron (Sun 18:00 UTC) ──▶ pg_net POST ──▶ send-weekly-reengagement-push (verify_jwt: false)
+                                                     │  apikey header == Vault secret (else 401)
+                                                     ▼
+                              one Web Push per push_subscriptions row for a user
+                              with NO meal_plans row this ISO week
+
+### Context
+
+The only flow that reaches a user outside the app, and the only Edge Function with
+`verify_jwt: false` — so it authenticates differently from everything else:
+`requireServiceRoleCaller()` checks the `apikey` header against
+`SUPABASE_SECRET_KEYS.default`, not a user JWT. `pg_cron` + `pg_net` is the single
+scheduler for every time-based job (`ADR-0011`); there is no Vercel Cron or GitHub
+Actions cron for DB-adjacent work.
+
+### What to keep in mind
+
+- **It is fire-and-forget.** `pg_net` is async — `cron.job_run_details` shows no HTTP
+  result. Success is observed only in Edge Function logs / Sentry. If it silently
+  stops working, nothing alerts you.
+- **It depends on a manually-created Vault secret** (`edge_function_secret_key`).
+  Absent → every send `401`s and the job no-ops on schedule.
+- **VAPID signing + `aes128gcm` encryption is delegated to the `web-push` library**
+  (`ADR-0012`), not hand-rolled. Dead endpoints (`404`/`410`) get their
+  `push_subscriptions` row deleted; a transient `5xx` logs and skips (row kept); one
+  bad send never aborts the batch.
+- **The email variant is blocked** — no verified Resend sending domain (FRESCO-241);
+  this is a standing constraint, not a TODO.
+- If you redeploy this function, pass `--no-verify-jwt` — there is no per-function
+  config in `config.toml`, so a plain `supabase functions deploy` re-enables JWT
+  verification and breaks the cron.
+
+### Dependencies
+
+    Weekly Re-Engagement Push
+         │
+         ├──► reads ───────► push_subscriptions, meal_plans (current ISO week)
+         ├──► writes ──────► push_subscriptions (prunes dead endpoints only)
+         └──► scheduled by ─► pg_cron 'send-weekly-reengagement-push' (ADR-0011)
+
+---
+
+## Flow: User Recipe Curation (favourites + own recipes)
+
+    Recipe detail ──▶ toggle ♥ ──▶ favorites (client → Postgres, RLS auth.uid())
+    Biblioteca ─────▶ "Añadir receta" ──▶ recetas_propias (client → Postgres, RLS auth.uid())
+
+### Context
+
+Two small user-owned tables that never go through an Edge Function — plain
+client-to-Postgres writes guarded by RLS (`favorites_insert_own`,
+`recetas_propias_*`, both `with check (auth.uid() = user_id)`). `favorites` is a
+join row against a catalog `recipe_id`; `recetas_propias` is a free-form recipe the
+user typed in.
+
+### What to keep in mind
+
+- **`recetas_propias` never enters menu generation.** `generate-meal-plan` only ever
+  reads the `recipes` catalog — a user's own recipe is a Biblioteca-only artifact, by
+  design (a user recipe hasn't passed the 8-point food-safety review). If you touch
+  the generation candidate pool, do not "helpfully" include it.
+- **`favorites` is a real recommendation signal** — `get-shopping-list-suggestions`
+  derives its carousel from the ingredients of the user's favorited recipes (real
+  data only, no model). It is *not* a generation input.
+- Both tables are in the `ON DELETE CASCADE` chain from `auth.users`, so account
+  deletion and guest cleanup remove them with no extra code.
+
+### Dependencies
+
+    User Recipe Curation
+         │
+         ├──► favorites ────────► feeds get-shopping-list-suggestions' carousel
+         └──► recetas_propias ──► Biblioteca only; never read by generate-meal-plan
+
+---
+
 #### 3. THE STATE MACHINES
 
 ```
@@ -318,9 +505,13 @@ convenience, not part of the running system — there is no LLM call in producti
 
 ## `meal_plan_recipes.estado`
 
+   (generation — day/meal NOT in       ┌─────────────┐
+    planning_selection, FRESCO-199) ──▶│  excluida   │  (terminal; recipe_id = null;
+                                       └─────────────┘   renders "no planeado", not draggable)
+
                      ┌─────────────┐
-        (created) ──▶│  pendiente  │
-                     └──┬───┬───┬──┘
+   (generation —  ──▶│  pendiente  │
+    normal slot)     └──┬───┬───┬──┘
                         │   │   │
           mark cooked   │   │   │  mark discarded
           ┌─────────────┘   │   └─────────────┐
@@ -337,6 +528,11 @@ convenience, not part of the running system — there is no LLM call in producti
                   (loops back into cocinada / descartada,
                    per the terminal-state rule)
 
+    NOTE: a drag-and-drop position swap (swap_meal_plan_slots) moves
+    (recipe_id, estado, rating) between two same-tipo_plato slots WITHOUT
+    firing recipe_learning_trigger (§4 / ADR-0002). It rejects a slot in
+    estado 'excluida' outright (FRESCO-396 / A4-L9).
+
 ### Why it matters
 
 This is the single most consequential piece of state in Fresco, because it's the
@@ -350,6 +546,12 @@ either double-counts or silently drops data.
 - `cocinada` and `descartada` are the only terminal states. Once a slot lands there,
   any further attempt to patch it is rejected outright. This is what makes the
   aggregate statistics trustworthy — no double-counting via repeated toggling.
+- `excluida` is set **at generation time** for every day/meal combo the user left
+  out of `user_profiles.planning_selection` (FRESCO-199). It carries `recipe_id =
+  null`, renders as "no planeado", and is not draggable. It never transitions —
+  changing which slots are excluded means regenerating the plan, not patching the
+  slot. `swap_meal_plan_slots` raises if either side is `excluida` (FRESCO-396).
+  Don't write code that assumes every slot in a plan holds a recipe.
 - `sustituida` is deliberately **not** terminal and has **no statistics effect at
   all** — it's explicitly neutral. Swapping a disliked meal for another one is
   treated as ordinary calendar editing, not a learning signal. A substituted slot can
@@ -374,11 +576,28 @@ either double-counts or silently drops data.
 
 There's exactly one automatic process worth knowing deeply in the core generation loop:
 the `recipe_learning_trigger`. Everything else in that loop is a synchronous, on-demand,
-request/response call. Outside the core loop there are a few scheduled / event-driven
-pieces — a Vercel cron that reconciles Stripe subscription state
-(`app/api/cron/stripe-reconcile/route.ts`), the Stripe billing webhooks, and the
-`send-weekly-reengagement-push` Edge Function — but none of them touch the menu /
-shopping-list / learning data path.
+request/response call.
+
+Outside the core loop, **all time-based work runs on `pg_cron` + `pg_net`** — there is
+no Vercel Cron or GitHub Actions cron for anything DB-adjacent (`ADR-0011`). Four jobs
+exist; none touch the menu / shopping-list / learning data path:
+
+| Job (`cron.job`) | Schedule (UTC) | What it does |
+|---|---|---|
+| `cleanup-abandoned-guest-users` | daily 03:00 | `delete from auth.users where is_anonymous AND created_at < now() - 3 days` — cascades the whole guest footprint away (`ADR-0003`; 7d → 3d, FRESCO-238) |
+| `cleanup-expired-rate-limits` | daily 03:15 | `delete from rate_limits where window_start` older than the current hour − 2h (`ADR-0010`) |
+| `stripe-reconcile-subscriptions` | daily 04:17 | `pg_net` GET into `https://fresco-pro.vercel.app/api/cron/stripe-reconcile` (Bearer = a Vault secret); the route re-derives each subscribed user's `plan`/`plan_expires_at`/`payment_failed_at` from live Stripe and corrects drift (Flow: Pro Subscription Lifecycle; `ADR-0015`, still `Proposed`) |
+| `send-weekly-reengagement-push` | Sun 18:00 | `pg_net` POST into the Edge Function (Flow: Weekly Re-Engagement Push) |
+
+Plus two event-driven pieces: the **Stripe billing webhook** (`POST /api/stripe/webhook`,
+the primary writer of subscription state) and the **`ON DELETE CASCADE` chains** rooted
+at `auth.users` (one delete removes `user_profiles` → `meal_plans` → `meal_plan_recipes`,
+plus `shopping_lists`, `favorites`, `recetas_propias`, `push_subscriptions`).
+
+Every one of these jobs depends on a **manually-created secret** (a Supabase Vault
+secret, or a Vercel env var, or both) that no migration provisions. When a secret is
+missing the job still fires on schedule but every call `401`s and silently no-ops —
+there is no alert. If a scheduled job "isn't working", check the secret before the code.
 
 ## `recipe_learning_trigger`
 
@@ -436,27 +655,90 @@ the codebase today, it is dead config to delete, not a secret to protect.
 Historical prompt contracts are retained, banner-marked as superseded, in
 `api-contracts.md` §1a / §2b for anyone tracing why the code looks the way it does.
 
-## Third-party services actually in use
+## Third-party services actually in use — what will bite you
 
     Client (Next.js / Vercel)                 Backend (Supabase Edge Functions)
         │                                          │
         ├─▶ Stripe        checkout + billing       │
-        │   (Pro tier — server-side session;       │
-        │    webhooks + cron reconcile)            │
-        ├─▶ PostHog       product analytics /      │
-        │   funnel (reverse-proxied via /ingest,   │
-        │    FRESCO-366)                           │
-        ├─▶ Sentry        error monitoring +       ├─▶ Sentry (Edge runtime)
-        │   CSP reporting                          │
-        └─▶ Unsplash      recipe photography       └─▶ (no AI/LLM call)
-            (images.unsplash.com, FRESCO-31)
+        │   (server-side session; webhook +        │
+        │    daily reconcile cron)                 │
+        ├─▶ PostHog       analytics / funnel       │
+        │   (same-origin /ingest reverse proxy)    │
+        ├─▶ Sentry        error monitoring +       ├─▶ Sentry (Deno / Edge runtime)
+        │   CSP report-uri                         │
+        └─▶ (browser Web Push services)            └─▶ (no AI / LLM call anywhere)
 
-Supabase (database, auth, Edge compute, RLS) is treated as core platform, not an
-external line item. Per-integration detail — auth model, webhook contracts, env-var
-scoping — lives in `.context/business/business-api-map.md` and `.context/SRS/`; this
-guide does not duplicate it. (This subsection is a corrected stub — a full write-up of
-each integration's "what will bite you" is part of the deferred `/project-foundation`
-regeneration noted in the banner at the top.)
+    offline only, not a runtime dependency:  Unsplash  (recipe photo backfill script)
+
+Supabase (database, auth, Edge compute, RLS) is core platform, not an external line
+item — see `.context/SRS/architecture.md`. The rest:
+
+### Stripe
+
+The whole Pro tier. Server-side Checkout + Billing Portal route handlers, the
+signature-verified webhook, and the daily reconcile cron. **What bites:** the webhook
+is the primary writer of `user_profiles` subscription columns and returns `200` even
+on a post-signature failure (non-2xx = infinite Stripe retries), so a silently
+half-applied subscription change is possible — the reconcile cron is the safety net
+*only if* its `CRON_SECRET` (Vercel Production + matching Supabase Vault secret) is
+set. Webhook secret is **per-environment** (`STRIPE_WEBHOOK_SECRET_{DEV,PRE,PROD}`)
+because one Stripe account serves all three deploys — get the wrong one and every
+event `400`s. Never write subscription columns from client code; the BEFORE UPDATE
+trigger blocks it (`ADR-0007`). Secrets: `STRIPE_SECRET_KEY`,
+`STRIPE_PRICE_ID_PRO_MONTH`, `STRIPE_WEBHOOK_SECRET_{DEV,PRE,PROD}`, `CRON_SECRET`.
+
+### PostHog (EU Cloud)
+
+Product-funnel analytics — the North-star KPI ("menús generados **y** usados") and the
+3-week repeat hypothesis (`ADR-0013`). **What bites:** it is served through a
+**same-origin reverse proxy** — `posthog-js` posts to `/ingest` and `next.config.mjs`
+`rewrites()` forward to PostHog's EU ingestion + asset hosts (FRESCO-366), so an
+ad-blocker filtering `*.posthog.com` can't drop events; if you touch `next.config.mjs`
+rewrites or the CSP `connect-src`, you can break analytics without any error. Region
+follows `NEXT_PUBLIC_POSTHOG_HOST`. `identify()` is keyed on `auth.uid()` including
+guests, so a guest's pre-signup event stream must merge into her post-signup one
+(`alias()` on the reassignment path). **No app-DB writes**; autocapture is off on
+purpose (it would scrape allergen/diet UI text). Every capture is a silent no-op on
+failure or when `NEXT_PUBLIC_POSTHOG_KEY` is unset. Secrets:
+`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`.
+
+### Sentry
+
+Unhandled-error capture across all three Next.js runtimes (`instrumentation.ts` +
+`sentry.{server,edge}.config.ts` + `instrumentation-client.ts`) and, since FRESCO-385,
+the Edge Functions too (`_shared/sentry.ts` reports unexpected errors from the Deno
+runtime). Production source-map upload via `withSentryConfig` (`ADR-0009`). The CSP
+(`lib/security/csp.ts`) points its `report-uri` at Sentry. **What bites:** degraded
+observability only — the app is never affected. If `SENTRY_AUTH_TOKEN` is absent,
+source-map upload fails quietly and production stack traces stay minified. Secrets:
+`NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
+
+### Browser Web Push services (FCM / Mozilla / Apple / …)
+
+Delivery endpoint for the weekly re-engagement notification (Flow: Weekly
+Re-Engagement Push) — one outbound POST per `push_subscriptions` row, VAPID-signed and
+`aes128gcm`-encrypted by the `web-push` library (`ADR-0012`). **What bites:** a
+`404`/`410` response is the *only* automatic deleter of a `push_subscriptions` row
+besides user opt-out; a transient `5xx` logs and keeps the row. Secrets (Edge Function
+scope): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+
+### Unsplash — offline only
+
+Not a runtime integration. `scripts/fetch-recipe-photos.ts` backfills
+`recipes.foto_url` from Unsplash's free tier (50 searches/hour) — a founder-operated
+batch script in the same category as catalog seeding, run by hand, never called by the
+app. The CSP allows `https://images.unsplash.com` as an `img-src` so the applied
+photos render; `foto_url` is `null` until a recipe's batch runs (FRESCO-31, ongoing).
+Secret (local `.env` only): `UNPLASH_ACCESS_KEY` (sic — the env var is misspelled).
+
+### Supabase Auth
+
+The sole identity provider — email/password, anonymous (guest), password recovery,
+email-change OTP, `admin.deleteUser()`. **What bites:** anonymous sign-in must stay
+enabled (`external_anonymous_users_enabled`, Management API only, `ADR-0003`) or Guest
+Mode breaks entirely; anonymous sign-in is rate-limited (~30/hour); and OTP/recovery
+email hits Supabase free-tier limits and rejects non-standard domains — a named risk
+on the guest-upgrade path.
 
 ---
 
@@ -552,13 +834,15 @@ It's always worth taking a moment to:
 - Re-read `business-data-map.md` for the flow you're touching — this guide gives you
   the "watch out for" framing, but the data map has the authoritative step-by-step
   narrative and business rules.
-- Identify which of the four flows above your change actually affects — several of
-  them share entities and Edge Functions, so a change that looks scoped to one flow
-  (say, shopping-list consolidation) can still touch shared ground (the `recipes`
-  catalog every flow reads from).
-- Check whether an automatic process is related — right now that's really just the
-  `recipe_learning_trigger`, but if you're touching anything in the cooked/discarded
-  path, assume it's involved until you've confirmed otherwise.
+- Identify which of the §2 flows your change actually affects — several share
+  entities and Edge Functions, so a change that looks scoped to one flow (say,
+  shopping-list consolidation) can still touch shared ground (the `recipes` catalog
+  every flow reads from). The core generation loop is the first four; guest
+  onboarding, the Pro lifecycle, the weekly push, and recipe curation are the rest.
+- Check whether an automatic process is related — the `recipe_learning_trigger` for
+  anything in the cooked/discarded path, the `prevent_client_subscription_writes`
+  trigger for anything near `user_profiles.plan`, and the four `pg_cron` jobs (§4)
+  for anything touching guest cleanup, rate limits, Stripe state, or push.
 - If your change touches auth, ownership checks, or the allergen/hated-ingredient
   filtering, treat it as security- or safety-relevant by default, not routine —
   those are the two places in this system where a missing check has a blast radius
