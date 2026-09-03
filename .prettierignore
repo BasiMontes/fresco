@@ -133,3 +133,13 @@ bones/*.bones.json
 # checkout. Prettier (which honors only .prettierignore, not .git metadata)
 # would otherwise recurse into it and flag formatting on files we don't own here.
 .claude/worktrees/
+
+# ===========================================
+# Supabase Auth email templates - mirror the live dashboard
+# ===========================================
+# supabase/templates/*.html are byte-for-byte copies of the templates hosted in
+# the Supabase dashboard (project jdqemhewjrjuopssdurn). Reformatting them would
+# break the diff against what is actually live and can mangle the MSO/Outlook
+# conditional comments. Edit by hand, apply via the Management API (see the
+# folder README).
+supabase/templates/
