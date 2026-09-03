@@ -1,6 +1,7 @@
 import type { createServiceClient } from '@/lib/supabase/service';
-import { describe, expect, test } from 'bun:test';
-import { sweepOrphanPaidPlans } from './route';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import * as realStripe from '@/lib/stripe';
+import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 /**
  * FRESCO-360: unit coverage for the orphan-plan sweep — the second safety net
@@ -8,7 +9,18 @@ import { sweepOrphanPaidPlans } from './route';
  * (not e2e) on purpose: exercising it through the real cron route would run
  * the global reconcile loop against every `user_profiles` row and could
  * downgrade a parallel e2e scenario's seeded Pro fixture mid-test.
+ *
+ * FRESCO-410: plus the `GET` handler's auth + config gate.
  */
+
+let supa = fakeSupabase();
+void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
+void mock.module('@/lib/stripe', () => ({
+  ...realStripe,
+  stripe: { subscriptions: { retrieve: async () => ({}) } },
+}));
+
+const { GET, sweepOrphanPaidPlans } = await import('./route');
 
 interface OrphanRow { id: string, plan: 'pro' | 'family' }
 
@@ -84,5 +96,50 @@ describe('sweepOrphanPaidPlans', () => {
 
     expect(swept).toBe(2);
     expect(updated).toEqual(['a', 'c']);
+  });
+});
+
+describe('GET /api/cron/stripe-reconcile — auth + config gate', () => {
+  const OLD_ENV = { ...process.env };
+
+  beforeEach(() => {
+    process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
+    supa = fakeSupabase({ user_profiles: { rows: [] } });
+  });
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  function req(headers: Record<string, string> = {}) {
+    return new Request('https://test.fresco.local/api/cron/stripe-reconcile', { headers });
+  }
+
+  test('500 when CRON_SECRET is not configured', async () => {
+    delete process.env.CRON_SECRET;
+    const res = await GET(req({ authorization: 'Bearer cron_test' }));
+    expect(res.status).toBe(500);
+  });
+
+  test('401 when the Authorization header does not match', async () => {
+    const res = await GET(req({ authorization: 'Bearer wrong' }));
+    expect(res.status).toBe(401);
+  });
+
+  test('401 when there is no Authorization header', async () => {
+    const res = await GET(req());
+    expect(res.status).toBe(401);
+  });
+
+  test('500 when STRIPE_PRICE_ID_PRO_MONTH is not set', async () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_MONTH;
+    const res = await GET(req({ authorization: 'Bearer cron_test' }));
+    expect(res.status).toBe(500);
+  });
+
+  test('200 with a zero-drift summary when authorised and no profiles carry a subscription', async () => {
+    const res = await GET(req({ authorization: 'Bearer cron_test' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ checked: 0, reconciled: 0, sweptOrphans: 0 });
   });
 });
