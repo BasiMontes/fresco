@@ -184,3 +184,8 @@ Historia archivada:
 - Qué: Fase 2 del epic FRESCO-408. 34 tests nuevos para los 6 route handlers de app/ (stripe/webhook 12, cron/stripe-reconcile GET +5, profile/export 3, stripe/checkout 5, stripe/portal 5, auth/confirm 4). Nuevo helper tests/mocks/supabase-query-builder.ts. PR #263 squash -> dev (dca6da5), ff staging. Jira -> Control de calidad.
 - Por qué: app/ tenía 1 test; la capa HTTP + máquina de estados de suscripción iban cubiertas solo por e2e.
 - Siguiente: FRESCO-411 (orquestación index.ts de Edge Functions), FRESCO-412 (gate bun test --coverage). NOTA: CI test:unit subió a 29s (tope ADR-0018 = 30s) - FRESCO-412 debe vigilarlo; contribuye el beforeEach de re-registro de DOM de FRESCO-409.
+
+## 2026-09-03 - FRESCO-411: tests de orquestación de Edge Functions
+- Qué: Fase 3 del epic FRESCO-408. 31 tests para 3 index.ts (update-recipe-status 12, delete-account 9, reassign-guest-data 10) cubriendo 401/400/429/404/403/409/422/500/200. Nuevo helper tests/mocks/edge-function.ts (captura el handler de Deno.serve + fakeEdgeClient). PR #264 squash -> dev (8afd137), ff staging. Jira -> Control de calidad.
+- Por qué: los index.ts de las Edge Functions solo tenían cobertura e2e; la orquestación (auth->rate-limit->validar->trabajo->mapear error) no estaba testeada.
+- Siguiente: FRESCO-412 (gate bun test --coverage). FRESCO-421 creada: el escenario e2e de generación desde /calendar es inestable en test:e2e (cold-start de generate-meal-plan > 30s), 3 PRs seguidos con re-run manual.
