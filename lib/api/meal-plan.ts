@@ -262,6 +262,35 @@ export async function listPastMealPlanWeeks(
 }
 
 /**
+ * Copies an owned past week's 21-slot menu onto the CURRENT ISO week
+ * (FRESCO-427 "Usar este menú en la semana actual"), via the
+ * `copy_meal_plan_to_week` RPC (`security definer`, see its migration) —
+ * one atomic write: any existing current-week plan is replaced, all 21
+ * slots land or none do. The caller is responsible for confirming the
+ * replace with the user first when the current week already has a menu.
+ *
+ * `estado` is reset to `pendiente` for every copied slot — it is a fresh
+ * menu to cook, and the source week's cooked/discarded history stays put.
+ *
+ * Public method — fails fast (throws `MealPlanError`) on any RPC error,
+ * same convention as `swapMealPlanSlots()`.
+ */
+export async function copyMealPlanToCurrentWeek(
+  client: SupabaseClient<Database>,
+  sourceMealPlanId: string,
+): Promise<void> {
+  const { error } = await client.rpc('copy_meal_plan_to_week', {
+    p_source_meal_plan_id: sourceMealPlanId,
+    p_semana_iso: getIsoWeek(),
+    p_fecha_inicio: getIsoWeekMonday(),
+  });
+
+  if (error) {
+    throw new MealPlanError(`No se pudo copiar el menú a la semana actual: ${error.message}`);
+  }
+}
+
+/**
  * Swaps two `meal_plan_recipes` slots' recipe assignments (STORY-FRESCO-11
  * drag-and-drop calendar reorder) via the `swap_meal_plan_slots` RPC
  * (`security definer`, see ADR-0002) — the single atomic write path for a

@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
-import { deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
+import { copyMealPlanToCurrentWeek, deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
 
@@ -228,6 +228,32 @@ describe('swapMealPlanSlots', () => {
     const { client } = createRpcMockClient({ errorMessage: 'foreign key violation' });
 
     await expectRejection(swapMealPlanSlots(client, 'slot-a-id', 'slot-b-id'));
+  });
+});
+
+describe('copyMealPlanToCurrentWeek', () => {
+  test('calls copy_meal_plan_to_week with the source id and the current ISO week, resolving void', async () => {
+    let captured: { fn: string, args: Record<string, unknown> } | null = null;
+    const client = {
+      rpc: async (fn: string, args: Record<string, unknown>) => {
+        captured = { fn, args };
+        return { data: 'new-plan-id', error: null };
+      },
+    } as unknown as SupabaseClient<Database>;
+
+    const result = await copyMealPlanToCurrentWeek(client, 'source-plan-id');
+
+    expect(result).toBeUndefined();
+    expect(captured!.fn).toBe('copy_meal_plan_to_week');
+    expect(captured!.args.p_source_meal_plan_id).toBe('source-plan-id');
+    expect(captured!.args.p_semana_iso).toEqual(getIsoWeek());
+    expect(captured!.args.p_fecha_inicio).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test('throws MealPlanError when the RPC fails (e.g. not the owner)', async () => {
+    const { client } = createRpcMockClient({ errorMessage: 'caller does not own source plan' });
+
+    await expectRejection(copyMealPlanToCurrentWeek(client, 'source-plan-id'));
   });
 });
 
