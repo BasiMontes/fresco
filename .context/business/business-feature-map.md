@@ -104,10 +104,11 @@ The prior version (2026-08-07) predated six epics and one re-audit remediation w
 | **Endpoints** | `POST /reassign-guest-data` (Edge Function, `verify_jwt: true`) |
 | **UI** | `/signup`, email-conflict branch |
 | **Owners** | Guest whose chosen email already belongs to an existing account |
-| **Dependencies** | FEAT-003, `reassign_guest_data()` SQL function (`ADR-0004`, `service_role`-only) |
-| **Evidence** | `supabase/functions/reassign-guest-data/index.ts`; `lib/api/edge-functions.ts` |
+| **Dependencies** | FEAT-003, `reassign_guest_data()` SQL function (`ADR-0004`, verification revised by `ADR-0022`, `service_role`-only) |
+| **Evidence** | `supabase/functions/reassign-guest-data/index.ts`; `supabase/functions/_shared/rate-limit.ts`; `lib/api/edge-functions.ts` |
 
-- [x] Verifies the conflicting account's password server-side via a fresh anon client (no email enumeration)
+- [x] Verifies control of the target account by checking a session token the client obtained from native Auth (`{targetAccessToken}`, `ADR-0022`) — not a server-side password sign-in; rejects an anonymous target; generic 401, no email enumeration
+- [x] 5/hour per-guest rate limit (`_shared/rate-limit.ts`, `ADR-0010`), fail-closed
 - [x] Moves `meal_plans` + `shopping_lists` onto the verified account, skipping weeks the target already has; deletes the orphaned guest
 - [x] The project's only cross-user write — `EXECUTE` revoked from `public`/`anon`/`authenticated`
 

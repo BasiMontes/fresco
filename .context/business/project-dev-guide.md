@@ -12,10 +12,9 @@
 > `excluida` state to §3, four shipped flows to §2 (guest onboarding + account
 > conversion, Pro subscription lifecycle, weekly re-engagement push, user recipe
 > curation), the scheduled jobs to §4, and a real per-integration "what will bite
-> you" write-up to §5. Base map note: `business-data-map.md` Flow 6 still shows the
-> pre-`ADR-0022` reassign contract (`{email, password}`) — this guide uses the
-> current one (`{targetAccessToken}`, FRESCO-395); `business-api-map.md` is a few
-> days behind (last full sync 2026-08-30) and is a separate refresh.
+> you" write-up to §5. Base maps `business-data-map.md` (Flow 6) and
+> `business-api-map.md` were brought current with the `{targetAccessToken}`
+> reassign contract and the edge-function hardening on 2026-09-03 (FRESCO-418).
 
 > This document assumes you've already read `.context/business/business-data-map.md`
 > to understand the business flows. Here I'll walk you through what to consider
