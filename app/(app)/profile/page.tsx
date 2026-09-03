@@ -2,12 +2,14 @@ import { User as UserIcon } from 'lucide-react';
 import { AyudaSection } from '@/components/profile/ayuda-section';
 import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
 import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
+import { MenuHistoryCard } from '@/components/profile/menu-history-card';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
 import { PushNotificationsToggle } from '@/components/profile/push-notifications-toggle';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
+import { listPastMealPlanWeeks } from '@/lib/api/meal-plan';
 import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, isPaymentFailedAlertActive } from '@/lib/api/user-profile';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { createClient } from '@/lib/supabase/server';
@@ -42,7 +44,7 @@ export default async function ProfilePage() {
   // rather than paying for 3 sequential round trips. Each keeps its own
   // fallback via `.catch()` (same conservative-default judgment calls as
   // before) so one call's rejection can't take the others down with it.
-  const [plan, paymentFailedAt, nombre, dietaryPreferences] = await Promise.all([
+  const [plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks] = await Promise.all([
     getUserPlan(supabase, user?.id).catch((error) => {
       // Same judgment call as every other page reading server-side profile
       // data: a real read failure defaults to the more conservative 'free'
@@ -83,6 +85,12 @@ export default async function ProfilePage() {
         ingredientes_odiados: [],
         cocinas_favoritas: [],
       } as Awaited<ReturnType<typeof getUserDietaryPreferences>>;
+    }),
+    listPastMealPlanWeeks(supabase, user?.id).catch((error) => {
+      // Same conservative fallback as the reads above: a failure hides the
+      // history card's content (empty state) rather than crashing the page.
+      console.error('[/profile] listPastMealPlanWeeks failed, defaulting to none', error);
+      return [];
     }),
   ]);
 
@@ -171,6 +179,8 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <MenuHistoryCard weeks={pastWeeks} plan={plan} />
 
       {plan === 'free' && (
         <Card variant="pro" className="mt-4">

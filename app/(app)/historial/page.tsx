@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
 import { MenuReadonlyGrid } from '@/components/historial/menu-readonly-grid';
+import { ReuseMenuButton } from '@/components/historial/reuse-menu-button';
 import { WeekHistoryList } from '@/components/historial/week-history-list';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getMealPlanForWeek, listPastMealPlanWeeks } from '@/lib/api/meal-plan';
@@ -47,10 +48,17 @@ export default async function HistorialPage({
       redirect('/historial');
     }
 
-    const plan = await getMealPlanForWeek(supabase, requestedSemana, user?.id).catch((error) => {
-      console.error('[/historial] getMealPlanForWeek failed', error);
-      return null;
-    });
+    const [plan, currentWeekPlan] = await Promise.all([
+      getMealPlanForWeek(supabase, requestedSemana, user?.id).catch((error) => {
+        console.error('[/historial] getMealPlanForWeek failed', error);
+        return null;
+      }),
+      // Only to decide whether "Usar este menú" needs the replace confirmation.
+      getMealPlanForWeek(supabase, getIsoWeek(), user?.id).catch((error) => {
+        console.error('[/historial] current-week read failed, assuming no menu', error);
+        return null;
+      }),
+    ]);
 
     if (!plan) {
       redirect('/historial');
@@ -74,8 +82,14 @@ export default async function HistorialPage({
           {formatWeekRangeLabel(mondayIso)}
         </h1>
         <p className="mt-1 text-body-md text-tertiary">
-          Este menú es de solo lectura. Para volver a usarlo, ábrelo desde el calendario de esa semana.
+          Menú de solo lectura. Puedes copiarlo a la semana en curso.
         </p>
+        <div className="mt-4">
+          <ReuseMenuButton
+            sourceMealPlanId={plan.mealPlanId}
+            currentWeekHasMenu={currentWeekPlan !== null}
+          />
+        </div>
         <div className="mt-6">
           <MenuReadonlyGrid menu={plan.menu} estados={plan.estados} />
         </div>

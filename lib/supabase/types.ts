@@ -596,6 +596,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      copy_meal_plan_to_week: {
+        Args: {
+          p_source_meal_plan_id: string
+          p_semana_iso: string
+          p_fecha_inicio: string
+        }
+        Returns: string
+      }
       reassign_guest_data: {
         Args: { p_from_user_id: string; p_to_user_id: string }
         Returns: undefined
