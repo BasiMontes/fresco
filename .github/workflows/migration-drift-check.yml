@@ -1,6 +1,6 @@
 name: Drift checks (migration ledger + seed catalog)
 
-# Weekly guards against the repo drifting away from the production project:
+# Guards against the repo drifting away from the production project:
 #
 #   drift-check    `supabase/migrations/` vs the prod migration ledger
 #                  (FRESCO-325). Catches the next divergence in days instead
@@ -14,8 +14,22 @@ name: Drift checks (migration ledger + seed catalog)
 #
 # NEITHER is in pr-check.yml on purpose: both need credentials for the
 # production project, and keeping those off the per-PR path is the point of
-# ADR-0017. Both run on a schedule with their own secrets and open a GitHub
+# ADR-0017. They run on a schedule with their own secrets and open a GitHub
 # issue on drift.
+#
+# FRESCO-413: `drift-check` ALSO runs on `push: [staging]` as a promotion
+# gate. On 2026-09-02, six migrations were committed and reached `main` with
+# the code but never applied to the prod DB (`get_catalog` missing → /recipes
+# empty for every user); the weekly cadence let that sit undetected between
+# runs. `staging` is the last hop before the manual `staging -> main`
+# fast-forward, so a red `drift-check` on that commit is what a human sees
+# before promoting. Same precedent as `test:e2e` running on `push: [staging]`
+# (FRESCO-377 / A4-M12): a staging push is not a PR and the promoted squash
+# SHA is one the per-PR runs never covered. NOT added to `push: [main]` —
+# `main` is a byte-identical ff of the same staging SHA. `seed-drift` stays
+# weekly-only: `seed.sql` is never deployed to prod (it only seeds the local
+# e2e stack), so a stale fixture is a CI-freshness issue, not a promotion
+# risk, and the weekly cadence covers it.
 #
 # Required repo secrets:
 #   SUPABASE_ACCESS_TOKEN   personal access token (supabase.com/dashboard/account/tokens)
@@ -25,6 +39,8 @@ on:
   schedule:
     - cron: '23 6 * * 1' # Mondays 06:23 UTC
   workflow_dispatch:
+  push:
+    branches: [staging]
 
 permissions:
   contents: read
@@ -72,7 +88,11 @@ jobs:
           bun scripts/check-migration-drift.ts | tee drift-report.txt
 
       - name: Open an issue on drift
-        if: failure() && steps.drift.outcome == 'failure'
+        # Only on the scheduled / manual runs — on a `push: [staging]` the red
+        # check on the promoted commit IS the signal (a human is right there
+        # about to do the `staging -> main` ff), and an issue would just be
+        # noise on top of it.
+        if: failure() && steps.drift.outcome == 'failure' && github.event_name != 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -93,6 +113,10 @@ jobs:
   seed-drift:
     name: check seed.sql vs prod recipe catalog
     runs-on: ubuntu-latest
+    # Weekly-only: `seed.sql` seeds the ephemeral local e2e stack, never prod,
+    # so a stale fixture is a CI-freshness concern, not a promotion risk
+    # (FRESCO-413). The staging-push gate is `drift-check` alone.
+    if: github.event_name != 'push'
     steps:
       - uses: actions/checkout@v4
 

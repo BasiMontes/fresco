@@ -186,6 +186,27 @@ the PR pipeline, to keep prod credentials off that path) that fails and opens a
 `migration-drift` issue if `migration list --linked` shows any local-only or
 remote-only entry.
 
+## Update — 2026-09-03 (FRESCO-413): migration-drift also gates `push: [staging]`
+
+The weekly `drift-check` cadence still let drift reach production: on 2026-09-02
+six audit-4 ola-3 migrations were committed and promoted to `main` with the
+code but never applied to the prod DB (`get_catalog` missing → `/recipes` empty
+for every user), and the gap sat undetected between scheduled runs.
+
+`.github/workflows/migration-drift-check.yml` now runs its **`drift-check` job
+on `push: [staging]`** as well — `staging` is the last hop before the manual
+`staging -> main` fast-forward, so a red check on that exact squash SHA is what
+a maintainer sees before promoting.
+
+This does **not** reopen the "prod credentials off the per-PR path" principle
+this ADR established: a `staging` push is not a pull request, and that path
+already carries production secrets — `test:e2e` runs on `push: [staging]` for
+the same reason (FRESCO-377 / A4-M12; the "FRESCO-311 — e2e stays PR-only"
+reference below is superseded on that point). `seed-drift` stays weekly-only
+(`seed.sql` seeds only the ephemeral local e2e stack, never prod), and the
+issue-creation step is gated to the scheduled / manual runs — on a staging push
+the failed check itself is the signal.
+
 ## References
 
 - FRESCO-307 / FRESCO-310 — "CI e2e writes to prod Supabase with real keys" tech debt

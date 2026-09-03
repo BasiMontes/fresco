@@ -20,10 +20,12 @@
  * ADR-0017 "Consequences"). This check exists so the next drift is caught in
  * days, not discovered months later at deploy time (as happened in FRESCO-310).
  *
- * It is NOT wired into the PR pipeline on purpose — `migration list --linked`
- * needs credentials for the production project, and keeping those out of the
- * per-PR path is the whole point of ADR-0017. It runs from a scheduled
- * workflow (`.github/workflows/migration-drift-check.yml`) instead.
+ * It is NOT wired into the per-PR pipeline on purpose — `migration list
+ * --linked` needs credentials for the production project, and keeping those
+ * out of the per-PR path is the whole point of ADR-0017. It runs from
+ * `.github/workflows/migration-drift-check.yml`: weekly on a schedule, and
+ * (FRESCO-413) on `push: [staging]` as a gate on the commit about to be
+ * fast-forwarded to `main`.
  *
  * Usage:
  *   bun scripts/check-migration-drift.ts            # exit 0 clean, 1 on drift
