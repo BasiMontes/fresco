@@ -179,3 +179,8 @@ Historia archivada:
 - Qué: Fase 1 del epic FRESCO-408. Infra de test de componentes en bun test + 10 componentes de riesgo (43 tests). ADR-0024. PR #262 -> dev (d1bfea2), ff staging. Jira -> Control de calidad.
 - Por qué: components/ tenia 0 tests unitarios.
 - Siguiente: FRESCO-419 (Dialog components), FRESCO-410/411/412.
+
+## 2026-09-03 - FRESCO-410: tests de route handlers de app/ (webhook de Stripe)
+- Qué: Fase 2 del epic FRESCO-408. 34 tests nuevos para los 6 route handlers de app/ (stripe/webhook 12, cron/stripe-reconcile GET +5, profile/export 3, stripe/checkout 5, stripe/portal 5, auth/confirm 4). Nuevo helper tests/mocks/supabase-query-builder.ts. PR #263 squash -> dev (dca6da5), ff staging. Jira -> Control de calidad.
+- Por qué: app/ tenía 1 test; la capa HTTP + máquina de estados de suscripción iban cubiertas solo por e2e.
+- Siguiente: FRESCO-411 (orquestación index.ts de Edge Functions), FRESCO-412 (gate bun test --coverage). NOTA: CI test:unit subió a 29s (tope ADR-0018 = 30s) - FRESCO-412 debe vigilarlo; contribuye el beforeEach de re-registro de DOM de FRESCO-409.
