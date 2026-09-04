@@ -89,10 +89,11 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
       data-testid="receipt_ticket_dialog"
       className="max-w-sm border-none bg-transparent p-0 shadow-none"
     >
-      {/* Machine body: deliberately a distinct (darker) tone from the paper
+      {/* Machine body: dark corporate green (`accent-800`/`accent-700`), not
+          a neutral — deliberately a distinct (darker) tone from the paper
           below (`bg-surface`) — same color would make the perforated
           `clip-path` edge invisible, since there'd be no boundary to see. */}
-      <div className="relative isolate w-full overflow-hidden rounded-3xl border border-neutral-700 bg-neutral-800 p-3 pb-6 shadow-lg">
+      <div className="relative isolate w-full overflow-hidden rounded-3xl border border-accent-700 bg-accent-800 p-3 pb-6 shadow-lg">
         <div className="relative z-10 mb-3 flex items-center gap-2 rounded-xl bg-text px-4 py-3 text-background">
           {isComplete
             ? (
@@ -154,17 +155,14 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
         </div>
 
         {isComplete && (
-          // `default` Button (primary green on cream) is ~1:1 contrast
-          // directly against the dark `neutral-800` machine body — same
-          // low luminance, button was nearly invisible as a shape (found
-          // live). The light `bg-background` chip gives it the same real
-          // contrast it already has everywhere else in the app, rather
-          // than reaching for the `action` (amber) variant, which DESIGN.md
-          // reserves for the screen's single highest-intent CTA — "Listo"
-          // is a low-stakes dismiss, not that.
+          // `action` (orange) Button — this dialog's only CTA, so it's the
+          // screen's single highest-intent action DESIGN.md reserves the
+          // variant for. The light `bg-background` chip still wraps it so
+          // the shape reads clearly against the dark `accent-800` machine
+          // body, on top of `action`'s own contrast.
           <div className="relative z-10 mt-3 flex justify-center">
             <div className="rounded-full bg-background p-1 shadow-inner">
-              <Button type="button" onClick={onClose} data-testid="receipt_ticket_done_button">
+              <Button type="button" variant="action" onClick={onClose} data-testid="receipt_ticket_done_button">
                 Listo
               </Button>
             </div>
