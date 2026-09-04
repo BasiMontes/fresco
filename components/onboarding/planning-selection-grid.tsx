@@ -35,6 +35,11 @@ const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
  * FRESCO-426 — axis flipped: days are the columns (7), meal types the rows
  * (3). A weekly planner reads left-to-right like a calendar, and 7 columns
  * use the horizontal space that 3 columns wasted.
+ *
+ * FRESCO-427-ish (post axis flip) — bulk "Todos/Ninguno" moved from a
+ * second header row repeated once per day column (7x, visually noisy) to
+ * once per meal row, next to Desayuno/Almuerzo/Cena — it now bulk-toggles
+ * that meal across all 7 days instead of all 3 meals on one day.
  */
 export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTestId }: PlanningSelectionGridProps) {
   function toggleCell(day: DiaSemana, meal: TipoPlatoSlot) {
@@ -45,10 +50,17 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
     onChange({ ...value, [day]: nextDayMeals });
   }
 
-  // FRESCO-426: bulk select/clear a whole day column — sets all three meal
-  // types for that one day, leaving every other day's selection untouched.
-  function setDay(day: DiaSemana, included: boolean) {
-    onChange({ ...value, [day]: included ? MEAL_OPTIONS.map(meal => meal.value) : [] });
+  // Bulk select/clear a whole meal row — sets that one meal type across all
+  // seven days, leaving every other meal type's selection untouched.
+  function setMeal(meal: TipoPlatoSlot, included: boolean) {
+    const next = { ...value };
+    for (const day of DAY_OPTIONS) {
+      const dayMeals = next[day.value] ?? [];
+      next[day.value] = included
+        ? (dayMeals.includes(meal) ? dayMeals : [...dayMeals, meal])
+        : dayMeals.filter(item => item !== meal);
+    }
+    onChange(next);
   }
 
   return (
@@ -56,40 +68,10 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
       <table className="w-full min-w-[19rem] border-collapse">
         <thead>
           <tr>
-            <th scope="col" className="w-14" />
+            <th scope="col" className="w-20" />
             {DAY_OPTIONS.map(day => (
               <th key={day.value} scope="col" className="pb-1 text-center text-caption font-sans uppercase text-tertiary">
                 {day.label}
-              </th>
-            ))}
-          </tr>
-          {/* FRESCO-426: per-day bulk controls are a power-user shortcut — hidden on
-              mobile, where 7 columns of stacked text would overflow and the default
-              (every meal on) rarely needs bulk clearing. */}
-          <tr className="hidden sm:table-row">
-            <th scope="col" className="w-14" />
-            {DAY_OPTIONS.map(day => (
-              <th key={day.value} scope="col" className="pb-2 text-center font-normal">
-                <span className="inline-flex flex-col items-center gap-0.5 text-caption font-sans text-tertiary">
-                  <button
-                    type="button"
-                    data-testid="planning_day_select_all"
-                    aria-label={`Marcar todas las comidas del ${day.name}`}
-                    className="underline-offset-2 hover:text-primary hover:underline"
-                    onClick={() => setDay(day.value, true)}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    type="button"
-                    data-testid="planning_day_select_none"
-                    aria-label={`Desmarcar todas las comidas del ${day.name}`}
-                    className="underline-offset-2 hover:text-primary hover:underline"
-                    onClick={() => setDay(day.value, false)}
-                  >
-                    Ninguno
-                  </button>
-                </span>
               </th>
             ))}
           </tr>
@@ -97,8 +79,30 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
         <tbody>
           {MEAL_OPTIONS.map(meal => (
             <tr key={meal.value}>
-              <th scope="row" className="py-1.5 pr-2 text-left text-body-sm font-sans font-normal text-text">
-                {meal.label}
+              <th scope="row" aria-label={meal.label} className="py-1.5 pr-2 text-left align-middle">
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-body-sm font-sans font-normal text-text">{meal.label}</span>
+                  <span className="flex gap-1.5 text-caption font-sans text-tertiary">
+                    <button
+                      type="button"
+                      data-testid="planning_meal_select_all"
+                      aria-label={`Marcar ${meal.label.toLowerCase()} todos los días`}
+                      className="underline-offset-2 hover:text-primary hover:underline"
+                      onClick={() => setMeal(meal.value, true)}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="planning_meal_select_none"
+                      aria-label={`Desmarcar ${meal.label.toLowerCase()} todos los días`}
+                      className="underline-offset-2 hover:text-primary hover:underline"
+                      onClick={() => setMeal(meal.value, false)}
+                    >
+                      Ninguno
+                    </button>
+                  </span>
+                </span>
               </th>
               {DAY_OPTIONS.map((day) => {
                 const checked = (value[day.value] ?? []).includes(meal.value);

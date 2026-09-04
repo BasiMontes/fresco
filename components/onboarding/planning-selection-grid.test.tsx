@@ -6,7 +6,7 @@ import { PlanningSelectionGrid } from './planning-selection-grid';
 
 /**
  * FRESCO-426 — axis flipped to days-as-columns, meals-as-rows. Tests pin
- * the header axis, the per-day bulk controls, cell toggling, and that an
+ * the header axis, the per-meal bulk controls, cell toggling, and that an
  * existing selection survives the render unchanged.
  */
 
@@ -64,20 +64,25 @@ describe('PlanningSelectionGrid', () => {
     expect(onChange).toHaveBeenCalledWith({ ...EMPTY, martes: ['comida'] });
   });
 
-  test('"Todos" on a day column selects all three meals for that day only', async () => {
+  test('"Todos" on a meal row selects that meal for all seven days', async () => {
     const user = setupUser();
     const onChange = mock(() => {});
     render({ onChange });
 
-    await user.click(screen.getByRole('button', { name: 'Marcar todas las comidas del miércoles' }));
+    await user.click(screen.getByRole('button', { name: 'Marcar almuerzo todos los días' }));
 
     expect(onChange).toHaveBeenCalledWith({
-      ...EMPTY,
-      miercoles: ['desayuno', 'comida', 'cena'],
+      lunes: ['comida'],
+      martes: ['comida'],
+      miercoles: ['comida'],
+      jueves: ['comida'],
+      viernes: ['comida'],
+      sabado: ['comida'],
+      domingo: ['comida'],
     });
   });
 
-  test('"Ninguno" on a day column clears that day, leaving the rest intact', async () => {
+  test('"Ninguno" on a meal row clears that meal from every day, leaving other meals intact', async () => {
     const user = setupUser();
     const onChange = mock(() => {});
     const value: PlanningSelection = {
@@ -87,9 +92,13 @@ describe('PlanningSelectionGrid', () => {
     };
     render({ value, onChange });
 
-    await user.click(screen.getByRole('button', { name: 'Desmarcar todas las comidas del lunes' }));
+    await user.click(screen.getByRole('button', { name: 'Desmarcar almuerzo todos los días' }));
 
-    expect(onChange).toHaveBeenCalledWith({ ...value, lunes: [] });
+    expect(onChange).toHaveBeenCalledWith({
+      ...value,
+      lunes: ['cena'],
+      martes: ['cena'],
+    });
   });
 
   test('an existing selection is reflected in the checked cells after the axis flip', () => {
