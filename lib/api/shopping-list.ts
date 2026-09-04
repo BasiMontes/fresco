@@ -102,6 +102,32 @@ export async function toggleShoppingListItem(
 }
 
 /**
+ * Removes every item already marked `comprado` from the list (and drops
+ * any pasillo bucket left empty) via the `jsonb_clear_comprados` `security
+ * definer` RPC — same direct-write precedent as `toggleShoppingListItem`.
+ * Filters server-side by the already-persisted `comprado` flag rather than
+ * taking coordinates, since every checkbox toggle already wrote it live —
+ * see the migration's own comment (`20260904140000_jsonb_clear_comprados_rpc.sql`).
+ *
+ * Replaces the receipt-ticket flow's prior placeholder behaviour (un-check
+ * instead of remove, inherited from FRESCO-191/215 — the only RPC that
+ * existed before this one) once real usage showed items reappearing as
+ * pending read as "nothing happened" instead of "done".
+ */
+export async function clearComprados(
+  client: SupabaseClient<Database>,
+  listId: string,
+): Promise<void> {
+  const { error } = await client.rpc('jsonb_clear_comprados', {
+    p_list_id: listId,
+  });
+
+  if (error) {
+    throw new ShoppingListError(`No se pudieron quitar los productos comprados: ${error.message}`);
+  }
+}
+
+/**
  * Adds a suggested item (FRESCO-194's favorites-based carousel) to the
  * given pasillo via the `jsonb_add_item` `security definer` RPC — same
  * direct-write precedent as `toggleShoppingListItem`. `jsonb_add_item`

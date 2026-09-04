@@ -27,7 +27,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
-import { addShoppingListItem, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
+import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -264,16 +264,10 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
     }
   }
 
-  async function handleClearComprados() {
-    await Promise.all(
-      compradosCoords.map(async ([pasilloIdx, itemIdx]) => handleToggle(pasilloIdx, itemIdx, false)),
-    );
-  }
-
   // Receipt ticket (docs/superpowers/specs/2026-09-04-receipt-ticket-design.md)
   // — clicking "Compra realizada" no longer un-checks immediately. It
-  // snapshots the checked items, shows the printed ticket, and only runs the
-  // existing `handleClearComprados` un-check once the user dismisses it.
+  // snapshots the checked items, shows the printed ticket, and only removes
+  // them once the user dismisses it.
   const [receiptOpen, setReceiptOpen] = React.useState(false);
   const [receiptItems, setReceiptItems] = React.useState<ShoppingListItem[]>([]);
 
@@ -282,9 +276,32 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
     setReceiptOpen(true);
   }
 
-  function handleReceiptClose() {
+  /**
+   * FRESCO-192-ish (receipt ticket follow-up) — was `handleClearComprados`,
+   * which only un-checked items (the sole RPC that existed before
+   * `jsonb_clear_comprados`). Live usage showed that reads as "nothing
+   * happened": the point of "Compra realizada" is that these items are done,
+   * not that they should come back as pending next render. Optimistic
+   * update + revert-on-failure, same shape as `handleToggle` above.
+   */
+  async function handleReceiptClose() {
     setReceiptOpen(false);
-    void handleClearComprados();
+    setErrorMessage(null);
+    const snapshot = pasillos;
+    setPasillos(current =>
+      current
+        .map(pasillo => ({ ...pasillo, items: pasillo.items.filter(item => !item.comprado) }))
+        .filter(pasillo => pasillo.items.length > 0),
+    );
+
+    try {
+      await clearComprados(supabase, list.id);
+    }
+    catch (error) {
+      console.error('[ShoppingListView] clearComprados failed, reverting', error);
+      setPasillos(snapshot);
+      setErrorMessage('No se pudieron quitar los productos comprados. Vuelve a intentarlo.');
+    }
   }
 
   async function handleAddSuggestion(suggestion: ShoppingListSuggestion) {
@@ -524,7 +541,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
         </div>
       )}
 
-      <ReceiptTicket open={receiptOpen} items={receiptItems} onClose={handleReceiptClose} />
+      <ReceiptTicket open={receiptOpen} items={receiptItems} onClose={() => void handleReceiptClose()} />
     </div>
   );
 }

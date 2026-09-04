@@ -4,16 +4,16 @@ import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/compo
 import { ShoppingListView } from './shopping-list-view';
 
 /**
- * FRESCO-426-ish (receipt ticket) — "Compra realizada" now opens the
- * receipt ticket instead of immediately un-checking items (handled by
- * `handleClearComprados`, unchanged, now called from the ticket's close
- * instead). These tests pin that sequencing at the UI-observable level
- * only — same boundary `delete-week-button.test.tsx` draws (see its own
- * comment, ADR-0024 §11): no `@/lib/api/*` module mock (a bun re-transpile
- * cliff per that file's note), so the actual `toggleShoppingListItem`
- * network call is left untested here, deferred to e2e. Fine because
- * `handleReceiptClose` fires it with `void` (fire-and-forget) — nothing in
- * these tests awaits it.
+ * FRESCO-426-ish (receipt ticket) — "Compra realizada" opens the receipt
+ * ticket instead of immediately acting on the checked items; only once the
+ * ticket is dismissed does `handleReceiptClose` remove them (via the
+ * `jsonb_clear_comprados` RPC, `clearComprados()` — replaced the earlier
+ * un-check-only placeholder once real usage showed that read as a no-op).
+ * These tests pin the sequencing at the UI-observable level only — same
+ * boundary `delete-week-button.test.tsx` draws (see its own comment,
+ * ADR-0024 §11): no `@/lib/api/*` module mock (a bun re-transpile cliff per
+ * that file's note), so the actual `clearComprados` network round-trip is
+ * left untested here, deferred to e2e.
  */
 
 const LIST: ShoppingListPersistido = {
@@ -50,7 +50,7 @@ describe('ShoppingListView — receipt ticket on "Compra realizada"', () => {
 
     const paper = screen.getByTestId('receipt_ticket_paper');
     expect(paper).toHaveTextContent('Tomate');
-    // Still checked — `handleClearComprados` hasn't run yet.
+    // Still in the list, still checked — `handleReceiptClose` hasn't run yet.
     expect(screen.getByTestId('shopping_list_item_0_0')).toBeChecked();
   });
 
