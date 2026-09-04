@@ -14,13 +14,14 @@ import {
   Lightbulb,
   Package,
   Plus,
+  Receipt,
   Sandwich,
-  Trash2,
   Utensils,
   Wheat,
 } from 'lucide-react';
 import * as React from 'react';
 import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
+import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -269,6 +270,23 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
     );
   }
 
+  // Receipt ticket (docs/superpowers/specs/2026-09-04-receipt-ticket-design.md)
+  // — clicking "Compra realizada" no longer un-checks immediately. It
+  // snapshots the checked items, shows the printed ticket, and only runs the
+  // existing `handleClearComprados` un-check once the user dismisses it.
+  const [receiptOpen, setReceiptOpen] = React.useState(false);
+  const [receiptItems, setReceiptItems] = React.useState<ShoppingListItem[]>([]);
+
+  function handleCompraRealizada() {
+    setReceiptItems(compradosCoords.map(([pasilloIdx, itemIdx]) => pasillos[pasilloIdx].items[itemIdx]));
+    setReceiptOpen(true);
+  }
+
+  function handleReceiptClose() {
+    setReceiptOpen(false);
+    void handleClearComprados();
+  }
+
   async function handleAddSuggestion(suggestion: ShoppingListSuggestion) {
     setErrorMessage(null);
     const newItem: ShoppingListItem = {
@@ -497,14 +515,16 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
             type="button"
             size="lg"
             className="shadow-lg"
-            onClick={() => void handleClearComprados()}
+            onClick={handleCompraRealizada}
             data-testid="shopping_list_clear_comprados_button"
           >
-            <Trash2 className="size-4" aria-hidden="true" />
+            <Receipt className="size-4" aria-hidden="true" />
             Compra realizada
           </Button>
         </div>
       )}
+
+      <ReceiptTicket open={receiptOpen} items={receiptItems} onClose={handleReceiptClose} />
     </div>
   );
 }
