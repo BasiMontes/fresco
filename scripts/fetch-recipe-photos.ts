@@ -237,6 +237,16 @@ const ES_EN_WORDS: Record<string, string> = {
   'girasol': 'sunflower',
   'picante': 'spicy',
   'griega': 'greek',
+  'bacalao': 'cod',
+  'cordero': 'lamb',
+  'tortitas': 'pancakes',
+  'rellena': 'stuffed',
+  'rellenas': 'stuffed',
+  'relleno': 'stuffed',
+  'rellenos': 'stuffed',
+  'leche': 'milk',
+  'fria': 'cold',
+  'frio': 'cold',
 };
 
 const STOPWORDS = new Set(['con', 'y', 'de', 'a', 'la', 'el', 'del', 'las', 'los', 'al']);
@@ -301,7 +311,11 @@ async function fetchUnsplashPage(query: string, page: number): Promise<{ urls: {
   // while X-Ratelimit-Remaining still showed plenty left; recovered within
   // 5s of pausing).
   await sleep(1200);
-  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish`, {
+  // v11: content_filter=high — FRESCO-192's audit found one applied photo
+  // (17ef7f11) with a real person + visible text that had to be nulled as
+  // inappropriate. Unsplash's own moderation filter costs nothing and
+  // rules that class of result out before it ever reaches pickFromPage.
+  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish&content_filter=high`, {
     headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
   });
   if (!res.ok) {
@@ -460,7 +474,14 @@ async function main() {
     let query = preciseQuery;
 
     if (!url) {
-      const broadQuery = `${broadenQuery(recipe.nombre)} food photography`;
+      // v11: broad tier had dropped the "cooked" disambiguator entirely
+      // (down to just "food photography") to maximize corpus size — but
+      // FRESCO-192's audit traced a real chunk of its mismatches back to
+      // exactly that: raw-ingredient/product shots slipping through once
+      // "cooked" was gone. Adding the single word back costs far less
+      // corpus width than the old 2-word "cooked meal" precise-tier bias
+      // while still excluding the worst offenders.
+      const broadQuery = `${broadenQuery(recipe.nombre)} cooked food photography`;
       url = await searchUnsplash(broadQuery, recipe.id, usedUrls);
       if (url) { query = `${broadQuery} [broad]`; }
     }
