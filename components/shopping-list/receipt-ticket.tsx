@@ -154,10 +154,20 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
         </div>
 
         {isComplete && (
+          // `default` Button (primary green on cream) is ~1:1 contrast
+          // directly against the dark `neutral-800` machine body — same
+          // low luminance, button was nearly invisible as a shape (found
+          // live). The light `bg-background` chip gives it the same real
+          // contrast it already has everywhere else in the app, rather
+          // than reaching for the `action` (amber) variant, which DESIGN.md
+          // reserves for the screen's single highest-intent CTA — "Listo"
+          // is a low-stakes dismiss, not that.
           <div className="relative z-10 mt-3 flex justify-center">
-            <Button type="button" onClick={onClose} data-testid="receipt_ticket_done_button">
-              Listo
-            </Button>
+            <div className="rounded-full bg-background p-1 shadow-inner">
+              <Button type="button" onClick={onClose} data-testid="receipt_ticket_done_button">
+                Listo
+              </Button>
+            </div>
           </div>
         )}
       </div>
