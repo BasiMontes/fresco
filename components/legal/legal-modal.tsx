@@ -18,8 +18,8 @@ interface LegalSubsection {
   body: string
 }
 
-/** Placeholder — no legal entity exists yet behind this Terms of Service (sole proprietor / autónomo / S.L. TBD). Must be filled with a real name + NIF/CIF before this stops being a draft — never fabricate one. */
-const LEGAL_ENTITY_PLACEHOLDER = '[Titular del Servicio — nombre legal y NIF/CIF pendientes]';
+/** FRESCO-430: real titular, provided by the founder — Basilio Montes Castaño, autónomo (persona física), NIF 47427105R. Domicile is published as locality-only (Utrera, Sevilla, España) by the founder's explicit choice — a known LSSI gap (full street address) accepted over publishing a private home address, not an oversight. Founder has not registered as autónomo (RETA/Hacienda) yet — a separate business-registration concern the ticket explicitly scopes out of this fix. */
+const LEGAL_ENTITY = 'Basilio Montes Castaño, autónomo, NIF 47427105R, con domicilio en Utrera (Sevilla), España, a efectos de notificaciones';
 
 /**
  * Adapted from an earlier iteration's legal copy (a private prior repo,
@@ -44,13 +44,17 @@ const LEGAL_ENTITY_PLACEHOLDER = '[Titular del Servicio — nombre legal y NIF/C
  * ownership/license clause; GDPR rights list was incomplete (missing
  * portability, objection, restriction, AEPD complaint right); no data
  * retention period was stated; no liability cap/warranty disclaimer
- * existed. The legal-entity gap from the original comment above is still
- * open — a placeholder, not a fabrication.
+ * existed.
+ *
+ * FRESCO-430: the legal-entity gap from the original comment above is now
+ * closed — see `LEGAL_ENTITY` above. The draft banner is gone; retention
+ * periods, DPO designation, and a lawyer pass on liability/withdrawal
+ * clauses remain open per that ticket's explicit out-of-scope list.
  */
 const TERMS_SECTIONS: LegalSubsection[] = [
   {
     title: 'Aceptación de los Términos',
-    body: `Al acceder y usar Fresco ("el Servicio"), operado por ${LEGAL_ENTITY_PLACEHOLDER}, aceptas estar sujeto/a a estos Términos de Servicio. Si no estás de acuerdo con alguna parte, no debes usar el Servicio.`,
+    body: `Al acceder y usar Fresco ("el Servicio"), operado por ${LEGAL_ENTITY}, aceptas estar sujeto/a a estos Términos de Servicio. Si no estás de acuerdo con alguna parte, no debes usar el Servicio.`,
   },
   {
     title: 'Descripción del Servicio',
@@ -149,9 +153,6 @@ export function LegalModal({ open, onOpenChange, section }: LegalModalProps) {
       <div className="mt-4 text-body-md text-text">
         {(section === 'terminos' || section === 'privacidad') && (
           <div data-testid={`legal_modal_content_${section}`}>
-            <p className="mb-4 rounded-md bg-warning/10 p-2 text-caption text-accent-2-700">
-              Borrador — pendiente de revisión legal antes de producción.
-            </p>
             <div className="flex flex-col gap-4">
               {(section === 'terminos' ? TERMS_SECTIONS : PRIVACY_SECTIONS).map(({ title, body }) => (
                 <div key={title}>
