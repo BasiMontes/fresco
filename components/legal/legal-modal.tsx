@@ -89,7 +89,7 @@ const TERMS_SECTIONS: LegalSubsection[] = [
 const PRIVACY_SECTIONS: LegalSubsection[] = [
   {
     title: 'Información que Recopilamos',
-    body: 'Correo electrónico, tu dieta y restricciones (alergias, ingredientes que no te gustan — datos de categoría especial bajo el RGPD por su relación con la salud), cocinas favoritas, y el tamaño de tu hogar. Si tienes Plan Pro, también qué recetas marcas como cocinadas o descartadas.',
+    body: 'Correo electrónico; tu dieta y restricciones (alergias, ingredientes que no te gustan — datos de categoría especial bajo el RGPD por su relación con la salud); cocinas favoritas; tamaño de tu hogar; presupuesto semanal; límites de tiempo de cocina; tu experiencia de cocina y objetivo; qué comidas del día quieres planificar; los menús y listas de la compra que generas; tus recetas propias y tus favoritos. Si marcas una receta como cocinada o descartada, registramos esa señal en todos los planes (más abajo, en "Cómo Usamos tu Información"). Si contratas el Plan Pro, también tratamos tus identificadores de cliente y de suscripción de Stripe. Con tu consentimiento, recogemos eventos de uso con fines de analítica y, si activas las notificaciones, tu suscripción push del navegador. Si ocurre un error técnico, registramos su traza para poder solucionarlo.',
   },
   {
     title: 'Base Legal para Datos de Alergias',
@@ -97,11 +97,11 @@ const PRIVACY_SECTIONS: LegalSubsection[] = [
   },
   {
     title: 'Cómo Usamos tu Información',
-    body: 'Para generar tus menús semanales y tu lista de la compra, y — solo en Plan Pro — para que la generación de menús futuros tenga en cuenta lo que realmente cocinaste o descartaste. En Free, ese historial se registra igual pero nunca se aplica a tus propios menús.',
+    body: 'Para generar tus menús semanales y tu lista de la compra, como parte del servicio que contratas (Art. 6.1.b RGPD). Registramos si marcas una receta como cocinada o descartada en todos los planes, no solo en Pro: en el Plan Free por nuestro interés legítimo en mejorar el catálogo (Art. 6.1.f, con derecho de oposición) y, además, en el Plan Pro para ajustar tus propios menús futuros como parte del servicio contratado (Art. 6.1.b). Con tu consentimiento (Art. 6.1.a) usamos también analítica de producto y notificaciones push. Para gestionar tu suscripción y facturación tratamos tus datos por ejecución del contrato y por obligación legal (Art. 6.1.b y 6.1.c).',
   },
   {
-    title: 'Dónde se Almacenan tus Datos',
-    body: 'Tus datos están almacenados en Supabase, en servidores ubicados en la Unión Europea (Irlanda), con las medidas de seguridad estándar de la industria. No vendemos, alquilamos ni compartimos tu información personal con terceros para fines comerciales.',
+    title: 'Encargados del Tratamiento y Transferencias Internacionales',
+    body: 'Para prestar el Servicio recurrimos, bajo contrato, a los siguientes proveedores tecnológicos (encargados del tratamiento): Supabase (base de datos y autenticación, alojado en la Unión Europea — Irlanda, con soporte desde EE. UU. amparado en cláusulas contractuales tipo); Stripe (procesamiento de pagos, en Irlanda y EE. UU., amparado en el Data Privacy Framework UE-EE. UU. y cláusulas contractuales tipo); PostHog (analítica de producto, alojado en la UE con acceso de soporte desde EE. UU., amparado en cláusulas contractuales tipo); Sentry (registro de errores técnicos, empresa con sede en EE. UU., amparado en el Data Privacy Framework y/o cláusulas contractuales tipo); Vercel (alojamiento del frontend, en EE. UU., amparado en el Data Privacy Framework); y, si activas las notificaciones, el proveedor de mensajería push de tu navegador (p. ej. Google/FCM, Mozilla o Apple), que solo recibe el endpoint cifrado necesario para entregarlas. No vendemos ni alquilamos tus datos personales, ni los compartimos con nadie más allá de estos proveedores necesarios para operar el Servicio.',
   },
   {
     title: 'Plazo de Conservación',
