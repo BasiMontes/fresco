@@ -81,7 +81,7 @@ or placeholder remains; `n/a` = not a user-facing fidelity surface.
 *screens*; `DESIGN.md` owns *tokens and components*. Token values are **not** duplicated here — read
 them from `DESIGN.md`. Pointers:
 
-> **`DESIGN.md` is at `version: beta` (v2, epic FRESCO-436).** The calm-editorial redesign is landing token-by-token; the pointers below track v2. §4 screen specs still name v1 tokens (Caprasimo etc.) and are swept as each redesign card ships — see the v2 note under §5.
+> **`DESIGN.md` is at `version: beta` (v2, epic FRESCO-436).** The calm-editorial redesign is landing token-by-token; the pointers below track v2. Shipped so far: FRESCO-437 (contract), 438 (Fraunces on h1/h2), 439 (`surface-raised` + hairline cards, radii, hairline tags). A few §4 specs may still name a v1 token mid-migration — swept as each redesign card ships; see the v2 note under §5.
 
 | Concern | Where in `DESIGN.md` |
 |---|---|
@@ -116,7 +116,7 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   routes to `/onboarding` (primary) and `/signup` / `/login`.
 - **Layout.** `site-nav` → `hero` → `pain-points` → `how-it-works` → `learns-pro` → `impact-stats` →
   `pricing` → `faq` → `final-cta` → `site-footer`.
-- **Tokens.** Cream `background`; Caprasimo `h1`/`h2`; `button` (primary green) + `button-action`
+- **Tokens.** Cream `background`; Fraunces `h1`/`h2`; `button` (primary green) + `button-action`
   (orange, single hero CTA); `card` for pain-point / how-it-works tiles; amber-as-text uses
   `accent-2-700` per the Do's/Don'ts contrast rule.
 - **Components.** `components/landing/*` (10 files), composed by `app/page.tsx`.
@@ -264,8 +264,8 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   icon header (10 real aisle names, `ChefHat` fallback) → item rows: circular checkbox + Title-Cased
   name + per-item estimated price + unit (correct pluralisation — DEFECT-FRESCO-180) → floating
   "Vaciar comprados" button, visible only when ≥1 item is checked (TECHDEBT-FRESCO-214/215).
-- **Tokens.** `card` (summary, on `surface` — the deliberate subtle lift over `background`, kept over
-  the mockup's pure white — §5-E); circular checkbox = `components/ui/checkbox.tsx`; aisle icon tint
+- **Tokens.** `card` (summary — v2/FRESCO-439: `surface-raised` + hairline `border-border`, lighter
+  than the page, not the v1 darker `surface`); circular checkbox = `components/ui/checkbox.tsx`; aisle icon tint
   = `accent-2-100` (pre-computed, no opacity modifier — DEFECT-FRESCO-169); currency format `2,80€`
   matching `recipe-card`.
 - **Components.** `components/shopping-list/shopping-list-view.tsx`, `shopping-list-generator.tsx`,
@@ -308,7 +308,7 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 
 - **Purpose.** Full recipe view: image, title, tags, meta, ingredients, steps. Favourite toggle.
 - **Layout.** `ArrowLeft` + "Volver" link (shared pattern, not a circular icon-only button — §5-F)
-  → image area (`rounded.lg`) → title (`h3`, Caprasimo) → tag row → meta line
+  → image area (`rounded.image`) → title (`h3`, Figtree, line-clamp 2) → tag row → meta line
   ("50 min · fácil · 2,80€/persona") → ingredients list → numbered steps →
   `favorite-toggle-button`. Personal recipes render the same layout with **no** edit/delete/rate/
   menu-add/share (deliberate scope cut — feature-map gap 3).
@@ -463,7 +463,7 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Purpose.** Framework-level safety nets (TECHDEBT-FRESCO-46).
 - **Layout.** Centred message + a primary action back to safety. `not-found.tsx` is branded, not the
   Next.js default (DEFECT-FRESCO-182).
-- **Tokens.** `background` canvas; `h2` Caprasimo; `button` primary; keep it minimal.
+- **Tokens.** `background` canvas; `h2` Fraunces; `button` primary; keep it minimal.
 - **Components.** `app/error.tsx`, `app/global-error.tsx`, `app/not-found.tsx`.
 - **Checklist.** [ ] `not-found` is styled · [ ] `global-error` renders without the app shell /
   providers · [ ] copy in Spanish, no raw stack trace.

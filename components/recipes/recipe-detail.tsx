@@ -78,7 +78,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Reci
         {receta.clasificacion?.cocina && <Tag variant="neutral">{receta.clasificacion.cocina}</Tag>}
         {dietaLabels.map(label => <Tag key={label} variant="accent">{label}</Tag>)}
         {(receta.alergenos ?? []).map(alergeno => (
-          <Tag key={alergeno} variant="accent-2">
+          <Tag key={alergeno} variant="allergen">
             {alergenoLabel(alergeno)}
           </Tag>
         ))}

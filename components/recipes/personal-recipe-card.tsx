@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
  */
 export function PersonalRecipeCard({ receta, className }: { receta: RecetaPropia, className?: string }) {
   return (
-    <div className={cn('rounded-card bg-surface p-3 shadow-sm', className)}>
+    <div className={cn('rounded-card border border-border bg-surface-raised p-3 shadow-sm', className)}>
       <div className="mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
         <NotebookPen className="size-10 text-neutral-400" aria-hidden="true" />
       </div>

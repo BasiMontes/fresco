@@ -632,7 +632,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
           }
         : undefined}
       className={cn(
-        'flex flex-col rounded-card bg-surface p-3 shadow-sm',
+        'flex flex-col rounded-card border border-border bg-surface-raised p-3 shadow-sm',
         !disabled && 'cursor-pointer',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
