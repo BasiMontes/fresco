@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 
-// FRESCO-31 — recipe photo backfill via Unsplash's free tier (50 req/hour).
+// FRESCO-31 — recipe photo backfill via Unsplash (50 req/hour), falling back
+// to Pexels (200 req/hour) and Pixabay (5000 req/hour) free tiers when
+// Unsplash has nothing for a given dish. See the v12 note further down.
 // Usage: bun scripts/fetch-recipe-photos.ts [batchSize=30] > /tmp/batch.json
 // Prints a JSON array of `{id, foto_url}` to stdout (progress goes to
 // stderr). Convert to SQL and apply:
@@ -94,6 +96,16 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const UNSPLASH_KEY = process.env.UNPLASH_ACCESS_KEY!;
+// v12 — FRESCO-31: Unsplash's own corpus for this table's combinatorial
+// dish names hit a wall this session (86 candidates fetched, 1 usable —
+// content_filter=high + a healthy hit-rate, but the SPECIFIC dish just
+// isn't in Unsplash's collection). Pexels (200 req/hour, 20k/month) and
+// Pixabay (5000 req/hour) are additional free-tier stock-photo corpora with
+// their own independent collections — same translated-query strategy, tried
+// only after both Unsplash tiers come back empty, so they add coverage
+// without diluting Unsplash's already-tuned precision.
+const PEXELS_KEY = process.env.PEXELS_API_KEY!;
+const PIXABAY_KEY = process.env.PIXABAY_API_KEY!;
 const BATCH_SIZE = Number(process.argv[2] ?? 30);
 
 function stripAccents(s: string): string {
@@ -415,6 +427,54 @@ async function searchUnsplash(query: string, seed: string, usedUrls: Set<string>
   return pickFromPage(page2, seed, usedUrls);
 }
 
+// v12 — no `category=food` scoping: the file-header v4 note already
+// live-validated that collection/category scoping on Unsplash made results
+// WORSE (a 2.5k-image collection was too narrow for these combinatorial
+// names, and being "inside a food collection" didn't mean the SPECIFIC dish
+// was in it). Same risk applies to Pixabay's category filter — rely on the
+// translated query alone, same as Unsplash.
+async function fetchPexelsPage(query: string): Promise<{ urls: { regular: string } }[] | null> {
+  // Pexels' free tier (200 req/hour) is generous relative to Unsplash's
+  // 50/hour — a light throttle is still worth keeping since this script
+  // fires requests back-to-back across the fallback chain.
+  await sleep(300);
+  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30&orientation=square`, {
+    headers: { Authorization: PEXELS_KEY },
+  });
+  if (!res.ok) {
+    console.error(`Pexels error ${res.status} for query "${query}"`);
+    return null;
+  }
+  const body = await res.json() as { photos: { src: { large: string } }[] };
+  return body.photos.map(p => ({ urls: { regular: p.src.large } }));
+}
+
+async function searchPexels(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
+  const results = await fetchPexelsPage(query);
+  if (!results || results.length === 0) { return null; }
+  return pickFromPage(results, seed, usedUrls);
+}
+
+async function fetchPixabayPage(query: string): Promise<{ urls: { regular: string } }[] | null> {
+  // Pixabay's free tier is 5000 req/hour — the least quota-constrained of
+  // the three, but still throttled lightly for the same back-to-back-calls
+  // reason as Pexels above.
+  await sleep(300);
+  const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30&safesearch=true`);
+  if (!res.ok) {
+    console.error(`Pixabay error ${res.status} for query "${query}"`);
+    return null;
+  }
+  const body = await res.json() as { hits: { largeImageURL: string }[] };
+  return body.hits.map(h => ({ urls: { regular: h.largeImageURL } }));
+}
+
+async function searchPixabay(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
+  const results = await fetchPixabayPage(query);
+  if (!results || results.length === 0) { return null; }
+  return pickFromPage(results, seed, usedUrls);
+}
+
 async function main() {
   // Seed with every foto_url already applied — a fresh fetch must never
   // collide with an existing GOOD photo either, not just with others in
@@ -470,20 +530,35 @@ async function main() {
     // database was the real root cause of bad matches, not just relevance
     // ranking).
     const preciseQuery = `${translateQuery(recipe.nombre)} cooked meal food photography`;
-    let url = await searchUnsplash(preciseQuery, recipe.id, usedUrls);
-    let query = preciseQuery;
+    // v11: broad tier had dropped the "cooked" disambiguator entirely (down
+    // to just "food photography") to maximize corpus size — but FRESCO-192's
+    // audit traced a real chunk of its mismatches back to exactly that:
+    // raw-ingredient/product shots slipping through once "cooked" was gone.
+    // Adding the single word back costs far less corpus width than the old
+    // 2-word "cooked meal" precise-tier bias while still excluding the worst
+    // offenders.
+    const broadQuery = `${broadenQuery(recipe.nombre)} cooked food photography`;
 
-    if (!url) {
-      // v11: broad tier had dropped the "cooked" disambiguator entirely
-      // (down to just "food photography") to maximize corpus size — but
-      // FRESCO-192's audit traced a real chunk of its mismatches back to
-      // exactly that: raw-ingredient/product shots slipping through once
-      // "cooked" was gone. Adding the single word back costs far less
-      // corpus width than the old 2-word "cooked meal" precise-tier bias
-      // while still excluding the worst offenders.
-      const broadQuery = `${broadenQuery(recipe.nombre)} cooked food photography`;
-      url = await searchUnsplash(broadQuery, recipe.id, usedUrls);
-      if (url) { query = `${broadQuery} [broad]`; }
+    // v12 — provider fallback chain, tried in order, first hit wins. Each
+    // provider gets its own precise + broad attempt before moving to the
+    // next: Unsplash's tuning (content_filter, topK, page-2 exhaustion) is
+    // the most battle-tested, so it goes first; Pexels/Pixabay only fire
+    // once Unsplash's own corpus for this specific dish is confirmed empty,
+    // not as a first-choice alternative.
+    const attempts: { label: string, run: () => Promise<string | null> }[] = [
+      { label: preciseQuery, run: async () => searchUnsplash(preciseQuery, recipe.id, usedUrls) },
+      { label: `${broadQuery} [broad]`, run: async () => searchUnsplash(broadQuery, recipe.id, usedUrls) },
+      { label: `${preciseQuery} [pexels]`, run: async () => searchPexels(preciseQuery, recipe.id, usedUrls) },
+      { label: `${broadQuery} [pexels broad]`, run: async () => searchPexels(broadQuery, recipe.id, usedUrls) },
+      { label: `${preciseQuery} [pixabay]`, run: async () => searchPixabay(preciseQuery, recipe.id, usedUrls) },
+      { label: `${broadQuery} [pixabay broad]`, run: async () => searchPixabay(broadQuery, recipe.id, usedUrls) },
+    ];
+
+    let url: string | null = null;
+    let query = '';
+    for (const attempt of attempts) {
+      url = await attempt.run();
+      if (url) { query = attempt.label; break; }
     }
 
     if (url) {
