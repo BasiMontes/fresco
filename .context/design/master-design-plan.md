@@ -81,14 +81,19 @@ or placeholder remains; `n/a` = not a user-facing fidelity surface.
 *screens*; `DESIGN.md` owns *tokens and components*. Token values are **not** duplicated here — read
 them from `DESIGN.md`. Pointers:
 
+> **`DESIGN.md` is at `version: beta` (v2, epic FRESCO-436).** The calm-editorial redesign is landing token-by-token; the pointers below track v2. §4 screen specs still name v1 tokens (Caprasimo etc.) and are swept as each redesign card ships — see the v2 note under §5.
+
 | Concern | Where in `DESIGN.md` |
 |---|---|
-| Colours (primary `verde corporativo`, secondary `naranja corporativo`, cream background/surface, warm neutral + accent ramps, error clay-red) | frontmatter `colors:` + prose §Colors |
-| Typography (Caprasimo display `h1`–`h6`, Figtree body, 15px base) | frontmatter `typography:` + prose §Typography |
-| Spacing (4.4px base unit, `space-1`…`space-8`) | frontmatter `spacing:` + prose §Layout |
-| Radii (`sm` 8 / `md` 16 / `lg` 28 / `card` ≈32 / `full` 999 — every button & tag is a pill) | frontmatter `rounded:` + prose §Shapes |
-| Elevation (3 warm-based shadow levels; `lg` for overlays only) | prose §Elevation & Depth |
-| Components (button variants incl. `button-action` orange, tag/pill variants, `input`, `segmented-control`, `card` / `card-insight` / `card-pro` / `recipe-card`, `nav-sidebar` / `nav-bottom-tab`, `icon` 2px stroke) | frontmatter `components:` + prose §Components |
+| Design thesis ("un ritual semanal, no una app") — governs every visual decision | prose §Tesis |
+| Colours (primary `verde corporativo`, secondary `naranja corporativo`, cream background, **v2 `surface-raised` card fill**, warm neutral + accent ramps, error clay-red) | frontmatter `colors:` + prose §Colors |
+| **Colour discipline (v2)** — near-monochrome, one accent = CTA, tags lose fills (except `tag-allergen`), no decorative orange | prose §Colors → "Color discipline (v2)" |
+| Typography (**v2: Fraunces display `h1`/`h2` ONLY; Figtree for `h3`–`h6` + card titles + button labels**, 15px body base) | frontmatter `typography:` + prose §Typography |
+| Spacing (4.4px base unit, `space-1`…`space-8`, **v2 page-rhythm `space-12/16/24`**) | frontmatter `spacing:` + prose §Layout |
+| Radii (**v2 option A: `sm` 6 / `md` 12 / `lg` 16 / `image` 16 / `card` 20 / `full` 999 — buttons & tags stay pills**) | frontmatter `rounded:` + prose §Shapes |
+| Elevation (**v2: hairline border on every card**, then 3 warm-based shadow levels; `lg` for overlays only) | prose §Elevation & Depth |
+| **Motion (v2)** — `duration-fast/base/slow` (120/200/320ms), `ease-standard/entrance/exit`, no spring, honour `prefers-reduced-motion` | frontmatter `motion:` + prose §Motion |
+| Components (button variants incl. `button-action` orange, **v2 hairline `tag` + `tag-allergen`**, `input` **+ focus ring**, `segmented-control`, `card` / `card-insight` / `card-pro` / **photo-forward `recipe-card`**, `nav-sidebar` / `nav-bottom-tab`, `icon` 2px stroke) | frontmatter `components:` + prose §Components |
 | Logo lockups (`Logo base` / `Logo negativo` / `Logo naranja`) | prose §Overview |
 | Amber WCAG-AA contrast rule (FRESCO-283/285/299/303) | prose §Do's and Don'ts |
 
@@ -492,6 +497,17 @@ compliance notes.
 > `text-tertiary` darkening, FRESCO-303 pricing check colour, FRESCO-70 sidebar-on-green, FRESCO-298
 > icon stroke held at 2px. These changed the token spec itself, so they are the contract now, not
 > departures from it (see §2).
+>
+> **v2 redesign contract (epic FRESCO-436, FRESCO-437 — `DESIGN.md` `version: beta`).** The first
+> deliberate departure from the Claude-Design canvas, ratified with the founder: thesis added
+> ("un ritual semanal, no una app"); display face Caprasimo → **Fraunces on `h1`/`h2` only**,
+> Figtree everywhere else; **`surface-raised` (#FBF6EC)** card fill + mandatory hairline border
+> (kills the v1 "beige on beige"); colour discipline tightened to one-accent-per-screen, tag fills
+> removed except `tag-allergen`; radii dialled back (option A — `card` 32→20, `lg` 28→16, **pills
+> kept** on buttons/tags); page-rhythm spacing `space-12/16/24` added; **first `motion:` tokens**.
+> This is the contract now. Downstream FRESCO-436 cards (438 typography apply, 439 components, 440
+> colour sweep, 441 recipe card, 443 forms, 444 spacing, 446 motion, 447 photo grade) apply it to
+> `app/**` + `components/**` and sweep the v1 token names still in §4 as they land.
 
 ---
 
