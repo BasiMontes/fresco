@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Caprasimo, Figtree } from 'next/font/google';
+import { Figtree, Fraunces } from 'next/font/google';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
 
 import './globals.css';
@@ -15,13 +15,17 @@ import './globals.css';
 // that renders `<Skeleton>` imports the registry itself instead — see
 // `app/(app)/menu/loading.tsx` etc.
 
-// DESIGN.md Typography: Caprasimo (display, weight 400 only) for headings,
-// Figtree (400/600/700) for body copy. Exposed as CSS variables consumed by
-// tailwind.config.ts's `fontFamily.heading` / `fontFamily.sans`.
-const caprasimo = Caprasimo({
+// DESIGN.md v2 Typography (FRESCO-438): Fraunces (variable display serif) for
+// h1/h2 only — weight 400, 300 for `display-light`; SOFT/WONK/opsz axes give it
+// bespoke character. Figtree (400/600/700) for body copy AND h3–h6, card titles,
+// button labels. Exposed as CSS variables consumed by tailwind.config.ts's
+// `fontFamily.heading` / `fontFamily.sans` and the split `h1,h2` / `h3..h6`
+// rules in globals.css.
+const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: '400',
+  axes: ['SOFT', 'WONK', 'opsz'],
   variable: '--font-heading',
+  display: 'swap',
 });
 
 const figtree = Figtree({
@@ -46,7 +50,7 @@ export const dynamic = 'force-dynamic';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${caprasimo.variable} ${figtree.variable}`}>
+    <html lang="es" className={`${fraunces.variable} ${figtree.variable}`}>
       <body>
         <PostHogProvider>{children}</PostHogProvider>
       </body>

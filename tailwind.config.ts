@@ -58,7 +58,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ['var(--font-heading)', 'Caprasimo', '"Baloo 2"', 'cursive'],
+        // FRESCO-438: Fraunces (var(--font-heading)) for the display face.
+        heading: ['var(--font-heading)', 'Georgia', '"Times New Roman"', 'serif'],
         sans: [
           'var(--font-body)',
           'Figtree',
@@ -68,12 +69,15 @@ const config: Config = {
         ],
       },
       fontSize: {
-        'h1': ['42px', { lineHeight: '1.12', letterSpacing: '-0.015em', fontWeight: '400' }],
-        'h2': ['30px', { lineHeight: '1.12', letterSpacing: '-0.015em', fontWeight: '400' }],
-        'h3': ['22px', { lineHeight: '1.12', letterSpacing: '-0.015em', fontWeight: '400' }],
-        'h4': ['18px', { lineHeight: '1.12', letterSpacing: '-0.015em', fontWeight: '400' }],
-        'h5': ['15px', { lineHeight: '1.12', letterSpacing: '-0.015em', fontWeight: '400' }],
-        'h6': ['12px', { lineHeight: '1.12', letterSpacing: '0.08em', fontWeight: '400' }],
+        // FRESCO-438 (DESIGN.md v2): h1/h2 are Fraunces (weight 400, tight tracking,
+        // set via the h1,h2 rule in globals.css); h3–h6 are Figtree 600.
+        'h1': ['44px', { lineHeight: '1.04', letterSpacing: '-0.025em', fontWeight: '400' }],
+        'h2': ['32px', { lineHeight: '1.08', letterSpacing: '-0.02em', fontWeight: '400' }],
+        'display-light': ['28px', { lineHeight: '1.15', letterSpacing: '-0.015em', fontWeight: '300' }],
+        'h3': ['22px', { lineHeight: '1.25', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'h4': ['18px', { lineHeight: '1.3', letterSpacing: '-0.005em', fontWeight: '600' }],
+        'h5': ['15px', { lineHeight: '1.3', letterSpacing: '0', fontWeight: '600' }],
+        'h6': ['12px', { lineHeight: '1.2', letterSpacing: '0.08em', fontWeight: '600' }],
         'body-md': ['15px', { lineHeight: '1.55', fontWeight: '400' }],
         'body-sm': ['13px', { lineHeight: '1.55', fontWeight: '400' }],
         'label': ['14px', { lineHeight: '1.2', fontWeight: '600' }],

@@ -331,14 +331,29 @@
       sans-serif;
   }
 
+  /*
+   * FRESCO-438 (DESIGN.md v2) — the display face (Fraunces) is reserved for
+   * h1/h2 only. h3–h6, card titles and button labels are Figtree 600. A
+   * heading that is not a page- or section-level headline is Figtree.
+   */
   h1,
-  h2,
+  h2 {
+    font-family: var(--font-heading), Georgia, 'Times New Roman', serif;
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
   h3,
   h4,
   h5,
   h6 {
-    font-family: var(--font-heading), Caprasimo, 'Baloo 2', cursive;
-    font-weight: 400;
+    font-family:
+      var(--font-body),
+      Figtree,
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
+    font-weight: 600;
   }
 }
 

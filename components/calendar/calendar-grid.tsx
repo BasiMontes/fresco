@@ -705,7 +705,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
                 )}
               </div>
               <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-              <h3 className={cn('text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
+              <h3 className={cn('line-clamp-2 text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
               {dietaLabel && (
                 <div className="mt-1">
                   <Tag variant="accent">{dietaLabel}</Tag>
