@@ -92,7 +92,7 @@ them from `DESIGN.md`. Pointers:
 | Spacing (4.4px base unit, `space-1`…`space-8`, **v2 page-rhythm `space-12/16/24`**) | frontmatter `spacing:` + prose §Layout |
 | Radii (**v2 option A: `sm` 6 / `md` 12 / `lg` 16 / `image` 16 / `card` 20 / `full` 999 — buttons & tags stay pills**) | frontmatter `rounded:` + prose §Shapes |
 | Elevation (**v2: hairline border on every card**, then 3 warm-based shadow levels; `lg` for overlays only) | prose §Elevation & Depth |
-| **Motion (v2)** — `duration-fast/base/slow` (120/200/320ms), `ease-standard/entrance/exit`, no spring, honour `prefers-reduced-motion` | frontmatter `motion:` + prose §Motion |
+| **Motion (v2)** — *intent* over the existing transitions-dev tokens (`--duration-*` / `--ease-*` in `globals.css`, FRESCO-247): prefer the calm end, add no new spring; `prefers-reduced-motion` already wired (FRESCO-244) | frontmatter `motion:` + prose §Motion |
 | Components (button variants incl. `button-action` orange, **v2 hairline `tag` + `tag-allergen`**, `input` **+ focus ring**, `segmented-control`, `card` / `card-insight` / `card-pro` / **photo-forward `recipe-card`**, `nav-sidebar` / `nav-bottom-tab`, `icon` 2px stroke) | frontmatter `components:` + prose §Components |
 | Logo lockups (`Logo base` / `Logo negativo` / `Logo naranja`) | prose §Overview |
 | Amber WCAG-AA contrast rule (FRESCO-283/285/299/303) | prose §Do's and Don'ts |
@@ -504,7 +504,7 @@ compliance notes.
 > Figtree everywhere else; **`surface-raised` (#FBF6EC)** card fill + mandatory hairline border
 > (kills the v1 "beige on beige"); colour discipline tightened to one-accent-per-screen, tag fills
 > removed except `tag-allergen`; radii dialled back (option A — `card` 32→20, `lg` 28→16, **pills
-> kept** on buttons/tags); page-rhythm spacing `space-12/16/24` added; **first `motion:` tokens**.
+> kept** on buttons/tags); page-rhythm spacing `space-12/16/24` added; motion gets a calm *intent* over the existing transitions-dev tokens (no new numbers).
 > This is the contract now. Downstream FRESCO-436 cards (438 typography apply, 439 components, 440
 > colour sweep, 441 recipe card, 443 forms, 444 spacing, 446 motion, 447 photo grade) apply it to
 > `app/**` + `components/**` and sweep the v1 token names still in §4 as they land.

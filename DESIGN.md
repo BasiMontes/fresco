@@ -126,14 +126,14 @@ spacing:
   16: 70.4px # v2: gap between major content blocks
   24: 105.6px # v2: hero / page-top breathing room
 motion:
-  # v2 (FRESCO-437): first motion tokens in the system. Consumed by the transitions layer (FRESCO-446).
-  duration-fast: 120ms # hovers, small state flips
-  duration-base: 200ms # standard enter/exit, dropdowns, tabs
-  duration-slow: 320ms # sheets, page-level reveals
-  ease-standard: 'cubic-bezier(0.2, 0, 0, 1)' # most transitions
-  ease-entrance: 'cubic-bezier(0, 0, 0, 1)' # elements appearing
-  ease-exit: 'cubic-bezier(0.3, 0, 1, 1)' # elements leaving
-  reduced-motion: 'Honour prefers-reduced-motion: reduce — drop non-essential animation, keep opacity fades ≤120ms'
+  # v2 (FRESCO-437): motion values are NOT redefined here. The system already
+  # has a full vocabulary in `app/globals.css` :root — `--duration-*`,
+  # `--ease-*`, `--distance-*`, `--scale-*` plus per-interaction tokens —
+  # installed by transitions-dev (FRESCO-247). DESIGN.md v2 sets the *intent*,
+  # not new numbers. See prose §Motion. FRESCO-446 applies it.
+  source: 'app/globals.css :root (transitions-dev / FRESCO-247)'
+  intent: 'calm — prefer the shorter durations (--duration-quick 150ms / --duration-fast 250ms) and --ease-smooth-out; treat the --ease-bounce* curves as legacy (keep what ships, add no new overshoot)'
+  reduced-motion: 'Honour prefers-reduced-motion: reduce — already wired app-wide (FRESCO-244); drop non-essential animation, keep short opacity fades'
 components:
   button:
     backgroundColor: '{colors.primary}'
@@ -248,7 +248,7 @@ Fresco is a Spain-focused weekly meal-planning app for **Laura, the exhausted pl
 
 The visual theme, in the founder's own words from the brand canvas, is direct: **"Cálido, redondeado, verde + naranja"** — warm, rounded, green + orange (`design/handoff/fresco/brand-guide.dc.html`). The brand tagline frames the product identity end to end: *"Menús semanales con IA que aprende de lo que realmente cocinas"* (Weekly menus with AI that learns from what you actually cook). Every token in this system exists to make that tagline felt on first paint, not just claimed in copy.
 
-Concretely: a warm cream background (`#FAF3E3`) instead of clinical white, a hand-picked corporate green (`#0F4E0E`) for trust and primary action, and a corporate orange (`#DF8C26`) reserved for the single highest-intent moment on a screen. Corners are soft but not bouncy — **v2 (FRESCO-436)** dialled the card/panel radii back toward an editorial read while keeping buttons and tags as full pills (the brand-shape signal); see §Shapes. This system was originally authored in Claude Design (`claude.ai/design`) and exported as a brand-guide canvas; **v1** of this file wrapped those tokens verbatim. **v2** is the first deliberate departure — a calm editorial direction (Fraunces display, one-accent discipline, hairline-first surfaces, first motion tokens) ratified screen-by-screen under epic FRESCO-436. Where a value now differs from the `design/handoff/fresco/brand-guide.dc.html` canvas, the change is annotated inline with its ticket.
+Concretely: a warm cream background (`#FAF3E3`) instead of clinical white, a hand-picked corporate green (`#0F4E0E`) for trust and primary action, and a corporate orange (`#DF8C26`) reserved for the single highest-intent moment on a screen. Corners are soft but not bouncy — **v2 (FRESCO-436)** dialled the card/panel radii back toward an editorial read while keeping buttons and tags as full pills (the brand-shape signal); see §Shapes. This system was originally authored in Claude Design (`claude.ai/design`) and exported as a brand-guide canvas; **v1** of this file wrapped those tokens verbatim. **v2** is the first deliberate departure — a calm editorial direction (Fraunces display, one-accent discipline, hairline-first surfaces, an unhurried motion intent over the existing transitions-dev tokens) ratified screen-by-screen under epic FRESCO-436. Where a value now differs from the `design/handoff/fresco/brand-guide.dc.html` canvas, the change is annotated inline with its ticket.
 
 This system was designed to counter one specific risk named in the Constitution: that Free-tier users won't perceive the Pro-tier learning moat unless it's made *visible* (`.context/business/market-context.md` — Risks). The "insight card" component (§Components) exists directly to solve that — it is the one place in the UI where the system says out loud, in the primary accent color, "I adjusted for you."
 
@@ -336,12 +336,12 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 
 ## Motion
 
-**v2 (FRESCO-437) — first motion tokens in the system.** v1 defined none, and the UI was fully static. Per the thesis, motion is *unhurried*: short, eased, quiet. Nothing bounces, nothing overshoots, nothing springs. The tokens live in frontmatter `motion:` and are consumed by the transitions layer (FRESCO-446).
+**v2 (FRESCO-437) — intent, not new tokens.** The system already has a complete motion vocabulary: `app/globals.css` `:root` defines `--duration-*` (`stagger` 40ms … `very-slow` 500ms), `--ease-*` (`smooth-out`, `in-out`, `out`, `linear`, `bounce`, `bounce-strong`), `--distance-*`, `--scale-*`, `--blur-*`, plus dozens of per-interaction tokens — all installed by transitions-dev (FRESCO-247) and consumed across the app. `prefers-reduced-motion` is already wired app-wide (FRESCO-244). v2 does **not** redefine any of this; it sets how the thesis ("unhurried") picks from it.
 
-- **Durations.** `fast` 120ms (hovers, small state flips), `base` 200ms (standard enter/exit, dropdowns, tabs, accordions), `slow` 320ms (sheets, page-level reveals). Nothing in the product animates longer than `slow`.
-- **Easing.** `ease-standard` `cubic-bezier(0.2, 0, 0, 1)` for most transitions; `ease-entrance` `cubic-bezier(0, 0, 0, 1)` for elements appearing; `ease-exit` `cubic-bezier(0.3, 0, 1, 1)` for elements leaving. No `cubic-bezier` with a negative or >1 control point (those are the spring/overshoot curves — banned here).
-- **Reduced motion.** Honour `prefers-reduced-motion: reduce` — drop non-essential animation (reveals, slides, parallax), keep only opacity fades capped at 120ms.
-- **What gets motion.** Landing: gentle section reveals on scroll. App: hover/press feedback on cards and buttons, dropdown and sheet open/close, tab and view changes, the `card-insight` appearing. Not: decorative loops, attention-seeking pulses, anything on the critical path of reading a recipe.
+- **Prefer the calm end of the scale.** Default to `--duration-quick` (150ms) and `--duration-fast` (250ms); reserve `--duration-slow`/`--duration-very-slow` for genuine page- or panel-level moments. `--ease-smooth-out` is the house curve.
+- **The `--ease-bounce` / `--ease-bounce-strong` curves are legacy.** They ship on the like-button burst, the notification-badge pop and the avatar-group hover — keep those. Add **no new** overshoot or spring: a new transition uses `--ease-smooth-out`, `--ease-in-out`, or `--ease-out`.
+- **Reduced motion.** Already honoured everywhere via FRESCO-244 — drop non-essential animation (reveals, slides, parallax), keep short opacity fades. New motion must respect the same guard.
+- **What gets motion (v2 additions, FRESCO-446).** Landing: gentle section reveals on scroll. App: the existing hover/press, dropdown/sheet, tab and page transitions stay; add a quiet entrance for the `card-insight`. Not: decorative loops, attention pulses, or anything on the path of reading a recipe.
 
 ## Components
 
@@ -389,7 +389,7 @@ The vibrant `#DF8C26` stays the brand color everywhere it is a surface; it just 
 - Do use **Fraunces on `h1`/`h2` only.** Every other heading, every card title, every button label is Figtree. A card title in the display face pisa the photo and flattens hierarchy — that was the v1 mistake.
 - Do give **every card a hairline border** (`{colors.border}`), unconditionally, on top of `surface-raised`. The hairline is the guarantee a card never disappears into the cream page.
 - Do keep headlines at **weight 400** (or 300 for `display-light`). Never bold a Fraunces headline — authority comes from calm and scale, not weight.
-- Do pull motion values from the `motion:` tokens (`duration-*`, `ease-*`). No hardcoded `300ms ease-in-out`, no spring/overshoot curves.
+- Do pull motion values from the existing `--duration-*` / `--ease-*` tokens in `globals.css` (transitions-dev / FRESCO-247), preferring the calm end. No hardcoded `300ms ease-in-out`; add no new spring/overshoot curve.
 - Do use the page-rhythm steps (`space-12/16/24`) between major blocks — the v1 scale stopped at `space-8` and everything felt packed.
 
 **Do:**
