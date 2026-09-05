@@ -47,9 +47,19 @@ const LEGAL_ENTITY = 'Basilio Montes Castaño, autónomo, NIF 47427105R, con dom
  * existed.
  *
  * FRESCO-430: the legal-entity gap from the original comment above is now
- * closed — see `LEGAL_ENTITY` above. The draft banner is gone; retention
- * periods, DPO designation, and a lawyer pass on liability/withdrawal
- * clauses remain open per that ticket's explicit out-of-scope list.
+ * closed — see `LEGAL_ENTITY` above. The draft banner is gone.
+ *
+ * FRESCO-365 (non-lawyer technical review, course-project context — see
+ * Jira comment for full scope note): closed the four gaps a real review
+ * would flag first on a subscription service — withdrawal right (Ley
+ * 3/2014 / TRLGDCU Art. 102-103, mandatory 14-day window + explicit
+ * loss-of-right acknowledgment for digital services), auto-renewal /
+ * cancellation disclosure for the Stripe Pro subscription (transparency
+ * duty for recurring billing), a liability-cap carve-out for the mandatory
+ * consumer-protection floor (Art. 86 TRLGDCU — a cap cannot shield willful
+ * misconduct, gross negligence, or personal injury), and a fixed deletion
+ * SLA + terms-change notice clause. DPO designation remains out of scope
+ * (not mandatory at this processing scale).
  */
 const TERMS_SECTIONS: LegalSubsection[] = [
   {
@@ -74,11 +84,19 @@ const TERMS_SECTIONS: LegalSubsection[] = [
   },
   {
     title: 'Limitación de Responsabilidad',
-    body: 'El Servicio se ofrece "tal cual". Los menús y recetas son sugerencias, no un consejo médico o nutricional profesional. Aunque Fresco excluye estructuralmente los alérgenos e ingredientes que declaras, sigues siendo responsable de verificar que cada receta es segura para tu hogar antes de cocinarla. En la medida permitida por la ley, la responsabilidad de Fresco frente a ti se limita a lo que hayas pagado por el Servicio en los últimos 12 meses.',
+    body: 'El Servicio se ofrece "tal cual". Los menús y recetas son sugerencias, no un consejo médico o nutricional profesional. Aunque Fresco excluye estructuralmente los alérgenos e ingredientes que declaras, sigues siendo responsable de verificar que cada receta es segura para tu hogar antes de cocinarla. En la medida permitida por la ley, la responsabilidad de Fresco frente a ti se limita a lo que hayas pagado por el Servicio en los últimos 12 meses. Esta limitación no aplica a daños causados por dolo o negligencia grave, ni a daños personales, ni a ningún otro supuesto en que la normativa de protección de consumidores no permita limitar la responsabilidad.',
+  },
+  {
+    title: 'Suscripción, Renovación y Derecho de Desistimiento',
+    body: 'El Plan Pro es una suscripción de pago recurrente gestionada por Stripe que se renueva automáticamente al final de cada periodo salvo que la canceles antes desde tu perfil; al cancelar, mantienes el acceso hasta el final del periodo ya pagado y no se te cobrará de nuevo. Si contratas el Plan Pro como consumidor en España o la UE, dispones de 14 días naturales desde la contratación para desistir sin justificar el motivo y con devolución íntegra del importe. Si nos pides expresamente empezar a prestarte el servicio antes de que termine ese plazo, entiendes que pierdes el derecho de desistimiento en el momento en que el servicio se haya ejecutado por completo; si se cancela antes de la ejecución completa, te devolvemos la parte proporcional no disfrutada.',
   },
   {
     title: 'Terminación',
     body: 'Puedes dejar de usar Fresco en cualquier momento y borrar tu cuenta desde tu perfil, lo que elimina tus datos según se describe en la Política de Privacidad. Nos reservamos el derecho de suspender cuentas que violen estos Términos.',
+  },
+  {
+    title: 'Modificaciones de estos Términos',
+    body: 'Podemos actualizar estos Términos ocasionalmente. Si el cambio es material, te avisaremos dentro de la aplicación o por correo electrónico con al menos 15 días de antelación a su entrada en vigor. Si sigues usando el Servicio después de esa fecha, se entiende que aceptas los nuevos Términos.',
   },
   {
     title: 'Ley Aplicable y Jurisdicción',
@@ -109,7 +127,7 @@ const PRIVACY_SECTIONS: LegalSubsection[] = [
   },
   {
     title: 'Plazo de Conservación',
-    body: 'Conservamos tus datos mientras tu cuenta esté activa. Si eres invitada (sesión anónima) y no conviertes tu sesión en una cuenta real, tus datos se eliminan automáticamente pasado un período de inactividad.',
+    body: 'Conservamos tus datos mientras tu cuenta esté activa. Si eres invitada (sesión anónima) y no conviertes tu sesión en una cuenta real, tus datos se eliminan automáticamente pasado un período de inactividad. Cuando borras tu cuenta, eliminamos tus datos personales de nuestros sistemas en un plazo máximo de 30 días, salvo la información de facturación que debamos conservar por obligación legal (normativa fiscal y contable española).',
   },
   {
     title: 'Tus Derechos',
