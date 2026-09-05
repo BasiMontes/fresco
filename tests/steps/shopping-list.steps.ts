@@ -120,12 +120,22 @@ Given(/^que el usuario tiene una lista de la compra generada con un producto mar
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
 });
 
-When(/^pulsa "Compra realizada"$/, async ({ page }) => {
+When(/^pulsa "Compra realizada" y cierra el recibo$/, async ({ page }) => {
+  // db2899c / FRESCO-450: "Compra realizada" no borra al instante — abre el
+  // ReceiptTicket. Cerrarlo ("Listo") es lo que dispara `jsonb_clear_comprados`
+  // y retira los items comprados. Son dos pasos, no uno.
   await page.getByTestId('shopping_list_clear_comprados_button').click();
+  await expect(page.getByTestId('receipt_ticket_dialog')).toBeVisible();
+  await page.getByTestId('receipt_ticket_done_button').click();
+  await expect(page.getByTestId('receipt_ticket_dialog')).toHaveCount(0);
 });
 
-Then(/^todos los productos quedan desmarcados$/, async ({ page }) => {
-  await expect(page.getByTestId('shopping_list_item_0_0')).not.toBeChecked();
+Then(/^los productos comprados desaparecen de la lista$/, async ({ page }) => {
+  // Se eliminan (no se desmarcan), así que no queda ningún checkbox marcado
+  // en toda la lista.
+  await expect(
+    page.locator('main input[type="checkbox"][data-testid^="shopping_list_item_"]:checked'),
+  ).toHaveCount(0);
 });
 
 Then(/^el botón "Compra realizada" desaparece$/, async ({ page }) => {
