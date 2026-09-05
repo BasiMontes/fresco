@@ -158,7 +158,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
         </Button>
       </div>
       <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-      <h3 className="text-h4">{recipe.nombre}</h3>
+      <h3 className="line-clamp-2 text-h4">{recipe.nombre}</h3>
       <div className="mt-1">
         <Tag variant={dietaLabel ? 'accent' : 'neutral'}>
           {dietaLabel ?? recipe.clasificacion?.cocina ?? '—'}

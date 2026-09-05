@@ -9,7 +9,7 @@ import './globals.css';
  * layout, not the layout itself — Next.js docs). Must define its own
  * `<html>`/`<body>`, since it replaces the root layout when active; skips
  * next/font (root layout is what's failing) and falls back to the
- * Caprasimo/Figtree fallback chain already declared in tailwind.config.ts.
+ * Fraunces/Figtree fallback chain already declared in tailwind.config.ts.
  */
 export default function GlobalError({
   error,
