@@ -18,6 +18,12 @@
   --color-neutral: #a39372;
   --color-background: #faf3e3;
   --color-surface: #f1e3c6;
+  /* FRESCO-439 (DESIGN.md v2): one step LIGHTER than background — the card
+     surface, so cards lift off the cream page instead of the v1
+     surface-on-background beige-on-beige (~4% contrast). Always paired with a
+     hairline border on the card. `--color-surface` stays for recessed
+     elements (inputs, segmented controls, inset panels). */
+  --color-surface-raised: #fbf6ec;
   --color-text: #201e1d;
   --color-border: color-mix(in srgb, #201e1d 16%, transparent);
   --color-success: #0f4e0e;

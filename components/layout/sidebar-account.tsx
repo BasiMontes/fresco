@@ -98,7 +98,14 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
           <p data-testid="user_email" className="mt-0.5 truncate text-caption text-background/70">
             {email || 'Invitada'}
           </p>
-          <Tag data-testid="plan_tag" variant={getPlanTagVariant(plan)} className="mt-1.5">
+          {/* FRESCO-439: the sidebar sits on the dark-green ground, where the
+              v2 hairline tag (tertiary-brown text) has no contrast — override
+              to a cream hairline for this placement. */}
+          <Tag
+            data-testid="plan_tag"
+            variant={getPlanTagVariant(plan)}
+            className="mt-1.5 border-background/30 text-background/90"
+          >
             {PLAN_LABELS[plan]}
           </Tag>
         </div>

@@ -109,7 +109,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
   const favoriteButtonRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <div className={cn('flex h-full flex-col rounded-card bg-surface p-3 shadow-sm', className)}>
+    <div className={cn('flex h-full flex-col rounded-card border border-border bg-surface-raised p-3 shadow-sm', className)}>
       <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
         {recipe.foto_url
           ? (

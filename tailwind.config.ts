@@ -17,6 +17,7 @@ const config: Config = {
         'tertiary': 'var(--color-tertiary)',
         'background': 'var(--color-background)',
         'surface': 'var(--color-surface)',
+        'surface-raised': 'var(--color-surface-raised)', // FRESCO-439 (DESIGN.md v2) — card surface
         'text': 'var(--color-text)',
         'border': 'var(--color-border)',
         'success': 'var(--color-success)',
@@ -84,10 +85,14 @@ const config: Config = {
         'caption': ['11px', { lineHeight: '1.3', fontWeight: '400' }],
       },
       borderRadius: {
-        sm: '8px',
-        md: '16px',
-        lg: '28px',
-        card: '32px',
+        // FRESCO-439 (DESIGN.md v2, option A): roundness dialled back toward an
+        // editorial read. Pills KEPT on buttons/tags (`full`) — the system's
+        // strongest brand-shape signal. Ratified with the founder.
+        sm: '6px',
+        md: '12px',
+        lg: '16px',
+        image: '16px', // recipe / photo image areas
+        card: '20px', // down from 32px
         full: '999px',
       },
       spacing: {

@@ -6,12 +6,19 @@ import { cn } from '@/lib/utils';
 
 /**
  * Card variants mirror DESIGN.md's `components.card`, `card-insight`, and
- * `card-pro` tokens. All three use the `card` radius (32px = lg x 1.15),
- * not the raw `lg` token — see DESIGN.md Shapes / Do's & Don'ts.
+ * `card-pro` tokens. `card` radius is 20px (FRESCO-439, DESIGN.md v2 — down
+ * from 32px), not the raw `lg` token — see DESIGN.md Shapes / Do's & Don'ts.
+ *
+ * FRESCO-439 (DESIGN.md v2): `default` now sits on `surface-raised` (one step
+ * LIGHTER than the page) with an unconditional hairline `border-border`, so a
+ * card is always visibly distinct from the cream page — the v1 `bg-surface`
+ * (one step darker) read as "beige on beige". The hairline is the guarantee,
+ * the soft `shadow-sm` is secondary.
  *
  * `insight` is meaning-carrying, not decorative (DESIGN.md Don'ts): only use
  * it for a genuine "Fresco learned something" moment (the Pro-tier learning
- * moat, EPIC-FRESCO-5).
+ * moat, EPIC-FRESCO-5). It keeps its `accent-100` tint — the one place the
+ * near-monochrome v2 UI deliberately raises its voice.
  *
  * `danger` is not a DESIGN.md token — no destructive card variant exists
  * there. Added for `/profile`'s "zona de peligro" footer (FRESCO-70) as a
@@ -23,10 +30,10 @@ import { cn } from '@/lib/utils';
 const cardVariants = cva('rounded-card p-3', {
   variants: {
     variant: {
-      default: 'bg-surface shadow-sm',
+      default: 'border border-border bg-surface-raised shadow-sm',
       insight: 'bg-accent-100 text-accent-800 shadow-md',
-      pro: 'border-2 border-primary bg-surface shadow-md',
-      danger: 'border-2 border-error bg-surface shadow-md',
+      pro: 'border-2 border-primary bg-surface-raised shadow-md',
+      danger: 'border-2 border-error bg-surface-raised shadow-md',
     },
   },
   defaultVariants: {

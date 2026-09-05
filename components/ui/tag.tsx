@@ -5,23 +5,31 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Tag/pill variants mirror DESIGN.md's `components.tag*` tokens exactly.
- * FRESCO-78 — `accent` moved from `accent-100` to `accent-200`: the text
- * itself had plenty of contrast against `accent-100`, but that background
- * was too close in lightness to `bg-surface` (the card behind it) for the
- * pill shape to read as a distinct chip, not a legibility failure so much
- * as a "the tag disappears into the card" one.
+ * Tag/pill variants mirror DESIGN.md v2's `components.tag*` tokens.
+ *
+ * FRESCO-439 (DESIGN.md v2): tags are hairline by default — no colour fill.
+ * `accent` and `neutral` (previously tinted `accent-200` / `neutral-100`
+ * fills) now render as the same hairline chip; they're kept as names so the
+ * ~6 callers don't churn, but visually there is one non-interactive tag.
+ * `allergen` is the ONE tag that keeps a colour fill — allergen and
+ * hard-restriction flags must stand out for food-safety reasons.
+ * `selected` / `outline` are the interactive filter-chip pair (onboarding,
+ * preferences) and keep their primary treatment.
  */
 const tagVariants = cva(
-  'inline-flex items-center rounded-full px-2 py-1 text-caption font-sans',
+  'inline-flex items-center rounded-full border px-2 py-1 text-caption font-sans',
   {
     variants: {
       variant: {
-        'selected': 'border border-primary bg-primary text-background',
-        'outline': 'border border-primary text-primary',
-        'accent': 'bg-accent-200 text-accent-800',
-        'accent-2': 'bg-accent-2-100 text-accent-2-800',
-        'neutral': 'bg-neutral-100 text-neutral-800',
+        'selected': 'border-primary bg-primary text-background',
+        'outline': 'border-primary text-primary',
+        // hairline, no fill — the v2 default
+        'neutral': 'border-border text-tertiary',
+        'accent': 'border-border text-tertiary',
+        // food-safety flag — the only coloured tag in v2
+        'allergen': 'border-transparent bg-accent-2-100 text-accent-2-800',
+        /** @deprecated FRESCO-439 — use `allergen` */
+        'accent-2': 'border-transparent bg-accent-2-100 text-accent-2-800',
       },
     },
     defaultVariants: {
