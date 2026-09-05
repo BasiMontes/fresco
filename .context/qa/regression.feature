@@ -935,18 +935,20 @@ Característica: Flujo completo de usuario en Fresco
     # real por ingrediente para armar el total — precio_estimado lo expone
     # por producto en vez de perderlo en la suma.
 
-  @lista-compra @verificado-manual-2026-08-14 @automatizado
+  @lista-compra @verificado-manual-2026-09-05 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
-  Escenario: Compra realizada desmarca todos los productos marcados
+  Escenario: "Compra realizada" retira de la lista los productos ya comprados
     Dado que el usuario tiene una lista de la compra generada con un producto marcado como comprado
-    Cuando pulsa "Compra realizada"
-    Entonces todos los productos quedan desmarcados
+    Cuando pulsa "Compra realizada" y cierra el recibo
+    Entonces los productos comprados desaparecen de la lista
     Y el botón "Compra realizada" desaparece
     # FRESCO-191 (QA rework): repurpose real del CTA "Completar compra" del
-    # mockup — sin acción de "completar lista" en el backend, así que se
-    # convirtió en un desmarcado en bloque real vía toggleShoppingListItem.
-    # FRESCO-215: copy renombrada de "Vaciar comprados" a "Compra realizada"
-    # para comunicar la intención (fin de la compra) en vez de la mecánica.
+    # mockup — al principio desmarcaba en bloque (única RPC que existía).
+    # FRESCO-215: copy renombrada de "Vaciar comprados" a "Compra realizada".
+    # db2899c / FRESCO-450: el comportamiento cambió — "Compra realizada" abre
+    # un recibo (ReceiptTicket) y, al cerrarlo, ELIMINA los items comprados
+    # vía `jsonb_clear_comprados` en vez de desmarcarlos ("volvían como
+    # pendientes" leía como que no pasaba nada).
 
   @lista-compra @verificado-manual-2026-08-14 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
