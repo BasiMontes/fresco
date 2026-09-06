@@ -127,7 +127,7 @@ export function AdminRecipeSearch() {
               <div className="relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-neutral-200">
                 {recipe.foto_url
                   ? (
-                      <Image src={recipe.foto_url} alt={recipe.nombre} fill sizes="48px" className="object-cover" />
+                      <Image src={recipe.foto_url} alt={recipe.nombre} fill sizes="48px" className="recipe-photo object-cover" />
                     )
                   : (
                       <ImageOff className="size-5 text-neutral-400" aria-hidden="true" />

@@ -10,9 +10,12 @@ import { cn } from '@/lib/utils';
  * `/menu`, `/calendar` and `/recipes` render the same photo-forward
  * anatomy. Owns the photo-vs-placeholder decision and nothing else:
  *
- * - Real photo (`fotoUrl` set) → `next/image` `fill` + `object-cover`.
+ * - Real photo (`fotoUrl` set) → `next/image` `fill` + `object-cover`, with
+ *   the shared `.recipe-photo` grade (FRESCO-447) so photos from many
+ *   sources read as one brand.
  * - No photo → `<RecipePlaceholder>` (category gradient + typographic
- *   initial), never a bare icon.
+ *   initial), never a bare icon. The grade is NOT applied here — the
+ *   placeholder is a designed per-category gradient.
  *
  * "Sin marco": no border, no `bg-neutral-200` box — just the image or the
  * designed placeholder. The media is full-bleed at the top of the card, so
@@ -58,7 +61,7 @@ export function RecipeCardMedia({
               fill
               sizes={sizes ?? DEFAULT_SIZES}
               priority={priority}
-              className="object-cover"
+              className="recipe-photo object-cover"
             />
           )
         : (

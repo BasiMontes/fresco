@@ -926,3 +926,25 @@
     animation: spin 1s linear infinite !important;
   }
 }
+
+/*
+ * Recipe-photo grade (FRESCO-447, epic FRESCO-436 card 9) — the single
+ * reusable treatment that makes ~600 photos from ~600 sources read as one
+ * brand. It is the main compensator for not spending on photography.
+ *
+ * A subtle warm grade only: pull saturation back a touch, nudge contrast up,
+ * add a faint sepia so cool and warm source lighting land on a shared tone.
+ * Kept deliberately light — it must not look like a filter, just like the
+ * app has one photographer. Apply to the real <img> only, never to the
+ * `RecipePlaceholder` (that is a designed per-category gradient).
+ *
+ * One utility, consumed by `RecipeCardMedia` (→ /menu, /calendar, /recipes,
+ * /favorites), the `/recipes/[id]` detail hero, and the admin thumbnail —
+ * never re-declared per screen (AC: "una utilidad reutilizable, no CSS por
+ * pantalla"). Ratio is unified separately at aspect-[4/3] on every surface.
+ */
+@layer utilities {
+  .recipe-photo {
+    filter: saturate(0.92) contrast(1.04) sepia(0.08) brightness(1.01);
+  }
+}
