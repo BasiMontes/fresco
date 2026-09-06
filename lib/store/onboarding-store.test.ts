@@ -1,5 +1,14 @@
-import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { useOnboardingStore } from './onboarding-store';
+
+/**
+ * This suite replaces `globalThis.window` with a bare `{ sessionStorage }`
+ * stub. Capture the real happy-dom window and restore it after the file so
+ * later component-test files keep a window with `addEventListener` /
+ * `dispatchEvent` (the shared `bun-test-setup.ts` re-register guard only
+ * fires when `window` is fully `undefined`, not when it is a stub).
+ */
+const realWindow = (globalThis as { window?: unknown }).window;
 
 /**
  * Bun's default test runtime has no `window`/`sessionStorage` — the store's
@@ -164,4 +173,8 @@ describe('useOnboardingStore — dieta implies alergeno locks (FRESCO-275)', () 
 
     expect(useOnboardingStore.getState().alergenos).not.toContain('apio');
   });
+});
+
+afterAll(() => {
+  (globalThis as { window?: unknown }).window = realWindow;
 });
