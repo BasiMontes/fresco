@@ -58,7 +58,6 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-49](https://basiliomontescastano.atlassian.net/browse/FRESCO-49) - Información Legal y Contacto
 
 **Status:** Finalizada | **Stories:** 1 | **Points:** 0
@@ -114,7 +113,6 @@ _Project: FRESCO_
 
 **Status:** Rechazos | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-223](https://basiliomontescastano.atlassian.net/browse/FRESCO-223) - Centro de Avisos
 
 **Status:** Finalizada | **Stories:** 3 | **Points:** 0
@@ -146,11 +144,9 @@ _Project: FRESCO_
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
 
-
 ## [FRESCO-309](https://basiliomontescastano.atlassian.net/browse/FRESCO-309) - Tercera auditoría técnica (29 ago 2026) — remediación
 
 **Status:** Finalizada | **Stories:** 0 | **Points:** 0
-
 
 ## [FRESCO-330](https://basiliomontescastano.atlassian.net/browse/FRESCO-330) - [DRAFT] Refuerzo del moat: aprendizaje percibido
 
@@ -197,6 +193,24 @@ _Project: FRESCO_
 - [FRESCO-371](https://basiliomontescastano.atlassian.net/browse/FRESCO-371) A4-H14 · Onboarding a 3 pasos: hacer el presupuesto opcional o plegar pasos + instrumentar por paso _(3 pts, Finalizada)_
 - [FRESCO-372](https://basiliomontescastano.atlassian.net/browse/FRESCO-372) A4-H15 · Loop de re-enganche con dientes: pedir el push tras el primer menu, arreglar copy, instrumentar _(5 pts, Blocked)_
 - [FRESCO-373](https://basiliomontescastano.atlassian.net/browse/FRESCO-373) A4-M27 · Toggle cocinado/descartado usable: agrandar el objetivo, anadir deshacer o hacerlo no terminal _(3 pts, Finalizada)_
+
+## [FRESCO-436](https://basiliomontescastano.atlassian.net/browse/FRESCO-436) - Rediseño visual: de "simplona" a premium editorial
+
+**Status:** Listo | **Stories:** 13 | **Points:** 6
+
+- [FRESCO-437](https://basiliomontescastano.atlassian.net/browse/FRESCO-437) Rediseño | Contrato de diseño: DESIGN.md v2 + tesis _(- pts, Finalizada)_
+- [FRESCO-438](https://basiliomontescastano.atlassian.net/browse/FRESCO-438) Rediseño | Tipografía: sustituir la display face y aplicar roles _(- pts, Finalizada)_
+- [FRESCO-439](https://basiliomontescastano.atlassian.net/browse/FRESCO-439) Rediseño | Componentes: de "chunky" a editorial _(- pts, Finalizada)_
+- [FRESCO-440](https://basiliomontescastano.atlassian.net/browse/FRESCO-440) Rediseño | Disciplina de color: barrido por pantallas _(3 pts, Control de calidad)_
+- [FRESCO-441](https://basiliomontescastano.atlassian.net/browse/FRESCO-441) Rediseño | Card de receta rediseñada + placeholder con intención _(3 pts, Control de calidad)_
+- [FRESCO-442](https://basiliomontescastano.atlassian.net/browse/FRESCO-442) Rediseño | Cobertura de fotos de receta ≥90% _(- pts, Rechazos)_
+- [FRESCO-443](https://basiliomontescastano.atlassian.net/browse/FRESCO-443) Rediseño | Estados de formulario e inputs (absorbe defects) _(- pts, Listo)_
+- [FRESCO-444](https://basiliomontescastano.atlassian.net/browse/FRESCO-444) Rediseño | Ritmo espacial y densidad _(- pts, Listo)_
+- [FRESCO-445](https://basiliomontescastano.atlassian.net/browse/FRESCO-445) Rediseño | Firma editorial: footer wordmark + landing hero _(- pts, Listo)_
+- [FRESCO-446](https://basiliomontescastano.atlassian.net/browse/FRESCO-446) Rediseño | Capa de motion _(- pts, Listo)_
+- [FRESCO-447](https://basiliomontescastano.atlassian.net/browse/FRESCO-447) Rediseño | Tratamiento visual de foto: ratio + grade unificador _(- pts, Listo)_
+- [FRESCO-448](https://basiliomontescastano.atlassian.net/browse/FRESCO-448) Rediseño | Pasada de craft con ojo de diseño (por pantalla) _(- pts, Listo)_
+- [FRESCO-449](https://basiliomontescastano.atlassian.net/browse/FRESCO-449) Rediseño | Content design: nombres de receta + microcopy _(- pts, Listo)_
 
 ---
 
