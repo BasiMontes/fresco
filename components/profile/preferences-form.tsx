@@ -328,7 +328,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
       )}
 
       <div className="t-input-wrap mt-4" ref={wrapRef} data-testid="preferencias_save_wrap">
-        <Button type="submit" variant="action" disabled={isSaving || !isDirty} data-testid="actualizar_preferencias_button" className="t-input" ref={inputRef}>
+        <Button type="submit" variant="default" disabled={isSaving || !isDirty} data-testid="actualizar_preferencias_button" className="t-input" ref={inputRef}>
           {isSaving ? 'Guardando…' : 'Actualizar Preferencias'}
         </Button>
         <p data-testid="preferencias_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">

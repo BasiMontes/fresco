@@ -170,7 +170,7 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: Crea
         )}
 
         <div>
-          <Button type="submit" variant="action" disabled={!isValid || isSaving} data-testid="guardar_receta_button">
+          <Button type="submit" variant="default" disabled={!isValid || isSaving} data-testid="guardar_receta_button">
             {isSaving ? 'Guardando…' : (isEditMode ? 'Guardar cambios' : 'Guardar receta')}
           </Button>
         </div>

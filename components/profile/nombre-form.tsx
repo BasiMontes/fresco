@@ -191,7 +191,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
             </div>
           )}
           <div className="t-input-wrap" ref={wrapRef} data-testid="nombre_save_wrap">
-            <Button type="submit" variant="action" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button" className="t-input" ref={inputRef}>
+            <Button type="submit" variant="default" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button" className="t-input" ref={inputRef}>
               Guardar
             </Button>
             <p data-testid="nombre_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">

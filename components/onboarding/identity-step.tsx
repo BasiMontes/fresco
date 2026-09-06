@@ -233,7 +233,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
           <div className="flex flex-col gap-4">
             <Button
               data-testid="onboarding_create_account_button"
-              variant="action"
+              variant="default"
               onClick={() => setChoice('account')}
               disabled={isSubmitting}
             >

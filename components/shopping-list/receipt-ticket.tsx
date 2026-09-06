@@ -164,13 +164,15 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
         </div>
 
         {isComplete && (
-          // `action` (orange) Button — this dialog's only CTA, so it's the
-          // screen's single highest-intent action DESIGN.md reserves the
-          // variant for. Plain pill, no extra wrapper chip (FRESCO-432
-          // reopen: the earlier `bg-background` ring was only ever needed
-          // against the old near-black `accent-800` body — against the
-          // real `bg-primary` green it's redundant and off brand-guide,
-          // per the "Cocinar ya" reference).
+          // `action` (orange) Button — FRESCO-440 kept it deliberately: this
+          // dialog is a full-screen modal moment and "Listo" is its ONLY
+          // control, so it satisfies "one accent per screen". It also has to
+          // read against the `bg-primary` green machine body — `variant`
+          // `default` would be green-on-green. Plain pill, no extra wrapper
+          // chip (FRESCO-432 reopen: the earlier `bg-background` ring was
+          // only ever needed against the old near-black `accent-800` body —
+          // against the real `bg-primary` green it's redundant and off
+          // brand-guide, per the "Cocinar ya" reference).
           <div className="relative z-10 mt-3 flex justify-center">
             <Button type="button" variant="action" onClick={onClose} data-testid="receipt_ticket_done_button">
               Listo

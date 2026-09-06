@@ -47,7 +47,7 @@ export function ManageSubscriptionButton() {
     <div>
       <Button
         type="button"
-        variant="action"
+        variant="default"
         data-testid="manage_subscription_button"
         disabled={isRedirecting}
         onClick={() => void handleClick()}
