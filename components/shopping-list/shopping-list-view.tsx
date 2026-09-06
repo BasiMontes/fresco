@@ -347,7 +347,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
           <h2 className="text-h5">Resumen</h2>
           <p className="text-right text-caption uppercase tracking-wide text-tertiary">Total estimado</p>
           <p className="flex items-center gap-1.5 text-body-sm text-tertiary">
-            <span className="inline-block size-2 rounded-full bg-secondary" aria-hidden="true" />
+            <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
             {pendientes}
             {' '}
             {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
@@ -378,8 +378,8 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
               return (
                 <Card key={suggestion.nombre} className="flex w-40 shrink-0 flex-col justify-between gap-3">
                   <div>
-                    <span className="flex size-10 items-center justify-center rounded-full bg-accent-2-100">
-                      <SuggestionIcon className="size-5 text-secondary" aria-hidden="true" />
+                    <span className="flex size-10 items-center justify-center rounded-full border border-border">
+                      <SuggestionIcon className="size-5 text-tertiary" aria-hidden="true" />
                     </span>
                     <p className="mt-2 line-clamp-2 text-body-sm font-medium text-text">
                       {capitalize(suggestion.nombre)}
@@ -411,17 +411,13 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
           return (
             <div key={pasillo.nombre} className="flex flex-col gap-3">
               <h3 className="flex items-center gap-2 border-b border-border pb-1 text-h6">
-                {/* accent-2-100 is secondary's own pre-computed light tint, not
-                    an opacity modifier — bg-secondary/10 silently resolves to
-                    transparent, same root cause as FRESCO-169 (tailwind.config.ts
-                    maps every semantic color to a raw var(--color-*) reference,
-                    which Tailwind can't decompose for the alpha channel).
-
-                    Padding lives on this wrapper span, not on the icon itself —
-                    size-4 + p-1.5 on the same element (border-box) ate into the
-                    icon's own fixed box, shrinking the visible glyph to ~4px. */}
-                <span className="flex shrink-0 items-center justify-center rounded-lg bg-accent-2-100 p-1.5">
-                  <PasilloIcon className="size-4 text-secondary" aria-hidden="true" />
+                {/* FRESCO-440: hairline box, no accent tint — a section-heading
+                    adornment is not a CTA. Padding lives on this wrapper span,
+                    not on the icon itself — size-4 + p-1.5 on the same element
+                    (border-box) ate into the icon's own fixed box, shrinking the
+                    visible glyph to ~4px. */}
+                <span className="flex shrink-0 items-center justify-center rounded-lg border border-border p-1.5">
+                  <PasilloIcon className="size-4 text-tertiary" aria-hidden="true" />
                 </span>
                 {pasillo.nombre}
               </h3>
@@ -475,13 +471,14 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                               {capitalize(item.nombre)}
                             </span>
                             {/* FRESCO-194 — flagged when this item wasn't on
-                                last week's list. Same pill convention as
-                                `landing/pricing.tsx`. Hidden once bought so a
-                                struck-through row doesn't shout "Nuevo". */}
+                                last week's list. Hidden once bought so a
+                                struck-through row doesn't shout "Nuevo".
+                                FRESCO-440 — hairline chip, no accent fill (a
+                                "new item" badge is decoration, not a CTA). */}
                             {!item.comprado && nuevosNombres.has(normalizeNombre(item.nombre)) && (
                               <span
                                 data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_nuevo`}
-                                className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-caption uppercase tracking-wide text-text"
+                                className="shrink-0 rounded-full border border-border px-2 py-0.5 text-caption uppercase tracking-wide text-tertiary"
                               >
                                 Nuevo
                               </span>
