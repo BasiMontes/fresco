@@ -33,7 +33,7 @@ export default function ErrorPage({
           Tuvimos un problema inesperado. Puedes intentarlo de nuevo o volver al inicio.
         </p>
         <div className="mt-6 flex flex-col gap-2">
-          <Button data-testid="error_retry_button" variant="action" onClick={() => unstable_retry()}>
+          <Button data-testid="error_retry_button" variant="default" onClick={() => unstable_retry()}>
             Intentar de nuevo
           </Button>
           <Link data-testid="error_home_link" href="/menu" className={buttonVariants({ variant: 'secondary' })}>
