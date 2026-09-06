@@ -105,11 +105,14 @@ describe('Reveal', () => {
       expect(observers[0].disconnected).toBe(true);
     });
 
-    test('scroll fallback reveals a section jumped past without an intersection event', () => {
+    test('scroll fallback ignores a section still below the 85% line, then reveals it once it rises past', () => {
       renderWithProviders(<Reveal><p>contenido</p></Reveal>);
       const wrapper = screen.getByText('contenido').parentElement as HTMLElement;
 
-      scrollWrapperTo(wrapper, 400); // now within the lower 85% of an 800px viewport
+      scrollWrapperTo(wrapper, 700); // top edge below 0.85 * 800 = 680 → not yet
+      expect(wrapper).not.toHaveAttribute('data-revealed');
+
+      scrollWrapperTo(wrapper, 400); // now within the visible 85% of the viewport
       expect(wrapper).toHaveAttribute('data-revealed');
       expect(observers[0].disconnected).toBe(true);
     });

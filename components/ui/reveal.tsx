@@ -28,8 +28,9 @@ interface RevealProps {
  * fallback covers the case IO cannot: an anchor jump from the nav (`#pricing`,
  * `#faq`) moves a section straight from below the fold to above it without
  * crossing a threshold, so IO never fires — the fallback reveals any section
- * whose top edge has reached the lower 85% of the viewport. Both are removed
- * once the section is revealed.
+ * whose top edge has risen past the 85%-of-viewport-height line (i.e. the
+ * section is at least mostly on screen, or already scrolled past). Both are
+ * removed once the section is revealed.
  */
 export function Reveal({ children, className, threshold = 0.15 }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
