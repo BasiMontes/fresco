@@ -44,7 +44,7 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
   }
 
   return (
-    <div className="mt-6" data-testid="latest_recipes_section">
+    <div data-testid="latest_recipes_section">
       <div className="flex items-center justify-between">
         <h2 className="text-h3">Últimas recetas añadidas</h2>
         <Link href="/recipes" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
