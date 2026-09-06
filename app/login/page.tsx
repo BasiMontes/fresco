@@ -127,7 +127,7 @@ function LoginPageInner() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       {/* FRESCO-269: logo and LegalLinks are absolutely positioned around the
           Card instead of sharing its justify-center flow — their unequal
           heights (logo ~98px vs. footer ~30px) were shifting the Card's own
