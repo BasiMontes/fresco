@@ -31,7 +31,9 @@ export function SiteFooter() {
               data-testid={`site_footer_${linkSection}_link`}
               onClick={() => openSection(linkSection)}
               // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
-              className="inline-flex min-h-[44px] items-center text-caption text-accent-300"
+              // FRESCO-445: text-accent-300 (#8fab8d) on bg-primary was ~3.9:1 —
+              // under AA for 11px text; accent-200 clears it at ~6:1.
+              className="inline-flex min-h-[44px] items-center text-caption text-accent-200"
             >
               {label}
             </button>
@@ -40,9 +42,10 @@ export function SiteFooter() {
         {/*
           FRESCO-445: was `text-accent-500` (#0F4E0E) on `bg-primary`
           (#0F4E0E) — a 1:1 contrast, the copyright line rendered invisible.
-          `text-accent-300` matches the legal-links treatment right above.
+          `text-accent-200` matches the legal-links treatment right above and
+          clears AA (~6:1) for this 11px text.
         */}
-        <p className="mt-5 border-t border-accent-600 pt-5 text-caption text-accent-300">
+        <p className="mt-5 border-t border-accent-600 pt-5 text-caption text-accent-200">
           ©
           {' '}
           {new Date().getFullYear()}

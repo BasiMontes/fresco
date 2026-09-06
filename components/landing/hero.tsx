@@ -55,7 +55,7 @@ function HeroPhotoFrame({
         src={photo.src}
         alt={photo.alt}
         fill
-        sizes="(max-width: 768px) 45vw, 25vw"
+        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 22vw, 240px"
         className="object-cover"
         priority={priority}
       />
@@ -71,14 +71,15 @@ function HeroPhotoFrame({
  */
 function HeroPhotoComposition() {
   return (
-    <div className="mt-10 flex gap-3 md:mt-0 md:gap-4">
+    <div className="mt-8 flex gap-3 md:mt-0 md:gap-4">
       <div className="flex w-1/2 flex-col gap-3 md:w-[54%] md:gap-4">
-        {/* Anchor column. Both tiles sit above the fold — hero is the LCP region (FRESCO-183). */}
+        {/* Anchor column. The top tile is the composition's likely LCP element
+            (the hero h1 aside) — only it is eager; the rest lazy-load. */}
         <HeroPhotoFrame photo={HERO_PHOTOS[0]} priority className="aspect-[4/5]" />
-        <HeroPhotoFrame photo={HERO_PHOTOS[1]} priority className="aspect-[4/5] md:aspect-[5/4]" />
+        <HeroPhotoFrame photo={HERO_PHOTOS[1]} className="aspect-[4/5] md:aspect-[5/4]" />
       </div>
-      <div className="flex w-1/2 flex-col gap-3 md:w-[46%] md:gap-4 md:pt-14">
-        <HeroPhotoFrame photo={HERO_PHOTOS[2]} priority className="aspect-[4/5]" />
+      <div className="flex w-1/2 flex-col gap-3 md:w-[46%] md:gap-4 md:pt-12">
+        <HeroPhotoFrame photo={HERO_PHOTOS[2]} className="aspect-[4/5]" />
         <HeroPhotoFrame photo={HERO_PHOTOS[3]} className="aspect-[4/5] md:aspect-square" />
       </div>
     </div>
