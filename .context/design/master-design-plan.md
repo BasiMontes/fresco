@@ -119,7 +119,8 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Tokens.** Cream `background`; Fraunces `h1`/`h2`; `button` (primary green) + `button-action`
   (orange, single hero CTA); `card` for pain-point / how-it-works tiles; amber-as-text uses
   `accent-2-700` per the Do's/Don'ts contrast rule.
-- **Components.** `components/landing/*` (10 files), composed by `app/page.tsx`.
+- **Components.** `components/landing/*` (10 files), composed by `app/page.tsx`. Every section
+  below the hero is wrapped in `components/ui/reveal.tsx` for a scroll-in settle (FRESCO-446).
 - **Checklist.** [ ] one orange CTA only · [ ] amber text at `accent-2-700` not `secondary` ·
   [ ] header logo links to `/` and is legible over every section (DEFECT-FRESCO-169/173) ·
   [ ] footer copyright year not hard-coded (DEFECT-FRESCO-235) · [ ] "ya tengo cuenta" → `/login`
@@ -456,7 +457,13 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   `animation-duration`/`transition-duration` → `0.01ms`, `scroll-behavior: auto`, `.animate-spin`
   re-exempted; per-component blocks still win by specificity where they exist) · [ ] no layout shift
   from enter/exit · [ ] modal transitions do not trap focus mid-animation.
-- **Provenance.** EPIC-FRESCO-244. No mockup — motion spec is behavioural, defined in the epic AC.
+- **v2 additions (FRESCO-446, epic FRESCO-436).** Landing scroll reveals (`components/ui/reveal.tsx`
+  + `[data-reveal]` in `globals.css`) and the `card-insight` entrance (`[data-insight-enter]`), both
+  gated `prefers-reduced-motion: no-preference`, reusing the transitions-dev tokens — no new tokens,
+  no spring. The scroll reveal is a bespoke `IntersectionObserver` primitive: the `transitions-dev`
+  catalogue has no scroll-position-triggered pattern. See §5-R.
+- **Provenance.** EPIC-FRESCO-244. No mockup — motion spec is behavioural, defined in the epic AC
+  (and, for the v2 additions, `DESIGN.md` §Motion).
 
 ### 4.20 Error & not-found screens — `error.tsx` / `global-error.tsx` / `not-found.tsx`
 
@@ -497,6 +504,7 @@ compliance notes.
 | §5-O | Home (`/menu`) — value-indicator stat tiles (`available-recipes-card`, `savings-estimate-cards`) | Rendered as a **top-hairline `StatTile`** (`border-t border-border` + `pt-3`, number in `text-h2`, icon demoted to `text-tertiary`), not the `Card` surface (`surface-raised` fill + full hairline + `shadow-sm`) the components previously used. | `DESIGN.md` §Components `card` (generic content container) | "El dato manda" — the strip is orientative context, not four boxes competing with the day's meal cards; the hairline unit reads calmer and keeps the number dominant. One-accent discipline (FRESCO-440) demotes the tile icons off `text-primary`. `DESIGN.md` §Layout updated to state the stat-tile hairline contract. | FRESCO-444 story plan (2026-09-06) |
 | §5-P | Auth / 404 / empty screens — `/login`, `/signup`, `/forgot-password`, `/update-password`, `/onboarding`, `/not-found` | Content is **top-anchored** (`justify-start` + `pt-16 md:pt-24 pb-12`), not vertically centered in the viewport (`justify-center` + `py-12`). | Live UI as built (auth screens shipped canvas-centered) | Tall viewports left the card floating with >200px of dead space above it (the FRESCO-444 AC "pantallas centradas ancladas"); a token-scale top anchor gives a predictable, editorial page-top rhythm and stays comfortable on mobile. | FRESCO-444 story plan (2026-09-06) |
 | §5-Q | Landing (`/`) — hero visual + footer close | Hero right column is a curated composition of 4 real recipe photos (`components/landing/hero.tsx` `HERO_PHOTOS`), replacing the CSS `WeeklyMenuPreview` menu mockup that used 🥣🍲🥗 as product illustration. Footer closes on an oversized Fraunces wordmark (`text-6xl md:text-7xl`, weight 400, `text-accent-200` on `bg-primary`) in place of the small `logo-negativo.svg`. | Approved `fresco_landing.html` CSS mockup (§5-A) | Hero direction = Option B (photo composition), ratified with the founder over Option A (treated app screenshot): ~408 real Unsplash photos already exist in `recipes.foto_url`, a composition does not go stale, and it is closer to the Houseplant brand reference than a UI screenshot. Photos are a hardcoded curated set, not a live query — the landing is the acquisition funnel (zero runtime deps) and the ~70%-mismatch rate (FRESCO-192) makes random selection a quality risk. | FRESCO-445 story plan (2026-09-06) |
+| §5-R | Motion layer — landing scroll reveals (FRESCO-446) | Section reveals are a bespoke `components/ui/reveal.tsx` (`IntersectionObserver`, `data-reveal` applied post-mount so SSR / no-JS renders every section visible), not a `transitions-dev` catalogue snippet. The `[data-reveal]` CSS reuses `--duration-slow` / `--distance-medium` / `--ease-smooth-out`. The `card-insight` entrance is a one-shot `[data-insight-enter]` keyframe on the existing element. | `DESIGN.md` §Motion ("Usar el skill `transitions-dev` para los patrones") | The `transitions-dev` catalogue has 27 patterns, none scroll-position-triggered — its "texts reveal" is for hero copy on mount, not on-scroll sections. A ~40-line `IntersectionObserver` primitive is lighter than pulling a motion library, and it reuses the existing token scale so there is zero drift from the catalogue's timing vocabulary. No new tokens, no spring. | FRESCO-446 story plan (2026-09-06) |
 
 > **Not divergences (reconciled into `DESIGN.md`):** FRESCO-283 amber-CTA contrast, FRESCO-285/299
 > `text-tertiary` darkening, FRESCO-303 pricing check colour, FRESCO-70 sidebar-on-green, FRESCO-298

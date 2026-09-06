@@ -860,6 +860,43 @@
 }
 
 /*
+ * Scroll reveal for landing sections + insight-card entrance (FRESCO-446,
+ * epic FRESCO-436 tarjeta 8). `components/ui/reveal.tsx` marks a wrapper
+ * `[data-reveal]` after mount and flips `[data-revealed]` once it scrolls into
+ * view; the insight card (`app/(app)/menu/page.tsx`) carries `data-insight-enter`
+ * and animates once on render.
+ *
+ * Both are gated by `prefers-reduced-motion: no-preference` so under reduced
+ * motion the rules do not exist at all — the content is simply visible, with no
+ * dependency on the reveal JS ever running. Reuses the --duration-slow /
+ * --duration-fast / --distance-medium / --ease-smooth-out tokens from
+ * transitions-dev (FRESCO-247); defines no new motion tokens, adds no spring
+ * (DESIGN.md §Motion — "unhurried", calm end of the scale).
+ */
+@keyframes fresco-insight-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--distance-medium));
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(var(--distance-medium));
+    transition:
+      opacity var(--duration-slow) var(--ease-smooth-out),
+      transform var(--duration-slow) var(--ease-smooth-out);
+  }
+  [data-reveal][data-revealed] {
+    opacity: 1;
+    transform: none;
+  }
+  [data-insight-enter] {
+    animation: fresco-insight-enter var(--duration-fast) var(--ease-smooth-out) both;
+  }
+}
+
+/*
  * Reduced-motion global guard (FRESCO-249, WCAG 2.3.3 / 2.2.2) — the
  * transversal counterpart to every animation this epic (and the rest of the
  * app) introduces. The per-component `@media (prefers-reduced-motion: reduce)`

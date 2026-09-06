@@ -1,5 +1,14 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { consumeFirstMenuSignal, markFirstMenuGenerated } from './first-menu-signal';
+
+/**
+ * These tests reassign (and one deletes) `globalThis.window`. Capture the
+ * real happy-dom window up front and restore it after the file so later
+ * component-test files still have `window.addEventListener` / `dispatchEvent`
+ * (the shared `bun-test-setup.ts` re-register guard only fires when `window`
+ * is fully `undefined`, not when it is a bare stub).
+ */
+const realWindow = (globalThis as { window?: unknown }).window;
 
 /**
  * FRESCO-372 — same in-memory `Storage` stand-in `onboarding-store.test.ts`
@@ -42,5 +51,9 @@ describe('first-menu-signal', () => {
     const globalWithWindow = globalThis as { window?: { sessionStorage: Storage } };
     delete globalWithWindow.window;
     expect(consumeFirstMenuSignal()).toBe(false);
+  });
+
+  afterAll(() => {
+    (globalThis as { window?: unknown }).window = realWindow;
   });
 });
