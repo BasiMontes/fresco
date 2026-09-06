@@ -1,14 +1,14 @@
 import type { RecetaPropia, Recipe, RecipeDieta } from '@schemas';
 import type { RecipeDetail } from '@/lib/api/recipes';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FavoriteToggleButton } from '@/components/recipe/favorite-toggle-button';
+import { RecipePlaceholder } from '@/components/recipe/recipe-placeholder';
 import { PersonalRecipeActions } from '@/components/recipes/personal-recipe-actions';
 import { buttonVariants } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
-import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { COSTE_ESTIMADO_LABELS, DIETA_LABELS, DIFICULTAD_LABELS } from '@/lib/recipes/labels';
 
 /** Every active diet flag as a display label — unlike `RecipeCard`'s single "first match" pick (space-constrained), the detail view has room to show all of them. */
@@ -41,7 +41,6 @@ function BackToLibraryLink({ from }: { from?: string }) {
 }
 
 function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Recipe, initialIsFavorite: boolean, from?: string }) {
-  const CategoryIcon = getCategoryIcon(receta.clasificacion?.categoria);
   const dietaLabels = activeDietaLabels(receta.dieta);
   const ingredientes = receta.ingredientes_principales ?? [];
   const pasos = receta.pasos_resumen ?? [];
@@ -50,7 +49,10 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Reci
     <div>
       <BackToLibraryLink from={from} />
 
-      <div className="relative mt-4 grid aspect-video w-full place-items-center overflow-hidden rounded-card bg-neutral-200">
+      {/* FRESCO-447: same aspect-[4/3] ratio + `.recipe-photo` grade as the
+          recipe cards (RecipeCardMedia); no-photo falls back to the designed
+          RecipePlaceholder, not a bare icon. */}
+      <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-card">
         {receta.foto_url
           ? (
               <Image
@@ -58,11 +60,11 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Reci
                 alt={receta.nombre}
                 fill
                 sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
+                className="recipe-photo object-cover"
               />
             )
           : (
-              <CategoryIcon className="size-16 text-neutral-400" aria-hidden="true" />
+              <RecipePlaceholder name={receta.nombre} categoria={receta.clasificacion?.categoria} />
             )}
         <FavoriteToggleButton
           recipeId={receta.id}
@@ -116,8 +118,11 @@ function PersonalRecipeDetail({ receta, from }: { receta: RecetaPropia, from?: s
     <div>
       <BackToLibraryLink from={from} />
 
-      <div className="relative mt-4 grid aspect-video w-full place-items-center overflow-hidden rounded-card bg-neutral-200">
-        <BookOpen className="size-16 text-neutral-400" aria-hidden="true" />
+      {/* FRESCO-447: personal recipes carry no photo — same aspect-[4/3]
+          media area as the catalog detail + its own card, rendered as the
+          designed placeholder. */}
+      <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-card">
+        <RecipePlaceholder name={receta.nombre} categoria={null} />
       </div>
 
       <div className="mt-4 flex items-start justify-between gap-2">

@@ -12,7 +12,8 @@ import { cn } from '@/lib/utils';
  * heading carries the recipe name for assistive tech.
  *
  * No `'use client'` — pure render, safe from both server and client
- * components (`RecipeCardMedia` is the only caller today).
+ * components. Callers: `RecipeCardMedia` (all card surfaces) and the
+ * `/recipes/[id]` detail media area (FRESCO-447).
  */
 function initialFrom(name: string): string {
   const trimmed = name.trim();
