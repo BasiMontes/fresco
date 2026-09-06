@@ -9,6 +9,14 @@ const config: Config = {
     './components/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
   ],
+  // FRESCO-448 §Dark mode: theme is driven by CSS custom-property swaps in
+  // globals.css (role tokens + inverted brand ramps), so almost no component
+  // needs a `dark:` variant. Where one is unavoidable, it must match BOTH the
+  // OS preference (`system` cookie / first visit) and the explicit override.
+  darkMode: ['variant', [
+    '@media (prefers-color-scheme: dark) { &:not([data-theme="light"] *) }',
+    '&:is([data-theme="dark"] *)',
+  ]],
   theme: {
     extend: {
       colors: {
@@ -20,6 +28,9 @@ const config: Config = {
         'surface-raised': 'var(--color-surface-raised)', // FRESCO-439 (DESIGN.md v2) — card surface
         'text': 'var(--color-text)',
         'border': 'var(--color-border)',
+        'scrim': 'var(--color-scrim)', // FRESCO-448 (S6a) — modal/drawer backdrop dim
+        'on-brand': 'var(--color-on-brand)', // FRESCO-448 — theme-stable light text on a saturated (green/red) fill
+        'on-warning': 'var(--color-on-warning)', // FRESCO-448 — theme-stable near-black text on the amber fill
         'success': 'var(--color-success)',
         'warning': 'var(--color-warning)',
         'error': 'var(--color-error)',
@@ -111,11 +122,13 @@ const config: Config = {
         24: '105.6px',
       },
       boxShadow: {
-        // Computed against DESIGN.md's darkest neutral (#2F281C = rgb(47,40,28)),
-        // not a generic black, per DESIGN.md's Elevation & Depth section.
-        sm: '0 1px 2px rgba(47, 40, 28, 0.14)',
-        md: '0 3px 10px rgba(47, 40, 28, 0.16)',
-        lg: '0 12px 32px rgba(47, 40, 28, 0.22)',
+        // Sourced from the `--shadow-*` custom properties in globals.css.
+        // Light: computed against DESIGN.md's darkest warm neutral (#2F281C),
+        // not a generic black (§Elevation & Depth). Dark (§Dark mode): deepened
+        // toward true black so cards still separate from the near-black ground.
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
       },
     },
   },

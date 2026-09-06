@@ -1,4 +1,5 @@
 import { User as UserIcon } from 'lucide-react';
+import { AppearanceCard } from '@/components/profile/appearance-card';
 import { AyudaSection } from '@/components/profile/ayuda-section';
 import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
 import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
@@ -114,7 +115,7 @@ export default async function ProfilePage() {
           <div className="flex items-center gap-3">
             <div
               aria-hidden="true"
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-h5 text-background"
+              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-h5 text-on-brand"
             >
               {initial || <UserIcon className="size-6" />}
             </div>
@@ -155,6 +156,8 @@ export default async function ProfilePage() {
           server-read like the cards around it — same reasoning as why
           NombreForm/PreferencesForm are themselves 'use client'. */}
       <PushNotificationsToggle />
+
+      <AppearanceCard />
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card>

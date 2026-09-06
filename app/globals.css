@@ -8,61 +8,105 @@
  * here too (see tailwind.config.ts for how these are consumed as utilities).
  */
 :root {
-  --color-primary: #0f4e0e;
-  --color-secondary: #df8c26;
+  /*
+   * FRESCO-448 §Dark mode: every themed token is `light-dark(<light>, <dark>)`,
+   * resolved by the `color-scheme` set a few rules below (`light` by default,
+   * `dark` under `[data-theme='dark']` or `@media (prefers-color-scheme: dark)`
+   * when not explicitly overridden to light). One definition per token — no
+   * duplicated dark block to keep in sync. The dark palette re-grounds the
+   * cream light look onto a deep green-black anchored on the `accent` (green)
+   * ramp's dark end; the `accent` / `accent-2` / `neutral` ramps are inverted
+   * end-for-end so every `bg-x-100 / text-x-800` pair flips together. Full
+   * rationale + exact values: DESIGN.md §Dark mode.
+   */
+  --color-primary: light-dark(#0f4e0e, #1c6b1a);
+  --color-secondary: light-dark(#df8c26, #df8c26);
   /* FRESCO-299: darkened from #847456 (shared with --color-neutral-600) to
      clear WCAG AA as `text-tertiary` body copy — #847456 measured 3,59:1 on
      surface / 4,12:1 on background; #6f5f43 measures ~4,9:1 / ~5,6:1. The
      neutral-600 ramp step stays #847456. */
-  --color-tertiary: #6f5f43;
-  --color-neutral: #a39372;
-  --color-background: #faf3e3;
-  --color-surface: #f1e3c6;
+  --color-tertiary: light-dark(#6f5f43, #a99a7c);
+  --color-neutral: light-dark(#a39372, #8a7c5e);
+  --color-background: light-dark(#faf3e3, #011101);
+  --color-surface: light-dark(#f1e3c6, #04180a);
   /* FRESCO-439 (DESIGN.md v2): one step LIGHTER than background — the card
      surface, so cards lift off the cream page instead of the v1
      surface-on-background beige-on-beige (~4% contrast). Always paired with a
      hairline border on the card. `--color-surface` stays for recessed
      elements (inputs, segmented controls, inset panels). */
-  --color-surface-raised: #fbf6ec;
-  --color-text: #201e1d;
-  --color-border: color-mix(in srgb, #201e1d 16%, transparent);
-  --color-success: #0f4e0e;
-  --color-warning: #df8c26;
+  --color-surface-raised: light-dark(#fbf6ec, #0c2712);
+  --color-text: light-dark(#201e1d, #f2e8d2);
+  --color-border: color-mix(in srgb, light-dark(#201e1d, #f2e8d2) 16%, transparent);
+  /* FRESCO-448 (S6a): a real backdrop dim. `bg-text/50` collapsed to
+     transparent because `--color-text` is a hex string, not rgb channels
+     (the alpha-on-hex gotcha DESIGN.md §Elevation warns about) — so modals
+     and the filter drawer had NO scrim. Warm dark light-side, near-black dark. */
+  --color-scrim: light-dark(
+    color-mix(in srgb, #2f281c 55%, transparent),
+    color-mix(in srgb, #000 68%, transparent)
+  );
+  /* FRESCO-448 §Dark mode: the light contrast colour for a saturated fill
+     (`bg-primary` / `bg-error` / `bg-secondary` chips + buttons). Theme-STABLE
+     cream — `text-background` was standing in for this, but `background` flips
+     to near-black in dark, which killed the contrast on every primary button. */
+  --color-on-brand: #faf3e3;
+  /* Theme-stable near-black for text on the amber `secondary` fill (the
+     `button-action` CTA, the "today" pill). `#DF8C26` stays amber in both
+     themes; near-black on it ≈ 6,3:1 (FRESCO-283). `text-text` used to do
+     this but flips to cream in dark, which fails on amber. */
+  --color-on-warning: #201e1d;
+  --color-success: light-dark(#0f4e0e, #4fae4b);
+  --color-warning: light-dark(#df8c26, #df8c26);
   /* FRESCO-293: darkened from #b8422e (measured 4,29:1 as text on the
      #f1e3c6 cream surface — below WCAG AA 4,5:1). #b03d2b measures ~4,66:1
      on cream and ~5,92:1 for white text on the token itself (destructive
-     buttons). Same warm-clay family, one global error red. */
-  --color-error: #b03d2b;
+     buttons). Same warm-clay family, one global error red. Dark: lifted to
+     #e06a56 for legibility on the near-black ground. */
+  --color-error: light-dark(#b03d2b, #e06a56);
 
-  --color-accent-100: #e1e8e0;
-  --color-accent-200: #bfcfbd;
-  --color-accent-300: #8fab8d;
-  --color-accent-400: #547d51;
-  --color-accent-500: #0f4e0e;
-  --color-accent-600: #0a3e09;
-  --color-accent-700: #052d05;
-  --color-accent-800: #031f03;
-  --color-accent-900: #011101;
+  /* Elevation shadows — sourced from DESIGN.md §Elevation & Depth, computed
+     against the darkest warm neutral (#2F281C), not pure black. Exposed as
+     tokens (not hardcoded in tailwind.config.ts) so §Dark mode can deepen
+     them toward true black for a near-black ground. */
+  --shadow-sm: light-dark(0 1px 2px rgba(47, 40, 28, 0.14), 0 1px 2px rgba(0, 0, 0, 0.5));
+  --shadow-md: light-dark(0 3px 10px rgba(47, 40, 28, 0.16), 0 4px 14px rgba(0, 0, 0, 0.55));
+  --shadow-lg: light-dark(0 12px 32px rgba(47, 40, 28, 0.22), 0 16px 40px rgba(0, 0, 0, 0.62));
 
-  --color-accent-2-100: #fcf1e8;
-  --color-accent-2-200: #f9e2cc;
-  --color-accent-2-300: #f3cba5;
-  --color-accent-2-400: #eaad70;
-  --color-accent-2-500: #df8c26;
-  --color-accent-2-600: #b6721d;
-  --color-accent-2-700: #8a5513;
-  --color-accent-2-800: #653d0b;
-  --color-accent-2-900: #422605;
+  /* `accent` (green) ramp — dark values are the light ramp reversed end-for-end
+     (step -100 stays "subtlest", -900 "strongest"). */
+  --color-accent-100: light-dark(#e1e8e0, #0a2510);
+  --color-accent-200: light-dark(#bfcfbd, #123a1a);
+  --color-accent-300: light-dark(#8fab8d, #1c5227);
+  --color-accent-400: light-dark(#547d51, #2f7a3a);
+  --color-accent-500: light-dark(#0f4e0e, #1c6b1a);
+  --color-accent-600: light-dark(#0a3e09, #3f9a3a);
+  --color-accent-700: light-dark(#052d05, #63b85e);
+  --color-accent-800: light-dark(#031f03, #8fd18a);
+  --color-accent-900: light-dark(#011101, #bfe8bd);
 
-  --color-neutral-100: #fbf6ec;
-  --color-neutral-200: #f0e8d8;
-  --color-neutral-300: #ded2b8;
-  --color-neutral-400: #c2b393;
-  --color-neutral-500: #a39372;
-  --color-neutral-600: #847456;
-  --color-neutral-700: #66593f;
-  --color-neutral-800: #493f2c;
-  --color-neutral-900: #2f281c;
+  /* `accent-2` (amber) ramp — same end-for-end inversion for dark. */
+  --color-accent-2-100: light-dark(#fcf1e8, #3a2408);
+  --color-accent-2-200: light-dark(#f9e2cc, #5a3a0f);
+  --color-accent-2-300: light-dark(#f3cba5, #85550f);
+  --color-accent-2-400: light-dark(#eaad70, #b6721d);
+  --color-accent-2-500: light-dark(#df8c26, #df8c26);
+  --color-accent-2-600: light-dark(#b6721d, #eaad70);
+  --color-accent-2-700: light-dark(#8a5513, #f3cba5);
+  --color-accent-2-800: light-dark(#653d0b, #f9e2cc);
+  --color-accent-2-900: light-dark(#422605, #fcf1e8);
+
+  /* `neutral` (warm grey) ramp — dark values reversed end-for-end. `-600` is
+     the FRESCO-443 input-border / switch-OFF-track step; #8a7c5e still clears
+     3:1 on its adjacent surface in dark (SC 1.4.11). */
+  --color-neutral-100: light-dark(#fbf6ec, #0a0f08);
+  --color-neutral-200: light-dark(#f0e8d8, #1a2016);
+  --color-neutral-300: light-dark(#ded2b8, #2f3a28);
+  --color-neutral-400: light-dark(#c2b393, #4a5540);
+  --color-neutral-500: light-dark(#a39372, #6b6a52);
+  --color-neutral-600: light-dark(#847456, #8a7c5e);
+  --color-neutral-700: light-dark(#66593f, #a99a7c);
+  --color-neutral-800: light-dark(#493f2c, #c8b89a);
+  --color-neutral-900: light-dark(#2f281c, #e6dcc4);
 
   /* transitions-dev motion tokens — installed once, FRESCO-247 */
   /* Durations */
@@ -213,17 +257,20 @@
   --reveal-ease: ease-in-out;
   /* Shimmer text */
   --shimmer-dur: 2000ms;
-  --shimmer-base: #7c7c7c;
-  --shimmer-highlight: #0d0d0d;
+  /* FRESCO-448: these transitions-dev helper colours were hardcoded light —
+     `light-dark()` gives them a dark counterpart so shimmer/tabs/tooltip
+     chrome tracks the theme. */
+  --shimmer-base: light-dark(#7c7c7c, #2f3a28);
+  --shimmer-highlight: light-dark(#0d0d0d, #6b6a52);
   --shimmer-band: 400%;
   --shimmer-ease: linear;
   /* Tabs sliding */
   --tabs-dur: 250ms;
   --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tabs-text-muted: rgba(15, 15, 15, 0.8);
-  --tabs-text-active: #0f0f0f;
-  --tabs-bar-bg: #f1f1f1;
-  --tabs-pill-bg: #ffffff;
+  --tabs-text-muted: light-dark(rgba(15, 15, 15, 0.8), rgba(242, 232, 210, 0.7));
+  --tabs-text-active: light-dark(#0f0f0f, #f2e8d2);
+  --tabs-bar-bg: light-dark(#f1f1f1, #04180a);
+  --tabs-pill-bg: light-dark(#ffffff, #0c2712);
   /* Tooltip open/close */
   --tt-in-dur: 150ms;
   --tt-out-dur: 50ms;
@@ -231,8 +278,8 @@
   --tt-delay: 80ms;
   --tt-in-ease: ease-out;
   --tt-out-ease: ease-out;
-  --tt-bg: #ffffff;
-  --tt-fg: #2f2f2f;
+  --tt-bg: light-dark(#ffffff, #0c2712);
+  --tt-fg: light-dark(#2f2f2f, #f2e8d2);
   /* Texts reveal */
   --stagger-dur: 500ms;
   --stagger-distance: 12px;
@@ -311,6 +358,50 @@
   --toggle-ease: cubic-bezier(0.34, 1.35, 0.64, 1);
   /* Receipt print (shopping-list "Compra realizada" ticket) */
   --receipt-print-dur: 1750ms;
+
+  /* FRESCO-448 §Dark mode: `color-scheme` is what every `light-dark()` token
+     above reads. Default `light`; the two rules below flip it to `dark` for
+     an explicit toggle override or an OS-dark preference that has not been
+     forced back to light. Also pins the UA rendering intent so native
+     affordances (autofill, scrollbars, spinners) match the theme. */
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+  }
+}
+
+/*
+ * FRESCO-448 §Dark mode — brand-ground pinning. The desktop sidebar is a
+ * dark-green ground (`bg-primary` + `text-background`) in BOTH themes — it is
+ * brand chrome, not a themed surface. Its internal cream-on-green treatments
+ * (FRESCO-70 nav pill, FRESCO-82 account block, the theme toggle) read the
+ * `background` / `primary` / `surface` role tokens, which the dark palette
+ * inverts — so under dark mode a `bg-background` chip flipped from cream to
+ * near-black. Re-pin the role tokens to their light values inside any
+ * `[data-brand-ground]` subtree so the sidebar looks identical in both
+ * themes and every cream-on-green pair keeps its contrast.
+ */
+[data-brand-ground] {
+  /* Re-declare the role tokens with static light values so every cream-on-green
+     pair keeps its light-mode contrast under dark mode. `color-scheme: light`
+     alone is NOT enough — the `light-dark()` tokens are declared on `:root` and
+     resolve against `:root`'s color-scheme, not this subtree's. */
+  color-scheme: light;
+  --color-background: #faf3e3;
+  --color-surface: #f1e3c6;
+  --color-surface-raised: #fbf6ec;
+  --color-text: #201e1d;
+  --color-tertiary: #6f5f43;
+  --color-primary: #0f4e0e;
+  --color-border: color-mix(in srgb, #201e1d 16%, transparent);
+  --color-neutral-200: #f0e8d8;
 }
 
 @layer base {
@@ -325,6 +416,13 @@
   html {
     @apply bg-background;
     overscroll-behavior-y: none;
+    /*
+     * FRESCO-448 (S4): the focus-ring offset gap was painting the Tailwind
+     * default (#fff) — a hard white halo around focused controls on the cream
+     * page. Anchor it to the page ground so the offset reads as a clean gap
+     * in both themes.
+     */
+    --tw-ring-offset-color: var(--color-background);
   }
 
   body {
@@ -360,6 +458,41 @@
       BlinkMacSystemFont,
       sans-serif;
     font-weight: 600;
+  }
+
+  /*
+   * FRESCO-448 (S2): a page-headline element (h1/h2) carrying a smaller step
+   * token (`text-h3`…`text-h6`) is being used for visual size, not headline
+   * rank — the small-bold-serif that DESIGN.md forbids ("never bold a
+   * Fraunces headline"; non-headline headings are Figtree). Fall the family
+   * back to Figtree; the 600 weight already comes from the size utility.
+   * One fix here instead of re-tagging ~15 components. Fraunces stays on a
+   * bare h1/h2 (no size override) — the real page/section headlines.
+   */
+  :where(h1, h2).text-h3,
+  :where(h1, h2).text-h4,
+  :where(h1, h2).text-h5,
+  :where(h1, h2).text-h6 {
+    font-family:
+      var(--font-body),
+      Figtree,
+      -apple-system,
+      BlinkMacSystemFont,
+      sans-serif;
+  }
+
+  /*
+   * FRESCO-448 (S3): brand focus-ring fallback. Many controls (raw <button>s
+   * in the calendar grid, preference chips, recipe-card <Link>s, segmented
+   * control) never got the FRESCO-443 `focus-visible:ring` treatment and
+   * fell back to the UA's blue outline — off-brand in an all-green/cream UI.
+   * `:where()` keeps specificity at 0 so any component's own
+   * `focus-visible:ring-*` still wins; this only catches the ones with
+   * nothing of their own.
+   */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 }
 

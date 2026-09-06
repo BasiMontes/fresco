@@ -15,10 +15,11 @@ import { EmptyState } from '@/components/ui/empty-state';
  * a full onboarding round-trip. Optional so `/menu`'s existing call site is
  * unaffected.
  */
-export function NoMenuEmptyState({ 'data-testid': dataTestId, action }: { 'data-testid': string, 'action'?: ReactNode }) {
+export function NoMenuEmptyState({ 'data-testid': dataTestId, action, titleAs }: { 'data-testid': string, 'action'?: ReactNode, 'titleAs'?: 'h1' | 'h2' }) {
   return (
     <EmptyState
       data-testid={dataTestId}
+      titleAs={titleAs}
       icon={<UtensilsCrossed className="size-8 text-tertiary" aria-hidden="true" />}
       title="Todavía no tienes un menú para esta semana"
       description="Completa tu perfil y genera tu primer menú semanal en unos segundos."

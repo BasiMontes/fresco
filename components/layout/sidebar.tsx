@@ -7,6 +7,7 @@ import Link from 'next/link';
 
 import { usePathname } from 'next/navigation';
 import { SidebarAccount } from '@/components/layout/sidebar-account';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { cn } from '@/lib/utils';
 
 /**
@@ -40,7 +41,7 @@ export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto bg-primary px-4 py-6 text-background md:flex">
+    <aside data-brand-ground className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto bg-primary px-4 py-6 text-background md:flex">
       <Link href="/menu" className="mb-8 flex items-center px-2">
         <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} priority />
       </Link>
@@ -65,7 +66,13 @@ export function Sidebar({ user }: SidebarProps) {
           );
         })}
       </nav>
-      {user && <SidebarAccount nombre={user.nombre} email={user.email} plan={user.plan} isAnonymous={user.isAnonymous} />}
+      <div className="mt-auto flex flex-col gap-4 pt-6">
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className="text-h6 text-background/60">Tema</span>
+          <ThemeToggle tone="inverse" />
+        </div>
+        {user && <SidebarAccount nombre={user.nombre} email={user.email} plan={user.plan} isAnonymous={user.isAnonymous} />}
+      </div>
     </aside>
   );
 }

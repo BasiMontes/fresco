@@ -21,15 +21,20 @@ const tagVariants = cva(
   {
     variants: {
       variant: {
-        'selected': 'border-primary bg-primary text-background',
+        'selected': 'border-primary bg-primary text-on-brand',
         'outline': 'border-primary text-primary',
         // hairline, no fill — the v2 default
         'neutral': 'border-border text-tertiary',
         'accent': 'border-border text-tertiary',
-        // food-safety flag — the only coloured tag in v2
-        'allergen': 'border-transparent bg-accent-2-100 text-accent-2-800',
+        // food-safety flag — the only coloured tag in v2. FRESCO-448 (S6b):
+        // the amber-100 fill has ~0 contrast on the cream page, so the tag
+        // that "must stand out for food-safety" was the least visible one.
+        // A `accent-2-600` boundary clears ~3.5:1 on `background` wherever the
+        // tag sits directly on the page (recipe detail), and both ends of the
+        // pair flip correctly in §Dark mode.
+        'allergen': 'border-accent-2-600 bg-accent-2-100 text-accent-2-800',
         /** @deprecated FRESCO-439 — use `allergen` */
-        'accent-2': 'border-transparent bg-accent-2-100 text-accent-2-800',
+        'accent-2': 'border-accent-2-600 bg-accent-2-100 text-accent-2-800',
       },
     },
     defaultVariants: {

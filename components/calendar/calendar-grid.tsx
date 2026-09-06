@@ -449,7 +449,7 @@ export function CalendarGrid({
                 <p
                   className={cn(
                     'text-label',
-                    isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-text',
+                    isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-on-warning',
                   )}
                 >
                   {DIA_LABELS[dia]}
@@ -503,7 +503,7 @@ export function CalendarGrid({
           data-testid="mark_undo_snackbar"
           role="status"
           aria-live="polite"
-          className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-lg bg-primary px-4 py-2.5 text-body-sm text-background shadow-lg"
+          className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-lg bg-primary px-4 py-2.5 text-body-sm text-on-brand shadow-lg"
         >
           <span>
             {pendingMark.estado === 'cocinada' ? 'Marcado como cocinado' : 'Marcado como descartado'}
@@ -730,7 +730,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
                 event.stopPropagation();
                 onMark('cocinada');
               }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-primary hover:bg-primary hover:text-background disabled:pointer-events-none disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:bg-surface hover:text-primary disabled:pointer-events-none disabled:opacity-50"
             >
               <Check className="size-4 shrink-0" />
               Cocinado
@@ -744,7 +744,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
                 event.stopPropagation();
                 onMark('descartada');
               }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-error hover:bg-error hover:text-background disabled:pointer-events-none disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-error hover:bg-surface hover:text-error disabled:pointer-events-none disabled:opacity-50"
             >
               <X className="size-4 shrink-0" />
               Descartar

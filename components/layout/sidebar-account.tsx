@@ -31,8 +31,9 @@ export type SidebarAccountProps = AccountUser;
 
 /**
  * Sidebar footer account block (FRESCO-82): name + email + avatar/initial,
- * plus the logout action, pinned to the bottom of the desktop sidebar via
- * `mt-auto` on the parent `<aside>` (`sidebar.tsx`). Only ever mounted
+ * plus the logout action. Sits at the bottom of the desktop sidebar inside
+ * the `mt-auto` footer group (`sidebar.tsx`), below the theme toggle
+ * (FRESCO-448). Only ever mounted
  * inside `app/(app)/layout.tsx` — `/login` and `/signup` live outside that
  * route group and never render `AppShell`, so no `/login`/`/signup` route
  * can render this component. `Sidebar` additionally skips mounting it when
@@ -82,7 +83,7 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
   const initial = nombre?.trim().charAt(0).toUpperCase();
 
   return (
-    <div data-testid="sidebarAccount" className="mt-auto border-t border-background/10 pt-4">
+    <div data-testid="sidebarAccount" className="border-t border-background/10 pt-4">
       <div className="flex items-start gap-3">
         <div
           data-testid="user_avatar"

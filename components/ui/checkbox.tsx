@@ -38,7 +38,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         )}
       />
       <Check
-        className="pointer-events-none absolute size-3.5 text-background opacity-0 peer-checked:opacity-100"
+        className="pointer-events-none absolute size-3.5 text-on-brand opacity-0 peer-checked:opacity-100"
         aria-hidden="true"
         strokeWidth={3}
       />

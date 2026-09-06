@@ -80,7 +80,7 @@ export function SegmentedControl({
             onKeyDown={event => handleKeyDown(event, index)}
             className={cn(
               'rounded-[11.6px] px-3 py-1 text-body-sm font-sans transition-colors',
-              isSelected ? 'bg-primary text-background' : 'bg-transparent text-text',
+              isSelected ? 'bg-primary text-on-brand' : 'bg-transparent text-text',
             )}
           >
             {option.label}

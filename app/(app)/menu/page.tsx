@@ -125,7 +125,7 @@ export default async function MenuPage() {
         deliberately NOT rendered in this branch: it implies a plan already
         exists to resume, which is exactly the contradiction the user hit
         ("estaba dentro sin menú"). It stays in the has-plan branch below. */}
-        <NoMenuEmptyState data-testid="menu_empty_state" />
+        <NoMenuEmptyState data-testid="menu_empty_state" titleAs="h1" />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
         <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           {recetasDisponibles !== null && (

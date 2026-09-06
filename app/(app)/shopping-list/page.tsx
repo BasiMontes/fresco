@@ -38,7 +38,7 @@ export default async function ShoppingListPage() {
   if (!plan) {
     return (
       <div className="mx-auto max-w-2xl">
-        <NoMenuEmptyState data-testid="shopping_list_no_menu_empty_state" />
+        <NoMenuEmptyState data-testid="shopping_list_no_menu_empty_state" titleAs="h1" />
       </div>
     );
   }
