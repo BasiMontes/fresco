@@ -260,3 +260,27 @@ Historia archivada:
 - Que: nueva pagina /historial (lista de semanas anteriores + balance cocinada/descartada + vista solo lectura del menu) + enlace desde el calendario (425a, PR #279) y RPC copy_meal_plan_to_week + boton "Usar este menu en la semana actual" + card en el perfil (427, PR #280 stacked). FRESCO-425 se dividio en 425 (Consultar) + 427 (Reutilizar). Ambas hijas de FRESCO-330 adelantadas por decision de producto. Merge #279+#281(365 docs)+#280 -> dev 6ee6ff6 -> ff staging -> ff main. Jira 425 y 427 Finalizada, SP 5 c/u.
 - Por que: peticion de usuario "creo la story"; el moat de aprendizaje percibido necesita hacer visible el registro semana a semana (riesgo de monetizacion 2).
 - Siguiente: (1) migracion 20260903200000_copy_meal_plan_to_week NO aplicada a prod - "supabase db push" a mano; el boton "Usar este menu" no funciona hasta entonces. (2) Deploy a prod de Vercel bloqueado por el cap de 100/dia (afecta a 424-bitacora, 425a, 426, 427) - fresco-pro sirve 45052cb; se despliega al resetear el cap o con "vercel --prod" manual. (3) FRESCO-372 desbloqueada y Finalizada: Edge Function send-weekly-reengagement-push desplegada (--import-map + --no-verify-jwt) + 2 secrets de PostHog puestos. (4) FRESCO-365: borrador de textos legales entregado (PR #281, .context/legal/), + 3 cards nuevas 428 (cookies) 429 (email suscripcion art 98.7) 430 (entidad legal + privacidad) - camino a poder cobrar; falta abogado + decisiones del fundador + dominio de email propio.
+## 2026-09-05 - FRESCO-365 revisión legal cerrada
+- Qué: Revisión técnica-legal de LegalModal (Términos+Privacidad) hecha por Claude (no abogado colegiado, contexto académico explícito). Añadidas cláusulas de desistimiento (14 días), renovación automática/cancelación Stripe, salvedad de responsabilidad por dolo/negligencia grave, SLA de borrado 30 días, aviso de cambios de términos. Commit 5e26984 -> dev/staging/main.
+- Por qué: FRESCO-365 solo tenía pasos no-ingenieriles pendientes (enviar a abogado + registrar revisión); usuario confirmó tratar la revisión de Claude como suficiente dado el contexto de proyecto final de curso.
+- Siguiente: Si Fresco pasa a explotación comercial real, repetir revisión con abogado colegiado antes de cobrar. Gaps conocidos: cookie policy dedicada, DPO, dirección completa, alta autónomo.
+
+## 2026-09-05 - Rediseño visual v1: contrato DESIGN.md v2 + Fraunces (épica FRESCO-436)
+- Qué: FRESCO-437 + FRESCO-438 + FRESCO-450, PRs #282/#283/#284 a dev -> staging -> main (7682f97).
+- Por qué: rediseño visual (2 de 13 tarjetas); 450 desbloqueó test:e2e roto desde 04-sep.
+- Siguiente: FRESCO-439/440/441.
+
+## 2026-09-05 - FRESCO-439: componentes de chunky a editorial (épica FRESCO-436)
+- Qué: aplicado el contrato de componentes de DESIGN.md v2 al código: `--color-surface-raised` (#fbf6ec, mas claro que el fondo) + hairline border obligatorio en `card.tsx` (mata el beige-sobre-beige); borderRadius v2 (card 32->20, lg 28->16, +image 16, pills se mantienen); tags a hairline sin relleno + nueva variante `allergen`; recipe-card/personal-recipe-card/calendar-grid a surface-raised; override cream del plan tag en el sidebar (verde oscuro). PR #285 -> dev -> staging -> main (7eaecfa).
+- Por qué: 3a de 13 tarjetas del rediseno visual. El contrato ya estaba en prod desde #282, esto es el codigo poniendose al dia.
+- Siguiente: FRESCO-440 (barrido de color: reasignar variant=action por "un acento por pantalla" - el Guardar del perfil sigue naranja), 441 (rediseno recipe-card + placeholder de foto), 443 (estados de formulario: inputs, focus ring, toggle invisible, defects 257/258/262/283/299).
+
+## 2026-09-06 - FRESCO-440: disciplina de color (barrido por pantallas)
+- Qué: regla "un acento = CTA" aplicada en Perfil, Biblioteca, Onboarding, Lista, error boundaries. PR #286 -> dev (6b0a999). Jira -> Control de calidad.
+- Por qué: tarjeta 4 épica FRESCO-436.
+- Siguiente: QA en staging.
+
+## 2026-09-06 - FRESCO-441: recipe-card foto-protagonista + placeholder con intención
+- Qué: nuevo `RecipeCardMedia` compartido (foto full-bleed o `RecipePlaceholder` = gradiente `neutral-*` por categoría + inicial en Fraunces); consumido por RecipeCard, PersonalRecipeCard y el SlotCell del calendario (drag handle vía prop `overlay`). Título h4->h5. `lib/recipes/category-gradient.ts` nuevo. §5-M en master-design-plan. PR #287 -> dev -> staging -> main (771ee79). FRESCO-440 propagó junto en el mismo ff. Jira -> Control de calidad.
+- Por qué: tarjeta 5 de 13, épica FRESCO-436 (rediseño editorial).
+- Siguiente: QA en staging (440 + 441); tarjeta 442 (cobertura de fotos >=90%), 443 (estados de formulario).
