@@ -15,7 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
  */
 export function CalendarSuggestionBanner() {
   return (
-    <Card data-testid="calendar_suggestion_banner" className="mt-4 border-2 border-primary">
+    <Card data-testid="calendar_suggestion_banner" className="border-2 border-primary">
       <CardContent className="flex flex-col items-start gap-3 text-body-sm sm:flex-row sm:items-center sm:justify-between">
         <p>Retoma la organización de tu semana en el Calendario.</p>
         <Link href="/calendar" className={buttonVariants({ variant: 'default' })}>

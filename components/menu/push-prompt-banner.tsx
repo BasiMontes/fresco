@@ -73,7 +73,7 @@ export function PushPromptBanner() {
   }
 
   return (
-    <Card data-testid="push_prompt_banner" className="mt-4 border-2 border-primary">
+    <Card data-testid="push_prompt_banner" className="border-2 border-primary">
       <CardContent className="flex flex-col items-start gap-3 text-body-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2">
           <Bell className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />

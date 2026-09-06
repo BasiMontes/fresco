@@ -426,14 +426,14 @@ export default function OnboardingPage() {
 
   if (!identityResolved) {
     return (
-      <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
+      <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
         <IdentityStep onResolved={() => setIdentityResolved(true)} />
       </div>
     );
   }
 
   return (
-    <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
+    <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       <div className={`t-stagger ${wizardShown ? 'is-shown' : ''}`}>
         <Image
           src="/brand/logo-base.svg"

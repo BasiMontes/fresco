@@ -113,7 +113,7 @@ export default async function MenuPage() {
 
   if (!plan) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl space-y-16">
         {/* FRESCO-372: a re-engagement notification click can land here
         (she hasn't generated this week's plan yet) just as easily as the
         has-plan branch below — the tracker runs regardless of plan state. */}
@@ -127,7 +127,7 @@ export default async function MenuPage() {
         ("estaba dentro sin menú"). It stays in the has-plan branch below. */}
         <NoMenuEmptyState data-testid="menu_empty_state" />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
           {recetasDisponibles !== null && (
             <AvailableRecipesCard count={recetasDisponibles} />
           )}
@@ -141,7 +141,7 @@ export default async function MenuPage() {
   const hoy = plan.menu.lunes;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-3xl space-y-16">
       <PushOpenedTracker />
       <div className="flex items-start justify-between">
         <div>
@@ -165,50 +165,55 @@ export default async function MenuPage() {
         </div>
       </div>
 
-      <CalendarSuggestionBanner />
-      <PushPromptBanner />
+      <div className="space-y-4">
+        <CalendarSuggestionBanner />
+        <PushPromptBanner />
+      </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
         {recetasDisponibles !== null && (
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
         <SavingsEstimateCards />
       </div>
 
-      {user?.is_anonymous && (
-        <Card data-testid="guest_save_menu_banner" className="mt-4 border-2 border-primary">
-          <CardContent className="flex flex-col items-start gap-3 text-body-sm sm:flex-row sm:items-center sm:justify-between">
-            <p>Crea una cuenta para no perder este menú.</p>
-            <Link href="/signup" className={buttonVariants({ variant: 'action' })}>
-              Guardar mi menú
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+      {(user?.is_anonymous || (plan.advertencias && plan.advertencias.length > 0) || plan.explicacionAprendizaje) && (
+        <div className="space-y-4">
+          {user?.is_anonymous && (
+            <Card data-testid="guest_save_menu_banner" className="border-2 border-primary">
+              <CardContent className="flex flex-col items-start gap-3 text-body-sm sm:flex-row sm:items-center sm:justify-between">
+                <p>Crea una cuenta para no perder este menú.</p>
+                <Link href="/signup" className={buttonVariants({ variant: 'action' })}>
+                  Guardar mi menú
+                </Link>
+              </CardContent>
+            </Card>
+          )}
 
-      <AlertBanner
-        advertencias={plan.advertencias}
-        data-testid="menu_advertencias_banner"
-        className="mt-4"
-      />
+          <AlertBanner
+            advertencias={plan.advertencias}
+            data-testid="menu_advertencias_banner"
+          />
 
-      {/*
-       * STORY-FRESCO-22 (FR-5.5): real data now, not the hardcoded mock
-       * FRESCO-21 removed. `explicacionAprendizaje` is populated server-side
-       * only for Pro users with real history (generate-meal-plan/index.ts) —
-       * its mere presence here is proof that gate already passed, so no
-       * client-side `isPro` re-check is needed.
-       */}
-      {plan.explicacionAprendizaje && (
-        <Card variant="insight" className="mt-6" data-testid="learning_explanation_card">
-          <CardContent className="text-body-sm">
-            {plan.explicacionAprendizaje}
-          </CardContent>
-        </Card>
+          {/*
+           * STORY-FRESCO-22 (FR-5.5): real data now, not the hardcoded mock
+           * FRESCO-21 removed. `explicacionAprendizaje` is populated server-side
+           * only for Pro users with real history (generate-meal-plan/index.ts) —
+           * its mere presence here is proof that gate already passed, so no
+           * client-side `isPro` re-check is needed.
+           */}
+          {plan.explicacionAprendizaje && (
+            <Card variant="insight" data-testid="learning_explanation_card">
+              <CardContent className="text-body-sm">
+                {plan.explicacionAprendizaje}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       <h2 className="sr-only">Menú de hoy por comida</h2>
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* FRESCO-199: `planning_selection` is per-day now — this row still
             shows "today's meals" as a whole-week toggle (the union across
             every included day) until a real per-day-aware /menu view ships;

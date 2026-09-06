@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
       <Card className="text-center">
         <h1 className="text-h3">Página no encontrada</h1>

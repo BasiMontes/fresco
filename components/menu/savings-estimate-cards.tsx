@@ -1,8 +1,8 @@
 import { Clock, TrendingDown, Wallet } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { StatTile } from '@/components/menu/stat-tile';
 
 /**
- * FRESCO-58 — three fixed, non-personalized estimate cards, per the story's
+ * FRESCO-58 — three fixed, non-personalized estimate tiles, per the story's
  * own Business Rule: "valores orientativos generales para todos los
  * usuarios, no calculados a partir de la actividad real de cada usuario en
  * esta versión." No sourced spend/savings/time-recovered figures exist
@@ -21,20 +21,15 @@ const ESTIMATES = [
 /**
  * FRESCO-156: no longer owns its own grid wrapper — renders as siblings of
  * `AvailableRecipesCard` inside the shared 2x2/4-col grid in `/menu`'s page
- * component, so all four value-indicator cards (recetas disponibles + these
+ * component, so all four value-indicator tiles (recetas disponibles + these
  * 3) reflow together on mobile instead of stacking as 4 separate rows.
+ * FRESCO-444 — top-hairline `StatTile`s, not filled `Card`s.
  */
 export function SavingsEstimateCards() {
   return (
     <>
-      {ESTIMATES.map(({ icon: Icon, value, label }) => (
-        <Card key={label} data-testid="savings_estimate_cards">
-          <CardContent className="flex flex-col items-start gap-1">
-            <Icon className="size-5 text-primary" aria-hidden="true" />
-            <p className="text-h3">{value}</p>
-            <p className="text-body-sm text-tertiary">{label}</p>
-          </CardContent>
-        </Card>
+      {ESTIMATES.map(({ icon, value, label }) => (
+        <StatTile key={label} icon={icon} value={value} label={label} data-testid="savings_estimate_cards" />
       ))}
     </>
   );

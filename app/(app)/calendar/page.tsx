@@ -88,11 +88,40 @@ export default async function CalendarPage({
 
   if (!plan) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-5xl space-y-12">
+        <div>
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-h2">Calendario semanal</h1>
+            <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
+          </div>
+          <Link
+            href="/historial"
+            data-testid="calendar_historial_link"
+            className="mt-1 inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+          >
+            <History className="size-4" aria-hidden="true" />
+            Ver semanas anteriores
+          </Link>
+        </div>
+        <NoMenuEmptyState
+          data-testid="calendar_empty_state"
+          action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} />}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-12">
+      <div>
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-h2">Calendario semanal</h1>
-          <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
+          <div className="flex items-center gap-2">
+            <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
+            <DeleteWeekButton mealPlanId={plan.mealPlanId} />
+          </div>
         </div>
+        <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
         <Link
           href="/historial"
           data-testid="calendar_historial_link"
@@ -101,39 +130,11 @@ export default async function CalendarPage({
           <History className="size-4" aria-hidden="true" />
           Ver semanas anteriores
         </Link>
-        <div className="mt-6">
-          <NoMenuEmptyState
-            data-testid="calendar_empty_state"
-            action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} />}
-          />
-        </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto max-w-5xl">
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-h2">Calendario semanal</h1>
-        <div className="flex items-center gap-2">
-          <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
-          <DeleteWeekButton mealPlanId={plan.mealPlanId} />
-        </div>
-      </div>
-      <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
-      <Link
-        href="/historial"
-        data-testid="calendar_historial_link"
-        className="mt-1 inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
-      >
-        <History className="size-4" aria-hidden="true" />
-        Ver semanas anteriores
-      </Link>
 
       <AlertBanner
         advertencias={plan.advertencias}
         data-testid="calendar_advertencias_banner"
-        className="mt-4"
       />
 
       {/* FRESCO-369: the week-1 moat bridge — replaces CalendarGrid's flat
@@ -147,15 +148,13 @@ export default async function CalendarPage({
           still takes a whole-week days/meals pair (the union across every
           included day) until it's updated to render per-slot exclusions
           from the real `meal_plan_recipes` rows instead. */}
-      <div className="mt-6">
-        <CalendarGrid
-          initialMenu={plan.menu}
-          slotIds={plan.slotIds}
-          initialEstados={plan.estados}
-          planningDays={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).days : undefined}
-          planningMeals={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).meals : undefined}
-        />
-      </div>
+      <CalendarGrid
+        initialMenu={plan.menu}
+        slotIds={plan.slotIds}
+        initialEstados={plan.estados}
+        planningDays={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).days : undefined}
+        planningMeals={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).meals : undefined}
+      />
     </div>
   );
 }

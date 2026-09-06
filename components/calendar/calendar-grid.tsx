@@ -429,9 +429,10 @@ export function CalendarGrid({
         <div
           className="grid gap-3"
           style={{
-            gridTemplateColumns: `auto repeat(${visibleDays.length}, 15rem)`,
+            gridTemplateColumns: `max-content repeat(${visibleDays.length}, 15rem)`,
             gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
             gridAutoFlow: 'column',
+            justifyContent: 'start',
           }}
         >
           <div aria-hidden="true" />

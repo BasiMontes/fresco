@@ -40,7 +40,6 @@ export function LearningBridgeCard({ plan, hasMarks }: LearningBridgeCardProps) 
   return (
     <Card
       variant="pro"
-      className="mt-4"
       // Kept so the existing @aprendizaje coverage still finds the Free notice.
       data-testid={isFree ? 'learning_free_tier_notice' : 'learning_bridge_card'}
     >

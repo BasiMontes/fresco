@@ -309,6 +309,8 @@ Spacing usage convention observed in the canvas: `space-2` for tight internal ga
 - `space-16` (≈70px) — gap between major content blocks (e.g. the stat row and the meal grid on `/menu`).
 - `space-24` (≈106px) — page-top / hero breathing room, and the gap before a page-closing block.
 
+**Value-indicator stat tiles (v2 — FRESCO-444).** A stat tile (the `/menu` "recetas disponibles" / savings strip) is a **top `{colors.border}` hairline + `{spacing.3}` padding**, not the `Card` surface — no fill, no shadow, no rounding, no full border. The number (`text.h2`) is the dominant element; the icon is demoted to `{colors.tertiary}` (one-accent discipline). The strip reads as one unit divided by hairlines, not a row of boxes.
+
 No container max-width or grid-column convention is defined in the source bundle — inherit standard responsive breakpoints from the frontend framework rather than inventing one here.
 
 ## Elevation & Depth
