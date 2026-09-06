@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
  */
 export function PersonalRecipeCard({ receta, className }: { receta: RecetaPropia, className?: string }) {
   return (
-    <div className={cn('flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface-raised shadow-sm', className)}>
+    <div className={cn('flex h-full flex-col rounded-card border border-border bg-surface-raised shadow-sm', className)}>
       <RecipeCardMedia fotoUrl={null} nombre={receta.nombre} categoria={null} />
       <div className="flex flex-1 flex-col p-3">
         <h3 className="line-clamp-2 text-h5">{receta.nombre}</h3>

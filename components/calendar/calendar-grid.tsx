@@ -555,9 +555,9 @@ interface SlotCellProps {
  * FRESCO-441 — the image area is now the SHARED `RecipeCardMedia` (photo, or
  * the designed `RecipePlaceholder` — category gradient + typographic initial,
  * never a bare icon), so `/calendar` renders the same photo-forward anatomy
- * as `/menu` and `/recipes`. The media is full-bleed at the top of the cell;
- * the cell shell owns the radius + `overflow-hidden`, and the kicker/title/
- * tag and the mark-status controls live in a padded body below it. The drag
+ * as `/menu` and `/recipes`. The media is full-bleed at the top of the cell
+ * (it rounds its own top corners to the card radius); the kicker/title/tag
+ * and the mark-status controls live in a padded body below it. The drag
  * handle rides on the media (top-left, mirroring where `RecipeCard`'s
  * favourite heart sits) via the media's `overlay` slot. Mark-status controls
  * stay pinned to the bottom (`mt-auto`) — STORY-FRESCO-15, a buttons row
@@ -634,7 +634,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
           }
         : undefined}
       className={cn(
-        'flex flex-col overflow-hidden rounded-card border border-border bg-surface-raised shadow-sm',
+        'flex flex-col rounded-card border border-border bg-surface-raised shadow-sm',
         !disabled && 'cursor-pointer',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',

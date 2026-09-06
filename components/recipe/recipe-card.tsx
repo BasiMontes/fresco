@@ -113,7 +113,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
   const favoriteButtonRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <div className={cn('flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface-raised shadow-sm', className)}>
+    <div className={cn('flex h-full flex-col rounded-card border border-border bg-surface-raised shadow-sm', className)}>
       <RecipeCardMedia
         fotoUrl={recipe.foto_url}
         nombre={recipe.nombre}

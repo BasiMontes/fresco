@@ -15,10 +15,11 @@ import { cn } from '@/lib/utils';
  *   initial), never a bare icon.
  *
  * "Sin marco": no border, no `bg-neutral-200` box — just the image or the
- * designed placeholder. The media is full-bleed at the top of the card; the
- * card shell owns the radius (`rounded-card`) and clips this via
- * `overflow-hidden`, so the visible top corners follow the card. A consumer
- * that needs its own rounding passes it through `className`.
+ * designed placeholder. The media is full-bleed at the top of the card, so
+ * it rounds its own top corners to the card radius (`rounded-t-card`) — the
+ * card root is NOT `overflow-hidden` (that would clip the favourite
+ * button's like-particle burst, FRESCO-248). A consumer that needs
+ * different rounding overrides it through `className`.
  *
  * `overlay` is an absolutely-positioned slot for controls that sit ON the
  * photo — the favourite heart (`RecipeCard`) or the drag handle
@@ -48,7 +49,7 @@ export function RecipeCardMedia({
   className,
 }: RecipeCardMediaProps) {
   return (
-    <div className={cn('relative aspect-[4/3] w-full overflow-hidden', className)}>
+    <div className={cn('relative aspect-[4/3] w-full overflow-hidden rounded-t-card', className)}>
       {fotoUrl
         ? (
             <Image
