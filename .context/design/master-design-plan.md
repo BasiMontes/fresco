@@ -563,6 +563,7 @@ stories) are listed at the end.
 | FRESCO-273 | Filter: filter and sort in a new `/recipes` drawer (mobile) | `_orphans` (→ EPIC-FRESCO-64) | 4.10 Recipe library (`filter-drawer`) | — |
 | FRESCO-274 | Filter: filter and sort in a lateral drawer (desktop) | `_orphans` (→ EPIC-FRESCO-64) | 4.10 Recipe library (`filter-drawer`) | — |
 | FRESCO-275 | Lock allergens already implied by the selected diet | `_orphans` (→ EPIC-FRESCO-4 / -64) | 4.6 Onboarding | 4.13 Profile (`preferences-form`) |
+| FRESCO-443 | Form & input states | EPIC-FRESCO-436 Visual redesign | 4.13 Profile | 4.3 Signup, 4.6 Onboarding, 4.4/4.5 Password |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -572,7 +573,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 43 stories enumerated · **43 mapped to at least one screen** · **0 omitted as non-UI**
+**Count:** 44 stories enumerated · **44 mapped to at least one screen** · **0 omitted as non-UI**
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.

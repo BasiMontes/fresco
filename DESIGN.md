@@ -363,6 +363,13 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 - `segmented-control`: a radio-style pill group (`rounded.md`, not full). Checked option → filled `{colors.primary}` background; unchecked stay transparent in the shared outlined container.
 - Ghost/secondary buttons on a form (e.g. "Guardar") never render as `surface`-on-`surface` — that reads as disabled. Use `button` (primary green) for the real action and `button-ghost` for the escape hatch.
 
+**Switch (v2 — FRESCO-443):** the toggle primitive (`components/ui/switch.tsx`), for a binary on/off setting — not a form value to submit (e.g. "Recordatorios semanales" on `/profile`). No dedicated token in the source canvas; it composes existing ones.
+- ON track: filled `{colors.primary}`.
+- OFF track: `{colors.neutral-300}` fill **plus** a `{colors.border}` hairline. The hairline is what keeps the OFF state visibly present on the near-white card surface — never a translucent `{colors.tertiary}` wash (the opacity modifier collapses to transparent on the hex-valued token, leaving no track at all).
+- Knob: `{colors.surface-raised}` (the card-surface token) with `shadow.sm`, sliding between the two ends.
+- Focus ring: `ring-2` `{colors.primary}` + `ring-offset-2`, identical to `button`. Space/Enter activate it (native `<button>`).
+- The two states are ~8:1 apart in luminance (`neutral-300` ↔ `primary`) — the on/off read never depends on the knob position alone.
+
 **Cards** — all use `rounded.card` (20px, v2), `surface-raised` fill, and an unconditional `{colors.border}` hairline:
 - `card` (base): `surface-raised` background, hairline border, `shadow.sm`. Generic content container. The hairline is what keeps it distinct from the cream page.
 - `card-insight`: `{colors.accent-100}` tinted background, `{colors.accent-800}` text, `shadow.md`. The behavioural-learning-moat callout — "Fresco aprendió — menos pimentón picante". Its accent tint is what makes the learning feel like a celebrated event, and it is the one place in v2 the near-monochrome UI deliberately raises its voice. Unchanged from v1 — this token is reserved and meaning-carrying.
