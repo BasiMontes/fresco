@@ -3,22 +3,27 @@
 import type { Recipe } from '@schemas';
 
 import { Heart } from 'lucide-react';
-import Image from 'next/image';
 import * as React from 'react';
+import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
-import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { COSTE_ESTIMADO_LABELS, firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { cn } from '@/lib/utils';
 
 /**
- * Mirrors DESIGN.md's `components.recipe-card`: base card treatment + a
- * dedicated image area (`rounded.lg`, real photo when `recipe.foto_url` is
- * set, washed placeholder with a per-category icon otherwise — the P1
- * photography deferral from mvp-scope.md is being backfilled recipe by
- * recipe (FRESCO-31), so both states are real, not just the fallback), a
- * top-right circular favorite button, an `h6` kicker, a heading-font
- * title, one tag, and a meta line ("50 min · fácil · 2,80€/persona").
+ * Mirrors DESIGN.md's `components.recipe-card` (v2, FRESCO-441): photo-forward
+ * anatomy — a full-bleed image area at the top of the card (shared
+ * `RecipeCardMedia`: real photo when `recipe.foto_url` is set, else the
+ * designed `RecipePlaceholder` — a category gradient + typographic initial,
+ * never a lone icon), the favorite button floated top-right over it, then a
+ * padded body with an `h6` kicker, a calm `h5` title (2 lines max), one tag,
+ * and a meta line ("50 min · fácil · 2,80€/persona"). The P1 photography
+ * deferral from mvp-scope.md is being backfilled recipe by recipe
+ * (FRESCO-31/442), so the photo state is real, not just the fallback.
+ *
+ * The same `RecipeCardMedia` renders on `/menu`, `/calendar` (via
+ * `calendar-grid`'s `SlotCell`) and `/recipes`, so the card reads identically
+ * everywhere per the story's "misma card en todas partes" AC.
  *
  * Consumes the real, nested `@schemas` `Recipe` shape (`clasificacion`/
  * `meta`/`dieta` objects, the live DB/Edge Function contract) — not a flat
@@ -105,72 +110,65 @@ function triggerLikeBurst(button: HTMLButtonElement | null) {
 
 export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: RecipeCardProps) {
   const dietaLabel = firstActiveDietaLabel(recipe.dieta);
-  const CategoryIcon = getCategoryIcon(recipe.clasificacion?.categoria);
   const favoriteButtonRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <div className={cn('flex h-full flex-col rounded-card border border-border bg-surface-raised p-3 shadow-sm', className)}>
-      <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
-        {recipe.foto_url
-          ? (
-              <Image
-                src={recipe.foto_url}
-                alt={recipe.nombre}
-                fill
-                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-                className="object-cover"
-              />
-            )
-          : (
-              <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
-            )}
-        <Button
-          ref={favoriteButtonRef}
-          variant="icon"
-          size="sm"
-          aria-label={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-          data-liked={Boolean(isFavorite)}
-          onClick={(event) => {
-            // FRESCO-69 — the card is now wrapped in a Link to the detail
-            // page; without this the favorite button's click would bubble
-            // into a navigation instead of toggling the favorite.
-            event.preventDefault();
-            event.stopPropagation();
-            // AC-1: `isFavorite` here is still the pre-click value (state
-            // update happens in the parent, after this handler returns), so
-            // a `false` value means this click is a like — the burst should
-            // only play on that transition, matching favorite-toggle-button.tsx.
-            if (!isFavorite) {
-              triggerLikeBurst(favoriteButtonRef.current);
-            }
-            onToggleFavorite?.();
-          }}
-          className="t-like absolute right-2 top-2"
-        >
-          <span className="t-like-icon">
-            <Heart className="t-like-heart size-6" />
-          </span>
-          <span className="t-like-particles" aria-hidden="true" data-testid="recipe_card_favorite_particles">
-            {Array.from({ length: LIKE_PARTICLE_COUNT }, (_, index) => (
-              <i key={index} />
-            ))}
-          </span>
-        </Button>
+    <div className={cn('flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface-raised shadow-sm', className)}>
+      <RecipeCardMedia
+        fotoUrl={recipe.foto_url}
+        nombre={recipe.nombre}
+        categoria={recipe.clasificacion?.categoria}
+        overlay={(
+          <Button
+            ref={favoriteButtonRef}
+            variant="icon"
+            size="sm"
+            aria-label={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+            data-liked={Boolean(isFavorite)}
+            onClick={(event) => {
+              // FRESCO-69 — the card is now wrapped in a Link to the detail
+              // page; without this the favorite button's click would bubble
+              // into a navigation instead of toggling the favorite.
+              event.preventDefault();
+              event.stopPropagation();
+              // AC-1: `isFavorite` here is still the pre-click value (state
+              // update happens in the parent, after this handler returns), so
+              // a `false` value means this click is a like — the burst should
+              // only play on that transition, matching favorite-toggle-button.tsx.
+              if (!isFavorite) {
+                triggerLikeBurst(favoriteButtonRef.current);
+              }
+              onToggleFavorite?.();
+            }}
+            className="t-like absolute right-2 top-2"
+          >
+            <span className="t-like-icon">
+              <Heart className="t-like-heart size-6" />
+            </span>
+            <span className="t-like-particles" aria-hidden="true" data-testid="recipe_card_favorite_particles">
+              {Array.from({ length: LIKE_PARTICLE_COUNT }, (_, index) => (
+                <i key={index} />
+              ))}
+            </span>
+          </Button>
+        )}
+      />
+      <div className="flex flex-1 flex-col p-3">
+        <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
+        <h3 className="line-clamp-2 text-h5">{recipe.nombre}</h3>
+        <div className="mt-1">
+          <Tag variant={dietaLabel ? 'accent' : 'neutral'}>
+            {dietaLabel ?? recipe.clasificacion?.cocina ?? '—'}
+          </Tag>
+        </div>
+        <p className="mt-2 text-body-sm text-tertiary">
+          {recipe.meta?.tiempo_total_min ?? '—'}
+          {' '}
+          min ·
+          {' '}
+          {recipe.meta?.coste_estimado ? COSTE_ESTIMADO_LABELS[recipe.meta.coste_estimado] : '—'}
+        </p>
       </div>
-      <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-      <h3 className="line-clamp-2 text-h4">{recipe.nombre}</h3>
-      <div className="mt-1">
-        <Tag variant={dietaLabel ? 'accent' : 'neutral'}>
-          {dietaLabel ?? recipe.clasificacion?.cocina ?? '—'}
-        </Tag>
-      </div>
-      <p className="mt-2 text-body-sm text-tertiary">
-        {recipe.meta?.tiempo_total_min ?? '—'}
-        {' '}
-        min ·
-        {' '}
-        {recipe.meta?.coste_estimado ? COSTE_ESTIMADO_LABELS[recipe.meta.coste_estimado] : '—'}
-      </p>
     </div>
   );
 }

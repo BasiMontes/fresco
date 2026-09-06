@@ -16,16 +16,15 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { MealPlanError, swapMealPlanSlots } from '@/lib/api/meal-plan';
 import { applySlotSwap } from '@/lib/calendar/apply-slot-swap';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
-import { getCategoryIcon } from '@/lib/recipes/category-icon';
 import { firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -551,14 +550,18 @@ interface SlotCellProps {
  * Column width dropped from `w-64` to `w-60` to match `RecipeCard`'s own
  * width elsewhere (`/menu`, `/recipes`, `/favorites`). Not literally
  * `<RecipeCard>` — this cell needs the drag handle and mark-status
- * controls that component doesn't have, so it mirrors the same visual
- * structure by hand rather than wrapping it. The drag handle moved onto
- * the image area (top-left, matching where `RecipeCard`'s favorite heart
- * sits top-right) since the compact row's inline handle no longer has a
- * home; mark-status controls stay pinned to the bottom (`mt-auto`) below
- * whatever content precedes them, same "stacked below, not beside" reason
- * as before (STORY-FRESCO-15 — a buttons row competing for width with a
- * long title collapses the title's wrapper).
+ * controls that component doesn't have.
+ *
+ * FRESCO-441 — the image area is now the SHARED `RecipeCardMedia` (photo, or
+ * the designed `RecipePlaceholder` — category gradient + typographic initial,
+ * never a bare icon), so `/calendar` renders the same photo-forward anatomy
+ * as `/menu` and `/recipes`. The media is full-bleed at the top of the cell;
+ * the cell shell owns the radius + `overflow-hidden`, and the kicker/title/
+ * tag and the mark-status controls live in a padded body below it. The drag
+ * handle rides on the media (top-left, mirroring where `RecipeCard`'s
+ * favourite heart sits) via the media's `overlay` slot. Mark-status controls
+ * stay pinned to the bottom (`mt-auto`) — STORY-FRESCO-15, a buttons row
+ * competing for width with a long title collapses the title's wrapper.
  */
 function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, priority }: SlotCellProps) {
   const router = useRouter();
@@ -593,7 +596,6 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
     [setDragRef, setDropRef],
   );
 
-  const CategoryIcon = getCategoryIcon(recipe?.clasificacion?.categoria);
   const dietaLabel = recipe ? firstActiveDietaLabel(recipe.dieta) : null;
 
   return (
@@ -632,7 +634,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
           }
         : undefined}
       className={cn(
-        'flex flex-col rounded-card border border-border bg-surface-raised p-3 shadow-sm',
+        'flex flex-col overflow-hidden rounded-card border border-border bg-surface-raised shadow-sm',
         !disabled && 'cursor-pointer',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
@@ -640,138 +642,127 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
         estado === 'descartada' && 'opacity-60',
       )}
     >
-      {recipe
-        ? (
-            <>
-              <div className="relative mb-2 grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-lg bg-neutral-200">
-                {recipe.foto_url
-                  ? (
-                      <Image
-                        src={recipe.foto_url}
-                        alt={recipe.nombre}
-                        fill
-                        sizes="240px"
-                        priority={priority}
-                        className="object-cover"
-                      />
-                    )
-                  : (
-                      <CategoryIcon className="size-10 text-neutral-400" aria-hidden="true" />
-                    )}
-                {/*
-                  FRESCO-159 — no drag handle for desayuno: user-reported
-                  finding, breakfast slots don't need drag & drop. Not
-                  rendering the handle is sufficient to disable dragging
-                  entirely (see the comment below) — no need to also flip
-                  `useDraggable`'s `disabled` flag.
+      {recipe && (
+        <RecipeCardMedia
+          fotoUrl={recipe.foto_url}
+          nombre={recipe.nombre}
+          categoria={recipe.clasificacion?.categoria}
+          priority={priority}
+          sizes="240px"
+          overlay={tipo !== 'desayuno' && (
+            /*
+              FRESCO-159 — no drag handle for desayuno: user-reported
+              finding, breakfast slots don't need drag & drop. Not
+              rendering the handle is sufficient to disable dragging
+              entirely — no need to also flip `useDraggable`'s `disabled`.
 
-                  Drag activation listeners live ONLY on this handle, not the
-                  whole cell (dnd-kit's documented "drag handle" pattern) —
-                  spreading them on the outer div, as before FRESCO-15, made
-                  the entire cell a drag source, so the PointerSensor captured
-                  every pointerdown on the mark buttons below and the drag
-                  gesture fired instead of their onClick. Found live: the
-                  buttons never worked, dnd-kit's own screen-reader announcer
-                  confirmed a self-drop was registered on every click.
-                */}
-                {tipo !== 'desayuno' && (
-                  <Button
-                    type="button"
-                    variant="icon"
-                    size="sm"
-                    {...listeners}
-                    {...attributes}
-                    aria-label="Arrastrar para reordenar"
-                    disabled={disabled}
-                    // STORY-FRESCO-88 — dnd-kit's own pointer handling (via
-                    // `listeners`) must still fire, so no `preventDefault()`
-                    // here; only stop the `click` from bubbling into the
-                    // cell's navigation `onClick`.
-                    onClick={event => event.stopPropagation()}
-                    // FRESCO-170 — no `touch-none` here (was `cursor-grab
-                    // touch-none`): `touch-action: none` disables the
-                    // browser's native touch scrolling unconditionally for
-                    // any touch that starts on this element, regardless of
-                    // dnd-kit's own activation logic — confirmed live: a
-                    // touch swipe starting on this handle couldn't scroll
-                    // the grid at all, while the same swipe starting
-                    // anywhere else on the card scrolled fine. The `sensors`
-                    // activationConstraints above (see the comment there)
-                    // now arbitrate scroll-vs-drag intent instead.
-                    className="absolute left-2 top-2 cursor-grab disabled:cursor-not-allowed"
-                  >
-                    <GripVertical className="size-6" />
-                  </Button>
-                )}
-              </div>
-              <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-              <h3 className={cn('line-clamp-2 text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
-              {dietaLabel && (
-                <div className="mt-1">
-                  <Tag variant="accent">{dietaLabel}</Tag>
-                </div>
-              )}
-            </>
-          )
-        : estado === 'excluida'
-          ? (
-              <p data-testid={`calendar_slot_${dia}_${tipo}_excluida`} className="text-body-sm italic text-tertiary">
-                Excluida por ti
-              </p>
-            )
-          : (
-              <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
-                Sin receta
-              </p>
-            )}
-
-      {recipe && estado === 'pendiente' && (
-        // FRESCO-373 (A4-M27): was a pair of ~24px icon-only buttons pinned
-        // bottom-right — the single interaction the paid tier depends on.
-        // Now two full-width labelled buttons, ≥44px tall (WCAG 2.5.5).
-        <div className="mt-auto flex gap-2 pt-3">
-          <button
-            type="button"
-            data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
-            aria-label="Marcar como cocinado"
-            disabled={pending}
-            onClick={(event) => {
-              event.stopPropagation();
-              onMark('cocinada');
-            }}
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-primary hover:bg-primary hover:text-background disabled:pointer-events-none disabled:opacity-50"
-          >
-            <Check className="size-4 shrink-0" />
-            Cocinado
-          </button>
-          <button
-            type="button"
-            data-testid={`calendar_slot_${dia}_${tipo}_mark_descartada`}
-            aria-label="Marcar como descartado"
-            disabled={pending}
-            onClick={(event) => {
-              event.stopPropagation();
-              onMark('descartada');
-            }}
-            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-error hover:bg-error hover:text-background disabled:pointer-events-none disabled:opacity-50"
-          >
-            <X className="size-4 shrink-0" />
-            Descartar
-          </button>
-        </div>
-      )}
-
-      {recipe && estado !== 'pendiente' && (
-        <p
-          data-testid={`calendar_slot_${dia}_${tipo}_estado_badge`}
-          className={cn(
-            'mt-auto pt-2 text-right text-caption uppercase',
-            estado === 'cocinada' ? 'text-primary' : 'text-tertiary',
+              Drag activation listeners live ONLY on this handle, not the
+              whole cell (dnd-kit's documented "drag handle" pattern) —
+              spreading them on the outer div, as before FRESCO-15, made
+              the entire cell a drag source, so the PointerSensor captured
+              every pointerdown on the mark buttons below and the drag
+              gesture fired instead of their onClick.
+            */
+            <Button
+              type="button"
+              variant="icon"
+              size="sm"
+              {...listeners}
+              {...attributes}
+              aria-label="Arrastrar para reordenar"
+              disabled={disabled}
+              // STORY-FRESCO-88 — dnd-kit's own pointer handling (via
+              // `listeners`) must still fire, so no `preventDefault()`
+              // here; only stop the `click` from bubbling into the
+              // cell's navigation `onClick`.
+              onClick={event => event.stopPropagation()}
+              // FRESCO-170 — no `touch-none` here (was `cursor-grab
+              // touch-none`): `touch-action: none` disables the browser's
+              // native touch scrolling unconditionally for any touch that
+              // starts on this element, regardless of dnd-kit's own
+              // activation logic. The `sensors` activationConstraints
+              // arbitrate scroll-vs-drag intent instead.
+              className="absolute left-2 top-2 cursor-grab disabled:cursor-not-allowed"
+            >
+              <GripVertical className="size-6" />
+            </Button>
           )}
-        >
-          {estado === 'cocinada' ? 'Cocinado' : 'Descartado'}
-        </p>
+        />
       )}
+
+      <div className="flex flex-1 flex-col p-3">
+        {recipe
+          ? (
+              <>
+                <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
+                <h3 className={cn('line-clamp-2 text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
+                {dietaLabel && (
+                  <div className="mt-1">
+                    <Tag variant="accent">{dietaLabel}</Tag>
+                  </div>
+                )}
+              </>
+            )
+          : estado === 'excluida'
+            ? (
+                <p data-testid={`calendar_slot_${dia}_${tipo}_excluida`} className="text-body-sm italic text-tertiary">
+                  Excluida por ti
+                </p>
+              )
+            : (
+                <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
+                  Sin receta
+                </p>
+              )}
+
+        {recipe && estado === 'pendiente' && (
+          // FRESCO-373 (A4-M27): was a pair of ~24px icon-only buttons pinned
+          // bottom-right — the single interaction the paid tier depends on.
+          // Now two full-width labelled buttons, ≥44px tall (WCAG 2.5.5).
+          <div className="mt-auto flex gap-2 pt-3">
+            <button
+              type="button"
+              data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
+              aria-label="Marcar como cocinado"
+              disabled={pending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onMark('cocinada');
+              }}
+              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-primary hover:bg-primary hover:text-background disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Check className="size-4 shrink-0" />
+              Cocinado
+            </button>
+            <button
+              type="button"
+              data-testid={`calendar_slot_${dia}_${tipo}_mark_descartada`}
+              aria-label="Marcar como descartado"
+              disabled={pending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onMark('descartada');
+              }}
+              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border border-border text-body-sm font-medium text-tertiary hover:border-error hover:bg-error hover:text-background disabled:pointer-events-none disabled:opacity-50"
+            >
+              <X className="size-4 shrink-0" />
+              Descartar
+            </button>
+          </div>
+        )}
+
+        {recipe && estado !== 'pendiente' && (
+          <p
+            data-testid={`calendar_slot_${dia}_${tipo}_estado_badge`}
+            className={cn(
+              'mt-auto pt-2 text-right text-caption uppercase',
+              estado === 'cocinada' ? 'text-primary' : 'text-tertiary',
+            )}
+          >
+            {estado === 'cocinada' ? 'Cocinado' : 'Descartado'}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
