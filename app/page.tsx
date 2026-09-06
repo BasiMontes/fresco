@@ -8,6 +8,7 @@ import { PainPoints } from '@/components/landing/pain-points';
 import { Pricing } from '@/components/landing/pricing';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
+import { Reveal } from '@/components/ui/reveal';
 
 /**
  * Guest landing ("/") — EPIC-FRESCO-6 (Guest Mode). Content and structure
@@ -24,14 +25,17 @@ export default function GuestLandingPage() {
           (`<header>`) and SiteFooter (`<footer>`) stay siblings so the
           landmark structure is header / main / contentinfo. */}
       <main>
+        {/* Hero is above the fold — no scroll reveal. FRESCO-446: every
+            section below gets a gentle settle as it enters the viewport
+            (disabled under prefers-reduced-motion). */}
         <Hero />
-        <PainPoints />
-        <HowItWorks />
-        <LearnsPro />
-        <ImpactStats />
-        <Pricing />
-        <Faq />
-        <FinalCta />
+        <Reveal><PainPoints /></Reveal>
+        <Reveal><HowItWorks /></Reveal>
+        <Reveal><LearnsPro /></Reveal>
+        <Reveal><ImpactStats /></Reveal>
+        <Reveal><Pricing /></Reveal>
+        <Reveal><Faq /></Reveal>
+        <Reveal><FinalCta /></Reveal>
       </main>
       <SiteFooter />
     </div>

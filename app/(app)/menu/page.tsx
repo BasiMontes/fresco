@@ -203,7 +203,7 @@ export default async function MenuPage() {
            * client-side `isPro` re-check is needed.
            */}
           {plan.explicacionAprendizaje && (
-            <Card variant="insight" data-testid="learning_explanation_card">
+            <Card variant="insight" data-insight-enter="" data-testid="learning_explanation_card">
               <CardContent className="text-body-sm">
                 {plan.explicacionAprendizaje}
               </CardContent>
