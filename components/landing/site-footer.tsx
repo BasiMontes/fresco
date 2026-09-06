@@ -1,7 +1,6 @@
 'use client';
 
 import type { LegalSection } from '@/components/legal/legal-modal';
-import Image from 'next/image';
 import * as React from 'react';
 import { LegalModal } from '@/components/legal/legal-modal';
 
@@ -24,29 +23,43 @@ export function SiteFooter() {
   return (
     <footer className="bg-primary px-4 py-10 md:px-8">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <Image src="/brand/logo-negativo.svg" alt="Fresco" width={90} height={27} />
-          <div className="flex flex-wrap gap-5">
-            {FOOTER_LINKS.map(({ label, section: linkSection }) => (
-              <button
-                key={label}
-                type="button"
-                data-testid={`site_footer_${linkSection}_link`}
-                onClick={() => openSection(linkSection)}
-                // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
-                className="inline-flex min-h-[44px] items-center text-caption text-accent-300"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap justify-end gap-5">
+          {FOOTER_LINKS.map(({ label, section: linkSection }) => (
+            <button
+              key={label}
+              type="button"
+              data-testid={`site_footer_${linkSection}_link`}
+              onClick={() => openSection(linkSection)}
+              // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
+              className="inline-flex min-h-[44px] items-center text-caption text-accent-300"
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <p className="border-t border-accent-600 pt-5 text-caption text-accent-500">
+        {/*
+          FRESCO-445: was `text-accent-500` (#0F4E0E) on `bg-primary`
+          (#0F4E0E) — a 1:1 contrast, the copyright line rendered invisible.
+          `text-accent-300` matches the legal-links treatment right above.
+        */}
+        <p className="mt-5 border-t border-accent-600 pt-5 text-caption text-accent-300">
           ©
           {' '}
           {new Date().getFullYear()}
           {' '}
           Fresco · Hecho con cariño (y muchas lentejas)
+        </p>
+        {/*
+          FRESCO-445 (epic FRESCO-436): the footer closes on an oversized
+          Fraunces wordmark treated as a graphic element — the "editorial
+          signature". It replaces the small negative logo that used to sit in
+          the top row; this is now the footer's sole brand mark. Kept as a
+          readable <p> (not aria-hidden) so the name is still in the
+          accessibility tree and text search. Never bold (DESIGN.md
+          Typography — "authority comes from calm, not weight").
+        */}
+        <p className="mt-16 font-heading text-6xl font-normal leading-none tracking-tight text-accent-200 md:text-7xl">
+          Fresco
         </p>
       </div>
 
