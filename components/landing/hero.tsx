@@ -1,91 +1,86 @@
-import { Check, Clock, Leaf } from 'lucide-react';
+import { Clock, Leaf } from 'lucide-react';
+import Image from 'next/image';
 
 import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
-const WEEK_DAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'] as const;
-const ACTIVE_DAY_INDEX = 1;
+interface HeroPhoto {
+  src: string
+  alt: string
+}
 
-const MEALS = [
-  { emoji: '🥣', type: 'Desayuno', name: 'Tostadas con tomate y aceite', time: '5 min', done: true },
-  { emoji: '🍲', type: 'Comida', name: 'Lentejas estofadas con verduras', time: '40 min', done: false },
-  { emoji: '🥗', type: 'Cena', name: 'Ensalada de pollo con aguacate', time: '15 min', done: false },
-] as const;
+/**
+ * FRESCO-445 (epic FRESCO-436). The hero visual is a curated, static set of
+ * real dish photos from the recipe catalogue (`recipes.foto_url`, all
+ * `images.unsplash.com` — already allow-listed in `next.config.mjs`). It
+ * replaced a CSS menu mockup that used 🥣🍲🥗 as product illustration.
+ * Hand-picked, not a live query: the landing is the acquisition funnel and
+ * must render with zero runtime dependencies, and the catalogue's
+ * photo-match rate makes random selection a quality risk (FRESCO-192).
+ * Keep the full Unsplash query string on every URL — a truncated `ixid`
+ * 404s (FRESCO-192).
+ */
+const HERO_PHOTOS: HeroPhoto[] = [
+  {
+    src: 'https://images.unsplash.com/photo-1704642153271-5f241866aaaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8aHVldm9zJTIwcmFuY2hlcm9zJTIwbWV4aWNhbiUyMGJyZWFrZmFzdCUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NTY5NzU5M3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Huevos rancheros',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1604909053796-048c8c9801a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8MXx8RW5zYWxhZGElMjB0ZW1wbGFkYSUyMGRlJTIwY2hhbXBpbm9uZXMlMjB5JTIwamFtb24lMjBjb29rZWQlMjBtZWFsJTIwZm9vZCUyMHBob3RvZ3JhcGh5fGVufDB8Mnx8fDE3ODU2MjI5MTR8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Ensalada templada de champiñones y jamón',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1540832804691-58c47b913830?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8Mnx8dG9hc3QlMjBpbnRlZ3JhbCUyMHRvbWF0ZXMlMjBjaGVycnklMjBjaGVlc2UlMjBmZXRhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NzYwNDcxfDA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Tostada integral con tomates cherry y queso feta',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1778104682662-0cc3a777fad3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8NHx8U29wYSUyMGRlJTIwdG9tYXRlJTIweSUyMGFsYmFoYWNhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NjIyOTE2fDA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Sopa de tomate y albahaca',
+  },
+];
 
-const SHOPPING_LIST = [
-  { label: 'Lentejas pardinas · 400g', struck: true },
-  { label: 'Cebolla · 2 unidades', struck: true },
-  { label: 'Pechuga de pollo · 500g', struck: false },
-  { label: 'Aguacate · 2 unidades', struck: false },
-] as const;
-
-function WeeklyMenuPreview() {
+/** One photo tile. `fill` + `sizes` so the intrinsic 1080px source scales to the slot. */
+function HeroPhotoFrame({
+  photo,
+  priority = false,
+  className,
+}: {
+  photo: HeroPhoto
+  priority?: boolean
+  className?: string
+}) {
   return (
-    <div className="overflow-hidden rounded-card border border-border bg-surface shadow-lg">
-      <div className="bg-primary px-4 pb-4 pt-4">
-        <p className="text-caption text-accent-200">Tu semana</p>
-        {/* Mock week — real 2026 calendar: Mon 19 → Sun 25 Jan (was "20 al 26",
-            off by one, FRESCO-400 / A4-L18). Martes below is the 20th. */}
-        <p className="text-label text-background">Semana del 19 al 25 enero</p>
-        <div className="mt-3 grid grid-cols-7 gap-1">
-          {WEEK_DAYS.map((day, index) => (
-            <div
-              key={day}
-              className={cn(
-                'rounded-sm py-1 text-center',
-                index === ACTIVE_DAY_INDEX ? 'bg-secondary' : 'bg-accent-600',
-              )}
-            >
-              <p className={cn('text-caption', index === ACTIVE_DAY_INDEX ? 'text-text' : 'text-accent-200')}>
-                {day}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className={`relative overflow-hidden rounded-image shadow-md ${className ?? ''}`}>
+      <Image
+        src={photo.src}
+        alt={photo.alt}
+        fill
+        sizes="(max-width: 768px) 45vw, (max-width: 1200px) 22vw, 240px"
+        className="object-cover"
+        priority={priority}
+      />
+    </div>
+  );
+}
 
-      <div className="space-y-2 bg-background px-4 py-3">
-        <div className="flex items-center justify-between text-label text-text">
-          Martes
-          <span className="text-caption text-tertiary">20 ene</span>
-        </div>
-        {MEALS.map(meal => (
-          <div key={meal.type} className="flex items-center gap-2 border-b border-border py-2 last:border-none">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-surface text-base">
-              {meal.emoji}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-caption uppercase text-tertiary">{meal.type}</p>
-              <p className="truncate text-body-sm font-medium text-text">{meal.name}</p>
-              <p className="text-caption text-tertiary">
-                ⏱
-                {meal.time}
-              </p>
-            </div>
-            <span
-              className={cn(
-                'grid size-5 shrink-0 place-items-center rounded-full border border-border',
-                meal.done && 'border-primary bg-accent-100 text-primary',
-              )}
-            >
-              {meal.done && <Check className="size-3" strokeWidth={3} />}
-            </span>
-          </div>
-        ))}
+/**
+ * Editorial, deliberately asymmetric composition of four real dish photos —
+ * one anchor column slightly wider, the second column dropped down. Calm,
+ * not a collage (DESIGN.md "calm over busy"). Same four images on mobile as
+ * a 2×2 grid below the copy.
+ */
+function HeroPhotoComposition() {
+  return (
+    <div className="mt-8 flex gap-3 md:mt-0 md:gap-4">
+      <div className="flex w-1/2 flex-col gap-3 md:w-[54%] md:gap-4">
+        {/* Anchor column. The top tile is the composition's likely LCP element
+            (the hero h1 aside) — only it is eager; the rest lazy-load. */}
+        <HeroPhotoFrame photo={HERO_PHOTOS[0]} priority className="aspect-[4/5]" />
+        <HeroPhotoFrame photo={HERO_PHOTOS[1]} className="aspect-[4/5] md:aspect-[5/4]" />
       </div>
-
-      <div className="border-t border-border bg-surface px-4 py-3">
-        <div className="mb-2 flex items-center justify-between text-caption uppercase text-tertiary">
-          Lista de la compra
-          <span className="text-primary normal-case">Ver todo →</span>
-        </div>
-        {SHOPPING_LIST.map(item => (
-          <div key={item.label} className="flex items-center gap-2 py-0.5 text-caption">
-            <span className={cn('size-1.5 shrink-0 rounded-full', item.struck ? 'bg-neutral-400' : 'bg-secondary')} />
-            <span className={cn(item.struck ? 'text-tertiary line-through' : 'text-text')}>{item.label}</span>
-          </div>
-        ))}
+      <div className="flex w-1/2 flex-col gap-3 md:w-[46%] md:gap-4 md:pt-12">
+        <HeroPhotoFrame photo={HERO_PHOTOS[2]} className="aspect-[4/5]" />
+        <HeroPhotoFrame photo={HERO_PHOTOS[3]} className="aspect-[4/5] md:aspect-square" />
       </div>
     </div>
   );
@@ -147,12 +142,7 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="mt-10 md:mt-0">
-        <p className="mb-3 text-center text-caption uppercase text-tertiary md:hidden">
-          Así se ve por dentro
-        </p>
-        <WeeklyMenuPreview />
-      </div>
+      <HeroPhotoComposition />
     </section>
   );
 }
