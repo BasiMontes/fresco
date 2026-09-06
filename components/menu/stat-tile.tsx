@@ -19,6 +19,8 @@ export interface StatTileProps {
  * FRESCO-440). The strip reads as one unit divided by hairlines, per
  * DESIGN.md §Layout.
  */
+const TILE_CLASS = 'flex flex-col items-start gap-1 border-t border-border pt-3';
+
 export function StatTile({ icon: Icon, value, label, href, 'data-testid': testId }: StatTileProps) {
   const content = (
     <>
@@ -30,14 +32,14 @@ export function StatTile({ icon: Icon, value, label, href, 'data-testid': testId
 
   if (href) {
     return (
-      <Link href={href} data-testid={testId} className="block border-t border-border pt-3">
+      <Link href={href} data-testid={testId} className={TILE_CLASS}>
         {content}
       </Link>
     );
   }
 
   return (
-    <div data-testid={testId} className="border-t border-border pt-3">
+    <div data-testid={testId} className={TILE_CLASS}>
       {content}
     </div>
   );
