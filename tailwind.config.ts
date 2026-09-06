@@ -104,6 +104,11 @@ const config: Config = {
         4: '17.6px',
         6: '26.4px',
         8: '35.2px',
+        // Page-level rhythm (DESIGN.md v2 §Layout) — same 4.4px multiplier,
+        // reserved for page structure (section gaps, hero breathing room).
+        12: '52.8px',
+        16: '70.4px',
+        24: '105.6px',
       },
       boxShadow: {
         // Computed against DESIGN.md's darkest neutral (#2F281C = rgb(47,40,28)),
