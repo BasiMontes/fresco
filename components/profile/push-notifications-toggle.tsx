@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { clientEnv } from '@/lib/env';
 import { getCurrentPushSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush, WebPushError } from '@/lib/push/web-push-client';
 import { createClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
 
 type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unconfigured';
 
@@ -16,11 +16,6 @@ type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unco
  * action), minus the FRESCO-248 shake choreography — that snippet targets a
  * save button reverting a form value; a switch failing to flip has no
  * "value" to revert, an inline error line is enough here.
- *
- * No `components/ui/switch.tsx` primitive exists yet (checked: only
- * `checkbox.tsx`), and nothing else in the app needs a toggle switch today
- * (YAGNI) — the switch markup lives inline below, domain-specific to this
- * one component rather than a speculative new base component.
  */
 export function PushNotificationsToggle() {
   const [status, setStatus] = useState<ToggleStatus>('checking');
@@ -121,29 +116,15 @@ export function PushNotificationsToggle() {
               {(status === 'on' || status === 'off' || status === 'checking') && 'Recibe un aviso cuando sea buen momento para planificar tu menú de la semana.'}
             </p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={isOn}
-            aria-label="Recordatorios semanales"
-            disabled={isDisabled}
-            data-testid="push_notifications_switch"
-            onClick={() => {
+          <Switch
+            checked={isOn}
+            onCheckedChange={() => {
               void handleToggle();
             }}
-            className={cn(
-              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-              isOn ? 'bg-primary' : 'bg-tertiary/30',
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className={cn(
-                'inline-block size-5 translate-x-0.5 rounded-full bg-background shadow transition-transform',
-                isOn && 'translate-x-5',
-              )}
-            />
-          </button>
+            disabled={isDisabled}
+            aria-label="Recordatorios semanales"
+            data-testid="push_notifications_switch"
+          />
         </div>
         {error && (
           <p role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error" data-testid="push_notifications_error_message">

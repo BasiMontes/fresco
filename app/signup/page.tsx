@@ -12,6 +12,7 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
@@ -469,12 +470,10 @@ export default function SignupPage() {
                       />
                       <label className="mt-1 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
                         <span className="flex size-6 shrink-0 items-center justify-center">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             data-testid="accept_terms_checkbox"
                             checked={acceptedTerms}
                             onChange={e => setAcceptedTerms(e.target.checked)}
-                            className="size-4 accent-primary"
                           />
                         </span>
                         <span>
