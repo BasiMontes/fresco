@@ -35,7 +35,7 @@ export default async function FavoritesPage() {
         </Link>
         <div>
           <h1 className="text-h2">Tus Favoritos</h1>
-          <p className="text-body-sm uppercase text-tertiary">Tu biblioteca seleccionada</p>
+          <p className="text-h6 uppercase text-tertiary">Tu biblioteca seleccionada</p>
         </div>
       </div>
 

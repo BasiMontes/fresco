@@ -81,6 +81,7 @@ export default async function HistorialPage({
           {' '}
           {formatWeekRangeLabel(mondayIso)}
         </h1>
+        <p className="text-h6 uppercase text-tertiary">Solo lectura</p>
         <p className="mt-1 text-body-md text-tertiary">
           Menú de solo lectura. Puedes copiarlo a la semana en curso.
         </p>
@@ -106,6 +107,7 @@ export default async function HistorialPage({
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-h2">Histórico de menús</h1>
+      <p className="text-h6 uppercase text-tertiary">Semanas anteriores</p>
       <p className="mt-1 text-body-md text-tertiary">
         Tus menús de semanas anteriores, con lo que marcaste como cocinado o descartado.
       </p>
