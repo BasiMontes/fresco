@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
@@ -39,7 +40,7 @@ export function SiteNav() {
             <a
               key={link.href}
               href={link.href}
-              className="text-body-sm text-tertiary transition-colors hover:text-text"
+              className="text-label text-tertiary transition-colors hover:text-text"
             >
               {link.label}
             </a>
@@ -47,6 +48,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle className="hidden sm:inline-flex" />
           <Link
             href="/login"
             // FRESCO-315: 44px comfortable tap target on mobile (was ~26px).
@@ -86,6 +88,10 @@ export function SiteNav() {
               {link.label}
             </a>
           ))}
+          <div className="flex items-center justify-between border-b border-border px-4 py-4">
+            <span className="text-body-md text-text">Tema</span>
+            <ThemeToggle />
+          </div>
         </nav>
       )}
     </header>
