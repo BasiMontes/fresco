@@ -4,6 +4,7 @@ import type { FormEvent } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -93,7 +94,10 @@ export default function UpdatePasswordPage() {
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
       <Card className="p-6 md:p-8">
-        <h1 className="text-h3">Elige una nueva contraseña</h1>
+        {/* FRESCO-451: this heading used to render unconditionally, showing
+            "Elige una nueva contraseña" over an invalid-link state with no
+            password field to elect anything in. */}
+        {hasSession !== false && <h1 className="text-h3">Elige una nueva contraseña</h1>}
 
         {hasSession === null && (
           <p data-testid="update_password_loading" role="status" className="mt-4 text-body-sm text-tertiary">
@@ -102,10 +106,10 @@ export default function UpdatePasswordPage() {
         )}
 
         {hasSession === false && (
-          <p data-testid="update_password_no_session_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+          <p data-testid="update_password_no_session_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
             Este enlace ya no es válido. Solicita uno nuevo desde
             {' '}
-            <a href="/forgot-password" className="text-primary">recuperar contraseña</a>
+            <a href="/forgot-password" className="text-primary underline">recuperar contraseña</a>
             .
           </p>
         )}
@@ -149,6 +153,8 @@ export default function UpdatePasswordPage() {
           </p>
         )}
       </Card>
+
+      <LegalLinks />
     </div>
   );
 }

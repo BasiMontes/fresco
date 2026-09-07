@@ -64,7 +64,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Reci
               />
             )
           : (
-              <RecipePlaceholder name={receta.nombre} categoria={receta.clasificacion?.categoria} />
+              <RecipePlaceholder name={receta.nombre} categoria={receta.clasificacion?.categoria} size="hero" />
             )}
         <FavoriteToggleButton
           recipeId={receta.id}
@@ -122,7 +122,7 @@ function PersonalRecipeDetail({ receta, from }: { receta: RecetaPropia, from?: s
           media area as the catalog detail + its own card, rendered as the
           designed placeholder. */}
       <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-card">
-        <RecipePlaceholder name={receta.nombre} categoria={null} />
+        <RecipePlaceholder name={receta.nombre} categoria={null} size="hero" />
       </div>
 
       <div className="mt-4 flex items-start justify-between gap-2">

@@ -29,9 +29,16 @@ export interface RecipePlaceholderProps {
   name: string
   categoria: CategoriaReceta | null | undefined
   className?: string
+  /**
+   * FRESCO-451: a fixed `text-5xl` glyph read fine on a ~240px card but
+   * looked like a broken image floating in the much larger `/recipes/[id]`
+   * hero media area — same small mark, way more empty gradient around it.
+   * `hero` scales the glyph up and darkens it for legibility at that size.
+   */
+  size?: 'card' | 'hero'
 }
 
-export function RecipePlaceholder({ name, categoria, className }: RecipePlaceholderProps) {
+export function RecipePlaceholder({ name, categoria, className, size = 'card' }: RecipePlaceholderProps) {
   return (
     <div
       className={cn('grid size-full place-items-center', className)}
@@ -39,7 +46,12 @@ export function RecipePlaceholder({ name, categoria, className }: RecipePlacehol
       aria-hidden="true"
       data-testid="recipe_placeholder"
     >
-      <span className="select-none font-heading text-5xl font-light text-neutral-500">
+      <span
+        className={cn(
+          'select-none font-heading font-light',
+          size === 'hero' ? 'text-8xl text-neutral-600' : 'text-5xl text-neutral-500',
+        )}
+      >
         {initialFrom(name)}
       </span>
     </div>

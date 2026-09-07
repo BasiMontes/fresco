@@ -15,7 +15,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, ChevronLeft, ChevronRight, GripVertical, X } from 'lucide-react';
+import { Ban, Check, ChevronLeft, ChevronRight, GripVertical, UtensilsCrossed, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
@@ -706,14 +706,24 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
             )
           : estado === 'excluida'
             ? (
-                <p data-testid={`calendar_slot_${dia}_${tipo}_excluida`} className="text-body-sm italic text-tertiary">
-                  Excluida por ti
-                </p>
+                // FRESCO-451: a bare italic line read as an unfinished slot,
+                // not a designed empty state — a small icon (mirroring
+                // `EmptyState`'s icon-above-copy shape, scaled down for this
+                // compact cell) gives it the same visual language.
+                <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
+                  <Ban className="size-5 text-tertiary" aria-hidden="true" />
+                  <p data-testid={`calendar_slot_${dia}_${tipo}_excluida`} className="text-body-sm italic text-tertiary">
+                    Excluida por ti
+                  </p>
+                </div>
               )
             : (
-                <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
-                  Sin receta
-                </p>
+                <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
+                  <UtensilsCrossed className="size-5 text-tertiary" aria-hidden="true" />
+                  <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
+                    Sin receta
+                  </p>
+                </div>
               )}
 
         {recipe && estado === 'pendiente' && (
