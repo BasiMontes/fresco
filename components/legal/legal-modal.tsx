@@ -10,16 +10,16 @@ const SECTION_LABEL: Record<LegalSection, string> = {
   contacto: 'Contacto',
 };
 
-/** FRESCO-51: real inbox — `hola.frescoapp@gmail.com` is the working Gmail address Supabase Auth itself sends from (no `@fresco.app` domain exists). */
-const CONTACT_EMAIL = 'hola.frescoapp@gmail.com';
+/** FRESCO-51: real inbox — `hola.frescoapp@gmail.com` is the working Gmail address Supabase Auth itself sends from (no `@fresco.app` domain exists). Exported for FRESCO-429's subscription-confirmation email, which needs the same real contact address. */
+export const CONTACT_EMAIL = 'hola.frescoapp@gmail.com';
 
 interface LegalSubsection {
   title: string
   body: string
 }
 
-/** FRESCO-430: real titular, provided by the founder — Basilio Montes Castaño, autónomo (persona física), NIF 47427105R. Domicile is published as locality-only (Utrera, Sevilla, España) by the founder's explicit choice — a known LSSI gap (full street address) accepted over publishing a private home address, not an oversight. Founder has not registered as autónomo (RETA/Hacienda) yet — a separate business-registration concern the ticket explicitly scopes out of this fix. */
-const LEGAL_ENTITY = 'Basilio Montes Castaño, autónomo, NIF 47427105R, con domicilio en Utrera (Sevilla), España, a efectos de notificaciones';
+/** FRESCO-430: real titular, provided by the founder — Basilio Montes Castaño, autónomo (persona física), NIF 47427105R. Domicile is published as locality-only (Utrera, Sevilla, España) by the founder's explicit choice — a known LSSI gap (full street address) accepted over publishing a private home address, not an oversight. Founder has not registered as autónomo (RETA/Hacienda) yet — a separate business-registration concern the ticket explicitly scopes out of this fix. Exported for FRESCO-429's subscription-confirmation email (art. 98.7 requires the provider's identity in the same durable-support notice). */
+export const LEGAL_ENTITY = 'Basilio Montes Castaño, autónomo, NIF 47427105R, con domicilio en Utrera (Sevilla), España, a efectos de notificaciones';
 
 /**
  * Adapted from an earlier iteration's legal copy (a private prior repo,
