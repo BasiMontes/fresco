@@ -31,6 +31,18 @@
  * coverage is not a quality signal and a ratchet on it would punish adding
  * an un-exercised branch to a mock.
  *
+ * 2026-09-07 (FRESCO-454, boilerplate sync to 7ede94e): `cli/` added to the
+ * exclusion list for the same reason as `scripts/` — it's the synced
+ * boilerplate-updater's own tooling (`update-boilerplate.ts`, `doctor.ts`,
+ * `install.ts`, `lib/updater-*.ts`, `lib/agent-compatibility*.ts`), not this
+ * project's app code, and it ships with its own test suite maintained
+ * upstream. Without this exclusion the sync's ~30 new `cli/` files (much of
+ * it interactive-TUI / self-update paths that aren't meaningfully
+ * unit-testable) pulled the weighted total down to functions 72.13% /
+ * lines 55.57% -- not a real drop in this project's own code quality, just
+ * a denominator shift. With `cli/` excluded, coverage holds at
+ * functions 83.66% / lines 84.87%, still above FLOOR unchanged.
+ *
  * ## Raising the floor
  *
  *   bun scripts/check-coverage.ts --print   # measure without enforcing
@@ -66,7 +78,7 @@ import { join } from 'node:path';
 const FLOOR = { functions: 82.0, lines: 84.0 } as const;
 
 /** Path prefixes whose files are not part of the ratchet. */
-const IGNORE_PREFIXES = ['tests/', 'scripts/', 'bun-test-setup.ts'];
+const IGNORE_PREFIXES = ['tests/', 'scripts/', 'cli/', 'bun-test-setup.ts'];
 
 interface Totals { fnFound: number, fnHit: number, lineFound: number, lineHit: number }
 
@@ -130,7 +142,7 @@ async function main(): Promise<void> {
 
   console.log('');
   console.log('─'.repeat(52));
-  console.log('  Total unit-test coverage (line-weighted, excl. tests/, scripts/)');
+  console.log('  Total unit-test coverage (line-weighted, excl. tests/, scripts/, cli/)');
   console.log(`    functions  ${functions.toFixed(2)} %   (floor ${FLOOR.functions.toFixed(2)} %)`);
   console.log(`    lines      ${lines.toFixed(2)} %   (floor ${FLOOR.lines.toFixed(2)} %)`);
   console.log('─'.repeat(52));
