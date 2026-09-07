@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
+import { clearAllCookies } from '@/tests/component-render';
 import {
   clearPostHogStorage,
   COOKIE_CONSENT_COOKIE,
@@ -7,15 +8,6 @@ import {
   readCookieConsentClient,
   writeCookieConsent,
 } from './cookie-consent';
-
-function clearAllCookies() {
-  document.cookie.split(';').forEach((entry) => {
-    const name = entry.split('=')[0]?.trim();
-    if (name) {
-      document.cookie = `${name}=; path=/; max-age=0`;
-    }
-  });
-}
 
 describe('isCookieConsentDecision / parseCookieConsent', () => {
   test('accepts the two valid decisions', () => {

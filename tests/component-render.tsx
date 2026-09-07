@@ -9,10 +9,16 @@ import userEvent from '@testing-library/user-event';
  * helper from one place, and wraps `render` with whatever app-wide
  * providers a component needs.
  *
- * Today the wrapper is a pass-through: the only app-wide provider is
- * `PostHogProvider` (`app/layout.tsx`), and `posthog-js` is stubbed in
- * `bun-test-setup.ts`, so components read the stub directly. The wrapper
- * stays so a future provider (theme, auth, i18n) is a one-line change here.
+ * The wrapper is a pass-through: `PostHogProvider` (`app/layout.tsx`) reads
+ * its consent decision from `useCookieConsent()`, and `SiteFooter` /
+ * `AyudaSection` (FRESCO-428) call that same hook directly — none of those
+ * are wrapped here, so a test rendering any of them (or anything under
+ * `PostHogProvider`) THROUGH this helper still needs its own
+ * `<CookieConsentProvider initialDecision={...}>` wrapper, same as the test
+ * files under `components/legal/` and `app/providers/posthog-provider.test.tsx`
+ * already do. Not folded in globally: most component tests render neither
+ * PostHog- nor consent-aware components, and a blanket wrapper here would
+ * change what every one of those tests actually exercises.
  */
 export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) {
   return render(ui, options);
@@ -38,3 +44,16 @@ export const screen: Screen = new Proxy({} as Screen, {
 
 export * from '@testing-library/react';
 export { userEvent };
+
+/**
+ * FRESCO-428 — was hand-copied identically into `lib/consent/cookie-consent.test.ts`,
+ * `components/legal/cookie-consent-banner.test.tsx`, and
+ * `components/legal/cookie-settings-dialog.test.tsx` (found in code review).
+ * Shared here so a future change to test cookie-clearing semantics is one edit.
+ */
+export function clearAllCookies() {
+  document.cookie.split(';').forEach((entry) => {
+    const name = entry.split('=')[0]?.trim();
+    if (name) { document.cookie = `${name}=; path=/; max-age=0`; }
+  });
+}

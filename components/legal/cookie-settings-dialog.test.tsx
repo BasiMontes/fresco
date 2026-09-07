@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
-import { describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import { CookieConsentProvider, useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { COOKIE_CONSENT_COOKIE } from '@/lib/consent/cookie-consent';
-import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
+import { clearAllCookies, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 
 function Wrapper({ children, initialDecision = null }: { children: ReactNode, initialDecision?: 'accepted' | 'rejected' | null }) {
   return <CookieConsentProvider initialDecision={initialDecision}>{children}</CookieConsentProvider>;
@@ -34,14 +34,16 @@ function AcceptThenOpen() {
   return null;
 }
 
-function clearAllCookies() {
-  document.cookie.split(';').forEach((entry) => {
-    const name = entry.split('=')[0]?.trim();
-    if (name) { document.cookie = `${name}=; path=/; max-age=0`; }
-  });
-}
-
 describe('CookieSettingsDialog', () => {
+  // `bun test` runs all given files in one process sharing the same
+  // happy-dom `document`, in file-path order — a decision cookie left
+  // behind by this file's last test would leak into whichever test file
+  // sorts next alphabetically. See the matching note in
+  // app/providers/posthog-provider.test.tsx (found in code review).
+  afterEach(() => {
+    clearAllCookies();
+  });
+
   test('starts with the toggle reflecting the current decision', () => {
     renderWithProviders(
       <Wrapper initialDecision="accepted">

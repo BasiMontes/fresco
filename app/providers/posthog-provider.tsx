@@ -77,6 +77,17 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       });
       initialized = true;
     }
+    else {
+      // A re-accept after an earlier withdrawal: `initialized` is already
+      // true so `init()` above is skipped, but the SDK is still internally
+      // opted-out from the `opt_out_capturing()` call in
+      // cookie-consent-context.tsx's withdrawal path — nothing else ever
+      // reverses that. Found in review (FRESCO-428): without this, capture
+      // silently stays off for the rest of the session after a
+      // reject-then-accept cycle. Idempotent when there was nothing to
+      // reverse (first-ever accept never reaches this branch).
+      posthog.opt_in_capturing();
+    }
 
     const client = createClient();
 

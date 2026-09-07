@@ -1,23 +1,23 @@
 import type { ReactNode } from 'react';
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { COOKIE_CONSENT_COOKIE } from '@/lib/consent/cookie-consent';
-import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
+import { clearAllCookies, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 
 function Wrapper({ children, initialDecision = null }: { children: ReactNode, initialDecision?: 'accepted' | 'rejected' | null }) {
   return <CookieConsentProvider initialDecision={initialDecision}>{children}</CookieConsentProvider>;
 }
 
-function clearAllCookies() {
-  document.cookie.split(';').forEach((entry) => {
-    const name = entry.split('=')[0]?.trim();
-    if (name) { document.cookie = `${name}=; path=/; max-age=0`; }
-  });
-}
-
 describe('CookieConsentBanner', () => {
+  // Same file-order pollution risk as the other cookie-consent test files
+  // (see app/providers/posthog-provider.test.tsx) — clean up unconditionally
+  // rather than relying on every mutating test remembering to.
+  afterEach(() => {
+    clearAllCookies();
+  });
+
   test('shows when there is no consent decision yet', () => {
     renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
     expect(screen.getByTestId('cookie_consent_banner')).toBeInTheDocument();

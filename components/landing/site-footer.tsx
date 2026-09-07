@@ -13,6 +13,13 @@ const FOOTER_LINKS: { label: string, section: LegalSection }[] = [
   { label: 'Contacto', section: 'contacto' },
 ];
 
+// FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
+// FRESCO-445: text-accent-300 (#8fab8d) on bg-primary was ~3.9:1 —
+// under AA for 11px text; accent-200 clears it at ~6:1. Shared by every
+// footer link (FOOTER_LINKS-driven and the standalone "Configurar cookies"
+// button) so a future tweak can't update one and miss the other.
+const FOOTER_LINK_CLASSNAME = 'inline-flex min-h-[44px] items-center text-caption text-accent-200';
+
 /** Landing footer — same `LegalModal` FRESCO-51 wired into `/login`/`/signup`, dead `href="#"` links replaced with real triggers. */
 export function SiteFooter() {
   const [open, setOpen] = React.useState(false);
@@ -41,10 +48,7 @@ export function SiteFooter() {
                 type="button"
                 data-testid={`site_footer_${linkSection}_link`}
                 onClick={() => openSection(linkSection)}
-                // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
-                // FRESCO-445: text-accent-300 (#8fab8d) on bg-primary was ~3.9:1 —
-                // under AA for 11px text; accent-200 clears it at ~6:1.
-                className="inline-flex min-h-[44px] items-center text-caption text-accent-200"
+                className={FOOTER_LINK_CLASSNAME}
               >
                 {label}
               </button>
@@ -53,7 +57,7 @@ export function SiteFooter() {
               type="button"
               data-testid="site_footer_cookie_settings_link"
               onClick={openSettings}
-              className="inline-flex min-h-[44px] items-center text-caption text-accent-200"
+              className={FOOTER_LINK_CLASSNAME}
             >
               Configurar cookies
             </button>
