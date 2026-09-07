@@ -68,9 +68,9 @@
      against the darkest warm neutral (#2F281C), not pure black. Exposed as
      tokens (not hardcoded in tailwind.config.ts) so §Dark mode can deepen
      them toward true black for a near-black ground. */
-  --shadow-sm: light-dark(0 1px 2px rgba(47, 40, 28, 0.14), 0 1px 2px rgba(0, 0, 0, 0.5));
-  --shadow-md: light-dark(0 3px 10px rgba(47, 40, 28, 0.16), 0 4px 14px rgba(0, 0, 0, 0.55));
-  --shadow-lg: light-dark(0 12px 32px rgba(47, 40, 28, 0.22), 0 16px 40px rgba(0, 0, 0, 0.62));
+  --shadow-sm: 0 1px 2px rgba(47, 40, 28, 0.14);
+  --shadow-md: 0 3px 10px rgba(47, 40, 28, 0.16);
+  --shadow-lg: 0 12px 32px rgba(47, 40, 28, 0.22);
 
   /* `accent` (green) ramp — dark values are the light ramp reversed end-for-end
      (step -100 stays "subtlest", -900 "strongest"). */
@@ -369,11 +369,20 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+  /* box-shadow has no <color>-only slot to wrap in light-dark() here — `md`/
+     `lg` change offset/blur between themes, not just color — so the dark
+     values are redeclared here rather than folded into the `:root` block. */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.62);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.62);
   }
 }
 
@@ -392,7 +401,10 @@
   /* Re-declare the role tokens with static light values so every cream-on-green
      pair keeps its light-mode contrast under dark mode. `color-scheme: light`
      alone is NOT enough — the `light-dark()` tokens are declared on `:root` and
-     resolve against `:root`'s color-scheme, not this subtree's. */
+     resolve against `:root`'s color-scheme, not this subtree's. Each token
+     below is consumed by at least one component inside the sidebar subtree
+     (nav pill, account block, theme toggle, empty-state card) — checked
+     against this build, not a defensive superset. */
   color-scheme: light;
   --color-background: #faf3e3;
   --color-surface: #f1e3c6;
@@ -416,12 +428,20 @@
   html {
     @apply bg-background;
     overscroll-behavior-y: none;
-    /*
-     * FRESCO-448 (S4): the focus-ring offset gap was painting the Tailwind
-     * default (#fff) — a hard white halo around focused controls on the cream
-     * page. Anchor it to the page ground so the offset reads as a clean gap
-     * in both themes.
-     */
+  }
+
+  /*
+   * FRESCO-448 (S4): the focus-ring offset gap was painting the Tailwind
+   * default (#fff) — a hard white halo around focused controls on the cream
+   * page. Setting `--tw-ring-offset-color` on `html` alone is inert: Tailwind's
+   * own preflight sets it directly on `*, ::before, ::after`, and an explicit
+   * per-element declaration always wins over one merely inherited from an
+   * ancestor, regardless of selector specificity. Match that exact selector
+   * so the override actually reaches every ringed control.
+   */
+  *,
+  ::before,
+  ::after {
     --tw-ring-offset-color: var(--color-background);
   }
 
@@ -493,6 +513,19 @@
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  /*
+   * FRESCO-448 regression fix: inside `[data-brand-ground]` (the always-green
+   * sidebar) `--color-primary` is re-pinned to the same dark green as the
+   * sidebar background (see the `[data-brand-ground]` block below) — so the
+   * S3 fallback above outlined focused nav items in their own background
+   * color, invisible. Re-point the fallback to the pinned light `background`
+   * (cream), which reads against the green ground.
+   */
+  [data-brand-ground]
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline-color: var(--color-background);
   }
 }
 

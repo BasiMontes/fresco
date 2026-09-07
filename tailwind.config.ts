@@ -9,14 +9,9 @@ const config: Config = {
     './components/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
   ],
-  // FRESCO-448 §Dark mode: theme is driven by CSS custom-property swaps in
-  // globals.css (role tokens + inverted brand ramps), so almost no component
-  // needs a `dark:` variant. Where one is unavoidable, it must match BOTH the
-  // OS preference (`system` cookie / first visit) and the explicit override.
-  darkMode: ['variant', [
-    '@media (prefers-color-scheme: dark) { &:not([data-theme="light"] *) }',
-    '&:is([data-theme="dark"] *)',
-  ]],
+  // FRESCO-448 §Dark mode: theme is driven entirely by CSS custom-property
+  // swaps in globals.css (role tokens + inverted brand ramps via
+  // `light-dark()`) — no component uses Tailwind's `dark:` variant.
   theme: {
     extend: {
       colors: {

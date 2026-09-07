@@ -99,7 +99,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
           off-brand value) rather than a plain near-black neutral, per the
           brand guide (`design/handoff/fresco/brand-guide.dc.html`). */}
       <div className="relative isolate w-full overflow-hidden rounded-3xl bg-primary p-3 pb-6 shadow-lg">
-        <div className="relative z-10 mb-3 flex items-center gap-2 rounded-xl bg-[color-mix(in_oklch,black_44%,#0f4e0e_56%)] px-4 py-3 text-background">
+        <div className="relative z-10 mb-3 flex items-center gap-2 rounded-xl bg-[color-mix(in_oklch,black_44%,#0f4e0e_56%)] px-4 py-3 text-on-brand">
           {isComplete
             ? (
                 <span className="t-success-check" data-state="in" aria-hidden="true">

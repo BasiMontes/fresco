@@ -17,8 +17,6 @@ export const THEME_COOKIE = 'theme';
 /** 1 year — a UI preference, safe to persist long. */
 export const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-export const THEME_PREFERENCES: readonly ThemePreference[] = ['light', 'dark', 'system'];
-
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === 'light' || value === 'dark' || value === 'system';
 }

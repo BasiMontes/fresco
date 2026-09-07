@@ -60,9 +60,11 @@ export function ThemeToggle({ tone = 'default', className }: ThemeToggleProps) {
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') { return; }
+    const isNext = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+    const isPrev = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+    if (!isNext && !isPrev) { return; }
     event.preventDefault();
-    const delta = event.key === 'ArrowRight' ? 1 : -1;
+    const delta = isNext ? 1 : -1;
     const nextIndex = (index + delta + OPTIONS.length) % OPTIONS.length;
     const next = OPTIONS[nextIndex];
     if (!next) { return; }
@@ -79,7 +81,14 @@ export function ThemeToggle({ tone = 'default', className }: ThemeToggleProps) {
       data-testid="theme_toggle"
       className={cn(
         'inline-flex gap-1 rounded-md border p-1',
-        isInverse ? 'border-background/25 bg-background/10' : 'border-border bg-surface',
+        // FRESCO-169 precedent: an opacity modifier (`/25`, `/10`) on a color
+        // defined as a raw `var(--color-*)` reference silently resolves to
+        // fully transparent — the border then fell back to Tailwind's own
+        // preflight gray. `color-mix()` arbitrary values sidestep Tailwind's
+        // opacity pipeline entirely and compile to valid CSS regardless.
+        isInverse
+          ? 'border-[color-mix(in_srgb,var(--color-background)_25%,transparent)] bg-[color-mix(in_srgb,var(--color-background)_10%,transparent)]'
+          : 'border-border bg-surface',
         className,
       )}
     >
