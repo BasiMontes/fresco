@@ -86,7 +86,7 @@ export default async function NotificationsPage() {
         </Link>
         <div>
           <h1 className="text-h2">Centro de Avisos</h1>
-          <p className="text-body-sm uppercase text-tertiary">Tus notificaciones</p>
+          <p className="text-h6 uppercase text-tertiary">Tus notificaciones</p>
         </div>
       </div>
 

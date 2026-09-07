@@ -13,17 +13,21 @@ import type { CosteEstimado, DificultadReceta, RecipeDieta } from '@schemas';
  * This module has no `'use client'` directive, so both server and client
  * components can import it safely.
  */
+// FRESCO-451: Title Case, matching the same vocabulary's casing in
+// `components/profile/preferences-form.tsx`'s `DIETA_FIELDS` — these render
+// as `Tag` pills everywhere (recipe cards, filters, recipe detail), never
+// inline mid-sentence, so Title Case is safe app-wide.
 export const DIETA_LABELS: Partial<Record<keyof RecipeDieta, string>> = {
-  vegetariano: 'vegetariano',
-  vegano: 'vegano',
-  sin_gluten: 'sin gluten',
-  sin_lactosa: 'sin lactosa',
-  sin_huevo: 'sin huevo',
-  bajo_fodmap: 'bajo FODMAP',
-  keto: 'keto',
-  paleo: 'paleo',
-  halal: 'halal',
-  kosher: 'kosher',
+  vegetariano: 'Vegetariano',
+  vegano: 'Vegano',
+  sin_gluten: 'Sin gluten',
+  sin_lactosa: 'Sin lactosa',
+  sin_huevo: 'Sin huevo',
+  bajo_fodmap: 'Bajo FODMAP',
+  keto: 'Keto',
+  paleo: 'Paleo',
+  halal: 'Halal',
+  kosher: 'Kosher',
 };
 
 export const COSTE_ESTIMADO_LABELS: Record<CosteEstimado, string> = {

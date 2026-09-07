@@ -503,9 +503,8 @@ export default function SignupPage() {
                             }}
                             className="text-primary underline"
                           >
-                            Política de Privacidad
+                            Política de Privacidad.
                           </button>
-                          .
                         </span>
                       </label>
 
