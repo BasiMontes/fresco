@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fresco · Auditoría de proyecto · 31 ago 2026</title>
+<style>
+  :root {
+    --bg: #FAF3E3;
+    --surface: #F1E3C6;
+    --surface-2: #FCF8EE;
+    --accent: #0F4E0E;
+    --accent-warm: #C4711A;
+    --highlight: #EAAD70;
+
+    --ink: #201E1D;
+    --ink-2: #4A4437;
+    --ink-3: #6F5F43;
+    --red: #B8422E;
+    --red-soft: #F7E2DE;
+    --orange-soft: #FCF1E8;
+    --accent-soft: #E1E8E0;
+    --line: #E3D5B6;
+    --line-2: #C9B48E;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17150F; --surface: #24201A; --surface-2: #1D1A13;
+      --accent: #8FAB8D; --accent-warm: #EAAD70; --highlight: #F3CBA5;
+      --ink: #F4EEDD; --ink-2: #D8CFB8; --ink-3: #A99E86;
+      --red: #E98474; --red-soft: #33201C; --orange-soft: #2E2415; --accent-soft: #1D2C21;
+      --line: #36301F; --line-2: #4C4530;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.65; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 20px 96px; }
+
+  header.masthead { padding: 64px 0 40px; border-bottom: 3px solid var(--accent); }
+  .kicker { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent-warm); font-weight: 700; margin: 0 0 14px; }
+  h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.06; margin: 0 0 18px; letter-spacing: -0.02em; font-weight: 800; color: var(--accent); }
+  .standfirst { font-size: 19px; color: var(--ink-2); margin: 0 0 28px; max-width: 62ch; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 26px; }
+  .meta-cell { border-left: 3px solid var(--line-2); padding-left: 12px; }
+  .meta-cell dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; }
+  .meta-cell dd { margin: 3px 0 0; font-size: 15px; color: var(--ink); font-weight: 600; }
+
+  section { padding-top: 56px; }
+  h2 { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; margin: 0 0 6px; display: flex; align-items: baseline; gap: 10px; }
+  h2 .num { color: var(--accent-warm); font-variant-numeric: tabular-nums; }
+  h3.title { font-size: clamp(24px, 3.6vw, 32px); line-height: 1.18; margin: 0 0 18px; letter-spacing: -0.015em; font-weight: 800; color: var(--ink); }
+  h4 { font-size: 18px; margin: 30px 0 8px; font-weight: 750; color: var(--ink); letter-spacing: -0.01em; }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  code { font-family: var(--mono); font-size: .875em; background: var(--surface); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+
+  .verdict { background: var(--accent); color: #F7F3E8; border-radius: 14px; padding: 28px 30px; }
+  .verdict p { color: #EDE7D8; max-width: none; }
+  .verdict p:last-child { margin-bottom: 0; }
+  .verdict .big { font-size: 22px; line-height: 1.35; font-weight: 700; color: #fff; }
+  .verdict .score { font-size: 60px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; color: var(--highlight); font-variant-numeric: tabular-nums; }
+  .verdict .score small { font-size: 22px; color: #C9D8C6; font-weight: 600; }
+  .verdict code { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); color: #fff; }
+
+  .score-row { display: grid; grid-template-columns: 210px 1fr 64px; gap: 14px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }
+  .score-row:last-child { border-bottom: 0; }
+  .score-row .label { font-weight: 700; font-size: 15px; }
+  .score-row .label span { display: block; font-weight: 400; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+  .bar { height: 9px; background: var(--surface); border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+  .bar i.warn { background: var(--accent-warm); }
+  .bar i.bad { background: var(--red); }
+  .score-row .val { text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; font-size: 15px; }
+  .score-row .val small { display:block; font-weight: 600; font-size: 11px; color: var(--ink-3); }
+
+  .card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; margin: 0 0 16px; }
+  .card > :last-child { margin-bottom: 0; }
+  .finding { border-left: 5px solid var(--line-2); }
+  .finding.block { border-left-color: var(--red); }
+  .finding.high { border-left-color: var(--red); }
+  .finding.mid { border-left-color: var(--accent-warm); }
+  .finding.low { border-left-color: var(--accent); }
+  .tag { display: inline-block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; padding: 3px 9px; border-radius: 99px; vertical-align: 2px; margin-right: 8px; }
+  .tag.block { background: var(--red); color: #fff; }
+  .tag.high { background: var(--red-soft); color: var(--red); }
+  .tag.mid { background: var(--orange-soft); color: var(--accent-warm); }
+  .tag.low { background: var(--accent-soft); color: var(--accent); }
+  .tag.done { background: var(--accent-soft); color: var(--accent); }
+  .tag.open { background: var(--red-soft); color: var(--red); }
+  .tag.partial { background: var(--orange-soft); color: var(--accent-warm); }
+  .finding h4 { margin-top: 0; }
+
+  blockquote.pull { margin: 20px 0; padding: 18px 22px; background: var(--surface); border-radius: 10px; border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; line-height: 1.6; color: var(--ink-2); overflow-x: auto; }
+  blockquote.pull p { max-width: none; margin: 0; }
+  .cite { display: block; margin-top: 10px; font-family: var(--sans); font-size: 12.5px; color: var(--ink-3); }
+
+  .table-scroll { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 640px; }
+  th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); font-weight: 800; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.axis, td.id { font-weight: 700; white-space: nowrap; }
+  td.id { font-family: var(--mono); font-size: 12.5px; }
+
+  ul.clean { margin: 0 0 16px; padding-left: 20px; }
+  ul.clean li { margin-bottom: 8px; max-width: 66ch; }
+  pre.diagram { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; overflow-x: auto; color: var(--ink-2); margin: 0 0 18px; }
+  pre.code { font-family: var(--mono); font-size: 12.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; overflow-x: auto; color: var(--ink-2); margin: 0 0 16px; }
+
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  ol.steps li { counter-increment: s; position: relative; padding: 16px 0 16px 52px; border-bottom: 1px solid var(--line); }
+  ol.steps li:last-child { border-bottom: 0; }
+  ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 15px; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #F7F3E8; display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+  ol.steps b { display: block; font-size: 16.5px; margin-bottom: 3px; }
+  ol.steps span { color: var(--ink-2); font-size: 14.5px; }
+
+  footer.end { margin-top: 64px; padding-top: 28px; border-top: 3px solid var(--accent); color: var(--ink-3); font-size: 14px; }
+  .stamp { margin-top: 18px; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+  @media (max-width: 620px) {
+    .score-row { grid-template-columns: 1fr 64px; }
+    .score-row .bar { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="kicker">Claude · Cuarta auditoría · Fresco</p>
+  <h1>La casa está bien construida. La puerta de atrás está abierta y nadie ha entrado a comprobarlo.</h1>
+  <p class="standfirst">Basi, esto es la cuarta pasada sobre Fresco, y la más profunda: seis frentes en paralelo entraron en el motor de generación, en cada política RLS, en el webhook de Stripe línea a línea, en el funnel de PostHog evento a evento y en el propio bucle de auditorías. Pediste una nota igual o más dura que las tres anteriores y con ojo de product engineer. La nota baja. No porque el código haya empeorado —no lo ha hecho—, sino porque a esta profundidad aparecen dos cosas que las pasadas anteriores no llegaron a ver: un <strong>bypass de pago explotable por cualquiera</strong>, y una capa de seguridad alimentaria que es un único punto de fallo sin un solo test que lo cubra. Y porque el eje que siempre brilló —Arquitectura— es justo donde viven las dos.</p>
+  <dl class="meta-grid">
+    <div class="meta-cell"><dt>Fecha</dt><dd>31 ago 2026</dd></div>
+    <div class="meta-cell"><dt>Base</dt><dd><code>dev</code> @ 1940cef · 937 commits</dd></div>
+    <div class="meta-cell"><dt>Método</dt><dd>6 subagentes · lectura + repo + Jira live + Supabase live + prod pública</dd></div>
+    <div class="meta-cell"><dt>Rúbrica</dt><dd>agentic-audit v1 (congelada)</dd></div>
+    <div class="meta-cell"><dt>Nota anterior</dt><dd>4,3 (auditoría-3, 29 ago)</dd></div>
+    <div class="meta-cell"><dt>Nota</dt><dd>3,5 / 5</dd></div>
+  </dl>
+</header>
+
+<section>
+  <h2><span class="num">01</span> Veredicto</h2>
+  <h3 class="title">3,5 / 5. Ingeniería sólida, gastada en la pregunta equivocada, con dos agujeros serios que nadie había buscado.</h3>
+
+  <div class="verdict">
+    <p class="score">3,5 <small>/ 5</small></p>
+    <p class="big">Desde 4,3 (29 ago). El movimiento es −0,8, y es real: no es deriva de documentación esta vez. Son defectos nuevos, encontrados a una profundidad que ninguna pasada anterior alcanzó, en el eje que las tres anteriores puntuaron entre 4,7 y 5,0.</p>
+    <p>Dos <strong>BLOCKER técnicos</strong>: (1) cualquier usuario —incluido un invitado anónimo sin registro— puede auto-concederse Pro permanente con una sola petición REST, porque el trigger que protege las columnas de suscripción es <code>BEFORE UPDATE</code> y el camino de <code>INSERT</code> está abierto. (2) El filtro de alérgenos/dieta es el único punto de enforcement desde que se quitó Gemini, hace un match sensible a mayúsculas contra un vocabulario incompleto, ignora por completo el campo de texto libre de alérgenos que el propio onboarding ofrece, y no tiene ni un test unitario, ni pgTAP, ni aserción e2e que compruebe que una receta prohibida queda fuera del menú.</p>
+    <p>Dos <strong>BLOCKER de producto</strong>: el banner "Borrador — pendiente de revisión legal" y el <code>[nombre legal y NIF/CIF pendientes]</code> siguen vivos en <code>fresco-pro</code> un mes después; y la métrica que el propio charter del MVP define como el go/no-go —"3 de 10 pagan y repiten 3+ semanas"— <strong>no se puede medir hoy</strong>: no hay evento de conversión trial→pago, ni de renovación, ni de cancelación, ni property de plan en PostHog. Si mañana llega una cohorte, se audita a mano desde Stripe.</p>
+  </div>
+
+  <h4>Nota por eje (rúbrica v1, comparable con la auditoría-3)</h4>
+  <div class="score-block">
+    <div class="score-row">
+      <div class="label">Fundación<span>PRD, SRS, mapas de negocio, glosario, ADRs</span></div>
+      <div class="bar"><i class="warn" style="width:78%"></i></div>
+      <div class="val">3,9<small>(4,7)</small></div>
+    </div>
+    <div class="score-row">
+      <div class="label">Backlog<span>épicas, historias, AC, defectos, roadmap</span></div>
+      <div class="bar"><i class="bad" style="width:68%"></i></div>
+      <div class="val">3,4<small>(3,8)</small></div>
+    </div>
+    <div class="score-row">
+      <div class="label">Trazabilidad<span>commits, ramas, PRs, flujo de promoción</span></div>
+      <div class="bar"><i class="bad" style="width:68%"></i></div>
+      <div class="val">3,4<small>(3,8)</small></div>
+    </div>
+    <div class="score-row">
+      <div class="label">Arquitectura<span>capas, tokens, enforcement de auth, RLS</span></div>
+      <div class="bar"><i class="bad" style="width:64%"></i></div>
+      <div class="val">3,2<small>(4,8)</small></div>
+    </div>
+    <div class="score-row">
+      <div class="label">Verificación<span>tests, CI, entornos, smoke post-deploy</span></div>
+      <div class="bar"><i class="bad" style="width:64%"></i></div>
+      <div class="val">3,2<small>(4,0)</small></div>
+    </div>
+    <div class="score-row">
+      <div class="label">Disciplina con el agente<span>bitácora, ADRs, revisión humana</span></div>
+      <div class="bar"><i class="warn" style="width:74%"></i></div>
+      <div class="val">3,7<small>(4,8)</small></div>
+    </div>
+  </div>
+  <p style="margin-top:18px"><strong>Global 3,47 → 3,5.</strong> Arquitectura cae 1,6 puntos: pasa de ser el eje estrella a contener un BLOCKER de pago y un BLOCKER de seguridad alimentaria. Verificación cae 0,8: la capa de mayor responsabilidad legal no tiene cobertura de comportamiento, ningún handler de Edge Function tiene test, no se mide cobertura, y <code>supabase/functions/</code> no se typechquea ni se lintea en CI. Fundación y Disciplina bajan por drift de documentación y por un patrón de esfuerzo que describo en §08.</p>
+
+  <h4>Lente de producto (fuera de la rúbrica v1 — no comparable con el 4,3)</h4>
+  <p>La rúbrica v1 mide <code>subject=dev</code>. Pediste ojo de product engineer, y esa mirada puntúa aparte. <strong>Preparación de producto: ~2,5 / 5.</strong> La maquinaria está construida —Stripe, Sentry, PostHog, Centro de Avisos, motor determinista sub-segundo—, pero: 0 suscriptores, 0 cohortes concierge, 2 listas de la compra en producción de 38 planes, el funnel sin instrumentar de punta a punta, el moat sin payoff en las 2 primeras semanas, y un blocker legal que se puede resolver con una revisión de abogado y lleva un mes sin moverse. El producto se está puliendo, no validando.</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span> Qué cubre esta pasada que las anteriores no</h2>
+  <h3 class="title">Las tres primeras contaron cosas. Esta las abrió.</h3>
+  <p>Las auditorías 1–3 fueron, por diseño, de superficie: contaron 24 políticas RLS sin verificar que cada una acota bien las filas; confirmaron "0 llamadas a IA externas" sin leer el algoritmo que las reemplazó; midieron el TTFB de la landing sin abrir una sola pantalla autenticada. La auditoría-3 lo dice de sí misma: inspeccionó el código "layering, dónde se aplica auth, usos de <code>SERVICE_ROLE</code>", pero no construyó un exploit ni trazó un ingrediente prohibido desde el onboarding hasta el plato.</p>
+  <p>Esta pasada sí. Seis frentes:</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Frente</th><th>Qué hizo de nuevo</th></tr></thead>
+    <tbody>
+      <tr><td class="axis">Motor de dominio</td><td>Leyó <code>menu-selector.ts</code>, <code>consolidator.ts</code>, <code>get_filtered_recipes</code>, los triggers de aprendizaje y sus tests, y contrastó cada uno con la garantía que declara su ADR. Encontró que "determinista" (ADR-0005) no lo es, que la media móvil de rating tiene un bug sistemático, y que el camino de sustitución de <code>update-recipe-status</code> puede meter un alérgeno en el calendario.</td></tr>
+      <tr><td class="axis">Seguridad + infra</td><td>Construyó el exploit del bypass de pago. Revisó <code>pg_policies</code> y <code>pg_proc</code> política a política y función a función contra la base de datos viva. Corrió los advisors de Supabase. Escaneó todo el árbol y el historial en busca de secretos (limpio). Revisó los 4 <code>pg_cron</code>, las cabeceras HTTP y el guard de open-redirect.</td></tr>
+      <tr><td class="axis">Tests + CI</td><td>Corrió <code>bun test</code> (270/270). Mapeó módulo por módulo qué se testea de verdad. Descubrió que la capa de seguridad alimentaria tiene cero cobertura de comportamiento, que <code>supabase/functions/</code> está excluido de <code>tsc</code> y ESLint, y que el CI usa secretos de Stripe/PostHog/Sentry de <em>producción</em>.</td></tr>
+      <tr><td class="axis">Producto</td><td>Mapeó las 20 etapas del funnel contra los 6 eventos de PostHog que existen. Analizó el time-to-payoff del moat semana a semana. Desmontó la propuesta de valor de Pro claim a claim contra el código que debería hacerlos cumplir. Verificó en vivo el banner legal y las cifras de "Tu impacto".</td></tr>
+      <tr><td class="axis">Backlog + docs + meta</td><td>Jira <strong>en vivo</strong> vía <code>acli</code> (el blind spot #1 ya no aplica). 339 work items contados desde la API. Verificó cierres forward-only. Contrastó los 18 ADRs contra el código. Cuestionó si tres auditorías en 15 días es sostenible.</td></tr>
+      <tr><td class="axis">Baseline</td><td>Reconstruyó la rúbrica v1 y las notas de las tres pasadas, y encontró que <code>audits/README.md</code> registra mal la nota de la auditoría-3.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Blind spots de la auditoría-3, estado hoy:</strong> #1 (acceso a Jira) — <strong>resuelto</strong>, <code>acli</code> autentica y el token incluso tiene <code>Administer Jira</code>. #3 (required checks ilegibles) — <strong>resuelto</strong>, <code>branch-protection.md</code> commiteado. #4 (informes fuera del repo) — <strong>resuelto</strong>. #2 (app autenticada nunca ejercida) — <strong>sigue abierto</strong>: esta pasada tampoco tuvo credenciales para <code>/menu</code>, <code>/calendar</code>, <code>/shopping-list</code>, <code>/perfil</code>, <code>/admin</code>. Todo hallazgo de UX/a11y del lado autenticado sigue sin cubrirse.</p>
+</section>
+
+<section>
+  <h2><span class="num">03</span> Antes de nada: el 4,3 está mal contado en dos sitios</h2>
+  <h3 class="title">El rastro de las auditorías tiene un error que se ha propagado a MEMORY y al encargo de esta.</h3>
+  <p><code>.context/audits/README.md:15</code> dice que la auditoría-3 sacó "~3,7/5 vs baseline 4,7". El propio HTML de la auditoría-3 saca <strong>4,3</strong>, y dice explícitamente que el 4,7 y el 4,3 "no se pueden comparar" porque el 4,7 es anterior a la rúbrica v1. El "3,7" es la nota de la <em>auditoría-2</em> (la pasada de Claude del 27 de agosto, el fichero está fechado mal como 21). <code>master-implementation-plan.md:275</code> lo dice bien; el README, MEMORY y el prompt que encargó esta auditoría, no.</p>
+  <p>La trayectoria real es <strong>4,7 → 3,7 → 4,3 → 3,5</strong>. Sube y baja. La auditoría-2 hundió la nota al llegar a superficies que la 1 no vio (el board real de Jira, el contraste token a token, branch protection). La auditoría-3 la recuperó con remediación genuina (required checks, tests unitarios en CI, serie de contraste completa, sync de mapas, ADR-0014). Esta la vuelve a bajar por la misma razón que la 2: más profundidad de inspección. La diferencia es que esta vez lo que aparece a esa profundidad no es documentación desfasada — es un bypass de pago y una capa de seguridad sin red.</p>
+  <p><strong>Corrígelo:</strong> la fila de la auditoría-3 en <code>audits/README.md</code> debe decir 4,3, y la frase "so scores are comparable" es falsa — la auditoría-1 usó 6 ejes distintos (Diseño y Testabilidad como ejes propios). Actualiza también la nota de MEMORY.</p>
+</section>
+
+<section>
+  <h2><span class="num">04</span> BLOCKER 1 — Pro gratis, para cualquiera, con una petición</h2>
+  <h3 class="title">El trigger que protege la suscripción es <code>BEFORE UPDATE</code>. El camino de <code>INSERT</code> lleva abierto desde julio.</h3>
+
+  <div class="card finding block">
+    <h4><span class="tag block">Blocker</span>A4-B1 · Arquitectura / Seguridad · bypass de pago</h4>
+    <p>El code review de la PR #100 (FRESCO-228) encontró que <code>profiles_update_own</code> no restringe columnas y que <code>grant update … to authenticated</code> es de tabla entera, así que cualquier usuario autenticado podía hacer <code>.from('user_profiles').update({ plan: 'pro' })</code> sobre su propia fila. El arreglo fue un trigger <code>BEFORE UPDATE</code> que rechaza cambios a las 5 columnas de suscripción salvo si el rol JWT es <code>service_role</code>. El comentario de la migración lo dice con todas las letras:</p>
+    <blockquote class="pull"><p>-- any authenticated user could already call the Supabase client SDK<br>-- directly (`.from('user_profiles').update({ plan: 'pro' })…`) and<br>-- self-grant Pro — this predates this PR<br>…<br>create trigger protect_subscription_columns<br>&nbsp;&nbsp;before update on public.user_profiles</p>
+    <span class="cite">supabase/migrations/20260818190000_prevent_client_subscription_column_writes.sql</span></blockquote>
+    <p><strong>El problema: el trigger cubre <code>UPDATE</code>, no <code>INSERT</code>.</strong> Y el camino de <code>INSERT</code> está abierto de par en par:</p>
+    <ul class="clean">
+      <li><code>authenticated</code> tiene <code>INSERT</code> de tabla sobre <code>user_profiles</code> (<code>20260729120000_grant_authenticated_table_privileges.sql</code>).</li>
+      <li>La política <code>profiles_insert_own</code> es <code>with check ((select auth.uid()) = id)</code> — acota la <em>fila</em>, no las <em>columnas</em>.</li>
+      <li>No hay ningún trigger <code>on auth.users</code> que cree la fila de perfil por defecto (verificado: <code>pg_trigger</code> sobre <code>auth.*</code> está vacío). La fila no existe hasta que el usuario termina el onboarding — que la escribe con <code>client.from('user_profiles').upsert(...)</code> desde el navegador (<code>lib/api/user-profile.ts:91</code>, <code>app/onboarding/page.tsx</code>).</li>
+      <li>El cron de reconciliación de Stripe solo mira filas con <code>stripe_subscription_id IS NOT NULL</code> (<code>app/api/cron/stripe-reconcile/route.ts:67</code>), así que nunca ve una fila con <code>plan:'pro'</code> puesta a mano.</li>
+      <li><code>generate-meal-plan</code> y toda la UI de Pro se gatean solo con <code>profile.plan === 'pro'</code>, nunca con <code>plan_expires_at</code> (A4-L8).</li>
+    </ul>
+    <p><strong>Exploit, sin tocar la app:</strong></p>
+    <pre class="code"># 1. La anon key está en el bundle del cliente. Registra un anónimo:
+curl -s "$SUPABASE_URL/auth/v1/signup" -H "apikey: $ANON" \
+  -H 'content-type: application/json' -d '{}'   # o POST /auth/v1/token?grant_type=anonymous
+
+# 2. Con el JWT devuelto, INSERTA tu propio perfil como Pro:
+curl -s "$SUPABASE_URL/rest/v1/user_profiles" \
+  -H "apikey: $ANON" -H "authorization: Bearer $JWT" \
+  -H 'content-type: application/json' -H 'prefer: return=representation' \
+  -d '{"id":"<tu-uid>","plan":"pro","plan_expires_at":"2099-01-01T00:00:00Z",
+       "num_personas":2,"adultos":2,"ninos":0,
+       "dias_planificar":["lunes"],"comidas_planificar":["comida"]}'
+# → fila creada. Sin UPDATE, el trigger no dispara. plan='pro' persiste.
+# Pro para siempre, gratis, para cualquiera — incluido un invitado sin email.</pre>
+    <p><strong>Impacto:</strong> el ingreso del producto no existe. Tres auditorías externas y un code review de PR —que <em>vio</em> el hueco de UPDATE y solo tapó UPDATE— no lo cogieron.</p>
+    <p><strong>Arreglo:</strong> añade una rama <code>BEFORE INSERT</code> a <code>prevent_client_subscription_writes()</code> (forzar <code>plan='free'</code>, <code>NULL</code> en las columnas stripe / <code>plan_expires_at</code> / <code>payment_failed_at</code> salvo <code>service_role</code>) y re-apunta el trigger a <code>BEFORE INSERT OR UPDATE</code>. O <code>REVOKE INSERT ON user_profiles FROM authenticated</code> y crea la fila con una RPC <code>SECURITY DEFINER</code> con lista blanca de columnas. Además: el cron de reconciliación debería barrer <code>plan IN ('pro','family') AND stripe_subscription_id IS NULL</code> para limpiar lo que ya se haya colado.</p>
+  </div>
+
+  <div class="card finding high">
+    <h4><span class="tag high">Alto</span>A4-H3 · el mismo hueco de INSERT permite denegar Pro a un cliente que paga</h4>
+    <p><code>stripe_customer_id</code> y <code>stripe_subscription_id</code> son <code>UNIQUE</code>. Un atacante que consiga un <code>cus_…</code> real lo pre-ocupa en su propia fila en el INSERT. Cuando ese cliente completa el checkout, el <code>.update({ stripe_customer_id })</code> del webhook (<code>app/api/stripe/webhook/route.ts:125</code>) choca con la constraint única → loguea error, devuelve 200 → el cliente que ha pagado nunca recibe Pro. Confianza menor (los ids de Stripe no son enumerables) pero el daño —cliente pagando sin servicio— es real. Lo tapa el mismo arreglo de A4-B1.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span> BLOCKER 2 — La seguridad alimentaria es un único punto de fallo sin un test</h2>
+  <h3 class="title">Desde que se fue Gemini, <code>get_filtered_recipes</code> es lo único que separa a una celíaca de un plato con gluten. Nadie comprueba que funcione.</h3>
+
+  <div class="card finding block">
+    <h4><span class="tag block">Blocker</span>A4-B2 · Arquitectura / Verificación · seguridad alimentaria</h4>
+    <p>Tres defectos que se componen:</p>
+    <h4 style="font-size:15px">1 · El campo de texto libre de alérgenos no lo lee nadie</h4>
+    <p>El onboarding ofrece "¿Algún otro alérgeno?" → <code>alergenos_texto_libre</code> (<code>app/onboarding/page.tsx:547</code>). Se persiste. Y <strong>no lo lee <code>get_filtered_recipes</code> ni ningún punto de la generación o la lista de la compra</strong> — solo se filtra por <code>v_profile.alergenos</code>, la lista estructurada de 6 ítems. La lista estructurada (<code>lib/constants/dietary-options.ts:15</code>) omite <strong>cacahuete, leche como alérgeno, soja, sésamo, crustáceos, moluscos, mostaza, altramuz</strong> — 8 de los 14 alérgenos de declaración obligatoria en la UE. Cualquier usuario con uno de esos es empujado justo al campo que se ignora.</p>
+    <blockquote class="pull"><p>Usuaria escribe "cacahuete" en "¿Algún otro alérgeno?" → termina onboarding →<br>menú generado con una receta de cacahuete → renderizada en /menu sin advertencia.</p></blockquote>
+    <h4 style="font-size:15px">2 · El match es exacto y sensible a mayúsculas, sin backstop</h4>
+    <p>ADR-0005 quitó la "Layer 2" de Gemini que repetía la exclusión. Ahora <code>coalesce(r.alergenos,'[]') ?| v_profile.alergenos</code> (<code>20260804010000_…:35</code>) es el único enforcement — comparación de strings exacta entre el vocabulario curado del onboarding y el campo <code>recipes.alergenos</code> generado por IA en la migración del catálogo. Ningún test verifica que los valores de <code>recipes.alergenos</code> se ajusten al conjunto canónico. Una receta sembrada con <code>["Gluten"]</code> (mayúscula) o <code>["lacteos"]</code> se sirve a alguien con <code>"gluten"</code>. Y el comentario de la migración <code>20260725120100_…:257</code> <em>todavía</em> afirma que "el system prompt de Gemini (Layer 2)… repite la misma exclusión" — describe una red que ya no existe.</p>
+    <h4 style="font-size:15px">3 · Cero cobertura de comportamiento</h4>
+    <p><code>get_filtered_recipes</code> se ha redefinido ≥4 veces (4 migraciones). No hay <code>supabase/tests/</code>. No hay pgTAP. <code>menu-selector.test.ts</code> recibe candidatos <em>ya filtrados</em> y solo asserta estructura — no hay una sola aserción de <code>alergenos</code> o <code>dieta</code> en todo el fichero. Los 3 escenarios <code>@seguridad</code> del e2e testean <strong>propiedad de RPC</strong> (aislamiento de tenant), no correctitud del filtro (<code>tests/steps/aislamiento-datos.steps.ts:53</code>). El escenario de "no hay receta segura para el hueco" (AC-4 / FR-8.2) está marcado <code>@verificado-manual-2026-07-31</code> — verificado a mano, una vez, hace cinco semanas, contra un catálogo distinto.</p>
+    <p><strong>Un pipeline verde no te dice que el filtro de alérgenos funciona.</strong> Como <code>@seguridad</code> corre en el e2e, la capa <em>parece</em> cubierta.</p>
+    <p><strong>Arreglo:</strong> (a) pgTAP o un e2e dedicado — perfil con alérgeno + receta de catálogo que lo lleva + generar + assertar que la receta está ausente — y gatear sobre él; (b) CHECK / validación al sembrar que todo elemento de <code>recipes.alergenos ∈</code> el conjunto canónico, y <code>lower()</code> en el filtro; (c) decidir qué hacer con <code>*_texto_libre</code>: parsearlo contra un vocabulario ampliado, o quitarlo y mostrar un bloqueo honesto "no podemos garantizar seguridad para X"; (d) ampliar <code>ALERGENO_OPTIONS</code> hacia los 14 de la UE que el catálogo pueda soportar; (e) borrar el comentario de la Layer 2.</p>
+  </div>
+
+  <div class="card finding high">
+    <h4><span class="tag high">Alto</span>A4-H1 · <code>update-recipe-status</code> mete alérgenos por la puerta de la sustitución</h4>
+    <p>El endpoint aplica <code>nueva_recipe_id</code> <code>if (nueva_recipe_id !== undefined)</code> <strong>sin importar el <code>estado</code></strong>, sin comprobar que esa receta es segura para el usuario, que existe, o que no está ya en el plan (<code>update-recipe-status/index.ts:36,44</code>). Luego el cambio de <code>estado</code> dispara el trigger global <code>recipe_learning_trigger</code>. El endpoint está vivo aunque ninguna UI lo use. Un usuario autenticado POSTea <code>{estado:'sustituida', nueva_recipe_id: X}</code> para los 21 huecos con una receta X que lleva un alérgeno, luego <code>{estado:'cocinada', rating:5}</code> ×21 → su calendario y su lista de la compra contienen la receta con alérgeno sin advertencia, <strong>y</strong> <code>recipes.veces_cocinada[X] += 21</code>, <code>rating_promedio[X]</code> sesgado — el agregado exacto que ADR-0002 prohíbe tocar a un swap de posición, corruptible directamente y sin rate limit (5 planes/hora × 21). <strong>Arreglo:</strong> validar <code>estado === 'sustituida'</code> antes de tocar <code>recipe_id</code>; pasar <code>nueva_recipe_id</code> por <code>get_filtered_recipes</code> para el llamante; rechazar receta ya en el plan; rate-limitar el endpoint.</p>
+  </div>
+
+  <div class="card finding high">
+    <h4><span class="tag high">Alto</span>A4-H2 · <code>reassign_guest_data</code> mueve menús sin re-validarlos contra el perfil de destino</h4>
+    <p>Cuando un invitado convierte con un email que ya tiene cuenta (path <code>email_exists</code>), <code>reassign_guest_data</code> mueve los <code>meal_plans</code> del invitado a la cuenta destino <strong>sin re-filtrarlos contra el perfil de alérgenos del destino</strong> (<code>20260731140000_…:23</code>) — se generaron contra el perfil del <em>invitado</em>. El data-map presenta "el perfil del destino nunca se toca" como una feature de seguridad; para el menú movido es lo contrario. Invitado sin alergias genera una semana con gluten, convierte con el email de una celíaca → la celíaca abre <code>/calendar</code> y ve recetas con gluten sin advertencia. <strong>Arreglo:</strong> al reasignar, re-filtrar cada hueco de cada plan movido contra el perfil destino y anular + advertir cualquier hueco ahora inseguro, o descartar los planes que no pasen.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span> BLOCKER 3 y 4 — El producto no se está midiendo, y no se puede vender</h2>
+  <h3 class="title">La maquinaria de monetización está entera. Lo que falta es la parte que da miedo: ponerlo delante de diez personas.</h3>
+
+  <div class="card finding block">
+    <h4><span class="tag block">Blocker</span>A4-B3 · Producto · el blocker legal lleva un mes sin moverse</h4>
+    <p>Verificado en vivo en <code>fresco-pro.vercel.app</code>: el footer → "Términos" abre un modal con el banner "Borrador — pendiente de revisión legal antes de producción" y el placeholder <code>[Titular del Servicio — nombre legal y NIF/CIF pendientes]</code> (<code>components/legal/legal-modal.tsx:22,153</code>). En agosto el borrador se endureció bien (8 huecos GDPR cerrados), pero endurecer contenido no es la firma de un abogado, y Stripe necesita una entidad registrada real para cobrar. Todo el Master Sprint 2 del plan maestro está gateado en esto. Es la única tarea de la lista que <strong>no es de ingeniería</strong>, y es la que lleva un mes parada mientras se shipeaban fixes de contraste WCAG y caché de CI. Ese orden de prioridades es el síntoma, no el bug.</p>
+  </div>
+
+  <div class="card finding block">
+    <h4><span class="tag block">Blocker</span>A4-B4 · Producto / Verificación · la métrica del MVP no es medible + funnel a ciegas</h4>
+    <p>El charter del MVP (<code>mvp-scope.md</code>) define el go/no-go: <em>"≥3 de 10 usuarios concierge tanto pagan como repiten uso 3+ semanas consecutivas, o pivota antes de escribir más código"</em>. Hoy:</p>
+    <ul class="clean">
+      <li><strong>"Pagan"</strong> — no medible. <code>SUBSCRIPTION_STARTED</code> dispara en <code>checkout.session.completed</code> para un trial de 7 días <em>sin tarjeta</em> — marca inicio de trial, no pago. No hay evento <code>trial_converted_to_paid</code>, no hay <code>subscription_renewed</code>, y <code>handleSubscriptionUpdated</code> no emite ningún evento PostHog en el primer cobro (<code>webhook/route.ts:154</code>). La conversión se leería de Stripe a mano.</li>
+      <li><strong>"Repiten 3+ semanas"</strong> — débilmente medible. <code>SESSION_STARTED</code> (dispara también para invitados) alimenta el retention report de PostHog, pero ni <code>SESSION_STARTED</code> ni <code>MENU_GENERATION_COMPLETED</code> llevan <code>semana_iso</code> ni flag de tier — "semanas consecutivas" y "solo Pro" requieren aritmética de fechas frágil en PostHog.</li>
+      <li><strong>Cohorte</strong> — imposible desde properties. <code>identify()</code> se llama con el uid pelado; <strong>no hay ni un <code>posthog.people.set</code> en todo el código</strong>. No hay property <code>plan</code>, <code>signup_method</code>, <code>is_guest</code> ni fecha-de-inicio-de-trial. No puedes definir la cohorte "empezó trial Pro en la semana de la cohorte".</li>
+      <li><strong>Churn</strong> — invisible. <code>webhook/route.ts:157</code> hace <code>return</code> temprano en <code>canceled</code> sin evento.</li>
+    </ul>
+    <p>El funnel entero (20 etapas mapeadas) tiene <strong>6 nombres de evento, 5 sin propiedades</strong>. Cero eventos de: onboarding iniciado / paso / completado, lista de la compra generada, plato descartado (¡la señal primaria del moat!), prompt de registro progresivo mostrado, checkout iniciado, CTA de landing. ADR-0013 prometió "el retention report nativo de PostHog, sin SQL de cohortes" — esa promesa solo cubre un retorno-de-sesión crudo, no la cohorte de ingreso-y-retención que el charter especifica.</p>
+    <p><strong>Arreglo:</strong> antes de correr cualquier cohorte, instrumentar: eventos servidor <code>trial_started</code> (distinto), <code>trial_converted_to_paid</code>, <code>subscription_renewed</code>, <code>subscription_cancelled</code>; sincronizar <code>plan</code> / <code>is_guest</code> / <code>signup_method</code> como person properties en <code>identify</code>; etiquetar <code>MENU_GENERATION_COMPLETED</code> con <code>semana_iso</code> + tier; instrumentar las 15 etapas de funnel que faltan; y el reverse-proxy de PostHog (<code>/ingest</code>) que ADR-0013 difirió, porque un 15–30% de pérdida a ad-blockers sobre una cohorte de 10 distorsiona el go/no-go.</p>
+  </div>
+
+  <h4>El moat es una bomba de tiempo</h4>
+  <p>ADR-0001: el aprendizaje necesita semanas de señal. Trazado semana a semana (<code>menu/page.tsx:194</code>, <code>index.ts:175</code>, <code>calendar-grid.tsx:300</code>):</p>
+  <ul class="clean">
+    <li><strong>Semana 1</strong> (cualquier tier): menú desde el perfil declarado. <code>explicacionAprendizaje</code> es <code>null</code> (sin historial). <code>/menu</code> no muestra ninguna superficie de aprendizaje. Free ve una caja de texto gris. <strong>Payoff percibido: cero.</strong></li>
+    <li><strong>Semana 2</strong> (solo Pro): <em>si y solo si</em> el usuario encontró el toggle de 16px (A4-M27) y marcó ≥1 plato → primera explicación real. Requiere engagement activo en la semana 1.</li>
+    <li><strong>Semana 4+</strong> (solo Pro): <code>destacadas</code> + el nudge de <code>scoreRecipe</code> (ADR-0008) empiezan a morder. Aquí aterriza el "empieza a conocerte" de <code>learns-pro.tsx</code> — un mes dentro.</li>
+    <li><strong>¿Sembrado para usuarios nuevos?</strong> No — genuinamente vacío. Nada pre-poblado. El timeline de la landing ("Semana 4: vimos que descartas el pescado los miércoles") describe una capacidad que el producto no puede demostrar en semanas y que Free nunca demuestra.</li>
+  </ul>
+  <p>El modelo concierge hace 3–4 semanas de seguimiento <em>precisamente</em> porque el dolor recurre — pero un usuario que no percibe valor en las semanas 1–2 se va antes de que el moat exista. <strong>No hay puente</strong>: ni ejemplo sembrado, ni "esto es lo que Pro hará cuando marques unos platos", ni indicador de progreso. La sección Consequences de ADR-0001 marca este riesgo exacto; la mitigación (hacer visible la mejora de Pro) está infra-construida.</p>
+
+  <h4>Desmontaje de la propuesta de Pro</h4>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Claim en la landing (<code>pricing.tsx:8</code>)</th><th>¿Real?</th><th>Evidencia</th></tr></thead>
+    <tbody>
+      <tr><td>"Menús ilimitados"</td><td><strong>No</strong></td><td><code>generate-meal-plan/index.ts:83</code> — 409 si ya hay plan para esa semana ISO, <em>todos los tiers</em>; <code>:50</code> — 5 generaciones/hora, todos los tiers. Free y Pro tienen el mismo límite.</td></tr>
+      <tr><td>"Aprendizaje real de tus gustos"</td><td>Sí</td><td>nudge de engagement de <code>scoreRecipe</code>, solo Pro (ADR-0008) — pero swamped por el jitter (A4-M1) y sin output visible hasta semana 2.</td></tr>
+      <tr><td>"Sin repetir lo de semanas anteriores"</td><td>Sí</td><td>exclusión <code>recentRecipeIds</code>, solo Pro — pero solo de marcas que el usuario hizo.</td></tr>
+      <tr><td>"Historial de menús"</td><td><strong>No</strong></td><td><code>week-navigation.tsx:7</code> — navegación ±2 semanas para <em>todos los tiers</em>; ningún gate por tier en ninguna parte.</td></tr>
+      <tr><td>"Personalización avanzada"</td><td>Vago</td><td>Mapea flojamente al nudge; nada distinto.</td></tr>
+    </tbody>
+  </table></div>
+  <p>2 de 5 claims no se cumplen en código. El botón "Empezar 7 días gratis →" de la landing enlaza a <code>/onboarding</code> (<code>pricing.tsx:71</code>), que corre el flujo Free genérico — <strong>no hay camino desde la landing hasta un trial de Pro</strong>. El trial solo se inicia después, encontrando <code>UpgradeToProButton</code> en <code>/profile</code>. El "Sin trampa" del titular está justo encima de esto.</p>
+</section>
+
+<section>
+  <h2><span class="num">07</span> Hallazgos por severidad</h2>
+  <h3 class="title">71 hallazgos. Los BLOCKER están arriba; aquí va el resto.</h3>
+  <p>Cada ID enlaza a su frente de origen. Severidad: <strong>ALTO</strong> = merma valor o expone al usuario y hay que arreglarlo antes de una cohorte; <strong>MEDIO</strong> = deuda con riesgo concreto; <strong>BAJO</strong> = arréglalo cuando pases cerca.</p>
+
+  <h4>ALTO (16, además de los 3 ya expandidos: A4-H1, H2, H3)</h4>
+  <div class="table-scroll"><table>
+    <thead><tr><th>ID</th><th>Eje</th><th>Hallazgo</th><th>Evidencia</th></tr></thead>
+    <tbody>
+      <tr><td class="id">A4-H4</td><td class="axis">Verificación</td><td><code>supabase/functions/</code> excluido de <code>tsc</code> (<code>tsconfig.json</code> <code>exclude</code>) y de ESLint (<code>eslint.config.js:60</code> <code>ignores</code>), sin <code>deno check</code>/<code>deno lint</code> en ningún workflow. Toda la capa de cómputo backend nunca se typechquea ni lintea en CI — un error de tipos en <code>generate-meal-plan/index.ts</code> pasa <code>repo:check</code> en verde.</td><td>tsconfig / eslint.config / grep <code>.github/</code></td></tr>
+      <tr><td class="id">A4-H5</td><td class="axis">Verificación</td><td>Los 8 handlers <code>index.ts</code> de Edge Function no tienen test unitario — incluidos <code>reassign-guest-data</code> (seguridad), <code>delete-account</code> (irreversible), <code>update-recipe-status</code> (la escritura del aprendizaje). Solo 5 helpers puros están testeados. <code>_shared/auth.ts</code>, <code>_shared/admin.ts</code>, <code>_shared/cors.ts</code> — sin test.</td><td><code>fd -e ts -E '*.test.ts' supabase/functions</code></td></tr>
+      <tr><td class="id">A4-H6</td><td class="axis">Verificación</td><td>Cobertura no se mide en ningún sitio — <code>bun test</code> sin <code>--coverage</code>, sin umbral, sin codecov. ~86 features catalogadas; no hay forma de saber cuáles tienen algún test.</td><td>grep <code>coverage</code> en <code>package.json</code>/<code>.github/</code></td></tr>
+      <tr><td class="id">A4-H7</td><td class="axis">Verificación / Seg.</td><td>El job e2e de PR y <code>post-deploy-smoke.yml</code> restauran el <code>.env</code> de producción — <code>STRIPE_*</code>, <code>POSTHOG_*</code>, <code>SENTRY_*</code> conservan valores de prod (<code>.env.ci</code> solo sobreescribe Supabase). Los pasos <code>@suscripcion</code> llaman a la API real de Stripe (<code>stripe.customers.create</code>) sin limpieza. Cada PR emite eventos PostHog/Sentry desde CI a los proyectos de producción y filtra objetos Stripe; cada deploy de prod crea un factory user + Stripe customer en el backend real.</td><td><code>.env.ci</code> header; <code>tests/steps/suscripcion.steps.ts:125,342</code>; <code>post-deploy-smoke.yml:69</code></td></tr>
+      <tr><td class="id">A4-H8</td><td class="axis">Seguridad</td><td>Leaked-password protection (HaveIBeenPwned) <strong>desactivada</strong> en el proyecto hosted (advisor <code>auth_leaked_password_protection</code> WARN). <code>config.toml</code> pone <code>minimum_password_length = 6</code> y <code>password_requirements = ""</code>. Toma de cuenta por credential-stuffing.</td><td>advisor; <code>supabase/config.toml:192</code></td></tr>
+      <tr><td class="id">A4-H9</td><td class="axis">Arq. / Seg.</td><td><code>rate_limit_exempt_users</code> contiene 4 UUID de cuentas de producción — las cuentas compartidas <code>hola.frescoapp+{dev,pre,pro}-user</code> cuyas credenciales están en <code>.env</code>, en secretos de CI y en una épica enlazada desde la <code>/qa</code> pública. Cualquiera con esas credenciales tiene <code>generate-meal-plan</code> <strong>ilimitado</strong> (21 inserts + 3 RPC por llamada, sin techo) — bypass total del propósito de ADR-0010.</td><td><code>20260830142702_…:98</code>; <code>app/qa/page.tsx:119</code></td></tr>
+      <tr><td class="id">A4-H10</td><td class="axis">Producto</td><td>La lista de la compra —"pilar no negociable"— es una generación <strong>manual aparte</strong> en otra pantalla (<code>shopping-list-generator.tsx:33</code>), no automática. En prod: <strong>2 listas de 38 planes</strong>. El PRD US 4.1 dice "generada automáticamente desde mi menú semanal"; la promesa es "menú y lista en menos de 30s".</td><td><code>shopping-list/page.tsx</code>; <code>business-feature-map.md:51</code></td></tr>
+      <tr><td class="id">A4-H11</td><td class="axis">Producto</td><td>La landing vende "Menús ilimitados" e "Historial de menús" como Pro; ninguno está gateado por tier en código. Ver §06.</td><td><code>pricing.tsx:8</code> vs <code>generate-meal-plan/index.ts:83</code>, <code>week-navigation.tsx:7</code></td></tr>
+      <tr><td class="id">A4-H12</td><td class="axis">Producto</td><td>El moat no da payoff hasta la semana 2 y exige haber usado un toggle de 16px en la semana 1; Free nunca lo ve. Sin puente para las 2 primeras semanas — el momento exacto en que una cohorte concierge churnea. Ver §06.</td><td><code>menu/page.tsx:194</code>; <code>index.ts:175</code>; ADR-0001 Consequences</td></tr>
+      <tr><td class="id">A4-H13</td><td class="axis">Producto</td><td>Marketing "Menú semanal con IA" / "a diferencia de ChatGPT" sobre un motor <strong>100% determinista, cero IA</strong>. Para una cohorte que paga y sabe de tecnología, se lee como publicidad falsa en cuanto lo comprueban. La historia determinista es <em>más fuerte</em> (instantánea, privada, sin alucinaciones) — apóyate en ella.</td><td>hero kicker + <code>title</code> tag vs <code>/qa</code> "generación 100% determinista" + ADR-0005</td></tr>
+      <tr><td class="id">A4-H14</td><td class="axis">Producto / Fund.</td><td>Onboarding de <strong>4 pasos con presupuesto obligatorio</strong> (<code>onboarding/page.tsx:414</code> "Paso {step} de 4", <code>:243</code> <code>presupuestoValid</code> gatea submit), no "3 pasos". El PRD US 1.2 hace de "solo 3 pasos" un requisito duro "para no abandonar antes de llegar a ningún valor". El motor determinista apenas usa el presupuesto.</td><td><code>onboarding/page.tsx:243,414</code>; DEFECT-263/265</td></tr>
+      <tr><td class="id">A4-H15</td><td class="axis">Producto</td><td>El loop de re-enganche es solo push (email bloqueado por dominio Resend), el opt-in es un toggle enterrado en <code>/profile</code> tras el prompt nativo (<strong>0 suscripciones en prod</strong>), el envío no está instrumentado (sin <code>push_sent</code>/<code>push_opened</code>), y el copy está en español rioplatense ("armaste", "hacelo" — viola la regla de español de España).</td><td><code>send-weekly-reengagement-push/index.ts:34</code>; <code>push-notifications-toggle.tsx</code></td></tr>
+      <tr><td class="id">A4-H16</td><td class="axis">Producto / Fund.</td><td>"Tu impacto" (<code>impact-stats.tsx:3</code>): "~300€ menos en compras anuales", "25% menos desperdicio", "Estimaciones basadas en hábitos reales… en España" — cifras inventadas presentadas como investigadas. El componente hermano <code>savings-estimate-cards.tsx:11</code> admite en un comentario: "No sourced spend/savings/time-recovered figures exist anywhere in this repo's business docs". También contradice la North-star del PRD (explícitamente <em>no</em> "dinero ahorrado").</td><td><code>impact-stats.tsx</code>; <code>savings-estimate-cards.tsx:11</code></td></tr>
+      <tr><td class="id">A4-H17</td><td class="axis">Trazab. / Backlog</td><td>123/133 defectos sin <code>parent</code> ni enlace a historia (10 tienen parent, 8 a una épica de remediación, 0 a la historia que rompió). 0/133 con Severity/Evidence/Root Cause/Error Type poblados — todo vive en comentarios de texto libre, no consultable. FRESCO-282 y FRESCO-313 se cerraron <em>forward-only</em> pero figuran <code>Finalizada</code> sin ese matiz.</td><td>Jira REST: <code>parent</code> en 10/133, <code>customfield_10194</code> null en 133/133</td></tr>
+      <tr><td class="id">A4-H18</td><td class="axis">Fundación</td><td><code>.context/business/project-dev-guide.md</code> describe Gemini Flash como dependencia viva de producción en todo el documento (diagramas de flujo, "REGLAS ABSOLUTAS", <code>GEMINI_API_KEY</code> como secreto de Edge Function, una sección "## Gemini Flash" entera). Gemini se quitó el 1 de agosto (ADR-0005). FRESCO-302 acotó la limpieza a PRD/SRS y se saltó este fichero.</td><td><code>project-dev-guide.md:71,95,115,135,257,399,442</code></td></tr>
+      <tr><td class="id">A4-H19</td><td class="axis">Disciplina</td><td>El propio rastro de auditoría se contradice: <code>audits/README.md:15</code> y MEMORY dicen "~3,7/5" para la auditoría-3; el HTML dice <strong>4,3</strong> y que las cifras "no se pueden comparar". Ver §03.</td><td><code>audits/README.md:15</code> vs <code>2026-08-29-audit-3.html</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>MEDIO (27)</h4>
+  <div class="table-scroll"><table>
+    <thead><tr><th>ID</th><th>Eje</th><th>Hallazgo</th><th>Evidencia</th></tr></thead>
+    <tbody>
+      <tr><td class="id">A4-M1</td><td class="axis">Arquitectura</td><td><code>scoreRecipe</code> suma <code>Math.random()*2</code> de jitter — magnitud ≥ el paso de la señal de rating (<code>rating_promedio*2</code>: 1 estrella = 2,0) y &gt; el nudge personal de ADR-0008 (+1,0). <code>get_filtered_recipes</code> no tiene <code>ORDER BY</code>. ADR-0005 se titula "determinista" pero ningún menú es reproducible; los tests fijan <code>Math.random</code> a 0, así que no reflejan producción. Una receta de 5★ y una de 4★ para el mismo hueco: la de 4★ gana ~25% de las veces solo por ruido.</td><td><code>menu-selector.ts:100,158</code>; <code>menu-selector.test.ts:243</code></td></tr>
+      <tr><td class="id">A4-M2</td><td class="axis">Arquitectura</td><td><code>update_recipe_learning()</code> calcula la media móvil de rating con el <em>total de cocinados</em> como denominador: <code>(rating_promedio*veces_cocinada + new.rating)/(veces_cocinada+1)</code>. <code>veces_cocinada</code> incluye cocinados sin puntuar → cada uno hunde <code>rating_promedio</code> hacia 0. Cocinada 5× sin puntuar + 1× con 4★ → guarda 0,67 en vez de 4,0. Sin test SQL.</td><td><code>20260725120200_…:30</code></td></tr>
+      <tr><td class="id">A4-M3</td><td class="axis">Arquitectura</td><td>Cuando el pool de un <code>tipo_plato</code> se agota por la regla de no-repetición (7 huecos de comida, &lt;7 recetas de comida) o el tope de 3 desayunos, el hueco recibe <code>NO_SAFE_RECIPE_SENTINEL</code> y la advertencia "No hay ninguna receta segura para {tipo} del {dia} con tus restricciones declaradas" — texto de seguridad alimentaria para un problema de variedad de catálogo. El hogar ve un menú roto y una causa engañosa.</td><td><code>menu-selector.ts:139</code></td></tr>
+      <tr><td class="id">A4-M4</td><td class="axis">Arq. / Seg.</td><td><code>num_personas</code>/<code>adultos</code>/<code>ninos</code> sin límite server-side. <code>validateHousehold</code> capa a 10 solo en cliente; los CHECK de DB solo son <code>&gt; 0</code>. <code>upsertUserProfile</code> pasa los campos de hogar directo. <code>{num_personas: 1000000}</code> persiste → factor de escalado de la lista de la compra absurdo, coste en millones, lista inutilizable.</td><td><code>lib/validation/onboarding.ts:17</code>; <code>lib/api/user-profile.ts:78</code></td></tr>
+      <tr><td class="id">A4-M5</td><td class="axis">Arquitectura</td><td><code>consolidateIngredientes</code>: <code>factor = raciones_usuario / (recipe.meta?.raciones ?? 4)</code> sin guardia contra 0/negativo. Una receta sembrada con <code>meta.raciones: 0</code> → <code>Math.ceil(x*Infinity)</code> → <code>Infinity</code> → <code>JSON.stringify</code> lo serializa como <code>null</code> → <code>coste_estimado_min/max</code> = <code>NaN</code> en toda la lista.</td><td><code>consolidator.ts:293</code>; <code>aisle-pricing.ts:374</code></td></tr>
+      <tr><td class="id">A4-M6</td><td class="axis">Arq. / Rend.</td><td><code>swap_meal_plan_slots</code> hace <code>ALTER TABLE … DISABLE/ENABLE TRIGGER</code> dentro de la transacción → lock <strong>ACCESS EXCLUSIVE</strong> de toda <code>meal_plan_recipes</code> mientras dura → serializa todas las lecturas/escrituras de esa tabla (calendarios de todos los usuarios, cada insert de <code>generate-meal-plan</code>). RPC sin rate limit. Un script spameando swaps congela la tabla para todos.</td><td><code>20260801000000_…:54</code>; ADR-0002 "Alternatives" (la opción GUC, rechazada)</td></tr>
+      <tr><td class="id">A4-M7</td><td class="axis">Arq. / Rend.</td><td><code>getCatalogRecipes</code> llama a <code>get_filtered_recipes</code> sin <code>limit</code> y envía el catálogo filtrado entero (~1000 filas <code>Recipe</code> jsonb, ~1 MB) al RSC y al cliente, donde <code>/recipes</code> filtra en cliente y <code>countWithOption</code> itera todo el array por opción por render. FRESCO-187 arregló el render, no el fetch ni el bucle de facetas.</td><td><code>lib/api/recipes.ts:127</code>; <code>recipe-filters.ts:62</code></td></tr>
+      <tr><td class="id">A4-M8</td><td class="axis">Arquitectura</td><td><code>normalizeNombre</code> copiado en 3 ficheros (byte-idéntico salvo el <code>;</code>), y el mismo patrón "no puede cruzar Deno/Node" se ha extendido a <code>getIsoWeek</code> (2 copias). Nada fuerza que sigan sincronizados; el badge "Nuevo" (<code>diffNombresNuevos</code>) y el consolidador de Edge <em>tienen</em> que coincidir en la normalización.</td><td><code>_shared/normalize.ts:2</code>; <code>lib/api/shopping-list.ts:136</code>; <code>lib/date/iso-week.ts</code> vs <code>send-weekly-reengagement-push/iso-week.ts</code></td></tr>
+      <tr><td class="id">A4-M9</td><td class="axis">Arq. / Obs.</td><td>Los errores inesperados de Edge Function van <code>toErrorResponse → logger.error → console.error</code> — a los log drains de Supabase, <strong>no a Sentry</strong> (no hay SDK de Sentry en <code>_shared/logger.ts</code>), pese a que Sentry es el backstop declarado (ADR-0009, data-map). Un bug sistémico en <code>generate-meal-plan</code> 500ea cada generación y la única señal es alguien leyendo logs a mano.</td><td><code>_shared/logger.ts</code>; <code>_shared/http.ts:44</code></td></tr>
+      <tr><td class="id">A4-M10</td><td class="axis">Arq. / Seg.</td><td>La CSP se sirve como <code>Content-Security-Policy-Report-Only</code> (no aplica nada) con <code>'unsafe-inline'</code> en <code>script-src</code>. Ninguna protección CSP activa contra XSS inyectado/almacenado (campos <code>*_texto_libre</code> del perfil, texto de recetas, búsqueda de admin). FRESCO-312 dejó el follow-up "pasar a enforcing + nonce" sin ticket.</td><td><code>next.config.mjs:114</code></td></tr>
+      <tr><td class="id">A4-M11</td><td class="axis">Infra</td><td>Un único proyecto Supabase (<code>jdqemhewjrjuopssdurn</code>) para prod + staging + dev. <code>post-deploy-smoke.yml</code> escribe en la DB de prod (crea factory users + Stripe customers) en cada deploy de producción. Una migración mala promovida a cualquier entorno Vercel, o un cambio RLS probado en dev, corrompe la base de datos de producción. FRESCO-328 lo difirió — pero está <code>Finalizada</code>, no <code>Rechazos</code>.</td><td><code>stripe-reconcile/route.ts:22</code>; <code>post-deploy-smoke.yml:48</code></td></tr>
+      <tr><td class="id">A4-M12</td><td class="axis">Verif. / Trazab.</td><td>El commit de squash que llega a producción es un SHA que la suite e2e <strong>nunca ejecutó</strong> (e2e es <code>pull_request</code>-only; el trigger <code>push</code> a staging/main solo corre <code>repo:check</code> + <code>unit</code>). Con <code>strict:false</code>, una rama de PR por detrás de <code>dev</code> puede mergear; su árbol squasheado contiene cambios de <code>dev</code> que el CI del PR nunca vio combinados — justo el workflow de worktrees paralelos que usa este proyecto.</td><td><code>pr-check.yml:68</code>; <code>branch-protection.md</code> <code>strict:false</code></td></tr>
+      <tr><td class="id">A4-M13</td><td class="axis">Verificación</td><td>El e2e corre contra <code>supabase/seed.sql</code> — un <code>supabase db dump</code> de prod regenerado <strong>a mano</strong> (~1000 filas). Nada comprueba que coincida con el catálogo de prod actual; el migration-drift check es solo de esquema y semanal. Un cambio en el catálogo de prod → el e2e sigue verde contra el snapshot obsoleto mientras prod se comporta distinto.</td><td><code>supabase/seed.sql:6</code>; commit <code>1e487d7</code></td></tr>
+      <tr><td class="id">A4-M14</td><td class="axis">Verificación</td><td><code>retries: 1</code> en CI + <code>trace: 'on-first-retry'</code>, pero el job <code>e2e</code> de PR <strong>no sube artefactos</strong> — el trace del retry se destruye con el runner. <code>reporter: 'list'</code>, sin JSON/blob, sin tracking de flakes. Dado el historial documentado de carreras (FRESCO-289/308/322/329), el enmascaramiento por retry no es hipotético.</td><td><code>playwright.config.ts:55,63</code>; <code>pr-check.yml</code> job e2e sin upload-artifact</td></tr>
+      <tr><td class="id">A4-M15</td><td class="axis">Verificación</td><td><code>aprendizaje-generacion.steps.ts</code> (FR-5.4/5.5, "el moat") solo asserta que las recetas <em>descartadas</em> quedan fuera; la mitad de <em>cocinadas</em> nunca se compara (<code>cookedIds</code> se calcula, nunca se compara con <code>planRecipeIds</code>). El diferenciador del producto podría regresar a "solo excluye descartes" y el e2e seguiría verde. El título del escenario dice "cocinada o descartada".</td><td><code>tests/steps/aprendizaje-generacion.steps.ts:75,111</code></td></tr>
+      <tr><td class="id">A4-M16</td><td class="axis">Backlog</td><td>~15 tickets en "Control de calidad" y 3 épicas (FRESCO-81/223/244) en "Listo" con todos los hijos <code>Finalizada</code> — código shipeado, nunca transicionado. FRESCO-240 (PostHog), 241 (push), 242 (Sentry) llevan en QA desde el 23–24 de agosto con el código entero en el repo. La columna QA es un cementerio, no una cola.</td><td>Jira; código confirmado en repo</td></tr>
+      <tr><td class="id">A4-M17</td><td class="axis">Backlog</td><td>Story points en 6/62 historias, 0/24 épicas, 23/116 tareas — y todo lo estimado salvo 3 historias de Motion ya está <code>Finalizada</code>, de los últimos ~4 días. Sin campo de sprint (Kanban). <strong>La velocidad no es computable y nunca lo fue.</strong></td><td>Jira <code>customfield_10192</code></td></tr>
+      <tr><td class="id">A4-M18</td><td class="axis">Backlog</td><td>AC no testeable en las historias abiertas. El propio comentario de cierre de FRESCO-320 califica FRESCO-245/246 como "<strong>FALLA</strong>" (Then cualitativos, sin escenario de cero/vacío/error) y FRESCO-274/275 como "sin AC" — y elige no arreglarlas ("churn sin valor"), solo añadir un gate hacia adelante. FRESCO-320 queda <code>Finalizada</code>, no "gate añadido, deuda diferida".</td><td>comentario de FRESCO-320 (30 ago); <code>STORY-FRESCO-245/comments.md</code></td></tr>
+      <tr><td class="id">A4-M19</td><td class="axis">Disciplina</td><td><code>bitacora.md</code> escrita para trabajo trivial (49 entradas en 4 días, las últimas 5 micro-iteraciones de tiempo de CI) contra la Regla 15 de CLAUDE.md ("SOLO al completar una historia… NUNCA por tareas triviales"). A punto de romper la regla de "rotar a las 50" otra vez, 10 días después de que FRESCO-291 la rotara (archivo de 383 entradas).</td><td><code>.context/bitacora.md</code></td></tr>
+      <tr><td class="id">A4-M20</td><td class="axis">Disc. / Verif.</td><td>El hilo de e2e-CI es un agujero de conejo desproporcionado para un proyecto pre-lanzamiento con un committer. FRESCO-321 (ratchet) → CI a 6m40s → dispara ADR-0018 → FRESCO-356 (paralelizar, −45s) → FRESCO-357 (caché, −27s, "nada cacheable") → FRESCO-358 (<code>Listo</code>, "rediseñar el ciclo de vida del stack, el único camino a sub-3min"). ~72 segundos perseguidos con 3 tickets, 1 ADR, 3 PRs y 5 entradas de bitácora. La bitácora misma dice "No urgente (un committer)".</td><td>bitácora 31 ago; ADR-0018; FRESCO-356/357/358</td></tr>
+      <tr><td class="id">A4-M21</td><td class="axis">Fundación</td><td>ADRs que faltan por el propio listón del proyecto (Sentry, PostHog, rate-limiting, reconciliación de Stripe todos tienen uno): (a) cabeceras de seguridad + CSP (FRESCO-312 — cross-cutting, cada respuesta); (b) proyecto Supabase único compartido dev+staging+prod (FRESCO-328 — topología de despliegue + tenancy, difícil de revertir, "decisión registrada" solo en comentarios de <code>project.yaml</code>).</td><td><code>.context/ADR/</code> sin filas para ninguno</td></tr>
+      <tr><td class="id">A4-M22</td><td class="axis">Fundación</td><td>ADR-0005: título y Decisión conservan "Gemini acotado a la explicación de aprendizaje Pro"; esa llamada <em>también</em> se hizo determinista (<code>buildLearningExplanation()</code>) el 1 de agosto. El SRS atribuye la eliminación <em>completa</em> a ADR-0005, así que el ADR infra-describe lo que se shipeó. Cita ids de modelo inexistentes (<code>gemini-3.6-flash</code>).</td><td><code>ADR-0005-*.md:1,29</code> vs <code>SRS/architecture.md:70</code></td></tr>
+      <tr><td class="id">A4-M23</td><td class="axis">Disciplina</td><td>MEMORY contradice a <code>project.yaml</code> (fuente de verdad, más reciente) sobre el alias <code>fresco-pre</code>: MEMORY dice "auto-sigue HEAD, sin realias manual"; <code>project.yaml:126</code> dice "NOT auto-following… se RECLAMA en silencio sobre el deploy de producción… re-ejecuta <code>vercel alias set</code> después de cada deploy". Riesgo de que la URL de staging sirva prod en silencio — peligro para QA.</td><td><code>project.yaml:126</code> vs <code>project_fresco_pre_alias_stale_after_merge.md</code></td></tr>
+      <tr><td class="id">A4-M24</td><td class="axis">Prod. / Analytics</td><td>Los invitados se <code>identify()</code>'an con su uid anónimo sin marcador; <code>USER_SIGNED_UP{method:'guest'}</code> infla "signups" (mezcla inicio-de-trial con registro); el cron de limpieza de invitados deja personas huérfanas en PostHog. "Usuarios registrados" no se puede aislar. Sin PostHog reverse proxy (ADR-0013 lo difirió) → 15–30% de pérdida de eventos a ad-blockers sobre una cohorte de 10.</td><td><code>posthog-provider.tsx:52</code>; <code>identity-step.tsx:64</code>; ADR-0013</td></tr>
+      <tr><td class="id">A4-M25</td><td class="axis">Producto</td><td>La conversión de registro progresivo (el momento "convierte tras el valor") depende de OTP/confirmación por un remitente <strong>Gmail SMTP</strong> (<code>hola.frescoapp@gmail.com</code>). Techo de envío diario bajo + riesgo de spam en el peor momento posible. DEFECT-149 (render roto del email de confirmación) ya lo tocó.</td><td><code>/qa</code>; <code>signup/page.tsx:141</code></td></tr>
+      <tr><td class="id">A4-M26</td><td class="axis">Producto</td><td>Catálogo: <strong>717/1000</strong> con foto — y los docs dan <strong>cinco</strong> conteos distintos (626 / 650 / 717 / 797 / 821 entre <code>master-implementation-plan.md</code>, <code>TECHDEBT-FRESCO-31</code> y sus comentarios). 228 recetas con dificultad en blanco (DEFECT-122). Catálogo fino/inconsistente = impuesto a la primera impresión de la cohorte.</td><td><code>select count(*) … foto_url is not null</code> = 717; docs varios</td></tr>
+      <tr><td class="id">A4-M27</td><td class="axis">Prod. / Moat</td><td>El toggle cocinado/descartado es un icono de <strong>16px</strong>, abajo a la derecha de cada tarjeta, y la marca es <strong>irreversible</strong> ("queda fijado — no puede volver a cambiarse"). La única interacción de la que depende todo el tier de pago es un objetivo diminuto, poco descubrible y sin perdón. Un misclick en la X envenena permanentemente la generación futura.</td><td><code>calendar-grid.tsx:636,247</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>BAJO (21)</h4>
+  <div class="table-scroll"><table>
+    <thead><tr><th>ID</th><th>Eje</th><th>Hallazgo</th><th>Evidencia</th></tr></thead>
+    <tbody>
+      <tr><td class="id">A4-L1</td><td class="axis">Seguridad</td><td>Open redirect en <code>/auth/confirm</code>: el guard de <code>next</code> comprueba <code>startsWith('/') &amp;&amp; !startsWith('//')</code> pero no el backslash inicial. <code>next=/\evil.com</code> normaliza (WHATWG) a <code>https://evil.com/</code> tras un OTP exitoso.</td><td><code>app/auth/confirm/route.ts:25,31</code></td></tr>
+      <tr><td class="id">A4-L2</td><td class="axis">Seguridad</td><td><code>_shared/cors.ts</code> incluye <code>http://localhost:3000</code> en <code>ALLOWED_ORIGINS</code>, servido en producción. Una página maliciosa en localhost:3000 puede hacer llamadas credenciadas a las edge functions de prod (impacto limitado: auth por bearer en localStorage, no cookie).</td><td><code>_shared/cors.ts:24</code></td></tr>
+      <tr><td class="id">A4-L3</td><td class="axis">Seguridad</td><td><code>/api/profile/export</code> <code>toCsvValue()</code> envuelve en comillas por <code>" , \n</code> pero no neutraliza <code>= + - @</code> iniciales (formula injection). El export incluye campos controlados por el usuario (<code>nombre</code>, <code>*_texto_libre</code>, recetas propias). Solo-propio → bajo, salvo que soporte abra el CSV.</td><td><code>app/api/profile/export/route.ts:13</code></td></tr>
+      <tr><td class="id">A4-L4</td><td class="axis">Seguridad</td><td><code>reassign-guest-data</code> verifica propiedad de la cuenta destino con <code>signInWithPassword({email, password})</code> de valores suministrados por el llamante → oráculo de fuerza bruta de contraseñas, throttle solo por el límite per-IP de Supabase Auth, y el tráfico egresa de la IP compartida de las edge functions.</td><td><code>reassign-guest-data/index.ts:32</code></td></tr>
+      <tr><td class="id">A4-L5</td><td class="axis">Seguridad</td><td><code>/qa</code> es pública y crawlable (<code>robots.ts</code> permite todo, sin <code>noindex</code>). Documenta endpoints de edge function, el modelo de auth, el contrato de API, el project ref de Supabase y la URL del dashboard de Studio. Ayuda de reconocimiento; será indexada.</td><td><code>app/robots.ts</code>; <code>app/qa/page.tsx:119</code></td></tr>
+      <tr><td class="id">A4-L6</td><td class="axis">Arquitectura</td><td><code>searchCatalogRecipes</code> interpola input crudo del usuario en un filtro <code>.or()</code> de PostgREST: <code>.or(\`nombre.ilike.%${needle}%,slug.ilike.%${needle}%\`)</code>. <code>needle = "x,id.eq.&lt;uuid&gt;"</code> inyecta un término OR extra. Radio limitado (SELECT en <code>recipes</code>, ya legible) pero el patrón es inseguro si se copia a una tabla sensible.</td><td><code>lib/api/admin-recipes.ts:44</code></td></tr>
+      <tr><td class="id">A4-L7</td><td class="axis">Arquitectura</td><td><code>update-recipe-status</code> no valida <code>estado</code> contra el enum (basura → 500 feo), aplica <code>nueva_recipe_id</code> sin importar <code>estado</code>, y comprueba límites de <code>rating</code> sin check de entero (<code>"3"</code>, <code>3.7</code>, <code>null</code> pasan).</td><td><code>update-recipe-status/index.ts:36,73</code></td></tr>
+      <tr><td class="id">A4-L8</td><td class="axis">Arquitectura</td><td><code>generate-meal-plan</code> gatea Pro por <code>profile.plan</code>, nunca por <code>plan_expires_at</code>. Un <code>customer.subscription.deleted</code> perdido (fuera de la ventana de retry de Stripe — el escenario exacto para el que existe el cron de ADR-0015) → un no-pagador conserva Pro hasta la siguiente pasada del cron diario (≤24h).</td><td><code>generate-meal-plan/index.ts:113</code>; <code>plan_expires_at</code> sin uso</td></tr>
+      <tr><td class="id">A4-L9</td><td class="axis">Arquitectura</td><td><code>swap_meal_plan_slots</code> no rechaza slots <code>excluida</code> ni obliga consistencia con <code>planning_selection</code>. Una llamada RPC directa puede producir un slot <code>pendiente</code> con receta real en un día/comida que el usuario excluyó.</td><td><code>20260801000000_…:26</code></td></tr>
+      <tr><td class="id">A4-L10</td><td class="axis">Arquitectura</td><td>Ramas que descartan cantidad en silencio: <code>consolidator</code> <code>canSumUnits</code> else (loguea warning, <em>no</em> suma — actualmente inalcanzable); <code>menu-selector</code> budget bucket desconocido → <code>totalEuros += undefined</code> → <code>NaN</code> → la advertencia de sobre-presupuesto desaparece.</td><td><code>consolidator.ts:312</code>; <code>menu-selector.ts:196</code></td></tr>
+      <tr><td class="id">A4-L11</td><td class="axis">Arquitectura</td><td><code>delete-account</code> no tiene confirmación/re-auth server-side (el gate "escribe tu email" es solo cliente) ni rate limit — cualquier JWT válido dispara el cascade delete.</td><td><code>delete-account/index.ts:29</code></td></tr>
+      <tr><td class="id">A4-L12</td><td class="axis">Arquitectura</td><td><code>iso-week.ts</code> mezcla getters locales (<code>getFullYear/Month/Date</code>) con aritmética UTC → semana equivocada cerca del límite dom/lun en TZ negativas. España (mercado objetivo, UTC+) no afectada. Los tests solo usan fixtures <code>Date.UTC</code>.</td><td><code>lib/date/iso-week.ts:29,93</code></td></tr>
+      <tr><td class="id">A4-L13</td><td class="axis">Fundación</td><td><code>lib/api/edge-functions.ts</code> sigue con el comentario de cabecera "these calls are stubs … there is nothing live to respond yet … Swap the <code>mock</code> fallback" — las 8 funciones están desplegadas y no hay <code>mock</code> en el código.</td><td><code>lib/api/edge-functions.ts:1</code></td></tr>
+      <tr><td class="id">A4-L14</td><td class="axis">Verificación</td><td>75/142 escenarios <code>@automatizado</code> (53%). 12 <code>@pendiente</code> nunca verificados — ni a mano, ni automatizados. Guest→cuenta OTP (conflicto), avisos de pago fallido, badge "Nuevo" de la lista.</td><td><code>bddgen</code>; <code>regression.feature</code></td></tr>
+      <tr><td class="id">A4-L15</td><td class="axis">Verificación</td><td>Etiquetas <code>@verificado-manual-&lt;fecha&gt;</code> agrupadas en jul/ago; hoy es 31 ago. Son checks puntuales contra la prod de entonces, no una garantía vigente. Un lector ve "verificado" y sobre-confía en una pasada manual de hace 5 semanas.</td><td>histograma de tags</td></tr>
+      <tr><td class="id">A4-L16</td><td class="axis">Verif. / Seg.</td><td><code>post-deploy-smoke.yml</code> (<code>deployment_status</code>) corre el workflow + el código de <code>test:e2e:smoke</code> <em>desde el commit desplegado</em> con <code>secrets.ENV_FILE</code> en scope. Acciones ancladas por tag móvil (<code>@v4</code>), no por SHA. <code>pr-check.yml</code> sin <code>permissions:</code> de nivel superior. Repo solo, sin forks → aceptable hoy.</td><td><code>post-deploy-smoke.yml:26,69</code></td></tr>
+      <tr><td class="id">A4-L17</td><td class="axis">Verificación</td><td>La aserción de rendimiento <code>&lt;10s</code> de <code>generacion-determinista</code> (guardia de regresión de ADR-0005) es frágil a retry: un flake de cold-start falla una vez, el retry caliente pasa, una regresión de latencia real queda enmascarada. Solo una regresión <em>consistente</em> &gt;10s se coge.</td><td><code>tests/steps/generacion-determinista.steps.ts:48</code></td></tr>
+      <tr><td class="id">A4-L18</td><td class="axis">Producto</td><td>"¿Cómo funciona? <strong>Ver demo</strong>" → ancla <code>#como-funciona</code>, que son 4 tarjetas de texto — no hay demo. Hero mock: "Semana del 20 al 26 enero" con "Martes 21 ene" (el 20 ene 2026 es martes). Off-by-one en el showcase que un prospecto estudia de cerca.</td><td>verificado en vivo; <code>hero.tsx:10</code></td></tr>
+      <tr><td class="id">A4-L19</td><td class="axis">Backlog</td><td><code>epic-tree.md</code> desfasado pese a FRESCO-304 (muestra FRESCO-278 como "Listo / 0 stories"; Jira: <code>Finalizada</code>; sin filas para 309/330/331/332). <code>_orphans/</code> con historias ya parented a FRESCO-64. 28 ramas locales sin podar (17 <code>worktree-agent-*</code>). <code>dev</code> 2 commits por delante de <code>main</code>/<code>staging</code> contra la afirmación "espejo byte-idéntico" de <code>project.yaml</code>.</td><td><code>epic-tree.md:142</code>; <code>git branch</code>/<code>worktree list</code></td></tr>
+      <tr><td class="id">A4-L20</td><td class="axis">Backlog</td><td>El script de sync materializa enlaces defecto↔defecto como carpetas anidadas: <code>DEFECT-FRESCO-124-…/defects/DEFECT-FRESCO-118-….md</code> — estructura recursiva confusa en ~10 carpetas.</td><td><code>.context/PBI/defects/DEFECT-FRESCO-124-…/defects/</code></td></tr>
+      <tr><td class="id">A4-L21</td><td class="axis">Prod. / Seg.</td><td>La CSP en prod loguea una violación de <code>unsafe-eval</code> de un chunk de Next en cada carga (consola en vivo). El follow-up de FRESCO-312 ("pasar a enforcing") no está hecho.</td><td>consola en vivo de <code>fresco-pro</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2><span class="num">08</span> Regresiones del propio bucle de remediación</h2>
+  <h3 class="title">Cuatro de los hallazgos más duros de las auditorías anteriores se cerraron <em>hacia adelante</em>. El ticket dice "hecho". El problema sigue.</h3>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Ticket</th><th>Estado Jira</th><th>Qué se hizo</th><th>Qué sigue abierto</th></tr></thead>
+    <tbody>
+      <tr><td class="id">FRESCO-282</td><td>Finalizada</td><td>2 links parent + ~7 <code>Relates</code> a épicas; contrato forward-only para defectos nuevos</td><td>123/133 defectos siguen sin enlace. Para ~90% no puedes saber qué historia/commit introdujo la regresión.</td></tr>
+      <tr><td class="id">FRESCO-313</td><td>Finalizada</td><td>Campos Severity 🚩 + Evidence 🧫 añadidos a la pantalla Error y marcados obligatorios (verificado vía <code>createmeta</code>)</td><td>0/133 defectos existentes tienen ninguno poblado. El gate es real pero no probado (ningún Error nuevo desde que aterrizó).</td></tr>
+      <tr><td class="id">FRESCO-320</td><td>Finalizada</td><td>Gate de testeabilidad añadido a <code>/product-management</code> (anti-patrón I22)</td><td>FRESCO-245/246/274/275 conservan AC no testeable. El propio ticket las llama "FALLA".</td></tr>
+      <tr><td class="id">FRESCO-328</td><td>Finalizada</td><td>Decisión documentada con tabla de riesgo residual y triggers de reapertura — bien hecho como <em>deferral</em></td><td>El estado debería ser <code>Rechazos</code>, no <code>Finalizada</code>. Un lector del board cuenta esto como trabajo completado. La DB de prod sigue compartida y el smoke sigue escribiendo en ella.</td></tr>
+      <tr><td class="id">FRESCO-312</td><td>Finalizada</td><td>6 cabeceras + CSP Report-Only</td><td>La CSP nunca pasó a enforcing; loguea violaciones de <code>unsafe-eval</code> en cada carga. El follow-up no se ticketó (A4-M10, A4-L21).</td></tr>
+    </tbody>
+  </table></div>
+  <p>Las notas de Backlog (3,8) y Trazabilidad (3,8) de la auditoría-3 estaban calificando "el mecanismo ahora existe", no "el backlog está limpio". Un lector que confía en el 4,3 sin leer los comentarios de los tickets queda mal informado. Por eso esos ejes bajan aquí — no porque el mecanismo desaparezca, sino porque la distancia entre "mecanismo" y "hecho" ahora está medida.</p>
+</section>
+
+<section>
+  <h2><span class="num">09</span> El meta-proceso: la cinta de correr de auditorías</h2>
+  <h3 class="title">Tres auditorías profundas en 15 días, ~40 tickets de remediación, dos épicas meta. Y la validación del producto no ha empezado.</h3>
+  <p>Desde el 20 de agosto: <strong>110 commits <code>docs</code> contra 28 <code>feat</code></strong>. Casi todo ticket <em>completado</em> desde el 27 de agosto es remediación de auditoría o infra de tests, no capacidad de usuario. La remediación es real donde es barata y verificable —cabeceras de seguridad, required checks, fixes de a11y, stack local en CI, el ledger de migraciones, ADR-0014→0018, el ratio de automatización 23%→56%, todo genuinamente hecho y confirmado en código—. Pero los tres hallazgos más difíciles se cerraron forward-only (§08), y la validación del núcleo —¿alguien paga y se queda?— sigue sin tocarse.</p>
+  <p>El modo de fallo del bucle se ve entero en el hilo de e2e-CI (A4-M20): un ticket de ratchet dispara un umbral que tú mismo pusiste en un ADR, que engendra un ticket de paralelización (−45s), luego uno de caché (−27s), luego "rediseñar todo el ciclo de vida del stack" (FRESCO-358). ~72 segundos perseguidos con 3 PRs, 1 ADR y 5 entradas de bitácora, en un proyecto que tu propio log llama "no urgente (un committer)". Y ADR-0018 puso un umbral de wall-clock que el <em>siguiente</em> ticket cruzó de inmediato — un umbral que atraviesas con tu propia siguiente tarea no es un umbral.</p>
+  <p>Las épicas post-MVP (FRESCO-330/331/332, 19 historias) se crearon <strong>el mismo día que esta auditoría</strong> y están sin refinar, sin AC, sin estimar, mientras el aparato de auditoría se come el calendario. La ingeniería es genuinamente buena. Se está gastando en la pregunta equivocada.</p>
+  <h4>Recomendación de proceso</h4>
+  <ul class="clean">
+    <li><strong>Cadencia mensual, no semanal.</strong> Una auditoría cada 4–6 semanas, no cada 5 días.</li>
+    <li><strong>Una épica de remediación abierta a la vez</strong>, y tiene que cerrar —de verdad, no forward-only— antes de abrir la siguiente auditoría.</li>
+    <li><strong>Congela la optimización de CI</strong> en "verde bajo ~7 min" hasta que haya usuarios de pago o un segundo committer. Cierra FRESCO-358 como diferido.</li>
+    <li><strong>Las semanas recuperadas van a refinar y shipear FRESCO-330</strong> para que exista uso real que auditar la próxima vez.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">10</span> El siguiente movimiento</h2>
+  <h3 class="title">Seis que hay que hacer antes de tocar nada más, y luego parar de auditar.</h3>
+  <ol class="steps">
+    <li><b>Cerrar el bypass de pago (A4-B1)</b><span>Rama <code>BEFORE INSERT</code> en <code>prevent_client_subscription_writes()</code> + re-apuntar el trigger a <code>BEFORE INSERT OR UPDATE</code>, o <code>REVOKE INSERT</code> + RPC con lista blanca. Barrido en el cron de reconciliación de <code>plan IN ('pro','family') AND stripe_subscription_id IS NULL</code>. Una migración. Hoy.</span></li>
+    <li><b>Poner una red bajo la seguridad alimentaria (A4-B2)</b><span>Un test —pgTAP o e2e— que siembre un perfil con alérgeno + una receta que lo lleve, genere, y asserte que la receta está ausente. Gatear sobre él. CHECK de conformidad en <code>recipes.alergenos</code> + <code>lower()</code> en el filtro. Decidir qué hace <code>*_texto_libre</code>. Borrar el comentario de la Layer 2.</span></li>
+    <li><b>Instrumentar el funnel y la métrica del MVP (A4-B4)</b><span>Eventos servidor de trial/conversión/renovación/cancelación; person properties <code>plan</code>/<code>is_guest</code>/<code>signup_method</code>; <code>semana_iso</code> + tier en la generación; las 15 etapas de funnel que faltan; el reverse-proxy <code>/ingest</code>. Sin esto, una cohorte corre a ciegas.</span></li>
+    <li><b>Sacar los secretos de prod del CI (A4-H7)</b><span>Sobreescribir <code>STRIPE_*</code>/<code>POSTHOG_*</code>/<code>SENTRY_*</code> a valores de test/deshabilitados en <code>.env.ci</code>; teardown de Stripe customer en el fixture de <code>@suscripcion</code>; smoke contra un customer de test dedicado. Deja de contaminar tus propios analytics y alertas.</span></li>
+    <li><b>Typecheck + lint de <code>supabase/functions/</code> en CI (A4-H4/H5)</b><span>Un job <code>deno check supabase/functions/**/*.ts</code> + <code>deno lint</code>, obligatorio. Extraer la lógica de los handlers detrás de funciones puras y testearlas. Es la capa de mayor responsabilidad y la única sin typecheck.</span></li>
+    <li><b>La revisión legal (A4-B3)</b><span>No es ingeniería. Consigue que un abogado revise el borrador (ya mucho más fuerte), rellena la entidad, quita el banner. Programa esto como el blocker que es — lleva un mes cayéndose de la lista.</span></li>
+  </ol>
+  <p style="margin-top:22px">Luego: baja la cadencia de auditoría a mensual, congela la optimización de CI, y gasta las semanas en FRESCO-330. La próxima pasada debería auditar <em>uso real</em>, no otra ronda de tickets.</p>
+</section>
+
+<section>
+  <h2><span class="num">11</span> Lo que está bien — y es mucho</h2>
+  <h3 class="title">Los seis frentes lo dijeron por separado: la ingeniería es genuinamente buena.</h3>
+  <ul class="clean">
+    <li><strong>El flujo de Stripe es sólido</strong> — verificación de firma con tolerancia de timestamp, fail-closed si falta el secreto, secreto de webhook por entorno, <strong>price-id verificado antes de cada concesión de Pro</strong>, entrega fuera de orden guardada por cross-check de <code>stripe_subscription_id</code>, <code>client_reference_id</code> server-side. El único hueco es el de INSERT (A4-B1), no el webhook.</li>
+    <li><strong>El endurecimiento de la base de datos está hecho</strong> — todas las funciones <code>SECURITY DEFINER</code> con <code>search_path</code> pinneado; todas las políticas RLS con <code>(SELECT auth.uid())</code> (sin re-evaluación por fila); <code>pg_trgm</code>/<code>pg_net</code> fuera de <code>public</code>; un event trigger <code>rls_auto_enable</code> que pone RLS deny-all a cualquier tabla nueva. FRESCO-27/28/29 realmente cerrados.</li>
+    <li><strong>El aislamiento del e2e ya es arquitectónicamente correcto</strong> — stack Supabase local efímero por run (FRESCO-310) + factory users desechables por escenario con cascade-delete. La clase de carreras de estado compartido genuinamente desapareció.</li>
+    <li><strong>Los tests que existen son de calidad real</strong> — lógica de verdad, edge cases con criterio (NaN, límites de año, anti-enumeración, scoping RLS aserido vía call args), <code>bun test</code> hermético (270 aserciones, 271 ms, <code>fetch</code> stubbeado en todo test networked).</li>
+    <li><strong>El aislamiento de seguridad del e2e es la parte más fuerte de la suite</strong> — <code>aislamiento-datos.steps.ts</code> hace llamadas REST reales con tokens de atacante/víctima y asserta <em>tanto</em> el status rechazado <em>como</em> el estado de datos sin cambiar.</li>
+    <li><strong>El motor determinista es un activo real</strong> — generación sub-segundo, cero coste de API, sin superficie de prompt-injection, sin alérgenos alucinados. Retiró entero el riesgo "la generación puede ser lenta/genérica" del PRD. El marketing debería dejar de esconderlo detrás de "con IA".</li>
+    <li><strong>La higiene de defectos es excelente</strong> — ~93% cerrados, 7 abiertos y todos menores. La lectura de "180 tickets desordenados" es errónea: es un bucle de remediación de alto throughput bien llevado. El problema es la <em>trazabilidad</em>, no el volumen.</li>
+    <li><strong>La seguridad alimentaria es lo construido con más cuidado</strong> — prefiltro SQL en capas + selector determinista + alérgenos implicados por dieta bloqueados en el onboarding (<code>impliedAlergenos</code>). El requisito no negociable recibió ingeniería no negociable — le falta la <em>red de tests</em> (A4-B2), no el diseño.</li>
+    <li><strong>Los ADRs son disciplinados</strong> — 18 registros reales con alternativas y consecuencias; ADR-0014→0018 es un modelo de cómo hacer una supersesión.</li>
+    <li><strong>El bloque <code>git_strategy</code> de <code>project.yaml</code> es inusualmente honesto</strong> — documenta que la estrategia "enterprise" declarada nunca se practicó y baja a <code>solo-main</code> para coincidir con <code>git log</code>.</li>
+    <li><strong>Jira en vivo + token con <code>Administer Jira</code> ya funcionan</strong>, y <code>branch-protection.md</code> + <code>.context/audits/*.html</code> dan visibilidad real a un lector que solo tiene el clon.</li>
+  </ul>
+</section>
+
+<footer class="end">
+  <p>La app autenticada sigue sin ejercerse — <code>/menu</code>, <code>/calendar</code>, <code>/shopping-list</code>, <code>/perfil</code>, <code>/admin</code> nunca se han abierto en ninguna de las cuatro pasadas. Con las credenciales <code>PRE_USER_*</code> por un canal privado, la quinta cubre la UX autenticada, la a11y del lado logueado y el flujo de admin de verdad. La rúbrica se queda fija en v1.</p>
+  <p>Basi: la distancia entre este informe y los tres anteriores no es que Fresco haya empeorado. Es que por fin alguien construyó el exploit en vez de contar las políticas, y trazó el cacahuete desde el input hasta el plato en vez de confiar en que el filtro existe. Los dos agujeros serios llevan ahí desde julio y agosto respectivamente, invisibles a tres auditorías. Eso es lo que compra la profundidad. La casa está bien construida — de verdad, los seis frentes lo dijeron sin ponerse de acuerdo. Ahora cierra la puerta de atrás, pon una alarma en la cocina, y ve a enseñarle la casa a diez personas.</p>
+  <p class="stamp">rubric: agentic-audit v1 · subject=dev · lens=external + product · 2026-08-31 · base dev@1940cef · 6 subagentes</p>
+</footer>
+
+</div>
+</body>
+</html>
