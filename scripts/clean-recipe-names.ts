@@ -14,15 +14,13 @@
 //   bun scripts/clean-recipe-names.ts              # dry-run, logs id | before -> after
 //   bun scripts/clean-recipe-names.ts --apply       # writes changed rows via service_role
 
-const SUPABASE_URL = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL)!;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Read lazily inside main() — not at module load — so importing
+// `cleanRecipeName` for unit tests (CI's test job has no Supabase secrets)
+// never trips this check.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APPLY = process.argv.includes('--apply');
 const PAGE_SIZE = 500;
-
-if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error('Missing NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) / SUPABASE_SERVICE_ROLE_KEY in env.');
-  process.exit(1);
-}
 
 // Wrapper phrases that carry zero signal — accent-tolerant, matched
 // case-insensitively. A *named* spice/herb/descriptor after "con" is real
@@ -126,16 +124,16 @@ interface RecipeRow {
   nombre: string
 }
 
-async function fetchAllRecipes(): Promise<RecipeRow[]> {
+async function fetchAllRecipes(supabaseUrl: string, serviceRoleKey: string): Promise<RecipeRow[]> {
   const all: RecipeRow[] = [];
   let offset = 0;
   for (;;) {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre&order=id&offset=${offset}&limit=${PAGE_SIZE}`,
+      `${supabaseUrl}/rest/v1/recipes?select=id,nombre&order=id&offset=${offset}&limit=${PAGE_SIZE}`,
       {
         headers: {
-          apikey: SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
         },
       },
     );
@@ -150,12 +148,12 @@ async function fetchAllRecipes(): Promise<RecipeRow[]> {
   return all;
 }
 
-async function applyUpdate(id: string, nombre: string): Promise<void> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/recipes?id=eq.${id}`, {
+async function applyUpdate(supabaseUrl: string, serviceRoleKey: string, id: string, nombre: string): Promise<void> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/recipes?id=eq.${id}`, {
     method: 'PATCH',
     headers: {
-      'apikey': SERVICE_ROLE_KEY,
-      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal',
     },
@@ -167,8 +165,13 @@ async function applyUpdate(id: string, nombre: string): Promise<void> {
 }
 
 async function main() {
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    console.error('Missing NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) / SUPABASE_SERVICE_ROLE_KEY in env.');
+    process.exit(1);
+  }
+
   console.error(`Mode: ${APPLY ? 'APPLY' : 'DRY-RUN'}`);
-  const recipes = await fetchAllRecipes();
+  const recipes = await fetchAllRecipes(SUPABASE_URL, SERVICE_ROLE_KEY);
   console.error(`Fetched ${recipes.length} recipes.`);
 
   let changed = 0;
@@ -178,7 +181,7 @@ async function main() {
       changed++;
       console.log(`${recipe.id} | ${recipe.nombre} -> ${cleaned}`);
       if (APPLY) {
-        await applyUpdate(recipe.id, cleaned);
+        await applyUpdate(SUPABASE_URL, SERVICE_ROLE_KEY, recipe.id, cleaned);
       }
     }
   }
