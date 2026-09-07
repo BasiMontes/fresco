@@ -3,7 +3,7 @@ import type { ThemePreference } from '@/lib/theme/theme';
 import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
-import { THEME_COOKIE } from '@/lib/theme/theme';
+import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
 import './globals.css';
 
@@ -55,12 +55,13 @@ export const dynamic = 'force-dynamic';
 // read per request — `dynamic = 'force-dynamic'` above already forces a
 // request context — and stamped onto `<html>` server-side, so the correct
 // palette paints on first byte with no flash and no inline script. `system`
-// (and first visit, no cookie) emits no `data-theme`, falling through to the
-// `@media (prefers-color-scheme: dark)` block in globals.css.
+// is an explicit user choice (follows `prefers-color-scheme`, no `data-theme`
+// stamped). First visit — no cookie at all — defaults to `light`, not
+// `system`: a clean, predictable first impression regardless of the visitor's
+// OS setting.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const themeCookie = (await cookies()).get(THEME_COOKIE)?.value as ThemePreference | undefined;
-  const theme: ThemePreference
-    = themeCookie === 'dark' || themeCookie === 'light' ? themeCookie : 'system';
+  const theme: ThemePreference = isThemePreference(themeCookie) ? themeCookie : 'light';
 
   return (
     <html

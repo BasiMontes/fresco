@@ -32,10 +32,10 @@ const OPTIONS: readonly { value: ThemePreference, label: string, Icon: typeof Su
 ];
 
 function readCookiePreference(): ThemePreference {
-  if (typeof document === 'undefined') { return 'system'; }
+  if (typeof document === 'undefined') { return 'light'; }
   const match = document.cookie.match(new RegExp(`(?:^|; )${THEME_COOKIE}=([^;]*)`));
   const value = match?.[1];
-  return isThemePreference(value) ? value : 'system';
+  return isThemePreference(value) ? value : 'light';
 }
 
 export interface ThemeToggleProps {
@@ -44,10 +44,10 @@ export interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ tone = 'default', className }: ThemeToggleProps) {
-  // Server render and first client paint must agree, so start at `system`
-  // (the SSR assumption when no attribute is stamped) and reconcile from the
-  // real cookie after mount.
-  const [preference, setPreference] = useState<ThemePreference>('system');
+  // Server render and first client paint must agree, so start at `light`
+  // (the SSR assumption when no cookie is set — see app/layout.tsx) and
+  // reconcile from the real cookie after mount.
+  const [preference, setPreference] = useState<ThemePreference>('light');
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {

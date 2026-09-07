@@ -6,9 +6,11 @@
  * (not `localStorage`) so `app/layout.tsx` can read it per request and stamp
  * `data-theme` on `<html>` server-side — no flash, no inline script.
  *
- * - `light` / `dark` — explicit override, wins over the OS.
- * - `system` — follow `prefers-color-scheme` (also the first-visit default,
- *   represented by the ABSENCE of the cookie / of the `data-theme` attribute).
+ * - `light` / `dark` — explicit override, wins over the OS. `light` is also
+ *   the first-visit default (no cookie set yet) — a clean, predictable
+ *   impression regardless of the visitor's OS setting.
+ * - `system` — explicit user choice to follow `prefers-color-scheme`,
+ *   represented by the ABSENCE of the `data-theme` attribute (cookie cleared).
  */
 export type ThemePreference = 'light' | 'dark' | 'system';
 
