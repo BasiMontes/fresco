@@ -32,17 +32,19 @@ Two failure modes, both mechanical (template bugs, not creative failures):
    - `con hierbas frescas` (as a bare suffix — a *named* herb is fine)
 3. **Real flavor/ingredient descriptors stay.** `con miel`, `con canela`, `con frutos rojos`, `con tomate`, etc. — these are specific and vary per recipe, so they carry real signal. The line is: does this phrase name something a camera (or a diner) can actually see/taste, or is it a generic wrapper the generator bolts onto everything?
 4. **No dangling connectors.** Never let a name end in a bare `con`, `y`, `de`, `al`, `a la` — that means a template slot was left empty; drop the connector, not just the missing word.
-5. **Correct tildes.** `versión`, `mediterráneo`, `guarnición`, etc. — never ship the unaccented generator-bug spelling even inside a phrase you're keeping.
+5. **Drop a whole clause, never half of one.** When a name is still over 6 words after removing filler, drop the last `con`/`y` clause entirely (e.g. "... con frutos rojos" goes away as a unit) — never truncate mid-clause, which leaves an orphaned word like "frutos" with no idea what it was describing.
+6. **Correct tildes.** `versión`, `mediterráneo`, `guarnición`, etc. — never ship the unaccented generator-bug spelling even inside a phrase you're keeping.
 
 ## Sí / No examples
 
 | No (generator bug) | Sí (cleaned) |
 | --- | --- |
-| `Tostada con queso fresco al estilo mediterraneo con frutos rojos` | `Tostada con queso fresco y frutos rojos` |
+| `Tostada con queso fresco al estilo mediterraneo con frutos rojos` | `Tostada con queso fresco` |
 | `Gambas al ajillo al estilo mediterraneo con guarnicion de temporada` | `Gambas al ajillo` |
-| `Curry de y leche de coco picante con jengibre` | `Curry de leche de coco con jengibre` |
+| `Curry de y leche de coco picante con jengibre` | `Curry de leche de coco picante` |
 | `Pollo al horno al estilo del sur version ligera` | `Pollo al horno` |
-| `Boles de coco y con semillas de girasol con semillas de lino` | `Boles de coco con semillas de girasol y lino` |
+| `Boles de coco y con semillas de girasol con semillas de lino` | `Boles de coco` |
+| `Pollo con especias orientales al horno` (real descriptor after a bare wrapper word) | `Pollo con especias orientales al horno` — unchanged; only a *bare* `con especias` with nothing after it is filler |
 
 ## Applying this to new drafts
 

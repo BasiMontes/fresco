@@ -27,15 +27,25 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 // Wrapper phrases that carry zero signal — accent-tolerant, matched
 // case-insensitively. A *named* spice/herb/descriptor after "con" is real
 // content and stays (e.g. "con canela", "con frutos rojos").
-const FILLER_PHRASES: RegExp[] = [
-  /\bal estilo (mediterr[aá]neo|del sur)\b/gi,
-  /\bestilo casero\b/gi,
-  /\bversi[oó]n ligera\b/gi,
-  /\bcon guarnici[oó]n de temporada\b/gi,
-  /\bcon verduras de temporada\b/gi,
-  /\bcon especias\b/gi,
-  /\bcon hierbas frescas\b/gi,
+const FILLER_PHRASE_SOURCES = [
+  'al estilo (?:mediterr[aá]neo|del sur)',
+  'estilo casero',
+  'versi[oó]n ligera',
+  'con guarnici[oó]n de temporada',
+  'con verduras de temporada',
+  'con especias',
+  'con hierbas frescas',
 ];
+
+// A bare wrapper phrase ("con especias", "estilo casero"...) only gets
+// stripped when it is a whole clause on its own — followed by the next
+// connector/filler-phrase or the end of the name. Without this guard,
+// "con especias orientales al horno" would strip "con especias" and leave
+// "orientales" dangling with no connector in front of it.
+const CLAUSE_BOUNDARY = String.raw`(?=\s+(?:con|y|de|al|a la|estilo|versi[oó]n)\b|\s*$)`;
+const FILLER_PHRASES: RegExp[] = FILLER_PHRASE_SOURCES.map(
+  source => new RegExp(String.raw`\b${source}\b${CLAUSE_BOUNDARY}`, 'gi'),
+);
 
 // Two adjacent connector words means the generator left a slot empty and
 // concatenated straight through it — collapse to the one that still reads.
@@ -44,7 +54,7 @@ const DANGLING_CONNECTOR_MID_PAIRS: [RegExp, string][] = [
   [/\by\s+(con|de)\s+/gi, '$1 '], // "coco y con semillas" -> "coco con semillas"
 ];
 
-const TRAILING_CONNECTOR = /\s+(?:con|y|de|al)$/i;
+const TRAILING_CONNECTOR = /\s+(?:a la|con|y|de|al)$/i;
 const MAX_WORDS = 6;
 // Only "con"/"y" introduce a new trailing descriptor clause ("con canela",
 // "y jengibre"). "de"/"al" glue to the noun right before them ("semillas de
@@ -104,7 +114,11 @@ export function cleanRecipeName(original: string): string {
     name = collapseConnectors(name);
   }
 
-  return capitalize(name.trim());
+  const cleaned = capitalize(name.trim());
+  // Never collapse a name to nothing — a pathological input (the whole
+  // string was itself filler) falls back to the original untouched, for a
+  // human to review, rather than writing an empty nombre.
+  return cleaned || original;
 }
 
 interface RecipeRow {

@@ -53,6 +53,20 @@ describe('cleanRecipeName', () => {
     expect(cleanRecipeName('Sopa fría de melón')).toBe('Sopa fría de melón');
   });
 
+  test('does not strip a bare wrapper phrase when a real modifier follows it in the same clause', () => {
+    expect(cleanRecipeName('Pollo con especias orientales al horno')).toBe(
+      'Pollo con especias orientales al horno',
+    );
+  });
+
+  test('strips a trailing dangling "a la" (empty style slot)', () => {
+    expect(cleanRecipeName('Pollo asado a la')).toBe('Pollo asado');
+  });
+
+  test('never collapses to an empty name — falls back to the original', () => {
+    expect(cleanRecipeName('con especias')).toBe('con especias');
+  });
+
   test('is idempotent — running twice yields the same result', () => {
     const inputs = [
       'Tostada con salmon ahumado al estilo mediterraneo con frutos rojos',
