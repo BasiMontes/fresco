@@ -387,24 +387,28 @@
 }
 
 /*
- * FRESCO-448 §Dark mode — brand-ground pinning. The desktop sidebar is a
- * dark-green ground (`bg-primary` + `text-background`) in BOTH themes — it is
- * brand chrome, not a themed surface. Its internal cream-on-green treatments
- * (FRESCO-70 nav pill, FRESCO-82 account block, the theme toggle) read the
- * `background` / `primary` / `surface` role tokens, which the dark palette
+ * FRESCO-448 §Dark mode — brand-ground pinning. The desktop sidebar (and the
+ * landing footer) is a dark-green ground (`bg-primary` + `text-background`)
+ * in BOTH themes — it is brand chrome, not a themed surface. Its internal
+ * cream-on-green treatments (FRESCO-70 nav pill, FRESCO-82 account block, the
+ * theme toggle, the footer's legal links/copyright) read the `background` /
+ * `primary` / `surface` / `accent-200` role tokens, which the dark palette
  * inverts — so under dark mode a `bg-background` chip flipped from cream to
- * near-black. Re-pin the role tokens to their light values inside any
- * `[data-brand-ground]` subtree so the sidebar looks identical in both
- * themes and every cream-on-green pair keeps its contrast.
+ * near-black, and `text-accent-200` flipped from a readable #bfcfbd to a
+ * near-invisible #123a1a on the same green ground. Re-pin the role tokens to
+ * their light values inside any `[data-brand-ground]` subtree so brand chrome
+ * looks identical in both themes and every cream-on-green pair keeps its
+ * contrast.
  */
 [data-brand-ground] {
   /* Re-declare the role tokens with static light values so every cream-on-green
      pair keeps its light-mode contrast under dark mode. `color-scheme: light`
      alone is NOT enough — the `light-dark()` tokens are declared on `:root` and
      resolve against `:root`'s color-scheme, not this subtree's. Each token
-     below is consumed by at least one component inside the sidebar subtree
-     (nav pill, account block, theme toggle, empty-state card) — checked
-     against this build, not a defensive superset. */
+     below is consumed by at least one component inside a brand-ground subtree
+     (sidebar nav pill, account block, theme toggle, empty-state card; footer
+     legal links + copyright) — checked against this build, not a defensive
+     superset. */
   color-scheme: light;
   --color-background: #faf3e3;
   --color-surface: #f1e3c6;
@@ -414,6 +418,7 @@
   --color-primary: #0f4e0e;
   --color-border: color-mix(in srgb, #201e1d 16%, transparent);
   --color-neutral-200: #f0e8d8;
+  --color-accent-200: #bfcfbd;
 }
 
 @layer base {

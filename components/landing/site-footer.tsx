@@ -1,6 +1,7 @@
 'use client';
 
 import type { LegalSection } from '@/components/legal/legal-modal';
+import Image from 'next/image';
 import * as React from 'react';
 import { LegalModal } from '@/components/legal/legal-modal';
 
@@ -21,23 +22,31 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="bg-primary px-4 py-10 md:px-8">
+    <footer data-brand-ground className="bg-primary px-4 py-10 md:px-8">
       <div className="mx-auto max-w-5xl">
-        <div className="flex flex-wrap justify-end gap-5">
-          {FOOTER_LINKS.map(({ label, section: linkSection }) => (
-            <button
-              key={label}
-              type="button"
-              data-testid={`site_footer_${linkSection}_link`}
-              onClick={() => openSection(linkSection)}
-              // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
-              // FRESCO-445: text-accent-300 (#8fab8d) on bg-primary was ~3.9:1 —
-              // under AA for 11px text; accent-200 clears it at ~6:1.
-              className="inline-flex min-h-[44px] items-center text-caption text-accent-200"
-            >
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          {/*
+            The white "negativo" mark is a static asset, not a themed text
+            color — it reads correctly on `bg-primary` in both light and dark
+            mode without depending on a `light-dark()` token pairing.
+          */}
+          <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} />
+          <div className="flex flex-wrap gap-5">
+            {FOOTER_LINKS.map(({ label, section: linkSection }) => (
+              <button
+                key={label}
+                type="button"
+                data-testid={`site_footer_${linkSection}_link`}
+                onClick={() => openSection(linkSection)}
+                // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
+                // FRESCO-445: text-accent-300 (#8fab8d) on bg-primary was ~3.9:1 —
+                // under AA for 11px text; accent-200 clears it at ~6:1.
+                className="inline-flex min-h-[44px] items-center text-caption text-accent-200"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         {/*
           FRESCO-445: was `text-accent-500` (#0F4E0E) on `bg-primary`
@@ -51,18 +60,6 @@ export function SiteFooter() {
           {new Date().getFullYear()}
           {' '}
           Fresco · Hecho con cariño (y muchas lentejas)
-        </p>
-        {/*
-          FRESCO-445 (epic FRESCO-436): the footer closes on an oversized
-          Fraunces wordmark treated as a graphic element — the "editorial
-          signature". It replaces the small negative logo that used to sit in
-          the top row; this is now the footer's sole brand mark. Kept as a
-          readable <p> (not aria-hidden) so the name is still in the
-          accessibility tree and text search. Never bold (DESIGN.md
-          Typography — "authority comes from calm, not weight").
-        */}
-        <p className="mt-16 font-heading text-6xl font-normal leading-none tracking-tight text-accent-200 md:text-7xl">
-          Fresco
         </p>
       </div>
 
