@@ -14,6 +14,11 @@ export interface PasswordInputProps {
   'autoComplete'?: 'new-password' | 'current-password'
   /** Show the live strength meter — off for a login field, on for signup. */
   'showStrength'?: boolean
+  /**
+   * Show the static "mínimo N caracteres" policy hint while the field is
+   *  empty (FRESCO-448 / S9 — surface FRESCO-363's policy before the error).
+   */
+  'showPolicyHint'?: boolean
   'disabled'?: boolean
 }
 
@@ -44,6 +49,7 @@ export function PasswordInput({
   placeholder = 'Contraseña',
   autoComplete = 'new-password',
   showStrength = true,
+  showPolicyHint = false,
   disabled,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
@@ -58,7 +64,11 @@ export function PasswordInput({
           placeholder={placeholder}
           aria-label={placeholder}
           required
-          minLength={MIN_PASSWORD_LENGTH}
+          // FRESCO-448 (S9): no native `minLength` — it fired the browser's
+          // un-branded OS validation bubble ("Aumenta la longitud…") before
+          // the designed `text-error` message ever rendered. The policy is
+          // enforced by `isPasswordTooShort` (mirrors the server) + surfaced
+          // by `showPolicyHint` / the strength meter.
           autoComplete={autoComplete}
           value={value}
           disabled={disabled}
@@ -80,6 +90,16 @@ export function PasswordInput({
         </button>
       </div>
 
+      {showPolicyHint && value.length === 0 && (
+        <p className="text-caption text-tertiary">
+          Mínimo
+          {' '}
+          {MIN_PASSWORD_LENGTH}
+          {' '}
+          caracteres.
+        </p>
+      )}
+
       {showStrength && value.length > 0 && (
         <div data-testid="password_strength_indicator" className="flex items-center gap-2">
           <div className="flex h-1 flex-1 gap-1" role="presentation">
@@ -89,7 +109,9 @@ export function PasswordInput({
               return (
                 <div
                   key={level}
-                  className={`h-1 flex-1 rounded-full ${filled ? STRENGTH_BAR_COLOR[strength] : 'bg-surface'}`}
+                  // FRESCO-448 (hijo 5): empty track was `bg-surface` (~1.1:1
+                  // on the card) — use the neutral ramp so it reads.
+                  className={`h-1 flex-1 rounded-full ${filled ? STRENGTH_BAR_COLOR[strength] : 'bg-neutral-300'}`}
                 />
               );
             })}

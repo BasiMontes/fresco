@@ -161,7 +161,7 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-text/50 p-4"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-scrim p-4"
       onClick={() => onOpenChange(false)}
     >
       <div
@@ -173,7 +173,7 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
         data-testid={dataTestId}
         onClick={event => event.stopPropagation()}
         className={cn(
-          't-modal max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card bg-surface p-4 shadow-lg focus:outline-none sm:p-6',
+          't-modal max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-card border border-border bg-surface-raised p-4 shadow-lg focus:outline-none sm:p-6',
           open && hasEntered && 'is-open',
           isClosing && 'is-closing',
           className,

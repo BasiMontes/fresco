@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { clientEnv } from '@/lib/env';
@@ -21,7 +22,7 @@ import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/po
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
-import { isPasswordTooShort, MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
+import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
@@ -456,17 +457,17 @@ export default function SignupPage() {
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                       />
-                      <label htmlFor="signup-password" className="sr-only">Contraseña</label>
-                      <Input
-                        id="signup-password"
-                        data-testid="password_input"
-                        type="password"
-                        placeholder="Contraseña"
-                        required
-                        minLength={MIN_PASSWORD_LENGTH}
-                        autoComplete="new-password"
+                      {/* FRESCO-448 (S9): was a bare <Input> — the highest-
+                          traffic signup path had the weakest password field
+                          (no show/hide, no strength meter, no policy hint,
+                          and a native minLength bubble). Now matches the
+                          onboarding "Crear cuenta" field. */}
+                      <PasswordInput
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={setPassword}
+                        data-testid="password_input"
+                        autoComplete="new-password"
+                        showPolicyHint
                       />
                       <label className="mt-1 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
                         <span className="flex size-6 shrink-0 items-center justify-center">

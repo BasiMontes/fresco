@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
-import { isPasswordTooShort, MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
+import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
 /**
@@ -112,30 +112,28 @@ export default function UpdatePasswordPage() {
 
         {hasSession === true && (
           <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
-            <Input
+            {/* FRESCO-448 (S9): match the signup / onboarding password field —
+                show/hide + strength + static policy hint, no native minLength
+                bubble. */}
+            <PasswordInput
               data-testid="update_password_new_input"
-              type="password"
               placeholder="Nueva contraseña"
-              aria-label="Nueva contraseña"
-              required
-              minLength={MIN_PASSWORD_LENGTH}
               autoComplete="new-password"
+              showPolicyHint
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
+              onChange={(v) => {
+                setPassword(v);
                 setError(null);
               }}
             />
-            <Input
+            <PasswordInput
               data-testid="update_password_confirm_input"
-              type="password"
               placeholder="Confirma la nueva contraseña"
-              aria-label="Confirma la nueva contraseña"
-              required
               autoComplete="new-password"
+              showStrength={false}
               value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
+              onChange={(v) => {
+                setConfirmPassword(v);
                 setError(null);
               }}
             />

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import type { ThemePreference } from '@/lib/theme/theme';
 import { Figtree, Fraunces } from 'next/font/google';
+import { cookies } from 'next/headers';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
+import { THEME_COOKIE } from '@/lib/theme/theme';
 
 import './globals.css';
 
@@ -48,9 +51,23 @@ export const metadata: Metadata = {
 // CDN caching, no PPR.
 export const dynamic = 'force-dynamic';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// FRESCO-448 §Dark mode: the `theme` cookie (`light` | `dark` | `system`) is
+// read per request — `dynamic = 'force-dynamic'` above already forces a
+// request context — and stamped onto `<html>` server-side, so the correct
+// palette paints on first byte with no flash and no inline script. `system`
+// (and first visit, no cookie) emits no `data-theme`, falling through to the
+// `@media (prefers-color-scheme: dark)` block in globals.css.
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const themeCookie = (await cookies()).get(THEME_COOKIE)?.value as ThemePreference | undefined;
+  const theme: ThemePreference
+    = themeCookie === 'dark' || themeCookie === 'light' ? themeCookie : 'system';
+
   return (
-    <html lang="es" className={`${fraunces.variable} ${figtree.variable}`}>
+    <html
+      lang="es"
+      data-theme={theme === 'system' ? undefined : theme}
+      className={`${fraunces.variable} ${figtree.variable}`}
+    >
       <body>
         <PostHogProvider>{children}</PostHogProvider>
       </body>

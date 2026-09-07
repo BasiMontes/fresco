@@ -23,9 +23,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-background hover:bg-accent-600',
-        action: 'bg-secondary text-text hover:bg-accent-2-400',
-        secondary: 'border border-border bg-transparent text-text hover:bg-surface',
+        // FRESCO-448 §Dark mode: `text-on-brand` / `text-on-warning` are
+        // theme-stable — `text-background` / `text-text` flipped to the wrong
+        // end in dark and killed the label contrast on the fill.
+        default: 'bg-primary text-on-brand hover:bg-accent-600',
+        action: 'bg-secondary text-on-warning hover:bg-accent-2-400',
+        // FRESCO-448 (S5): `border-border` (text @16% ≈ 1.2:1 on the page) is
+        // below WCAG 2.2 SC 1.4.11's 3:1 for a control boundary — and this
+        // variant's transparent fill means the border is the whole affordance.
+        // `neutral-600` matches the input border contract from FRESCO-443.
+        secondary: 'border border-neutral-600 bg-transparent text-text hover:bg-surface',
         ghost: 'bg-transparent text-primary hover:bg-accent-100',
         icon: 'size-9 rounded-full bg-surface text-primary hover:bg-neutral-200',
       },

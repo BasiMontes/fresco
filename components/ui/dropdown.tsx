@@ -170,7 +170,7 @@ export function Dropdown({
                 className={cn(
                   'w-full rounded-full px-3 py-2 text-left text-body-md',
                   option.value === value
-                    ? 'bg-primary text-background'
+                    ? 'bg-primary text-on-brand'
                     : 'text-text hover:bg-neutral-100',
                 )}
                 onClick={() => selectOption(option.value)}

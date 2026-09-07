@@ -181,8 +181,12 @@ export function RecipeLibrary({
 
   return (
     <div>
-      <div className="mt-6 flex items-center gap-2">
-        <div className="relative max-w-56 flex-1 sm:max-w-96">
+      {/* FRESCO-448 (P1-d): search — Biblioteca's primary action — was
+          crushed to a ~40px unlabelled box between two non-shrinking
+          buttons on mobile. It now takes its own full-width row below
+          ≥sm, and the two secondary buttons collapse to icons there. */}
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative w-full flex-1 sm:max-w-96">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-tertiary" aria-hidden="true" />
           <Input
             type="search"
@@ -194,29 +198,33 @@ export function RecipeLibrary({
             aria-label="Buscar receta o ingrediente"
           />
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => setCreateOpen(true)}
-          data-testid="crear_propia_button"
-        >
-          <Plus className="size-4" aria-hidden="true" />
-          Crear propia
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={openFilterDrawer}
-          data-testid="filtrar_y_ordenar_button"
-        >
-          <SlidersHorizontal className="size-4" aria-hidden="true" />
-          Filtrar y ordenar
-          {activeCount > 0 && (
-            <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-primary text-caption text-background">
-              {activeCount}
-            </span>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setCreateOpen(true)}
+            data-testid="crear_propia_button"
+            aria-label="Crear receta propia"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Crear propia</span>
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={openFilterDrawer}
+            data-testid="filtrar_y_ordenar_button"
+            aria-label="Filtrar y ordenar"
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Filtrar y ordenar</span>
+            {activeCount > 0 && (
+              <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-primary text-caption text-on-brand">
+                {activeCount}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
       <CreateRecipeForm

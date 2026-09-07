@@ -464,7 +464,10 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                           <div className="flex min-w-0 items-center gap-2">
                             <span
                               className={cn(
-                                'truncate text-body-lg',
+                                // FRESCO-448 (S8): was `text-body-lg`, a class
+                                // that does not exist — the list's primary
+                                // content line had no design-token size.
+                                'truncate text-body-md font-semibold',
                                 item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
                               )}
                             >
@@ -484,7 +487,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                               </span>
                             )}
                           </div>
-                          <span className="text-caption text-tertiary">
+                          <span className="text-body-sm text-tertiary">
                             {item.cantidad}
                             {' '}
                             {formatUnidad(item.cantidad, item.unidad)}
