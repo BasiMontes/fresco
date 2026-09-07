@@ -242,6 +242,26 @@ What it means in practice:
 
 The north-star references for this direction are two editorial product sites (Houseplant, Sweetgreen): cream canvas, near-monochrome UI, photography-forward, hairline-first, big calm type. Fresco keeps its own palette (green + orange) and its own thesis; it borrows the *posture*, not the look.
 
+## Voice
+
+Four rules, derived directly from the Tesis above (FRESCO-449). They govern every UI string — headers, empty states, error messages, notifications, tooltips.
+
+1. **Calm, not hype.** No exclamation-point marketing, no filler emoji. State it the way a printed planner would.
+   - ✅ "No hay recetas guardadas todavía."
+   - ❌ "¡Ups! Parece que aún no tienes recetas guardadas 😅"
+
+2. **Confidence, not padding.** Say the thing directly — no "puede que", no stacked courtesy clauses. The same vice that produced the recipe-name filler this story cleaned up.
+   - ✅ "No pudimos generar tu menú. Intenta de nuevo."
+   - ❌ "Lo sentimos mucho, parece que hubo un pequeño problema al intentar generar tu menú, por favor intenta de nuevo más tarde."
+
+3. **Concrete, not generic.** Name the real thing — the recipe, the day, the ingredient — never an empty placeholder.
+   - ✅ "Añade tu primera receta desde Biblioteca."
+   - ❌ "No hay contenido para mostrar."
+
+4. **The exclamation is earned.** Consistent with Tesis point 5 ("the learning is the payoff... that scarcity is the point"): the only place tone rises is the learning insight (`card-insight`). Everywhere else stays declarative, no exclamation marks.
+   - ✅ (only in `card-insight`): "Ajusté esto para ti."
+   - ❌ (anywhere else): "¡Tu lista de la compra está lista!" → correct: "Tu lista de la compra está lista."
+
 ## Overview
 
 Fresco is a Spain-focused weekly meal-planning app for **Laura, the exhausted planner** — a 30–40-year-old who cooks five-plus days a week and hits the same recurring wall every Sunday afternoon: "what do I cook this week?" (`.context/business/business-model.md`, `.context/PRD/user-personas.md`). The product's entire pitch is that it gets easier the more you use it, because it learns from what your household actually cooks, not from a preference form you filled out once. A design system for that promise cannot look like a cold utility tool — it has to feel like the difference between a spreadsheet and a kitchen counter.
