@@ -48,6 +48,14 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # FRESCO-454: `.claude/skills` is a generated, gitignored symlink to
+      # `.agents/skills/` (never committed - see AGENTS.md §5.5). A fresh
+      # checkout has no symlink, so `repo:check`'s `agents:compat:check` step
+      # would fail on a missing alias that isn't actually a drift. Regenerate
+      # it first, same as a contributor's local `bun run agents:compat` after
+      # cloning.
+      - run: bun run agents:compat
+
       - run: bun run repo:check
 
   unit:
