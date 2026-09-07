@@ -1,7 +1,9 @@
 {
   "detector": {
     "ignoreRules": [],
-    "ignoreFiles": [],
+    "ignoreFiles": [
+      ".context/audits/**"
+    ],
     "ignoreValues": [
       {
         "rule": "side-tab",
