@@ -99,7 +99,7 @@ export default async function NotificationsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <PartyPopper className="size-5 text-primary" aria-hidden="true" />
-              <CardTitle>¡Bienvenida al Centro de Avisos!</CardTitle>
+              <CardTitle>Bienvenida al Centro de Avisos</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
