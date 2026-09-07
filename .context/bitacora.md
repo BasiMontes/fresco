@@ -317,3 +317,8 @@ Historia archivada:
 - Qué: sync completo (272 archivos: migración .claude/skills -> .agents/skills, CLAUDE.md -> AGENTS.md, skills nuevos project-context/jira-administration/autonomous-delivery) + 19 hallazgos de paridad resueltos a mano (3 bloqueantes: hooks de Claude, MCP mirror en opencode/codex). Se destrackearon 459 archivos de .context/PBI/ (drift histórico, tag pbi-pre-cache-migration). Se mantuvo tsconfig.json, el ignore-list de eslint y scripts.test del proyecto (upstream los hubiera roto). Coverage ratchet ajustado (cli/ excluido) y CI arreglado (symlink de skills regenerado antes de repo:check).
 - Por qué: la nueva versión del updater trabaja por paridad en vez de pisar archivos; había que adoptarla antes de que el drift creciera más.
 - Siguiente: rebuild de .context/PBI/ desde Jira + auditar contenido que solo vivía en git (pasos 4-5 de la receta de migración), pendiente. Línea ATLASSIAN_URL obsoleta en .env, sin tocar.
+## 2026-09-07 - FRESCO-428 consentimiento de cookies + gate PostHog
+- Qué: banner de cookies (Aceptar/Rechazar/Configurar), gate de posthog.init() tras consentimiento (ADR-0025), tabla de política de cookies, enlaces "Configurar cookies" en footer y Ajustes. PR #296 mergeada a dev, propagada a staging y main (fef3ee7). También FRESCO-459: velocidad del marquee del hero a la mitad.
+- Por qué: cierra infracción activa de LSSI art. 22.2 / guía AEPD (PostHog se inicializaba sin consentimiento) — bloqueante del camino "poder cobrar".
+- Siguiente: QA verifica en staging (fuera de alcance de este flujo). Sin trabajo pendiente en FRESCO-428.
+
