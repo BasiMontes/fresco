@@ -298,6 +298,10 @@ convenience, not part of the running system — there is no LLM call in producti
 - If you're building any tooling around this process, remember it's explicitly not
   meant to become fully automated at MVP scale — the manual review is additive to
   whatever future validation code exists, not something code is meant to replace.
+- Recipe naming has a versioned style guide as of FRESCO-449:
+  `recipe-name-voice-guide.md` (same directory) — max ~6 words, no combinatorial
+  filler suffixes, real descriptors stay. Run new batches through
+  `scripts/clean-recipe-names.ts --dry-run` before insert.
 
 ### Dependencies
 
