@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import posthog from 'posthog-js';
 import { useEffect, useRef } from 'react';
+import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { derivePersonProperties } from '@/lib/posthog/person-properties';
 import { createClient } from '@/lib/supabase/client';
@@ -33,8 +34,17 @@ let initialized = false;
  * guests (never have a row) and de-duped per `auth.uid()` for the lifetime
  * of this provider (a Pro upgrade re-`$set`s `plan` server-side from the
  * Stripe webhook, so a stale client value self-heals).
+ *
+ * FRESCO-428 / ADR-0025: `posthog.init()` — and everything downstream of it
+ * in this effect (identify, `SESSION_STARTED` capture) — is gated behind
+ * `useCookieConsent().decision === 'accepted'`. No PostHog code runs before
+ * consent, not even in an "opted out" state; this is a deliberate divergence
+ * from PostHog's own documented `opt_out_capturing_by_default` pattern — see
+ * the ADR for why. Must render inside `CookieConsentProvider`
+ * (`app/layout.tsx`).
  */
 export function PostHogProvider({ children }: { children: ReactNode }) {
+  const { decision } = useCookieConsent();
   // Keyed on uid + anonymity, not uid alone: ADR-0004's OTP conversion keeps
   // the same auth.uid() while flipping is_anonymous, and that transition must
   // re-`$set` `is_guest` / `plan`.
@@ -42,7 +52,11 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (key && !initialized) {
+    if (!key || decision !== 'accepted') {
+      return;
+    }
+
+    if (!initialized) {
       posthog.init(key, {
         // FRESCO-366 / A4-B4: route ingestion through the same-origin
         // `/ingest` reverse proxy (Next rewrites in `next.config.mjs`) so
@@ -63,9 +77,16 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       });
       initialized = true;
     }
-
-    if (!key) {
-      return;
+    else {
+      // A re-accept after an earlier withdrawal: `initialized` is already
+      // true so `init()` above is skipped, but the SDK is still internally
+      // opted-out from the `opt_out_capturing()` call in
+      // cookie-consent-context.tsx's withdrawal path — nothing else ever
+      // reverses that. Found in review (FRESCO-428): without this, capture
+      // silently stays off for the rest of the session after a
+      // reject-then-accept cycle. Idempotent when there was nothing to
+      // reverse (first-ever accept never reaches this branch).
+      posthog.opt_in_capturing();
     }
 
     const client = createClient();
@@ -117,7 +138,7 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [decision]);
 
   return <>{children}</>;
 }

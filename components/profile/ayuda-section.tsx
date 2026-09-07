@@ -1,7 +1,8 @@
 'use client';
 
-import { ChevronRight, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
+import { ChevronRight, Cookie, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -86,6 +87,9 @@ const ROWS = [
  */
 export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProps) {
   const [openModal, setOpenModal] = useState<AyudaModal>(null);
+  // FRESCO-428 — "Cookies" opens the single, context-driven `CookieSettingsDialog`
+  // (mounted once in `app/layout.tsx`), not a locally-tracked `AyudaModal` state.
+  const { openSettings: openCookieSettings } = useCookieConsent();
   // FRESCO-161 — reuses the same `resetPasswordForEmail` call and
   // anti-enumeration posture (no error branching — Supabase's own API never
   // reveals whether the address has an account either) as
@@ -136,6 +140,18 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
             <ChevronRight className="size-4 text-tertiary" aria-hidden="true" />
           </button>
         ))}
+        <button
+          type="button"
+          data-testid="ayuda_row_cookies"
+          onClick={openCookieSettings}
+          className="flex items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
+        >
+          <div className="flex items-center gap-2 text-body-md">
+            <Cookie className="size-4" aria-hidden="true" />
+            Cookies
+          </div>
+          <ChevronRight className="size-4 text-tertiary" aria-hidden="true" />
+        </button>
       </div>
 
       <Dialog

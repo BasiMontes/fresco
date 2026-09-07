@@ -1,6 +1,7 @@
 import type { Request as PlaywrightRequest } from '@playwright/test';
 import type { TestUser, TestUserFactory } from './test-user-factory';
 import { test as base } from 'playwright-bdd';
+import { COOKIE_CONSENT_COOKIE } from '../lib/consent/cookie-consent';
 import { createTestUserFactory } from './test-user-factory';
 
 /**
@@ -71,5 +72,23 @@ export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: Aprendiz
     const { factory, cleanupAll } = createTestUserFactory(request);
     await use(factory);
     await cleanupAll();
+  },
+  // FRESCO-428: `CookieConsentBanner` is fixed to the bottom of every page
+  // and starts visible on a first visit — no step file drives it (it isn't
+  // under test in these flows), so it silently intercepted clicks on
+  // whatever else sat at the bottom of the viewport (found on CI: 4
+  // unrelated scenarios timed out clicking through it — delete-account,
+  // calendar-generate, undo-marcado, lista-compra). Pre-seeding the
+  // decision on the CONTEXT, before `page` (and therefore any navigation)
+  // exists, keeps the banner from ever rendering for these scenarios.
+  context: async ({ context }, use) => {
+    await context.addCookies([
+      {
+        name: COOKIE_CONSENT_COOKIE,
+        value: 'accepted',
+        url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
+      },
+    ]);
+    await use(context);
   },
 });

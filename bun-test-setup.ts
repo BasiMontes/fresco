@@ -74,6 +74,13 @@ void mock.module('posthog-js', () => ({
     alias: () => {},
     get_distinct_id: () => null,
     init: () => {},
+    // FRESCO-428 / ADR-0025: withdrawal cleanup calls `opt_out_capturing`;
+    // a re-accept after withdrawal calls `opt_in_capturing` (posthog-provider.tsx).
+    // `reset` stays stubbed (spy-able) only so a regression test can assert
+    // it is NEVER called — see cookie-settings-dialog.test.tsx.
+    opt_out_capturing: () => {},
+    opt_in_capturing: () => {},
+    reset: () => {},
   },
 }));
 
@@ -94,6 +101,9 @@ void mock.module('@/lib/supabase/client', () => ({
       getUser: async () => ({ data: { user: null } }),
       signInWithPassword: async () => ({ data: { session: null }, error: new Error('no test backend') }),
       signOut: async () => ({ error: null }),
+      // FRESCO-428: PostHogProvider's identify listener subscribes to this
+      // once consent is accepted — needs a real (inert) subscription shape.
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
   }),
 }));
