@@ -1101,10 +1101,10 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .hero-marquee-col-a {
-    animation: fresco-hero-marquee-up 34s linear infinite;
+    animation: fresco-hero-marquee-up 68s linear infinite;
   }
   .hero-marquee-col-b {
-    animation: fresco-hero-marquee-down 40s linear infinite;
+    animation: fresco-hero-marquee-down 80s linear infinite;
   }
 }
 
