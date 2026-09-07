@@ -74,6 +74,10 @@ void mock.module('posthog-js', () => ({
     alias: () => {},
     get_distinct_id: () => null,
     init: () => {},
+    // FRESCO-428 / ADR-0025: withdrawal cleanup calls these two on the
+    // consent-context's `opt_out_capturing`/`reset` path.
+    opt_out_capturing: () => {},
+    reset: () => {},
   },
 }));
 
@@ -94,6 +98,9 @@ void mock.module('@/lib/supabase/client', () => ({
       getUser: async () => ({ data: { user: null } }),
       signInWithPassword: async () => ({ data: { session: null }, error: new Error('no test backend') }),
       signOut: async () => ({ error: null }),
+      // FRESCO-428: PostHogProvider's identify listener subscribes to this
+      // once consent is accepted — needs a real (inert) subscription shape.
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
   }),
 }));
