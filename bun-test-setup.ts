@@ -74,8 +74,9 @@ void mock.module('posthog-js', () => ({
     alias: () => {},
     get_distinct_id: () => null,
     init: () => {},
-    // FRESCO-428 / ADR-0025: withdrawal cleanup calls these two on the
-    // consent-context's `opt_out_capturing`/`reset` path.
+    // FRESCO-428 / ADR-0025: withdrawal cleanup calls `opt_out_capturing`.
+    // `reset` stays stubbed (spy-able) only so a regression test can assert
+    // it is NEVER called — see cookie-settings-dialog.test.tsx.
     opt_out_capturing: () => {},
     reset: () => {},
   },

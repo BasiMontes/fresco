@@ -49,6 +49,13 @@ const COOKIE_TABLE: CookieTableRow[] = [
     duration: '1 año',
     type: 'Analítica',
   },
+  {
+    name: '__ph_opt_in_out_<clave>',
+    provider: 'PostHog',
+    purpose: 'Recordar que rechazaste la analítica (localStorage)',
+    duration: 'Hasta que cambies tu decisión',
+    type: 'Técnica',
+  },
 ];
 
 /** FRESCO-51: real inbox — `hola.frescoapp@gmail.com` is the working Gmail address Supabase Auth itself sends from (no `@fresco.app` domain exists). Exported for FRESCO-429's subscription-confirmation email, which needs the same real contact address. */

@@ -21,7 +21,7 @@ This ADR exists because the two approaches are not interchangeable for a legal-c
 
 We will gate the `posthog.init()` call itself behind the consent decision. `PostHogProvider` never calls `posthog.init()` while the stored consent decision is `null` (undecided) or `'rejected'` — the PostHog SDK does not run at all pre-consent, not even in an opted-out state. `init()` fires only once, on the transition to `decision === 'accepted'`.
 
-On withdrawal (an existing `'accepted'` decision changing to `'rejected'`), we explicitly call `posthog.opt_out_capturing()` + `posthog.reset()`, AND delete PostHog's own persisted state ourselves — the `ph_<NEXT_PUBLIC_POSTHOG_KEY>_posthog` cookie (`document.cookie` expiry) and the matching `localStorage` key — rather than relying on internal SDK cleanup behavior that this project does not control or test.
+On withdrawal (an existing `'accepted'` decision changing to `'rejected'`), we explicitly call `posthog.opt_out_capturing()` (stop future capture) and delete PostHog's own persisted state ourselves — the `ph_<NEXT_PUBLIC_POSTHOG_KEY>_posthog` cookie (`document.cookie` expiry) and the matching `localStorage` key — rather than relying on internal SDK cleanup behavior that this project does not control or test. Deliberately **not** calling `posthog.reset()`: live-UI validation caught it asynchronously re-writing that same cookie with a fresh anonymous `distinct_id` moments after our explicit delete, silently resurrecting it.
 
 ## Consequences
 

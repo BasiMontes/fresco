@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
+import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
@@ -81,6 +82,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CookieConsentProvider initialDecision={initialConsentDecision}>
           <PostHogProvider>{children}</PostHogProvider>
           <CookieConsentBanner />
+          <CookieSettingsDialog />
         </CookieConsentProvider>
       </body>
     </html>

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { describe, expect, test } from 'bun:test';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
-import { CookieConsentProvider, useCookieConsent } from '@/components/legal/cookie-consent-context';
+import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
+import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { COOKIE_CONSENT_COOKIE } from '@/lib/consent/cookie-consent';
 import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
 
@@ -58,24 +59,19 @@ describe('CookieConsentBanner', () => {
     expect(screen.queryByTestId('cookie_consent_banner')).not.toBeInTheDocument();
   });
 
-  test('"Configurar" opens the settings context state without writing a decision', async () => {
-    function Probe() {
-      const { settingsOpen } = useCookieConsent();
-      return <span data-testid="settings_open_probe">{String(settingsOpen)}</span>;
-    }
-
+  test('"Configurar" opens the actual settings dialog, without writing a decision', async () => {
     clearAllCookies();
     const user = setupUser();
     renderWithProviders(
       <Wrapper>
         <CookieConsentBanner />
-        <Probe />
+        <CookieSettingsDialog />
       </Wrapper>,
     );
 
-    expect(screen.getByTestId('settings_open_probe')).toHaveTextContent('false');
+    expect(screen.queryByTestId('cookie_settings_dialog')).not.toBeInTheDocument();
     await user.click(screen.getByTestId('cookie_consent_configure_button'));
-    expect(screen.getByTestId('settings_open_probe')).toHaveTextContent('true');
+    expect(screen.getByTestId('cookie_settings_dialog')).toBeInTheDocument();
     expect(document.cookie).not.toContain(COOKIE_CONSENT_COOKIE);
   });
 });

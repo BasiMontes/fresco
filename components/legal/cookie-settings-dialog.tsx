@@ -1,37 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 
-export interface CookieSettingsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
-
 /**
  * FRESCO-428 — the interactive counterpart to `LegalModal`'s `'cookies'`
- * section (which is read-only). Opened from the banner's "Configurar", from
- * `SiteFooter`'s "Configurar cookies" link, and from `AyudaSection`'s
- * "Cookies" row — the one place any of those three surfaces actually change
- * the decision. A single toggle: this story scopes exactly one non-essential
- * category (analítica / PostHog).
+ * section (which is read-only). A SINGLE instance, mounted once in
+ * `app/layout.tsx` next to `CookieConsentBanner`, driven entirely by
+ * `useCookieConsent()`'s `settingsOpen`/`closeSettings` — not by local
+ * per-caller state. `SiteFooter`'s "Configurar cookies" link,
+ * `AyudaSection`'s "Cookies" row, and the banner's own "Configurar" button
+ * all call `openSettings()` from the same context instead of each owning a
+ * separate `Dialog`; a per-caller instance would leave callers other than
+ * the one that opened it unaware the dialog exists (found live: the
+ * banner's "Configurar" flipped `settingsOpen` in context with nothing
+ * mounted to read it).
  */
-export function CookieSettingsDialog({ open, onOpenChange }: CookieSettingsDialogProps) {
-  const { decision, saveSettings } = useCookieConsent();
+export function CookieSettingsDialog() {
+  const { decision, settingsOpen, closeSettings, saveSettings } = useCookieConsent();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(decision === 'accepted');
+
+  // This is a single instance that never unmounts (mounted once in
+  // `app/layout.tsx`), so a `useState` initializer alone only ever reflects
+  // `decision` from the very first render — found live: accepting via the
+  // banner, then opening this same dialog without a full reload, showed a
+  // stale unchecked toggle. Re-sync on every open so it always starts from
+  // the current persisted decision, not whatever it happened to be left at.
+  useEffect(() => {
+    if (settingsOpen) {
+      setAnalyticsEnabled(decision === 'accepted');
+    }
+  }, [settingsOpen, decision]);
 
   function handleSave() {
     saveSettings(analyticsEnabled);
-    onOpenChange(false);
+    closeSettings();
   }
 
   return (
     <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
+      open={settingsOpen}
+      onOpenChange={open => !open && closeSettings()}
       aria-label="Configurar cookies"
       data-testid="cookie_settings_dialog"
     >

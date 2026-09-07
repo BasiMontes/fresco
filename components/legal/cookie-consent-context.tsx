@@ -55,11 +55,16 @@ export function CookieConsentProvider({ children, initialDecision }: CookieConse
     // Withdrawal: an already-initialized PostHog instance must stop
     // capturing and its own persisted state must be cleared (ADR-0025) —
     // never leave the SDK running with events an unconsenting user rejected.
+    // Deliberately NOT calling `posthog.reset()` here — found live: `reset()`
+    // asynchronously re-writes `ph_<key>_posthog` with a fresh anonymous
+    // distinct_id, landing AFTER `clearPostHogStorage` and silently
+    // resurrecting the very cookie this withdrawal is supposed to delete.
+    // `opt_out_capturing()` alone stops future capture without touching
+    // that key, so the explicit delete below is the only writer left.
     if (wasAccepted && next === 'rejected') {
       const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
       if (key) {
         posthog.opt_out_capturing();
-        posthog.reset();
         clearPostHogStorage(key);
       }
     }
