@@ -29,7 +29,7 @@ export function FavoritesGrid({ recipes }: { recipes: Recipe[] }) {
         className="mt-6"
         data-testid="favorites_empty_state"
         icon={<Heart className="size-8 text-tertiary" aria-hidden="true" />}
-        title="Lista vacía"
+        title="Todavía no tienes recetas favoritas"
         description="Guarda recetas para verlas aquí."
       />
     );
