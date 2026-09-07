@@ -1,6 +1,10 @@
+'use client';
+
 import type { DiaSemana, TipoPlatoSlot } from '@schemas';
 import type { PlanningSelection } from '@/lib/planning-selection';
+import * as React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 
 export interface PlanningSelectionGridProps {
   'value': PlanningSelection
@@ -42,6 +46,33 @@ const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
  * that meal across all 7 days instead of all 3 meals on one day.
  */
 export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTestId }: PlanningSelectionGridProps) {
+  // FRESCO-451: found in review — a plain CSS `mask-image` fade is painted
+  // relative to the container's own box, not scroll offset, so it stayed
+  // visible over Domingo's column even once fully scrolled right (the exact
+  // "fades content that isn't actually cut off" problem the sm:-breakpoint
+  // reset was meant to avoid, just recurring mid-scroll instead). Track
+  // scroll position the same way `HorizontalScrollRow` tracks its arrows and
+  // only render the fade while there's actually more to scroll to.
+  const scrollerRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  const updateFade = React.useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) { return; }
+    // 1px tolerance — sub-pixel layout can leave scrollLeft a fraction short
+    // of the true max, which would otherwise strand the fade visible forever.
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+  }, []);
+
+  React.useEffect(() => {
+    updateFade();
+    const el = scrollerRef.current;
+    if (!el) { return; }
+    const resizeObserver = new ResizeObserver(updateFade);
+    resizeObserver.observe(el);
+    return () => resizeObserver.disconnect();
+  }, [updateFade]);
+
   function toggleCell(day: DiaSemana, meal: TipoPlatoSlot) {
     const dayMeals = value[day] ?? [];
     const nextDayMeals = dayMeals.includes(meal)
@@ -65,15 +96,20 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
 
   return (
     <div
+      ref={scrollerRef}
+      onScroll={updateFade}
       data-testid={dataTestId}
       // FRESCO-451: below `sm` the 7-day table needs a horizontal scroll to
       // reach Sáb/Dom, with nothing signaling that — a right-edge fade tells
       // the eye there's more without interactive scroll arrows (this is a
-      // table, not `HorizontalScrollRow`'s card-carousel shape). Reset to
-      // `none` at `sm`+, where the table already fits without scrolling —
-      // an unconditional fade would clip the last column's checkboxes even
-      // when nothing is actually cut off.
-      className="overflow-x-auto [mask-image:linear-gradient(to_right,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_right,black_92%,transparent)] sm:[mask-image:none] sm:[-webkit-mask-image:none]"
+      // table, not `HorizontalScrollRow`'s card-carousel shape). Only
+      // rendered while `canScrollRight` — a static fade stays painted over
+      // the last column even once fully scrolled, which is exactly the
+      // "fades content that isn't cut off" problem this is meant to avoid.
+      className={cn(
+        'overflow-x-auto',
+        canScrollRight && '[mask-image:linear-gradient(to_right,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_right,black_92%,transparent)]',
+      )}
     >
       <table className="w-full min-w-[19rem] border-collapse">
         <thead>
