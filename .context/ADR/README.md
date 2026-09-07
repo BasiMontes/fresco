@@ -85,6 +85,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0022](./ADR-0022-guest-reassignment-verify-via-session-token.md) | Guest-data reassignment verifies target ownership via a session token + rate limit, not a server-side password sign-in | Proposed | ADR-0004 (verification step only) | — |
 | [ADR-0023](./ADR-0023-delete-account-recent-reauth.md) | `delete-account` requires a recent re-authentication (verified as a token, per ADR-0022) + a per-user rate limit | Proposed | — | — |
 | [ADR-0024](./ADR-0024-component-test-infra-happy-dom-rtl.md) | Component tests run on happy-dom + React Testing Library, registered globally for `bun test` | Proposed | — | — |
+| [ADR-0025](./ADR-0025-cookie-consent-gate-strategy.md) | Cookie consent gates `posthog.init()` itself, not `opt_out_capturing_by_default` | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
