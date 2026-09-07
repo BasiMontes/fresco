@@ -48,7 +48,6 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle className="hidden sm:inline-flex" />
           <Link
             href="/login"
             // FRESCO-315: 44px comfortable tap target on mobile (was ~26px).
@@ -62,6 +61,7 @@ export function SiteNav() {
           >
             Empezar gratis
           </LandingCtaLink>
+          <ThemeToggle variant="binary" className="hidden sm:inline-flex" />
           <Button
             variant="secondary"
             size="sm"
@@ -90,7 +90,7 @@ export function SiteNav() {
           ))}
           <div className="flex items-center justify-between border-b border-border px-4 py-4">
             <span className="text-body-md text-text">Tema</span>
-            <ThemeToggle />
+            <ThemeToggle variant="binary" />
           </div>
         </nav>
       )}

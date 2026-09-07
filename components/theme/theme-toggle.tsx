@@ -24,12 +24,18 @@ import { cn } from '@/lib/utils';
  * `tone="inverse"` is for the green sidebar ground, where the default
  * hairline + tertiary-brown text have no contrast (same override pattern as
  * `SidebarAccount`'s plan tag).
+ *
+ * `variant="binary"` drops the "automático" (system) segment for surfaces
+ * that only want a direct claro/oscuro switch (the landing nav) — `select()`
+ * still writes an explicit `light`/`dark` cookie either way, `system` is
+ * just not offered as a click target there.
  */
-const OPTIONS: readonly { value: ThemePreference, label: string, Icon: typeof Sun }[] = [
+const ALL_OPTIONS: readonly { value: ThemePreference, label: string, Icon: typeof Sun }[] = [
   { value: 'light', label: 'Tema claro', Icon: Sun },
   { value: 'system', label: 'Tema automático (según el sistema)', Icon: Monitor },
   { value: 'dark', label: 'Tema oscuro', Icon: Moon },
 ];
+const BINARY_OPTIONS = ALL_OPTIONS.filter(option => option.value !== 'system');
 
 function readCookiePreference(): ThemePreference {
   if (typeof document === 'undefined') { return 'light'; }
@@ -40,15 +46,17 @@ function readCookiePreference(): ThemePreference {
 
 export interface ThemeToggleProps {
   tone?: 'default' | 'inverse'
+  variant?: 'segmented' | 'binary'
   className?: string
 }
 
-export function ThemeToggle({ tone = 'default', className }: ThemeToggleProps) {
+export function ThemeToggle({ tone = 'default', variant = 'segmented', className }: ThemeToggleProps) {
   // Server render and first client paint must agree, so start at `light`
   // (the SSR assumption when no cookie is set — see app/layout.tsx) and
   // reconcile from the real cookie after mount.
   const [preference, setPreference] = useState<ThemePreference>('light');
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const options = variant === 'binary' ? BINARY_OPTIONS : ALL_OPTIONS;
 
   useEffect(() => {
     setPreference(readCookiePreference());
@@ -65,8 +73,8 @@ export function ThemeToggle({ tone = 'default', className }: ThemeToggleProps) {
     if (!isNext && !isPrev) { return; }
     event.preventDefault();
     const delta = isNext ? 1 : -1;
-    const nextIndex = (index + delta + OPTIONS.length) % OPTIONS.length;
-    const next = OPTIONS[nextIndex];
+    const nextIndex = (index + delta + options.length) % options.length;
+    const next = options[nextIndex];
     if (!next) { return; }
     select(next.value);
     buttonRefs.current[nextIndex]?.focus();
@@ -92,7 +100,7 @@ export function ThemeToggle({ tone = 'default', className }: ThemeToggleProps) {
         className,
       )}
     >
-      {OPTIONS.map((option, index) => {
+      {options.map((option, index) => {
         const isSelected = option.value === preference;
         const { Icon } = option;
         return (
