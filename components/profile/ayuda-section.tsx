@@ -1,7 +1,8 @@
 'use client';
 
-import { ChevronRight, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
+import { ChevronRight, Cookie, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useState } from 'react';
+import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -65,7 +66,7 @@ export interface AyudaSectionProps {
   memberSince: string | null
 }
 
-type AyudaModal = 'configuracion' | 'faq' | 'privacidad' | 'terminos' | null;
+type AyudaModal = 'configuracion' | 'faq' | 'privacidad' | 'terminos' | 'cookies' | null;
 
 const ROWS = [
   { key: 'configuracion' as const, icon: Settings, label: 'Configuración' },
@@ -74,6 +75,10 @@ const ROWS = [
   // FRESCO-162 — the content already existed in LegalModal (TERMS_SECTIONS),
   // just had no entry point from `/profile`.
   { key: 'terminos' as const, icon: FileText, label: 'Términos de Servicio' },
+  // FRESCO-428 — opens `CookieSettingsDialog` (interactive), not `LegalModal`
+  // (read-only): this row is the app-side "Configurar cookies" surface for
+  // authenticated users, since `SiteFooter` doesn't render inside the app shell.
+  { key: 'cookies' as const, icon: Cookie, label: 'Cookies' },
 ];
 
 /**
@@ -232,6 +237,11 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
         open={openModal === 'privacidad'}
         onOpenChange={open => setOpenModal(open ? 'privacidad' : null)}
         section="privacidad"
+      />
+
+      <CookieSettingsDialog
+        open={openModal === 'cookies'}
+        onOpenChange={open => setOpenModal(open ? 'cookies' : null)}
       />
     </>
   );

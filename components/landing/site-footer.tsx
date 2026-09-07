@@ -3,11 +3,13 @@
 import type { LegalSection } from '@/components/legal/legal-modal';
 import Image from 'next/image';
 import * as React from 'react';
+import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { LegalModal } from '@/components/legal/legal-modal';
 
 const FOOTER_LINKS: { label: string, section: LegalSection }[] = [
   { label: 'Privacidad', section: 'privacidad' },
   { label: 'Términos', section: 'terminos' },
+  { label: 'Política de Cookies', section: 'cookies' },
   { label: 'Contacto', section: 'contacto' },
 ];
 
@@ -15,6 +17,7 @@ const FOOTER_LINKS: { label: string, section: LegalSection }[] = [
 export function SiteFooter() {
   const [open, setOpen] = React.useState(false);
   const [section, setSection] = React.useState<LegalSection>('terminos');
+  const [cookieSettingsOpen, setCookieSettingsOpen] = React.useState(false);
 
   function openSection(value: LegalSection) {
     setSection(value);
@@ -46,6 +49,14 @@ export function SiteFooter() {
                 {label}
               </button>
             ))}
+            <button
+              type="button"
+              data-testid="site_footer_cookie_settings_link"
+              onClick={() => setCookieSettingsOpen(true)}
+              className="inline-flex min-h-[44px] items-center text-caption text-accent-200"
+            >
+              Configurar cookies
+            </button>
           </div>
         </div>
         {/*
@@ -64,6 +75,7 @@ export function SiteFooter() {
       </div>
 
       <LegalModal open={open} onOpenChange={setOpen} section={section} />
+      <CookieSettingsDialog open={cookieSettingsOpen} onOpenChange={setCookieSettingsOpen} />
     </footer>
   );
 }

@@ -2,13 +2,54 @@
 
 import { Dialog } from '@/components/ui/dialog';
 
-export type LegalSection = 'terminos' | 'privacidad' | 'contacto';
+export type LegalSection = 'terminos' | 'privacidad' | 'contacto' | 'cookies';
 
 const SECTION_LABEL: Record<LegalSection, string> = {
   terminos: 'Términos de Servicio',
   privacidad: 'Política de Privacidad',
   contacto: 'Contacto',
+  cookies: 'Política de Cookies',
 };
+
+/**
+ * FRESCO-428 — cookie names/durations confirmed against real code:
+ * `fresco_cookie_consent` (`lib/consent/cookie-consent.ts`), Supabase's
+ * `@supabase/ssr` default naming convention (`sb-<project-ref>-auth-token`,
+ * no override configured in `lib/supabase/client.ts`), and PostHog's own
+ * documented default persistence key (`ph_<project_api_key>_posthog`,
+ * confirmed via Context7 against `/posthog/posthog.com`).
+ */
+interface CookieTableRow {
+  name: string
+  provider: string
+  purpose: string
+  duration: string
+  type: 'Técnica' | 'Analítica'
+}
+
+const COOKIE_TABLE: CookieTableRow[] = [
+  {
+    name: 'fresco_cookie_consent',
+    provider: 'Fresco',
+    purpose: 'Recordar tu decisión sobre cookies',
+    duration: '1 año',
+    type: 'Técnica',
+  },
+  {
+    name: 'sb-<ref>-auth-token',
+    provider: 'Supabase',
+    purpose: 'Mantener tu sesión iniciada',
+    duration: 'Sesión / hasta expirar',
+    type: 'Técnica',
+  },
+  {
+    name: 'ph_<clave>_posthog',
+    provider: 'PostHog',
+    purpose: 'Analítica de uso — solo si aceptas',
+    duration: '1 año',
+    type: 'Analítica',
+  },
+];
 
 /** FRESCO-51: real inbox — `hola.frescoapp@gmail.com` is the working Gmail address Supabase Auth itself sends from (no `@fresco.app` domain exists). Exported for FRESCO-429's subscription-confirmation email, which needs the same real contact address. */
 export const CONTACT_EMAIL = 'hola.frescoapp@gmail.com';
@@ -195,6 +236,36 @@ export function LegalModal({ open, onOpenChange, section }: LegalModalProps) {
             >
               {CONTACT_EMAIL}
             </a>
+          </div>
+        )}
+
+        {section === 'cookies' && (
+          <div data-testid="legal_modal_content_cookies">
+            <p>Estas son las cookies que usa Fresco:</p>
+            <div className="mt-4 overflow-x-auto">
+              <table data-testid="cookie_policy_table" className="w-full text-left text-body-sm">
+                <thead>
+                  <tr className="border-b border-border text-label">
+                    <th className="py-2 pr-3">Nombre</th>
+                    <th className="py-2 pr-3">Proveedor</th>
+                    <th className="py-2 pr-3">Finalidad</th>
+                    <th className="py-2 pr-3">Duración</th>
+                    <th className="py-2">Tipo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {COOKIE_TABLE.map(row => (
+                    <tr key={row.name} className="border-b border-border last:border-0">
+                      <td className="py-2 pr-3 font-mono text-caption">{row.name}</td>
+                      <td className="py-2 pr-3">{row.provider}</td>
+                      <td className="py-2 pr-3">{row.purpose}</td>
+                      <td className="py-2 pr-3">{row.duration}</td>
+                      <td className="py-2">{row.type}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
