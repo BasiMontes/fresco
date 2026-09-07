@@ -1,10 +1,23 @@
 import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
+import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
 import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent, resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
-import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
+import { resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
+
+// FRESCO-429 (TRLGDCU art. 98.7): formats the actual amount Stripe charged —
+// no separate VAT line is invented, since this checkout has no
+// `automatic_tax` configured to compute one.
+function formatChargedAmount(unitAmount: number | null | undefined, currency: string | undefined): string {
+  const amount = (unitAmount ?? 0) / 100;
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: (currency ?? 'eur').toUpperCase() }).format(amount);
+}
+
+function formatRenewalDate(isoTimestamp: string): string {
+  return new Date(isoTimestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 /**
  * POST /api/stripe/webhook — the ONLY writer of `user_profiles.plan` /
@@ -154,6 +167,31 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
         $set: { plan: 'pro' },
       },
     });
+
+    // FRESCO-429 (TRLGDCU art. 98.7): the durable-support subscription
+    // confirmation email. The subscription is already active at this point
+    // (write above already succeeded) — a send failure is logged for
+    // retry/review and never re-thrown, per AC3.
+    try {
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(update.userId);
+      const recipientEmail = userData?.user?.email;
+      if (userError || !recipientEmail) {
+        throw userError ?? new Error('no email on file for this user');
+      }
+
+      const price = subscription.items.data[0]?.price;
+      await sendSubscriptionConfirmationEmail({
+        to: recipientEmail,
+        priceFormatted: formatChargedAmount(price?.unit_amount, price?.currency),
+        // `update.planExpiresAt` is the same trial_end-derived timestamp the
+        // `user_profiles` write above just used — the next real charge date.
+        nextRenewalDateFormatted: formatRenewalDate(update.planExpiresAt),
+        manageSubscriptionUrl: `${resolveAppUrl()}/profile`,
+      });
+    }
+    catch (error) {
+      console.error(`[/api/stripe/webhook] subscription confirmation email failed for user ${update.userId} (subscription ${update.stripeSubscriptionId})`, error);
+    }
   }
 }
 

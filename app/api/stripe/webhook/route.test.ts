@@ -16,6 +16,7 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
+const sendSubscriptionConfirmationEmail = mock(async (_p: unknown) => {});
 
 let supa = fakeSupabase();
 
@@ -26,6 +27,7 @@ void mock.module('@/lib/stripe', () => ({
 }));
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
 void mock.module('@/lib/posthog/server', () => ({ ...realPosthog, captureServerEvent }));
+void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail }));
 
 const { POST } = await import('./route');
 
@@ -56,11 +58,22 @@ function updateFor(table: string): RecordedUpdate | undefined {
   return supa.updates.find(u => u.table === table);
 }
 
+function authWithEmail(email: string | null) {
+  return {
+    admin: {
+      getUserById: mock(async (_id: string) => (
+        email ? { data: { user: { email } }, error: null } : { data: { user: null }, error: new Error('user not found') }
+      )),
+    },
+  };
+}
+
 beforeEach(() => {
   process.env.STRIPE_PRICE_ID_PRO_MONTH = PRICE;
   constructEvent.mockReset();
   subscriptionsRetrieve.mockReset();
   captureServerEvent.mockClear();
+  sendSubscriptionConfirmationEmail.mockReset();
   supa = fakeSupabase();
 });
 
@@ -209,5 +222,73 @@ describe('POST /api/stripe/webhook — failure handling', () => {
 
     expect(res.status).toBe(200);
     expect(supa.updates).toHaveLength(0);
+  });
+});
+
+describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation email', () => {
+  test('sends the confirmation email for a new subscription', async () => {
+    const sub = subscription({ status: 'trialing' });
+    constructEvent.mockReturnValue({
+      id: 'evt_6',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(sub);
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('pro@example.com'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(sendSubscriptionConfirmationEmail).toHaveBeenCalledTimes(1);
+    const call = sendSubscriptionConfirmationEmail.mock.calls[0][0] as Record<string, unknown>;
+    expect(call.to).toBe('pro@example.com');
+    expect(call.priceFormatted).toBeString();
+    expect(call.nextRenewalDateFormatted).toBeString();
+    expect(call.manageSubscriptionUrl).toContain('/profile');
+  });
+
+  test('does not send when the subscription already existed (not a new grant)', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_7',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription());
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: 'sub_1' } } }, authWithEmail('pro@example.com'));
+
+    await POST(req({}));
+
+    expect(sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+  });
+
+  test('logs and still 200s when the send throws — the subscription write already succeeded', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_8',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('pro@example.com'));
+    sendSubscriptionConfirmationEmail.mockImplementation(async () => { throw new Error('resend down'); });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'pro' });
+  });
+
+  test('logs and still 200s when the account has no email on file', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_9',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail(null));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
   });
 });

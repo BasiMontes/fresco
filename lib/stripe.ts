@@ -56,6 +56,28 @@ export function resolveWebhookSecret(): string | undefined {
   return process.env.STRIPE_WEBHOOK_SECRET_DEV ?? process.env.STRIPE_WEBHOOK_SECRET;
 }
 
+/**
+ * The web app's own base URL for the current environment — used by
+ * FRESCO-429's subscription-confirmation email to link back to
+ * `/profile` ("manage your subscription"). The webhook has no `NextRequest`
+ * to read an origin from (Stripe calls it server-to-server), so this mirrors
+ * `resolveWebhookSecret()`'s exact `VERCEL_ENV` / `VERCEL_GIT_COMMIT_REF`
+ * branch-detection shape rather than introducing a second pattern. Literal
+ * URLs match `.agents/project.yaml` -> `environments.*.web_url` (all three
+ * are auto-following Vercel Git Branch domains, not expected to change).
+ */
+export function resolveAppUrl(): string {
+  if (process.env.VERCEL_ENV === 'production') {
+    return 'https://fresco-pro.vercel.app';
+  }
+  if (process.env.VERCEL_ENV === 'preview') {
+    return process.env.VERCEL_GIT_COMMIT_REF === 'dev'
+      ? 'https://fresco-dev.vercel.app'
+      : 'https://fresco-pre.vercel.app';
+  }
+  return 'http://localhost:3000';
+}
+
 let cachedStripe: Stripe | undefined;
 
 function getStripe(): Stripe {
