@@ -112,14 +112,14 @@ export default async function ProfilePage() {
       <h2 className="sr-only">Tu cuenta</h2>
       <Card className="mt-6">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div
               aria-hidden="true"
               className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-h5 text-on-brand"
             >
               {initial || <UserIcon className="size-6" />}
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-h5">
                 Hola
                 {nombre ? `, ${nombre}` : ''}
@@ -145,7 +145,7 @@ export default async function ProfilePage() {
                   )}
             </div>
           </div>
-          <Tag variant={getPlanTagVariant(plan)}>{PLAN_LABELS[plan]}</Tag>
+          <Tag variant={getPlanTagVariant(plan)} className="shrink-0 whitespace-nowrap">{PLAN_LABELS[plan]}</Tag>
         </div>
       </Card>
 

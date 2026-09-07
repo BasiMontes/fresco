@@ -64,7 +64,17 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
   }
 
   return (
-    <div data-testid={dataTestId} className="overflow-x-auto">
+    <div
+      data-testid={dataTestId}
+      // FRESCO-451: below `sm` the 7-day table needs a horizontal scroll to
+      // reach Sáb/Dom, with nothing signaling that — a right-edge fade tells
+      // the eye there's more without interactive scroll arrows (this is a
+      // table, not `HorizontalScrollRow`'s card-carousel shape). Reset to
+      // `none` at `sm`+, where the table already fits without scrolling —
+      // an unconditional fade would clip the last column's checkboxes even
+      // when nothing is actually cut off.
+      className="overflow-x-auto [mask-image:linear-gradient(to_right,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_right,black_92%,transparent)] sm:[mask-image:none] sm:[-webkit-mask-image:none]"
+    >
       <table className="w-full min-w-[19rem] border-collapse">
         <thead>
           <tr>

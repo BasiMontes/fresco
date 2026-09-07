@@ -128,130 +128,115 @@ function LoginPageInner() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
-      {/* FRESCO-269: logo and LegalLinks are absolutely positioned around the
-          Card instead of sharing its justify-center flow — their unequal
-          heights (logo ~98px vs. footer ~30px) were shifting the Card's own
-          center off the viewport center by a fixed ~19px. */}
-      <div className="relative">
-        <Image
-          src="/brand/logo-base.svg"
-          alt="Fresco"
-          width={112}
-          height={34}
-          className="absolute bottom-full left-1/2 mb-8 -translate-x-1/2"
-          priority
-        />
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
-        <Card className="p-6 md:p-8">
-          <h1 className="text-h3">Inicia sesión</h1>
-          <p className="mt-1 text-body-sm text-tertiary">
-            Accede a tu cuenta para ver tu menú.
+      <Card className="p-6 md:p-8">
+        <h1 className="text-h3">Inicia sesión</h1>
+        <p className="mt-1 text-body-sm text-tertiary">
+          Accede a tu cuenta para ver tu menú.
+        </p>
+
+        {sessionExpired && (
+          <p data-testid="session_expired_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+            Tu sesión expiró. Inicia sesión de nuevo.
           </p>
+        )}
 
-          {sessionExpired && (
-            <p data-testid="session_expired_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
-              Tu sesión expiró. Inicia sesión de nuevo.
-            </p>
-          )}
+        {passwordReset && (
+          <p data-testid="password_reset_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
+            Tu contraseña se actualizó. Inicia sesión con la nueva.
+          </p>
+        )}
 
-          {passwordReset && (
-            <p data-testid="password_reset_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
-              Tu contraseña se actualizó. Inicia sesión con la nueva.
-            </p>
-          )}
+        {accountDeleted && (
+          <p data-testid="account_deleted_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
+            Tu cuenta se eliminó correctamente. Gracias por haber probado Fresco.
+          </p>
+        )}
 
-          {accountDeleted && (
-            <p data-testid="account_deleted_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
-              Tu cuenta se eliminó correctamente. Gracias por haber probado Fresco.
-            </p>
-          )}
-
-          <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
-            {/* FRESCO-315: real <label for> — the accessible name was carried
+        <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+          {/* FRESCO-315: real <label for> — the accessible name was carried
                 only by aria-label duplicating the placeholder (WCAG 3.3.2 /
                 4.1.2). sr-only keeps the minimalist card design unchanged. */}
-            <label htmlFor="login-email" className="sr-only">Correo electrónico</label>
-            <Input
-              id="login-email"
-              data-testid="email_input"
-              type="email"
-              placeholder="Correo electrónico"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            <label htmlFor="login-password" className="sr-only">Contraseña</label>
-            <Input
-              id="login-password"
-              data-testid="password_input"
-              type="password"
-              placeholder="Contraseña"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-            <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
-              {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
-            </Button>
-          </form>
+          <label htmlFor="login-email" className="sr-only">Correo electrónico</label>
+          <Input
+            id="login-email"
+            data-testid="email_input"
+            type="email"
+            placeholder="Correo electrónico"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+          <label htmlFor="login-password" className="sr-only">Contraseña</label>
+          <Input
+            id="login-password"
+            data-testid="password_input"
+            type="password"
+            placeholder="Contraseña"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+          <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+            {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
+          </Button>
+        </form>
 
-          <p className="mt-3 text-center text-body-sm">
-            <Link href="/forgot-password" data-testid="forgot_password_link" className="text-primary">
-              ¿Olvidaste tu contraseña?
-            </Link>
+        <p className="mt-3 text-center text-body-sm">
+          <Link href="/forgot-password" data-testid="forgot_password_link" className="text-primary">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
+
+        {loginError && (
+          <p data-testid="login_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+            {loginError}
           </p>
+        )}
 
-          {loginError && (
-            <p data-testid="login_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
-              {loginError}
-            </p>
-          )}
-
-          {failedAttempts >= 3 && (
-            <p data-testid="login_repeated_failures_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-tertiary">
-              Varios intentos fallidos seguidos. Si no recuerdas tu contraseña, puedes
-              {' '}
-              <Link href="/forgot-password" className="text-primary">
-                restablecerla
-              </Link>
-              .
-            </p>
-          )}
-
-          {unconfirmedEmail && (
-            <div className="mt-2 text-center">
-              <button
-                type="button"
-                data-testid="resend_confirmation_button"
-                onClick={() => void handleResendConfirmation()}
-                disabled={isResendingConfirmation}
-                className="text-body-sm text-primary underline"
-              >
-                {isResendingConfirmation ? 'Reenviando…' : 'Reenviar email de confirmación'}
-              </button>
-              {resendConfirmationMessage && (
-                <p data-testid="resend_confirmation_message" role="status" aria-live="polite" className="mt-1 text-body-sm text-tertiary">
-                  {resendConfirmationMessage}
-                </p>
-              )}
-            </div>
-          )}
-
-          <p className="mt-4 text-center text-body-sm text-tertiary">
-            ¿No tienes cuenta?
+        {failedAttempts >= 3 && (
+          <p data-testid="login_repeated_failures_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-tertiary">
+            Varios intentos fallidos seguidos. Si no recuerdas tu contraseña, puedes
             {' '}
-            <Link href="/signup" className="text-primary">
-              Crea una
+            <Link href="/forgot-password" className="text-primary">
+              restablecerla
             </Link>
+            .
           </p>
-        </Card>
+        )}
 
-        <div className="absolute inset-x-0 top-full">
-          <LegalLinks />
-        </div>
-      </div>
+        {unconfirmedEmail && (
+          <div className="mt-2 text-center">
+            <button
+              type="button"
+              data-testid="resend_confirmation_button"
+              onClick={() => void handleResendConfirmation()}
+              disabled={isResendingConfirmation}
+              className="text-body-sm text-primary underline"
+            >
+              {isResendingConfirmation ? 'Reenviando…' : 'Reenviar email de confirmación'}
+            </button>
+            {resendConfirmationMessage && (
+              <p data-testid="resend_confirmation_message" role="status" aria-live="polite" className="mt-1 text-body-sm text-tertiary">
+                {resendConfirmationMessage}
+              </p>
+            )}
+          </div>
+        )}
+
+        <p className="mt-4 text-center text-body-sm text-tertiary">
+          ¿No tienes cuenta?
+          {' '}
+          <Link href="/signup" className="text-primary">
+            Crea una
+          </Link>
+        </p>
+      </Card>
+
+      <LegalLinks />
     </div>
   );
 }

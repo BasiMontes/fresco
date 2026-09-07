@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 /**
  * FRESCO-59 — the `recipes` prop is already the food-safety-filtered,
@@ -45,9 +46,9 @@ export function LatestRecipesSection({ recipes, favoriteRecipeIds }: { recipes: 
 
   return (
     <div data-testid="latest_recipes_section">
-      <div className="flex items-center justify-between">
-        <h2 className="text-h3">Últimas recetas añadidas</h2>
-        <Link href="/recipes" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="min-w-0 text-h3">Últimas recetas añadidas</h2>
+        <Link href="/recipes" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'shrink-0')}>
           Ver todas
         </Link>
       </div>
