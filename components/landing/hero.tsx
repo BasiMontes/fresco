@@ -19,6 +19,13 @@ interface HeroPhoto {
  * photo-match rate makes random selection a quality risk (FRESCO-192).
  * Keep the full Unsplash query string on every URL — a truncated `ixid`
  * 404s (FRESCO-192).
+ *
+ * FRESCO-459: photos 4-7 added for the marquee (needs more than 4 so each
+ * column's loop doesn't repeat too fast) — pulled from `recipes.foto_url`
+ * rows already live in the catalogue and manually checked one by one against
+ * their dish name before inclusion (same bar as the original four; several
+ * other random rows were rejected as a mismatch, e.g. a chicken-biryani photo
+ * on a "Pollo al horno" row).
  */
 const HERO_PHOTOS: HeroPhoto[] = [
   {
@@ -36,6 +43,22 @@ const HERO_PHOTOS: HeroPhoto[] = [
   {
     src: 'https://images.unsplash.com/photo-1778104682662-0cc3a777fad3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8NHx8U29wYSUyMGRlJTIwdG9tYXRlJTIweSUyMGFsYmFoYWNhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NjIyOTE2fDA&ixlib=rb-4.1.0&q=80&w=1080',
     alt: 'Sopa de tomate y albahaca',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1572448992068-26624d5cf341?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8OHx8YnVyZ2VyJTIwYmVlZiUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NjAyNTI3MXww&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Hamburguesa de ternera',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1782089543715-13daa38402b7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8Z2FybGljJTIwc2hyaW1wJTIwZnJlc2glMjBoZXJicyUyMGxpZ2h0JTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NzAxNTc2fDA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Gambas al ajillo',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1708782342102-ee13e9ac16f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8N3x8YWxib25kaWdhcyUyMGVuJTIwc2Fsc2ElMjBlc3Bhbm9sYSUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NjA4NjI5NHww&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Albóndigas en salsa española',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1676471755539-d99326272d53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8dGVuZGVybG9pbiUyMHBvcmslMjBjb29rZWQlMjBtZWFsJTIwZm9vZCUyMHBob3RvZ3JhcGh5fGVufDB8Mnx8fDE3ODU3NjA0MzV8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    alt: 'Solomillo de cerdo',
   },
 ];
 
@@ -64,24 +87,68 @@ function HeroPhotoFrame({
 }
 
 /**
- * Editorial, deliberately asymmetric composition of four real dish photos —
+ * Editorial, deliberately asymmetric composition of real dish photos —
  * one anchor column slightly wider, the second column dropped down. Calm,
- * not a collage (DESIGN.md "calm over busy"). Same four images on mobile as
- * a 2×2 grid below the copy.
+ * not a collage (DESIGN.md "calm over busy").
+ *
+ * FRESCO-459: each column is a slow vertical marquee (`fresco-hero-marquee-up`
+ * / `-down` in globals.css) drifting in opposite directions at ambient speed
+ * — approved live by the founder ("me flipa") off a throwaway prototype.
+ * Each column's photo list is doubled (`[...photos, ...photos]`) so the
+ * `translateY(0 -> -50%)` loop is seamless. The `mask-image` gradient on the
+ * outer `overflow-hidden` wrapper fades photos in/out at the top and bottom
+ * edge instead of cutting them off flush — the one change the founder asked
+ * for over the prototype. `-webkit-mask-image` is required for Safari; both
+ * declarations must stay in sync.
  */
+const LEFT_COLUMN_PHOTOS = [HERO_PHOTOS[0], HERO_PHOTOS[1], HERO_PHOTOS[2], HERO_PHOTOS[3]];
+const RIGHT_COLUMN_PHOTOS = [HERO_PHOTOS[4], HERO_PHOTOS[5], HERO_PHOTOS[6], HERO_PHOTOS[7]];
+
+const EDGE_FADE_MASK = 'linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)';
+
+function HeroMarqueeColumn({
+  photos,
+  animationClassName,
+  widthClassName,
+  priority = false,
+}: {
+  photos: HeroPhoto[]
+  animationClassName: string
+  widthClassName: string
+  priority?: boolean
+}) {
+  const strip = [...photos, ...photos];
+
+  return (
+    <div
+      className={`overflow-hidden ${widthClassName}`}
+      style={{ maskImage: EDGE_FADE_MASK, WebkitMaskImage: EDGE_FADE_MASK }}
+    >
+      <div className={`flex flex-col gap-3 md:gap-4 ${animationClassName}`}>
+        {strip.map((photo, i) => (
+          <HeroPhotoFrame key={i} photo={photo} priority={priority && i === 0} className="aspect-[4/5] shrink-0" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HeroPhotoComposition() {
   return (
-    <div className="mt-8 flex gap-3 md:mt-0 md:gap-4">
-      <div className="flex w-1/2 flex-col gap-3 md:w-[54%] md:gap-4">
-        {/* Anchor column. The top tile is the composition's likely LCP element
-            (the hero h1 aside) — only it is eager; the rest lazy-load. */}
-        <HeroPhotoFrame photo={HERO_PHOTOS[0]} priority className="aspect-[4/5]" />
-        <HeroPhotoFrame photo={HERO_PHOTOS[1]} className="aspect-[4/5] md:aspect-[5/4]" />
-      </div>
-      <div className="flex w-1/2 flex-col gap-3 md:w-[46%] md:gap-4 md:pt-12">
-        <HeroPhotoFrame photo={HERO_PHOTOS[2]} className="aspect-[4/5]" />
-        <HeroPhotoFrame photo={HERO_PHOTOS[3]} className="aspect-[4/5] md:aspect-square" />
-      </div>
+    <div className="mt-8 flex h-[520px] gap-3 md:mt-0 md:gap-4">
+      {/* Anchor column. The top tile is the composition's likely LCP element
+          (the hero h1 aside) — only it is eager; the rest lazy-load. */}
+      <HeroMarqueeColumn
+        photos={LEFT_COLUMN_PHOTOS}
+        animationClassName="hero-marquee-col-a"
+        widthClassName="w-1/2 md:w-[54%]"
+        priority
+      />
+      <HeroMarqueeColumn
+        photos={RIGHT_COLUMN_PHOTOS}
+        animationClassName="hero-marquee-col-b"
+        widthClassName="w-1/2 md:w-[46%] md:pt-12"
+      />
     </div>
   );
 }

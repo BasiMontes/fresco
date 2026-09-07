@@ -1068,6 +1068,47 @@
 }
 
 /*
+ * Hero photo marquee (FRESCO-459, epic FRESCO-436 tarjeta 9 follow-up).
+ * `components/landing/hero.tsx`'s `HeroPhotoComposition` drifts its two photo
+ * columns vertically, opposite directions, at ambient (not interaction)
+ * speed — `linear`, not `--ease-smooth-out`, since this is a constant-speed
+ * loop, not a discrete enter/exit transition. Durations are local to this
+ * one component, not promoted to `--duration-*` (that ramp tops out at
+ * `--duration-very-slow` / 500ms for micro-interactions; a 30s+ ambient loop
+ * is a different motion category with a single call site).
+ *
+ * Gated by `prefers-reduced-motion: no-preference` so the animation rule does
+ * not exist at all under reduced motion (columns render as a static stack,
+ * same convention as `fresco-list-enter` / `fresco-insight-enter` above) —
+ * belt-and-braces with the global `prefers-reduced-motion: reduce` guard
+ * further down, which would otherwise also just collapse it to ~0.01ms.
+ */
+@keyframes fresco-hero-marquee-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+@keyframes fresco-hero-marquee-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-marquee-col-a {
+    animation: fresco-hero-marquee-up 34s linear infinite;
+  }
+  .hero-marquee-col-b {
+    animation: fresco-hero-marquee-down 40s linear infinite;
+  }
+}
+
+/*
  * Reduced-motion global guard (FRESCO-249, WCAG 2.3.3 / 2.2.2) — the
  * transversal counterpart to every animation this epic (and the rest of the
  * app) introduces. The per-component `@media (prefers-reduced-motion: reduce)`
