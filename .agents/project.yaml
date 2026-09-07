@@ -34,6 +34,24 @@ issue_tracker:
 
 testing:
   default_env: local # fill per project — Default working environment — must match a key under `environments:` (e.g. staging)
+  # Identity used by ANY automation that drives the running app as a user:
+  # live-UI validation, smoke checks, authenticated HTTP probes.
+  # Skills read VARIABLE NAMES from here and resolve the values from `.env` at
+  # runtime — never put a credential value in this file (it is committed).
+  # FAIL-CLOSED: if `email_var` / `password_var` are null, /sprint-development
+  # STOPS before any live-UI run instead of improvising a login.
+  # Contract + prohibitions: .agents/skills/sprint-development/references/live-ui-identity.md
+  automation_identity:
+    email_var: DEV_USER_EMAIL # dedicated dev-env test account (hola.frescoapp+dev-user@gmail.com row) — Rule #1
+    password_var: DEV_USER_PASSWORD
+    scope: dedicated-non-production-account
+    per_env:
+      staging:
+        email_var: PRE_USER_EMAIL
+        password_var: PRE_USER_PASSWORD
+      production:
+        email_var: PRO_USER_EMAIL
+        password_var: PRO_USER_PASSWORD
 
 # Git workflow for THIS project — the SOURCE OF TRUTH read by the git-flow-master skill
 # before any git/gh operation. Ships `null` (template): on the first git intent git-flow-master
@@ -102,6 +120,40 @@ git_strategy:
     setup_version: 4 # v4 2026-08-30 (FRESCO-314): squash-only enforced on GitHub, docs_changes policy added, hotfix runbook written
     created: 2026-07-24 # YYYY-MM-DD — first commit of this repo (6271533); the git_strategy block has existed since project bootstrap
     updated: 2026-08-29 # downgraded enterprise (three-tier) -> solo-main per re-audit finding 08 (declared strategy didn't match actual direct-push-heavy, single-maintainer practice)
+    policy_verified: 2026-09-07 # stamped by `bun run git:policy verify --stamp`
+    policy_source: verified # verified | accepted | declared
+    # Did anyone actually CHOOSE this strategy, or is it just the shipped default?
+    # CHOSEN — see the `description` above: re-audited 2026-08-29 (finding 08) against
+    # real git-log history, not the shipped solo-main default left untouched.
+    strategy_source: chosen # inherited | chosen
+
+decision_authority:
+  product: escalate # escalate | decide — human PO (Basi) in the loop. See decision-protocol.md §5.1.
+
+# Scheduled / unattended delivery runs. Read by the `autonomous-delivery` skill at
+# Phase 0. Master switch off by default — not adopted yet.
+autonomous_delivery:
+  enabled: false
+  modes: [story, bug, discovery]
+  caps:
+    story: 1
+    bug: 3
+    discovery: 0
+    discovery_definitions: 2
+  lock_staleness_minutes: 90
+  automation_gh_account: null # TODO: fill if autonomous_delivery is ever enabled — gh identity asserted before every push and merge.
+  migrations: confirm # confirm | autonomous | unrestricted
+  isolation: worktree
+  context_budget:
+    handoff_checkpoint: every-phase
+    stop_at_remaining_pct: 20
+  report_channel: null
+  escalation_channel: null
+  escalation_log: .session/autonomous-delivery/escalation-log.md
+
+# Files `bun run up` must keep as THIS project's own, beyond the built-in watchlist.
+updater:
+  protected_paths: []
 
 # Variables declared above that are consumed OUTSIDE the {{TEMPLATE}} system
 # (env vars in scripts/, shell `yq` reads embedded in skill docs, etc.).
@@ -111,7 +163,25 @@ git_strategy:
 # EXTERNAL_CONSUMER_UNDOCUMENTED so the allowlist cannot rot silently.
 external_consumers:
   - default_env # consumed implicitly by the AI variable resolver (sets active env for {{WEB_URL}} / {{API_URL}} / ...) AND by scripts/agents-setup.ts via process.env.DEFAULT_ENV in --non-interactive mode
-  - design_md_path # read by `yq '.design_md_path'` inside bash code fences of .claude/skills/{design-system/references/getdesign-matcher.md, project-bootstrap/references/frontend-setup.md}
+  - design_md_path # read by `yq '.design_md_path'` inside bash code fences of .agents/skills/{design-system/references/getdesign-matcher.md, project-bootstrap/references/frontend-setup.md}
+  - automation_identity # read DIRECTLY (not as a {{VAR}}) by .agents/skills/sprint-development/references/live-ui-identity.md + live-ui-validation.md — its leaves hold env-var NAMES, resolved from .env at runtime
+  - decision_authority # key of the structured `decision_authority:` block, read directly by .agents/skills/agentic-dev-core/references/decision-protocol.md §5.1 — never resolved through {{VAR}} templating
+  - product # key of the structured `decision_authority:` block, read directly by .agents/skills/agentic-dev-core/references/decision-protocol.md §5.1 — never resolved through {{VAR}} templating
+  - autonomous_delivery # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - enabled # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - modes # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - caps # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - lock_staleness_minutes # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - automation_gh_account # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md Phase 0b step 3 (push-identity assertion) — never resolved through {{VAR}} templating
+  - migrations # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - isolation # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - context_budget # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - report_channel # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - escalation_channel # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md Autonomy §Notifying an escalation — never resolved through {{VAR}} templating
+  - escalation_log # key of the structured `autonomous_delivery:` block, read directly by .agents/skills/autonomous-delivery/SKILL.md §Configuration — never resolved through {{VAR}} templating
+  - updater # key of the structured `updater:` block, read directly by cli/update-boilerplate.ts (resolveProtectedWatchlist) at the start of every `bun run up`, never resolved through {{VAR}} templating
+  - protected_paths # key of the structured `updater:` block, read directly by cli/lib/updater-drift.ts (projectProtectedPaths), never resolved through {{VAR}} templating
+  - strategy_source # key of the structured `git_strategy.meta:` block, read directly by .agents/skills/git-flow-master (bootstrap trigger + Strategy Setup persist) — never resolved through {{VAR}} templating
 
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL three keys: web_url, api_url, db_project_ref.

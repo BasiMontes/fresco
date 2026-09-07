@@ -25,10 +25,22 @@
  * ENVIRONMENT SETUP
  * ============================================================================
  *
- * Required environment variables:
- *   ATLASSIAN_URL=https://your-instance.atlassian.net
+ * Required environment variables (credentials — env-only, never mirrored to yaml):
  *   ATLASSIAN_EMAIL=your-email@example.com
  *   ATLASSIAN_API_TOKEN=ATATT3x...
+ *
+ * Instance host resolution (in precedence order — NOTE the inversion vs. the
+ * project key below):
+ *   1. .agents/project.yaml -> issue_tracker.atlassian_url  (source of truth, versioned)
+ *   2. ATLASSIAN_URL env var                                (transitional fallback —
+ *      NOT a .env variable anymore; a hit means a stale copy is loose in the
+ *      environment, which is the failure this resolution order exists to survive)
+ *   3. Neither set -> the script fails with an actionable message.
+ *
+ *   The host is project identity, not a per-developer override, and it is the
+ *   value that goes stale after a site migration. This command OVERWRITES
+ *   `.context/PBI/`, so a stale host corrupts the cache with another site's
+ *   content while reporting success. Rationale: cli/lib/atlassian-instance.ts.
  *
  * Project key resolution (in precedence order):
  *   1. JIRA_PROJECT_KEY env var (override, e.g. JIRA_PROJECT_KEY=ACME bun run jira:sync-issues ...)
@@ -69,9 +81,16 @@
  * ============================================================================
  */
 
+import type { AtlassianUrlSource } from '../cli/lib/atlassian-instance';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
+
 import { parse as parseYaml } from 'yaml';
+import {
+  formatInstanceMismatchWarning,
+  instanceSourceLabel,
+  resolveAtlassianInstance,
+} from '../cli/lib/atlassian-instance';
 
 // ============================================================================
 // CONSTANTS
@@ -366,15 +385,6 @@ function loadRegistry(): Registry {
   return REGISTRY_CACHE;
 }
 
-/**
- * Resolves this workspace's actual Story issue-type name (`work_types.story.jira_issue_type`
- * in `.agents/jira-required.yaml` — e.g. `Historia` on a Spanish-language Jira site), so JQL
- * and type comparisons never hardcode the English literal `Story`.
- */
-function storyIssueTypeName(): string {
-  return loadRegistry().bySlug.get('story')?.jiraIssueType ?? 'Story';
-}
-
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -390,6 +400,14 @@ interface Config {
   apiToken: string
   project: string
   projectKeySource: ProjectKeySource
+  /** Where `baseUrl` came from — reported in the run banner. */
+  instanceSource: AtlassianUrlSource
+  /**
+   * Set when `.agents/project.yaml` and `ATLASSIAN_URL` name different hosts.
+   * The yaml wins, but the divergence is printed on every run: `acli` and the
+   * Atlassian MCP still read the env var directly.
+   */
+  instanceWarning: string | null
   outputDir: string
 }
 
@@ -728,6 +746,87 @@ function readProjectKeyFromYaml(): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
+/** Default when no yaml declares `qa.qa_artifact_label`. */
+const DEFAULT_QA_ARTIFACT_LABEL = 'QA-Artifact';
+
+interface QaArtifactConfig {
+  /** Jira label marking an Epic as a QA-artifact bucket. */
+  label: string
+  /** Epic keys cached under `qa.qa_epics.*.key`; empty until a skill discovers them. */
+  cachedKeys: Set<string>
+}
+
+/** Best-effort read of a yaml file's top-level `qa:` block. `null` when absent/unreadable. */
+function readQaBlock(path: string): Record<string, unknown> | null {
+  if (!existsSync(path)) { return null; }
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(readFileSync(path, 'utf8'));
+  }
+  catch {
+    return null;
+  }
+  const qa = (parsed as Record<string, unknown> | null)?.qa;
+  return qa !== null && typeof qa === 'object' ? qa as Record<string, unknown> : null;
+}
+
+/**
+ * Reads the QA-artifact detection config. Two homes, merged:
+ *   - `.agents/project.yaml` → `qa:` — where the companion QA boilerplate's
+ *     skills cache discovered epic keys (`qa.qa_epics.*.key`), so a project
+ *     pairing both repos is recognized without re-declaring anything here.
+ *   - `.agents/jira-required.yaml` → `qa:` — where THIS repo ships the default
+ *     label (project.yaml is a frozen per-project template on the dev side).
+ *
+ * Falls back to the default label when neither file declares one, so a project
+ * that never edited any yaml still gets the filtering.
+ */
+function readQaArtifactConfig(): QaArtifactConfig {
+  const blocks = [readQaBlock(PROJECT_YAML_PATH), readQaBlock(JIRA_REQUIRED_PATH)];
+
+  let label = DEFAULT_QA_ARTIFACT_LABEL;
+  const cachedKeys = new Set<string>();
+  for (const qa of blocks) {
+    if (!qa) { continue; }
+    const rawLabel = qa.qa_artifact_label;
+    if (label === DEFAULT_QA_ARTIFACT_LABEL && typeof rawLabel === 'string' && rawLabel.trim() !== '') {
+      label = rawLabel.trim();
+    }
+    const epics = qa.qa_epics;
+    if (epics !== null && typeof epics === 'object') {
+      for (const entry of Object.values(epics as Record<string, unknown>)) {
+        if (entry === null || typeof entry !== 'object') { continue; }
+        const key = (entry as Record<string, unknown>).key;
+        if (typeof key === 'string' && key.trim() !== '') { cachedKeys.add(key.trim()); }
+      }
+    }
+  }
+
+  return { label, cachedKeys };
+}
+
+/**
+ * Decides whether an Epic is a QA-artifact bucket rather than a product Epic.
+ *
+ * Three signals, in descending confidence. The label is authoritative. The cached
+ * `qa_epics.*.key` values cover an instance whose Epics predate the label. The
+ * `QA ` name prefix is a last resort, and it reports so the yaml can be
+ * completed — it is the only signal that can misfire, on a product Epic
+ * legitimately named "QA Tooling" or similar.
+ *
+ * Returns null for a product Epic.
+ */
+function classifyQaArtifactEpic(
+  epic: JiraIssue,
+  cfg: QaArtifactConfig,
+): { via: 'label' | 'cached-key' | 'name-prefix' } | null {
+  const labels = epic.fields.labels ?? [];
+  if (labels.includes(cfg.label)) { return { via: 'label' }; }
+  if (cfg.cachedKeys.has(epic.key)) { return { via: 'cached-key' }; }
+  if (epic.fields.summary.startsWith('QA ')) { return { via: 'name-prefix' }; }
+  return null;
+}
+
 /**
  * Resolves the active Jira project key. Precedence:
  *   1. `JIRA_PROJECT_KEY` env var (explicit override).
@@ -765,12 +864,18 @@ function toDisplayUrl(baseUrl: string): string {
 }
 
 function getConfig(): Config {
-  const baseUrl = process.env.ATLASSIAN_URL;
+  // The instance host is resolved from `.agents/project.yaml` FIRST and only
+  // falls back to `ATLASSIAN_URL`. This command overwrites `.context/PBI/` with
+  // whatever the host returns, so a stale env value corrupts the local cache
+  // with another site's content while reporting success. See the rationale in
+  // `cli/lib/atlassian-instance.ts`.
+  const instance = resolveAtlassianInstance();
+
   const email = process.env.ATLASSIAN_EMAIL;
   const apiToken = process.env.ATLASSIAN_API_TOKEN;
 
+  // Credentials stay env-only — never mirrored into the versioned yaml.
   const missing: string[] = [];
-  if (!baseUrl) { missing.push('ATLASSIAN_URL'); }
   if (!email) { missing.push('ATLASSIAN_EMAIL'); }
   if (!apiToken) { missing.push('ATLASSIAN_API_TOKEN'); }
 
@@ -780,29 +885,35 @@ function getConfig(): Config {
 
   const projectKey = resolveProjectKey();
 
-  const cleanBaseUrl = baseUrl!.replace(/\/$/, ''); // Remove trailing slash
   return {
-    baseUrl: cleanBaseUrl,
-    displayUrl: toDisplayUrl(cleanBaseUrl),
+    baseUrl: instance.baseUrl,
+    displayUrl: toDisplayUrl(instance.baseUrl),
     email: email!,
     apiToken: apiToken!,
     project: projectKey.key,
     projectKeySource: projectKey.source,
+    instanceSource: instance.source,
+    instanceWarning: formatInstanceMismatchWarning(instance),
     outputDir: process.env.JIRA_SYNC_OUTPUT || DEFAULT_OUTPUT_DIR,
   };
 }
 
 /**
- * Prints "Using project=<KEY> (source: ...)" once per command run so the user
- * never has to guess which project the script is hitting. Skipped under
- * `--json` so machine-readable output stays clean.
+ * Prints "Using instance=<host> / project=<KEY> (source: ...)" once per command
+ * run so the user never has to guess which site or project the script is
+ * hitting. Skipped under `--json` so machine-readable output stays clean.
+ *
+ * A yaml/env instance divergence is ALWAYS printed as a warning, `--json` or
+ * not, because it means the rest of the toolchain is still misaimed.
  */
 function logProjectBanner(config: Config, options: { json?: boolean } = {}): void {
+  if (config.instanceWarning) { log.warn(config.instanceWarning); }
   if (options.json) { return; }
-  const sourceLabel = config.projectKeySource === 'env'
+  const keySourceLabel = config.projectKeySource === 'env'
     ? 'JIRA_PROJECT_KEY env override'
     : '.agents/project.yaml';
-  log.info(`Using project=${config.project} (source: ${sourceLabel})`);
+  log.info(`Using instance=${config.baseUrl} (source: ${instanceSourceLabel(config.instanceSource)})`);
+  log.info(`Using project=${config.project} (source: ${keySourceLabel})`);
 }
 
 // ============================================================================
@@ -958,7 +1069,7 @@ function generateTraceabilitySection(
   const lines: string[] = [];
 
   // Define preferred order for issue types
-  const typeOrder = ['Test', 'Test Execution', 'Defect', 'Bug', storyIssueTypeName(), 'Improvement', 'Task', 'Epic'];
+  const typeOrder = ['Test', 'Test Execution', 'Defect', 'Bug', 'Story', 'Improvement', 'Task', 'Epic'];
 
   // Sort types by preferred order, then alphabetically for unknown types
   const sortedTypes = Object.keys(grouped).sort((a, b) => {
@@ -1050,6 +1161,23 @@ function processNode(node: AdfNode): string {
       }
       return rows.join('\n');
     }
+
+    case 'taskList':
+      return (
+        node.content
+          ?.map((item) => {
+            const state = String(item.attrs?.state || 'TODO');
+            const box = state === 'DONE' ? '[x]' : '[ ]';
+            const inlineNodes = (item.content || []).filter(n => n.type !== 'taskList');
+            const nestedTaskList = (item.content || []).find(n => n.type === 'taskList');
+            const text = processInlineContent(inlineNodes);
+            const nested = nestedTaskList
+              ? `\n  ${processNode(nestedTaskList).split('\n').join('\n  ')}`
+              : '';
+            return `- ${box} ${text}${nested}`;
+          })
+          .join('\n') || ''
+      );
 
     case 'mediaSingle':
     case 'mediaGroup':
@@ -1903,35 +2031,6 @@ function generateXrayArtifactMarkdown(
   return lines.join('\n');
 }
 
-/** One epic's `## [KEY]...` section (heading + status line + story bullets), no trailing blank line. */
-function buildEpicTreeBlock(
-  epic: JiraIssue,
-  stories: JiraIssue[],
-  config: Config,
-): string {
-  const totalPoints = stories.reduce((sum, story) => {
-    const points = story.fields[CUSTOM_FIELDS.storyPoints];
-    return sum + (typeof points === 'number' ? points : 0);
-  }, 0);
-
-  const lines: string[] = [
-    `## [${epic.key}](${config.displayUrl}/browse/${epic.key}) - ${epic.fields.summary}`,
-    '',
-    `**Status:** ${epic.fields.status?.name} | **Stories:** ${stories.length} | **Points:** ${totalPoints}`,
-    '',
-  ];
-
-  if (stories.length > 0) {
-    for (const story of stories) {
-      const points = story.fields[CUSTOM_FIELDS.storyPoints] as number | undefined;
-      const status = String(story.fields.status?.name || 'Unknown');
-      lines.push(`- [${story.key}](${config.displayUrl}/browse/${story.key}) ${String(story.fields.summary)} _(${points ?? '-'} pts, ${status})_`);
-    }
-  }
-
-  return lines.join('\n');
-}
-
 function generateEpicTreeMarkdown(
   epics: Array<{ epic: JiraIssue, stories: JiraIssue[] }>,
   config: Config,
@@ -1946,53 +2045,26 @@ function generateEpicTreeMarkdown(
   ];
 
   for (const { epic, stories } of epics) {
-    lines.push(buildEpicTreeBlock(epic, stories, config), '');
-  }
+    const totalPoints = stories.reduce((sum, story) => {
+      const points = story.fields[CUSTOM_FIELDS.storyPoints];
+      return sum + (typeof points === 'number' ? points : 0);
+    }, 0);
 
-  lines.push('---', '', '_Synced from Jira by sync-jira-issues_', '');
+    lines.push(
+      `## [${epic.key}](${config.displayUrl}/browse/${epic.key}) - ${epic.fields.summary}`,
+      '',
+      `**Status:** ${epic.fields.status?.name} | **Stories:** ${stories.length} | **Points:** ${totalPoints}`,
+      '',
+    );
 
-  return lines.join('\n');
-}
-
-/**
- * Upserts one or more epics' blocks into an already-materialized `epic-tree.md`
- * instead of regenerating the whole file — a scoped `pull --epic <KEY>` run only
- * knows about the ONE epic it fetched, so overwriting wholesale (the previous
- * behavior) silently dropped every other epic's rows. Preserves every existing
- * block this run didn't touch; sorts by the numeric suffix of the key so a
- * newly-appended epic lands in the same ascending order as a full regenerate.
- */
-function upsertEpicTreeMarkdown(
-  existingContent: string,
-  epicsToUpsert: Array<{ epic: JiraIssue, stories: JiraIssue[] }>,
-  config: Config,
-): string {
-  const blockRegex = /## \[([A-Z][A-Z0-9]*-\d+)\][\s\S]*?(?=\n## \[|\n---\n\n_Synced from Jira|$)/g;
-  const blocksByKey = new Map<string, string>();
-
-  for (const match of existingContent.matchAll(blockRegex)) {
-    blocksByKey.set(match[1], match[0].trimEnd());
-  }
-
-  for (const { epic, stories } of epicsToUpsert) {
-    blocksByKey.set(epic.key, buildEpicTreeBlock(epic, stories, config));
-  }
-
-  const orderedKeys = [...blocksByKey.keys()].sort(
-    (a, b) => Number(a.split('-').pop()) - Number(b.split('-').pop()),
-  );
-
-  const lines: string[] = [
-    '# Epic Tree',
-    '',
-    `_Project: ${config.project}_`,
-    '',
-    '---',
-    '',
-  ];
-
-  for (const key of orderedKeys) {
-    lines.push(blocksByKey.get(key)!, '');
+    if (stories.length > 0) {
+      for (const story of stories) {
+        const points = story.fields[CUSTOM_FIELDS.storyPoints] as number | undefined;
+        const status = String(story.fields.status?.name || 'Unknown');
+        lines.push(`- [${story.key}](${config.displayUrl}/browse/${story.key}) ${String(story.fields.summary)} _(${points ?? '-'} pts, ${status})_`);
+      }
+      lines.push('');
+    }
   }
 
   lines.push('---', '', '_Synced from Jira by sync-jira-issues_', '');
@@ -2042,15 +2114,51 @@ function loadLinkTypeNames(slugs: string[]): Set<string> {
   return names;
 }
 
-/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution) and Defect buckets. */
+// ---------------------------------------------------------------------------
+// Artifact-ladder altitudes (title-prefix guard)
+//
+// The QA artifact ladder puts ATP / ATR / ATS at Story altitude; FTP (feature),
+// STP / STR (sprint) and MTP (master) live higher and must NEVER materialize as
+// a Story's acceptance-test-plan.md / acceptance-test-results.md just because
+// they are linked to it. Titles with no recognized prefix keep the pre-ladder
+// behavior (any linked Plan / Execution counts) for backward compatibility.
+// ---------------------------------------------------------------------------
+
+/** Story-altitude Test Set title (`ATS: {US_ID}: ...`). */
+const STORY_ATS_PREFIX = /^ATS:/i;
+/**
+ * Higher-altitude ladder artifacts a Story link must skip for its ATP/ATR.
+ * `FTR` is a legacy guard: it was retired from the ladder (its results roll up
+ * via ATRs + the sprint STR), but the prefix skip stays so pulls of
+ * pre-migration data never mistake an old FTR for a Story-altitude ATR.
+ */
+const HIGHER_ALTITUDE_PREFIX = /^(FTP|FTR|STP|STR|MTP):/i;
+
+/** Human label for a skipped higher-altitude artifact's info line. */
+function higherAltitudeLabel(summary: string): string {
+  const m = HIGHER_ALTITUDE_PREFIX.exec(summary.trim());
+  const p = (m?.[1] ?? '').toUpperCase();
+  if (p === 'STP' || p === 'STR') { return 'sprint-altitude'; }
+  if (p === 'FTP' || p === 'FTR') { return 'feature-altitude'; }
+  return 'master-plan-altitude';
+}
+
+/** Splits an issue's links into ATP (Test Plan), ATR (Test / Re-Test Execution), ATS (Test Set), Test and Defect buckets. */
 function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
   atp: CoverageLink[]
   atr: CoverageLink[]
+  sets: CoverageLink[]
+  tests: CoverageLink[]
   defects: Array<CoverageLink & { linkOk: boolean }>
+  /** Higher-altitude Plans/Executions skipped by the title guard (info-lined, never materialized). */
+  skipped: Array<CoverageLink & { role: 'ATP' | 'ATR' }>
 } {
   const atp: CoverageLink[] = [];
   const atr: CoverageLink[] = [];
+  const sets: CoverageLink[] = [];
+  const tests: CoverageLink[] = [];
   const defects: Array<CoverageLink & { linkOk: boolean }> = [];
+  const skipped: Array<CoverageLink & { role: 'ATP' | 'ATR' }> = [];
   const acceptedDefectNames = loadLinkTypeNames(reg.bySlug.get('defect')?.defectLinkTypes ?? []);
 
   for (const link of issue.fields.issuelinks ?? []) {
@@ -2064,11 +2172,82 @@ function classifyCoverageLinks(issue: JiraIssue, reg: Registry): {
       summary: other.fields.summary,
       linkTypeName: link.type.name,
     };
-    if (entry.role === 'atp') { atp.push(cl); }
-    else if (entry.role === 'atr') { atr.push(cl); }
+    if (entry.role === 'atp') {
+      if (HIGHER_ALTITUDE_PREFIX.test(cl.summary.trim())) { skipped.push({ ...cl, role: 'ATP' }); }
+      else { atp.push(cl); } // `ATP:*` or unprefixed (backward compat)
+    }
+    else if (entry.role === 'atr') {
+      if (HIGHER_ALTITUDE_PREFIX.test(cl.summary.trim())) { skipped.push({ ...cl, role: 'ATR' }); }
+      else { atr.push(cl); } // `ATR:*` / `ReTest:*` or unprefixed (backward compat)
+    }
+    else if (entry.slug === 'test_set') {
+      // Only the Story's own `ATS:*` Set is bucketed. Feature-level `TS:*`
+      // Sets stay ignored, exactly as every Test Set was before.
+      if (STORY_ATS_PREFIX.test(cl.summary.trim())) { sets.push(cl); }
+    }
+    else if (entry.slug === 'test_case') { tests.push(cl); }
     else if (entry.slug === 'defect') { defects.push({ ...cl, linkOk: acceptedDefectNames.has(link.type.name) }); }
   }
-  return { atp, atr, defects };
+  return { atp, atr, sets, tests, defects, skipped };
+}
+
+/** Keys of the coverable issues this issue links to, sorted for a stable report. */
+function coverableLinkKeys(issue: JiraIssue, reg: Registry): string[] {
+  const keys = new Set<string>();
+  for (const link of issue.fields.issuelinks ?? []) {
+    const other = link.inwardIssue ?? link.outwardIssue;
+    if (!other) { continue; }
+    const e = reg.byJiraType.get(other.fields.issuetype?.name ?? '');
+    if (e?.coverable === true) { keys.add(other.key); }
+  }
+  return [...keys].sort();
+}
+
+/** True when the issue has an issue-link to a coverable work type. */
+function hasCoverableLink(issue: JiraIssue, reg: Registry): boolean {
+  return coverableLinkKeys(issue, reg).length > 0;
+}
+
+/**
+ * Materializes one directly linked Test under the coverable's `test-cases/`.
+ * A Test already placed for this coverable is not re-placed.
+ *
+ * LIMITATION (deliberate): Tests are resolved from Jira issue links ONLY.
+ * Xray-internal membership (TC ∈ Test Set / TC ∈ Test Plan) is GraphQL-only
+ * and this boilerplate carries no Xray client, so a Test whose only home is
+ * Set/Plan membership is not discoverable here and stays an orphan for
+ * `syncOrphanTests` to surface. The companion QA boilerplate resolves those
+ * memberships; on the dev side, re-linking the Test in Jira is the fix.
+ */
+async function placeLinkedTest(
+  config: Config,
+  coverable: JiraIssue,
+  tcDir: string,
+  testKey: string,
+  options: SyncOptions,
+  result: SyncResult,
+  reg: Registry,
+  placed: Set<string>,
+): Promise<void> {
+  if (placed.has(testKey) || testKey === coverable.key) { return; }
+  placed.add(testKey);
+  if (!options.dryRun) { ensureDir(tcDir); }
+  const tIssue = await fetchIssue(config, testKey, TEST_FIELDS);
+  const body = generateTestMarkdown(tIssue, config);
+  const prefix = FOLDER_PREFIX.test_case ?? 'TEST';
+  bumpFile(writeIndexFile(join(tcDir, `${prefix}-${tIssue.key}-${generateSlug(tIssue.fields.summary)}.md`), body, options.dryRun).status, result);
+  result.synced.tests++;
+
+  // A Test may cover several issues; it is then written under each of them.
+  // Duplicating is safe here — every copy is generated from the same sync of
+  // the same Jira issue, so they cannot drift — but broad coverage is usually
+  // a sign the Test should be split, so it is worth naming. Reported only
+  // while processing the lowest-keyed coverer, otherwise the same Test would
+  // announce itself once per issue it covers.
+  const covered = coverableLinkKeys(tIssue, reg);
+  if (covered.length > 1 && coverable.key === covered[0]) {
+    result.warnings.push(`INFO: ${tIssue.key} covers ${covered.length} issues (${covered.join(', ')}) — materialized under each`);
+  }
 }
 
 /** Provenance footer appended to an ATP/ATR file synced from a linked Xray artifact. */
@@ -2089,10 +2268,18 @@ async function discoverCoverage(
   folder: string,
   options: SyncOptions,
   result: SyncResult,
-  coveredSlug?: string,
 ): Promise<void> {
   const reg = loadRegistry();
-  const { atp, atr, defects } = classifyCoverageLinks(issue, reg);
+  const { atp, atr, tests, defects, skipped } = classifyCoverageLinks(issue, reg);
+
+  // --- Altitude guard: higher-ladder artifacts linked to this issue are named, never materialized ---
+  for (const s of skipped) {
+    result.warnings.push(`INFO: ${issue.key}: skipping ${s.summary} (${s.key}) — ${higherAltitudeLabel(s.summary)} artifact, not this Story's ${s.role}`);
+  }
+
+  // NOTE: `sets` (linked `ATS:*` Test Sets) are recognized but NOT expanded:
+  // resolving a Set's member Tests needs the Xray GraphQL API, which this
+  // boilerplate deliberately does not integrate. See `placeLinkedTest`.
 
   // --- ATP: Xray Test Plan description overrides the custom-field copy ---
   if (atp.length > 0) {
@@ -2132,14 +2319,21 @@ async function discoverCoverage(
     }
   }
 
+  // --- Tests directly linked to this issue (the anti-duplication rule) ---
+  // A Test that covers this issue belongs to it. Materializing it here is what
+  // lets the orphan-tests sweep shrink to genuinely orphan Tests instead of
+  // holding a second copy of every Test already reachable from a Story.
+  const tcDir = join(folder, 'test-cases');
+  const placedTests = new Set<string>();
+  for (const t of tests) {
+    if (t.linkTypeName !== 'Test') {
+      result.warnings.push(`${issue.key} ↔ ${t.key} (Test) linked via '${t.linkTypeName}' (expected 'is tested by') — fix Jira link`);
+    }
+    await placeLinkedTest(config, issue, tcDir, t.key, options, result, reg, placedTests);
+  }
+
   // --- Defects: nested under defects/ (skipped with --no-defects) ---
-  // A4-L20 (FRESCO-398): only nest linked Defects under a Story/Bug/Improvement/
-  // Tech Story/Tech Debt — i.e. a "this feature regressed" relationship. A
-  // Defect that links ANOTHER Defect (`Relates`, near-always bidirectional) is
-  // a see-also, not containment: nesting a full defect body under each side
-  // duplicates the folder and recurses. That link already shows in the
-  // "Related Issues" section of the defect's own `defect.md`.
-  if (defects.length > 0 && !options.noDefects && coveredSlug !== 'defect') {
+  if (defects.length > 0 && !options.noDefects) {
     const defDir = join(folder, 'defects');
     if (!options.dryRun) { ensureDir(defDir); }
     for (const d of defects) {
@@ -2227,7 +2421,7 @@ async function syncEpic(
   // Fetch stories for this epic (only Stories, not Bugs/Tests/etc.)
   const stories = await searchIssues(
     config,
-    `project = ${config.project} AND parent = ${epicKey} AND issuetype = "${storyIssueTypeName()}"${sprintAndClause(options)} ORDER BY key ASC`,
+    `project = ${config.project} AND parent = ${epicKey} AND issuetype = Story${sprintAndClause(options)} ORDER BY key ASC`,
     STORY_FIELDS,
   );
 
@@ -2328,6 +2522,45 @@ async function syncSingleStory(
   await syncStory(config, story, epic, epicFolder, options, result);
 }
 
+/** Directory holding the index of QA-artifact Epics, sibling of `epics/`. */
+const QA_ARTIFACTS_DIR = 'qa-artifacts';
+
+/**
+ * Writes `qa-artifacts/_index.md` — the register of Epics that are QA buckets.
+ *
+ * No per-epic folder is created on purpose: their content is already distributed
+ * (Tests under their covering Story, defects nested, ATP/ATR under their coverable
+ * parent), so a folder per bucket would only hold an `epic.md` with no children.
+ * What is worth keeping is the mapping from bucket to key, which is what a skill
+ * needs to parent a new artifact.
+ */
+function writeQaArtifactsIndex(
+  epics: Array<{ epic: JiraIssue, via: string }>,
+  config: Config,
+  dryRun: boolean,
+  result: SyncResult,
+): void {
+  const dir = join(config.outputDir, QA_ARTIFACTS_DIR);
+  if (!dryRun) { ensureDir(dir); }
+
+  const lines = [
+    '# QA-Artifact Epics',
+    '',
+    '> Epics that hold QA artifacts instead of product scope. Kept out of `epics/`',
+    '> so the product tree stays product-only. Their content is not stored here —',
+    '> it lives under whatever each artifact covers.',
+    '',
+    '| Key | Name | Detected via |',
+    '| --- | ---- | ------------ |',
+  ];
+  for (const { epic, via } of epics) {
+    lines.push(`| [${epic.key}](${config.displayUrl}/browse/${epic.key}) | ${epic.fields.summary} | ${via} |`);
+  }
+  lines.push('', '---', '_Synced from Jira by sync-jira-issues_', '');
+
+  bumpFile(writeIndexFile(join(dir, '_index.md'), lines.join('\n'), dryRun).status, result);
+}
+
 async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult> {
   const startTime = Date.now();
 
@@ -2368,20 +2601,47 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
         log.info('Fetching epics from Jira...');
       }
 
-      const epics = await searchIssues(
+      const allEpics = await searchIssues(
         config,
         `project = ${config.project} AND issuetype = Epic ORDER BY key ASC`,
         EPIC_FIELDS,
       );
 
+      // Split product Epics from QA-artifact buckets. Without this, `QA Test
+      // Repository` and its siblings land in `epics/` beside real product Epics,
+      // and syncEpic then queries them for Stories and finds none — a folder that
+      // looks like a product module but is a process bucket.
+      const qaCfg = readQaArtifactConfig();
+      const qaArtifactEpics: Array<{ epic: JiraIssue, via: string }> = [];
+      const epics: JiraIssue[] = [];
+      for (const epic of allEpics) {
+        const verdict = classifyQaArtifactEpic(epic, qaCfg);
+        if (verdict) { qaArtifactEpics.push({ epic, via: verdict.via }); }
+        else { epics.push(epic); }
+      }
+
+      if (qaArtifactEpics.length > 0) {
+        writeQaArtifactsIndex(qaArtifactEpics, config, options.dryRun, result);
+        // The name-prefix signal is the guessy one — surface it so the label (or the
+        // cached key) can be set and the guess stops being load-bearing.
+        const guessed = qaArtifactEpics.filter(e => e.via === 'name-prefix').map(e => e.epic.key);
+        if (guessed.length > 0) {
+          result.warnings.push(
+            `${guessed.length} Epic(s) treated as QA artifacts by name prefix only: ${guessed.join(', ')} — `
+            + `add the \`${qaCfg.label}\` label in Jira, or cache their keys under \`qa.qa_epics.*.key\` in .agents/project.yaml`,
+          );
+        }
+      }
+
       if (!options.json) {
-        log.success(`Found ${epics.length} epics`);
+        const qaNote = qaArtifactEpics.length > 0 ? ` (+${qaArtifactEpics.length} QA-artifact, indexed separately)` : '';
+        log.success(`Found ${epics.length} product epics${qaNote}`);
       }
 
       // Also find orphan stories (stories without parent epic)
       const orphanStories = await searchIssues(
         config,
-        `project = ${config.project} AND issuetype = "${storyIssueTypeName()}" AND parent is EMPTY${sprintAndClause(options)} ORDER BY key ASC`,
+        `project = ${config.project} AND issuetype = Story AND parent is EMPTY${sprintAndClause(options)} ORDER BY key ASC`,
         STORY_FIELDS,
       );
 
@@ -2400,16 +2660,10 @@ async function syncAll(config: Config, options: SyncOptions): Promise<SyncResult
       }
     }
 
-    // Generate/upsert epic-tree.md. A scoped `--epic <KEY>` run only has data
-    // for that one epic — upsert its block into the existing file instead of
-    // regenerating from scratch, or every other epic's rows get dropped.
+    // Generate epic-tree.md if we synced multiple epics
     if (allEpicData.length > 0 && !options.storyKey) {
+      const treeContent = generateEpicTreeMarkdown(allEpicData, config);
       const treePath = join(config.outputDir, 'epic-tree.md');
-      const isScoped = Boolean(options.epicKey);
-      const existingTree = isScoped && existsSync(treePath) ? readFileSync(treePath, 'utf-8') : null;
-      const treeContent = existingTree
-        ? upsertEpicTreeMarkdown(existingTree, allEpicData, config)
-        : generateEpicTreeMarkdown(allEpicData, config);
       const treeResult = writeIndexFile(treePath, treeContent, options.dryRun);
 
       if (treeResult.status === 'created') { result.files.created++; }
@@ -2487,14 +2741,14 @@ function findLinkedStory(defect: JiraIssue): { key: string, summary: string } | 
 
   for (const link of links) {
     // Check inward issues (e.g., "is caused by" Story)
-    if (link.inwardIssue?.fields.issuetype?.name === storyIssueTypeName()) {
+    if (link.inwardIssue?.fields.issuetype?.name === 'Story') {
       return {
         key: link.inwardIssue.key,
         summary: link.inwardIssue.fields.summary,
       };
     }
     // Check outward issues (e.g., "causes" Story)
-    if (link.outwardIssue?.fields.issuetype?.name === storyIssueTypeName()) {
+    if (link.outwardIssue?.fields.issuetype?.name === 'Story') {
       return {
         key: link.outwardIssue.key,
         summary: link.outwardIssue.fields.summary,
@@ -2620,55 +2874,72 @@ async function syncImprovements(config: Config, options: SyncOptions): Promise<S
   return result;
 }
 
+/** Where a Test with no covering issue lands, beside the orphan Stories. */
+const ORPHAN_TESTS_DIR = join('epics', '_orphans', 'tests');
+
+/**
+ * Materializes Tests that no coverable issue covers, into `epics/_orphans/tests/`.
+ *
+ * A Test linked to a Story is written under that Story by `discoverCoverage`, so
+ * it is deliberately skipped here — one Jira issue, one file. What is left is the
+ * set nothing points at, and those are the interesting ones: a Test with no
+ * covering issue traces to no requirement. Parking them beside the orphan Stories
+ * (the `_orphans` convention this tree already uses) makes the gap a visible
+ * worklist rather than a silent absence, and re-linking one in Jira moves it under
+ * its Story on the next sync.
+ *
+ * TRADE-OFF (deliberate): no membership refinement runs here. A Test whose only
+ * connection to a Story is Xray Set/Plan membership (TC ∈ ATS / TC ∈ ATP) would
+ * need the Xray GraphQL API to be rescued from this list, and this boilerplate
+ * carries no Xray client — so such a Test IS reported as an orphan. The report
+ * over-approximates rather than misses; the companion QA boilerplate (which does
+ * integrate Xray) resolves memberships, and a Jira issue link fixes it here.
+ */
+async function syncOrphanTests(
+  config: Config,
+  options: SyncOptions,
+  result: SyncResult,
+): Promise<void> {
+  if (!options.json) { log.info('Fetching tests from Jira...'); }
+
+  const allTests = await searchIssues(
+    config,
+    `project = ${config.project} AND issuetype = Test${sprintAndClause(options)} ORDER BY key ASC`,
+    TEST_FIELDS,
+  );
+
+  const reg = loadRegistry();
+  const orphans = allTests.filter(t => !hasCoverableLink(t, reg));
+  const nested = allTests.length - orphans.length;
+
+  if (!options.json) {
+    log.success(`Found ${allTests.length} test(s) — ${orphans.length} orphan, ${nested} already under a covering issue`);
+  }
+  if (orphans.length === 0) { return; }
+
+  const dir = join(config.outputDir, ORPHAN_TESTS_DIR);
+  if (!options.dryRun) { ensureDir(dir); }
+
+  for (const test of orphans) {
+    if (!options.json) {
+      log.tree(test.key, test.fields.summary, test === orphans[orphans.length - 1]);
+    }
+    const filename = `TEST-${test.key}-${generateSlug(test.fields.summary)}.md`;
+    bumpFile(writeIndexFile(join(dir, filename), generateTestMarkdown(test, config), options.dryRun).status, result);
+    result.synced.tests++;
+  }
+
+  result.warnings.push(
+    `${orphans.length} Test(s) cover no Story/Bug/Improvement — see ${ORPHAN_TESTS_DIR}/ and link them in Jira`,
+  );
+}
+
 async function syncTests(config: Config, options: SyncOptions): Promise<SyncResult> {
   const startTime = Date.now();
-
-  const result: SyncResult = {
-    success: true,
-    synced: { epics: 0, stories: 0, bugs: 0, defects: 0, improvements: 0, tests: 0, tech_stories: 0, tech_debts: 0 },
-    warnings: [],
-    files: { created: 0, updated: 0, skipped: 0 },
-    duration_ms: 0,
-  };
+  const result = emptyResult();
 
   try {
-    const testsDir = join(config.outputDir, 'tests');
-    if (!options.dryRun) {
-      ensureDir(testsDir);
-    }
-
-    if (!options.json) {
-      log.info('Fetching tests from Jira...');
-    }
-
-    const tests = await searchIssues(
-      config,
-      `project = ${config.project} AND issuetype = Test${sprintAndClause(options)} ORDER BY key ASC`,
-      TEST_FIELDS,
-    );
-
-    if (!options.json) {
-      log.success(`Found ${tests.length} tests`);
-    }
-
-    for (const test of tests) {
-      const slug = generateSlug(test.fields.summary);
-      const filename = `TEST-${test.key}-${slug}.md`;
-      const filePath = join(testsDir, filename);
-
-      if (!options.json) {
-        log.tree(test.key, test.fields.summary, test === tests[tests.length - 1]);
-      }
-
-      const content = generateTestMarkdown(test, config);
-      const writeResult = writeIndexFile(filePath, content, options.dryRun);
-
-      if (writeResult.status === 'created') { result.files.created++; }
-      else if (writeResult.status === 'updated') { result.files.updated++; }
-      else { result.files.skipped++; }
-
-      result.synced.tests++;
-    }
+    await syncOrphanTests(config, options, result);
   }
   catch (error) {
     result.success = false;
@@ -2852,7 +3123,7 @@ async function syncCoverableStandalone(
   const contentFile = `${entry.slug.replace(/_/g, '-')}.md`;
   bumpFile(writeIndexFile(join(folder, contentFile), renderCoverableContent(entry, issue, config), options.dryRun).status, result);
 
-  await discoverCoverage(config, issue, folder, options, result, entry.slug);
+  await discoverCoverage(config, issue, folder, options, result);
 
   if (options.includeComments) {
     const comments = await fetchComments(config, key);
@@ -2926,7 +3197,7 @@ async function routeIssueByKey(
   if (type === 'Epic') {
     await syncEpic(config, key, options, result);
   }
-  else if (type === storyIssueTypeName()) {
+  else if (type === 'Story') {
     await syncSingleStory(config, key, options, result);
   }
   else {
@@ -2966,7 +3237,7 @@ async function cmdStatus(): Promise<void> {
   try {
     const config = getConfig();
 
-    log.success(`ATLASSIAN_URL: ${config.baseUrl}`);
+    log.success(`Instance: ${config.baseUrl}  (source: ${instanceSourceLabel(config.instanceSource)})`);
     log.success(`ATLASSIAN_EMAIL: ${config.email}`);
     log.success(`ATLASSIAN_API_TOKEN: ${'*'.repeat(20)}`);
     logProjectBanner(config);
@@ -3027,6 +3298,91 @@ async function auditOrphanDefects(config: Config, options: SyncOptions, result: 
   }
 }
 
+/**
+ * Slugs whose issues `syncAll` already materializes by walking Epics and the
+ * Stories nested under them. A declarative sweep must skip them or every Story
+ * would be written twice.
+ */
+const SWEPT_BY_SYNC_ALL = new Set(['epic', 'story']);
+
+/**
+ * Work types the registry marks `sync: default` and that still need their own
+ * sweep. Replaces a hardcoded Bug sweep: the scope now lives in
+ * `.agents/jira-required.yaml`, which is where a project can widen it without
+ * editing this script.
+ *
+ * The shipped default resolves to Bug alone, and deliberately so — Epic, Story
+ * and Bug are the only types a vanilla Jira instance has. Defect, Improvement,
+ * Tech Story and Tech Debt are custom types, so making them default would break
+ * the first sync on any project that never created them.
+ */
+function defaultSweepEntries(reg: Registry): WorkTypeEntry[] {
+  return reg.list.filter(e => e.sync === 'default' && !SWEPT_BY_SYNC_ALL.has(e.slug));
+}
+
+interface JiraProjectMeta {
+  issueTypes?: Array<{ name?: string, subtask?: boolean }>
+}
+
+/**
+ * The subset of `present` Jira issue-type names an unfiltered pull will NOT
+ * touch: not `sync: default` (swept), not `sync: discovery` (arrives through
+ * issue links), not `test_case` (arrives through coverage / the orphan sweep),
+ * and not requested via `--types`. Pure — extracted so it can be unit-tested.
+ */
+function outOfScopeTypeNames(present: string[], reg: Registry, extraSlugs: string[]): string[] {
+  const enabled = new Set<string>();
+  for (const e of reg.list) {
+    // `discovery` types arrive through issue links, `test_case` through coverage —
+    // both produce files without being swept, so neither is "out of scope".
+    if (e.sync === 'default' || e.sync === 'discovery' || e.slug === 'test_case') { enabled.add(e.jiraIssueType); }
+  }
+  for (const slug of extraSlugs) {
+    const e = reg.bySlug.get(slug) ?? reg.bySlug.get(slug.replace(/-/g, '_'));
+    if (e) { enabled.add(e.jiraIssueType); }
+  }
+  return present.filter(n => !enabled.has(n));
+}
+
+/**
+ * Names the issue types that exist in the Jira project but will produce nothing
+ * this run, so an empty folder reads as a configuration choice rather than a bug.
+ *
+ * Informational by design: most projects legitimately leave several types off,
+ * and this is not a fault to fix. Names only, no counts — counts would need a
+ * search per type, which is a lot of API calls to answer a question nobody asked.
+ *
+ * Never throws: an advisory must not be able to fail a sync.
+ */
+async function reportOutOfScopeTypes(
+  config: Config,
+  reg: Registry,
+  options: SyncOptions,
+  result: SyncResult,
+): Promise<void> {
+  let meta: JiraProjectMeta;
+  try {
+    meta = await jiraFetch<JiraProjectMeta>(config, `/rest/api/3/project/${config.project}`);
+  }
+  catch {
+    return;
+  }
+
+  // Sub-tasks are structural children, never a work item this methodology syncs.
+  const present = (meta.issueTypes ?? [])
+    .filter(t => t.subtask !== true)
+    .map(t => t.name)
+    .filter((n): n is string => typeof n === 'string' && n !== '');
+
+  const outOfScope = outOfScopeTypeNames(present, reg, options.types ?? []);
+  if (outOfScope.length === 0) { return; }
+
+  result.warnings.push(
+    `INFO: present in Jira but not synced — ${outOfScope.join(', ')}. `
+    + 'Add one to this run with `--types <slug>`, or set its `sync:` in .agents/jira-required.yaml → `work_types`.',
+  );
+}
+
 async function cmdPull(options: SyncOptions): Promise<void> {
   const issueTypeLabels: Record<IssueTypeFilter, string> = {
     stories: 'Epics, Stories & Bugs',
@@ -3067,17 +3423,22 @@ async function cmdPull(options: SyncOptions): Promise<void> {
       case 'stories':
       default:
         result = await syncAll(config, options);
-        // Default scope also pulls Bugs (+ optional --types) unless scoped to a single epic/story.
+        // An unfiltered pull also sweeps every `sync: default` type (+ optional
+        // --types). Scoping to one epic/story means the caller asked for that
+        // subtree, so no project-wide sweep runs.
         if (!options.epicKey && !options.storyKey) {
           const reg = loadRegistry();
-          const bug = reg.bySlug.get('bug');
-          if (bug) { await syncTypeSweep(config, bug, options, result); }
+          for (const entry of defaultSweepEntries(reg)) {
+            await syncTypeSweep(config, entry, options, result);
+          }
           for (const slug of options.types ?? []) {
             const e = reg.bySlug.get(slug) ?? reg.bySlug.get(slug.replace(/-/g, '_'));
             if (e) { await syncTypeSweep(config, e, options, result); }
             else { result.warnings.push(`INFO: --types '${slug}' is not a known work_type slug — skipped.`); }
           }
+          await syncOrphanTests(config, options, result);
           await auditOrphanDefects(config, options, result);
+          await reportOutOfScopeTypes(config, reg, options, result);
         }
         break;
     }
@@ -3107,6 +3468,7 @@ async function cmdPull(options: SyncOptions): Promise<void> {
         if (result.synced.bugs > 0) { log.line(`Bugs synced:    ${result.synced.bugs}`); }
         if (result.synced.defects > 0) { log.line(`Defects synced: ${result.synced.defects}`); }
         if (result.synced.improvements > 0) { log.line(`Improvements synced: ${result.synced.improvements}`); }
+        if (result.synced.tests > 0) { log.line(`Tests synced:   ${result.synced.tests}`); }
         if (result.synced.tech_stories > 0) { log.line(`Tech Stories synced: ${result.synced.tech_stories}`); }
         if (result.synced.tech_debts > 0) { log.line(`Tech Debts synced: ${result.synced.tech_debts}`); }
       }
@@ -3232,11 +3594,13 @@ ${colors.bold}COMMANDS${colors.reset}
   help                Show this help message
 
 ${colors.bold}PULL SUBCOMMANDS${colors.reset}
-  pull                Sync Epics + Stories + Bugs (default) → .context/PBI/
+  pull                Sync Epics + Stories + every registry \`sync: default\` type
+                      (ships as Bug — widen via .agents/jira-required.yaml) → .context/PBI/
   pull bugs           Sync Bugs → .context/PBI/bugs/BUG-<KEY>-<slug>/
   pull defects        Sync Defects → nested under their coverable parent (defects/)
   pull improvements   Sync Improvements → .context/PBI/improvements/IMPROVEMENT-<KEY>-<slug>/
-  pull tests          Sync Tests → .context/PBI/tests/
+  pull tests          Sync orphan Tests (no coverable link) → .context/PBI/epics/_orphans/tests/
+                      (a Test linked to a Story materializes under that Story's test-cases/)
 
 ${colors.bold}COVERABLE FOLDERS${colors.reset}
   Coverable issues — Story, Bug, Defect, Improvement, Tech Story, Tech Debt — each
@@ -3286,7 +3650,6 @@ ${colors.bold}EXAMPLES${colors.reset}
   bun run jira:sync-issues pull --include-comments --dry-run
 
 ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
-  ATLASSIAN_URL         Jira instance URL (required)
   ATLASSIAN_EMAIL       Your email (required)
   ATLASSIAN_API_TOKEN   API token (required)
   JIRA_PROJECT_KEY      Project key override (default: read from .agents/project.yaml)
@@ -3295,6 +3658,21 @@ ${colors.bold}ENVIRONMENT VARIABLES${colors.reset}
   JIRA_SYNC_TYPES       Default csv of optional coverable work-type slugs for --types
   Precedence: flag > env var > default. --project beats JIRA_PROJECT_KEY beats
   .agents/project.yaml project_key.
+
+${colors.bold}INSTANCE RESOLUTION${colors.reset}
+  The Atlassian host comes from .agents/project.yaml -> issue_tracker.atlassian_url.
+  It is NOT a .env variable: the host is project identity, not a per-developer
+  override, and it is the value that goes stale after a site migration. A stale one
+  silently overwrites .context/PBI/ with another site's content — which is exactly
+  what happened while it lived in .env, where a copy inherited from the parent
+  process shadowed the corrected file and this command exited 0.
+  This is the INVERSE of the project-key precedence, on purpose.
+
+  ATLASSIAN_URL is still READ as a last-resort fallback, for a repo whose yaml has
+  not been filled in yet. If it is set AND disagrees with the yaml, the yaml wins
+  and a warning names both values — that variable should not exist locally at all,
+  so a hit means a stale copy is loose in your environment. Print the resolved host
+  with: bun run --silent jira:url
 
 ${colors.bold}OVERWRITE POLICY${colors.reset}
   Jira is the source of truth — NO files are protected. Every file the sync owns
@@ -3378,7 +3756,20 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  log.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+export {
+  classifyCoverageLinks,
+  classifyQaArtifactEpic,
+  DEFAULT_QA_ARTIFACT_LABEL,
+  defaultSweepEntries,
+  higherAltitudeLabel,
+  outOfScopeTypeNames,
+};
+
+// Guarded so the pure helpers above can be imported by tests without running a
+// sync.
+if (import.meta.main) {
+  main().catch((error) => {
+    log.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

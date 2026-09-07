@@ -4,6 +4,8 @@
 
 > 💡 Para conceptos generales de MCP, consulta [MCP - Guía General](./README.md)
 
+> ⚠️ **En este boilerplate, VS Code con GitHub Copilot no tiene adapter en runtime.** Los harnesses soportados con config commiteada y verificada en paridad son Claude Code (`.mcp.json`), OpenCode (`opencode.jsonc`) y Codex CLI + Desktop (`.codex/config.toml`); ver la matriz en [README](./README.md). Esta guía es referencia manual: si la usás, replicá a mano los servidores que declara `.mcp.json` (en el boilerplate: `context7`, `tavily`, `supabase`, `n8n`) y no esperes que `bun run agents:compat:check` los vea.
+
 ---
 
 ## 🚀 Quick Start
@@ -52,7 +54,7 @@ Luego:
   "servers": {
     "github-mcp": {
       "type": "http",
-      "url": "https://mcp.github.com/"
+      "url": "https://api.githubcopilot.com/mcp/"
     }
   },
   "inputs": [
@@ -156,7 +158,7 @@ code-insiders --add-mcp '{"name":"repomix","command":"npx","args":["-y","repomix
   "servers": {
     "context7": {
       "type": "http",
-      "url": "https://context7.mcp.io"
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }
@@ -380,7 +382,7 @@ En Copilot Chat:
     },
     "context7": {
       "type": "http",
-      "url": "https://context7.mcp.io"
+      "url": "https://mcp.context7.com/mcp"
     }
   },
   "inputs": [
@@ -433,7 +435,7 @@ En Copilot Chat:
     },
     "context7": {
       "type": "http",
-      "url": "https://context7.mcp.io"
+      "url": "https://mcp.context7.com/mcp"
     }
   }
 }

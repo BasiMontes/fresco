@@ -35,8 +35,10 @@
  * ENVIRONMENT
  * ============================================================================
  *
+ * Instance host — NOT an env var. Resolved from `.agents/project.yaml` ->
+ * `issue_tracker.atlassian_url` (see `cli/lib/atlassian-instance.ts`).
+ *
  * Required environment variables (same as `scripts/sync-jira-issues.ts`):
- *   ATLASSIAN_URL=https://your-instance.atlassian.net
  *   ATLASSIAN_EMAIL=your-email@example.com
  *   ATLASSIAN_API_TOKEN=ATATT3x...
  *
@@ -83,6 +85,11 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import {
+  formatInstanceMismatchWarning,
+  instanceSourceLabel,
+  resolveAtlassianInstance,
+} from '../cli/lib/atlassian-instance';
 
 // ============================================================================
 // CONSTANTS
@@ -100,12 +107,21 @@ const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
  * Administer permission from being blocked: they can still pull a working
  * `jira-fields.json` even though it reflects upex-galaxy's workspace, not theirs.
  *
- * Hardcoded per-repo (QA vs DEV) so the update path is trivial:
- * `bun up` re-syncs this script from upstream and the URL travels with it.
+ * Points at agentic-qa-boilerplate, NOT at this repo. The field catalog
+ * describes the shared Jira instance, and both boilerplates use the same
+ * slugs for it, so there is exactly one correct file and it should have
+ * exactly one home. Sourcing it per-repo is what let this repo ship 71-era
+ * ids for a day after the QA side had already been corrected: two copies of
+ * one truth drift the moment only one of them is refreshed. The QA side owns
+ * it because that is where the catalogs are verified (`jira:check --live`,
+ * which this repo does not have yet).
+ *
+ * `jira-link-types.json` is deliberately NOT sourced this way — see the
+ * constant in sync-jira-link-types.ts.
  *
  * Pinned to `main` so `--upex` always means "current UPEX standard".
  */
-const UPEX_UPSTREAM_URL = 'https://raw.githubusercontent.com/upex-galaxy/agentic-dev-boilerplate/main/.agents/jira-fields.json';
+const UPEX_UPSTREAM_URL = 'https://raw.githubusercontent.com/upex-galaxy/agentic-qa-boilerplate/main/.agents/jira-fields.json';
 
 /**
  * Stderr marker the installer (`cli/install.ts` Phase 5) parses to register
@@ -329,8 +345,11 @@ FLAGS:
                        Source: ${UPEX_UPSTREAM_URL}
   --help, -h           Show this help.
 
+INSTANCE HOST (not an env var):
+  .agents/project.yaml -> issue_tracker.atlassian_url
+  Print it with: bun run --silent jira:url
+
 ENVIRONMENT:
-  ATLASSIAN_URL          e.g. https://your-instance.atlassian.net
   ATLASSIAN_EMAIL        e.g. you@example.com
   ATLASSIAN_API_TOKEN    Atlassian API token (https://id.atlassian.com/manage-profile/security/api-tokens)
 
@@ -370,12 +389,28 @@ RECOMMENDED FLOW:
 // ============================================================================
 
 function loadConfig(): Config {
-  const baseUrl = process.env.ATLASSIAN_URL;
+  // Instance host: `.agents/project.yaml` first, `ATLASSIAN_URL` only as fallback.
+  // This script overwrites the versioned `.agents/jira-fields.json` catalog, so a
+  // stale host silently replaces it with another site's customfield_* IDs — every
+  // `{{jira.*}}` reference in the methodology would then point at the wrong field.
+  // Rationale: cli/lib/atlassian-instance.ts.
+  let instance;
+  try {
+    instance = resolveAtlassianInstance();
+  }
+  catch (err) {
+    log.error((err as Error).message);
+    process.exit(1);
+  }
+
+  const warning = formatInstanceMismatchWarning(instance);
+  if (warning) { log.warn(warning); }
+
+  // Credentials stay env-only — never mirrored into the versioned yaml.
   const email = process.env.ATLASSIAN_EMAIL;
   const apiToken = process.env.ATLASSIAN_API_TOKEN;
 
   const missing: string[] = [];
-  if (!baseUrl) { missing.push('ATLASSIAN_URL'); }
   if (!email) { missing.push('ATLASSIAN_EMAIL'); }
   if (!apiToken) { missing.push('ATLASSIAN_API_TOKEN'); }
 
@@ -386,8 +421,10 @@ function loadConfig(): Config {
     process.exit(1);
   }
 
+  log.info(`Using instance=${instance.baseUrl} (source: ${instanceSourceLabel(instance.source)})`);
+
   return {
-    baseUrl: baseUrl!.replace(/\/$/, ''),
+    baseUrl: instance.baseUrl,
     email: email!,
     apiToken: apiToken!,
   };

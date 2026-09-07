@@ -46,8 +46,10 @@
  * ENVIRONMENT
  * ============================================================================
  *
+ * Instance host — NOT an env var. Resolved from `.agents/project.yaml` ->
+ * `issue_tracker.atlassian_url` (see `cli/lib/atlassian-instance.ts`).
+ *
  * Required environment variables (same as the sibling sync scripts):
- *   ATLASSIAN_URL=https://your-instance.atlassian.net
  *   ATLASSIAN_EMAIL=your-email@example.com
  *   ATLASSIAN_API_TOKEN=ATATT3x...
  *
@@ -94,6 +96,11 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import {
+  formatInstanceMismatchWarning,
+  instanceSourceLabel,
+  resolveAtlassianInstance,
+} from '../cli/lib/atlassian-instance';
 
 // ============================================================================
 // CONSTANTS
@@ -111,7 +118,15 @@ const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
  * flag is mainly a convenience for users who want the UPEX standard without
  * running the script against their own workspace.
  *
- * Hardcoded per-repo (QA vs DEV) so `bun up` re-syncs the URL with the script.
+ * Stays on THIS repo, unlike the fields and workflows catalogs, which are
+ * sourced from agentic-qa-boilerplate. Those two use the same slugs on both
+ * sides, so one file serves both. This one does not: this repo declares
+ * `causes` and `tested_by` (jira-required.yaml, consumed by the
+ * product-management skill) and the QA side does not, while the QA side maps
+ * the same Jira link type under the slug `problem_incident`. The catalog is a
+ * methodology-slug -> workspace-entity mapping, and the slugs diverge here, so
+ * pulling the QA copy would silently delete two declared link types.
+ *
  * Pinned to `main` so `--upex` always means "current UPEX standard".
  */
 const UPEX_UPSTREAM_URL = 'https://raw.githubusercontent.com/upex-galaxy/agentic-dev-boilerplate/main/.agents/jira-link-types.json';
@@ -270,8 +285,11 @@ FLAGS:
                    Source: ${UPEX_UPSTREAM_URL}
   --help, -h       Show this help.
 
+INSTANCE HOST (not an env var):
+  .agents/project.yaml -> issue_tracker.atlassian_url
+  Print it with: bun run --silent jira:url
+
 ENVIRONMENT:
-  ATLASSIAN_URL          e.g. https://your-instance.atlassian.net
   ATLASSIAN_EMAIL        e.g. you@example.com
   ATLASSIAN_API_TOKEN    Atlassian API token (https://id.atlassian.com/manage-profile/security/api-tokens)
 
@@ -310,12 +328,28 @@ EXIT CODES:
 // ============================================================================
 
 function loadConfig(): Config {
-  const baseUrl = process.env.ATLASSIAN_URL;
+  // Instance host: `.agents/project.yaml` first, `ATLASSIAN_URL` only as fallback.
+  // This script overwrites the versioned `.agents/jira-link-types.json` catalog, so a
+  // stale host silently replaces it with another site's link-type names — every
+  // `{{jira.link_types.*}}` reference would then resolve against the wrong workspace.
+  // Rationale: cli/lib/atlassian-instance.ts.
+  let instance;
+  try {
+    instance = resolveAtlassianInstance();
+  }
+  catch (err) {
+    log.error((err as Error).message);
+    process.exit(1);
+  }
+
+  const warning = formatInstanceMismatchWarning(instance);
+  if (warning) { log.warn(warning); }
+
+  // Credentials stay env-only — never mirrored into the versioned yaml.
   const email = process.env.ATLASSIAN_EMAIL;
   const apiToken = process.env.ATLASSIAN_API_TOKEN;
 
   const missing: string[] = [];
-  if (!baseUrl) { missing.push('ATLASSIAN_URL'); }
   if (!email) { missing.push('ATLASSIAN_EMAIL'); }
   if (!apiToken) { missing.push('ATLASSIAN_API_TOKEN'); }
 
@@ -326,8 +360,10 @@ function loadConfig(): Config {
     process.exit(1);
   }
 
+  log.info(`Using instance=${instance.baseUrl} (source: ${instanceSourceLabel(instance.source)})`);
+
   return {
-    baseUrl: baseUrl!.replace(/\/$/, ''),
+    baseUrl: instance.baseUrl,
     email: email!,
     apiToken: apiToken!,
   };

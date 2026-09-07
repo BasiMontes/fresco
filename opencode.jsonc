@@ -53,6 +53,30 @@
         "SUPABASE_SERVICE_ROLE_KEY": "{env:SUPABASE_SECRET_KEY}",
       },
     },
+    "21st": {
+      "type": "remote",
+      "url": "https://21st.dev/api/mcp",
+      "enabled": true,
+      "headers": {
+        "x-api-key": "{env:API_KEY_21ST}",
+      },
+    },
+    "stitch": {
+      "type": "remote",
+      "url": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Goog-Api-Key": "{env:API_KEY_GOOGLE_STITCH}",
+      },
+    },
+    "posthog": {
+      "type": "remote",
+      "url": "https://mcp.posthog.com/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:POSTHOG_PERSONAL_API_KEY}",
+      },
+    },
   },
 
   // Permissions — mirrors .claude/settings.json 1:1.

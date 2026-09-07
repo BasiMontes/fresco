@@ -143,3 +143,9 @@ bones/*.bones.json
 # conditional comments. Edit by hand, apply via the Management API (see the
 # folder README).
 supabase/templates/
+
+# ===== Synced from boilerplate v8.4 =====
+# ----- 2026-09-07 (sync) -----
+packages/decks/
+.scratch/
+.session/

@@ -112,4 +112,63 @@ export default antfu({
       },
     ],
   },
+}, {
+  // --- cli/ IMPORT CLOSURE (updater self-update invariant) ---
+  //
+  // `cli/` is the updater's self-update component: `runUpdate` refreshes those
+  // files in place and re-execs the process BEFORE any other component is
+  // synced (cli/lib/updater-core.ts, "SELF-UPDATE (before Phase 2)"). A repo
+  // several releases behind therefore runs the NEW `cli/` against its OWN, old
+  // copy of every sibling directory.
+  //
+  // So an import that escapes `cli/` is not a style question: it bricks the
+  // update path for anyone jumping more than one release. It happened in the
+  // QA boilerplate: `cli/` imported `../scripts/agent-compatibility.ts`, the
+  // re-exec died on `Cannot find module`, and `bun run up`, `up --rollback`,
+  // `setup` and `setup:doctor` all went down together, since the failure is at
+  // module load and the rollback path shares the same entrypoint.
+  //
+  // Shared code goes in `cli/lib/`. A `scripts/` file that needs it imports
+  // FROM `cli/` (that direction is safe: `scripts/` is synced later, never
+  // re-exec'd mid-run). `api/`, `src/`, `config/` and `tests/` are listed for
+  // the scaffolded project this config travels into; they are equally absent
+  // at re-exec time.
+  files: ['cli/**/*.ts'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{
+        group: [
+          '../scripts/**',
+          '../../scripts/**',
+          '../../../scripts/**',
+          '../../../../scripts/**',
+          '../packages/**',
+          '../../packages/**',
+          '../../../packages/**',
+          '../../../../packages/**',
+          '../api/**',
+          '../../api/**',
+          '../../../api/**',
+          '../../../../api/**',
+          '../src/**',
+          '../../src/**',
+          '../../../src/**',
+          '../../../../src/**',
+          '../config/**',
+          '../../config/**',
+          '../../../config/**',
+          '../../../../config/**',
+          '../tests/**',
+          '../../tests/**',
+          '../../../tests/**',
+          '../../../../tests/**',
+          '@/*',
+          '@api/*',
+          '@schemas/*',
+          '@utils/*',
+        ],
+        message: 'cli/ must be import-closed: the updater re-execs the new cli/ before other components are synced, so an import that escapes cli/ breaks `bun run up` for repos more than one release behind. Move the shared module into cli/lib/ instead.',
+      }],
+    }],
+  },
 });

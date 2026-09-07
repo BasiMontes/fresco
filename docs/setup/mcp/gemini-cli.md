@@ -4,6 +4,8 @@
 
 > 💡 Para conceptos generales de MCP, consulta [MCP - Guía General](./README.md)
 
+> ⚠️ **En este boilerplate, Gemini CLI no tiene adapter en runtime.** Los harnesses soportados con config commiteada y verificada en paridad son Claude Code (`.mcp.json`), OpenCode (`opencode.jsonc`) y Codex CLI + Desktop (`.codex/config.toml`); ver la matriz en [README](./README.md). Esta guía es referencia manual: si la usás, replicá a mano los servidores que declara `.mcp.json` (en el boilerplate: `context7`, `tavily`, `supabase`, `n8n`) y no esperes que `bun run agents:compat:check` los vea.
+
 ---
 
 ## 🚀 Quick Start
@@ -23,13 +25,13 @@
 #### Agregar servidor stdio local
 
 ```bash
-gemini mcp add myserver --command "python3 my_server.py" --port 8080
+gemini mcp add myserver python3 my_server.py
 ```
 
 #### Agregar servidor HTTP remoto
 
 ```bash
-gemini mcp add --transport http context7 https://context7.mcp.io
+gemini mcp add --transport http context7 https://mcp.context7.com/mcp
 ```
 
 #### Listar servidores configurados
@@ -55,7 +57,7 @@ gemini mcp remove myserver
       "command": "npx",
       "args": ["-y", "@supabase/mcp-server-supabase@latest"],
       "env": {
-        "SUPABASE_ACCESS_TOKEN": "sbp_your_token_here"
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
       }
     }
   }
@@ -115,7 +117,7 @@ gemini mcp remove myserver
 **Mediante CLI**:
 
 ```bash
-gemini mcp add --command "npx -y @supabase/mcp-server-supabase@latest" supabase
+gemini mcp add supabase -e SUPABASE_ACCESS_TOKEN=$SUPABASE_ACCESS_TOKEN -- npx -y @supabase/mcp-server-supabase@latest
 ```
 
 **O manualmente en ~/.gemini/settings.json**:
@@ -127,7 +129,7 @@ gemini mcp add --command "npx -y @supabase/mcp-server-supabase@latest" supabase
       "command": "npx",
       "args": ["-y", "@supabase/mcp-server-supabase@latest"],
       "env": {
-        "SUPABASE_ACCESS_TOKEN": "sbp_your_actual_token"
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
       }
     }
   }
@@ -137,7 +139,7 @@ gemini mcp add --command "npx -y @supabase/mcp-server-supabase@latest" supabase
 ### Ejemplo 2: Context7 (Documentación)
 
 ```bash
-gemini mcp add --transport http context7 https://context7.mcp.io
+gemini mcp add --transport http context7 https://mcp.context7.com/mcp
 ```
 
 ### Ejemplo 3: Playwright MCP
@@ -212,13 +214,13 @@ Gemini CLI soporta **extensiones** que empaquetan:
 ### Instalar extensión
 
 ```bash
-gemini extension install firebase
+gemini extensions install https://github.com/gemini-cli-extensions/firebase
 ```
 
 ### Listar extensiones instaladas
 
 ```bash
-gemini extension list
+gemini extensions list
 ```
 
 ### Ejemplo: Instalar Firebase Extension
@@ -226,7 +228,7 @@ gemini extension list
 **Opción 1**: Via extensión (recomendado)
 
 ```bash
-gemini extension install firebase
+gemini extensions install https://github.com/gemini-cli-extensions/firebase
 ```
 
 **Opción 2**: Configuración manual
@@ -367,8 +369,8 @@ Crear `.gemini/settings.json` en cada proyecto:
 
 ```bash
 # En lugar de configurar manualmente
-gemini extension install firebase
-gemini extension install playwright
+gemini extensions install https://github.com/gemini-cli-extensions/firebase
+gemini extensions install <url-del-repo-de-la-extension>
 ```
 
 ### 4. Debugging
@@ -398,7 +400,7 @@ gemini mcp list
       }
     },
     "context7": {
-      "httpUrl": "https://context7.mcp.io"
+      "httpUrl": "https://mcp.context7.com/mcp"
     }
   }
 }
@@ -418,7 +420,7 @@ gemini mcp list
       "args": ["-y", "chrome-devtools-mcp"]
     },
     "context7": {
-      "httpUrl": "https://context7.mcp.io"
+      "httpUrl": "https://mcp.context7.com/mcp"
     }
   }
 }
@@ -440,7 +442,7 @@ gemini mcp list
       }
     },
     "context7": {
-      "httpUrl": "https://context7.mcp.io"
+      "httpUrl": "https://mcp.context7.com/mcp"
     }
   }
 }
@@ -455,7 +457,7 @@ gemini mcp list
       "httpUrl": "https://mcp.notion.com/mcp"
     },
     "context7": {
-      "httpUrl": "https://context7.mcp.io"
+      "httpUrl": "https://mcp.context7.com/mcp"
     },
     "tavily": {
       "command": "npx",

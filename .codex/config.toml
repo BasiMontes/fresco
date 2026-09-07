@@ -1,0 +1,77 @@
+# Codex CLI + Desktop read this same file. Instructions come from AGENTS.md and
+# skills from .agents/skills/, both natively — neither needs configuring here.
+# The MCP inventory below is the Codex-format adapter of the four servers that
+# .mcp.json and opencode.jsonc also declare; `bun run agents:compat:check`
+# compares the three semantically, so a server added to one host only fails.
+#
+# Codex never expands `${VAR}` in args or env values. Every secret is therefore
+# forwarded BY NAME (`env_vars`, `bearer_token_env_var`) from the environment
+# `bun run codex` loads out of .env; `[mcp_servers.X.env]` tables hold literal
+# settings only. The parity check compares the .env variable names each host
+# depends on, so the command shape may differ from .mcp.json where Codex needs it.
+
+[shell_environment_policy]
+inherit = "core"
+
+[mcp_servers.context7]
+command = "bunx"
+enabled = true
+args = [
+  "-y",
+  "@upstash/context7-mcp",
+]
+
+# Streamable HTTP with the key as a bearer token: the mcp-remote tunnel that
+# .mcp.json / opencode.jsonc use only exists to put ${TAVILY_API_KEY} in a URL.
+[mcp_servers.tavily]
+url = "https://mcp.tavily.com/mcp/"
+bearer_token_env_var = "TAVILY_API_KEY"
+enabled = true
+
+# @supabase/mcp-server-supabase reads SUPABASE_ACCESS_TOKEN from the environment
+# when --access-token is absent (documented fallback), so the token is forwarded
+# instead of interpolated. The URL and the two keys travel under their .env
+# names; the SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY aliases
+# that .mcp.json sets are the same three variables, renamed.
+[mcp_servers.supabase]
+command = "bunx"
+enabled = true
+args = [
+  "-y",
+  "@supabase/mcp-server-supabase@latest",
+]
+env_vars = [
+  "SUPABASE_ACCESS_TOKEN",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_SECRET_KEY",
+]
+
+# Standard Authorization: Bearer scheme — expressible via bearer_token_env_var.
+[mcp_servers.posthog]
+url = "https://mcp.posthog.com/mcp"
+bearer_token_env_var = "POSTHOG_PERSONAL_API_KEY"
+enabled = true
+
+# Custom (non-bearer) HTTP header auth — env_http_headers maps header name to
+# the .env variable NAME holding its value (Codex never expands placeholders).
+# NOTE: "21st" stays quoted below on purpose — Bun.TOML.parse (this project's
+# actual parser, see cli/lib/agent-compatibility-contracts.ts) rejects a bare
+# digit-leading key in a dotted table header; the spec allows it, Bun's parser
+# does not. Verified live: Bun.TOML.parse('[a.21st]\nurl="x"') throws,
+# [a."21st"] does not. Do not let `eslint --fix` strip these quotes again.
+# eslint-disable-next-line toml/quoted-keys
+[mcp_servers."21st"]
+url = "https://21st.dev/api/mcp"
+enabled = true
+
+# eslint-disable-next-line toml/quoted-keys
+[mcp_servers."21st".env_http_headers]
+x-api-key = "API_KEY_21ST"
+
+[mcp_servers.stitch]
+url = "https://stitch.googleapis.com/mcp"
+enabled = true
+
+[mcp_servers.stitch.env_http_headers]
+X-Goog-Api-Key = "API_KEY_GOOGLE_STITCH"

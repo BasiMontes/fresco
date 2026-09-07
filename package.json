@@ -25,8 +25,8 @@
     "onboarding": "bun scripts/onboarding.ts",
     "opencode": "bash -c 'set -a; . ./.env; set +a; exec opencode \"$@\"' --",
     "prepare": "husky",
-    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run vars:env:check && bun run skills:check && bun run skills:registry:check",
-    "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run vars:env:check && bun run skills:check && bun run skills:registry:check",
+    "repo:check": "bun run format:check && bun run lint:check && bun run types:check && bun run vars:check && bun run vars:env:check && bun run skills:check && bun run skills:registry:check && bun run agents:compat:check",
+    "repo:fix": "bun run format:fix && bun run lint:fix && bun run types:check && bun run vars:check && bun run vars:env:check && bun run skills:check && bun run skills:registry:check && bun run agents:compat:check",
     "setup:doctor": "bun cli/doctor.ts",
     "setup": "bun cli/doctor.ts --preflight && bun cli/install.ts",
     "skills:check": "bun scripts/lint-skills.ts",
@@ -43,7 +43,14 @@
     "types:check": "tsc --noEmit",
     "up": "bun cli/update-boilerplate.ts",
     "vars:check": "bun scripts/lint-vars.ts",
-    "vars:env:check": "bun scripts/check-vars.ts"
+    "vars:env:check": "bun scripts/check-vars.ts",
+    "agents:compat": "bun scripts/agent-compatibility.ts",
+    "agents:compat:check": "bun scripts/agent-compatibility.ts --check",
+    "codex": "dotenv -o -e .env -- codex",
+    "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
+    "git:policy": "bun scripts/git-policy.ts",
+    "jira:components": "bun scripts/sync-jira-components.ts",
+    "jira:url": "bun scripts/atlassian-url.ts"
   },
   "dependencies": {
     "@clack/prompts": "^1.4.0",

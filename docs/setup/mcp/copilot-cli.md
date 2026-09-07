@@ -4,6 +4,8 @@
 
 > 💡 Para conceptos generales de MCP, consulta [MCP - Guía General](./README.md)
 
+> ⚠️ **En este boilerplate, GitHub Copilot CLI no tiene adapter en runtime.** Los harnesses soportados con config commiteada y verificada en paridad son Claude Code (`.mcp.json`), OpenCode (`opencode.jsonc`) y Codex CLI + Desktop (`.codex/config.toml`); ver la matriz en [README](./README.md). Esta guía es referencia manual: si la usás, replicá a mano los servidores que declara `.mcp.json` (en el boilerplate: `context7`, `tavily`, `supabase`, `n8n`) y no esperes que `bun run agents:compat:check` los vea.
+
 ---
 
 ## 🚀 Quick Start
@@ -60,7 +62,7 @@ Esto abrirá un asistente interactivo que te pedirá:
   "mcpServers": {
     "github": {
       "type": "http",
-      "url": "https://mcp.github.com/",
+      "url": "https://api.githubcopilot.com/mcp/",
       "tools": ["*"]
     }
   }
@@ -91,11 +93,11 @@ Esto abrirá un asistente interactivo que te pedirá:
   "mcpServers": {
     "context7": {
       "type": "http",
-      "url": "https://context7.mcp.io",
+      "url": "https://mcp.context7.com/mcp",
       "headers": {
         "X-API-Key": "your-api-key"
       },
-      "tools": ["search_docs", "get_library"]
+      "tools": ["resolve-library-id", "query-docs"]
     }
   }
 }
@@ -165,7 +167,7 @@ Esto abrirá un asistente interactivo que te pedirá:
   "mcpServers": {
     "github": {
       "type": "http",
-      "url": "https://mcp.github.com/",
+      "url": "https://api.githubcopilot.com/mcp/",
       "tools": ["*"]
     },
     "context7": {
@@ -287,7 +289,7 @@ Puedes especificar qué herramientas de un servidor cargar:
 
 ```json
 {
-  "tools": ["search_docs", "get_library"] // Solo estas
+  "tools": ["resolve-library-id", "query-docs"] // Solo estas
 }
 ```
 
@@ -367,7 +369,7 @@ cd ~/.copilot/logs/
   "mcpServers": {
     "github": {
       "type": "http",
-      "url": "https://mcp.github.com/"
+      "url": "https://api.githubcopilot.com/mcp/"
     },
     "playwright": {
       "type": "local",
@@ -413,7 +415,7 @@ Copilot: [usa github-mcp] "Issue #123 creado"
   "mcpServers": {
     "github": {
       "type": "http",
-      "url": "https://mcp.github.com/",
+      "url": "https://api.githubcopilot.com/mcp/",
       "tools": ["*"]
     },
     "playwright": {
@@ -462,7 +464,7 @@ Copilot: [usa github-mcp] "Issue #123 creado"
   "mcpServers": {
     "github": {
       "type": "http",
-      "url": "https://mcp.github.com/",
+      "url": "https://api.githubcopilot.com/mcp/",
       "tools": ["*"]
     },
     "slack": {

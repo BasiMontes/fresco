@@ -15,51 +15,23 @@ The directory has two roles:
 
 | File                  | What it is                                                                                                                                                                       | Who edits it                             | How to regenerate                                                            |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------- |
-| `project.yaml`        | Human-edited project config: project name, repo paths, URLs, MCP server names, issue-tracker metadata, default env. ALSO holds the `git_strategy:` block (this repo's git workflow — read by `git-flow-master`; see §"`git_strategy`" below). | You (project owner) / `git-flow-master` | Edit by hand. The `git_strategy:` block is filled by `git-flow-master` Strategy Setup, NOT by `agents:setup`. |
+| `project.yaml`        | Human-edited project config: project name, repo paths, URLs, MCP server names, issue-tracker metadata, default env. ALSO holds the `git_strategy:` block (this repo's git workflow — read by `git-flow-master`; see §"`git_strategy`" below) and the `updater:` block (files `bun run up` must keep as the project's own; see §"`updater`" below). | You (project owner) / `git-flow-master` | Edit by hand. The `git_strategy:` block is filled by `git-flow-master` Strategy Setup, NOT by `agents:setup`. |
 | `jira-fields.json`    | Auto-generated catalog of every custom field in your Jira workspace, keyed by canonical slug. Each entry has `id`, `type`, optional `name`, `options`, `system`, `provider`.     | Generated only — **do not edit by hand** | `bun run jira:sync-fields`                                                   |
-| `jira-workflows.json` | Auto-generated catalog of work-type workflows, statuses, and transitions resolved against your Jira workspace. Companion to `jira-fields.json` for the work_types substrate. **Many canonical slugs in here are LOCAL ALIASES that collapse onto the same real Jira status/transition — see "Canonical slugs are LOCAL ALIASES" below before treating every slug as a distinct Jira state.** | Generated only — **do not edit by hand** | `bun run jira:sync-workflows`                                                |
+| `jira-workflows.json` | Auto-generated catalog of work-type workflows, statuses, and transitions resolved against your Jira workspace. Companion to `jira-fields.json` for the work_types substrate.     | Generated only — **do not edit by hand** | `bun run jira:sync-workflows`                                                |
 | `jira-link-types.json` | Auto-generated catalog of every issue link type in your Jira workspace (e.g. `blocks`, `relates`, `is caused by`), keyed by canonical slug. Each entry has `id`, `name`, `outward`, `inward`, `exists_in_workspace`. | Generated only — **do not edit by hand** | `bun run jira:sync-link-types`                                               |
 | `jira-required.yaml`  | Declarative manifest of the custom fields the methodology requires (with expected types, option lists, and consumers). The contract between skills/commands and the user's Jira. | Methodology maintainers                  | Updated when a skill or command adds or drops a `{{jira.<slug>}}` reference. |
 | `README.md`           | This file.                                                                                                                                                                       | Methodology maintainers                  | —                                                                            |
 
-## Canonical slugs are LOCAL ALIASES, not proof of extra Jira states
-
-`jira-required.yaml` declares a **methodology-level** vocabulary of canonical slugs (`shift_left_qa`, `ready_for_qa`, `qa_approved`, `ready_for_release`, `deployed_to_production`, `in_test`, `in_automation`, …) that is intentionally more granular than any single project's real Jira workflow — the methodology names every plausible phase up front so it fits teams with a finely-instrumented pipeline. **This does not mean your Jira workflow has a distinct physical status or transition for every slug.**
-
-`bun run jira:sync-workflows` resolves each declared slug against your workspace's *actual* statuses/transitions and records the result in `jira-workflows.json`. When your real workflow is flatter than the methodology's vocabulary, **multiple canonical slugs resolve to the same physical Jira status or transition** — this is visible directly in the catalog: several `statuses.<slug>` entries share the same `id`/`name`, and every `transitions.<slug>` entry carries a `to_canonical` pointer that names which status bucket it actually lands in.
-
-**How to tell an alias from a real distinct state**: group a work type's `statuses` entries in `jira-workflows.json` by `id`. Every slug sharing an `id` is a local shorthand name for the *same* physical Jira status, not a separate one. Do the same for `transitions` by grouping on `to_status_id` (or just reading `to_canonical`).
-
-### Fresco's resolved mapping (project key `FRESCO`)
-
-Fresco's Jira workflow (still literally named "Software workflow for project KAN" in Jira — see follow-up note below) implements exactly **7 physical statuses** — confirmed via `acli jira workitem search --jql "project = FRESCO" --json --paginate | jq -r '.[].fields.status.name' | sort -u`. Every canonical slug in `jira-workflows.json` collapses onto one of these seven:
-
-| Real Jira status (`id`) | category | Canonical slug aliases seen across work types (`story` shown in full; `bug`/`defect`/`improvement`/`epic`/`test_case`/`tech_story`/`tech_debt` reuse the same 7 buckets with domain-flavored slug names) |
-|---|---|---|
-| **Listo** (`10004`) | new | `listo`, `backlog`, `ready_for_dev`, `open` (bug/defect/improvement), `to_do` (tech_story/tech_debt), `draft` / `ready` / `candidate` / `manual` (test_case) |
-| **WIP** (`10005`) | indeterminate | `wip`, `estimation`, `in_progress`, `in_design` / `in_automation` (test_case) |
-| **Control de calidad** (`10006`) | indeterminate | `control_de_calidad`, `shift_left_qa`, `ready_for_qa`, `in_test` |
-| **Merged** (`10007`) | indeterminate | `merged`, `in_review`, `pull_request` (test_case), `fixed` (tech_story/tech_debt) |
-| **Blocked** (`10041`) | new | `blocked`, `deferred` (bug/defect/improvement) |
-| **Rechazos** (`10042`) | new | `rechazos`, `aborted`, `cannot_reproduce`, `duplicated`, `rejected`, `enhancement` (bug/defect/improvement), `deprecated` (test_case), `abort` (tech_story/tech_debt) |
-| **Finalizada** (`10008`) | done | `finalizada`, `done` (epic), `closed` (bug/defect/improvement), `qa_approved`, `ready_for_release`, `deployed_to_production`, `automated` / `completed` (test_case/tech_story/tech_debt) |
-
-The same collapsing applies to `transitions`: 30+ canonical transition slugs resolve to only **8 real Jira transitions** (`Create`=1, `Ready`=11, `WIP`=21, `QA`=31, `Merged`=41, `Done`=51, `Blocked`=2, `Rechazos`=3) — read `to_canonical` on any `transitions.<slug>` entry to find which one a given slug actually fires.
-
-**Do not** read `jira-workflows.json`'s ~17 status keys or ~30 transition keys per work type as evidence that Fresco's Jira has 17 or 30 distinct states — they are a vocabulary of *local aliases* the methodology uses to reason about workflow phases, layered over a much flatter real workflow. This table is a snapshot at time of writing; the catalog (`jira-workflows.json`) is the live source of truth if the two ever disagree.
-
-> **Manual follow-up (not automatable by `acli` or the Atlassian MCP tools available here)**: the underlying Jira workflow is still literally named "Software workflow for project KAN" and the board is still "KAN board" — leftover names from before this project was branded Fresco. Renaming either is a Jira **admin** action (Project Settings → Workflows for the workflow name; Project Settings → board name) with no `acli` or MCP surface — `acli` has no workflow-management commands at all (confirmed limitation, see `.claude/skills/acli/SKILL.md`). A human must do this in the Jira web UI.
-
 ## `git_strategy` (block inside `project.yaml`)
 
-The persisted source of truth for **this repository's** git workflow lives as the `git_strategy:` block inside `.agents/project.yaml` (not a separate file). `git-flow-master` reads it before any branch / commit / push / PR / `gh` operation and adapts every action to the declared strategy. When `git_strategy.strategy` is `null`, `git-flow-master` detects the strategy per-invocation and OFFERS **Strategy Setup**, which fills the block.
+The persisted source of truth for **this repository's** git workflow lives as the `git_strategy:` block inside `.agents/project.yaml` (not a separate file). `git-flow-master` reads it before any branch / commit / push / PR / `gh` operation and adapts every action to the declared strategy. When `git_strategy.strategy` is `null` OR `meta.strategy_source` is `inherited` (the shipped default nobody chose for that project), `git-flow-master` detects the strategy per-invocation and OFFERS **Strategy Setup**, which fills the block and stamps `strategy_source: chosen`.
 
 **Lifecycle**
 
-- **Ships as a template** — the boilerplate's `project.yaml` carries `git_strategy.strategy: null` (like every other field). A fresh project inherits the unset block and fills it on first git use.
+- **Ships as a default, not a decision** — the block carries `strategy: solo-main` with provenance stamps in `meta:`. The scaffolder resets a fresh project to `strategy_source: inherited` / `policy_source: declared` / `policy_verified: null` and strips `accepted_divergences` (`packages/create-agentic-dev/src/prepare.ts` → `resetGitStrategyMeta`), so a consumer project starts with a placeholder it is expected to replace via Strategy Setup on first git use. This repo itself carries `strategy_source: chosen` (2026-08-21).
 - **Autogenerated** by `git-flow-master` Strategy Setup (pick the flow → create only the branches that flow needs → write the block in place).
 - **Committed / tracked** — part of each project's git workflow contract.
-- **Frozen by `bun run update`** — `project.yaml` is in the updater's `bootstrapOnlyPaths`, so a consumer project's filled strategy is never overwritten.
+- **Frozen by `bun run up`** — `project.yaml` is in the updater's `bootstrapOnlyPaths`, so a consumer project's filled strategy is never overwritten.
 - **Hand-editable** — edit the block to change the workflow, or re-run Strategy Setup.
 - **Not a `{{VAR}}` source** — `vars:check` skips the `git_strategy:` block (its leaves are read directly by the skill, not as template variables).
 
@@ -78,12 +50,52 @@ The persisted source of truth for **this repository's** git workflow lives as th
 | `decisions.hotfix_policy` | enum | `branch-off-prod-backmerge` / `via-integration` / `none` / `n/a`. |
 | `policy.direct_push_to_protected` | enum | `forbidden` / `confirm` / `allowed` — direct pushes to protected branches. |
 | `policy.admin_bypass` | bool | Team policy: may a repo admin bypass PR/protection for urgent changes? Intent only — real capability depends on the GitHub user's role; the skill re-confirms at runtime. |
-| `policy.require_pr_reviews` | int\|null | Min approvals before merge to a protected branch (informational). |
+| `policy.require_pr_reviews` | int\|null | Min approvals before merge to a protected branch. Records the team's EXPECTATION — what the host enforces is discovered by the Step 1b reconciliation. |
+| `policy.accepted_divergences[]` | list | Host divergences formally ACCEPTED, not drift. Each entry names a `bun run git:policy verify` finding verbatim (`field`), plus `enforced`, `accepted` date, and `reason`. `verify` reports matching findings as ACCEPTED instead of DRIFT (and can stamp entries via `--stamp`); `apply` preserves the host's side for accepted fields. |
 | `branch_prefixes.precedence` | list | Order for choosing a prefix when several apply. |
 | `branch_prefixes.naming_with_key` | string | Branch-name template with an issue key (e.g. `feat/UPEX-123-slug`). |
 | `branch_prefixes.naming_without_key` | string | Branch-name template without a key. |
 | `meta.setup_version` | int | Strategy Setup schema version. |
 | `meta.created` | string | Date stamped by Strategy Setup. |
+| `meta.policy_verified` | string\|null | Date of the last reconciliation of `policy:` against the host (`git-flow-master` Step 1b). `null` = never verified. |
+| `meta.policy_source` | enum | `verified` / `accepted` / `declared`. `verified` = host matches the yaml exactly; `accepted` = every divergence is formally listed in `policy.accepted_divergences`; with `declared`, the skill never states what the remote requires — it says "declared, not verified". |
+
+**Policy drift.** `policy:` is intent; the hosting platform is enforcement. They drift (someone tightens protection in the UI, or the block was filled before the remote existed). `git-flow-master` reconciles them once per session at the first push / PR / merge intent, reports any mismatch with both values, and lets YOU decide whether to align the file, change the host, or accept the divergence. It never edits the block on its own.
+
+## `updater` (block inside `project.yaml`)
+
+`bun run up` never overwrites the files on its protected watchlist (`AGENTS.md`, `.agents/project.yaml`, `.agents/jira-required.yaml`, `tsconfig.json`, `eslint.config.js`, `.mcp.json`, `opencode.jsonc`, `.codex/config.toml`, `.claude/settings.json`, `.husky/pre-commit`, `.husky/pre-push`): a watched file inside a synced component is delivered once when missing, then it is project-owned, and when upstream's copy changes the parity report shows a drift row with evidence (keys, headings or hunks) instead of touching it. The `updater:` block lets a project extend that list.
+
+```yaml
+updater:
+  protected_paths: # repo-relative FILE paths; empty by default
+    - scripts/lint-vars.ts
+    - .agents/skills/acli/SKILL.md
+```
+
+- **When to list a path**: a synced file you merged by hand and want to keep across syncs. The parity row `project edit overwritten; backup: .backups/...` names exactly that situation and ends with the fix (`add the path to updater.protected_paths in .agents/project.yaml so the next sync keeps your merge`); the saved `parity-plan.md` repeats it under the row as the YAML to paste.
+- **Semantics**: identical to the upstream watchlist. Never overwritten (also under `--auto` and `--force`), delivered once from upstream when the file is missing locally, included in the sparse checkout so its upstream copy can be diffed, one drift row per upstream change (marker under `.template/upstream-sha/`).
+- **Validation**: a path outside the repo (absolute, `..`), under `.git`, a directory, or a non-string is reported at the start of the run (`updater.protected_paths (.agents/project.yaml): entrada ignorada "...": <reason>.`) and ignored; the run continues. Duplicates and paths already on the upstream watchlist are folded silently.
+- **Bootstrap-only**: `project.yaml` is never synced, so the list is entirely yours. Both keys are allowlisted in `external_consumers` (not `{{VAR}}` sources).
+
+## `testing.automation_identity` (block inside `project.yaml`)
+
+Declares WHICH account browser and HTTP automation logs in as when validating a story against the running app (`/sprint-development` live-UI validation and Tier 0 probes). It holds **variable NAMES only** — values live in `.env`, which is gitignored; `project.yaml` is committed.
+
+| Field | Type | Description |
+|---|---|---|
+| `email_var` | string\|null | Name of the env var holding the account email (e.g. `QA_E2E_USER_EMAIL`). The name is the project's choice. |
+| `password_var` | string\|null | Name of the env var holding its password. |
+| `scope` | enum\|null | `dedicated-non-production-account` (default, preferred) / `shared-demo-account` (only when the account's access is intentionally public). |
+| `per_env` | map | Optional per-environment overrides, keyed by an `environments:` key. Empty when one identity serves every env. |
+
+**Why it exists.** "Use credentials from `.env`" says where values live, not which identity is legitimate. Without a declared slot, an agent asked to validate a UI story will improvise — and the shortest path to a session is usually a privileged one (a service-role key, an admin user-management API, a generated login link), which means acting as, or against, a real account.
+
+**Rules.** Fail-closed: slot unset, variable missing from `.env`, or `scope` unset → `/sprint-development` STOPS before any authenticated action and reports what to provision. Automation always authenticates through the app's OWN login path; privileged bypasses and impersonation are prohibited outright. Full contract, prohibition list, and dispatch requirements: `.agents/skills/sprint-development/references/live-ui-identity.md`.
+
+**Detectability.** Register the chosen variable names in `cli/lib/variables-manifest.ts` so `bun run vars:env:check` and the doctor flag a missing identity before a sprint starts rather than mid-run. The boilerplate ships `QA_E2E_USER_EMAIL` / `QA_E2E_USER_PASSWORD` as defaults; rename in both places if your project uses different names.
+
+Like `git_strategy`, this block is read directly by skills and is **not** a `{{VAR}}` source — it is listed in `external_consumers` so `vars:check` skips it.
 
 ## Variable syntax conventions
 
@@ -118,9 +130,9 @@ When a document genuinely needs to compare environments side-by-side (e.g. an en
 When you clone this boilerplate into a new project:
 
 1. Copy `.env.example` to `.env` and fill in:
-   - `LOCAL_USER_EMAIL` / `STAGING_USER_EMAIL` and the matching passwords (test users).
-   - `ATLASSIAN_URL` / `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (get a token at <https://id.atlassian.com/manage-profile/security/api-tokens>).
-2. Edit `.agents/project.yaml` by hand. Replace every `null` with the real value (the inline `# TODO:` comment shows the expected format). Make sure `testing.default_env` matches one of the keys under `environments:`.
+   - `QA_E2E_USER_EMAIL` / `QA_E2E_USER_PASSWORD` — the automation identity (dedicated non-production account; see §"`testing.automation_identity`").
+   - `ATLASSIAN_EMAIL` / `ATLASSIAN_API_TOKEN` (get a token at <https://id.atlassian.com/manage-profile/security/api-tokens>). The Atlassian **site URL** does not go here — see step 2.
+2. Edit `.agents/project.yaml` by hand. Replace every `null` with the real value (the inline `# TODO:` comment shows the expected format). Make sure `testing.default_env` matches one of the keys under `environments:`. `issue_tracker.atlassian_url` is the **source of truth** for the Atlassian host — it is not in `.env` at all, because a stale copy there silently shadowed the real value and pointed `jira:sync-*` at a dead instance. Confirm it resolves with `bun run --silent jira:url`.
 3. Run `bun run jira:sync-fields` to discover your Jira workspace's custom fields. Writes `.agents/jira-fields.json` (~100-150 fields typical). Resolves slug collisions deterministically — see `--allow-collisions` if you hit one.
 4. Run `bun run jira:check` to validate your Jira against the methodology's required-fields **and** required-`work_types` manifest. Address any output:
    - **❌ MISSING** — for a custom field: create the field in Jira admin (Settings → Issues → Custom fields) with the suggested name, type, and options. Re-run `bun run jira:sync-fields --force` then `bun run jira:check`. For a `work_type` / status / transition: amend the workflow in Jira admin so it exposes the required status / transition, then re-run `bun run jira:sync-workflows --force` then `bun run jira:check`.
@@ -193,8 +205,9 @@ When the methodology evolves and needs a brand-new canonical status or transitio
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `bun run jira:sync-fields` | Discover Jira custom fields → write `jira-fields.json`. Flags: `--force` (overwrite), `--allow-collisions` (suffix slug duplicates), `--dry-run`, `--verbose`, `--json`.                                     |
 | `bun run jira:sync-workflows` | Discover Jira workflows (statuses + transitions per `work_type`) → write `jira-workflows.json`. Interactive on first run for slugs that don't auto-resolve. Flags: `--force` (re-prompt for already-mapped slugs), `--allow-collisions`, `--dry-run`, `--verbose`, `--json`, `--help`. |
+| `bun run jira:sync-link-types` | Discover Jira issue link types → write `jira-link-types.json`.                                                                                                                       |
 | `bun run jira:check`       | Compare `jira-required.yaml` vs `jira-fields.json` (custom fields) AND vs `jira-workflows.json` (work types, statuses, transitions) → setup report. Flags: `--json` (machine-readable), `--verbose` (include OK rows), `--help`. Exits 1 if any required field, `work_type`, status or transition is missing or mismatched. |
-| `bun run vars:check`       | Validate every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.<slug>.<option>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` reference across `.claude/skills/`, `.claude/commands/`, `.context/`, `CLAUDE.md`. Exits 1 if any are undeclared.                                      |
+| `bun run vars:check`       | Validate every `{{VAR}}`, `{{jira.<slug>}}`, `{{jira.<slug>.<option>}}`, `{{jira.work_type.*}}`, `{{jira.status.*}}` and `{{jira.transition.*}}` reference across `.agents/skills/`, `.claude/commands/`, `.context/`, `AGENTS.md`. Exits 1 if any are undeclared.                                      |
 
 ## Troubleshooting
 
@@ -216,7 +229,7 @@ These produce false-positive `DECLARED_BUT_UNUSED` warnings. To silence them, ad
 ```yaml
 external_consumers:
   - default_env # consumed by the AI resolver + scripts/agents-setup.ts (process.env.DEFAULT_ENV)
-  - design_md_path # read by yq in .claude/skills/design-system/references/getdesign-matcher.md
+  - design_md_path # read by yq in .agents/skills/design-system/references/getdesign-matcher.md
 ```
 
 If you forget the comment, `vars:check` fails with `EXTERNAL_CONSUMER_UNDOCUMENTED` to prevent the allowlist from rotting silently.

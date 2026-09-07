@@ -1,7 +1,7 @@
 # Jira + Xray TMS Setup Guide
 
 > **Purpose**: Step-by-step guide to configure Jira with Xray as a Test Management System (TMS) aligned with IQL methodology.
-> **Prerequisite**: Read `jira-platform.md` and `test-management-system.md` first.
+> **Prerequisite**: Read `docs/methodology/jira-platform.md` and `docs/methodology/IQL-methodology.md` first.
 > **Time Estimate**: 2-4 hours for complete setup.
 
 ---
@@ -353,8 +353,11 @@ curl -H "Authorization: Bearer YOUR_PAT" \
 Create or update your `.env` file:
 
 ```bash
-# Atlassian credentials — single source of truth for Jira + acli + MCP atlassian
-ATLASSIAN_URL=https://your-company.atlassian.net
+# Atlassian credentials — one family for Jira + acli + MCP atlassian.
+# NOTE: the site URL is NOT here. It lives in .agents/project.yaml ->
+# issue_tracker.atlassian_url (set it with `bun run agents:setup`, read it with
+# `bun run --silent jira:url`). Keeping a second copy in .env is what let a
+# stale value shadow the real one and rebuild the PBI cache from a dead site.
 ATLASSIAN_EMAIL=your.email@example.com
 ATLASSIAN_API_TOKEN=your_api_token
 
@@ -436,27 +439,18 @@ Run these checks:
 ### Step 10.2: Validate API Connection
 
 ```bash
-# Set up authentication
-export XRAY_CLIENT_ID="your_client_id"
-export XRAY_CLIENT_SECRET="your_client_secret"
+# Authenticate against the Xray Cloud API (returns a bearer token)
+curl -s -X POST https://xray.cloud.getxray.app/api/v2/authenticate \
+  -H "Content-Type: application/json" \
+  -d '{"client_id":"your_client_id","client_secret":"your_client_secret"}'
 
-# Test CLI connection
-bun xray auth status
-
-# List tests (should return data)
-bun xray test list
-
-# Create a test case
-bun xray test create \
-  --summary "Verify login flow" \
-  --type Generic \
-  --project PROJ
-
-# Import sample results
-bun xray import sample-results.xml \
-  --project PROJ \
-  --test-plan PROJ-300
+# A quoted token string in the response = credentials are valid.
 ```
+
+> Test-management CLI operations (test/plan/execution CRUD, result imports)
+> ship with the **QA boilerplate's** `xray-cli`, not this repo. From here,
+> validate the Jira side with `bun run jira:check` and pull the PBI cache
+> with `bun run jira:sync-issues pull`.
 
 ### Step 10.3: Test Full Workflow
 
@@ -559,4 +553,4 @@ After completing this setup:
 
 **Document Created**: 2026-02-09
 **IQL Version**: 2.0
-**Compatible With**: jira-platform.md v1.0, cli/xray v2.0.0
+**Compatible With**: jira-platform.md v1.0

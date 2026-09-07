@@ -30,7 +30,7 @@
  * on a malformed entry so a misconfigured manifest fails fast at startup.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 // ----------------------------------------------------------------------------
 // Types
@@ -43,6 +43,28 @@ export type VarDestination = 'local' | 'vercel';
 export type VarScope = 'production' | 'preview' | 'development';
 
 /**
+ * Where the installer READS a variable's value from when it needs one.
+ *
+ * - `env-file` (the default) — the value lives in `.env`. True for every var
+ *   with a `local` destination, which is almost all of them.
+ * - `atlassian-instance` — resolved by `cli/lib/atlassian-instance.ts` from
+ *   `.agents/project.yaml` -> `issue_tracker.atlassian_url`.
+ *
+ * The second case exists because `ATLASSIAN_URL` is deliberately NOT a local
+ * variable: while it sat in `.env`, a stale copy in the process environment
+ * shadowed the corrected file (both `bun`'s autoload and `dotenv-cli` skip a
+ * var that is already set), and `jira:sync-issues` silently rebuilt the PBI
+ * cache from a dead Jira site with exit code 0. The host is project identity,
+ * so it is anchored to a versioned file that shows up in a diff.
+ *
+ * The NAME still has to reach the deploy backend, because a serverless Jira
+ * integration cannot read `.agents/project.yaml`. So the var keeps a `vercel`
+ * destination and drops `local`: one value, in the yaml, feeding both the local
+ * tooling and the remote scope, with no second copy to drift.
+ */
+export type VarValueSource = 'env-file' | 'atlassian-instance';
+
+/**
  * `required` is either an unconditional boolean or a conditional gate:
  * `{ ifEnv: '<VAR_NAME>' }` means "required only when env var `<VAR_NAME>` is
  * set (non-empty)". DEV has no conditional-required vars today, but the shape is
@@ -53,13 +75,24 @@ export type VarRequired = boolean | { ifEnv: string };
 export interface VarSpec {
   /** UPPER_SNAKE_CASE env-var name, exactly as it appears in `.env.example`. */
   name: string
-  /** One or more write destinations. Always includes `local`. */
+  /**
+   * One or more write destinations. Includes `local` for every var whose value
+   * lives in `.env` — i.e. everything except a var that declares a non-default
+   * `valueSource` (see `VarValueSource`), which is never written to `.env` at
+   * all. `validateVarManifest` enforces exactly that correspondence.
+   */
   destinations: VarDestination[]
   /**
    * Vercel scopes the var is set into when `destinations` includes `vercel`.
    * Omitted (undefined) for local-only vars.
    */
   scopes?: VarScope[]
+  /**
+   * Where the value is read from. Omitted = `env-file` (the overwhelming
+   * default). A var declaring anything else has NO `.env` entry, so it is
+   * absent from `.env.example` and exempt from the parity check.
+   */
+  valueSource?: VarValueSource
   /** Secret value → masked in reports, piped via stdin (never argv) on remote write. */
   secret: boolean
   /** Unconditionally required, or conditionally required via `{ ifEnv }`. */
@@ -108,7 +141,7 @@ const ALL_SCOPES: VarScope[] = ['production', 'preview', 'development'];
  *
  * Sourced from §2 (DEV table) of the handoff and reconciled against the EXACT
  * var names in `.env.example`, `cli/doctor.ts` `PROJECT_BOUND_VARS`
- * (the 7 POSTGRES_* names + the Supabase set).
+ * (the 7 POSTGRES_* names + the Supabase set), and `N8N_API_URL` / `N8N_API_KEY`.
  */
 export const VAR_MANIFEST: VarSpec[] = [
   // --- CRITICAL tool credentials (project-independent; prompted at install) ---
@@ -116,13 +149,23 @@ export const VAR_MANIFEST: VarSpec[] = [
   // the normal installer. `critical: true` drives `criticalVars()`, which
   // `install.ts` uses to decide what to prompt on a fresh clone. They are NOT
   // pushed to Vercel (they are local tool creds, not app-runtime config).
+  // ATLASSIAN_URL is the ONE var that is not a `.env` entry. It is a public
+  // hostname, not a secret, and it is project IDENTITY — so it is anchored to
+  // `.agents/project.yaml` (versioned, shows up in a diff) instead of a local
+  // file a stale process value can shadow in silence. See `VarValueSource`.
+  //
+  // It keeps a `vercel` destination because the deployed app cannot read the
+  // yaml; `runRemote` sources the value from the resolver, so the yaml is the
+  // single origin for both the local tooling and the remote scope.
   {
     name: 'ATLASSIAN_URL',
-    destinations: ['local'],
+    destinations: ['vercel'],
+    scopes: ALL_SCOPES,
+    valueSource: 'atlassian-instance',
     secret: false,
     required: true,
     critical: true,
-    note: 'Atlassian site URL (acli + scripts/sync-jira-*.ts). Critical tool credential — prompted at install.',
+    note: 'Atlassian site URL. SOURCE OF TRUTH is .agents/project.yaml -> issue_tracker.atlassian_url, NOT .env — prompted at install and written there. Pushed to Vercel for the serverless Jira integration.',
   },
   {
     name: 'ATLASSIAN_EMAIL',
@@ -292,6 +335,56 @@ export const VAR_MANIFEST: VarSpec[] = [
     obtainHint: 'Auto-provisioned by Supabase↔Vercel — pull with `vercel env pull` via `bun run setup --variables`. Defaults to http://localhost:3000 locally.',
     note: 'Base URL for auth redirects, OAuth callbacks, email links. Referenced in code; previously untracked by installer AND doctor.',
   },
+  // --- Automation identity (live-UI validation + authenticated HTTP probes) ---
+  // The account browser/HTTP automation logs in as while validating a story
+  // against the running app. Declared BY NAME in `.agents/project.yaml` →
+  // `testing.automation_identity`; the contract + the prohibition list live in
+  // `.agents/skills/sprint-development/references/live-ui-identity.md`.
+  //
+  // These two names are the RECOMMENDED DEFAULTS, tracked here so `vars:check` /
+  // doctor surface a missing automation identity BEFORE a sprint instead of a
+  // subagent improvising a login mid-run. A project may rename them — if it does,
+  // rename them in this manifest too, so detection keeps working.
+  //
+  // `required: false` because non-UI projects never drive a browser. Local only:
+  // never pushed to Vercel (it is a test identity, not app-runtime config).
+  {
+    name: 'QA_E2E_USER_EMAIL',
+    destinations: ['local'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'Provision a DEDICATED non-production account (no real data, minimum privileges), then declare its var name in `.agents/project.yaml` → testing.automation_identity.email_var. Never a real user, admin, or production account.',
+    note: 'Email of the automation identity used by live-UI validation / authenticated HTTP probes. Local only.',
+  },
+  {
+    name: 'QA_E2E_USER_PASSWORD',
+    destinations: ['local'],
+    secret: true,
+    required: false,
+    critical: false,
+    obtainHint: 'Password of the dedicated automation account above. Read at runtime from .env by the automation script; never inlined in code, plans, or PR bodies.',
+    note: 'Password of the automation identity. Local only, secret.',
+  },
+  // --- n8n automation (non-critical, local only, set when you adopt n8n) ---
+  {
+    name: 'N8N_API_URL',
+    destinations: ['local'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'Your n8n instance → Settings → API (e.g. https://n8n.yourapp.com/api/v1). Only needed if you use the n8n MCP server.',
+    note: 'n8n instance API URL for the n8n MCP server (project-bound). Local only.',
+  },
+  {
+    name: 'N8N_API_KEY',
+    destinations: ['local'],
+    secret: true,
+    required: false,
+    critical: false,
+    obtainHint: 'Your n8n instance → Settings → API. Only needed if you use the n8n MCP server.',
+    note: 'n8n API key for the n8n MCP server. Local only.',
+  },
 ];
 
 /**
@@ -311,14 +404,6 @@ export const DEPRECATED_VARS: DeprecatedVar[] = [
   {
     name: 'JIRA_API_TOKEN',
     reason: 'Replaced by ATLASSIAN_API_TOKEN (DRY Atlassian credential family). Nothing reads JIRA_API_TOKEN anymore.',
-  },
-  {
-    name: 'N8N_API_URL',
-    reason: 'The n8n MCP server was removed (FRESCO-318). Nothing reads N8N_API_URL anymore.',
-  },
-  {
-    name: 'N8N_API_KEY',
-    reason: 'The n8n MCP server was removed (FRESCO-318). Nothing reads N8N_API_KEY anymore.',
   },
   // NOTE: the legacy Supabase keys (SUPABASE_ANON_KEY,
   // NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) are deliberately
@@ -354,6 +439,21 @@ export class VarManifestError extends Error {
 /** Manifest entries whose `destinations` include `dest`. */
 export function varsFor(dest: VarDestination): VarSpec[] {
   return VAR_MANIFEST.filter(spec => spec.destinations.includes(dest));
+}
+
+/** A spec's value source, with the `env-file` default applied. */
+export function valueSourceOf(spec: VarSpec): VarValueSource {
+  return spec.valueSource ?? 'env-file';
+}
+
+/**
+ * Vars whose value actually lives in `.env`. This — NOT the whole manifest — is
+ * the set `.env.example` must document and the set the process⇄file drift check
+ * compares, because a var sourced elsewhere has no `.env` line to be right or
+ * wrong about.
+ */
+export function envFileVars(): VarSpec[] {
+  return VAR_MANIFEST.filter(spec => valueSourceOf(spec) === 'env-file');
 }
 
 /**
@@ -437,6 +537,44 @@ export function parseDotEnvExampleKeys(path: string): string[] {
   return keys;
 }
 
+/**
+ * Parse a real `.env` file into KEY -> VALUE pairs.
+ *
+ * Deliberately NOT `parseDotEnvExampleKeys` with values bolted on: that function
+ * strips a leading `#` so a COMMENTED declaration still counts as documented,
+ * which is right for `.env.example` and wrong here. A commented line in `.env` is
+ * a variable that is not set, and treating it as set would produce phantom drift.
+ *
+ * Strips one layer of matching quotes; on an UNQUOTED value a trailing `#`
+ * comment is removed. That rule matters in practice: a template line like
+ * `SUPABASE_URL=# https://<project-ref>.supabase.co` carries no value at all, and
+ * reading the comment as the value would report phantom drift against whatever
+ * the process actually holds. A `#` only opens a comment when it starts the value
+ * or follows whitespace, so `pass#word` and `https://host/#anchor` survive intact,
+ * and a quoted value is never touched.
+ *
+ * Later definitions win, matching how both `bun` and `dotenv` load a file. Returns
+ * an empty map when the file does not exist — callers decide whether that is a
+ * skip or an error.
+ */
+export function parseDotEnvPairs(path: string): Map<string, string> {
+  const pairs = new Map<string, string>();
+  if (!existsSync(path)) { return pairs; }
+  const content = readFileSync(path, 'utf8');
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim().replace(/^export\s+/, '');
+    if (line.length === 0 || line.startsWith('#')) { continue; }
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)\s*=(.*)$/);
+    if (m === null) { continue; }
+    let value = m[2].trim();
+    const quoted = /^(['"])([\s\S]*)\1$/.exec(value);
+    if (quoted) { value = quoted[2]; }
+    else { value = value.replace(/(^|\s)#.*$/, '$1').trim(); }
+    pairs.set(m[1], value);
+  }
+  return pairs;
+}
+
 // ----------------------------------------------------------------------------
 // Validation
 // ----------------------------------------------------------------------------
@@ -454,7 +592,7 @@ const NAME_RE = /^[A-Z_][A-Z0-9_]*$/;
  * Checks:
  *  - non-empty, UPPER_SNAKE_CASE, unique names
  *  - every var has at least one destination, all destinations valid
- *  - every destination is `local` (DEV writes locally for every tracked var)
+ *  - `local` destination iff the value is sourced from `.env` (`valueSource`)
  *  - `scopes` present + valid iff `vercel` is a destination
  *  - conditional `required` references a non-empty gate name
  *  - critical vars carry no `obtainHint` / `pulledFromInfra` (prompted at install);
@@ -482,9 +620,22 @@ export function validateVarManifest(): void {
         throw new VarManifestError(`Var '${spec.name}' has invalid destination '${dest}'.`);
       }
     }
-    if (!spec.destinations.includes('local')) {
+    // `local` and `valueSource` are two views of the same fact and must agree:
+    // a var written to `.env` is read from `.env`, and a var read from anywhere
+    // else must not also be written to `.env` (that would re-create the second
+    // copy this whole design exists to remove).
+    const source = valueSourceOf(spec);
+    const isLocal = spec.destinations.includes('local');
+    if (source === 'env-file' && !isLocal) {
       throw new VarManifestError(
-        `Var '${spec.name}' must include the 'local' destination (every tracked var is written to .env).`,
+        `Var '${spec.name}' must include the 'local' destination (its value is read from .env). `
+        + 'Declare a `valueSource` if the value lives somewhere else.',
+      );
+    }
+    if (source !== 'env-file' && isLocal) {
+      throw new VarManifestError(
+        `Var '${spec.name}' declares valueSource '${source}' but also targets 'local'. `
+        + 'A var sourced outside .env must never be written back into it.',
       );
     }
 

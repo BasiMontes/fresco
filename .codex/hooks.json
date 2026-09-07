@@ -1,26 +1,14 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "UserPromptSubmit": [
       {
-        "matcher": "Edit|Write|apply_patch",
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f \".agents/skills/impeccable/scripts/hook.mjs\" ] || node \".agents/skills/impeccable/scripts/hook.mjs\"",
+            "command": "root=\"$(git rev-parse --show-toplevel)\" && node \"$root/.agents/hooks/personality-reinject.mjs\"",
+            "commandWindows": "powershell.exe -NoProfile -Command \"$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; node (Join-Path $root '.agents/hooks/personality-reinject.mjs')\"",
             "timeout": 5,
-            "statusMessage": "Checking UI changes"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ ! -f \".agents/skills/impeccable/scripts/hook.mjs\" ] || node \".agents/skills/impeccable/scripts/hook.mjs\"",
-            "timeout": 30,
-            "statusMessage": "Design deep pass"
+            "statusMessage": "Loading output contract..."
           }
         ]
       }

@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 7,
+  "templateRepo": "upex-galaxy/agentic-dev-boilerplate",
+  "templateCommit": "7ede94e737401430518a55520f9c4169d13b8705",
+  "perComponentCommit": {
+    "agent-compatibility": "7ede94e737401430518a55520f9c4169d13b8705",
+    "commands": "7ede94e737401430518a55520f9c4169d13b8705",
+    "codex-config": "7ede94e737401430518a55520f9c4169d13b8705",
+    "agents": "7ede94e737401430518a55520f9c4169d13b8705",
+    "scripts": "7ede94e737401430518a55520f9c4169d13b8705",
+    "cli": "7ede94e737401430518a55520f9c4169d13b8705",
+    "docs": "7ede94e737401430518a55520f9c4169d13b8705",
+    "context": "7ede94e737401430518a55520f9c4169d13b8705",
+    "context-engineering": "7ede94e737401430518a55520f9c4169d13b8705",
+    "vscode": "7ede94e737401430518a55520f9c4169d13b8705",
+    "tooling": "7ede94e737401430518a55520f9c4169d13b8705",
+    "env-template": "7ede94e737401430518a55520f9c4169d13b8705",
+    "agent-root-config": "7ede94e737401430518a55520f9c4169d13b8705",
+    "husky": "7ede94e737401430518a55520f9c4169d13b8705"
+  },
+  "syncedComponents": [],
+  "ignoreFileSync": {
+    ".gitignore": {
+      "lastSyncedSha": "f3962ec6a3b582a136807961b35af97ab5f9744b",
+      "appendedLines": [
+        "*storage-state*.json",
+        "*storageState*.json",
+        "*.cookies",
+        "cookies.txt",
+        "*.har",
+        ".template/upstream-sha/",
+        ".template/last-apply.json",
+        "/.agents/prompts/",
+        ".agents/skills/*-workspace/",
+        ".context/PBI/*",
+        "!.context/PBI/README.md",
+        "!.context/PBI/templates/"
+      ]
+    },
+    ".prettierignore": {
+      "lastSyncedSha": "04dff9f366acd062fd9b5d83d05ef0b8f51e12d5",
+      "appendedLines": [
+        "packages/decks/",
+        ".scratch/",
+        ".session/"
+      ]
+    }
+  },
+  "packageJsonSync": {
+    "package.json": {
+      "scripts": {
+        "lastSyncedSha": "e8dc2e358fb2064c92c136a983846cd28aa20ec0",
+        "appliedKeys": [
+          "agents:compat",
+          "agents:compat:check",
+          "codex",
+          "context:hydrate",
+          "git:policy",
+          "jira:components",
+          "jira:url"
+        ]
+      },
+      "devDependencies": {
+        "lastSyncedSha": "e8dc2e358fb2064c92c136a983846cd28aa20ec0",
+        "appliedKeys": []
+      },
+      "dependencies": {
+        "lastSyncedSha": "e8dc2e358fb2064c92c136a983846cd28aa20ec0",
+        "appliedKeys": []
+      },
+      "lint-staged": {
+        "lastSyncedSha": "e8dc2e358fb2064c92c136a983846cd28aa20ec0",
+        "appliedKeys": []
+      }
+    }
+  },
+  "cliVersion": "8.4",
+  "lastSyncedAt": "2026-09-07T08:34:56.364Z",
+  "variableSystemVersion": 1
+}

@@ -4,17 +4,21 @@
  *
  * Drives the end-to-end setup flow:
  *   1. Detect gentle-ai (presence + version)
- *   2. Detect agents (Claude Code / OpenCode) and prompt selection
+ *   2. Detect agents (Claude Code / OpenCode / Codex) and prompt selection
  *   3. Optionally install Engram persistent memory via gentle-ai (--preset minimal)
  *   4. Wire `.env` for MCP servers + offer direnv autoload
- *      (`.mcp.json` and `opencode.jsonc` are committed with ${VAR}/{env:VAR}
- *      expansion — installer only ensures `.env` has the required values)
+ *      (`.mcp.json`, `opencode.jsonc` and `.codex/config.toml` are committed
+ *      with ${VAR} / {env:VAR} / env-var-name forwarding — installer only
+ *      ensures `.env` has the union of values the selected harnesses need)
+ *   4b. Repair cross-harness compatibility: the generated `.claude/skills`
+ *      alias and the command wrappers (`cli/lib/agent-compatibility.ts`)
  *   5. Verify external CLIs (bun, gh, supabase, vercel, resend, acli,
  *      playwright-cli, jq) — `which`-check only; no auto-install (Rule 4:
  *      OS-dependent installs are deferred to upstream docs)
  *   6. Persist `.template/installer.state.json` for idempotency (gitignored)
  *
  * Env:
+ *   INSTALL_AGENTS=claude-code,opencode,codex   Comma-list of agents to configure (non-interactive)
  *   INSTALL_SKIP_DIRENV=1             Skip direnv autoload sub-step
  *   INSTALL_FORCE_AGENTS_SETUP=1      Force re-run of gentle-ai skill install (Step 5)
  *   INSTALL_FORCE_COMMUNITY_SKILLS=1  Force re-run of community skills install (Step 6)
@@ -31,6 +35,16 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
 import { checkbox, password } from '@inquirer/prompts';
+import {
+  checkAgentCompatibility,
+  repairClaudeSkillsAlias,
+  repairCommandWrappers,
+} from './lib/agent-compatibility.ts';
+import {
+  resolveAtlassianInstance,
+  toSiteSlug,
+  writeAtlassianUrlToYaml,
+} from './lib/atlassian-instance.ts';
 import * as tui from './lib/tui.ts';
 import { nextStepsVars, varsFor } from './lib/variables-manifest.ts';
 
@@ -38,7 +52,7 @@ import { nextStepsVars, varsFor } from './lib/variables-manifest.ts';
 // Types
 // ============================================================================
 
-type AgentId = 'claude-code' | 'opencode';
+export type AgentId = 'claude-code' | 'opencode' | 'codex';
 
 type InstallStatus = 'installed' | 'skipped' | 'failed';
 
@@ -53,9 +67,13 @@ interface GentleAiInfo {
   status: 'installed' | 'missing' | 'skipped' | 'incompatible'
 }
 
-interface AgentDetection {
+export interface AgentDetection {
   claudeCode: boolean
   opencode: boolean
+  /** `codex` executable on PATH. */
+  codexCli: boolean
+  /** `.codex/config.toml` present in the repo — Codex Desktop reads it without a CLI. */
+  codexConfigured: boolean
 }
 
 interface GithubRemoteInfo {
@@ -99,6 +117,7 @@ const STATE_PATH = join(REPO_ROOT, '.template', 'installer.state.json');
 const MARKER_PATH = join(REPO_ROOT, '.template', 'installer.lock.json');
 const CLAUDE_MCP_PATH = join(REPO_ROOT, '.mcp.json');
 const OPENCODE_CONFIG_PATH = join(REPO_ROOT, 'opencode.jsonc');
+const CODEX_CONFIG_PATH = join(REPO_ROOT, '.codex', 'config.toml');
 const ENV_PATH = join(REPO_ROOT, '.env');
 const ENV_EXAMPLE_PATH = join(REPO_ROOT, '.env.example');
 
@@ -106,11 +125,43 @@ const MIN_GENTLE_AI_VERSION = [1, 26, 5] as const;
 
 const ENGRAM_COMPONENT = 'engram';
 
-const CANONICAL_MCPS = ['context7', 'tavily', 'supabase'] as const;
+const CANONICAL_MCPS = ['context7', 'tavily', 'supabase', 'n8n'] as const;
 
 interface CommunitySkill {
   package: string
   skill?: string // omit or '*' to install all skills from the package
+}
+
+/**
+ * Canonical project-level skill store. `bunx skills add` (project level, no
+ * `--agent`) writes the skill body here; Claude Code reaches it through the
+ * generated `.claude/skills` alias, OpenCode and Codex read it natively.
+ */
+export const PROJECT_SKILL_DESTINATION = '.agents/skills';
+
+/**
+ * Argument list for one `bunx skills add` call.
+ *
+ * Project level deliberately passes NO `--agent`: the body must land once in
+ * `.agents/skills/` (the canonical store every harness reads). Passing
+ * `--agent` there would make the CLI create per-harness copies or a REAL
+ * `.claude/skills/` directory, which collides with the directory-level alias
+ * `repairRepositoryCompatibility()` maintains. User level (`--global`) has no
+ * canonical store, so it keeps one `--agent` per selected harness.
+ */
+export function buildCommunitySkillArgs(
+  item: CommunitySkill,
+  level: 'project' | 'global',
+  agents: AgentId[],
+): string[] {
+  const args = ['skills', 'add', item.package];
+  if (item.skill && item.skill !== '*') { args.push('--skill', item.skill); }
+  if (level === 'global') {
+    args.push('--global');
+    for (const agent of agents) { args.push('--agent', agent); }
+  }
+  args.push('--yes');
+  return args;
 }
 
 // Community skills installed at PROJECT level (`bunx skills add`).
@@ -134,6 +185,7 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'https://github.com/wshobson/agents', skill: 'typescript-advanced-types' },
   { package: 'https://github.com/addyosmani/web-quality-skills', skill: 'accessibility' },
   { package: 'https://github.com/addyosmani/web-quality-skills', skill: 'seo' },
+  { package: 'czlonkowski/n8n-skills' }, // whole repo (n8n MCP toolkit)
   { package: 'https://github.com/emilkowalski/skill', skill: 'emil-design-eng' },
   { package: 'https://github.com/nextlevelbuilder/ui-ux-pro-max-skill', skill: 'ui-ux-pro-max' },
   { package: 'https://github.com/pbakaus/impeccable', skill: 'impeccable' },
@@ -161,9 +213,10 @@ const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   // any project the user touches, regardless of stack.
   { package: 'https://bun.sh/docs', skill: 'bun' },
   { package: 'https://github.com/microsoft/playwright-cli', skill: 'playwright-cli' },
-  // Cross-project human-in-the-loop feedback CLI (`toki`): a blocking browser UI
-  // the AI drives mid-conversation to collect structured, anchored answers.
-  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'wokitoki' },
+  // Cross-project decision-deck CLI (`mkd`, Make Decision): the AI writes a spec
+  // of items (decision / question / report / table) and the user answers in a
+  // browser deck, pasting the Result JSON back into the chat (non-blocking).
+  { package: 'https://github.com/upex-galaxy/agentic-user-skills', skill: 'mkd' },
 ];
 
 // External CLIs the boilerplate's skills depend on. Installer NEVER auto-installs
@@ -245,15 +298,18 @@ const MCP_SERVER_SECRETS: Record<string, readonly string[]> = {
     'SUPABASE_PUBLISHABLE_KEY',
     'SUPABASE_SECRET_KEY',
   ],
+  n8n: ['N8N_API_URL', 'N8N_API_KEY'],
 };
 
 // Vars discovered from committed MCP configs that the installer should NOT
 // prompt for at install time — they require an existing Supabase project /
-// backend. Surfaced later by `bun run doctor`.
+// n8n instance / backend. Surfaced later by `bun run doctor`.
 const INSTALLER_DEFERRED_VARS = new Set<string>([
   'NEXT_PUBLIC_SUPABASE_URL',
   'SUPABASE_PUBLISHABLE_KEY',
   'SUPABASE_SECRET_KEY',
+  'N8N_API_URL',
+  'N8N_API_KEY',
 ]);
 
 // ============================================================================
@@ -269,9 +325,10 @@ const AUTO_NON_INTERACTIVE
   = !process.argv.includes('--non-interactive') && !process.stdin.isTTY;
 const SKIP_DIRENV = process.env.INSTALL_SKIP_DIRENV === '1';
 const FORCE_AGENTS_SETUP = process.env.INSTALL_FORCE_AGENTS_SETUP === '1';
-// --sync-skills: standalone repair mode — re-installs community skills targeting
-// the selected agent(s) so they land in each agent's own skills dir (e.g. Claude
-// Code's `.claude/skills/`). Implies a forced community re-run.
+// --sync-skills: standalone repair mode — re-installs community skills so
+// project skills land in the canonical `.agents/skills/` store (reachable by
+// Claude Code through the generated `.claude/skills` alias) and user-level
+// skills reach every selected harness. Implies a forced community re-run.
 const SYNC_SKILLS = process.argv.includes('--sync-skills');
 const FORCE_COMMUNITY_SKILLS = process.env.INSTALL_FORCE_COMMUNITY_SKILLS === '1' || SYNC_SKILLS;
 const FORCE_GITHUB_REMOTE = process.env.INSTALL_FORCE_GITHUB_REMOTE === '1';
@@ -377,6 +434,14 @@ async function verifyRepoRoot(): Promise<void> {
     }
   }
 
+  // No TTY to answer with: keep the conservative default (do not continue) and
+  // say why, rather than rendering a prompt that would never resolve.
+  if (NON_INTERACTIVE) {
+    log.error(`package.json name is "${pkg.name ?? '(unknown)'}" — this does not look like the repo root.`);
+    log.dim('Re-run from the correct directory with: bun run setup');
+    process.exit(1);
+  }
+
   const proceed = await tui.confirm({
     message: `package.json name is "${pkg.name ?? '(unknown)'}". Continue anyway?`,
     initialValue: false,
@@ -435,6 +500,14 @@ async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
   log.info('gentle-ai installs Engram persistent memory (--preset minimal) into your agent.');
   process.stdout.write('\n');
 
+  // No TTY: continuing without gentle-ai is the only answer that lets the rest
+  // of the install finish. Exiting would strand every unattended re-run here.
+  if (NON_INTERACTIVE) {
+    log.warn('  Skipped (no TTY). Continuing without gentle-ai — skills + engram will NOT be installed.');
+    log.dim('  To enable later: install gentle-ai (https://github.com/Gentleman-Programming/gentle-ai), then re-run: bun run setup');
+    return 'skip';
+  }
+
   const choiceRaw = await tui.confirm({
     message: 'Show install commands and exit so you can install it? (No = continue without gentle-ai)',
     initialValue: true,
@@ -461,50 +534,117 @@ async function handleMissingGentleAi(): Promise<'show-and-exit' | 'skip'> {
 // Step 4 — detect agents
 // ============================================================================
 
-async function detectAgents(): Promise<AgentDetection> {
-  const claudePath = join(homedir(), '.claude');
-  const opencodePath = join(homedir(), '.config', 'opencode');
+const AGENT_DOCS: Record<AgentId, string> = {
+  'claude-code': 'https://docs.claude.com/en/docs/claude-code',
+  'opencode': 'https://opencode.ai/docs',
+  'codex': 'https://developers.openai.com/codex/',
+};
 
-  const [claude, opencode] = await Promise.all([
-    stat(claudePath).then(
-      s => s.isDirectory(),
-      () => false,
-    ),
-    stat(opencodePath).then(
-      s => s.isDirectory(),
-      () => false,
-    ),
+/**
+ * Detect which harnesses this machine (and this repo) can run.
+ *
+ * Claude Code and OpenCode count as present when their user config directory
+ * exists OR the executable is on PATH. Codex is two independent signals: the
+ * `codex` CLI on PATH, and `.codex/config.toml` in the repo — Codex Desktop
+ * reads the repository config with no CLI installed, so a configured repo is a
+ * valid Codex target on its own. Every input is injectable for tests.
+ */
+export async function detectAgents(options: {
+  home?: string
+  root?: string
+  binaryExists?: (binary: string) => boolean
+} = {}): Promise<AgentDetection> {
+  const home = options.home ?? homedir();
+  const root = options.root ?? REPO_ROOT;
+  const binaryExists = options.binaryExists ?? (binary => which(binary) !== null);
+  const claudePath = join(home, '.claude');
+  const opencodePath = join(home, '.config', 'opencode');
+
+  const [claudeDirectory, opencodeDirectory] = await Promise.all([
+    stat(claudePath).then(s => s.isDirectory(), () => false),
+    stat(opencodePath).then(s => s.isDirectory(), () => false),
   ]);
 
-  return { claudeCode: claude, opencode };
+  return {
+    claudeCode: claudeDirectory || binaryExists('claude'),
+    opencode: opencodeDirectory || binaryExists('opencode'),
+    codexCli: binaryExists('codex'),
+    codexConfigured: existsSync(join(root, '.codex', 'config.toml')),
+  };
+}
+
+/**
+ * `INSTALL_AGENTS=claude-code,opencode,codex` — non-interactive override for
+ * the agent selection prompt. Unknown entries are dropped, duplicates collapse.
+ */
+export function parseAgentsEnv(raw = process.env.INSTALL_AGENTS): AgentId[] | null {
+  if (!raw) { return null; }
+  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const valid = new Set<AgentId>();
+  for (const p of parts) {
+    if (p === 'claude-code' || p === 'opencode' || p === 'codex') { valid.add(p); }
+  }
+  return [...valid];
+}
+
+export function describeAgentDetection(detected: AgentDetection): string {
+  const codex = detected.codexCli
+    ? 'CLI found; Desktop uses the repository config'
+    : detected.codexConfigured
+      ? 'repository configured for Desktop; CLI not found'
+      : 'not found';
+  return `Claude Code: ${detected.claudeCode ? 'found' : 'not found'} | OpenCode: ${detected.opencode ? 'found' : 'not found'} | Codex: ${codex}`;
 }
 
 async function promptAgentSelection(detected: AgentDetection): Promise<AgentId[]> {
-  if (!detected.claudeCode && !detected.opencode) {
-    log.error('No agents detected. Install Claude Code (~/.claude/) or OpenCode (~/.config/opencode/) and rerun.');
-    log.dim('  Claude Code : https://docs.claude.com/claude-code');
-    log.dim('  OpenCode    : https://opencode.ai');
-    log.dim('After installing one (or both), re-run: bun run setup');
+  // A validation, not a prompt — it must run in both modes. Skipping it in
+  // non-interactive mode would let the installer proceed with zero agents and
+  // silently configure nothing.
+  const codexAvailable = detected.codexCli || detected.codexConfigured;
+  if (!detected.claudeCode && !detected.opencode && !codexAvailable) {
+    log.error('No agent executable or Codex repository configuration detected.');
+    log.dim(`  Claude Code : ${AGENT_DOCS['claude-code']}`);
+    log.dim(`  OpenCode    : ${AGENT_DOCS.opencode}`);
+    log.dim(`  Codex       : ${AGENT_DOCS.codex}`);
+    log.dim('After installing at least one, re-run: bun run setup');
     process.exit(1);
   }
 
-  if (detected.claudeCode && !detected.opencode) {
-    const ok = await tui.confirm({ message: 'Detected Claude Code. Configure for it?', initialValue: true });
-    if (tui.isCancel(ok)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
-    return ok ? ['claude-code'] : [];
+  // main() calls this unconditionally, so without the guard a no-TTY run hangs
+  // here forever: clack and inquirer both render and never resolve when stdin
+  // is not a TTY. That covers CI, an AI agent piping stdin, and Git Bash on
+  // Windows, whose MSYS pty reports isTTY false.
+  if (NON_INTERACTIVE) {
+    const fromEnv = parseAgentsEnv();
+    if (fromEnv && fromEnv.length > 0) { return fromEnv; }
+    const out: AgentId[] = [];
+    if (detected.claudeCode) { out.push('claude-code'); }
+    if (detected.opencode) { out.push('opencode'); }
+    if (codexAvailable) { out.push('codex'); }
+    return out;
   }
 
-  if (detected.opencode && !detected.claudeCode) {
-    const ok = await tui.confirm({ message: 'Detected OpenCode. Configure for it?', initialValue: true });
-    if (tui.isCancel(ok)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
-    return ok ? ['opencode'] : [];
-  }
-
+  // Every harness is listed so the user sees what else the repo supports; an
+  // undetected one is disabled with its install docs instead of hidden.
+  const choice = (id: AgentId, name: string, available: boolean, detail?: string) => ({
+    name: available ? `${name}${detail ? ` (${detail})` : ''}` : name,
+    value: id,
+    checked: available,
+    disabled: available ? false : `not detected — ${AGENT_DOCS[id]}`,
+  });
   const selected = await checkbox<AgentId>({
-    message: 'Detected both agents. Which to configure?',
+    message: 'Which detected agents should this repository support?',
     choices: [
-      { name: 'Claude Code', value: 'claude-code', checked: true },
-      { name: 'OpenCode', value: 'opencode', checked: true },
+      choice('claude-code', 'Claude Code', detected.claudeCode, 'executable/config found'),
+      choice('opencode', 'OpenCode', detected.opencode, 'executable/config found'),
+      choice(
+        'codex',
+        'Codex',
+        codexAvailable,
+        detected.codexCli
+          ? 'CLI found; Desktop uses the same repository config'
+          : 'Desktop target: repository configured, CLI not found',
+      ),
     ],
     required: true,
   });
@@ -557,9 +697,7 @@ async function installSkillsViaGentleAi(
   log.info(`This will run ${totalCalls} gentle-ai install command(s) — one call per agent.`);
   log.dim('  Each call: gentle-ai install --agent <agent> --preset minimal (installs Engram only)');
 
-  const proceedRaw = await tui.confirm({ message: 'Continue with Engram installation?', initialValue: true });
-  if (tui.isCancel(proceedRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
-  const proceed = proceedRaw;
+  const proceed = await maybeConfirm('Continue with Engram installation?', true);
   if (!proceed) {
     log.warn('Skipping Engram installation.');
     for (const agent of agents) {
@@ -624,12 +762,7 @@ async function installCommunitySkills(
     return;
   }
 
-  const proceedRaw = await tui.confirm({
-    message: `Install ${label} community skills?`,
-    initialValue: true,
-  });
-  if (tui.isCancel(proceedRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
-  const proceed = proceedRaw;
+  const proceed = await maybeConfirm(`Install ${label} community skills?`, true);
   if (!proceed) {
     log.warn(`Skipping ${label} community skills.`);
     for (const item of list) {
@@ -647,20 +780,12 @@ async function installCommunitySkills(
       log.dim(`  skipping ${slug} (already installed)`);
       continue;
     }
-    // Install into each selected agent's skills directory via `--agent`. Claude
-    // Code only discovers skills under `.claude/skills/` (plus ~/.claude/skills/,
-    // plugins, and --add-dir) — it NEVER scans `.agents/skills/`. Without an
-    // explicit `--agent`, `bunx skills add` writes only to `.agents/skills/` (the
-    // agent-agnostic store read by Copilot/OpenCode/Warp), so the skills stay
-    // invisible to Claude Code. Passing the selected agents lands each skill where
-    // that agent actually loads it.
-    const args = ['skills', 'add', item.package];
-    if (item.skill && item.skill !== '*') {
-      args.push('--skill', item.skill);
-    }
-    if (level === 'global') { args.push('--global'); }
-    for (const agent of agents) { args.push('--agent', agent); }
-    args.push('--yes');
+    // Project level: body lands once in `.agents/skills/` (PROJECT_SKILL_DESTINATION);
+    // Claude Code reads it through the `.claude/skills` alias that
+    // `repairRepositoryCompatibility()` restores right after this step (the CLI
+    // may leave a per-skill symlink shim there, which the repair reclaims).
+    // User level: one `--agent` per selected harness — see buildCommunitySkillArgs.
+    const args = buildCommunitySkillArgs(item, level, agents);
     const result = tryRun('bunx', args);
     if (result.ok) {
       log.success(`  installed: ${slug}`);
@@ -696,16 +821,53 @@ function stripJsoncComments(input: string): string {
     .replace(/^\s*\/\/.*$/gm, '');
 }
 
-async function discoverRequiredEnvVars(agents: AgentId[]): Promise<string[]> {
+/**
+ * Codex never expands `${VAR}`: `.codex/config.toml` forwards secrets BY NAME
+ * through `env_vars = [...]` and `bearer_token_env_var = "..."`. Those names are
+ * the Codex side of the env contract. `[mcp_servers.X.env]` tables hold literal
+ * settings (log level, mode flags) and are deliberately NOT collected.
+ */
+function collectCodexMcpEnvVars(value: unknown, seen: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (const entry of value) { collectCodexMcpEnvVars(entry, seen); }
+    return;
+  }
+  if (!value || typeof value !== 'object') { return; }
+  for (const [key, entry] of Object.entries(value)) {
+    if (key === 'bearer_token_env_var' && typeof entry === 'string') { seen.add(entry); }
+    else if (key === 'env_vars' && Array.isArray(entry)) {
+      for (const name of entry) { if (typeof name === 'string') { seen.add(name); } }
+    }
+    else if (key === 'env') { continue; }
+    else { collectCodexMcpEnvVars(entry, seen); }
+  }
+}
+
+/**
+ * Union of the `.env` names the selected harnesses' committed MCP configs
+ * depend on. Each host declares them differently (`${VAR}` in `.mcp.json`,
+ * `{env:VAR}` in `opencode.jsonc`, forwarded names in `.codex/config.toml`).
+ */
+export async function discoverRequiredEnvVars(
+  agents: AgentId[],
+  root = REPO_ROOT,
+): Promise<string[]> {
   const seen = new Set<string>();
-  if (agents.includes('claude-code') && existsSync(CLAUDE_MCP_PATH)) {
-    const content = await readFile(CLAUDE_MCP_PATH, 'utf8');
+  const claudeMcpPath = root === REPO_ROOT ? CLAUDE_MCP_PATH : join(root, '.mcp.json');
+  const openCodeConfigPath = root === REPO_ROOT ? OPENCODE_CONFIG_PATH : join(root, 'opencode.jsonc');
+  const codexConfigPath = root === REPO_ROOT ? CODEX_CONFIG_PATH : join(root, '.codex', 'config.toml');
+  if (agents.includes('claude-code') && existsSync(claudeMcpPath)) {
+    const content = await readFile(claudeMcpPath, 'utf8');
     for (const m of content.matchAll(MCP_VAR_PATTERN)) { seen.add(m[1]); }
   }
-  if (agents.includes('opencode') && existsSync(OPENCODE_CONFIG_PATH)) {
-    const raw = await readFile(OPENCODE_CONFIG_PATH, 'utf8');
+  if (agents.includes('opencode') && existsSync(openCodeConfigPath)) {
+    const raw = await readFile(openCodeConfigPath, 'utf8');
     const content = stripJsoncComments(raw);
     for (const m of content.matchAll(OPENCODE_VAR_PATTERN)) { seen.add(m[1]); }
+  }
+  if (agents.includes('codex') && existsSync(codexConfigPath)) {
+    const parsed = Bun.TOML.parse(await readFile(codexConfigPath, 'utf8'));
+    collectCodexMcpEnvVars(parsed, seen);
   }
   return [...seen].sort();
 }
@@ -783,6 +945,11 @@ export async function appendVarsToEnv(vars: Record<string, string>): Promise<voi
 }
 
 async function promptForVar(name: string): Promise<string> {
+  // Callers are expected to gate on NON_INTERACTIVE, but this is the single
+  // choke point for every credential prompt — returning empty here means a
+  // missed guard downstream degrades to "left unset in .env" instead of a hang.
+  if (NON_INTERACTIVE) { return ''; }
+
   if (isSecretName(name)) {
     const entered = await password({
       message: `${name} (Enter to skip — fill later in .env):`,
@@ -807,7 +974,7 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
 
   const required = await discoverRequiredEnvVars(agents);
   if (required.length === 0) {
-    log.warn('No env-var placeholders found in .mcp.json or opencode.jsonc.');
+    log.warn('No env-var placeholders found in .mcp.json, opencode.jsonc or .codex/config.toml.');
     state.pendingEnvVars = [];
     return;
   }
@@ -833,7 +1000,7 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
     if (INSTALLER_DEFERRED_VARS.has(name)) {
       // Non-critical project-bound / infra var: NOT prompted and NOT a blocking
       // "pending" warning. Supabase/Postgres/app vars are auto-provisioned and
-      // pulled later via `bun run setup --variables`.
+      // pulled later via `bun run setup --variables`; n8n vars are optional.
       // Surfaced only in the closing "Next steps — finish later" section.
       log.dim(`  ${name}: deferred (non-critical — auto-provisioned / optional; see closing Next steps).`);
       continue;
@@ -884,15 +1051,82 @@ async function configureMcps(agents: AgentId[], state: InstallState): Promise<vo
 // required). Promoted out of the acli auth loop (formerly Step 12.4) so the
 // user is asked even if they later skip Jira bootstrap.
 //
-// Project-bound vars (SUPABASE_URL + new-style keys, POSTGRES_*) are
+// Project-bound vars (SUPABASE_URL + new-style keys, POSTGRES_*, N8N_*) are
 // deferred to `bun run doctor` — see INSTALLER_DEFERRED_VARS above.
 
-const DAY_ZERO_ATLASSIAN_VARS = ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
+// NOTE: the site HOST is not in this list. `ATLASSIAN_URL` is not a `.env`
+// variable — it is written to `.agents/project.yaml` by `ensureAtlassianHost()`
+// below. Only the two real secrets belong in `.env`.
+const DAY_ZERO_ATLASSIAN_VARS = ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
+
+/**
+ * Make sure `.agents/project.yaml` -> `issue_tracker.atlassian_url` holds the
+ * Atlassian host, prompting for it when it does not.
+ *
+ * Runs at day-0, BEFORE anything that needs the host: the acli login in Step
+ * 12.4 reads it through the resolver, so an empty yaml there means no session.
+ *
+ * Deliberately NOT written to `.env`. The host is project identity, and while
+ * it lived in `.env` a stale copy inherited from the process environment
+ * shadowed the file in silence — `jira:sync-issues` rebuilt `.context/PBI/`
+ * from a dead site and exited 0. The yaml is versioned, so the value shows up
+ * in a diff.
+ *
+ * Leaving the prompt empty is allowed and non-fatal: the install continues, the
+ * acli login step later reports it cannot authenticate, and the closing summary
+ * points at `bun run agents:setup`. Nothing guesses a host.
+ */
+async function ensureAtlassianHost(): Promise<void> {
+  let existing: string | null = null;
+  try {
+    existing = resolveAtlassianInstance().baseUrl;
+  }
+  catch {
+    existing = null;
+  }
+
+  if (existing !== null) {
+    log.dim(`  Atlassian host: ${existing} (.agents/project.yaml).`);
+    return;
+  }
+
+  if (NON_INTERACTIVE) {
+    log.warn(
+      'Atlassian host not set in .agents/project.yaml (issue_tracker.atlassian_url), '
+      + 'and non-interactive mode cannot prompt. Jira steps will be skipped. '
+      + 'Fix with `bun run agents:setup`.',
+    );
+    return;
+  }
+
+  tui.note(
+    'The Atlassian site URL, e.g. https://your-org.atlassian.net\n'
+    + 'Stored in .agents/project.yaml (versioned), NOT in .env — it is project\n'
+    + 'identity, and a stale copy in .env silently pointed the sync scripts at a\n'
+    + 'dead Jira site. Read it back any time with `bun run --silent jira:url`.',
+    'Atlassian host',
+  );
+  const value = await promptForVar('ATLASSIAN_URL');
+  if (value.length === 0) {
+    log.warn('  Atlassian host left empty — Jira steps will be skipped. Set it later with `bun run agents:setup`.');
+    return;
+  }
+  try {
+    const written = writeAtlassianUrlToYaml(value);
+    log.dim(`  Atlassian host → .agents/project.yaml (${written}).`);
+  }
+  catch (err) {
+    log.warn(`  Could not write the Atlassian host: ${(err as Error).message}`);
+  }
+}
 
 async function configureDayZeroCredentials(state: InstallState): Promise<void> {
   await ensureEnvFileExists();
   const envValues = parseEnvFile(await readFile(ENV_PATH, 'utf8'));
   const newValues: Record<string, string> = {};
+
+  // ── Atlassian host (project.yaml, not .env) ───────────────────────────────
+  await ensureAtlassianHost();
 
   // ── Atlassian credentials ─────────────────────────────────────────────────
   const missingAtlassian = DAY_ZERO_ATLASSIAN_VARS.filter((name) => {
@@ -921,7 +1155,7 @@ async function configureDayZeroCredentials(state: InstallState): Promise<void> {
     }
   }
   else {
-    log.dim('  ATLASSIAN_URL / ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN: already set.');
+    log.dim('  ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN: already set.');
   }
 
   // ── Resend API key ────────────────────────────────────────────────────────
@@ -1061,7 +1295,7 @@ async function offerDirenvAutoload(): Promise<void> {
 
   if (!info.installed) {
     log.info('direnv not installed (optional).');
-    log.dim('  Launch agents with: bun claude  /  bun opencode  (dotenv-cli loads .env automatically).');
+    log.dim('  Launch agents with: bun claude  /  bun opencode  /  bun codex  (dotenv-cli loads .env automatically).');
     log.dim(`  Or install direnv for shell autoload: ${installHintForPlatform()}`);
     return;
   }
@@ -1075,7 +1309,7 @@ async function offerDirenvAutoload(): Promise<void> {
     true,
   );
   if (!proceed) {
-    log.dim('  Skipped. Launch agents with: bun claude  /  bun opencode.');
+    log.dim('  Skipped. Launch agents with: bun claude  /  bun opencode  /  bun codex.');
     return;
   }
   const result = tryRun('direnv', ['allow', REPO_ROOT]);
@@ -1084,7 +1318,7 @@ async function offerDirenvAutoload(): Promise<void> {
     log.dim(`  Reminder: add this to your shell rc if not already done: ${shellHookHint(info)}`);
   }
   else {
-    log.warn('direnv allow failed. Launch agents with: bun claude  /  bun opencode.');
+    log.warn('direnv allow failed. Launch agents with: bun claude  /  bun opencode  /  bun codex.');
     log.dim(`  ${(result.stderr || result.stdout).trim().slice(0, 200)}`);
   }
 }
@@ -1143,11 +1377,19 @@ function verifyExternalClis(state: InstallState): CliResult[] {
 // Step 9 — persist state
 // ============================================================================
 
+/** Drop unknown / duplicated agent ids from a persisted state file. */
+export function migrateAgentIds(value: unknown): AgentId[] {
+  if (!Array.isArray(value)) { return []; }
+  return [...new Set(value.filter((agent): agent is AgentId =>
+    agent === 'claude-code' || agent === 'opencode' || agent === 'codex'))];
+}
+
 async function loadPriorState(): Promise<InstallState | null> {
   if (!existsSync(STATE_PATH)) { return null; }
   try {
     const raw = await readFile(STATE_PATH, 'utf8');
     const parsed = JSON.parse(raw) as InstallState;
+    parsed.agents = migrateAgentIds(parsed.agents);
     // Back-fill postInstall for state files written before this field existed.
     parsed.postInstall ??= {
       agentsSetup: 'pending',
@@ -1173,8 +1415,9 @@ async function writeInstallState(state: InstallState): Promise<void> {
   log.success(`Wrote ${STATE_PATH}`);
 }
 
-function buildInitialState(prior: InstallState | null): InstallState {
+export function buildInitialState(prior: InstallState | null): InstallState {
   if (prior && prior.version === 1) {
+    prior.agents = migrateAgentIds(prior.agents);
     prior.steps ??= {};
     prior.postInstall ??= {
       agentsSetup: 'pending',
@@ -1205,6 +1448,54 @@ function buildInitialState(prior: InstallState | null): InstallState {
       jiraCheck: 'pending',
     },
   };
+}
+
+export function launchCommandsForAgents(agents: AgentId[]): string[] {
+  return agents.map(agent => agent === 'claude-code' ? 'bun run claude' : `bun run ${agent}`);
+}
+
+// ============================================================================
+// Step 6b — repository compatibility (Claude skills alias + command wrappers)
+// ============================================================================
+
+/**
+ * Restore the generated cross-harness artifacts and prove the contract holds.
+ *
+ * `.claude/skills` becomes the directory-level alias to `.agents/skills`
+ * (reclaiming the per-skill symlink shim `bunx skills add` leaves behind), the
+ * command wrappers under `.claude/commands` / `.opencode/commands` are
+ * regenerated from `.agents/compatibility/command-aliases.json`, and the full
+ * check (hooks, MCP parity, shim) runs afterwards. Throws with the check's
+ * errors when something the repair cannot fix (a hand-edited config, a missing
+ * canonical file) is still out of contract.
+ */
+export function repairRepositoryCompatibility(
+  root = REPO_ROOT,
+  platform: NodeJS.Platform = process.platform,
+): { alias: ReturnType<typeof repairClaudeSkillsAlias>, wrappersWritten: number } {
+  const alias = repairClaudeSkillsAlias(root, platform);
+  const wrappersWritten = repairCommandWrappers(root);
+  const check = checkAgentCompatibility(root, platform);
+  if (!check.ok) {
+    throw new Error(`Agent compatibility repair incomplete:\n${check.errors.join('\n')}`);
+  }
+  return { alias, wrappersWritten };
+}
+
+/**
+ * Installer-facing wrapper: never aborts the run. A compatibility failure here
+ * is real but not a reason to lose the env / Jira steps that follow — doctor
+ * reports it and `bun run agents:compat` repairs it later.
+ */
+function runRepositoryCompatibility(): void {
+  try {
+    const compatibility = repairRepositoryCompatibility();
+    log.success(`Repository compatibility ready (${compatibility.wrappersWritten} wrapper update(s); Claude skills alias ${compatibility.alias.status}).`);
+  }
+  catch (err) {
+    log.error(`Repository compatibility is out of contract — ${(err as Error).message ?? String(err)}`);
+    log.dim('  Fix the reported files, then run: bun run agents:compat   (bun run setup:doctor shows the current state)');
+  }
 }
 
 // ============================================================================
@@ -1460,7 +1751,13 @@ function reloadDotEnv(): void {
       if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith('\'') && v.endsWith('\''))) {
         v = v.slice(1, -1);
       }
-      // Don't overwrite an already-populated value with an empty one from .env.
+      // The FILE WINS over an inherited process value. This is deliberate and must
+      // not be "corrected" to the usual non-override dotenv default: a stale value
+      // inherited from whatever spawned this process (an agent session, a parent
+      // shell) would otherwise shadow a corrected `.env` in silence and survive an
+      // application restart. `bun run vars:env:check` guards the same class
+      // repo-wide; see `cli/lib/atlassian-instance.ts` for the incident this comes
+      // from. Only an EMPTY file value defers to an already-populated process value.
       if (k && (v !== '' || !process.env[k])) { process.env[k] = v; }
     }
   }
@@ -1470,13 +1767,16 @@ function reloadDotEnv(): void {
 }
 
 /**
- * Interactive loop that checks Atlassian credentials (ATLASSIAN_URL /
- * ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN) and probes /rest/api/3/myself.
+ * Interactive loop that checks Atlassian access and probes /rest/api/3/myself.
  * Up to 5 attempts; lets the user skip at any time.
  *
- * Single credential family across every consumer (DRY):
- *   - scripts/sync-jira-*.ts  read ATLASSIAN_* directly
- *   - acli auth login         reads ATLASSIAN_* (token piped via stdin)
+ * Two inputs, two homes — on purpose:
+ *   - the HOST from `.agents/project.yaml` (project identity, versioned)
+ *   - ATLASSIAN_EMAIL / ATLASSIAN_API_TOKEN from `.env` (real secrets)
+ *
+ * Consumers:
+ *   - scripts/sync-jira-*.ts  resolve the host, read the credentials from .env
+ *   - acli auth login         `--site` from the resolver, token piped via stdin
  *
  * The Atlassian MCP server is opt-in only (see docs/mcp/*.template.* for the
  * templates to enable it manually); it is not part of the default boilerplate.
@@ -1486,19 +1786,25 @@ function reloadDotEnv(): void {
  */
 async function jiraAuthLoop(): Promise<'authenticated' | 'skipped'> {
   const probe = async (): Promise<{ ok: boolean, reason: string }> => {
-    const url = process.env.ATLASSIAN_URL;
+    let url: string | null = null;
+    try {
+      url = resolveAtlassianInstance().baseUrl;
+    }
+    catch {
+      url = null;
+    }
     const email = process.env.ATLASSIAN_EMAIL;
     const token = process.env.ATLASSIAN_API_TOKEN;
     const missing: string[] = [];
-    if (!url) { missing.push('ATLASSIAN_URL'); }
+    if (!url) { missing.push('issue_tracker.atlassian_url in .agents/project.yaml'); }
     if (!email) { missing.push('ATLASSIAN_EMAIL'); }
     if (!token) { missing.push('ATLASSIAN_API_TOKEN'); }
     if (missing.length > 0) {
-      return { ok: false, reason: `Missing env vars: ${missing.join(', ')}` };
+      return { ok: false, reason: `Missing: ${missing.join(', ')}` };
     }
     try {
       const auth = Buffer.from(`${email}:${token}`).toString('base64');
-      const res = await fetch(`${url!.replace(/\/$/, '')}/rest/api/3/myself`, {
+      const res = await fetch(`${url!}/rest/api/3/myself`, {
         method: 'GET',
         headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
         signal: AbortSignal.timeout(5000),
@@ -1526,13 +1832,15 @@ async function jiraAuthLoop(): Promise<'authenticated' | 'skipped'> {
     if (attempt === 1) {
       tui.note(
         [
-          '1. Open .env in your editor.',
-          '2. Set the three Atlassian variables:',
-          '     ATLASSIAN_URL=https://your-org.atlassian.net',
+          '1. Set the SITE HOST (not a .env variable — it is project identity):',
+          '     bun run agents:setup',
+          '     -> .agents/project.yaml  ->  issue_tracker.atlassian_url',
+          '     Check it with: bun run --silent jira:url',
+          '2. Open .env and set the two CREDENTIALS:',
           '     ATLASSIAN_EMAIL=your-email@example.com',
           '     ATLASSIAN_API_TOKEN=...',
           '     (Get a token at https://id.atlassian.com/manage-profile/security/api-tokens)',
-          '3. Save the file. dotenv auto-loads on the next probe — no shell reload needed.',
+          '3. Save. dotenv auto-loads on the next probe — no shell reload needed.',
         ].join('\n'),
         'Fix Atlassian credentials',
       );
@@ -1689,34 +1997,71 @@ async function runPostInstallSteps(state: InstallState): Promise<void> {
     ['jira', 'workitem', 'search', '--jql', 'created >= -1d', '--limit', '1', '--json'],
     { stdio: ['ignore', 'pipe', 'pipe'], timeout: 8000 },
   );
-  const acliManualHint = 'echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token';
-  const ATLASSIAN_VARS = ['ATLASSIAN_URL', 'ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
+  // The env syntax differs per shell, so match the platform. The site is read
+  // from `.agents/project.yaml` via `bun run jira:url --slug` — `--site` wants
+  // the BARE host, and the old hint interpolated `$ATLASSIAN_URL`, which both
+  // carries a scheme acli rejects and no longer exists as a variable.
+  const acliManualHint = process.platform === 'win32'
+    ? '$env:ATLASSIAN_API_TOKEN | acli jira auth login --site (bun run --silent jira:url --slug) --email $env:ATLASSIAN_EMAIL --token'
+    : 'echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$(bun run --silent jira:url --slug)" --email "$ATLASSIAN_EMAIL" --token';
+  const ATLASSIAN_VARS = ['ATLASSIAN_EMAIL', 'ATLASSIAN_API_TOKEN'] as const;
+
+  /**
+   * The bare host `acli --site` requires, or null when unresolvable.
+   *
+   * `--site` rejects a value carrying `https://`. This used to pass
+   * `process.env.ATLASSIAN_URL` straight through — which in `.env` was written
+   * WITH the scheme and a trailing slash — so the login was being handed a
+   * malformed site all along.
+   */
+  const acliSite = (): string | null => {
+    try {
+      return toSiteSlug(resolveAtlassianInstance().baseUrl);
+    }
+    catch {
+      return null;
+    }
+  };
 
   if (state.postInstall.acliAuth === 'completed') {
     process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated in a prior run.\n`);
   }
   else if (AUTO_NON_INTERACTIVE) {
     // Non-interactive: vars must already be present (env or .env). If so, run
-    // probe + login non-interactively. If anything is missing, hard-fail —
-    // the user decision was: no silent skips when acli auth cannot complete.
+    // probe + login non-interactively.
+    //
+    // A miss is reported loudly but does NOT abort. AUTO_NON_INTERACTIVE fires
+    // for real interactive users on Git Bash, whose MSYS pty is a named pipe
+    // and reports isTTY false — aborting stranded every one of their re-runs
+    // at this step, before the later steps that write the Jira catalog
+    // placeholders the repo's own lint requires. The outcome is still recorded
+    // in state.postInstall.acliAuth and surfaced in the closing summary, so
+    // this is a visible skip, not a silent one.
     reloadDotEnv();
-    const missing = ATLASSIAN_VARS.filter(v => !(process.env[v] && process.env[v].trim().length > 0));
+    const missing: string[] = ATLASSIAN_VARS.filter(
+      v => !(process.env[v] && process.env[v].trim().length > 0),
+    );
+    const site = acliSite();
+    if (site === null) {
+      missing.unshift('issue_tracker.atlassian_url (.agents/project.yaml)');
+    }
     if (missing.length > 0) {
       state.postInstall.acliAuth = 'skipped-non-interactive';
-      process.stdout.write(`${tui.statusIcon('fail')} Missing ${missing.join(', ')} in environment / .env. Cannot authenticate acli non-interactively.\n`);
-      process.stdout.write(`  Re-run manually: ${acliManualHint}\n`);
+      process.stdout.write(`${tui.statusIcon('warn')} Missing ${missing.join(', ')}. Skipping acli authentication.\n`);
+      process.stdout.write('  Set the host with `bun run agents:setup`, fill the credentials in .env, then re-run `bun run setup` — or authenticate manually:\n');
+      process.stdout.write(`  ${acliManualHint}\n`);
       await writeInstallState(state);
-      process.exit(1);
     }
-    const probe = acliProbe();
-    if (probe.status === 0) {
+    else if (acliProbe().status === 0) {
       state.postInstall.acliAuth = 'completed';
       process.stdout.write(`${tui.statusIcon('ok')} acli already authenticated (existing session detected).\n`);
     }
     else {
       const loginRes = spawnSync(
         'acli',
-        ['jira', 'auth', 'login', '--site', process.env.ATLASSIAN_URL!, '--email', process.env.ATLASSIAN_EMAIL!, '--token'],
+        // Non-null: a null `site` was pushed onto `missing` above, and a
+        // non-empty `missing` takes the branch that returns before this point.
+        ['jira', 'auth', 'login', '--site', site!, '--email', process.env.ATLASSIAN_EMAIL!, '--token'],
         { input: process.env.ATLASSIAN_API_TOKEN!, stdio: ['pipe', 'inherit', 'inherit'], timeout: 15000 },
       );
       if (loginRes.status === 0) {
@@ -1724,11 +2069,12 @@ async function runPostInstallSteps(state: InstallState): Promise<void> {
         process.stdout.write(`${tui.statusIcon('ok')} acli session created.\n`);
       }
       else {
+        // Recorded as failed and reported in the closing summary; the install
+        // continues so the remaining steps still run.
         state.postInstall.acliAuth = 'failed';
         process.stdout.write(`${tui.statusIcon('fail')} acli auth login failed (exit ${loginRes.status}).\n`);
         process.stdout.write(`  Re-run manually: ${acliManualHint}\n`);
         await writeInstallState(state);
-        process.exit(1);
       }
     }
   }
@@ -1748,12 +2094,13 @@ async function runPostInstallSteps(state: InstallState): Promise<void> {
       // re-prompted on each failure.
       let authenticated = false;
       for (let attempt = 1; attempt <= 3; attempt++) {
-        const url = process.env.ATLASSIAN_URL;
         const email = process.env.ATLASSIAN_EMAIL;
         const token = process.env.ATLASSIAN_API_TOKEN;
-        if (!url || !email || !token) {
-          // A missing var here means the user skipped the prompt above. Re-
-          // prompt the missing one(s) so we have something to try.
+        if (acliSite() === null || !email || !token) {
+          // Missing input here means the user skipped a prompt above. Re-ask for
+          // whatever is absent — the host goes to the yaml, the credentials to
+          // `.env`, each to its own home.
+          await ensureAtlassianHost();
           const need: Record<string, string> = {};
           for (const name of ATLASSIAN_VARS) {
             if (!process.env[name] || process.env[name].trim().length === 0) {
@@ -1765,15 +2112,15 @@ async function runPostInstallSteps(state: InstallState): Promise<void> {
             await appendVarsToEnv(need);
             reloadDotEnv();
           }
-          if (!process.env.ATLASSIAN_URL || !process.env.ATLASSIAN_EMAIL || !process.env.ATLASSIAN_API_TOKEN) {
-            process.stdout.write(`${tui.statusIcon('fail')} Atlassian credentials still missing — cannot authenticate acli.\n`);
+          if (acliSite() === null || !process.env.ATLASSIAN_EMAIL || !process.env.ATLASSIAN_API_TOKEN) {
+            process.stdout.write(`${tui.statusIcon('fail')} Atlassian host / credentials still missing — cannot authenticate acli.\n`);
             break;
           }
         }
 
         const loginRes = spawnSync(
           'acli',
-          ['jira', 'auth', 'login', '--site', process.env.ATLASSIAN_URL!, '--email', process.env.ATLASSIAN_EMAIL!, '--token'],
+          ['jira', 'auth', 'login', '--site', acliSite()!, '--email', process.env.ATLASSIAN_EMAIL!, '--token'],
           { input: process.env.ATLASSIAN_API_TOKEN!, stdio: ['pipe', 'inherit', 'inherit'], timeout: 15000 },
         );
         if (loginRes.status === 0) {
@@ -2027,7 +2374,7 @@ function printClosingSummary(state: InstallState): void {
 
   if (state.postInstall.acliAuth !== 'completed') {
     process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Authenticate acli (Atlassian CLI)${COLORS.reset}\n`);
-    process.stdout.write(`    ${COLORS.cyan}echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$ATLASSIAN_URL" --email "$ATLASSIAN_EMAIL" --token${COLORS.reset}\n`);
+    process.stdout.write(`    ${COLORS.cyan}echo "$ATLASSIAN_API_TOKEN" | acli jira auth login --site "$(bun run --silent jira:url --slug)" --email "$ATLASSIAN_EMAIL" --token${COLORS.reset}\n`);
     process.stdout.write(`    ${COLORS.dim}Writes a persistent session to ~/.config/acli/. The /acli skill needs this.${COLORS.reset}\n\n`);
     stepNum++;
   }
@@ -2063,8 +2410,10 @@ function printClosingSummary(state: InstallState): void {
   stepNum++;
 
   process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Open the agent${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.cyan}claude${COLORS.reset}                       ${COLORS.dim}(or: bun claude — works without direnv)${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.dim}Launches your AI in this project's context.${COLORS.reset}\n\n`);
+  process.stdout.write(`    ${COLORS.cyan}bun run claude${COLORS.reset}      ${COLORS.dim}(dotenv-cli loads .env — works without direnv)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}bun run opencode${COLORS.reset}    ${COLORS.dim}(dotenv-cli loads .env)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.cyan}bun run codex${COLORS.reset}       ${COLORS.dim}(CLI; Codex Desktop opens this same repository)${COLORS.reset}\n`);
+  process.stdout.write(`    ${COLORS.dim}All three read AGENTS.md + .agents/skills/. Codex Desktop needs repository trust before hooks run.${COLORS.reset}\n\n`);
   stepNum++;
 
   process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Define + scaffold${COLORS.reset}\n`);
@@ -2074,7 +2423,7 @@ function printClosingSummary(state: InstallState): void {
 
   process.stdout.write(`${circled[stepNum]}  ${COLORS.bold}Sync project memory${COLORS.reset}\n`);
   process.stdout.write(`    ${COLORS.cyan}/sync-ai-memory${COLORS.reset}\n`);
-  process.stdout.write(`    ${COLORS.dim}AFTER foundation + bootstrap exist. Updates README, CLAUDE.md, and other docs from the new project state.${COLORS.reset}\n\n`);
+  process.stdout.write(`    ${COLORS.dim}AFTER foundation + bootstrap exist. Updates README, AGENTS.md, and other docs from the new project state.${COLORS.reset}\n\n`);
 
   // 4c.1 — NEXT STEPS (non-critical vars). Critical tool creds (Atlassian,
   // Resend, Tavily) were prompted above. These are NOT asked at install and NOT
@@ -2120,13 +2469,22 @@ function printClosingSummary(state: InstallState): void {
     process.stdout.write('\n');
   }
 
+  // `--no-hooks` is deliberate. The installer defaults to `--all`, which installs
+  // the Claude Code plugin AND writes a second copy of the same two hooks into
+  // ~/.claude/settings.json — both fire every turn, injecting caveman twice per
+  // prompt. The flag keeps the plugin (it registers those hooks in its own
+  // plugin.json), the multi-agent coverage this repo needs for OpenCode, and the
+  // caveman-shrink MCP proxy. On Windows `irm | iex` cannot receive arguments
+  // (caveman #565), so we call the Node installer the script delegates to anyway.
   const caveman = process.platform === 'win32'
-    ? 'irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.ps1 | iex'
-    : 'curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash';
-  process.stdout.write('→  Install caveman skill (token compression, ~30s):\n');
+    ? 'npx -y github:JuliusBrussee/caveman --no-hooks'
+    : 'curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash -s -- --no-hooks';
+  process.stdout.write('→  Install caveman skill (Claude Code only — token compression, ~30s):\n');
   process.stdout.write(`     ${COLORS.cyan}${caveman}${COLORS.reset}\n`);
+  process.stdout.write(`     ${COLORS.dim}--no-hooks avoids a duplicate hook registration — see INSTALLER.md.${COLORS.reset}\n`);
+  process.stdout.write(`     ${COLORS.dim}OpenCode and Codex do not load caveman; they get the shared personality hook (.agents/hooks/) instead.${COLORS.reset}\n`);
 
-  process.stdout.write('→  Warp terminal users — install Claude Code plugin:\n');
+  process.stdout.write('→  Warp terminal users — install Claude Code plugin (Claude Code only):\n');
   process.stdout.write(`     ${COLORS.cyan}/plugin install warp@claude-code-warp${COLORS.reset}\n`);
   process.stdout.write(`     ${COLORS.dim}Docs: https://docs.warp.dev/agent-platform/cli-agents/claude-code/${COLORS.reset}\n`);
 
@@ -2305,9 +2663,7 @@ async function main(): Promise<void> {
     process.stdout.write(`${tui.headline('agentic-dev-boilerplate — sync community skills')}\n\n`);
     await verifyRepoRoot();
     const detected = await detectAgents();
-    log.info(
-      `Claude Code: ${detected.claudeCode ? 'found' : 'not found'} | OpenCode: ${detected.opencode ? 'found' : 'not found'}`,
-    );
+    log.info(describeAgentDetection(detected));
     const agents = await promptAgentSelection(detected);
     if (agents.length === 0) {
       log.warn('No agents selected — nothing to sync.');
@@ -2317,6 +2673,7 @@ async function main(): Promise<void> {
     state.agents = agents;
     await installCommunitySkills(agents, state, 'project');
     await installCommunitySkills(agents, state, 'global');
+    runRepositoryCompatibility();
     await writeInstallState(state);
     log.success(`Community skills synced to: ${agents.join(', ')}.`);
     process.exit(0);
@@ -2365,12 +2722,10 @@ async function main(): Promise<void> {
     runSkillInstall = true;
   }
   else if (gentleAi.status === 'incompatible') {
-    const contRaw = await tui.confirm({
-      message: 'gentle-ai is installed but version is older than required. Try anyway?',
-      initialValue: false,
-    });
-    if (tui.isCancel(contRaw)) { throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' }); }
-    runSkillInstall = contRaw;
+    runSkillInstall = await maybeConfirm(
+      'gentle-ai is installed but version is older than required. Try anyway?',
+      false,
+    );
   }
   else {
     const decision = await handleMissingGentleAi();
@@ -2384,9 +2739,7 @@ async function main(): Promise<void> {
 
   tui.section('Step 4: Detecting agents');
   const detected = await detectAgents();
-  log.info(
-    `Claude Code: ${detected.claudeCode ? 'found' : 'not found'} | OpenCode: ${detected.opencode ? 'found' : 'not found'}`,
-  );
+  log.info(describeAgentDetection(detected));
   const agents = await promptAgentSelection(detected);
   state.agents = agents;
   if (agents.length === 0) {
@@ -2420,6 +2773,12 @@ async function main(): Promise<void> {
   tui.section('Step 6: Installing community skills via bunx skills CLI');
   await installCommunitySkills(agents, state, 'project');
   await installCommunitySkills(agents, state, 'global');
+
+  // Step 6b — runs on EVERY install, right after the step that can leave a
+  // per-skill shim in `.claude/skills/`, so an aborted run later on still
+  // leaves Claude Code able to see the canonical skills.
+  tui.section('Step 6b: Repository compatibility (Claude skills alias + command wrappers)');
+  runRepositoryCompatibility();
 
   // ── PHASE 3 — CONFIGURATION ──────────────────────────────────────────────
   tui.phaseHeader(3, 'CONFIGURATION');

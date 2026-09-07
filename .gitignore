@@ -146,3 +146,24 @@ dbhub.local.toml
 # FRESCO-310: committed CI overlay of Supabase local-dev demo constants
 # (no real secrets — see the file header). Must be tracked.
 !.env.ci
+
+# ===== Cross-harness generated artifacts =====
+# Generated alias onto .agents/skills. Never edit or commit it.
+.claude/skills
+# Local recovery copy written by the cross-harness migration.
+.template/pre-agents-migration/
+
+# ===== Synced from boilerplate v8.4 =====
+# ----- 2026-09-07 (sync) -----
+*storage-state*.json
+*storageState*.json
+*.cookies
+cookies.txt
+*.har
+.template/upstream-sha/
+.template/last-apply.json
+/.agents/prompts/
+.agents/skills/*-workspace/
+.context/PBI/*
+!.context/PBI/README.md
+!.context/PBI/templates/
