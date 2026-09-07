@@ -3,6 +3,9 @@ import type { ThemePreference } from '@/lib/theme/theme';
 import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
+import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
+import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
+import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
 import './globals.css';
@@ -60,8 +63,13 @@ export const dynamic = 'force-dynamic';
 // `system`: a clean, predictable first impression regardless of the visitor's
 // OS setting.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const themeCookie = (await cookies()).get(THEME_COOKIE)?.value as ThemePreference | undefined;
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get(THEME_COOKIE)?.value as ThemePreference | undefined;
   const theme: ThemePreference = isThemePreference(themeCookie) ? themeCookie : 'light';
+  // FRESCO-428: same server-read pattern as `theme` above — reading the
+  // consent cookie per request avoids a banner flash on hydration for a
+  // returning visitor who already decided.
+  const initialConsentDecision = parseCookieConsent(cookieStore.get(COOKIE_CONSENT_COOKIE)?.value);
 
   return (
     <html
@@ -70,7 +78,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${fraunces.variable} ${figtree.variable}`}
     >
       <body>
-        <PostHogProvider>{children}</PostHogProvider>
+        <CookieConsentProvider initialDecision={initialConsentDecision}>
+          <PostHogProvider>{children}</PostHogProvider>
+          <CookieConsentBanner />
+        </CookieConsentProvider>
       </body>
     </html>
   );
