@@ -20,4 +20,18 @@ describe('password-policy (FRESCO-363 / A4-H8)', () => {
   it('names the minimum in the user-facing message', () => {
     expect(PASSWORD_TOO_SHORT_MESSAGE).toContain('10');
   });
+
+  // FRESCO-465 — explicit boundary-value batch on the length frontier.
+  describe('length boundary (FRESCO-465)', () => {
+    it.each([
+      [0, true],
+      [9, true],
+      [10, false],
+      [11, false],
+    ] as const)('length %i -> tooShort=%p', (length, expected) => {
+      const password = 'a'.repeat(length);
+      expect(password).toHaveLength(length);
+      expect(isPasswordTooShort(password)).toBe(expected);
+    });
+  });
 });
