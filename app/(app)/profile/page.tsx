@@ -112,15 +112,15 @@ export default async function ProfilePage() {
       <h2 className="sr-only">Tu cuenta</h2>
       <Card className="mt-6">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div
               aria-hidden="true"
               className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-h5 text-on-brand"
             >
               {initial || <UserIcon className="size-6" />}
             </div>
-            <div>
-              <p className="text-h5">
+            <div className="min-w-0">
+              <p className="truncate text-h5">
                 Hola
                 {nombre ? `, ${nombre}` : ''}
               </p>
@@ -139,13 +139,13 @@ export default async function ProfilePage() {
                   )
                 : (
                     <div className="mt-0.5 flex flex-col gap-0.5">
-                      <p data-testid="profile_identity_email" className="text-body-sm text-tertiary">{user?.email}</p>
+                      <p data-testid="profile_identity_email" className="truncate text-body-sm text-tertiary">{user?.email}</p>
                       <p data-testid="profile_identity_password_masked" className="text-body-sm tracking-widest text-tertiary">••••••••</p>
                     </div>
                   )}
             </div>
           </div>
-          <Tag variant={getPlanTagVariant(plan)}>{PLAN_LABELS[plan]}</Tag>
+          <Tag variant={getPlanTagVariant(plan)} className="shrink-0">{PLAN_LABELS[plan]}</Tag>
         </div>
       </Card>
 
@@ -159,8 +159,14 @@ export default async function ProfilePage() {
 
       <AppearanceCard />
 
+      {/* FRESCO-451: found live while verifying the planning-grid scroll
+          fade — a CSS grid item's default min-width is `auto`, so without
+          `min-w-0` this Card grew to fit PlanningSelectionGrid's 304px
+          table instead of shrinking to its grid track, pushing the whole
+          PAGE into horizontal overflow rather than scrolling just the
+          table inside it. */}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Preferencias</CardTitle>
           </CardHeader>
@@ -169,7 +175,7 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Ayuda</CardTitle>
           </CardHeader>

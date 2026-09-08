@@ -81,10 +81,10 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex items-center gap-3">
-        <Link href="/menu" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }))} aria-label="Volver" data-testid="notifications_back_link">
+        <Link href="/menu" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'shrink-0')} aria-label="Volver" data-testid="notifications_back_link">
           <ArrowLeft className="size-6" />
         </Link>
-        <div>
+        <div className="min-w-0">
           <h1 className="text-h2">Centro de Avisos</h1>
           <p className="text-h6 uppercase text-tertiary">Tus notificaciones</p>
         </div>

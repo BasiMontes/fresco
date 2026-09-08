@@ -17,7 +17,11 @@ import { cn } from '@/lib/utils';
  * preferences) and keep their primary treatment.
  */
 const tagVariants = cva(
-  'inline-flex items-center rounded-full border px-2 py-1 text-caption font-sans',
+  // FRESCO-451: `whitespace-nowrap` at the component level, not bolted onto
+  // individual call sites — a pill's text wrapping inside its own rounded
+  // border (found live on /profile's plan Tag at 320px) is a defect for
+  // every caller, not a per-instance choice.
+  'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-1 text-caption font-sans',
   {
     variants: {
       variant: {
