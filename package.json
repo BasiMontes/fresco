@@ -35,6 +35,7 @@
     "start": "next start",
     "test": "bun test",
     "test:coverage": "bun scripts/check-coverage.ts",
+    "test:db": "RUN_DB_INTEGRATION=1 bun test tests/db/",
     "test:e2e": "bash -c 'set -a; . ./.env; set +a; bddgen --tags \"@automatizado and not @requiere-stripe-real\" && exec playwright test'",
     "test:e2e:stripe": "bash -c 'set -a; . ./.env; set +a; bddgen --tags \"@automatizado and @requiere-stripe-real\" && exec playwright test'",
     "test:e2e:smoke": "bash -c 'set -a; . ./.env; set +a; bddgen --tags @smoke && exec playwright test'",
