@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
-import { describe, expect, test } from 'bun:test';
-import { resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate } from './stripe';
+import { afterEach, describe, expect, test } from 'bun:test';
+import { resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret } from './stripe';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -218,5 +218,104 @@ describe('resolveCancellationCustomerId', () => {
   test('throws when the subscription has no Stripe customer', () => {
     expect(() => resolveCancellationCustomerId(fakeSubscription({ customer: null as unknown as Stripe.Subscription['customer'] })))
       .toThrow('Stripe customer id');
+  });
+});
+
+/**
+ * `resolveWebhookSecret` / `resolveAppUrl` branch on `VERCEL_ENV` /
+ * `VERCEL_GIT_COMMIT_REF` — pure env-var reads, previously untested. Each
+ * test clears the whole var set first so a leftover from a prior test (or
+ * the real `.env`) can't leak into the branch under test.
+ */
+const ENV_VARS = [
+  'VERCEL_ENV',
+  'VERCEL_GIT_COMMIT_REF',
+  'STRIPE_WEBHOOK_SECRET_PROD',
+  'STRIPE_WEBHOOK_SECRET_PRE',
+  'STRIPE_WEBHOOK_SECRET_DEV',
+  'STRIPE_WEBHOOK_SECRET',
+] as const;
+const OLD_ENV = { ...process.env };
+
+function clearEnv() {
+  for (const key of ENV_VARS) { delete process.env[key]; }
+}
+
+describe('resolveWebhookSecret', () => {
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  test('production reads the scoped PROD secret', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'production';
+    process.env.STRIPE_WEBHOOK_SECRET_PROD = 'whsec_prod';
+    expect(resolveWebhookSecret()).toBe('whsec_prod');
+  });
+
+  test('production falls back to the legacy unscoped secret when PROD is unset', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'production';
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_legacy';
+    expect(resolveWebhookSecret()).toBe('whsec_legacy');
+  });
+
+  test('preview on the dev branch reads the DEV secret', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'preview';
+    process.env.VERCEL_GIT_COMMIT_REF = 'dev';
+    process.env.STRIPE_WEBHOOK_SECRET_DEV = 'whsec_dev';
+    expect(resolveWebhookSecret()).toBe('whsec_dev');
+  });
+
+  test('preview on any other branch reads the PRE secret', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'preview';
+    process.env.VERCEL_GIT_COMMIT_REF = 'feature/some-branch';
+    process.env.STRIPE_WEBHOOK_SECRET_PRE = 'whsec_pre';
+    expect(resolveWebhookSecret()).toBe('whsec_pre');
+  });
+
+  test('local (no VERCEL_ENV) reads the DEV secret', () => {
+    clearEnv();
+    process.env.STRIPE_WEBHOOK_SECRET_DEV = 'whsec_local';
+    expect(resolveWebhookSecret()).toBe('whsec_local');
+  });
+
+  test('local falls back to the legacy secret when DEV is unset', () => {
+    clearEnv();
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_legacy_local';
+    expect(resolveWebhookSecret()).toBe('whsec_legacy_local');
+  });
+});
+
+describe('resolveAppUrl', () => {
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  test('production → fresco-pro.vercel.app', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'production';
+    expect(resolveAppUrl()).toBe('https://fresco-pro.vercel.app');
+  });
+
+  test('preview on the dev branch → fresco-dev.vercel.app', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'preview';
+    process.env.VERCEL_GIT_COMMIT_REF = 'dev';
+    expect(resolveAppUrl()).toBe('https://fresco-dev.vercel.app');
+  });
+
+  test('preview on any other branch → fresco-pre.vercel.app', () => {
+    clearEnv();
+    process.env.VERCEL_ENV = 'preview';
+    process.env.VERCEL_GIT_COMMIT_REF = 'feature/some-branch';
+    expect(resolveAppUrl()).toBe('https://fresco-pre.vercel.app');
+  });
+
+  test('local (no VERCEL_ENV) → localhost:3000', () => {
+    clearEnv();
+    expect(resolveAppUrl()).toBe('http://localhost:3000');
   });
 });
