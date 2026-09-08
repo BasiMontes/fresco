@@ -154,3 +154,46 @@ Then(/^no puede generar uno nuevo directamente — primero tiene que eliminar el
   await expect(page.getByTestId('generate_week_button')).toHaveCount(0);
   await expect(page.getByTestId('delete_week_button')).toBeVisible();
 });
+
+// ── @edge-case scenarios (FRESCO-463) ────────────────────────────────────
+
+// "Un parámetro de semana inválido en la URL cae a la semana actual" —
+// `app/(app)/calendar/page.tsx` ignores `?semana=` unless it matches
+// `ISO_WEEK_PATTERN`, falling back to the current ISO week. No redirect, no
+// error: the page just renders the current week.
+
+Given(/^que el usuario visita \/calendar con un valor de semana mal formado en la URL$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await page.goto('/login');
+  await page.getByTestId('email_input').fill(testUser.email);
+  await page.getByTestId('password_input').fill(testUser.password);
+  await page.getByTestId('login_submit_button').click();
+  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await page.goto('/calendar?semana=no-es-una-semana-valida');
+});
+
+When(/^\/calendar termina de cargar$/, async ({ page }) => {
+  await expect(page.getByTestId('week_navigation')).toBeVisible();
+});
+
+Then(/^ve la semana actual, sin ningún error$/, async ({ page }) => {
+  // A fresh factory user has no plan for the current week; the page renders
+  // the normal empty state rather than crashing on the bad param.
+  await expect(page.getByTestId('calendar_empty_state')).toBeVisible();
+  await expect(page.getByTestId('week_navigation')).toBeVisible();
+  // Prove the base week resolved to the CURRENT one: its "next" link points
+  // at current-week + 1.
+  await page.getByTestId('week_nav_next').click();
+  await expect(page).toHaveURL(new RegExp(`semana=${adjacentWeekIso(1)}`));
+});
+
+// "No hay opción de eliminar cuando no hay menú generado" — reuses the
+// existing Given ("...una semana sin menú generado todavía") and When
+// ("mira los controles disponibles"). `calendar/page.tsx` only mounts
+// `DeleteWeekButton` on the `plan` branch.
+
+Then(/^no se le ofrece la opción de eliminar$/, async ({ page }) => {
+  await expect(page.getByTestId('delete_week_button')).toHaveCount(0);
+  await expect(page.getByTestId('generate_week_button')).toBeVisible();
+});

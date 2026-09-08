@@ -158,3 +158,58 @@ Then(/^ve un aviso de que esa contraseña apareció en filtraciones y la cuenta 
   await expect(page.getByTestId('signup_error_message')).toContainText('filtraciones');
   await expect(page).toHaveURL(/\/signup$/);
 });
+
+// ── @edge-case "Alta falla porque el email ya está registrado" (FRESCO-463) ──
+//
+// Supabase Auth's documented anti-enumeration behavior: `signUp()` with an
+// email that already belongs to a confirmed account returns 200 with an
+// obfuscated user object, `identities: []`, and no session — NOT an error.
+// `app/signup/page.tsx` detects `data.user?.identities?.length === 0` and
+// shows "Ya existe una cuenta con ese email." instead of dead-ending on
+// /onboarding without a session. Same route-mock rationale as the happy
+// path above (file header) — no real backend call, fully repeatable.
+
+Given(/^que un visitante intenta darse de alta con un email ya existente$/, async ({ page }) => {
+  await page.goto('/signup');
+
+  const signupUrlPattern = /\/auth\/v1\/signup(\?|$)/;
+  await page.route(signupUrlPattern, async (route) => {
+    const nowIso = new Date().toISOString();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      // The bare user object Supabase returns for the duplicate-email case:
+      // obfuscated, `identities: []`, no session envelope.
+      body: JSON.stringify({
+        id: '00000000-0000-4000-8000-0000000000ff',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'ya-registrado@example.com',
+        phone: '',
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: {},
+        identities: [],
+        created_at: nowIso,
+        updated_at: nowIso,
+      }),
+    });
+  });
+
+  await page.getByTestId('email_input').fill('ya-registrado@example.com');
+  await page.getByTestId('password_input').fill('Qa-Existing-Account-123!');
+  await page.getByTestId('accept_terms_checkbox').check();
+});
+
+Then(/^ve el mensaje de error que devuelve Supabase Auth$/, async ({ page }) => {
+  await expect(page.getByTestId('signup_error_message')).toContainText('Ya existe una cuenta');
+});
+
+Then(/^no se crea una cuenta duplicada$/, async ({ page }) => {
+  // The error renders in place — the form never advanced to /onboarding,
+  // which is the dead-end a silently-accepted signup produced before the
+  // `identities: []` check. (A cookie assertion is unreliable here: the PKCE
+  // `sb-…-auth-token-code-verifier` cookie is written on client init and is
+  // not a session.)
+  await expect(page).toHaveURL(/\/signup(\?|$)/);
+  await expect(page.getByRole('heading', { name: 'Guarda tu menú' })).toBeVisible();
+});

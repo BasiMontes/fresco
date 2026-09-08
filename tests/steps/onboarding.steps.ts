@@ -105,3 +105,66 @@ Then(/^es redirigido a \/menu, donde ve el menú completo$/, async ({ page }) =>
   await expect(page).toHaveURL(/\/menu$/);
   await expect(page.getByTestId('menu_empty_state')).toHaveCount(0);
 });
+
+// ── @edge-case scenarios (FRESCO-463) ────────────────────────────────────
+
+async function loginAsFreshUser(
+  page: import('@playwright/test').Page,
+  testUserFactory: import('../test-user-factory').TestUserFactory,
+): Promise<void> {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await page.goto('/login');
+  await page.getByTestId('email_input').fill(testUser.email);
+  await page.getByTestId('password_input').fill(testUser.password);
+  await page.getByTestId('login_submit_button').click();
+  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+}
+
+// "Recargar a mitad del onboarding no borra el progreso" — FRESCO-94:
+// `lib/store/onboarding-store.ts` persists `step` + every answer to
+// sessionStorage via zustand persist, so an F5 mid-wizard restores exactly
+// where the user was.
+
+Given(/^que el usuario completó el paso 1 o 2 del onboarding$/, async ({ page, testUserFactory }) => {
+  await loginAsFreshUser(page, testUserFactory);
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+1\s+de\s+3/);
+  await page.getByTestId('next_button').click();
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+2\s+de\s+3/);
+  // Real progress to lose: toggle the first diet chip.
+  await page.getByTestId('dieta_option').first().click();
+  await expect(page.getByTestId('dieta_option').first()).toHaveAttribute('aria-pressed', 'true');
+});
+
+When(/^recarga la página antes de llegar al paso 3$/, async ({ page }) => {
+  await page.reload();
+});
+
+Then(/^sus respuestas ya dadas siguen ahí, no vuelve al paso 1 en blanco$/, async ({ page }) => {
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+2\s+de\s+3/);
+  await expect(page.getByTestId('dieta_option').first()).toHaveAttribute('aria-pressed', 'true');
+});
+
+// "El campo Adultos respeta un tope superior" — FRESCO-110: `validateHousehold`
+// caps adultos/niños at `HOUSEHOLD_FIELD_MAX` (10); over that, the inline
+// message shows AND `generate_menu_button` is disabled
+// (`disabled={... || !household.valid || ...}`).
+
+Given(/^que el usuario está en el paso 3 del onboarding \(hogar\)$/, async ({ page, testUserFactory }) => {
+  await loginAsFreshUser(page, testUserFactory);
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('next_button').click();
+  await expect(page.getByTestId('adultos_input')).toBeVisible();
+});
+
+When(/^escribe un valor muy grande \(ej\. 999\) en "Adultos"$/, async ({ page }) => {
+  await page.getByTestId('adultos_input').fill('999');
+});
+
+Then(/^el sistema lo rechaza o lo acota a un máximo razonable antes de permitir generar el menú$/, async ({ page }) => {
+  await expect(page.getByTestId('household_validation_message')).toBeVisible();
+  await expect(page.getByTestId('generate_menu_button')).toBeDisabled();
+});

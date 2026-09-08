@@ -61,7 +61,8 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema le redirige a /menu
     Y la sesión queda activa
 
-  @login @edge-case @verificado-manual-2026-07-31
+  @login @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Inicio de sesión falla con credenciales incorrectas
     Dado que un usuario introduce un email o contraseña incorrectos
     Cuando confirma el formulario de /login
@@ -76,7 +77,8 @@ Característica: Flujo completo de usuario en Fresco
     # Re-verificado en vivo tras el fix: mensaje "Email o contraseña
     # incorrectos." en español.
 
-  @login @edge-case @verificado-manual-2026-08-07
+  @login @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Doble-click rápido en "Iniciar sesión" no dispara dos intentos de autenticación
     Dado que un usuario completa email y contraseña válidos en /login
     Cuando hace dos clicks sincrónicos sobre "Iniciar sesión" sin esperar entre ambos
@@ -107,7 +109,8 @@ Característica: Flujo completo de usuario en Fresco
     # solo salen 5 chars del hash SHA-1). Fail-open: si HIBP no responde, no
     # bloquea el alta.
 
-  @registro @edge-case @verificado-manual-2026-07-31
+  @registro @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/signup.steps.ts (FRESCO-463, route-mock: 200 + identities:[])
   Escenario: Alta falla porque el email ya está registrado
     Dado que un visitante intenta darse de alta con un email ya existente
     Cuando confirma el formulario de /signup
@@ -127,20 +130,22 @@ Característica: Flujo completo de usuario en Fresco
     Cuando introduce su email registrado y confirma el formulario
     Entonces ve un mensaje genérico confirmando que si la cuenta existe, recibirá un enlace
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-463)
   Escenario: El mensaje de recuperación de contraseña no revela si el email existe (anti-enumeración)
     Dado que un visitante introduce un email que no está registrado en /forgot-password
-    Cuando confirma el formulario
+    Cuando confirma el formulario de recuperación
     Entonces ve exactamente el mismo mensaje genérico que con un email real
     # Mismo patrón anti-enumeración que signUp() (ver escenario "Alta falla
     # porque el email ya está registrado"), aplicado también aquí por diseño
     # de Supabase Auth. Verificado en vivo comparando ambos mensajes carácter
     # a carácter.
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-463)
   Escenario: El campo de email en /forgot-password exige un formato válido antes de enviar
     Dado que un usuario deja vacío el campo de email en /forgot-password
-    Cuando intenta confirmar el formulario
+    Cuando intenta confirmar el formulario de recuperación
     Entonces el navegador bloquea el envío con la validación nativa del campo (required + type=email), sin llamar al backend
 
   @login @recuperar-password @edge-case @verificado-manual-2026-08-19
@@ -258,7 +263,8 @@ Característica: Flujo completo de usuario en Fresco
     # un usuario Pro, la llamada real a Gemini para la explicación de
     # aprendizaje — la única IA que queda en el flujo).
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-31
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/generacion-menu-edge.steps.ts (FRESCO-463, API-only)
   Escenario: Ya existe un plan para la semana solicitada
     Dado que el usuario ya generó un menú para la semana actual
     Cuando intenta generar de nuevo sin eliminar el plan existente
@@ -276,7 +282,8 @@ Característica: Flujo completo de usuario en Fresco
     # components/calendar/generate-week-button.tsx SÍ maneja el 409
     # correctamente — confirma que es un gap, no una limitación técnica.
 
-  @onboarding @edge-case @verificado-manual-2026-08-07
+  @onboarding @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-463)
   Escenario: Recargar la página a mitad del onboarding no borra el progreso ya completado
     Dado que el usuario completó el paso 1 o 2 del onboarding
     Cuando recarga la página antes de llegar al paso 3
@@ -287,7 +294,8 @@ Característica: Flujo completo de usuario en Fresco
     # El store se resetea al generar el menú con éxito para no filtrar
     # respuestas viejas a una futura visita en la misma pestaña.
 
-  @onboarding @edge-case @verificado-manual-2026-08-07
+  @onboarding @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-463)
   Escenario: El campo "Adultos" del hogar respeta un tope superior razonable
     Dado que el usuario está en el paso 3 del onboarding (hogar)
     Cuando escribe un valor muy grande (ej. 999) en "Adultos"
@@ -455,9 +463,10 @@ Característica: Flujo completo de usuario en Fresco
     # ambos. Ver el escenario de arriba para el detalle de lo verificado en
     # vivo y lo pendiente de QA manual.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-08
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (FRESCO-463)
   Escenario: Una password débil se rechaza antes de gastar el roundtrip de OTP
-    Dado que una invitada rellena /signup con un email nuevo y una password de menos de 6 caracteres
+    Dado que una invitada rellena /signup con un email nuevo y una password demasiado corta
     Cuando confirma el formulario
     Entonces se rechaza de inmediato, sin llegar a la pantalla de OTP
     # FRESCO-123 (arreglado 2026-08-08): app/signup/page.tsx no validaba la
@@ -468,11 +477,14 @@ Característica: Flujo completo de usuario en Fresco
     # Verificado en vivo: password "123" nunca llega a "Revisa tu correo";
     # password válida sigue llegando normalmente (sin regresión).
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-08
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (FRESCO-463,
+  # route-mock del PATCH /auth/v1/user para llegar a la pantalla OTP sin email real)
   Escenario: El botón de confirmar código OTP solo se habilita con los 6 dígitos completos
     Dado que la invitada está en la pantalla de OTP
     Cuando escribe menos de 6 dígitos
     Entonces el botón "Confirmar código" permanece deshabilitado
+    Y al completar los 6 dígitos el botón se habilita
     # FRESCO-126 (arreglado 2026-08-08): el gate solo chequeaba !otpCode
     # (truthy), dejaba enviar con 2 dígitos — el servidor siempre rechaza
     # pero era una request desperdiciada (el error ya se mostraba bien
@@ -681,10 +693,11 @@ Característica: Flujo completo de usuario en Fresco
     # la página gana 36px de scroll horizontal no deseado. En la práctica,
     # "eliminar semana" es inalcanzable en mobile sin ese scroll accidental.
 
-  @calendario @edge-case @verificado-manual-2026-08-03
+  @calendario @edge-case @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-463)
   Escenario: Un parámetro de semana inválido en la URL cae a la semana actual
     Dado que el usuario visita /calendar con un valor de semana mal formado en la URL
-    Cuando la página carga
+    Cuando /calendar termina de cargar
     Entonces ve la semana actual, sin ningún error
 
   @calendario @verificado-manual-2026-08-03 @automatizado
@@ -694,9 +707,10 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca el botón de eliminar
     Entonces el menú completo de esa semana desaparece y ve el mismo estado vacío que si nunca hubiera generado uno
 
-  @calendario @edge-case @verificado-manual-2026-08-03
+  @calendario @edge-case @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-463)
   Escenario: No hay opción de eliminar cuando no hay menú generado
-    Dado que el usuario ve el estado vacío de una semana sin menú generado
+    Dado que el usuario está viendo una semana sin menú generado todavía
     Cuando mira los controles disponibles
     Entonces no se le ofrece la opción de eliminar
 
@@ -1186,7 +1200,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta guardar
     Entonces ve un mensaje claro pidiéndole completar el nombre antes de guardar
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-463)
   Escenario: El botón "Guardar receta" se deshabilita mientras el nombre esté vacío
     Dado que Laura abre "Crear propia" y deja el nombre vacío o solo con espacios
     Cuando mira el botón "Guardar receta"
@@ -1307,7 +1322,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando elige volver
     Entonces regresa a la Biblioteca
 
-  @biblioteca @verificado-manual-2026-09-02
+  @biblioteca @verificado-manual-2026-09-02 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-463)
   Escenario: El estado de la Biblioteca (búsqueda, filtros, página) vive en la URL
     Dado que Laura busca y aplica filtros en la Biblioteca
     Cuando comparte o recarga la URL resultante
@@ -1367,7 +1383,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando pulsa "Salir"
     Entonces la cookie de sesión se elimina y vuelve a /login
 
-  @perfil @edge-case @verificado-manual-2026-08-04
+  @perfil @edge-case @verificado-manual-2026-08-04 @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-463, nunca confirma el borrado)
   Escenario: Borrar cuenta exige escribir el email exacto y la contraseña para habilitarse
     Dado que Laura abre el diálogo "Borrar cuenta definitivamente"
     Cuando escribe un email distinto al suyo
