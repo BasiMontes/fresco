@@ -284,6 +284,7 @@ export type Database = {
       }
       recipes: {
         Row: {
+          activo: boolean
           alergenos: Json | null
           clasificacion: Json | null
           created_at: string
@@ -306,6 +307,7 @@ export type Database = {
           veces_descartada: number
         }
         Insert: {
+          activo?: boolean
           alergenos?: Json | null
           clasificacion?: Json | null
           created_at?: string
@@ -328,6 +330,7 @@ export type Database = {
           veces_descartada?: number
         }
         Update: {
+          activo?: boolean
           alergenos?: Json | null
           clasificacion?: Json | null
           created_at?: string
@@ -566,6 +569,7 @@ export type Database = {
       get_filtered_recipes: {
         Args: { p_recipe_id?: string; p_user_id: string }
         Returns: {
+          activo: boolean
           alergenos: Json | null
           clasificacion: Json | null
           created_at: string
