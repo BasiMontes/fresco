@@ -1,5 +1,6 @@
-import type { DiaSemana, Recipe, TipoPlatoSlot, UserProfile } from './types.ts'
+import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
 import { describe, expect, test } from 'bun:test'
+import fc from 'fast-check'
 import { selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
@@ -348,5 +349,318 @@ describe('selectMenu — personal engagement nudge (ADR-0008)', () => {
     })
 
     expect(menu.lunes.desayuno).toBe(higherRated.id)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRESCO-465 — property-based verification (fast-check).
+//
+// The example tests above pin specific menus. These generalise the four
+// ADR-0005 / FR-8.2 invariants over hundreds of generated (profile, catalog,
+// seed) triples. `selectMenu` is a pure, synchronous, constrained-selection
+// function, so an invariant that survives a wide random sweep is structural,
+// not incidental to the hand-picked fixtures.
+// ---------------------------------------------------------------------------
+
+type Coste = 'muy_bajo' | 'bajo' | 'medio' | 'alto'
+
+const ALLERGEN_VOCAB = [
+  'gluten', 'lactosa', 'huevo', 'frutos_secos', 'cacahuetes', 'marisco',
+  'pescado', 'soja', 'sesamo', 'sulfitos', 'mostaza', 'apio',
+]
+const TEMPORADA_VOCAB: Temporada[] = ['primavera', 'verano', 'otono', 'invierno', 'todo_el_ano']
+const COSTE_VOCAB: Coste[] = ['muy_bajo', 'bajo', 'medio', 'alto']
+
+/** fast-check seed pinned so a counterexample reproduces byte-for-byte. */
+const FC_SEED = 0x46534335 // "FSC5"
+const FC_RUNS = 150
+
+interface RecipeShape {
+  alergenos: string[]
+  temporada: Temporada[]
+  rating: number | null
+  vecesCocinada: number
+  vecesDescartada: number
+  tiempoTotal: number
+  coste: Coste
+}
+
+const recipeShapeArb: fc.Arbitrary<RecipeShape> = fc.record({
+  alergenos: fc.subarray(ALLERGEN_VOCAB),
+  temporada: fc.subarray(TEMPORADA_VOCAB, { minLength: 1 }),
+  rating: fc.option(fc.integer({ min: 0, max: 5 }), { nil: null }),
+  vecesCocinada: fc.nat({ max: 40 }),
+  vecesDescartada: fc.nat({ max: 12 }),
+  tiempoTotal: fc.integer({ min: 5, max: 180 }),
+  coste: fc.constantFrom(...COSTE_VOCAB),
+})
+
+function applyShape(base: Recipe, s: RecipeShape): Recipe {
+  return {
+    ...base,
+    alergenos: s.alergenos,
+    temporada: s.temporada,
+    rating_promedio: s.rating,
+    veces_cocinada: s.vecesCocinada,
+    veces_descartada: s.vecesDescartada,
+    meta: { ...base.meta!, tiempo_total_min: s.tiempoTotal, coste_estimado: s.coste },
+  }
+}
+
+/** Independent recipe counts per tipo_plato; ids unique within a tipo. */
+function catalogArb(perTipo: { minLength: number, maxLength: number }): fc.Arbitrary<Recipe[]> {
+  return fc.record({
+    desayuno: fc.array(recipeShapeArb, perTipo),
+    comida: fc.array(recipeShapeArb, perTipo),
+    cena: fc.array(recipeShapeArb, perTipo),
+  }).map((byTipo) => {
+    const recipes: Recipe[] = []
+    for (const tipo of TIPOS) {
+      byTipo[tipo].forEach((shape, i) => {
+        recipes.push(applyShape(makeRecipe(`${tipo}-${i}`, tipo), shape))
+      })
+    }
+    return recipes
+  })
+}
+
+const planningSelectionArb: fc.Arbitrary<Record<DiaSemana, TipoPlatoSlot[]>> = fc.record(
+  Object.fromEntries(DIAS.map(dia => [dia, fc.subarray([...TIPOS])])) as Record<DiaSemana, fc.Arbitrary<TipoPlatoSlot[]>>,
+)
+
+const profileArb: fc.Arbitrary<UserProfile> = fc.record({
+  adultos: fc.integer({ min: 1, max: 8 }),
+  ninos: fc.integer({ min: 0, max: 6 }),
+  alergenos: fc.subarray(ALLERGEN_VOCAB),
+  dieta_vegetariano: fc.boolean(),
+  dieta_vegano: fc.boolean(),
+  dieta_sin_gluten: fc.boolean(),
+  dieta_sin_lactosa: fc.boolean(),
+  dieta_sin_huevo: fc.boolean(),
+  dieta_keto: fc.boolean(),
+  dieta_halal: fc.boolean(),
+  tiempo_max_semana_min: fc.integer({ min: 5, max: 120 }),
+  tiempo_max_finde_min: fc.integer({ min: 5, max: 180 }),
+  presupuesto_semana_euros: fc.option(fc.integer({ min: 10, max: 400 }), { nil: null }),
+  plan: fc.constantFrom('free', 'pro') as fc.Arbitrary<UserProfile['plan']>,
+  planning_selection: planningSelectionArb,
+}).map(o => makeProfile({ ...o, num_personas: o.adultos + o.ninos }))
+
+describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', () => {
+  test('any valid profile + catalog yields a menu with EXACTLY 21 slots', () => {
+    fc.assert(
+      fc.property(
+        profileArb,
+        catalogArb({ minLength: 0, maxLength: 14 }),
+        fc.string({ minLength: 1 }),
+        (profile, candidates, seed) => {
+          const { menu } = selectMenu({ candidates, recentRecipeIds: [], profile, seed })
+
+          expect(Object.keys(menu).sort()).toEqual([...DIAS].sort())
+          let slots = 0
+          for (const dia of DIAS) {
+            expect(Object.keys(menu[dia]).sort()).toEqual([...TIPOS].sort())
+            for (const tipo of TIPOS) {
+              expect(typeof menu[dia][tipo]).toBe('string')
+              expect(menu[dia][tipo].length).toBeGreaterThan(0)
+              slots++
+            }
+          }
+          expect(slots).toBe(21)
+        },
+      ),
+      { seed: FC_SEED, numRuns: FC_RUNS },
+    )
+  })
+
+  test('no recipe placed in the plan carries an allergen declared in the profile (A4-B2)', () => {
+    fc.assert(
+      fc.property(
+        profileArb,
+        catalogArb({ minLength: 10, maxLength: 24 }),
+        fc.string({ minLength: 1 }),
+        (profile, rawCandidates, seed) => {
+          const profileAllergens = new Set(profile.alergenos)
+          // Mimic get_filtered_recipes() Layer 1: the SQL pre-filter drops
+          // every recipe carrying a profile allergen before selectMenu runs.
+          const candidates = rawCandidates.filter(
+            r => !(r.alergenos ?? []).some(a => profileAllergens.has(a)),
+          )
+          const byId = new Map(candidates.map(r => [r.id, r]))
+
+          const { menu } = selectMenu({ candidates, recentRecipeIds: [], profile, seed })
+
+          for (const dia of DIAS) {
+            for (const tipo of TIPOS) {
+              const id = menu[dia][tipo]
+              if (id === NO_SAFE_RECIPE_SENTINEL || id === SLOT_EXCLUDED_SENTINEL) continue
+              const chosen = byId.get(id)
+              // selectMenu only ever emits ids from its own candidate set...
+              expect(chosen).toBeDefined()
+              // ...and never reintroduces an allergen the pre-filter removed.
+              for (const a of chosen!.alergenos ?? []) {
+                expect(profileAllergens.has(a)).toBe(false)
+              }
+            }
+          }
+        },
+      ),
+      { seed: FC_SEED, numRuns: FC_RUNS },
+    )
+  })
+
+  test('a fixed seed yields byte-identical output across repeated runs (ADR-0005 / FRESCO-380)', () => {
+    fc.assert(
+      fc.property(
+        profileArb,
+        catalogArb({ minLength: 0, maxLength: 16 }),
+        fc.string({ minLength: 1 }),
+        (profile, candidates, seed) => {
+          const runs = [0, 1, 2].map(() => selectMenu({ candidates, recentRecipeIds: [], profile, seed }))
+          expect(runs[1]).toEqual(runs[0])
+          expect(runs[2]).toEqual(runs[0])
+        },
+      ),
+      { seed: FC_SEED, numRuns: FC_RUNS },
+    )
+  })
+
+  test('a catalog below the 21-slot minimum never produces a silently-complete plan', () => {
+    // The typed 409/422 rejection for an under-sized catalog is index.ts step 5
+    // (`recipes.length < MIN_CATALOG_SIZE` -> `HttpError(422)`), which runs
+    // inside Deno.serve and is out of reach of `bun test`. What the PURE engine
+    // guarantees — the half that makes the gap detectable upstream and visible
+    // to the user — is: every unfillable slot is NO_SAFE_RECIPE_SENTINEL and
+    // every affected tipo is named in an advertencia. Never a plan that looks
+    // full when it is not.
+    fc.assert(
+      fc.property(
+        profileArb.map(p => makeProfile({ ...p, planning_selection: ALL_DAYS_ALL_MEALS })),
+        catalogArb({ minLength: 0, maxLength: 6 }),
+        fc.string({ minLength: 1 }),
+        (profile, candidates, seed) => {
+          const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile, seed })
+
+          const gapTipos = new Set<TipoPlatoSlot>()
+          for (const dia of DIAS) {
+            for (const tipo of TIPOS) {
+              if (menu[dia][tipo] === NO_SAFE_RECIPE_SENTINEL) gapTipos.add(tipo)
+            }
+          }
+          if (gapTipos.size > 0) {
+            expect(advertencias.length).toBeGreaterThan(0)
+            for (const tipo of gapTipos) {
+              expect(advertencias.some(a => a.includes(tipo))).toBe(true)
+            }
+          }
+        },
+      ),
+      { seed: FC_SEED, numRuns: FC_RUNS },
+    )
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FRESCO-465 (scope expansion, comments.md) — failure-side concrete examples.
+// Property-based already covers the positive invariants; these are the
+// readable per-scenario regressions for the error side. Where the pure engine
+// deliberately emits a sentinel + a franja-naming advertencia instead of
+// throwing (ADR-0005 / FR-8.2 / FRESCO-199), the test asserts that documented
+// contract — the typed 409/422/404 lives in index.ts (inside Deno.serve, not
+// bun-testable) and is documented per case.
+// ---------------------------------------------------------------------------
+describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
+  // Row 1 — filtered catalog below the 21-recipe minimum for the profile.
+  test('an under-minimum catalog surfaces every gap (sentinel + tipo-named advertencia), never a complete-looking plan', () => {
+    // 6 desayunos + 3 comidas + 0 cenas = 9 usable recipes, far below 21.
+    const candidates = [
+      ...Array.from({ length: 6 }, (_, i) => makeRecipe(`d-${i}`, 'desayuno')),
+      ...Array.from({ length: 3 }, (_, i) => makeRecipe(`c-${i}`, 'comida')),
+    ]
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+
+    for (const dia of DIAS) {
+      expect(menu[dia].cena).toBe(NO_SAFE_RECIPE_SENTINEL)
+    }
+    // cena: none at all; comida: runs out of distinct recipes mid-week. Both named.
+    expect(advertencias.some(a => a.includes('cena'))).toBe(true)
+    expect(advertencias.some(a => a.includes('comida'))).toBe(true)
+    // index.ts step 5 rejects this same catalog earlier: HttpError 422
+    // "Catálogo insuficiente: 9 recetas disponibles (mínimo 21)". MIN_CATALOG_SIZE = 21.
+  })
+
+  // Row 2 — zero safe recipes for one concrete slot.
+  test('zero safe recipes for a whole tipo -> that slot is the sentinel everywhere + ONE advertencia naming the franja', () => {
+    const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'desayuno')
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+
+    for (const dia of DIAS) {
+      expect(menu[dia].desayuno).toBe(NO_SAFE_RECIPE_SENTINEL)
+    }
+    const desayunoWarnings = advertencias.filter(a => a.includes('desayuno'))
+    expect(desayunoWarnings).toHaveLength(1)
+    expect(desayunoWarnings[0]).toContain('compatible con tus alergias')
+    // comida + cena stay fully filled — the failure is scoped to the one franja.
+    for (const dia of DIAS) {
+      expect(menu[dia].comida).not.toBe(NO_SAFE_RECIPE_SENTINEL)
+      expect(menu[dia].cena).not.toBe(NO_SAFE_RECIPE_SENTINEL)
+    }
+  })
+
+  // Row 3 — impossible dietary combo. Diet/allergen exclusion is the SQL
+  // pre-filter's job (get_filtered_recipes), so an "impossible combo" reaches
+  // selectMenu as a catalog already emptied for one or more tipos. Same
+  // contract as row 2: a clear per-franja error, never a degraded plan.
+  test('a dietary combo that empties the catalog for two tipos -> named sentinels, not a degraded plan', () => {
+    const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato === 'desayuno')
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+
+    for (const dia of DIAS) {
+      expect(menu[dia].comida).toBe(NO_SAFE_RECIPE_SENTINEL)
+      expect(menu[dia].cena).toBe(NO_SAFE_RECIPE_SENTINEL)
+    }
+    expect(advertencias.some(a => a.includes('comida') && a.includes('compatible con tus alergias'))).toBe(true)
+    expect(advertencias.some(a => a.includes('cena') && a.includes('compatible con tus alergias'))).toBe(true)
+    expect(DIAS.every(dia => menu[dia].desayuno !== NO_SAFE_RECIPE_SENTINEL)).toBe(true)
+  })
+
+  // Row 4 — planning_selection with 0 franjas marked.
+  test('planning_selection with zero franjas -> all 21 slots excluded, no crash, no advertencia (documented pure-function behavior)', () => {
+    const emptySelection = Object.fromEntries(
+      DIAS.map(dia => [dia, [] as TipoPlatoSlot[]]),
+    ) as Record<DiaSemana, TipoPlatoSlot[]>
+    const { menu, advertencias } = selectMenu({
+      candidates: buildAmpleCatalog(),
+      recentRecipeIds: [],
+      seed: SEED,
+      profile: makeProfile({ planning_selection: emptySelection }),
+    })
+
+    for (const dia of DIAS) {
+      for (const tipo of TIPOS) {
+        expect(menu[dia][tipo]).toBe(SLOT_EXCLUDED_SENTINEL)
+      }
+    }
+    expect(advertencias).toEqual([])
+    // NOTE (FRESCO-465): the ticket expects an empty planning_selection to be
+    // rejected *before generating*. The pure selector does not throw — it
+    // returns an all-excluded plan. The "reject" guard is UI-side (and could be
+    // added to index.ts); selectMenu's own contract (FRESCO-199) is "the user
+    // chose nothing, so nothing is planned, and that is not a gap".
+  })
+
+  // Row 5 — profile with no user_profiles row yet.
+  test('a missing user_profiles row is index.ts 404; selectMenu never crashes on a minimal valid profile', () => {
+    // The 404 ("Perfil de usuario no encontrado") is index.ts step 3, inside
+    // Deno.serve — not reachable from bun test. The pure engine's guarantee:
+    // given any structurally-valid profile it returns a well-formed result.
+    const { menu, advertencias } = selectMenu({
+      candidates: buildAmpleCatalog(),
+      recentRecipeIds: [],
+      seed: SEED,
+      profile: makeProfile(),
+    })
+    expect(Object.keys(menu)).toHaveLength(7)
+    expect(Array.isArray(advertencias)).toBe(true)
   })
 })
