@@ -1,5 +1,6 @@
 'use client';
 
+import { ChevronDown } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -149,7 +150,10 @@ export function Dropdown({
         <span className={selected ? '' : 'text-tertiary'}>
           {selected?.label ?? placeholder}
         </span>
-        <span aria-hidden="true" className="ml-2 text-tertiary">▾</span>
+        {/* FRESCO-451 (slice 5/5): a raw "▾" glyph instead of a real icon —
+            every other affordance in the system (chevrons, checks, arrows)
+            is a lucide-react icon; this was the one exception. */}
+        <ChevronDown aria-hidden="true" className="ml-2 size-4 shrink-0 text-tertiary" />
       </button>
 
       {open && (

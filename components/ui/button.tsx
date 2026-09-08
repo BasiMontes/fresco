@@ -19,7 +19,12 @@ import { cn } from '@/lib/utils';
  * `spacing.2` base padding.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-full text-label font-sans transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+  // FRESCO-451 (slice 5/5): disabled:opacity-50 halved an already-light label
+  // color on top of a colored fill — two compounding reductions left disabled
+  // buttons genuinely hard to read, not just visually "off". opacity-65 still
+  // reads as disabled (paired with pointer-events-none + no hover) without
+  // crushing the text.
+  'inline-flex items-center justify-center gap-2 rounded-full text-label font-sans transition-colors disabled:pointer-events-none disabled:opacity-65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
   {
     variants: {
       variant: {
