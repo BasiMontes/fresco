@@ -90,6 +90,16 @@ const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
 // 409 branch.
 const EXISTING_MENU_FOR_WEEK_MESSAGE = 'Ya existe un menú para esta semana.';
 
+// FRESCO-451 (slice 4/5, densidad y restraint): step 2 packs ~25 chips
+// across 4 groups (dieta, alérgenos, ingredientes, cocinas) — the shared
+// `outline` Tag variant borders every one of them in full brand-primary
+// green regardless of selection, so the whole step reads as a wall of
+// green with no contrast between "chosen" and "not chosen". Toning the
+// unselected state down to a neutral hairline (scoped to this page only,
+// not the shared Tag component — other `outline` callers are static
+// badges, not this chip-wall) lets `selected`'s primary fill actually pop.
+const UNSELECTED_CHIP_CLASS = 'border-border text-tertiary';
+
 const ALERGENO_LABELS: Record<string, string> = {
   vegano: 'vegano',
   vegetariano: 'vegetariano',
@@ -534,7 +544,7 @@ export default function OnboardingPage() {
                           aria-pressed={dietaState[option.value]}
                           onClick={() => toggleDieta(option.value)}
                         >
-                          <Tag variant={dietaState[option.value] ? 'selected' : 'outline'}>
+                          <Tag variant={dietaState[option.value] ? 'selected' : 'outline'} className={dietaState[option.value] ? undefined : UNSELECTED_CHIP_CLASS}>
                             {option.label}
                           </Tag>
                         </button>
@@ -572,7 +582,7 @@ export default function OnboardingPage() {
                           aria-pressed={alergenos.includes(option.value)}
                           onClick={() => toggleAlergeno(option.value)}
                         >
-                          <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'}>
+                          <Tag variant={alergenos.includes(option.value) ? 'selected' : 'outline'} className={alergenos.includes(option.value) ? undefined : UNSELECTED_CHIP_CLASS}>
                             {option.label}
                           </Tag>
                         </button>
@@ -597,7 +607,7 @@ export default function OnboardingPage() {
                       aria-pressed={ingredientesOdiados.includes(option.value)}
                       onClick={() => toggleIngredienteOdiado(option.value)}
                     >
-                      <Tag variant={ingredientesOdiados.includes(option.value) ? 'selected' : 'outline'}>
+                      <Tag variant={ingredientesOdiados.includes(option.value) ? 'selected' : 'outline'} className={ingredientesOdiados.includes(option.value) ? undefined : UNSELECTED_CHIP_CLASS}>
                         {option.label}
                       </Tag>
                     </button>
@@ -626,7 +636,7 @@ export default function OnboardingPage() {
                       aria-pressed={cocinasFavoritas.includes(option.value)}
                       onClick={() => toggleCocina(option.value)}
                     >
-                      <Tag variant={cocinasFavoritas.includes(option.value) ? 'selected' : 'outline'}>
+                      <Tag variant={cocinasFavoritas.includes(option.value) ? 'selected' : 'outline'} className={cocinasFavoritas.includes(option.value) ? undefined : UNSELECTED_CHIP_CLASS}>
                         {option.label}
                       </Tag>
                     </button>

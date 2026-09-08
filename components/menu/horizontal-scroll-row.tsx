@@ -51,14 +51,20 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
   return (
     <div className="relative">
       {canScrollLeft && (
-        <button
-          type="button"
-          aria-label="Ver recetas anteriores"
-          onClick={() => scrollByCard(-1)}
-          className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -left-2 top-1/2 z-10 -translate-y-1/2 bg-primary text-on-brand shadow-md hover:bg-accent-600')}
-        >
-          <ChevronLeft className="size-6" />
-        </button>
+        <>
+          {/* FRESCO-451 (slice 4/5): the arrow sat directly on top of the
+              edge card's content with nothing to separate them — this scrim
+              fades the card out under the button instead of a hard overlap. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-[9] w-12 bg-gradient-to-r from-background to-transparent" />
+          <button
+            type="button"
+            aria-label="Ver recetas anteriores"
+            onClick={() => scrollByCard(-1)}
+            className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -left-2 top-1/2 z-10 -translate-y-1/2 bg-primary text-on-brand shadow-md hover:bg-accent-600')}
+          >
+            <ChevronLeft className="size-6" />
+          </button>
+        </>
       )}
       <div
         ref={scrollerRef}
@@ -68,14 +74,17 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
         {children}
       </div>
       {canScrollRight && (
-        <button
-          type="button"
-          aria-label="Ver recetas siguientes"
-          onClick={() => scrollByCard(1)}
-          className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -right-2 top-1/2 z-10 -translate-y-1/2 bg-primary text-on-brand shadow-md hover:bg-accent-600')}
-        >
-          <ChevronRight className="size-6" />
-        </button>
+        <>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-[9] w-12 bg-gradient-to-l from-background to-transparent" />
+          <button
+            type="button"
+            aria-label="Ver recetas siguientes"
+            onClick={() => scrollByCard(1)}
+            className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'absolute -right-2 top-1/2 z-10 -translate-y-1/2 bg-primary text-on-brand shadow-md hover:bg-accent-600')}
+          >
+            <ChevronRight className="size-6" />
+          </button>
+        </>
       )}
     </div>
   );

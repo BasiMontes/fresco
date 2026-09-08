@@ -28,7 +28,10 @@ export default async function FavoritesPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl">
+    // FRESCO-451 (slice 4/5): matches /recipes' max-w-5xl — same grid-cols
+    // breakpoints (recipe-library.tsx), so the shared lg:grid-cols-4 layout
+    // was cramped narrower here than on the catalog browse grid.
+    <div className="mx-auto max-w-5xl">
       <div className="flex items-center gap-3">
         <Link href="/menu" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }))} aria-label="Volver" data-testid="favorites_back_link">
           <ArrowLeft className="size-6" />

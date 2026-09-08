@@ -471,10 +471,16 @@ export default function SignupPage() {
                       />
                       <label className="mt-1 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
                         <span className="flex size-6 shrink-0 items-center justify-center">
+                          {/* FRESCO-451 (slice 4/5): the shared Checkbox's
+                              default circular indicator reads as a radio
+                              button here — a single agree/disagree toggle,
+                              not one option among several, so it gets the
+                              square shape instead. */}
                           <Checkbox
                             data-testid="accept_terms_checkbox"
                             checked={acceptedTerms}
                             onChange={e => setAcceptedTerms(e.target.checked)}
+                            className="rounded-sm"
                           />
                         </span>
                         <span>
