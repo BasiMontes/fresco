@@ -277,6 +277,66 @@ Then(/^regresa a la Biblioteca$/, async ({ page }) => {
   await expect(page).toHaveURL(/\/recipes$/);
 });
 
+// ── @edge-case / URL-state scenarios (FRESCO-463) ────────────────────────
+
+// "El botón 'Guardar receta' se deshabilita mientras el nombre esté vacío" —
+// FRESCO-118: `create-recipe-form.tsx` `disabled={!isValid || isSaving}`;
+// `isValid` needs a non-whitespace name.
+
+Given(/^que Laura abre "Crear propia" y deja el nombre vacío o solo con espacios$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToLibrary(page, testUser);
+  await page.getByTestId('crear_propia_button').click();
+  await expect(page.getByTestId('create_recipe_dialog')).toBeVisible();
+  await page.getByTestId('receta_nombre_input').fill('   ');
+});
+
+When(/^mira el botón "Guardar receta"$/, async () => {
+  // Pure observation — the assertions live in the Then.
+});
+
+Then(/^está deshabilitado, no solo mostrando un error tras el click$/, async ({ page }) => {
+  await expect(page.getByTestId('guardar_receta_button')).toBeDisabled();
+  // And it is not permanently disabled: a real name enables it.
+  await page.getByTestId('receta_nombre_input').fill(`Mi receta e2e ${Date.now()}`);
+  await expect(page.getByTestId('guardar_receta_button')).toBeEnabled();
+});
+
+// "El estado de la Biblioteca (búsqueda, filtros, página) vive en la URL" —
+// FRESCO-384: `/recipes` is URL-driven (`?q`, `?page`, `?cocina`, …). A fresh
+// navigation to the resulting URL restores search + filters + count.
+
+interface LibraryUrlState { url: string, count: number }
+const libraryUrlState: LibraryUrlState = { url: '', count: 0 };
+
+Given(/^que Laura busca y aplica filtros en la Biblioteca$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToLibrary(page, testUser);
+  await page.getByTestId('recipe_search_input').fill('pollo');
+  // `applyDraftFilters` carries the typed query into the same navigation, so
+  // no need to wait for the 300ms search debounce first. "Cena" is a broad
+  // meal-type filter that keeps the result set non-empty (same combo the
+  // existing @biblioteca scenarios assert `> 0` on).
+  await applyDrawerFilter(page, 'recipe_filter_section_comida', 'Cena');
+  await expect(page.getByTestId('recipe_search_input')).toHaveValue('pollo');
+  await expect.poll(async () => shownCount(page)).toBeGreaterThan(0);
+  libraryUrlState.url = page.url();
+  libraryUrlState.count = await shownCount(page);
+});
+
+When(/^comparte o recarga la URL resultante$/, async ({ page }) => {
+  await page.goto(libraryUrlState.url);
+  await expect(page.getByTestId('recipe_library_grid')).toBeVisible();
+});
+
+Then(/^la Biblioteca vuelve exactamente al mismo estado de búsqueda, filtros y páginas cargadas$/, async ({ page }) => {
+  await expect(page.getByTestId('recipe_search_input')).toHaveValue('pollo');
+  await expect(page.getByTestId('filtrar_y_ordenar_button')).toContainText('1');
+  await expect.poll(async () => shownCount(page)).toBe(libraryUrlState.count);
+});
+
 Then(/^esa receta propia nunca aparece en el menú generado por la IA$/, async ({ request }) => {
   const testUser = ctx.testUser!;
   const { semanaIso } = currentWeekMonday();

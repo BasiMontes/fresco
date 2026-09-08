@@ -263,7 +263,8 @@ Característica: Flujo completo de usuario en Fresco
     # un usuario Pro, la llamada real a Gemini para la explicación de
     # aprendizaje — la única IA que queda en el flujo).
 
-  @generacion-menu @edge-case @verificado-manual-2026-07-31
+  @generacion-menu @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/generacion-menu-edge.steps.ts (FRESCO-463, API-only)
   Escenario: Ya existe un plan para la semana solicitada
     Dado que el usuario ya generó un menú para la semana actual
     Cuando intenta generar de nuevo sin eliminar el plan existente
@@ -281,7 +282,8 @@ Característica: Flujo completo de usuario en Fresco
     # components/calendar/generate-week-button.tsx SÍ maneja el 409
     # correctamente — confirma que es un gap, no una limitación técnica.
 
-  @onboarding @edge-case @verificado-manual-2026-08-07
+  @onboarding @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-463)
   Escenario: Recargar la página a mitad del onboarding no borra el progreso ya completado
     Dado que el usuario completó el paso 1 o 2 del onboarding
     Cuando recarga la página antes de llegar al paso 3
@@ -292,7 +294,8 @@ Característica: Flujo completo de usuario en Fresco
     # El store se resetea al generar el menú con éxito para no filtrar
     # respuestas viejas a una futura visita en la misma pestaña.
 
-  @onboarding @edge-case @verificado-manual-2026-08-07
+  @onboarding @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-463)
   Escenario: El campo "Adultos" del hogar respeta un tope superior razonable
     Dado que el usuario está en el paso 3 del onboarding (hogar)
     Cuando escribe un valor muy grande (ej. 999) en "Adultos"
@@ -690,10 +693,11 @@ Característica: Flujo completo de usuario en Fresco
     # la página gana 36px de scroll horizontal no deseado. En la práctica,
     # "eliminar semana" es inalcanzable en mobile sin ese scroll accidental.
 
-  @calendario @edge-case @verificado-manual-2026-08-03
+  @calendario @edge-case @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-463)
   Escenario: Un parámetro de semana inválido en la URL cae a la semana actual
     Dado que el usuario visita /calendar con un valor de semana mal formado en la URL
-    Cuando la página carga
+    Cuando /calendar termina de cargar
     Entonces ve la semana actual, sin ningún error
 
   @calendario @verificado-manual-2026-08-03 @automatizado
@@ -703,9 +707,10 @@ Característica: Flujo completo de usuario en Fresco
     Cuando toca el botón de eliminar
     Entonces el menú completo de esa semana desaparece y ve el mismo estado vacío que si nunca hubiera generado uno
 
-  @calendario @edge-case @verificado-manual-2026-08-03
+  @calendario @edge-case @verificado-manual-2026-08-03 @automatizado
+  # Automatizado: tests/steps/calendario-semana.steps.ts (FRESCO-463)
   Escenario: No hay opción de eliminar cuando no hay menú generado
-    Dado que el usuario ve el estado vacío de una semana sin menú generado
+    Dado que el usuario está viendo una semana sin menú generado todavía
     Cuando mira los controles disponibles
     Entonces no se le ofrece la opción de eliminar
 
@@ -1195,7 +1200,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando intenta guardar
     Entonces ve un mensaje claro pidiéndole completar el nombre antes de guardar
 
-  @biblioteca @edge-case @verificado-manual-2026-08-07
+  @biblioteca @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-463)
   Escenario: El botón "Guardar receta" se deshabilita mientras el nombre esté vacío
     Dado que Laura abre "Crear propia" y deja el nombre vacío o solo con espacios
     Cuando mira el botón "Guardar receta"
@@ -1316,7 +1322,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando elige volver
     Entonces regresa a la Biblioteca
 
-  @biblioteca @verificado-manual-2026-09-02
+  @biblioteca @verificado-manual-2026-09-02 @automatizado
+  # Automatizado: tests/steps/biblioteca.steps.ts (FRESCO-463)
   Escenario: El estado de la Biblioteca (búsqueda, filtros, página) vive en la URL
     Dado que Laura busca y aplica filtros en la Biblioteca
     Cuando comparte o recarga la URL resultante
@@ -1376,7 +1383,8 @@ Característica: Flujo completo de usuario en Fresco
     Cuando pulsa "Salir"
     Entonces la cookie de sesión se elimina y vuelve a /login
 
-  @perfil @edge-case @verificado-manual-2026-08-04
+  @perfil @edge-case @verificado-manual-2026-08-04 @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-463, nunca confirma el borrado)
   Escenario: Borrar cuenta exige escribir el email exacto y la contraseña para habilitarse
     Dado que Laura abre el diálogo "Borrar cuenta definitivamente"
     Cuando escribe un email distinto al suyo

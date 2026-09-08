@@ -205,10 +205,11 @@ Then(/^ve el mensaje de error que devuelve Supabase Auth$/, async ({ page }) => 
 });
 
 Then(/^no se crea una cuenta duplicada$/, async ({ page }) => {
+  // The error renders in place — the form never advanced to /onboarding,
+  // which is the dead-end a silently-accepted signup produced before the
+  // `identities: []` check. (A cookie assertion is unreliable here: the PKCE
+  // `sb-…-auth-token-code-verifier` cookie is written on client init and is
+  // not a session.)
   await expect(page).toHaveURL(/\/signup(\?|$)/);
-  const cookies = await page.context().cookies();
-  const hasSupabaseAuthCookie = cookies.some(
-    cookie => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token'),
-  );
-  expect(hasSupabaseAuthCookie).toBe(false);
+  await expect(page.getByRole('heading', { name: 'Guarda tu menú' })).toBeVisible();
 });

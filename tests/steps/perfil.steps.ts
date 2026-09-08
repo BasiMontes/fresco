@@ -111,3 +111,39 @@ Then(/^la sesión se cierra y es redirigida a \/login con un mensaje de despedid
   await page.waitForURL(/\/login\?account_deleted=1/);
   await expect(page.getByTestId('account_deleted_message')).toBeVisible();
 });
+
+// ── @edge-case "Borrar cuenta exige email exacto + contraseña" (FRESCO-463) ──
+//
+// `delete-account-dialog.tsx`: `isConfirmed = phraseMatches && (isAnonymous
+// || password.length > 0)`, and `confirm` is `disabled={!isConfirmed}`. This
+// scenario only exercises the gating — it never clicks confirm, so nothing
+// is deleted.
+
+Given(/^que Laura abre el diálogo "Borrar cuenta definitivamente"$/, async ({ page, testUserFactory }) => {
+  const testUser = await testUserFactory();
+  ctx.testUser = testUser;
+  await loginAndGoToProfile(page, testUser);
+  await page.getByTestId('delete_account_open_button').click();
+  await expect(page.getByTestId('delete_account_dialog')).toBeVisible();
+});
+
+When(/^escribe un email distinto al suyo$/, async ({ page }) => {
+  await page.getByTestId('delete_account_email_input').fill('otra-persona@example.com');
+});
+
+When(/^escribe su propio email exacto pero deja la contraseña vacía$/, async ({ page }) => {
+  await page.getByTestId('delete_account_email_input').fill(ctx.testUser!.email);
+  await page.getByTestId('delete_account_password_input').fill('');
+});
+
+When(/^escribe también su contraseña$/, async ({ page }) => {
+  await page.getByTestId('delete_account_password_input').fill(ctx.testUser!.password);
+});
+
+Then(/^el botón de confirmación sigue deshabilitado$/, async ({ page }) => {
+  await expect(page.getByTestId('delete_account_confirm_button')).toBeDisabled();
+});
+
+Then(/^el botón de confirmación se habilita$/, async ({ page }) => {
+  await expect(page.getByTestId('delete_account_confirm_button')).toBeEnabled();
+});
