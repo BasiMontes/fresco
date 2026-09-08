@@ -75,7 +75,7 @@ import { join } from 'node:path';
  *   files carry uncovered handlers. Net positive — a documented,
  *   reviewed one-off dip, per .context/qa/coverage-ratchet.md.
  */
-const FLOOR = { functions: 82.0, lines: 84.0 } as const;
+const FLOOR = { functions: 84.5, lines: 86.2 } as const;
 
 /** Path prefixes whose files are not part of the ratchet. */
 const IGNORE_PREFIXES = ['tests/', 'scripts/', 'cli/', 'bun-test-setup.ts'];
