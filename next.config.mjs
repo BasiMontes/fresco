@@ -45,6 +45,9 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      // FRESCO-462: 20 active recipes source their photo from Pexels; next/image
+      // 400s on any hostname not listed here.
+      { protocol: 'https', hostname: 'images.pexels.com' },
     ],
   },
   // ADR-0009: force-expose VERCEL_ENV to the client, independent of Vercel's project toggle.
