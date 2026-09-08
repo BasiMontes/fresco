@@ -5,10 +5,12 @@ import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
 import { MenuReadonlyGrid } from '@/components/historial/menu-readonly-grid';
 import { ReuseMenuButton } from '@/components/historial/reuse-menu-button';
 import { WeekHistoryList } from '@/components/historial/week-history-list';
+import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getMealPlanForWeek, listPastMealPlanWeeks } from '@/lib/api/meal-plan';
 import { formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { createClient } from '@/lib/supabase/server';
+import { cn } from '@/lib/utils';
 
 const ISO_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
 
@@ -68,20 +70,27 @@ export default async function HistorialPage({
 
     return (
       <div className="mx-auto max-w-5xl">
-        <Link
-          href="/historial"
-          data-testid="historial_back_link"
-          className="inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Volver al histórico
-        </Link>
-        <h1 className="mt-3 text-h2">
-          Semana del
-          {' '}
-          {formatWeekRangeLabel(mondayIso)}
-        </h1>
-        <p className="text-h6 uppercase text-tertiary">Solo lectura</p>
+        {/* FRESCO-451: standardized on the icon-only circular back button
+            used by favorites/notifications — this used to be a text+icon
+            inline link, a third, inconsistent back-affordance pattern. */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/historial"
+            data-testid="historial_back_link"
+            aria-label="Volver al histórico"
+            className={cn(buttonVariants({ variant: 'icon', size: 'sm' }), 'shrink-0')}
+          >
+            <ArrowLeft className="size-6" aria-hidden="true" />
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-h2">
+              Semana del
+              {' '}
+              {formatWeekRangeLabel(mondayIso)}
+            </h1>
+            <p className="text-h6 uppercase text-tertiary">Solo lectura</p>
+          </div>
+        </div>
         <p className="mt-1 text-body-md text-tertiary">
           Menú de solo lectura. Puedes copiarlo a la semana en curso.
         </p>

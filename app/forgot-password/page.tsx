@@ -1,10 +1,12 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState } from 'react';
+import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -62,9 +64,14 @@ function ForgotPasswordPageInner() {
 
       <Card className="p-6 md:p-8">
         <h1 className="text-h3">Recupera tu contraseña</h1>
-        <p className="mt-1 text-body-sm text-tertiary">
-          Te enviamos un enlace para elegir una nueva contraseña.
-        </p>
+        {/* FRESCO-451: this used to render unconditionally, so the
+            "success" confirmation below stacked a near-identical second
+            paragraph on top of it instead of replacing it. */}
+        {!submitted && (
+          <p className="mt-1 text-body-sm text-tertiary">
+            Te enviaremos un enlace para elegir una nueva contraseña.
+          </p>
+        )}
 
         {invalidLink && (
           <p data-testid="invalid_link_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
@@ -74,9 +81,12 @@ function ForgotPasswordPageInner() {
 
         {submitted
           ? (
-              <p data-testid="forgot_password_confirmation_message" role="status" aria-live="polite" className="mt-6 text-body-sm text-text">
-                Si existe una cuenta con ese email, te llegará un enlace para restablecer tu contraseña en unos minutos.
-              </p>
+              <div className="mt-6 flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+                <p data-testid="forgot_password_confirmation_message" role="status" aria-live="polite" className="text-body-sm text-primary">
+                  Si existe una cuenta con ese email, te llegará un enlace para restablecer tu contraseña en unos minutos.
+                </p>
+              </div>
             )
           : (
               <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
@@ -97,11 +107,13 @@ function ForgotPasswordPageInner() {
             )}
 
         <p className="mt-4 text-center text-body-sm text-tertiary">
-          <Link href="/login" className="text-primary">
+          <Link href="/login" className="text-primary underline">
             Volver a iniciar sesión
           </Link>
         </p>
       </Card>
+
+      <LegalLinks />
     </div>
   );
 }
