@@ -326,3 +326,7 @@ Historia archivada:
 - Qué: 15 escenarios manuales de regression.feature automatizados en PR #311 (0ee0b97). Ratio 89->104 @automatizado. Nuevo generacion-menu-edge.steps.ts. 15/15 verde local.
 - Por qué: escenarios core sin spec, invisibles a CI. Tope de 15 por wall-clock de test:e2e (ADR-0018).
 - Siguiente: QA en staging. FRESCO-467 en Listo; 464/465/466 en backlog.
+## 2026-09-08 - FRESCO-467: templates de email Auth alineados al rediseno + email_change brandeado
+- Que: confirmation/recovery a Fraunces + card 20px/#FBF6EC/hairline + voz calmada (sin voseo/emoji/hype) + tagline real. Nuevo email_change.html (era stub ingles con enlace) branded, espanol, con codigo {{ .Token }}. PR #312 squash a staging (3871070), ff a dev. Aplicado al hosted jdqemhewjrjuopssdurn (los 3 entornos) por Management API PATCH, verificado por GET. supabase/templates/** anadido a .impeccable ignoreFiles (email HTML, medio distinto).
+- Por que: los templates se quedaron pre-FRESCO-436; el email_change en ingles sin marca era un defecto en el camino de conversion invitado->cuenta.
+- Siguiente: QA prueba de envio real en staging (Gmail web/app + Outlook/dark). Mirror a main pendiente de confirmacion.
