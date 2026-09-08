@@ -34,6 +34,10 @@ export function LegalLinks() {
         <button type="button" data-testid="legal_links_contact" onClick={() => openSection('contacto')} className="inline-block py-1.5 underline">
           Contacto
         </button>
+        {' · '}
+        <button type="button" data-testid="legal_links_cookies" onClick={() => openSection('cookies')} className="inline-block py-1.5 underline">
+          Cookies
+        </button>
       </p>
 
       <LegalModal open={open} onOpenChange={setOpen} section={section} />
