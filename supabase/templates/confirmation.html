@@ -18,15 +18,8 @@
 <![endif]-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  @font-face {
-    font-family: 'Caprasimo';
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url(https://fonts.gstatic.com/s/caprasimo/v6/esDT31JQOPuXIUGBp72kkJUEGpA.woff2) format('woff2');
-  }
   @font-face {
     font-family: 'Figtree';
     font-style: normal;
@@ -55,7 +48,10 @@
   body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: #FAF3E3; }
   a { text-decoration: none; }
 
-  .heading { font-family: Caprasimo, "Baloo 2", Verdana, Geneva, sans-serif; font-weight: 400; color: #201E1D; }
+  /* DESIGN.md v2 (FRESCO-437): Fraunces is the display face; Caprasimo retired.
+     Most email clients strip webfonts, so Georgia carries the editorial serif
+     read for the majority; Apple / iOS Mail render Fraunces. */
+  .heading { font-family: Fraunces, Georgia, "Times New Roman", serif; font-weight: 400; color: #201E1D; }
   .body-text { font-family: Figtree, -apple-system, BlinkMacSystemFont, sans-serif; color: #201E1D; }
 
   @media only screen and (max-width: 600px) {
@@ -70,14 +66,14 @@
 <body style="margin:0; padding:0; background-color:#FAF3E3;">
   <!-- Preheader (hidden preview text) -->
   <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#FAF3E3;">
-    Un clic y tu menú queda a salvo — confirmá tu cuenta para seguir planificando.
+    Confirma tu cuenta para guardar tu menú y planificar la semana.
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAF3E3;">
     <tr>
       <td align="center" style="padding: 40px 16px;">
 
-        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:600px; background-color:#F1E3C6; border-radius:32px; overflow:hidden; box-shadow: 0 3px 10px rgba(47,40,28,0.16);">
+        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:600px; background-color:#FBF6EC; border-radius:20px; overflow:hidden; border:1px solid rgba(32,30,29,0.16); box-shadow: 0 3px 10px rgba(47,40,28,0.16);">
 
           <!-- Header band -->
           <tr>
@@ -91,18 +87,18 @@
             <td class="card-padding fluid-padding" style="padding: 40px 44px 36px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" class="headline heading" style="font-size:30px; line-height:1.12; letter-spacing:-0.015em; padding-bottom:14px;">
-                    Que no se te pase el punto
+                  <td align="center" class="headline heading" style="font-size:30px; line-height:1.12; letter-spacing:-0.02em; padding-bottom:14px;">
+                    Confirma tu cuenta
                   </td>
                 </tr>
                 <tr>
-                  <td align="center" class="body-text" style="font-size:15px; line-height:1.55; color:#524A3D; padding-bottom:30px; max-width:420px;">
-                    Un clic y tu cuenta queda tan fresca como nuestras recetas — lista para guardar tu menú y planificar la semana sin dramas.
+                  <td align="center" class="body-text" style="font-size:15px; line-height:1.55; color:#201E1D; padding-bottom:30px; max-width:420px;">
+                    Confirma tu cuenta para guardar el menú que acabas de generar y empezar a planificar la semana.
                   </td>
                 </tr>
                 <tr>
                   <td align="center" style="padding-bottom: 28px;">
-                    <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup" class="cta-button heading" target="_blank" style="background-color:#DF8C26; color:#FFFFFF; font-size:16px; line-height:1; padding:18px 44px; border-radius:999px; display:inline-block; box-shadow: 0 1px 2px rgba(47,40,28,0.14);">
+                    <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup" class="cta-button body-text" target="_blank" style="background-color:#DF8C26; color:#FFFFFF; font-size:16px; font-weight:600; line-height:1; padding:18px 44px; border-radius:999px; display:inline-block; box-shadow: 0 1px 2px rgba(47,40,28,0.14);">
                       Confirmar mi cuenta
                     </a>
                     <!--[if mso]>
@@ -113,7 +109,7 @@
                 </tr>
                 <tr>
                   <td align="center" class="body-text" style="font-size:13px; line-height:1.5; color:#8A8172;">
-                    ¿Esto no ha sido cosa tuya? Tranquilo/a, ignora este correo — aquí seguimos tan frescos.
+                    ¿No has creado esta cuenta? Ignora este correo.
                   </td>
                 </tr>
               </table>
@@ -132,9 +128,8 @@
             <td align="center" class="fluid-padding" style="padding: 24px 44px 32px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td valign="middle" style="padding-right:8px; font-size:16px;">🍃</td>
                   <td valign="middle" class="body-text" style="font-size:13px; color:#8A8172;">
-                    Fresco — menús semanales pensados para ti
+                    Fresco — menús semanales con IA que aprende de lo que realmente cocinas
                   </td>
                 </tr>
               </table>

@@ -2,7 +2,8 @@
   "detector": {
     "ignoreRules": [],
     "ignoreFiles": [
-      ".context/audits/**"
+      ".context/audits/**",
+      "supabase/templates/**"
     ],
     "ignoreValues": [
       {
