@@ -115,6 +115,56 @@ jobs:
         working-directory: supabase/functions
         run: deno check "**/*.ts"
 
+  db-integration:
+    name: test:db-integration
+    runs-on: ubuntu-latest
+    # FRESCO-464 — the DB-integration test layer: `bun test` (tests/db/) against
+    # a REAL Postgres (the Supabase CLI local stack), not e2e. It runs the
+    # cross-user RLS denial + `SECURITY DEFINER` spoof tests that the mocked
+    # unit suite structurally cannot ('a mocked db.rpc proves nothing about the
+    # function' — rpc-authorization.md §5). Kept as its own job, parallel to
+    # `unit` / `deno` and SEPARATE from `e2e`, so it never adds to the `e2e`
+    # job's wall-clock (ADR-0018 — e2e wall-clock is the binding constraint).
+    # No secrets: it only ever talks to the local stack with Supabase's public
+    # `supabase-demo` demo keys (committed in `.env.ci`), so it runs on `push`
+    # too, the same triggers as `unit`.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Cache bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - run: bun install --frozen-lockfile
+
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Start local Supabase
+        # Same `-x` exclusions as the `e2e` job — Postgres + Auth (GoTrue) +
+        # PostgREST are all these tests touch.
+        run: supabase start -x realtime,storage-api,imgproxy,studio,inbucket,logflare,vector
+
+      - name: Apply migrations + seed
+        # Rebuilds the DB from every migration, then loads supabase/seed.sql
+        # (the 1000-row recipe catalog the harness seeds meal-plan slots from).
+        run: supabase db reset
+
+      - run: bun run test:db
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
+
   e2e:
     name: test:e2e
     runs-on: ubuntu-latest
