@@ -127,7 +127,11 @@ export default async function MenuPage() {
         ("estaba dentro sin menú"). It stays in the has-plan branch below. */}
         <NoMenuEmptyState data-testid="menu_empty_state" titleAs="h1" />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        {/* FRESCO-451 (slice 4/5): gap-8 left each StatTile's top hairline
+          reading as a disconnected dash instead of "one unit divided by
+          hairlines" (stat-tile.tsx's own intent) — gap-4 keeps them close
+          enough to cohere. */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {recetasDisponibles !== null && (
             <AvailableRecipesCard count={recetasDisponibles} />
           )}
@@ -170,7 +174,11 @@ export default async function MenuPage() {
         <PushPromptBanner />
       </div>
 
-      <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+      {/* FRESCO-451 (slice 4/5): gap-8 left each StatTile's top hairline
+          reading as a disconnected dash instead of "one unit divided by
+          hairlines" (stat-tile.tsx's own intent) — gap-4 keeps them close
+          enough to cohere. */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {recetasDisponibles !== null && (
           <AvailableRecipesCard count={recetasDisponibles} />
         )}

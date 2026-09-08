@@ -40,8 +40,21 @@ function BackToLibraryLink({ from }: { from?: string }) {
       );
 }
 
+// FRESCO-451 (slice 4/5, densidad y restraint): a recipe with several active
+// dieta flags plus its cocina tag was observed live piling up to 9 pills in
+// one row. Cocina + dieta are informational, so they get capped with a "+N"
+// overflow tag; alergenos stay uncapped below — they're safety-critical
+// (recipes the user must avoid), never worth hiding behind a count.
+const MAX_VISIBLE_INFO_TAGS = 3;
+
 function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Recipe, initialIsFavorite: boolean, from?: string }) {
   const dietaLabels = activeDietaLabels(receta.dieta);
+  const infoTags = [
+    ...(receta.clasificacion?.cocina ? [receta.clasificacion.cocina] : []),
+    ...dietaLabels,
+  ];
+  const visibleInfoTags = infoTags.slice(0, MAX_VISIBLE_INFO_TAGS);
+  const hiddenInfoCount = infoTags.length - visibleInfoTags.length;
   const ingredientes = receta.ingredientes_principales ?? [];
   const pasos = receta.pasos_resumen ?? [];
 
@@ -77,8 +90,12 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Reci
       <h1 className="text-h2">{receta.nombre}</h1>
 
       <div className="mt-2 flex flex-wrap gap-2" data-testid="recipe_detail_tags">
-        {receta.clasificacion?.cocina && <Tag variant="neutral">{receta.clasificacion.cocina}</Tag>}
-        {dietaLabels.map(label => <Tag key={label} variant="accent">{label}</Tag>)}
+        {visibleInfoTags.map(label => (
+          <Tag key={label} variant={label === receta.clasificacion?.cocina ? 'neutral' : 'accent'}>
+            {label}
+          </Tag>
+        ))}
+        {hiddenInfoCount > 0 && <Tag variant="neutral">{`+${hiddenInfoCount}`}</Tag>}
         {(receta.alergenos ?? []).map(alergeno => (
           <Tag key={alergeno} variant="allergen">
             {alergenoLabel(alergeno)}
