@@ -120,9 +120,11 @@ export default async function ProfilePage() {
               {initial || <UserIcon className="size-6" />}
             </div>
             <div className="min-w-0">
+              {/* FRESCO-451 (slice 5/5): the no-name case read as a bare,
+                  unfinished "Hola" — matches /menu's "¡Hola!" / "¡Hola,
+                  {nombre}!" pattern instead. */}
               <p className="truncate text-h5">
-                Hola
-                {nombre ? `, ${nombre}` : ''}
+                {nombre ? `¡Hola, ${nombre}!` : '¡Hola!'}
               </p>
               {/* FRESCO-218: reflect the onboarding identity choice
                   (FRESCO-197) here — a guest sees a plain "Invitada" badge

@@ -18,6 +18,8 @@ export interface FilterDrawerProps {
   'onOpenChange': (open: boolean) => void
   'title': string
   'onClearAll': () => void
+  /** FRESCO-451 (slice 5/5): "Borrar todo" showed even with nothing to clear — gates it to when the caller actually has active filters. */
+  'hasActiveFilters': boolean
   'footer': React.ReactNode
   'children': React.ReactNode
   'aria-label': string
@@ -33,7 +35,7 @@ function readCssDurationMs(propertyName: string, fallbackMs: number): number {
   return raw.endsWith('ms') ? value : value * 1000;
 }
 
-export function FilterDrawer({ open, onOpenChange, title, onClearAll, footer, children, 'aria-label': ariaLabel, 'data-testid': dataTestId }: FilterDrawerProps) {
+export function FilterDrawer({ open, onOpenChange, title, onClearAll, hasActiveFilters, footer, children, 'aria-label': ariaLabel, 'data-testid': dataTestId }: FilterDrawerProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocused = React.useRef<HTMLElement | null>(null);
 
@@ -151,14 +153,16 @@ export function FilterDrawer({ open, onOpenChange, title, onClearAll, footer, ch
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border p-4">
           <h2 className="text-h6 uppercase text-text">{title}</h2>
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onClearAll}
-              data-testid={dataTestId ? `${dataTestId}_clear_all_button` : undefined}
-              className="text-body-sm font-semibold text-primary underline underline-offset-2"
-            >
-              Borrar todo
-            </button>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={onClearAll}
+                data-testid={dataTestId ? `${dataTestId}_clear_all_button` : undefined}
+                className="text-body-sm font-semibold text-primary underline underline-offset-2"
+              >
+                Borrar todo
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onOpenChange(false)}

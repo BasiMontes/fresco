@@ -238,6 +238,7 @@ export function RecipeLibrary({
         onOpenChange={setFilterDrawerOpen}
         title="Filtrar y ordenar"
         onClearAll={() => setDraftFilters(EMPTY_FILTER_STATE)}
+        hasActiveFilters={activeFilterChips(draftFilters).length > 0}
         aria-label="Filtrar y ordenar recetas"
         data-testid="recipe_filter_drawer"
         footer={(

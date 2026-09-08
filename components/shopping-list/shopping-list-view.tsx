@@ -544,10 +544,14 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
             receiptOpen ? 'invisible justify-end md:visible md:pr-8' : 'justify-center',
           )}
         >
+          {/* FRESCO-451 (slice 5/5): shadow-md matches every other floating
+              control's elevation (e.g. HorizontalScrollRow's arrows) —
+              shadow-lg on top of an already-solid `action` fill overstated
+              this button's weight relative to the rest of the system. */}
           <Button
             type="button"
             size="lg"
-            className="shadow-lg"
+            className="shadow-md"
             onClick={handleCompraRealizada}
             data-testid="shopping_list_clear_comprados_button"
           >

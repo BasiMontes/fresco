@@ -740,7 +740,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
                 event.stopPropagation();
                 onMark('cocinada');
               }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:bg-surface hover:text-primary disabled:pointer-events-none disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-65"
             >
               <Check className="size-4 shrink-0" />
               Cocinado
@@ -754,7 +754,7 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
                 event.stopPropagation();
                 onMark('descartada');
               }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-error hover:bg-surface hover:text-error disabled:pointer-events-none disabled:opacity-50"
+              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-error hover:text-error disabled:pointer-events-none disabled:opacity-65"
             >
               <X className="size-4 shrink-0" />
               Descartar
