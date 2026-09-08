@@ -5,6 +5,7 @@ import { configureBoneyard } from 'boneyard-js/react'
 
 import _menu_page from './menu-page.bones.json'
 import _recipes_page from './recipes-page.bones.json'
+import _recipe_detail_page from './recipe-detail-page.bones.json'
 import _calendar_page from './calendar-page.bones.json'
 import _shopping_list_page from './shopping-list-page.bones.json'
 
@@ -13,6 +14,7 @@ configureBoneyard({"color":"#DED2B8","darkColor":"#493F2C","animate":"shimmer"})
 registerBones({
   "menu-page": _menu_page,
   "recipes-page": _recipes_page,
+  "recipe-detail-page": _recipe_detail_page,
   "calendar-page": _calendar_page,
   "shopping-list-page": _shopping_list_page,
 })

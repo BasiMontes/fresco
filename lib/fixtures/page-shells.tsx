@@ -8,6 +8,7 @@ import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-
 import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
+import { RecipeDetailView } from '@/components/recipes/recipe-detail';
 import { ShoppingListView } from '@/components/shopping-list/shopping-list-view';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +106,18 @@ export function RecipesPageFixture() {
           <FavoriteRecipeCard key={recipe.id} recipe={recipe} initialIsFavorite={false} />
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Mirrors `/recipes/[id]`'s own outer container (page.tsx). */
+export function RecipeDetailPageFixture() {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <RecipeDetailView
+        detail={{ kind: 'catalogo', receta: makeFixtureRecipe() }}
+        initialIsFavorite={false}
+      />
     </div>
   );
 }

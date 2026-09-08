@@ -3,7 +3,7 @@
 import { Skeleton } from 'boneyard-js/react';
 import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
-import { CalendarPageFixture, MenuPageFixture, RecipesPageFixture, ShoppingListPageFixture } from '@/lib/fixtures/page-shells';
+import { CalendarPageFixture, MenuPageFixture, RecipeDetailPageFixture, RecipesPageFixture, ShoppingListPageFixture } from '@/lib/fixtures/page-shells';
 import '@/bones/registry';
 
 /**
@@ -21,6 +21,9 @@ function SkeletonCaptureInner() {
       </Skeleton>
       <Skeleton name="recipes-page" loading={loading}>
         <RecipesPageFixture />
+      </Skeleton>
+      <Skeleton name="recipe-detail-page" loading={loading}>
+        <RecipeDetailPageFixture />
       </Skeleton>
       <Skeleton name="calendar-page" loading={loading}>
         <CalendarPageFixture />
