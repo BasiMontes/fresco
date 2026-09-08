@@ -222,3 +222,98 @@ Then(/^no se mueve ni se modifica ningún dato$/, async ({ page }) => {
   expect(page.url()).toContain('/signup');
   await expect(page.getByTestId('conflict_password_input')).toBeVisible();
 });
+
+// ── @edge-case "Una password débil se rechaza antes del roundtrip de OTP" (FRESCO-463) ──
+//
+// FRESCO-123: `app/signup/page.tsx` `handleSubmit` runs `isPasswordTooShort`
+// (client mirror of the server `minimum_password_length`, `lib/validation/
+// password-policy.ts`) BEFORE the anonymous-conversion `updateUser({ email })`
+// call that would send a real OTP email — so a too-short password never
+// reaches the OTP screen.
+
+/** A password below `MIN_PASSWORD_LENGTH` (10) — the exact value doesn't matter, only that it's short. */
+const SHORT_PASSWORD = '123';
+
+Given(/^que una invitada rellena \/signup con un email nuevo y una password demasiado corta$/, async ({ page }) => {
+  await ensureAnonymousSession(page);
+  await page.goto('/signup');
+  await page.getByTestId('email_input').fill(`hola.frescoapp+e2e-${crypto.randomUUID()}@gmail.com`);
+  await page.getByTestId('password_input').fill(SHORT_PASSWORD);
+  await page.getByTestId('accept_terms_checkbox').check();
+});
+
+Then(/^se rechaza de inmediato, sin llegar a la pantalla de OTP$/, async ({ page }) => {
+  await expect(page.getByTestId('signup_error_message')).toContainText('caracteres');
+  await expect(page.getByTestId('otp_code_input')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/signup(\?|$)/);
+});
+
+// ── @edge-case "El botón de confirmar código OTP solo se habilita con 6 dígitos" (FRESCO-463) ──
+//
+// The OTP screen is reached by the real anonymous-conversion branch
+// (`user?.is_anonymous` → `updateUser({ email })` → `setStep('otp')`). That
+// PUT is route-mocked to a success so no real email-change verification mail
+// is sent; the button's `disabled={isVerifyingOtp || otpCode.length !== 6}`
+// logic is pure client state and needs no backend.
+
+Given(/^que la invitada está en la pantalla de OTP$/, async ({ page }) => {
+  await ensureAnonymousSession(page);
+
+  const newEmail = `hola.frescoapp+e2e-${crypto.randomUUID()}@gmail.com`;
+  const nowIso = new Date().toISOString();
+
+  // Keep the leaked-password pre-check offline + deterministic: no suffix in
+  // the range body matches this password's SHA-1, so it reads as not-pwned.
+  await page.route('**/api.pwnedpasswords.com/range/**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'text/plain', body: '0000000000000000000000000000000000A:1' });
+  });
+
+  // `updateUser({ email })` on the anonymous user → PUT /auth/v1/user. Supabase
+  // really queues the email change and returns 200; mock it so the flow
+  // advances to the OTP step without dispatching a real verification email.
+  // The initial GET /auth/v1/user (getUser) must still hit the real backend —
+  // that's what proves the session is anonymous.
+  await page.route(/\/auth\/v1\/user(\?|$)/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: '00000000-0000-4000-8000-0000000000aa',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: '',
+        new_email: newEmail,
+        phone: '',
+        app_metadata: { provider: 'email', providers: ['email'] },
+        user_metadata: {},
+        identities: [],
+        created_at: nowIso,
+        updated_at: nowIso,
+      }),
+    });
+  });
+
+  await page.goto('/signup');
+  await page.getByTestId('email_input').fill(newEmail);
+  await page.getByTestId('password_input').fill(`E2e-Otp-Screen-${Date.now()}!`);
+  await page.getByTestId('accept_terms_checkbox').check();
+  await page.getByTestId('signup_submit_button').click();
+  await expect(page.getByTestId('otp_code_input')).toBeVisible();
+});
+
+When(/^escribe menos de 6 dígitos$/, async ({ page }) => {
+  await page.getByTestId('otp_code_input').fill('123');
+});
+
+Then(/^el botón "Confirmar código" permanece deshabilitado$/, async ({ page }) => {
+  await expect(page.getByTestId('signup_verify_otp_button')).toBeDisabled();
+});
+
+Then(/^al completar los 6 dígitos el botón se habilita$/, async ({ page }) => {
+  await page.getByTestId('otp_code_input').fill('123456');
+  await expect(page.getByTestId('signup_verify_otp_button')).toBeEnabled();
+});

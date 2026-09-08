@@ -61,7 +61,8 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema le redirige a /menu
     Y la sesión queda activa
 
-  @login @edge-case @verificado-manual-2026-07-31
+  @login @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Inicio de sesión falla con credenciales incorrectas
     Dado que un usuario introduce un email o contraseña incorrectos
     Cuando confirma el formulario de /login
@@ -76,7 +77,8 @@ Característica: Flujo completo de usuario en Fresco
     # Re-verificado en vivo tras el fix: mensaje "Email o contraseña
     # incorrectos." en español.
 
-  @login @edge-case @verificado-manual-2026-08-07
+  @login @edge-case @verificado-manual-2026-08-07 @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Doble-click rápido en "Iniciar sesión" no dispara dos intentos de autenticación
     Dado que un usuario completa email y contraseña válidos en /login
     Cuando hace dos clicks sincrónicos sobre "Iniciar sesión" sin esperar entre ambos
@@ -107,7 +109,8 @@ Característica: Flujo completo de usuario en Fresco
     # solo salen 5 chars del hash SHA-1). Fail-open: si HIBP no responde, no
     # bloquea el alta.
 
-  @registro @edge-case @verificado-manual-2026-07-31
+  @registro @edge-case @verificado-manual-2026-07-31 @automatizado
+  # Automatizado: tests/steps/signup.steps.ts (FRESCO-463, route-mock: 200 + identities:[])
   Escenario: Alta falla porque el email ya está registrado
     Dado que un visitante intenta darse de alta con un email ya existente
     Cuando confirma el formulario de /signup
@@ -127,20 +130,22 @@ Característica: Flujo completo de usuario en Fresco
     Cuando introduce su email registrado y confirma el formulario
     Entonces ve un mensaje genérico confirmando que si la cuenta existe, recibirá un enlace
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-463)
   Escenario: El mensaje de recuperación de contraseña no revela si el email existe (anti-enumeración)
     Dado que un visitante introduce un email que no está registrado en /forgot-password
-    Cuando confirma el formulario
+    Cuando confirma el formulario de recuperación
     Entonces ve exactamente el mismo mensaje genérico que con un email real
     # Mismo patrón anti-enumeración que signUp() (ver escenario "Alta falla
     # porque el email ya está registrado"), aplicado también aquí por diseño
     # de Supabase Auth. Verificado en vivo comparando ambos mensajes carácter
     # a carácter.
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado
+  # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-463)
   Escenario: El campo de email en /forgot-password exige un formato válido antes de enviar
     Dado que un usuario deja vacío el campo de email en /forgot-password
-    Cuando intenta confirmar el formulario
+    Cuando intenta confirmar el formulario de recuperación
     Entonces el navegador bloquea el envío con la validación nativa del campo (required + type=email), sin llamar al backend
 
   @login @recuperar-password @edge-case @verificado-manual-2026-08-19
@@ -455,9 +460,10 @@ Característica: Flujo completo de usuario en Fresco
     # ambos. Ver el escenario de arriba para el detalle de lo verificado en
     # vivo y lo pendiente de QA manual.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-08
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (FRESCO-463)
   Escenario: Una password débil se rechaza antes de gastar el roundtrip de OTP
-    Dado que una invitada rellena /signup con un email nuevo y una password de menos de 6 caracteres
+    Dado que una invitada rellena /signup con un email nuevo y una password demasiado corta
     Cuando confirma el formulario
     Entonces se rechaza de inmediato, sin llegar a la pantalla de OTP
     # FRESCO-123 (arreglado 2026-08-08): app/signup/page.tsx no validaba la
@@ -468,11 +474,14 @@ Característica: Flujo completo de usuario en Fresco
     # Verificado en vivo: password "123" nunca llega a "Revisa tu correo";
     # password válida sigue llegando normalmente (sin regresión).
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-08
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado
+  # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (FRESCO-463,
+  # route-mock del PATCH /auth/v1/user para llegar a la pantalla OTP sin email real)
   Escenario: El botón de confirmar código OTP solo se habilita con los 6 dígitos completos
     Dado que la invitada está en la pantalla de OTP
     Cuando escribe menos de 6 dígitos
     Entonces el botón "Confirmar código" permanece deshabilitado
+    Y al completar los 6 dígitos el botón se habilita
     # FRESCO-126 (arreglado 2026-08-08): el gate solo chequeaba !otpCode
     # (truthy), dejaba enviar con 2 dígitos — el servidor siempre rechaza
     # pero era una request desperdiciada (el error ya se mostraba bien
