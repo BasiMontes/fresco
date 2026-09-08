@@ -113,6 +113,18 @@ describe.skipIf(!(RUN && reachable))('cross-user RLS denial (real DB)', () => {
       body: { user_id: A.id, semana_iso: '2099-W02', fecha_inicio: '2099-01-12', advertencias: [] },
     }));
 
+    // Positive control: the SAME row shape, only differing in user_id, inserts
+    // fine for B's own id. This proves the 42501 above is the RLS WITH CHECK
+    // policy rejecting the cross-user user_id — not an incidental schema/NOT
+    // NULL error that would also mask a missing policy.
+    const ownInsert = await rest('meal_plans', {
+      method: 'POST',
+      token: B.token,
+      prefer: 'return=representation',
+      body: { user_id: B.id, semana_iso: '2099-W02', fecha_inicio: '2099-01-12', advertencias: [] },
+    });
+    expect(ownInsert.status).toBe(201);
+
     const check = await rest('meal_plans', { token: A.token, query: `id=eq.${planId}&select=semana_iso` });
     expect((check.body as { semana_iso: string }[])[0].semana_iso).toBe('2099-W01');
   });

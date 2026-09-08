@@ -99,6 +99,14 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
     }, { token: A.token });
     expect(legit.status).toBe(200);
     expect(typeof legit.body).toBe('string');
+    // The legit call must have actually created the row it returned an id for —
+    // otherwise a broken function that returns a bogus id would let this test
+    // pass vacuously (the assertion above is only "ran and returned a string").
+    const created = await rest('meal_plans', {
+      token: A.token,
+      query: `id=eq.${legit.body as string}&select=semana_iso`,
+    });
+    expect((created.body as { semana_iso: string }[])[0]?.semana_iso).toBe('2099-W03');
   });
 
   test('get_catalog — B cannot read A\'s personalised catalog', async () => {
