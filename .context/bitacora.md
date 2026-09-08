@@ -322,3 +322,7 @@ Historia archivada:
 - Por qué: cierra infracción activa de LSSI art. 22.2 / guía AEPD (PostHog se inicializaba sin consentimiento) — bloqueante del camino "poder cobrar".
 - Siguiente: QA verifica en staging (fuera de alcance de este flujo). Sin trabajo pendiente en FRESCO-428.
 
+## 2026-09-08 - FRESCO-463: batch de 15 escenarios e2e (@edge-case) del ratchet FRESCO-321
+- Qué: 15 escenarios manuales de regression.feature automatizados en PR #311 (0ee0b97). Ratio 89->104 @automatizado. Nuevo generacion-menu-edge.steps.ts. 15/15 verde local.
+- Por qué: escenarios core sin spec, invisibles a CI. Tope de 15 por wall-clock de test:e2e (ADR-0018).
+- Siguiente: QA en staging. FRESCO-467 en Listo; 464/465/466 en backlog.
