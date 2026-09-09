@@ -24,6 +24,15 @@ import { afterEach, beforeEach, mock } from 'bun:test';
  */
 const HAPPY_DOM_URL = 'https://test.fresco.local/';
 
+// FRESCO-464 — `tests/db/**` (`bun run test:db`, RUN_DB_INTEGRATION=1) hit the
+// real local Supabase stack over `http://127.0.0.1:54321` and need Bun's native
+// `fetch`: happy-dom replaces the global with an XHR-backed impl that blocks the
+// plain-HTTP stack as "mixed content" from the HTTPS `HAPPY_DOM_URL` origin.
+// Stash the native impl before the registrator overwrites it; `tests/db/harness.ts`
+// reads it back. `test:db` only ever runs `tests/db/`, so component tests, which
+// need the DOM shim, are unaffected.
+(globalThis as { __FRESCO_NATIVE_FETCH__?: typeof fetch }).__FRESCO_NATIVE_FETCH__ = globalThis.fetch.bind(globalThis);
+
 // First registration — window is definitely absent and the registrator's
 // flag is unset here, so a plain sync call is enough.
 GlobalRegistrator.register({ url: HAPPY_DOM_URL });

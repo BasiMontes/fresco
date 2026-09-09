@@ -76,6 +76,15 @@ A hit is not a failure — it means "the last human check of this manual-only pa
 - Before automating, this file is the spec — one Playwright test per `Escenario`, ideally via `playwright-bdd`/`cucumber-js` so the Gherkin text and the executable test stay the same artifact (not a separate hand-translated spec that can drift).
 - `@no-implementado` scenarios double as a lightweight backlog signal: if a story ships that closes one, flip its tag and note the date.
 
+## Test surfaces (what runs where)
+
+| Surface | Runner | Backend | CI job | Covers |
+|---|---|---|---|---|
+| Unit | `bun test` (`test:coverage`, ratchet floor) | fully mocked | `unit` | pure logic, wrappers, component render |
+| **DB-integration** (FRESCO-464, ADR-0026) | `bun run test:db` (`RUN_DB_INTEGRATION=1`) | **real Postgres — Supabase CLI local stack only** | `db-integration` (separate from `e2e`) | cross-user RLS denial per user-data table; `SECURITY DEFINER` actor-bind spoofs. `tests/db/README.md`. |
+| pgTAP | `supabase test db` | real Postgres as superuser | inside `e2e` | pure in-database logic (learning trigger) — cannot test JWT-scoped authz |
+| e2e | `bun run test:e2e` (`playwright-bdd`) | ephemeral local stack (ADR-0017) | `e2e` | full user journeys — this file's `regression.feature` |
+
 ## Related
 
 - Per-story AC (Jira-synced, one story at a time) → `.context/PBI/epics/EPIC-<KEY>-*/stories/STORY-<KEY>-*/comments.md`.
