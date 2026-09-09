@@ -194,4 +194,60 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       warnSpy.mockRestore()
     })
   })
+
+  // FRESCO-465 — explicit boundary-value batch: identical name+unit merge, a
+  // zero scaling factor, and the single-recipe / single-ingredient minimum.
+  describe('boundary values (FRESCO-465)', () => {
+    test('identical name + identical unit across two recipes -> exactly one summed line', () => {
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'tomate', receta_id: 'r1', receta_nombre: 'A', dia: 'lunes' }),
+        makeRaw({ nombre: 'tomate', receta_id: 'r2', receta_nombre: 'B', dia: 'martes' }),
+      ])
+
+      expect(result).toHaveLength(1)
+      // tomate base = 300g, factor 1 each -> 300 + 300 = 600g, single line, both usos.
+      expect(result[0]).toEqual({
+        nombre: 'tomate',
+        cantidad: 600,
+        unidad: 'g',
+        usos: [
+          { receta: 'A', dia: 'lunes' },
+          { receta: 'B', dia: 'martes' },
+        ],
+      })
+    })
+
+    test('raciones_usuario = 0 (factor 0) -> the ingredient line is kept at quantity 0', () => {
+      // raciones_receta stays positive so the A4-M5 guard does not fire; the
+      // factor is 0, so ceil(base * 0) = 0. Documents that a recipe scaled to
+      // zero servings still emits a (zero-quantity) line rather than crashing
+      // or producing NaN.
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'patata', raciones_receta: 4, raciones_usuario: 0 }),
+      ])
+
+      expect(result).toEqual([{
+        nombre: 'patata',
+        cantidad: 0,
+        unidad: 'g',
+        usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+      }])
+    })
+
+    test('the minimum input: a single recipe with a single ingredient', () => {
+      const result = consolidateIngredientes([makeRaw({ nombre: 'cebolla' })])
+
+      // cebolla base = 1 unidad, factor 1.
+      expect(result).toEqual([{
+        nombre: 'cebolla',
+        cantidad: 1,
+        unidad: 'unidades',
+        usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+      }])
+    })
+
+    test('the empty input: no rows -> no lines', () => {
+      expect(consolidateIngredientes([])).toEqual([])
+    })
+  })
 })

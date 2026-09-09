@@ -95,6 +95,7 @@
     "autoprefixer": "^10.5.4",
     "dotenv-cli": "^8.0.0",
     "eslint": "^9.28.0",
+    "fast-check": "^4.9.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "playwright-bdd": "^9.2.0",

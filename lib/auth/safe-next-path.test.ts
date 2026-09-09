@@ -35,4 +35,24 @@ describe('safeNextPath (FRESCO-364 / A4-L1)', () => {
     expect(safeNextPath('/../../etc')).toBe('/etc');
     expect(safeNextPath('/@evil.com')).toBe('/@evil.com');
   });
+
+  // FRESCO-465 — explicit boundary batch on the redirect-target frontiers.
+  describe('scheme / encoding boundary (FRESCO-465)', () => {
+    it.each([
+      ['javascript: scheme', 'javascript:alert(1)'],
+      ['JavaScript: scheme (mixed case)', 'JavaScript:alert(1)'],
+      ['data: scheme', 'data:text/html,<script>alert(1)</script>'],
+      ['leading-backslash protocol-relative', '/\\evil.com'],
+      ['bare double slash', '//evil.com'],
+      ['tab-prefixed scheme', '\tjavascript:alert(1)'],
+      ['percent-encoded double slash', '%2F%2Fevil.com'],
+    ] as const)('falls back to / for %s', (_label, raw) => {
+      expect(safeNextPath(raw)).toBe('/');
+    });
+
+    it('keeps a single leading slash (the boundary that IS allowed)', () => {
+      expect(safeNextPath('/')).toBe('/');
+      expect(safeNextPath('/a')).toBe('/a');
+    });
+  });
 });

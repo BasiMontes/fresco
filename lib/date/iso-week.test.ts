@@ -169,3 +169,43 @@ describe('negative-UTC-offset runtime (America/Los_Angeles)', () => {
     expect(getDateFromIsoWeek('2026-W02').toISOString().slice(0, 10)).toBe('2026-01-05');
   });
 });
+
+// FRESCO-465 — explicit boundary-value batch: the ISO 52<->53 leap week and
+// the 29-February leap day, both classic off-by-one frontiers for date code.
+describe('boundary values: ISO week 52<->53 and the leap day (FRESCO-465)', () => {
+  // A year has 53 ISO weeks iff 1 Jan is a Thursday, or it is a leap year and
+  // 1 Jan is a Wednesday. 2020 (leap, 1 Jan = Wed) and 2026 (1 Jan = Thu) both do.
+  test.each([2020, 2026])('%i has an ISO week 53, and 28 Dec falls in it', (year) => {
+    expect(getIsoWeek(utc(year, 11, 28))).toBe(`${year}-W53`);
+  });
+
+  // 2025 has only 52 ISO weeks (1 Jan 2025 = Wed, not a leap year).
+  test('2025 tops out at week 52 — 28 Dec 2025 is 2025-W52', () => {
+    expect(getIsoWeek(utc(2025, 11, 28))).toBe('2025-W52');
+  });
+
+  test('week 52 -> 53 -> next year week 1 in a 53-week year (2026)', () => {
+    expect(addIsoWeeks('2026-W52', 1)).toBe('2026-W53');
+    expect(addIsoWeeks('2026-W53', 1)).toBe('2027-W01');
+    // and the reverse
+    expect(addIsoWeeks('2027-W01', -1)).toBe('2026-W53');
+  });
+
+  test('week 52 -> next year week 1 directly in a 52-week year (2025)', () => {
+    expect(addIsoWeeks('2025-W52', 1)).toBe('2026-W01');
+  });
+
+  test('29 February 2024 (leap day) resolves to a well-formed week that round-trips', () => {
+    const leapDay = utc(2024, 1, 29);
+    const isoWeek = getIsoWeek(leapDay);
+    expect(isoWeek).toMatch(/^2024-W\d{2}$/);
+    // 29 Feb 2024 is a Thursday; its ISO week starts Monday 26 Feb 2024.
+    expect(getIsoWeekMonday(leapDay)).toBe('2024-02-26');
+    expect(getDateFromIsoWeek(isoWeek).toISOString().slice(0, 10)).toBe('2024-02-26');
+  });
+
+  test('the week label spanning the leap day shows both months', () => {
+    // Monday 2024-02-26 -> Sunday 2024-03-03, crossing 29 Feb.
+    expect(formatWeekRangeLabel('2024-02-26')).toBe('26 feb – 3 mar');
+  });
+});

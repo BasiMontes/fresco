@@ -64,6 +64,31 @@ describe('assertRatingValido (A4-L7)', () => {
     expect(statusOf(() => assertRatingValido(0))).toBe(400)
     expect(statusOf(() => assertRatingValido(6))).toBe(400)
   })
+
+  // FRESCO-465 — explicit boundary-value batch on the 1..5 integer frontier.
+  // The FRESCO-381 rating moving-average denominator itself is the Postgres
+  // trigger `update_recipe_learning()`, covered by
+  // `supabase/tests/recipe_learning_trigger.test.sql` (pgTAP); this is the
+  // edge-function-side input gate that trigger relies on.
+  describe('boundary values (FRESCO-465)', () => {
+    test.each([
+      ['1 (lower bound)', 1, undefined],
+      ['5 (upper bound)', 5, undefined],
+      ['5.0 (integer-valued float, accepted)', 5.0, undefined],
+      ['0 (just below lower bound)', 0, 400],
+      ['6 (just above upper bound)', 6, 400],
+      ['-1 (negative)', -1, 400],
+      ['1.5 (fractional in range)', 1.5, 400],
+      ['NaN', Number.NaN, 400],
+      ['Infinity', Number.POSITIVE_INFINITY, 400],
+    ] as const)('rating %s', (_label, rating, expectedStatus) => {
+      expect(statusOf(() => assertRatingValido(rating))).toBe(expectedStatus)
+    })
+
+    test('first vote: undefined is the "no rating given" boundary and is accepted', () => {
+      expect(statusOf(() => assertRatingValido(undefined))).toBeUndefined()
+    })
+  })
 })
 
 describe('buildUpdatePayload (A4-L7 — fields gated by estado)', () => {
