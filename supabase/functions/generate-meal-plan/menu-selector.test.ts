@@ -447,6 +447,11 @@ const profileArb: fc.Arbitrary<UserProfile> = fc.record({
 }).map(o => makeProfile({ ...o, num_personas: o.adultos + o.ninos }))
 
 describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', () => {
+  // Structural-only: "21 slots" counts sentinel placeholders too — a
+  // catalog with zero valid recipes for a tipo still yields 21 non-empty
+  // string ids (NO_SAFE_RECIPE_SENTINEL / SLOT_EXCLUDED_SENTINEL). Whether
+  // those 21 are REAL recipes is the allergen-safety and gap-advertencia
+  // properties below, not this one.
   test('any valid profile + catalog yields a menu with EXACTLY 21 slots', () => {
     fc.assert(
       fc.property(
@@ -473,7 +478,13 @@ describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', ()
     )
   })
 
-  test('no recipe placed in the plan carries an allergen declared in the profile (A4-B2)', () => {
+  // Naming note: this does NOT test that selectMenu filters allergens — it
+  // doesn't, by design. get_filtered_recipes() (SQL, Layer 1) removes every
+  // recipe carrying a profile allergen before selectMenu ever sees the
+  // catalog (ADR-0005). What this proves is the second half of that
+  // contract: selectMenu's own scoring/tie-break machinery never reaches
+  // past the pre-filtered candidate set to reintroduce one.
+  test('selectMenu never reintroduces an allergen the upstream SQL pre-filter already removed (ADR-0005)', () => {
     fc.assert(
       fc.property(
         profileArb,
@@ -550,7 +561,12 @@ describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', ()
           if (gapTipos.size > 0) {
             expect(advertencias.length).toBeGreaterThan(0)
             for (const tipo of gapTipos) {
-              expect(advertencias.some(a => a.includes(tipo))).toBe(true)
+              // Must be one of the two gap-specific templates (food-safety or
+              // variety dead end) — not merely any advertencia that happens to
+              // mention the tipo, e.g. a budget warning could false-pass that.
+              expect(advertencias.some(a =>
+                a.includes(tipo) && (a.includes('compatible con tus alergias') || a.includes('sin repetir plato')),
+              )).toBe(true)
             }
           }
         },
@@ -582,9 +598,11 @@ describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
     for (const dia of DIAS) {
       expect(menu[dia].cena).toBe(NO_SAFE_RECIPE_SENTINEL)
     }
-    // cena: none at all; comida: runs out of distinct recipes mid-week. Both named.
-    expect(advertencias.some(a => a.includes('cena'))).toBe(true)
-    expect(advertencias.some(a => a.includes('comida'))).toBe(true)
+    // cena: none at all; comida: runs out of distinct recipes mid-week. Both
+    // named, and both are gap-specific (not a budget or other advertencia
+    // that happens to mention the tipo).
+    expect(advertencias.some(a => a.includes('cena') && a.includes('compatible con tus alergias'))).toBe(true)
+    expect(advertencias.some(a => a.includes('comida') && a.includes('sin repetir plato'))).toBe(true)
     // index.ts step 5 rejects this same catalog earlier: HttpError 422
     // "Catálogo insuficiente: 9 recetas disponibles (mínimo 21)". MIN_CATALOG_SIZE = 21.
   })
