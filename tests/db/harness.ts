@@ -68,10 +68,10 @@ const LOCAL_STACK_URL = 'http://127.0.0.1:54321';
  * plain-HTTP local stack as mixed content. Outside the runner the global is
  * already native, so the fallback is a no-op.
  */
-const nativeFetch: typeof fetch
+export const nativeFetch: typeof fetch
   = (globalThis as { __FRESCO_NATIVE_FETCH__?: typeof fetch }).__FRESCO_NATIVE_FETCH__ ?? globalThis.fetch;
 
-function resolveUrl(): string {
+export function resolveUrl(): string {
   const url = process.env.DB_IT_SUPABASE_URL ?? LOCAL_STACK_URL;
   assertLocalStack(url);
   return url.replace(/\/$/, '');
@@ -125,7 +125,7 @@ async function ciEnv(): Promise<Record<string, string>> {
   return parsed;
 }
 
-async function anonKey(): Promise<string> {
+export async function anonKey(): Promise<string> {
   const env = await ciEnv();
   const key = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!key) {
@@ -134,7 +134,7 @@ async function anonKey(): Promise<string> {
   return key;
 }
 
-async function serviceRoleKey(): Promise<string> {
+export async function serviceRoleKey(): Promise<string> {
   const env = await ciEnv();
   const key = env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) {
@@ -209,6 +209,37 @@ export async function rest(
 ): Promise<RpcResult> {
   const qs = opts.query ? `?${opts.query}` : '';
   return request(`/rest/v1/${table}${qs}`, opts);
+}
+
+export interface FunctionCallResult {
+  status: number
+  /** Parsed JSON body when the response had one, else the raw text, else null. */
+  body: unknown
+}
+
+/** Calls a Supabase Edge Function on the local stack over real HTTP (not mocked). */
+export async function callFunction(
+  name: string,
+  opts: { token?: string, body?: unknown } = {},
+): Promise<FunctionCallResult> {
+  const headers: Record<string, string> = { 'apikey': await anonKey(), 'Content-Type': 'application/json' };
+  if (opts.token) { headers.Authorization = `Bearer ${opts.token}`; }
+  const res = await nativeFetch(`${resolveUrl()}/functions/v1/${name}`, {
+    method: 'POST',
+    headers,
+    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+  });
+  const text = await res.text();
+  let body: unknown = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    }
+    catch {
+      body = text;
+    }
+  }
+  return { status: res.status, body };
 }
 
 async function createAuthUser(email: string, password: string): Promise<string> {

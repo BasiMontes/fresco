@@ -15,9 +15,10 @@ bypasses of exactly this class (FRESCO-360, FRESCO-361, FRESCO-362).
 
 | File | Covers |
 | --- | --- |
-| `harness.ts` | Config, native-`fetch` PostgREST/GoTrue helpers, per-test auth-user factory with cascade cleanup. Talks **only** to `127.0.0.1:54321` — `assertLocalStack()` refuses any hosted host. |
+| `harness.ts` | Config, native-`fetch` PostgREST/GoTrue helpers, per-test auth-user factory with cascade cleanup. Talks **only** to `127.0.0.1:54321` — `assertLocalStack()` refuses any hosted host. `callFunction()` calls an Edge Function on the local Functions runtime over real HTTP, the same way `rpc()`/`rest()` call PostgREST. |
 | `security-definer-spoof.test.ts` | Every `SECURITY DEFINER` function in `public` with an identity/scope param. User B, with B's own JWT, passes user A's id / row id and the test asserts the spoof is denied (raised exception, or a provably zero-row effect). Read functions also assert the legit call is scoped to B. |
 | `rls-cross-user.test.ts` | Every user-data table. A seeds a row; B (own token, never service-role) attempts SELECT / UPDATE / DELETE / INSERT-for-A and a real denial is asserted. Verification of "row unchanged" is re-read through A's own token. |
+| `edge-functions/*.test.ts` | HTTP negative-contract tests (FRESCO-464 PR2) for the 5 Edge Functions with a real auth/rate-limit/ownership surface (`generate-meal-plan`, `generate-shopping-list`, `reassign-guest-data`, `delete-account`, `update-recipe-status`): 401 (missing/garbage token), 429 (rate limit, pre-saturated via the same RPC the function calls), 400/404/409/422 body and ownership validation. Calls the real Functions runtime via `callFunction()` — never mocked. |
 
 ## Run it locally
 
