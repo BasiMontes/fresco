@@ -498,8 +498,12 @@ async function main() {
   // recipes. Shuffling the pool client-side means a failing recipe competes
   // for a slot on equal terms with every other un-photographed recipe,
   // instead of monopolizing the front of the queue forever.
+  // FRESCO-460 added recipes.activo (soft-delete): 362 of the photo-less
+  // rows are pruned near-duplicates nobody will ever see (get_filtered_recipes()
+  // excludes them) — querying without this filter burns Unsplash's 50/hour
+  // quota on invisible catalog rows.
   const poolRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre,descripcion_corta,clasificacion&foto_url=is.null&limit=${BATCH_SIZE * 10}`,
+    `${SUPABASE_URL}/rest/v1/recipes?select=id,nombre,descripcion_corta,clasificacion&foto_url=is.null&activo=eq.true&limit=${BATCH_SIZE * 10}`,
     { headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } },
   );
   const pool = await poolRes.json() as RecipeRow[];
