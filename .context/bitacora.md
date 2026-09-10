@@ -110,3 +110,8 @@ Historia archivada:
 - Qué: `app/onboarding/page.tsx` — contenedores IdentityStep + wizard pasan de `justify-start pt-16 md:pt-24` a `justify-center py-12`, igual que la rama de carga. `min-h-screen` mantiene scroll sin recortar cabecera en pasos largos. PR #321 squash a staging (e7ef675) + espejo a dev.
 - Por qué: FRESCO-479 (epic FRESCO-484). Tarjeta corta flotando arriba se leía como fallo de maquetación en móvil.
 - Siguiente: pendiente OK founder para espejo a main. Epic 484: quedan 478, 485, 486.
+
+## 2026-09-10 - FRESCO-478 zonas tactiles WCAG 2.5.5
+- Que: targets a 44x44px en banner cookies/login/pie/nav; texto lectura caption->body-sm. PR #322 a staging + dev.
+- Por que: auditoria Playwright, epic FRESCO-484.
+- Siguiente: mirror main pendiente confirmacion; tarea skeleton /profile.
