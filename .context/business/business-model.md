@@ -128,6 +128,8 @@ Receipt scanning, price comparison, pantry/inventory management, aggressive "mor
 
 **Explicit exception — not blacklisted, P0 from day one:** the food-safety guardrail (allergies/dietary restrictions). This is a manual checklist from the very first concierge delivery; it does not wait for code.
 
+**Pre-work note (2026-09-10, no scope change):** the supermarket-integration line has been refined ahead of the gate so the build/no-build call is ready the day it lifts — FRESCO-345 (v2: export-first, per-item deep-link discarded) and its transversal prerequisite FRESCO-488 (ingredient→product + unit-reconciliation layer, blocks FRESCO-345 and FRESCO-346). Feasibility evidence: `scripts/spikes/fresco-345-grocery-deeplink/`. These stay blacklisted and unbuilt until the MRR/retention gate above is met, or until a founder-approved scope reversal amends both this blacklist and `PRD/mvp-scope.md` (the way EPIC-FRESCO-227 did for self-serve payment). Refining a blacklisted item is not building it.
+
 ## Validation Plan Summary
 
 See `market-context.md` for the full go-to-market and risk framing. In brief: a lightweight, founder-scaled validation loop (landing page → concierge MVP → paid, repeat-usage test) precedes any further product investment, gated on real households paying and returning for 3+ consecutive weeks.
