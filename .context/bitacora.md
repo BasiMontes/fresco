@@ -115,3 +115,8 @@ Historia archivada:
 - Que: targets a 44x44px en banner cookies/login/pie/nav; texto lectura caption->body-sm. PR #322 a staging + dev.
 - Por que: auditoria Playwright, epic FRESCO-484.
 - Siguiente: mirror main pendiente confirmacion; tarea skeleton /profile.
+
+## 2026-09-10 - FRESCO-490 skeleton /profile + espejo a main
+- Que: /profile ya no muestra shell duplicado al navegar (bloque verde + grid generico). (app)/loading.tsx pasa a solo-contenido, nuevo profile/loading.tsx con la forma de la pagina, borrado app-shell-skeleton.tsx. PR #323 squash a staging (f7382b8). Espejo ff staging->dev->main de FRESCO-478 + FRESCO-490 juntos: las 3 ramas en f7382b8.
+- Por que: bug reportado por el founder (grabacion); causa = FRESCO-482 uso un skeleton de shell completo como fallback de loading. Epic FRESCO-484 platform polish.
+- Siguiente: verificar en fresco-pro; FRESCO-478 y 490 en Control de calidad. Follow-up sin ticket: checkbox de consentimiento de /signup <44px.
