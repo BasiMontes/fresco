@@ -23,11 +23,14 @@ export type CheckboxProps = React.InputHTMLAttributes<HTMLInputElement>;
  */
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, ...props }, ref) => (
-    <span className="relative inline-flex size-5 shrink-0 items-center justify-center">
+    // FRESCO-491: 24px box (WCAG 2.5.8 tap target). Bare-checkbox call sites
+    // — the onboarding planning grid, the shopping list — were at 20px, the
+    // label-wrapped ones (signup, recipe filters) were fine either way.
+    <span className="relative inline-flex size-6 shrink-0 items-center justify-center">
       <input
         ref={ref}
         type="checkbox"
-        className="peer absolute inset-0 size-5 cursor-pointer opacity-0"
+        className="peer absolute inset-0 size-6 cursor-pointer opacity-0"
         {...props}
       />
       <span
@@ -38,7 +41,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         )}
       />
       <Check
-        className="pointer-events-none absolute size-3.5 text-on-brand opacity-0 peer-checked:opacity-100"
+        className="pointer-events-none absolute size-4 text-on-brand opacity-0 peer-checked:opacity-100"
         aria-hidden="true"
         strokeWidth={3}
       />
