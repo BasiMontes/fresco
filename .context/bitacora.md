@@ -100,3 +100,8 @@ Historia archivada:
 - Que: getAuthUser() con React.cache() (lib/auth/current-user.ts) + proxy.ts getUser->getSession + swap en layout y 9 paginas (app) + getNombresNuevos con userId opcional. 14 archivos. PR #317 squash a staging (a814af1), ff a dev y main. Los 3 branches en a814af1. CI 5/5 verde (incl test:e2e en PR y en push a staging). Jira -> Finalizada.
 - Por que: la primera pantalla autenticada tras login encadenaba 3 round-trips de red a GoTrue (proxy + layout + pagina). Medido: tiempo de proxy.ts ~72-147ms -> ~3-6ms; verificaciones de red por carga de /menu 3 -> 1. El proxy corre en cada request.
 - Siguiente: fresco-pro redesplegando (cambio de runtime, camino de auth). Follow-up posible: getClaims() para llegar a 0 llamadas de red si esa 1 restante pesa. Epica FRESCO-484 tiene mas tareas de pulido en Listo (478-482, 485, 486).
+
+## 2026-09-10 - FRESCO-480 nav de landing rompe a 768px
+- Qué: `site-nav.tsx` pasaba a nav horizontal en `sm` (640px) y se apretaba contra `max-w-5xl` desde ~768px. Movido nav horizontal + theme toggle inline + hamburguesa a `lg` (1024px). CTAs de auth se quedan en `sm`. PR #320 squash a staging (4e8fc71) + espejo a dev.
+- Por qué: FRESCO-480 (epic FRESCO-484 platform polish). Transición ahora donde el nav horizontal tiene sitio.
+- Siguiente: pendiente OK del founder para espejo a main de FRESCO-480 + FRESCO-482 + FRESCO-481.
