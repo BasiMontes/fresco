@@ -120,3 +120,8 @@ Historia archivada:
 - Que: /profile ya no muestra shell duplicado al navegar (bloque verde + grid generico). (app)/loading.tsx pasa a solo-contenido, nuevo profile/loading.tsx con la forma de la pagina, borrado app-shell-skeleton.tsx. PR #323 squash a staging (f7382b8). Espejo ff staging->dev->main de FRESCO-478 + FRESCO-490 juntos: las 3 ramas en f7382b8.
 - Por que: bug reportado por el founder (grabacion); causa = FRESCO-482 uso un skeleton de shell completo como fallback de loading. Epic FRESCO-484 platform polish.
 - Siguiente: verificar en fresco-pro; FRESCO-478 y 490 en Control de calidad. Follow-up sin ticket: checkbox de consentimiento de /signup <44px.
+
+## 2026-09-10 - FRESCO-486 nav landing con estado logueado
+- Que: la nav de la landing mostraba los CTA de invitado a todos. Ahora visitante con sesion ve "Ir a mi menu" (-> /menu) + "Hola, {nombre}" si hay nombre; invitado sin cambios. Nuevo lib/auth/identity-cookie.ts (cookie funcional fresco_nombre, fuera del gate de consentimiento, evento fresco:identity-cookie) + components/auth/identity-cookie-sync.tsx (listener onAuthStateChange propio, montado en app/layout.tsx). site-nav.tsx: chequeo de sesion solo en cliente (getSession, sin verificacion en servidor por FRESCO-483), SSR=invitado y reconcilia tras montar. PR #324 squash a staging (fe1dc83).
+- Por que: FRESCO-486, epic FRESCO-484 platform polish. Founder noto los CTA de invitado estando logueado.
+- Siguiente: espejo a main pendiente OK founder. Epic 484: cerradas 478/479/480/481/482/483/490/486; quedan 485 y la tarea del checkbox de /signup (hija de 484 aun sin crear). test de render de site-nav quitado por fragilidad de happy-dom en CI.
