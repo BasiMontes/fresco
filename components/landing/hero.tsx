@@ -192,7 +192,7 @@ export function Hero() {
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
               <Clock className="size-4" strokeWidth={2} />
             </span>
-            <p className="text-caption text-tertiary">
+            <p className="text-body-sm text-tertiary">
               <strong className="block text-body-sm font-bold text-text">Menos tiempo decidiendo</strong>
               qué cocinar cada semana
             </p>
@@ -201,7 +201,7 @@ export function Hero() {
             <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
               <Leaf className="size-4" strokeWidth={2} />
             </span>
-            <p className="text-caption text-tertiary">
+            <p className="text-body-sm text-tertiary">
               <strong className="block text-body-sm font-bold text-text">Menos comida tirada</strong>
               compras justo lo que necesitas
             </p>

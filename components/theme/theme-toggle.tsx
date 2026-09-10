@@ -116,7 +116,11 @@ export function ThemeToggle({ tone = 'default', variant = 'segmented', className
             onClick={() => select(option.value)}
             onKeyDown={event => handleKeyDown(event, index)}
             className={cn(
-              'flex size-8 items-center justify-center rounded-[11.6px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+              // FRESCO-478: the `binary` variant (landing nav) needs a 44x44
+              // tap target (WCAG 2.5.5); the `segmented` variant keeps its
+              // compact 32px segments for the sidebar footer / profile row.
+              'flex items-center justify-center rounded-[11.6px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+              variant === 'binary' ? 'size-11' : 'size-8',
               isInverse
                 ? 'focus-visible:ring-background focus-visible:ring-offset-primary'
                 : 'focus-visible:ring-primary focus-visible:ring-offset-background',

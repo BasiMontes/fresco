@@ -18,7 +18,9 @@ const FOOTER_LINKS: { label: string, section: LegalSection }[] = [
 // under AA for 11px text; accent-200 clears it at ~6:1. Shared by every
 // footer link (FOOTER_LINKS-driven and the standalone "Configurar cookies"
 // button) so a future tweak can't update one and miss the other.
-const FOOTER_LINK_CLASSNAME = 'inline-flex min-h-[44px] items-center text-caption text-accent-200';
+// FRESCO-478: text-body-sm (13px) — AC bans reading text below 12px; the
+// larger size only widens the accent-200 contrast margin.
+const FOOTER_LINK_CLASSNAME = 'inline-flex min-h-[44px] items-center text-body-sm text-accent-200';
 
 /** Landing footer — same `LegalModal` FRESCO-51 wired into `/login`/`/signup`, dead `href="#"` links replaced with real triggers. */
 export function SiteFooter() {
@@ -67,9 +69,9 @@ export function SiteFooter() {
           FRESCO-445: was `text-accent-500` (#0F4E0E) on `bg-primary`
           (#0F4E0E) — a 1:1 contrast, the copyright line rendered invisible.
           `text-accent-200` matches the legal-links treatment right above and
-          clears AA (~6:1) for this 11px text.
+          clears AA (~6:1); FRESCO-478 bumped this line to text-body-sm (13px).
         */}
-        <p className="mt-5 border-t border-accent-600 pt-5 text-caption text-accent-200">
+        <p className="mt-5 border-t border-accent-600 pt-5 text-body-sm text-accent-200">
           ©
           {' '}
           {new Date().getFullYear()}

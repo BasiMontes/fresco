@@ -31,7 +31,7 @@ export function SiteNav() {
     // bg-background fixes contrast on any section behind it.
     <header className="sticky top-0 z-20 border-b border-border bg-background">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-8">
-        <Link href="/" className="shrink-0">
+        <Link href="/" className="inline-flex min-h-[44px] shrink-0 items-center">
           {/* FRESCO-481: cream negative mark on the near-black dark nav. */}
           <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} className="brand-mark--light" priority />
           <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} className="brand-mark--dark" priority />
@@ -46,7 +46,8 @@ export function SiteNav() {
             <a
               key={link.href}
               href={link.href}
-              className="text-label text-tertiary transition-colors hover:text-text"
+              // FRESCO-478: 44px tap target (WCAG 2.5.5).
+              className="inline-flex min-h-[44px] items-center text-label text-tertiary transition-colors hover:text-text"
             >
               {link.label}
             </a>
