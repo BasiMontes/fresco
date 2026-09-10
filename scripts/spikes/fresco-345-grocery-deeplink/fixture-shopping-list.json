@@ -1,0 +1,385 @@
+[
+  {
+    "items": [
+      {
+        "cantidad": 3,
+        "comprado": false,
+        "nombre": "ajo",
+        "precio_estimado": 0.09,
+        "unidad": "dientes",
+        "usos": [
+          {
+            "dia": "jueves",
+            "receta": "Tofu a la plancha con limón"
+          }
+        ]
+      },
+      {
+        "cantidad": 1,
+        "comprado": false,
+        "nombre": "berenjena",
+        "precio_estimado": 0.8,
+        "unidad": "unidades",
+        "usos": [
+          {
+            "dia": "domingo",
+            "receta": "Berenjenas rellenas de quinoa y tomate"
+          }
+        ]
+      },
+      {
+        "cantidad": 800,
+        "comprado": false,
+        "nombre": "boniato",
+        "precio_estimado": 4.8,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "jueves",
+            "receta": "Boniato asado con canela y nueces"
+          }
+        ]
+      },
+      {
+        "cantidad": 2,
+        "comprado": false,
+        "nombre": "cebolla",
+        "precio_estimado": 0.6,
+        "unidad": "unidades",
+        "usos": [
+          {
+            "dia": "lunes",
+            "receta": "Crema de coliflor"
+          },
+          {
+            "dia": "viernes",
+            "receta": "Crema de espinacas y queso"
+          }
+        ]
+      },
+      {
+        "cantidad": 10,
+        "comprado": false,
+        "nombre": "cilantro",
+        "precio_estimado": 0.06,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "miercoles",
+            "receta": "Crema de levadura nutricional con cilantro"
+          }
+        ]
+      },
+      {
+        "cantidad": 1,
+        "comprado": false,
+        "nombre": "coliflor",
+        "precio_estimado": 6,
+        "unidad": "kg",
+        "usos": [
+          {
+            "dia": "lunes",
+            "receta": "Crema de coliflor"
+          },
+          {
+            "dia": "miercoles",
+            "receta": "Crema de levadura nutricional con cilantro"
+          }
+        ]
+      },
+      {
+        "cantidad": 400,
+        "comprado": false,
+        "nombre": "espinacas",
+        "precio_estimado": 4.8,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "jueves",
+            "receta": "Tofu a la plancha con limón"
+          },
+          {
+            "dia": "viernes",
+            "receta": "Crema de espinacas y queso"
+          }
+        ]
+      },
+      {
+        "cantidad": 1,
+        "comprado": false,
+        "nombre": "limón",
+        "precio_estimado": 0.8,
+        "unidad": "unidades",
+        "usos": [
+          {
+            "dia": "jueves",
+            "receta": "Tofu a la plancha con limón"
+          }
+        ]
+      },
+      {
+        "cantidad": 4,
+        "comprado": false,
+        "nombre": "manzana",
+        "precio_estimado": 3.2,
+        "unidad": "unidades",
+        "usos": [
+          {
+            "dia": "viernes",
+            "receta": "Compota de manzana con avena"
+          }
+        ]
+      },
+      {
+        "cantidad": 300,
+        "comprado": false,
+        "nombre": "tomate",
+        "precio_estimado": 0.9,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "domingo",
+            "receta": "Berenjenas rellenas de quinoa y tomate"
+          }
+        ]
+      }
+    ],
+    "nombre": "Frutas y verduras",
+    "orden": 1
+  },
+  {
+    "items": [
+      {
+        "cantidad": 600,
+        "comprado": false,
+        "nombre": "salmón",
+        "precio_estimado": 11.4,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "lunes",
+            "receta": "Tostada con salmón ahumado"
+          },
+          {
+            "dia": "martes",
+            "receta": "Tostada con salmón ahumado"
+          },
+          {
+            "dia": "sabado",
+            "receta": "Tostada con salmón ahumado"
+          }
+        ]
+      }
+    ],
+    "nombre": "Pescados y mariscos",
+    "orden": 3
+  },
+  {
+    "items": [
+      {
+        "cantidad": 500,
+        "comprado": false,
+        "nombre": "leche",
+        "precio_estimado": 0.55,
+        "unidad": "ml",
+        "usos": [
+          {
+            "dia": "miercoles",
+            "receta": "Gachas dulces andaluzas"
+          }
+        ]
+      },
+      {
+        "cantidad": 200,
+        "comprado": false,
+        "nombre": "queso",
+        "precio_estimado": 1.2,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "viernes",
+            "receta": "Crema de espinacas y queso"
+          }
+        ]
+      },
+      {
+        "cantidad": 225,
+        "comprado": false,
+        "nombre": "queso fresco",
+        "precio_estimado": 2.25,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "lunes",
+            "receta": "Tostada con salmón ahumado"
+          },
+          {
+            "dia": "martes",
+            "receta": "Tostada con salmón ahumado"
+          },
+          {
+            "dia": "sabado",
+            "receta": "Tostada con salmón ahumado"
+          }
+        ]
+      }
+    ],
+    "nombre": "Lácteos y huevos",
+    "orden": 5
+  },
+  {
+    "items": [
+      {
+        "cantidad": 4,
+        "comprado": false,
+        "nombre": "pan",
+        "precio_estimado": 0.48,
+        "unidad": "rebanadas",
+        "usos": [
+          {
+            "dia": "miercoles",
+            "receta": "Gachas dulces andaluzas"
+          }
+        ]
+      },
+      {
+        "cantidad": 6,
+        "comprado": false,
+        "nombre": "pan integral",
+        "precio_estimado": 0.72,
+        "unidad": "rebanadas",
+        "usos": [
+          {
+            "dia": "lunes",
+            "receta": "Tostada con salmón ahumado"
+          },
+          {
+            "dia": "martes",
+            "receta": "Tostada con salmón ahumado"
+          },
+          {
+            "dia": "sabado",
+            "receta": "Tostada con salmón ahumado"
+          }
+        ]
+      }
+    ],
+    "nombre": "Pan y bollería",
+    "orden": 6
+  },
+  {
+    "items": [
+      {
+        "cantidad": 160,
+        "comprado": false,
+        "nombre": "avena",
+        "precio_estimado": 0.96,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "viernes",
+            "receta": "Compota de manzana con avena"
+          }
+        ]
+      },
+      {
+        "cantidad": 100,
+        "comprado": false,
+        "nombre": "nueces",
+        "precio_estimado": 1,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "jueves",
+            "receta": "Boniato asado con canela y nueces"
+          }
+        ]
+      },
+      {
+        "cantidad": 200,
+        "comprado": false,
+        "nombre": "quinoa",
+        "precio_estimado": 1.2,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "domingo",
+            "receta": "Berenjenas rellenas de quinoa y tomate"
+          }
+        ]
+      },
+      {
+        "cantidad": 200,
+        "comprado": false,
+        "nombre": "tofu",
+        "precio_estimado": 1.6,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "jueves",
+            "receta": "Tofu a la plancha con limón"
+          }
+        ]
+      }
+    ],
+    "nombre": "Pasta/arroz/legumbres",
+    "orden": 7
+  },
+  {
+    "items": [
+      {
+        "cantidad": 100,
+        "comprado": false,
+        "nombre": "aceite de oliva",
+        "precio_estimado": 0.9,
+        "unidad": "ml",
+        "usos": [
+          {
+            "dia": "lunes",
+            "receta": "Crema de coliflor"
+          },
+          {
+            "dia": "miercoles",
+            "receta": "Crema de levadura nutricional con cilantro"
+          }
+        ]
+      },
+      {
+        "cantidad": 15,
+        "comprado": false,
+        "nombre": "canela",
+        "precio_estimado": 0.09,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "miercoles",
+            "receta": "Gachas dulces andaluzas"
+          },
+          {
+            "dia": "jueves",
+            "receta": "Boniato asado con canela y nueces"
+          },
+          {
+            "dia": "viernes",
+            "receta": "Compota de manzana con avena"
+          }
+        ]
+      },
+      {
+        "cantidad": 15,
+        "comprado": false,
+        "nombre": "levadura nutricional",
+        "precio_estimado": 0.09,
+        "unidad": "g",
+        "usos": [
+          {
+            "dia": "miercoles",
+            "receta": "Crema de levadura nutricional con cilantro"
+          }
+        ]
+      }
+    ],
+    "nombre": "Aceites/vinagres/condimentos",
+    "orden": 9
+  }
+]
