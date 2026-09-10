@@ -8,6 +8,7 @@ import { WeekHistoryList } from '@/components/historial/week-history-list';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { getMealPlanForWeek, listPastMealPlanWeeks } from '@/lib/api/meal-plan';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -34,7 +35,8 @@ export default async function HistorialPage({
   searchParams: Promise<{ semana?: string }>
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
+  const { data: { user } } = await getAuthUser();
 
   const requestedSemana = (await searchParams).semana;
 

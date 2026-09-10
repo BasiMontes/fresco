@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -25,7 +26,9 @@ import { createClient } from '@/lib/supabase/server';
  */
 export default async function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // FRESCO-483: one verified session read per render, shared with the page
+  // and any `lib/api/*` helper called without an explicit `userId`.
+  const { data: { user } } = await getAuthUser();
 
   if (!user) { redirect('/login'); }
 

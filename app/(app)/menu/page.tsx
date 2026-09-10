@@ -18,6 +18,7 @@ import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,9 @@ import { cn } from '@/lib/utils';
  */
 export default async function MenuPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // FRESCO-483: shares the layout's verified session read (React.cache) —
+  // no third round trip to GoTrue for this render.
+  const { data: { user } } = await getAuthUser();
 
   // The reads below are mutually independent once `user.id` is
   // resolved — run them concurrently rather than paying for sequential

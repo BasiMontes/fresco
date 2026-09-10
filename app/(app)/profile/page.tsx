@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { listPastMealPlanWeeks } from '@/lib/api/meal-plan';
 import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, isPaymentFailedAlertActive } from '@/lib/api/user-profile';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { createClient } from '@/lib/supabase/server';
 
@@ -39,7 +40,8 @@ import { createClient } from '@/lib/supabase/server';
  */
 export default async function ProfilePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
+  const { data: { user } } = await getAuthUser();
 
   // The three reads below are mutually independent — run them concurrently
   // rather than paying for 3 sequential round trips. Each keeps its own

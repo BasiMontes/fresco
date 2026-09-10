@@ -1,6 +1,7 @@
 import { RecipeDetailView, RecipeNotFoundState } from '@/components/recipes/recipe-detail';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getRecipeDetail } from '@/lib/api/recipes';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -16,10 +17,12 @@ export default async function RecipeDetailPage({ params, searchParams }: {
   const { id } = await params;
   const { from } = await searchParams;
   const supabase = await createClient();
+  // FRESCO-483: resolve the session once for both reads below.
+  const { data: { user } } = await getAuthUser();
 
   let detail: Awaited<ReturnType<typeof getRecipeDetail>>;
   try {
-    detail = await getRecipeDetail(supabase, id);
+    detail = await getRecipeDetail(supabase, id, user?.id);
   }
   catch (error) {
     console.error('[/recipes/[id]] getRecipeDetail failed, falling back to not-found state', error);
@@ -32,7 +35,7 @@ export default async function RecipeDetailPage({ params, searchParams }: {
   // detail fetch above as the only hard failure path for this page.
   let isFavorite = false;
   try {
-    isFavorite = (await getFavoriteRecipeIds(supabase)).has(id);
+    isFavorite = (await getFavoriteRecipeIds(supabase, user?.id)).has(id);
   }
   catch (error) {
     console.error('[/recipes/[id]] getFavoriteRecipeIds failed, defaulting to not-favorited', error);

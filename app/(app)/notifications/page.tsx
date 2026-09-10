@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getPaymentFailedAt, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserPlan, isPaymentFailedAlertActive, markWelcomeNoticeSeen } from '@/lib/api/user-profile';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 
@@ -30,7 +31,8 @@ const RECOMMENDED_RECIPES_LIMIT = 3;
  */
 export default async function NotificationsPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
+  const { data: { user } } = await getAuthUser();
 
   // Same conservative-default judgment call as `/profile`'s reads: a real
   // read failure hides the notice rather than crashing the page — worst case

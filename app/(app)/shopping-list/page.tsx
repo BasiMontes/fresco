@@ -5,6 +5,7 @@ import { ShoppingListGenerator } from '@/components/shopping-list/shopping-list-
 import { ShoppingListView } from '@/components/shopping-list/shopping-list-view';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getNombresNuevos, getShoppingListForPlan } from '@/lib/api/shopping-list';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -23,10 +24,13 @@ import { createClient } from '@/lib/supabase/server';
  */
 export default async function ShoppingListPage() {
   const supabase = await createClient();
+  // FRESCO-483: resolve the session once and thread it through the reads
+  // below so none of them repeat the `auth.getUser()` round trip.
+  const { data: { user } } = await getAuthUser();
 
   let plan: MenuSemanalPersistido | null;
   try {
-    plan = await getMealPlanForWeek(supabase);
+    plan = await getMealPlanForWeek(supabase, undefined, user?.id);
   }
   catch (error) {
     // Same judgment call as /menu and /calendar (STORY-FRESCO-7 batch 2):
@@ -58,7 +62,7 @@ export default async function ShoppingListPage() {
     // FRESCO-194 — "Nuevo" badge: which items weren't on last week's list.
     // `getNombresNuevos` is fail-soft (empty set on any error), so no extra
     // try/catch here.
-    const nuevosNombres = await getNombresNuevos(supabase, plan.semanaIso, list.pasillos);
+    const nuevosNombres = await getNombresNuevos(supabase, plan.semanaIso, list.pasillos, user?.id);
 
     return <ShoppingListView list={list} nuevosNombres={nuevosNombres} />;
   }

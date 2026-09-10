@@ -11,6 +11,7 @@ import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getUserDietaryPreferences, getUserPlan } from '@/lib/api/user-profile';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
@@ -40,7 +41,8 @@ export default async function CalendarPage({
   searchParams: Promise<{ semana?: string }>
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
+  const { data: { user } } = await getAuthUser();
 
   // FRESCO-61: `?semana=YYYY-Www` picks which week to view (prev/next
   // controls below). A malformed or absent value falls back to the current

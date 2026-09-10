@@ -59,9 +59,16 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Touching auth.getUser() is what actually triggers the token refresh +
-  // cookie rewrite above when the access token is near/past expiry.
-  await supabase.auth.getUser();
+  // FRESCO-483: `getSession()`, not `getUser()`. Both would refresh the token
+  // + rewrite the cookie when it is near expiry, but `getUser()` ALSO makes an
+  // unconditional network round trip to GoTrue to verify the JWT on every
+  // request — wasted work here, since the proxy does no access control (that
+  // lives in `(app)/layout.tsx` via `getAuthUser()`). `getSession()` reads the
+  // cookie locally and only hits the network when the access token is within
+  // `@supabase/ssr`'s 90 s expiry margin, which is exactly when a refresh is
+  // needed. The result is intentionally ignored — this call is fired only for
+  // its refresh side effect.
+  await supabase.auth.getSession();
 
   response.headers.set('Content-Security-Policy', csp);
   if (reportUri) {
