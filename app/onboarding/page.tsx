@@ -445,13 +445,22 @@ export default function OnboardingPage() {
   return (
     <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       <div className={`t-stagger ${wizardShown ? 'is-shown' : ''}`}>
+        {/* FRESCO-481: cream negative mark on the near-black dark ground. */}
         <Image
           src="/brand/logo-base.svg"
           alt="Fresco"
           width={100}
           height={30}
           priority
-          className="t-stagger-line t-stagger-line--1 mx-auto"
+          className="t-stagger-line t-stagger-line--1 mx-auto brand-mark--light"
+        />
+        <Image
+          src="/brand/logo-negativo.svg"
+          alt="Fresco"
+          width={100}
+          height={30}
+          priority
+          className="t-stagger-line t-stagger-line--1 mx-auto brand-mark--dark"
         />
 
         <div className="t-stagger-line t-stagger-line--2 mt-6">

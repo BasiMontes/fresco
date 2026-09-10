@@ -62,7 +62,10 @@ export function Pricing() {
           <div className="flex flex-col rounded-card border-2 border-secondary bg-background p-7 shadow-lg">
             <div className="mb-1 flex items-start justify-between">
               <p className="text-h6 uppercase text-primary">Pro</p>
-              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-caption uppercase text-text">
+              {/* FRESCO-481: near-black on amber (~6,3:1), not `text-text` —
+                  cream on amber measured 2,18:1 in dark. Same pairing the
+                  `button-action` CTA uses on this same fill. */}
+              <span className="rounded-full bg-secondary px-2.5 py-0.5 text-caption uppercase text-on-warning">
                 Popular
               </span>
             </div>

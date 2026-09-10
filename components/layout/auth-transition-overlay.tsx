@@ -22,7 +22,8 @@ export function AuthTransitionOverlay({ label }: { label: string }) {
       aria-live="polite"
       data-testid="auth_transition_overlay"
     >
-      <Image src="/brand/logo-base.svg" alt="" width={96} height={29} priority />
+      <Image src="/brand/logo-base.svg" alt="" width={96} height={29} className="brand-mark--light" priority />
+      <Image src="/brand/logo-negativo.svg" alt="" width={96} height={29} className="brand-mark--dark" priority />
       <p className="text-body-sm text-tertiary">{label}</p>
       <div className="auth-transition-overlay__bar" aria-hidden="true" />
     </div>

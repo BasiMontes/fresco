@@ -19,7 +19,13 @@
    * end-for-end so every `bg-x-100 / text-x-800` pair flips together. Full
    * rationale + exact values: DESIGN.md §Dark mode.
    */
-  --color-primary: light-dark(#0f4e0e, #1c6b1a);
+  /* FRESCO-481: the dark value was `#1c6b1a` (a "one notch lifted" green from
+     FRESCO-448) but measured 2,93:1 as `text-primary` on the `#011101` ground
+     and as the primary-button fill vs the page — below WCAG AA. Raised to the
+     already-inverted `accent-700` dark step (~9:1 on background, ~7:1 on
+     `surface` / `surface-raised`), which also lifts every `text-primary` chip
+     sitting on `bg-accent-100/200` in dark. Light value unchanged. */
+  --color-primary: light-dark(#0f4e0e, #63b85e);
   --color-secondary: light-dark(#df8c26, #df8c26);
   /* FRESCO-299: darkened from #847456 (shared with --color-neutral-600) to
      clear WCAG AA as `text-tertiary` body copy — #847456 measured 3,59:1 on
@@ -36,7 +42,15 @@
      elements (inputs, segmented controls, inset panels). */
   --color-surface-raised: light-dark(#fbf6ec, #0c2712);
   --color-text: light-dark(#201e1d, #f2e8d2);
-  --color-border: color-mix(in srgb, light-dark(#201e1d, #f2e8d2) 16%, transparent);
+  /* FRESCO-481: the dark card boundary (`surface-raised` #0c2712 on the
+     #011101 page) measured 1,22:1 surface-to-page — a login/onboarding card
+     barely separated. The border is what has to carry that separation, so
+     the dark side goes from 16% to 30% cream (≈3:1 against both the card and
+     the page). Light side unchanged — FRESCO-443's `neutral-600` contract. */
+  --color-border: light-dark(
+    color-mix(in srgb, #201e1d 16%, transparent),
+    color-mix(in srgb, #f2e8d2 45%, transparent)
+  );
   /* FRESCO-448 (S6a): a real backdrop dim. `bg-text/50` collapsed to
      transparent because `--color-text` is a hex string, not rgb channels
      (the alpha-on-hex gotcha DESIGN.md §Elevation warns about) — so modals
@@ -49,7 +63,12 @@
      (`bg-primary` / `bg-error` / `bg-secondary` chips + buttons). Theme-STABLE
      cream — `text-background` was standing in for this, but `background` flips
      to near-black in dark, which killed the contrast on every primary button. */
-  --color-on-brand: #faf3e3;
+  /* FRESCO-481: was a fixed cream. With the dark `--color-primary` now a
+     LIGHT green (#63b85e), cream text on the primary button dropped to ~2:1
+     — so in dark the on-brand pairing flips to near-black (`surface` step,
+     ~9:1 on the light-green fill). Light theme keeps cream on the dark-green
+     button. */
+  --color-on-brand: light-dark(#faf3e3, #04180a);
   /* Theme-stable near-black for text on the amber `secondary` fill (the
      `button-action` CTA, the "today" pill). `#DF8C26` stays amber in both
      themes; near-black on it ≈ 6,3:1 (FRESCO-283). `text-text` used to do
@@ -1091,6 +1110,35 @@
  * near-instant pass and the overlay appears without a fade. The cover still
  * does its job (hiding the frozen-looking card) — it just does not animate.
  */
+
+/*
+ * Theme-aware brand mark (FRESCO-481). The green `logo-base.svg` reads dim on
+ * the near-black dark ground; the cream `logo-negativo.svg` (the sidebar's
+ * on-green mark) reads well. This project drives theme through CSS token
+ * swaps, NOT Tailwind's `dark:` variant (see `tailwind.config.ts`), so the
+ * swap is a class pair here — same shape as the `[data-brand-ground]` and
+ * `.page-transition` theme rules. A component renders BOTH `<Image>`s.
+ */
+.brand-mark--light {
+  display: block;
+}
+.brand-mark--dark {
+  display: none;
+}
+:root[data-theme='dark'] .brand-mark--light {
+  display: none;
+}
+:root[data-theme='dark'] .brand-mark--dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .brand-mark--light {
+    display: none;
+  }
+  :root:not([data-theme='light']) .brand-mark--dark {
+    display: block;
+  }
+}
 
 /*
  * List / card enter animation (FRESCO-246) — a new card fades in with a slight
