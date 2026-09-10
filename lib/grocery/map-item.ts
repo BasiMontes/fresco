@@ -24,6 +24,9 @@ const UNIT_FAMILIES: readonly (readonly string[])[] = [
   ['cucharadas'],
 ];
 
+/** Recipe-name filler that carries no ingredient signal — ignored when gating a context remap. */
+const STOPWORDS = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'con', 'sin', 'al', 'a', 'y', 'en']);
+
 function sameFamily(a: string, b: string): boolean {
   if (a === b) { return true; }
   return UNIT_FAMILIES.some(f => f.includes(a) && f.includes(b));
@@ -53,7 +56,11 @@ function recoverFromRecipeContext(
   let best: CanonicalIngredient | null = null;
   for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
     if (entry.clave === clave || !entry.clave.startsWith(`${clave} `)) { continue; }
-    const extraWords = entry.clave.slice(clave.length + 1).split(' ');
+    const extraWords = entry.clave
+      .slice(clave.length + 1)
+      .split(' ')
+      .filter(w => !STOPWORDS.has(w));
+    if (extraWords.length === 0) { continue; }
     const allPresent = extraWords.every(w => recetasNorm.some(r => r.includes(w)));
     if (!allPresent) { continue; }
     // Prefer the most specific match (longest key).
@@ -84,7 +91,7 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
       terminoBusqueda: item.nombre,
       pasillo: null,
       cantidadNormalizada,
-      unidadVenta: item.unidad,
+      unidadVenta: unidadNormalizada,
       envasesEstimados: 1,
       confianza: 'baja',
     };

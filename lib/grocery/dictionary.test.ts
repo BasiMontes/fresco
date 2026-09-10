@@ -19,10 +19,8 @@ import {
 describe('ingredient-dictionary — generated file is in sync', () => {
   test('committed file matches a fresh generator run', async () => {
     const fresh = renderFile(buildDictionary());
-    const committed = Bun.file(new URL('./ingredient-dictionary.ts', import.meta.url));
-    return committed.text().then((text) => {
-      expect(text).toBe(fresh);
-    });
+    const committed = await Bun.file(new URL('./ingredient-dictionary.ts', import.meta.url)).text();
+    expect(committed).toBe(fresh);
   });
 });
 

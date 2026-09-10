@@ -112,6 +112,27 @@ describe('mapShoppingListItem — invariants', () => {
     expect(r.productoCanonico).toBe('salmón');
   });
 
+  test('recovery fires on a real qualifier past the stopwords (pan → pan de centeno)', () => {
+    const r = mapShoppingListItem({
+      nombre: 'pan',
+      cantidad: 4,
+      unidad: 'rebanadas',
+      usos: [{ receta: 'Tostada de pan de centeno con aguacate' }],
+    });
+    expect(r.productoCanonico).toBe('pan de centeno');
+    expect(r.confianza).toBe('media');
+  });
+
+  test('recovery is not tricked by a stopword-only difference (pan, recipe just says pan)', () => {
+    const r = mapShoppingListItem({
+      nombre: 'pan',
+      cantidad: 4,
+      unidad: 'rebanadas',
+      usos: [{ receta: 'Tostada de pan con tomate' }],
+    });
+    expect(r.productoCanonico).toBe('pan');
+  });
+
   test('envasesEstimados is always at least 1', () => {
     const r = mapShoppingListItem({ nombre: 'canela', cantidad: 3, unidad: 'g' });
     expect(r.envasesEstimados).toBeGreaterThanOrEqual(1);
