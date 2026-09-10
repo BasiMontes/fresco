@@ -82,6 +82,8 @@ The following are **explicitly excluded from the MVP and from all near-term road
 
 **Do not read the Food-Safety Guardrail (EPIC-FRESCO-8) as part of this list** — it is the one explicit, named exception, P0 from day one regardless of the MRR/retention gate.
 
+**Pre-work note (2026-09-10, no scope change):** the supermarket-integration line has been refined ahead of the gate so the build/no-build call is ready the day it lifts — FRESCO-345 (v2: export-first, per-item deep-link discarded) plus its transversal prerequisite FRESCO-488 (ingredient→product + unit-reconciliation layer, blocks FRESCO-345 and FRESCO-346). Feasibility evidence: `scripts/spikes/fresco-345-grocery-deeplink/`. These stay blacklisted and unbuilt until the MRR/retention gate is met, or until a founder-approved scope reversal amends both this list and `.context/business/business-model.md` — Out-of-Scope Blacklist (the way EPIC-FRESCO-227 did for self-serve payment). Refining a blacklisted item is not building it.
+
 ## Success Criteria
 
 The MVP is considered successful when the concierge-validation bar defined in the Constitution phase is met, not by an internal feature-completeness checklist:
