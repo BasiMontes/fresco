@@ -125,3 +125,8 @@ Historia archivada:
 - Que: la nav de la landing mostraba los CTA de invitado a todos. Ahora visitante con sesion ve "Ir a mi menu" (-> /menu) + "Hola, {nombre}" si hay nombre; invitado sin cambios. Nuevo lib/auth/identity-cookie.ts (cookie funcional fresco_nombre, fuera del gate de consentimiento, evento fresco:identity-cookie) + components/auth/identity-cookie-sync.tsx (listener onAuthStateChange propio, montado en app/layout.tsx). site-nav.tsx: chequeo de sesion solo en cliente (getSession, sin verificacion en servidor por FRESCO-483), SSR=invitado y reconcilia tras montar. PR #324 squash a staging (fe1dc83).
 - Por que: FRESCO-486, epic FRESCO-484 platform polish. Founder noto los CTA de invitado estando logueado.
 - Siguiente: espejo a main pendiente OK founder. Epic 484: cerradas 478/479/480/481/482/483/490/486; quedan 485 y la tarea del checkbox de /signup (hija de 484 aun sin crear). test de render de site-nav quitado por fragilidad de happy-dom en CI.
+
+## 2026-09-10 - FRESCO-491 checkbox design system a 24px
+- Que: components/ui/checkbox.tsx size-5 -> size-6 (20 -> 24px objetivo tactil WCAG 2.5.8), icono Check size-3.5 -> size-4. Cierra un hallazgo de la auditoria Playwright: los checkbox sueltos sin label (rejilla de planificacion del onboarding, lista de la compra) estaban <24px; los envueltos en label (signup, filtros) ya cumplian via el label. PR #325 squash a staging (4ca4b2f).
+- Por que: FRESCO-491, epic FRESCO-484 platform polish. Nota de regression.feature actualizada de "falso positivo" a hallazgo real + resolucion.
+- Siguiente: espejo a main pendiente OK founder (junto con FRESCO-486). Epic 484: queda FRESCO-485 (sidebar colapsable).
