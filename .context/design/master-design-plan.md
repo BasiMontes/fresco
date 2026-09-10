@@ -416,21 +416,30 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Layout.** Desktop: `sidebar` on `primary` green background (`Logo negativo`), nav items with a
   pill highlight on the active item (`aria-current="page"` — TECHDEBT-FRESCO-40), `sidebar-account`
   block at the bottom (name + email + plan tag + logout; hierarchy per DEFECT-FRESCO-202;
-  no blank email — DEFECT-FRESCO-111/178). Mobile: `bottom-tab-bar`, `background`-coloured, `primary`
-  icons, dot-indicator active state, constrained height (DEFECT-FRESCO-154). `app-shell` adds
-  `pb-20` so fixed mobile nav never overlaps content. `guest-logout-dialog` intercepts guest logout
-  (guest data loss warning — DEFECT-FRESCO-90).
+  no blank email — DEFECT-FRESCO-111/178). **Collapsible to a `w-16` icon rail (FRESCO-485):** a
+  `PanelLeft*` toggle at the top (aligned with the logo, 44px, `aria-expanded`) switches the aside
+  between `w-64` and `w-16`; the preference is a cookie (`lib/layout/sidebar-preference.ts`) read
+  server-side in `app/(app)/layout.tsx` so the rail width is correct on the first byte. Collapsed:
+  `Logo mark` in place of the wordmark, nav labels hidden with `aria-label` + `title` kept, footer
+  reduced to a vertical theme toggle + avatar + logout. Width animates (`transition-[width]`,
+  dropped under `prefers-reduced-motion`). See §5-U. Mobile: `bottom-tab-bar`, `background`-coloured,
+  `primary` icons, dot-indicator active state, constrained height (DEFECT-FRESCO-154). `app-shell`
+  adds `pb-20` so fixed mobile nav never overlaps content. `guest-logout-dialog` intercepts guest
+  logout (guest data loss warning — DEFECT-FRESCO-90).
 - **Tokens.** `nav-sidebar` (primary bg, background text) + `nav-bottom-tab` (background bg, primary
   icons); `icon` 2px stroke, unified glyph sizes (FRESCO-85/86/87/298); active pill = `rounded.full`.
 - **Components.** `components/layout/app-shell.tsx`, `sidebar.tsx`, `bottom-tab-bar.tsx`,
-  `sidebar-account.tsx`, `guest-logout-dialog.tsx`.
+  `sidebar-account.tsx`, `guest-logout-dialog.tsx`. `lib/layout/sidebar-preference.ts` +
+  `public/brand/logo-mark-negativo.svg` (FRESCO-485).
 - **Checklist.** [ ] `Logo negativo` on the green sidebar, never the base logo · [ ] active item has
   `aria-current` · [ ] mobile nav height constrained · [ ] plan tag from shared `lib/plan-labels.ts`
   · [ ] icons at 2px stroke (no global `stroke-width:3` override — DEFECT-FRESCO-298) · [ ] guest
   logout warns about data loss · [ ] unauthenticated `/(app)/*` redirects to `/login`
-  (DEFECT-FRESCO-83).
+  (DEFECT-FRESCO-83) · [ ] collapse toggle 44px with `aria-expanded`, collapsed nav items keep an
+  accessible name, width transition respects `prefers-reduced-motion` (FRESCO-485).
 - **Provenance.** Sidebar colour = DEFECT-FRESCO-70 (moved onto `primary`, reconciled into
-  `DESIGN.md`). User-block redesign = DEFECT-FRESCO-202. No external mockup.
+  `DESIGN.md`). User-block redesign = DEFECT-FRESCO-202. Collapsible rail = FRESCO-485 (§5-U). No
+  external mockup.
 
 ### 4.18 Legal modal — cross-cutting overlay
 
@@ -509,6 +518,7 @@ compliance notes.
 | §5-S | Recipe detail (`/recipes/[id]`) — media area | Catalog detail hero was `aspect-video` (16/9) + a bare `CategoryIcon` on `bg-neutral-200`; personal detail the same with `BookOpen`. Both moved to `aspect-[4/3]` (the card ratio, now the single recipe-photo ratio system-wide) + `RecipePlaceholder` for the no-photo state + the `.recipe-photo` grade on the real photo. | `DESIGN.md` §4.11 already said "recipe-card image treatment" for detail — it just wasn't wired that way. | FRESCO-447 unifies crop + grade across every recipe-photo surface; leaving detail at a different ratio and a different empty state was the inconsistency the epic exists to fix. Same block already being edited for the grade. No new tokens. | FRESCO-447 story plan (2026-09-06) |
 | §5-R | Motion layer — landing scroll reveals (FRESCO-446) | Section reveals are a bespoke `components/ui/reveal.tsx` (`IntersectionObserver`, `data-reveal` applied post-mount so SSR / no-JS renders every section visible), not a `transitions-dev` catalogue snippet. The `[data-reveal]` CSS reuses `--duration-slow` / `--distance-medium` / `--ease-smooth-out`. The `card-insight` entrance is a one-shot `[data-insight-enter]` keyframe on the existing element. | `DESIGN.md` §Motion ("Usar el skill `transitions-dev` para los patrones") | The `transitions-dev` catalogue has 27 patterns, none scroll-position-triggered — its "texts reveal" is for hero copy on mount, not on-scroll sections. A ~40-line `IntersectionObserver` primitive is lighter than pulling a motion library, and it reuses the existing token scale so there is zero drift from the catalogue's timing vocabulary. No new tokens, no spring. | FRESCO-446 story plan (2026-09-06) |
 | §5-T | Loading layer — `(app)/*` skeleton + auth transition (FRESCO-482) | New surfaces with no §8 screen row and no mockup: `components/layout/app-shell-skeleton.tsx` (shown by `app/(app)/loading.tsx`) is hand-built plain markup mirroring `AppShell`'s structure; `components/layout/auth-transition-overlay.tsx` covers `/login` + `/signup` after a successful auth call; `components/layout/top-progress-bar.tsx` sweeps on every committed client navigation. All CSS in `app/globals.css` reuses `--duration-fast` / `--duration-slow` / `--ease-smooth-out` / `--color-primary`; `prefers-reduced-motion` drops each animation the repo way. | No `DESIGN.md` screen spec or §8 row exists for a loading screen | These are the skeleton / transition states of screens that already exist, not new screens — built LIVE-UI-FIRST against `AppShell` and the auth cards. No new motion tokens (DESIGN.md §4.19). No animation dependency (repo is CSS-only for motion). | FRESCO-482 story plan (2026-09-10) |
+| §5-U | App shell / navigation (`/(app)/*`) — collapsible desktop sidebar (FRESCO-485) | New capability, no mockup. `sidebar.tsx` gains a `w-64` ↔ `w-16` icon-rail toggle: a `PanelLeftClose` / `PanelLeftOpen` button at the top aligned with the logo (`size-11`, `aria-expanded`, `aria-label` "Contraer/Expandir menú"). Preference persisted in a `sidebar_collapsed` cookie (`lib/layout/sidebar-preference.ts`), read server-side in `app/(app)/layout.tsx` and passed as `initialCollapsed` so the first byte is already at the right width (identical pattern to the theme cookie). Collapsed: `logo-mark-negativo.svg` (new, the icon glyph extracted from `logo-negativo.svg`) replaces the wordmark, nav labels hidden but `aria-label` + `title` kept, `sidebar-account` reduced to avatar + logout, theme toggle stacked vertical (`flex-col`). Width animates `transition-[width] duration-200 ease-out`, `motion-reduce:transition-none`. Mobile unchanged (bottom tab bar still owns it). | No `DESIGN.md` screen spec beyond §4.17's "one destination set", no external mockup | Standard desktop-tool pattern; built LIVE-UI-FIRST on the existing `sidebar.tsx` tokens (`nav-sidebar`, active pill, `Logo negativo`). No new colour/spacing tokens — only the `logo-mark` asset and Tailwind width/transition utilities already in the system. The collapsed footer keeps the theme control (AC) as a vertical stack rather than dropping it. | FRESCO-485 story plan (2026-09-10) |
 
 > **Not divergences (reconciled into `DESIGN.md`):** FRESCO-283 amber-CTA contrast, FRESCO-285/299
 > `text-tertiary` darkening, FRESCO-303 pricing check colour, FRESCO-70 sidebar-on-green, FRESCO-298

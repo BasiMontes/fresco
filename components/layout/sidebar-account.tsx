@@ -10,6 +10,7 @@ import { Tag } from '@/components/ui/tag';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
 
 /**
  * Shared shape for the signed-in user's account info (FRESCO-82), threaded
@@ -27,7 +28,13 @@ export interface AccountUser {
   isAnonymous: boolean
 }
 
-export type SidebarAccountProps = AccountUser;
+export interface SidebarAccountProps extends AccountUser {
+  /**
+   * FRESCO-485 — collapsed rail: drop the name / email / plan tag, keep
+   * just the avatar and the logout control, stacked and centred.
+   */
+  collapsed?: boolean
+}
 
 /**
  * Sidebar footer account block (FRESCO-82): name + email + avatar/initial,
@@ -48,7 +55,7 @@ export type SidebarAccountProps = AccountUser;
  * convention of independent local copies of this same 3-line pattern
  * (`danger-zone.tsx`, `app/update-password/page.tsx`).
  */
-export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAccountProps) {
+export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = false }: SidebarAccountProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -83,8 +90,11 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
   const initial = nombre?.trim().charAt(0).toUpperCase();
 
   return (
-    <div data-testid="sidebarAccount" className="border-t border-background/10 pt-4">
-      <div className="flex items-start gap-3">
+    <div
+      data-testid="sidebarAccount"
+      className={cn('border-t border-background/10 pt-4', collapsed && 'flex flex-col items-center gap-3')}
+    >
+      <div className={cn('flex items-start gap-3', collapsed && 'flex-col items-center gap-3')}>
         <div
           data-testid="user_avatar"
           aria-hidden="true"
@@ -92,7 +102,7 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous }: SidebarAcco
         >
           {initial || <UserIcon className="size-4" />}
         </div>
-        <div className="min-w-0 flex-1">
+        <div className={cn('min-w-0 flex-1', collapsed && 'hidden')}>
           <p data-testid="user_name" className="truncate text-label text-background">
             {nombre || 'Sin nombre'}
           </p>

@@ -12,6 +12,8 @@ export interface AppShellProps {
    * `null` when there is no active session (see `Sidebar`'s `user` prop).
    */
   user: AccountUser | null
+  /** Server-read desktop sidebar collapse preference (FRESCO-485). */
+  sidebarCollapsed?: boolean
 }
 
 /**
@@ -20,10 +22,10 @@ export interface AppShellProps {
  * every authenticated/app-shell route (menu, calendar, recipes, profile,
  * shopping-list).
  */
-export function AppShell({ children, user }: AppShellProps) {
+export function AppShell({ children, user, sidebarCollapsed }: AppShellProps) {
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar user={user} />
+      <Sidebar user={user} initialCollapsed={sidebarCollapsed} />
       {/*
         min-w-0 overrides the flex item default of min-width:auto — without
         it, a wide horizontally-scrolling descendant (e.g. CalendarGrid's
