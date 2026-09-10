@@ -61,18 +61,16 @@ This document — and the "Success Criteria" section below — originally assume
 The following are **explicitly excluded from the MVP and from all near-term roadmap consideration**, not merely deprioritized. They remain out of scope until **both** conditions are met: **MRR > €5,000 AND 30-day retention > 50%** (`.context/business/business-model.md` — Out-of-Scope Blacklist):
 
 - Receipt scanning
-- Price comparison
 - Pantry / inventory management
 - Aggressive push notifications (e.g., "morning briefing" style)
 - Voice operations
 - Wake Lock API / background device APIs
 - Complex local-first architecture
-- JSON / CSV export
+- JSON / CSV export — _except the shopping-list export feature (`ADR-0027`)_
 - Price learning
 - Leftover-ingredient AI
 - Batch-cooking mode
 - Expiration alerts
-- Supermarket integrations
 - Complex glassmorphism UI
 - Gamification
 - Community / social features
@@ -82,9 +80,7 @@ The following are **explicitly excluded from the MVP and from all near-term road
 
 **Do not read the Food-Safety Guardrail (EPIC-FRESCO-8) as part of this list** — it is the one explicit, named exception, P0 from day one regardless of the MRR/retention gate.
 
-**Pre-work note (2026-09-10):** the supermarket-integration line has been refined ahead of the gate so the build/no-build call is ready the day it lifts — FRESCO-345 (v2: export-first, per-item deep-link discarded) plus FRESCO-346 (price comparison). Feasibility evidence: `scripts/spikes/fresco-345-grocery-deeplink/`. FRESCO-345 and FRESCO-346 stay blacklisted and unbuilt until the MRR/retention gate is met, or until a founder-approved scope reversal amends both this list and `.context/business/business-model.md` — Out-of-Scope Blacklist (the way EPIC-FRESCO-227 did for self-serve payment). Refining a blacklisted item is not building it.
-
-**Narrow carve-out (2026-09-10, founder-approved):** FRESCO-488 — the ingredient→product + unit-reconciliation layer that blocks FRESCO-345 and FRESCO-346 — is taken **out** of the blacklist. Zero-cost, pure code, no user-facing surface of its own, no vendor dependency (the founder's "no extra spend" constraint rules out the real integration via Northfork/Whisk, not this). Same shape as the EPIC-FRESCO-8 exception, not a scope reversal — the supermarket-integration and price-comparison lines themselves stay blacklisted. Full rationale in `.context/business/business-model.md` — Out-of-Scope Blacklist.
+**Scope reversal (2026-09-10, founder-approved — `ADR-0027`):** "supermarket integrations" and "price comparison" are **removed** from this list. Epic FRESCO-332 with FRESCO-345 (list → supermarket) and FRESCO-346 (price comparison), plus their zero-cost enabling pieces (shopping-list export, the FRESCO-488 ingredient→product layer), move to the active backlog. **Bounded by the standing no-extra-spend constraint:** buildable now = structured export + affiliate deep links (Awin); still gated on budget (not on the retention metric) = any recipe-commerce provider integration (Northfork / Whisk) or other paid dependency. The AI's recorded recommendation was to wait for the MRR/retention gate; the founder decided to proceed. Full context, trade-offs and alternatives in `ADR-0027` and `.context/business/business-model.md` — Out-of-Scope Blacklist. The moat (`ADR-0001`) is unchanged and this work stays behind concierge-validation in priority order. Feasibility evidence: `scripts/spikes/fresco-345-grocery-deeplink/`.
 
 ## Success Criteria
 

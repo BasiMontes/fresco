@@ -87,6 +87,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0024](./ADR-0024-component-test-infra-happy-dom-rtl.md) | Component tests run on happy-dom + React Testing Library, registered globally for `bun test` | Proposed | — | — |
 | [ADR-0025](./ADR-0025-cookie-consent-gate-strategy.md) | Cookie consent gates `posthog.init()` itself, not `opt_out_capturing_by_default` | Proposed | — | — |
 | [ADR-0026](./ADR-0026-db-integration-test-layer.md) | DB-integration tests (`bun test`, real Postgres) run against the Supabase CLI local stack in a dedicated CI job, never a hosted project | Proposed | — | — |
+| [ADR-0027](./ADR-0027-supermarket-integration-out-of-blacklist.md) | Supermarket integration + price comparison removed from the Out-of-Scope Blacklist; bounded to zero-cost (export + affiliate) by the standing no-extra-spend constraint | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
