@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ThemePreference } from '@/lib/theme/theme';
 import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
@@ -48,6 +48,20 @@ export const metadata: Metadata = {
   title: 'Fresco — Menús semanales que aprenden de lo que realmente cocinas',
   description:
     'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
+};
+
+// FRESCO-476 (SEO): `<meta name="theme-color">` for the mobile browser UI,
+// keyed to `prefers-color-scheme` so it tracks the two DESIGN.md grounds —
+// light `--color-background` #faf3e3, dark #011101 (accent-900). The `media`
+// form is a static export (no request context) so it doesn't affect the
+// cookie-driven `data-theme` SSR above; a `system`/first-visit user still
+// paints the light palette, and the theme-color follows the OS the same way
+// the app's own `@media (prefers-color-scheme: dark)` fallback does.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#faf3e3' },
+    { media: '(prefers-color-scheme: dark)', color: '#011101' },
+  ],
 };
 
 // FRESCO-386 (A4-M10): the enforcing, nonce-based CSP (see `proxy.ts`) needs
