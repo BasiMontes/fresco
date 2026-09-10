@@ -105,3 +105,8 @@ Historia archivada:
 - Qué: `site-nav.tsx` pasaba a nav horizontal en `sm` (640px) y se apretaba contra `max-w-5xl` desde ~768px. Movido nav horizontal + theme toggle inline + hamburguesa a `lg` (1024px). CTAs de auth se quedan en `sm`. PR #320 squash a staging (4e8fc71) + espejo a dev.
 - Por qué: FRESCO-480 (epic FRESCO-484 platform polish). Transición ahora donde el nav horizontal tiene sitio.
 - Siguiente: pendiente OK del founder para espejo a main de FRESCO-480 + FRESCO-482 + FRESCO-481.
+
+## 2026-09-10 - FRESCO-479 onboarding sin centrar vertical
+- Qué: `app/onboarding/page.tsx` — contenedores IdentityStep + wizard pasan de `justify-start pt-16 md:pt-24` a `justify-center py-12`, igual que la rama de carga. `min-h-screen` mantiene scroll sin recortar cabecera en pasos largos. PR #321 squash a staging (e7ef675) + espejo a dev.
+- Por qué: FRESCO-479 (epic FRESCO-484). Tarjeta corta flotando arriba se leía como fallo de maquetación en móvil.
+- Siguiente: pendiente OK founder para espejo a main. Epic 484: quedan 478, 485, 486.
