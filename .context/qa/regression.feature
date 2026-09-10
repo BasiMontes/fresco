@@ -1875,3 +1875,13 @@ Característica: Flujo completo de usuario en Fresco
   #   tarjeta hospedado por Stripe (Checkout y Billing Portal) es un
   #   iframe anidado, accesible con refs normales de playwright-cli sin
   #   tratamiento especial.
+  # - Checkbox del design system y objetivo táctil (FRESCO-491, cerró un
+  #   hallazgo de la auditoría Playwright): `components/ui/checkbox.tsx`
+  #   medía 20px (size-5). Los usos envueltos en <label> (signup
+  #   `accept_terms_checkbox`, filtros de recetas) tenían zona activable
+  #   grande vía el label — nunca fueron violación. Los usos sueltos sin
+  #   label (rejilla de planificación del onboarding en celda de tabla,
+  #   lista de la compra) sí estaban por debajo del mínimo de 24px de WCAG
+  #   2.5.8. Resuelto subiendo el componente compartido a size-6 (24px);
+  #   el icono Check pasó a size-4. Verificado en vivo en los 4
+  #   consumidores sin rotura de layout.
