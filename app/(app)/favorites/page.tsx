@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { FavoritesGrid } from '@/components/recipe/favorites-grid';
 import { buttonVariants } from '@/components/ui/button';
 import { getFavoriteRecipes } from '@/lib/api/favorites';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
 
@@ -18,8 +19,11 @@ import { cn } from '@/lib/utils';
  */
 export default async function FavoritesPage() {
   const supabase = await createClient();
+  // FRESCO-483: resolve the session once here so `getFavoriteRecipes` skips
+  // its own `auth.getUser()` round trip.
+  const { data: { user } } = await getAuthUser();
 
-  const recetas = await getFavoriteRecipes(supabase).catch((error) => {
+  const recetas = await getFavoriteRecipes(supabase, user?.id).catch((error) => {
     // Same fail-soft pattern as every other server-side read in the app: a
     // real read failure falls back to the empty state rather than crashing
     // the page, logged so a real outage stays visible in server logs.

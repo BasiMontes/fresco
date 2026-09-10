@@ -3,6 +3,7 @@ import type { RecipeFilterState } from '@/lib/recipes/recipe-filters';
 import { RecipeLibrary } from '@/components/recipes/recipe-library';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getCatalog, getRecetasPropias } from '@/lib/api/recipes';
+import { getAuthUser } from '@/lib/auth/current-user';
 import { RECIPE_PAGE_SIZE } from '@/lib/recipes/recipe-filters';
 import { createClient } from '@/lib/supabase/server';
 
@@ -38,6 +39,9 @@ export default async function RecipesPage({
 }) {
   const params = await searchParams;
   const supabase = await createClient();
+  // FRESCO-483: resolve the session once so the three reads below share it
+  // instead of each doing its own `auth.getUser()` round trip.
+  const { data: { user } } = await getAuthUser();
 
   const query = (Array.isArray(params.q) ? params.q[0] : params.q ?? '').trim();
   const page = parsePage(params.page);
@@ -60,15 +64,15 @@ export default async function RecipesPage({
       alergenos: appliedFilters.alergenos,
       limit: page * RECIPE_PAGE_SIZE,
       offset: 0,
-    }).catch((error) => {
+    }, user?.id).catch((error) => {
       console.error('[/recipes] getCatalog failed, falling back to empty state', error);
       return { recipes: [], total: 0, facets: { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} } };
     }),
-    getRecetasPropias(supabase).catch((error) => {
+    getRecetasPropias(supabase, user?.id).catch((error) => {
       console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
       return [] as Awaited<ReturnType<typeof getRecetasPropias>>;
     }),
-    getFavoriteRecipeIds(supabase).catch((error) => {
+    getFavoriteRecipeIds(supabase, user?.id).catch((error) => {
       console.error('[/recipes] getFavoriteRecipeIds failed, defaulting to none favorited', error);
       return new Set<string>();
     }),

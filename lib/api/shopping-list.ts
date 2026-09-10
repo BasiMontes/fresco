@@ -198,10 +198,13 @@ export async function getNombresNuevos(
   client: SupabaseClient<Database>,
   semanaIsoActual: string,
   pasillosActuales: Pasillos,
+  userId?: string,
 ): Promise<Set<string>> {
   try {
     const semanaPrevia = addIsoWeeks(semanaIsoActual, -1);
-    const planPrevio = await getMealPlanForWeek(client, semanaPrevia);
+    // FRESCO-483: pass the already-resolved user through so the prior-week
+    // lookup skips a redundant `auth.getUser()` round trip.
+    const planPrevio = await getMealPlanForWeek(client, semanaPrevia, userId);
     if (!planPrevio) {
       return new Set();
     }
