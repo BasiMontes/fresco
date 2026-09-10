@@ -85,3 +85,13 @@ Historia archivada:
 - Que: Spike FRESCO-345 (deep-link Carrefour/Dia + export contra lista real, scripts/spikes/fresco-345-grocery-deeplink/). Creada FRESCO-488 (capa ingrediente->producto + reconciliacion de unidades, 5 SP, bloquea 345/346). FRESCO-345 refinada a v2 (export-first, deep-link descartado). Decision de fundador: sacar FRESCO-332/345/346 del Out-of-Scope Blacklist (ADR-0027). business-model.md y mvp-scope.md actualizados. staging @ 1fdce25+.
 - Por que: el fundador quiere la integracion con supermercados como valor anadido. Restriccion "sin coste extra": el carrito real via proveedor (Northfork/Whisk) sigue fuera; lo abordable a coste cero es export + deep-link de afiliacion (Awin). Recomendacion registrada en contra de adelantarlo antes de validar retencion; decision del fundador prevalece.
 - Siguiente: FRESCO-488 primero (bloquea al resto). Refinar FRESCO-345 pieza A (export) y FRESCO-346 para build. Alta en Awin cuando se aborde el deep-link. Rotar bitacora.md (65 entradas, supera el tope de 50).
+
+## 2026-09-10 - FRESCO-488 capa ingrediente-producto: implementada y desplegada
+- Que: lib/grocery/ (mapShoppingListItem puro + diccionario canonico de 199 ingredientes generado desde el vocabulario del Edge + overlay de envases curado a mano + parity/drift tests). PR #316 squash a staging (5ad8c43), ff-mirror a dev y main. Los 3 branches en 5ad8c43. CI verde (5/5 incl test:e2e en PR y en push a staging). Jira -> Finalizada.
+- Por que: prerrequisito transversal de FRESCO-345/346, desbloqueado por el carve-out ADR-0027. Sin consumidores todavia (por diseno) — deja resuelta la parte mas incierta de cualquier integracion de super.
+- Siguiente: fresco-pro redesplegando (impacto runtime cero: lib sin consumidores + docs). FRESCO-345 pieza A (export) y FRESCO-346 quedan listas para build cuando toque. Archivar sesion sprint-development/FRESCO-488.
+
+## 2026-09-10 - FRESCO-489: primera tanda de fotos verificada por agente
+- Que: 50 candidatos de FRESCO-31 revisados por agente-vision. 10 aplicadas / 40 rechazadas (4 con marca). recipes.foto_url 468 -> 478, 0 duplicados. FRESCO-489 -> Finalizada.
+- Por que: valida el camino a coste cero de la Opcion A de FRESCO-435 (verificacion por agente, sin API key). Elimina la QA manual por tanda de FRESCO-192.
+- Siguiente: repetir por tanda mientras FRESCO-31 siga abierta (333 activas sin foto). Unsplash rate-limit 50/h obliga a esperar entre tandas.
