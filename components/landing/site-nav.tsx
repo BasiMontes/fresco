@@ -37,7 +37,11 @@ export function SiteNav() {
           <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} className="brand-mark--dark" priority />
         </Link>
 
-        <nav className="hidden items-center gap-7 sm:flex">
+        {/* FRESCO-480: was `sm:flex` (640px) — the row (logo + 3 links + two
+            CTAs + theme toggle) crammed against `max-w-5xl` from ~768px down.
+            Horizontal nav now only appears at `lg` (1024px) where it has room;
+            below that the hamburger owns the links. */}
+        <nav className="hidden items-center gap-7 lg:flex">
           {NAV_LINKS.map(link => (
             <a
               key={link.href}
@@ -63,12 +67,15 @@ export function SiteNav() {
           >
             Empezar gratis
           </LandingCtaLink>
-          <ThemeToggle variant="binary" className="hidden sm:inline-flex" />
+          {/* FRESCO-480: inline theme toggle rides with the horizontal nav — at
+              `lg` and up. Between `sm` and `lg` it lives in the hamburger sheet. */}
+          <ThemeToggle variant="binary" className="hidden lg:inline-flex" />
           <Button
             variant="secondary"
             size="sm"
             // FRESCO-315: 44x44 comfortable tap target on mobile (was ~40x31).
-            className="min-h-[44px] min-w-[44px] rounded-sm px-2 sm:hidden"
+            // FRESCO-480: hamburger now covers the tablet range too (< lg).
+            className="min-h-[44px] min-w-[44px] rounded-sm px-2 lg:hidden"
             aria-label={isOpen ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={isOpen}
             onClick={() => setIsOpen(open => !open)}
@@ -79,7 +86,7 @@ export function SiteNav() {
       </div>
 
       {isOpen && (
-        <nav className="flex flex-col border-t border-border bg-background sm:hidden">
+        <nav className="flex flex-col border-t border-border bg-background lg:hidden">
           {NAV_LINKS.map(link => (
             <a
               key={link.href}
