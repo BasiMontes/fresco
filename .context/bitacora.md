@@ -95,3 +95,8 @@ Historia archivada:
 - Que: 50 candidatos de FRESCO-31 revisados por agente-vision. 10 aplicadas / 40 rechazadas (4 con marca). recipes.foto_url 468 -> 478, 0 duplicados. FRESCO-489 -> Finalizada.
 - Por que: valida el camino a coste cero de la Opcion A de FRESCO-435 (verificacion por agente, sin API key). Elimina la QA manual por tanda de FRESCO-192.
 - Siguiente: repetir por tanda mientras FRESCO-31 siga abierta (333 activas sin foto). Unsplash rate-limit 50/h obliga a esperar entre tandas.
+
+## 2026-09-10 - FRESCO-483 colapsa 3 verificaciones de sesion a 1 (perf de entrada)
+- Que: getAuthUser() con React.cache() (lib/auth/current-user.ts) + proxy.ts getUser->getSession + swap en layout y 9 paginas (app) + getNombresNuevos con userId opcional. 14 archivos. PR #317 squash a staging (a814af1), ff a dev y main. Los 3 branches en a814af1. CI 5/5 verde (incl test:e2e en PR y en push a staging). Jira -> Finalizada.
+- Por que: la primera pantalla autenticada tras login encadenaba 3 round-trips de red a GoTrue (proxy + layout + pagina). Medido: tiempo de proxy.ts ~72-147ms -> ~3-6ms; verificaciones de red por carga de /menu 3 -> 1. El proxy corre en cada request.
+- Siguiente: fresco-pro redesplegando (cambio de runtime, camino de auth). Follow-up posible: getClaims() para llegar a 0 llamadas de red si esa 1 restante pesa. Epica FRESCO-484 tiene mas tareas de pulido en Listo (478-482, 485, 486).
