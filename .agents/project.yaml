@@ -120,7 +120,7 @@ git_strategy:
     setup_version: 4 # v4 2026-08-30 (FRESCO-314): squash-only enforced on GitHub, docs_changes policy added, hotfix runbook written
     created: 2026-07-24 # YYYY-MM-DD — first commit of this repo (6271533); the git_strategy block has existed since project bootstrap
     updated: 2026-08-29 # downgraded enterprise (three-tier) -> solo-main per re-audit finding 08 (declared strategy didn't match actual direct-push-heavy, single-maintainer practice)
-    policy_verified: 2026-09-07 # stamped by `bun run git:policy verify --stamp`
+    policy_verified: 2026-09-10 # stamped by `bun run git:policy verify --stamp`
     policy_source: verified # verified | accepted | declared
     # Did anyone actually CHOOSE this strategy, or is it just the shipped default?
     # CHOSEN — see the `description` above: re-audited 2026-08-29 (finding 08) against
