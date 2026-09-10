@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { clearAllCookies } from '@/tests/component-render';
 import {
   clearNombreCookie,
+  IDENTITY_COOKIE_EVENT,
   IDENTITY_NOMBRE_COOKIE,
   readNombreCookie,
   writeNombreCookie,
@@ -48,5 +49,17 @@ describe('identity-cookie (FRESCO-486)', () => {
   test('reads null for a malformed percent-encoding rather than throwing', () => {
     document.cookie = `${IDENTITY_NOMBRE_COOKIE}=%E0%A4%A; path=/`;
     expect(readNombreCookie()).toBeNull();
+  });
+
+  test('emits the change event on write and on clear', () => {
+    let fired = 0;
+    const bump = () => { fired += 1; };
+    window.addEventListener(IDENTITY_COOKIE_EVENT, bump);
+
+    writeNombreCookie('Basi');
+    clearNombreCookie();
+
+    window.removeEventListener(IDENTITY_COOKIE_EVENT, bump);
+    expect(fired).toBe(2);
   });
 });

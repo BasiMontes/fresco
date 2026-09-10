@@ -22,16 +22,31 @@ export const IDENTITY_NOMBRE_COOKIE = 'fresco_nombre';
 /** 30 days — a convenience hint, re-written on every sign-in. */
 export const IDENTITY_NOMBRE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
+/**
+ * Fired on `window` whenever the cookie is written or cleared, so a
+ * component that already read it once (the landing nav) can pick up a
+ * change that landed after its own mount — e.g. `IdentityCookieSync`'s
+ * `user_profiles` query resolving just after the nav's first paint.
+ */
+export const IDENTITY_COOKIE_EVENT = 'fresco:identity-cookie';
+
+function emitChange(): void {
+  if (typeof window === 'undefined') { return; }
+  window.dispatchEvent(new Event(IDENTITY_COOKIE_EVENT));
+}
+
 export function writeNombreCookie(nombre: string): void {
   if (typeof document === 'undefined') { return; }
   const trimmed = nombre.trim();
   if (!trimmed) { clearNombreCookie(); return; }
   document.cookie = `${IDENTITY_NOMBRE_COOKIE}=${encodeURIComponent(trimmed)}; path=/; max-age=${IDENTITY_NOMBRE_COOKIE_MAX_AGE}; samesite=lax`;
+  emitChange();
 }
 
 export function clearNombreCookie(): void {
   if (typeof document === 'undefined') { return; }
   document.cookie = `${IDENTITY_NOMBRE_COOKIE}=; path=/; max-age=0; samesite=lax`;
+  emitChange();
 }
 
 export function readNombreCookie(): string | null {

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { readNombreCookie } from '@/lib/auth/identity-cookie';
+import { IDENTITY_COOKIE_EVENT, readNombreCookie } from '@/lib/auth/identity-cookie';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
@@ -49,7 +49,20 @@ export function SiteNav() {
       if (!active) { return; }
       setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
     });
-    return () => { active = false; };
+
+    // `IdentityCookieSync` writes the name cookie from an async query that
+    // can resolve just after this first paint — pick that up without a
+    // reload (keeps the "sin parpadeo" promise for a fresh sign-in).
+    function onCookieChange() {
+      if (!active) { return; }
+      setIdentity(prev => ({ ...prev, nombre: readNombreCookie() }));
+    }
+    window.addEventListener(IDENTITY_COOKIE_EVENT, onCookieChange);
+
+    return () => {
+      active = false;
+      window.removeEventListener(IDENTITY_COOKIE_EVENT, onCookieChange);
+    };
   }, []);
 
   return (
