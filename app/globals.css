@@ -1006,6 +1006,93 @@
 }
 
 /*
+ * Top navigation progress bar (FRESCO-482) — `components/layout/top-progress-bar.tsx`
+ * re-mounts this element on every committed client navigation, replaying the
+ * sweep once: a fast fill to full width, then a fade. It is the lightweight
+ * "the route changed" signal; slow transitions are carried by the
+ * `loading.tsx` skeletons and `AuthTransitionOverlay`. 2px, top edge,
+ * non-interactive. Reuses --duration-slow / --duration-fast / --ease-smooth-out
+ * / --color-primary; defines no new motion tokens (DESIGN.md §4.19).
+ */
+.top-progress-bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 2px;
+  transform-origin: left;
+  background: var(--color-primary);
+  z-index: 1100;
+  animation:
+    fresco-top-progress-fill var(--duration-slow) var(--ease-smooth-out) forwards,
+    fresco-top-progress-fade var(--duration-fast) var(--ease-smooth-out) var(--duration-slow)
+      forwards;
+}
+@keyframes fresco-top-progress-fill {
+  from {
+    transform: scaleX(0.02);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes fresco-top-progress-fade {
+  to {
+    opacity: 0;
+  }
+}
+/*
+ * Reduced-motion (AC: "con prefers-reduced-motion la animación se reduce o
+ * desaparece") is covered by the global `*, *::before, *::after` catch-all
+ * further down (`animation-duration: 0.01ms`, `animation-iteration-count: 1`):
+ * the fill keyframe's `forwards` fill-mode lands the bar at full width, the
+ * fade runs instantly, the element is gone. No per-element block needed.
+ */
+
+/*
+ * Auth transition cover (FRESCO-482) — `components/layout/auth-transition-overlay.tsx`.
+ * Fades in over the login/signup card after a successful auth call; its inner
+ * bar loops an indeterminate sweep so the wait for `/menu` reads as "working",
+ * not "frozen". Opacity-only entrance (no layout shift). Reuses --duration-fast
+ * / --duration-slow / --ease-smooth-out / --color-primary; no new motion tokens
+ * (DESIGN.md §4.19).
+ */
+.auth-transition-overlay {
+  animation: fresco-auth-overlay-in var(--duration-fast) var(--ease-smooth-out);
+}
+.auth-transition-overlay__bar {
+  width: min(200px, 60vw);
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+.auth-transition-overlay__bar::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--color-primary);
+  animation: fresco-auth-overlay-sweep 1s var(--ease-smooth-out) infinite;
+}
+@keyframes fresco-auth-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fresco-auth-overlay-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(350%);
+  }
+}
+/*
+ * Reduced-motion: the global catch-all pins `animation-iteration-count: 1`
+ * and `animation-duration: 0.01ms`, so the looping sweep stops after one
+ * near-instant pass and the overlay appears without a fade. The cover still
+ * does its job (hiding the frozen-looking card) — it just does not animate.
+ */
+
+/*
  * List / card enter animation (FRESCO-246) — a new card fades in with a slight
  * upward shift; on first render of a long list the items enter staggered
  * (~--duration-stagger apart). `components/ui/use-list-enter-animation.ts`

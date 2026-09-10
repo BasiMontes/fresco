@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Suspense, useRef, useState } from 'react';
+import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -48,6 +49,11 @@ function LoginPageInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // FRESCO-482: set on a successful sign-in, never cleared — the whole page
+  // unmounts when `/menu` mounts. Keeps the button in its loading state and
+  // mounts a full-screen cover so the 1-3s wait for `/menu` doesn't look
+  // like the click did nothing.
+  const [navigating, setNavigating] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   // FRESCO-190: set when login fails specifically because the account's
   // email was never confirmed — the compounding half of the signup bug,
@@ -91,6 +97,8 @@ function LoginPageInner() {
         if (isAuthError(error) && error.code === 'email_not_confirmed') {
           setUnconfirmedEmail(email);
         }
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
         return;
       }
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
@@ -100,9 +108,15 @@ function LoginPageInner() {
       // ADR-0013: input to PostHog's native retention report — the reason
       // this vendor was chosen over the alternatives.
       captureEvent(POSTHOG_EVENTS.SESSION_STARTED);
+      // FRESCO-482: keep the loading state through the navigation — do NOT
+      // reset `isSubmitting` on the success path. The cover stays up until
+      // `/menu` paints and unmounts this page.
+      setNavigating(true);
       router.push('/menu');
     }
-    finally {
+    catch {
+      // A thrown (vs. returned) error — network failure reaching Supabase.
+      setLoginError(translateAuthError(null));
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -128,6 +142,7 @@ function LoginPageInner() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
+      {navigating && <AuthTransitionOverlay label="Entrando en tu cuenta…" />}
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
       <Card className="p-6 md:p-8">

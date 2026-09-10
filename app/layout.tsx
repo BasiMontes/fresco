@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import type { ThemePreference } from '@/lib/theme/theme';
 import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
+import { Suspense } from 'react';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
+import { TopProgressBar } from '@/components/layout/top-progress-bar';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
@@ -79,6 +81,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${fraunces.variable} ${figtree.variable}`}
     >
       <body>
+        {/* FRESCO-482: sweeps on every committed client navigation. */}
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
         <CookieConsentProvider initialDecision={initialConsentDecision}>
           <PostHogProvider>{children}</PostHogProvider>
           <CookieConsentBanner />

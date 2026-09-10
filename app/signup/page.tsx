@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,11 @@ export default function SignupPage() {
   // session and silently create a disconnected anonymous guest.
   const [signupPendingConfirmation, setSignupPendingConfirmation] = useState(false);
   const [isReassigning, setIsReassigning] = useState(false);
+  // FRESCO-482: set right before any `router.push` to a post-auth screen —
+  // mounts a full-screen cover so the wait for `/menu` / `/onboarding` reads
+  // as "working", not "the button did nothing". Never cleared; the page
+  // unmounts on navigation.
+  const [navigating, setNavigating] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
   // FRESCO-89: Supabase requires the anonymous user's email to be verified
   // before it can be linked (docs: "Convert an anonymous user to a
@@ -141,6 +147,7 @@ export default function SignupPage() {
       // just did. `router.refresh()` busts it, same pattern used elsewhere
       // in this app after server state changes.
       router.refresh();
+      setNavigating(true);
       router.push('/menu');
     }
     catch (err) {
@@ -216,6 +223,7 @@ export default function SignupPage() {
       // FRESCO-204: same Router Cache staleness risk as `handleReassign`
       // above — bust it before returning to /menu.
       router.refresh();
+      setNavigating(true);
       router.push('/menu');
     }
     finally {
@@ -357,6 +365,7 @@ export default function SignupPage() {
       // this brand-new account starts its own onboarding.
       useOnboardingStore.getState().reset();
       // New users always go through onboarding next — see FRESCO-1.
+      setNavigating(true);
       router.push('/onboarding');
     }
     finally {
@@ -367,6 +376,7 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
+      {navigating && <AuthTransitionOverlay label="Preparando tu cuenta…" />}
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
 
       <Card className="p-6 md:p-8">
