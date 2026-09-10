@@ -143,7 +143,11 @@ function LoginPageInner() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       {navigating && <AuthTransitionOverlay label="Entrando en tu cuenta…" />}
-      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
+      {/* FRESCO-481: the green wordmark reads dim on the near-black dark
+          ground — swap to the cream negative mark (the same one the sidebar
+          uses on its green panel). Both rendered, theme toggles visibility. */}
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8 brand-mark--light" priority />
+      <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8 brand-mark--dark" priority />
 
       <Card className="p-6 md:p-8">
         <h1 className="text-h3">Inicia sesión</h1>

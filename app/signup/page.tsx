@@ -377,7 +377,9 @@ export default function SignupPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       {navigating && <AuthTransitionOverlay label="Preparando tu cuenta…" />}
-      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
+      {/* FRESCO-481: cream negative mark on the near-black dark ground. */}
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8 brand-mark--light" priority />
+      <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8 brand-mark--dark" priority />
 
       <Card className="p-6 md:p-8">
         {emailConflict
