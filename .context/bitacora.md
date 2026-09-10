@@ -130,3 +130,13 @@ Historia archivada:
 - Que: components/ui/checkbox.tsx size-5 -> size-6 (20 -> 24px objetivo tactil WCAG 2.5.8), icono Check size-3.5 -> size-4. Cierra un hallazgo de la auditoria Playwright: los checkbox sueltos sin label (rejilla de planificacion del onboarding, lista de la compra) estaban <24px; los envueltos en label (signup, filtros) ya cumplian via el label. PR #325 squash a staging (4ca4b2f).
 - Por que: FRESCO-491, epic FRESCO-484 platform polish. Nota de regression.feature actualizada de "falso positivo" a hallazgo real + resolucion.
 - Siguiente: espejo a main pendiente OK founder (junto con FRESCO-486). Epic 484: queda FRESCO-485 (sidebar colapsable).
+
+## 2026-09-10 - FRESCO-485 sidebar de escritorio colapsable
+- Que: sidebar.tsx se recoge a un rail de iconos w-16 (desde w-64). Toggle PanelLeft arriba junto al logo (44px, aria-expanded). Preferencia en cookie sidebar_collapsed (lib/layout/sidebar-preference.ts, nuevo) leida server-side en app/(app)/layout.tsx -> sin flash. Colapsado: marca sola (public/brand/logo-mark-negativo.svg, nuevo), labels ocultas con aria-label+title, footer = tema vertical + avatar + logout (SidebarAccount gana prop collapsed). transition-[width] 200ms + motion-reduce. Movil sin cambios. PR #326 squash a staging (2b36144).
+- Por que: FRESCO-485, ultima hija de epic FRESCO-484 platform polish. Pantallas de portatil perdian ancho de contenido. master-design-plan.md §4.17 actualizada + §5-U (capacidad nueva, sin mockup, sobre UI viva).
+- Siguiente: espejo a main pendiente OK founder (con 486/491/476). Epic 484: trabajo de desarrollo cerrado; 478/485/486/490/491 en Control de calidad.
+
+## 2026-09-10 - FRESCO-476 web manifest y theme-color
+- Que: app/manifest.ts (nuevo, convencion App Router, servido en /manifest.webmanifest) con name/short_name/description/display standalone/background+theme color #faf3e3. viewport.themeColor en app/layout.tsx con media prefers-color-scheme (claro #faf3e3, oscuro #011101). Iconos PWA 192/512/maskable-512 (public/icons/) + apple-icon 180x180, generados de la marca. PR #327 squash a staging (c0fbd91).
+- Por que: FRESCO-476, epic FRESCO-469 SEO. Lighthouse marcaba PWA/Installable sin manifest. Implementado por subagente en worktree (mordio FRESCO-468, recuperado sin perdida); verificado y PR abierta por la sesion principal.
+- Siguiente: SEO 470-475 y 477 siguen en Listo. Espejo a main pendiente.
