@@ -37,7 +37,10 @@ function emitChange(): void {
 
 export function writeNombreCookie(nombre: string): void {
   if (typeof document === 'undefined') { return; }
-  const trimmed = nombre.trim();
+  // Cap the length — a display name is short, and this keeps a pathological
+  // value well clear of the ~4KB cookie limit (past which the browser drops
+  // it silently).
+  const trimmed = nombre.trim().slice(0, 80);
   if (!trimmed) { clearNombreCookie(); return; }
   document.cookie = `${IDENTITY_NOMBRE_COOKIE}=${encodeURIComponent(trimmed)}; path=/; max-age=${IDENTITY_NOMBRE_COOKIE_MAX_AGE}; samesite=lax`;
   emitChange();

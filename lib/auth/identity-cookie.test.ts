@@ -34,6 +34,11 @@ describe('identity-cookie (FRESCO-486)', () => {
     expect(readNombreCookie()).toBe('José; DROP');
   });
 
+  test('caps an over-long name to keep the cookie well under the size limit', () => {
+    writeNombreCookie('x'.repeat(500));
+    expect(readNombreCookie()).toBe('x'.repeat(80));
+  });
+
   test('writing an empty / whitespace-only name clears the cookie', () => {
     writeNombreCookie('Basi');
     writeNombreCookie('   ');
