@@ -29,6 +29,9 @@ export default antfu({
     '.github/**',
     // Generated files (auto-generated, not manually edited)
     'api/openapi-types.ts',
+    // FRESCO-488: joined from the Edge recipe vocabulary + lib/grocery/retail-packs.ts
+    // by scripts/gen-grocery-dictionary.ts. Drift is caught by lib/grocery/dictionary.test.ts.
+    'lib/grocery/ingredient-dictionary.ts',
     // Supabase Database types written by `bun run db:types` (`supabase gen
     // types typescript`, per package.json). Large machine-generated
     // snake_case file — linting it produces noise and `eslint --fix` would
