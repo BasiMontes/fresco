@@ -435,15 +435,22 @@ export default function OnboardingPage() {
   }
 
   if (!identityResolved) {
+    // FRESCO-479: center the short identity card in the viewport instead of
+    // pinning it to the top with a fixed pad, matching the loading branch
+    // above. min-h-screen (not h-screen) keeps long content scrollable.
     return (
-      <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
+      <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
         <IdentityStep onResolved={() => setIdentityResolved(true)} />
       </div>
     );
   }
 
+  // FRESCO-479: justify-center + min-h-screen self-adjusts — a short step
+  // centers, a long step that overflows the viewport lays out from the top
+  // (no free space to distribute) so the header is never clipped and the
+  // body scrolls normally.
   return (
-    <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
+    <div data-testid="onboardingPage" className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-12">
       <div className={`t-stagger ${wizardShown ? 'is-shown' : ''}`}>
         {/* FRESCO-481: cream negative mark on the near-black dark ground. */}
         <Image
