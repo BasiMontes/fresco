@@ -89,6 +89,31 @@ Característica: Flujo completo de usuario en Fresco
     # re-render, no alcanza a bloquear el mismo tick. Verificado en vivo: 3
     # clicks sincrónicos ahora producen 1 solo POST.
 
+  @login @landing @verificado-manual-2026-09-10
+  # FRESCO-486 (epic FRESCO-484): la nav de la landing mostraba los CTA de
+  # invitado a todo el mundo. NO @automatizado: el estado logueado depende de
+  # `getSession()` en cliente + la cookie `fresco_nombre` que escribe
+  # IdentityCookieSync tras una consulta async — el mismo tipo de cadena
+  # sesión-real + timing que ya se verifica a mano en el resto de flujos de
+  # /login. Verificado en vivo con playwright-cli (cuenta dev): invitado sin
+  # cambios, "Ir a mi menú" con sesión sin nombre, "Hola, {nombre}" cuando la
+  # cookie aterriza (sin recargar, vía evento), el sheet móvil replica el
+  # estado, 0 errores de consola.
+  Escenario: La nav de la landing refleja el estado logueado
+    Dado que un visitante con sesión activa y nombre en su perfil abre la landing
+    Cuando la nav termina de resolver la sesión en cliente
+    Entonces ve "Hola, {nombre}" y un enlace "Ir a mi menú" en lugar de "Ya tengo cuenta" y "Empezar gratis"
+    Y el menú móvil desplegable muestra el mismo estado
+
+  @login @landing @edge-case @verificado-manual-2026-09-10
+  # FRESCO-486: rama sin nombre disponible (perfil sin `nombre`, o cookie aún
+  # no escrita en la primera visita tras iniciar sesión).
+  Escenario: La nav de la landing con sesión pero sin nombre muestra solo el enlace a la app
+    Dado que un visitante con sesión activa y sin nombre en su perfil abre la landing
+    Cuando la nav termina de resolver la sesión en cliente
+    Entonces ve el enlace "Ir a mi menú" sin saludo y sin salto de layout
+    Y un visitante sin sesión sigue viendo la landing exactamente igual que antes
+
   @registro @verificado-manual-2026-07-29 @automatizado
   # Automatizado: tests/steps/signup.steps.ts (playwright-bdd, mock de red — ver comentario en el step file)
   Escenario: Alta de nuevo usuario desde /signup

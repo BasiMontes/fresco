@@ -4,6 +4,7 @@ import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
+import { IdentityCookieSync } from '@/components/auth/identity-cookie-sync';
 import { TopProgressBar } from '@/components/layout/top-progress-bar';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
@@ -85,6 +86,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Suspense fallback={null}>
           <TopProgressBar />
         </Suspense>
+        {/* FRESCO-486: keeps the `fresco_nombre` cookie in sync with the
+            session so the landing nav can greet a returning user. Functional
+            cookie — outside CookieConsentProvider on purpose. */}
+        <IdentityCookieSync />
         <CookieConsentProvider initialDecision={initialConsentDecision}>
           <PostHogProvider>{children}</PostHogProvider>
           <CookieConsentBanner />

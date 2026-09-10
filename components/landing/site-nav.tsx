@@ -3,10 +3,12 @@
 import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { IDENTITY_COOKIE_EVENT, readNombreCookie } from '@/lib/auth/identity-cookie';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
@@ -20,8 +22,48 @@ const NAV_LINKS = [
  * Sticky guest nav. Only this component and `Faq` need client-side state in
  * the landing page — everything else stays server-rendered.
  */
+/**
+ * FRESCO-486: the landing nav shows guest CTAs by default; a visitor with an
+ * active session sees a direct link back to the app instead, plus a greeting
+ * when we know their name.
+ *
+ * `hasSession` is resolved client-side only (never a server session check —
+ * the landing must stay off that critical path, see FRESCO-483) from a local
+ * `getSession()` read (no network). The name comes from the `fresco_nombre`
+ * cookie kept in sync by `IdentityCookieSync`; SSR and first paint render the
+ * guest state, then this reconciles after mount (same pattern as the
+ * `ThemeToggle` beside it).
+ */
+interface NavIdentity {
+  hasSession: boolean
+  nombre: string | null
+}
+
 export function SiteNav() {
   const [isOpen, setIsOpen] = useState(false);
+  const [identity, setIdentity] = useState<NavIdentity>({ hasSession: false, nombre: null });
+
+  useEffect(() => {
+    let active = true;
+    void createClient().auth.getSession().then(({ data: { session } }) => {
+      if (!active) { return; }
+      setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
+    });
+
+    // `IdentityCookieSync` writes the name cookie from an async query that
+    // can resolve just after this first paint — pick that up without a
+    // reload (keeps the "sin parpadeo" promise for a fresh sign-in).
+    function onCookieChange() {
+      if (!active) { return; }
+      setIdentity(prev => ({ ...prev, nombre: readNombreCookie() }));
+    }
+    window.addEventListener(IDENTITY_COOKIE_EVENT, onCookieChange);
+
+    return () => {
+      active = false;
+      window.removeEventListener(IDENTITY_COOKIE_EVENT, onCookieChange);
+    };
+  }, []);
 
   return (
     // FRESCO-169: was `bg-background/95 backdrop-blur` — Tailwind can't
@@ -55,19 +97,45 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/login"
-            // FRESCO-315: 44px comfortable tap target on mobile (was ~26px).
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'min-h-[44px]')}
-          >
-            Ya tengo cuenta
-          </Link>
-          <LandingCtaLink
-            location="site_nav"
-            className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
-          >
-            Empezar gratis
-          </LandingCtaLink>
+          {identity.hasSession
+            ? (
+                <div className="flex items-center gap-2" data-testid="site_nav_authed">
+                  {identity.nombre && (
+                    <span
+                      data-testid="site_nav_greeting"
+                      className="hidden text-label text-tertiary sm:inline"
+                    >
+                      Hola,
+                      {' '}
+                      {identity.nombre}
+                    </span>
+                  )}
+                  <Link
+                    href="/menu"
+                    data-testid="site_nav_app_link"
+                    className={cn(buttonVariants({ size: 'sm' }), 'min-h-[44px]')}
+                  >
+                    Ir a mi menú
+                  </Link>
+                </div>
+              )
+            : (
+                <>
+                  <Link
+                    href="/login"
+                    // FRESCO-315: 44px comfortable tap target on mobile (was ~26px).
+                    className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'min-h-[44px]')}
+                  >
+                    Ya tengo cuenta
+                  </Link>
+                  <LandingCtaLink
+                    location="site_nav"
+                    className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
+                  >
+                    Empezar gratis
+                  </LandingCtaLink>
+                </>
+              )}
           {/* FRESCO-480: inline theme toggle rides with the horizontal nav — at
               `lg` and up. Between `sm` and `lg` it lives in the hamburger sheet. */}
           <ThemeToggle variant="binary" className="hidden lg:inline-flex" />
@@ -98,6 +166,26 @@ export function SiteNav() {
               {link.label}
             </a>
           ))}
+          {/* FRESCO-486: the mobile sheet mirrors the header's logged-in state. */}
+          {identity.hasSession && (
+            <div className="border-b border-border px-4 py-4" data-testid="site_nav_authed_mobile">
+              {identity.nombre && (
+                <p data-testid="site_nav_greeting_mobile" className="mb-1 text-caption text-tertiary">
+                  Hola,
+                  {' '}
+                  {identity.nombre}
+                </p>
+              )}
+              <Link
+                href="/menu"
+                onClick={() => setIsOpen(false)}
+                data-testid="site_nav_app_link_mobile"
+                className="text-body-md font-semibold text-primary"
+              >
+                Ir a mi menú
+              </Link>
+            </div>
+          )}
           <div className="flex items-center justify-between border-b border-border px-4 py-4">
             <span className="text-body-md text-text">Tema</span>
             <ThemeToggle variant="binary" />
