@@ -30,7 +30,8 @@ export function FinalCta() {
           ¿Cómo funciona?
         </a>
       </div>
-      <p className="mt-4 text-caption text-tertiary">
+      {/* FRESCO-478: text-body-sm (13px) — AC bans reading text below 12px. */}
+      <p className="mt-4 text-body-sm text-tertiary">
         7 días de Pro gratis · Sin tarjeta · Cancela cuando quieras
       </p>
     </section>

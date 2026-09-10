@@ -22,20 +22,22 @@ export function LegalLinks() {
 
   return (
     <>
-      <p className="mt-4 text-center text-caption text-tertiary">
-        <button type="button" data-testid="legal_links_terms" onClick={() => openSection('terminos')} className="inline-block py-1.5 underline">
+      {/* FRESCO-478: text-body-sm (13px) not text-caption (11px) — AC bans
+          reading text below 12px; py-3 gives each link a ~44px tap target. */}
+      <p className="mt-4 text-center text-body-sm text-tertiary">
+        <button type="button" data-testid="legal_links_terms" onClick={() => openSection('terminos')} className="inline-block py-3 underline">
           Términos
         </button>
         {' · '}
-        <button type="button" data-testid="legal_links_privacy" onClick={() => openSection('privacidad')} className="inline-block py-1.5 underline">
+        <button type="button" data-testid="legal_links_privacy" onClick={() => openSection('privacidad')} className="inline-block py-3 underline">
           Privacidad
         </button>
         {' · '}
-        <button type="button" data-testid="legal_links_contact" onClick={() => openSection('contacto')} className="inline-block py-1.5 underline">
+        <button type="button" data-testid="legal_links_contact" onClick={() => openSection('contacto')} className="inline-block py-3 underline">
           Contacto
         </button>
         {' · '}
-        <button type="button" data-testid="legal_links_cookies" onClick={() => openSection('cookies')} className="inline-block py-1.5 underline">
+        <button type="button" data-testid="legal_links_cookies" onClick={() => openSection('cookies')} className="inline-block py-3 underline">
           Cookies
         </button>
       </p>

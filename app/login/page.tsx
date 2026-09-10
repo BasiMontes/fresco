@@ -205,7 +205,8 @@ function LoginPageInner() {
         </form>
 
         <p className="mt-3 text-center text-body-sm">
-          <Link href="/forgot-password" data-testid="forgot_password_link" className="text-primary">
+          {/* FRESCO-478: 44px tap target (WCAG 2.5.5). */}
+          <Link href="/forgot-password" data-testid="forgot_password_link" className="inline-flex min-h-[44px] items-center text-primary">
             ¿Olvidaste tu contraseña?
           </Link>
         </p>
@@ -220,7 +221,8 @@ function LoginPageInner() {
           <p data-testid="login_repeated_failures_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-tertiary">
             Varios intentos fallidos seguidos. Si no recuerdas tu contraseña, puedes
             {' '}
-            <Link href="/forgot-password" className="text-primary">
+            {/* FRESCO-478: py-3 widens the tap target inline. */}
+            <Link href="/forgot-password" className="inline-block py-3 text-primary">
               restablecerla
             </Link>
             .
@@ -234,7 +236,8 @@ function LoginPageInner() {
               data-testid="resend_confirmation_button"
               onClick={() => void handleResendConfirmation()}
               disabled={isResendingConfirmation}
-              className="text-body-sm text-primary underline"
+              // FRESCO-478: 44px tap target (WCAG 2.5.5).
+              className="inline-flex min-h-[44px] items-center text-body-sm text-primary underline"
             >
               {isResendingConfirmation ? 'Reenviando…' : 'Reenviar email de confirmación'}
             </button>
@@ -249,7 +252,8 @@ function LoginPageInner() {
         <p className="mt-4 text-center text-body-sm text-tertiary">
           ¿No tienes cuenta?
           {' '}
-          <Link href="/signup" className="text-primary">
+          {/* FRESCO-478: py-3 widens the tap target without breaking the line. */}
+          <Link href="/signup" className="inline-block py-3 text-primary">
             Crea una
           </Link>
         </p>

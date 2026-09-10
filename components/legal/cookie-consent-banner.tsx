@@ -33,7 +33,8 @@ export function CookieConsentBanner() {
             type="button"
             onClick={openSettings}
             data-testid="cookie_consent_banner_policy_link"
-            className="underline"
+            // FRESCO-478: 44px tap target (WCAG 2.5.5).
+            className="inline-flex min-h-[44px] items-center align-middle underline"
           >
             Más información
           </button>

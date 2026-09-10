@@ -73,7 +73,7 @@ export function PasswordInput({
           value={value}
           disabled={disabled}
           onChange={e => onChange(e.target.value)}
-          className="pr-10"
+          className="pr-12"
         />
         <button
           type="button"
@@ -82,7 +82,8 @@ export function PasswordInput({
           aria-pressed={visible}
           onClick={() => setVisible(v => !v)}
           disabled={disabled}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
+          // FRESCO-478: 44x44 tap target (WCAG 2.5.5) — was the bare icon.
+          className="absolute right-1 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-tertiary hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
         >
           {visible
             ? <EyeOff className="size-4" aria-hidden="true" />

@@ -42,12 +42,15 @@ const buttonVariants = cva(
         icon: 'size-9 rounded-full bg-surface text-primary hover:bg-neutral-200',
       },
       size: {
-        sm: 'px-3 py-1',
-        md: 'px-4 py-2',
-        lg: 'px-6 py-3',
+        // FRESCO-478: WCAG 2.5.5 — every button is a >=44px-tall tap target.
+        // The `icon` variant keeps its 36x36 circular footprint (min-h reset
+        // in compoundVariants below).
+        sm: 'min-h-[44px] px-3 py-1',
+        md: 'min-h-[44px] px-4 py-2',
+        lg: 'min-h-[44px] px-6 py-3',
       },
     },
-    compoundVariants: [{ variant: 'icon', className: 'p-0' }],
+    compoundVariants: [{ variant: 'icon', className: 'min-h-0 p-0' }],
     defaultVariants: {
       variant: 'default',
       size: 'md',
