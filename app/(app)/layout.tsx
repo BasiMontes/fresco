@@ -1,7 +1,9 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/layout/sidebar-preference';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -60,5 +62,17 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   // confirmation email) — steer them back instead of rendering the shell.
   if (!profileExists) { redirect('/onboarding'); }
 
-  return <AppShell user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}>{children}</AppShell>;
+  // FRESCO-485: same cookie-read pattern as the theme in the root layout —
+  // the desktop rail renders at the right width on the first byte.
+  const cookieStore = await cookies();
+  const sidebarCollapsed = parseSidebarCollapsed(cookieStore.get(SIDEBAR_COLLAPSED_COOKIE)?.value);
+
+  return (
+    <AppShell
+      user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}
+      sidebarCollapsed={sidebarCollapsed}
+    >
+      {children}
+    </AppShell>
+  );
 }
