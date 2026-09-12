@@ -1,16 +1,20 @@
 'use client';
 
-import type { LegalSection } from '@/components/legal/legal-modal';
 import Image from 'next/image';
-import * as React from 'react';
+import Link from 'next/link';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
-import { LegalModal } from '@/components/legal/legal-modal';
 
-const FOOTER_LINKS: { label: string, section: LegalSection }[] = [
-  { label: 'Privacidad', section: 'privacidad' },
-  { label: 'Términos', section: 'terminos' },
-  { label: 'Política de Cookies', section: 'cookies' },
-  { label: 'Contacto', section: 'contacto' },
+// FRESCO-493: real hrefs to the indexable `/legal/*` + `/sobre-nosotros`
+// routes — these used to be `onClick` triggers for `LegalModal` with no
+// `href`, invisible to a static crawler (the original audit gap). The modal
+// stays wired into `/login` and `/signup`'s own in-flow UX; the footer's job
+// is discoverability, so plain navigation is simpler and sufficient here.
+const FOOTER_LINKS: { label: string, href: string }[] = [
+  { label: 'Privacidad', href: '/legal/privacidad' },
+  { label: 'Términos', href: '/legal/terminos' },
+  { label: 'Política de Cookies', href: '/legal/cookies' },
+  { label: 'Contacto', href: '/legal/contacto' },
+  { label: 'Sobre nosotros', href: '/sobre-nosotros' },
 ];
 
 // FRESCO-315: 44px comfortable tap target (was ~26px) — text unchanged.
@@ -22,16 +26,9 @@ const FOOTER_LINKS: { label: string, section: LegalSection }[] = [
 // larger size only widens the accent-200 contrast margin.
 const FOOTER_LINK_CLASSNAME = 'inline-flex min-h-[44px] items-center text-body-sm text-accent-200';
 
-/** Landing footer — same `LegalModal` FRESCO-51 wired into `/login`/`/signup`, dead `href="#"` links replaced with real triggers. */
+/** Landing footer — legal/about links are real routes (FRESCO-493); `LegalModal` FRESCO-51 stays wired into `/login`/`/signup` for their own in-flow UX. */
 export function SiteFooter() {
-  const [open, setOpen] = React.useState(false);
-  const [section, setSection] = React.useState<LegalSection>('terminos');
   const { openSettings } = useCookieConsent();
-
-  function openSection(value: LegalSection) {
-    setSection(value);
-    setOpen(true);
-  }
 
   return (
     <footer data-brand-ground className="bg-primary px-4 py-10 md:px-8">
@@ -44,16 +41,15 @@ export function SiteFooter() {
           */}
           <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} />
           <div className="flex flex-wrap gap-5">
-            {FOOTER_LINKS.map(({ label, section: linkSection }) => (
-              <button
+            {FOOTER_LINKS.map(({ label, href }) => (
+              <Link
                 key={label}
-                type="button"
-                data-testid={`site_footer_${linkSection}_link`}
-                onClick={() => openSection(linkSection)}
+                href={href}
+                data-testid={`site_footer_${href.replace(/\//g, '_').replace(/^_/, '')}_link`}
                 className={FOOTER_LINK_CLASSNAME}
               >
                 {label}
-              </button>
+              </Link>
             ))}
             <button
               type="button"
@@ -79,8 +75,6 @@ export function SiteFooter() {
           Fresco · Hecho con cariño (y muchas lentejas)
         </p>
       </div>
-
-      <LegalModal open={open} onOpenChange={setOpen} section={section} />
     </footer>
   );
 }
