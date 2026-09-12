@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 
 import { describe, expect, test } from 'bun:test';
 
+import { sanitizedGitEnv } from './git-env.ts';
 import {
   buildPbiMigrationPrompt,
   buildPbiPromptFileContent,
@@ -131,7 +132,9 @@ describe('the afterApply hook', () => {
   // the eight parity rows. The hook now writes the recipe and reports one
   // fact; the terminal gets nothing from it.
   function git(root: string, args: string[]): void {
-    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+    // FRESCO-468: sanitizedGitEnv strips GIT_DIR/GIT_WORK_TREE so this never
+    // redirects onto the real repo when run from a linked worktree.
+    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: sanitizedGitEnv() });
     if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
   }
   function write(root: string, rel: string, body: string): void {
