@@ -40,7 +40,7 @@ export function AppShell({ children, user, sidebarCollapsed }: AppShellProps) {
         sidebar and bottom tab bar stay put, so there is no layout shift and
         the user keeps a fixed spatial anchor.
       */}
-      <main className="min-w-0 flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">
+      <main id="main" className="min-w-0 flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">
         <PageTransition>{children}</PageTransition>
       </main>
       <BottomTabBar />
