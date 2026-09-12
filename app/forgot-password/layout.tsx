@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 
 // FRESCO-315: `<main>` landmark for the auth route (the public pages had none).
 export default function ForgotPasswordLayout({ children }: { children: React.ReactNode }) {
-  return <main>{children}</main>;
+  return <main id="main">{children}</main>;
 }

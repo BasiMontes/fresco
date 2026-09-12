@@ -24,7 +24,7 @@ export default function GuestLandingPage() {
       {/* FRESCO-315: `<main>` wraps only the content sections — SiteNav
           (`<header>`) and SiteFooter (`<footer>`) stay siblings so the
           landmark structure is header / main / contentinfo. */}
-      <main>
+      <main id="main">
         {/* Hero is above the fold — no scroll reveal. FRESCO-446: every
             section below gets a gentle settle as it enters the viewport
             (disabled under prefers-reduced-motion). */}

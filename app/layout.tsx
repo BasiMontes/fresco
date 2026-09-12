@@ -96,6 +96,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${fraunces.variable} ${figtree.variable}`}
     >
       <body>
+        {/* FRESCO-495 (WCAG 2.4.1): first focusable element site-wide. Hidden
+            until it receives keyboard focus, then jumps to `#main` — every
+            page landmark below carries that id. */}
+        <a
+          href="#main"
+          data-testid="skip_to_content_link"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-body-sm focus:text-on-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          Saltar al contenido
+        </a>
         {/* FRESCO-482: sweeps on every committed client navigation. */}
         <Suspense fallback={null}>
           <TopProgressBar />
