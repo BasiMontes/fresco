@@ -10,6 +10,7 @@ import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
+import { canonicalUrl, getMetadataBase } from '@/lib/seo/canonical';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
 import './globals.css';
@@ -45,9 +46,21 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
+  // FRESCO-471: convenience base for any URL-based metadata field below that
+  // provides a relative path — canonical URLs themselves are built as
+  // absolute strings via `canonicalUrl()` (see `lib/seo/canonical.ts`) so
+  // they don't depend on Next's metadataBase resolution/inheritance.
+  metadataBase: getMetadataBase(),
   title: 'Fresco — Menús semanales que aprenden de lo que realmente cocinas',
   description:
     'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
+  // FRESCO-471: self-referencing canonical for the landing route ("/").
+  // Every other route overrides this explicitly in its own metadata export
+  // (Next's metadata merge replaces `alternates` wholesale, not per-key —
+  // an uncovered route would otherwise silently inherit this one).
+  alternates: {
+    canonical: canonicalUrl('/'),
+  },
 };
 
 // FRESCO-476 (SEO): `<meta name="theme-color">` for the mobile browser UI,
