@@ -19,7 +19,8 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { clientEnv } from '@/lib/env';
-import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { getDistinctId } from '@/lib/posthog/distinct-id';
+import { aliasUser, captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 

@@ -67,7 +67,7 @@ describe('PostHogProvider — consent gate', () => {
     initSpy.mockRestore();
   });
 
-  test('calls posthog.init once consent is accepted', () => {
+  test('calls posthog.init once consent is accepted', async () => {
     const initSpy = spyOn(posthog, 'init');
 
     renderWithProviders(
@@ -78,6 +78,9 @@ describe('PostHogProvider — consent gate', () => {
       </CookieConsentProvider>,
     );
 
+    // FRESCO-496: `posthog.init()` now fires inside a lazy
+    // `import('posthog-js')`'s `.then()` — flush the microtask queue first.
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(initSpy).toHaveBeenCalled();
     initSpy.mockRestore();
   });
@@ -102,6 +105,9 @@ describe('PostHogProvider — consent gate', () => {
     await user.click(screen.getByTestId('test_accept'));
     await user.click(screen.getByTestId('test_reject'));
     await user.click(screen.getByTestId('test_accept'));
+    // FRESCO-496: opt_in_capturing() now fires inside a lazy
+    // `import('posthog-js')`'s `.then()` — flush the microtask queue first.
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(optInSpy).toHaveBeenCalled();
     optInSpy.mockRestore();
