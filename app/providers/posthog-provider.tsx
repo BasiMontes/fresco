@@ -3,7 +3,6 @@
 import type { PlanUsuario } from '@schemas';
 import type { User } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
-import posthog from 'posthog-js';
 import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
@@ -13,6 +12,19 @@ import { createClient } from '@/lib/supabase/client';
 // Module-level, not component state: React StrictMode double-invokes effects
 // in dev, and posthog.init() is not itself idempotent-safe to call twice.
 let initialized = false;
+
+// FRESCO-496: lazy, cached-after-first-resolution import of posthog-js.
+// This provider wraps every route via `app/layout.tsx`, so a static
+// `import posthog from 'posthog-js'` here shipped the whole SDK in the
+// initial JS of every page even though `posthog.init()` never runs until
+// cookie consent is `'accepted'` — never true on a fresh/anonymous visit,
+// which is exactly what a Lighthouse-style audit measures.
+let posthogModulePromise: Promise<typeof import('posthog-js')> | null = null;
+
+async function loadPosthog(): Promise<typeof import('posthog-js')> {
+  posthogModulePromise ??= import('posthog-js');
+  return posthogModulePromise;
+}
 
 /**
  * ADR-0013: the app's first client provider (`app/layout.tsx` had none
@@ -56,38 +68,42 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!initialized) {
-      posthog.init(key, {
-        // FRESCO-366 / A4-B4: route ingestion through the same-origin
-        // `/ingest` reverse proxy (Next rewrites in `next.config.mjs`) so
-        // ad-blockers that filter `*.posthog.com` don't silently drop
-        // 15-30% of client events. `ui_host` keeps "open in PostHog" links
-        // and the toolbar pointing at the real app host.
-        api_host: '/ingest',
-        ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST?.replace('.i.posthog.com', '.posthog.com'),
-        // FRESCO-240: PostHog's default DOM-click autocapture would scrape
-        // allergen/diet/health-adjacent UI text (e.g. "Vegano", "Sin
-        // gluten", "Halal" tags in app/onboarding/page.tsx) outside the
-        // reviewed event catalog in lib/posthog/event-names.ts — every event
-        // this app emits goes through that catalog deliberately, so
-        // autocapture is off. Pageview capture stays on default (URLs only,
-        // no DOM content) — the landing→signup→onboarding funnel builds on
-        // those plus the explicit events.
-        autocapture: false,
-      });
-      initialized = true;
-    }
-    else {
-      // A re-accept after an earlier withdrawal: `initialized` is already
-      // true so `init()` above is skipped, but the SDK is still internally
-      // opted-out from the `opt_out_capturing()` call in
-      // cookie-consent-context.tsx's withdrawal path — nothing else ever
-      // reverses that. Found in review (FRESCO-428): without this, capture
-      // silently stays off for the rest of the session after a
-      // reject-then-accept cycle. Idempotent when there was nothing to
-      // reverse (first-ever accept never reaches this branch).
-      posthog.opt_in_capturing();
-    }
+    loadPosthog().then(({ default: posthog }) => {
+      if (!initialized) {
+        posthog.init(key, {
+          // FRESCO-366 / A4-B4: route ingestion through the same-origin
+          // `/ingest` reverse proxy (Next rewrites in `next.config.mjs`) so
+          // ad-blockers that filter `*.posthog.com` don't silently drop
+          // 15-30% of client events. `ui_host` keeps "open in PostHog" links
+          // and the toolbar pointing at the real app host.
+          api_host: '/ingest',
+          ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST?.replace('.i.posthog.com', '.posthog.com'),
+          // FRESCO-240: PostHog's default DOM-click autocapture would scrape
+          // allergen/diet/health-adjacent UI text (e.g. "Vegano", "Sin
+          // gluten", "Halal" tags in app/onboarding/page.tsx) outside the
+          // reviewed event catalog in lib/posthog/event-names.ts — every event
+          // this app emits goes through that catalog deliberately, so
+          // autocapture is off. Pageview capture stays on default (URLs only,
+          // no DOM content) — the landing→signup→onboarding funnel builds on
+          // those plus the explicit events.
+          autocapture: false,
+        });
+        initialized = true;
+      }
+      else {
+        // A re-accept after an earlier withdrawal: `initialized` is already
+        // true so `init()` above is skipped, but the SDK is still internally
+        // opted-out from the `opt_out_capturing()` call in
+        // cookie-consent-context.tsx's withdrawal path — nothing else ever
+        // reverses that. Found in review (FRESCO-428): without this, capture
+        // silently stays off for the rest of the session after a
+        // reject-then-accept cycle. Idempotent when there was nothing to
+        // reverse (first-ever accept never reaches this branch).
+        posthog.opt_in_capturing();
+      }
+    }).catch((error) => {
+      console.error('[posthog-provider] failed to load posthog-js', error);
+    });
 
     const client = createClient();
 

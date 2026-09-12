@@ -2,9 +2,21 @@
 
 import type { ReactNode } from 'react';
 import type { CookieConsentDecision } from '@/lib/consent/cookie-consent';
-import posthog from 'posthog-js';
 import { createContext, use, useCallback, useMemo, useState } from 'react';
 import { clearPostHogStorage, writeCookieConsent } from '@/lib/consent/cookie-consent';
+
+// FRESCO-496: this provider wraps every route (`app/layout.tsx`), so a
+// static `import posthog from 'posthog-js'` here shipped the whole SDK in
+// the initial JS of every page even though the block below only runs on an
+// explicit withdrawal after a prior accept — never on first paint. Lazy,
+// cached-after-first-resolution import instead, same pattern as
+// `app/providers/posthog-provider.tsx` and `lib/posthog/events.ts`.
+let posthogModulePromise: Promise<typeof import('posthog-js')> | null = null;
+
+async function loadPosthog(): Promise<typeof import('posthog-js')> {
+  posthogModulePromise ??= import('posthog-js');
+  return posthogModulePromise;
+}
 
 interface CookieConsentContextValue {
   /** `null` = no decision yet — the banner should be visible. */
@@ -64,8 +76,15 @@ export function CookieConsentProvider({ children, initialDecision }: CookieConse
     if (wasAccepted && next === 'rejected') {
       const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
       if (key) {
-        posthog.opt_out_capturing();
-        clearPostHogStorage(key);
+        // Both calls stay inside the same `.then()` so their relative order
+        // (opt-out THEN clear) is preserved regardless of when posthog-js
+        // resolves — see the comment above for why that order matters.
+        loadPosthog().then(({ default: posthog }) => {
+          posthog.opt_out_capturing();
+          clearPostHogStorage(key);
+        }).catch((error) => {
+          console.error('[cookie-consent-context] failed to load posthog-js', error);
+        });
       }
     }
   }, [decision]);
