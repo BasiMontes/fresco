@@ -31,11 +31,23 @@ import './globals.css';
 // button labels. Exposed as CSS variables consumed by tailwind.config.ts's
 // `fontFamily.heading` / `fontFamily.sans` and the split `h1,h2` / `h3..h6`
 // rules in globals.css.
+// FRESCO-496: `display: 'optional'` (not the default `'swap'`) — this is the
+// large, above-the-fold h1/h2 display face on the guest landing page, and
+// next/font's automatic fallback-metric override (ascent/descent/size-adjust)
+// is computed from the font file's default named instance, not this
+// component's aggressively customized SOFT/WONK/opsz axis values, so a swap
+// at this size can still measurably shift layout on a slow mobile connection
+// (web.dev's own CLS guide recommends `optional` to eliminate font-swap CLS
+// outright). `optional` means the browser keeps the fallback for the rest of
+// the page's lifetime if Fraunces isn't cached/fast enough — an acceptable
+// trade for a decorative headline face, unlike Figtree's body copy below,
+// which keeps the default `swap` (small font size, so a swap there is a
+// far smaller CLS contributor, and swap avoids invisible text on body copy).
 const fraunces = Fraunces({
   subsets: ['latin'],
   axes: ['SOFT', 'WONK', 'opsz'],
   variable: '--font-heading',
-  display: 'swap',
+  display: 'optional',
 });
 
 const figtree = Figtree({
