@@ -21,6 +21,7 @@ import * as path from 'node:path';
 import pc from 'picocolors';
 import { parseEnvFile } from './install';
 import { checkAgentCompatibility, COMMAND_ALIAS_MANIFEST, repairAgentSurfaces, SKILLS_ALIAS_DEFERRED_MARKER } from './lib/agent-compatibility.ts';
+import { sanitizedGitEnv } from './lib/git-env';
 import * as tui from './lib/tui';
 import {
   cleanupTempDir,
@@ -943,7 +944,7 @@ const ALIAS_DEFERRED_NEXT_STEP = 'Siguiente: commit de la migración, luego bun 
 function migrationCommitPending(cwd: string): boolean {
   if (!fs.existsSync(path.join(cwd, SKILLS_ALIAS_DEFERRED_MARKER))) { return false; }
   try {
-    return execSync(`git -C "${cwd}" status --porcelain -- .claude/skills`, { encoding: 'utf8' }).trim() !== '';
+    return execSync(`git -C "${cwd}" status --porcelain -- .claude/skills`, { encoding: 'utf8', env: sanitizedGitEnv() }).trim() !== '';
   }
   catch {
     return false;
