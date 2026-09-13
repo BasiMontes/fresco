@@ -552,7 +552,11 @@ export default function SignupPage() {
                     <p className="mt-4 text-center text-body-sm text-tertiary">
                       ¿Ya tienes cuenta?
                       {' '}
-                      <Link href="/login" className="text-primary">
+                      {/* FRESCO-499: underline distinguishes this inline link from
+                          the surrounding text without relying on color alone
+                          (axe link-in-text-block), matching the underline already
+                          used for the Términos/Privacidad in-text links below. */}
+                      <Link href="/login" className="text-primary underline">
                         Inicia sesión
                       </Link>
                     </p>

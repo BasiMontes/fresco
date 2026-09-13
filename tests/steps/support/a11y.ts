@@ -6,10 +6,7 @@ import AxeBuilder from '@axe-core/playwright';
  * FRESCO-466. Rules already known to fail, tracked by a follow-up ticket
  * each — never add one here without a ticket. Emptied as tickets close.
  */
-export const KNOWN_A11Y_ALLOWLIST: string[] = [
-  // FRESCO-499: one inline link on /signup not distinguishable without color.
-  'link-in-text-block',
-];
+export const KNOWN_A11Y_ALLOWLIST: string[] = [];
 
 const BLOCKING_IMPACTS = new Set(['serious', 'critical']);
 
