@@ -46,8 +46,13 @@ const figtree = Figtree({
   variable: '--font-body',
 });
 
+// FRESCO-475: shortened to fit within Google's ~60-char display budget
+// (the previous 65-char title truncated in results) and reworked around the
+// primary target keyword ("planificador de menús semanales") agreed with
+// the PO. Only the landing ("/") actually renders this default — every other
+// route already overrides `metadata.title` in its own layout.
 export const metadata: Metadata = {
-  title: 'Fresco — Menús semanales que aprenden de lo que realmente cocinas',
+  title: 'Fresco — Planificador de menús semanales',
   description:
     'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
 };
