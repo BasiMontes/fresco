@@ -46,10 +46,53 @@ const figtree = Figtree({
   variable: '--font-body',
 });
 
+// FRESCO-470: base-URL branching mirrors `resolveBaseUrl()` in `app/robots.ts`
+// / `app/sitemap.ts` (kept standalone, no cross-import, per that pair's
+// documented no-domain-coupling convention) — `metadataBase` and the
+// `openGraph.url` below need the SAME per-environment domain those two
+// already resolve, so a staging PR preview's shared link points at
+// `fresco-pre`/`fresco-dev`, not at production.
+function resolveBaseUrl(): string {
+  if (process.env.VERCEL_ENV === 'production') {
+    return 'https://fresco-pro.vercel.app';
+  }
+  if (process.env.VERCEL_ENV === 'preview') {
+    return process.env.VERCEL_GIT_COMMIT_REF === 'dev'
+      ? 'https://fresco-dev.vercel.app'
+      : 'https://fresco-pre.vercel.app';
+  }
+  return 'http://localhost:3000';
+}
+
+const TITLE = 'Fresco — Menús semanales que aprenden de lo que realmente cocinas';
+const DESCRIPTION
+  = 'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.';
+
+// FRESCO-470: without `metadataBase`, the relative `opengraph-image.tsx`
+// route below can't resolve into the absolute `og:image` URL that
+// WhatsApp/LinkedIn/Facebook/X require — Next.js only emits a warning and
+// falls back to `http://localhost:3000` in that case.
 export const metadata: Metadata = {
-  title: 'Fresco — Menús semanales que aprenden de lo que realmente cocinas',
-  description:
-    'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
+  metadataBase: new URL(resolveBaseUrl()),
+  title: TITLE,
+  description: DESCRIPTION,
+  // Public marketing pages (login, signup, etc.) that don't declare their own
+  // `openGraph`/`twitter` block inherit this one wholesale — coherent branded
+  // sharing cards everywhere, with per-route override still available to any
+  // page that sets its own `openGraph`/`twitter` metadata.
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+    siteName: 'Fresco',
+    locale: 'es_ES',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 // FRESCO-476 (SEO): `<meta name="theme-color">` for the mobile browser UI,
