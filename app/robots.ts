@@ -12,6 +12,11 @@ import type { MetadataRoute } from 'next';
  *
  * FRESCO-455: base-URL branching mirrors `app/sitemap.ts` (and
  * `resolveAppUrl()` in `lib/stripe.ts`) so crawlers get a `Sitemap:` pointer.
+ *
+ * FRESCO-473: `/auth/confirm` is a Route Handler (a one-shot Supabase
+ * email-link redirect, never renders HTML) — it can't carry a `<meta
+ * name="robots">` tag like the other noindexed routes, so the disallow lives
+ * here instead.
  */
 function resolveBaseUrl(): string {
   if (process.env.VERCEL_ENV === 'production') {
@@ -30,7 +35,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: '/qa',
+      disallow: ['/qa', '/auth/confirm'],
     },
     sitemap: `${resolveBaseUrl()}/sitemap.xml`,
   };
