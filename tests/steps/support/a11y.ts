@@ -13,8 +13,6 @@ export const KNOWN_A11Y_ALLOWLIST: string[] = [
   // FRESCO-498: ~40 form elements (shopping-list item checkboxes) without an
   // accessible label.
   'label',
-  // FRESCO-499: one inline link on /signup not distinguishable without color.
-  'link-in-text-block',
 ];
 
 const BLOCKING_IMPACTS = new Set(['serious', 'critical']);
