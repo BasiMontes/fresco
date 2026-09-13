@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
+import { sanitizedGitEnv } from './git-env.ts';
 import {
   detectProtectedDrift,
   mergeProtectedWatchlist,
@@ -31,7 +32,9 @@ function write(root: string, relativePath: string, contents: string): void {
 }
 
 function git(root: string, args: string[]): string {
-  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  // FRESCO-468: sanitizedGitEnv strips GIT_DIR/GIT_WORK_TREE so this never
+  // redirects onto the real repo when run from a linked worktree.
+  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: sanitizedGitEnv() });
   if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
   return res.stdout;
 }

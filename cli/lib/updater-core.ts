@@ -54,6 +54,7 @@ import * as os from 'node:os';
 
 import * as path from 'node:path';
 
+import { sanitizedGitEnv } from './git-env';
 import { applyIgnoreAppend, computeBlobSha, detectIgnoreDelta } from './updater-ignore';
 import { applyPackageJsonAppend, applyPackageJsonOverride, detectPackageJsonDelta } from './updater-package';
 import { ComponentOverlapError, CorruptStateError } from './updater-types';
@@ -156,7 +157,7 @@ export function cleanupTempDir(tempDir: string): void {
 export function detectGitVersion(): GitVersion {
   let raw: string;
   try {
-    raw = execSync('git --version', { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+    raw = execSync('git --version', { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() }).toString().trim();
   }
   catch {
     throw new Error('GIT_NOT_FOUND');
@@ -188,7 +189,7 @@ export function gitVersionMeetsMin(v: GitVersion): boolean {
  */
 export function resolveTemplateHeadSha(repoDir: string): string {
   try {
-    return execSync(`git -C "${repoDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'] })
+    return execSync(`git -C "${repoDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() })
       .toString()
       .trim();
   }
@@ -523,7 +524,7 @@ export function classifyFile(
     try {
       templateOldBytes = execSync(
         `git -C "${templateDir}" show ${entry.templateOldSha}`,
-        { stdio: ['pipe', 'pipe', 'pipe'] },
+        { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
       ) as unknown as Buffer;
     }
     catch {
@@ -578,7 +579,7 @@ export function computeDelta(
   // Get current HEAD SHA of the template clone
   let headSha: string;
   try {
-    headSha = execSync(`git -C "${templateDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'] })
+    headSha = execSync(`git -C "${templateDir}" rev-parse HEAD`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() })
       .toString()
       .trim();
   }
@@ -608,7 +609,7 @@ export function computeDelta(
     try {
       nameStatusOutput = execSync(
         `git -C "${templateDir}" log ${componentSha}..HEAD --name-status --no-renames --diff-filter=ADM -- ${pathArgs}`,
-        { stdio: ['pipe', 'pipe', 'pipe'] },
+        { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
       ).toString();
     }
     catch {
@@ -621,7 +622,7 @@ export function computeDelta(
     try {
       numstatOutput = execSync(
         `git -C "${templateDir}" diff --numstat ${componentSha}..HEAD -- ${pathArgs}`,
-        { stdio: ['pipe', 'pipe', 'pipe'] },
+        { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
       ).toString();
     }
     catch {
@@ -681,7 +682,7 @@ export function computeDelta(
         try {
           const lsOld = execSync(
             `git -C "${templateDir}" ls-tree ${componentSha} -- "${filePath}"`,
-            { stdio: ['pipe', 'pipe', 'pipe'] },
+            { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
           ).toString().trim();
           const blobMatch = /\bblob\s+([0-9a-f]{40})\b/.exec(lsOld);
           templateOldSha = blobMatch ? blobMatch[1] : null;
@@ -697,7 +698,7 @@ export function computeDelta(
         try {
           const lsNew = execSync(
             `git -C "${templateDir}" ls-tree HEAD -- "${filePath}"`,
-            { stdio: ['pipe', 'pipe', 'pipe'] },
+            { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
           ).toString().trim();
           const blobMatch = /\bblob\s+([0-9a-f]{40})\b/.exec(lsNew);
           templateNewSha = blobMatch ? blobMatch[1] : null;
@@ -766,7 +767,7 @@ function batchUpstreamShas(templateDir: string, pathspecs: string[]): Map<string
     const args = pathspecs.map(p => `"${p}"`).join(' ');
     const out = execSync(
       `git -C "${templateDir}" ls-tree -r HEAD -- ${args}`,
-      { stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 1024 * 1024 * 64 },
+      { stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 1024 * 1024 * 64, env: sanitizedGitEnv() },
     ).toString();
     for (const line of out.split('\n')) {
       // <mode> blob <sha>\t<path>
@@ -794,6 +795,7 @@ function batchLocalShas(repoRoot: string, relPaths: string[]): Map<string, strin
       input: relPaths.join('\n'),
       stdio: ['pipe', 'pipe', 'pipe'],
       maxBuffer: 1024 * 1024 * 64,
+      env: sanitizedGitEnv(),
     }).toString().trim();
     const shas = out.split('\n');
     relPaths.forEach((p, i) => {
@@ -1297,7 +1299,7 @@ export function detectLocalEdits(
     let changedUpstream: Set<string>;
     try {
       const pathArgs = component.paths.map(p => `"${p}"`).join(' ');
-      const out = execSync(`git -C "${templateDir}" diff --name-only ${cursor} HEAD -- ${pathArgs}`, { stdio: ['pipe', 'pipe', 'pipe'] }).toString();
+      const out = execSync(`git -C "${templateDir}" diff --name-only ${cursor} HEAD -- ${pathArgs}`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() }).toString();
       changedUpstream = new Set(out.split('\n').map(l => l.trim()).filter(l => l !== ''));
     }
     catch {
@@ -1524,7 +1526,7 @@ export async function applyResolution(
         // Write raw upstream bytes (not normalized)
         const templateBytes = execSync(
           `git -C "${templateDir}" show ${entry.templateNewSha}`,
-          { stdio: ['pipe', 'pipe', 'pipe'] },
+          { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
         );
         fs.mkdirSync(path.join(localPath, '..'), { recursive: true });
         fs.writeFileSync(localPath, templateBytes);
@@ -1573,7 +1575,7 @@ export function renderTemplateDiff(entry: DeltaEntry, repoDir: string): string {
     try {
       return execSync(
         `git -C "${repoDir}" show ${entry.templateNewSha}`,
-        { stdio: ['pipe', 'pipe', 'pipe'] },
+        { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
       ).toString();
     }
     catch {
@@ -1588,7 +1590,7 @@ export function renderTemplateDiff(entry: DeltaEntry, repoDir: string): string {
   try {
     return execSync(
       `git -C "${repoDir}" diff --color=always ${oldRef} ${newRef}`,
-      { stdio: ['pipe', 'pipe', 'pipe'] },
+      { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
     ).toString();
   }
   catch {
@@ -1617,14 +1619,14 @@ export function renderLocalDiff(entry: DeltaEntry, repoDir: string, localRepoRoo
   try {
     const blobBytes = execSync(
       `git -C "${repoDir}" show ${entry.templateOldSha}`,
-      { stdio: ['pipe', 'pipe', 'pipe'] },
+      { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
     );
     fs.writeFileSync(tmpPath, blobBytes);
 
     try {
       return execSync(
         `git diff --no-index --color=always "${tmpPath}" "${localPath}"`,
-        { stdio: ['pipe', 'pipe', 'pipe'] },
+        { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
       ).toString();
     }
     catch (diffErr) {
@@ -1970,10 +1972,10 @@ export async function partialCloneTemplate(
   cloneTemplate(templateRepo, dest, ['--no-checkout'], !isLocalTemplateSource(templateRepo));
 
   try {
-    execSync(`git -C "${dest}" sparse-checkout init --no-cone`, { stdio: ['pipe', 'pipe', 'pipe'] });
+    execSync(`git -C "${dest}" sparse-checkout init --no-cone`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() });
     const patterns = allowedPaths.map(p => `"${p}"`).join(' ');
-    execSync(`git -C "${dest}" sparse-checkout set ${patterns}`, { stdio: ['pipe', 'pipe', 'pipe'] });
-    execSync(`git -C "${dest}" checkout`, { stdio: ['pipe', 'pipe', 'pipe'] });
+    execSync(`git -C "${dest}" sparse-checkout set ${patterns}`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() });
+    execSync(`git -C "${dest}" checkout`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() });
   }
   catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -2002,8 +2004,8 @@ export function prefetchedUpstreamDir(env: NodeJS.ProcessEnv = process.env): str
  */
 export function widenSparseCheckout(dest: string, allowedPaths: string[]): void {
   const patterns = allowedPaths.map(p => `"${p}"`).join(' ');
-  execSync(`git -C "${dest}" sparse-checkout set ${patterns}`, { stdio: ['pipe', 'pipe', 'pipe'] });
-  execSync(`git -C "${dest}" checkout`, { stdio: ['pipe', 'pipe', 'pipe'] });
+  execSync(`git -C "${dest}" sparse-checkout set ${patterns}`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() });
+  execSync(`git -C "${dest}" checkout`, { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() });
 }
 
 /**
@@ -2053,7 +2055,7 @@ function cloneTemplate(templateRepo: string, dest: string, gitArgs: string[], vi
     ? `gh repo clone ${templateRepo} "${dest}" -- ${[...filter, ...gitArgs, '--quiet'].join(' ')}`
     : `git clone ${[...gitArgs, '--quiet'].join(' ')} "${templateRepo.replace(/^file:\/\//, '')}" "${dest}"`;
   try {
-    execSync(command, { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 });
+    execSync(command, { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000, env: sanitizedGitEnv() });
   }
   catch (error) {
     const err = error as { killed?: boolean };
@@ -2118,7 +2120,7 @@ function bootstrapEntry(component: string, relPath: string, templateDir: string)
   try {
     const lsOutput = execSync(
       `git -C "${templateDir}" ls-tree HEAD -- "${relPath}"`,
-      { stdio: ['pipe', 'pipe', 'pipe'] },
+      { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
     ).toString().trim();
     if (lsOutput) {
       const parts = lsOutput.split(/\s+/);
@@ -2132,7 +2134,7 @@ function bootstrapEntry(component: string, relPath: string, templateDir: string)
     try {
       const blob = execSync(
         `git -C "${templateDir}" show ${templateNewSha}`,
-        { stdio: ['pipe', 'pipe', 'pipe'] },
+        { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
       ).toString();
       added = blob.length === 0 ? 0 : blob.split('\n').length - (blob.endsWith('\n') ? 1 : 0);
     }
@@ -2301,7 +2303,7 @@ export async function runUpdate(
       // `-uall` lists untracked FILES, not a collapsed `?? dir/` entry, so a
       // directory the updater created can be matched file by file against the
       // exemptions instead of hiding (or exposing) everything beneath it.
-      return execSync(`git -C "${repoRoot}" status --porcelain --untracked-files=all`, { encoding: 'utf8' }).trimEnd();
+      return execSync(`git -C "${repoRoot}" status --porcelain --untracked-files=all`, { encoding: 'utf8', env: sanitizedGitEnv() }).trimEnd();
     }
     catch {
       return ''; // not a git repo / git unavailable — nothing to guard against
@@ -2491,7 +2493,7 @@ export async function runUpdate(
         try {
           upstreamSha = execSync(
             `git -C "${templateDir}" hash-object "${relPath}"`,
-            { stdio: ['pipe', 'pipe', 'pipe'] },
+            { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
           ).toString().trim();
         }
         catch {
@@ -2502,7 +2504,7 @@ export async function runUpdate(
           try {
             localSha = execSync(
               `git hash-object "${localPath}"`,
-              { stdio: ['pipe', 'pipe', 'pipe'] },
+              { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
             ).toString().trim();
           }
           catch {
