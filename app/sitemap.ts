@@ -7,6 +7,14 @@ import type { MetadataRoute } from 'next';
  * import) to match `app/robots.ts`'s existing no-domain-coupling convention.
  * Only the indexable public routes are listed; every `(app)/` route sits
  * behind auth and `/qa` is a testability guide, not marketing content.
+ *
+ * FRESCO-473: `/login` and `/signup` were dropped from this list. Both are
+ * functional gates (a bare form, no unique marketing copy) that compete with
+ * "/" for the same keywords — exactly the thin/duplicate-content risk this
+ * ticket calls out. They stay crawlable (no `noindex`, still linked from the
+ * landing page) so a visitor or a direct search can still land on them; they
+ * just no longer get a sitemap priority hint, which is reserved for pages
+ * with real standalone content.
  */
 function resolveBaseUrl(): string {
   if (process.env.VERCEL_ENV === 'production') {
@@ -28,16 +36,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: baseUrl,
       changeFrequency: 'weekly',
       priority: 1,
-    },
-    {
-      url: `${baseUrl}/login`,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/signup`,
-      changeFrequency: 'monthly',
-      priority: 0.5,
     },
   ];
 }
