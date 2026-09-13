@@ -1,4 +1,5 @@
 import { Faq } from '@/components/landing/faq';
+import { FAQS } from '@/components/landing/faq-data';
 import { FinalCta } from '@/components/landing/final-cta';
 import { Hero } from '@/components/landing/hero';
 import { HowItWorks } from '@/components/landing/how-it-works';
@@ -8,7 +9,9 @@ import { PainPoints } from '@/components/landing/pain-points';
 import { Pricing } from '@/components/landing/pricing';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
+import { JsonLd } from '@/components/seo/json-ld';
 import { Reveal } from '@/components/ui/reveal';
+import { faqJsonLd, softwareApplicationJsonLd } from '@/lib/seo/structured-data';
 
 /**
  * Guest landing ("/") — EPIC-FRESCO-6 (Guest Mode). Content and structure
@@ -20,6 +23,11 @@ import { Reveal } from '@/components/ui/reveal';
 export default function GuestLandingPage() {
   return (
     <div className="min-h-screen bg-background">
+      {/* FRESCO-472: SoftwareApplication + FAQPage JSON-LD. The FAQPage block
+          is derived from the same `FAQS` array the visible accordion below
+          maps over, so it can never drift from the rendered content. */}
+      <JsonLd data={softwareApplicationJsonLd()} />
+      <JsonLd data={faqJsonLd(FAQS)} />
       <SiteNav />
       {/* FRESCO-315: `<main>` wraps only the content sections — SiteNav
           (`<header>`) and SiteFooter (`<footer>`) stay siblings so the

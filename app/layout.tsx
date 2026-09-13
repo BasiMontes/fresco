@@ -9,7 +9,9 @@ import { TopProgressBar } from '@/components/layout/top-progress-bar';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
+import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
+import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/structured-data';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
 import './globals.css';
@@ -95,6 +97,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       data-theme={theme === 'system' ? undefined : theme}
       className={`${fraunces.variable} ${figtree.variable}`}
     >
+      <head>
+        {/* FRESCO-472: Organization + WebSite JSON-LD, site-wide. */}
+        <JsonLd data={organizationJsonLd()} />
+        <JsonLd data={websiteJsonLd()} />
+      </head>
       <body>
         {/* FRESCO-495 (WCAG 2.4.1): first focusable element site-wide. Hidden
             until it receives keyboard focus, then jumps to `#main` — every
