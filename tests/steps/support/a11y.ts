@@ -6,14 +6,7 @@ import AxeBuilder from '@axe-core/playwright';
  * FRESCO-466. Rules already known to fail, tracked by a follow-up ticket
  * each — never add one here without a ticket. Emptied as tickets close.
  */
-export const KNOWN_A11Y_ALLOWLIST: string[] = [
-  // FRESCO-497: insufficient color contrast on /onboarding, /shopping-list,
-  // and intermittently /recipes (reproduced 1/4 runs there).
-  'color-contrast',
-  // FRESCO-498: ~40 form elements (shopping-list item checkboxes) without an
-  // accessible label.
-  'label',
-];
+export const KNOWN_A11Y_ALLOWLIST: string[] = [];
 
 const BLOCKING_IMPACTS = new Set(['serious', 'critical']);
 
@@ -39,6 +32,24 @@ export async function expectNoA11yViolations(
   // boundary). Best-effort wait, not a hard requirement: a page genuinely
   // missing a title still fails the real axe check below.
   await page.waitForFunction(() => document.title.length > 0, undefined, { timeout: 5000 }).catch(() => {});
+  // FRESCO-497: `fresco-list-enter` (app/globals.css) fades list/card rows in
+  // from `opacity: 0` over `--duration-fast` (250ms), staggered
+  // `--duration-stagger` (40ms) apart per row, and the `action` button variant
+  // (components/ui/button.tsx) runs `transition-colors` when it flips from
+  // disabled to enabled a tick after mount. Both are real, intentional,
+  // `prefers-reduced-motion`-gated motion — not a broken color pairing — but
+  // axe measures whatever is on screen at the instant it scans, so a scan
+  // mid-fade / mid-transition can catch a genuinely transient sub-4.5:1 frame
+  // that never persists for a real user (reproduced this way on /onboarding,
+  // /shopping-list, and intermittently /recipes — all three consumers of the
+  // stagger, plus the onboarding CTA transition). Best-effort wait, not a hard
+  // requirement: a page with a REAL static contrast defect still fails the
+  // real axe check below once every animation has settled.
+  await page.waitForFunction(
+    () => document.getAnimations().every(animation => animation.playState !== 'running'),
+    undefined,
+    { timeout: 1000 },
+  ).catch(() => {});
   const results = await new AxeBuilder({ page }).disableRules(allowlist).analyze();
 
   const moderateOrLower = results.violations.filter(
