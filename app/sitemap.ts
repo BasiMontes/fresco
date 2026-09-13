@@ -15,7 +15,19 @@ import type { MetadataRoute } from 'next';
  * landing page) so a visitor or a direct search can still land on them; they
  * just no longer get a sitemap priority hint, which is reserved for pages
  * with real standalone content.
+ *
+ * FRESCO-474: `lastModified` below is the landing page's actual last
+ * git-tracked content change (`git log -1 --format=%ad -- app/page.tsx`),
+ * not `new Date()`. This function is statically rendered at build time —
+ * a runtime `new Date()` would only ever report "when this build ran",
+ * which is not a real modification signal and would make the date churn
+ * on every deploy regardless of whether the page changed. Bump the
+ * constant by hand when `app/page.tsx` next changes materially; revisit
+ * this approach (e.g. a small git-log build step) only if the sitemap
+ * grows enough entries that hand-tracking each date stops being cheap.
  */
+const LANDING_LAST_MODIFIED = '2026-09-12';
+
 function resolveBaseUrl(): string {
   if (process.env.VERCEL_ENV === 'production') {
     return 'https://fresco-pro.vercel.app';
@@ -34,6 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: baseUrl,
+      lastModified: LANDING_LAST_MODIFIED,
       changeFrequency: 'weekly',
       priority: 1,
     },
