@@ -1,0 +1,65 @@
+import type { Page } from '@playwright/test';
+import type { Result as AxeViolation } from 'axe-core';
+import AxeBuilder from '@axe-core/playwright';
+
+/**
+ * FRESCO-466. Rules already known to fail, tracked by a follow-up ticket
+ * each — never add one here without a ticket. Emptied as tickets close.
+ */
+export const KNOWN_A11Y_ALLOWLIST: string[] = [
+  // FRESCO-497: insufficient color contrast on /onboarding, /shopping-list,
+  // and intermittently /recipes (reproduced 1/4 runs there).
+  'color-contrast',
+  // FRESCO-498: ~40 form elements (shopping-list item checkboxes) without an
+  // accessible label.
+  'label',
+  // FRESCO-499: one inline link on /signup not distinguishable without color.
+  'link-in-text-block',
+];
+
+const BLOCKING_IMPACTS = new Set(['serious', 'critical']);
+
+function describeViolation(violation: AxeViolation): string {
+  return `- ${violation.id} (${violation.impact}): ${violation.help} — ${violation.nodes.length} nodo(s)\n  ${violation.helpUrl}`;
+}
+
+/**
+ * Runs axe-core against the current page and fails the test on any
+ * serious/critical violation not covered by the allowlist. Moderate/minor
+ * violations are logged as a warning so they stay visible without blocking
+ * the gate.
+ */
+export async function expectNoA11yViolations(
+  page: Page,
+  options: { allowlist?: string[] } = {},
+): Promise<void> {
+  const allowlist = options.allowlist ?? KNOWN_A11Y_ALLOWLIST;
+  // Next.js App Router briefly detaches the previous route's <title> during
+  // a client-side navigation's Suspense swap — scanning in that exact
+  // instant makes axe's `document-title` rule flake on a title that IS there
+  // a moment later (reproduced on /recipes/[id], which has a `loading.tsx`
+  // boundary). Best-effort wait, not a hard requirement: a page genuinely
+  // missing a title still fails the real axe check below.
+  await page.waitForFunction(() => document.title.length > 0, undefined, { timeout: 5000 }).catch(() => {});
+  const results = await new AxeBuilder({ page }).disableRules(allowlist).analyze();
+
+  const moderateOrLower = results.violations.filter(
+    violation => !BLOCKING_IMPACTS.has(violation.impact ?? ''),
+  );
+  if (moderateOrLower.length > 0) {
+    console.warn(
+      `[a11y] ${moderateOrLower.length} violación(es) no bloqueante(s) en ${page.url()}:\n${
+        moderateOrLower.map(describeViolation).join('\n')}`,
+    );
+  }
+
+  const blocking = results.violations.filter(violation =>
+    BLOCKING_IMPACTS.has(violation.impact ?? ''),
+  );
+  if (blocking.length > 0) {
+    throw new Error(
+      `[a11y] ${blocking.length} violación(es) serious/critical en ${page.url()}:\n${
+        blocking.map(describeViolation).join('\n')}`,
+    );
+  }
+}
