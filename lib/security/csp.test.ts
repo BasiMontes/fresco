@@ -61,14 +61,13 @@ describe('buildContentSecurityPolicy', () => {
     expect(connect).toContain('https://api.pwnedpasswords.com');
   });
 
-  it('includes report-uri + report-to only when a report URI is given', () => {
+  it('includes report-uri only when a report URI is given (report-to is deprecated by Chrome — Reporting-Endpoints header covers it, see proxy.ts)', () => {
     const withReport = buildContentSecurityPolicy({ nonce: 'n', isDev: false, reportUri: 'https://r/report' }, ENV);
     expect(withReport).toContain('report-uri https://r/report');
-    expect(withReport).toContain('report-to csp-endpoint');
+    expect(withReport).not.toContain('report-to');
 
     const without = buildContentSecurityPolicy({ nonce: 'n', isDev: false }, ENV);
     expect(without).not.toContain('report-uri');
-    expect(without).not.toContain('report-to');
   });
 
   it('always locks down the framing / object / base-uri primitives', () => {
