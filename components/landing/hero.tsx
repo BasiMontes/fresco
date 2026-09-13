@@ -168,14 +168,22 @@ export function Hero() {
           <span className="text-accent-2-700">súper.</span>
         </h1>
 
+        {/* FRESCO-475: self-contained "qué es Fresco" sentence right below
+            the h1, carrying the primary target keyword literally — extractable
+            on its own by search snippets/AI summaries without depending on the
+            rest of the page. The emotional h1 above is left untouched. */}
+        <p className="mt-3 max-w-md text-body-md font-semibold text-text">
+          Fresco es el planificador de menús semanales que genera tu menú de lunes a domingo y la lista de la compra en 30 segundos.
+        </p>
+
+        {/* FRESCO-475: trimmed the trailing "Fresco te da el menú..." sentence
+            — it now duplicates the subtitle above almost verbatim. */}
         <p className="mt-4 max-w-md text-body-md text-tertiary">
           Cada semana la misma historia:
           {' '}
           <strong className="font-semibold text-text">
             no sabes qué cocinar, compras de más y acabas tirando comida.
           </strong>
-          {' '}
-          Fresco te da el menú del lunes al domingo en 30 segundos. Con la lista ya hecha.
         </p>
 
         <div className="mt-8 flex max-w-sm flex-col gap-3">
