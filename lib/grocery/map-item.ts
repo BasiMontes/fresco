@@ -46,7 +46,7 @@ function toBaseUnit(cantidad: number, unidad: string): { cantidad: number, unida
  * is what the shopper actually needs. e.g. "salmón" + recipe "Tostada con
  * salmón ahumado" → "salmón ahumado".
  */
-function recoverFromRecipeContext(
+export function recoverFromRecipeContext(
   clave: string,
   usos: GroceryInput['usos'],
 ): CanonicalIngredient | null {

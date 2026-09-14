@@ -3,7 +3,7 @@ import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
-import { mapShoppingList } from './map-item';
+import { mapShoppingList, recoverFromRecipeContext } from './map-item';
 
 /**
  * FRESCO-340 — coste estimado del menú semanal.
@@ -142,6 +142,23 @@ export function packPrice(item: MappedGroceryItem): number {
  * sueltos). Slot vacío (`recipe: null`) se salta, no cuenta.
  * `recipe.meta.raciones` ausente o 0 cae a 4 — nunca divide por 0 ni
  * produce `Infinity`.
+ *
+ * FRESCO-340 fix-round (adversarial review finding #1): `porcionReceta` se
+ * lee de la MISMA entrada canónica (directa o recuperada por contexto de
+ * receta) que `mapShoppingListItem` resolverá después para el precio —
+ * nunca de un lookup directo independiente. Sin esto, un ingrediente
+ * genérico ("salmón") cuyo nombre de receta apunta a una variante más
+ * específica ("salmón ahumado", FRESCO-488 `recoverFromRecipeContext`)
+ * calculaba la cantidad con la porción del genérico pero el precio con el
+ * paquete/precio de la variante recuperada — dos productos distintos
+ * mezclados en un solo número.
+ *
+ * La recuperación se aplica POR CONTRIBUCIÓN DE RECETA (el `usos` de una
+ * sola entrada, no el acumulado del bucket) y el bucket de consolidación se
+ * indexa por la clave YA RESUELTA — así un "salmón" genérico en una receta
+ * de la semana y un "salmón" con contexto "ahumado" en otra receta de la
+ * MISMA semana no se mezclan en una sola entrada: cada uno cae en el bucket
+ * del producto canónico que de verdad es, con su propia porción y precio.
  */
 export function consolidateRecipeIngredients(menu: MenuGrid, numPersonas: number): GroceryInput[] {
   const totales = new Map<string, { nombre: string, cantidad: number, unidad: string, usos: { receta: string }[] }>();
@@ -157,10 +174,20 @@ export function consolidateRecipeIngredients(menu: MenuGrid, numPersonas: number
 
       for (const nombreIngrediente of recipe.ingredientes_principales ?? []) {
         const clave = normalizeNombre(nombreIngrediente);
-        const base = INGREDIENT_DICTIONARY[clave]?.porcionReceta ?? { cantidad: 1, unidad: 'unidades' };
+        const directo = INGREDIENT_DICTIONARY[clave] ?? null;
+        const recuperado = directo ? recoverFromRecipeContext(clave, [{ receta: recipe.nombre }]) : null;
+        const entry = recuperado ?? directo;
+
+        const base = entry?.porcionReceta ?? { cantidad: 1, unidad: 'unidades' };
         const cantidadEscalada = base.cantidad * factor;
 
-        const existente = totales.get(clave);
+        // Bucket por la clave YA RESUELTA (recuperada o directa) — nunca la
+        // clave cruda del ingrediente — para que dos contribuciones que
+        // resuelven a productos canónicos distintos no se mezclen.
+        const claveResuelta = entry?.clave ?? clave;
+        const nombreResuelto = entry?.canonico ?? nombreIngrediente;
+
+        const existente = totales.get(claveResuelta);
         if (existente) {
           existente.cantidad += cantidadEscalada;
           if (!existente.usos.some(u => u.receta === recipe.nombre)) {
@@ -168,8 +195,8 @@ export function consolidateRecipeIngredients(menu: MenuGrid, numPersonas: number
           }
         }
         else {
-          totales.set(clave, {
-            nombre: nombreIngrediente,
+          totales.set(claveResuelta, {
+            nombre: nombreResuelto,
             cantidad: cantidadEscalada,
             unidad: base.unidad,
             usos: [{ receta: recipe.nombre }],
