@@ -126,7 +126,23 @@ function normalize(s: string): string {
 /** `porcionReceta.unidad` -> the Mercadona `size_format` it corresponds to (Decision 2: g/ml only). */
 const UNIT_TO_SIZE_FORMAT: Record<string, string> = { g: 'kg', ml: 'l' };
 
-function matchOneTerm(term: string, catalog: MercadonaProduct[], sizeFormat: string): MercadonaProduct | null {
+/**
+ * Max multiple of the recipe's own portion a matched pack may weigh/hold
+ * before it's rejected as implausible (Stage 3 review fix — a whole/bulk SKU
+ * like a 7.5 kg jamón serrano lot was winning the "shortest name" tie-break
+ * for a 100 g recipe portion, purely on string length, with no regard for
+ * whether anyone buys that pack for one recipe). 20x keeps legitimate
+ * multi-buy packs (e.g. a 2.5 kg rice bag for a 200 g portion) eligible while
+ * rejecting outliers like the 75x jamón serrano case.
+ */
+const MAX_PACK_TO_PORTION_RATIO = 20;
+
+function matchOneTerm(
+  term: string,
+  catalog: MercadonaProduct[],
+  sizeFormat: string,
+  portionInSizeFormatUnit: number,
+): MercadonaProduct | null {
   const needle = normalize(term);
   if (!needle) { return null; }
   const wordBoundary = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
@@ -135,6 +151,7 @@ function matchOneTerm(term: string, catalog: MercadonaProduct[], sizeFormat: str
     if (pi.size_format !== sizeFormat) { return false; }
     if (!(pi.unit_size !== null && pi.unit_size > 0)) { return false; }
     if (!(Number.parseFloat(pi.reference_price) > 0)) { return false; }
+    if (pi.unit_size > portionInSizeFormatUnit * MAX_PACK_TO_PORTION_RATIO) { return false; }
     return wordBoundary.test(normalize(p.display_name));
   });
   if (candidates.length === 0) { return null; }
@@ -156,10 +173,15 @@ function matchOneTerm(term: string, catalog: MercadonaProduct[], sizeFormat: str
 }
 
 /** Canonical term first, then each `SYNONYM_OVERRIDE` alternate — first match wins (Decision 3). */
-function findBestMatch(clave: string, catalog: MercadonaProduct[], sizeFormat: string): MercadonaProduct | null {
+function findBestMatch(
+  clave: string,
+  catalog: MercadonaProduct[],
+  sizeFormat: string,
+  portionInSizeFormatUnit: number,
+): MercadonaProduct | null {
   const terms = [clave, ...(SYNONYM_OVERRIDE[clave] ?? [])];
   for (const term of terms) {
-    const match = matchOneTerm(term, catalog, sizeFormat);
+    const match = matchOneTerm(term, catalog, sizeFormat, portionInSizeFormatUnit);
     if (match) { return match; }
   }
   return null;
@@ -179,8 +201,9 @@ export function buildMercadonaCatalogMatch(
     const sizeFormat = UNIT_TO_SIZE_FORMAT[porciones[clave].unidad];
     if (!sizeFormat) { continue; } // count-based unit — out of scope (Decision 2)
 
-    const match = findBestMatch(normalizeNombre(clave), catalog, sizeFormat);
-    if (!match) { continue; } // no catalog equivalent — absent from the table, never a placeholder
+    const portionInSizeFormatUnit = porciones[clave].cantidad / 1000; // g/ml -> kg/l
+    const match = findBestMatch(normalizeNombre(clave), catalog, sizeFormat, portionInSizeFormatUnit);
+    if (!match) { continue; } // no catalog equivalent (or none within a plausible pack size) — absent from the table, never a placeholder
 
     const pi = match.price_instructions;
     const cantidad = Math.round((pi.unit_size as number) * 1000);

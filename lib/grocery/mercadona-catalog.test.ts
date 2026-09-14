@@ -125,4 +125,23 @@ describe('buildMercadonaCatalogMatch — matching heuristic (inline fixture, no 
     const match = buildMercadonaCatalogMatch(catalog, { boniato: { cantidad: 400, unidad: 'g' } });
     expect(match.boniato?.envaseVenta).toEqual({ cantidad: 800, unidad: 'g' });
   });
+
+  test('plausibility guard: an outsized bulk pack loses the shortest-name tie-break to a plausible one (jamón serrano regression)', () => {
+    const catalog = [
+      // Shorter name, wins on raw length alone — but 7.5 kg is a 75x multiple
+      // of the 100 g recipe portion, an implausible single-recipe purchase.
+      product({ display_name: 'Jamon serrano', id: 'jamon-serrano-lote', price_instructions: { reference_price: '9.559', reference_format: 'kg', unit_size: 7.5, size_format: 'kg' } }),
+      // Longer name, but a 190 g pack is a plausible 1.9x multiple.
+      product({ display_name: 'Jamon serrano en lonchas Hacendado', id: 'jamon-serrano-lonchas', price_instructions: { reference_price: '25', reference_format: 'kg', unit_size: 0.19, size_format: 'kg' } }),
+    ];
+    const match = buildMercadonaCatalogMatch(catalog, { 'jamon serrano': { cantidad: 100, unidad: 'g' } });
+    expect(match['jamon serrano']?.envaseVenta).toEqual({ cantidad: 190, unidad: 'g' });
+  });
+
+  test('plausibility guard: when every candidate is implausibly oversized, the ingredient is unmatched, not forced onto the bulk pack', () => {
+    const catalog = [product({ display_name: 'Comino en grano Hacendado', price_instructions: { reference_price: '19.828', reference_format: 'kg', unit_size: 0.058, size_format: 'kg' } })];
+    // 58 g pack vs. a 2 g recipe portion is a 29x multiple — past the 20x guard.
+    const match = buildMercadonaCatalogMatch(catalog, { comino: { cantidad: 2, unidad: 'g' } });
+    expect(match.comino).toBeUndefined();
+  });
 });
