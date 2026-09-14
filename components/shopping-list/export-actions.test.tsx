@@ -1,6 +1,7 @@
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { afterEach, describe, expect, it, mock } from 'bun:test';
 import { ExportActions } from '@/components/shopping-list/export-actions';
+import { formatShoppingListAsCsv } from '@/lib/grocery/export-shopping-list';
 import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
 
 const PASILLOS: ShoppingListPasillo[] = [
@@ -44,7 +45,7 @@ function stubClipboard() {
 function stubObjectUrl() {
   const originalCreate = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
   const originalRevoke = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
-  const createObjectURL = mock(() => 'blob:mock-url');
+  const createObjectURL = mock((_blob: Blob) => 'blob:mock-url');
   const revokeObjectURL = mock(() => {});
   Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true, writable: true });
   Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true, writable: true });
@@ -63,20 +64,31 @@ function stubObjectUrl() {
  * internal navigation/download machinery — observed corrupting unrelated
  * `document.cookie` writes in OTHER test files later in the same full-suite
  * run (this DOM is process-wide, not per-file). The component under test
- * only needs `.click()` to have been called; stubbing it out avoids that
- * happy-dom side effect entirely, restored in `afterEach`.
+ * only needs `.click()` to have been called and its `download`/`href` to be
+ * correct; stubbing `.click()` out avoids that happy-dom side effect
+ * entirely, restored in `afterEach`.
+ *
+ * The stub also captures the anchor `.click()` was invoked on (`this`
+ * inside the method call), so the test can assert on its `download`
+ * attribute — the actual wiring — without relying on the click side effect.
  */
 function stubAnchorClick() {
   // Stored only to be written straight back onto the prototype in
   // `afterEach`, never called directly.
   // eslint-disable-next-line ts/unbound-method
   const original = HTMLAnchorElement.prototype.click;
-  const click = mock(() => {});
+  let clickedAnchor: HTMLAnchorElement | undefined;
+  const click = mock(function (this: HTMLAnchorElement) {
+    // Capturing the clicked anchor is the whole point of this stub; there's
+    // no `this`-free way to read which element `.click()` was invoked on.
+    // eslint-disable-next-line ts/no-this-alias
+    clickedAnchor = this;
+  });
   HTMLAnchorElement.prototype.click = click;
   restoreFns.push(() => {
     HTMLAnchorElement.prototype.click = original;
   });
-  return click;
+  return { click, getClickedAnchor: () => clickedAnchor };
 }
 
 describe('ExportActions (FRESCO-345)', () => {
@@ -110,17 +122,28 @@ describe('ExportActions (FRESCO-345)', () => {
     expect(screen.getByTestId('shopping_list_export_copy_button')).toHaveTextContent('Copiado');
   });
 
-  it('"Descargar" creates and revokes an object URL for the CSV blob', async () => {
+  it('"Descargar" downloads the correctly-named CSV file with the exact formatted content', async () => {
     const user = setupUser();
     renderWithProviders(<ExportActions pasillos={PASILLOS} />);
     const { createObjectURL, revokeObjectURL } = stubObjectUrl();
-    const anchorClick = stubAnchorClick();
+    const { click: anchorClick, getClickedAnchor } = stubAnchorClick();
 
     await user.click(screen.getByTestId('shopping_list_export_download_button'));
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(anchorClick).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+
+    // Wiring check, not just the call shape: the Blob actually handed to
+    // `createObjectURL` must carry the real formatted CSV (not an empty or
+    // stale blob), and the anchor must be set up to save it under the
+    // expected filename.
+    const blob = createObjectURL.mock.calls[0]?.[0];
+    expect(blob?.type).toBe('text/csv;charset=utf-8');
+    await expect(blob.text()).resolves.toBe(formatShoppingListAsCsv(PASILLOS));
+
+    const anchor = getClickedAnchor();
+    expect(anchor?.download).toBe('lista-compra.csv');
   });
 
   it('disables Copiar/Descargar for an empty list, but keeps the open-app links active', () => {
