@@ -46,15 +46,15 @@ export interface SidebarAccountProps extends AccountUser {
 }
 
 /**
- * Sidebar footer account block (FRESCO-82): a conditional Pro-trial upsell
- * section (FRESCO-510, `plan === 'free'` only — border-less, a bottom
- * hairline instead of a boxed card per the FRESCO-510 amendment: it reads
- * as another footer section, not a card nested inside a footer), then
- * name + plan + avatar/initial, the logout action, and the app version
- * label. Sits at the bottom of the desktop sidebar inside the `mt-auto`
- * footer group (`sidebar.tsx`) — the theme toggle that used to live above
- * it moved to `/profile`'s `AppearanceCard` (FRESCO-510 amendment), so this
- * is now the sidebar footer's only content. Only ever mounted
+ * Sidebar footer account block (FRESCO-82): avatar/initial + name + plan,
+ * a compact "Mejorar plan" upgrade CTA (FRESCO-513, `plan === 'free'` only
+ * — folded into this same row instead of the separate boxed/bordered upsell
+ * section FRESCO-510 shipped; less real estate, no lost affordance), the
+ * logout action, and the app version label below. Sits at the bottom of the
+ * desktop sidebar inside the `mt-auto` footer group (`sidebar.tsx`) — the
+ * theme toggle that used to live above it moved to `/profile`'s
+ * `AppearanceCard` (FRESCO-510 amendment), so this is now the sidebar
+ * footer's only content. Only ever mounted
  * inside `app/(app)/layout.tsx` — `/login` and `/signup` live outside that
  * route group and never render `AppShell`, so no `/login`/`/signup` route
  * can render this component. `Sidebar` additionally skips mounting it when
@@ -111,16 +111,6 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
       data-testid="sidebarAccount"
       className={cn('flex flex-col gap-4 border-t border-background/10 pt-4', collapsed && 'items-center')}
     >
-      {showProUpsell && !collapsed && (
-        <div data-testid="sidebar_pro_upsell_card" className="flex flex-col gap-3 border-b border-background/10 pb-4">
-          <div>
-            <h3 className="text-h5 text-background">Prueba Pro gratis</h3>
-            <p className="mt-1 text-body-sm text-background/70">7 días para que el menú te conozca.</p>
-          </div>
-          <UpgradeToProButton />
-        </div>
-      )}
-
       <div className={cn('flex items-start gap-3', collapsed && 'flex-col items-center gap-3')}>
         <div
           data-testid="user_avatar"
@@ -137,6 +127,13 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             {PLAN_LABELS[plan]}
           </p>
         </div>
+        {showProUpsell && !collapsed && (
+          <UpgradeToProButton
+            label="Mejorar plan"
+            size="sm"
+            className="shrink-0"
+          />
+        )}
         <Button
           type="button"
           variant="icon"
