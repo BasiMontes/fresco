@@ -20,6 +20,15 @@ export interface EnvaseVenta {
   unidad: string
 }
 
+/** Real Mercadona reference price for an `envaseVenta` sourced from the catalog (FRESCO-503). */
+export interface PrecioMercadona {
+  precioReferencia: number
+  formatoReferencia: string
+}
+
+/** Where `envaseVenta` came from — lets downstream stories (FRESCO-340, FRESCO-345) tell a real price from an estimate. */
+export type OrigenEnvase = 'mercadona' | 'estimado';
+
 /** One dictionary entry: everything known about a canonical Fresco ingredient. */
 export interface CanonicalIngredient {
   /** Normalized canonical key (lowercase, accent-stripped) — matches `normalizeNombre`. */
@@ -29,12 +38,16 @@ export interface CanonicalIngredient {
   pasillo: Pasillo
   /** Recipe portion this ingredient's `BASE_QUANTITIES` entry encodes (reference only). */
   porcionReceta: { cantidad: number, unidad: string }
-  /** Typical retail pack — the hand-curated part (story Business Rule: a constant, never a provider feed). */
+  /** Typical retail pack — real Mercadona data when available (FRESCO-503), else the hand-curated estimate. */
   envaseVenta: EnvaseVenta
   /** Alternate spellings a shopper or a supermarket search might use. */
   sinonimos: string[]
   /** Supermarket search term when the canonical name is a poor query. Defaults to `canonico`. */
   terminoBusqueda: string
+  /** Whether `envaseVenta` came from the real Mercadona catalog or the hand-curated fallback (FRESCO-503). */
+  origenEnvase: OrigenEnvase
+  /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
+  precioMercadona: PrecioMercadona | null
 }
 
 /** Result of mapping one shopping-list item. */
@@ -54,6 +67,10 @@ export interface MappedGroceryItem {
   /** How many retail packs cover the quantity. Always ≥ 1. */
   envasesEstimados: number
   confianza: Confianza
+  /** Whether `unidadVenta`/pack size came from the real Mercadona catalog or the hand-curated fallback (FRESCO-503). */
+  origenEnvase: OrigenEnvase
+  /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
+  precioMercadona: PrecioMercadona | null
 }
 
 /** Input shape — the subset of `ShoppingListItem` this layer reads. */
