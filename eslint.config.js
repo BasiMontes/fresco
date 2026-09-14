@@ -32,6 +32,10 @@ export default antfu({
     // FRESCO-488: joined from the Edge recipe vocabulary + lib/grocery/retail-packs.ts
     // by scripts/gen-grocery-dictionary.ts. Drift is caught by lib/grocery/dictionary.test.ts.
     'lib/grocery/ingredient-dictionary.ts',
+    // FRESCO-503: matched from the datania/mercadona-catalog dataset by
+    // scripts/gen-mercadona-catalog.ts. Drift is caught by
+    // lib/grocery/mercadona-catalog.test.ts.
+    'lib/grocery/mercadona-catalog.generated.ts',
     // Supabase Database types written by `bun run db:types` (`supabase gen
     // types typescript`, per package.json). Large machine-generated
     // snake_case file — linting it produces noise and `eslint --fix` would

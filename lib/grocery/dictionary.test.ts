@@ -62,4 +62,16 @@ describe('ingredient-dictionary — every entry is well-formed', () => {
       expect(entry.terminoBusqueda.length).toBeGreaterThan(0);
     }
   });
+
+  // FRESCO-503 — origenEnvase/precioMercadona shape invariant.
+  test('every entry with origenEnvase "mercadona" has a non-null precioMercadona, and vice versa', () => {
+    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
+      if (entry.origenEnvase === 'mercadona') {
+        expect(entry.precioMercadona).not.toBeNull();
+      }
+      else {
+        expect(entry.precioMercadona).toBeNull();
+      }
+    }
+  });
 });

@@ -20,6 +20,29 @@ export interface EnvaseVenta {
   unidad: string
 }
 
+/**
+ * Real Mercadona reference price sourced from the catalog (FRESCO-503).
+ *
+ * NOT the price of the whole `envaseVenta` pack — `precioReferencia` is the
+ * price of ONE unit of `formatoReferencia` (e.g. "100 g" or "1 kg"), and
+ * `formatoReferencia` can differ from the pack's own `envaseVenta.unidad`/
+ * `cantidad`. Example: a 40 g pack (`envaseVenta: {cantidad: 40, unidad:
+ * 'g'}`) can carry `{precioReferencia: 3.5, formatoReferencia: '100 g'}` —
+ * the pack itself costs ≈€1.40 (3.5 × 40/100), not €3.5. A consumer that
+ * needs the pack price (FRESCO-340, cost estimate) must convert
+ * `envaseVenta` into `formatoReferencia`'s unit and multiply, never read
+ * `precioReferencia` directly as the pack price.
+ */
+export interface PrecioMercadona {
+  /** Price in EUR for one unit of `formatoReferencia` — NOT the price of `envaseVenta`. */
+  precioReferencia: number
+  /** The unit `precioReferencia` is priced per, e.g. "100 g" or "1 kg" — may differ from `envaseVenta.unidad`. */
+  formatoReferencia: string
+}
+
+/** Where `envaseVenta` came from — lets downstream stories (FRESCO-340, FRESCO-345) tell a real price from an estimate. */
+export type OrigenEnvase = 'mercadona' | 'estimado';
+
 /** One dictionary entry: everything known about a canonical Fresco ingredient. */
 export interface CanonicalIngredient {
   /** Normalized canonical key (lowercase, accent-stripped) — matches `normalizeNombre`. */
@@ -29,12 +52,16 @@ export interface CanonicalIngredient {
   pasillo: Pasillo
   /** Recipe portion this ingredient's `BASE_QUANTITIES` entry encodes (reference only). */
   porcionReceta: { cantidad: number, unidad: string }
-  /** Typical retail pack — the hand-curated part (story Business Rule: a constant, never a provider feed). */
+  /** Typical retail pack — real Mercadona data when available (FRESCO-503), else the hand-curated estimate. */
   envaseVenta: EnvaseVenta
   /** Alternate spellings a shopper or a supermarket search might use. */
   sinonimos: string[]
   /** Supermarket search term when the canonical name is a poor query. Defaults to `canonico`. */
   terminoBusqueda: string
+  /** Whether `envaseVenta` came from the real Mercadona catalog or the hand-curated fallback (FRESCO-503). */
+  origenEnvase: OrigenEnvase
+  /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
+  precioMercadona: PrecioMercadona | null
 }
 
 /** Result of mapping one shopping-list item. */
@@ -54,6 +81,10 @@ export interface MappedGroceryItem {
   /** How many retail packs cover the quantity. Always ≥ 1. */
   envasesEstimados: number
   confianza: Confianza
+  /** Whether `unidadVenta`/pack size came from the real Mercadona catalog or the hand-curated fallback (FRESCO-503). */
+  origenEnvase: OrigenEnvase
+  /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
+  precioMercadona: PrecioMercadona | null
 }
 
 /** Input shape — the subset of `ShoppingListItem` this layer reads. */

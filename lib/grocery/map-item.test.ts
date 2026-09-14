@@ -78,6 +78,33 @@ describe('mapShoppingListItem — unit handling', () => {
   });
 });
 
+describe('mapShoppingListItem — FRESCO-503 acceptance criteria (Mercadona pack/price)', () => {
+  test('AC1: ingrediente con equivalente en el catálogo de Mercadona → usa envase y precio reales', () => {
+    const r = mapShoppingListItem({ nombre: 'espinacas', cantidad: 200, unidad: 'g' });
+    expect(r.origenEnvase).toBe('mercadona');
+    expect(r.precioMercadona).not.toBeNull();
+    expect(r.precioMercadona?.precioReferencia).toBeGreaterThan(0);
+  });
+
+  test('AC2: ingrediente sin equivalente en el catálogo → usa el envase estimado a mano, nunca se descarta', () => {
+    const r = mapShoppingListItem({ nombre: 'kale', cantidad: 150, unidad: 'g' });
+    expect(r.origenEnvase).toBe('estimado');
+    expect(r.precioMercadona).toBeNull();
+    expect(r.unidadVenta).toBe('g'); // RETAIL_PACK_OVERRIDE fallback, item still mapped
+  });
+
+  // Exercises the pre-existing FRESCO-488 "unknown ingredient never dropped"
+  // invariant, which this story's fallback path also relies on — not AC3's
+  // own scenario ("catálogo no disponible"). AC3 is satisfied structurally
+  // (no I/O anywhere on the request path), not by a runtime test.
+  test('unknown-ingredient fallback (FRESCO-488 invariant): ingrediente fuera del diccionario nunca se bloquea, sigue con origenEnvase estimado', () => {
+    const r = mapShoppingListItem({ nombre: 'kombucha casera', cantidad: 500, unidad: 'ml' });
+    expect(r.origenEnvase).toBe('estimado');
+    expect(r.precioMercadona).toBeNull();
+    expect(r.confianza).toBe('baja');
+  });
+});
+
 describe('mapShoppingListItem — invariants', () => {
   test('deterministic: same input, same output', () => {
     const input: GroceryInput = {

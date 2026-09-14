@@ -15,6 +15,7 @@
 // drifts from a fresh run (same pattern as scripts/check-*-drift.ts).
 
 import type { CanonicalIngredient } from '../lib/grocery/types.ts';
+import { MERCADONA_CATALOG_MATCH } from '../lib/grocery/mercadona-catalog.generated.ts';
 import {
   DEFAULT_PACK_BY_UNIT,
   RETAIL_PACK_OVERRIDE,
@@ -72,8 +73,12 @@ const ACCENT_DISPLAY: Record<string, string> = {
 function buildEntry(clave: string): CanonicalIngredient {
   const porcion = BASE_QUANTITIES[clave];
   const canonico = ACCENT_DISPLAY[clave] ?? clave;
+  // FRESCO-503 — real Mercadona pack/price wins over the hand-curated
+  // estimate when a catalog match exists; falls through cleanly otherwise.
+  const mercadonaMatch = MERCADONA_CATALOG_MATCH[clave];
   const envaseVenta
-    = RETAIL_PACK_OVERRIDE[clave]
+    = mercadonaMatch?.envaseVenta
+      ?? RETAIL_PACK_OVERRIDE[clave]
       ?? DEFAULT_PACK_BY_UNIT[porcion.unidad]
       ?? { cantidad: 1, unidad: porcion.unidad };
   return {
@@ -84,6 +89,8 @@ function buildEntry(clave: string): CanonicalIngredient {
     envaseVenta,
     sinonimos: SYNONYM_OVERRIDE[clave] ?? [],
     terminoBusqueda: SEARCH_TERM_OVERRIDE[clave] ?? canonico,
+    origenEnvase: mercadonaMatch ? 'mercadona' : 'estimado',
+    precioMercadona: mercadonaMatch?.precioMercadona ?? null,
   };
 }
 

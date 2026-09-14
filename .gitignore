@@ -8,6 +8,10 @@ node_modules/
 # ===== SDD / Framework Caches =====
 # .atl/ holds sdd-init generated registry, regenerated on demand
 .atl/
+# FRESCO-503 — local cache for scripts/gen-mercadona-catalog.ts's downloaded
+# Hugging Face dataset payloads. Independent of the throwaway spike's own
+# cache/ under scripts/spikes/.
+/scripts/.cache/
 # Known underscore-prefixed caches. Listed explicitly because a blanket
 # `*_*/` rule would also swallow skill subfolders like
 # `.claude/skills/<skill>/references/_shared/`, which we DO want to commit

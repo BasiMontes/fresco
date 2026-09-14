@@ -152,6 +152,11 @@ supabase/templates/
 scripts/spikes/**/out.*
 scripts/spikes/**/cache/
 
+# FRESCO-503 — scripts/gen-mercadona-catalog.ts's local download cache
+# (gitignored via /scripts/.cache/ in .gitignore). Includes 404-sentinel
+# files that aren't valid JSON at all — Prettier would hard-fail on them.
+scripts/.cache/
+
 # ===== Synced from boilerplate v8.4 =====
 # ----- 2026-09-07 (sync) -----
 packages/decks/
