@@ -132,7 +132,6 @@ export function buildContentSecurityPolicy(
     `connect-src ${dedupe(connectSrc).join(' ')}`,
     'upgrade-insecure-requests',
     reportUri ? `report-uri ${reportUri}` : null,
-    reportUri ? 'report-to csp-endpoint' : null,
   ];
 
   return directives.filter(Boolean).join('; ');

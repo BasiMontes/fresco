@@ -31,6 +31,21 @@ const LIST: ShoppingListPersistido = {
   resumen: { total_items: 2, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
 };
 
+describe('ShoppingListView — item checkbox accessible name (FRESCO-498)', () => {
+  test('each item checkbox exposes its item name as the accessible name', () => {
+    renderWithProviders(<ShoppingListView list={LIST} />);
+
+    // axe-core's `label` rule flagged these (~40 nodes in the live page, one
+    // per rendered item) as inputs with no accessible name at all. The fix
+    // wires `aria-labelledby` on the `Checkbox` to the `id` on the visible
+    // item-name span instead of duplicating the text into a new hidden
+    // label — asserting via `getByRole('checkbox', { name })` is exactly
+    // what axe checks: the input's computed accessible name.
+    expect(screen.getByRole('checkbox', { name: 'Tomate' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Lechuga' })).not.toBeChecked();
+  });
+});
+
 describe('ShoppingListView — receipt ticket on "Compra realizada"', () => {
   test('the button is absent when nothing is checked', () => {
     const noneChecked: ShoppingListPersistido = {

@@ -1820,6 +1820,74 @@ Característica: Flujo completo de usuario en Fresco
     # un año hardcodeado en vez de calcularlo dinámicamente.
 
   # ==========================================================================
+  # Verificación: accesibilidad automatizada (axe-core)
+  # ==========================================================================
+  # FRESCO-466. Reutiliza los `Given` de navegación ya existentes en cada
+  # dominio; solo añade dos `Given` nuevos para visitar /login y /signup sin
+  # rellenar su formulario. Allowlist de reglas conocidas-rotas (ninguna por
+  # ahora) en `tests/steps/support/a11y.ts` — cada entrada futura debe citar
+  # su propio ticket de seguimiento.
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: La pantalla de login no tiene violaciones de accesibilidad serias
+    Dado que un visitante sin cuenta ni sesión visita /login
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: La pantalla de registro no tiene violaciones de accesibilidad serias
+    Dado que un visitante sin cuenta ni sesión visita /signup
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @onboarding @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: El asistente de onboarding no tiene violaciones de accesibilidad serias en ninguno de sus 3 pasos
+    Dado que el usuario tiene sesión iniciada
+    Cuando visita /onboarding
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+    Cuando avanza al siguiente paso del onboarding
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+    Cuando avanza al siguiente paso del onboarding
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: /menu no tiene violaciones de accesibilidad serias
+    Dado que el usuario está en /menu (Inicio)
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: /calendar no tiene violaciones de accesibilidad serias
+    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: La Biblioteca de recetas no tiene violaciones de accesibilidad serias
+    Dado que Laura está en la Biblioteca de recetas
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: El detalle de una receta no tiene violaciones de accesibilidad serias
+    Dado que Laura está viendo el detalle de una receta
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: La lista de la compra no tiene violaciones de accesibilidad serias
+    Dado que el usuario tiene una lista de la compra generada
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-466)
+  Escenario: /profile no tiene violaciones de accesibilidad serias
+    Dado que Laura está en /profile
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
   # ==========================================================================

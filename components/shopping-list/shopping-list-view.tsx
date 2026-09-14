@@ -451,10 +451,17 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                                 key={isShaking ? `shake-${shakingItem.nonce}` : 'idle'}
                                 className={cn('t-input', isShaking && 'is-shaking')}
                               >
+                                {/* FRESCO-498 — axe `label` violation: this
+                                    checkbox had no accessible name (~40 nodes,
+                                    one per rendered item). `aria-labelledby`
+                                    points at the item-name span below instead
+                                    of duplicating its text into a new hidden
+                                    label. */}
                                 <Checkbox
                                   data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
                                   checked={item.comprado}
                                   onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
+                                  aria-labelledby={`shopping_list_item_${pasilloIdx}_${itemIdx}_name`}
                                 />
                               </div>
                             </div>
@@ -463,6 +470,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                         <div className="flex min-w-0 flex-1 flex-col">
                           <div className="flex min-w-0 items-center gap-2">
                             <span
+                              id={`shopping_list_item_${pasilloIdx}_${itemIdx}_name`}
                               className={cn(
                                 // FRESCO-448 (S8): was `text-body-lg`, a class
                                 // that does not exist — the list's primary

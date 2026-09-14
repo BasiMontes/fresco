@@ -19,7 +19,8 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { clientEnv } from '@/lib/env';
-import { aliasUser, captureEvent, getDistinctId, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { getDistinctId } from '@/lib/posthog/distinct-id';
+import { aliasUser, captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
@@ -552,7 +553,11 @@ export default function SignupPage() {
                     <p className="mt-4 text-center text-body-sm text-tertiary">
                       ¿Ya tienes cuenta?
                       {' '}
-                      <Link href="/login" className="text-primary">
+                      {/* FRESCO-499: underline distinguishes this inline link from
+                          the surrounding text without relying on color alone
+                          (axe link-in-text-block), matching the underline already
+                          used for the Términos/Privacidad in-text links below. */}
+                      <Link href="/login" className="text-primary underline">
                         Inicia sesión
                       </Link>
                     </p>
