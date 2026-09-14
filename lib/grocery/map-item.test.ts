@@ -93,7 +93,11 @@ describe('mapShoppingListItem — FRESCO-503 acceptance criteria (Mercadona pack
     expect(r.unidadVenta).toBe('g'); // RETAIL_PACK_OVERRIDE fallback, item still mapped
   });
 
-  test('AC3 (invariant this story leans on): ingrediente fuera del diccionario nunca se bloquea, sigue con origenEnvase estimado', () => {
+  // Exercises the pre-existing FRESCO-488 "unknown ingredient never dropped"
+  // invariant, which this story's fallback path also relies on — not AC3's
+  // own scenario ("catálogo no disponible"). AC3 is satisfied structurally
+  // (no I/O anywhere on the request path), not by a runtime test.
+  test('unknown-ingredient fallback (FRESCO-488 invariant): ingrediente fuera del diccionario nunca se bloquea, sigue con origenEnvase estimado', () => {
     const r = mapShoppingListItem({ nombre: 'kombucha casera', cantidad: 500, unidad: 'ml' });
     expect(r.origenEnvase).toBe('estimado');
     expect(r.precioMercadona).toBeNull();
