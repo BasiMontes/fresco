@@ -3,6 +3,7 @@ import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import { Bell, Heart } from 'lucide-react';
 
 import Link from 'next/link';
+import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
 import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
 import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
@@ -19,6 +20,7 @@ import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { estimateMenuCost } from '@/lib/grocery/estimate-menu-cost';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
@@ -49,6 +51,12 @@ export default async function MenuPage() {
   // FRESCO-483: shares the layout's verified session read (React.cache) —
   // no third round trip to GoTrue for this render.
   const { data: { user } } = await getAuthUser();
+
+  // FRESCO-509: same current-week values `/calendar` already computes for
+  // its own `GenerateWeekButton` — needed here too so the empty-state CTA
+  // can generate directly instead of falling back to `/onboarding`.
+  const semanaIso = getIsoWeek();
+  const mondayIso = getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10);
 
   // The reads below are mutually independent once `user.id` is
   // resolved — run them concurrently rather than paying for sequential
@@ -129,7 +137,11 @@ export default async function MenuPage() {
         deliberately NOT rendered in this branch: it implies a plan already
         exists to resume, which is exactly the contradiction the user hit
         ("estaba dentro sin menú"). It stays in the has-plan branch below. */}
-        <NoMenuEmptyState data-testid="menu_empty_state" titleAs="h1" />
+        <NoMenuEmptyState
+          data-testid="menu_empty_state"
+          titleAs="h1"
+          action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} />}
+        />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
         {/* FRESCO-451 (slice 4/5): gap-8 left each StatTile's top hairline
           reading as a disconnected dash instead of "one unit divided by
