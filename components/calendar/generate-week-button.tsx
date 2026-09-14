@@ -34,8 +34,16 @@ const PAST_WEEK_MESSAGE = 'No se pueden planificar semanas que ya han pasado.';
  * passed" without new date math. Blocked at both the UI (button disabled,
  * generation never fires) and defensively inside `handleGenerate` in case a
  * session left open across a week boundary makes the disabled state stale.
+ *
+ * FRESCO-509 (amendment) — `redirectTo` lets `/menu`'s empty-state instance
+ * navigate to `/calendar` after generating, instead of refreshing in place.
+ * `/menu`'s server component can't pass a closure across the client
+ * boundary, so this stays a plain serializable string prop rather than an
+ * `onSuccess` callback. `/calendar`'s own instance omits it and keeps the
+ * original `router.refresh()` — it's already showing the week it just
+ * generated, navigating away from itself would be wrong.
  */
-export function GenerateWeekButton({ semanaIso, fechaInicio }: { semanaIso: string, fechaInicio: string }) {
+export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { semanaIso: string, fechaInicio: string, redirectTo?: string }) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -67,7 +75,12 @@ export function GenerateWeekButton({ semanaIso, fechaInicio }: { semanaIso: stri
         ? await getPlanTierForAnalytics(supabase, session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
-      router.refresh();
+      if (redirectTo) {
+        router.push(redirectTo);
+      }
+      else {
+        router.refresh();
+      }
     }
     catch (caught) {
       if (caught instanceof EdgeFunctionError && caught.status === 422) {
