@@ -5,13 +5,32 @@
  * Any new user-facing flow that should count toward the North-star KPI or a
  * funnel/retention report adds its event to `event-names.ts`, never a magic
  * string at the call site.
+ *
+ * FRESCO-496: no top-level `import posthog from 'posthog-js'` here on
+ * purpose. This module is imported by components on the very first paint of
+ * many routes (e.g. the guest landing page's CTA, via
+ * `landing-cta-link.tsx`) purely to fire an event on click — a static
+ * posthog-js import would ship that whole SDK in the initial JS of every
+ * such route even though nothing here runs until the user actually
+ * interacts. Every export below is already documented as fire-and-forget /
+ * fail-soft, so lazily loading posthog-js on first call (`loadPosthog`,
+ * cached after the first resolution) changes nothing about their contract —
+ * except `getDistinctId`, which has a synchronous, ordering-critical
+ * contract and lives in `./distinct-id.ts` instead, with its own static
+ * import.
  */
 
 import type { PosthogEventName } from './event-names';
-import posthog from 'posthog-js';
 
 export { POSTHOG_EVENTS } from './event-names';
 export type { PosthogEventName } from './event-names';
+
+let posthogModulePromise: Promise<typeof import('posthog-js')> | null = null;
+
+async function loadPosthog(): Promise<typeof import('posthog-js')> {
+  posthogModulePromise ??= import('posthog-js');
+  return posthogModulePromise;
+}
 
 /**
  * Client-side capture — silent no-op when `NEXT_PUBLIC_POSTHOG_KEY` is unset
@@ -23,12 +42,11 @@ export function captureEvent(name: PosthogEventName, properties?: Record<string,
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     return;
   }
-  try {
-    posthog.capture(name, properties);
-  }
-  catch (error) {
-    console.error('[lib/posthog/events] captureEvent failed', error);
-  }
+  loadPosthog()
+    .then(({ default: posthog }) => posthog.capture(name, properties))
+    .catch((error) => {
+      console.error('[lib/posthog/events] captureEvent failed', error);
+    });
 }
 
 /**
@@ -46,12 +64,11 @@ export function identifyUser(userId: string, personProperties?: Record<string, u
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     return;
   }
-  try {
-    posthog.identify(userId, personProperties);
-  }
-  catch (error) {
-    console.error('[lib/posthog/events] identifyUser failed', error);
-  }
+  loadPosthog()
+    .then(({ default: posthog }) => posthog.identify(userId, personProperties))
+    .catch((error) => {
+      console.error('[lib/posthog/events] identifyUser failed', error);
+    });
 }
 
 /**
@@ -68,30 +85,9 @@ export function aliasUser(newUserId: string, previousUserId: string): void {
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     return;
   }
-  try {
-    posthog.alias(newUserId, previousUserId);
-  }
-  catch (error) {
-    console.error('[lib/posthog/events] aliasUser failed', error);
-  }
-}
-
-/**
- * Reads the current browser's PostHog distinct_id. `aliasUser` callers need
- * this captured BEFORE a session-switching auth call (e.g.
- * `signInWithPassword`) resolves — once it does, the provider's
- * `onAuthStateChange` has already re-identified under the new uid and the
- * prior anonymous id is gone. Same fail-soft guard as `captureEvent`.
- */
-export function getDistinctId(): string | null {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-    return null;
-  }
-  try {
-    return posthog.get_distinct_id();
-  }
-  catch (error) {
-    console.error('[lib/posthog/events] getDistinctId failed', error);
-    return null;
-  }
+  loadPosthog()
+    .then(({ default: posthog }) => posthog.alias(newUserId, previousUserId))
+    .catch((error) => {
+      console.error('[lib/posthog/events] aliasUser failed', error);
+    });
 }
