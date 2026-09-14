@@ -5,12 +5,20 @@ import { LogOut, User as UserIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
+import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Button } from '@/components/ui/button';
-import { Tag } from '@/components/ui/tag';
-import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
+import { PLAN_LABELS } from '@/lib/plan-labels';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+
+/**
+ * FRESCO-510 — public-facing app version, deliberately NOT read from
+ * `package.json`. The internal semver (`0.1.0`) doesn't match this
+ * marketing-facing string, and coupling them would surprise whoever bumps
+ * the package version expecting it to stay internal.
+ */
+const APP_VERSION_LABEL = 'FRESCO APP V1.0';
 
 /**
  * Shared shape for the signed-in user's account info (FRESCO-82), threaded
@@ -30,17 +38,19 @@ export interface AccountUser {
 
 export interface SidebarAccountProps extends AccountUser {
   /**
-   * FRESCO-485 — collapsed rail: drop the name / email / plan tag, keep
-   * just the avatar and the logout control, stacked and centred.
+   * FRESCO-485 — collapsed rail: drop the upsell card, name / plan label,
+   * and version text, keep just the avatar and the logout control, stacked
+   * and centred.
    */
   collapsed?: boolean
 }
 
 /**
- * Sidebar footer account block (FRESCO-82): name + email + avatar/initial,
- * plus the logout action. Sits at the bottom of the desktop sidebar inside
- * the `mt-auto` footer group (`sidebar.tsx`), below the theme toggle
- * (FRESCO-448). Only ever mounted
+ * Sidebar footer account block (FRESCO-82): a conditional Pro-trial upsell
+ * card (FRESCO-510, `plan === 'free'` only), then name + plan + avatar/
+ * initial, the logout action, and the app version label. Sits at the bottom
+ * of the desktop sidebar inside the `mt-auto` footer group (`sidebar.tsx`),
+ * below the theme toggle (FRESCO-448). Only ever mounted
  * inside `app/(app)/layout.tsx` — `/login` and `/signup` live outside that
  * route group and never render `AppShell`, so no `/login`/`/signup` route
  * can render this component. `Sidebar` additionally skips mounting it when
@@ -55,7 +65,7 @@ export interface SidebarAccountProps extends AccountUser {
  * convention of independent local copies of this same 3-line pattern
  * (`danger-zone.tsx`, `app/update-password/page.tsx`).
  */
-export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = false }: SidebarAccountProps) {
+export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }: SidebarAccountProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -88,12 +98,25 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
   }
 
   const initial = nombre?.trim().charAt(0).toUpperCase();
+  // FRESCO-510 — the trial upsell only makes sense for a user who isn't
+  // already paying; pro/family are already the outcome this card sells.
+  const showProUpsell = plan === 'free' && !isAnonymous;
 
   return (
     <div
       data-testid="sidebarAccount"
-      className={cn('border-t border-background/10 pt-4', collapsed && 'flex flex-col items-center gap-3')}
+      className={cn('flex flex-col gap-4 border-t border-background/10 pt-4', collapsed && 'items-center')}
     >
+      {showProUpsell && !collapsed && (
+        <div data-testid="sidebar_pro_upsell_card" className="flex flex-col gap-3 rounded-card border border-background/20 p-4">
+          <div>
+            <h3 className="text-h5 text-background">Prueba Pro gratis</h3>
+            <p className="mt-1 text-body-sm text-background/70">7 días para que el menú te conozca.</p>
+          </div>
+          <UpgradeToProButton />
+        </div>
+      )}
+
       <div className={cn('flex items-start gap-3', collapsed && 'flex-col items-center gap-3')}>
         <div
           data-testid="user_avatar"
@@ -106,19 +129,9 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
           <p data-testid="user_name" className="truncate text-label text-background">
             {nombre || 'Sin nombre'}
           </p>
-          <p data-testid="user_email" className="mt-0.5 truncate text-caption text-background/70">
-            {email || 'Invitada'}
-          </p>
-          {/* FRESCO-439: the sidebar sits on the dark-green ground, where the
-              v2 hairline tag (tertiary-brown text) has no contrast — override
-              to a cream hairline for this placement. */}
-          <Tag
-            data-testid="plan_tag"
-            variant={getPlanTagVariant(plan)}
-            className="mt-1.5 border-background/30 text-background/90"
-          >
+          <p data-testid="plan_label" className="mt-0.5 truncate text-caption text-background/70">
             {PLAN_LABELS[plan]}
-          </Tag>
+          </p>
         </div>
         <Button
           type="button"
@@ -134,8 +147,13 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
         </Button>
       </div>
       {logoutError && (
-        <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
+        <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
           {logoutError}
+        </p>
+      )}
+      {!collapsed && (
+        <p data-testid="sidebar_app_version" className="text-center text-caption text-background/50">
+          {APP_VERSION_LABEL}
         </p>
       )}
       {isAnonymous && (

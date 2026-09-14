@@ -119,11 +119,11 @@ export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
 
       <div className={cn('mt-auto flex flex-col gap-4 pt-6', collapsed && 'items-center')}>
         {collapsed
-          ? <ThemeToggle tone="inverse" className="flex-col" />
+          ? <ThemeToggle tone="inverse" variant="binary" className="flex-col" />
           : (
               <div className="flex items-center justify-between gap-2 px-1">
                 <span className="text-h6 text-background/60">Tema</span>
-                <ThemeToggle tone="inverse" />
+                <ThemeToggle tone="inverse" variant="binary" />
               </div>
             )}
         {user && (
