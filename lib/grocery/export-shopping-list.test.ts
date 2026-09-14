@@ -74,6 +74,20 @@ describe('formatShoppingListAsCsv (FRESCO-345)', () => {
     expect(csv).toContain('"Queso ""curado"""');
   });
 
+  it('neutralizes a leading formula-trigger character (CSV/formula injection guard)', () => {
+    const csv = formatShoppingListAsCsv([
+      pasillo({ items: [{ nombre: '=SUM(A1:A10)', cantidad: 1, unidad: 'unidades', comprado: false }] }),
+    ]);
+    const rowLine = csv.split('\n')[1];
+
+    // Left un-guarded, a spreadsheet app (Excel, Sheets, LibreOffice) would
+    // read a cell starting with `=` as a formula on open. The shared
+    // `toCsvValue` guard (lib/csv/export-csv.ts, FRESCO-364/A4-L3) prefixes
+    // a leading `'` so it is forced to be read as plain text instead.
+    expect(rowLine).not.toContain(',=SUM(A1:A10)');
+    expect(rowLine).toContain(',\'=SUM(A1:A10)');
+  });
+
   it('emits only the header for an empty list', () => {
     expect(formatShoppingListAsCsv([])).toBe('Pasillo,Artículo,Cantidad,Unidad,Comprado');
   });

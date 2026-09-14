@@ -1,4 +1,5 @@
 import type { ShoppingListPasillo } from '@/lib/api/types';
+import { toCsvValue } from '@/lib/csv/export-csv';
 
 /**
  * FRESCO-345 (Pieza A — export estructurado, comentario "Refinamiento v2" +
@@ -52,17 +53,6 @@ export function formatShoppingListAsText(pasillos: ShoppingListPasillo[]): strin
     .join('\n\n');
 }
 
-/** Campos que necesitan comillas RFC-4180: coma, comilla doble o salto de línea. */
-const CSV_NEEDS_QUOTING = /[",\n]/;
-
-/** Escapa un campo CSV per RFC-4180: si contiene coma/comilla/salto de línea, lo envuelve en comillas dobles y duplica las comillas internas. */
-function escapeCsvField(value: string): string {
-  if (!CSV_NEEDS_QUOTING.test(value)) {
-    return value;
-  }
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
 const CSV_HEADER = ['Pasillo', 'Artículo', 'Cantidad', 'Unidad', 'Comprado'];
 
 /**
@@ -70,6 +60,13 @@ const CSV_HEADER = ['Pasillo', 'Artículo', 'Cantidad', 'Unidad', 'Comprado'];
  * artículos (mismo criterio que el texto plano, columna `Comprado`
  * distingue Sí/No). Lista vacía -> solo la cabecera, nunca un archivo
  * vacío de verdad.
+ *
+ * Escapado (comillas RFC-4180 + neutralización de fórmula CSV) reutiliza
+ * `toCsvValue` de `lib/csv/export-csv.ts` (FRESCO-364/A4-L3) en vez de
+ * duplicar la lógica: los nombres de artículo son texto libre de usuario
+ * (recetas personales, `components/recipes/create-recipe-form.tsx`) y
+ * pueden empezar por `=`/`+`/`-`/`@`, la misma superficie de ataque que ya
+ * se cerró para el export de `/profile`.
  */
 export function formatShoppingListAsCsv(pasillos: ShoppingListPasillo[]): string {
   const filas = pasillos.flatMap(pasillo =>
@@ -83,7 +80,7 @@ export function formatShoppingListAsCsv(pasillos: ShoppingListPasillo[]): string
   );
 
   return [CSV_HEADER, ...filas]
-    .map(fila => fila.map(escapeCsvField).join(','))
+    .map(fila => fila.map(toCsvValue).join(','))
     .join('\n');
 }
 
