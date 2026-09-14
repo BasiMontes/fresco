@@ -47,10 +47,14 @@ export interface SidebarAccountProps extends AccountUser {
 
 /**
  * Sidebar footer account block (FRESCO-82): a conditional Pro-trial upsell
- * card (FRESCO-510, `plan === 'free'` only), then name + plan + avatar/
- * initial, the logout action, and the app version label. Sits at the bottom
- * of the desktop sidebar inside the `mt-auto` footer group (`sidebar.tsx`),
- * below the theme toggle (FRESCO-448). Only ever mounted
+ * section (FRESCO-510, `plan === 'free'` only — border-less, a bottom
+ * hairline instead of a boxed card per the FRESCO-510 amendment: it reads
+ * as another footer section, not a card nested inside a footer), then
+ * name + plan + avatar/initial, the logout action, and the app version
+ * label. Sits at the bottom of the desktop sidebar inside the `mt-auto`
+ * footer group (`sidebar.tsx`) — the theme toggle that used to live above
+ * it moved to `/profile`'s `AppearanceCard` (FRESCO-510 amendment), so this
+ * is now the sidebar footer's only content. Only ever mounted
  * inside `app/(app)/layout.tsx` — `/login` and `/signup` live outside that
  * route group and never render `AppShell`, so no `/login`/`/signup` route
  * can render this component. `Sidebar` additionally skips mounting it when
@@ -108,7 +112,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
       className={cn('flex flex-col gap-4 border-t border-background/10 pt-4', collapsed && 'items-center')}
     >
       {showProUpsell && !collapsed && (
-        <div data-testid="sidebar_pro_upsell_card" className="flex flex-col gap-3 rounded-card border border-background/20 p-4">
+        <div data-testid="sidebar_pro_upsell_card" className="flex flex-col gap-3 border-b border-background/10 pb-4">
           <div>
             <h3 className="text-h5 text-background">Prueba Pro gratis</h3>
             <p className="mt-1 text-body-sm text-background/70">7 días para que el menú te conozca.</p>
