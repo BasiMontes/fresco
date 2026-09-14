@@ -127,40 +127,40 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             {PLAN_LABELS[plan]}
           </p>
         </div>
-        {/* FRESCO-513 (follow-up) — grouped so the CTA+logout pair keeps its
-            own tight, fixed gap regardless of how much space the name/plan
-            block above claims via its own `flex-1`. Third pass (same
-            follow-up): the real bug behind "not aligned" was the outer row
-            being `items-start` with hand-tuned `mt-0.5` nudges trying to
-            approximate vertical centering — that only ever worked by
-            accident, and broke for real once a 44px-tall button (`size="sm"`
-            forces `min-h-[44px]`, WCAG 2.5.5) sat next to 36px `size-9`
-            elements (the avatar, the icon-variant logout button). Switched
-            the row to `items-center`, which aligns every child's cross-axis
-            center regardless of its own height — no more per-element margin
-            guesswork. In `collapsed` mode the CTA is already gated off
-            below, so this wrapper just holds the logout button alone. */}
-        <div className="flex items-center gap-3">
-          {showProUpsell && !collapsed && (
-            <UpgradeToProButton
-              label="Mejorar plan"
-              size="sm"
-              className="shrink-0"
-            />
-          )}
-          <Button
-            type="button"
-            variant="icon"
-            aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
-            data-testid="sidebar_logout_button"
-            disabled={isLoggingOut}
-            aria-busy={isLoggingOut}
-            onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
-            className="shrink-0 bg-background/10 text-background hover:bg-background/20"
-          >
-            <LogOut className="size-6" aria-hidden="true" />
-          </Button>
-        </div>
+        {/* FRESCO-513 (follow-up) — fourth pass. Grouping the CTA with
+            logout (previous passes) pinned both to the row's right edge,
+            which read as the CTA sitting too far right, AND meant the
+            button's own width change between "Mejorar plan" (~128px) and
+            the `isRedirecting` state "Redirigiendo…" (~150px, measured with
+            the real Figtree font) had nowhere to go but into the logout
+            button next to it — both are `shrink-0` and the sidebar's aside
+            is `overflow-x-hidden`, so the 22px jump visually swallowed
+            logout instead of wrapping or scrolling. Un-grouped: the CTA now
+            sits right after the name/plan block (which keeps `min-w-0
+            flex-1` and can truncate further to absorb the width change),
+            and logout is the row's own last child, protected structurally
+            rather than by hoping the CTA never grows. `min-w-[150px]` on
+            the CTA additionally pins it to its loading-state width so
+            "Mejorar plan" doesn't visibly re-center when the label swaps. */}
+        {showProUpsell && !collapsed && (
+          <UpgradeToProButton
+            label="Mejorar plan"
+            size="sm"
+            className="min-w-[150px] shrink-0"
+          />
+        )}
+        <Button
+          type="button"
+          variant="icon"
+          aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
+          data-testid="sidebar_logout_button"
+          disabled={isLoggingOut}
+          aria-busy={isLoggingOut}
+          onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
+          className="shrink-0 bg-background/10 text-background hover:bg-background/20"
+        >
+          <LogOut className="size-6" aria-hidden="true" />
+        </Button>
       </div>
       {logoutError && (
         <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
