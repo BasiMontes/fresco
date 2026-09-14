@@ -20,9 +20,23 @@ export interface EnvaseVenta {
   unidad: string
 }
 
-/** Real Mercadona reference price for an `envaseVenta` sourced from the catalog (FRESCO-503). */
+/**
+ * Real Mercadona reference price sourced from the catalog (FRESCO-503).
+ *
+ * NOT the price of the whole `envaseVenta` pack — `precioReferencia` is the
+ * price of ONE unit of `formatoReferencia` (e.g. "100 g" or "1 kg"), and
+ * `formatoReferencia` can differ from the pack's own `envaseVenta.unidad`/
+ * `cantidad`. Example: a 40 g pack (`envaseVenta: {cantidad: 40, unidad:
+ * 'g'}`) can carry `{precioReferencia: 3.5, formatoReferencia: '100 g'}` —
+ * the pack itself costs ≈€1.40 (3.5 × 40/100), not €3.5. A consumer that
+ * needs the pack price (FRESCO-340, cost estimate) must convert
+ * `envaseVenta` into `formatoReferencia`'s unit and multiply, never read
+ * `precioReferencia` directly as the pack price.
+ */
 export interface PrecioMercadona {
+  /** Price in EUR for one unit of `formatoReferencia` — NOT the price of `envaseVenta`. */
   precioReferencia: number
+  /** The unit `precioReferencia` is priced per, e.g. "100 g" or "1 kg" — may differ from `envaseVenta.unidad`. */
   formatoReferencia: string
 }
 
