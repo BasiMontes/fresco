@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { SidebarAccount } from '@/components/layout/sidebar-account';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { writeSidebarCollapsed } from '@/lib/layout/sidebar-preference';
 import { cn } from '@/lib/utils';
 
@@ -117,15 +116,11 @@ export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
         })}
       </nav>
 
-      <div className={cn('mt-auto flex flex-col gap-4 pt-6', collapsed && 'items-center')}>
-        {collapsed
-          ? <ThemeToggle tone="inverse" variant="binary" className="flex-col" />
-          : (
-              <div className="flex items-center justify-between gap-2 px-1">
-                <span className="text-h6 text-background/60">Tema</span>
-                <ThemeToggle tone="inverse" variant="binary" />
-              </div>
-            )}
+      <div className={cn('mt-auto flex flex-col', collapsed && 'items-center')}>
+        {/* FRESCO-510 (amendment) — theme choice moved out of the sidebar
+            entirely; `/profile`'s AppearanceCard is now the single place
+            for it (desktop and mobile alike), instead of duplicating the
+            control here too. */}
         {user && (
           <SidebarAccount
             nombre={user.nombre}
