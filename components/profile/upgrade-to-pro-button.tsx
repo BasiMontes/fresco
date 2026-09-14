@@ -9,6 +9,17 @@ interface CheckoutResponse {
   error?: string
 }
 
+export interface UpgradeToProButtonProps {
+  /**
+   * FRESCO-513 — the sidebar's compact placement wants "Mejorar plan"
+   * instead of `/profile`'s persuasive default; same checkout flow either
+   * way, this only overrides the visible text.
+   */
+  label?: string
+  size?: 'sm' | 'md'
+  className?: string
+}
+
 /**
  * `/profile`'s "Pásate a Fresco Pro" card CTA (STORY-FRESCO-228). Posts to
  * `POST /api/stripe/checkout`, then does a full-page redirect to the
@@ -22,7 +33,7 @@ interface CheckoutResponse {
  * every other async profile action is an inline `role="alert"` message next
  * to the button, so this follows that instead of introducing a new one.
  */
-export function UpgradeToProButton() {
+export function UpgradeToProButton({ label = 'Empezar prueba gratis', size = 'md', className }: UpgradeToProButtonProps = {}) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,15 +61,16 @@ export function UpgradeToProButton() {
   }
 
   return (
-    <div>
+    <div className={className}>
       <Button
         type="button"
         variant="action"
+        size={size}
         data-testid="upgrade_to_pro_button"
         disabled={isRedirecting}
         onClick={() => void handleClick()}
       >
-        {isRedirecting ? 'Redirigiendo…' : 'Empezar prueba gratis'}
+        {isRedirecting ? 'Redirigiendo…' : label}
       </Button>
       {error && (
         <p data-testid="upgrade_to_pro_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
