@@ -140,7 +140,7 @@ export default async function MenuPage() {
         <NoMenuEmptyState
           data-testid="menu_empty_state"
           titleAs="h1"
-          action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} />}
+          action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} redirectTo="/calendar" />}
         />
         {/* FRESCO-57: profile-based count, independent of having a plan. */}
         {/* FRESCO-451 (slice 4/5): gap-8 left each StatTile's top hairline
