@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { canonicalUrl } from '@/lib/seo/canonical';
 
 // FRESCO-174: see app/login/layout.tsx — same reason (client page.tsx can't
 // export metadata itself).
@@ -7,6 +8,10 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Crea tu cuenta · Fresco',
   description: 'Crea tu cuenta gratis en Fresco y genera tu menú semanal personalizado en menos de 30 segundos.',
+  // FRESCO-471: self-referencing canonical, param-free.
+  alternates: {
+    canonical: canonicalUrl('/signup'),
+  },
 };
 
 // FRESCO-315: `<main>` landmark for the auth route (the public pages had none).
