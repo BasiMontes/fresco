@@ -11,6 +11,7 @@ import { CookieConsentProvider } from '@/components/legal/cookie-consent-context
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
+import { canonicalUrl, getMetadataBase } from '@/lib/seo/canonical';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/structured-data';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
@@ -58,24 +59,6 @@ const figtree = Figtree({
   variable: '--font-body',
 });
 
-// FRESCO-470: base-URL branching mirrors `resolveBaseUrl()` in `app/robots.ts`
-// / `app/sitemap.ts` (kept standalone, no cross-import, per that pair's
-// documented no-domain-coupling convention) — `metadataBase` and the
-// `openGraph.url` below need the SAME per-environment domain those two
-// already resolve, so a staging PR preview's shared link points at
-// `fresco-pre`/`fresco-dev`, not at production.
-function resolveBaseUrl(): string {
-  if (process.env.VERCEL_ENV === 'production') {
-    return 'https://fresco-pro.vercel.app';
-  }
-  if (process.env.VERCEL_ENV === 'preview') {
-    return process.env.VERCEL_GIT_COMMIT_REF === 'dev'
-      ? 'https://fresco-dev.vercel.app'
-      : 'https://fresco-pre.vercel.app';
-  }
-  return 'http://localhost:3000';
-}
-
 // FRESCO-475: shortened to fit within Google's ~60-char display budget
 // (the previous 65-char title truncated in results) and reworked around the
 // primary target keyword ("planificador de menús semanales") agreed with
@@ -88,9 +71,12 @@ const DESCRIPTION
 // FRESCO-470: without `metadataBase`, the relative `opengraph-image.tsx`
 // route below can't resolve into the absolute `og:image` URL that
 // WhatsApp/LinkedIn/Facebook/X require — Next.js only emits a warning and
-// falls back to `http://localhost:3000` in that case.
+// falls back to `http://localhost:3000` in that case. `getMetadataBase()`
+// (FRESCO-471, `lib/seo/canonical.ts`) is the single source of truth for
+// this per-environment base — the previous local `resolveBaseUrl()` here
+// duplicated it exactly.
 export const metadata: Metadata = {
-  metadataBase: new URL(resolveBaseUrl()),
+  metadataBase: getMetadataBase(),
   title: TITLE,
   description: DESCRIPTION,
   // Public marketing pages (login, signup, etc.) that don't declare their own
@@ -109,6 +95,13 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
+  },
+  // FRESCO-471: self-referencing canonical for the landing route ("/").
+  // Every other route overrides this explicitly in its own metadata export
+  // (Next's metadata merge replaces `alternates` wholesale, not per-key —
+  // an uncovered route would otherwise silently inherit this one).
+  alternates: {
+    canonical: canonicalUrl('/'),
   },
 };
 

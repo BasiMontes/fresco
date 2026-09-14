@@ -17,6 +17,16 @@ import type { MetadataRoute } from 'next';
  * email-link redirect, never renders HTML) — it can't carry a `<meta
  * name="robots">` tag like the other noindexed routes, so the disallow lives
  * here instead.
+ *
+ * FRESCO-474: the blanket `allow: '/'` above only ever meant "the public
+ * marketing surface", but nothing actually blocked a crawler from wandering
+ * into `/api` or any `(app)/` route — those redirect an unauthenticated
+ * crawler to `/login` (see FRESCO-315 above), which just wastes crawl
+ * budget on a login wall instead of real content. The `(app)/` list below
+ * is read straight off `app/(app)/*` (grepped, not from memory): `/admin`
+ * covers `/admin/recipes` too, and `/recipes` covers `/recipes/[id]` — a
+ * `Disallow` value is a path-prefix match, so no per-subroute entries are
+ * needed. `/qa` and `/auth/confirm` are unchanged from FRESCO-395/473.
  */
 function resolveBaseUrl(): string {
   if (process.env.VERCEL_ENV === 'production') {
@@ -35,7 +45,20 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/qa', '/auth/confirm'],
+      disallow: [
+        '/api',
+        '/admin',
+        '/calendar',
+        '/favorites',
+        '/historial',
+        '/menu',
+        '/notifications',
+        '/profile',
+        '/recipes',
+        '/shopping-list',
+        '/qa',
+        '/auth/confirm',
+      ],
     },
     sitemap: `${resolveBaseUrl()}/sitemap.xml`,
   };

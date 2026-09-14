@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { canonicalUrl } from '@/lib/seo/canonical';
 
 // FRESCO-174: `page.tsx` is a client component ('use client'), and the
 // `metadata` export is only supported in Server Components — this
@@ -9,6 +10,10 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Inicia sesión · Fresco',
   description: 'Inicia sesión en Fresco para ver tu menú semanal, tu lista de la compra y tus recetas guardadas.',
+  // FRESCO-471: self-referencing canonical, param-free.
+  alternates: {
+    canonical: canonicalUrl('/login'),
+  },
 };
 
 // FRESCO-315: `<main>` landmark for the auth route (the public pages had none).
