@@ -86,6 +86,20 @@ function convertirUnidad(cantidad: number, desde: string, hasta: string): number
 }
 
 /**
+ * Tokens de `formatoReferencia` que NO son masa ni volumen — cuentan
+ * paquetes/piezas enteras ("ud", "uds", "unidad", "unidades"). Ninguna
+ * familia de `convertirUnidad` los reconoce, así que sin este caso especial
+ * `packPrice` caía silenciosamente al precio medio genérico DESCARTANDO un
+ * precio real de catálogo conocido (adversarial review finding #2).
+ */
+const UNIDADES_DE_CONTEO = new Set(['ud', 'uds', 'unidad', 'unidades']);
+
+/** `true` cuando `unidad` (ya en minúsculas via `parseFormatoReferencia`) representa un paquete/pieza entera, no una cantidad de masa/volumen. */
+function esUnidadDeConteo(unidad: string): boolean {
+  return UNIDADES_DE_CONTEO.has(unidad);
+}
+
+/**
  * El paquete real (`envaseVenta`) que respalda un `MappedGroceryItem` no es
  * hoy un campo del tipo — `lib/grocery/types.ts` todavía no lo expone. Esa
  * extensión aditiva es el Step 1 del plan de esta historia, deliberadamente
@@ -124,6 +138,14 @@ export function packPrice(item: MappedGroceryItem): number {
 
   if (item.origenEnvase === 'mercadona' && item.precioMercadona) {
     const referencia = parseFormatoReferencia(item.precioMercadona.formatoReferencia);
+
+    // "ud"/"unidad"/… no es masa ni volumen: el precio de referencia YA
+    // cubre 1 paquete completo, así que se usa directo en vez de caer al
+    // fallback genérico (finding #2).
+    if (esUnidadDeConteo(referencia.unidad) && referencia.cantidad > 0) {
+      return item.precioMercadona.precioReferencia * referencia.cantidad;
+    }
+
     const cantidadEnvaseEnUnidadReferencia = convertirUnidad(envaseVenta.cantidad, envaseVenta.unidad, referencia.unidad);
 
     if (cantidadEnvaseEnUnidadReferencia !== null && referencia.cantidad > 0) {
