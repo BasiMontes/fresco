@@ -7,7 +7,9 @@ import {
   estimateMenuCost,
   packPrice,
   parseFormatoReferencia,
+  PRECIO_MEDIO_POR_UNIDAD,
 } from './estimate-menu-cost';
+import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingListItem } from './map-item';
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
@@ -98,6 +100,58 @@ describe('packPrice', () => {
     expect(Number.isFinite(price)).toBe(true);
     expect(Number.isNaN(price)).toBe(false);
   });
+
+  // Adversarial review finding #2: "lentejas" es el único dictionary entry
+  // con `formatoReferencia: "ud"` — ni masa ni volumen, así que
+  // `convertirUnidad` no lo reconoce. Antes del fix, esto descartaba un
+  // precio real de catálogo (€4) en favor del fallback genérico (€2.91).
+  test('ingrediente con formatoReferencia "ud" (lentejas) usa el precio real de catálogo, no el fallback genérico', () => {
+    const item = mapShoppingListItem({ nombre: 'lentejas', cantidad: 300, unidad: 'g' });
+    expect(item.origenEnvase).toBe('mercadona');
+
+    // precioReferencia 4 €/ud, el envase de 485 g ES esa "ud" -> precio de paquete = 4 €.
+    expect(packPrice(item)).toBeCloseTo(4, 2);
+
+    // El fallback genérico (envase 485 g * PRECIO_MEDIO_POR_UNIDAD.g) sería un número muy distinto (2.91 €).
+    const fallbackGenerico = PRECIO_MEDIO_POR_UNIDAD.g * 485;
+    expect(packPrice(item)).not.toBeCloseTo(fallbackGenerico, 2);
+  });
+
+  // Guarda de regresión (sugerencia del reviewer): escanea TODOS los tokens
+  // de `formatoReferencia` que existen hoy en el diccionario generado y
+  // asegura que ninguno cae silenciosamente al fallback genérico para un
+  // ingrediente con match real de Mercadona. Si una futura regeneración del
+  // diccionario introduce un token nuevo no reconocido ni por `convertirUnidad`
+  // ni por `esUnidadDeConteo`, este test lo detecta sin que nadie tenga que
+  // pensar en ello.
+  test('cada token distinto de formatoReferencia presente en el diccionario produce un precio real, no el fallback genérico', () => {
+    const claveDeEjemploPorToken = new Map<string, string>();
+    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
+      if (entry.origenEnvase !== 'mercadona' || !entry.precioMercadona) { continue; }
+      const { unidad } = parseFormatoReferencia(entry.precioMercadona.formatoReferencia);
+      if (!claveDeEjemploPorToken.has(unidad)) { claveDeEjemploPorToken.set(unidad, entry.clave); }
+    }
+
+    // Sanity: si esto es 0, el propio test está roto (diccionario vacío o sin entradas mercadona).
+    expect(claveDeEjemploPorToken.size).toBeGreaterThan(0);
+
+    for (const clave of claveDeEjemploPorToken.values()) {
+      const entry = INGREDIENT_DICTIONARY[clave];
+      const item = mapShoppingListItem({
+        nombre: entry.canonico,
+        cantidad: entry.porcionReceta.cantidad,
+        unidad: entry.porcionReceta.unidad,
+      });
+      expect(item.origenEnvase).toBe('mercadona');
+
+      const price = packPrice(item);
+      expect(Number.isFinite(price)).toBe(true);
+      expect(Number.isNaN(price)).toBe(false);
+
+      const fallbackGenerico = (PRECIO_MEDIO_POR_UNIDAD[entry.envaseVenta.unidad] ?? PRECIO_MEDIO_POR_UNIDAD.unidades) * entry.envaseVenta.cantidad;
+      expect(price).not.toBeCloseTo(fallbackGenerico, 2);
+    }
+  });
 });
 
 describe('consolidateRecipeIngredients', () => {
@@ -148,6 +202,61 @@ describe('consolidateRecipeIngredients', () => {
     expect(Number.isFinite(aceite?.cantidad)).toBe(true);
     // raciones 0 -> fallback 4; numPersonas 4 -> factor 1, igual que el caso base (50 ml).
     expect(aceite?.cantidad).toBeCloseTo(50, 5);
+  });
+
+  // Adversarial review finding #1: el nombre de la receta lleva contexto
+  // ("ahumado") que `recoverFromRecipeContext` (FRESCO-488) remapea a un
+  // dictionary entry MÁS específico ("salmón ahumado", porcionReceta 150 g)
+  // que el genérico "salmón" (porcionReceta 400 g). La cantidad consolidada
+  // debe salir de la porción del entry RECUPERADO, no del genérico.
+  test('un ingrediente genérico con contexto de receta más específico consolida la cantidad del entry RECUPERADO, no del directo', () => {
+    const menu = emptyMenu();
+    menu.lunes.desayuno = makeFixtureRecipe({
+      nombre: 'Tostada con salmon ahumado y aguacate',
+      ingredientes_principales: ['salmon'],
+      meta: metaConRaciones(4),
+    });
+
+    const inputs = consolidateRecipeIngredients(menu, 4);
+
+    // Se buckeó bajo el producto canónico recuperado ("salmón ahumado"), no bajo "salmón" genérico.
+    expect(inputs.find(i => i.nombre === 'salmón')).toBeUndefined();
+    const salmonAhumado = inputs.find(i => i.nombre === 'salmón ahumado');
+    expect(salmonAhumado).toBeDefined();
+    // porcionReceta de "salmón ahumado" es 150 g (NO los 400 g del "salmón" genérico) * factor 1.
+    expect(salmonAhumado?.cantidad).toBeCloseTo(150, 5);
+    expect(salmonAhumado?.unidad).toBe('g');
+  });
+
+  // Compounding: el MISMO ingrediente genérico aparece dos veces en la misma
+  // semana — una vez SIN contexto específico (debe quedarse genérico) y otra
+  // vez CON contexto (debe recuperar) — no deben mezclarse en un solo bucket.
+  test('el mismo ingrediente genérico sin contexto y con contexto en la misma semana NO se mezclan en un solo bucket', () => {
+    const menu = emptyMenu();
+    menu.lunes.comida = makeFixtureRecipe({
+      nombre: 'Salmón a la plancha',
+      ingredientes_principales: ['salmon'],
+      meta: metaConRaciones(4),
+    });
+    menu.martes.desayuno = makeFixtureRecipe({
+      nombre: 'Tostada con salmon ahumado y aguacate',
+      ingredientes_principales: ['salmon'],
+      meta: metaConRaciones(4),
+    });
+
+    const inputs = consolidateRecipeIngredients(menu, 4);
+
+    expect(inputs.length).toBe(2);
+
+    const salmonGenerico = inputs.find(i => i.nombre === 'salmón');
+    expect(salmonGenerico).toBeDefined();
+    expect(salmonGenerico?.cantidad).toBeCloseTo(400, 5);
+    expect(salmonGenerico?.usos?.length).toBe(1);
+
+    const salmonAhumado = inputs.find(i => i.nombre === 'salmón ahumado');
+    expect(salmonAhumado).toBeDefined();
+    expect(salmonAhumado?.cantidad).toBeCloseTo(150, 5);
+    expect(salmonAhumado?.usos?.length).toBe(1);
   });
 });
 
@@ -232,5 +341,40 @@ describe('estimateMenuCost', () => {
     expect(total8).toBeCloseTo(Math.round(precioPorPaquete * 2 * 100) / 100, 2);
     // El salto de 1 a 2 paquetes es más que el simple doblado de cantidad (400g -> 800g sin cruzar límite escalaría igual).
     expect(total8).toBeCloseTo(total4 * 2, 2);
+  });
+
+  // Adversarial review finding #1 — reproducción end-to-end del reviewer:
+  // receta "Tostada con salmon ahumado y aguacate", ingredientes_principales
+  // ['salmon'], 4 raciones, numPersonas 4.
+  //
+  // ANTES del fix (bug real, verificado a mano): la cantidad salía del
+  // dictionary entry DIRECTO ("salmón", porcionReceta 400 g) pero el precio
+  // del RECUPERADO ("salmón ahumado", envase 100 g, 37 €/kg) -> 400 g / 100 g
+  // = 4 paquetes * 3.70 € = 14.80 € — precio de dos productos mezclados.
+  //
+  // DESPUÉS del fix: cantidad y precio salen del MISMO entry recuperado
+  // ("salmón ahumado", porcionReceta 150 g) -> 150 g / 100 g = 2 paquetes
+  // (ceil) * 3.70 € = 7.40 €.
+  test('recuperación de contexto de receta (salmón ahumado) produce el coste correcto, no un blend de dos productos', () => {
+    const menu = emptyMenu();
+    menu.lunes.desayuno = makeFixtureRecipe({
+      nombre: 'Tostada con salmon ahumado y aguacate',
+      ingredientes_principales: ['salmon'],
+      meta: metaConRaciones(4),
+    });
+
+    const total = estimateMenuCost(menu, 4);
+
+    // Precio por paquete de "salmón ahumado": 37 €/kg * (100 g -> 0.1 kg) = 3.70 €.
+    const precioPorPaqueteAhumado = 37 * (100 / 1000);
+    // Cantidad correcta: porcionReceta del RECUPERADO (150 g) * factor 1 -> ceil(150/100) = 2 paquetes.
+    const totalCorrecto = Math.round(precioPorPaqueteAhumado * 2 * 100) / 100;
+    expect(totalCorrecto).toBeCloseTo(7.4, 2);
+    expect(total).toBeCloseTo(totalCorrecto, 2);
+
+    // El número que producía el bug (cantidad del directo 400g / envase 100g = 4 paquetes * 3.70€) queda descartado.
+    const totalBugueado = Math.round(precioPorPaqueteAhumado * 4 * 100) / 100;
+    expect(totalBugueado).toBeCloseTo(14.8, 2);
+    expect(total).not.toBeCloseTo(totalBugueado, 2);
   });
 });
