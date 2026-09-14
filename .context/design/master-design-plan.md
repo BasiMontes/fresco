@@ -595,6 +595,7 @@ stories) are listed at the end.
 | FRESCO-446 | Motion layer: landing scroll reveals + insight-card entrance | EPIC-FRESCO-436 Visual redesign | 4.19 Motion layer | 4.1 Landing, 4.7 Home |
 | FRESCO-447 | Photo treatment: unified crop ratio + grade | EPIC-FRESCO-436 Visual redesign | 4.11 Recipe detail | 4.7 Home, 4.8 Calendar, 4.10 Recipe library, 4.12 Favorites |
 | FRESCO-340 | Coste estimado: mostrar el coste aproximado del menú semanal | EPIC-FRESCO-331 [DRAFT] Horizonte 2 | 4.7 Home (`savings-estimate-cards`, real value replaces the FRESCO-58 placeholder) | — |
+| FRESCO-345 | Integración supermercado: exportar la lista (copiar / CSV / abrir app) | EPIC-FRESCO-332 [DRAFT] Horizonte 3 | 4.9 Shopping list (`export-actions` — nueva fila de acciones) | — |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
