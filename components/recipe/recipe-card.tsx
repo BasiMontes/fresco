@@ -42,6 +42,16 @@ import { cn } from '@/lib/utils';
  * `flex-1` via `className` instead — `flex-basis:0` from `flex-1` takes
  * precedence over `height:100%` from `h-full` here, so the two compose
  * correctly rather than fighting.
+ *
+ * FRESCO-511 — same problem on the horizontal axis: `HorizontalScrollRow`
+ * (`components/menu/horizontal-scroll-row.tsx`) wraps each card in a
+ * `flex w-60 shrink-0` link, a row-direction flex container. Row-direction
+ * `align-items:stretch` only governs the cross axis (height), not width —
+ * without `w-full` here, this root sized itself via `flex-basis:auto`
+ * (content-based), so a card with less text content shrank narrower than
+ * its `w-60` (240px) parent instead of filling it. Confirmed live: 6 cards
+ * at the same `w-60` wrapper width measured between 144px and 240px before
+ * this fix.
  */
 /**
  * Everything `RecipeCard` actually reads off a recipe. A full `@schemas`
@@ -113,7 +123,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
   const favoriteButtonRef = React.useRef<HTMLButtonElement>(null);
 
   return (
-    <div className={cn('flex h-full flex-col rounded-card border border-border bg-surface-raised shadow-sm transition-shadow hover:border-primary/30 hover:shadow-md', className)}>
+    <div className={cn('flex h-full w-full flex-col rounded-card border border-border bg-surface-raised shadow-sm transition-shadow hover:border-primary/30 hover:shadow-md', className)}>
       <RecipeCardMedia
         fotoUrl={recipe.foto_url}
         nombre={recipe.nombre}
