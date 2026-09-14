@@ -29,7 +29,7 @@ import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation'
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, formatPrecio } from '@/lib/utils';
 
 export interface ShoppingListViewProps {
   list: ShoppingListPersistido
@@ -55,11 +55,6 @@ function formatUnidad(cantidad: number, unidad: string): string {
 
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-/** Matches the app's existing static-copy convention (`recipe-card.tsx`: "2,80€/persona") — comma decimal, no space before the symbol. */
-function formatPrecio(precio: number): string {
-  return `${precio.toFixed(2).replace('.', ',')}€`;
 }
 
 /** Same mapping `calendar-grid.tsx` uses for `DiaSemana` values — kept local rather than shared since this is the only other consumer today. */
