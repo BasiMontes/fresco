@@ -85,7 +85,7 @@ export function ExportActions({ pasillos }: ExportActionsProps) {
         className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }))}
       >
         <Download className="size-3.5" aria-hidden="true" />
-        Descargar
+        Descargar CSV
       </button>
 
       {Object.entries(SUPERMARKET_LINKS).map(([key, link]) => (
