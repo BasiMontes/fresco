@@ -1,0 +1,29 @@
+# Fresco
+
+> Fresco is an AI weekly menu planner: it generates a realistic weekly menu and an aisle-grouped shopping list in under 30 seconds, and gets better every week by learning from which recipes a household actually cooks versus discards.
+
+Fresco is not a recipe-discovery app, a pantry/inventory manager, or a price comparator. It solves a planning and decision-fatigue problem: turning "what do I cook this week?" into a full week of meals and a shopping list, repeated every week, with less effort each time.
+
+## Product
+
+- [Home](/): Guest landing page — value proposition, how it works, pricing, FAQ. Try a first menu with no signup required.
+- [Onboarding](/onboarding): 3-step setup (diet, favorite cuisines, household size) that generates a first weekly menu without creating an account.
+- [Sign up](/signup): Create a Fresco account to save menus and unlock the Pro learning loop.
+- [Log in](/login): Access an existing Fresco account.
+
+## Core features
+
+- AI-generated weekly menu (21 meals) in under 30 seconds.
+- Editable calendar with drag-and-drop meal swaps.
+- Shopping list automatically grouped by supermarket aisle.
+- "Cooked / discarded" feedback per recipe — the signal behind Pro's week-over-week learning.
+- Manual food-safety review for allergies and dietary restrictions on every generated menu.
+
+## Plans
+
+- Free (€0/month): one AI-generated weekly menu and shopping list per week, generated from scratch each time.
+- Pro (€4.99/month): everything in Free, plus behavioral learning — Fresco avoids recipes the household discarded, prioritizes ones they cooked, and adjusts quantities over time. 7-day free trial, no card required upfront.
+
+## Optional
+
+- Fresco explicitly does not do: receipt scanning, pantry/inventory management, price comparison, or a recipe marketplace.
