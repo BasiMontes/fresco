@@ -109,9 +109,9 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
   return (
     <div
       data-testid="sidebarAccount"
-      className={cn('flex flex-col gap-4 border-t border-background/10 pt-4', collapsed && 'items-center')}
+      className={cn('flex flex-col gap-5 border-t border-background/10 pt-5', collapsed && 'items-center')}
     >
-      <div className={cn('flex items-start gap-3', collapsed && 'flex-col items-center gap-3')}>
+      <div className={cn('flex items-start gap-4', collapsed && 'flex-col items-center gap-3')}>
         <div
           data-testid="user_avatar"
           aria-hidden="true"
@@ -131,13 +131,16 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             own tight, fixed gap regardless of how much space the name/plan
             block above claims via its own `flex-1`. Without this wrapper the
             CTA sat directly on the outer row's flex line, so its gap to the
-            name block (elastic, via that `flex-1`) and its gap to logout
-            (the row's plain `gap-3`) never matched — the row's rhythm read
-            as unaligned to the eye even though both used the same `gap-3`
-            token. In `collapsed` mode the CTA is already gated off below, so
-            this wrapper just holds the logout button alone — no extra class
-            needed, the outer row's own `flex-col items-center` handles it. */}
-        <div className="mt-0.5 flex items-center gap-2">
+            name block (elastic) and its gap to logout (a plain fixed token)
+            never matched, even sharing the same token value — the row's
+            rhythm read as unaligned. Second pass (same follow-up) widened
+            both this group's gap and the outer row's gap a step further —
+            the first pass fixed the mismatch but the row still read as
+            cramped at the original `gap-2`/`gap-3` sizes. In `collapsed`
+            mode the CTA is already gated off below, so this wrapper just
+            holds the logout button alone — no extra class needed, the outer
+            row's own `flex-col items-center` handles it. */}
+        <div className="mt-0.5 flex items-center gap-3">
           {showProUpsell && !collapsed && (
             <UpgradeToProButton
               label="Mejorar plan"
