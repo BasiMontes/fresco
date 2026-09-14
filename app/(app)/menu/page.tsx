@@ -19,6 +19,7 @@ import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
 import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { estimateMenuCost } from '@/lib/grocery/estimate-menu-cost';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -147,6 +148,22 @@ export default async function MenuPage() {
 
   const hoy = plan.menu.lunes;
 
+  // FRESCO-340: real weekly cost estimate for the "Gasto semanal estimado"
+  // tile. `estimateMenuCost` is a pure function (never throws per its own
+  // contract), but this try/catch matches the same fail-soft pattern used by
+  // every other computed value on this page — a real error falls back to
+  // `undefined`, which keeps `SavingsEstimateCards`'s existing `'~45€'`
+  // placeholder instead of crashing the page.
+  const costeEstimado = (() => {
+    try {
+      return estimateMenuCost(plan.menu, dietaryPreferences?.num_personas ?? 2);
+    }
+    catch (error) {
+      console.error('[/menu] estimateMenuCost failed, falling back to placeholder', error);
+      return undefined;
+    }
+  })();
+
   return (
     <div className="mx-auto max-w-3xl space-y-16">
       <PushOpenedTracker />
@@ -185,7 +202,7 @@ export default async function MenuPage() {
         {recetasDisponibles !== null && (
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
-        <SavingsEstimateCards />
+        <SavingsEstimateCards costeEstimado={costeEstimado} />
       </div>
 
       {(user?.is_anonymous || (plan.advertencias && plan.advertencias.length > 0) || plan.explicacionAprendizaje) && (
