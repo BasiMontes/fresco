@@ -127,25 +127,37 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             {PLAN_LABELS[plan]}
           </p>
         </div>
-        {showProUpsell && !collapsed && (
-          <UpgradeToProButton
-            label="Mejorar plan"
-            size="sm"
-            className="shrink-0"
-          />
-        )}
-        <Button
-          type="button"
-          variant="icon"
-          aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
-          data-testid="sidebar_logout_button"
-          disabled={isLoggingOut}
-          aria-busy={isLoggingOut}
-          onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
-          className="mt-0.5 shrink-0 bg-background/10 text-background hover:bg-background/20"
-        >
-          <LogOut className="size-6" aria-hidden="true" />
-        </Button>
+        {/* FRESCO-513 (follow-up) — grouped so the CTA+logout pair keeps its
+            own tight, fixed gap regardless of how much space the name/plan
+            block above claims via its own `flex-1`. Without this wrapper the
+            CTA sat directly on the outer row's flex line, so its gap to the
+            name block (elastic, via that `flex-1`) and its gap to logout
+            (the row's plain `gap-3`) never matched — the row's rhythm read
+            as unaligned to the eye even though both used the same `gap-3`
+            token. In `collapsed` mode the CTA is already gated off below, so
+            this wrapper just holds the logout button alone — no extra class
+            needed, the outer row's own `flex-col items-center` handles it. */}
+        <div className="mt-0.5 flex items-center gap-2">
+          {showProUpsell && !collapsed && (
+            <UpgradeToProButton
+              label="Mejorar plan"
+              size="sm"
+              className="shrink-0"
+            />
+          )}
+          <Button
+            type="button"
+            variant="icon"
+            aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
+            data-testid="sidebar_logout_button"
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+            onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
+            className="shrink-0 bg-background/10 text-background hover:bg-background/20"
+          >
+            <LogOut className="size-6" aria-hidden="true" />
+          </Button>
+        </div>
       </div>
       {logoutError && (
         <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
