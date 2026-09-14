@@ -111,11 +111,11 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
       data-testid="sidebarAccount"
       className={cn('flex flex-col gap-5 border-t border-background/10 pt-5', collapsed && 'items-center')}
     >
-      <div className={cn('flex items-start gap-4', collapsed && 'flex-col items-center gap-3')}>
+      <div className={cn('flex items-center gap-4', collapsed && 'flex-col gap-3')}>
         <div
           data-testid="user_avatar"
           aria-hidden="true"
-          className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
         >
           {initial || <UserIcon className="size-4" />}
         </div>
@@ -129,18 +129,18 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
         </div>
         {/* FRESCO-513 (follow-up) — grouped so the CTA+logout pair keeps its
             own tight, fixed gap regardless of how much space the name/plan
-            block above claims via its own `flex-1`. Without this wrapper the
-            CTA sat directly on the outer row's flex line, so its gap to the
-            name block (elastic) and its gap to logout (a plain fixed token)
-            never matched, even sharing the same token value — the row's
-            rhythm read as unaligned. Second pass (same follow-up) widened
-            both this group's gap and the outer row's gap a step further —
-            the first pass fixed the mismatch but the row still read as
-            cramped at the original `gap-2`/`gap-3` sizes. In `collapsed`
-            mode the CTA is already gated off below, so this wrapper just
-            holds the logout button alone — no extra class needed, the outer
-            row's own `flex-col items-center` handles it. */}
-        <div className="mt-0.5 flex items-center gap-3">
+            block above claims via its own `flex-1`. Third pass (same
+            follow-up): the real bug behind "not aligned" was the outer row
+            being `items-start` with hand-tuned `mt-0.5` nudges trying to
+            approximate vertical centering — that only ever worked by
+            accident, and broke for real once a 44px-tall button (`size="sm"`
+            forces `min-h-[44px]`, WCAG 2.5.5) sat next to 36px `size-9`
+            elements (the avatar, the icon-variant logout button). Switched
+            the row to `items-center`, which aligns every child's cross-axis
+            center regardless of its own height — no more per-element margin
+            guesswork. In `collapsed` mode the CTA is already gated off
+            below, so this wrapper just holds the logout button alone. */}
+        <div className="flex items-center gap-3">
           {showProUpsell && !collapsed && (
             <UpgradeToProButton
               label="Mejorar plan"
