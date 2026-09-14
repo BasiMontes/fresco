@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 import { HorizontalScrollRow } from '@/components/menu/horizontal-scroll-row';
+import { ExportActions } from '@/components/shopping-list/export-actions';
 import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -336,6 +337,8 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-h2">Lista de la compra</h1>
+
+      <ExportActions pasillos={pasillos} />
 
       <Card className="mt-4">
         <div className="grid grid-cols-2 items-start gap-x-4 gap-y-1">
