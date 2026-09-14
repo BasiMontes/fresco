@@ -30,10 +30,14 @@ describe('lib/posthog/events', () => {
     expect(captureSpy).not.toHaveBeenCalled();
   });
 
-  test('captureEvent calls posthog.capture when NEXT_PUBLIC_POSTHOG_KEY is set', () => {
+  test('captureEvent calls posthog.capture when NEXT_PUBLIC_POSTHOG_KEY is set', async () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
     const captureSpy = spyOn(posthog, 'capture').mockImplementation(() => ({ uuid: 'test', event: 'test', properties: {} }));
     captureEvent(POSTHOG_EVENTS.RECIPE_MARKED_COOKED, { source: 'test' });
+    // FRESCO-496: captureEvent now lazy-loads posthog-js (`import('posthog-js')`)
+    // instead of calling it synchronously — flush the microtask queue so the
+    // dynamic import's `.then()` has run before asserting.
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(captureSpy).toHaveBeenCalledWith(POSTHOG_EVENTS.RECIPE_MARKED_COOKED, { source: 'test' });
   });
 
@@ -43,17 +47,19 @@ describe('lib/posthog/events', () => {
     expect(identifySpy).not.toHaveBeenCalled();
   });
 
-  test('identifyUser calls posthog.identify when NEXT_PUBLIC_POSTHOG_KEY is set', () => {
+  test('identifyUser calls posthog.identify when NEXT_PUBLIC_POSTHOG_KEY is set', async () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
     const identifySpy = spyOn(posthog, 'identify').mockImplementation(() => {});
     identifyUser('user-123');
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(identifySpy).toHaveBeenCalledWith('user-123', undefined);
   });
 
-  test('identifyUser forwards person properties to posthog.identify (FRESCO-366)', () => {
+  test('identifyUser forwards person properties to posthog.identify (FRESCO-366)', async () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
     const identifySpy = spyOn(posthog, 'identify').mockImplementation(() => {});
     identifyUser('user-123', { plan: 'pro', is_guest: false, signup_method: 'account' });
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(identifySpy).toHaveBeenCalledWith('user-123', { plan: 'pro', is_guest: false, signup_method: 'account' });
   });
 });

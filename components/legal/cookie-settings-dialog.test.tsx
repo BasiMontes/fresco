@@ -115,6 +115,9 @@ describe('CookieSettingsDialog', () => {
 
     await user.click(screen.getByTestId('cookie_settings_analytics_toggle'));
     await user.click(screen.getByTestId('cookie_settings_save_button'));
+    // FRESCO-496: opt_out_capturing() now fires inside a lazy
+    // `import('posthog-js')`'s `.then()` — flush the microtask queue first.
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(optOutSpy).toHaveBeenCalled();
     expect(resetSpy).not.toHaveBeenCalled();
