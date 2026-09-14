@@ -64,15 +64,38 @@ const figtree = Figtree({
 // primary target keyword ("planificador de menús semanales") agreed with
 // the PO. Only the landing ("/") actually renders this default — every other
 // route already overrides `metadata.title` in its own layout.
+const TITLE = 'Fresco — Planificador de menús semanales';
+const DESCRIPTION
+  = 'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.';
+
+// FRESCO-470: without `metadataBase`, the relative `opengraph-image.tsx`
+// route below can't resolve into the absolute `og:image` URL that
+// WhatsApp/LinkedIn/Facebook/X require — Next.js only emits a warning and
+// falls back to `http://localhost:3000` in that case. `getMetadataBase()`
+// (FRESCO-471, `lib/seo/canonical.ts`) is the single source of truth for
+// this per-environment base — the previous local `resolveBaseUrl()` here
+// duplicated it exactly.
 export const metadata: Metadata = {
-  // FRESCO-471: convenience base for any URL-based metadata field below that
-  // provides a relative path — canonical URLs themselves are built as
-  // absolute strings via `canonicalUrl()` (see `lib/seo/canonical.ts`) so
-  // they don't depend on Next's metadataBase resolution/inheritance.
   metadataBase: getMetadataBase(),
-  title: 'Fresco — Planificador de menús semanales',
-  description:
-    'Fresco genera tu menú semanal en menos de 30 segundos y aprende de lo que realmente cocinas cada semana.',
+  title: TITLE,
+  description: DESCRIPTION,
+  // Public marketing pages (login, signup, etc.) that don't declare their own
+  // `openGraph`/`twitter` block inherit this one wholesale — coherent branded
+  // sharing cards everywhere, with per-route override still available to any
+  // page that sets its own `openGraph`/`twitter` metadata.
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+    siteName: 'Fresco',
+    locale: 'es_ES',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITLE,
+    description: DESCRIPTION,
+  },
   // FRESCO-471: self-referencing canonical for the landing route ("/").
   // Every other route overrides this explicitly in its own metadata export
   // (Next's metadata merge replaces `alternates` wholesale, not per-key —
