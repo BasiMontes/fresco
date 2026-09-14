@@ -84,6 +84,8 @@ The following are **explicitly excluded from the MVP and from all near-term road
 
 ## Success Criteria
 
+**Bar reached (2026-09-14, founder-confirmed):** the primary concierge-validation bar below has been met — at least 3 of 10 concierge cohort users both pay and repeat usage for 3+ consecutive weeks. This unblocks work that was explicitly gated on this bar, story by story (not a blanket epic-wide unblock) — e.g. FRESCO-340 (`EPIC-FRESCO-331`) and the priority-reordering of FRESCO-345 (`EPIC-FRESCO-332`, ADR-0027) are the first two. **Distinct from the Out-of-Scope Blacklist gate above**, which is MRR > €5,000 AND 30-day retention > 50% and is unaffected by this milestone — do not conflate the two when unblocking future work.
+
 The MVP is considered successful when the concierge-validation bar defined in the Constitution phase is met, not by an internal feature-completeness checklist:
 
 - **Primary bar:** at least **3 of 10** concierge cohort users both **pay** and **repeat usage for 3+ consecutive weeks** (`.context/business/market-context.md` — Validation Plan, step 4).
