@@ -29,6 +29,17 @@ import { cn } from '@/lib/utils';
  * (`calendar-grid`'s `SlotCell`). The caller positions its own node
  * (`absolute right-2 top-2` etc.); this component only provides the
  * positioned context.
+ *
+ * FRESCO-511 — `shrink-0`: `RecipeCard`'s root is `flex h-full flex-col`, and
+ * this media box sits above a `flex-1` text body. Without `shrink-0`, this
+ * item's default `flex-shrink: 1` let the flex algorithm steal height from
+ * the `aspect-[4/3]` box to satisfy the body's content-driven min-height
+ * (longer titles, more meta text) — the outer card stayed a uniform height
+ * (the `h-full` stretch still worked), but the photo itself silently
+ * violated its own aspect ratio card-to-card (confirmed live: 107-179px tall
+ * at a fixed 240px width, never the correct 180px). `shrink-0` takes this
+ * box out of that contest entirely, so only the body's `flex-1` absorbs
+ * leftover space and the aspect ratio holds everywhere this renders.
  */
 export interface RecipeCardMediaProps {
   fotoUrl: string | null | undefined
@@ -52,7 +63,7 @@ export function RecipeCardMedia({
   className,
 }: RecipeCardMediaProps) {
   return (
-    <div className={cn('relative aspect-[4/3] w-full overflow-hidden rounded-t-card', className)}>
+    <div className={cn('relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-t-card', className)}>
       {fotoUrl
         ? (
             <Image
