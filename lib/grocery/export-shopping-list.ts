@@ -83,22 +83,3 @@ export function formatShoppingListAsCsv(pasillos: ShoppingListPasillo[]): string
     .map(fila => fila.map(toCsvValue).join(','))
     .join('\n');
 }
-
-export interface SupermarketLink {
-  label: string
-  url: string
-}
-
-/**
- * Home de cada supermercado, sin parámetros de búsqueda ni afiliación
- * (Scope v2 de la historia: "abrir app/web... sin precargar", y el propio
- * plan de Stage 1 marca los enlaces de afiliación Awin explícitamente fuera
- * de alcance de ESTA historia — ver "Out of scope"). La resolución
- * app-si-está-instalada / web-si-no (Business Rule v2) la hace el sistema
- * operativo sobre una URL `https://` normal, cero código adicional.
- */
-export const SUPERMARKET_LINKS: Record<'mercadona' | 'carrefour' | 'dia', SupermarketLink> = {
-  mercadona: { label: 'Mercadona', url: 'https://www.mercadona.es' },
-  carrefour: { label: 'Carrefour', url: 'https://www.carrefour.es' },
-  dia: { label: 'Dia', url: 'https://www.dia.es' },
-};

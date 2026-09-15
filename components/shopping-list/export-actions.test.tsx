@@ -92,23 +92,6 @@ function stubAnchorClick() {
 }
 
 describe('ExportActions (FRESCO-345)', () => {
-  it('renders the 3 open-app links with correct href/target/rel', () => {
-    renderWithProviders(<ExportActions pasillos={PASILLOS} />);
-
-    const mercadona = screen.getByTestId('shopping_list_export_open_mercadona_link');
-    const carrefour = screen.getByTestId('shopping_list_export_open_carrefour_link');
-    const dia = screen.getByTestId('shopping_list_export_open_dia_link');
-
-    expect(mercadona).toHaveAttribute('href', 'https://www.mercadona.es');
-    expect(carrefour).toHaveAttribute('href', 'https://www.carrefour.es');
-    expect(dia).toHaveAttribute('href', 'https://www.dia.es');
-
-    for (const link of [mercadona, carrefour, dia]) {
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    }
-  });
-
   it('"Copiar" writes the formatted text to the clipboard and shows "Copiado"', async () => {
     const user = setupUser();
     renderWithProviders(<ExportActions pasillos={PASILLOS} />);
@@ -146,11 +129,10 @@ describe('ExportActions (FRESCO-345)', () => {
     expect(anchor?.download).toBe('lista-compra.csv');
   });
 
-  it('disables Copiar/Descargar for an empty list, but keeps the open-app links active', () => {
+  it('disables Copiar/Descargar for an empty list', () => {
     renderWithProviders(<ExportActions pasillos={[]} />);
 
     expect(screen.getByTestId('shopping_list_export_copy_button')).toBeDisabled();
     expect(screen.getByTestId('shopping_list_export_download_button')).toBeDisabled();
-    expect(screen.getByTestId('shopping_list_export_open_mercadona_link')).not.toHaveAttribute('disabled');
   });
 });

@@ -431,8 +431,14 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                     // Mercadona product page instead of a generic "abrir en
                     // Mercadona" home link. `null` (no catalog match, or a
                     // count-based unit — Decision 2 of FRESCO-503) simply
-                    // omits the link for that row.
-                    const mercadonaUrl = mapShoppingListItem(item).mercadonaUrl;
+                    // omits the link for that row. FRESCO-521 extends the
+                    // same per-item pattern to Consum — `consumUrl` is only
+                    // ever populated when there's no Mercadona match for
+                    // that ingredient (dictionary priority set in FRESCO-520),
+                    // so at most one of the two renders per row.
+                    const mapped = mapShoppingListItem(item);
+                    const mercadonaUrl = mapped.mercadonaUrl;
+                    const consumUrl = mapped.consumUrl;
                     return (
                       <li
                         key={item.nombre}
@@ -532,6 +538,18 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                             rel="noopener noreferrer"
                             aria-label={`Abrir ${capitalize(item.nombre)} en Mercadona`}
                             data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_mercadona_link`}
+                            className="shrink-0 rounded-lg border border-border p-1.5 text-tertiary transition-colors hover:text-text"
+                          >
+                            <ShoppingCart className="size-4" aria-hidden="true" />
+                          </a>
+                        )}
+                        {consumUrl && !item.comprado && (
+                          <a
+                            href={consumUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Abrir ${capitalize(item.nombre)} en Consum`}
+                            data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_consum_link`}
                             className="shrink-0 rounded-lg border border-border p-1.5 text-tertiary transition-colors hover:text-text"
                           >
                             <ShoppingCart className="size-4" aria-hidden="true" />

@@ -1,6 +1,6 @@
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { describe, expect, it } from 'bun:test';
-import { formatShoppingListAsCsv, formatShoppingListAsText, SUPERMARKET_LINKS } from './export-shopping-list';
+import { formatShoppingListAsCsv, formatShoppingListAsText } from './export-shopping-list';
 
 function pasillo(overrides: Partial<ShoppingListPasillo> = {}): ShoppingListPasillo {
   return {
@@ -97,14 +97,5 @@ describe('formatShoppingListAsCsv (FRESCO-345)', () => {
       pasillo({ items: [{ nombre: 'huevo', cantidad: 1, unidad: 'unidades', comprado: false }] }),
     ]);
     expect(csv).toContain('1,unidad,');
-  });
-});
-
-describe('SUPERMARKET_LINKS (FRESCO-345)', () => {
-  it('has no query params or tracking, per the Out-of-Scope carve-out', () => {
-    for (const link of Object.values(SUPERMARKET_LINKS)) {
-      expect(link.url).not.toContain('?');
-      expect(link.url).toMatch(/^https:\/\/www\.[a-z]+\.es$/);
-    }
   });
 });
