@@ -179,7 +179,11 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Card className="min-w-0">
+        {/* FRESCO-514 — whole-card scroll target for the sidebar account
+            popover's plain "Ayuda" item (`/profile#ayuda`); distinct from
+            the row-level `#ayuda-configuracion` target inside AyudaSection
+            itself. */}
+        <Card id="ayuda" className="min-w-0">
           <CardHeader>
             <CardTitle>Ayuda</CardTitle>
           </CardHeader>
