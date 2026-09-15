@@ -1,6 +1,7 @@
 import type { DiaSemana, TipoPlatoSlot } from '@schemas';
 
 const ALL_DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+const ALL_MEALS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena'];
 
 export type PlanningSelection = Record<DiaSemana, TipoPlatoSlot[]>;
 
@@ -26,6 +27,11 @@ export function toPlanningSelection(days: DiaSemana[], meals: TipoPlatoSlot[]): 
  */
 export function fromPlanningSelection(selection: PlanningSelection): { days: DiaSemana[], meals: TipoPlatoSlot[] } {
   const days = ALL_DIAS.filter(dia => (selection[dia]?.length ?? 0) > 0);
-  const meals = [...new Set(days.flatMap(dia => selection[dia] ?? []))] as TipoPlatoSlot[];
+  const mealSet = new Set(days.flatMap(dia => selection[dia] ?? []));
+  // FRESCO-516: `mealSet`'s iteration order follows insertion order (whatever
+  // order each day's meals happen to be stored in), not the canonical
+  // desayuno->comida->cena order the calendar always renders in — sort
+  // against ALL_MEALS instead of trusting the Set.
+  const meals = ALL_MEALS.filter(meal => mealSet.has(meal));
   return { days, meals };
 }
