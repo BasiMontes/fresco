@@ -35,6 +35,11 @@ export function organizationJsonLd() {
   };
 }
 
+/**
+ * `about` (FRESCO-508): the site's core entities, as bare `Thing` nodes — no
+ * `url` per entity, since none has a standalone public page to point at
+ * (`/recipes` and the meal-plan/shopping-list flows sit behind auth).
+ */
 export function websiteJsonLd() {
   const baseUrl = resolveBaseUrl();
   return {
@@ -42,6 +47,11 @@ export function websiteJsonLd() {
     '@type': 'WebSite',
     'name': 'Fresco',
     'url': baseUrl,
+    'about': [
+      { '@type': 'Thing', 'name': 'Menú semanal', 'description': 'Planificación automática del menú de la semana según lo que el usuario cocina.' },
+      { '@type': 'Thing', 'name': 'Lista de la compra', 'description': 'Lista de la compra generada a partir del menú semanal.' },
+      { '@type': 'Thing', 'name': 'Recetas', 'description': 'Catálogo de recetas usado para generar el menú semanal.' },
+    ],
   };
 }
 

@@ -34,6 +34,17 @@ describe('websiteJsonLd', () => {
     expect(typeof data.name).toBe('string');
     expect(data.url).toMatch(/^https?:\/\//);
   });
+
+  test('lists the site\'s core entities under about (FRESCO-508)', () => {
+    const data = websiteJsonLd();
+
+    expect(data.about.length).toBeGreaterThan(0);
+    data.about.forEach((entity) => {
+      expect(entity['@type']).toBe('Thing');
+      expect(typeof entity.name).toBe('string');
+      expect(typeof entity.description).toBe('string');
+    });
+  });
 });
 
 describe('softwareApplicationJsonLd', () => {
