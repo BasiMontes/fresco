@@ -375,11 +375,16 @@ export function CalendarGrid({
   }
 
   return (
-    <div>
-      {/* FRESCO-369: the Free-tier learning notice moved up to
-          `LearningBridgeCard` in the page, expanded with the mechanism preview
-          + a `/profile` CTA. */}
-      <div className="mb-2 flex items-center justify-end gap-2">
+    <div className="relative">
+      {/* FRESCO-516: shares the grid's day-header row instead of its own row
+          above it — that row used to be nearly empty (buttons right-aligned,
+          nothing to their left), reading as a band of dead white space above
+          the actual grid. Absolutely positioned against this `relative`
+          wrapper, which starts exactly at the grid's top edge, so `top-0`
+          lands in the header row; the day-header `<p>` below gets a matching
+          `min-h-8` so the grid's row-1 track (sized to the tallest cell in
+          it, per the comment below) is never shorter than these buttons. */}
+      <div className="absolute right-0 top-0 z-10 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setStartIndex(i => i - 1)}
@@ -448,8 +453,8 @@ export function CalendarGrid({
               <React.Fragment key={dia}>
                 <p
                   className={cn(
-                    'text-label',
-                    isToday && 'inline-flex w-fit items-center rounded-full bg-secondary px-3 py-1 text-on-warning',
+                    'flex min-h-8 w-fit items-center text-label',
+                    isToday && 'rounded-full bg-secondary px-3 py-1 text-on-warning',
                   )}
                 >
                   {DIA_LABELS[dia]}
