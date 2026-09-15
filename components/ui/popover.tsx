@@ -20,7 +20,12 @@ import { cn } from '@/lib/utils';
  * not the trigger — the caller renders its own trigger element (with
  * `aria-haspopup="menu"` + `aria-expanded`) inside a `relative`-positioned
  * wrapper alongside `<Popover>`, so the panel's `absolute` positioning
- * anchors against that wrapper.
+ * anchors against that wrapper. The caller also passes a `ref` to its
+ * trigger element as `triggerRef` so the click-outside check below can
+ * exclude it — otherwise a `mousedown` on the trigger itself (while open)
+ * reads as "outside", queuing a close that the trigger's own `click`
+ * handler then immediately re-opens against stale state (FRESCO-514
+ * fix-and-iterate, PR #361 review).
  */
 export interface PopoverProps {
   'open': boolean
@@ -29,11 +34,13 @@ export interface PopoverProps {
   'aria-label': string
   'className'?: string
   'data-testid'?: string
+  /** The caller's trigger element — excluded from the click-outside check. */
+  'triggerRef'?: React.RefObject<HTMLElement | null>
 }
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId }: PopoverProps) {
+export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId, triggerRef }: PopoverProps) {
   const panelRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocused = React.useRef<HTMLElement | null>(null);
 
@@ -43,14 +50,15 @@ export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel,
     if (!open) { return; }
 
     function handleClickOutside(event: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        onOpenChange(false);
-      }
+      const target = event.target as Node;
+      if (panelRef.current?.contains(target)) { return; }
+      if (triggerRef?.current?.contains(target)) { return; }
+      onOpenChange(false);
     }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, triggerRef]);
 
   // Focus trap + Escape-to-close + focus-return-on-close, keyed on `open`
   // exactly like `Dialog`'s equivalent effect.

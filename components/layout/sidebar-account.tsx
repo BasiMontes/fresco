@@ -4,7 +4,7 @@ import type { UserProfile } from '@schemas';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Button } from '@/components/ui/button';
@@ -87,6 +87,10 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
   const [showGuestConfirm, setShowGuestConfirm] = useState(false);
   // FRESCO-514: the account footer is now the trigger for a popover menu.
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // FRESCO-514 fix-and-iterate — handed to `Popover` as `triggerRef` so its
+  // click-outside check can exclude this button; without it, re-clicking
+  // the trigger while open closed then immediately reopened the panel.
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -127,6 +131,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
     >
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           data-testid="sidebar_account_trigger"
           aria-haspopup="menu"
@@ -161,6 +166,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
           onOpenChange={setIsMenuOpen}
           aria-label="Menú de cuenta"
           data-testid="sidebar_account_popover"
+          triggerRef={triggerRef}
           className="inset-x-0 bottom-full mb-2 w-64"
         >
           {/* Identity row, repeated — in `collapsed` mode the trigger above

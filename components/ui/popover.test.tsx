@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { Popover } from './popover';
 
@@ -12,12 +12,13 @@ import { Popover } from './popover';
 
 function Harness() {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   return (
     <div>
-      <button type="button" data-testid="trigger" onClick={() => setOpen(current => !current)}>
+      <button ref={triggerRef} type="button" data-testid="trigger" onClick={() => setOpen(current => !current)}>
         Cuenta
       </button>
-      <Popover open={open} onOpenChange={setOpen} aria-label="Menú de cuenta" data-testid="account_popover">
+      <Popover open={open} onOpenChange={setOpen} aria-label="Menú de cuenta" data-testid="account_popover" triggerRef={triggerRef}>
         <a href="/profile" data-testid="first_item">Perfil</a>
         <button type="button" data-testid="last_item">Cerrar sesión</button>
       </Popover>
@@ -58,6 +59,26 @@ describe('Popover', () => {
     expect(screen.getByRole('menu')).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  test('re-clicking the trigger while open closes it instead of reopening', async () => {
+    // FRESCO-514 fix-and-iterate, PR #361 BLOCKER — the click-outside
+    // `mousedown` handler had no reference to the trigger, so a `mousedown`
+    // on the trigger while open was treated as "outside" and queued
+    // `onOpenChange(false)`, then the trigger's own `click` handler fired
+    // right after and flipped it back to `true` against stale state: the
+    // popover never closed via re-clicking the trigger. `triggerRef` fixes
+    // it by excluding the trigger from that check.
+    const user = setupUser();
+    renderWithProviders(<Harness />);
+    const trigger = screen.getByTestId('trigger');
+
+    await user.click(trigger);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+
+    await user.click(trigger);
 
     expect(screen.queryByRole('menu')).toBeNull();
   });
