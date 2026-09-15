@@ -345,7 +345,11 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
       <Card className="mt-4">
         <div className="grid grid-cols-2 items-start gap-x-4 gap-y-1">
           <h2 className="text-h5">Resumen</h2>
-          <p className="text-right text-caption uppercase tracking-wide text-tertiary">Total estimado</p>
+          {/* FRESCO-527: was "Total estimado" — read as a running total that
+              should drop as items get checked off. It's a fixed snapshot of
+              the whole week's menu (computed once in `generate-shopping-list`),
+              so the wording says "del menú" to set that expectation. */}
+          <p className="text-right text-caption uppercase tracking-wide text-tertiary">Total estimado del menú de esta semana</p>
           <p className="flex items-center gap-1.5 text-body-sm text-tertiary">
             <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
             {pendientes}
