@@ -74,9 +74,13 @@ export function SiteNav() {
     <header className="sticky top-0 z-20 border-b border-border bg-background">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-8">
         <Link href="/" className="inline-flex min-h-[44px] shrink-0 items-center">
-          {/* FRESCO-481: cream negative mark on the near-black dark nav. */}
-          <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} className="brand-mark--light" priority />
-          <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} className="brand-mark--dark" priority />
+          {/* FRESCO-481: cream negative mark on the near-black dark nav.
+              FRESCO-504: dropped `priority` — only one of these two ever
+              renders visible (the other is CSS-hidden by theme), and both
+              were preloading regardless, competing with the hero photo (the
+              actual LCP candidate) for initial bandwidth. */}
+          <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} className="brand-mark--light" />
+          <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} className="brand-mark--dark" />
         </Link>
 
         {/* FRESCO-480: was `sm:flex` (640px) — the row (logo + 3 links + two
