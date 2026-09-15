@@ -166,32 +166,19 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
           aria-label="Menú de cuenta"
           data-testid="sidebar_account_popover"
           triggerRef={triggerRef}
-          className={cn(
-            'bottom-full mb-2 w-64',
-            // FRESCO-514 fix-and-iterate — `inset-x-0` (`left-0 right-0`)
-            // was over-constrained together with the explicit `w-64`: per
-            // CSS 2.1 §10.3.7, in LTR that combination is already resolved
-            // by using `left` + `width` and discarding `right`, so it
-            // rendered identically to `left-0` — this just states that
-            // intent directly instead of relying on the over-constrained
-            // rule.
-            //
-            // Collapsed mode anchors from the `<aside>`'s own left padding
-            // edge (`-left-2` cancels `sidebar.tsx`'s collapsed `px-2`)
-            // instead of the ~36px avatar-only trigger wrapper it would
-            // otherwise center inside — that maximizes the visible slice.
-            // It's a mitigation, not a full fix: the collapsed rail
-            // (`w-16` = 64px) is narrower than this panel (`w-64` = 256px)
-            // and its `<aside>` sets `overflow-x-hidden`, which hard-clips
-            // ANY absolutely-positioned descendant at that 64px boundary
-            // regardless of which edge it anchors from — a real fix needs
-            // the panel to escape that overflow ancestor (e.g. a
-            // `createPortal` to `document.body` with `position: fixed`
-            // coordinates from the trigger's `getBoundingClientRect()`),
-            // which is out of scope here (`sidebar.tsx` isn't touched by
-            // this fix). Needs a visual check on the collapsed rail.
-            collapsed ? '-left-2' : 'left-0',
-          )}
+          // Expanded: match the trigger's own rendered width, so the panel
+          // gets the identical left/right margin to the sidebar edges as
+          // the trigger row itself (a fixed 256px panel was ~32px wider
+          // than the ~224px trigger column it used to anchor inside,
+          // visibly spilling past the sidebar's right edge — reported in
+          // review). Collapsed: the trigger is a ~36px avatar, too narrow
+          // for a usable panel — `matchTriggerWidth={false}` keeps the
+          // panel's own `w-64`, and since `Popover` now portals to
+          // `document.body` at fixed viewport coordinates (second
+          // fix-and-iterate), it correctly renders outside the collapsed
+          // rail's `overflow-x-hidden` clip instead of being cut off.
+          matchTriggerWidth={!collapsed}
+          className={collapsed ? 'w-64' : undefined}
         >
           {/* Identity row, repeated — in `collapsed` mode the trigger above
               shows only the avatar, so this is the only place name/plan are
