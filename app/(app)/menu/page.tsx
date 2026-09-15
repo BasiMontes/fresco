@@ -125,7 +125,7 @@ export default async function MenuPage() {
 
   if (!plan) {
     return (
-      <div className="mx-auto max-w-3xl space-y-12">
+      <div className="mx-auto max-w-3xl space-y-8">
         {/* FRESCO-372: a re-engagement notification click can land here
         (she hasn't generated this week's plan yet) just as easily as the
         has-plan branch below — the tracker runs regardless of plan state. */}
@@ -177,7 +177,7 @@ export default async function MenuPage() {
   })();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-12">
+    <div className="mx-auto max-w-3xl space-y-8">
       <PushOpenedTracker />
       <div className="flex items-start justify-between">
         <div>
