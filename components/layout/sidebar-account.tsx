@@ -134,7 +134,6 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
           ref={triggerRef}
           type="button"
           data-testid="sidebar_account_trigger"
-          aria-haspopup="menu"
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen(current => !current)}
           className={cn(
@@ -217,7 +216,6 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
 
           <Link
             href="/profile"
-            role="menuitem"
             data-testid="popover_item_perfil"
             onClick={() => setIsMenuOpen(false)}
             className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
@@ -227,7 +225,6 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
 
           <Link
             href="/profile#ayuda-configuracion"
-            role="menuitem"
             data-testid="popover_item_configuracion"
             onClick={() => setIsMenuOpen(false)}
             className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
@@ -239,7 +236,6 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
 
           <Link
             href="/profile#ayuda"
-            role="menuitem"
             data-testid="popover_item_ayuda"
             onClick={() => setIsMenuOpen(false)}
             className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
@@ -250,7 +246,6 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
           <Button
             type="button"
             variant="ghost"
-            role="menuitem"
             aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
             data-testid="sidebar_logout_button"
             disabled={isLoggingOut}

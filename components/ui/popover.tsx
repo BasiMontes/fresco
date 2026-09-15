@@ -18,14 +18,23 @@ import { cn } from '@/lib/utils';
  *
  * Composition mirrors `Dialog`: this component owns only the panel/content,
  * not the trigger — the caller renders its own trigger element (with
- * `aria-haspopup="menu"` + `aria-expanded`) inside a `relative`-positioned
- * wrapper alongside `<Popover>`, so the panel's `absolute` positioning
- * anchors against that wrapper. The caller also passes a `ref` to its
- * trigger element as `triggerRef` so the click-outside check below can
- * exclude it — otherwise a `mousedown` on the trigger itself (while open)
- * reads as "outside", queuing a close that the trigger's own `click`
- * handler then immediately re-opens against stale state (FRESCO-514
- * fix-and-iterate, PR #361 review).
+ * `aria-expanded`) inside a `relative`-positioned wrapper alongside
+ * `<Popover>`, so the panel's `absolute` positioning anchors against that
+ * wrapper. The caller also passes a `ref` to its trigger element as
+ * `triggerRef` so the click-outside check below can exclude it — otherwise
+ * a `mousedown` on the trigger itself (while open) reads as "outside",
+ * queuing a close that the trigger's own `click` handler then immediately
+ * re-opens against stale state (FRESCO-514 fix-and-iterate, PR #361 review).
+ *
+ * No `role="menu"`/`role="menuitem"` here (FRESCO-514 fix-and-iterate):
+ * that WAI-ARIA pattern requires arrow-key roving navigation this
+ * implementation doesn't provide, and most callers use this for plain page
+ * navigation, not a command menu — APG discourages `menu`/`menuitem` for
+ * that. This stays a plain, accessible group of links/buttons (`aria-label`
+ * only), matching `Dropdown`'s `aria-haspopup`/`aria-expanded`-on-trigger
+ * convention rather than promising menu keyboard semantics. The Tab-trap +
+ * focus-return-on-close behavior below is still fine to keep as general
+ * "popover panel" behavior — it isn't tied to the menu role.
  */
 export interface PopoverProps {
   'open': boolean
@@ -105,9 +114,7 @@ export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel,
   return (
     <div
       ref={panelRef}
-      role="menu"
       aria-label={ariaLabel}
-      aria-orientation="vertical"
       tabIndex={-1}
       data-testid={dataTestId}
       className={cn(

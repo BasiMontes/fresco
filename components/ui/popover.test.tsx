@@ -8,6 +8,10 @@ import { Popover } from './popover';
  * renders its own trigger, `Dialog`-style composition): these tests pin the
  * open/close cycle via the caller's own trigger, outside-click and Escape
  * closing, and focus-trap/focus-return.
+ *
+ * No `role="menu"` on the panel (fix-and-iterate, PR #361 review — see
+ * `popover.tsx`'s doc comment): queries below use the panel's `data-testid`
+ * instead of `getByRole('menu')`.
  */
 
 function Harness() {
@@ -32,11 +36,11 @@ describe('Popover', () => {
     const user = setupUser();
     renderWithProviders(<Harness />);
 
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByTestId('account_popover')).toBeNull();
 
     await user.click(screen.getByTestId('trigger'));
 
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByTestId('account_popover')).toBeInTheDocument();
   });
 
   test('closes on outside click', async () => {
@@ -44,11 +48,11 @@ describe('Popover', () => {
     renderWithProviders(<Harness />);
 
     await user.click(screen.getByTestId('trigger'));
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByTestId('account_popover')).toBeInTheDocument();
 
     await user.click(screen.getByTestId('outside'));
 
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByTestId('account_popover')).toBeNull();
   });
 
   test('closes on Escape', async () => {
@@ -56,11 +60,11 @@ describe('Popover', () => {
     renderWithProviders(<Harness />);
 
     await user.click(screen.getByTestId('trigger'));
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByTestId('account_popover')).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
 
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByTestId('account_popover')).toBeNull();
   });
 
   test('re-clicking the trigger while open closes it instead of reopening', async () => {
@@ -76,11 +80,11 @@ describe('Popover', () => {
     const trigger = screen.getByTestId('trigger');
 
     await user.click(trigger);
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByTestId('account_popover')).toBeInTheDocument();
 
     await user.click(trigger);
 
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByTestId('account_popover')).toBeNull();
   });
 
   test('returns focus to the trigger on close', async () => {
@@ -90,11 +94,11 @@ describe('Popover', () => {
 
     trigger.focus();
     await user.click(trigger);
-    expect(screen.getByRole('menu')).toBeInTheDocument();
+    expect(screen.getByTestId('account_popover')).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
 
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByTestId('account_popover')).toBeNull();
     expect(trigger).toHaveFocus();
   });
 
@@ -126,6 +130,6 @@ describe('Popover', () => {
       </Popover>,
     );
 
-    expect(screen.queryByRole('menu')).toBeNull();
+    expect(screen.queryByTestId('p')).toBeNull();
   });
 });
