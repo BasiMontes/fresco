@@ -322,10 +322,20 @@ statuses:
 
   story_default:
     description: |
-      Status a Story transitions into immediately after creation. Methodology
-      default: `shift_left_qa` (already declared under `work_types.story.required_statuses`).
-    fallback_literal: Shift-Left QA
-    work_type_slug: shift_left_qa
+      Status a Story transitions into immediately after creation/refinement.
+      Methodology default is `shift_left_qa`, but THIS workspace collapsed the
+      abstract 11-status model onto 7 real Jira statuses (Listo / Blocked /
+      WIP / Control de calidad / Merged / Finalizada / Rechazos) — see
+      `jira-workflows.json` → `story.statuses`. In that collapse, `shift_left_qa`
+      resolves to "Control de calidad", which in this project's real workflow
+      is the post-dev code-review stage (reached via WIP), NOT "ready for a
+      developer to pick up". `ready_for_dev` resolves to "Listo" instead —
+      the correct target for a just-refined story, and what every sibling
+      story in this project (FRESCO-346, FRESCO-503, FRESCO-520, ...)
+      actually sits at once refined. Overridden 2026-09-15 after the drift
+      was caught mid-refinement of FRESCO-520.
+    fallback_literal: Listo
+    work_type_slug: ready_for_dev # resolves via work_types.story.required_statuses.ready_for_dev -> "Listo" in this workspace
     used_by:
       - product-management/add-feature
       - product-management/product-backlog-seed
