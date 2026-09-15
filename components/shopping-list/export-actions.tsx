@@ -4,7 +4,7 @@ import type { ShoppingListPasillo } from '@/lib/api/types';
 import { Check, Copy, Download } from 'lucide-react';
 import * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
-import { formatShoppingListAsCsv, formatShoppingListAsText, SUPERMARKET_LINKS } from '@/lib/grocery/export-shopping-list';
+import { formatShoppingListAsCsv, formatShoppingListAsText } from '@/lib/grocery/export-shopping-list';
 import { cn } from '@/lib/utils';
 
 export interface ExportActionsProps {
@@ -12,17 +12,21 @@ export interface ExportActionsProps {
 }
 
 /**
- * FRESCO-345 (Pieza A — export estructurado). Fila de 3 acciones debajo del
+ * FRESCO-345 (Pieza A — export estructurado). Fila de acciones debajo del
  * `<h1>` de `/shopping-list`: "Copiar" (portapapeles, mismo patrón
  * `navigator.clipboard.writeText` + estado `copied`/timeout que
- * `components/qa/copy-button.tsx`, adaptado a un componente de dominio),
- * "Descargar" (CSV vía Blob + ancla temporal), y 3 enlaces "Abrir en
- * <súper>" que solo lanzan la app/web sin precargar nada.
+ * `components/qa/copy-button.tsx`, adaptado a un componente de dominio) y
+ * "Descargar" (CSV vía Blob + ancla temporal).
+ *
+ * FRESCO-521 retiró los 3 enlaces "Abrir en <súper>" a nivel de lista
+ * completa que vivían acá: solo abrían la home de cada cadena sin buscar
+ * nada (ruido para Mercadona, que ya tiene el patrón mejor por artículo en
+ * `ShoppingListView`; directamente engañoso para Carrefour/Dia, sin datos
+ * de catálogo detrás).
  *
  * `pasillos` vacío deshabilita Copiar/Descargar (no tiene sentido copiar o
  * descargar una lista sin artículos — comportamiento menos sorprendente que
- * generar un archivo/texto vacío en silencio); los enlaces "Abrir en"
- * siguen siempre activos porque no dependen del contenido de la lista.
+ * generar un archivo/texto vacío en silencio).
  */
 export function ExportActions({ pasillos }: ExportActionsProps) {
   const [copied, setCopied] = React.useState(false);
@@ -87,21 +91,6 @@ export function ExportActions({ pasillos }: ExportActionsProps) {
         <Download className="size-3.5" aria-hidden="true" />
         Descargar CSV
       </button>
-
-      {Object.entries(SUPERMARKET_LINKS).map(([key, link]) => (
-        <a
-          key={key}
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid={`shopping_list_export_open_${key}_link`}
-          className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }))}
-        >
-          Abrir en
-          {' '}
-          {link.label}
-        </a>
-      ))}
     </div>
   );
 }

@@ -46,6 +46,63 @@ describe('ShoppingListView — item checkbox accessible name (FRESCO-498)', () =
   });
 });
 
+describe('ShoppingListView — supermarket links per item (FRESCO-521)', () => {
+  const LIST_WITH_LINKS: ShoppingListPersistido = {
+    id: 'list2',
+    pasillos: [
+      {
+        nombre: 'Frutas y verduras',
+        orden: 1,
+        items: [
+          // Real dictionary entries: "aceite de oliva" only has a Mercadona
+          // match, "alubias rojas" only has a Consum match (FRESCO-520
+          // priority — a Consum URL is only ever populated when there's no
+          // Mercadona one), "aguacate" has neither.
+          { nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml', comprado: false },
+          { nombre: 'alubias rojas', cantidad: 300, unidad: 'g', comprado: false },
+          { nombre: 'aguacate', cantidad: 1, unidad: 'unidades', comprado: false },
+        ],
+      },
+    ],
+    resumen: { total_items: 3, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('an item matched only in Mercadona shows the Mercadona link, not Consum (regression)', () => {
+    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_0_mercadona_link')).toBeTruthy();
+    expect(screen.queryByTestId('shopping_list_item_0_0_consum_link')).toBeNull();
+  });
+
+  test('an item matched only in Consum shows the Consum link, not Mercadona', () => {
+    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_1_consum_link')).toBeTruthy();
+    expect(screen.queryByTestId('shopping_list_item_0_1_mercadona_link')).toBeNull();
+  });
+
+  test('an item with no catalog match shows no supermarket link', () => {
+    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} />);
+
+    expect(screen.queryByTestId('shopping_list_item_0_2_mercadona_link')).toBeNull();
+    expect(screen.queryByTestId('shopping_list_item_0_2_consum_link')).toBeNull();
+  });
+
+  test('a bought item shows no supermarket link even with a real match', () => {
+    const boughtList: ShoppingListPersistido = {
+      ...LIST_WITH_LINKS,
+      pasillos: [{
+        ...LIST_WITH_LINKS.pasillos[0],
+        items: LIST_WITH_LINKS.pasillos[0].items.map(item => ({ ...item, comprado: true })),
+      }],
+    };
+    renderWithProviders(<ShoppingListView list={boughtList} />);
+
+    expect(screen.queryByTestId('shopping_list_item_0_0_mercadona_link')).toBeNull();
+    expect(screen.queryByTestId('shopping_list_item_0_1_consum_link')).toBeNull();
+  });
+});
+
 describe('ShoppingListView — receipt ticket on "Compra realizada"', () => {
   test('the button is absent when nothing is checked', () => {
     const noneChecked: ShoppingListPersistido = {
