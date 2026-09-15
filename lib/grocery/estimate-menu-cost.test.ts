@@ -94,6 +94,7 @@ describe('packPrice', () => {
       confianza: 'baja' as const,
       origenEnvase: 'mercadona' as const,
       precioMercadona: { precioReferencia: 5, formatoReferencia: '???' },
+      mercadonaUrl: 'https://tienda.mercadona.es/product/1/ingrediente-raro',
     };
 
     const price = packPrice(item);

@@ -46,6 +46,7 @@ const HF_BASE = 'https://huggingface.co/datasets/datania/mercadona-catalog/resol
 export interface MercadonaProduct {
   id: string
   display_name: string
+  share_url: string
   price_instructions: {
     reference_price: string
     reference_format: string
@@ -63,6 +64,7 @@ interface MercadonaCategory {
 export interface MercadonaMatch {
   envaseVenta: { cantidad: number, unidad: string }
   precioMercadona: { precioReferencia: number, formatoReferencia: string }
+  shareUrl: string
 }
 
 const NOT_FOUND_MARKER = '__NOT_FOUND__';
@@ -212,6 +214,7 @@ export function buildMercadonaCatalogMatch(
     out[clave] = {
       envaseVenta: { cantidad, unidad: porciones[clave].unidad },
       precioMercadona: { precioReferencia, formatoReferencia: pi.reference_format },
+      shareUrl: match.share_url,
     };
   }
   return out;
@@ -232,6 +235,7 @@ import type { EnvaseVenta, PrecioMercadona } from './types';
 export interface MercadonaMatch {
   envaseVenta: EnvaseVenta
   precioMercadona: PrecioMercadona
+  shareUrl: string
 }
 
 /** Real Mercadona pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */

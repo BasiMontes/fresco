@@ -91,6 +91,7 @@ function buildEntry(clave: string): CanonicalIngredient {
     terminoBusqueda: SEARCH_TERM_OVERRIDE[clave] ?? canonico,
     origenEnvase: mercadonaMatch ? 'mercadona' : 'estimado',
     precioMercadona: mercadonaMatch?.precioMercadona ?? null,
+    mercadonaUrl: mercadonaMatch?.shareUrl ?? null,
   };
 }
 

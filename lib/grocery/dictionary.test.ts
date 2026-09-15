@@ -74,4 +74,16 @@ describe('ingredient-dictionary — every entry is well-formed', () => {
       }
     }
   });
+
+  // FRESCO-518 tier 1 — origenEnvase/mercadonaUrl shape invariant, same posture as precioMercadona above.
+  test('every entry with origenEnvase "mercadona" has a non-null mercadonaUrl, and vice versa', () => {
+    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
+      if (entry.origenEnvase === 'mercadona') {
+        expect(entry.mercadonaUrl).not.toBeNull();
+      }
+      else {
+        expect(entry.mercadonaUrl).toBeNull();
+      }
+    }
+  });
 });

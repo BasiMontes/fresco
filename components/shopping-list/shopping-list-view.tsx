@@ -16,6 +16,7 @@ import {
   Plus,
   Receipt,
   Sandwich,
+  ShoppingCart,
   Utensils,
   Wheat,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
+import { mapShoppingListItem } from '@/lib/grocery/map-item';
 import { createClient } from '@/lib/supabase/client';
 import { cn, formatPrecio } from '@/lib/utils';
 
@@ -425,6 +427,12 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                     const usosLabel = formatUsos(item.usos);
                     const flatIndex
                       = pasillos.slice(0, pasilloIdx).reduce((n, p) => n + p.items.length, 0) + itemIdx;
+                    // FRESCO-518 tier 1 — deep-link straight to the matched
+                    // Mercadona product page instead of a generic "abrir en
+                    // Mercadona" home link. `null` (no catalog match, or a
+                    // count-based unit — Decision 2 of FRESCO-503) simply
+                    // omits the link for that row.
+                    const mercadonaUrl = mapShoppingListItem(item).mercadonaUrl;
                     return (
                       <li
                         key={item.nombre}
@@ -517,6 +525,18 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                             </span>
                           )}
                         </div>
+                        {mercadonaUrl && !item.comprado && (
+                          <a
+                            href={mercadonaUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Abrir ${capitalize(item.nombre)} en Mercadona`}
+                            data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_mercadona_link`}
+                            className="shrink-0 rounded-lg border border-border p-1.5 text-tertiary transition-colors hover:text-text"
+                          >
+                            <ShoppingCart className="size-4" aria-hidden="true" />
+                          </a>
+                        )}
                       </li>
                     );
                   })}

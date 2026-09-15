@@ -50,6 +50,12 @@ describe('mercadona-catalog.generated — every entry is well-formed', () => {
     }
   });
 
+  test('shareUrl is a real Mercadona product URL', () => {
+    for (const match of Object.values(MERCADONA_CATALOG_MATCH)) {
+      expect(match.shareUrl.startsWith('https://tienda.mercadona.es/product/')).toBe(true);
+    }
+  });
+
   test('every key is a real g/ml-unit ingredient (Decision 2: no count-based units)', () => {
     for (const clave of Object.keys(MERCADONA_CATALOG_MATCH)) {
       const porcion = BASE_QUANTITIES[clave];
@@ -63,6 +69,7 @@ describe('buildMercadonaCatalogMatch — matching heuristic (inline fixture, no 
   function product(overrides: Partial<MercadonaProduct> & { display_name: string }): MercadonaProduct {
     return {
       id: overrides.display_name,
+      share_url: `https://tienda.mercadona.es/product/${overrides.display_name}`,
       price_instructions: {
         reference_price: '2.50',
         reference_format: 'kg',
@@ -79,6 +86,7 @@ describe('buildMercadonaCatalogMatch — matching heuristic (inline fixture, no 
     expect(match.espinacas).toEqual({
       envaseVenta: { cantidad: 500, unidad: 'g' },
       precioMercadona: { precioReferencia: 2.5, formatoReferencia: 'kg' },
+      shareUrl: 'https://tienda.mercadona.es/product/Espinacas frescas Hacendado',
     });
   });
 

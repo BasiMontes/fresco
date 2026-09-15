@@ -96,6 +96,7 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
       confianza: 'baja',
       origenEnvase: 'estimado',
       precioMercadona: null,
+      mercadonaUrl: null,
     };
   }
 
@@ -116,6 +117,7 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
     confianza: remapAplicado || !familiasCoinciden ? 'media' : 'alta',
     origenEnvase: entry.origenEnvase,
     precioMercadona: entry.precioMercadona,
+    mercadonaUrl: entry.mercadonaUrl,
   };
 }
 

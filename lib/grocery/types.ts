@@ -62,6 +62,8 @@ export interface CanonicalIngredient {
   origenEnvase: OrigenEnvase
   /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
   precioMercadona: PrecioMercadona | null
+  /** Deep-link to this exact product on tienda.mercadona.es (FRESCO-518 tier 1), when `origenEnvase === 'mercadona'`. Null otherwise. */
+  mercadonaUrl: string | null
 }
 
 /** Result of mapping one shopping-list item. */
@@ -85,6 +87,8 @@ export interface MappedGroceryItem {
   origenEnvase: OrigenEnvase
   /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
   precioMercadona: PrecioMercadona | null
+  /** Deep-link to this exact product on tienda.mercadona.es (FRESCO-518 tier 1), when `origenEnvase === 'mercadona'`. Null otherwise. */
+  mercadonaUrl: string | null
 }
 
 /** Input shape — the subset of `ShoppingListItem` this layer reads. */
