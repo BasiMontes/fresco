@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { derivePersonProperties } from '@/lib/posthog/person-properties';
-import { createClient } from '@/lib/supabase/client';
+import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
 
 // Module-level, not component state: React StrictMode double-invokes effects
 // in dev, and posthog.init() is not itself idempotent-safe to call twice.
@@ -105,55 +105,74 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       console.error('[posthog-provider] failed to load posthog-js', error);
     });
 
-    const client = createClient();
+    // FRESCO-505: same class of bug FRESCO-496 already fixed for
+    // `posthog-js` above, just missed here — `@/lib/supabase/client` pulls
+    // in the whole `@supabase/supabase-js` client (realtime + storage +
+    // postgrest + functions), and this effect only ever reaches it once
+    // cookie consent is accepted (the early return above), so a static
+    // import shipped that weight in every page's initial bundle for a call
+    // that a fresh, no-consent-yet visit — exactly what Lighthouse measures
+    // — never even runs.
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    async function identifyWithProperties(user: User): Promise<void> {
-      const key = `${user.id}:${user.is_anonymous === true}`;
-      if (identifiedKey.current === key) {
-        return;
-      }
-      identifiedKey.current = key;
+    void loadSupabaseClient().then(({ createClient }) => {
+      if (!active) { return; }
+      const client = createClient();
 
-      let plan: PlanUsuario = 'free';
-      if (user.is_anonymous !== true) {
-        try {
-          const { data } = await client
-            .from('user_profiles')
-            .select('plan')
-            .eq('id', user.id)
-            .maybeSingle();
-          plan = data?.plan ?? 'free';
+      async function identifyWithProperties(user: User): Promise<void> {
+        const identKey = `${user.id}:${user.is_anonymous === true}`;
+        if (identifiedKey.current === identKey) {
+          return;
         }
-        catch {
-          // Fail-soft (§10 Errors) — a profile-read blip must never break
-          // identity linkage; `plan` just stays at its 'free' default.
+        identifiedKey.current = identKey;
+
+        let plan: PlanUsuario = 'free';
+        if (user.is_anonymous !== true) {
+          try {
+            const { data } = await client
+              .from('user_profiles')
+              .select('plan')
+              .eq('id', user.id)
+              .maybeSingle();
+            plan = data?.plan ?? 'free';
+          }
+          catch {
+            // Fail-soft (§10 Errors) — a profile-read blip must never break
+            // identity linkage; `plan` just stays at its 'free' default.
+          }
         }
+
+        identifyUser(user.id, derivePersonProperties(user, plan));
       }
 
-      identifyUser(user.id, derivePersonProperties(user, plan));
-    }
+      const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+        const user = session?.user;
+        if (user?.id) {
+          void identifyWithProperties(user);
+        }
+        if (event === 'SIGNED_OUT') {
+          identifiedKey.current = null;
+        }
+        // FRESCO-240: `/login`'s own SESSION_STARTED capture only fires on an
+        // explicit credential submission, missing a returning user whose
+        // persisted session is still valid and who never hits /login again.
+        // `INITIAL_SESSION` fires exactly once, on mount, and only ever
+        // carries a session when one was already persisted — a real
+        // credential submission fires `SIGNED_IN` instead, so this can't
+        // double-count against /login's own capture.
+        if (event === 'INITIAL_SESSION' && session?.user?.id) {
+          captureEvent(POSTHOG_EVENTS.SESSION_STARTED);
+        }
+      });
 
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      const user = session?.user;
-      if (user?.id) {
-        void identifyWithProperties(user);
-      }
-      if (event === 'SIGNED_OUT') {
-        identifiedKey.current = null;
-      }
-      // FRESCO-240: `/login`'s own SESSION_STARTED capture only fires on an
-      // explicit credential submission, missing a returning user whose
-      // persisted session is still valid and who never hits /login again.
-      // `INITIAL_SESSION` fires exactly once, on mount, and only ever
-      // carries a session when one was already persisted — a real
-      // credential submission fires `SIGNED_IN` instead, so this can't
-      // double-count against /login's own capture.
-      if (event === 'INITIAL_SESSION' && session?.user?.id) {
-        captureEvent(POSTHOG_EVENTS.SESSION_STARTED);
-      }
+      unsubscribe = () => subscription.unsubscribe();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, [decision]);
 
   return <>{children}</>;
