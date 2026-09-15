@@ -86,4 +86,18 @@ describe('ingredient-dictionary — every entry is well-formed', () => {
       }
     }
   });
+
+  // FRESCO-520 — origenEnvase/precioConsum+consumUrl shape invariant, same posture as the Mercadona pair above.
+  test('every entry with origenEnvase "consum" has a non-null precioConsum and consumUrl, and vice versa', () => {
+    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
+      if (entry.origenEnvase === 'consum') {
+        expect(entry.precioConsum).not.toBeNull();
+        expect(entry.consumUrl).not.toBeNull();
+      }
+      else {
+        expect(entry.precioConsum).toBeNull();
+        expect(entry.consumUrl).toBeNull();
+      }
+    }
+  });
 });

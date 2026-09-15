@@ -97,6 +97,8 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
       origenEnvase: 'estimado',
       precioMercadona: null,
       mercadonaUrl: null,
+      precioConsum: null,
+      consumUrl: null,
     };
   }
 
@@ -118,6 +120,8 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
     origenEnvase: entry.origenEnvase,
     precioMercadona: entry.precioMercadona,
     mercadonaUrl: entry.mercadonaUrl,
+    precioConsum: entry.precioConsum,
+    consumUrl: entry.consumUrl,
   };
 }
 

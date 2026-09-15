@@ -41,7 +41,19 @@ export interface PrecioMercadona {
 }
 
 /** Where `envaseVenta` came from — lets downstream stories (FRESCO-340, FRESCO-345) tell a real price from an estimate. */
-export type OrigenEnvase = 'mercadona' | 'estimado';
+export type OrigenEnvase = 'mercadona' | 'consum' | 'estimado';
+
+/**
+ * Real Consum reference price sourced from the catalog (FRESCO-520).
+ *
+ * Unlike `PrecioMercadona`, `precio` IS the price of the whole `envaseVenta`
+ * pack directly (Consum's `centAmount` is a pack price, not a per-reference-
+ * unit price) — no conversion needed downstream.
+ */
+export interface PrecioConsum {
+  /** Price in EUR for the whole `envaseVenta` pack. */
+  precio: number
+}
 
 /** One dictionary entry: everything known about a canonical Fresco ingredient. */
 export interface CanonicalIngredient {
@@ -58,12 +70,16 @@ export interface CanonicalIngredient {
   sinonimos: string[]
   /** Supermarket search term when the canonical name is a poor query. Defaults to `canonico`. */
   terminoBusqueda: string
-  /** Whether `envaseVenta` came from the real Mercadona catalog or the hand-curated fallback (FRESCO-503). */
+  /** Whether `envaseVenta` came from a real supermarket catalog or the hand-curated fallback (FRESCO-503, FRESCO-520). */
   origenEnvase: OrigenEnvase
   /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
   precioMercadona: PrecioMercadona | null
   /** Deep-link to this exact product on tienda.mercadona.es (FRESCO-518 tier 1), when `origenEnvase === 'mercadona'`. Null otherwise. */
   mercadonaUrl: string | null
+  /** Real Consum reference price, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
+  precioConsum: PrecioConsum | null
+  /** Deep-link to this exact product on tienda.consum.es, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
+  consumUrl: string | null
 }
 
 /** Result of mapping one shopping-list item. */
@@ -83,12 +99,16 @@ export interface MappedGroceryItem {
   /** How many retail packs cover the quantity. Always ≥ 1. */
   envasesEstimados: number
   confianza: Confianza
-  /** Whether `unidadVenta`/pack size came from the real Mercadona catalog or the hand-curated fallback (FRESCO-503). */
+  /** Whether `unidadVenta`/pack size came from a real supermarket catalog or the hand-curated fallback (FRESCO-503, FRESCO-520). */
   origenEnvase: OrigenEnvase
   /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
   precioMercadona: PrecioMercadona | null
   /** Deep-link to this exact product on tienda.mercadona.es (FRESCO-518 tier 1), when `origenEnvase === 'mercadona'`. Null otherwise. */
   mercadonaUrl: string | null
+  /** Real Consum reference price, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
+  precioConsum: PrecioConsum | null
+  /** Deep-link to this exact product on tienda.consum.es, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
+  consumUrl: string | null
 }
 
 /** Input shape — the subset of `ShoppingListItem` this layer reads. */
