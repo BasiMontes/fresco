@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { IDENTITY_COOKIE_EVENT, readNombreCookie } from '@/lib/auth/identity-cookie';
-import { createClient } from '@/lib/supabase/client';
+import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
@@ -33,6 +33,12 @@ const NAV_LINKS = [
  * cookie kept in sync by `IdentityCookieSync`; SSR and first paint render the
  * guest state, then this reconciles after mount (same pattern as the
  * `ThemeToggle` beside it).
+ *
+ * FRESCO-505: `@/lib/supabase/client` is imported dynamically inside the
+ * effect, not statically — it pulls in the full `@supabase/supabase-js`
+ * client (realtime + storage + postgrest + functions), which otherwise rides
+ * along in this route's critical initial bundle for a call that only
+ * happens after mount anyway.
  */
 interface NavIdentity {
   hasSession: boolean
@@ -45,10 +51,12 @@ export function SiteNav() {
 
   useEffect(() => {
     let active = true;
-    void createClient().auth.getSession().then(({ data: { session } }) => {
-      if (!active) { return; }
-      setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
-    });
+    void loadSupabaseClient()
+      .then(async ({ createClient }) => createClient().auth.getSession())
+      .then(({ data: { session } }) => {
+        if (!active) { return; }
+        setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
+      });
 
     // `IdentityCookieSync` writes the name cookie from an async query that
     // can resolve just after this first paint — pick that up without a

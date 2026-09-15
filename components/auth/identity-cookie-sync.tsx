@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { clearNombreCookie, readNombreCookie, writeNombreCookie } from '@/lib/auth/identity-cookie';
-import { createClient } from '@/lib/supabase/client';
+import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
 
 /**
  * Keeps the `fresco_nombre` cookie (`lib/auth/identity-cookie.ts`) in sync
@@ -23,51 +23,70 @@ import { createClient } from '@/lib/supabase/client';
  *   greeting.
  * - `SIGNED_OUT` / no session → clear the cookie.
  *
- * Renders nothing. Mounted once in `app/layout.tsx`.
+ * Renders nothing. Mounted once in `app/layout.tsx` — on every route,
+ * including the guest landing. FRESCO-505: `@/lib/supabase/client` pulls in
+ * the whole `@supabase/supabase-js` client (realtime + storage + postgrest +
+ * functions, ~530 KiB uncompressed — `SupabaseClient`'s constructor wires up
+ * every sub-client regardless of which one you call), and this component
+ * used to import it statically, so it rode along in the landing page's
+ * critical initial bundle even though this effect's own work only starts
+ * after mount. A dynamic `import()` inside the effect defers that fetch +
+ * parse to after first paint instead, with the same runtime behavior.
  */
 export function IdentityCookieSync() {
   const syncedUid = useRef<string | null>(null);
 
   useEffect(() => {
-    const client = createClient();
+    let unsubscribe: (() => void) | undefined;
+    let active = true;
 
-    async function syncNombre(userId: string): Promise<void> {
-      if (syncedUid.current === userId && readNombreCookie()) { return; }
-      syncedUid.current = userId;
-      try {
-        const { data } = await client
-          .from('user_profiles')
-          .select('nombre')
-          .eq('id', userId)
-          .maybeSingle();
-        const nombre = data?.nombre?.trim();
-        if (nombre) { writeNombreCookie(nombre); }
-        else { clearNombreCookie(); }
-      }
-      catch {
-        // Fail-soft (§10 Errors): a profile-read blip just leaves the nav
-        // without a greeting — it still shows "Ir a mi menú" via getSession().
-      }
-    }
+    void loadSupabaseClient().then(({ createClient }) => {
+      if (!active) { return; }
+      const client = createClient();
 
-    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
-      const user = session?.user;
-
-      if (event === 'SIGNED_OUT' || !user) {
-        syncedUid.current = null;
-        if (readNombreCookie()) { clearNombreCookie(); }
-        return;
+      async function syncNombre(userId: string): Promise<void> {
+        if (syncedUid.current === userId && readNombreCookie()) { return; }
+        syncedUid.current = userId;
+        try {
+          const { data } = await client
+            .from('user_profiles')
+            .select('nombre')
+            .eq('id', userId)
+            .maybeSingle();
+          const nombre = data?.nombre?.trim();
+          if (nombre) { writeNombreCookie(nombre); }
+          else { clearNombreCookie(); }
+        }
+        catch {
+          // Fail-soft (§10 Errors): a profile-read blip just leaves the nav
+          // without a greeting — it still shows "Ir a mi menú" via getSession().
+        }
       }
 
-      if (user.is_anonymous === true) {
-        if (readNombreCookie()) { clearNombreCookie(); }
-        return;
-      }
+      const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+        const user = session?.user;
 
-      void syncNombre(user.id);
+        if (event === 'SIGNED_OUT' || !user) {
+          syncedUid.current = null;
+          if (readNombreCookie()) { clearNombreCookie(); }
+          return;
+        }
+
+        if (user.is_anonymous === true) {
+          if (readNombreCookie()) { clearNombreCookie(); }
+          return;
+        }
+
+        void syncNombre(user.id);
+      });
+
+      unsubscribe = () => subscription.unsubscribe();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
   }, []);
 
   return null;
