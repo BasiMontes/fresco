@@ -62,7 +62,18 @@ const HERO_PHOTOS: HeroPhoto[] = [
   },
 ];
 
-/** One photo tile. `fill` + `sizes` so the intrinsic 1080px source scales to the slot. */
+/**
+ * One photo tile. `fill` + `sizes` so the intrinsic 1080px source scales to
+ * the slot.
+ *
+ * FRESCO-504: `priority` is deprecated as of Next.js 16 in favor of `preload`
+ * — the compat shim still inserts the `<link rel=preload>` but no longer
+ * adds `fetchPriority="high"` to it (confirmed against
+ * `node_modules/next/dist/shared/lib/get-img-props.js` and the component
+ * docs), so the LCP candidate's preload no longer outranks any other image
+ * preload on the page. `fetchPriority="high"` is set explicitly here so the
+ * true LCP tile wins the browser's fetch queue.
+ */
 function HeroPhotoFrame({
   photo,
   priority = false,
@@ -80,7 +91,8 @@ function HeroPhotoFrame({
         fill
         sizes="(max-width: 768px) 45vw, (max-width: 1200px) 22vw, 240px"
         className="object-cover"
-        priority={priority}
+        preload={priority}
+        fetchPriority={priority ? 'high' : undefined}
       />
     </div>
   );
