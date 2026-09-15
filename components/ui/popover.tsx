@@ -118,7 +118,17 @@ export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel,
       tabIndex={-1}
       data-testid={dataTestId}
       className={cn(
-        'absolute z-[1000] min-w-[220px] rounded-card border border-border bg-surface p-1 shadow-lg focus:outline-none',
+        // FRESCO-514 fix-and-iterate — `dropdown: 100` (DESIGN.md's
+        // Z-index layer convention), not the `modal: 1000` band `Dialog`
+        // reserves: `sidebar.tsx`'s `<aside>` is `position: sticky`, which
+        // unconditionally creates its own stacking context, so this
+        // panel's z-index only has to out-rank *other* elements inside the
+        // aside (there are none with a non-auto z-index) — it plays no
+        // part in how the aside's whole subtree stacks against page
+        // siblings. `z-[1000]` and `z-[100]` render identically here; the
+        // token is the correct one, no divergence needed (see
+        // master-design-plan.md §5-V, removed alongside this).
+        'absolute z-[100] min-w-[220px] rounded-card border border-border bg-surface p-1 shadow-lg focus:outline-none',
         className,
       )}
     >
