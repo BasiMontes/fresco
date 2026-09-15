@@ -574,6 +574,7 @@ stories) are listed at the end.
 | FRESCO-88 | Recipes: open detail by tapping any card | EPIC-FRESCO-64 Recipe Library | 4.10 Recipe library | 4.7 Home, 4.12 Favorites, 4.11 Recipe detail |
 | FRESCO-82 | Account: view account data and log out from the sidebar | EPIC-FRESCO-81 Account & Session | 4.17 App shell (`sidebar-account`) | 4.13 Profile |
 | FRESCO-84 | Account: view the subscription plan in the sidebar | EPIC-FRESCO-81 Account & Session | 4.17 App shell (plan `Tag`) | 4.13 Profile |
+| FRESCO-514 | Account: sidebar account menu as a popover (groups Perfil/Configuración/Ayuda) | EPIC-FRESCO-81 Account & Session | 4.17 App shell (`sidebar-account` popover) | 4.13 Profile (Ayuda anchors) |
 | FRESCO-224 | Notices: welcome message on first entry | EPIC-FRESCO-223 Notices Centre | 4.14 Notifications | — |
 | FRESCO-225 | Notices: main platform routes guide | EPIC-FRESCO-223 Notices Centre | 4.14 Notifications (`routes-notice`) | — |
 | FRESCO-226 | Notices: recipe recommendations | EPIC-FRESCO-223 Notices Centre | 4.14 Notifications (`recommended-recipes-notice`) | 4.11 Recipe detail |

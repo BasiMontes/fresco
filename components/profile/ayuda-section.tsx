@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronRight, Cookie, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
@@ -99,6 +99,18 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState(false);
 
+  // FRESCO-514 — the sidebar account popover's "Configuración" / "Ayuda"
+  // items link here as `/profile#ayuda-configuracion` / `/profile#ayuda`
+  // instead of auto-opening the Configuración dialog. An explicit
+  // `scrollIntoView` on mount rather than relying on the browser's native
+  // hash-scroll: this is a client component mounting post-hydration inside
+  // a `'use client'` subtree, and native hash handling can race that.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash !== '#ayuda' && hash !== '#ayuda-configuracion') { return; }
+    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   async function handleSendPasswordReset() {
     setIsSendingReset(true);
     setResetError(false);
@@ -129,6 +141,9 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
           <button
             key={key}
             type="button"
+            // FRESCO-514 — row-level anchor target for the sidebar popover's
+            // "Configuración" item (`/profile#ayuda-configuracion`).
+            id={key === 'configuracion' ? 'ayuda-configuracion' : undefined}
             data-testid={`ayuda_row_${key}`}
             onClick={() => setOpenModal(key)}
             className="flex items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
