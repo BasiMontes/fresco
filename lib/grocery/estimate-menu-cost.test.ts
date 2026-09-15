@@ -95,6 +95,8 @@ describe('packPrice', () => {
       origenEnvase: 'mercadona' as const,
       precioMercadona: { precioReferencia: 5, formatoReferencia: '???' },
       mercadonaUrl: 'https://tienda.mercadona.es/product/1/ingrediente-raro',
+      precioConsum: null,
+      consumUrl: null,
     };
 
     const price = packPrice(item);

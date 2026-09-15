@@ -36,6 +36,10 @@ export default antfu({
     // scripts/gen-mercadona-catalog.ts. Drift is caught by
     // lib/grocery/mercadona-catalog.test.ts.
     'lib/grocery/mercadona-catalog.generated.ts',
+    // FRESCO-520: matched from Consum's public storefront API by
+    // scripts/gen-consum-catalog.ts. Drift is caught by
+    // lib/grocery/consum-catalog.test.ts.
+    'lib/grocery/consum-catalog.generated.ts',
     // Supabase Database types written by `bun run db:types` (`supabase gen
     // types typescript`, per package.json). Large machine-generated
     // snake_case file — linting it produces noise and `eslint --fix` would

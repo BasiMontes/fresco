@@ -105,6 +105,25 @@ describe('mapShoppingListItem — FRESCO-503 acceptance criteria (Mercadona pack
   });
 });
 
+describe('mapShoppingListItem — FRESCO-520 acceptance criteria (Consum pack/price)', () => {
+  test('AC1: ingrediente con equivalente en el catálogo de Consum → usa envase y precio reales', () => {
+    const r = mapShoppingListItem({ nombre: 'alubias rojas', cantidad: 300, unidad: 'g' });
+    expect(r.origenEnvase).toBe('consum');
+    expect(r.precioConsum).not.toBeNull();
+    expect(r.precioConsum?.precio).toBeGreaterThan(0);
+    expect(r.consumUrl).not.toBeNull();
+  });
+
+  test('AC2: ingrediente sin equivalente en ningún catálogo → usa el envase estimado a mano, nunca se descarta', () => {
+    const r = mapShoppingListItem({ nombre: 'kale', cantidad: 150, unidad: 'g' });
+    expect(r.origenEnvase).toBe('estimado');
+    expect(r.precioConsum).toBeNull();
+    expect(r.consumUrl).toBeNull();
+  });
+
+  // AC3 ("catálogo no disponible") is satisfied structurally, same posture as FRESCO-503's own AC3 — no I/O on the request path.
+});
+
 describe('mapShoppingListItem — invariants', () => {
   test('deterministic: same input, same output', () => {
     const input: GroceryInput = {

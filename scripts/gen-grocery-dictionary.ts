@@ -15,6 +15,7 @@
 // drifts from a fresh run (same pattern as scripts/check-*-drift.ts).
 
 import type { CanonicalIngredient } from '../lib/grocery/types.ts';
+import { CONSUM_CATALOG_MATCH } from '../lib/grocery/consum-catalog.generated.ts';
 import { MERCADONA_CATALOG_MATCH } from '../lib/grocery/mercadona-catalog.generated.ts';
 import {
   DEFAULT_PACK_BY_UNIT,
@@ -73,14 +74,19 @@ const ACCENT_DISPLAY: Record<string, string> = {
 function buildEntry(clave: string): CanonicalIngredient {
   const porcion = BASE_QUANTITIES[clave];
   const canonico = ACCENT_DISPLAY[clave] ?? clave;
-  // FRESCO-503 — real Mercadona pack/price wins over the hand-curated
-  // estimate when a catalog match exists; falls through cleanly otherwise.
+  // FRESCO-503/520 — real catalog pack/price wins over the hand-curated
+  // estimate when a match exists. Mercadona wins when both chains match
+  // (larger chain, shipped first); Consum is the next tier ahead of the
+  // hand-curated tables; falls through cleanly otherwise.
   const mercadonaMatch = MERCADONA_CATALOG_MATCH[clave];
+  const consumMatch = CONSUM_CATALOG_MATCH[clave];
   const envaseVenta
     = mercadonaMatch?.envaseVenta
+      ?? consumMatch?.envaseVenta
       ?? RETAIL_PACK_OVERRIDE[clave]
       ?? DEFAULT_PACK_BY_UNIT[porcion.unidad]
       ?? { cantidad: 1, unidad: porcion.unidad };
+  const origenEnvase = mercadonaMatch ? 'mercadona' as const : consumMatch ? 'consum' as const : 'estimado' as const;
   return {
     clave,
     canonico,
@@ -89,9 +95,11 @@ function buildEntry(clave: string): CanonicalIngredient {
     envaseVenta,
     sinonimos: SYNONYM_OVERRIDE[clave] ?? [],
     terminoBusqueda: SEARCH_TERM_OVERRIDE[clave] ?? canonico,
-    origenEnvase: mercadonaMatch ? 'mercadona' : 'estimado',
+    origenEnvase,
     precioMercadona: mercadonaMatch?.precioMercadona ?? null,
     mercadonaUrl: mercadonaMatch?.shareUrl ?? null,
+    precioConsum: !mercadonaMatch ? consumMatch?.precioConsum ?? null : null,
+    consumUrl: !mercadonaMatch ? consumMatch?.url ?? null : null,
   };
 }
 
