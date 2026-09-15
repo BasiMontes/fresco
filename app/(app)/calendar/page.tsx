@@ -1,17 +1,19 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 
 import { History } from 'lucide-react';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { CalendarGrid } from '@/components/calendar/calendar-grid';
 import { DeleteWeekButton } from '@/components/calendar/delete-week-button';
 import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
-import { LearningBridgeCard } from '@/components/calendar/learning-bridge-card';
+import { LearningBridgeCard, LearningBridgeReopenLink } from '@/components/calendar/learning-bridge-card';
 import { WeekNavigation } from '@/components/calendar/week-navigation';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getUserDietaryPreferences, getUserPlan } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { LEARNING_BRIDGE_DISMISSED_COOKIE, parseLearningBridgeDismissed } from '@/lib/calendar/learning-bridge-preference';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
@@ -53,6 +55,13 @@ export default async function CalendarPage({
     ? requestedSemana
     : getIsoWeek();
   const mondayIso = getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10);
+
+  // FRESCO-512: same cookie-read pattern as the sidebar collapse preference
+  // (`app/(app)/layout.tsx`) — decides card vs. reopen link with no flash.
+  const cookieStore = await cookies();
+  const learningBridgeDismissed = parseLearningBridgeDismissed(
+    cookieStore.get(LEARNING_BRIDGE_DISMISSED_COOKIE)?.value,
+  );
 
   // `plan` and `userPlan` are mutually independent reads — run them
   // concurrently rather than sequentially (this page still awaited each in
@@ -113,6 +122,12 @@ export default async function CalendarPage({
     );
   }
 
+  const hasMarks = Object.values(plan.estados).some(dia => Object.values(dia).some(estado => estado === 'cocinada' || estado === 'descartada'));
+  // FRESCO-512: mirrors `LearningBridgeCard`'s own internal visibility gate —
+  // needed here too, to know whether the reopen link (once dismissed) should
+  // show at all. Pro/Family past week 1 gets neither the card nor the link.
+  const learningBridgeEligible = userPlan === 'free' || !hasMarks;
+
   return (
     <div className="mx-auto max-w-5xl space-y-12">
       <div>
@@ -124,6 +139,7 @@ export default async function CalendarPage({
           </div>
         </div>
         <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
+        {learningBridgeEligible && learningBridgeDismissed && <LearningBridgeReopenLink />}
         <Link
           href="/historial"
           data-testid="calendar_historial_link"
@@ -140,11 +156,12 @@ export default async function CalendarPage({
       />
 
       {/* FRESCO-369: the week-1 moat bridge — replaces CalendarGrid's flat
-          Free notice. `hasMarks` gates the Pro variant off once they engage. */}
-      <LearningBridgeCard
-        plan={userPlan}
-        hasMarks={Object.values(plan.estados).some(dia => Object.values(dia).some(estado => estado === 'cocinada' || estado === 'descartada'))}
-      />
+          Free notice. `hasMarks` gates the Pro variant off once they engage.
+          FRESCO-512: hidden once dismissed — `LearningBridgeReopenLink` above
+          takes over. */}
+      {!learningBridgeDismissed && (
+        <LearningBridgeCard plan={userPlan} hasMarks={hasMarks} />
+      )}
 
       {/* FRESCO-199: `planning_selection` is per-day now — `CalendarGrid`
           still takes a whole-week days/meals pair (the union across every

@@ -1,5 +1,10 @@
+'use client';
+
+import { X } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
+import { writeLearningBridgeDismissed } from '@/lib/calendar/learning-bridge-preference';
 
 interface LearningBridgeCardProps {
   plan: 'free' | 'pro' | 'family'
@@ -29,8 +34,15 @@ interface LearningBridgeCardProps {
  * Uses the `pro` card variant, not `insight` — `insight` is reserved for the
  * actual learning payoff and must never carry pre-data content (master-design-
  * plan §5-D). This card is a promise, so it gets the Pro-framed border treatment.
+ *
+ * FRESCO-512: dismissible via the `X` — `'use client'` for the click handler.
+ * `writeLearningBridgeDismissed` + `router.refresh()` persists the choice
+ * (cookie, same pattern as `lib/layout/sidebar-preference.ts`) and re-renders
+ * `app/(app)/calendar/page.tsx`, which swaps this card for the
+ * `LearningBridgeReopenLink` below.
  */
 export function LearningBridgeCard({ plan, hasMarks }: LearningBridgeCardProps) {
+  const router = useRouter();
   const isFree = plan === 'free';
 
   if (!isFree && hasMarks) {
@@ -44,7 +56,21 @@ export function LearningBridgeCard({ plan, hasMarks }: LearningBridgeCardProps) 
       data-testid={isFree ? 'learning_free_tier_notice' : 'learning_bridge_card'}
     >
       <CardContent className="text-body-sm">
-        <p className="text-h6 uppercase">Cómo aprenden tus menús</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-h6 uppercase">Cómo aprenden tus menús</p>
+          <button
+            type="button"
+            onClick={() => {
+              writeLearningBridgeDismissed(true);
+              router.refresh();
+            }}
+            className="shrink-0 text-tertiary hover:text-text"
+            aria-label="Cerrar"
+            data-testid="learning_bridge_dismiss"
+          >
+            <X className="size-5" aria-hidden="true" />
+          </button>
+        </div>
         <p className="mt-1.5">
           En cuanto marques platos como cocinados o descartados, tus menús se adaptan: lo que marcas no vuelve a salir durante 2 semanas, los platos que sueles cocinar ganan peso, y los que descartas bajan mucho.
         </p>
@@ -64,5 +90,31 @@ export function LearningBridgeCard({ plan, hasMarks }: LearningBridgeCardProps) 
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * FRESCO-512: the reopen control for a dismissed `LearningBridgeCard`, shown
+ * in the page header instead of the card itself. Same toggle, same cookie —
+ * `router.refresh()` re-runs `app/(app)/calendar/page.tsx` with the updated
+ * value, which is what lets this control (header) and the card (further down
+ * the page, past `AlertBanner`) stay in sync despite not being adjacent in
+ * the JSX tree.
+ */
+export function LearningBridgeReopenLink() {
+  const router = useRouter();
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        writeLearningBridgeDismissed(false);
+        router.refresh();
+      }}
+      data-testid="learning_bridge_reopen"
+      className="mt-1 text-body-sm text-primary underline"
+    >
+      Ver cómo aprenden tus menús
+    </button>
   );
 }
