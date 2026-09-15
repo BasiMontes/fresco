@@ -112,7 +112,7 @@ export function LearningBridgeReopenLink() {
         router.refresh();
       }}
       data-testid="learning_bridge_reopen"
-      className="mt-1 text-body-sm text-primary underline"
+      className="text-primary underline"
     >
       Ver cómo aprenden tus menús
     </button>

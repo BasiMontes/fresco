@@ -138,8 +138,15 @@ export default async function CalendarPage({
             <DeleteWeekButton mealPlanId={plan.mealPlanId} />
           </div>
         </div>
-        <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>
-        {learningBridgeEligible && learningBridgeDismissed && <LearningBridgeReopenLink />}
+        <p className="mt-1 text-body-md text-tertiary">
+          Arrastra cualquier plato para reorganizar tu semana.
+          {learningBridgeEligible && learningBridgeDismissed && (
+            <>
+              {' '}
+              <LearningBridgeReopenLink />
+            </>
+          )}
+        </p>
         <Link
           href="/historial"
           data-testid="calendar_historial_link"
