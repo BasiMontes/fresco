@@ -2,11 +2,13 @@
 
 import type { UserProfile } from '@schemas';
 import { LogOut, User as UserIcon } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
 import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Button } from '@/components/ui/button';
+import { Popover } from '@/components/ui/popover';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
@@ -46,11 +48,16 @@ export interface SidebarAccountProps extends AccountUser {
 }
 
 /**
- * Sidebar footer account block (FRESCO-82): avatar/initial + name + plan,
- * a compact "Mejorar plan" upgrade CTA (FRESCO-513, `plan === 'free'` only
- * — folded into this same row instead of the separate boxed/bordered upsell
- * section FRESCO-510 shipped; less real estate, no lost affordance), the
- * logout action, and the app version label below. Sits at the bottom of the
+ * Sidebar footer account block (FRESCO-82). FRESCO-514 collapsed the
+ * previously-flat footer row into a popover-triggered menu: the identity
+ * row (avatar/initial + name + plan) is the trigger, and clicking it opens
+ * a `Popover` panel — repeating the identity row for context (the trigger
+ * itself only shows the avatar in `collapsed` mode), then "Mejorar plan"
+ * (FRESCO-513, `plan === 'free'` only), "Perfil", "Configuración" (scrolls
+ * `/profile` to `AyudaSection`'s Configuración row), "Ayuda" (scrolls
+ * `/profile` to the Ayuda card), and "Cerrar sesión" last. `Perfil` no
+ * longer lives as its own top-nav item (`sidebar.tsx`) — this popover is
+ * now its only entry point from the sidebar. Sits at the bottom of the
  * desktop sidebar inside the `mt-auto` footer group (`sidebar.tsx`) — the
  * theme toggle that used to live above it moved to `/profile`'s
  * `AppearanceCard` (FRESCO-510 amendment), so this is now the sidebar
@@ -78,6 +85,8 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
   // dialog instead of firing immediately, unlike a real account's logout
   // (100% safe/reversible, no gate needed).
   const [showGuestConfirm, setShowGuestConfirm] = useState(false);
+  // FRESCO-514: the account footer is now the trigger for a popover menu.
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -106,62 +115,124 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
   // already paying; pro/family are already the outcome this card sells.
   const showProUpsell = plan === 'free' && !isAnonymous;
 
+  function closeMenuThen(action: () => void) {
+    setIsMenuOpen(false);
+    action();
+  }
+
   return (
     <div
       data-testid="sidebarAccount"
       className={cn('flex flex-col gap-5 border-t border-background/10 pt-5', collapsed && 'items-center')}
     >
-      <div className={cn('flex items-center gap-4', collapsed && 'flex-col gap-3')}>
-        <div
-          data-testid="user_avatar"
-          aria-hidden="true"
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
-        >
-          {initial || <UserIcon className="size-4" />}
-        </div>
-        <div className={cn('min-w-0 flex-1', collapsed && 'hidden')}>
-          <p data-testid="user_name" className="truncate text-label text-background">
-            {nombre || 'Sin nombre'}
-          </p>
-          <p data-testid="plan_label" className="mt-0.5 truncate text-caption text-background/70">
-            {PLAN_LABELS[plan]}
-          </p>
-        </div>
-        {/* FRESCO-513 (follow-up) — fourth pass. Grouping the CTA with
-            logout (previous passes) pinned both to the row's right edge,
-            which read as the CTA sitting too far right, AND meant the
-            button's own width change between "Mejorar plan" (~128px) and
-            the `isRedirecting` state "Redirigiendo…" (~150px, measured with
-            the real Figtree font) had nowhere to go but into the logout
-            button next to it — both are `shrink-0` and the sidebar's aside
-            is `overflow-x-hidden`, so the 22px jump visually swallowed
-            logout instead of wrapping or scrolling. Un-grouped: the CTA now
-            sits right after the name/plan block (which keeps `min-w-0
-            flex-1` and can truncate further to absorb the width change),
-            and logout is the row's own last child, protected structurally
-            rather than by hoping the CTA never grows. `min-w-[150px]` on
-            the CTA additionally pins it to its loading-state width so
-            "Mejorar plan" doesn't visibly re-center when the label swaps. */}
-        {showProUpsell && !collapsed && (
-          <UpgradeToProButton
-            label="Mejorar plan"
-            size="sm"
-            className="min-w-[150px] shrink-0"
-          />
-        )}
-        <Button
+      <div className="relative">
+        <button
           type="button"
-          variant="icon"
-          aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
-          data-testid="sidebar_logout_button"
-          disabled={isLoggingOut}
-          aria-busy={isLoggingOut}
-          onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
-          className="shrink-0 bg-background/10 text-background hover:bg-background/20"
+          data-testid="sidebar_account_trigger"
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen}
+          onClick={() => setIsMenuOpen(current => !current)}
+          className={cn(
+            'flex items-center gap-3 rounded-card text-left transition-colors hover:bg-background/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary',
+            collapsed ? 'rounded-full p-0' : 'w-full p-1',
+          )}
         >
-          <LogOut className="size-6" aria-hidden="true" />
-        </Button>
+          <span
+            data-testid="user_avatar"
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-body-md font-semibold text-primary"
+          >
+            {initial || <UserIcon className="size-4" />}
+          </span>
+          {!collapsed && (
+            <span className="min-w-0 flex-1">
+              <p data-testid="user_name" className="truncate text-label text-background">
+                {nombre || 'Sin nombre'}
+              </p>
+              <p data-testid="plan_label" className="mt-0.5 truncate text-caption text-background/70">
+                {PLAN_LABELS[plan]}
+              </p>
+            </span>
+          )}
+        </button>
+
+        <Popover
+          open={isMenuOpen}
+          onOpenChange={setIsMenuOpen}
+          aria-label="Menú de cuenta"
+          data-testid="sidebar_account_popover"
+          className="inset-x-0 bottom-full mb-2 w-64"
+        >
+          {/* Identity row, repeated — in `collapsed` mode the trigger above
+              shows only the avatar, so this is the only place name/plan are
+              visible until the panel is opened. */}
+          <div className="flex items-center gap-3 px-3 py-2">
+            <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-body-md font-semibold text-on-brand">
+              {initial || <UserIcon className="size-4" />}
+            </span>
+            <span className="min-w-0 flex-1">
+              <p className="truncate text-label text-text">{nombre || 'Sin nombre'}</p>
+              <p className="mt-0.5 truncate text-caption text-tertiary">{PLAN_LABELS[plan]}</p>
+            </span>
+          </div>
+
+          <div role="separator" className="my-1 border-t border-border" />
+
+          {showProUpsell && (
+            <div className="px-2 py-1">
+              <UpgradeToProButton label="Mejorar plan" size="sm" className="w-full" />
+            </div>
+          )}
+
+          <Link
+            href="/profile"
+            role="menuitem"
+            data-testid="popover_item_perfil"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
+          >
+            Perfil
+          </Link>
+
+          <Link
+            href="/profile#ayuda-configuracion"
+            role="menuitem"
+            data-testid="popover_item_configuracion"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
+          >
+            Configuración
+          </Link>
+
+          <div role="separator" className="my-1 border-t border-border" />
+
+          <Link
+            href="/profile#ayuda"
+            role="menuitem"
+            data-testid="popover_item_ayuda"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
+          >
+            Ayuda
+          </Link>
+
+          <Button
+            type="button"
+            variant="ghost"
+            role="menuitem"
+            aria-label={isAnonymous ? 'Cerrar sesión (perderás tu menú generado)' : 'Cerrar sesión'}
+            data-testid="sidebar_logout_button"
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+            onClick={() => closeMenuThen(() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout()))}
+            className="w-full justify-start gap-2 px-3 text-error hover:bg-neutral-100"
+          >
+            <LogOut className="size-4" aria-hidden="true" />
+            Cerrar sesión
+          </Button>
+        </Popover>
       </div>
+
       {logoutError && (
         <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
           {logoutError}
