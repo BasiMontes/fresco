@@ -1,7 +1,7 @@
 'use client';
 
 import type { AccountUser } from '@/components/layout/sidebar-account';
-import { BookOpen, Calendar, Home, PanelLeftClose, PanelLeftOpen, ShoppingCart, User } from 'lucide-react';
+import { BookOpen, Calendar, Home, PanelLeftClose, PanelLeftOpen, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -33,7 +33,9 @@ const NAV_ITEMS = [
   // FRESCO-164 — /shopping-list (STORY-FRESCO-13) was fully built and
   // working, just unreachable: no nav item linked to it anywhere.
   { href: '/shopping-list', label: 'Lista', icon: ShoppingCart },
-  { href: '/profile', label: 'Perfil', icon: User },
+  // FRESCO-514 — `Perfil` moved out of the top nav into the
+  // `sidebar-account` popover menu (its "Perfil" item) as this list's only
+  // entry point now.
 ] as const;
 
 export interface SidebarProps {
