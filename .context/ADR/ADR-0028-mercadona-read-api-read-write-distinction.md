@@ -41,6 +41,21 @@ fingerprint without notice. A public GitHub scraper repo
 endpoint, which is evidence it is viable at some scale, not evidence it is
 sanctioned.
 
+**Confirmed legal basis (2026-09-16, verified against the live page).** This
+is not a generic gray zone — Mercadona's own Terms and Conditions
+(`info.mercadona.es/es/terminos-y-condiciones`) state explicitly:
+
+> "no se puede (salvo lo dispuesto en estas condiciones y la ley aplicable)
+> modificar, copiar, reproducir, añadir o usar cualquier información o
+> documentación del sitio **sin el consentimiento por escrito de Mercadona**"
+
+Copying and displaying their catalog/price data inside Fresco is squarely
+"usar información del sitio". Without Mercadona's written consent, this is a
+direct breach of their stated IP terms, not an ambiguous automation question.
+This raises the bar on the production-use gate below: the open item is not
+"assess a vague ToS risk", it is "get Mercadona's written consent, or accept
+knowingly operating against an explicit clause of their published terms".
+
 ## Decision
 
 We record two things, at two different confidence levels:
@@ -74,10 +89,23 @@ We record two things, at two different confidence levels:
   affiliate fee. If depended upon at volume and blocked, FRESCO-346 has no
   fallback data source without paying for one (Northfork/Whisk).
 - **Neutral / follow-ups:**
-  - Founder reads this ADR and the spike README, then either accepts it
-    (production build on Mercadona read data may proceed under FRESCO-346)
-    or rejects it (FRESCO-346 stays scoped to what ADR-0027 already allowed:
-    export + affiliate, no real price shown).
+  - **Third path added (2026-09-16): request Mercadona's written consent
+    directly**, per their own clause's carve-out ("salvo lo dispuesto en
+    estas condiciones y la ley aplicable"). A written reply (email counts —
+    Spanish law does not require a notarized form for this) from an
+    accountable contact at Mercadona, scoped to "read catalog/price data,
+    display it in Fresco, no resale, no cart/checkout", would resolve the
+    gate cleanly without waiting on a paid provider. Absence of a reply is
+    not consent — do not proceed on silence. If pursued, target Mercadona's
+    corporate/legal or IT contact (`info.mercadona.es` → Conócenos /
+    Mercadona IT), not generic customer service, which has no authority to
+    grant this.
+  - Founder reads this ADR and the spike README, then picks one of three:
+    (a) request written consent from Mercadona (above) — cleanest, adds
+    lead time; (b) accept this ADR and proceed on the current risk read
+    without consent (production build on Mercadona read data may proceed
+    under FRESCO-346); (c) reject it (FRESCO-346 stays scoped to what
+    ADR-0027 already allowed: export + affiliate, no real price shown).
   - Carrefour/Dia/Alcampo were not verified this spike (blind endpoint
     guesses all failed, as expected — a real check needs a headed-browser
     devtools trace, the same method that found the Bonpreu/Mercadona
