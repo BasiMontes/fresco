@@ -13,14 +13,20 @@ import { Button } from '@/components/ui/button';
  * on top of it) and above the app's `dropdown: 100` tier, reusing that same
  * z-index rather than reserving a new one for a single call site.
  *
- * FRESCO-536: `min-h-[158px] sm:min-h-0` — the Figtree body-copy font swap
- * (kept at `display: swap` per FRESCO-496, unlike the `optional` hero face)
+ * FRESCO-536: `h-[190px] sm:h-auto` — the Figtree body-copy font swap (kept
+ * at `display: swap` per FRESCO-496, unlike the `optional` hero face)
  * reflows this paragraph's line wrap on mobile, and since this box is
  * `fixed bottom-0` with auto height, that reflow moves its own `top` and
- * scored as this repo's entire measured mobile CLS (0.104). Reserving the
- * stacked-layout height it already renders at keeps the box size stable
- * across the swap without forcing `optional` (invisible text) on body copy
- * sitewide. Reset above `sm:` where the row layout is shorter and stable.
+ * scored as this repo's entire measured mobile CLS (0.104). A `min-height`
+ * matching only the settled (post-swap) height did NOT fix this on a real
+ * network — verified against the deployed staging URL, not just localhost:
+ * next/font's automatic fallback-metric override matches vertical ascent/
+ * descent, not per-glyph advance widths, so the fallback face can still wrap
+ * this paragraph onto a taller box than Figtree's final line count, and a
+ * `min-height` floor doesn't stop that taller box from *shrinking* back down
+ * when the swap lands. A fixed `height` with a one-line buffer over the
+ * settled 158px covers that shrink regardless of which face renders first.
+ * Reset above `sm:` where the row layout is shorter and stable.
  */
 export function CookieConsentBanner() {
   const { bannerVisible, accept, reject, openSettings } = useCookieConsent();
@@ -32,7 +38,7 @@ export function CookieConsentBanner() {
       role="region"
       aria-label="Consentimiento de cookies"
       data-testid="cookie_consent_banner"
-      className="fixed inset-x-0 bottom-0 z-[100] min-h-[158px] border-t border-border bg-surface-raised p-4 shadow-lg sm:min-h-0"
+      className="fixed inset-x-0 bottom-0 z-[100] h-[190px] border-t border-border bg-surface-raised p-4 shadow-lg sm:h-auto"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-body-sm text-text">
