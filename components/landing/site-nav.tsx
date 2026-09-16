@@ -9,6 +9,7 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { IDENTITY_COOKIE_EVENT, readNombreCookie } from '@/lib/auth/identity-cookie';
 import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
+import { hasSupabaseSessionCookie } from '@/lib/supabase/session-cookie';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
@@ -39,6 +40,12 @@ const NAV_LINKS = [
  * client (realtime + storage + postgrest + functions), which otherwise rides
  * along in this route's critical initial bundle for a call that only
  * happens after mount anyway.
+ *
+ * FRESCO-539: a guest with no Supabase auth cookie skips the client load
+ * entirely instead of loading it just to resolve an always-empty session —
+ * this component remounts fresh on every visit to `/` (page-scoped, not
+ * root-layout-scoped), so a session created elsewhere mid-visit is picked up
+ * correctly the next time this mounts.
  */
 interface NavIdentity {
   hasSession: boolean
@@ -51,12 +58,14 @@ export function SiteNav() {
 
   useEffect(() => {
     let active = true;
-    void loadSupabaseClient()
-      .then(async ({ createClient }) => createClient().auth.getSession())
-      .then(({ data: { session } }) => {
-        if (!active) { return; }
-        setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
-      });
+    if (hasSupabaseSessionCookie()) {
+      void loadSupabaseClient()
+        .then(async ({ createClient }) => createClient().auth.getSession())
+        .then(({ data: { session } }) => {
+          if (!active) { return; }
+          setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
+        });
+    }
 
     // `IdentityCookieSync` writes the name cookie from an async query that
     // can resolve just after this first paint — pick that up without a

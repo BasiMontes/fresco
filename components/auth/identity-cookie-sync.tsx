@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { clearNombreCookie, readNombreCookie, writeNombreCookie } from '@/lib/auth/identity-cookie';
 import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
+import { hasSupabaseSessionCookie } from '@/lib/supabase/session-cookie';
 
 /**
  * Keeps the `fresco_nombre` cookie (`lib/auth/identity-cookie.ts`) in sync
@@ -32,11 +33,19 @@ import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
  * critical initial bundle even though this effect's own work only starts
  * after mount. A dynamic `import()` inside the effect defers that fetch +
  * parse to after first paint instead, with the same runtime behavior.
+ *
+ * FRESCO-539: deferring past paint fixed FCP but not TTI — the effect still
+ * fired immediately post-mount for every visitor, so the client's parse+exec
+ * cost still landed inside the TTI window. A guest who has never signed in
+ * has no Supabase auth cookie at all, so `hasSupabaseSessionCookie()` skips
+ * the load entirely for that (majority, on the guest landing) case.
  */
 export function IdentityCookieSync() {
   const syncedUid = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!hasSupabaseSessionCookie()) { return; }
+
     let unsubscribe: (() => void) | undefined;
     let active = true;
 
