@@ -1,8 +1,8 @@
 # ADR-0029 — Build-time CSP nonce for fully-static public routes
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-16
-- **Deciders:** Founder (pending sign-off — this ADR is drafted for review, not yet accepted)
+- **Deciders:** Founder (approved live in-session)
 - **Tags:** security, performance, csp, caching, cross-cutting-invariant
 - **Supersedes:** —
 - **Superseded by:** —
@@ -44,9 +44,10 @@ non-personalized routes — that is the option this ADR evaluates.
 
 ## Decision
 
-**Not yet made — Proposed for founder review.** The investigated option: for
-a short, explicit allowlist of fully-static public routes (`/`,
-`/sobre-nosotros` today — legal pages if they become server-rendered later),
+**We will carve a narrow, audited exception into ADR-0019's nonce-CSP
+posture.** For a short, explicit allowlist of fully-static public routes
+(`/`, `/sobre-nosotros` today — legal pages if they become server-rendered
+later),
 
 1. Override `dynamic = 'force-static'` on those route segments (opting out
    of the root layout's app-wide `force-dynamic`).
@@ -68,8 +69,8 @@ Every other route (anything authenticated, anything with per-user or
 per-request content) keeps the existing per-request nonce from `proxy.ts`
 unchanged.
 
-**Do not implement any of this against `proxy.ts` or `next.config.mjs`
-before this ADR moves to Accepted.**
+Implementation is a separate, follow-up ticket — this ADR settles the
+posture, not the code.
 
 ## Consequences
 
