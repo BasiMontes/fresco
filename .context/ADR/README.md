@@ -89,7 +89,8 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0026](./ADR-0026-db-integration-test-layer.md) | DB-integration tests (`bun test`, real Postgres) run against the Supabase CLI local stack in a dedicated CI job, never a hosted project | Proposed | — | — |
 | [ADR-0027](./ADR-0027-supermarket-integration-out-of-blacklist.md) | Supermarket integration + price comparison removed from the Out-of-Scope Blacklist; bounded to zero-cost (export + affiliate) by the standing no-extra-spend constraint | Accepted | — | — |
 | [ADR-0028](./ADR-0028-mercadona-read-api-read-write-distinction.md) | Mercadona catalog/price read API is a distinct, unblocked surface from the cart-write API; production use gated on a founder ToS/legal decision | Proposed | — | — |
-| [ADR-0029](./ADR-0029-static-csp-public-routes.md) | Build-time CSP nonce for a small allowlist of fully-static public routes (`/`, `/sobre-nosotros`), regains CDN caching without weakening `script-src`; carves a narrow exception into ADR-0019's ratified posture | Accepted | — | — |
+| [ADR-0029](./ADR-0029-static-csp-public-routes.md) | Build-time CSP nonce for a small allowlist of fully-static public routes (`/`, `/sobre-nosotros`), regains CDN caching without weakening `script-src`; carves a narrow exception into ADR-0019's ratified posture | Superseded | — | ADR-0030 |
+| [ADR-0030](./ADR-0030-static-csp-public-routes-rejected.md) | Rejects ADR-0029's implementation: the only Next.js mechanism (multiple root layouts) forces a full page reload on landing→login/signup, the app's primary conversion path — not worth the TTFB win | Accepted | ADR-0029 | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 

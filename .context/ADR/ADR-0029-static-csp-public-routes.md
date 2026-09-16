@@ -1,11 +1,11 @@
 # ADR-0029 — Build-time CSP nonce for fully-static public routes
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0030
 - **Date:** 2026-09-16
 - **Deciders:** Founder (approved live in-session)
 - **Tags:** security, performance, csp, caching, cross-cutting-invariant
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0030
 
 ---
 
