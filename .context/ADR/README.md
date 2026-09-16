@@ -88,6 +88,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0025](./ADR-0025-cookie-consent-gate-strategy.md) | Cookie consent gates `posthog.init()` itself, not `opt_out_capturing_by_default` | Proposed | — | — |
 | [ADR-0026](./ADR-0026-db-integration-test-layer.md) | DB-integration tests (`bun test`, real Postgres) run against the Supabase CLI local stack in a dedicated CI job, never a hosted project | Proposed | — | — |
 | [ADR-0027](./ADR-0027-supermarket-integration-out-of-blacklist.md) | Supermarket integration + price comparison removed from the Out-of-Scope Blacklist; bounded to zero-cost (export + affiliate) by the standing no-extra-spend constraint | Accepted | — | — |
+| [ADR-0028](./ADR-0028-mercadona-read-api-read-write-distinction.md) | Mercadona catalog/price read API is a distinct, unblocked surface from the cart-write API; production use gated on a founder ToS/legal decision | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
