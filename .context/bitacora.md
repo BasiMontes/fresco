@@ -175,3 +175,8 @@ Historia archivada:
 - Que: PR #374 (FRESCO-526) squash-mergeado a staging (ff38c8b), ff-propagado a dev y main - los 3 dominios al mismo commit. Nuevo script scripts/clean-recipe-descriptions.ts (mismo patron que clean-recipe-names.ts de FRESCO-449): corrige "de con" -> "con" en descripcion_corta, bug de plantilla del generador combinatorio offline. Ya corrido --apply contra prod antes de abrir el PR: 62/76 filas candidatas cambiadas, verificado 0 restantes. Al muestrear se encontro un bug hermano ("con y"/"de y", 90 filas, mas grande que este) - separado a FRESCO-528 en vez de mezclarlo. Jira: Listo -> WIP -> Control de calidad -> Merged.
 - Por que: continuacion directa del analisis de FRESCO-522 (recetas con nombre duplicado) - este era uno de los 3 tickets de seguimiento que salieron de ahi, elegido por ser el mas chico y mecanico.
 - Siguiente: FRESCO-524 (nombre debe incluir el diferenciador) y FRESCO-525 (revision manual de casi-duplicados) siguen abiertos del mismo analisis; FRESCO-528 (bug hermano) tambien.
+
+## 2026-09-16 - FRESCO-523: sync boilerplate CLI updater
+- Qué: `bun run up` ejecutado, 9 archivos del CLI updater (updater-core/drift/ignore/pbi + update-boilerplate.ts + tests) actualizados a upstream 7ede94e. package.json (scripts.claude/opencode/test) conservado con valor de proyecto. Commit dfbc526, propagado staging/dev/main.
+- Por qué: FRESCO-523, mantener boilerplate al día (ciclo de vida Xray, MCP context7/dbhub, fixes varios de sync-jira-issues).
+- Siguiente: ninguno, ticket cerrado (Finalizada).
