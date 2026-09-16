@@ -1,8 +1,8 @@
 # ADR-0031 — Edge-cache + nonce-substitution spike: viable, partial, scoped separately
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-16
-- **Deciders:** Founder (pending sign-off)
+- **Deciders:** Founder (approved live in-session)
 - **Tags:** performance, csp, caching, spike
 - **Supersedes:** —
 - **Superseded by:** —
