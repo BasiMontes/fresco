@@ -34,8 +34,6 @@ import * as path from 'node:path';
 
 import { parse as parseYaml } from 'yaml';
 
-import { sanitizedGitEnv } from './git-env';
-
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -241,7 +239,7 @@ function upstreamUnchangedSinceCursor(tempDir: string, lockCursor: string, entry
   try {
     const out = execSync(
       `git -C "${tempDir}" diff --name-only ${lockCursor} HEAD -- "${entryPath}"`,
-      { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
+      { stdio: ['pipe', 'pipe', 'pipe'] },
     ).toString().trim();
     return out === '';
   }

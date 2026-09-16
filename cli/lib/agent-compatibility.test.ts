@@ -41,7 +41,6 @@ import {
   validateCanonicalSources,
   validateCommandAliases,
 } from './agent-compatibility.ts';
-import { sanitizedGitEnv } from './git-env.ts';
 
 const REPO_ROOT = resolve(import.meta.dir, '..', '..');
 const temporaryRoots: string[] = [];
@@ -318,7 +317,6 @@ describe('Codex hook portability', () => {
       cwd: root,
       stdout: 'pipe',
       stderr: 'pipe',
-      env: sanitizedGitEnv(),
     });
 
     expect(result.exitCode).not.toBe(0);
@@ -328,7 +326,7 @@ describe('Codex hook portability', () => {
     const root = contractFixture('agent compatibility spaced root ');
     const nested = join(root, 'nested directory');
     mkdirSync(nested);
-    const init = Bun.spawnSync({ cmd: ['git', 'init', '-q'], cwd: root, stderr: 'pipe', env: sanitizedGitEnv() });
+    const init = Bun.spawnSync({ cmd: ['git', 'init', '-q'], cwd: root, stderr: 'pipe' });
     expect(init.exitCode).toBe(0);
 
     const result = Bun.spawnSync({
@@ -336,7 +334,6 @@ describe('Codex hook portability', () => {
       cwd: nested,
       stdout: 'pipe',
       stderr: 'pipe',
-      env: sanitizedGitEnv(),
     });
 
     expect(result.exitCode).toBe(0);

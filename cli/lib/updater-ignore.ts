@@ -38,8 +38,6 @@ import * as fs from 'node:fs';
 
 import * as path from 'node:path';
 
-import { sanitizedGitEnv } from './git-env';
-
 // ============================================================================
 // LINE TOKENISATION + COMPARABLE SET
 // ============================================================================
@@ -397,7 +395,7 @@ export function computeBlobSha(filePath: string): string {
   try {
     return execSync(
       `git hash-object "${filePath}"`,
-      { stdio: ['pipe', 'pipe', 'pipe'], env: sanitizedGitEnv() },
+      { stdio: ['pipe', 'pipe', 'pipe'] },
     ).toString().trim();
   }
   catch {

@@ -24,8 +24,6 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { sanitizedGitEnv } from './git-env';
-
 // ============================================================================
 // ALLOWLIST
 // ============================================================================
@@ -149,7 +147,6 @@ function listTrackedPbiPaths(cwd: string): string[] {
     const out = execSync('git ls-files .context/PBI', {
       cwd,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: sanitizedGitEnv(),
     }).toString();
     return out.split('\n').map(l => l.trim()).filter(Boolean);
   }
