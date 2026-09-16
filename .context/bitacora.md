@@ -180,3 +180,8 @@ Historia archivada:
 - Qué: `bun run up` ejecutado, 9 archivos del CLI updater (updater-core/drift/ignore/pbi + update-boilerplate.ts + tests) actualizados a upstream 7ede94e. package.json (scripts.claude/opencode/test) conservado con valor de proyecto. Commit dfbc526, propagado staging/dev/main.
 - Por qué: FRESCO-523, mantener boilerplate al día (ciclo de vida Xray, MCP context7/dbhub, fixes varios de sync-jira-issues).
 - Siguiente: ninguno, ticket cerrado (Finalizada).
+
+## 2026-09-16 - FRESCO-531 shipped: Mercadona read-price API spike + ADR-0028
+- Qué: Spike técnico live-verifica que la API pública de catálogo/precio de Mercadona es de solo lectura, sin auth, sin bloqueo, y devuelve precio real inline por subcategoría (sin N+1 por producto). Prueba de rate-limit: 10 requests secuenciales, 0 bloqueos, ~110ms promedio, cookies de Akamai Bot Manager presentes en toda respuesta. Nuevo ADR-0028 corrige la línea "Mercadona bloquea automatización" de ADR-0027 (cierta solo para el endpoint de carrito/escritura) y deja el uso en producción gateado a decisión explícita del founder sobre riesgo legal/ToS. Carrefour/Dia/Alcampo quedan sin verificar (requieren trace real con devtools) y marcados como spike de seguimiento.
+- Por qué: Desbloquea FRESCO-346 (comparador de precios) con fuente de dato real y coste cero, exactamente lo que ADR-0027 dejó pendiente.
+- Siguiente: Founder revisa y acepta (o rechaza) ADR-0028; si acepta, FRESCO-346 puede construirse sobre cache en Supabase (pg_cron/pg_net) de este dato, con FRESCO-488 (mapeo ingrediente->producto) como prerrequisito real.
