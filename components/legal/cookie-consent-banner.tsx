@@ -12,6 +12,15 @@ import { Button } from '@/components/ui/button';
  * settings dialog opened from here or from the footer/Ajustes must render
  * on top of it) and above the app's `dropdown: 100` tier, reusing that same
  * z-index rather than reserving a new one for a single call site.
+ *
+ * FRESCO-536: `min-h-[158px] sm:min-h-0` — the Figtree body-copy font swap
+ * (kept at `display: swap` per FRESCO-496, unlike the `optional` hero face)
+ * reflows this paragraph's line wrap on mobile, and since this box is
+ * `fixed bottom-0` with auto height, that reflow moves its own `top` and
+ * scored as this repo's entire measured mobile CLS (0.104). Reserving the
+ * stacked-layout height it already renders at keeps the box size stable
+ * across the swap without forcing `optional` (invisible text) on body copy
+ * sitewide. Reset above `sm:` where the row layout is shorter and stable.
  */
 export function CookieConsentBanner() {
   const { bannerVisible, accept, reject, openSettings } = useCookieConsent();
@@ -23,7 +32,7 @@ export function CookieConsentBanner() {
       role="region"
       aria-label="Consentimiento de cookies"
       data-testid="cookie_consent_banner"
-      className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-surface-raised p-4 shadow-lg"
+      className="fixed inset-x-0 bottom-0 z-[100] min-h-[158px] border-t border-border bg-surface-raised p-4 shadow-lg sm:min-h-0"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-body-sm text-text">
