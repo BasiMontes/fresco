@@ -171,3 +171,4 @@ cookies.txt
 .context/PBI/*
 !.context/PBI/README.md
 !.context/PBI/templates/
+.context/qa/agiletest-import-*.csv
