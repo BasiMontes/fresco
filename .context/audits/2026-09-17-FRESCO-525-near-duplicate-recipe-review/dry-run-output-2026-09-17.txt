@@ -1,0 +1,32 @@
+Mode: DRY-RUN
+4 human-reviewed merge pairs (see analysis doc for the other 7 groups kept as-is).
+
+=== Batido verde + frutos rojos ===
+Canonical: 71bd98eb-8f99-4cb9-996e-622471e0e694 | Batido verde con frutos rojos
+Duplicate: 92598a37-b83f-4c22-921a-2d71c797125d | Batido verde frutos rojos (would be deactivated)
+  meal_plan_recipes: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.meal_plan_recipes TO service_role;","message":"permission denied for table meal_plan_recipes"}).
+  favorites: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.favorites TO service_role;","message":"permission denied for table favorites"}).
+  recipes 92598a37-b83f-4c22-921a-2d71c797125d | activo: true -> false — SKIPPED: reference redirect is blocked, deactivating now would orphan any live reference.
+
+=== Batido verde + miel ===
+Canonical: f87aa7ce-aa3e-45ff-b6a9-f152404e61a0 | Batido verde miel
+Duplicate: a8edf55f-21da-4269-a3d6-a248d6d4e50c | Batido verde con miel (would be deactivated)
+  meal_plan_recipes: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.meal_plan_recipes TO service_role;","message":"permission denied for table meal_plan_recipes"}).
+  favorites: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.favorites TO service_role;","message":"permission denied for table favorites"}).
+  recipes a8edf55f-21da-4269-a3d6-a248d6d4e50c | activo: true -> false — SKIPPED: reference redirect is blocked, deactivating now would orphan any live reference.
+
+=== Batido verde + canela ===
+Canonical: d67259a9-89a5-4aaa-95dc-a5e3f68806a8 | Batido verde con canela
+Duplicate: d806c307-1c2f-4c4a-b30c-cf15ce75c256 | Batido verde canela (would be deactivated)
+  meal_plan_recipes: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.meal_plan_recipes TO service_role;","message":"permission denied for table meal_plan_recipes"}).
+  favorites: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.favorites TO service_role;","message":"permission denied for table favorites"}).
+  recipes d806c307-1c2f-4c4a-b30c-cf15ce75c256 | activo: true -> false — SKIPPED: reference redirect is blocked, deactivating now would orphan any live reference.
+
+=== Sopa de tomate + albahaca ===
+Canonical: 1b85af10-6641-4cf8-b68a-425a37575391 | Sopa de tomate y albahaca
+Duplicate: ca33bf14-c5c9-4d20-90fd-5ab141d0515b | Sopa de tomate con albahaca (would be deactivated)
+  meal_plan_recipes: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.meal_plan_recipes TO service_role;","message":"permission denied for table meal_plan_recipes"}).
+  favorites: BLOCKED — service_role lacks SELECT grant on this table (403 permission denied: {"code":"42501","details":null,"hint":"Grant the required privileges to the current role with: GRANT SELECT ON public.favorites TO service_role;","message":"permission denied for table favorites"}).
+  recipes ca33bf14-c5c9-4d20-90fd-5ab141d0515b | activo: true -> false — SKIPPED: reference redirect is blocked, deactivating now would orphan any live reference.
+
+4 pairs processed. Dry-run only — pass --apply to write.
