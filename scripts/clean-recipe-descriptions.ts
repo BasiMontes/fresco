@@ -11,6 +11,13 @@
 // the leftover) — dropping it reads naturally in every sample ("Wok de con
 // tamari" -> "Wok con tamari", "Sopa de con ajo" -> "Sopa con ajo").
 //
+// FRESCO-528 — collateral finding from FRESCO-526, same generator-template
+// bug, different connector pair: the generator also left a duplicated
+// connector "con y "/"de y " (e.g. "Tofu a la plancha con y limón con ajo
+// asado..." -> "...con limón con ajo asado..."). Verified against the
+// affected active rows (2026-09-17): collapsing "<con|de> y " to "<con|de> "
+// reads naturally in every sample.
+//
 // Usage:
 //   bun scripts/clean-recipe-descriptions.ts              # dry-run, logs id | before -> after
 //   bun scripts/clean-recipe-descriptions.ts --apply       # writes changed rows via service_role
@@ -21,9 +28,12 @@ const APPLY = process.argv.includes('--apply');
 const PAGE_SIZE = 500;
 
 const DANGLING_DE_CON = /\bde con\b/gi;
+const DUPLICATED_CONNECTOR = /\b(con|de)\s+y\s+/gi;
 
 export function cleanRecipeDescription(original: string): string {
-  return original.replace(DANGLING_DE_CON, 'con');
+  return original
+    .replace(DANGLING_DE_CON, 'con')
+    .replace(DUPLICATED_CONNECTOR, '$1 ');
 }
 
 interface RecipeRow {
@@ -36,7 +46,7 @@ async function fetchAffectedRecipes(supabaseUrl: string, serviceRoleKey: string)
   let offset = 0;
   for (;;) {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/recipes?select=id,descripcion_corta&descripcion_corta=ilike.*de con*&order=id&offset=${offset}&limit=${PAGE_SIZE}`,
+      `${supabaseUrl}/rest/v1/recipes?select=id,descripcion_corta&or=(descripcion_corta.ilike.*de con*,descripcion_corta.ilike.*con y*,descripcion_corta.ilike.*de y*)&order=id&offset=${offset}&limit=${PAGE_SIZE}`,
       {
         headers: {
           apikey: serviceRoleKey,
@@ -78,9 +88,13 @@ async function main() {
   }
 
   console.error(`Mode: ${APPLY ? 'APPLY' : 'DRY-RUN'}`);
-  // `ilike.*de con*` is a coarse pre-filter (case-insensitive substring, no
-  // word boundaries) — cheaper than fetching every row. `cleanRecipeName`'s
-  // word-boundary regex is still the source of truth for what actually changes.
+  // The `or=(...)` ilike clauses are a coarse pre-filter (case-insensitive
+  // substring, no word boundaries — PostgREST can't express `\y`/`\b` regex
+  // directly) — cheaper than fetching every row. `cleanRecipeDescription`'s
+  // word-boundary regexes are still the source of truth for what actually
+  // changes: "*con y*"/"*de y*" also match unrelated words like "con yogur"
+  // or "de yuca", but those pass through untouched since the JS regex
+  // requires a standalone "y" token.
   const recipes = await fetchAffectedRecipes(SUPABASE_URL, SERVICE_ROLE_KEY);
   console.error(`Fetched ${recipes.length} candidate recipes.`);
 
