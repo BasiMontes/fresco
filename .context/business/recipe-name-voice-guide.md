@@ -1,11 +1,12 @@
 # Recipe Name Voice Guide
 
-**Versioned prompt/style guide for recipe names — v1, FRESCO-449 (2026-09-07).**
+**Versioned prompt/style guide for recipe names — v2, FRESCO-449 (2026-09-07), FRESCO-524 (2026-09-17).**
 
-Consumed by two places:
+Consumed by three places:
 
 1. The founder's offline batch-drafting step (`project-dev-guide.md` § Batch Recipe-Catalog Seeding) when writing new recipe names by hand or with LLM assistance.
 2. `scripts/clean-recipe-names.ts`, the deterministic cleanup pass applied once to the existing 1000-recipe catalog.
+3. `scripts/backfill-recipe-name-differentiator.ts` (FRESCO-524), the one-off backfill that applied rule 7 above to the recipes that already existed when the rule was added.
 
 ## The problem this replaces
 
@@ -34,6 +35,7 @@ Two failure modes, both mechanical (template bugs, not creative failures):
 4. **No dangling connectors.** Never let a name end in a bare `con`, `y`, `de`, `al`, `a la` — that means a template slot was left empty; drop the connector, not just the missing word.
 5. **Drop a whole clause, never half of one.** When a name is still over 6 words after removing filler, drop the last `con`/`y` clause entirely (e.g. "... con frutos rojos" goes away as a unit) — never truncate mid-clause, which leaves an orphaned word like "frutos" with no idea what it was describing.
 6. **Correct tildes.** `versión`, `mediterráneo`, `guarnición`, etc. — never ship the unaccented generator-bug spelling even inside a phrase you're keeping.
+7. **The differentiator goes in `nombre`, not only in `descripcion_corta`** (FRESCO-524). When a batch drafts several recipes that share a base dish — same category, same base ingredients, only one ingredient rotates ("Wok de tamari y jengibre" with a rotating `con <ingrediente>` clause) — that rotating ingredient is what makes each recipe genuinely distinct. It must be part of the displayed `nombre` for every recipe in the batch, e.g. `Wok de tamari y jengibre con lima`, `Wok de tamari y jengibre con cilantro`, never all sharing the bare `Wok de tamari y jengibre`. Leaving it only in `descripcion_corta` produces recipes that are indistinguishable in any list/search view that shows `nombre` alone — confirmed at scale in FRESCO-522 (47 groups, 157 recipes sharing a `nombre` with a distinct sibling). This rule is about a variable ingredient across a *batch*, distinct from rule 3 (a single recipe's own real descriptor) — both land in the same place, `nombre`.
 
 ## Sí / No examples
 
