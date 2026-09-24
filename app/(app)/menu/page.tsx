@@ -3,6 +3,7 @@ import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import { Bell, Heart } from 'lucide-react';
 
 import Link from 'next/link';
+import { after } from 'next/server';
 import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
 import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
@@ -187,24 +188,37 @@ export default async function MenuPage() {
 
   // FRESCO-535: persist this week's cost the first time it's computed, so
   // the trend chart above has a real historical point for this week going
-  // forward. `coste_estimado is null` makes this idempotent — a later
-  // render of the same week never overwrites the first value it wrote, per
-  // the story's own AC (a snapshot reflects what was estimated AT THE TIME,
-  // not a live-updating figure). Fire-and-forget: a write failure here must
-  // never affect this page's render, same fail-soft posture as every other
-  // side-effect-free read above.
-  if (costeEstimado !== undefined && user?.id) {
-    void supabase
-      .from('meal_plans')
-      .update({ coste_estimado: costeEstimado })
-      .eq('user_id', user.id)
-      .eq('semana_iso', semanaIso)
-      .is('coste_estimado', null)
-      .then(({ error }) => {
-        if (error) {
-          console.error('[/menu] failed to persist coste_estimado for the spend trend', error);
-        }
-      });
+  // forward. `coste_estimado is null` makes the DB write itself idempotent —
+  // a later render of the same week never overwrites the first value it
+  // wrote, per the story's own AC (a snapshot reflects what was estimated AT
+  // THE TIME, not a live-updating figure). `spendTrend`'s last point IS this
+  // week (see `getSpendTrend`'s expected-week ordering) and was already
+  // fetched above in the same `Promise.all` — checking it here skips the
+  // network round trip entirely for every render after the first one this
+  // week, instead of sending a write that would just match 0 rows.
+  const currentWeekAlreadyPersisted = spendTrend.at(-1)?.costeEstimado != null;
+  if (costeEstimado !== undefined && user?.id && !currentWeekAlreadyPersisted) {
+    // `after()` (not fire-and-forget `void promise`): on Vercel's serverless
+    // runtime, an unawaited promise is not guaranteed to keep running once
+    // the response has been sent — `after()` is Next's documented mechanism
+    // for exactly this "side effect that shouldn't block the response" case
+    // (`node_modules/next/dist/docs/.../after.md`), via `waitUntil` under
+    // the hood. A write failure still must never affect this page's render
+    // (this callback runs after the response is already on its way), same
+    // fail-soft posture as every other side-effect-free read above.
+    const userId = user.id;
+    after(async () => {
+      const { error } = await supabase
+        .from('meal_plans')
+        .update({ coste_estimado: costeEstimado })
+        .eq('user_id', userId)
+        .eq('semana_iso', semanaIso)
+        .is('coste_estimado', null);
+
+      if (error) {
+        console.error('[/menu] failed to persist coste_estimado for the spend trend', error);
+      }
+    });
   }
 
   return (
