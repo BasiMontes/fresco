@@ -129,6 +129,7 @@ export type Database = {
       meal_plans: {
         Row: {
           advertencias: string[]
+          coste_estimado: number | null
           created_at: string
           explicacion_aprendizaje: string | null
           fecha_inicio: string
@@ -139,6 +140,7 @@ export type Database = {
         }
         Insert: {
           advertencias?: string[]
+          coste_estimado?: number | null
           created_at?: string
           explicacion_aprendizaje?: string | null
           fecha_inicio: string
@@ -149,6 +151,7 @@ export type Database = {
         }
         Update: {
           advertencias?: string[]
+          coste_estimado?: number | null
           created_at?: string
           explicacion_aprendizaje?: string | null
           fecha_inicio?: string
