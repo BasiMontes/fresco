@@ -89,7 +89,12 @@ export function SiteNav() {
     // transparent background (confirmed via getComputedStyle). Solid
     // bg-background fixes contrast on any section behind it.
     <header className="sticky top-0 z-20 border-b border-border bg-background">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-8">
+      {/* FRESCO-713 review: this row has no `position` of its own, so without
+          `relative z-20` it paints in the non-positioned step of the header's
+          local stacking order — BEHIND the `fixed z-10` scrim below, even
+          though the header itself is `z-20`. That made the logo/login/
+          hamburger unclickable while the drawer was open. */}
+      <div className="relative z-20 mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 md:px-8">
         <Link href="/" className="inline-flex min-h-[44px] shrink-0 items-center">
           {/* FRESCO-481: cream negative mark on the near-black dark nav.
               FRESCO-504: dropped `priority` — only one of these two ever
@@ -176,7 +181,21 @@ export function SiteNav() {
       </div>
 
       {isOpen && (
-        <nav className="flex flex-col border-t border-border bg-background lg:hidden">
+        // FRESCO-713: matches the scrim FilterDrawer uses (FRESCO-448). This
+        // panel is a plain in-flow block, not a portal, so it shares the
+        // header's local stacking context — the header row above needs its
+        // own `relative z-20` (see that div) to stay above this backdrop;
+        // without it, a positioned z-10 descendant paints over ALL of the
+        // header's non-positioned content, not just the page below.
+        <div
+          className="fixed inset-0 z-10 bg-scrim lg:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {isOpen && (
+        <nav className="relative z-10 flex flex-col border-t border-border bg-background lg:hidden">
           {NAV_LINKS.map(link => (
             <a
               key={link.href}
