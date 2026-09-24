@@ -176,7 +176,19 @@ export function SiteNav() {
       </div>
 
       {isOpen && (
-        <nav className="flex flex-col border-t border-border bg-background lg:hidden">
+        // FRESCO-713: matches the scrim FilterDrawer uses (FRESCO-448) —
+        // this panel is a plain in-flow block, not a portal, so the header's
+        // own `z-20` paints over the backdrop within its own rect and only
+        // the page content below gets dimmed.
+        <div
+          className="fixed inset-0 z-10 bg-scrim lg:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {isOpen && (
+        <nav className="relative z-10 flex flex-col border-t border-border bg-background lg:hidden">
           {NAV_LINKS.map(link => (
             <a
               key={link.href}
