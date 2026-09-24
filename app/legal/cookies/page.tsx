@@ -13,7 +13,8 @@ export default function CookiesPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteNav />
-      <main className="mx-auto max-w-3xl px-4 py-16 text-body-md text-text">
+      {/* FRESCO-495: skip-link target — this page predates that ticket's convention. */}
+      <main id="main" className="mx-auto max-w-3xl px-4 py-16 text-body-md text-text">
         <h1 className="text-h3 mb-6">Política de Cookies</h1>
         <CookiesContent />
       </main>
