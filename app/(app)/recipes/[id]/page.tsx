@@ -2,6 +2,7 @@ import { RecipeDetailView, RecipeNotFoundState } from '@/components/recipes/reci
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getRecipeDetail } from '@/lib/api/recipes';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { getSlotSubstitutionContext } from '@/lib/ingredients/get-slot-substitution-context';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -9,13 +10,19 @@ import { createClient } from '@/lib/supabase/server';
  * (rich metadata, food-safety-scoped) and personal recipes (name/ingredients/
  * steps only) — see `getRecipeDetail()` for how `id` resolves to one or the
  * other.
+ *
+ * FRESCO-534: an optional `?slot=<meal_plan_recipe_id>` (set only by
+ * `calendar-grid.tsx`'s navigation) scopes the ingredient-substitution UI to
+ * that specific planned meal. `getSlotSubstitutionContext()` degrades to
+ * `null` on any mismatch (wrong recipe, not the caller's slot, or absent) —
+ * a Biblioteca-browse open of the same recipe never carries it.
  */
 export default async function RecipeDetailPage({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ from?: string }>
+  searchParams: Promise<{ from?: string, slot?: string }>
 }) {
   const { id } = await params;
-  const { from } = await searchParams;
+  const { from, slot } = await searchParams;
   const supabase = await createClient();
   // FRESCO-483: resolve the session once for both reads below.
   const { data: { user } } = await getAuthUser();
@@ -41,9 +48,23 @@ export default async function RecipeDetailPage({ params, searchParams }: {
     console.error('[/recipes/[id]] getFavoriteRecipeIds failed, defaulting to not-favorited', error);
   }
 
+  const substitutionContext = detail ? await getSlotSubstitutionContext(supabase, slot, id) : null;
+
   return (
     <div className="mx-auto max-w-2xl">
-      {detail ? <RecipeDetailView detail={detail} initialIsFavorite={isFavorite} from={from} /> : <RecipeNotFoundState from={from} />}
+      {detail
+        ? (
+            <RecipeDetailView
+              detail={detail}
+              initialIsFavorite={isFavorite}
+              from={from}
+              slotId={substitutionContext?.slotId}
+              sustitucionIngrediente={substitutionContext?.sustitucionIngrediente}
+            />
+          )
+        : (
+            <RecipeNotFoundState from={from} />
+          )}
     </div>
   );
 }
