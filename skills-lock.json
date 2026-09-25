@@ -7,6 +7,12 @@
       "skillPath": "skills/accessibility/SKILL.md",
       "computedHash": "10e83284d3395ab5ec2f2db602b663480a37a4ff404d16510eefe86b034fcc1a"
     },
+    "brag": {
+      "source": "latent-spaces/brag",
+      "sourceType": "github",
+      "skillPath": "skills/brag/SKILL.md",
+      "computedHash": "c3a7c7831d52996fcf3425a9c7bb7ece6555d8a29200730d9463ad593c7b33f9"
+    },
     "captions-overlay": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",

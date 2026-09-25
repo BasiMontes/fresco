@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-09-07T08:35:36.184Z`
+> Generated: `2026-09-25T06:41:28.306Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-dev-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 33
+Skills indexed: 34
 
 ---
 ## Skill: accessibility
@@ -129,6 +129,25 @@ Skills indexed: 33
 **Read full SKILL.md when**: you are running any phase of a scheduled run, a gate fires, or the briefing tells you to load the full skill.
 
 > Source: `.agents/skills/autonomous-delivery/SKILL.md` · phase: `implementation` · source: frontmatter `compact_rules` (verbatim)
+
+---
+
+## Skill: brag
+
+**Purpose**: Turn the current project website into a short, polished, shareable launch video using Hyperframes.
+
+**Compact Rules**:
+- Reads the current project code to understand the app.
+- Plans a short brag concept specific to this project.
+- Scripts and storyboards the video.
+- Hands a focused composition brief to Hyperframes.
+- Validates, renders, and writes share copy.
+- The user explicitly asks for a new run without overriding previous results
+- A `brag-output/` directory already exists in the project
+
+**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+
+> Source: `.agents/skills/brag/SKILL.md` · phase: `unknown` · extraction strategy: B
 
 ---
 
