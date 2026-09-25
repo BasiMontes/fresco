@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="es" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Fresco — brag (problema + flujo)</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Fraunces';
+        src: url('assets/fonts/Fraunces-variable.woff2') format('woff2');
+        font-weight: 300 700;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: 'Figtree';
+        src: url('assets/fonts/Figtree-variable.woff2') format('woff2');
+        font-weight: 300 700;
+        font-style: normal;
+        font-display: block;
+      }
+
+      :root {
+        --bg: #faf3e3;
+        --surface: #f1e3c6;
+        --surface-raised: #fbf6ec;
+        --border: rgba(32, 30, 29, 0.16);
+        --primary: #0f4e0e;
+        --accent-600: #0a3e09;
+        --accent-700: #052d05;
+        --accent-100: #e1e8e0;
+        --secondary: #df8c26;
+        --error: #b03d2b;
+        --text: #201e1d;
+        --tertiary: #6f5f43;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--primary);
+        font-family: 'Figtree', sans-serif;
+        color: var(--text);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      #sceneDark {
+        z-index: 1;
+        opacity: 1;
+        background: var(--primary);
+      }
+      #sceneCream {
+        z-index: 2;
+        opacity: 0;
+        background: var(--bg);
+      }
+
+      /* ---------- Dark scene: hook + pain grid ---------- */
+      .hook-line-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 260px;
+      }
+      .hook-line {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 84px;
+        line-height: 1.18;
+        color: var(--bg);
+        text-align: center;
+      }
+      .hw {
+        display: inline-block;
+        opacity: 0;
+      }
+
+      .pain-grid {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 0 120px;
+      }
+      .pain-card {
+        width: 460px;
+        background: var(--accent-600);
+        border: 1px solid var(--accent-700);
+        border-radius: 18px;
+        padding: 32px 34px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        opacity: 0;
+      }
+      .pain-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: var(--error);
+        color: var(--bg);
+        display: grid;
+        place-items: center;
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 22px;
+      }
+      .pain-lead {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 28px;
+        color: var(--bg);
+        line-height: 1.25;
+      }
+      .pain-rest {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 400;
+        font-size: 19px;
+        color: var(--accent-100);
+        line-height: 1.4;
+      }
+
+      /* ---------- Cream scene: shared background for everything after the turn ---------- */
+      .turn-logo {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .turn-logo img {
+        width: 340px;
+        height: auto;
+        opacity: 0;
+      }
+
+      /* Onboarding wizard (reused from v1) */
+      .wizard-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+      }
+      .wizard-card {
+        width: 860px;
+        background: var(--surface-raised);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        padding: 72px 80px;
+        box-shadow: 0 24px 60px rgba(32, 30, 29, 0.1);
+      }
+      .step-label-wrap {
+        position: relative;
+        height: 34px;
+      }
+      .step-label {
+        position: absolute;
+        inset: 0;
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 24px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--tertiary);
+        opacity: 0;
+      }
+      .step-dots {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+        margin-bottom: 56px;
+      }
+      .dot {
+        width: 100%;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--surface);
+        flex: 1;
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 14px 28px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-family: 'Figtree', sans-serif;
+        font-weight: 600;
+        font-size: 28px;
+        color: var(--tertiary);
+        background: transparent;
+        opacity: 0;
+        transform-origin: 50% 50%;
+      }
+
+      /* Generating + calendar (reused from v1) */
+      .gen-wrap {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+      }
+      .spinner {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        border: 8px solid var(--surface);
+        border-top-color: var(--primary);
+      }
+      .gen-label {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 600;
+        font-size: 34px;
+        color: var(--tertiary);
+      }
+      .calendar-wrap {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+      }
+      .calendar-title {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 44px;
+        color: var(--text);
+      }
+      .calendar-grid {
+        display: flex;
+        gap: 20px;
+      }
+      .day-card {
+        width: 232px;
+        background: var(--surface-raised);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        opacity: 0;
+      }
+      .day-card img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+      }
+      .day-card .inner {
+        padding: 18px 20px 22px;
+      }
+      .day-card .day-name {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: 8px;
+      }
+      .day-card .dish-cat {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 600;
+        font-size: 15px;
+        text-transform: uppercase;
+        color: var(--tertiary);
+        margin-bottom: 4px;
+      }
+      .day-card .dish-name {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 600;
+        font-size: 20px;
+        color: var(--text);
+        line-height: 1.25;
+      }
+
+      /* Shopping list (reused from v1) */
+      .list-wrap {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .list-inner {
+        width: 1180px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .list-title {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 44px;
+        margin-bottom: 6px;
+      }
+      .aisle-group {
+        background: var(--surface-raised);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 28px 36px;
+        opacity: 0;
+      }
+      .aisle-name {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 22px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--primary);
+        margin-bottom: 14px;
+      }
+      .aisle-items {
+        display: flex;
+        gap: 32px;
+      }
+      .item-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .checkbox {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        border: 2px solid var(--border);
+        background: var(--surface-raised);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .checkbox svg {
+        opacity: 0;
+        transform: scale(0.4);
+      }
+      .item-label {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 400;
+        font-size: 24px;
+        color: var(--text);
+      }
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        padding: 8px 6px 0;
+        opacity: 0;
+      }
+      .totals-label {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        color: var(--tertiary);
+      }
+      .totals-value {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 36px;
+        color: var(--primary);
+      }
+
+      /* Outro (reused pattern from v1/v2) */
+      .outro-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 44px;
+      }
+      .outro-line {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 92px;
+        text-align: center;
+        max-width: 1300px;
+        line-height: 1.15;
+        color: var(--text);
+      }
+      .ow {
+        display: inline-block;
+        opacity: 0;
+      }
+      .ow-accent {
+        color: var(--primary);
+      }
+      .outro-logo {
+        width: 300px;
+        height: auto;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="30"
+    >
+      <!-- ============ DARK SCENE — HOOK + PAIN GRID (0 - 9s) ============ -->
+      <div id="sceneDark" class="scene">
+        <div class="hook-line-wrap">
+          <h1 class="hook-line" id="hookLine">
+            <span class="hw">¿Cuántas</span> <span class="hw">veces</span>
+            <span class="hw">has</span> <span class="hw">acabado</span>
+            <span class="hw">comiendo</span> <span class="hw">lo</span> <span class="hw">que</span>
+            <span class="hw">sea?</span>
+          </h1>
+        </div>
+
+        <div class="pain-grid" id="painGrid">
+          <div class="pain-card" id="pain1">
+            <span class="pain-badge">✗</span>
+            <p class="pain-lead">El domingo por la tarde.</p>
+            <p class="pain-rest">Mirando el techo intentando recordar qué había en la nevera.</p>
+          </div>
+          <div class="pain-card" id="pain2">
+            <span class="pain-badge">✗</span>
+            <p class="pain-lead">El súper sin lista.</p>
+            <p class="pain-rest">
+              Sales con el doble de lo que necesitas y olvidas la mitad de lo que ibas a buscar.
+            </p>
+          </div>
+          <div class="pain-card" id="pain3">
+            <span class="pain-badge">✗</span>
+            <p class="pain-lead">El miércoles a las 8pm.</p>
+            <p class="pain-rest">
+              Nevera medio vacía, cansancio máximo y la pregunta de siempre: ¿qué hacemos de cenar?
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CREAM SCENE — TURN + FLOW DEMO + OUTRO (9 - 30s) ============ -->
+      <div id="sceneCream" class="scene">
+        <div class="turn-logo" id="turnLogo">
+          <img src="assets/brand/logo-base.svg" alt="Fresco" />
+        </div>
+
+        <div class="wizard-wrap" id="wizardWrap">
+          <div class="wizard-card">
+            <div class="step-label-wrap">
+              <p class="step-label" id="stepLabel1">Paso 1 de 3</p>
+              <p class="step-label" id="stepLabel2">Paso 2 de 3</p>
+              <p class="step-label" id="stepLabel3">Paso 3 de 3</p>
+            </div>
+            <div class="step-dots">
+              <span class="dot" id="dot1"></span>
+              <span class="dot" id="dot2"></span>
+              <span class="dot" id="dot3"></span>
+            </div>
+            <div class="chip-row">
+              <span class="chip" id="chip1">Vegetariano</span>
+              <span class="chip" id="chip2">Sin gluten</span>
+              <span class="chip" id="chip3">Española</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gen-wrap" id="genWrap">
+          <div class="spinner" id="spinner"></div>
+          <p class="gen-label">Generando menú…</p>
+        </div>
+
+        <div class="calendar-wrap" id="calendarWrap">
+          <p class="calendar-title">Tu semana, lista.</p>
+          <div class="calendar-grid">
+            <div class="day-card" id="day1">
+              <img
+                src="https://images.unsplash.com/photo-1704642153271-5f241866aaaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8aHVldm9zJTIwcmFuY2hlcm9zJTIwbWV4aWNhbiUyMGJyZWFrZmFzdCUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NTY5NzU5M3ww&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Huevos rancheros"
+              />
+              <div class="inner">
+                <p class="day-name">Lunes</p>
+                <p class="dish-cat">Desayuno</p>
+                <p class="dish-name">Huevos rancheros</p>
+              </div>
+            </div>
+            <div class="day-card" id="day2">
+              <img
+                src="https://images.unsplash.com/photo-1604909053796-048c8c9801a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8MXx8RW5zYWxhZGElMjB0ZW1wbGFkYSUyMGRlJTIwY2hhbXBpbm9uZXMlMjB5JTIwamFtb24lMjBjb29rZWQlMjBtZWFsJTIwZm9vZCUyMHBob3RvZ3JhcGh5fGVufDB8Mnx8fDE3ODU2MjI5MTR8MA&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Ensalada templada de champiñones y jamón"
+              />
+              <div class="inner">
+                <p class="day-name">Martes</p>
+                <p class="dish-cat">Comida</p>
+                <p class="dish-name">Ensalada templada de champiñones</p>
+              </div>
+            </div>
+            <div class="day-card" id="day3">
+              <img
+                src="https://images.unsplash.com/photo-1540832804691-58c47b913830?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8Mnx8dG9hc3QlMjBpbnRlZ3JhbCUyMHRvbWF0ZXMlMjBjaGVycnklMjBjaGVlc2UlMjBmZXRhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NzYwNDcxfDA&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Tostada integral con tomates cherry y queso feta"
+              />
+              <div class="inner">
+                <p class="day-name">Miércoles</p>
+                <p class="dish-cat">Cena</p>
+                <p class="dish-name">Tostada con tomate y feta</p>
+              </div>
+            </div>
+            <div class="day-card" id="day4">
+              <img
+                src="https://images.unsplash.com/photo-1778104682662-0cc3a777fad3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8NHx8U29wYSUyMGRlJTIwdG9tYXRlJTIweSUyMGFsYmFoYWNhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NjIyOTE2fDA&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Sopa de tomate y albahaca"
+              />
+              <div class="inner">
+                <p class="day-name">Jueves</p>
+                <p class="dish-cat">Comida</p>
+                <p class="dish-name">Sopa de tomate y albahaca</p>
+              </div>
+            </div>
+            <div class="day-card" id="day5">
+              <img
+                src="https://images.unsplash.com/photo-1572448992068-26624d5cf341?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8OHx8YnVyZ2VyJTIwYmVlZiUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NjAyNTI3MXww&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Hamburguesa de ternera"
+              />
+              <div class="inner">
+                <p class="day-name">Viernes</p>
+                <p class="dish-cat">Cena</p>
+                <p class="dish-name">Hamburguesa de ternera</p>
+              </div>
+            </div>
+            <div class="day-card" id="day6">
+              <img
+                src="https://images.unsplash.com/photo-1782089543715-13daa38402b7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8Z2FybGljJTIwc2hyaW1wJTIwZnJlc2glMjBoZXJicyUyMGxpZ2h0JTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NzAxNTc2fDA&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Gambas al ajillo"
+              />
+              <div class="inner">
+                <p class="day-name">Sábado</p>
+                <p class="dish-cat">Comida</p>
+                <p class="dish-name">Gambas al ajillo</p>
+              </div>
+            </div>
+            <div class="day-card" id="day7">
+              <img
+                src="https://images.unsplash.com/photo-1708782342102-ee13e9ac16f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8N3x8YWxib25kaWdhcyUyMGVuJTIwc2Fsc2ElMjBlc3Bhbm9sYSUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NjA4NjI5NHww&ixlib=rb-4.1.0&q=80&w=600"
+                alt="Albóndigas en salsa española"
+              />
+              <div class="inner">
+                <p class="day-name">Domingo</p>
+                <p class="dish-cat">Cena</p>
+                <p class="dish-name">Albóndigas en salsa española</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="list-wrap" id="listWrap">
+          <div class="list-inner">
+            <p class="list-title">Tu lista, ya hecha.</p>
+            <div class="aisle-group" id="aisle1">
+              <p class="aisle-name">Frutas y verduras</p>
+              <div class="aisle-items">
+                <span class="item-row"
+                  ><span class="checkbox"
+                    ><svg width="14" height="11" viewBox="0 0 14 11">
+                      <path
+                        d="M1 5.5L5 9.5L13 1.5"
+                        stroke="#FAF3E3"
+                        stroke-width="2.4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        fill="none"
+                      /></svg></span
+                  ><span class="item-label">Champiñones</span></span
+                >
+                <span class="item-row"
+                  ><span class="checkbox"></span><span class="item-label">Tomate cherry</span></span
+                >
+                <span class="item-row"
+                  ><span class="checkbox"></span><span class="item-label">Albahaca</span></span
+                >
+              </div>
+            </div>
+            <div class="aisle-group" id="aisle2">
+              <p class="aisle-name">Carnicería y pescadería</p>
+              <div class="aisle-items">
+                <span class="item-row"
+                  ><span class="checkbox"></span
+                  ><span class="item-label">Ternera picada</span></span
+                >
+                <span class="item-row"
+                  ><span class="checkbox"></span><span class="item-label">Gambas</span></span
+                >
+              </div>
+            </div>
+            <div class="aisle-group" id="aisle3">
+              <p class="aisle-name">Panadería y despensa</p>
+              <div class="aisle-items">
+                <span class="item-row"
+                  ><span class="checkbox"></span><span class="item-label">Pan integral</span></span
+                >
+                <span class="item-row"
+                  ><span class="checkbox"></span><span class="item-label">Tomate frito</span></span
+                >
+              </div>
+            </div>
+            <div class="totals-row" id="totalsRow">
+              <span class="totals-label">Total estimado del menú de esta semana</span>
+              <span class="totals-value">≈ 64 €</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="outro-wrap" id="outroWrap">
+          <h2 class="outro-line" id="outroLine">
+            <span class="ow">Deja</span> <span class="ow">de</span>
+            <span class="ow">improvisar</span> <span class="ow">en</span> <span class="ow">el</span>
+            <span class="ow ow-accent">súper.</span>
+          </h2>
+          <img
+            class="outro-logo"
+            id="outroLogo"
+            src="assets/brand/logo-base-outro.svg"
+            alt="Fresco"
+          />
+        </div>
+      </div>
+
+      <!-- ============ AUDIO ============ -->
+      <audio
+        id="bgm"
+        src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="30"
+        data-media-start="0"
+        data-track-index="10"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.8,"v":0.32},{"t":3.0,"v":0.28},{"t":9.0,"v":0.55},{"t":11.6,"v":0.4},{"t":15.9,"v":0.5},{"t":21.5,"v":0.4},{"t":26.5,"v":0.42},{"t":30.0,"v":0}]}]}'
+      ></audio>
+
+      <!-- pain thuds -->
+      <audio
+        id="sfx-pain1"
+        src="assets/sfx/thud.ogg"
+        data-start="3.00"
+        data-duration="0.55"
+        data-track-index="11"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-pain2"
+        src="assets/sfx/thud.ogg"
+        data-start="3.08"
+        data-duration="0.55"
+        data-track-index="12"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-pain3"
+        src="assets/sfx/thud.ogg"
+        data-start="3.16"
+        data-duration="0.55"
+        data-track-index="13"
+        data-volume="0.4"
+      ></audio>
+
+      <!-- the turn -->
+      <audio
+        id="sfx-turn"
+        src="assets/sfx/turn.ogg"
+        data-start="9.00"
+        data-duration="1.48"
+        data-track-index="11"
+        data-volume="0.5"
+      ></audio>
+
+      <!-- onboarding ticks -->
+      <audio
+        id="sfx-dot1"
+        src="assets/sfx/tick.ogg"
+        data-start="12.10"
+        data-duration="0.02"
+        data-track-index="11"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-dot2"
+        src="assets/sfx/tick.ogg"
+        data-start="12.35"
+        data-duration="0.02"
+        data-track-index="12"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-dot3"
+        src="assets/sfx/tick.ogg"
+        data-start="12.60"
+        data-duration="0.02"
+        data-track-index="13"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-chip1"
+        src="assets/sfx/tick.ogg"
+        data-start="13.00"
+        data-duration="0.02"
+        data-track-index="11"
+        data-volume="0.5"
+      ></audio>
+      <audio
+        id="sfx-chip2"
+        src="assets/sfx/tick.ogg"
+        data-start="13.65"
+        data-duration="0.02"
+        data-track-index="12"
+        data-volume="0.5"
+      ></audio>
+      <audio
+        id="sfx-chip3"
+        src="assets/sfx/tick.ogg"
+        data-start="14.30"
+        data-duration="0.02"
+        data-track-index="13"
+        data-volume="0.5"
+      ></audio>
+
+      <!-- calendar day-card arrivals -->
+      <audio
+        id="sfx-day1"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="15.90"
+        data-duration="0.16"
+        data-track-index="11"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-day2"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="16.08"
+        data-duration="0.16"
+        data-track-index="12"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-day3"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="16.26"
+        data-duration="0.16"
+        data-track-index="13"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-day4"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="16.44"
+        data-duration="0.16"
+        data-track-index="11"
+        data-volume="0.5"
+      ></audio>
+      <audio
+        id="sfx-day5"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="16.62"
+        data-duration="0.16"
+        data-track-index="12"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-day6"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="16.80"
+        data-duration="0.16"
+        data-track-index="13"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-day7"
+        src="assets/sfx/card-arrive.ogg"
+        data-start="16.98"
+        data-duration="0.16"
+        data-track-index="11"
+        data-volume="0.45"
+      ></audio>
+
+      <!-- shopping list -->
+      <audio
+        id="sfx-aisle1"
+        src="assets/sfx/aisle-arrive.ogg"
+        data-start="21.60"
+        data-duration="0.15"
+        data-track-index="11"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-aisle2"
+        src="assets/sfx/aisle-arrive.ogg"
+        data-start="21.90"
+        data-duration="0.15"
+        data-track-index="12"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-aisle3"
+        src="assets/sfx/aisle-arrive.ogg"
+        data-start="22.20"
+        data-duration="0.15"
+        data-track-index="13"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-check"
+        src="assets/sfx/chime.ogg"
+        data-start="22.70"
+        data-duration="0.13"
+        data-track-index="11"
+        data-volume="0.55"
+      ></audio>
+    </div>
+
+    <script>
+      document.fonts.ready.then(function () {
+        var tl = gsap.timeline({ paused: true });
+        var F = 1 / 25;
+
+        function waterfall(selector, start, offsets, durs) {
+          var els = gsap.utils.toArray(selector);
+          var t = start;
+          els.forEach(function (el, i) {
+            tl.set(el, { opacity: 1, y: offsets[i] }, t);
+            tl.to(el, { y: 0, duration: durs[i], ease: 'power4.out' }, t);
+            t = t + durs[i] - 1.5 * F;
+          });
+        }
+
+        function popGroup(ids, start, stagger) {
+          ids.forEach(function (sel, i) {
+            tl.fromTo(
+              sel,
+              { scale: 0, opacity: 0, y: 24 },
+              { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' },
+              start + i * stagger
+            );
+          });
+        }
+
+        // ============================================================
+        // THE TURN — hard cut at t=9.0
+        // ============================================================
+        tl.set('#sceneDark', { opacity: 0 }, 9.0);
+        tl.set('#sceneCream', { opacity: 1 }, 9.0);
+
+        // ============================================================
+        // DARK SCENE — hook + pain grid
+        // ============================================================
+        waterfall(
+          '#hookLine .hw',
+          0.15,
+          [60, 40, 36, 50, 52, 34, 32, 58],
+          [0.18, 0.14, 0.13, 0.16, 0.16, 0.13, 0.12, 0.18]
+        );
+        tl.to('#hookLine', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 2.7);
+        popGroup(['#pain1', '#pain2', '#pain3'], 3.0, 0.08);
+
+        // ============================================================
+        // CREAM SCENE — turn logo
+        // ============================================================
+        tl.fromTo(
+          '#turnLogo img',
+          { scale: 0.7, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.5, ease: 'power3.out' },
+          9.0
+        );
+        tl.to('#turnLogo img', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 11.1);
+
+        // ---- onboarding wizard ----
+        tl.fromTo(
+          '#wizardWrap',
+          { opacity: 0 },
+          { opacity: 1, duration: 0.4, ease: 'power2.out' },
+          11.6
+        );
+
+        tl.set('#stepLabel1', { opacity: 1 }, 12.1);
+        tl.set('#stepLabel2', { opacity: 0 }, 12.1);
+        tl.set('#stepLabel3', { opacity: 0 }, 12.1);
+        tl.to('#dot1', { backgroundColor: '#0F4E0E', duration: 0.15, ease: 'power2.out' }, 12.1);
+
+        tl.set('#stepLabel1', { opacity: 0 }, 12.35);
+        tl.set('#stepLabel2', { opacity: 1 }, 12.35);
+        tl.to('#dot2', { backgroundColor: '#0F4E0E', duration: 0.15, ease: 'power2.out' }, 12.35);
+
+        tl.set('#stepLabel2', { opacity: 0 }, 12.6);
+        tl.set('#stepLabel3', { opacity: 1 }, 12.6);
+        tl.to('#dot3', { backgroundColor: '#0F4E0E', duration: 0.15, ease: 'power2.out' }, 12.6);
+
+        [
+          ['#chip1', 13.0],
+          ['#chip2', 13.65],
+          ['#chip3', 14.3],
+        ].forEach(function (pair) {
+          var sel = pair[0],
+            t = pair[1];
+          tl.fromTo(
+            sel,
+            { scale: 0, opacity: 0, y: 20 },
+            { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' },
+            t
+          );
+          tl.to(
+            sel,
+            {
+              backgroundColor: '#0F4E0E',
+              color: '#FAF3E3',
+              borderColor: '#0F4E0E',
+              duration: 0.25,
+              ease: 'power2.out',
+            },
+            t + 0.15
+          );
+        });
+
+        tl.to('#wizardWrap', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 14.9);
+
+        // ---- generating -> calendar ----
+        tl.fromTo(
+          '#genWrap',
+          { opacity: 0 },
+          { opacity: 1, duration: 0.2, ease: 'power2.out' },
+          15.3
+        );
+        tl.fromTo(
+          '#spinner',
+          { rotation: 0 },
+          { rotation: 540, duration: 0.6, ease: 'power1.inOut' },
+          15.3
+        );
+        tl.to('#genWrap', { opacity: 0, duration: 0.25, ease: 'power2.in' }, 15.75);
+        tl.fromTo(
+          '#calendarWrap',
+          { opacity: 0 },
+          { opacity: 1, duration: 0.3, ease: 'power2.out' },
+          15.9
+        );
+        popGroup(['#day1', '#day2', '#day3', '#day4', '#day5', '#day6', '#day7'], 15.9, 0.18);
+        tl.to('#calendarWrap', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 21.0);
+
+        // ---- shopping list ----
+        tl.fromTo(
+          '#listWrap',
+          { opacity: 0 },
+          { opacity: 1, duration: 0.3, ease: 'power2.out' },
+          21.5
+        );
+        popGroup(['#aisle1', '#aisle2', '#aisle3'], 21.6, 0.3);
+        tl.to(
+          '#aisle1 .checkbox',
+          { backgroundColor: '#0F4E0E', borderColor: '#0F4E0E', duration: 0.2, ease: 'power2.out' },
+          22.7
+        );
+        tl.fromTo(
+          '#aisle1 .checkbox svg',
+          { opacity: 0, scale: 0.4 },
+          { opacity: 1, scale: 1, duration: 0.25, ease: 'power3.out' },
+          22.75
+        );
+        tl.fromTo(
+          '#totalsRow',
+          { opacity: 0, y: 12 },
+          { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' },
+          23.1
+        );
+        tl.to('#listWrap', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 26.0);
+
+        // ---- outro ----
+        waterfall(
+          '#outroLine .ow',
+          26.4,
+          [55, 38, 34, 36, 46, 62],
+          [0.18, 0.14, 0.13, 0.14, 0.16, 0.19]
+        );
+        tl.fromTo(
+          '#outroLogo',
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
+          27.65
+        );
+
+        window.__timelines['main'] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
