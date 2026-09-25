@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="es" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Fresco — brag (problema / solución)</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Fraunces';
+        src: url('assets/fonts/Fraunces-variable.woff2') format('woff2');
+        font-weight: 300 700;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: 'Figtree';
+        src: url('assets/fonts/Figtree-variable.woff2') format('woff2');
+        font-weight: 300 700;
+        font-style: normal;
+        font-display: block;
+      }
+
+      :root {
+        --bg: #faf3e3;
+        --surface: #f1e3c6;
+        --border: rgba(32, 30, 29, 0.16);
+        --primary: #0f4e0e;
+        --accent-600: #0a3e09;
+        --accent-700: #052d05;
+        --accent-2-100: #fcf1e8;
+        --accent-2-700: #8a5513;
+        --error: #b03d2b;
+        --text: #201e1d;
+        --tertiary: #6f5f43;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--primary);
+        font-family: 'Figtree', sans-serif;
+        color: var(--text);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      #sceneDark {
+        z-index: 1;
+        opacity: 1;
+        background: var(--primary);
+      }
+      #sceneCream {
+        z-index: 2;
+        opacity: 0;
+        background: var(--bg);
+      }
+
+      /* ---------- Dark scene: hook + pain grid ---------- */
+      /* Wrapper does the absolute-centering flex; the h1 inside is a plain
+         block so its .hw word spans keep normal inline spacing — a flex
+         container directly around inline-block word spans collapses the
+         whitespace text nodes between them (the bug this split avoids). */
+      .hook-line-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 260px;
+      }
+      .hook-line {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 84px;
+        line-height: 1.18;
+        color: var(--bg);
+        text-align: center;
+      }
+      .hw {
+        display: inline-block;
+        opacity: 0;
+      }
+
+      .pain-grid {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 0 120px;
+      }
+      .pain-card {
+        width: 460px;
+        background: var(--accent-600);
+        border: 1px solid var(--accent-700);
+        border-radius: 18px;
+        padding: 32px 34px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        opacity: 0;
+      }
+      .pain-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: var(--error);
+        color: var(--bg);
+        display: grid;
+        place-items: center;
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 22px;
+      }
+      .pain-lead {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 700;
+        font-size: 28px;
+        color: var(--bg);
+        line-height: 1.25;
+      }
+      .pain-rest {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 400;
+        font-size: 19px;
+        color: #e1e8e0;
+        line-height: 1.4;
+      }
+
+      /* ---------- Cream scene: turn + solution grid + outro ---------- */
+      .turn-logo {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .turn-logo img {
+        width: 340px;
+        height: auto;
+        opacity: 0;
+      }
+
+      .solution-grid {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 26px;
+        padding: 0 130px;
+      }
+      .solution-card {
+        width: 420px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 32px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 18px;
+        opacity: 0;
+      }
+      .solution-icon {
+        width: 68px;
+        height: 68px;
+        border-radius: 999px;
+        background: var(--accent-2-100);
+        display: grid;
+        place-items: center;
+      }
+      .solution-icon svg {
+        width: 30px;
+        height: 30px;
+        stroke: var(--accent-2-700);
+      }
+      .solution-value {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 36px;
+        color: var(--primary);
+      }
+      .solution-desc {
+        font-family: 'Figtree', sans-serif;
+        font-weight: 400;
+        font-size: 19px;
+        color: var(--tertiary);
+        line-height: 1.4;
+      }
+
+      .outro-wrap {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 44px;
+      }
+      .outro-line {
+        font-family: 'Fraunces', serif;
+        font-weight: 400;
+        font-size: 92px;
+        text-align: center;
+        max-width: 1300px;
+        line-height: 1.15;
+        color: var(--text);
+      }
+      .ow {
+        display: inline-block;
+        opacity: 0;
+      }
+      .ow-accent {
+        color: var(--primary);
+      }
+      .outro-logo {
+        width: 300px;
+        height: auto;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="20"
+    >
+      <!-- ============ DARK SCENE — HOOK + PAIN GRID (0 - 9s) ============ -->
+      <div id="sceneDark" class="scene">
+        <div class="hook-line-wrap">
+          <h1 class="hook-line" id="hookLine">
+            <span class="hw">¿Cuántas</span> <span class="hw">veces</span>
+            <span class="hw">has</span> <span class="hw">acabado</span>
+            <span class="hw">comiendo</span> <span class="hw">lo</span> <span class="hw">que</span>
+            <span class="hw">sea?</span>
+          </h1>
+        </div>
+
+        <div class="pain-grid" id="painGrid">
+          <div class="pain-card" id="pain1">
+            <span class="pain-badge">✗</span>
+            <p class="pain-lead">El domingo por la tarde.</p>
+            <p class="pain-rest">Mirando el techo intentando recordar qué había en la nevera.</p>
+          </div>
+          <div class="pain-card" id="pain2">
+            <span class="pain-badge">✗</span>
+            <p class="pain-lead">El súper sin lista.</p>
+            <p class="pain-rest">
+              Sales con el doble de lo que necesitas y olvidas la mitad de lo que ibas a buscar.
+            </p>
+          </div>
+          <div class="pain-card" id="pain3">
+            <span class="pain-badge">✗</span>
+            <p class="pain-lead">El miércoles a las 8pm.</p>
+            <p class="pain-rest">
+              Nevera medio vacía, cansancio máximo y la pregunta de siempre: ¿qué hacemos de cenar?
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CREAM SCENE — TURN + SOLUTION + OUTRO (9 - 20s) ============ -->
+      <div id="sceneCream" class="scene">
+        <div class="turn-logo" id="turnLogo">
+          <img src="assets/brand/logo-base.svg" alt="Fresco" />
+        </div>
+
+        <div class="solution-grid" id="solutionGrid">
+          <div class="solution-card" id="sol1">
+            <span class="solution-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </span>
+            <p class="solution-value">En 30 segundos</p>
+            <p class="solution-desc">
+              Tu menú completo de lunes a domingo, sin pensar qué cocinar.
+            </p>
+          </div>
+          <div class="solution-card" id="sol2">
+            <span class="solution-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="17 1 21 5 17 9" />
+                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                <polyline points="7 23 3 19 7 15" />
+                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </svg>
+            </span>
+            <p class="solution-value">Sin repetir</p>
+            <p class="solution-desc">No vuelven las recetas de las últimas semanas.</p>
+          </div>
+          <div class="solution-card" id="sol3">
+            <span class="solution-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </span>
+            <p class="solution-value">Lista ya hecha</p>
+            <p class="solution-desc">La compra agrupada por pasillos del súper.</p>
+          </div>
+        </div>
+
+        <div class="outro-wrap" id="outroWrap">
+          <h2 class="outro-line" id="outroLine">
+            <span class="ow">Deja</span> <span class="ow">de</span>
+            <span class="ow">improvisar</span> <span class="ow">en</span> <span class="ow">el</span>
+            <span class="ow ow-accent">súper.</span>
+          </h2>
+          <img
+            class="outro-logo"
+            id="outroLogo"
+            src="assets/brand/logo-base-outro.svg"
+            alt="Fresco"
+          />
+        </div>
+      </div>
+
+      <!-- ============ AUDIO ============ -->
+      <audio
+        id="bgm"
+        src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="20"
+        data-media-start="0"
+        data-track-index="10"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.8,"v":0.32},{"t":3.0,"v":0.28},{"t":9.0,"v":0.55},{"t":11.5,"v":0.48},{"t":17.0,"v":0.4},{"t":20.0,"v":0}]}]}'
+      ></audio>
+
+      <audio
+        id="sfx-pain1"
+        src="assets/sfx/thud.ogg"
+        data-start="3.00"
+        data-duration="0.55"
+        data-track-index="11"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-pain2"
+        src="assets/sfx/thud.ogg"
+        data-start="3.08"
+        data-duration="0.55"
+        data-track-index="12"
+        data-volume="0.4"
+      ></audio>
+      <audio
+        id="sfx-pain3"
+        src="assets/sfx/thud.ogg"
+        data-start="3.16"
+        data-duration="0.55"
+        data-track-index="13"
+        data-volume="0.4"
+      ></audio>
+
+      <audio
+        id="sfx-turn"
+        src="assets/sfx/turn.ogg"
+        data-start="9.00"
+        data-duration="1.48"
+        data-track-index="11"
+        data-volume="0.55"
+      ></audio>
+
+      <audio
+        id="sfx-sol1"
+        src="assets/sfx/light.ogg"
+        data-start="11.60"
+        data-duration="0.19"
+        data-track-index="11"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-sol2"
+        src="assets/sfx/light.ogg"
+        data-start="11.68"
+        data-duration="0.19"
+        data-track-index="12"
+        data-volume="0.45"
+      ></audio>
+      <audio
+        id="sfx-sol3"
+        src="assets/sfx/light.ogg"
+        data-start="11.76"
+        data-duration="0.19"
+        data-track-index="13"
+        data-volume="0.45"
+      ></audio>
+    </div>
+
+    <script>
+      document.fonts.ready.then(function () {
+        var tl = gsap.timeline({ paused: true });
+
+        // ============================================================
+        // THE TURN — hard cut at t=9.0 (deliberate: no dissolve between
+        // dark pain section and cream relief section, the snap is the point)
+        // ============================================================
+        tl.set('#sceneDark', { opacity: 0 }, 9.0);
+        tl.set('#sceneCream', { opacity: 1 }, 9.0);
+
+        // ============================================================
+        // DARK SCENE — hook waterfall, then pain-grid pop (3 cards together)
+        // ============================================================
+        (function darkScene() {
+          var F = 1 / 25;
+          var els = gsap.utils.toArray('#hookLine .hw');
+          var t = 0.15;
+          var offsets = [60, 40, 36, 50, 52, 34, 32, 58];
+          var durs = [0.18, 0.14, 0.13, 0.16, 0.16, 0.13, 0.12, 0.18];
+          els.forEach(function (el, i) {
+            tl.set(el, { opacity: 1, y: offsets[i] }, t);
+            tl.to(el, { y: 0, duration: durs[i], ease: 'power4.out' }, t);
+            t = t + durs[i] - 1.5 * F;
+          });
+
+          // hook line exits to make room for the pain grid (internal beat, not a scene transition)
+          tl.to('#hookLine', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 2.7);
+
+          // pain-grid — spring-pop entrance, staggered group (cap: 3 x 0.08 = 0.24s, one beat)
+          var cardIds = ['#pain1', '#pain2', '#pain3'];
+          cardIds.forEach(function (sel, i) {
+            tl.fromTo(
+              sel,
+              { scale: 0, opacity: 0, y: 24 },
+              { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' },
+              3.0 + i * 0.08
+            );
+          });
+        })();
+
+        // ============================================================
+        // CREAM SCENE — logo turn, solution grid, outro line
+        // ============================================================
+        (function creamScene() {
+          // logo pop right on the cut
+          tl.fromTo(
+            '#turnLogo img',
+            { scale: 0.7, opacity: 0 },
+            { scale: 1, opacity: 1, duration: 0.5, ease: 'power3.out' },
+            9.0
+          );
+          // logo exits to make room for the solution grid (internal beat, not a scene transition)
+          tl.to('#turnLogo img', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 11.2);
+
+          var solIds = ['#sol1', '#sol2', '#sol3'];
+          solIds.forEach(function (sel, i) {
+            tl.fromTo(
+              sel,
+              { scale: 0, opacity: 0, y: 24 },
+              { scale: 1, opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' },
+              11.6 + i * 0.08
+            );
+          });
+          // solution grid exits before the outro line
+          tl.to('#solutionGrid', { opacity: 0, duration: 0.3, ease: 'power2.in' }, 16.8);
+
+          // outro line — waterfall, then logo hold
+          var F = 1 / 25;
+          var owEls = gsap.utils.toArray('#outroLine .ow');
+          var t = 17.15;
+          var owOffsets = [55, 38, 34, 36, 46, 62];
+          var owDurs = [0.18, 0.14, 0.13, 0.14, 0.16, 0.19];
+          owEls.forEach(function (el, i) {
+            tl.set(el, { opacity: 1, y: owOffsets[i] }, t);
+            tl.to(el, { y: 0, duration: owDurs[i], ease: 'power4.out' }, t);
+            t = t + owDurs[i] - 1.5 * F;
+          });
+          tl.fromTo(
+            '#outroLogo',
+            { opacity: 0, y: 16 },
+            { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' },
+            18.35
+          );
+        })();
+
+        window.__timelines['main'] = tl;
+        tl.seek(0);
+      });
+    </script>
+  </body>
+</html>
