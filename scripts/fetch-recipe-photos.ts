@@ -323,25 +323,40 @@ async function fetchUnsplashPage(query: string, page: number): Promise<{ urls: {
   // while X-Ratelimit-Remaining still showed plenty left; recovered within
   // 5s of pausing).
   await sleep(1200);
-  // v11: content_filter=high — FRESCO-192's audit found one applied photo
-  // (17ef7f11) with a real person + visible text that had to be nulled as
-  // inappropriate. Unsplash's own moderation filter costs nothing and
-  // rules that class of result out before it ever reaches pickFromPage.
-  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish&content_filter=high`, {
-    headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
-  });
-  if (!res.ok) {
-    console.error(`Unsplash error ${res.status} for query "${query}" (page ${page})`);
-    if (res.status === 403) {
-      // Burst limiter, not the hourly quota — 400ms wasn't enough to clear
-      // it reliably across a real batch (confirmed live: still cascaded on
-      // most requests). Cool down harder before the next attempt.
-      await sleep(4000);
+  // v13 — try/catch around the whole request: a sustained 403 burst can
+  // escalate into the OS/network layer refusing the connection outright
+  // (`ConnectionRefused`, not an HTTP response), which `fetch` throws rather
+  // than returning. Uncaught, that crash killed the whole process mid-batch
+  // and discarded every already-fetched result (found live: 65 recipes lost
+  // after ~250 rows out of 291). Treat a network-level failure the same as
+  // an HTTP error for this one request — return null and let the caller's
+  // fallback chain continue.
+  try {
+    // v11: content_filter=high — FRESCO-192's audit found one applied photo
+    // (17ef7f11) with a real person + visible text that had to be nulled as
+    // inappropriate. Unsplash's own moderation filter costs nothing and
+    // rules that class of result out before it ever reaches pickFromPage.
+    const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish&content_filter=high`, {
+      headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
+    });
+    if (!res.ok) {
+      console.error(`Unsplash error ${res.status} for query "${query}" (page ${page})`);
+      if (res.status === 403) {
+        // Burst limiter, not the hourly quota — 400ms wasn't enough to clear
+        // it reliably across a real batch (confirmed live: still cascaded on
+        // most requests). Cool down harder before the next attempt.
+        await sleep(4000);
+      }
+      return null;
     }
+    const body = await res.json() as { results: { urls: { regular: string } }[] };
+    return body.results;
+  }
+  catch (err) {
+    console.error(`Unsplash network error for query "${query}" (page ${page}): ${err instanceof Error ? err.message : String(err)}`);
+    await sleep(4000);
     return null;
   }
-  const body = await res.json() as { results: { urls: { regular: string } }[] };
-  return body.results;
 }
 
 // Picks the seed-hashed top-2 first, then falls through the rest of a
@@ -438,15 +453,23 @@ async function fetchPexelsPage(query: string): Promise<{ urls: { regular: string
   // 50/hour — a light throttle is still worth keeping since this script
   // fires requests back-to-back across the fallback chain.
   await sleep(300);
-  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30&orientation=square`, {
-    headers: { Authorization: PEXELS_KEY },
-  });
-  if (!res.ok) {
-    console.error(`Pexels error ${res.status} for query "${query}"`);
+  // v13 — see the matching try/catch in fetchUnsplashPage: a network-level
+  // failure (not just a non-2xx response) must not crash the whole batch.
+  try {
+    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30&orientation=square`, {
+      headers: { Authorization: PEXELS_KEY },
+    });
+    if (!res.ok) {
+      console.error(`Pexels error ${res.status} for query "${query}"`);
+      return null;
+    }
+    const body = await res.json() as { photos: { src: { large: string } }[] };
+    return body.photos.map(p => ({ urls: { regular: p.src.large } }));
+  }
+  catch (err) {
+    console.error(`Pexels network error for query "${query}": ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
-  const body = await res.json() as { photos: { src: { large: string } }[] };
-  return body.photos.map(p => ({ urls: { regular: p.src.large } }));
 }
 
 async function searchPexels(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
@@ -460,13 +483,21 @@ async function fetchPixabayPage(query: string): Promise<{ urls: { regular: strin
   // the three, but still throttled lightly for the same back-to-back-calls
   // reason as Pexels above.
   await sleep(300);
-  const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30&safesearch=true`);
-  if (!res.ok) {
-    console.error(`Pixabay error ${res.status} for query "${query}"`);
+  // v13 — see the matching try/catch in fetchUnsplashPage: a network-level
+  // failure (not just a non-2xx response) must not crash the whole batch.
+  try {
+    const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30&safesearch=true`);
+    if (!res.ok) {
+      console.error(`Pixabay error ${res.status} for query "${query}"`);
+      return null;
+    }
+    const body = await res.json() as { hits: { largeImageURL: string }[] };
+    return body.hits.map(h => ({ urls: { regular: h.largeImageURL } }));
+  }
+  catch (err) {
+    console.error(`Pixabay network error for query "${query}": ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
-  const body = await res.json() as { hits: { largeImageURL: string }[] };
-  return body.hits.map(h => ({ urls: { regular: h.largeImageURL } }));
 }
 
 async function searchPixabay(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
