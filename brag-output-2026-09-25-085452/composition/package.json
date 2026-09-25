@@ -1,7 +1,7 @@
 {
   "name": "composition",
-  "private": true,
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "npx --yes hyperframes@0.8.72 preview",
     "check": "npx --yes hyperframes@0.8.72 check",
