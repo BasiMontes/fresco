@@ -75,6 +75,33 @@ export type Database = {
           },
         ]
       }
+      ingredient_substitutions: {
+        Row: {
+          alergenos: string[]
+          created_at: string
+          dieta: Json
+          id: string
+          ingrediente_original: string
+          ingrediente_sustituto: string
+        }
+        Insert: {
+          alergenos?: string[]
+          created_at?: string
+          dieta?: Json
+          id?: string
+          ingrediente_original: string
+          ingrediente_sustituto: string
+        }
+        Update: {
+          alergenos?: string[]
+          created_at?: string
+          dieta?: Json
+          id?: string
+          ingrediente_original?: string
+          ingrediente_sustituto?: string
+        }
+        Relationships: []
+      }
       meal_plan_recipes: {
         Row: {
           created_at: string
@@ -624,6 +651,13 @@ export type Database = {
         Returns: {
           estado: Database["public"]["Enums"]["estado_receta_menu"]
           recipe_id: string
+        }[]
+      }
+      get_safe_ingredient_substitutes: {
+        Args: { p_ingrediente: string }
+        Returns: {
+          alergenos: string[]
+          ingrediente_sustituto: string
         }[]
       }
       get_user_cooked_recipe_ids: {
