@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
     // query, which assumed a typed `raciones` column that doesn't exist here).
     const { data: slots, error: slotsError } = await supabase
       .from('meal_plan_recipes')
-      .select('recipe_id, dia, recipes ( id, nombre, meta, ingredientes_principales )')
+      .select('recipe_id, dia, sustitucion_ingrediente, recipes ( id, nombre, meta, ingredientes_principales )')
       .eq('meal_plan_id', meal_plan_id)
       .returns<SlotWithRecipeRow[]>()
 
@@ -94,10 +94,20 @@ Deno.serve(async (req: Request) => {
 
       const racionesReceta = recipe.meta?.raciones ?? 4
       const ingredientes = recipe.ingredientes_principales ?? []
+      const sustitucion = slot.sustitucion_ingrediente
 
       for (const ingrediente of ingredientes) {
+        // FRESCO-716/ADR-0033: a confirmed per-slot substitution swaps the
+        // ingredient NAME here, before consolidation groups by normalized
+        // name — this is the only change needed for the substitute to land
+        // in its own line item, separate from any other slot that still
+        // uses the original. Never mutates `recipes` or the recipe object.
+        const nombre = sustitucion && sustitucion.original.toLowerCase() === ingrediente.toLowerCase()
+          ? sustitucion.sustituto
+          : ingrediente
+
         rawIngredientes.push({
-          nombre: ingrediente,
+          nombre,
           receta_id: recipe.id,
           raciones_receta: racionesReceta,
           raciones_usuario: numPersonas,

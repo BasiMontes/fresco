@@ -35,6 +35,8 @@ export interface SlotWithRecipeRow {
   recipe_id: string | null
   // FRESCO-212: the day this slot occupies — needed to show ingredient provenance.
   dia: DiaSemana
+  /** FRESCO-534/ADR-0033 — `{ original, sustituto }` when this slot has a confirmed per-slot ingredient substitution, else `null`. Never affects `recipes` — read-only here. */
+  sustitucion_ingrediente: { original: string; sustituto: string } | null
   recipes: {
     id: string
     nombre: string
