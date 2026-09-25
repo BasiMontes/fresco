@@ -1,10 +1,12 @@
 import type { RecetaPropia, Recipe, RecipeDieta } from '@schemas';
 import type { RecipeDetail } from '@/lib/api/recipes';
+import type { Sustitucion } from '@/lib/ingredients/get-slot-substitution-context';
 import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FavoriteToggleButton } from '@/components/recipe/favorite-toggle-button';
 import { RecipePlaceholder } from '@/components/recipe/recipe-placeholder';
+import { IngredientList } from '@/components/recipes/ingredient-list';
 import { PersonalRecipeActions } from '@/components/recipes/personal-recipe-actions';
 import { buttonVariants } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
@@ -47,7 +49,14 @@ function BackToLibraryLink({ from }: { from?: string }) {
 // (recipes the user must avoid), never worth hiding behind a count.
 const MAX_VISIBLE_INFO_TAGS = 3;
 
-function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Recipe, initialIsFavorite: boolean, from?: string }) {
+function CatalogRecipeDetail({ receta, initialIsFavorite, from, slotId, sustitucionIngrediente }: {
+  receta: Recipe
+  initialIsFavorite: boolean
+  from?: string
+  /** FRESCO-534 — present only when opened from a specific planned meal. */
+  slotId?: string
+  sustitucionIngrediente?: Sustitucion | null
+}) {
   const dietaLabels = activeDietaLabels(receta.dieta);
   const infoTags = [
     ...(receta.clasificacion?.cocina ? [receta.clasificacion.cocina] : []),
@@ -118,9 +127,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from }: { receta: Reci
       {receta.descripcion_corta && <p className="mt-4 text-body-md">{receta.descripcion_corta}</p>}
 
       <h2 className="mt-6 text-h4">Ingredientes</h2>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-body-md" data-testid="recipe_detail_ingredientes">
-        {ingredientes.map(ingrediente => <li key={ingrediente}>{ingrediente}</li>)}
-      </ul>
+      <IngredientList ingredientes={ingredientes} slotId={slotId} initialSustitucion={sustitucionIngrediente} />
 
       <h2 className="mt-6 text-h4">Preparación</h2>
       <ol className="mt-2 list-decimal space-y-2 pl-5 text-body-md" data-testid="recipe_detail_pasos">
@@ -180,9 +187,16 @@ function PersonalRecipeDetail({ receta, from }: { receta: RecetaPropia, from?: s
 }
 
 /** Personal recipes now support edit/delete (FRESCO-236); rate/menu-add/share remain OOS. The shell (back link, name, ingredients, steps) is identical for both recipe types — only the metadata/actions block differs, so this dispatches to one of two small render branches rather than duplicating the shell. */
-export function RecipeDetailView({ detail, initialIsFavorite, from }: { detail: RecipeDetail, initialIsFavorite: boolean, from?: string }) {
+export function RecipeDetailView({ detail, initialIsFavorite, from, slotId, sustitucionIngrediente }: {
+  detail: RecipeDetail
+  initialIsFavorite: boolean
+  from?: string
+  /** FRESCO-534 — present only when opened from a specific planned meal; ignored for personal recipes. */
+  slotId?: string
+  sustitucionIngrediente?: Sustitucion | null
+}) {
   return detail.kind === 'catalogo'
-    ? <CatalogRecipeDetail receta={detail.receta} initialIsFavorite={initialIsFavorite} from={from} />
+    ? <CatalogRecipeDetail receta={detail.receta} initialIsFavorite={initialIsFavorite} from={from} slotId={slotId} sustitucionIngrediente={sustitucionIngrediente} />
     : <PersonalRecipeDetail receta={detail.receta} from={from} />;
 }
 

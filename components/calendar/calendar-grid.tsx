@@ -465,6 +465,7 @@ export function CalendarGrid({
                     dia={dia}
                     tipo={tipo}
                     recipe={menu[dia][tipo]}
+                    dbSlotId={slotIds[dia][tipo]}
                     estado={estados[dia][tipo]}
                     dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
                     pending={pendingSlots.has(slotId({ dia, tipo }))}
@@ -532,6 +533,8 @@ interface SlotCellProps {
   tipo: TipoPlato
   /** `null` — FR-8.2 / AC Scenario 4 (FRESCO-23): no safe recipe for this slot. */
   recipe: Recipe | null
+  /** FRESCO-534 — the real `meal_plan_recipes.id`, threaded to the recipe-detail link so it can scope the ingredient-substitution UI to this slot. Distinct from `slotId(slotKey)`, the client-side dnd-kit registry key. */
+  dbSlotId: string
   /** STORY-FRESCO-15 — current terminal state; gates the mark buttons vs a status badge. */
   estado: EstadoRecetaSlot
   /** True while this slot is part of an in-flight swap or mark-status call — blocks both. */
@@ -569,7 +572,7 @@ interface SlotCellProps {
  * stay pinned to the bottom (`mt-auto`) — STORY-FRESCO-15, a buttons row
  * competing for width with a long title collapses the title's wrapper.
  */
-function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, priority }: SlotCellProps) {
+function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDisabled, onMark, priority }: SlotCellProps) {
   const router = useRouter();
   const slotKey: SlotKey = { dia, tipo };
   const id = slotId(slotKey);
@@ -629,13 +632,13 @@ function SlotCell({ dia, tipo, recipe, estado, pending, dropDisabled, onMark, pr
        * `click`, but a native button's `keydown` bubbles independently of
        * that, so the guard is the actual fix, not the stopPropagation.
        */
-      onClick={recipe && !disabled ? () => router.push(`/recipes/${recipe.id}`) : undefined}
+      onClick={recipe && !disabled ? () => router.push(`/recipes/${recipe.id}?slot=${dbSlotId}`) : undefined}
       role={recipe && !disabled ? 'link' : undefined}
       tabIndex={recipe && !disabled ? 0 : undefined}
       onKeyDown={recipe && !disabled
         ? (event) => {
             if (event.key === 'Enter' && event.target === event.currentTarget) {
-              router.push(`/recipes/${recipe.id}`);
+              router.push(`/recipes/${recipe.id}?slot=${dbSlotId}`);
             }
           }
         : undefined}
