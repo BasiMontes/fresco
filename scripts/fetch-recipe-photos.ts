@@ -107,6 +107,19 @@ const UNSPLASH_KEY = process.env.UNPLASH_ACCESS_KEY!;
 const PEXELS_KEY = process.env.PEXELS_API_KEY!;
 const PIXABAY_KEY = process.env.PIXABAY_API_KEY!;
 const BATCH_SIZE = Number(process.argv[2] ?? 30);
+// v14 — FRESCO-192 batch 17/18 root cause: `pickFromPage`'s hash was seeded
+// ONLY by the recipe id, so the same recipe always resolved to the same
+// top-K candidate. `usedUrls` is seeded from `foto_url is not null` rows AT
+// RUN TIME — once an audit nulls out a rejected photo, that URL drops out of
+// the exclusion set, so a same-day or next-day retry deterministically
+// re-picked the EXACT photo an audit had just rejected (confirmed live:
+// batch 18 re-failed the identical recipes as batch 17, byte-identical
+// candidates). There is no persisted per-recipe rejection history to exclude
+// against instead, so the fix is to break the determinism itself: mix a
+// fresh per-invocation salt into the hash. A manual retry after a rejection
+// now has a real chance of landing on a different top-K candidate instead of
+// guaranteeing the same one forever.
+const RUN_SALT = crypto.randomUUID();
 
 function stripAccents(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036F]/g, '');
@@ -384,8 +397,11 @@ function pickFromPage(results: { urls: { regular: string } }[], seed: string, us
   // next-preferred index, and only past that to the "worse" indices 2-29 as
   // a last resort before giving up rather than forcing a duplicate.
   const topK = Math.min(2, results.length);
+  // v14: salted with RUN_SALT (see file header) so a retry across separate
+  // invocations doesn't reproduce the exact same pick for the same recipe.
+  const saltedSeed = seed + RUN_SALT;
   let hash = 0;
-  for (let i = 0; i < seed.length; i++) { hash = (hash * 31 + seed.charCodeAt(i)) >>> 0; }
+  for (let i = 0; i < saltedSeed.length; i++) { hash = (hash * 31 + saltedSeed.charCodeAt(i)) >>> 0; }
   const preferredStart = hash % topK;
 
   const order: number[] = [];
