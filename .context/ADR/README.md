@@ -92,6 +92,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0029](./ADR-0029-static-csp-public-routes.md) | Build-time CSP nonce for a small allowlist of fully-static public routes (`/`, `/sobre-nosotros`), regains CDN caching without weakening `script-src`; carves a narrow exception into ADR-0019's ratified posture | Superseded | — | ADR-0030 |
 | [ADR-0030](./ADR-0030-static-csp-public-routes-rejected.md) | Rejects ADR-0029's implementation: the only Next.js mechanism (multiple root layouts) forces a full page reload on landing→login/signup, the app's primary conversion path — not worth the TTFB win | Accepted | ADR-0029 | — |
 | [ADR-0031](./ADR-0031-edge-nonce-substitution-spike.md) | Edge-cache + nonce-substitution spike: confirmed viable (single nonce reused across all 62 script tags, tested substitution), but only recovers TTFB not bfcache; production wiring scoped to a separate future ticket | Accepted | — | — |
+| [ADR-0032](./ADR-0032-ingredient-substitution-catalog-invoker-rpc.md) | Ingredient substitution: global curated catalog (never mutates `recipes`) + `SECURITY INVOKER` RPC with no identity parameter, diverging from `get_filtered_recipes`'s `DEFINER`+`p_user_id` pattern | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
