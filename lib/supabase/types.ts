@@ -111,6 +111,7 @@ export type Database = {
           meal_plan_id: string
           rating: number | null
           recipe_id: string | null
+          sustitucion_ingrediente: Json | null
           tipo_plato: Database["public"]["Enums"]["tipo_plato"]
           updated_at: string
         }
@@ -122,6 +123,7 @@ export type Database = {
           meal_plan_id: string
           rating?: number | null
           recipe_id?: string | null
+          sustitucion_ingrediente?: Json | null
           tipo_plato: Database["public"]["Enums"]["tipo_plato"]
           updated_at?: string
         }
@@ -133,6 +135,7 @@ export type Database = {
           meal_plan_id?: string
           rating?: number | null
           recipe_id?: string | null
+          sustitucion_ingrediente?: Json | null
           tipo_plato?: Database["public"]["Enums"]["tipo_plato"]
           updated_at?: string
         }
@@ -574,6 +577,14 @@ export type Database = {
           p_window_seconds: number
         }
         Returns: boolean
+      }
+      confirm_ingredient_substitution: {
+        Args: {
+          p_ingrediente_original: string
+          p_ingrediente_sustituto: string
+          p_slot_id: string
+        }
+        Returns: undefined
       }
       copy_meal_plan_to_week: {
         Args: {
