@@ -1,0 +1,66 @@
+name: Stale branch cleanup
+
+# FRESCO-732 (A5-H2): delete_branch_on_merge=true only fires on an actual
+# merge. A PR that gets CLOSED without merging (superseded by another PR,
+# abandoned work) leaves its branch behind by GitHub design — that's how 82
+# stale branches accumulated before this repo adopted delete_branch_on_merge
+# (FRESCO-314). This job sweeps exactly that case: closed-but-not-merged PRs
+# whose head branch still exists here, past a grace period (in case the PR
+# gets reopened), and deletes the branch. It never touches an open PR's
+# branch, a merged PR's branch (already auto-deleted on merge), a protected
+# branch, a fork's branch (out of this repo's control), or a dependabot/*
+# branch (dependabot manages its own).
+
+on:
+  schedule:
+    - cron: '17 7 * * 1' # Mondays 07:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    name: delete branches from closed, unmerged PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sweep stale branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          protected='main staging dev'
+          grace_days=14
+          now=$(date -u +%s)
+
+          open_branches=$(gh pr list --repo "$REPO" --state open --limit 300 \
+            --json headRefName --jq '.[].headRefName')
+
+          gh pr list --repo "$REPO" --state closed --limit 300 \
+            --json headRefName,mergedAt,closedAt,isCrossRepository \
+            --jq '.[] | select(.mergedAt == null and .isCrossRepository == false) | [.headRefName, .closedAt] | @tsv' \
+          | while IFS=$'\t' read -r branch closed_at; do
+              [ -n "$branch" ] || continue
+              case " $protected " in *" $branch "*) continue ;; esac
+              case "$branch" in dependabot/*) continue ;; esac
+              if grep -qxF "$branch" <<< "$open_branches"; then
+                echo "skip $branch (reused by an open PR)"
+                continue
+              fi
+
+              closed_epoch=$(date -u -d "$closed_at" +%s 2>/dev/null || echo 0)
+              age_days=$(( (now - closed_epoch) / 86400 ))
+              if [ "$age_days" -lt "$grace_days" ]; then
+                echo "skip $branch (closed ${age_days}d ago, < ${grace_days}d grace)"
+                continue
+              fi
+
+              if gh api "repos/$REPO/branches/$branch" >/dev/null 2>&1; then
+                echo "deleting $branch (closed ${age_days}d ago)"
+                gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
+              else
+                echo "skip $branch (already gone)"
+              fi
+            done
