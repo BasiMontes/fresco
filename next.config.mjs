@@ -1,5 +1,7 @@
 import { fileURLToPath } from 'node:url';
-import { withSentryConfig } from '@sentry/nextjs';
+// FRESCO-725: @sentry/nextjs 11 moved `withSentryConfig` to its own entry
+// point; it's no longer exported from the package root.
+import { withSentryConfig } from '@sentry/nextjs/config';
 
 // --- FRESCO-312 / FRESCO-386: security response headers -------------------
 // The request-independent headers live here as a static block. The
@@ -94,5 +96,16 @@ export default process.env.VERCEL
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       silent: true,
+      // FRESCO-724/FRESCO-725: re-tested after the v11 upgrade. We don't use
+      // Session Replay or the `debug` option, so these tree-shake safely.
+      // NOT setting `excludeTracing`: `tracesSampleRate` in
+      // sentry.server.config.ts / sentry.edge.config.ts means performance
+      // monitoring is actively used.
+      bundleSizeOptimizations: {
+        excludeDebugStatements: true,
+        excludeReplayShadowDom: true,
+        excludeReplayIframe: true,
+        excludeReplayWorker: true,
+      },
     })
   : nextConfig;
