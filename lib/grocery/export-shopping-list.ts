@@ -1,5 +1,6 @@
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { toCsvValue } from '@/lib/csv/export-csv';
+import { capitalize, formatUnidad } from '@/lib/utils';
 
 /**
  * FRESCO-345 (Pieza A — export estructurado, comentario "Refinamiento v2" +
@@ -13,21 +14,12 @@ import { toCsvValue } from '@/lib/csv/export-csv';
  * existe ninguna librería de PDF en `package.json` — añadir una para un
  * único botón viola YAGNI).
  *
- * `formatUnidad`/`capitalize` están deliberadamente duplicadas de
- * `shopping-list-view.tsx` (Decision 3 del plan) en vez de extraídas a un
- * módulo compartido: son ~3 líneas cada una y refactorizar un componente de
- * 570 líneas ya testeado por esa ganancia marginal viola "Surgical
- * Changes" (AGENTS.md §2).
+ * `formatUnidad`/`capitalize` (antes Decision 3 del plan de FRESCO-345:
+ * duplicadas a propósito) ahora vienen de `lib/utils.ts` — FRESCO-733
+ * (A5-H3) las consolidó junto con sus otras 3 copias una vez que la
+ * duplicación cruzó 4 archivos, superando el ahorro marginal que motivó
+ * la Decision 3 original.
  */
-
-/** Mismo criterio que `formatUnidad` de `shopping-list-view.tsx`: singulariza solo el caso confirmado roto ("1 unidades" -> "1 unidad"). */
-function formatUnidad(cantidad: number, unidad: string): string {
-  return cantidad === 1 && unidad === 'unidades' ? 'unidad' : unidad;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 /**
  * Texto plano agrupado por pasillo: encabezado en mayúsculas, una línea por

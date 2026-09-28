@@ -5,7 +5,7 @@ import { Check, Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { capitalize, cn, formatUnidad } from '@/lib/utils';
 
 export interface ReceiptTicketProps {
   open: boolean
@@ -39,20 +39,6 @@ function formatFecha(date: Date): string {
     .replace('.', '');
   const timePart = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(date);
   return `${datePart} · ${timePart}`;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-/**
- * Duplicated (not imported) from `shopping-list-view.tsx` on purpose — that
- * file renders this component, so importing the function back from it would
- * create a circular module dependency for the sake of sharing two lines.
- * Same singularization rule, same source data shape.
- */
-function formatUnidad(cantidad: number, unidad: string): string {
-  return cantidad === 1 && unidad === 'unidades' ? 'unidad' : unidad;
 }
 
 /**

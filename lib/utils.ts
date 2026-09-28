@@ -22,3 +22,26 @@ export function cn(...inputs: ClassValue[]) {
 export function formatPrecio(precio: number): string {
   return `${precio.toFixed(2).replace('.', ',')}€`;
 }
+
+/**
+ * FRESCO-733 (A5-H3) — extracted from 4 identical copies (`recipe-library.tsx`,
+ * `shopping-list-view.tsx`, `receipt-ticket.tsx`, `export-shopping-list.ts`),
+ * same "≥2 features import + stable abstraction" bar as `formatPrecio` above.
+ */
+export function capitalize(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * FRESCO-733 (A5-H3) — extracted from 3 identical copies
+ * (`shopping-list-view.tsx`, `receipt-ticket.tsx`, `export-shopping-list.ts`).
+ *
+ * FRESCO-180 — `unidad` is free text from the shopping-list Edge Function
+ * (Gemini classification, `lib/api/types.ts`'s `unidad: string`), not a
+ * fixed union, so this only singularizes the one unit the QA sweep actually
+ * found broken ("1 unidades") rather than guessing a general Spanish
+ * pluralization rule for units we have no confirmed data on.
+ */
+export function formatUnidad(cantidad: number, unidad: string): string {
+  return cantidad === 1 && unidad === 'unidades' ? 'unidad' : unidad;
+}
