@@ -44,6 +44,18 @@ const nextConfig = {
   turbopack: {
     root: fileURLToPath(new URL('.', import.meta.url)),
   },
+  experimental: {
+    // FRESCO-723: PageSpeed's "render-blocking resources" audit flagged the
+    // global stylesheet (54 KB compressed, synchronous `<link>` in every
+    // page's `<head>`). Next's own docs recommend this exact flag for
+    // atomic-CSS (Tailwind) sites: inlines the CSS as a `<style>` tag in the
+    // HTML instead of a separate blocking request. Trade-off (documented):
+    // returning visitors lose the separately-cached stylesheet and
+    // re-download it with every HTML response — acceptable here since the
+    // whole point is a light, fast first load for new visitors on the
+    // landing page. Production builds only; no effect in `next dev`.
+    inlineCss: true,
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
