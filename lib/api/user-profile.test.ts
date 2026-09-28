@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
+import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
 import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, hasUserProfile, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
@@ -24,13 +25,7 @@ function createMockClient(options: { userId?: string, upsertErrorMessage?: strin
   const upsertCalls: unknown[] = [];
 
   const mock = {
-    auth: {
-      getUser: async () => (
-        options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
-    },
+    auth: mockAuthGetUser(options.userId),
     from: () => ({
       upsert: async (payload: unknown) => {
         upsertCalls.push(payload);

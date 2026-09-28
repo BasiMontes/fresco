@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
+import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
 import { getSpendTrend, SpendTrendError } from './get-spend-trend';
 
 const CURRENT_WEEK = getIsoWeek();
@@ -12,13 +13,7 @@ function createMockClient(options: {
   errorMessage?: string
 } = {}) {
   const mock = {
-    auth: {
-      getUser: async () => (
-        options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
-    },
+    auth: mockAuthGetUser(options.userId),
     from: () => ({
       select: () => ({
         eq: () => ({
