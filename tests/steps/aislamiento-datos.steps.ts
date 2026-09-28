@@ -110,7 +110,9 @@ When(/^intento intercambiar esas dos franjas ajenas desde mi propia sesión$/, a
 
 Then(/^la llamada es rechazada por no ser el dueño del plan$/, () => {
   expect(swapCtx.swapResponse.status).toBe(400);
-  expect(JSON.stringify(swapCtx.swapResponse.body)).toContain('caller does not own meal plan');
+  // FRESCO-736: not-found and not-owned raise the SAME generic message now
+  // (non-disclosure) — see supabase/migrations/20260928180000_no_disclosure_swap_and_copy.sql.
+  expect(JSON.stringify(swapCtx.swapResponse.body)).toContain('not found');
 });
 
 // ── jsonb_set_comprado (fails silently — assert the data, not the status) ──
