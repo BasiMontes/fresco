@@ -57,7 +57,7 @@
 --    exactly as the raw `.update()` call did.
 create function public.apply_recipe_status_update(
   p_slot_id uuid,
-  p_estado text,
+  p_estado public.estado_receta_menu,
   p_rating integer default null,
   p_recipe_id uuid default null
 )
@@ -79,7 +79,7 @@ begin
 end;
 $function$;
 
-grant execute on function public.apply_recipe_status_update(uuid, text, integer, uuid) to authenticated;
+grant execute on function public.apply_recipe_status_update(uuid, public.estado_receta_menu, integer, uuid) to authenticated;
 
 -- 2. swap_meal_plan_slots: add the trusted-write GUC around its two updates
 --    (body otherwise verbatim from 20260902150000, the latest prior version —
