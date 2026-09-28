@@ -49,6 +49,13 @@ const nextConfig = {
       // 400s on any hostname not listed here.
       { protocol: 'https', hostname: 'images.pexels.com' },
     ],
+    // FRESCO-719: Next only emits WebP by default. AVIF is the next real
+    // byte-size step over WebP at equivalent visual quality (PageSpeed's
+    // "improve image delivery" audit, ~32 KiB estimated saving across the
+    // recipe photo grid). Content negotiation via the `Accept` header
+    // (already `vary: Accept` on the optimizer response) falls back to
+    // WebP for any client that doesn't advertise AVIF support.
+    formats: ['image/avif', 'image/webp'],
   },
   // ADR-0009: force-expose VERCEL_ENV to the client, independent of Vercel's project toggle.
   env: {
