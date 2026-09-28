@@ -1,6 +1,6 @@
 # ADR-0024 — Component tests run on happy-dom + React Testing Library, registered globally for `bun test`
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-09-03
 - **Deciders:** Founder (approval pending); drafted by AI workflow (FRESCO-409, epic FRESCO-408, audit-4 eje Verificación)
 - **Tags:** testing, cross-cutting-invariant, ci, frontend

@@ -1,6 +1,6 @@
 # ADR-0025 — Cookie consent gates `posthog.init()` itself, not `opt_out_capturing_by_default`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-07
 - **Deciders:** Basi Montes
 - **Tags:** compliance, privacy, analytics, cross-cutting-invariant

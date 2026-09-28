@@ -1,6 +1,6 @@
 # ADR-0022 — Guest-data reassignment: verify target ownership via a session token, not a server-side password sign-in
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-09-02
 - **Deciders:** Founder (approval pending); drafted by AI workflow (FRESCO-395, audit-4 ola-3, eje Seguridad)
 - **Tags:** authentication, guest-mode, security, edge-function, api-contract

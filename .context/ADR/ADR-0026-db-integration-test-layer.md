@@ -1,6 +1,6 @@
 # ADR-0026 — DB-integration test layer runs against the Supabase CLI local stack, in its own CI job
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-09-09
 - **Deciders:** Basi Montes
 - **Tags:** testing, security, rls, ci, cross-cutting-invariant

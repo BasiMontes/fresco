@@ -1,6 +1,6 @@
 # ADR-0023 — `delete-account`: require a recent re-authentication, verified as a token
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-09-02
 - **Deciders:** Founder (approval pending); drafted by AI workflow (FRESCO-397, audit-4 ola-3, eje Arquitectura)
 - **Tags:** authentication, security, edge-function, api-contract, account-lifecycle
