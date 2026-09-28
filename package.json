@@ -117,9 +117,6 @@
     "@sentry/cli"
   ],
   "browserslist": [
-    "> 0.5%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
+    "defaults and supports es6-module"
   ]
 }
