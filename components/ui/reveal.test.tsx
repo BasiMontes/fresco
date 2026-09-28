@@ -57,11 +57,24 @@ function fireIntersection(isIntersecting: boolean) {
   });
 }
 
-/** Move the wrapper's reported top edge, then fire a window scroll event. */
-function scrollWrapperTo(el: HTMLElement, top: number) {
+/**
+ * Move the wrapper's reported top edge, fire a window scroll event, then
+ * flush the single rAF frame `Reveal` defers its layout read to (FRESCO-721
+ * — the read is scheduled a frame out so it never forces a synchronous
+ * reflow off the back of the scroll handler itself).
+ */
+async function scrollWrapperTo(el: HTMLElement, top: number) {
   el.getBoundingClientRect = () => ({ top } as DOMRect);
-  act(() => {
+  await act(async () => {
     window.dispatchEvent(new Event('scroll'));
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  });
+}
+
+/** Flush the single rAF frame `Reveal` defers its initial mount check to. */
+async function flushMountCheck() {
+  await act(async () => {
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
   });
 }
 
@@ -105,23 +118,24 @@ describe('Reveal', () => {
       expect(observers[0].disconnected).toBe(true);
     });
 
-    test('scroll fallback ignores a section still below the 85% line, then reveals it once it rises past', () => {
+    test('scroll fallback ignores a section still below the 85% line, then reveals it once it rises past', async () => {
       renderWithProviders(<Reveal><p>contenido</p></Reveal>);
       const wrapper = screen.getByText('contenido').parentElement as HTMLElement;
 
-      scrollWrapperTo(wrapper, 700); // top edge below 0.85 * 800 = 680 → not yet
+      await scrollWrapperTo(wrapper, 700); // top edge below 0.85 * 800 = 680 → not yet
       expect(wrapper).not.toHaveAttribute('data-revealed');
 
-      scrollWrapperTo(wrapper, 400); // now within the visible 85% of the viewport
+      await scrollWrapperTo(wrapper, 400); // now within the visible 85% of the viewport
       expect(wrapper).toHaveAttribute('data-revealed');
       expect(observers[0].disconnected).toBe(true);
     });
 
-    test('reveals synchronously on mount when already in view', () => {
+    test('reveals on mount, a frame later, when already in view', async () => {
       Element.prototype.getBoundingClientRect = () => ({ top: 100 } as DOMRect);
       renderWithProviders(<Reveal><p>contenido</p></Reveal>);
       const wrapper = screen.getByText('contenido').parentElement as HTMLElement;
 
+      await flushMountCheck();
       expect(wrapper).toHaveAttribute('data-revealed');
     });
   });

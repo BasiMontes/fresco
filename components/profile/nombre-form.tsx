@@ -58,9 +58,10 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
   const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // FRESCO-248 — imperative DOM classList toggling (not React state) is
-  // required here: the shake needs a remove -> reflow -> re-add sequence to
-  // replay on a second failed save, and two state updates in the same
-  // handler would batch into one render, never painting the removed class.
+  // required here: the shake needs a remove -> re-add sequence (FRESCO-721:
+  // spaced two rAF frames apart, not a synchronous forced reflow) to replay
+  // on a second failed save, and two state updates in the same handler would
+  // batch into one render, never painting the removed class.
   function showError() {
     const wrap = wrapRef.current;
     const input = inputRef.current;
@@ -72,14 +73,20 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
     input.classList.add('is-error');
 
     input.classList.remove('is-shaking');
-    void input.offsetWidth; // force reflow
-    input.classList.add('is-shaking');
-
-    const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
     if (shakeTimerRef.current) {
       clearTimeout(shakeTimerRef.current);
     }
-    shakeTimerRef.current = setTimeout(() => input.classList.remove('is-shaking'), shakeMs + 20);
+    const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
+    // FRESCO-721 — double rAF instead of a synchronous `offsetWidth` read: by
+    // the second frame the class removal above has already been applied, so
+    // re-adding it reliably replays the shake without forcing a synchronous
+    // layout recalculation.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        input.classList.add('is-shaking');
+        shakeTimerRef.current = setTimeout(() => input.classList.remove('is-shaking'), shakeMs + 20);
+      });
+    });
 
     if (revertTimerRef.current) {
       clearTimeout(revertTimerRef.current);

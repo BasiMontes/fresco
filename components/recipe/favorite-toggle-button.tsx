@@ -54,11 +54,17 @@ function triggerLikeBurst(button: HTMLButtonElement | null) {
   });
 
   button.classList.remove('is-bursting');
-  void button.offsetWidth; // force reflow so a rapid re-like replays cleanly
-  button.classList.add('is-bursting');
-
-  const burstDur = readCssTimeMs('--like-particle-dur', 600);
-  window.setTimeout(() => button.classList.remove('is-bursting'), burstDur + 20);
+  // FRESCO-721 — double rAF instead of a synchronous `offsetWidth` read: by
+  // the second frame the class removal above has already been applied, so
+  // re-adding it reliably replays the animation without forcing a
+  // synchronous layout recalculation.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      button.classList.add('is-bursting');
+      const burstDur = readCssTimeMs('--like-particle-dur', 600);
+      window.setTimeout(() => button.classList.remove('is-bursting'), burstDur + 20);
+    });
+  });
 }
 
 /**

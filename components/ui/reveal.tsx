@@ -64,9 +64,22 @@ export function Reveal({ children, className, threshold = 0.15 }: RevealProps) {
       cleanup();
     };
 
-    const onScroll = () => {
+    // FRESCO-721 — `getBoundingClientRect()` is a layout read. Calling it
+    // synchronously (at mount, or straight inside the `scroll` handler) risks
+    // a forced reflow if any DOM write from another effect landed earlier in
+    // the same task and hasn't been flushed to layout yet. Scheduling the
+    // read for the next animation frame lets the browser's own rendering
+    // pipeline settle layout first, so the read is never the thing forcing it.
+    let rafId: number | null = null;
+    const checkScroll = () => {
+      rafId = null;
       if (el.getBoundingClientRect().top < window.innerHeight * 0.85) {
         reveal();
+      }
+    };
+    const onScroll = () => {
+      if (rafId === null) {
+        rafId = requestAnimationFrame(checkScroll);
       }
     };
 
@@ -83,6 +96,9 @@ export function Reveal({ children, className, threshold = 0.15 }: RevealProps) {
       observer.disconnect();
       if (canListen) {
         window.removeEventListener('scroll', onScroll);
+      }
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
       }
     };
 
