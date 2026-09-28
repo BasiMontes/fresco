@@ -44,3 +44,8 @@ export function applySlotSwap(menu: MenuGrid, a: SlotKey, b: SlotKey): MenuGrid 
 
   return next;
 }
+
+/** Composite id `@dnd-kit` needs for each draggable/droppable slot node. */
+export function slotId(slot: SlotKey): string {
+  return `${slot.dia}:${slot.tipo}`;
+}
