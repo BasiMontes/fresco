@@ -146,14 +146,18 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
     input.classList.add('is-error');
 
     input.classList.remove('is-shaking');
-    void input.offsetWidth; // force reflow
-    input.classList.add('is-shaking');
-
-    const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
     if (shakeTimerRef.current) {
       clearTimeout(shakeTimerRef.current);
     }
-    shakeTimerRef.current = setTimeout(() => input.classList.remove('is-shaking'), shakeMs + 20);
+    const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
+    // FRESCO-721 — double rAF instead of a synchronous `offsetWidth` read;
+    // see nombre-form.tsx's comment.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        input.classList.add('is-shaking');
+        shakeTimerRef.current = setTimeout(() => input.classList.remove('is-shaking'), shakeMs + 20);
+      });
+    });
 
     if (revertTimerRef.current) {
       clearTimeout(revertTimerRef.current);
