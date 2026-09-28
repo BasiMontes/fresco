@@ -11,6 +11,7 @@ import { CookieConsentProvider } from '@/components/legal/cookie-consent-context
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
+import { toOrigin } from '@/lib/security/csp';
 import { canonicalUrl, getMetadataBase } from '@/lib/seo/canonical';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/structured-data';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
@@ -143,6 +144,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // consent cookie per request avoids a banner flash on hydration for a
   // returning visitor who already decided.
   const initialConsentDecision = parseCookieConsent(cookieStore.get(COOKIE_CONSENT_COOKIE)?.value);
+  // FRESCO-722: same derivation `lib/security/csp.ts` already uses for the
+  // Sentry CSP report-uri — reused here instead of the CSP's static
+  // `SENTRY_HOSTS` wildcard because this runs server-side per request
+  // (unlike a build-time CSP header), where `NEXT_PUBLIC_SENTRY_DSN` is
+  // guaranteed present.
+  const sentryIngestOrigin = toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
   return (
     <html
@@ -151,6 +158,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${fraunces.variable} ${figtree.variable}`}
     >
       <head>
+        {/* FRESCO-722: preconnect candidates Lighthouse's network-dependency-tree
+            audit flagged (~301ms LCP each). `vercel.live` is Vercel's own
+            preview/dev toolbar widget (static host, not a CORS fetch — no
+            `crossOrigin`). Sentry's ingest beacon IS a cross-origin
+            `fetch`/`sendBeacon` without credentials, hence `crossOrigin`. */}
+        <link rel="preconnect" href="https://vercel.live" />
+        {sentryIngestOrigin && <link rel="preconnect" href={sentryIngestOrigin} crossOrigin="anonymous" />}
         {/* FRESCO-472: Organization + WebSite JSON-LD, site-wide. */}
         <JsonLd data={organizationJsonLd()} />
         <JsonLd data={websiteJsonLd()} />
