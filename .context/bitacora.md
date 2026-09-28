@@ -206,3 +206,8 @@ Historia archivada:
 - Por qué: Usuario pidió lanzar una auditoría más dura que las 4 previas y cerrar el blind spot de la app autenticada nunca antes probado; tras compilar los 3 BLOCKER, usuario confirmó arrancar ya con el fix de la tabla (explotable en producción) y corregir el doc del MVP.
 - Siguiente: Epic FRESCO-727 sigue abierto con FRESCO-731...739 (Dependabot, ramas sin borrar, helpers duplicados, ADRs Proposed, suite @requiere-stripe-real sin CI, /admin/recipes sin gate de rol, god-components) -- backlog normal, sin urgencia de BLOCKER.
 
+
+## 2026-09-28 - FRESCO-731 shipped: Dependabot cubre ahora el ecosistema bun, no solo github-actions
+- Qué: Segundo hallazgo del epic de auditoría-5 (FRESCO-727) cerrado. dependabot.yml solo vigilaba github-actions; se agregó un bloque updates para package-ecosystem: bun (mismo patrón: weekly, target-branch dev, grupo único, prefix chore) -- GitHub soporta bun oficialmente via el lockfile de texto bun.lock (bun >=1.1.39, que este repo ya produce). PR #402 -> staging -> dev/main nivelados a b42c944b.
+- Por qué: Usuario pidió continuar el backlog de FRESCO-727 con FRESCO-731; dependencias reales de runtime (npm/bun) quedaban sin monitoreo automático de seguridad.
+- Siguiente: Epic FRESCO-727 sigue con FRESCO-732...739 pendientes (ramas sin borrar, helpers duplicados, ADRs Proposed, suite @requiere-stripe-real sin CI, /admin/recipes sin gate de rol, god-components) -- backlog normal, sin urgencia de BLOCKER.
