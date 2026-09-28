@@ -27,9 +27,18 @@
 --      tooling) — same allowlist `prevent_client_subscription_writes` uses.
 --   2. `auth.role() = 'service_role'` — the Supabase service-role key, never
 --      exposed to a client. Covers `reassign_guest_data()` (already
---      `security definer`, already service_role-only per ADR-0004) and
---      `scripts/merge-near-duplicate-recipes.ts`'s admin `recipe_id`
---      redirect, neither of which needs to change.
+--      `security definer`, already service_role-only per ADR-0004 — SECURITY
+--      DEFINER runs as the function owner regardless of the caller's own
+--      table grants, so this one never needed the grant below) and, as of
+--      this migration, `scripts/merge-near-duplicate-recipes.ts`'s admin
+--      `recipe_id` redirect too: that script's own header already documented
+--      "service_role currently lacks a table-level SELECT grant on ...
+--      meal_plan_recipes via PostgREST ... genuine infra gap ... grant the
+--      privilege via a migration" — this is that migration (see the GRANT
+--      below). Verified while building this fix: the e2e fixture helper
+--      `tests/steps/calendario-reordenar.steps.ts` hit the identical 403
+--      when switched to `serviceRoleHeaders()` to route around the new
+--      trigger, which is what surfaced the gap concretely.
 --   3. The transaction-local GUC `app.mpr_trusted_write = 'on'` — set
 --      explicitly, only around the single UPDATE statement that needs it, by
 --      the three RPCs that legitimately mutate these columns for an ordinary
@@ -47,6 +56,14 @@
 -- `sustitucion_ingrediente` on a self-owned row is self-inflicted only (same
 -- blast radius the audit already scored below BLOCKER for the equivalent
 -- UPDATE case) — tracked as a follow-up, not blocking this fix.
+
+-- 0. Close the documented service_role grant gap (see comment block above,
+--    and scripts/merge-near-duplicate-recipes.ts's own header). RLS bypass
+--    and base table GRANTs are separate mechanisms in Postgres — service_role
+--    has always bypassed RLS here, but was never given the base SELECT/UPDATE
+--    grant this table needs for a direct (non-SECURITY-DEFINER) PostgREST
+--    call. Same pattern as 20260908150000_grant_service_role_recipes_privileges.sql.
+grant select, update on public.meal_plan_recipes to service_role;
 
 -- 1. New RPC: the one direct-table write `update-recipe-status` (Edge
 --    Function) still needs to make, now routed through a function that sets
