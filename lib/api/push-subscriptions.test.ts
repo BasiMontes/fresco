@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
+import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
 import { deletePushSubscription, PushSubscriptionError, savePushSubscription } from './push-subscriptions';
 
 const SAMPLE_SUBSCRIPTION = {
@@ -31,13 +32,7 @@ function createMockClient(options: { userId?: string, insertErrorCode?: string, 
   const deleteEqCalls: [string, string][] = [];
 
   const mock = {
-    auth: {
-      getUser: async () => (
-        options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
-    },
+    auth: mockAuthGetUser(options.userId),
     from: () => ({
       insert: async (payload: unknown) => {
         insertCalls.push(payload);

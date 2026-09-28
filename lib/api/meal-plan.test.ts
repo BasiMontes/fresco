@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
+import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
 import { copyMealPlanToCurrentWeek, deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
@@ -87,13 +88,7 @@ function createMockClient(options: {
   dbErrorMessage?: string
 } = {}) {
   const mock = {
-    auth: {
-      getUser: async () => (
-        options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
-    },
+    auth: mockAuthGetUser(options.userId),
     from: () => ({
       select: () => ({
         eq: () => ({
@@ -262,13 +257,7 @@ function createDeleteMockClient(options: { userId?: string, errorMessage?: strin
   const eqCalls: unknown[] = [];
 
   const mock = {
-    auth: {
-      getUser: async () => (
-        options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
-    },
+    auth: mockAuthGetUser(options.userId),
     from: () => ({
       delete: () => ({
         eq: (column: string, value: string) => {
@@ -323,13 +312,7 @@ function createListMockClient(options: {
   errorMessage?: string
 } = {}) {
   const mock = {
-    auth: {
-      getUser: async () => (
-        options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null }
-      ),
-    },
+    auth: mockAuthGetUser(options.userId),
     from: () => ({
       select: () => ({
         eq: async () => ({
