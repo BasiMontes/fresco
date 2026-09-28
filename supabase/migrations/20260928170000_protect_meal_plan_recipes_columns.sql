@@ -82,7 +82,9 @@ $function$;
 grant execute on function public.apply_recipe_status_update(uuid, text, integer, uuid) to authenticated;
 
 -- 2. swap_meal_plan_slots: add the trusted-write GUC around its two updates
---    (body otherwise verbatim from 20260902130000).
+--    (body otherwise verbatim from 20260902150000, the latest prior version —
+--    including the A4-L9 excluida-rejection guard this migration must not
+--    regress).
 create or replace function public.swap_meal_plan_slots(
   p_slot_a_id uuid,
   p_slot_b_id uuid
@@ -126,6 +128,13 @@ begin
     raise exception 'swap_meal_plan_slots: caller does not own meal plan %', v_slot_a.meal_plan_id;
   end if;
 
+  -- FRESCO-396 (A4-L9): an 'excluida' slot is a franja the user removed from
+  -- planning_selection. Swapping it would put a real recipe on an excluded
+  -- day/meal (or blank a real slot). Reject either side being 'excluida'.
+  if v_slot_a.estado = 'excluida' or v_slot_b.estado = 'excluida' then
+    raise exception 'swap_meal_plan_slots: no se puede intercambiar una franja excluida';
+  end if;
+
   perform set_config('app.skip_recipe_learning', 'on', true);
   perform set_config('app.mpr_trusted_write', 'on', true);
 
@@ -147,7 +156,7 @@ end;
 $$ language plpgsql security definer set search_path = public;
 
 comment on function public.swap_meal_plan_slots(uuid, uuid) is
-  'STORY-FRESCO-11 calendar reorder: learning-neutral position swap between two meal_plan_recipes rows of the same tipo_plato. See ADR-0002. FRESCO-383: rate-limited, skips learning via app.skip_recipe_learning GUC (no table lock). Audit-5: sets app.mpr_trusted_write so protect_meal_plan_recipes_integrity lets its own writes through.';
+  'STORY-FRESCO-11 calendar reorder: learning-neutral position swap between two meal_plan_recipes rows of the same tipo_plato. See ADR-0002. FRESCO-383: rate-limited, skips learning via app.skip_recipe_learning GUC (no table lock). FRESCO-396: rejects slots in estado excluida (A4-L9). Audit-5: sets app.mpr_trusted_write so protect_meal_plan_recipes_integrity lets its own writes through.';
 
 -- 3. confirm_ingredient_substitution: add the trusted-write GUC around its
 --    update (body otherwise verbatim from 20260925130000).
