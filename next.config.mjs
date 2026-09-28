@@ -94,19 +94,5 @@ export default process.env.VERCEL
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       silent: true,
-      // FRESCO-724: the client Sentry bundle was 98% unused on the landing
-      // page (only 10 KiB of ~455 KiB executed — confirmed with Chrome's
-      // JS coverage API). We don't use Session Replay (no `replayIntegration`
-      // in instrumentation-client.ts) or the `debug` option, so these code
-      // paths tree-shake away safely. Deliberately NOT setting
-      // `excludeTracing`: `tracesSampleRate` in instrumentation-client.ts
-      // means we DO use performance monitoring, and the SDK's own docs warn
-      // that flag would break it.
-      bundleSizeOptimizations: {
-        excludeDebugStatements: true,
-        excludeReplayShadowDom: true,
-        excludeReplayIframe: true,
-        excludeReplayWorker: true,
-      },
     })
   : nextConfig;
