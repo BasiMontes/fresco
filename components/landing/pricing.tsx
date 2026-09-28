@@ -14,11 +14,16 @@ const FREE_FEATURES = [
   'Cambia cualquier receta y regenera el slot',
 ];
 
+// FRESCO-737 (A5-H7, honest pricing follow-up of FRESCO-368): removed
+// "Te recuerda marcar lo que cocinaste" — no such reminder exists anywhere in
+// the app (the only proactive push is send-weekly-reengagement-push's "¿ya
+// planificaste esta semana?", about planning, not about marking cooked
+// recipes). The learning claim it duplicated is already covered truthfully
+// by the first bullet below.
 const PRO_FEATURES = [
   'Aprende de lo que cocinas y lo que descartas',
   'No repite las recetas de las últimas semanas',
   'Te explica por qué eligió cada receta',
-  'Te recuerda marcar lo que cocinaste',
 ];
 
 function PlanFeature({ label, highlighted }: { label: string, highlighted?: boolean }) {
