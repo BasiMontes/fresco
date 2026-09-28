@@ -107,19 +107,6 @@ const UNSPLASH_KEY = process.env.UNPLASH_ACCESS_KEY!;
 const PEXELS_KEY = process.env.PEXELS_API_KEY!;
 const PIXABAY_KEY = process.env.PIXABAY_API_KEY!;
 const BATCH_SIZE = Number(process.argv[2] ?? 30);
-// v14 — FRESCO-192 batch 17/18 root cause: `pickFromPage`'s hash was seeded
-// ONLY by the recipe id, so the same recipe always resolved to the same
-// top-K candidate. `usedUrls` is seeded from `foto_url is not null` rows AT
-// RUN TIME — once an audit nulls out a rejected photo, that URL drops out of
-// the exclusion set, so a same-day or next-day retry deterministically
-// re-picked the EXACT photo an audit had just rejected (confirmed live:
-// batch 18 re-failed the identical recipes as batch 17, byte-identical
-// candidates). There is no persisted per-recipe rejection history to exclude
-// against instead, so the fix is to break the determinism itself: mix a
-// fresh per-invocation salt into the hash. A manual retry after a rejection
-// now has a real chance of landing on a different top-K candidate instead of
-// guaranteeing the same one forever.
-const RUN_SALT = crypto.randomUUID();
 
 function stripAccents(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036F]/g, '');
@@ -185,13 +172,24 @@ const ES_EN_WORDS: Record<string, string> = {
   'asadas': 'roasted',
   'asados': 'roasted',
   'revueltos': 'scrambled',
+  'revuelto': 'scrambled',
+  'revuelta': 'scrambled',
   'poche': 'poached',
   'vapor': 'steamed',
   'estofadas': 'braised',
   'estofado': 'braised',
+  'estofada': 'braised',
+  'estofados': 'braised',
+  'guisados': 'stewed',
+  'guisadas': 'stewed',
   'frito': 'fried',
   'frita': 'fried',
+  'fritos': 'fried',
+  'fritas': 'fried',
+  'meloso': 'creamy',
+  'melosa': 'creamy',
   'ahumado': 'smoked',
+  'barbacoa': 'barbecue',
   // bases
   'arroz': 'rice',
   'pasta': 'pasta',
@@ -229,16 +227,34 @@ const ES_EN_WORDS: Record<string, string> = {
   'berenjena': 'eggplant',
   'berenjenas': 'eggplant',
   'tomate': 'tomato',
+  'zanahoria': 'carrot',
+  'pepino': 'cucumber',
+  'manzana': 'apple',
+  'nata': 'cream',
+  'verde': 'green',
+  'dulce': 'sweet',
   'aguacate': 'avocado',
   'queso': 'cheese',
   'cebolla': 'onion',
   'coliflor': 'cauliflower',
   'repollo': 'cabbage',
+  'berza': 'collard greens',
   'coles': 'brussels',
   'bruselas': 'sprouts',
   'chia': 'chia seeds',
+  'guisantes': 'peas',
+  'proteina': 'protein',
+  'coco': 'coconut',
   'verduras': 'vegetables',
   'granola': 'granola',
+  'boles': 'bowl',
+  'boniato': 'sweet potato',
+  'callos': 'tripe stew',
+  'pochas': 'white beans',
+  'codorniz': 'quail',
+  'codornices': 'quail',
+  'albondigas': 'meatballs',
+  'arandanos': 'blueberry',
   // seasonings/garnishes with real visual signal
   'miel': 'honey',
   'canela': 'cinnamon',
@@ -255,6 +271,10 @@ const ES_EN_WORDS: Record<string, string> = {
   'curcuma': 'turmeric',
   'comino': 'cumin',
   'aceitunas': 'olives',
+  'aceite': 'oil',
+  'oliva': 'olive',
+  'vinagre': 'vinegar',
+  'soja': 'soy',
   'frutos rojos': 'berries',
   'nueces': 'walnuts',
   'semillas': 'seeds',
@@ -262,6 +282,13 @@ const ES_EN_WORDS: Record<string, string> = {
   'girasol': 'sunflower',
   'picante': 'spicy',
   'griega': 'greek',
+  'tradicional': 'traditional',
+  'casero': 'homemade',
+  'casera': 'homemade',
+  'ligero': 'light',
+  'ligera': 'light',
+  'saludable': 'healthy',
+  'champinon': 'mushroom',
   'bacalao': 'cod',
   'cordero': 'lamb',
   'tortitas': 'pancakes',
@@ -270,20 +297,80 @@ const ES_EN_WORDS: Record<string, string> = {
   'relleno': 'stuffed',
   'rellenos': 'stuffed',
   'leche': 'milk',
+  'salsa': 'sauce',
   'fria': 'cold',
   'frio': 'cold',
 };
 
-const STOPWORDS = new Set(['con', 'y', 'de', 'a', 'la', 'el', 'del', 'las', 'los', 'al']);
+const STOPWORDS = new Set(['con', 'y', 'de', 'a', 'la', 'el', 'del', 'las', 'los', 'al', 'en']);
 
-function translateQuery(nombre: string): string {
+// Regional/style demonyms ("a la madrilena", "estilo vizcaina", "gallega") carry
+// zero photographic signal on their own (Unsplash has no concept of "madrilena
+// style") and diluted real failures this session: "callos madrilena" and "berza
+// gallega" both landed on unrelated results once these words were left
+// untranslated. Dropped outright rather than mapped, same treatment as
+// FILLER_PHRASES — there's no useful English equivalent to map them to.
+const DEMONYM_FILLER = new Set(['madrilena', 'madrileno', 'vizcaina', 'vizcaino', 'gallega', 'gallego', 'seco', 'seca']);
+
+// Multi-word dict entries (e.g. 'frutos rojos': 'berries') never matched
+// anything — the pipeline below splits on whitespace THEN looks up each
+// single word, so a 2-word key can never equal a 1-word token. Found live
+// this session testing "Batido de proteína con frutos rojos" ("frutos" and
+// "rojos" both came back untranslated). Fix: substitute known multi-word
+// phrases for their translation BEFORE splitting into words, so the rest of
+// the pipeline sees them as a single already-translated token. Sorted
+// longest-first so a 3-word phrase isn't shadowed by a shorter one it
+// contains.
+const MULTI_WORD_PHRASES = Object.entries(ES_EN_WORDS)
+  .filter(([key]) => key.includes(' '))
+  .sort(([a], [b]) => b.length - a.length);
+
+function contentWords(nombre: string): string[] {
   let text = stripAccents(nombre.toLowerCase());
   for (const pattern of FILLER_PHRASES) { text = text.replace(pattern, ' '); }
+  for (const [phrase, translation] of MULTI_WORD_PHRASES) {
+    text = text.replaceAll(phrase, ` ${translation.replace(/\s+/g, '_')} `);
+  }
 
-  const words = text.split(/\s+/).filter(Boolean).filter(w => !STOPWORDS.has(w));
-  const translated = words.map(w => ES_EN_WORDS[w] ?? w);
+  return text.split(/\s+/).filter(Boolean).filter(w => !STOPWORDS.has(w)).filter(w => !DEMONYM_FILLER.has(w));
+}
+
+function translateQuery(nombre: string): string {
+  const translated = contentWords(nombre).map(w => (ES_EN_WORDS[w] ?? w).replace(/_/g, ' '));
   return [...new Set(translated)].join(' ');
 }
+
+// v13 — confidence gate. Root cause found live this session (FRESCO-31 batch,
+// 3/50 accepted after vision-verify): a query left with too many untranslated
+// Spanish content words doesn't fail cleanly — Unsplash still returns SOMETHING
+// (its ranking degrades toward generic/unrelated food photos instead of an
+// empty result), which looks like a normal candidate until a human/vision
+// check catches it. That silently burns API quota (both the search call and,
+// downstream, the vision-verify pass) on queries that were never going to
+// match. Returns the fraction of content words that had a real dictionary
+// translation — low coverage is the leading indicator this session actually
+// found for those wasted attempts ("berza gallega", "callos madrilena", "seco
+// de ternera" style names built from niche/regional vocabulary this table's
+// dictionary doesn't and likely can't fully cover).
+function queryConfidence(nombre: string): number {
+  const words = contentWords(nombre);
+  if (words.length === 0) { return 1; }
+  // A word already substituted by MULTI_WORD_PHRASES carries an underscore
+  // placeholder (e.g. "berries" stays literal, but a 2-word translation like
+  // "chia seeds" becomes "chia_seeds") — it's already-translated, count it as
+  // such rather than looking it up again in ES_EN_WORDS (which only has
+  // single-word-shaped keys post-split).
+  const translatedCount = words.filter(w => w.includes('_') || ES_EN_WORDS[w] !== undefined).length;
+  return translatedCount / words.length;
+}
+
+// Below this, a majority of the query's content words have no dictionary
+// translation — evidence from this session says that's when Unsplash's result
+// quality degrades to near-random rather than just narrower. Skipping these
+// outright saves quota for recipes with an actual shot at a match, and routes
+// them toward the AI-generation pipeline (build-photo-prompts.ts already picks
+// up any recipe with foto_url still null — no extra plumbing needed).
+const MIN_QUERY_CONFIDENCE = 0.5;
 
 // v10 — broad-query fallback tier, only fired when the precise query is
 // fully exhausted (searchUnsplash returned null after trying page 1 + page
@@ -336,40 +423,25 @@ async function fetchUnsplashPage(query: string, page: number): Promise<{ urls: {
   // while X-Ratelimit-Remaining still showed plenty left; recovered within
   // 5s of pausing).
   await sleep(1200);
-  // v13 — try/catch around the whole request: a sustained 403 burst can
-  // escalate into the OS/network layer refusing the connection outright
-  // (`ConnectionRefused`, not an HTTP response), which `fetch` throws rather
-  // than returning. Uncaught, that crash killed the whole process mid-batch
-  // and discarded every already-fetched result (found live: 65 recipes lost
-  // after ~250 rows out of 291). Treat a network-level failure the same as
-  // an HTTP error for this one request — return null and let the caller's
-  // fallback chain continue.
-  try {
-    // v11: content_filter=high — FRESCO-192's audit found one applied photo
-    // (17ef7f11) with a real person + visible text that had to be nulled as
-    // inappropriate. Unsplash's own moderation filter costs nothing and
-    // rules that class of result out before it ever reaches pickFromPage.
-    const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish&content_filter=high`, {
-      headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
-    });
-    if (!res.ok) {
-      console.error(`Unsplash error ${res.status} for query "${query}" (page ${page})`);
-      if (res.status === 403) {
-        // Burst limiter, not the hourly quota — 400ms wasn't enough to clear
-        // it reliably across a real batch (confirmed live: still cascaded on
-        // most requests). Cool down harder before the next attempt.
-        await sleep(4000);
-      }
-      return null;
+  // v11: content_filter=high — FRESCO-192's audit found one applied photo
+  // (17ef7f11) with a real person + visible text that had to be nulled as
+  // inappropriate. Unsplash's own moderation filter costs nothing and
+  // rules that class of result out before it ever reaches pickFromPage.
+  const res = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&page=${page}&orientation=squarish&content_filter=high`, {
+    headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
+  });
+  if (!res.ok) {
+    console.error(`Unsplash error ${res.status} for query "${query}" (page ${page})`);
+    if (res.status === 403) {
+      // Burst limiter, not the hourly quota — 400ms wasn't enough to clear
+      // it reliably across a real batch (confirmed live: still cascaded on
+      // most requests). Cool down harder before the next attempt.
+      await sleep(4000);
     }
-    const body = await res.json() as { results: { urls: { regular: string } }[] };
-    return body.results;
-  }
-  catch (err) {
-    console.error(`Unsplash network error for query "${query}" (page ${page}): ${err instanceof Error ? err.message : String(err)}`);
-    await sleep(4000);
     return null;
   }
+  const body = await res.json() as { results: { urls: { regular: string } }[] };
+  return body.results;
 }
 
 // Picks the seed-hashed top-2 first, then falls through the rest of a
@@ -397,11 +469,8 @@ function pickFromPage(results: { urls: { regular: string } }[], seed: string, us
   // next-preferred index, and only past that to the "worse" indices 2-29 as
   // a last resort before giving up rather than forcing a duplicate.
   const topK = Math.min(2, results.length);
-  // v14: salted with RUN_SALT (see file header) so a retry across separate
-  // invocations doesn't reproduce the exact same pick for the same recipe.
-  const saltedSeed = seed + RUN_SALT;
   let hash = 0;
-  for (let i = 0; i < saltedSeed.length; i++) { hash = (hash * 31 + saltedSeed.charCodeAt(i)) >>> 0; }
+  for (let i = 0; i < seed.length; i++) { hash = (hash * 31 + seed.charCodeAt(i)) >>> 0; }
   const preferredStart = hash % topK;
 
   const order: number[] = [];
@@ -469,23 +538,15 @@ async function fetchPexelsPage(query: string): Promise<{ urls: { regular: string
   // 50/hour — a light throttle is still worth keeping since this script
   // fires requests back-to-back across the fallback chain.
   await sleep(300);
-  // v13 — see the matching try/catch in fetchUnsplashPage: a network-level
-  // failure (not just a non-2xx response) must not crash the whole batch.
-  try {
-    const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30&orientation=square`, {
-      headers: { Authorization: PEXELS_KEY },
-    });
-    if (!res.ok) {
-      console.error(`Pexels error ${res.status} for query "${query}"`);
-      return null;
-    }
-    const body = await res.json() as { photos: { src: { large: string } }[] };
-    return body.photos.map(p => ({ urls: { regular: p.src.large } }));
-  }
-  catch (err) {
-    console.error(`Pexels network error for query "${query}": ${err instanceof Error ? err.message : String(err)}`);
+  const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30&orientation=square`, {
+    headers: { Authorization: PEXELS_KEY },
+  });
+  if (!res.ok) {
+    console.error(`Pexels error ${res.status} for query "${query}"`);
     return null;
   }
+  const body = await res.json() as { photos: { src: { large: string } }[] };
+  return body.photos.map(p => ({ urls: { regular: p.src.large } }));
 }
 
 async function searchPexels(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
@@ -499,21 +560,13 @@ async function fetchPixabayPage(query: string): Promise<{ urls: { regular: strin
   // the three, but still throttled lightly for the same back-to-back-calls
   // reason as Pexels above.
   await sleep(300);
-  // v13 — see the matching try/catch in fetchUnsplashPage: a network-level
-  // failure (not just a non-2xx response) must not crash the whole batch.
-  try {
-    const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30&safesearch=true`);
-    if (!res.ok) {
-      console.error(`Pixabay error ${res.status} for query "${query}"`);
-      return null;
-    }
-    const body = await res.json() as { hits: { largeImageURL: string }[] };
-    return body.hits.map(h => ({ urls: { regular: h.largeImageURL } }));
-  }
-  catch (err) {
-    console.error(`Pixabay network error for query "${query}": ${err instanceof Error ? err.message : String(err)}`);
+  const res = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&image_type=photo&per_page=30&safesearch=true`);
+  if (!res.ok) {
+    console.error(`Pixabay error ${res.status} for query "${query}"`);
     return null;
   }
+  const body = await res.json() as { hits: { largeImageURL: string }[] };
+  return body.hits.map(h => ({ urls: { regular: h.largeImageURL } }));
 }
 
 async function searchPixabay(query: string, seed: string, usedUrls: Set<string>): Promise<string | null> {
@@ -568,7 +621,20 @@ async function main() {
   // still-viable precise match never gets diluted, and the extra request
   // only lands on recipes that were already going to fail otherwise.
   const results: { id: string, foto_url: string }[] = [];
+  let lowConfidenceSkips = 0;
   for (const recipe of recipes) {
+    // v13 — skip outright when too little of the name survives translation.
+    // See queryConfidence's comment above: a low-coverage query doesn't fail
+    // cleanly on Unsplash, it silently returns unrelated results that only a
+    // vision check catches, wasting the search call AND the verify pass. No
+    // API cost to check this, so it runs before any network request.
+    const confidence = queryConfidence(recipe.nombre);
+    if (confidence < MIN_QUERY_CONFIDENCE) {
+      lowConfidenceSkips++;
+      console.error(`SKIP [confidence ${confidence.toFixed(2)}] ${recipe.nombre} (routed to AI pipeline instead)`);
+      continue;
+    }
+
     // "cooked meal food photography" bias: raw nombre alone too often
     // matches a raw-ingredient or product-photography stock shot (confirmed
     // live — "Arroz con magro y pimientos" returned a market bin of raw
@@ -580,15 +646,35 @@ async function main() {
     // see the file header for why (Spanish query into an English-tagged
     // database was the real root cause of bad matches, not just relevance
     // ranking).
-    const preciseQuery = `${translateQuery(recipe.nombre)} cooked meal food photography`;
+    //
+    // v13 — "overhead flat lay, no hands" bias, UNVALIDATED hypothesis: 7 of
+    // the 47 rejections in this session's batch had a hand/person dominating
+    // the frame (Unsplash's "food photography" tag pulls in a lot of
+    // lifestyle/eating-in-progress shots, not just plated stills). Keyword
+    // search engines don't reliably honor negation, so "no hands" isn't
+    // guaranteed to subtract anything — but "overhead flat lay" and "plated"
+    // are real positive-bias terms toward studio/still-life food photography,
+    // which is the genre this table actually wants. Needs a real batch +
+    // vision-verify to confirm it moves the needle; don't treat as proven.
+    // v13 also strengthens the raw-ingredient counter-bias: 8 of the 47
+    // rejections this session were the ingredient in its RAW state slipping
+    // past the existing "cooked" qualifier (raw whole apples for a compote,
+    // dry uncooked lentils, a raw salmon fillet, dry pasta, a whole raw
+    // carrot, unwashed wild mushrooms in grass) — "cooked" alone isn't
+    // outweighing a strongly-tagged raw-ingredient genre for common produce
+    // like carrot/salmon/mushroom. Same "positive bias, not guaranteed
+    // negation" caveat as the hands bias above.
+    const preciseQuery = `${translateQuery(recipe.nombre)} cooked meal food photography, overhead flat lay, plated, no hands, no people, finished prepared dish, not raw ingredients`;
     // v11: broad tier had dropped the "cooked" disambiguator entirely (down
     // to just "food photography") to maximize corpus size — but FRESCO-192's
     // audit traced a real chunk of its mismatches back to exactly that:
     // raw-ingredient/product shots slipping through once "cooked" was gone.
     // Adding the single word back costs far less corpus width than the old
     // 2-word "cooked meal" precise-tier bias while still excluding the worst
-    // offenders.
-    const broadQuery = `${broadenQuery(recipe.nombre)} cooked food photography`;
+    // offenders. v13: added "plated" only (not the full flat-lay/no-hands
+    // phrase) — broad tier already trades precision for corpus width, piling
+    // on more bias terms here would defeat that purpose.
+    const broadQuery = `${broadenQuery(recipe.nombre)} cooked food photography, plated`;
 
     // v12 — provider fallback chain, tried in order, first hit wins. Each
     // provider gets its own precise + broad attempt before moving to the
@@ -620,7 +706,7 @@ async function main() {
       console.error(`No photo found for ${recipe.nombre} (skipped, no cascade)`);
     }
   }
-  console.error(`Fetched ${results.length}/${recipes.length}. Writing JSON to stdout for SQL application.`);
+  console.error(`Fetched ${results.length}/${recipes.length} (${lowConfidenceSkips} skipped for low query confidence). Writing JSON to stdout for SQL application.`);
   console.log(JSON.stringify(results));
 }
 
