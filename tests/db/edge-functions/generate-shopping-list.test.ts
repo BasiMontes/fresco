@@ -11,7 +11,7 @@
 
 import type { DbTestUser } from '../harness';
 import { afterAll, describe, expect, test } from 'bun:test';
-import { callFunction, createDbTestContext, rest, seedMealPlan, seedSlots, stackReachable } from '../harness';
+import { callFunction, createDbTestContext, rest, rpc, seedMealPlan, seedSlots, stackReachable } from '../harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -82,13 +82,16 @@ describe.skipIf(!(RUN && reachable))('generate-shopping-list — reflects a conf
       { recipeId: recipe.id, tipoPlato: 'cena' },
     ]);
 
-    await rest('meal_plan_recipes', {
-      method: 'PATCH',
-      token: user.token,
-      query: `id=eq.${substitutedSlotId}`,
-      prefer: 'return=minimal',
-      body: { sustitucion_ingrediente: { original: 'gambas', sustituto: 'tofu firme' } },
-    });
+    // Audit-5 BLOCKER fix (20260928170000): meal_plan_recipes now rejects a
+    // raw client PATCH of sustitucion_ingrediente — seed through the real
+    // confirm_ingredient_substitution RPC, the only path this column can be
+    // written through anymore.
+    const confirmRes = await rpc('confirm_ingredient_substitution', {
+      p_slot_id: substitutedSlotId,
+      p_ingrediente_original: 'gambas',
+      p_ingrediente_sustituto: 'tofu firme',
+    }, { token: user.token });
+    expect(confirmRes.status).toBe(204);
 
     const res = await callFunction(ENDPOINT, { token: user.token, body: { meal_plan_id: plan.id } });
 

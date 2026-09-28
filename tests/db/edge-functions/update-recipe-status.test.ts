@@ -152,3 +152,54 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — HTTP negative con
     expect(res.status).toBe(409);
   });
 });
+
+/**
+ * Audit-5 BLOCKER fix (20260928170000) regression: the negative-contract
+ * suite above never exercised the 200 happy path against the real DB, so it
+ * missed that apply_recipe_status_update's `coalesce(p_estado, estado)`
+ * failed with `COALESCE types text and estado_receta_menu cannot be matched`
+ * (estado is a Postgres enum, not text) — caught only by the e2e suite.
+ */
+describe.skipIf(!(RUN && reachable))('update-recipe-status — happy path actually persists (real functions runtime)', () => {
+  const ctx = createDbTestContext();
+
+  afterAll(async () => ctx.cleanupAll());
+
+  test('200 and the row is really updated: estado, rating', async () => {
+    const user = await ctx.createUser();
+    const [recipeId] = await catalogRecipeIds(user, 1);
+    const plan = await seedMealPlan(user, { semanaIso: '2099-W10', fechaInicio: '2099-03-09' });
+    const [slotId] = await seedSlots(user, plan.id, [{ recipeId, tipoPlato: 'comida' }]);
+
+    const res = await callFunction(ENDPOINT, {
+      token: user.token,
+      body: { meal_plan_recipe_id: slotId, estado: 'cocinada', rating: 4 },
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true, estado: 'cocinada' });
+
+    const after = await rest('meal_plan_recipes', { token: user.token, query: `id=eq.${slotId}&select=estado,rating` });
+    expect((after.body as { estado: string, rating: number }[])[0]).toEqual({ estado: 'cocinada', rating: 4 });
+  });
+
+  test('200 substitution actually persists recipe_id, not just rating/estado', async () => {
+    const user = await ctx.createUser();
+    const safeRes = await rpc('get_filtered_recipes', { p_user_id: user.id }, { token: user.token });
+    const [safeRecipeId, otherRecipeId] = (safeRes.body as { id: string }[]).map(r => r.id);
+    const plan = await seedMealPlan(user, { semanaIso: '2099-W11', fechaInicio: '2099-03-16' });
+    const [slotId] = await seedSlots(user, plan.id, [{ recipeId: safeRecipeId, tipoPlato: 'comida' }]);
+
+    const res = await callFunction(ENDPOINT, {
+      token: user.token,
+      body: { meal_plan_recipe_id: slotId, estado: 'sustituida', nueva_recipe_id: otherRecipeId },
+    });
+    expect(res.status).toBe(200);
+
+    const after = await rest('meal_plan_recipes', { token: user.token, query: `id=eq.${slotId}&select=estado,recipe_id,rating` });
+    expect((after.body as { estado: string, recipe_id: string, rating: number | null }[])[0]).toEqual({
+      estado: 'sustituida',
+      recipe_id: otherRecipeId,
+      rating: null,
+    });
+  });
+});

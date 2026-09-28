@@ -84,7 +84,11 @@ The following are **explicitly excluded from the MVP and from all near-term road
 
 ## Success Criteria
 
-**Bar reached (2026-09-14, founder-confirmed):** the primary concierge-validation bar below has been met — at least 3 of 10 concierge cohort users both pay and repeat usage for 3+ consecutive weeks. This unblocks work that was explicitly gated on this bar, story by story (not a blanket epic-wide unblock) — e.g. FRESCO-340 (`EPIC-FRESCO-331`) and the priority-reordering of FRESCO-345 (`EPIC-FRESCO-332`, ADR-0027) are the first two. **Distinct from the Out-of-Scope Blacklist gate above**, which is MRR > €5,000 AND 30-day retention > 50% and is unaffected by this milestone — do not conflate the two when unblocking future work.
+**Bar NOT reached (corrected 2026-09-28, audit-5 finding B2 — see `.context/audits/2026-09-28-audit-5.md`).** The prior entry in this file (commit `ab0bc4df`, 2026-09-14) stated the primary concierge-validation bar had been met and cited "founder-confirmed" status. The founder has since confirmed that claim was incorrect: there is no real concierge cohort paying and repeating yet — the entry was written to unblock backlog work, not to record a measured fact. There is no Stripe subscriber export, PostHog cohort query, or bitácora entry describing an actual validation event for 2026-09-14, because none occurred.
+
+**Standing consequence:** FRESCO-340 (`EPIC-FRESCO-331`) and the priority-reordering of FRESCO-345 (`EPIC-FRESCO-332`, `ADR-0027`) were unblocked on this false premise and have since shipped (`Finalizada`). The code itself is not being reverted — it is real, working, reviewed software — but its priority ordering was justified by a milestone that hadn't happened. Re-litigate priority against the actual backlog once the bar is genuinely met, rather than treating the shipped state as retroactive validation.
+
+**Distinct from the Out-of-Scope Blacklist gate above**, which is MRR > €5,000 AND 30-day retention > 50% and remains its own, separately-tracked gate.
 
 The MVP is considered successful when the concierge-validation bar defined in the Constitution phase is met, not by an internal feature-completeness checklist:
 

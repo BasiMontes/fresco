@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, restHeaders } from '../test-helpers';
+import { currentWeekMonday, restHeaders, serviceRoleHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -48,13 +48,19 @@ async function seedTwoDistinctLunches(request: import('@playwright/test').APIReq
   );
   const [plan] = await planRes.json() as { id: string }[];
 
+  // Audit-5 BLOCKER fix (20260928170000): meal_plan_recipes now rejects a
+  // raw client PATCH of recipe_id — this is fixture setup (forcing two
+  // distinct recipes into place), not a real user action, so it uses the
+  // service-role fixture path already established elsewhere in this suite
+  // (test-user-factory.ts) instead of the test user's own token.
+  const svcHeaders = serviceRoleHeaders();
   await request.patch(
     `${SUPABASE_URL}/rest/v1/meal_plan_recipes?meal_plan_id=eq.${plan.id}&dia=eq.lunes&tipo_plato=eq.comida`,
-    { headers, data: { recipe_id: a.id } },
+    { headers: svcHeaders, data: { recipe_id: a.id } },
   );
   await request.patch(
     `${SUPABASE_URL}/rest/v1/meal_plan_recipes?meal_plan_id=eq.${plan.id}&dia=eq.martes&tipo_plato=eq.comida`,
-    { headers, data: { recipe_id: b.id } },
+    { headers: svcHeaders, data: { recipe_id: b.id } },
   );
 }
 

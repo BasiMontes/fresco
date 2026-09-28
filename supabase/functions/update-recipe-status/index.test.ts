@@ -94,7 +94,13 @@ describe('update-recipe-status/index.ts', () => {
   })
 
   test('500 when the meal_plan_recipes update errors', async () => {
-    supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: slotRow() }, updateError: { meal_plan_recipes: new Error('db down') } })
+    // Audit-5 BLOCKER fix (20260928170000): the write now goes through
+    // apply_recipe_status_update, not a raw .from('meal_plan_recipes').update().
+    supa = fakeEdgeClient({
+      user: USER,
+      rpc: { ...OK_RATE, apply_recipe_status_update: { error: new Error('db down') } },
+      rows: { meal_plan_recipes: slotRow() },
+    })
     const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada' }))
     expect(res.status).toBe(500)
   })
@@ -103,6 +109,9 @@ describe('update-recipe-status/index.ts', () => {
     const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating: 4 })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true, estado: 'cocinada' })
-    expect(supa.updates[0][0]).toBe('meal_plan_recipes')
+    expect(supa.rpcCalls.at(-1)).toEqual([
+      'apply_recipe_status_update',
+      { p_slot_id: 'mpr_1', p_estado: 'cocinada', p_rating: 4, p_recipe_id: null },
+    ])
   })
 })

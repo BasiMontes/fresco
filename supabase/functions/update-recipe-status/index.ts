@@ -126,14 +126,21 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. Apply the update — recipe_learning_trigger reacts to this in the DB.
-    // A4-L7: buildUpdatePayload writes only the fields the target estado
+    // A4-L7: buildUpdatePayload decides which fields the target estado
     // permits (recipe_id on `sustituida` only, rating off `sustituida`).
+    // Audit-5 BLOCKER fix: meal_plan_recipes now rejects a raw client
+    // `.update()` on these columns (protect_meal_plan_recipes_integrity,
+    // 20260928170000) — apply_recipe_status_update is the trusted RPC that
+    // opens the transaction-local GUC for this one write. Still the user's
+    // own JWT throughout (RLS mpr_update_own keeps enforcing ownership).
     const updatePayload = buildUpdatePayload(estado, rating, nueva_recipe_id)
 
-    const { error: updateError } = await supabase
-      .from('meal_plan_recipes')
-      .update(updatePayload)
-      .eq('id', meal_plan_recipe_id)
+    const { error: updateError } = await supabase.rpc('apply_recipe_status_update', {
+      p_slot_id: meal_plan_recipe_id,
+      p_estado: updatePayload.estado as string,
+      p_rating: (updatePayload.rating as number | undefined) ?? null,
+      p_recipe_id: (updatePayload.recipe_id as string | undefined) ?? null,
+    })
 
     if (updateError) {
       logger.error('Failed to update meal_plan_recipes', { fn: FN_NAME, error: updateError.message })
