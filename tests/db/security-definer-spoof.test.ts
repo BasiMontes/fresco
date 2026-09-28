@@ -86,7 +86,8 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
       p_semana_iso: '2099-W02',
       p_fecha_inicio: '2099-01-12',
     }, { token: B.token });
-    expectRaise(spoof, 'caller does not own source plan');
+    // FRESCO-736: not-found and not-owned raise the SAME message now (non-disclosure).
+    expectRaise(spoof, 'not found');
 
     // No plan was created for B by the spoofed call.
     const bPlans = await rest('meal_plans', { token: B.token, query: 'select=id' });
@@ -272,7 +273,8 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
       p_slot_a_id: slotA,
       p_slot_b_id: slotB,
     }, { token: B.token });
-    expectRaise(spoof, 'caller does not own meal plan');
+    // FRESCO-736: not-found and not-owned raise the SAME message now (non-disclosure).
+    expectRaise(spoof, 'not found');
 
     const after = await rest('meal_plan_recipes', {
       token: A.token,
