@@ -1,22 +1,8 @@
+import { resolveBaseUrl } from './resolve-base-url';
+
 /**
  * JSON-LD structured-data builders for the public marketing pages (FRESCO-472).
- *
- * `resolveBaseUrl()` mirrors the branching in `app/sitemap.ts` / `app/robots.ts`
- * / `lib/stripe.ts` (FRESCO-455) — kept standalone per those files' existing
- * no-domain-coupling convention rather than importing across modules for a
- * ten-line env branch.
  */
-function resolveBaseUrl(): string {
-  if (process.env.VERCEL_ENV === 'production') {
-    return 'https://fresco-pro.vercel.app';
-  }
-  if (process.env.VERCEL_ENV === 'preview') {
-    return process.env.VERCEL_GIT_COMMIT_REF === 'dev'
-      ? 'https://fresco-dev.vercel.app'
-      : 'https://fresco-pre.vercel.app';
-  }
-  return 'http://localhost:3000';
-}
 
 export interface FaqEntry {
   question: string

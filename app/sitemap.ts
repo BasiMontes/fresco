@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next';
+import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
 
 /**
  * FRESCO-455: `/sitemap.xml` was a 404 (isitagentready.com scan, 2026-09-07),
- * and `robots.txt` carried no `Sitemap:` directive. Base-URL branching
- * mirrors `resolveAppUrl()` in `lib/stripe.ts` — kept standalone (no cross
- * import) to match `app/robots.ts`'s existing no-domain-coupling convention.
+ * and `robots.txt` carried no `Sitemap:` directive. Base-URL branching comes
+ * from `resolveBaseUrl()` (`lib/seo/resolve-base-url.ts`, FRESCO-733), shared
+ * with `app/robots.ts` and the `lib/seo/` builders.
  * Only the indexable public routes are listed; every `(app)/` route sits
  * behind auth and `/qa` is a testability guide, not marketing content.
  *
@@ -27,18 +28,6 @@ import type { MetadataRoute } from 'next';
  * grows enough entries that hand-tracking each date stops being cheap.
  */
 const LANDING_LAST_MODIFIED = '2026-09-12';
-
-function resolveBaseUrl(): string {
-  if (process.env.VERCEL_ENV === 'production') {
-    return 'https://fresco-pro.vercel.app';
-  }
-  if (process.env.VERCEL_ENV === 'preview') {
-    return process.env.VERCEL_GIT_COMMIT_REF === 'dev'
-      ? 'https://fresco-dev.vercel.app'
-      : 'https://fresco-pre.vercel.app';
-  }
-  return 'http://localhost:3000';
-}
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = resolveBaseUrl();

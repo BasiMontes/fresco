@@ -32,7 +32,7 @@ import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
 import { mapShoppingListItem } from '@/lib/grocery/map-item';
 import { createClient } from '@/lib/supabase/client';
-import { cn, formatPrecio } from '@/lib/utils';
+import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
 
 export interface ShoppingListViewProps {
   list: ShoppingListPersistido
@@ -44,21 +44,6 @@ export interface ShoppingListViewProps {
 }
 
 const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
-
-/**
- * FRESCO-180 — `unidad` is free text from the shopping-list Edge Function
- * (Gemini classification, `lib/api/types.ts`'s `unidad: string`), not a
- * fixed union, so this only singularizes the one unit the QA sweep actually
- * found broken ("1 unidades") rather than guessing a general Spanish
- * pluralization rule for units we have no confirmed data on.
- */
-function formatUnidad(cantidad: number, unidad: string): string {
-  return cantidad === 1 && unidad === 'unidades' ? 'unidad' : unidad;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 /** Same mapping `calendar-grid.tsx` uses for `DiaSemana` values — kept local rather than shared since this is the only other consumer today. */
 const DIA_LABELS: Record<DiaSemana, string> = {

@@ -19,6 +19,7 @@ import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation'
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
 import { DIETA_LABELS } from '@/lib/recipes/labels';
 import { countActiveFilters, EMPTY_FILTER_STATE } from '@/lib/recipes/recipe-filters';
+import { capitalize } from '@/lib/utils';
 
 const COCINA_OPTIONS: TipoCocina[] = ['española', 'italiana', 'mexicana', 'asiática', 'mediterránea', 'latina', 'internacional'];
 const DIETA_OPTIONS = Object.keys(DIETA_LABELS) as (keyof RecipeDieta)[];
@@ -27,10 +28,6 @@ const MEAL_TYPE_OPTIONS: { value: MealTab, label: string }[] = [
   { value: 'comida', label: 'Comida' },
   { value: 'cena', label: 'Cena' },
 ];
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 const COCINA_FILTER_OPTIONS = COCINA_OPTIONS.map(option => ({ value: option, label: capitalize(option) }));
 const DIETA_FILTER_OPTIONS = DIETA_OPTIONS.map(option => ({ value: option, label: DIETA_LABELS[option] ?? option }));
