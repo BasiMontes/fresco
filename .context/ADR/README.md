@@ -94,6 +94,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0031](./ADR-0031-edge-nonce-substitution-spike.md) | Edge-cache + nonce-substitution spike: confirmed viable (single nonce reused across all 62 script tags, tested substitution), but only recovers TTFB not bfcache; production wiring scoped to a separate future ticket | Accepted | — | — |
 | [ADR-0032](./ADR-0032-ingredient-substitution-catalog-invoker-rpc.md) | Ingredient substitution: global curated catalog (never mutates `recipes`) + `SECURITY INVOKER` RPC with no identity parameter, diverging from `get_filtered_recipes`'s `DEFINER`+`p_user_id` pattern | Proposed | — | — |
 | [ADR-0033](./ADR-0033-per-slot-ingredient-substitution-storage.md) | Per-slot ingredient substitution: nullable jsonb column on `meal_plan_recipes` + `SECURITY INVOKER` RPC relying on existing RLS (`mpr_update_own`) for ownership, no identity parameter | Proposed | — | — |
+| [ADR-0034](./ADR-0034-defer-client-sentry-init.md) | Defer client-side Sentry init to idle time (dynamic import): ~358 KiB less unused JS on the critical path, at the cost of not capturing client errors that fire before the SDK's idle-scheduled load completes | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
