@@ -95,6 +95,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0032](./ADR-0032-ingredient-substitution-catalog-invoker-rpc.md) | Ingredient substitution: global curated catalog (never mutates `recipes`) + `SECURITY INVOKER` RPC with no identity parameter, diverging from `get_filtered_recipes`'s `DEFINER`+`p_user_id` pattern | Proposed | — | — |
 | [ADR-0033](./ADR-0033-per-slot-ingredient-substitution-storage.md) | Per-slot ingredient substitution: nullable jsonb column on `meal_plan_recipes` + `SECURITY INVOKER` RPC relying on existing RLS (`mpr_update_own`) for ownership, no identity parameter | Proposed | — | — |
 | [ADR-0034](./ADR-0034-defer-client-sentry-init.md) | Defer client-side Sentry init to idle time (dynamic import): ~358 KiB less unused JS on the critical path, at the cost of not capturing client errors that fire before the SDK's idle-scheduled load completes | Accepted | — | — |
+| [ADR-0035](./ADR-0035-supabase-session-cookie-stays-js-readable.md) | Supabase session cookie stays JS-readable (no `httpOnly`, no BFF): the enforcing nonce CSP of ADR-0019 plus 1h JWT and refresh-token rotation cover XSS token theft; a BFF would rewrite 32 client files and still not stop in-session abuse | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
