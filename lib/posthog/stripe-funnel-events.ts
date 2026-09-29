@@ -50,7 +50,7 @@ export function resolveActiveUpdateFunnelEvent(previousStatus: Stripe.Subscripti
 export function previousSubscriptionStatus(previousAttributes: unknown): Stripe.Subscription.Status | undefined {
   if (previousAttributes && typeof previousAttributes === 'object' && 'status' in previousAttributes) {
     const status = (previousAttributes as { status?: unknown }).status;
-    return typeof status === 'string' ? status as Stripe.Subscription.Status : undefined;
+    return typeof status === 'string' ? status : undefined;
   }
   return undefined;
 }

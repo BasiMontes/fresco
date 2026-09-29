@@ -1624,7 +1624,7 @@ function generateCommentsMarkdown(
     for (const comment of comments) {
       const author = comment.author?.displayName || 'Unknown';
       const date = new Date(comment.created).toLocaleString();
-      const body = adfToMarkdown(comment.body as AdfDocument);
+      const body = adfToMarkdown(comment.body);
 
       lines.push(`### ${author} - ${date}`, '', body, '', '---', '');
     }

@@ -243,7 +243,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
         return raw.endsWith('ms') ? value : value * 1000;
       };
       const shakeMs = readMs('--shake-dur-a', 80) * 2 + readMs('--shake-dur-b', 60) * 2;
-      shakeTimerRef.current = setTimeout(() => setShakingItem(null), shakeMs + 20);
+      shakeTimerRef.current = setTimeout(setShakingItem, shakeMs + 20, null);
     }
   }
 

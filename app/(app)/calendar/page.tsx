@@ -86,7 +86,7 @@ export default async function CalendarPage({
     // over, defaults to the more conservative 'free' (shows the notice).
     getUserPlan(supabase, user?.id).catch((error) => {
       console.error('[/calendar] getUserPlan failed, defaulting to free', error);
-      return 'free' as 'free' | 'pro' | 'family';
+      return 'free' as const;
     }),
     // FRESCO-153: which days/meal types she actually wants to see —
     // `CalendarGrid` defaults to the full week/3 meals if this read fails,

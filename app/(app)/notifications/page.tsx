@@ -43,7 +43,7 @@ export default async function NotificationsPage() {
       // read failure defaults to 'free' (hides the payment-failed notice)
       // rather than crashing the page.
       console.error('[/notifications] getUserPlan failed, defaulting to free', error);
-      return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+      return 'free' as const;
     }),
     getPaymentFailedAt(supabase, user?.id).catch((error) => {
       // Same conservative-default judgment call as `/profile`'s read: a real

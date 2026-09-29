@@ -53,7 +53,7 @@ export default async function ProfilePage() {
       // data: a real read failure defaults to the more conservative 'free'
       // (shows the upsell) rather than crashing the page.
       console.error('[/profile] getUserPlan failed, defaulting to free', error);
-      return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+      return 'free' as const;
     }),
     getPaymentFailedAt(supabase, user?.id).catch((error) => {
       // Same conservative-default judgment call: a real read failure hides
@@ -87,7 +87,7 @@ export default async function ProfilePage() {
         alergenos: [],
         ingredientes_odiados: [],
         cocinas_favoritas: [],
-      } as Awaited<ReturnType<typeof getUserDietaryPreferences>>;
+      };
     }),
     listPastMealPlanWeeks(supabase, user?.id).catch((error) => {
       // Same conservative fallback as the reads above: a failure hides the

@@ -23,7 +23,7 @@ export function CopyButton({ text, className }: CopyButtonProps) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(setCopied, 2000, false);
     }
     catch {
       // Clipboard API can reject (permissions, non-secure context) — silent
