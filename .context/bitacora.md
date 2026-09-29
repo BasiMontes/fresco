@@ -283,3 +283,7 @@ Historia archivada:
 - Qué: investigación cerrada como ADR-0035 (Proposed), PR #412, staging/dev/main en d7c8a9e8+bitácora. Conclusión: mantener la cookie legible por JS, sin httpOnly ni BFF.
 - Por qué: httpOnly rompe el cliente del navegador (32 archivos cliente hablan directo con Supabase bajo RLS); el BFF es reescritura y no frena el abuso en sesión. XSS cubierto por CSP con nonce (ADR-0019), JWT 1h y rotación de refresh tokens.
 - Siguiente: aceptar ADR-0035 y el ticket de maxAge 30 días + verificar Secure.
+## 2026-09-29 - FRESCO-748 stripe 22.6 y API 2026-08-26.dahlia
+- Qué: stripe 22.5 a ^22.6.2 y apiVersion fijada a 2026-08-26.dahlia en lib/stripe.ts y clientes de tests (PR #413, cba3a8ad).
+- Por qué: seguimiento de FRESCO-744. Release mensual aditiva dentro de dahlia; los webhooks usan la versión del endpoint, no este pin.
+- Siguiente: lanzar stripe-e2e (@requiere-stripe-real) contra staging; no corre en la CI del PR.
