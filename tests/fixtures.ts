@@ -55,7 +55,7 @@ export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: Aprendiz
     // Stripe client is only constructed when there is something to delete.
     if (ctx.stripeCustomerIds.length > 0) {
       const Stripe = (await import('stripe')).default;
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
       for (const id of ctx.stripeCustomerIds) {
         await stripe.customers.del(id).catch(() => { /* best-effort cleanup — a failed delete must not fail the run */ });
       }

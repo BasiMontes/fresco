@@ -82,10 +82,10 @@ let cachedStripe: Stripe | undefined;
 
 function getStripe(): Stripe {
   cachedStripe ??= new Stripe(requireStripeSecretKey(), {
-    // Pinned to the version this SDK (`stripe@22.5.0`) was generated against —
+    // Pinned to the version this SDK (`stripe@22.6.2`) was generated against —
     // otherwise the effective API version is whatever Stripe's account default
     // is at call time, an implicit and silently-shiftable surface.
-    apiVersion: '2026-07-29.dahlia',
+    apiVersion: '2026-08-26.dahlia',
   });
 
   return cachedStripe;
@@ -192,7 +192,7 @@ export interface RenewalUpdate {
  *
  * `current_period_end` is read off `subscription.items.data[0]`, not the
  * top-level `Subscription` object — on the pinned API version
- * (`2026-07-29.dahlia`) that field lives on `Stripe.SubscriptionItem`, not
+ * (`2026-08-26.dahlia`) that field lives on `Stripe.SubscriptionItem`, not
  * `Stripe.Subscription` (confirmed against the installed SDK's own
  * `.d.ts` files; the top-level field no longer exists on this API version's
  * type).
