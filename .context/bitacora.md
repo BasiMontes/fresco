@@ -252,3 +252,17 @@ Historia archivada:
   Fix de (1): nuevo lib/auth/is-admin.ts (isAdminUser(), espeja requireAdminUser() pero leyendo process.env en vez de Deno.env) + page.tsx convertida a Server Component async que llama supabase.auth.getUser() y notFound() si no es admin -- 404 genérico en vez de redirect/403, para no revelar que la ruta existe. delete-catalog-recipe queda sin tocar (segundo gate, no reemplazo). Verificado con test unitario del allowlist (5 casos) + chequeo EN VIVO real: dev server local (puerto 3100, evitando pisar un proceso ya corriendo en 3000) + Playwright, login real como DEV_USER (identidad declarada, no bypass), navegación a /admin/recipes, confirmado h1 "Página no encontrada" y heading de admin ausente -- sesión efímera, sin storageState persistido, script de verificación borrado antes de reportar. Agregado ADMIN_USER_ID (mismo UID que ya gatea la Edge Function, verificado contra auth.users en vivo, no copiado de prosa vieja) a Vercel Production + Preview vía vercel env add, antes de pushear. CI: 1er push con test:e2e rojo por un timeout de "Generar menú desde Calendario" + un 502 de infra al sembrar usuario -- sin relación con /admin/recipes (grep confirma cero escenarios e2e tocan esa ruta); re-run del job solo (gh run rerun --failed) confirmó flake, verde en 2do intento. PR directo -> staging -> dev/main nivelados a 7dfd2531.
 - Por qué: Usuario pidió continuar el backlog de FRESCO-727 tras cerrar FRESCO-737; ticket de seguridad de dos mitades, ejecutado en modo SOLO. Se le preguntó explícitamente cómo proceder con la mitad no-chica (httpOnly) antes de tocar código, en vez de decidir en silencio o intentar un fix desproporcionado.
 - Siguiente: Epic FRESCO-727 sigue con FRESCO-739 (god-components) + FRESCO-740...745 (majors de TS/Tailwind/ESLint/dotenv-cli, batch seguro de dependencias, investigación de cookie httpOnly) -- backlog normal, sin urgencia de BLOCKER.
+## 2026-09-28 - FRESCO-739 god-components divididos + dedup mocks
+- Qué: calendar-grid.tsx (787L->271L) y onboarding/page.tsx (856L->260L) divididos en hooks + componentes; createMockClient deduplicado en 4/7 tests via lib/fixtures/mock-supabase-auth.ts. PR #406 squash-merged a staging (b0862fd0), nivelado a dev/main.
+- Por qué: audit-5 finding A5-M1 (arquitectura, MEDIO) — god-components + mock duplicado.
+- Siguiente: ninguno, ticket cerrado.
+
+## 2026-09-29 - FRESCO-741 Tailwind 3.4 a 4.3
+- Qué: PR #408 mergeado y nivelado en dev/staging/main (8c668499). Config a @theme en globals.css, 72/72 capturas idénticas a la línea base.
+- Por qué: Dependabot #403 intentó el bump; el upgrade tool rompía tokens (autorreferencias), renombraba la variante Tag y dejaba clases con opacidad que v4 activa.
+- Siguiente: validar en producción hover/foco/modales; decidir si se respeta la intención de diseño de las clases con opacidad retiradas (menú lateral 80% y text-label 14px/600).
+
+## 2026-09-29 - FRESCO-740 TypeScript 7 (bloqueado)
+- Qué: PR #407 con tsconfig sin baseUrl, compatible con TS 5.9; bump a TS 7 no realizado, ticket en Blocked.
+- Por qué: typescript-eslint (peer <6.1.0) no carga con TS 7 y Next probablemente depende de la misma API.
+- Siguiente: reabrir cuando typescript-eslint y Next soporten TS 7.
