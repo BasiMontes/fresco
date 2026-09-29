@@ -1,4 +1,3 @@
-import type { EmailOtpType } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { safeNextPath } from '@/lib/auth/safe-next-path';
@@ -16,7 +15,7 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tokenHash = searchParams.get('token_hash');
-  const type = searchParams.get('type') as EmailOtpType | null;
+  const type = searchParams.get('type');
   // `next` is attacker-controllable (it's a query param) — `safeNextPath`
   // collapses it to a same-origin relative path or `/`, closing the open
   // redirect that would otherwise fire right after a successful auth verify

@@ -41,7 +41,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     }),
     getUserPlan(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] getUserPlan failed, defaulting to free', error);
-      return 'free' as Awaited<ReturnType<typeof getUserPlan>>;
+      return 'free' as const;
     }),
     // FRESCO-250: fails open (assumes onboarded) on a transient Supabase
     // error, same conservative-default judgment call as the two reads above

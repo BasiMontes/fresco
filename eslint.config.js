@@ -149,6 +149,14 @@ export default antfu({
   // at re-exec time.
   files: ['cli/**/*.ts'],
   rules: {
+    // cli/ is synced wholesale into downstream projects and must type-check
+    // under THEIR tsconfig and @types/node (see cli/updater-host-types.test.ts).
+    // Both autofixes are valid here but not there: a cast that is redundant
+    // under this repo's @types/node (`execSync(...) as unknown as Buffer`) can
+    // be required under another version, and `Object.hasOwn` needs a host with
+    // `lib` ES2022. Keep the portable form in cli/.
+    'ts/no-unnecessary-type-assertion': 'off',
+    'e18e/prefer-object-has-own': 'off',
     'no-restricted-imports': ['error', {
       patterns: [{
         group: [

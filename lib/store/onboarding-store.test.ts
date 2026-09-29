@@ -26,7 +26,7 @@ function createMemoryStorage(): Storage {
     clear: () => { store.clear(); },
     key: (index: number) => Array.from(store.keys())[index] ?? null,
     get length() { return store.size; },
-  } as Storage;
+  };
 }
 
 const mockSessionStorage = createMemoryStorage();

@@ -170,7 +170,7 @@ export async function getMealPlanForWeek(
     return null;
   }
 
-  const row = data as unknown as MealPlanJoinRow;
+  const row = data;
   const { menu, slotIds, estados } = reshapeMenu(row.meal_plan_recipes);
 
   return {

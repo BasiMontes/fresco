@@ -149,7 +149,7 @@ export function RecipeLibrary({
     setDraftFilters((current) => {
       const list = current[section] as string[];
       const next = list.includes(value) ? list.filter(item => item !== value) : [...list, value];
-      return { ...current, [section]: next } as RecipeFilterState;
+      return { ...current, [section]: next };
     });
   }
 

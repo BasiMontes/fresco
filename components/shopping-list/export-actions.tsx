@@ -36,7 +36,7 @@ export function ExportActions({ pasillos }: ExportActionsProps) {
     try {
       await navigator.clipboard.writeText(formatShoppingListAsText(pasillos));
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(setCopied, 2000, false);
     }
     catch {
       // Clipboard API puede rechazar (permisos / contexto no seguro) — fallo
