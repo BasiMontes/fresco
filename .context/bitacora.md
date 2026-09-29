@@ -287,3 +287,7 @@ Historia archivada:
 - Qué: stripe 22.5 a ^22.6.2 y apiVersion fijada a 2026-08-26.dahlia en lib/stripe.ts y clientes de tests (PR #413, cba3a8ad).
 - Por qué: seguimiento de FRESCO-744. Release mensual aditiva dentro de dahlia; los webhooks usan la versión del endpoint, no este pin.
 - Siguiente: lanzar stripe-e2e (@requiere-stripe-real) contra staging; no corre en la CI del PR.
+## 2026-09-29 - FRESCO-749 rechazado y ADR-0035 corregido
+- Qué: FRESCO-749 (maxAge de cookie a 30 días) rechazado; ADR-0035 corregido (PR #414, 9a40daf6). Seguimiento en FRESCO-750.
+- Por qué: @supabase/ssr fuerza maxAge a 400 días al escribir la sesión (cookies.js:230 y :470), y maxAge no acota una sesión robada. El control efectivo es auth.sessions timebox/inactivity_timeout (plan Pro).
+- Siguiente: FRESCO-750 bloqueado hasta migrar a Pro; aceptar ADR-0035.
