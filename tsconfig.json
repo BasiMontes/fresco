@@ -6,14 +6,13 @@
     "jsx": "react-jsx",
     "lib": ["ES2022", "dom", "dom.iterable"],
     "moduleDetection": "force",
-    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./*"],
-      "@schemas": ["api/schemas/index.ts"],
-      "@schemas/*": ["api/schemas/*"],
-      "@api/*": ["api/*"]
+      "@schemas": ["./api/schemas/index.ts"],
+      "@schemas/*": ["./api/schemas/*"],
+      "@api/*": ["./api/*"]
     },
     "resolveJsonModule": true,
     "types": ["bun-types", "node"],
