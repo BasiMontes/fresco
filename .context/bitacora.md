@@ -271,3 +271,7 @@ Historia archivada:
 - Qué: PR #409 mergeado y nivelado en dev/staging/main (c8d3cdc6). Dos commits (antfu sobre ESLint 9, luego ESLint 10); 26 hallazgos nuevos autofixados y revisados; cli/** con dos reglas apagadas por portabilidad.
 - Por qué: Dependabot #403 intentó el bump; antfu cambia reglas por defecto entre majors. Sin bloqueo de ecosistema (antfu 9.5.1 admite ESLint 10; @typescript-eslint 8.71 con TS 5.9).
 - Siguiente: ninguno; el autofix de no-unnecessary-type-assertion rompió 4 .catch(() => 'free') y se resolvieron con as const (revisar siempre con tsc tras un autofix de casts).
+## 2026-09-29 - FRESCO-743 dotenv-cli 8 a 11
+- Qué: dotenv-cli 8.0.0 a 11.0.0 (dotenv 17, dotenv-expand 12), PR #410, staging/dev/main en c5ccb274.
+- Por qué: Dependabot #403 cerrado; solo el wrapper codex usa dotenv-cli (claude/opencode ya usan bash). Entorno inyectado idéntico a v8, -o sigue ganando a lo heredado.
+- Siguiente: nada pendiente.
