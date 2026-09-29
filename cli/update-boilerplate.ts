@@ -1319,7 +1319,7 @@ function abortOnCancel<T>(v: T | symbol): T {
   if (tui.isCancel(v)) {
     throw Object.assign(new Error('Aborted by user.'), { name: 'ExitPromptError' });
   }
-  return v;
+  return v as T;
 }
 
 function buildSink(): ReportSink {
