@@ -66,10 +66,17 @@ Revisit (write a superseding ADR) if any of these happens:
 - **Honest limit of `httpOnly`:** it stops token theft, not abuse. Script injected in the page can still call the
   same-origin API with the victim's cookie attached, so a BFF would reduce blast radius but not remove XSS impact.
   That is why its cost (whole-app refactor) is not justified today.
-- **Neutral / follow-ups (not done here, each is small):**
-  - Set an explicit shorter `maxAge` through `cookieOptions`; the library default is 400 days.
-  - Confirm the `Secure` attribute on the deployed cookie (HSTS in ADR-0019 already forces HTTPS).
-  - Consider `[auth.sessions]` timeouts when the Supabase plan supports them (see `supabase/config.toml`).
+- **Neutral / follow-ups:**
+  - **A shorter cookie `maxAge` is not a mitigation, and is not viable.** `@supabase/ssr` overwrites `maxAge` with
+    its 400-day default on every session write (`dist/main/cookies.js` in `setItem` and `applyServerStorage`), so
+    `cookieOptions.maxAge` has no effect. Making it work needs a custom `document.cookie` adapter in the browser
+    plus trimming in the `setAll` of `lib/supabase/server.ts` and `proxy.ts`, which is new code in the auth path.
+    Even then `maxAge` is a browser hint: whoever exfiltrates the refresh token does not honour it, so it does not
+    bound a stolen session. Proposed in FRESCO-749, rejected there.
+  - **The effective control is server-side:** `[auth.sessions]` `timebox` / `inactivity_timeout` invalidate the
+    refresh token itself. They need the Supabase Pro plan (ADR-0020). Tracked in FRESCO-750, blocked on that
+    migration.
+  - The `Secure` attribute needs no action: HSTS with `preload` (ADR-0019) already forces HTTPS.
 
 ## Alternatives considered
 
