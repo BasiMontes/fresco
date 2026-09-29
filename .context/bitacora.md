@@ -266,3 +266,8 @@ Historia archivada:
 - Qué: PR #407 con tsconfig sin baseUrl, compatible con TS 5.9; bump a TS 7 no realizado, ticket en Blocked.
 - Por qué: typescript-eslint (peer <6.1.0) no carga con TS 7 y Next probablemente depende de la misma API.
 - Siguiente: reabrir cuando typescript-eslint y Next soporten TS 7.
+
+## 2026-09-29 - FRESCO-742 ESLint 10 + @antfu/eslint-config 9
+- Qué: PR #409 mergeado y nivelado en dev/staging/main (c8d3cdc6). Dos commits (antfu sobre ESLint 9, luego ESLint 10); 26 hallazgos nuevos autofixados y revisados; cli/** con dos reglas apagadas por portabilidad.
+- Por qué: Dependabot #403 intentó el bump; antfu cambia reglas por defecto entre majors. Sin bloqueo de ecosistema (antfu 9.5.1 admite ESLint 10; @typescript-eslint 8.71 con TS 5.9).
+- Siguiente: ninguno; el autofix de no-unnecessary-type-assertion rompió 4 .catch(() => 'free') y se resolvieron con as const (revisar siempre con tsc tras un autofix de casts).
