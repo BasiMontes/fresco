@@ -275,3 +275,7 @@ Historia archivada:
 - Qué: dotenv-cli 8.0.0 a 11.0.0 (dotenv 17, dotenv-expand 12), PR #410, staging/dev/main en c5ccb274.
 - Por qué: Dependabot #403 cerrado; solo el wrapper codex usa dotenv-cli (claude/opencode ya usan bash). Entorno inyectado idéntico a v8, -o sigue ganando a lo heredado.
 - Siguiente: nada pendiente.
+## 2026-09-29 - FRESCO-744 bumps seguros del grupo Dependabot #403
+- Qué: next 16.3.7, react 19.3.0, supabase-js, posthog, resend, zod, playwright 1.63, prettier 3.9.9 y demás bumps en rango (PR #411, 95e441f3). Formato de 2 HTML de docs arreglado.
+- Por qué: stripe se queda en ~22.5.0 porque 22.6 cambia la versión de API fijada (FRESCO-748). Playwright-core duplicado por boneyard-js resuelto limpiando el lockfile.
+- Siguiente: FRESCO-748 (stripe 22.6 y apiVersion).
