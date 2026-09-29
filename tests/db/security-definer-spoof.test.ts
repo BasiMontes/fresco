@@ -179,6 +179,18 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
     expect([...ids].sort()).toEqual([B_RECIPES()[0], B_RECIPES()[1]].sort());
   });
 
+  test('get_recent_recipe_ids — spoof returns nothing; legit is scoped to B', async () => {
+    const spoof = await rpc('get_recent_recipe_ids', { p_user_id: A.id, p_weeks: 520 }, { token: B.token });
+    expect(spoof.status).toBe(200);
+    expect(spoof.body === null || (Array.isArray(spoof.body) && spoof.body.length === 0)).toBe(true);
+
+    const legit = await rpc('get_recent_recipe_ids', { p_user_id: B.id, p_weeks: 520 }, { token: B.token });
+    expect(legit.status).toBe(200);
+    const ids = legit.body as string[];
+    // Every recipe in B's plan (any estado), none of A's.
+    expect([...ids].sort()).toEqual([...B_RECIPES()].sort());
+  });
+
   test('get_user_recipe_engagement — spoof returns nothing; legit is scoped to B', async () => {
     const spoof = await rpc('get_user_recipe_engagement', { p_user_id: A.id }, { token: B.token });
     expect(spoof.status).toBe(200);
