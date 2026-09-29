@@ -123,7 +123,7 @@ for (const [givenText, thenText] of [
     // re-fetches this subscription from Stripe's actual API. No reset to
     // Free needed first: this is a brand-new factory user, already Free.
     const StripeModule = (await import('stripe')).default;
-    const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+    const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
     const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH!;
     const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
     ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
@@ -344,7 +344,7 @@ Given(/^su cliente de Stripe existe realmente$/, async ({ request, suscripcionCt
   const userId = ctx.testUser.id;
 
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
   const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
   ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
 
@@ -390,7 +390,7 @@ When(/^llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripc
 
 Then(/^se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta$/, async ({ suscripcionCtx: ctx }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-07-29.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
   const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
   expect(session.payment_method_collection).toBe('if_required');
 });
