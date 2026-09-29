@@ -56,7 +56,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
 
   return (
     <>
-      <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-none">¿Qué dieta y restricciones sigue tu hogar?</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-hidden">¿Qué dieta y restricciones sigue tu hogar?</h1>
       <p className="mt-1 text-body-sm text-tertiary">Puedes elegir varias.</p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {DIETA_OPTIONS.map((option) => {

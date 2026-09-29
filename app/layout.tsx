@@ -32,8 +32,8 @@ import './globals.css';
 // DESIGN.md v2 Typography (FRESCO-438): Fraunces (variable display serif) for
 // h1/h2 only — weight 400, 300 for `display-light`; SOFT/WONK/opsz axes give it
 // bespoke character. Figtree (400/600/700) for body copy AND h3–h6, card titles,
-// button labels. Exposed as CSS variables consumed by tailwind.config.ts's
-// `fontFamily.heading` / `fontFamily.sans` and the split `h1,h2` / `h3..h6`
+// button labels. Exposed as CSS variables consumed by the
+// `--font-heading` / `--font-sans` theme tokens and the split `h1,h2` / `h3..h6`
 // rules in globals.css.
 // FRESCO-496: `display: 'optional'` (not the default `'swap'`) — this is the
 // large, above-the-fold h1/h2 display face on the guest landing page, and
@@ -50,14 +50,14 @@ import './globals.css';
 const fraunces = Fraunces({
   subsets: ['latin'],
   axes: ['SOFT', 'WONK', 'opsz'],
-  variable: '--font-heading',
+  variable: '--font-heading-face',
   display: 'optional',
 });
 
 const figtree = Figtree({
   subsets: ['latin'],
   weight: ['400', '600', '700'],
-  variable: '--font-body',
+  variable: '--font-body-face',
 });
 
 // FRESCO-475: shortened to fit within Google's ~60-char display budget
@@ -176,7 +176,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <a
           href="#main"
           data-testid="skip_to_content_link"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-body-sm focus:text-on-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-body-sm focus:text-on-brand focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           Saltar al contenido
         </a>

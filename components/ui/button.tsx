@@ -24,7 +24,7 @@ const buttonVariants = cva(
   // buttons genuinely hard to read, not just visually "off". opacity-65 still
   // reads as disabled (paired with pointer-events-none + no hover) without
   // crushing the text.
-  'inline-flex items-center justify-center gap-2 rounded-full text-label font-sans transition-colors disabled:pointer-events-none disabled:opacity-65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+  'inline-flex items-center justify-center gap-2 rounded-full text-label font-sans transition-colors disabled:pointer-events-none disabled:opacity-65 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
   {
     variants: {
       variant: {

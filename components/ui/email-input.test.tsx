@@ -26,7 +26,7 @@ describe('EmailInput', () => {
     expect(screen.getByTestId('email_input')).toHaveAttribute('aria-invalid', 'false');
   });
 
-  test('shows the error after blur when the value is non-empty and invalid', async () => {
+  test('shows the error after blur-sm when the value is non-empty and invalid', async () => {
     const user = setupUser();
     renderWithProviders(<Harness />);
     const input = screen.getByTestId('email_input');
@@ -38,7 +38,7 @@ describe('EmailInput', () => {
     expect(input).toHaveAttribute('aria-invalid', 'true');
   });
 
-  test('keeps a valid address error-free after blur', async () => {
+  test('keeps a valid address error-free after blur-sm', async () => {
     const user = setupUser();
     renderWithProviders(<Harness />);
 

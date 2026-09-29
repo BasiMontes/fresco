@@ -127,7 +127,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
   return (
     <div
       data-testid="sidebarAccount"
-      className={cn('flex flex-col gap-5 border-t border-background/10 pt-5', collapsed && 'items-center')}
+      className={cn('flex flex-col gap-5 border-t pt-5', collapsed && 'items-center')}
     >
       <div className="relative">
         <button
@@ -137,7 +137,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen(current => !current)}
           className={cn(
-            'flex items-center gap-3 rounded-card text-left transition-colors hover:bg-background/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary',
+            'flex items-center gap-3 rounded-card text-left transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary',
             collapsed ? 'rounded-full p-0' : 'w-full p-1',
           )}
         >
@@ -153,7 +153,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
               <p data-testid="user_name" className="truncate text-label text-background">
                 {nombre || 'Sin nombre'}
               </p>
-              <p data-testid="plan_label" className="mt-0.5 truncate text-caption text-background/70">
+              <p data-testid="plan_label" className="mt-0.5 truncate text-caption">
                 {PLAN_LABELS[plan]}
               </p>
             </span>
@@ -252,7 +252,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
         </p>
       )}
       {!collapsed && (
-        <p data-testid="sidebar_app_version" className="text-center text-caption text-background/50">
+        <p data-testid="sidebar_app_version" className="text-center text-caption">
           {APP_VERSION_LABEL}
         </p>
       )}

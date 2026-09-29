@@ -15,7 +15,7 @@ void mock.module('next/image', () => ({
 const { RecipeCardMedia } = await import('./recipe-card-media');
 
 /**
- * FRESCO-447 — every recipe photo surface crops to the same `aspect-[4/3]`
+ * FRESCO-447 — every recipe photo surface crops to the same `aspect-4/3`
  * and carries the single `.recipe-photo` grade; the no-photo placeholder does
  * NOT get the grade (it is a designed gradient).
  */
@@ -25,7 +25,7 @@ describe('RecipeCardMedia', () => {
       <RecipeCardMedia fotoUrl="https://example.com/paella.jpg" nombre="Paella" categoria="arroz" />,
     );
 
-    expect(container.firstElementChild?.className).toContain('aspect-[4/3]');
+    expect(container.firstElementChild?.className).toContain('aspect-4/3');
 
     const img = screen.getByRole('img');
     expect(img.className).toContain('recipe-photo');

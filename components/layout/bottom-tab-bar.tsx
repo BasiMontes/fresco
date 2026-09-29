@@ -27,7 +27,7 @@ export function BottomTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-[100] flex border-t border-border bg-background md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-100 flex border-t border-border bg-background md:hidden">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname?.startsWith(href);
         return (

@@ -71,10 +71,10 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from, slotId, sustituc
     <div>
       <BackToLibraryLink from={from} />
 
-      {/* FRESCO-447: same aspect-[4/3] ratio + `.recipe-photo` grade as the
+      {/* FRESCO-447: same aspect-4/3 ratio + `.recipe-photo` grade as the
           recipe cards (RecipeCardMedia); no-photo falls back to the designed
           RecipePlaceholder, not a bare icon. */}
-      <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-card">
+      <div className="relative mt-4 aspect-4/3 w-full overflow-hidden rounded-card">
         {receta.foto_url
           ? (
               <Image
@@ -142,10 +142,10 @@ function PersonalRecipeDetail({ receta, from }: { receta: RecetaPropia, from?: s
     <div>
       <BackToLibraryLink from={from} />
 
-      {/* FRESCO-447: personal recipes carry no photo — same aspect-[4/3]
+      {/* FRESCO-447: personal recipes carry no photo — same aspect-4/3
           media area as the catalog detail + its own card, rendered as the
           designed placeholder. */}
-      <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden rounded-card">
+      <div className="relative mt-4 aspect-4/3 w-full overflow-hidden rounded-card">
         <RecipePlaceholder name={receta.nombre} categoria={null} size="hero" />
       </div>
 

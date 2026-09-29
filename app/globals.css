@@ -1,14 +1,159 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme static {
+  --color-primary: var(--raw-color-primary);
+  --color-secondary: var(--raw-color-secondary);
+  --color-tertiary: var(--raw-color-tertiary);
+  --color-background: var(--raw-color-background);
+  --color-surface: var(--raw-color-surface);
+  --color-surface-raised: var(--raw-color-surface-raised);
+  --color-text: var(--raw-color-text);
+  --color-border: var(--raw-color-border);
+  --color-scrim: var(--raw-color-scrim);
+  --color-on-brand: var(--raw-color-on-brand);
+  --color-on-warning: var(--raw-color-on-warning);
+  --color-success: var(--raw-color-success);
+  --color-warning: var(--raw-color-warning);
+  --color-error: var(--raw-color-error);
+
+  --color-neutral-100: var(--raw-color-neutral-100);
+  --color-neutral-200: var(--raw-color-neutral-200);
+  --color-neutral-300: var(--raw-color-neutral-300);
+  --color-neutral-400: var(--raw-color-neutral-400);
+  --color-neutral-500: var(--raw-color-neutral-500);
+  --color-neutral-600: var(--raw-color-neutral-600);
+  --color-neutral-700: var(--raw-color-neutral-700);
+  --color-neutral-800: var(--raw-color-neutral-800);
+  --color-neutral-900: var(--raw-color-neutral-900);
+  --color-neutral: var(--raw-color-neutral);
+
+  --color-accent-100: var(--raw-color-accent-100);
+  --color-accent-200: var(--raw-color-accent-200);
+  --color-accent-300: var(--raw-color-accent-300);
+  --color-accent-400: var(--raw-color-accent-400);
+  --color-accent-500: var(--raw-color-accent-500);
+  --color-accent-600: var(--raw-color-accent-600);
+  --color-accent-700: var(--raw-color-accent-700);
+  --color-accent-800: var(--raw-color-accent-800);
+  --color-accent-900: var(--raw-color-accent-900);
+
+  --color-accent-2-100: var(--raw-color-accent-2-100);
+  --color-accent-2-200: var(--raw-color-accent-2-200);
+  --color-accent-2-300: var(--raw-color-accent-2-300);
+  --color-accent-2-400: var(--raw-color-accent-2-400);
+  --color-accent-2-500: var(--raw-color-accent-2-500);
+  --color-accent-2-600: var(--raw-color-accent-2-600);
+  --color-accent-2-700: var(--raw-color-accent-2-700);
+  --color-accent-2-800: var(--raw-color-accent-2-800);
+  --color-accent-2-900: var(--raw-color-accent-2-900);
+
+  --font-heading: var(--font-heading-face), Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-body-face), Figtree, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --text-h1: 44px;
+  --text-h1--line-height: 1.04;
+  --text-h1--letter-spacing: -0.025em;
+  --text-h1--font-weight: 400;
+  --text-h2: 32px;
+  --text-h2--line-height: 1.08;
+  --text-h2--letter-spacing: -0.02em;
+  --text-h2--font-weight: 400;
+  --text-display-light: 28px;
+  --text-display-light--line-height: 1.15;
+  --text-display-light--letter-spacing: -0.015em;
+  --text-display-light--font-weight: 300;
+  --text-h3: 22px;
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 600;
+  --text-h4: 18px;
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.005em;
+  --text-h4--font-weight: 600;
+  --text-h5: 15px;
+  --text-h5--line-height: 1.3;
+  --text-h5--letter-spacing: 0;
+  --text-h5--font-weight: 600;
+  --text-h6: 12px;
+  --text-h6--line-height: 1.2;
+  --text-h6--letter-spacing: 0.08em;
+  --text-h6--font-weight: 600;
+  --text-body-md: 15px;
+  --text-body-md--line-height: 1.55;
+  --text-body-md--font-weight: 400;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.55;
+  --text-body-sm--font-weight: 400;
+  --text-label: 14px;
+  --text-label--line-height: 1.2;
+  --text-label--font-weight: 600;
+  --text-caption: 11px;
+  --text-caption--line-height: 1.3;
+  --text-caption--font-weight: 400;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-image: 16px;
+  --radius-card: 20px;
+  --radius-full: 999px;
+
+  --spacing-1: 4.4px;
+  --spacing-2: 8.8px;
+  --spacing-3: 13.2px;
+  --spacing-4: 17.6px;
+  --spacing-6: 26.4px;
+  --spacing-8: 35.2px;
+  --spacing-12: 52.8px;
+  --spacing-16: 70.4px;
+  --spacing-24: 105.6px;
+
+  --shadow-sm: var(--raw-shadow-sm);
+  --shadow-md: var(--raw-shadow-md);
+  --shadow-lg: var(--raw-shadow-lg);
+}
 
 /*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /*
+    FRESCO-741: Tailwind v4's preflight resets `padding` on every element, but
+    v3 left the browser's `padding: 1px` on table cells. Restore it so table
+    layouts (cookie policy, planning grid) keep their v3 pixel geometry.
+    Base layer: any padding utility on a cell still wins.
+  */
+  td,
+  th {
+    padding: 1px;
+  }
+}
+
+@utility recipe-photo {
+  filter: saturate(0.92) contrast(1.04) sepia(0.08) brightness(1.01);
+}
+
+@layer utilities {
+  /*
  * Design tokens — copied verbatim from DESIGN.md's frontmatter `colors` block.
  * DESIGN.md is the single source of truth; if a value changes there, update it
- * here too (see tailwind.config.ts for how these are consumed as utilities).
+ * here too (see the `@theme` block above for how these are consumed as utilities).
  */
-:root {
-  /*
+  :root {
+    /*
    * FRESCO-448 §Dark mode: every themed token is `light-dark(<light>, <dark>)`,
    * resolved by the `color-scheme` set a few rules below (`light` by default,
    * `dark` under `[data-theme='dark']` or `@media (prefers-color-scheme: dark)`
@@ -19,393 +164,393 @@
    * end-for-end so every `bg-x-100 / text-x-800` pair flips together. Full
    * rationale + exact values: DESIGN.md §Dark mode.
    */
-  /* FRESCO-481: the dark value was `#1c6b1a` (a "one notch lifted" green from
+    /* FRESCO-481: the dark value was `#1c6b1a` (a "one notch lifted" green from
      FRESCO-448) but measured 2,93:1 as `text-primary` on the `#011101` ground
      and as the primary-button fill vs the page — below WCAG AA. Raised to the
      already-inverted `accent-700` dark step (~9:1 on background, ~7:1 on
      `surface` / `surface-raised`), which also lifts every `text-primary` chip
      sitting on `bg-accent-100/200` in dark. Light value unchanged. */
-  --color-primary: light-dark(#0f4e0e, #63b85e);
-  --color-secondary: light-dark(#df8c26, #df8c26);
-  /* FRESCO-299: darkened from #847456 (shared with --color-neutral-600) to
+    --raw-color-primary: light-dark(#0f4e0e, #63b85e);
+    --raw-color-secondary: light-dark(#df8c26, #df8c26);
+    /* FRESCO-299: darkened from #847456 (shared with --color-neutral-600) to
      clear WCAG AA as `text-tertiary` body copy — #847456 measured 3,59:1 on
      surface / 4,12:1 on background; #6f5f43 measures ~4,9:1 / ~5,6:1. The
      neutral-600 ramp step stays #847456. */
-  --color-tertiary: light-dark(#6f5f43, #a99a7c);
-  --color-neutral: light-dark(#a39372, #8a7c5e);
-  --color-background: light-dark(#faf3e3, #011101);
-  --color-surface: light-dark(#f1e3c6, #04180a);
-  /* FRESCO-439 (DESIGN.md v2): one step LIGHTER than background — the card
+    --raw-color-tertiary: light-dark(#6f5f43, #a99a7c);
+    --raw-color-neutral: light-dark(#a39372, #8a7c5e);
+    --raw-color-background: light-dark(#faf3e3, #011101);
+    --raw-color-surface: light-dark(#f1e3c6, #04180a);
+    /* FRESCO-439 (DESIGN.md v2): one step LIGHTER than background — the card
      surface, so cards lift off the cream page instead of the v1
      surface-on-background beige-on-beige (~4% contrast). Always paired with a
      hairline border on the card. `--color-surface` stays for recessed
      elements (inputs, segmented controls, inset panels). */
-  --color-surface-raised: light-dark(#fbf6ec, #0c2712);
-  --color-text: light-dark(#201e1d, #f2e8d2);
-  /* FRESCO-481: the dark card boundary (`surface-raised` #0c2712 on the
+    --raw-color-surface-raised: light-dark(#fbf6ec, #0c2712);
+    --raw-color-text: light-dark(#201e1d, #f2e8d2);
+    /* FRESCO-481: the dark card boundary (`surface-raised` #0c2712 on the
      #011101 page) measured 1,22:1 surface-to-page — a login/onboarding card
      barely separated. The border is what has to carry that separation, so
      the dark side goes from 16% to 30% cream (≈3:1 against both the card and
      the page). Light side unchanged — FRESCO-443's `neutral-600` contract. */
-  --color-border: light-dark(
-    color-mix(in srgb, #201e1d 16%, transparent),
-    color-mix(in srgb, #f2e8d2 45%, transparent)
-  );
-  /* FRESCO-448 (S6a): a real backdrop dim. `bg-text/50` collapsed to
+    --raw-color-border: light-dark(
+      color-mix(in srgb, #201e1d 16%, transparent),
+      color-mix(in srgb, #f2e8d2 45%, transparent)
+    );
+    /* FRESCO-448 (S6a): a real backdrop dim. `bg-text/50` collapsed to
      transparent because `--color-text` is a hex string, not rgb channels
      (the alpha-on-hex gotcha DESIGN.md §Elevation warns about) — so modals
      and the filter drawer had NO scrim. Warm dark light-side, near-black dark. */
-  --color-scrim: light-dark(
-    color-mix(in srgb, #2f281c 55%, transparent),
-    color-mix(in srgb, #000 68%, transparent)
-  );
-  /* FRESCO-448 §Dark mode: the light contrast colour for a saturated fill
+    --raw-color-scrim: light-dark(
+      color-mix(in srgb, #2f281c 55%, transparent),
+      color-mix(in srgb, #000 68%, transparent)
+    );
+    /* FRESCO-448 §Dark mode: the light contrast colour for a saturated fill
      (`bg-primary` / `bg-error` / `bg-secondary` chips + buttons). Theme-STABLE
      cream — `text-background` was standing in for this, but `background` flips
      to near-black in dark, which killed the contrast on every primary button. */
-  /* FRESCO-481: was a fixed cream. With the dark `--color-primary` now a
+    /* FRESCO-481: was a fixed cream. With the dark `--color-primary` now a
      LIGHT green (#63b85e), cream text on the primary button dropped to ~2:1
      — so in dark the on-brand pairing flips to near-black (`surface` step,
      ~9:1 on the light-green fill). Light theme keeps cream on the dark-green
      button. */
-  --color-on-brand: light-dark(#faf3e3, #04180a);
-  /* Theme-stable near-black for text on the amber `secondary` fill (the
+    --raw-color-on-brand: light-dark(#faf3e3, #04180a);
+    /* Theme-stable near-black for text on the amber `secondary` fill (the
      `button-action` CTA, the "today" pill). `#DF8C26` stays amber in both
      themes; near-black on it ≈ 6,3:1 (FRESCO-283). `text-text` used to do
      this but flips to cream in dark, which fails on amber. */
-  --color-on-warning: #201e1d;
-  --color-success: light-dark(#0f4e0e, #4fae4b);
-  --color-warning: light-dark(#df8c26, #df8c26);
-  /* FRESCO-293: darkened from #b8422e (measured 4,29:1 as text on the
+    --raw-color-on-warning: #201e1d;
+    --raw-color-success: light-dark(#0f4e0e, #4fae4b);
+    --raw-color-warning: light-dark(#df8c26, #df8c26);
+    /* FRESCO-293: darkened from #b8422e (measured 4,29:1 as text on the
      #f1e3c6 cream surface — below WCAG AA 4,5:1). #b03d2b measures ~4,66:1
      on cream and ~5,92:1 for white text on the token itself (destructive
      buttons). Same warm-clay family, one global error red. Dark: lifted to
      #e06a56 for legibility on the near-black ground. */
-  --color-error: light-dark(#b03d2b, #e06a56);
+    --raw-color-error: light-dark(#b03d2b, #e06a56);
 
-  /* Elevation shadows — sourced from DESIGN.md §Elevation & Depth, computed
+    /* Elevation shadows — sourced from DESIGN.md §Elevation & Depth, computed
      against the darkest warm neutral (#2F281C), not pure black. Exposed as
-     tokens (not hardcoded in tailwind.config.ts) so §Dark mode can deepen
+     tokens (not hardcoded in the `@theme` block) so §Dark mode can deepen
      them toward true black for a near-black ground. */
-  --shadow-sm: 0 1px 2px rgba(47, 40, 28, 0.14);
-  --shadow-md: 0 3px 10px rgba(47, 40, 28, 0.16);
-  --shadow-lg: 0 12px 32px rgba(47, 40, 28, 0.22);
+    --raw-shadow-sm: 0 1px 2px rgba(47, 40, 28, 0.14);
+    --raw-shadow-md: 0 3px 10px rgba(47, 40, 28, 0.16);
+    --raw-shadow-lg: 0 12px 32px rgba(47, 40, 28, 0.22);
 
-  /* `accent` (green) ramp — dark values are the light ramp reversed end-for-end
+    /* `accent` (green) ramp — dark values are the light ramp reversed end-for-end
      (step -100 stays "subtlest", -900 "strongest"). */
-  --color-accent-100: light-dark(#e1e8e0, #0a2510);
-  --color-accent-200: light-dark(#bfcfbd, #123a1a);
-  --color-accent-300: light-dark(#8fab8d, #1c5227);
-  --color-accent-400: light-dark(#547d51, #2f7a3a);
-  --color-accent-500: light-dark(#0f4e0e, #1c6b1a);
-  --color-accent-600: light-dark(#0a3e09, #3f9a3a);
-  --color-accent-700: light-dark(#052d05, #63b85e);
-  --color-accent-800: light-dark(#031f03, #8fd18a);
-  --color-accent-900: light-dark(#011101, #bfe8bd);
+    --raw-color-accent-100: light-dark(#e1e8e0, #0a2510);
+    --raw-color-accent-200: light-dark(#bfcfbd, #123a1a);
+    --raw-color-accent-300: light-dark(#8fab8d, #1c5227);
+    --raw-color-accent-400: light-dark(#547d51, #2f7a3a);
+    --raw-color-accent-500: light-dark(#0f4e0e, #1c6b1a);
+    --raw-color-accent-600: light-dark(#0a3e09, #3f9a3a);
+    --raw-color-accent-700: light-dark(#052d05, #63b85e);
+    --raw-color-accent-800: light-dark(#031f03, #8fd18a);
+    --raw-color-accent-900: light-dark(#011101, #bfe8bd);
 
-  /* `accent-2` (amber) ramp — same end-for-end inversion for dark. */
-  --color-accent-2-100: light-dark(#fcf1e8, #3a2408);
-  --color-accent-2-200: light-dark(#f9e2cc, #5a3a0f);
-  --color-accent-2-300: light-dark(#f3cba5, #85550f);
-  --color-accent-2-400: light-dark(#eaad70, #b6721d);
-  --color-accent-2-500: light-dark(#df8c26, #df8c26);
-  --color-accent-2-600: light-dark(#b6721d, #eaad70);
-  --color-accent-2-700: light-dark(#8a5513, #f3cba5);
-  --color-accent-2-800: light-dark(#653d0b, #f9e2cc);
-  --color-accent-2-900: light-dark(#422605, #fcf1e8);
+    /* `accent-2` (amber) ramp — same end-for-end inversion for dark. */
+    --raw-color-accent-2-100: light-dark(#fcf1e8, #3a2408);
+    --raw-color-accent-2-200: light-dark(#f9e2cc, #5a3a0f);
+    --raw-color-accent-2-300: light-dark(#f3cba5, #85550f);
+    --raw-color-accent-2-400: light-dark(#eaad70, #b6721d);
+    --raw-color-accent-2-500: light-dark(#df8c26, #df8c26);
+    --raw-color-accent-2-600: light-dark(#b6721d, #eaad70);
+    --raw-color-accent-2-700: light-dark(#8a5513, #f3cba5);
+    --raw-color-accent-2-800: light-dark(#653d0b, #f9e2cc);
+    --raw-color-accent-2-900: light-dark(#422605, #fcf1e8);
 
-  /* `neutral` (warm grey) ramp — dark values reversed end-for-end. `-600` is
+    /* `neutral` (warm grey) ramp — dark values reversed end-for-end. `-600` is
      the FRESCO-443 input-border / switch-OFF-track step; #8a7c5e still clears
      3:1 on its adjacent surface in dark (SC 1.4.11). */
-  --color-neutral-100: light-dark(#fbf6ec, #0a0f08);
-  --color-neutral-200: light-dark(#f0e8d8, #1a2016);
-  --color-neutral-300: light-dark(#ded2b8, #2f3a28);
-  --color-neutral-400: light-dark(#c2b393, #4a5540);
-  --color-neutral-500: light-dark(#a39372, #6b6a52);
-  --color-neutral-600: light-dark(#847456, #8a7c5e);
-  --color-neutral-700: light-dark(#66593f, #a99a7c);
-  --color-neutral-800: light-dark(#493f2c, #c8b89a);
-  --color-neutral-900: light-dark(#2f281c, #e6dcc4);
+    --raw-color-neutral-100: light-dark(#fbf6ec, #0a0f08);
+    --raw-color-neutral-200: light-dark(#f0e8d8, #1a2016);
+    --raw-color-neutral-300: light-dark(#ded2b8, #2f3a28);
+    --raw-color-neutral-400: light-dark(#c2b393, #4a5540);
+    --raw-color-neutral-500: light-dark(#a39372, #6b6a52);
+    --raw-color-neutral-600: light-dark(#847456, #8a7c5e);
+    --raw-color-neutral-700: light-dark(#66593f, #a99a7c);
+    --raw-color-neutral-800: light-dark(#493f2c, #c8b89a);
+    --raw-color-neutral-900: light-dark(#2f281c, #e6dcc4);
 
-  /* transitions-dev motion tokens — installed once, FRESCO-247 */
-  /* Durations */
-  --duration-stagger: 40ms; /* per-item stagger offset */
-  --duration-micro: 80ms; /* tooltip/path delay, shake segment, large stagger */
-  --duration-quick: 150ms; /* modal/dropdown close, text swap, tooltip appear */
-  --duration-fast: 250ms; /* icon swap, dropdown/modal open, tabs sliding, page slide */
-  --duration-medium: 350ms; /* panel close, toast close */
-  --duration-slow: 400ms; /* panel open, skeleton content reveal, input clear */
-  --duration-very-slow: 500ms; /* emphasis moments, badge appear, text reveal, success check */
-  /* Easings */
-  --ease-smooth-out: cubic-bezier(
-    0.22,
-    1,
-    0.36,
-    1
-  ); /* modal/dropdown/panel open + close, page slide, resize, position change */
-  --ease-in-out: ease-in-out; /* icon swap, text swap, text reveal, skeleton reveal */
-  --ease-out: ease-out; /* tooltip open / close */
-  --ease-linear: linear; /* shimmer, skeleton pulse, spinner */
-  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* badge pop open */
-  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1); /* bouncy hover-out (avatar return) */
-  /* Distances */
-  --distance-micro: 4px; /* text swap */
-  --distance-small: 6px; /* error shake (small segment) */
-  --distance-base: 8px; /* badge diagonal reveal, page slide, error shake (large segment) */
-  --distance-medium: 12px; /* text reveal */
-  --distance-large: 30px; /* check badge appear */
-  /* Scales */
-  --scale-large: 0.96; /* modal open / close */
-  --scale-medium: 0.97; /* dropdown open */
-  --scale-small: 0.98; /* tooltip open */
-  --scale-tiny: 0.99; /* dropdown close */
-  /* Blur */
-  --blur-small: 2px; /* panel reveal, icon swap, text swap, skeleton reveal, number pop-in */
-  --blur-medium: 3px; /* page slide, text reveal */
-  --blur-large: 8px; /* success check open */
+    /* transitions-dev motion tokens — installed once, FRESCO-247 */
+    /* Durations */
+    --duration-stagger: 40ms; /* per-item stagger offset */
+    --duration-micro: 80ms; /* tooltip/path delay, shake segment, large stagger */
+    --duration-quick: 150ms; /* modal/dropdown close, text swap, tooltip appear */
+    --duration-fast: 250ms; /* icon swap, dropdown/modal open, tabs sliding, page slide */
+    --duration-medium: 350ms; /* panel close, toast close */
+    --duration-slow: 400ms; /* panel open, skeleton content reveal, input clear */
+    --duration-very-slow: 500ms; /* emphasis moments, badge appear, text reveal, success check */
+    /* Easings */
+    --ease-smooth-out: cubic-bezier(
+      0.22,
+      1,
+      0.36,
+      1
+    ); /* modal/dropdown/panel open + close, page slide, resize, position change */
+    --ease-in-out: ease-in-out; /* icon swap, text swap, text reveal, skeleton reveal */
+    --ease-out: ease-out; /* tooltip open / close */
+    --ease-linear: linear; /* shimmer, skeleton pulse, spinner */
+    --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* badge pop open */
+    --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1); /* bouncy hover-out (avatar return) */
+    /* Distances */
+    --distance-micro: 4px; /* text swap */
+    --distance-small: 6px; /* error shake (small segment) */
+    --distance-base: 8px; /* badge diagonal reveal, page slide, error shake (large segment) */
+    --distance-medium: 12px; /* text reveal */
+    --distance-large: 30px; /* check badge appear */
+    /* Scales */
+    --scale-large: 0.96; /* modal open / close */
+    --scale-medium: 0.97; /* dropdown open */
+    --scale-small: 0.98; /* tooltip open */
+    --scale-tiny: 0.99; /* dropdown close */
+    /* Blur */
+    --blur-small: 2px; /* panel reveal, icon swap, text swap, skeleton reveal, number pop-in */
+    --blur-medium: 3px; /* page slide, text reveal */
+    --blur-large: 8px; /* success check open */
 
-  /* Card resize */
-  --resize-dur: 300ms;
-  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Number pop-in */
-  --digit-dur: 500ms;
-  --digit-distance: 8px;
-  --digit-stagger: 70ms;
-  --digit-blur: 2px;
-  --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
-  --digit-dir-x: 0;
-  --digit-dir-y: 1;
-  /* Notification badge */
-  --badge-slide-dur: 260ms;
-  --badge-pop-dur: 500ms;
-  --badge-pop-close-dur: 180ms;
-  --badge-fade-dur: 400ms;
-  --badge-fade-close-dur: 180ms;
-  --badge-blur: 2px;
-  --badge-offset-x: -8.2px;
-  --badge-offset-y: 12.4px;
-  --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
-  --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  /* Text states swap */
-  --text-swap-dur: 150ms;
-  --text-swap-translate-y: 4px;
-  --text-swap-blur: 2px;
-  --text-swap-ease: ease-in-out;
-  /* Menu dropdown */
-  --dropdown-open-dur: 250ms;
-  --dropdown-close-dur: 150ms;
-  --dropdown-pre-scale: 0.97;
-  --dropdown-closing-scale: 0.99;
-  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Modal open / close */
-  --modal-open-dur: 250ms;
-  --modal-close-dur: 150ms;
-  --modal-scale: 0.96;
-  --modal-scale-close: 0.96;
-  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Panel reveal */
-  --panel-open-dur: 400ms;
-  --panel-close-dur: 350ms;
-  --panel-translate-y: 100px;
-  --panel-blur: 2px;
-  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Page side-by-side */
-  --page-slide-dur: 250ms;
-  --page-fade-dur: 250ms;
-  --page-slide-distance: 8px;
-  --page-blur: 3px;
-  --page-stagger: 0ms;
-  --page-exit-enabled: 1;
-  --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Icon swap */
-  --icon-swap-dur: 250ms;
-  --icon-swap-blur: 2px;
-  --icon-swap-start-scale: 0.25;
-  --icon-swap-ease: ease-in-out;
-  /* Success check */
-  --check-opacity-dur: 500ms;
-  --check-rotate-dur: 500ms;
-  --check-rotate-from: 80deg;
-  --check-bob-dur: 500ms;
-  --check-y-amount: 40px;
-  --check-blur-dur: 500ms;
-  --check-blur-from: 10px;
-  --check-path-dur: 500ms;
-  --check-path-delay: 80ms;
-  --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
-  --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
-  --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Avatar group hover */
-  --avatar-lift: -4px;
-  --avatar-dur: 320ms;
-  --avatar-scale: 1.05;
-  --avatar-falloff: 0.45;
-  --avatar-ease-in: cubic-bezier(0.22, 1, 0.36, 1);
-  --avatar-ease-out: cubic-bezier(0.34, 3.85, 0.64, 1);
-  /* Error state shake */
-  --shake-distance: 6px;
-  --shake-overshoot: 4px;
-  --shake-dur-a: 80ms;
-  --shake-dur-b: 60ms;
-  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --revert-hold: 3000ms;
-  --revert-dur: 280ms;
-  /* Input clear with dissolve */
-  --clear-dur: 1000ms;
-  --clear-out-dur: 400ms;
-  --clear-in-dur: 400ms;
-  --clear-out-fly: 12px;
-  --clear-in-fly: 12px;
-  --clear-out-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --clear-in-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --clear-blur: 2px;
-  --glow-delay: 50ms;
-  --glow-peak-at: 0.15;
-  --glow-opacity: 0.42;
-  --glow-spread: 1.5;
-  /* Skeleton loader and reveal */
-  --pulse-dur: 1000ms;
-  --pulse-count: 1;
-  --pulse-min: 0.5;
-  --reveal-dur: 400ms;
-  --reveal-blur: 2px;
-  --reveal-ease: ease-in-out;
-  /* Shimmer text */
-  --shimmer-dur: 2000ms;
-  /* FRESCO-448: these transitions-dev helper colours were hardcoded light —
+    /* Card resize */
+    --resize-dur: 300ms;
+    --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Number pop-in */
+    --digit-dur: 500ms;
+    --digit-distance: 8px;
+    --digit-stagger: 70ms;
+    --digit-blur: 2px;
+    --digit-ease: cubic-bezier(0.34, 1.45, 0.64, 1);
+    --digit-dir-x: 0;
+    --digit-dir-y: 1;
+    /* Notification badge */
+    --badge-slide-dur: 260ms;
+    --badge-pop-dur: 500ms;
+    --badge-pop-close-dur: 180ms;
+    --badge-fade-dur: 400ms;
+    --badge-fade-close-dur: 180ms;
+    --badge-blur: 2px;
+    --badge-offset-x: -8.2px;
+    --badge-offset-y: 12.4px;
+    --badge-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --badge-pop-ease: cubic-bezier(0.34, 1.36, 0.64, 1);
+    --badge-close-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Text states swap */
+    --text-swap-dur: 150ms;
+    --text-swap-translate-y: 4px;
+    --text-swap-blur: 2px;
+    --text-swap-ease: ease-in-out;
+    /* Menu dropdown */
+    --dropdown-open-dur: 250ms;
+    --dropdown-close-dur: 150ms;
+    --dropdown-pre-scale: 0.97;
+    --dropdown-closing-scale: 0.99;
+    --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Modal open / close */
+    --modal-open-dur: 250ms;
+    --modal-close-dur: 150ms;
+    --modal-scale: 0.96;
+    --modal-scale-close: 0.96;
+    --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Panel reveal */
+    --panel-open-dur: 400ms;
+    --panel-close-dur: 350ms;
+    --panel-translate-y: 100px;
+    --panel-blur: 2px;
+    --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Page side-by-side */
+    --page-slide-dur: 250ms;
+    --page-fade-dur: 250ms;
+    --page-slide-distance: 8px;
+    --page-blur: 3px;
+    --page-stagger: 0ms;
+    --page-exit-enabled: 1;
+    --page-slide-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --page-fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Icon swap */
+    --icon-swap-dur: 250ms;
+    --icon-swap-blur: 2px;
+    --icon-swap-start-scale: 0.25;
+    --icon-swap-ease: ease-in-out;
+    /* Success check */
+    --check-opacity-dur: 500ms;
+    --check-rotate-dur: 500ms;
+    --check-rotate-from: 80deg;
+    --check-bob-dur: 500ms;
+    --check-y-amount: 40px;
+    --check-blur-dur: 500ms;
+    --check-blur-from: 10px;
+    --check-path-dur: 500ms;
+    --check-path-delay: 80ms;
+    --check-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --check-ease-opacity: cubic-bezier(0.22, 1, 0.36, 1);
+    --check-ease-rotate: cubic-bezier(0.22, 1, 0.36, 1);
+    --check-ease-bob: cubic-bezier(0.34, 1.35, 0.64, 1);
+    --check-ease-path: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Avatar group hover */
+    --avatar-lift: -4px;
+    --avatar-dur: 320ms;
+    --avatar-scale: 1.05;
+    --avatar-falloff: 0.45;
+    --avatar-ease-in: cubic-bezier(0.22, 1, 0.36, 1);
+    --avatar-ease-out: cubic-bezier(0.34, 3.85, 0.64, 1);
+    /* Error state shake */
+    --shake-distance: 6px;
+    --shake-overshoot: 4px;
+    --shake-dur-a: 80ms;
+    --shake-dur-b: 60ms;
+    --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --revert-hold: 3000ms;
+    --revert-dur: 280ms;
+    /* Input clear with dissolve */
+    --clear-dur: 1000ms;
+    --clear-out-dur: 400ms;
+    --clear-in-dur: 400ms;
+    --clear-out-fly: 12px;
+    --clear-in-fly: 12px;
+    --clear-out-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --clear-in-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --clear-blur: 2px;
+    --glow-delay: 50ms;
+    --glow-peak-at: 0.15;
+    --glow-opacity: 0.42;
+    --glow-spread: 1.5;
+    /* Skeleton loader and reveal */
+    --pulse-dur: 1000ms;
+    --pulse-count: 1;
+    --pulse-min: 0.5;
+    --reveal-dur: 400ms;
+    --reveal-blur: 2px;
+    --reveal-ease: ease-in-out;
+    /* Shimmer text */
+    --shimmer-dur: 2000ms;
+    /* FRESCO-448: these transitions-dev helper colours were hardcoded light —
      `light-dark()` gives them a dark counterpart so shimmer/tabs/tooltip
      chrome tracks the theme. */
-  --shimmer-base: light-dark(#7c7c7c, #2f3a28);
-  --shimmer-highlight: light-dark(#0d0d0d, #6b6a52);
-  --shimmer-band: 400%;
-  --shimmer-ease: linear;
-  /* Tabs sliding */
-  --tabs-dur: 250ms;
-  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tabs-text-muted: light-dark(rgba(15, 15, 15, 0.8), rgba(242, 232, 210, 0.7));
-  --tabs-text-active: light-dark(#0f0f0f, #f2e8d2);
-  --tabs-bar-bg: light-dark(#f1f1f1, #04180a);
-  --tabs-pill-bg: light-dark(#ffffff, #0c2712);
-  /* Tooltip open/close */
-  --tt-in-dur: 150ms;
-  --tt-out-dur: 50ms;
-  --tt-scale: 0.98;
-  --tt-delay: 80ms;
-  --tt-in-ease: ease-out;
-  --tt-out-ease: ease-out;
-  --tt-bg: light-dark(#ffffff, #0c2712);
-  --tt-fg: light-dark(#2f2f2f, #f2e8d2);
-  /* Texts reveal */
-  --stagger-dur: 500ms;
-  --stagger-distance: 12px;
-  --stagger-stagger: 40ms;
-  --stagger-blur: 3px;
-  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Card hover tilt */
-  --tilt-perspective: 1000px;
-  --tilt-return: 1000ms;
-  --tilt-return-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tilt-follow: 400ms;
-  --tilt-follow-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tilt-glare-opacity: 0.32;
-  --tilt-glare-fade: 300ms;
-  --tilt-glare-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Plus to menu morph */
-  --morph-open-dur: 350ms;
-  --morph-close-dur: 250ms;
-  --morph-ease: cubic-bezier(0.34, 1.25, 0.64, 1);
-  --morph-close-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --morph-r-closed: 40px;
-  --morph-r-open: 20px;
-  --morph-fade-dur: 200ms;
-  --morph-slide: 40px;
-  --morph-rotate: 45deg;
-  --morph-scale: 0.97;
-  --morph-blur: 2px;
-  /* Accordion expand */
-  --acc-expand: 250ms;
-  --acc-collapse: 250ms;
-  --acc-chevron: 250ms;
-  --acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Toast open / close */
-  --toast-open: 350ms;
-  --toast-close: 250ms;
-  --toast-distance: 16px;
-  --toast-blur: 2px;
-  --toast-scale: 0.97;
-  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Like button */
-  /* FRESCO-248: overridden from the snippet's stock #f40051 to the app's
+    --shimmer-base: light-dark(#7c7c7c, #2f3a28);
+    --shimmer-highlight: light-dark(#0d0d0d, #6b6a52);
+    --shimmer-band: 400%;
+    --shimmer-ease: linear;
+    /* Tabs sliding */
+    --tabs-dur: 250ms;
+    --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --tabs-text-muted: light-dark(rgba(15, 15, 15, 0.8), rgba(242, 232, 210, 0.7));
+    --tabs-text-active: light-dark(#0f0f0f, #f2e8d2);
+    --tabs-bar-bg: light-dark(#f1f1f1, #04180a);
+    --tabs-pill-bg: light-dark(#ffffff, #0c2712);
+    /* Tooltip open/close */
+    --tt-in-dur: 150ms;
+    --tt-out-dur: 50ms;
+    --tt-scale: 0.98;
+    --tt-delay: 80ms;
+    --tt-in-ease: ease-out;
+    --tt-out-ease: ease-out;
+    --tt-bg: light-dark(#ffffff, #0c2712);
+    --tt-fg: light-dark(#2f2f2f, #f2e8d2);
+    /* Texts reveal */
+    --stagger-dur: 500ms;
+    --stagger-distance: 12px;
+    --stagger-stagger: 40ms;
+    --stagger-blur: 3px;
+    --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Card hover tilt */
+    --tilt-perspective: 1000px;
+    --tilt-return: 1000ms;
+    --tilt-return-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --tilt-follow: 400ms;
+    --tilt-follow-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --tilt-glare-opacity: 0.32;
+    --tilt-glare-fade: 300ms;
+    --tilt-glare-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Plus to menu morph */
+    --morph-open-dur: 350ms;
+    --morph-close-dur: 250ms;
+    --morph-ease: cubic-bezier(0.34, 1.25, 0.64, 1);
+    --morph-close-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --morph-r-closed: 40px;
+    --morph-r-open: 20px;
+    --morph-fade-dur: 200ms;
+    --morph-slide: 40px;
+    --morph-rotate: 45deg;
+    --morph-scale: 0.97;
+    --morph-blur: 2px;
+    /* Accordion expand */
+    --acc-expand: 250ms;
+    --acc-collapse: 250ms;
+    --acc-chevron: 250ms;
+    --acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Toast open / close */
+    --toast-open: 350ms;
+    --toast-close: 250ms;
+    --toast-distance: 16px;
+    --toast-blur: 2px;
+    --toast-scale: 0.97;
+    --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Like button */
+    /* FRESCO-248: overridden from the snippet's stock #f40051 to the app's
      existing primary green so the celebration matches the `fill-primary`
      heart treatment already live today (see Technical Decision 3). */
-  --like-color: var(--color-primary);
-  --like-fill: 150ms;
-  --like-pop: 350ms;
-  --like-pop-ease: cubic-bezier(0.34, 1.96, 0.64, 1);
-  --like-particle-dur: 600ms;
-  --like-particle-dist: 20px;
-  --like-particle-size: 2.5px;
-  --like-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Learn more hover */
-  --learn-shift: 2px;
-  --learn-spread: 8deg;
-  --learn-in: 350ms;
-  --learn-out: 350ms;
-  --learn-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Checkbox check */
-  --check-box: 150ms;
-  --check-draw: 350ms;
-  --check-delay: 0ms;
-  --check-uncheck: 150ms;
-  --check-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  /* Spinning counter */
-  --reel-dur: 1400ms;
-  --reel-cell: 30px;
-  --reel-spin-blur: 3px;
-  --reel-stagger: 90ms;
-  --reel-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Toggle */
-  --toggle-dur: 350ms;
-  --toggle-travel: 14.66px;
-  --toggle-ov1: 1px;
-  --toggle-ov2: 0px;
-  --toggle-track: 0ms;
-  --toggle-ease: cubic-bezier(0.34, 1.35, 0.64, 1);
-  /* Receipt print (shopping-list "Compra realizada" ticket) */
-  --receipt-print-dur: 1750ms;
+    --like-color: var(--color-primary);
+    --like-fill: 150ms;
+    --like-pop: 350ms;
+    --like-pop-ease: cubic-bezier(0.34, 1.96, 0.64, 1);
+    --like-particle-dur: 600ms;
+    --like-particle-dist: 20px;
+    --like-particle-size: 2.5px;
+    --like-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Learn more hover */
+    --learn-shift: 2px;
+    --learn-spread: 8deg;
+    --learn-in: 350ms;
+    --learn-out: 350ms;
+    --learn-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Checkbox check */
+    --check-box: 150ms;
+    --check-draw: 350ms;
+    --check-delay: 0ms;
+    --check-uncheck: 150ms;
+    --check-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    /* Spinning counter */
+    --reel-dur: 1400ms;
+    --reel-cell: 30px;
+    --reel-spin-blur: 3px;
+    --reel-stagger: 90ms;
+    --reel-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    /* Toggle */
+    --toggle-dur: 350ms;
+    --toggle-travel: 14.66px;
+    --toggle-ov1: 1px;
+    --toggle-ov2: 0px;
+    --toggle-track: 0ms;
+    --toggle-ease: cubic-bezier(0.34, 1.35, 0.64, 1);
+    /* Receipt print (shopping-list "Compra realizada" ticket) */
+    --receipt-print-dur: 1750ms;
 
-  /* FRESCO-448 §Dark mode: `color-scheme` is what every `light-dark()` token
+    /* FRESCO-448 §Dark mode: `color-scheme` is what every `light-dark()` token
      above reads. Default `light`; the two rules below flip it to `dark` for
      an explicit toggle override or an OS-dark preference that has not been
      forced back to light. Also pins the UA rendering intent so native
      affordances (autofill, scrollbars, spinners) match the theme. */
-  color-scheme: light;
-}
+    color-scheme: light;
+  }
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  /* box-shadow has no <color>-only slot to wrap in light-dark() here — `md`/
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    /* box-shadow has no <color>-only slot to wrap in light-dark() here — `md`/
      `lg` change offset/blur between themes, not just color — so the dark
      values are redeclared here rather than folded into the `:root` block. */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.62);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.62);
+    --raw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --raw-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
+    --raw-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.62);
   }
-}
 
-/*
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --raw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+      --raw-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.55);
+      --raw-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.62);
+    }
+  }
+
+  /*
  * FRESCO-448 §Dark mode — brand-ground pinning. The desktop sidebar (and the
  * landing footer) is a dark-green ground (`bg-primary` + `text-background`)
  * in BOTH themes — it is brand chrome, not a themed surface. Its internal
@@ -419,8 +564,8 @@
  * looks identical in both themes and every cream-on-green pair keeps its
  * contrast.
  */
-[data-brand-ground] {
-  /* Re-declare the role tokens with static light values so every cream-on-green
+  [data-brand-ground] {
+    /* Re-declare the role tokens with static light values so every cream-on-green
      pair keeps its light-mode contrast under dark mode. `color-scheme: light`
      alone is NOT enough — the `light-dark()` tokens are declared on `:root` and
      resolve against `:root`'s color-scheme, not this subtree's. Each token
@@ -428,16 +573,17 @@
      (sidebar nav pill, account block, theme toggle, empty-state card; footer
      legal links + copyright) — checked against this build, not a defensive
      superset. */
-  color-scheme: light;
-  --color-background: #faf3e3;
-  --color-surface: #f1e3c6;
-  --color-surface-raised: #fbf6ec;
-  --color-text: #201e1d;
-  --color-tertiary: #6f5f43;
-  --color-primary: #0f4e0e;
-  --color-border: color-mix(in srgb, #201e1d 16%, transparent);
-  --color-neutral-200: #f0e8d8;
-  --color-accent-200: #bfcfbd;
+    color-scheme: light;
+    --raw-color-background: #faf3e3;
+    --raw-color-surface: #f1e3c6;
+    --raw-color-surface-raised: #fbf6ec;
+    --raw-color-text: #201e1d;
+    --raw-color-tertiary: #6f5f43;
+    --raw-color-primary: #0f4e0e;
+    --raw-color-border: color-mix(in srgb, #201e1d 16%, transparent);
+    --raw-color-neutral-200: #f0e8d8;
+    --raw-color-accent-200: #bfcfbd;
+  }
 }
 
 @layer base {
@@ -472,7 +618,7 @@
   body {
     @apply bg-background text-text;
     font-family:
-      var(--font-body),
+      var(--font-body-face),
       Figtree,
       -apple-system,
       BlinkMacSystemFont,
@@ -486,7 +632,7 @@
    */
   h1,
   h2 {
-    font-family: var(--font-heading), Georgia, 'Times New Roman', serif;
+    font-family: var(--font-heading-face), Georgia, 'Times New Roman', serif;
     font-weight: 400;
     text-wrap: balance;
   }
@@ -496,7 +642,7 @@
   h5,
   h6 {
     font-family:
-      var(--font-body),
+      var(--font-body-face),
       Figtree,
       -apple-system,
       BlinkMacSystemFont,
@@ -518,7 +664,7 @@
   :where(h1, h2).text-h5,
   :where(h1, h2).text-h6 {
     font-family:
-      var(--font-body),
+      var(--font-body-face),
       Figtree,
       -apple-system,
       BlinkMacSystemFont,
@@ -553,63 +699,64 @@
   }
 }
 
-/*
+@layer utilities {
+  /*
  * Shiki dual-theme code blocks (`components/qa/code-block.tsx`, `/qa` page).
  * This app has no site-wide dark mode today — scoped to `.shiki` only, per
  * Shiki's own dual-theme CSS-variable guide, rather than inventing a
  * site-wide dark theme this project doesn't otherwise have.
  */
-.shiki,
-.shiki span {
-  background-color: var(--shiki-light-bg) !important;
-  color: var(--shiki-light) !important;
-}
-
-@media (prefers-color-scheme: dark) {
   .shiki,
   .shiki span {
-    background-color: var(--shiki-dark-bg) !important;
-    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-light-bg) !important;
+    color: var(--shiki-light) !important;
   }
-}
 
-/*
+  @media (prefers-color-scheme: dark) {
+    .shiki,
+    .shiki span {
+      background-color: var(--shiki-dark-bg) !important;
+      color: var(--shiki-dark) !important;
+    }
+  }
+
+  /*
  * Modal open / close (transitions-dev, 06-modal.md) — FRESCO-247.
  * Drives `components/ui/dialog.tsx`'s `.t-modal` content wrapper: `.is-open`
  * scales up from --modal-scale, `.is-closing` dips to --modal-scale-close
  * over the shorter --modal-close-dur before the component unmounts.
  */
-.t-modal {
-  transform-origin: center;
-  transform: scale(var(--modal-scale));
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--modal-open-dur) var(--modal-ease),
-    opacity var(--modal-open-dur) var(--modal-ease);
-  will-change: transform, opacity;
-}
-.t-modal.is-open {
-  transform: scale(1);
-  opacity: 1;
-  pointer-events: auto;
-}
-.t-modal.is-closing {
-  transform: scale(var(--modal-scale-close));
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--modal-close-dur) var(--modal-ease),
-    opacity var(--modal-close-dur) var(--modal-ease);
-}
-
-@media (prefers-reduced-motion: reduce) {
   .t-modal {
-    transition: none !important;
+    transform-origin: center;
+    transform: scale(var(--modal-scale));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--modal-open-dur) var(--modal-ease),
+      opacity var(--modal-open-dur) var(--modal-ease);
+    will-change: transform, opacity;
   }
-}
+  .t-modal.is-open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .t-modal.is-closing {
+    transform: scale(var(--modal-scale-close));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--modal-close-dur) var(--modal-ease),
+      opacity var(--modal-close-dur) var(--modal-ease);
+  }
 
-/*
+  @media (prefers-reduced-motion: reduce) {
+    .t-modal {
+      transition: none !important;
+    }
+  }
+
+  /*
  * Filter drawer open / close (FRESCO-273) — same open/close/close-timeout
  * lifecycle as `.t-modal` (mirrors its --modal-open-dur/--modal-close-dur/
  * --modal-ease tokens rather than defining new ones). Slides up from the
@@ -618,48 +765,48 @@
  * edge (FRESCO-274) — it slides in from the right instead, same breakpoint
  * the rest of the app already uses for its layout switch.
  */
-.t-drawer {
-  transform: translateY(100%);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--modal-open-dur) var(--modal-ease),
-    opacity var(--modal-open-dur) var(--modal-ease);
-  will-change: transform, opacity;
-}
-.t-drawer.is-open {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-}
-.t-drawer.is-closing {
-  transform: translateY(100%);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform var(--modal-close-dur) var(--modal-ease),
-    opacity var(--modal-close-dur) var(--modal-ease);
-}
-
-@media (min-width: 640px) {
   .t-drawer {
-    transform: translateX(100%);
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--modal-open-dur) var(--modal-ease),
+      opacity var(--modal-open-dur) var(--modal-ease);
+    will-change: transform, opacity;
   }
   .t-drawer.is-open {
-    transform: translateX(0);
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
   .t-drawer.is-closing {
-    transform: translateX(100%);
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform var(--modal-close-dur) var(--modal-ease),
+      opacity var(--modal-close-dur) var(--modal-ease);
   }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .t-drawer {
-    transition: none !important;
+  @media (min-width: 640px) {
+    .t-drawer {
+      transform: translateX(100%);
+    }
+    .t-drawer.is-open {
+      transform: translateX(0);
+    }
+    .t-drawer.is-closing {
+      transform: translateX(100%);
+    }
   }
-}
 
-/*
+  @media (prefers-reduced-motion: reduce) {
+    .t-drawer {
+      transition: none !important;
+    }
+  }
+
+  /*
  * Success check (transitions-dev, 10-success-check.md) — FRESCO-248.
  * Drives the checkmark shown by `components/profile/nombre-form.tsx` and
  * `components/profile/preferences-form.tsx` on a successful save. The
@@ -671,87 +818,87 @@
  * calibrated to lucide's `Check` icon path (`M20 6 9 17l-5-5`),
  * `getTotalLength()` ≈ 22.63 rounded up to 24.
  */
-.t-success-check {
-  display: inline-block;
-  transform-origin: center;
-  opacity: 0;
-  will-change: transform, opacity, filter;
-}
-/* overflow: visible keeps the stroke from clipping while it
-   draws; display: block kills the inline whitespace under SVGs. */
-.t-success-check svg {
-  display: block;
-  overflow: visible;
-}
-/* Stroke-draw setup, calibrated for lucide's Check path (see comment
-   above) rather than the snippet's own `20` placeholder. */
-.t-success-check svg path {
-  stroke-dasharray: 24;
-  stroke-dashoffset: 24;
-}
-
-.t-success-check[data-state='in'] {
-  animation:
-    t-check-fade var(--check-opacity-dur) var(--check-ease-opacity) forwards,
-    t-check-rotate var(--check-rotate-dur) var(--check-ease-rotate) forwards,
-    t-check-blur var(--check-blur-dur) var(--check-ease-out) forwards,
-    t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
-}
-.t-success-check[data-state='in'] svg path {
-  animation: t-check-draw var(--check-path-dur) var(--check-ease-path) var(--check-path-delay, 0ms)
-    forwards;
-}
-
-@keyframes t-check-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@keyframes t-check-rotate {
-  from {
-    transform: rotate(var(--check-rotate-from));
-  }
-  to {
-    transform: rotate(0deg);
-  }
-}
-@keyframes t-check-blur {
-  from {
-    filter: blur(var(--check-blur-from));
-  }
-  to {
-    filter: blur(0);
-  }
-}
-@keyframes t-check-bob {
-  from {
-    translate: 0 var(--check-y-amount);
-  }
-  to {
-    translate: 0 0;
-  }
-}
-@keyframes t-check-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
   .t-success-check {
-    animation: none !important;
-    opacity: 1;
+    display: inline-block;
+    transform-origin: center;
+    opacity: 0;
+    will-change: transform, opacity, filter;
   }
+  /* overflow: visible keeps the stroke from clipping while it
+   draws; display: block kills the inline whitespace under SVGs. */
+  .t-success-check svg {
+    display: block;
+    overflow: visible;
+  }
+  /* Stroke-draw setup, calibrated for lucide's Check path (see comment
+   above) rather than the snippet's own `20` placeholder. */
   .t-success-check svg path {
-    animation: none !important;
-    stroke-dashoffset: 0 !important;
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
   }
-}
 
-/*
+  .t-success-check[data-state='in'] {
+    animation:
+      t-check-fade var(--check-opacity-dur) var(--check-ease-opacity) forwards,
+      t-check-rotate var(--check-rotate-dur) var(--check-ease-rotate) forwards,
+      t-check-blur var(--check-blur-dur) var(--check-ease-out) forwards,
+      t-check-bob var(--check-bob-dur) var(--check-ease-bob) forwards;
+  }
+  .t-success-check[data-state='in'] svg path {
+    animation: t-check-draw var(--check-path-dur) var(--check-ease-path)
+      var(--check-path-delay, 0ms) forwards;
+  }
+
+  @keyframes t-check-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes t-check-rotate {
+    from {
+      transform: rotate(var(--check-rotate-from));
+    }
+    to {
+      transform: rotate(0deg);
+    }
+  }
+  @keyframes t-check-blur {
+    from {
+      filter: blur(var(--check-blur-from));
+    }
+    to {
+      filter: blur(0);
+    }
+  }
+  @keyframes t-check-bob {
+    from {
+      translate: 0 var(--check-y-amount);
+    }
+    to {
+      translate: 0 0;
+    }
+  }
+  @keyframes t-check-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .t-success-check {
+      animation: none !important;
+      opacity: 1;
+    }
+    .t-success-check svg path {
+      animation: none !important;
+      stroke-dashoffset: 0 !important;
+    }
+  }
+
+  /*
  * Receipt print (shopping-list "Compra realizada" ticket).
  * Drives `components/shopping-list/receipt-ticket.tsx`'s paper element: a
  * single translateY(-100% -> 0%) run through `steps(10, jump-end)` gives the
@@ -766,25 +913,25 @@
  * `'printing'` forever; a ~0ms run still fires the event, just imperceptibly
  * fast.
  */
-.t-receipt-print {
-  animation: t-receipt-print-feed var(--receipt-print-dur) steps(10, jump-end) forwards;
-}
-@keyframes t-receipt-print-feed {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(0%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
   .t-receipt-print {
-    animation-duration: 0.01ms !important;
+    animation: t-receipt-print-feed var(--receipt-print-dur) steps(10, jump-end) forwards;
   }
-}
+  @keyframes t-receipt-print-feed {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0%);
+    }
+  }
 
-/*
+  @media (prefers-reduced-motion: reduce) {
+    .t-receipt-print {
+      animation-duration: 0.01ms !important;
+    }
+  }
+
+  /*
  * Like button (transitions-dev, 23-like-button.md) — FRESCO-248.
  * Drives `components/recipe/favorite-toggle-button.tsx` and
  * `components/recipe/recipe-card.tsx`'s heart toggle. `--like-color` is
@@ -792,129 +939,130 @@
  * so the celebration matches the app's existing green fill instead of the
  * snippet's stock magenta (see Technical Decision 3).
  */
-.t-like-heart {
-  color: currentColor;
-  transition: color var(--like-fill) var(--like-ease);
-}
-.t-like-heart path {
-  fill: transparent;
-  stroke: currentColor;
-  transition:
-    fill var(--like-fill) var(--like-ease),
-    stroke var(--like-fill) var(--like-ease);
-}
-.t-like[data-liked='true'] .t-like-heart {
-  color: var(--like-color);
-}
-.t-like[data-liked='true'] .t-like-heart path {
-  fill: currentColor;
-}
-/* Pop scale lives on an HTML wrapper, never the <svg> itself:
+  .t-like-heart {
+    color: currentColor;
+    transition: color var(--like-fill) var(--like-ease);
+  }
+  .t-like-heart path {
+    fill: transparent;
+    stroke: currentColor;
+    transition:
+      fill var(--like-fill) var(--like-ease),
+      stroke var(--like-fill) var(--like-ease);
+  }
+  .t-like[data-liked='true'] .t-like-heart {
+    color: var(--like-color);
+  }
+  .t-like[data-liked='true'] .t-like-heart path {
+    fill: currentColor;
+  }
+  /* Pop scale lives on an HTML wrapper, never the <svg> itself:
    transforming an inline SVG makes Chromium rasterise it at 1×
    (pixelated on hi-DPI). Wrapping keeps the vector crisp. */
-.t-like[data-liked='true'] .t-like-icon {
-  animation: t-like-pop var(--like-pop) var(--like-pop-ease);
-}
-@keyframes t-like-pop {
-  0% {
-    transform: scale(1);
+  .t-like[data-liked='true'] .t-like-icon {
+    animation: t-like-pop var(--like-pop) var(--like-pop-ease);
   }
-  30% {
-    transform: scale(0.82);
+  @keyframes t-like-pop {
+    0% {
+      transform: scale(1);
+    }
+    30% {
+      transform: scale(0.82);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
-  100% {
-    transform: scale(1);
-  }
-}
 
-/* Particle burst — 8 dots flung along per-particle vectors. */
-.t-like-particles {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  color: var(--like-color);
-}
-.t-like-particles i {
-  position: absolute;
-  left: calc(var(--like-particle-size) * var(--psize, 1) / -2);
-  top: calc(var(--like-particle-size) * var(--psize, 1) / -2);
-  width: calc(var(--like-particle-size) * var(--psize, 1));
-  height: calc(var(--like-particle-size) * var(--psize, 1));
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0;
-}
-@keyframes t-like-burst {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0) scale(0.4);
+  /* Particle burst — 8 dots flung along per-particle vectors. */
+  .t-like-particles {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    color: var(--like-color);
   }
-  20% {
-    opacity: 1;
-    transform: translate(calc(var(--px) * 0.25), calc(var(--py) * 0.25)) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--px), var(--py)) scale(var(--p-end-scale, 0.6));
-  }
-}
-.t-like.is-bursting .t-like-particles i {
-  animation: t-like-burst var(--pdur, var(--like-particle-dur)) ease-out var(--pdelay, 0ms) forwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .t-like-icon,
   .t-like-particles i {
-    animation: none !important;
+    position: absolute;
+    left: calc(var(--like-particle-size) * var(--psize, 1) / -2);
+    top: calc(var(--like-particle-size) * var(--psize, 1) / -2);
+    width: calc(var(--like-particle-size) * var(--psize, 1));
+    height: calc(var(--like-particle-size) * var(--psize, 1));
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0;
   }
-}
+  @keyframes t-like-burst {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.4);
+    }
+    20% {
+      opacity: 1;
+      transform: translate(calc(var(--px) * 0.25), calc(var(--py) * 0.25)) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--px), var(--py)) scale(var(--p-end-scale, 0.6));
+    }
+  }
+  .t-like.is-bursting .t-like-particles i {
+    animation: t-like-burst var(--pdur, var(--like-particle-dur)) ease-out var(--pdelay, 0ms)
+      forwards;
+  }
 
-/* Texts reveal (transitions-dev, 18-texts-reveal.md) — FRESCO-252. Entrance
+  @media (prefers-reduced-motion: reduce) {
+    .t-like-icon,
+    .t-like-particles i {
+      animation: none !important;
+    }
+  }
+
+  /* Texts reveal (transitions-dev, 18-texts-reveal.md) — FRESCO-252. Entrance
    for the onboarding identity-step card (logo / heading / actions). */
-.t-stagger-line {
-  display: block;
-  opacity: 0;
-  transform: translateY(var(--stagger-distance));
-  filter: blur(var(--stagger-blur));
-  transition:
-    opacity var(--stagger-dur) var(--stagger-ease),
-    transform var(--stagger-dur) var(--stagger-ease),
-    filter var(--stagger-dur) var(--stagger-ease);
-  will-change: transform, opacity, filter;
-}
-.t-stagger-line--2 {
-  transition-delay: var(--stagger-stagger);
-}
-.t-stagger-line--3 {
-  transition-delay: calc(var(--stagger-stagger) * 2);
-}
-
-.t-stagger.is-shown .t-stagger-line {
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
-.t-stagger.is-hiding .t-stagger-line {
-  opacity: 0;
-  transform: translateY(0);
-  filter: blur(0);
-  transition:
-    opacity 200ms ease,
-    transform 0s linear,
-    filter 0s linear;
-  transition-delay: 0s;
-}
-
-@media (prefers-reduced-motion: reduce) {
   .t-stagger-line {
-    transition: none !important;
+    display: block;
+    opacity: 0;
+    transform: translateY(var(--stagger-distance));
+    filter: blur(var(--stagger-blur));
+    transition:
+      opacity var(--stagger-dur) var(--stagger-ease),
+      transform var(--stagger-dur) var(--stagger-ease),
+      filter var(--stagger-dur) var(--stagger-ease);
+    will-change: transform, opacity, filter;
   }
-}
+  .t-stagger-line--2 {
+    transition-delay: var(--stagger-stagger);
+  }
+  .t-stagger-line--3 {
+    transition-delay: calc(var(--stagger-stagger) * 2);
+  }
 
-/*
+  .t-stagger.is-shown .t-stagger-line {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  .t-stagger.is-hiding .t-stagger-line {
+    opacity: 0;
+    transform: translateY(0);
+    filter: blur(0);
+    transition:
+      opacity 200ms ease,
+      transform 0s linear,
+      filter 0s linear;
+    transition-delay: 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .t-stagger-line {
+      transition: none !important;
+    }
+  }
+
+  /*
  * Error state shake (transitions-dev, 12-error-state-shake.md) — FRESCO-248.
  * Retargeted from its documented `<input>` shape onto the Guardar buttons in
  * `components/profile/nombre-form.tsx`/`preferences-form.tsx` and the
@@ -922,74 +1070,74 @@
  * — CSS pasted verbatim, only the JSX host element differs (button/row
  * instead of `<input>`).
  */
-.t-input {
-  transition: border-color 150ms ease-out;
-  will-change: transform;
-}
-.t-input.is-error {
-  /* Error border auto-reverts on the hold timer, so the
+  .t-input {
+    transition: border-color 150ms ease-out;
+    will-change: transform;
+  }
+  .t-input.is-error {
+    /* Error border auto-reverts on the hold timer, so the
      fade-out uses the slower revert duration (matches the
      message fade). */
-  transition: border-color var(--revert-dur, 280ms) ease-out;
-}
+    transition: border-color var(--revert-dur, 280ms) ease-out;
+  }
 
-/* Error message reveal. Visibility is delayed by --revert-dur
+  /* Error message reveal. Visibility is delayed by --revert-dur
    on hide so the message stays painted for the full opacity
    fade-out. Entering .is-error drops the delay to 0 so the
    message becomes visible immediately. */
-.t-error-msg {
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--revert-dur, 280ms) ease-out,
-    visibility 0s linear var(--revert-dur, 280ms);
-}
-.t-input-wrap.is-error .t-error-msg {
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity var(--revert-dur, 280ms) ease-out,
-    visibility 0s linear 0s;
-}
+  .t-error-msg {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--revert-dur, 280ms) ease-out,
+      visibility 0s linear var(--revert-dur, 280ms);
+  }
+  .t-input-wrap.is-error .t-error-msg {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity var(--revert-dur, 280ms) ease-out,
+      visibility 0s linear 0s;
+  }
 
-/* Multi-segment keyframe with per-stop easing so each leg
+  /* Multi-segment keyframe with per-stop easing so each leg
    of the shake follows its own cubic-bezier independently.
    %-stops are cumulative durations as a fraction of the
    total (80, 60, 80, 60 = 280ms): 28.57%, 57.14%, 78.57%,
    100%. Recompute if any segment duration changes. */
-.t-input.is-shaking {
-  animation: t-input-shake calc(var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2) linear;
-}
-@keyframes t-input-shake {
-  0% {
-    transform: translateX(0);
-    animation-timing-function: var(--shake-ease);
+  .t-input.is-shaking {
+    animation: t-input-shake calc(var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2) linear;
   }
-  28.57% {
-    transform: translateX(var(--shake-distance));
-    animation-timing-function: var(--shake-ease);
+  @keyframes t-input-shake {
+    0% {
+      transform: translateX(0);
+      animation-timing-function: var(--shake-ease);
+    }
+    28.57% {
+      transform: translateX(var(--shake-distance));
+      animation-timing-function: var(--shake-ease);
+    }
+    57.14% {
+      transform: translateX(calc(var(--shake-distance) * -1));
+      animation-timing-function: var(--shake-ease);
+    }
+    78.57% {
+      transform: translateX(var(--shake-overshoot));
+      animation-timing-function: var(--shake-ease);
+    }
+    100% {
+      transform: translateX(0);
+    }
   }
-  57.14% {
-    transform: translateX(calc(var(--shake-distance) * -1));
-    animation-timing-function: var(--shake-ease);
-  }
-  78.57% {
-    transform: translateX(var(--shake-overshoot));
-    animation-timing-function: var(--shake-ease);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .t-input {
-    animation: none !important;
-    transform: none !important;
+  @media (prefers-reduced-motion: reduce) {
+    .t-input {
+      animation: none !important;
+      transform: none !important;
+    }
   }
-}
 
-/*
+  /*
  * Page transitions (FRESCO-245) — soft-fade the incoming view when Laura
  * navigates between the sidebar destinations (Inicio / Calendario / Recetas /
  * Lista / Perfil). `components/layout/page-transition.tsx` re-keys this
@@ -1005,26 +1153,26 @@
  * the AC's 300ms budget. Reuses the --page-fade-* tokens installed by
  * transitions-dev; defines no new motion tokens (DESIGN.md §4.19).
  */
-.page-transition {
-  animation: fresco-page-transition-in var(--page-fade-dur) var(--page-fade-ease);
-}
-@keyframes fresco-page-transition-in {
-  from {
-    opacity: 0;
+  .page-transition {
+    animation: fresco-page-transition-in var(--page-fade-dur) var(--page-fade-ease);
   }
-}
+  @keyframes fresco-page-transition-in {
+    from {
+      opacity: 0;
+    }
+  }
 
-/*
+  /*
  * Reduced-motion: the view swaps instantly, no fade (AC: "el cambio de vista
  * es inmediato, sin fundido ni desplazamiento").
  */
-@media (prefers-reduced-motion: reduce) {
-  .page-transition {
-    animation: none;
+  @media (prefers-reduced-motion: reduce) {
+    .page-transition {
+      animation: none;
+    }
   }
-}
 
-/*
+  /*
  * Top navigation progress bar (FRESCO-482) — `components/layout/top-progress-bar.tsx`
  * re-mounts this element on every committed client navigation, replaying the
  * sweep once: a fast fill to full width, then a fade. It is the lightweight
@@ -1033,32 +1181,32 @@
  * non-interactive. Reuses --duration-slow / --duration-fast / --ease-smooth-out
  * / --color-primary; defines no new motion tokens (DESIGN.md §4.19).
  */
-.top-progress-bar {
-  position: fixed;
-  inset: 0 0 auto 0;
-  height: 2px;
-  transform-origin: left;
-  background: var(--color-primary);
-  z-index: 1100;
-  animation:
-    fresco-top-progress-fill var(--duration-slow) var(--ease-smooth-out) forwards,
-    fresco-top-progress-fade var(--duration-fast) var(--ease-smooth-out) var(--duration-slow)
-      forwards;
-}
-@keyframes fresco-top-progress-fill {
-  from {
-    transform: scaleX(0.02);
+  .top-progress-bar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 2px;
+    transform-origin: left;
+    background: var(--color-primary);
+    z-index: 1100;
+    animation:
+      fresco-top-progress-fill var(--duration-slow) var(--ease-smooth-out) forwards,
+      fresco-top-progress-fade var(--duration-fast) var(--ease-smooth-out) var(--duration-slow)
+        forwards;
   }
-  to {
-    transform: scaleX(1);
+  @keyframes fresco-top-progress-fill {
+    from {
+      transform: scaleX(0.02);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
-}
-@keyframes fresco-top-progress-fade {
-  to {
-    opacity: 0;
+  @keyframes fresco-top-progress-fade {
+    to {
+      opacity: 0;
+    }
   }
-}
-/*
+  /*
  * Reduced-motion (AC: "con prefers-reduced-motion la animación se reduce o
  * desaparece") is covered by the global `*, *::before, *::after` catch-all
  * further down (`animation-duration: 0.01ms`, `animation-iteration-count: 1`):
@@ -1066,7 +1214,7 @@
  * fade runs instantly, the element is gone. No per-element block needed.
  */
 
-/*
+  /*
  * Auth transition cover (FRESCO-482) — `components/layout/auth-transition-overlay.tsx`.
  * Fades in over the login/signup card after a successful auth call; its inner
  * bar loops an indeterminate sweep so the wait for `/menu` reads as "working",
@@ -1074,73 +1222,73 @@
  * / --duration-slow / --ease-smooth-out / --color-primary; no new motion tokens
  * (DESIGN.md §4.19).
  */
-.auth-transition-overlay {
-  animation: fresco-auth-overlay-in var(--duration-fast) var(--ease-smooth-out);
-}
-.auth-transition-overlay__bar {
-  width: min(200px, 60vw);
-  height: 2px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-.auth-transition-overlay__bar::after {
-  content: '';
-  display: block;
-  width: 40%;
-  height: 100%;
-  background: var(--color-primary);
-  animation: fresco-auth-overlay-sweep 1s var(--ease-smooth-out) infinite;
-}
-@keyframes fresco-auth-overlay-in {
-  from {
-    opacity: 0;
+  .auth-transition-overlay {
+    animation: fresco-auth-overlay-in var(--duration-fast) var(--ease-smooth-out);
   }
-}
-@keyframes fresco-auth-overlay-sweep {
-  from {
-    transform: translateX(-100%);
+  .auth-transition-overlay__bar {
+    width: min(200px, 60vw);
+    height: 2px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--color-primary) 20%, transparent);
   }
-  to {
-    transform: translateX(350%);
+  .auth-transition-overlay__bar::after {
+    content: '';
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: var(--color-primary);
+    animation: fresco-auth-overlay-sweep 1s var(--ease-smooth-out) infinite;
   }
-}
-/*
+  @keyframes fresco-auth-overlay-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fresco-auth-overlay-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(350%);
+    }
+  }
+  /*
  * Reduced-motion: the global catch-all pins `animation-iteration-count: 1`
  * and `animation-duration: 0.01ms`, so the looping sweep stops after one
  * near-instant pass and the overlay appears without a fade. The cover still
  * does its job (hiding the frozen-looking card) — it just does not animate.
  */
 
-/*
+  /*
  * Theme-aware brand mark (FRESCO-481). The green `logo-base.svg` reads dim on
  * the near-black dark ground; the cream `logo-negativo.svg` (the sidebar's
  * on-green mark) reads well. This project drives theme through CSS token
- * swaps, NOT Tailwind's `dark:` variant (see `tailwind.config.ts`), so the
+ * swaps, NOT Tailwind's `dark:` variant (see the `@theme` block), so the
  * swap is a class pair here — same shape as the `[data-brand-ground]` and
  * `.page-transition` theme rules. A component renders BOTH `<Image>`s.
  */
-.brand-mark--light {
-  display: block;
-}
-.brand-mark--dark {
-  display: none;
-}
-:root[data-theme='dark'] .brand-mark--light {
-  display: none;
-}
-:root[data-theme='dark'] .brand-mark--dark {
-  display: block;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .brand-mark--light {
-    display: none;
-  }
-  :root:not([data-theme='light']) .brand-mark--dark {
+  .brand-mark--light {
     display: block;
   }
-}
+  .brand-mark--dark {
+    display: none;
+  }
+  :root[data-theme='dark'] .brand-mark--light {
+    display: none;
+  }
+  :root[data-theme='dark'] .brand-mark--dark {
+    display: block;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .brand-mark--light {
+      display: none;
+    }
+    :root:not([data-theme='light']) .brand-mark--dark {
+      display: block;
+    }
+  }
 
-/*
+  /*
  * List / card enter animation (FRESCO-246) — a new card fades in with a slight
  * upward shift; on first render of a long list the items enter staggered
  * (~--duration-stagger apart). `components/ui/use-list-enter-animation.ts`
@@ -1152,20 +1300,20 @@
  * --duration-fast / --duration-stagger / --ease-smooth-out tokens installed
  * by transitions-dev; defines no new motion tokens (DESIGN.md §4.19).
  */
-@keyframes fresco-list-enter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
+  @keyframes fresco-list-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
   }
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-list-enter] {
-    animation: fresco-list-enter var(--duration-fast) var(--ease-smooth-out) both;
-    animation-delay: calc(var(--enter-index, 0) * var(--duration-stagger));
+  @media (prefers-reduced-motion: no-preference) {
+    [data-list-enter] {
+      animation: fresco-list-enter var(--duration-fast) var(--ease-smooth-out) both;
+      animation-delay: calc(var(--enter-index, 0) * var(--duration-stagger));
+    }
   }
-}
 
-/*
+  /*
  * Scroll reveal for landing sections + insight-card entrance (FRESCO-446,
  * epic FRESCO-436 tarjeta 8). `components/ui/reveal.tsx` marks a wrapper
  * `[data-reveal]` after mount and flips `[data-revealed]` once it scrolls into
@@ -1179,30 +1327,30 @@
  * transitions-dev (FRESCO-247); defines no new motion tokens, adds no spring
  * (DESIGN.md §Motion — "unhurried", calm end of the scale).
  */
-@keyframes fresco-insight-enter {
-  from {
-    opacity: 0;
-    transform: translateY(var(--distance-medium));
+  @keyframes fresco-insight-enter {
+    from {
+      opacity: 0;
+      transform: translateY(var(--distance-medium));
+    }
   }
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-reveal] {
-    opacity: 0;
-    transform: translateY(var(--distance-medium));
-    transition:
-      opacity var(--duration-slow) var(--ease-smooth-out),
-      transform var(--duration-slow) var(--ease-smooth-out);
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(var(--distance-medium));
+      transition:
+        opacity var(--duration-slow) var(--ease-smooth-out),
+        transform var(--duration-slow) var(--ease-smooth-out);
+    }
+    [data-reveal][data-revealed] {
+      opacity: 1;
+      transform: none;
+    }
+    [data-insight-enter] {
+      animation: fresco-insight-enter var(--duration-fast) var(--ease-smooth-out) both;
+    }
   }
-  [data-reveal][data-revealed] {
-    opacity: 1;
-    transform: none;
-  }
-  [data-insight-enter] {
-    animation: fresco-insight-enter var(--duration-fast) var(--ease-smooth-out) both;
-  }
-}
 
-/*
+  /*
  * Hero photo marquee (FRESCO-459, epic FRESCO-436 tarjeta 9 follow-up).
  * `components/landing/hero.tsx`'s `HeroPhotoComposition` drifts its two photo
  * columns vertically, opposite directions, at ambient (not interaction)
@@ -1218,32 +1366,32 @@
  * belt-and-braces with the global `prefers-reduced-motion: reduce` guard
  * further down, which would otherwise also just collapse it to ~0.01ms.
  */
-@keyframes fresco-hero-marquee-up {
-  from {
-    transform: translateY(0);
+  @keyframes fresco-hero-marquee-up {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-50%);
+    }
   }
-  to {
-    transform: translateY(-50%);
+  @keyframes fresco-hero-marquee-down {
+    from {
+      transform: translateY(-50%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
-}
-@keyframes fresco-hero-marquee-down {
-  from {
-    transform: translateY(-50%);
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-marquee-col-a {
+      animation: fresco-hero-marquee-up 68s linear infinite;
+    }
+    .hero-marquee-col-b {
+      animation: fresco-hero-marquee-down 80s linear infinite;
+    }
   }
-  to {
-    transform: translateY(0);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .hero-marquee-col-a {
-    animation: fresco-hero-marquee-up 68s linear infinite;
-  }
-  .hero-marquee-col-b {
-    animation: fresco-hero-marquee-down 80s linear infinite;
-  }
-}
 
-/*
+  /*
  * Reduced-motion global guard (FRESCO-249, WCAG 2.3.3 / 2.2.2) — the
  * transversal counterpart to every animation this epic (and the rest of the
  * app) introduces. The per-component `@media (prefers-reduced-motion: reduce)`
@@ -1253,28 +1401,28 @@
  * their own. `.01ms` (not `0`) so `transitionend` / `animationend` handlers
  * still fire and state machines that wait on them don't stall.
  */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-    scroll-behavior: auto !important;
-  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
+      scroll-behavior: auto !important;
+    }
 
-  /*
+    /*
    * Essential loading indicators keep spinning (AC: "los indicadores de carga
    * esenciales pueden seguir girando"). Tailwind's `animate-spin` is the only
    * infinite decorative-free loop in the app.
    */
-  .animate-spin {
-    animation: spin 1s linear infinite !important;
+    .animate-spin {
+      animation: spin 1s linear infinite !important;
+    }
   }
-}
 
-/*
+  /*
  * Recipe-photo grade (FRESCO-447, epic FRESCO-436 card 9) — the single
  * reusable treatment that makes ~600 photos from ~600 sources read as one
  * brand. It is the main compensator for not spending on photography.
@@ -1290,8 +1438,4 @@
  * never re-declared per screen (AC: "una utilidad reutilizable, no CSS por
  * pantalla"). Ratio is unified separately at aspect-[4/3] on every surface.
  */
-@layer utilities {
-  .recipe-photo {
-    filter: saturate(0.92) contrast(1.04) sepia(0.08) brightness(1.01);
-  }
 }

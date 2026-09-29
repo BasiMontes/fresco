@@ -17,7 +17,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
       type={type}
       className={cn(
         // FRESCO-478: h-11 (44px) — WCAG 2.5.5 tap-target minimum (was h-9 / 36px).
-        'h-11 w-full rounded-full border border-neutral-600 bg-surface px-3 text-body-md text-text placeholder:text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'h-11 w-full rounded-full border border-neutral-600 bg-surface px-3 text-body-md text-text placeholder:text-tertiary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         type === 'number'
         && '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
         className,

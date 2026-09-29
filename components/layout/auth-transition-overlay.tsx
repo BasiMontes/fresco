@@ -17,7 +17,7 @@ import Image from 'next/image';
 export function AuthTransitionOverlay({ label }: { label: string }) {
   return (
     <div
-      className="auth-transition-overlay fixed inset-0 z-[1200] flex flex-col items-center justify-center gap-4 bg-background"
+      className="auth-transition-overlay fixed inset-0 z-1200 flex flex-col items-center justify-center gap-4 bg-background"
       role="status"
       aria-live="polite"
       data-testid="auth_transition_overlay"
