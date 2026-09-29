@@ -279,3 +279,7 @@ Historia archivada:
 - Qué: next 16.3.7, react 19.3.0, supabase-js, posthog, resend, zod, playwright 1.63, prettier 3.9.9 y demás bumps en rango (PR #411, 95e441f3). Formato de 2 HTML de docs arreglado.
 - Por qué: stripe se queda en ~22.5.0 porque 22.6 cambia la versión de API fijada (FRESCO-748). Playwright-core duplicado por boneyard-js resuelto limpiando el lockfile.
 - Siguiente: FRESCO-748 (stripe 22.6 y apiVersion).
+## 2026-09-29 - FRESCO-745 ADR-0035 cookie de sesión Supabase
+- Qué: investigación cerrada como ADR-0035 (Proposed), PR #412, staging/dev/main en d7c8a9e8+bitácora. Conclusión: mantener la cookie legible por JS, sin httpOnly ni BFF.
+- Por qué: httpOnly rompe el cliente del navegador (32 archivos cliente hablan directo con Supabase bajo RLS); el BFF es reescritura y no frena el abuso en sesión. XSS cubierto por CSP con nonce (ADR-0019), JWT 1h y rotación de refresh tokens.
+- Siguiente: aceptar ADR-0035 y el ticket de maxAge 30 días + verificar Secure.
