@@ -83,9 +83,9 @@ export function SiteNav() {
   }, []);
 
   return (
-    // FRESCO-169: was `bg-background/95 backdrop-blur` — Tailwind can't
+    // FRESCO-169: was `bg-background/95 backdrop-blur` — Tailwind v3 can't
     // apply an opacity modifier to a color defined as a raw `var(--color-*)`
-    // reference (tailwind.config.ts), so it silently resolved to a fully
+    // reference (the @theme block in globals.css), so it silently resolved to a fully
     // transparent background (confirmed via getComputedStyle). Solid
     // bg-background fixes contrast on any section behind it.
     <header className="sticky top-0 z-20 border-b border-border bg-background">

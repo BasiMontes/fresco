@@ -34,7 +34,7 @@ export function OnboardingStepHousehold({ headingRef, household, presupuestoVali
 
   return (
     <>
-      <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-none">¿Quiénes cocináis en casa?</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-hidden">¿Quiénes cocináis en casa?</h1>
       <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
       <div className="mt-4 flex gap-4">
         <label className="flex flex-col gap-1">

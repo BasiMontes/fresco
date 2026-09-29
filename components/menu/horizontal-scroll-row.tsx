@@ -55,7 +55,7 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
           {/* FRESCO-451 (slice 4/5): the arrow sat directly on top of the
               edge card's content with nothing to separate them — this scrim
               fades the card out under the button instead of a hard overlap. */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-[9] w-12 bg-gradient-to-r from-background to-transparent" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-9 w-12 bg-linear-to-r from-background to-transparent" />
           <button
             type="button"
             aria-label="Ver recetas anteriores"
@@ -75,7 +75,7 @@ export function HorizontalScrollRow({ children, className }: { children: React.R
       </div>
       {canScrollRight && (
         <>
-          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-[9] w-12 bg-gradient-to-l from-background to-transparent" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-9 w-12 bg-linear-to-l from-background to-transparent" />
           <button
             type="button"
             aria-label="Ver recetas siguientes"

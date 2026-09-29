@@ -113,7 +113,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
         <div
           className={cn(
             'relative w-full px-1',
-            isComplete ? 'max-h-[26rem] overflow-y-auto' : 'h-[26rem] overflow-hidden',
+            isComplete ? 'max-h-104 overflow-y-auto' : 'h-104 overflow-hidden',
           )}
         >
           <article
@@ -124,7 +124,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
           >
             <p className="text-center font-semibold tracking-widest">FRESCO</p>
             <p className="mt-1 text-center text-caption text-tertiary">{formatFecha(fechaRef.current)}</p>
-            <div className="my-3 border-t border-dashed border-tertiary/40" />
+            <div className="my-3 border-t border-dashed" />
             <p className="font-semibold">
               {items.length}
               {' '}
@@ -134,7 +134,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
               COMPRADO
               {items.length === 1 ? '' : 'S'}
             </p>
-            <div className="my-3 border-t border-dashed border-tertiary/40" />
+            <div className="my-3 border-t border-dashed" />
             <ul>
               {items.map((item, index) => (
                 <li key={`${item.nombre}-${index}`} className="flex justify-between gap-3 py-0.5">
@@ -147,7 +147,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
                 </li>
               ))}
             </ul>
-            <div className="my-3 border-t border-dashed border-tertiary/40" />
+            <div className="my-3 border-t border-dashed" />
             <p className="text-center">¡Buen provecho!</p>
           </article>
         </div>

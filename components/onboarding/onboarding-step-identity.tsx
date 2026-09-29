@@ -23,7 +23,7 @@ export function OnboardingStepIdentity({ headingRef }: OnboardingStepIdentityPro
 
   return (
     <>
-      <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-none">Cuéntanos sobre ti</h1>
+      <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-hidden">Cuéntanos sobre ti</h1>
       <p className="mt-1 text-body-sm text-tertiary">Nos ayuda a afinar las recomendaciones. Todo es opcional.</p>
 
       <label className="mt-4 flex flex-col gap-1">

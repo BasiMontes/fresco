@@ -36,7 +36,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       <span
         aria-hidden="true"
         className={cn(
-          'pointer-events-none absolute inset-0 rounded-full border-2 border-tertiary bg-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2',
+          'pointer-events-none absolute inset-0 rounded-full border-2 border-tertiary bg-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-hidden peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2',
           className,
         )}
       />

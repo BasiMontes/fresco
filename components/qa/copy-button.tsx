@@ -42,7 +42,7 @@ export function CopyButton({ text, className }: CopyButtonProps) {
         // FRESCO-293: lives in the code block's header bar now, so it no
         // longer overlaps the first line. Keeps a visible keyboard focus
         // state (ring, never hover-only) per the app's focus-visible pattern.
-        'inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-caption text-tertiary shadow-sm transition-colors hover:bg-neutral-200 hover:text-text focus-visible:bg-neutral-200 focus-visible:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1',
+        'inline-flex items-center gap-1 rounded-full bg-surface px-2 py-1 text-caption text-tertiary shadow-sm transition-colors hover:bg-neutral-200 hover:text-text focus-visible:bg-neutral-200 focus-visible:text-text focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1',
         className,
       )}
     >

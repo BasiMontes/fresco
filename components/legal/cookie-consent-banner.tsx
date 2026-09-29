@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
  * `Button` variant (`secondary`, equal visual weight) deliberately: the AC
  * requires "Aceptar" / "Rechazar" / "Configurar" to carry equal weight, so
  * no variant here reads as the highlighted/default choice — a dark pattern
- * this story explicitly rules out. Sits below `Dialog`'s `z-[1000]` (a
+ * this story explicitly rules out. Sits below `Dialog`'s `z-1000` (a
  * settings dialog opened from here or from the footer/Ajustes must render
  * on top of it) and above the app's `dropdown: 100` tier, reusing that same
  * z-index rather than reserving a new one for a single call site.
@@ -38,7 +38,7 @@ export function CookieConsentBanner() {
       role="region"
       aria-label="Consentimiento de cookies"
       data-testid="cookie_consent_banner"
-      className="fixed inset-x-0 bottom-0 z-[100] h-[190px] border-t border-border bg-surface-raised p-4 shadow-lg sm:h-auto"
+      className="fixed inset-x-0 bottom-0 z-100 h-[190px] border-t border-border bg-surface-raised p-4 shadow-lg sm:h-auto"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-body-sm text-text">

@@ -138,7 +138,7 @@ function HeroMarqueeColumn({
     >
       <div className={`flex flex-col gap-3 md:gap-4 ${animationClassName}`}>
         {strip.map((photo, i) => (
-          <HeroPhotoFrame key={i} photo={photo} priority={priority && i === 0} className="aspect-[4/5] shrink-0" />
+          <HeroPhotoFrame key={i} photo={photo} priority={priority && i === 0} className="aspect-4/5 shrink-0" />
         ))}
       </div>
     </div>

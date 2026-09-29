@@ -39,7 +39,7 @@ export function MenuReadonlyGrid({ menu, estados }: {
 }) {
   return (
     <div className="overflow-x-auto" data-testid="historial_readonly_grid">
-      <table className="w-full min-w-[44rem] table-fixed border-collapse">
+      <table className="w-full min-w-176 table-fixed border-collapse">
         <thead>
           <tr>
             <th scope="col" className="w-20 pb-2 pr-3 text-left text-h6 uppercase text-tertiary">Día</th>

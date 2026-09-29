@@ -108,10 +108,10 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
       // "fades content that isn't cut off" problem this is meant to avoid.
       className={cn(
         'overflow-x-auto',
-        canScrollRight && '[mask-image:linear-gradient(to_right,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_right,black_92%,transparent)]',
+        canScrollRight && 'mask-[linear-gradient(to_right,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_right,black_92%,transparent)]',
       )}
     >
-      <table className="w-full min-w-[19rem] border-collapse">
+      <table className="w-full min-w-76 border-collapse">
         <thead>
           <tr>
             <th scope="col" className="w-20" />

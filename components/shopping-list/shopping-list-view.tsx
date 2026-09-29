@@ -557,7 +557,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
       {compradosCoords.length > 0 && (
         // FRESCO-214: floating instead of inline-at-the-bottom-of-the-list —
         // stays reachable without scrolling past every aisle first. Sits
-        // above `BottomTabBar` (mobile, `z-[100]`) and clears it plus the
+        // above `BottomTabBar` (mobile, `z-100`) and clears it plus the
         // device safe area via the `bottom-[calc(...)]` offset; `md:` drops
         // to a smaller offset once that tab bar is hidden.
         //
@@ -573,7 +573,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
         // ticket closes and the button reappears).
         <div
           className={cn(
-            'fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[90] flex px-4 md:bottom-[calc(2rem+env(safe-area-inset-bottom))]',
+            'fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-90 flex px-4 md:bottom-[calc(2rem+env(safe-area-inset-bottom))]',
             receiptOpen ? 'invisible justify-end md:visible md:pr-8' : 'justify-center',
           )}
         >

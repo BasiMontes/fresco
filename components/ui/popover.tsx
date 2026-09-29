@@ -184,7 +184,7 @@ export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel,
         // to out-rank ordinary page content (unlike the pre-portal version,
         // where the sidebar's own `position: sticky` stacking context made
         // this moot). `dropdown: 100` is comfortably above regular content.
-        'z-[100] min-w-[220px] rounded-card border border-border bg-surface p-1 shadow-lg focus:outline-none',
+        'z-100 min-w-[220px] rounded-card border border-border bg-surface p-1 shadow-lg focus:outline-hidden',
         !usePortal && 'absolute bottom-full left-0 mb-2',
         className,
       )}

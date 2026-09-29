@@ -85,7 +85,7 @@ export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
           aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}
           aria-expanded={!collapsed}
           data-testid="sidebar_collapse_toggle"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full text-background/80 transition-colors hover:bg-background/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
         >
           {collapsed
             ? <PanelLeftOpen className="size-5" strokeWidth={2} aria-hidden="true" />
@@ -104,11 +104,9 @@ export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
               aria-label={collapsed ? label : undefined}
               title={collapsed ? label : undefined}
               className={cn(
-                'flex items-center rounded-full text-label font-sans transition-colors',
+                'flex items-center rounded-full font-sans transition-colors',
                 collapsed ? 'size-11 justify-center' : 'gap-3 px-4 py-2',
-                isActive
-                  ? 'bg-background text-primary'
-                  : 'text-background/80 hover:bg-background/10',
+                isActive && 'bg-background text-primary',
               )}
             >
               <Icon className="size-[22px] shrink-0" strokeWidth={2} aria-hidden="true" />
