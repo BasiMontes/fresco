@@ -291,3 +291,7 @@ Historia archivada:
 - Qué: FRESCO-749 (maxAge de cookie a 30 días) rechazado; ADR-0035 corregido (PR #414, 9a40daf6). Seguimiento en FRESCO-750.
 - Por qué: @supabase/ssr fuerza maxAge a 400 días al escribir la sesión (cookies.js:230 y :470), y maxAge no acota una sesión robada. El control efectivo es auth.sessions timebox/inactivity_timeout (plan Pro).
 - Siguiente: FRESCO-750 bloqueado hasta migrar a Pro; aceptar ADR-0035.
+## 2026-09-29 - FRESCO-740 TypeScript 5.9 a 6.0
+- Qué: typescript 5.9.3 a 6.0.3 (PR #416, 2fe06056), primer salto de los dos majors. Sin cambios de código: el baseUrl ya se quitó en #407.
+- Por qué: typescript-eslint 8.71 declara peer <6.1.0 y no carga con TS 7, así que 6.0 es lo máximo posible hoy.
+- Siguiente: TS 7 queda bloqueado hasta que typescript-eslint (y Next) lo soporten.
