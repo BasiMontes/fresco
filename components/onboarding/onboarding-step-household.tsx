@@ -19,8 +19,9 @@ export interface OnboardingStepHouseholdProps {
  * planning days/meals). Extracted from `app/onboarding/page.tsx` (A5-M1,
  * god-component split) — reads/writes the shared `useOnboardingStore()`
  * directly; `household`/`presupuestoValid`/`hasInvalidPlanning` stay
- * parent-computed because they also gate the footer's "Generar mi menú" CTA,
- * which lives outside this step's JSX. `presupuestoTouched` is
+ * parent-computed because they also gate the footer's "Ver resumen" CTA
+ * (FRESCO-755; it was "Generar mi menú" before the summary step), which lives
+ * outside this step's JSX. `presupuestoTouched` is
  * step-3-local display-only UI state (gates whether the invalid-budget
  * message shows, not the CTA's disabled state) so it moved in here. No
  * behavior change from the original inline JSX.
