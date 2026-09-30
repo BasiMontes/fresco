@@ -34,56 +34,64 @@ export function CookieConsentBanner() {
   if (!bannerVisible) { return null; }
 
   return (
-    <div
-      role="region"
-      aria-label="Consentimiento de cookies"
-      data-testid="cookie_consent_banner"
-      className="fixed inset-x-0 bottom-0 z-100 h-[190px] border-t border-border bg-surface-raised p-4 shadow-lg sm:h-auto"
-    >
-      <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-body-sm text-text">
-          Usamos cookies técnicas necesarias para el funcionamiento de Fresco y, solo si lo aceptas, cookies de analítica.
-          {' '}
-          <button
-            type="button"
-            onClick={openSettings}
-            data-testid="cookie_consent_banner_policy_link"
-            // FRESCO-478: 44px tap target (WCAG 2.5.5).
-            className="inline-flex min-h-[44px] items-center align-middle underline"
-          >
-            Más información
-          </button>
-        </p>
-        <div className="flex shrink-0 gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            data-testid="cookie_consent_reject_button"
-            onClick={reject}
-          >
-            Rechazar
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            data-testid="cookie_consent_configure_button"
-            onClick={openSettings}
-          >
-            Configurar
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            data-testid="cookie_consent_accept_button"
-            onClick={accept}
-          >
-            Aceptar
-          </Button>
+    <>
+      {/* FRESCO-756: the banner is `fixed`, so it takes no room in the page and
+          covered whatever sat at the bottom of the document (footer links, the
+          onboarding CTAs) with no way to scroll it clear. This in-flow spacer,
+          last in `<body>`, adds exactly that room; it leaves with the banner. */}
+      <div aria-hidden="true" data-testid="cookie_consent_banner_spacer" className="h-(--cookie-banner-h)" />
+      <div
+        role="region"
+        aria-label="Consentimiento de cookies"
+        data-testid="cookie_consent_banner"
+        data-cookie-banner=""
+        className="fixed inset-x-0 bottom-0 z-100 h-[190px] border-t border-border bg-surface-raised p-4 shadow-lg sm:h-auto"
+      >
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-body-sm text-text">
+            Usamos cookies técnicas necesarias para el funcionamiento de Fresco y, solo si lo aceptas, cookies de analítica.
+            {' '}
+            <button
+              type="button"
+              onClick={openSettings}
+              data-testid="cookie_consent_banner_policy_link"
+              // FRESCO-478: 44px tap target (WCAG 2.5.5).
+              className="inline-flex min-h-[44px] items-center align-middle underline"
+            >
+              Más información
+            </button>
+          </p>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              data-testid="cookie_consent_reject_button"
+              onClick={reject}
+            >
+              Rechazar
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              data-testid="cookie_consent_configure_button"
+              onClick={openSettings}
+            >
+              Configurar
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              data-testid="cookie_consent_accept_button"
+              onClick={accept}
+            >
+              Aceptar
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
