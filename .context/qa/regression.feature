@@ -250,6 +250,21 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el paso ofrece "Ver resumen" en lugar de "Siguiente"
     Y al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado
 
+  @onboarding @generacion-menu @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-759). Reutiliza los pasos de generación del
+  # primer escenario; el segundo "Empezar" recibe el conflicto real de generate-meal-plan.
+  Escenario: Con el menú de la semana ya generado, el resumen ofrece "Ver mi menú" en lugar de "Empezar"
+    Dado que el usuario tiene sesión iniciada
+    Y no tiene todavía un menú generado para la semana actual
+    Cuando completa los 3 pasos del onboarding (dieta/alérgenos, cocinas favoritas, hogar)
+    Y pulsa "Ver resumen" y luego "Empezar"
+    Entonces la IA genera un menú de 21 huecos (7 días x desayuno/comida/cena)
+    Cuando vuelve al onboarding y llega al resumen
+    Y pulsa "Empezar" con el menú de la semana ya generado
+    Entonces ve el aviso "Ya existe un menú para esta semana." y "Ver mi menú" en lugar de "Empezar"
+    Cuando pulsa "Ver mi menú"
+    Entonces llega a /menu y la semana sigue teniendo un único menú
+
   @generacion-menu @edge-case @verificado-manual-2026-07-29
   Escenario: El catálogo filtrado no tiene recetas específicas para todos los huecos
     Dado que las restricciones del usuario dejan un catálogo con recetas insuficientes para desayuno o cena
