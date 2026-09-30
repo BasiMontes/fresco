@@ -45,6 +45,20 @@ describe('CookieConsentBanner', () => {
     expect(screen.queryByTestId('cookie_consent_banner_spacer')).not.toBeInTheDocument();
   });
 
+  // FRESCO-757: the banner publishes its real height for the spacer and for the
+  // mobile tab bar, and withdraws it when it goes away.
+  test('publishes its height as --cookie-banner-h while visible and clears it on decision', async () => {
+    clearAllCookies();
+    const user = setupUser();
+    renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
+
+    expect(document.documentElement.style.getPropertyValue('--cookie-banner-h')).not.toBe('');
+
+    await user.click(screen.getByTestId('cookie_consent_reject_button'));
+
+    expect(document.documentElement.style.getPropertyValue('--cookie-banner-h')).toBe('');
+  });
+
   test('reserves no room when a decision already exists', () => {
     renderWithProviders(<Wrapper initialDecision="rejected"><CookieConsentBanner /></Wrapper>);
     expect(screen.queryByTestId('cookie_consent_banner_spacer')).not.toBeInTheDocument();

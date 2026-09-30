@@ -27,7 +27,9 @@ export function BottomTabBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-100 flex border-t border-border bg-background md:hidden">
+    // FRESCO-757: `bottom` follows the cookie banner's height while it shows, so
+    // the bar sits on top of the banner instead of under it (0 once decided).
+    <nav className="fixed inset-x-0 bottom-(--cookie-banner-inset) z-100 flex border-t border-border bg-background transition-[bottom] duration-200 motion-reduce:transition-none md:hidden">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname?.startsWith(href);
         return (
