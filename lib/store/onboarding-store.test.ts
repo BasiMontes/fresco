@@ -175,6 +175,34 @@ describe('useOnboardingStore — dieta implies alergeno locks (FRESCO-275)', () 
   });
 });
 
+describe('onboarding summary navigation (FRESCO-755)', () => {
+  beforeEach(() => {
+    useOnboardingStore.getState().reset();
+  });
+
+  test('editFromSummary opens the step and marks the return to the summary', () => {
+    useOnboardingStore.getState().editFromSummary(2);
+
+    expect(useOnboardingStore.getState().step).toBe(2);
+    expect(useOnboardingStore.getState().returnToSummary).toBe(true);
+  });
+
+  test('goToSummary lands on step 4 and clears the return flag', () => {
+    useOnboardingStore.getState().editFromSummary(3);
+    useOnboardingStore.getState().goToSummary();
+
+    expect(useOnboardingStore.getState().step).toBe(4);
+    expect(useOnboardingStore.getState().returnToSummary).toBe(false);
+  });
+
+  test('reset clears the return flag', () => {
+    useOnboardingStore.getState().editFromSummary(1);
+    useOnboardingStore.getState().reset();
+
+    expect(useOnboardingStore.getState().returnToSummary).toBe(false);
+  });
+});
+
 afterAll(() => {
   (globalThis as { window?: unknown }).window = realWindow;
 });

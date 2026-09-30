@@ -1,14 +1,16 @@
 'use client';
 
+import type { OnboardingStep } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { IdentityStep } from '@/components/onboarding/identity-step';
 import { OnboardingStepDiet } from '@/components/onboarding/onboarding-step-diet';
 import { OnboardingStepHousehold } from '@/components/onboarding/onboarding-step-household';
 import { OnboardingStepIdentity } from '@/components/onboarding/onboarding-step-identity';
+import { OnboardingSummary } from '@/components/onboarding/onboarding-summary';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useGenerateMealPlan } from '@/lib/onboarding/use-generate-meal-plan';
@@ -31,6 +33,11 @@ import { validateHousehold } from '@/lib/validation/onboarding';
  * FRESCO-371 cuts the wizard from 4 steps back to 3 (PRD hard limit): cuisines
  * fold into the diet step, and the weekly budget goes optional again (the
  * engine only soft-warns on it — see the note at the budget input).
+ * FRESCO-755 adds a read-only summary (`step === 4`) after the 3 data steps:
+ * step 3's CTA becomes "Ver resumen" and generation moves to the summary's
+ * "Empezar". The summary is not a data step, so the indicator keeps saying
+ * "de 3". Its edit icons set `returnToSummary`, which turns each step's CTA
+ * into "Ver resumen" and its "Atrás" into a return to the summary.
  *
  * A5-M1 (god-component split): step options/lock-tooltip/each step's JSX,
  * session-gate, funnel-tracking, and generate-meal-plan each own their own
@@ -51,7 +58,9 @@ export default function OnboardingPage() {
     ninos,
     presupuestoSemanaEuros,
     planningSelection,
+    returnToSummary,
     setStep,
+    goToSummary,
   } = useOnboardingStore();
 
   const household = validateHousehold({ adultos, ninos });
@@ -130,11 +139,7 @@ export default function OnboardingPage() {
 
         <div className="t-stagger-line t-stagger-line--2 mt-6">
           <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
-            Paso
-            {' '}
-            {step}
-            {' '}
-            de 3
+            {step === 4 ? 'Resumen' : `Paso ${step} de 3`}
           </p>
           <div className="mt-2 flex gap-1">
             {[1, 2, 3].map(s => (
@@ -155,8 +160,9 @@ export default function OnboardingPage() {
                 hasInvalidPlanning={hasInvalidPlanning}
               />
             )}
+            {step === 4 && <OnboardingSummary headingRef={stepHeadingRef} />}
 
-            {generateError && !hasExistingMenu && (
+            {step === 4 && generateError && !hasExistingMenu && (
               <div className="mt-4">
                 <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
                   {generateError}
@@ -168,7 +174,7 @@ export default function OnboardingPage() {
             informational but the *action* moves into the primary CTA below
             ("Ver mi menú", de-emphasized) instead of also living here as a
             separate link — one action, not two competing ones. */}
-            {hasExistingMenu && (
+            {step === 4 && hasExistingMenu && (
               <p data-testid="generate_error_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
                 {generateError}
               </p>
@@ -198,29 +204,28 @@ export default function OnboardingPage() {
                 variant="secondary"
                 // FRESCO-296: on step 1 "Atrás" is no longer a dead end — it
                 // exits the wizard back to the landing page. Steps 2-3 keep
-                // walking back through the wizard.
-                onClick={() => (step > 1 ? setStep((step - 1) as 1 | 2 | 3) : router.push('/'))}
+                // walking back through the wizard. FRESCO-755: a step opened
+                // from the summary's edit icon returns to the summary instead.
+                onClick={() => {
+                  if (returnToSummary) {
+                    goToSummary();
+                  }
+                  else if (step === 1) {
+                    router.push('/');
+                  }
+                  else {
+                    setStep((step - 1) as OnboardingStep);
+                  }
+                }}
               >
                 Atrás
               </Button>
-              {step < 3
-                ? (
-                    <Button
-                      data-testid="next_button"
-                      onClick={() => {
-                        // FRESCO-366 / FRESCO-371: which wizard steps get abandoned.
-                        captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
-                        setStep((step + 1) as 1 | 2 | 3);
-                      }}
-                    >
-                      Siguiente
-                    </Button>
-                  )
-              // FRESCO-152: once a plan already exists for this week,
-              // "Generar mi menú" can't succeed — the primary action becomes
-              // a de-emphasized "Ver mi menú" instead of repeating a CTA that
-              // structurally cannot work.
-                : hasExistingMenu
+              {step === 4
+                // FRESCO-152: once a plan already exists for this week,
+                // "Empezar" can't succeed — the primary action becomes a
+                // de-emphasized "Ver mi menú" instead of repeating a CTA that
+                // structurally cannot work.
+                ? hasExistingMenu
                   ? (
                       <Button
                         data-testid="view_existing_menu_button"
@@ -247,8 +252,36 @@ export default function OnboardingPage() {
                               </>
                             )
                           : (
-                              'Generar mi menú'
+                              'Empezar'
                             )}
+                      </Button>
+                    )
+                : step < 3 && !returnToSummary
+                  ? (
+                      <Button
+                        data-testid="next_button"
+                        onClick={() => {
+                          // FRESCO-366 / FRESCO-371: which wizard steps get abandoned.
+                          captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
+                          setStep((step + 1) as OnboardingStep);
+                        }}
+                      >
+                        Siguiente
+                      </Button>
+                    )
+                  : (
+                      <Button
+                        data-testid="view_summary_button"
+                        onClick={() => {
+                          // Re-confirming an edited step is not a new completion.
+                          if (!returnToSummary) {
+                            captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
+                          }
+                          goToSummary();
+                        }}
+                        disabled={!household.valid || !presupuestoValid || hasInvalidPlanning}
+                      >
+                        Ver resumen
                       </Button>
                     )}
             </div>

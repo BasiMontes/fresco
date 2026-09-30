@@ -1,6 +1,8 @@
-import type { NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina } from '@schemas';
+import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { PlanningSelection } from '@/lib/planning-selection';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { DIETA_IMPLIED_ALERGENOS } from '@/lib/constants/dietary-options';
+import { fromPlanningSelection } from '@/lib/planning-selection';
 
 /**
  * Static option lists + shared helpers for `/onboarding`'s 3-step wizard.
@@ -78,4 +80,33 @@ export function alergenoLockMessage(value: string, flags: { vegano: boolean, veg
     .filter(flag => flags[flag] && DIETA_IMPLIED_ALERGENOS[flag].includes(value))
     .map(flag => ALERGENO_LABELS[flag]);
   return `Ya excluido por ${reasons.join(' y ')} — ninguna receta de nuestro catálogo con esa etiqueta lo incluye.`;
+}
+
+const DIA_SHORT_LABELS: Record<DiaSemana, string> = {
+  lunes: 'Lun',
+  martes: 'Mar',
+  miercoles: 'Mié',
+  jueves: 'Jue',
+  viernes: 'Vie',
+  sabado: 'Sáb',
+  domingo: 'Dom',
+};
+
+// Same wording as `PlanningSelectionGrid`'s rows ("comida" renders as "Almuerzo").
+const MEAL_LABELS: Record<TipoPlatoSlot, string> = {
+  desayuno: 'Desayuno',
+  comida: 'Almuerzo',
+  cena: 'Cena',
+};
+
+/**
+ * FRESCO-755 — human-readable recap of the planning matrix for the summary
+ * screen: which days ("Toda la semana" when all 7) and which meals.
+ */
+export function describePlanning(selection: PlanningSelection): { days: string, meals: string } {
+  const { days, meals } = fromPlanningSelection(selection);
+  return {
+    days: days.length === 7 ? 'Toda la semana' : days.map(day => DIA_SHORT_LABELS[day]).join(', '),
+    meals: meals.map(meal => MEAL_LABELS[meal]).join(', '),
+  };
 }

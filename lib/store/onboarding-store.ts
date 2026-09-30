@@ -31,8 +31,13 @@ export type DietaFlag
     | 'dietaKeto'
     | 'dietaHalal';
 
+/** Steps 1-3 collect data; 4 is the read-only summary (FRESCO-755), not a data step. */
+export type OnboardingStep = 1 | 2 | 3 | 4;
+
 export interface OnboardingState {
-  step: 1 | 2 | 3
+  step: OnboardingStep
+  /** FRESCO-755: true while a step was opened from the summary's edit icon, so it returns to the summary. */
+  returnToSummary: boolean
   nombre: string
   sexo: SexoUsuario | null
   objetivo: ObjetivoUsuario | null
@@ -54,7 +59,9 @@ export interface OnboardingState {
   presupuestoSemanaEuros: number | null
   planningSelection: PlanningSelection
   nivelExperiencia: NivelExperienciaCulinaria | null
-  setStep: (step: 1 | 2 | 3) => void
+  setStep: (step: OnboardingStep) => void
+  editFromSummary: (step: 1 | 2 | 3) => void
+  goToSummary: () => void
   setNombre: (value: string) => void
   setSexo: (value: SexoUsuario) => void
   setObjetivo: (value: ObjetivoUsuario) => void
@@ -74,7 +81,8 @@ export interface OnboardingState {
 }
 
 const initialState = {
-  step: 1 as const,
+  step: 1 as OnboardingStep,
+  returnToSummary: false,
   nombre: '',
   sexo: null as SexoUsuario | null,
   objetivo: null as ObjetivoUsuario | null,
@@ -133,6 +141,8 @@ function getOnboardingStorage(): Storage {
 export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   ...initialState,
   setStep: step => set({ step }),
+  editFromSummary: step => set({ step, returnToSummary: true }),
+  goToSummary: () => set({ step: 4, returnToSummary: false }),
   setNombre: nombre => set({ nombre }),
   setSexo: sexo => set({ sexo }),
   setObjetivo: objetivo => set({ objetivo }),
@@ -216,6 +226,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   storage: createJSONStorage(getOnboardingStorage),
   partialize: state => ({
     step: state.step,
+    returnToSummary: state.returnToSummary,
     nombre: state.nombre,
     sexo: state.sexo,
     objetivo: state.objetivo,

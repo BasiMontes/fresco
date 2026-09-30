@@ -1,10 +1,11 @@
+import type { OnboardingStep } from '@/lib/store/onboarding-store';
 import { useEffect, useRef } from 'react';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 export interface UseOnboardingFunnelTrackingArgs {
   identityResolved: boolean | null
-  step: 1 | 2 | 3
+  step: OnboardingStep
 }
 
 /**
@@ -24,9 +25,9 @@ export function useOnboardingFunnelTracking({ identityResolved, step }: UseOnboa
   const resetOnUnmount = useRef(false);
   // FRESCO-366: whether the `onboarding` funnel step has opened (wizard shown).
   const onboardingStarted = useRef(false);
-  // FRESCO-371: last wizard step reached — feeds `onboarding_abandoned` so the
+  // FRESCO-371: last wizard step reached (4 = summary, FRESCO-755) — feeds `onboarding_abandoned` so the
   // funnel can see WHERE people drop.
-  const lastStepRef = useRef<1 | 2 | 3>(1);
+  const lastStepRef = useRef<OnboardingStep>(1);
 
   // FRESCO-371: `resetOnUnmount` flips to true only on the success path (right
   // before router.push('/menu')). Any other unmount once the wizard was
