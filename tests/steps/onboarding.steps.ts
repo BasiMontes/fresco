@@ -208,3 +208,45 @@ Then(/^al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado$/, a
   await expect(page.getByTestId('onboarding_summary')).toBeVisible();
   await expect(page.getByTestId('summary_allergens').getByRole('listitem')).toHaveCount(1);
 });
+
+// FRESCO-759 — the "ya existe menú" variant of the summary's "Empezar" (FRESCO-152 behaviour, moved
+// to the summary by FRESCO-755). The first menu is generated through the UI by the shared steps, so
+// the second "Empezar" gets the real conflict from `generate-meal-plan`.
+
+When(/^vuelve al onboarding y llega al resumen$/, async ({ page }) => {
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('view_summary_button').click();
+  await expect(page.getByTestId('onboarding_summary')).toBeVisible();
+});
+
+When(/^pulsa "Empezar" con el menú de la semana ya generado$/, async ({ page }) => {
+  await page.getByTestId('generate_menu_button').click();
+});
+
+Then(/^ve el aviso "Ya existe un menú para esta semana\." y "Ver mi menú" en lugar de "Empezar"$/, async ({ page }) => {
+  const message = page.getByTestId('generate_error_message');
+  // Same cold-start margin as the generation steps: the edge runtime may still be booting.
+  await expect(message).toHaveText('Ya existe un menú para esta semana.', { timeout: 60_000 });
+  // Informational (role=status), not an alert: nothing went wrong, the week is just taken.
+  await expect(message).toHaveAttribute('role', 'status');
+  await expect(page.getByTestId('view_existing_menu_button')).toHaveText('Ver mi menú');
+  await expect(page.getByTestId('generate_menu_button')).toHaveCount(0);
+});
+
+When(/^pulsa "Ver mi menú"$/, async ({ page }) => {
+  await page.getByTestId('view_existing_menu_button').click();
+});
+
+Then(/^llega a \/menu y la semana sigue teniendo un único menú$/, async ({ page, request }) => {
+  await expect(page).toHaveURL(/\/menu$/);
+  const testUser = ctx.testUser!;
+  const { semanaIso } = currentWeekMonday();
+  const res = await request.get(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/meal_plans?select=id&user_id=eq.${testUser.id}&semana_iso=eq.${semanaIso}`,
+    { headers: restHeaders(testUser.accessToken) },
+  );
+  expect((await res.json() as unknown[]).length).toBe(1);
+});
