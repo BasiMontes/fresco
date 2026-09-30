@@ -295,3 +295,7 @@ Historia archivada:
 - Qué: typescript 5.9.3 a 6.0.3 (PR #416, 2fe06056), primer salto de los dos majors. Sin cambios de código: el baseUrl ya se quitó en #407.
 - Por qué: typescript-eslint 8.71 declara peer <6.1.0 y no carga con TS 7, así que 6.0 es lo máximo posible hoy.
 - Siguiente: TS 7 queda bloqueado hasta que typescript-eslint (y Next) lo soporten.
+## 2026-09-30 - FRESCO-755 Resumen al final del onboarding
+- Qué: el paso 3 acaba en "Ver resumen" y un resumen de solo lectura (paso 4, no cuenta como paso de datos) agrupa las respuestas con un icono de editar por bloque; "Empezar" genera el menú (PR #417, 2ba844a0). De la validación salieron FRESCO-756 (#418, hueco reservado bajo el banner de cookies) y FRESCO-757 (#419, barra inferior móvil sobre el banner).
+- Por qué: confirmar alergias y datos antes de generar, y corregir sin pulsar Atrás paso a paso. El banner fijo tapaba los botones inferiores en móvil, previo a este cambio.
+- Siguiente: el banner publica su altura real (--cookie-banner-h) y la barra la usa; queda sin validar en vivo la rama "ya existe menú" del resumen (exige un 409 en la base compartida).
