@@ -21,6 +21,14 @@ describe('BottomTabBar', () => {
     );
   });
 
+  // FRESCO-757: the bar is `fixed`; it follows the cookie banner's height so it
+  // never sits under it (the variable is 0 once the banner is gone).
+  test('is offset by the cookie banner inset instead of pinned to the bottom edge', () => {
+    renderWithProviders(<BottomTabBar />);
+
+    expect(screen.getByRole('navigation').className).toContain('bottom-(--cookie-banner-inset)');
+  });
+
   test('marks the tab matching the current path as current', () => {
     navState.pathname = '/calendar';
     renderWithProviders(<BottomTabBar />);

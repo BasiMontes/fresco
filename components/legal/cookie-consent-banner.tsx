@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { Button } from '@/components/ui/button';
 
@@ -30,6 +31,28 @@ import { Button } from '@/components/ui/button';
  */
 export function CookieConsentBanner() {
   const { bannerVisible, accept, reject, openSettings } = useCookieConsent();
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // FRESCO-757: above `sm` the banner's height is content-driven (100-120px
+  // depending on the copy's wrap), so the CSS constants in `globals.css` are
+  // only the pre-hydration fallback. Once mounted, the banner publishes its
+  // real height as `--cookie-banner-h`, which sizes the spacer below and lifts
+  // the mobile bottom tab bar exactly on top of it (no gap, no overlap). This
+  // only moves those two, never the banner itself, so FRESCO-536's CLS fix holds.
+  useEffect(() => {
+    const banner = bannerRef.current;
+    if (!banner) { return; }
+    const root = document.documentElement;
+    const publishHeight = () => root.style.setProperty('--cookie-banner-h', `${Math.ceil(banner.getBoundingClientRect().height)}px`);
+    publishHeight();
+    if (typeof ResizeObserver === 'undefined') { return () => root.style.removeProperty('--cookie-banner-h'); }
+    const observer = new ResizeObserver(publishHeight);
+    observer.observe(banner);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--cookie-banner-h');
+    };
+  }, [bannerVisible]);
 
   if (!bannerVisible) { return null; }
 
@@ -41,6 +64,7 @@ export function CookieConsentBanner() {
           last in `<body>`, adds exactly that room; it leaves with the banner. */}
       <div aria-hidden="true" data-testid="cookie_consent_banner_spacer" className="h-(--cookie-banner-h)" />
       <div
+        ref={bannerRef}
         role="region"
         aria-label="Consentimiento de cookies"
         data-testid="cookie_consent_banner"
