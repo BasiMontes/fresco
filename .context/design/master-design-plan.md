@@ -193,10 +193,14 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   `PlanningSelectionGrid`; "ninguno" blocks generation — DEFECT-FRESCO-165/172). 3-step wizard
   (FRESCO-371 / A4-H14 — PRD hard limit; per-step funnel events `onboarding_started` /
   `onboarding_step_completed` / `onboarding_completed` / `onboarding_abandoned`). "Atrás" button
-  between steps (DEFECT-FRESCO-296).
+  between steps (DEFECT-FRESCO-296). Step 3 ends in a read-only **summary** (FRESCO-755, `step === 4`,
+  not a data step — the indicator reads "Resumen", funnel `total_steps` stays 3): three blocks (Sobre
+  ti / Alimentación / Tu hogar), each with an edit icon (`button-icon` + `Pencil`) that reopens its step
+  and returns to the summary ("Ver resumen"); allergens always shown expanded with the `allergen` tag;
+  the final `button-action` "Empezar" generates the menu. Built live-UI-first, no mockup.
 - **Tokens.** `segmented-control` + `tag`/`tag-selected`/`tag-outline` for chips; `input` (pill);
   `dropdown` (`components/ui/dropdown.tsx`); `button` primary "continuar" / `button-action` on the
-  final "Generar mi menú"; `card` per step; heading focus moves to step title on change
+  summary's "Empezar" (FRESCO-755; was "Generar mi menú" on step 3); `card` per step; heading focus moves to step title on change
   (TECHDEBT-FRESCO-44).
 - **Components.** `app/onboarding/page.tsx`, `components/onboarding/identity-step.tsx`,
   `planning-selection-grid.tsx`.
@@ -547,6 +551,7 @@ stories) are listed at the end.
 | Story | Title (short) | Epic | Primary screen (§4) | Also touches |
 |---|---|---|---|---|
 | FRESCO-5 | Onboarding: diet + cuisine + household setup | EPIC-FRESCO-4 Onboarding | 4.6 Onboarding | 4.17 App shell |
+| FRESCO-755 | Onboarding: review summary + edit answers before starting | EPIC-FRESCO-4 Onboarding | 4.6 Onboarding (summary, `step === 4`) | — |
 | FRESCO-7 | Generate a 21-meal weekly menu | EPIC-FRESCO-6 AI Menu Generation | 4.8 Calendar | 4.6 Onboarding (final step), 4.7 Home |
 | FRESCO-9 | Guarantee: no allergen / disliked ingredient in the plan | EPIC-FRESCO-8 Food-Safety Guardrail | 4.8 Calendar (AlertBanner surface) | 4.7 Home — mostly backend/cross-cutting guardrail |
 | FRESCO-11 | Calendar: reorder the generated menu by dragging | EPIC-FRESCO-10 Editable Calendar | 4.8 Calendar | — |
