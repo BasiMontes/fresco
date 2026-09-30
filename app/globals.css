@@ -140,6 +140,34 @@
   th {
     padding: 1px;
   }
+
+  /*
+    FRESCO-756: height of the fixed cookie banner per breakpoint (measured live:
+    190px under `sm` — the banner's own fixed height, FRESCO-536 — 120px at
+    640-767, 100px from `md`), plus a few px of buffer where the banner's height
+    is content-driven. One source for the spacer the banner renders
+    (`cookie-consent-banner.tsx`) and for `scroll-padding-bottom` below, so a
+    focused or scrolled-to control lands ABOVE the banner (WCAG 2.2 SC 2.4.11).
+  */
+  :root {
+    --cookie-banner-h: 190px;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --cookie-banner-h: 128px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --cookie-banner-h: 108px;
+    }
+  }
+
+  html:has([data-cookie-banner]) {
+    scroll-padding-bottom: var(--cookie-banner-h);
+  }
 }
 
 @utility recipe-photo {

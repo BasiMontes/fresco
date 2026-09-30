@@ -28,6 +28,28 @@ describe('CookieConsentBanner', () => {
     expect(screen.queryByTestId('cookie_consent_banner')).not.toBeInTheDocument();
   });
 
+  // FRESCO-756: the banner is `fixed`; the spacer is what keeps the last
+  // controls of the page scrollable above it.
+  test('reserves in-flow room for the fixed banner while it is visible', () => {
+    renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
+    expect(screen.getByTestId('cookie_consent_banner_spacer')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('releases the reserved room together with the banner', async () => {
+    clearAllCookies();
+    const user = setupUser();
+    renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
+
+    await user.click(screen.getByTestId('cookie_consent_reject_button'));
+
+    expect(screen.queryByTestId('cookie_consent_banner_spacer')).not.toBeInTheDocument();
+  });
+
+  test('reserves no room when a decision already exists', () => {
+    renderWithProviders(<Wrapper initialDecision="rejected"><CookieConsentBanner /></Wrapper>);
+    expect(screen.queryByTestId('cookie_consent_banner_spacer')).not.toBeInTheDocument();
+  });
+
   test('Aceptar/Rechazar/Configurar all carry the same visual weight (same variant class)', () => {
     renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
     const accept = screen.getByTestId('cookie_consent_accept_button');
