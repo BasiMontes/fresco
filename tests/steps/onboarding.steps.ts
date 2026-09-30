@@ -13,9 +13,10 @@ import { currentWeekMonday, restHeaders } from '../test-helpers';
  * hangs on: onboarding → first generated week. Uses a throwaway factory user
  * (FRESCO-308) with no prior plan. The onboarding store's defaults
  * (`adultos: 2`, full `planning_selection`) already make every step valid, so
- * with FRESCO-371 (budget optional) nothing needs filling to reach "Generar
- * mi menú" — same as `generacion-determinista.steps.ts`, whose `pulsa
- * "Generar mi menú"` step this scenario reuses.
+ * with FRESCO-371 (budget optional) nothing needs filling to reach the
+ * summary (FRESCO-755) where "Empezar" generates — same as
+ * `generacion-determinista.steps.ts`, whose `pulsa "Ver resumen" y luego
+ * "Empezar"` step this scenario reuses.
  */
 
 const { Given, When, Then } = createBdd(test);
@@ -62,11 +63,13 @@ Then(/^el indicador de pasos del onboarding dice "Paso 1 de 3"$/, async ({ page 
   await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+1\s+de\s+3/);
 });
 
-When(/^llega al último paso sin rellenar el presupuesto y pulsa "Generar mi menú"$/, async ({ page }) => {
+When(/^llega al último paso sin rellenar el presupuesto y pulsa "Ver resumen" y "Empezar"$/, async ({ page }) => {
   // FRESCO-371: 2 clicks reach step 3; budget left blank (optional).
+  // FRESCO-755: step 3 ends in the summary, where "Empezar" generates.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   await expect(page.getByTestId('presupuesto_input')).toHaveValue('');
+  await page.getByTestId('view_summary_button').click();
   await page.getByTestId('generate_menu_button').click();
 });
 
@@ -148,7 +151,7 @@ Then(/^sus respuestas ya dadas siguen ahí, no vuelve al paso 1 en blanco$/, asy
 
 // "El campo Adultos respeta un tope superior" — FRESCO-110: `validateHousehold`
 // caps adultos/niños at `HOUSEHOLD_FIELD_MAX` (10); over that, the inline
-// message shows AND `generate_menu_button` is disabled
+// message shows AND `view_summary_button` (step 3's CTA, FRESCO-755) is disabled
 // (`disabled={... || !household.valid || ...}`).
 
 Given(/^que el usuario está en el paso 3 del onboarding \(hogar\)$/, async ({ page, testUserFactory }) => {
@@ -166,5 +169,42 @@ When(/^escribe un valor muy grande \(ej\. 999\) en "Adultos"$/, async ({ page })
 
 Then(/^el sistema lo rechaza o lo acota a un máximo razonable antes de permitir generar el menú$/, async ({ page }) => {
   await expect(page.getByTestId('household_validation_message')).toBeVisible();
-  await expect(page.getByTestId('generate_menu_button')).toBeDisabled();
+  await expect(page.getByTestId('view_summary_button')).toBeDisabled();
+});
+
+// FRESCO-755 — "El resumen del onboarding permite revisar y editar antes de empezar".
+
+When(/^llega al resumen del onboarding$/, async ({ page }) => {
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('view_summary_button').click();
+});
+
+Then(/^ve sus respuestas agrupadas por bloque, con los alérgenos visibles y el botón "Empezar"$/, async ({ page }) => {
+  await expect(page.getByTestId('onboarding_summary')).toBeVisible();
+  await expect(page.getByTestId('step_indicator_label')).toHaveText('Resumen');
+  for (const section of ['profile', 'diet', 'household']) {
+    await expect(page.getByTestId(`summary_section_${section}`)).toBeVisible();
+  }
+  await expect(page.getByTestId('summary_allergens')).toBeVisible();
+  await expect(page.getByTestId('generate_menu_button')).toHaveText('Empezar');
+});
+
+When(/^pulsa el icono de editar de "Alimentación" y marca un alérgeno$/, async ({ page }) => {
+  await page.getByTestId('summary_edit_diet').click();
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+2\s+de\s+3/);
+  await page.getByTestId('alergeno_option').first().click();
+});
+
+Then(/^el paso ofrece "Ver resumen" en lugar de "Siguiente"$/, async ({ page }) => {
+  await expect(page.getByTestId('view_summary_button')).toBeVisible();
+  await expect(page.getByTestId('next_button')).toHaveCount(0);
+});
+
+Then(/^al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado$/, async ({ page }) => {
+  await page.getByTestId('view_summary_button').click();
+  await expect(page.getByTestId('onboarding_summary')).toBeVisible();
+  await expect(page.getByTestId('summary_allergens').getByRole('listitem')).toHaveCount(1);
 });

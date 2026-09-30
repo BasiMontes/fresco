@@ -45,6 +45,8 @@ Given(
       .toBe(true);
     await page.getByTestId('next_button').click();
     await page.getByTestId('next_button').click();
+    // FRESCO-755: generation starts from the summary's "Empezar".
+    await page.getByTestId('view_summary_button').click();
     await page.getByTestId('generate_menu_button').click();
     // ~2-3s observed live post-ADR-0005 — margin kept generous for CI
     // variance, not tuned to the old thinking-model latency.

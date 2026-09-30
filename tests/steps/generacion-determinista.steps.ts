@@ -13,7 +13,7 @@ import { seedLastWeekCookedHistory } from '../test-user-factory';
  * the Pro learning explanation) alongside the deterministic 21-slot
  * selection, not just the fast Free path.
  *
- * The `pulsa "Generar mi menú"` step is shared with `onboarding.steps.ts`
+ * The `pulsa "Ver resumen" y luego "Empezar"` step is shared with `onboarding.steps.ts`
  * (Cucumber matches step text across every loaded file) — defined here.
  */
 
@@ -40,7 +40,10 @@ Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({
   await page.getByTestId('presupuesto_input').fill('80');
 });
 
-When(/^pulsa "Generar mi menú"$/, async ({ page }) => {
+// FRESCO-755: step 3's CTA is "Ver resumen"; generation starts from the
+// summary's "Empezar", so the clock starts there.
+When(/^pulsa "Ver resumen" y luego "Empezar"$/, async ({ page }) => {
+  await page.getByTestId('view_summary_button').click();
   generationStartedAt = Date.now();
   await page.getByTestId('generate_menu_button').click();
 });
