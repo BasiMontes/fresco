@@ -29,6 +29,15 @@ import { Button } from '@/components/ui/button';
  * settled 158px covers that shrink regardless of which face renders first.
  * Reset above `sm:` where the row layout is shorter and stable.
  */
+// FRESCO-758: at 320px the three buttons (285px + gaps) outgrew the 288px the
+// banner leaves them and "Aceptar" ended flush against the screen edge with
+// its border clipped. Tightening the horizontal padding below 360px makes the
+// row fit (~277px) without touching the height (fixed under `sm`, FRESCO-536),
+// the 44px tap height, or the equal weight of the three actions: the SAME
+// class goes on all of them. `justify-between` on the row (below 360px only)
+// spreads them across the full width so left and right margins match.
+const NARROW_SCREEN_BUTTON_CLASS = 'max-[360px]:px-2';
+
 export function CookieConsentBanner() {
   const { bannerVisible, accept, reject, openSettings } = useCookieConsent();
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -85,11 +94,12 @@ export function CookieConsentBanner() {
               Más información
             </button>
           </p>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 gap-2 max-[360px]:justify-between">
             <Button
               type="button"
               variant="secondary"
               size="sm"
+              className={NARROW_SCREEN_BUTTON_CLASS}
               data-testid="cookie_consent_reject_button"
               onClick={reject}
             >
@@ -99,6 +109,7 @@ export function CookieConsentBanner() {
               type="button"
               variant="secondary"
               size="sm"
+              className={NARROW_SCREEN_BUTTON_CLASS}
               data-testid="cookie_consent_configure_button"
               onClick={openSettings}
             >
@@ -108,6 +119,7 @@ export function CookieConsentBanner() {
               type="button"
               variant="secondary"
               size="sm"
+              className={NARROW_SCREEN_BUTTON_CLASS}
               data-testid="cookie_consent_accept_button"
               onClick={accept}
             >

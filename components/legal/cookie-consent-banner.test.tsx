@@ -28,6 +28,15 @@ describe('CookieConsentBanner', () => {
     expect(screen.queryByTestId('cookie_consent_banner')).not.toBeInTheDocument();
   });
 
+  // FRESCO-758: below 360px the row only fits with tighter padding; it must
+  // land on all three buttons so their visual weight stays equal.
+  test('tightens the padding of all three buttons on very narrow screens', () => {
+    renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
+    ['reject', 'configure', 'accept'].forEach((action) => {
+      expect(screen.getByTestId(`cookie_consent_${action}_button`).className).toContain('max-[360px]:px-2');
+    });
+  });
+
   // FRESCO-756: the banner is `fixed`; the spacer is what keeps the last
   // controls of the page scrollable above it.
   test('reserves in-flow room for the fixed banner while it is visible', () => {
