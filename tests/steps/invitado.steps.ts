@@ -33,6 +33,8 @@ When(/^completa el onboarding de 3 pasos y genera su menú$/, async ({ page }) =
   // optional now, so this guest flow leaves it blank on purpose.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
+  // FRESCO-755: step 3's CTA is "Ver resumen"; generation starts from the summary's "Empezar".
+  await page.getByTestId('view_summary_button').click();
   await page.getByTestId('generate_menu_button').click();
   await page.waitForURL('**/menu', { timeout: 30_000 });
 });

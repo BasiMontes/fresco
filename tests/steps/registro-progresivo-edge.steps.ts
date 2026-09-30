@@ -51,12 +51,13 @@ async function ensureAnonymousSession(page: import('@playwright/test').Page): Pr
 async function generateRealGuestMenu(page: import('@playwright/test').Page): Promise<void> {
   await ensureAnonymousSession(page);
   // FRESCO-371: back to a 3-step wizard ("Paso 3 de 3") — cuisines folded
-  // into the diet step. 2 clicks reaches the final step where "Generar mi
-  // menú" lives.
+  // into the diet step. 2 clicks reaches the final step, then FRESCO-755's
+  // summary where "Empezar" lives.
   await page.getByTestId('next_button').click();
   await page.getByTestId('next_button').click();
   // FRESCO-371: the weekly budget is optional again and no longer gates
   // `generate_menu_button` — left blank here.
+  await page.getByTestId('view_summary_button').click();
   await page.getByTestId('generate_menu_button').click();
   await page.waitForURL('**/menu', { timeout: 200_000 });
 }

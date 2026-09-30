@@ -216,12 +216,12 @@ Característica: Flujo completo de usuario en Fresco
 
   @onboarding @generacion-menu @verificado-manual-2026-07-29 @automatizado
   # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-352). Reutiliza el
-  # step "pulsa \"Generar mi menú\"" de generacion-determinista.steps.ts.
+  # step "pulsa \"Ver resumen\" y luego \"Empezar\"" de generacion-determinista.steps.ts.
   Escenario: Un usuario logueado completa el onboarding y genera su menú semanal
     Dado que el usuario tiene sesión iniciada
     Y no tiene todavía un menú generado para la semana actual
     Cuando completa los 3 pasos del onboarding (dieta/alérgenos, cocinas favoritas, hogar)
-    Y pulsa "Generar mi menú"
+    Y pulsa "Ver resumen" y luego "Empezar"
     Entonces la IA genera un menú de 21 huecos (7 días x desayuno/comida/cena)
     Y el menú queda persistido en base de datos
     Y es redirigido a /menu, donde ve el menú completo
@@ -232,12 +232,23 @@ Característica: Flujo completo de usuario en Fresco
     Dado que el usuario tiene sesión iniciada
     Y no tiene todavía un menú generado para la semana actual
     Entonces el indicador de pasos del onboarding dice "Paso 1 de 3"
-    Cuando llega al último paso sin rellenar el presupuesto y pulsa "Generar mi menú"
+    Cuando llega al último paso sin rellenar el presupuesto y pulsa "Ver resumen" y "Empezar"
     Entonces la IA genera un menú de 21 huecos (7 días x desayuno/comida/cena)
     Y es redirigido a /menu, donde ve el menú completo
     # FRESCO-371 (A4-H14): el PRD exige 3 pasos y el motor apenas usa el
     # presupuesto (solo un aviso blando post-generación en menu-selector.ts,
     # nunca filtra). Cocinas favoritas se pliega dentro del paso de dieta.
+
+  @onboarding @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-755)
+  Escenario: El resumen del onboarding permite revisar y editar antes de empezar
+    Dado que el usuario tiene sesión iniciada
+    Y no tiene todavía un menú generado para la semana actual
+    Cuando llega al resumen del onboarding
+    Entonces ve sus respuestas agrupadas por bloque, con los alérgenos visibles y el botón "Empezar"
+    Cuando pulsa el icono de editar de "Alimentación" y marca un alérgeno
+    Entonces el paso ofrece "Ver resumen" en lugar de "Siguiente"
+    Y al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado
 
   @generacion-menu @edge-case @verificado-manual-2026-07-29
   Escenario: El catálogo filtrado no tiene recetas específicas para todos los huecos
@@ -278,7 +289,7 @@ Característica: Flujo completo de usuario en Fresco
   # queda enmascarada. Este escenario mide una sola vez y esa medición manda.
   Escenario: La generación de menú es rápida y no depende de una llamada de IA por franja (ADR-0005)
     Dado que un usuario Pro con historial real completa el onboarding
-    Cuando pulsa "Generar mi menú"
+    Cuando pulsa "Ver resumen" y luego "Empezar"
     Entonces el menú completo queda listo en menos de 10 segundos
     # Antes de ADR-0005 (selección vía Gemini para las 21 franjas), la
     # generación tardaba entre 20 y 110 segundos de forma variable — el
