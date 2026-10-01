@@ -4,10 +4,10 @@ name: refresh-supermarket-prices
 # supermarket price refresh from the menus' demand and, with `apply`, runs it
 # and writes to the shared Supabase project.
 #
-# Manual only, on purpose. The connectors in the registry still read the
-# committed catalogs and make no request, so a scheduled run would only spend
-# minutes. Add a `schedule:` trigger when the live connectors land
-# (FRESCO-771 Mercadona, FRESCO-772 Consum).
+# Manual only, on purpose. Mercadona now has a live connector (FRESCO-771: the
+# community dataset, no request to Mercadona), but Consum does not yet
+# (FRESCO-772), and a scheduled run writes to the shared Supabase project, which
+# needs the founder's explicit go-ahead. Add a `schedule:` trigger then.
 #
 # Needs two repository secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.
 # The service-role key bypasses RLS, so this workflow reads no pull-request

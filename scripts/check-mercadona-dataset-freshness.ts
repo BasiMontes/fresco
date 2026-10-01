@@ -10,7 +10,7 @@
 // Usage:
 //   bun scripts/check-mercadona-dataset-freshness.ts
 
-const DATASET_API = 'https://huggingface.co/api/datasets/datania/mercadona-catalog';
+export const DATASET_API = 'https://huggingface.co/api/datasets/datania/mercadona-catalog';
 const MS_PER_DAY = 86_400_000;
 
 /** Two missed Monday exports. One missed week is normal slack; two is a stall. */

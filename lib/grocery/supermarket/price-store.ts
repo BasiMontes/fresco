@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { ProductoParaCarga } from './catalog-connectors';
 import type { DecisionEscritura, ObservacionDePrecio } from './price-write';
 import type { ProductoSeguido } from './refresh-plan';
 import type { CadenaId, ProductoSupermercado, ZonaId } from './types';
@@ -184,14 +185,15 @@ export async function guardarObservacion(db: Db, producto: ProductoSupermercado)
 }
 
 export interface ResultadoCarga {
+  /** Distinct products stored (two ingredients may share one). */
   productos: number
-  /** Products skipped because their price does not fit `numeric(10, 2)` above zero. */
+  /** Catalog entries skipped because their price does not fit `numeric(10, 2)` above zero. */
   omitidos: number
 }
 
 /**
  * Initial load: puts the products of the committed catalogs into the database,
- * each matched to the ingredient it is keyed by (`idExterno`), in `zona`.
+ * each matched to the ingredient(s) it was found for, in `zona`.
  *
  * Idempotent. Products and matches are upserted; an existing price is NEVER
  * overwritten, so re-running cannot replace a newer observation. The catalogs
@@ -200,11 +202,19 @@ export interface ResultadoCarga {
  */
 export async function cargarProductos(
   db: Db,
-  productos: readonly ProductoSupermercado[],
+  items: readonly ProductoParaCarga[],
   zona: ZonaId = ZONA_BD,
 ): Promise<ResultadoCarga> {
-  const validos = productos.filter(p => Math.round(p.precioEnvase * 100) > 0);
-  for (const lote of lotes(validos)) {
+  const clave = (p: ProductoSupermercado): string => `${p.cadena}\u0000${p.idExterno}`;
+  const validos = items.filter(i => Math.round(i.producto.precioEnvase * 100) > 0);
+  const unicos = new Map<string, ProductoSupermercado>();
+  for (const { producto } of validos) {
+    if (!unicos.has(clave(producto))) {
+      unicos.set(clave(producto), producto);
+    }
+  }
+
+  for (const lote of lotes([...unicos.values()])) {
     const { data, error } = await db
       .from('supermarket_product')
       .upsert(
@@ -221,30 +231,28 @@ export async function cargarProductos(
       )
       .select('id, cadena, id_externo');
     falla('load products', error);
-
     const idDe = new Map((data ?? []).map(f => [`${f.cadena}\u0000${f.id_externo}`, f.id]));
-    const filas = lote.flatMap((p) => {
-      const id = idDe.get(`${p.cadena}\u0000${p.idExterno}`);
-      return id === undefined ? [] : [{ p, id }];
-    });
 
-    const { error: errorMatch } = await db.from('ingredient_product_match').upsert(
-      filas.map(({ p, id }) => ({ ingrediente: p.idExterno, producto_id: id, confianza: 'alta' })),
-      { onConflict: 'ingrediente,producto_id', ignoreDuplicates: true },
-    );
+    const delLote = new Set(lote.map(clave));
+    const coincidencias = validos.flatMap(({ ingrediente, producto }) => {
+      const id = delLote.has(clave(producto)) ? idDe.get(clave(producto)) : undefined;
+      return id === undefined ? [] : [{ ingrediente, producto_id: id, confianza: 'alta' }];
+    });
+    const { error: errorMatch } = await db
+      .from('ingredient_product_match')
+      .upsert(coincidencias, { onConflict: 'ingrediente,producto_id', ignoreDuplicates: true });
     falla('load matches', errorMatch);
 
     const { error: errorPrecio } = await db.from('supermarket_price').upsert(
-      filas.map(({ p, id }) => ({
-        producto_id: id,
-        zona,
-        precio_envase: p.precioEnvase,
-        disponible: p.disponible,
-        observado_en: p.observadoEn,
-      })),
+      lote.flatMap((p) => {
+        const id = idDe.get(clave(p));
+        return id === undefined
+          ? []
+          : [{ producto_id: id, zona, precio_envase: p.precioEnvase, disponible: p.disponible, observado_en: p.observadoEn }];
+      }),
       { onConflict: 'producto_id,zona', ignoreDuplicates: true },
     );
     falla('load prices', errorPrecio);
   }
-  return { productos: validos.length, omitidos: productos.length - validos.length };
+  return { productos: unicos.size, omitidos: items.length - validos.length };
 }

@@ -16,16 +16,22 @@
 // printed). Without --apply nothing is written and no chain is contacted.
 //
 // The legal gate applies twice: a chain is only planned if it is `habilitada`
-// in the database AND runnable in the code registry, and the loop then asks
-// the registry again for every chain (`ejecutarRefresco`).
+// in the database AND has a runnable connector in the code, and the loop then
+// asks the registry again for every chain (`ejecutarRefresco`).
 //
-// KNOWN LIMIT: the connectors in the registry still read the committed catalogs
-// and make no request, so a refresh brings no new prices yet. The live
-// connectors are FRESCO-771 (Mercadona) and FRESCO-772 (Consum).
+// Two registries, on purpose. The app's `registroSupermercados` holds the
+// static connectors that read the committed catalogs; it is bundled into the
+// browser and cannot do I/O. The refresh uses its own, built here from the
+// live connectors. Today that is Mercadona, read from the community dataset
+// `datania/mercadona-catalog` (FRESCO-771, ADR-0028: no request to Mercadona,
+// prices at most a week old). Consum has none yet (FRESCO-772), so it is not
+// planned.
 
 import type { Database } from '../lib/supabase/types.ts';
 import { createClient } from '@supabase/supabase-js';
-import { productosDeCatalogo } from '../lib/grocery/supermarket/catalog-connectors.ts';
+import { productosParaCarga } from '../lib/grocery/supermarket/catalog-connectors.ts';
+import { crearRegistro } from '../lib/grocery/supermarket/connector.ts';
+import { crearConectorMercadonaDataset } from '../lib/grocery/supermarket/mercadona-dataset.ts';
 import {
   cargarProductos,
   guardarObservacion,
@@ -37,6 +43,8 @@ import {
 import { planificarRefresco } from '../lib/grocery/supermarket/refresh-plan.ts';
 import { ejecutarRefresco } from '../lib/grocery/supermarket/refresh-run.ts';
 import { registroSupermercados } from '../lib/grocery/supermarket/registry.ts';
+import { DATASET_API, datasetAgeDays, isStale, MAX_AGE_DAYS } from './check-mercadona-dataset-freshness.ts';
+import { loadCatalog } from './gen-mercadona-catalog.ts';
 
 interface Opciones {
   apply: boolean
@@ -66,6 +74,24 @@ function leerOpciones(argv: readonly string[]): Opciones {
   return opciones;
 }
 
+/** When the dataset snapshot was published. Fail-closed: a stalled dataset refreshes nothing. */
+async function fechaSnapshotMercadona(): Promise<string> {
+  const res = await fetch(DATASET_API);
+  if (!res.ok) {
+    throw new Error(`could not read the Mercadona dataset metadata (${res.status})`);
+  }
+  const { lastModified } = await res.json() as { lastModified: string };
+  const edad = datasetAgeDays(lastModified, new Date());
+  if (isStale(edad)) {
+    throw new Error(`the Mercadona dataset was last updated ${lastModified} (${edad} days ago, limit ${MAX_AGE_DAYS}): not refreshing from it`);
+  }
+  return lastModified;
+}
+
+const registroEnVivo = crearRegistro([
+  crearConectorMercadonaDataset({ cargarCatalogo: loadCatalog, fechaSnapshot: fechaSnapshotMercadona }),
+]);
+
 async function main(): Promise<void> {
   const opciones = leerOpciones(process.argv.slice(2));
   const url = process.env.SUPABASE_URL;
@@ -77,7 +103,10 @@ async function main(): Promise<void> {
   const db = createClient<Database>(url, clave, { auth: { persistSession: false, autoRefreshToken: false } });
 
   const habilitadas = await leerCadenasHabilitadas(db);
-  const enCodigo = new Set(registroSupermercados.activos().map(c => c.cadena));
+  // The initial load reads the committed catalogs (static connectors); the
+  // refresh needs a live connector.
+  const registro = opciones.cargarCatalogos ? registroSupermercados : registroEnVivo;
+  const enCodigo = new Set(registro.activos().map(c => c.cadena));
   const ejecutables = new Set([...habilitadas].filter(c => enCodigo.has(c)));
   console.log(`chains enabled in the database: ${[...habilitadas].sort().join(', ') || '(none)'}`);
   console.log(`chains runnable in the code:    ${[...enCodigo].sort().join(', ') || '(none)'}`);
@@ -91,7 +120,7 @@ async function main(): Promise<void> {
   }
 
   if (opciones.cargarCatalogos) {
-    const productos = [...ejecutables].flatMap(c => productosDeCatalogo(c));
+    const productos = [...ejecutables].flatMap(c => productosParaCarga(c));
     console.log(`initial load: ${productos.length} products from the committed catalogs of ${[...ejecutables].sort().join(', ')}`);
     if (!opciones.apply) {
       console.log('dry run: nothing written (pass --apply)');
@@ -124,7 +153,7 @@ async function main(): Promise<void> {
   }
 
   const informe = await ejecutarRefresco(plan, {
-    registro: registroSupermercados,
+    registro: registroEnVivo,
     guardar: async (producto) => { await guardarObservacion(db, producto); },
     esperar: async ms => Bun.sleep(ms),
   });

@@ -3,7 +3,8 @@ import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
 import { packPrice } from '../estimate-menu-cost';
 import { INGREDIENT_DICTIONARY } from '../ingredient-dictionary';
 import { mapShoppingListItem } from '../map-item';
-import { conectorConsum, conectorMercadona, ZONA_CATALOGO } from './catalog-connectors';
+import { MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
+import { conectorConsum, conectorMercadona, idMercadonaDeUrl, productosParaCarga, ZONA_CATALOGO } from './catalog-connectors';
 import { puedeEjecutarse } from './connector';
 import { registroSupermercados } from './registry';
 
@@ -104,5 +105,45 @@ describe('registroSupermercados', () => {
     expect(conectorConsum.permiso).toBe('riesgo-aceptado');
     expect(conectorConsum.permisoRef).toBe('ADR-0037');
     expect(puedeEjecutarse(conectorConsum)).toBe(true);
+  });
+});
+
+describe('idMercadonaDeUrl', () => {
+  test.each([
+    ['https://tienda.mercadona.es/product/4640/aceite-oliva-1o-hacendado-botella', '4640'],
+    ['https://tienda.mercadona.es/product/81649.1/salmon-rodajas-pieza', '81649.1'],
+    ['https://tienda.mercadona.es/product/52734', '52734'],
+  ])('%s -> %s', (url, id) => {
+    expect(idMercadonaDeUrl(url)).toBe(id);
+  });
+
+  test.each([null, '', 'https://tienda.mercadona.es/categories/112', 'https://tienda.mercadona.es/product/abc/x'])('%p -> null', (url) => {
+    expect(idMercadonaDeUrl(url)).toBeNull();
+  });
+});
+
+describe('productosParaCarga', () => {
+  test('no Mercadona catalog entry is lost for lack of a usable id', () => {
+    const catalogo = Object.keys(MERCADONA_CATALOG_MATCH).length;
+    expect(productosParaCarga('mercadona')).toHaveLength(catalogo);
+  });
+
+  test('Mercadona products carry Mercadona\'s own id and keep the ingredient they were found for', () => {
+    const carga = productosParaCarga('mercadona');
+    const salmon = carga.find(c => c.ingrediente === 'salmon');
+    expect(salmon?.producto.idExterno).toBe('81649.1');
+    for (const { producto } of carga) {
+      expect(producto.idExterno).toMatch(/^\d+(\.\d+)?$/);
+    }
+  });
+
+  test('other chains keep the ingredient key as their id until they have a live connector', () => {
+    for (const { ingrediente, producto } of productosParaCarga('consum')) {
+      expect(producto.idExterno).toBe(ingrediente);
+    }
+  });
+
+  test('an unknown chain has nothing to load', () => {
+    expect(productosParaCarga('no-existe')).toEqual([]);
   });
 });

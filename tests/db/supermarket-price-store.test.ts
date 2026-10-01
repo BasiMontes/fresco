@@ -7,6 +7,8 @@
  * `bun run test:db`. Uses a `service_role` client, like the runner does.
  */
 
+import type { ProductoParaCarga } from '../../lib/grocery/supermarket/catalog-connectors';
+import type { ProductoSupermercado } from '../../lib/grocery/supermarket/types';
 import type { Database } from '../../lib/supabase/types';
 import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
@@ -29,7 +31,7 @@ const reachable = RUN ? await stackReachable() : false;
 const PREFIX = 'it-770b-';
 const DESCONOCIDO = '1970-01-01T00:00:00.000Z';
 
-function producto(idExterno: string, extra: Partial<Parameters<typeof cargarProductos>[1][number]> = {}) {
+function producto(idExterno: string, extra: Partial<ProductoSupermercado> = {}): ProductoSupermercado {
   return {
     cadena: 'mercadona',
     idExterno: `${PREFIX}${idExterno}`,
@@ -43,6 +45,11 @@ function producto(idExterno: string, extra: Partial<Parameters<typeof cargarProd
     observadoEn: DESCONOCIDO,
     ...extra,
   };
+}
+
+/** A catalog entry for the initial load: the product, matched to the ingredient it is named after. */
+function carga(idExterno: string, extra: Partial<ProductoSupermercado> = {}, ingrediente = `${PREFIX}${idExterno}`): ProductoParaCarga {
+  return { ingrediente, producto: producto(idExterno, extra) };
 }
 
 describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => {
@@ -74,7 +81,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
 
   describe('initial load', () => {
     test('stores products, one match each and an unknown-date price, in the default zone', async () => {
-      const resultado = await cargarProductos(db, [producto('a'), producto('b')]);
+      const resultado = await cargarProductos(db, [carga('a'), carga('b')]);
       expect(resultado).toEqual({ productos: 2, omitidos: 0 });
 
       const { precio, historial } = await precioActual('a');
@@ -87,13 +94,26 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
     });
 
     test('is idempotent: running it twice leaves one row per product', async () => {
-      await cargarProductos(db, [producto('a'), producto('b')]);
+      await cargarProductos(db, [carga('a'), carga('b')]);
       const { count } = await db.from('supermarket_product').select('*', { count: 'exact', head: true }).like('id_externo', `${PREFIX}%`);
       expect(count).toBe(2);
     });
 
+    test('two ingredients that share one product give one product and a match each', async () => {
+      const resultado = await cargarProductos(db, [
+        carga('compartido', {}, `${PREFIX}aceite`),
+        carga('compartido', {}, `${PREFIX}aceite de oliva`),
+      ]);
+      expect(resultado).toEqual({ productos: 1, omitidos: 0 });
+
+      const { count } = await db.from('supermarket_product').select('*', { count: 'exact', head: true }).eq('id_externo', `${PREFIX}compartido`);
+      expect(count).toBe(1);
+      const { data: coincidencias } = await db.from('ingredient_product_match').select('ingrediente').like('ingrediente', `${PREFIX}aceite%`).order('ingrediente');
+      expect(coincidencias?.map(c => c.ingrediente)).toEqual([`${PREFIX}aceite`, `${PREFIX}aceite de oliva`]);
+    });
+
     test('skips a price that does not survive numeric(10, 2) above zero', async () => {
-      const resultado = await cargarProductos(db, [producto('barato', { precioEnvase: 0.004 })]);
+      const resultado = await cargarProductos(db, [carga('barato', { precioEnvase: 0.004 })]);
       expect(resultado).toEqual({ productos: 0, omitidos: 1 });
     });
   });
@@ -124,7 +144,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
     });
 
     test('re-running the initial load never overwrites a newer observation', async () => {
-      await cargarProductos(db, [producto('a')]);
+      await cargarProductos(db, [carga('a')]);
       const { precio } = await precioActual('a');
       expect(precio?.precio_envase).toBe(3);
       expect(new Date(precio!.observado_en).toISOString()).toBe('2026-10-02T12:00:00.000Z');
