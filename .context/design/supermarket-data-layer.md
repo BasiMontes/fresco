@@ -128,7 +128,9 @@ create table ingredient_product_match (
 
 Catalog (new products, pack changes) and price refresh get separate frequencies: price weekly or daily for demanded products, catalog monthly.
 
-**Runner, open question.** Two options: a GitHub Actions job (what FRESCO-762 uses; needs the service key as a secret) or `pg_cron` + `pg_net` into an Edge Function (ADR-0011; the key stays in Supabase). FRESCO-760 showed GitHub-hosted runners reach 5 of 6 chains; Supabase Edge egress IPs are untested and may be blocked the same way. Probe it before choosing.
+**Runner: GitHub Actions** (decided 2026-10-01, FRESCO-770). `scripts/refresh-supermarket-prices.ts` runs from `.github/workflows/refresh-supermarket-prices.yml` and reuses `lib/grocery/supermarket` with Bun, which a Deno Edge Function could not import as is. It needs the service-role key as a repository secret, which is the cost. The other option, `pg_cron` + `pg_net` into an Edge Function (ADR-0011), keeps the key inside Supabase but has a wall-time cap that sits close to a batch with a pause between requests. Supabase Edge egress was probed on 2026-10-01 against Mercadona and Consum only (the chains whose permission lets them run): both answered 200 with no block signal, twice. That proves reachability at low volume, not that those IPs stay unblocked under load, so the Edge option stays open if GitHub-hosted runners are blocked later.
+
+Menu demand comes from `get_supermarket_demand` (service_role only, aggregates only), because `service_role` has no table privilege on `meal_plans`. The workflow is manual until the live connectors exist (FRESCO-771, FRESCO-772): the connectors in the registry still read the committed catalogs.
 
 On `LimiteDeTasaError` the run waits and halves the batch; on `BloqueoError` it stops that chain for the run and records it. That runtime loop is described, not implemented, in this ticket.
 
@@ -148,11 +150,10 @@ Confidence is `alta` when the canonical term matched at the start of the name, `
 1. Wrap the existing generated catalogs as two connectors (`mercadona`, `consum`) whose `buscarProductos` read the committed data. No behavior change.
 2. Add `precios: PrecioNormalizado[]` to `MappedGroceryItem` next to the old fields; switch `estimate-menu-cost.ts` to read it.
 3. Remove `precioMercadona`, `precioConsum`, `mercadonaUrl`, `consumUrl` and the per-chain conversion once nothing reads them.
-4. Apply the schema as a real migration and move the refresh into the runner chosen in section 6.
+4. Apply the schema as a real migration and move the refresh into the runner chosen in section 6. Done in FRESCO-770 (schema, read RPC, loop, runner script). Live connectors that actually fetch prices: FRESCO-771, FRESCO-772.
 
 ## 9. Open questions
 
 - Postcode capture (product and privacy decision).
-- Runner: GitHub Actions or Edge Function, after probing Supabase egress.
 - History retention: one row per change is small for a few thousand demanded products; revisit if it grows.
 - How a user picks a chain (cheapest overall, a preferred chain, or a basket per chain): FRESCO-346's concern, not this layer's.

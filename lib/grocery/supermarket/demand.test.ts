@@ -1,36 +1,39 @@
 import { describe, expect, test } from 'bun:test';
-import { contarDemanda, demandaPorProducto } from './demand';
+import { demandaPorProducto, sumarDemanda } from './demand';
 
-describe('contarDemanda', () => {
-  test('counts the menu slots that need each ingredient', () => {
-    const demanda = contarDemanda([
-      { ingredientes: ['arroz', 'cebolla'] },
-      { ingredientes: ['arroz'] },
-      { ingredientes: ['leche'] },
+describe('sumarDemanda', () => {
+  test('keys the menu slots that need each ingredient by name', () => {
+    const demanda = sumarDemanda([
+      { ingrediente: 'arroz', huecos: 2 },
+      { ingrediente: 'cebolla', huecos: 1 },
     ]);
     expect(demanda.get('arroz')).toBe(2);
     expect(demanda.get('cebolla')).toBe(1);
-    expect(demanda.get('leche')).toBe(1);
   });
 
-  test('normalizes names, so accents and case do not split an ingredient', () => {
-    const demanda = contarDemanda([
-      { ingredientes: ['Champiñones'] },
-      { ingredientes: ['champinones'] },
-      { ingredientes: ['  CHAMPIÑONES '] },
+  test('sums spellings that normalize to the same ingredient', () => {
+    const demanda = sumarDemanda([
+      { ingrediente: 'Champiñones', huecos: 2 },
+      { ingrediente: 'champinones', huecos: 1 },
+      { ingrediente: '  CHAMPIÑONES ', huecos: 4 },
     ]);
-    expect(demanda.get('champinones')).toBe(3);
+    expect(demanda.get('champinones')).toBe(7);
     expect(demanda.size).toBe(1);
   });
 
-  test('counts an ingredient once per slot, however often the recipe lists it', () => {
-    const demanda = contarDemanda([{ ingredientes: ['ajo', 'Ajo', 'ajo '] }]);
-    expect(demanda.get('ajo')).toBe(1);
+  test('drops blank names and counts that are not positive', () => {
+    const demanda = sumarDemanda([
+      { ingrediente: '', huecos: 3 },
+      { ingrediente: '   ', huecos: 3 },
+      { ingrediente: 'sal', huecos: 0 },
+      { ingrediente: 'pimienta', huecos: -1 },
+      { ingrediente: 'comino', huecos: Number.NaN },
+    ]);
+    expect(demanda.size).toBe(0);
   });
 
-  test('ignores blank names and an empty menu', () => {
-    expect(contarDemanda([{ ingredientes: ['', '   '] }]).size).toBe(0);
-    expect(contarDemanda([]).size).toBe(0);
+  test('an empty result is an empty map', () => {
+    expect(sumarDemanda([]).size).toBe(0);
   });
 });
 

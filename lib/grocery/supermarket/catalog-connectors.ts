@@ -71,6 +71,15 @@ export function productoDeCatalogo(cadena: string, clave: string): ProductoSuper
   return PRODUCTOS_POR_CADENA.get(cadena)?.get(clave) ?? null;
 }
 
+/**
+ * Every product of a chain's committed catalog (FRESCO-770, initial load into
+ * the database). Same data the connector serves, and the same caveat: it does
+ * NOT check permission, callers must go through the registry first.
+ */
+export function productosDeCatalogo(cadena: string): ProductoSupermercado[] {
+  return [...(PRODUCTOS_POR_CADENA.get(cadena)?.values() ?? [])];
+}
+
 function crearConectorDeCatalogo(
   base: Pick<SupermarketConnector, 'cadena' | 'permiso' | 'permisoRef'>,
   entradas: readonly EntradaCatalogo[],
