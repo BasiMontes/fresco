@@ -349,3 +349,8 @@ Historia archivada:
 - Qué: three stacked PRs. #438 schema (7 tables, RLS, legal gate mirrored in the DB, get_supermarket_prices INVOKER, ADR-0036 accepted); #439 pure refresh loop, demand and write decision; #440 runner script, initial catalog load, get_supermarket_demand (service_role-only DEFINER, aggregates), manual workflow, types regenerated. Runner = GitHub Actions; Edge egress probed OK for Mercadona and Consum only.
 - Por qué: step 4 of the ADR-0036 migration. Live connectors cut to FRESCO-771 (Mercadona) and FRESCO-772 (Consum): the registry connectors still read the committed catalogs, so a refresh brings no new prices yet.
 - Siguiente: add repo secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; first --apply on prod needs founder approval; add a schedule trigger when 771/772 land; FRESCO-762 weekly Mercadona refresh untouched.
+
+## 2026-10-01 - FRESCO-771 Mercadona connector for the refresh runner
+- Qué: PR #441. The runner gets its own registry with a Mercadona connector that reads the community dataset datania/mercadona-catalog (not Mercadona API): own product id, real snapshot date, prices at most a week old. Initial load stores Mercadona ids (decimal ids like 81649.1 included) with one match per ingredient. App registry untouched. ADR-0028 follow-up and design doc updated.
+- Por qué: founder chose the dataset over the API (ADR-0028: calling Mercadona endpoints directly reopens the legal risk read). Verified end to end on the local stack: 12 prices stored with the snapshot date.
+- Siguiente: FRESCO-772 (Consum live connector); repo secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; first --apply on prod needs founder approval; per-chain pacing when Consum lands.
