@@ -1,6 +1,6 @@
 # ADR-0037 — Consum catalog and prices: run the connector under accepted risk while the consent request is unanswered
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-01, founder)
 - **Date:** 2026-10-01
 - **Deciders:** Founder (Basi Montes)
 - **Tags:** product-scope, data-access, legal-risk, supermarket-data-layer
