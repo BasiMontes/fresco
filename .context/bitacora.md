@@ -329,3 +329,8 @@ Historia archivada:
 - Qué: los catálogos generados de Mercadona y Consum envueltos como SupermarketConnector (lib/grocery/supermarket/catalog-connectors.ts); solo Mercadona registrado (registry.ts). PR #433.
 - Por qué: paso 1 de la migración de la capa de supermercado (ADR-0036). Sin cambio visible; test de equivalencia con el precio actual para cada ingrediente. Decisión A: Consum fuera del registro hasta FRESCO-764.
 - Siguiente: paso 2 (precios normalizados en MappedGroceryItem y estimate-menu-cost); registrar Consum cuando haya respuesta o ADR.
+
+## 2026-10-01 - FRESCO-768 precios normalizados en MappedGroceryItem
+- Qué: MappedGroceryItem gana precios (PrecioNormalizado: envase completo y precio por kg/l/unidad), rellenado desde los catálogos del paso 1 a través del registro; packPrice lee precios y ya no convierte el formato de referencia de Mercadona. PR #434.
+- Por qué: paso 2 de la migración de la capa de supermercado (ADR-0036). Sin cambio visible; test de equivalencia con la conversión antigua por ingrediente (medio céntimo). Los ítems de Consum llevan precios vacío mientras su conector siga pendiente (FRESCO-764).
+- Siguiente: FRESCO-769 (retirar campos por cadena) exige antes decidir Consum (ADR de riesgo o esperar respuesta, plazo ~6 oct); si no, desaparecen sus precios de la lista.
