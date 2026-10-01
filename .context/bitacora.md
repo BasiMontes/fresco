@@ -314,3 +314,8 @@ Historia archivada:
 - Qué: workflow `refresh-mercadona-catalog` (cron martes, también manual) regenera `mercadona-catalog.generated.ts` e `ingredient-dictionary.ts` desde el dataset `datania/mercadona-catalog` y abre una PR solo si hay cambios. Avisa si el dataset lleva más de 14 días parado. Primera PR de refresco (#428) mergeada. ADR-0028 pasa a Accepted (consentimiento de Mercadona pedido, sin respuesta).
 - Por qué: los precios reales de Mercadona eran una foto fija y envejecían.
 - Siguiente: FRESCO-763 (Dia, Alcampo, Lidl, Bonpreu). El token personal `CATALOG_REFRESH_TOKEN` caduca el 2027-10-01: renovarlo antes. Dataset sin export del 2026-09-28: vigilar. Opción 2 futura: precios en tabla de Supabase.
+
+## 2026-10-01 - FRESCO-751 LCP móvil de la home
+- Qué: no hacía falta tocar la app. Medido con limitación aplicada, el LCP real es de 1,0 a 1,1 s (Lighthouse) y 0,68 s (script propio); los 2,8 s del ticket venían del modo simulado de Lighthouse, que oscila de 1,6 a 3,4 s para el mismo despliegue. Se añade `scripts/measure-lcp.ts` y el workflow manual `lcp-budget` (mediana 816 ms en un runner, presupuesto 2.500 ms). El JS sin usar (141 KiB) es el SDK de Sentry ya diferido (ADR-0034), fuera de la ruta crítica.
+- Por qué: la medición simulada no permitía verificar el criterio de forma fiable.
+- Siguiente: no usar Lighthouse simulado como puerta de calidad; usar `lcp-budget` o `--throttling-method=devtools`.
