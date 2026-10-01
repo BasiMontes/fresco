@@ -66,15 +66,34 @@ challenge marker (`captcha`, `access denied`, `just a moment`, ...). Large
 | Lidl | 200 | none |
 | Bonpreu | 200 | none |
 
-### GitHub-hosted runner, `http`
+### GitHub-hosted runner (2026-10-01)
 
-_Pending: run the workflow once the branch is on the default branch._
-
-### GitHub-hosted runner, `browser`
-
-_Pending, only if `http` shows blocks._
+| Chain | `http` | `browser` |
+|---|---|---|
+| Mercadona | 200 | 200 |
+| Carrefour | 403 | 403 |
+| Dia | 200 | 403 |
+| Alcampo | 200 | 200 |
+| Lidl | 200 | 200 |
+| Bonpreu | 200 | 200 |
 
 ## Outcome
 
-_Table of chain, method that worked and step where it was resolved, filled
-after the runs._
+| Chain | Method that works from a runner | Resolved at step |
+|---|---|---|
+| Mercadona | plain HTTP | 1 |
+| Dia | plain HTTP | 1 |
+| Alcampo | plain HTTP | 1 |
+| Lidl | plain HTTP | 1 |
+| Bonpreu | plain HTTP | 1 |
+| Carrefour | none (403 from the runner IP, 200 from a home IP) | out of scope for v1 |
+
+- Plain HTTP is enough for 5 of 6 chains. Playwright did not help and made Dia
+  worse (200 to 403), so it is not needed.
+- Carrefour blocks the datacenter IP, not the tool. Fixing it needs a
+  self-hosted runner on an owned machine; decided to leave Carrefour out of
+  the first version.
+- Limits: one request per chain does not prove a full weekly refresh survives
+  at volume, and only Mercadona's real catalog endpoint is known. The other
+  chains were tested on their public landing page.
+- ADR-0028 (Proposed) still gates production use of these endpoints.
