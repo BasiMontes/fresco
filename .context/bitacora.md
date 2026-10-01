@@ -309,3 +309,8 @@ Historia archivada:
 - Qué: probe manual (`workflow_dispatch`) de 6 cadenas desde un runner `github-hosted`. HTTP plano alcanza 5 de 6 (Mercadona, Dia, Alcampo, Lidl, Bonpreu); Carrefour da 403 por IP de centro de datos y se deja fuera de la v1. Playwright no ayuda (Dia pasa de 200 a 403).
 - Por qué: validar el riesgo de bloqueo antes de construir el scraping semanal de FRESCO-747.
 - Siguiente: ticket de construcción (solo Mercadona tiene endpoint de catálogo conocido; el resto requiere traza con devtools). ADR-0028 sigue en Proposed y bloquea el uso en producción hasta que se acepte.
+
+## 2026-10-01 - FRESCO-762 refresco semanal de precios de Mercadona
+- Qué: workflow `refresh-mercadona-catalog` (cron martes, también manual) regenera `mercadona-catalog.generated.ts` e `ingredient-dictionary.ts` desde el dataset `datania/mercadona-catalog` y abre una PR solo si hay cambios. Avisa si el dataset lleva más de 14 días parado. Primera PR de refresco (#428) mergeada. ADR-0028 pasa a Accepted (consentimiento de Mercadona pedido, sin respuesta).
+- Por qué: los precios reales de Mercadona eran una foto fija y envejecían.
+- Siguiente: FRESCO-763 (Dia, Alcampo, Lidl, Bonpreu). El token personal `CATALOG_REFRESH_TOKEN` caduca el 2027-10-01: renovarlo antes. Dataset sin export del 2026-09-28: vigilar. Opción 2 futura: precios en tabla de Supabase.
