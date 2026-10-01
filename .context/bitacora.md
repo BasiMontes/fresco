@@ -344,3 +344,8 @@ Historia archivada:
 - Qué: removed precioMercadona/precioConsum/mercadonaUrl/consumUrl from CanonicalIngredient and MappedGroceryItem; shopping-list links read precios[].url; dictionary regenerated, tests moved to the catalogs (PR #437, 46be3b82).
 - Por qué: step 3 of the ADR-0036 migration, nothing read the per-chain fields after FRESCO-768. Catalogs keep their own source shape (connectors read it), AC narrowed in Jira.
 - Siguiente: FRESCO-770 (apply schema in Supabase, move refresh to runner); confirm the next weekly refresh-mercadona-catalog PR opens.
+
+## 2026-10-01 - FRESCO-770 supermarket price model, refresh loop and runner
+- Qué: three stacked PRs. #438 schema (7 tables, RLS, legal gate mirrored in the DB, get_supermarket_prices INVOKER, ADR-0036 accepted); #439 pure refresh loop, demand and write decision; #440 runner script, initial catalog load, get_supermarket_demand (service_role-only DEFINER, aggregates), manual workflow, types regenerated. Runner = GitHub Actions; Edge egress probed OK for Mercadona and Consum only.
+- Por qué: step 4 of the ADR-0036 migration. Live connectors cut to FRESCO-771 (Mercadona) and FRESCO-772 (Consum): the registry connectors still read the committed catalogs, so a refresh brings no new prices yet.
+- Siguiente: add repo secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; first --apply on prod needs founder approval; add a schedule trigger when 771/772 land; FRESCO-762 weekly Mercadona refresh untouched.
