@@ -20,6 +20,12 @@ one request per chain per run, stores no data, and is manual only
 | Alcampo | `compraonline.alcampo.es/` | public landing page |
 | Lidl | `lidl.es/` | public landing page |
 | Bonpreu | `compraonline.bonpreuesclat.cat/` | public landing page |
+| Consum | `tienda.consum.es/api/rest/V1.0/catalog/product?q=arroz` | public storefront API, same request as `gen-consum-catalog.ts` (FRESCO-520, added in FRESCO-763) |
+
+Consum result from a GitHub-hosted runner (2026-10-01, `http`): 200, 62 KB, no
+block signal. Technically reachable; its terms of use are the strictest of all
+the chains (copy or redistribution prohibited "whatever its purpose"), so
+automating it waits for written consent (FRESCO-764).
 
 Discarded: Aldi (`aldi.es` states it has no online store), Family Cash and
 Cash Fresh (online presence is flyers only, no product catalog with prices).
