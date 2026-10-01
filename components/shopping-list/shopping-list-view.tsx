@@ -418,16 +418,15 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                       = pasillos.slice(0, pasilloIdx).reduce((n, p) => n + p.items.length, 0) + itemIdx;
                     // FRESCO-518 tier 1 — deep-link straight to the matched
                     // Mercadona product page instead of a generic "abrir en
-                    // Mercadona" home link. `null` (no catalog match, or a
-                    // count-based unit — Decision 2 of FRESCO-503) simply
-                    // omits the link for that row. FRESCO-521 extends the
-                    // same per-item pattern to Consum — `consumUrl` is only
-                    // ever populated when there's no Mercadona match for
-                    // that ingredient (dictionary priority set in FRESCO-520),
-                    // so at most one of the two renders per row.
-                    const mapped = mapShoppingListItem(item);
-                    const mercadonaUrl = mapped.mercadonaUrl;
-                    const consumUrl = mapped.consumUrl;
+                    // Mercadona" home link. No price for the chain (no catalog
+                    // match, or a count-based unit — Decision 2 of FRESCO-503)
+                    // simply omits the link for that row. FRESCO-521 extends
+                    // the same per-item pattern to Consum. `precios` only
+                    // carries the chain whose pack the dictionary entry is
+                    // (FRESCO-768), so at most one of the two renders per row.
+                    const { precios } = mapShoppingListItem(item);
+                    const enlaceMercadona = precios.find(p => p.cadena === 'mercadona')?.url;
+                    const enlaceConsum = precios.find(p => p.cadena === 'consum')?.url;
                     return (
                       <li
                         key={item.nombre}
@@ -520,9 +519,9 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                             </span>
                           )}
                         </div>
-                        {mercadonaUrl && !item.comprado && (
+                        {enlaceMercadona && !item.comprado && (
                           <a
-                            href={mercadonaUrl}
+                            href={enlaceMercadona}
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Abrir ${capitalize(item.nombre)} en Mercadona`}
@@ -532,9 +531,9 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                             <ShoppingCart className="size-4" aria-hidden="true" />
                           </a>
                         )}
-                        {consumUrl && !item.comprado && (
+                        {enlaceConsum && !item.comprado && (
                           <a
-                            href={consumUrl}
+                            href={enlaceConsum}
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Abrir ${capitalize(item.nombre)} en Consum`}

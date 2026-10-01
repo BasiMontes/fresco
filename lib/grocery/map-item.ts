@@ -123,10 +123,6 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
       envasesEstimados: 1,
       confianza: 'baja',
       origenEnvase: 'estimado',
-      precioMercadona: null,
-      mercadonaUrl: null,
-      precioConsum: null,
-      consumUrl: null,
       precios: [],
     };
   }
@@ -147,10 +143,6 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
     envasesEstimados: packCount(cantidadNormalizada, entry.envaseVenta.cantidad),
     confianza: remapAplicado || !familiasCoinciden ? 'media' : 'alta',
     origenEnvase: entry.origenEnvase,
-    precioMercadona: entry.precioMercadona,
-    mercadonaUrl: entry.mercadonaUrl,
-    precioConsum: entry.precioConsum,
-    consumUrl: entry.consumUrl,
     precios: preciosNormalizados(entry),
   };
 }

@@ -96,10 +96,6 @@ function buildEntry(clave: string): CanonicalIngredient {
     sinonimos: SYNONYM_OVERRIDE[clave] ?? [],
     terminoBusqueda: SEARCH_TERM_OVERRIDE[clave] ?? canonico,
     origenEnvase,
-    precioMercadona: mercadonaMatch?.precioMercadona ?? null,
-    mercadonaUrl: mercadonaMatch?.shareUrl ?? null,
-    precioConsum: !mercadonaMatch ? consumMatch?.precioConsum ?? null : null,
-    consumUrl: !mercadonaMatch ? consumMatch?.url ?? null : null,
   };
 }
 

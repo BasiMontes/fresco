@@ -1,5 +1,6 @@
 import type { GroceryInput } from './types';
 import { describe, expect, test } from 'bun:test';
+import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingList, mapShoppingListItem } from './map-item';
 import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
@@ -88,14 +89,15 @@ describe('mapShoppingListItem — FRESCO-503 acceptance criteria (Mercadona pack
   test('AC1: ingrediente con equivalente en el catálogo de Mercadona → usa envase y precio reales', () => {
     const r = mapShoppingListItem({ nombre: 'espinacas', cantidad: 200, unidad: 'g' });
     expect(r.origenEnvase).toBe('mercadona');
-    expect(r.precioMercadona).not.toBeNull();
-    expect(r.precioMercadona?.precioReferencia).toBeGreaterThan(0);
+    expect(r.precios).toHaveLength(1);
+    expect(r.precios[0].cadena).toBe('mercadona');
+    expect(r.precios[0].precioEnvase).toBeGreaterThan(0);
   });
 
   test('AC2: ingrediente sin equivalente en el catálogo → usa el envase estimado a mano, nunca se descarta', () => {
     const r = mapShoppingListItem({ nombre: 'kale', cantidad: 150, unidad: 'g' });
     expect(r.origenEnvase).toBe('estimado');
-    expect(r.precioMercadona).toBeNull();
+    expect(r.precios).toEqual([]);
     expect(r.unidadVenta).toBe('g'); // RETAIL_PACK_OVERRIDE fallback, item still mapped
   });
 
@@ -106,7 +108,7 @@ describe('mapShoppingListItem — FRESCO-503 acceptance criteria (Mercadona pack
   test('unknown-ingredient fallback (FRESCO-488 invariant): ingrediente fuera del diccionario nunca se bloquea, sigue con origenEnvase estimado', () => {
     const r = mapShoppingListItem({ nombre: 'kombucha casera', cantidad: 500, unidad: 'ml' });
     expect(r.origenEnvase).toBe('estimado');
-    expect(r.precioMercadona).toBeNull();
+    expect(r.precios).toEqual([]);
     expect(r.confianza).toBe('baja');
   });
 });
@@ -115,16 +117,16 @@ describe('mapShoppingListItem — FRESCO-520 acceptance criteria (Consum pack/pr
   test('AC1: ingrediente con equivalente en el catálogo de Consum → usa envase y precio reales', () => {
     const r = mapShoppingListItem({ nombre: 'alubias rojas', cantidad: 300, unidad: 'g' });
     expect(r.origenEnvase).toBe('consum');
-    expect(r.precioConsum).not.toBeNull();
-    expect(r.precioConsum?.precio).toBeGreaterThan(0);
-    expect(r.consumUrl).not.toBeNull();
+    expect(r.precios).toHaveLength(1);
+    expect(r.precios[0].cadena).toBe('consum');
+    expect(r.precios[0].precioEnvase).toBeGreaterThan(0);
+    expect(r.precios[0].url).not.toBeNull();
   });
 
   test('AC2: ingrediente sin equivalente en ningún catálogo → usa el envase estimado a mano, nunca se descarta', () => {
     const r = mapShoppingListItem({ nombre: 'kale', cantidad: 150, unidad: 'g' });
     expect(r.origenEnvase).toBe('estimado');
-    expect(r.precioConsum).toBeNull();
-    expect(r.consumUrl).toBeNull();
+    expect(r.precios).toEqual([]);
   });
 
   // AC3 ("catálogo no disponible") is satisfied structurally, same posture as FRESCO-503's own AC3 — no I/O on the request path.
@@ -211,7 +213,7 @@ describe('mapShoppingListItem — FRESCO-768 normalized prices', () => {
     expect(precio.cadena).toBe('mercadona');
     expect(precio.precioEnvase).toBeGreaterThan(0);
     expect(precio.precioReferencia.por).toBe('l');
-    expect(precio.url).toBe(item.mercadonaUrl);
+    expect(precio.url).toBe(MERCADONA_CATALOG_MATCH['aceite de oliva'].shareUrl);
   });
 
   test('a Consum item carries its pack price as is (ADR-0037)', () => {
@@ -220,8 +222,9 @@ describe('mapShoppingListItem — FRESCO-768 normalized prices', () => {
     const item = mapShoppingListItem({ nombre: consum!.clave, cantidad: 1, unidad: 'g' });
     expect(item.precios).toHaveLength(1);
     expect(item.precios[0].cadena).toBe('consum');
-    expect(item.precios[0].precioEnvase).toBe(consum!.precioConsum!.precio);
-    expect(item.precios[0].url).toBe(item.consumUrl);
+    const catalogo = CONSUM_CATALOG_MATCH[consum!.clave];
+    expect(item.precios[0].precioEnvase).toBe(catalogo.precioConsum.precio);
+    expect(item.precios[0].url).toBe(catalogo.url);
   });
 
   test('an unknown ingredient carries no prices', () => {

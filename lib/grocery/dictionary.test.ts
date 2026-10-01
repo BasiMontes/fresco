@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { buildDictionary, renderFile } from '../../scripts/gen-grocery-dictionary';
 import { BASE_QUANTITIES } from '../../supabase/functions/generate-shopping-list/consolidator';
+import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
 import { CANONICAL_KEYS, INGREDIENT_DICTIONARY } from './ingredient-dictionary';
+import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 import {
   RETAIL_PACK_OVERRIDE,
   SEARCH_TERM_OVERRIDE,
@@ -63,41 +65,14 @@ describe('ingredient-dictionary — every entry is well-formed', () => {
     }
   });
 
-  // FRESCO-503 — origenEnvase/precioMercadona shape invariant.
-  test('every entry with origenEnvase "mercadona" has a non-null precioMercadona, and vice versa', () => {
+  // FRESCO-503/520 — `origenEnvase` must say which catalog the pack came from.
+  // Mercadona wins when both chains match, Consum is next, else hand-curated.
+  test('origenEnvase follows the catalogs: mercadona, else consum, else estimado', () => {
     for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
-      if (entry.origenEnvase === 'mercadona') {
-        expect(entry.precioMercadona).not.toBeNull();
-      }
-      else {
-        expect(entry.precioMercadona).toBeNull();
-      }
-    }
-  });
-
-  // FRESCO-518 tier 1 — origenEnvase/mercadonaUrl shape invariant, same posture as precioMercadona above.
-  test('every entry with origenEnvase "mercadona" has a non-null mercadonaUrl, and vice versa', () => {
-    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
-      if (entry.origenEnvase === 'mercadona') {
-        expect(entry.mercadonaUrl).not.toBeNull();
-      }
-      else {
-        expect(entry.mercadonaUrl).toBeNull();
-      }
-    }
-  });
-
-  // FRESCO-520 — origenEnvase/precioConsum+consumUrl shape invariant, same posture as the Mercadona pair above.
-  test('every entry with origenEnvase "consum" has a non-null precioConsum and consumUrl, and vice versa', () => {
-    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
-      if (entry.origenEnvase === 'consum') {
-        expect(entry.precioConsum).not.toBeNull();
-        expect(entry.consumUrl).not.toBeNull();
-      }
-      else {
-        expect(entry.precioConsum).toBeNull();
-        expect(entry.consumUrl).toBeNull();
-      }
+      const esperado = MERCADONA_CATALOG_MATCH[entry.clave]
+        ? 'mercadona'
+        : CONSUM_CATALOG_MATCH[entry.clave] ? 'consum' : 'estimado';
+      expect(entry.origenEnvase).toBe(esperado);
     }
   });
 });
