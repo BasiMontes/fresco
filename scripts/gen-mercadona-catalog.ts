@@ -20,9 +20,12 @@
 // Nothing on the request path fetches the network — the emitted table is a
 // static, committed artifact (Decision 1). Regenerate:
 //   bun scripts/gen-mercadona-catalog.ts
-// Drift is caught by lib/grocery/mercadona-catalog.test.ts (its drift check
-// is skipped, not failed, when the local HF cache is absent — see that
-// file's header comment).
+// FRESCO-762: the file is regenerated weekly (`refresh-mercadona-catalog`
+// workflow). To verify the committed file against the local cache without
+// writing anything:
+//   bun scripts/gen-mercadona-catalog.ts --check
+// It fails when the local cache is a different week's snapshot, so refresh the
+// cache first (delete scripts/.cache/mercadona-catalog) when it is old.
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -249,9 +252,20 @@ if (import.meta.main) {
   console.log('Loading Mercadona catalog (cached locally on first run)...');
   const catalog = await loadCatalog();
   const match = buildMercadonaCatalogMatch(catalog, BASE_QUANTITIES);
+  const rendered = renderFile(match);
   const target = new URL('../lib/grocery/mercadona-catalog.generated.ts', import.meta.url);
-  await Bun.write(target, renderFile(match));
   console.log(
     `Matched ${Object.keys(match).length} ingredients against ${catalog.length} Mercadona products.`,
   );
+
+  if (process.argv.includes('--check')) {
+    if (await Bun.file(target).text() !== rendered) {
+      console.error('mercadona-catalog.generated.ts is out of sync with the cached dataset. Run: bun scripts/gen-mercadona-catalog.ts');
+      process.exit(1);
+    }
+    console.log('In sync with the cached dataset.');
+  }
+  else {
+    await Bun.write(target, rendered);
+  }
 }
