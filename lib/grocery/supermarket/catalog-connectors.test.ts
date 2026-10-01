@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
 import { packPrice } from '../estimate-menu-cost';
 import { INGREDIENT_DICTIONARY } from '../ingredient-dictionary';
 import { mapShoppingListItem } from '../map-item';
@@ -8,7 +9,7 @@ import { registroSupermercados } from './registry';
 
 /**
  * FRESCO-767 AC: the connectors return the same price the app shows today.
- * "Today" is `packPrice` (Mercadona) and `precioConsum.precio` (Consum), read
+ * "Today" is `packPrice` (Mercadona) and the catalog's `precioConsum.precio` (Consum), read
  * through the real `mapShoppingListItem` for EVERY dictionary entry backed by
  * that chain, so a drift in either catalog or in the conversion fails here.
  */
@@ -55,7 +56,7 @@ describe('conectorConsum', () => {
   });
 
   test.each(entradas.map(e => [e.clave] as const))('%s: mismo precio de envase que hoy', async (clave) => {
-    const hoy = INGREDIENT_DICTIONARY[clave].precioConsum!.precio;
+    const hoy = CONSUM_CATALOG_MATCH[clave].precioConsum.precio;
     const producto = await conectorConsum.obtenerProducto(clave, ZONA_CATALOGO);
 
     expect(producto).not.toBeNull();

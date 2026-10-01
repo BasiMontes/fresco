@@ -2,6 +2,7 @@ import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
 import { describe, expect, test } from 'bun:test';
 import { makeFixtureRecipe } from '@/lib/fixtures/recipe';
+import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
 import {
   consolidateRecipeIngredients,
   estimateMenuCost,
@@ -11,6 +12,7 @@ import {
 } from './estimate-menu-cost';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingListItem } from './map-item';
+import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const TIPOS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
@@ -80,8 +82,8 @@ describe('packPrice', () => {
     const VOLUMEN: Record<string, number> = { ml: 1, l: 1000 };
     let comprobados = 0;
     for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
-      if (entry.origenEnvase !== 'mercadona' || !entry.precioMercadona) { continue; }
-      const { precioReferencia, formatoReferencia } = entry.precioMercadona;
+      if (entry.origenEnvase !== 'mercadona') { continue; }
+      const { precioReferencia, formatoReferencia } = MERCADONA_CATALOG_MATCH[entry.clave].precioMercadona;
       const ref = parseFormatoReferencia(formatoReferencia);
       const { cantidad, unidad } = entry.envaseVenta;
       const antiguo = ref.unidad === 'ud'
@@ -101,7 +103,7 @@ describe('packPrice', () => {
     const entry = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'consum');
     expect(entry).toBeDefined();
     const item = mapShoppingListItem({ nombre: entry!.clave, cantidad: 1, unidad: 'g' });
-    expect(packPrice(item)).toBe(entry!.precioConsum!.precio);
+    expect(packPrice(item)).toBe(CONSUM_CATALOG_MATCH[entry!.clave].precioConsum.precio);
   });
 
   test('ingrediente origenEnvase estimado (cebolla) usa el precio medio genérico por unidad', () => {
@@ -130,10 +132,6 @@ describe('packPrice', () => {
       envasesEstimados: 1,
       confianza: 'baja' as const,
       origenEnvase: 'mercadona' as const,
-      precioMercadona: { precioReferencia: 5, formatoReferencia: '???' },
-      mercadonaUrl: 'https://tienda.mercadona.es/product/1/ingrediente-raro',
-      precioConsum: null,
-      consumUrl: null,
       precios: [],
     };
 
@@ -168,8 +166,8 @@ describe('packPrice', () => {
   test('cada token distinto de formatoReferencia presente en el diccionario produce un precio real, no el fallback genérico', () => {
     const claveDeEjemploPorToken = new Map<string, string>();
     for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
-      if (entry.origenEnvase !== 'mercadona' || !entry.precioMercadona) { continue; }
-      const { unidad } = parseFormatoReferencia(entry.precioMercadona.formatoReferencia);
+      if (entry.origenEnvase !== 'mercadona') { continue; }
+      const { unidad } = parseFormatoReferencia(MERCADONA_CATALOG_MATCH[entry.clave].precioMercadona.formatoReferencia);
       if (!claveDeEjemploPorToken.has(unidad)) { claveDeEjemploPorToken.set(unidad, entry.clave); }
     }
 

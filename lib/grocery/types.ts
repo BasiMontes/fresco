@@ -73,14 +73,6 @@ export interface CanonicalIngredient {
   terminoBusqueda: string
   /** Whether `envaseVenta` came from a real supermarket catalog or the hand-curated fallback (FRESCO-503, FRESCO-520). */
   origenEnvase: OrigenEnvase
-  /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
-  precioMercadona: PrecioMercadona | null
-  /** Deep-link to this exact product on tienda.mercadona.es (FRESCO-518 tier 1), when `origenEnvase === 'mercadona'`. Null otherwise. */
-  mercadonaUrl: string | null
-  /** Real Consum reference price, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
-  precioConsum: PrecioConsum | null
-  /** Deep-link to this exact product on tienda.consum.es, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
-  consumUrl: string | null
 }
 
 /** Result of mapping one shopping-list item. */
@@ -102,19 +94,10 @@ export interface MappedGroceryItem {
   confianza: Confianza
   /** Whether `unidadVenta`/pack size came from a real supermarket catalog or the hand-curated fallback (FRESCO-503, FRESCO-520). */
   origenEnvase: OrigenEnvase
-  /** Real Mercadona reference price, when `origenEnvase === 'mercadona'`. Null otherwise. */
-  precioMercadona: PrecioMercadona | null
-  /** Deep-link to this exact product on tienda.mercadona.es (FRESCO-518 tier 1), when `origenEnvase === 'mercadona'`. Null otherwise. */
-  mercadonaUrl: string | null
-  /** Real Consum reference price, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
-  precioConsum: PrecioConsum | null
-  /** Deep-link to this exact product on tienda.consum.es, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
-  consumUrl: string | null
   /**
-   * FRESCO-768 — the same prices in the common shape, one per chain the
-   * connector registry lets run. Empty for an estimated pack, an unknown
-   * ingredient, or a chain whose connector is not runnable (see the registry).
-   * The four chain-specific fields above go away in FRESCO-769.
+   * Prices (and deep links) in the common shape, one per chain the connector
+   * registry lets run. Empty for an estimated pack, an unknown ingredient, or a
+   * chain whose connector is not runnable (see the registry).
    */
   precios: PrecioNormalizado[]
 }
