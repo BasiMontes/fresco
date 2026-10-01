@@ -60,21 +60,47 @@ describe('parseFormatoReferencia', () => {
 });
 
 describe('packPrice', () => {
-  test('ingrediente con match real de Mercadona (aceite de oliva) convierte precioReferencia (por L) al precio del envase de 1000 ml', () => {
+  test('ingrediente con match real de Mercadona (aceite de oliva) usa el precio de envase de precios', () => {
     const real = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
     expect(real.origenEnvase).toBe('mercadona');
-    // FRESCO-762: el catálogo y el diccionario se regeneran cada semana, así
-    // que ni el precio ni el tamaño de envase reales se fijan aquí. La
-    // conversión se prueba con un precio propio del test y el envase del
-    // diccionario (en ml) leído en el momento.
-    const envase = INGREDIENT_DICTIONARY['aceite de oliva'].envaseVenta;
-    expect(envase.unidad).toBe('ml');
-    const item = {
-      ...real,
-      precioMercadona: { precioReferencia: 3.9, formatoReferencia: 'L' },
-    };
-    // precioReferencia 3.9 €/L, envase en ml -> 3.9 * (envase / 1000) €.
-    expect(packPrice(item)).toBeCloseTo(3.9 * (envase.cantidad / 1000), 2);
+    // FRESCO-762/768: el catálogo se regenera cada semana, así que ningún
+    // precio real se fija aquí. packPrice solo lee `precios`: con el precio
+    // real devuelve ese, y con uno propio del test devuelve el del test.
+    expect(real.precios).toHaveLength(1);
+    expect(packPrice(real)).toBe(real.precios[0].precioEnvase);
+    const item = { ...real, precios: [{ ...real.precios[0], precioEnvase: 3.9 }] };
+    expect(packPrice(item)).toBe(3.9);
+  });
+
+  // FRESCO-768 AC: pasar a `precios` no cambia el coste. Oráculo = la
+  // conversión antigua (precio por unidad de referencia -> envase del
+  // diccionario), recalculada aquí para CADA ingrediente de Mercadona.
+  test('cada ingrediente de Mercadona cuesta lo mismo que con la conversión antigua (medio céntimo)', () => {
+    const MASA: Record<string, number> = { g: 1, kg: 1000 };
+    const VOLUMEN: Record<string, number> = { ml: 1, l: 1000 };
+    let comprobados = 0;
+    for (const entry of Object.values(INGREDIENT_DICTIONARY)) {
+      if (entry.origenEnvase !== 'mercadona' || !entry.precioMercadona) { continue; }
+      const { precioReferencia, formatoReferencia } = entry.precioMercadona;
+      const ref = parseFormatoReferencia(formatoReferencia);
+      const { cantidad, unidad } = entry.envaseVenta;
+      const antiguo = ref.unidad === 'ud'
+        ? precioReferencia * ref.cantidad
+        : precioReferencia * (((cantidad * (MASA[unidad] ?? VOLUMEN[unidad])) / (MASA[ref.unidad] ?? VOLUMEN[ref.unidad])) / ref.cantidad);
+
+      const item = mapShoppingListItem({ nombre: entry.clave, cantidad: 1, unidad: 'g' });
+      expect(Math.abs(packPrice(item) - antiguo)).toBeLessThan(0.005);
+      comprobados++;
+    }
+    expect(comprobados).toBeGreaterThan(0);
+  });
+
+  test('un ingrediente de Consum no lleva precios: su conector no es ejecutable (FRESCO-764)', () => {
+    const entry = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'consum');
+    expect(entry).toBeDefined();
+    const item = mapShoppingListItem({ nombre: entry!.clave, cantidad: 1, unidad: 'g' });
+    expect(item.precios).toEqual([]);
+    expect(item.precioConsum).not.toBeNull();
   });
 
   test('ingrediente origenEnvase estimado (cebolla) usa el precio medio genérico por unidad', () => {
@@ -92,7 +118,7 @@ describe('packPrice', () => {
     expect(Number.isFinite(price)).toBe(true);
   });
 
-  test('formatoReferencia no reconocido en un item mercadona cae al fallback genérico en vez de lanzar', () => {
+  test('item mercadona sin precio normalizado cae al fallback genérico en vez de lanzar', () => {
     const item = {
       nombreOriginal: 'ingrediente raro',
       productoCanonico: 'ingrediente raro',
@@ -107,6 +133,7 @@ describe('packPrice', () => {
       mercadonaUrl: 'https://tienda.mercadona.es/product/1/ingrediente-raro',
       precioConsum: null,
       consumUrl: null,
+      precios: [],
     };
 
     const price = packPrice(item);

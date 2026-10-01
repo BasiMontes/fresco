@@ -6,6 +6,29 @@ export interface MedidaReferencia {
   unidad: string
 }
 
+/**
+ * Parses a `formatoReferencia` ("100 g" / "kg" / "L") into quantity + unit.
+ * No leading number means 1. Never throws: an unrecognised format falls back
+ * to `{cantidad: 1, unidad: <string as is>}` and the caller's own fallback
+ * absorbs it.
+ */
+export function parseFormatoReferencia(formato: string): MedidaReferencia {
+  const trimmed = (formato ?? '').trim();
+  const match = trimmed.match(/^(\d+(?:[.,]\d+)?)?\s*([a-z]+)$/i);
+
+  if (!match) {
+    return { cantidad: 1, unidad: trimmed.toLowerCase() };
+  }
+
+  const [, cantidadStr, unidadRaw] = match;
+  const cantidad = cantidadStr ? Number.parseFloat(cantidadStr.replace(',', '.')) : 1;
+
+  return {
+    cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
+    unidad: unidadRaw.toLowerCase(),
+  };
+}
+
 const A_BASE: Record<string, { factor: number, unidad: Envase['unidad'] }> = {
   g: { factor: 1, unidad: 'g' },
   gr: { factor: 1, unidad: 'g' },

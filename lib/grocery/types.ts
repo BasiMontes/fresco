@@ -1,4 +1,5 @@
 import type { ShoppingListPasillo } from '@schemas';
+import type { PrecioNormalizado } from './supermarket/types';
 
 /**
  * FRESCO-488 — the ingredient→product mapping layer.
@@ -109,6 +110,13 @@ export interface MappedGroceryItem {
   precioConsum: PrecioConsum | null
   /** Deep-link to this exact product on tienda.consum.es, when `origenEnvase === 'consum'`. Null otherwise (FRESCO-520). */
   consumUrl: string | null
+  /**
+   * FRESCO-768 — the same prices in the common shape, one per chain the
+   * connector registry lets run. Empty for an estimated pack, an unknown
+   * ingredient, or a chain whose connector is not runnable (Consum, FRESCO-764).
+   * The four chain-specific fields above go away in FRESCO-769.
+   */
+  precios: PrecioNormalizado[]
 }
 
 /** Input shape — the subset of `ShoppingListItem` this layer reads. */

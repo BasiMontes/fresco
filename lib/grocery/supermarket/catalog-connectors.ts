@@ -2,9 +2,8 @@ import type { SupermarketConnector } from './connector';
 import type { Envase, ProductoSupermercado, UnidadBase, ZonaId } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
-import { parseFormatoReferencia } from '../estimate-menu-cost';
 import { MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
-import { precioEnvaseDesdeReferencia } from './units';
+import { parseFormatoReferencia, precioEnvaseDesdeReferencia } from './units';
 
 /**
  * FRESCO-767 — the two generated catalogs (Mercadona FRESCO-503/762, Consum
@@ -61,6 +60,17 @@ function coincide(clave: string, termino: string): boolean {
   return ` ${clave}`.includes(` ${termino}`);
 }
 
+const PRODUCTOS_POR_CADENA = new Map<string, ReadonlyMap<string, ProductoSupermercado>>();
+
+/**
+ * Synchronous read of the same catalog a connector serves (FRESCO-768):
+ * `mapShoppingListItem` is pure and sync, the connector methods are async.
+ * It does NOT check permission: callers must go through the registry first.
+ */
+export function productoDeCatalogo(cadena: string, clave: string): ProductoSupermercado | null {
+  return PRODUCTOS_POR_CADENA.get(cadena)?.get(clave) ?? null;
+}
+
 function crearConectorDeCatalogo(
   base: Pick<SupermarketConnector, 'cadena' | 'permiso' | 'permisoRef'>,
   entradas: readonly EntradaCatalogo[],
@@ -70,6 +80,7 @@ function crearConectorDeCatalogo(
     .filter((p): p is ProductoSupermercado => p !== null)
     .sort((a, b) => a.idExterno.localeCompare(b.idExterno));
   const porId = new Map(productos.map(p => [p.idExterno, p]));
+  PRODUCTOS_POR_CADENA.set(base.cadena, porId);
 
   return {
     ...base,
