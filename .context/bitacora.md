@@ -339,3 +339,8 @@ Historia archivada:
 - Qué: ADR-0037 aceptado (conector de Consum bajo riesgo aceptado, espejo del ADR-0028) y conectorConsum pasa a riesgo-aceptado con permisoRef ADR-0037 y entra en el registro. PRs #435 y #436.
 - Por qué: el paso 3 de la capa de supermercado (FRESCO-769) quitaba los precios de Consum de la lista de la compra mientras Consum estuviera pendiente. La solicitud de consentimiento sigue sin respuesta; el riesgo se acepta a sabiendas.
 - Siguiente: el coste del menú ya usa el precio real de Consum (antes, media genérica): vigilar totales. FRESCO-769 desbloqueado. Revertir quitando conectorConsum de registry.ts si Consum dice que no o bloquea.
+
+## 2026-10-01 - FRESCO-769 per-chain price fields retired
+- Qué: removed precioMercadona/precioConsum/mercadonaUrl/consumUrl from CanonicalIngredient and MappedGroceryItem; shopping-list links read precios[].url; dictionary regenerated, tests moved to the catalogs (PR #437, 46be3b82).
+- Por qué: step 3 of the ADR-0036 migration, nothing read the per-chain fields after FRESCO-768. Catalogs keep their own source shape (connectors read it), AC narrowed in Jira.
+- Siguiente: FRESCO-770 (apply schema in Supabase, move refresh to runner); confirm the next weekly refresh-mercadona-catalog PR opens.
