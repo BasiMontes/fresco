@@ -1,6 +1,10 @@
+import type { PrecioNormalizado } from './supermarket/types';
 import type { CanonicalIngredient, GroceryInput, MappedGroceryItem } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
+import { productoDeCatalogo } from './supermarket/catalog-connectors';
+import { registroSupermercados } from './supermarket/registry';
+import { precioPorUnidadReferencia } from './supermarket/units';
 
 /**
  * FRESCO-488 — `mapShoppingListItem`: one Fresco shopping-list item → its
@@ -69,6 +73,30 @@ export function recoverFromRecipeContext(
   return best;
 }
 
+/**
+ * FRESCO-768 — the entry's price in the common shape, from every connector the
+ * registry lets run. Only the chain whose pack the entry's `envaseVenta` IS
+ * counts (`origenEnvase`): another chain's catalog may also hold the
+ * ingredient, but with a different pack, and mixing them would price one pack
+ * and count another.
+ */
+function preciosNormalizados(entry: CanonicalIngredient): PrecioNormalizado[] {
+  const precios: PrecioNormalizado[] = [];
+  for (const conector of registroSupermercados.activos()) {
+    if (conector.cadena !== entry.origenEnvase) { continue; }
+    const producto = productoDeCatalogo(conector.cadena, entry.clave);
+    if (!producto) { continue; }
+    precios.push({
+      cadena: producto.cadena,
+      precioEnvase: producto.precioEnvase,
+      precioReferencia: precioPorUnidadReferencia({ precioEnvase: producto.precioEnvase, envase: producto.envase }),
+      url: producto.url,
+      observadoEn: producto.observadoEn,
+    });
+  }
+  return precios;
+}
+
 function packCount(cantidad: number, porPaquete: number): number {
   if (!(porPaquete > 0)) { return 1; }
   return Math.max(1, Math.ceil(cantidad / porPaquete));
@@ -99,6 +127,7 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
       mercadonaUrl: null,
       precioConsum: null,
       consumUrl: null,
+      precios: [],
     };
   }
 
@@ -122,6 +151,7 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
     mercadonaUrl: entry.mercadonaUrl,
     precioConsum: entry.precioConsum,
     consumUrl: entry.consumUrl,
+    precios: preciosNormalizados(entry),
   };
 }
 

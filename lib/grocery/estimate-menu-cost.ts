@@ -26,29 +26,8 @@ const TIPOS: readonly TipoPlato[] = ['desayuno', 'comida', 'cena'];
 /** Raciones por defecto cuando la receta no declara `meta.raciones` o declara 0 — nunca dividir por 0. */
 const RACIONES_POR_DEFECTO = 4;
 
-/**
- * Parsea un `formatoReferencia` de `precioMercadona` ("100 g" / "kg" / "L")
- * en cantidad+unidad. Sin número al frente → cantidad 1. Nunca lanza: un
- * formato no reconocido cae a `{cantidad: 1, unidad: <string tal cual>}`
- * (Risk 2 del plan) — `packPrice` absorbe ese fallback con su propia tabla
- * genérica en vez de propagar el error.
- */
-export function parseFormatoReferencia(formato: string): { cantidad: number, unidad: string } {
-  const trimmed = (formato ?? '').trim();
-  const match = trimmed.match(/^(\d+(?:[.,]\d+)?)?\s*([a-z]+)$/i);
-
-  if (!match) {
-    return { cantidad: 1, unidad: trimmed.toLowerCase() };
-  }
-
-  const [, cantidadStr, unidadRaw] = match;
-  const cantidad = cantidadStr ? Number.parseFloat(cantidadStr.replace(',', '.')) : 1;
-
-  return {
-    cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
-    unidad: unidadRaw.toLowerCase(),
-  };
-}
+/** FRESCO-768: el parseo vive en `supermarket/units.ts` (lo comparten los conectores); se reexporta aquí por compatibilidad. */
+export { parseFormatoReferencia } from './supermarket/units';
 
 /**
  * Tabla de precio medio de respaldo por tipo de unidad. Valores calcados 1:1
@@ -69,35 +48,6 @@ export const PRECIO_MEDIO_POR_UNIDAD: Record<string, number> = {
   dientes: 0.04,
   cucharadas: 0.08,
 };
-
-/** g↔kg, ml↔L — para convertir `envaseVenta` a la unidad de `formatoReferencia`. */
-const MASA_EN_GRAMOS: Record<string, number> = { g: 1, kg: 1000 };
-const VOLUMEN_EN_ML: Record<string, number> = { ml: 1, l: 1000 };
-
-/** Convierte `cantidad` de `desde` a `hasta` cuando ambas están en la misma familia (masa o volumen). `null` si no se puede — nunca lanza. */
-function convertirUnidad(cantidad: number, desde: string, hasta: string): number | null {
-  const from = desde.toLowerCase();
-  const to = hasta.toLowerCase();
-
-  if (from === to) { return cantidad; }
-  if (from in MASA_EN_GRAMOS && to in MASA_EN_GRAMOS) { return (cantidad * MASA_EN_GRAMOS[from]) / MASA_EN_GRAMOS[to]; }
-  if (from in VOLUMEN_EN_ML && to in VOLUMEN_EN_ML) { return (cantidad * VOLUMEN_EN_ML[from]) / VOLUMEN_EN_ML[to]; }
-  return null;
-}
-
-/**
- * Tokens de `formatoReferencia` que NO son masa ni volumen — cuentan
- * paquetes/piezas enteras ("ud", "uds", "unidad", "unidades"). Ninguna
- * familia de `convertirUnidad` los reconoce, así que sin este caso especial
- * `packPrice` caía silenciosamente al precio medio genérico DESCARTANDO un
- * precio real de catálogo conocido (adversarial review finding #2).
- */
-const UNIDADES_DE_CONTEO = new Set(['ud', 'uds', 'unidad', 'unidades']);
-
-/** `true` cuando `unidad` (ya en minúsculas via `parseFormatoReferencia`) representa un paquete/pieza entera, no una cantidad de masa/volumen. */
-function esUnidadDeConteo(unidad: string): boolean {
-  return UNIDADES_DE_CONTEO.has(unidad);
-}
 
 /**
  * El paquete real (`envaseVenta`) que respalda un `MappedGroceryItem` no es
@@ -126,31 +76,19 @@ function redondear2(valor: number): number {
 }
 
 /**
- * Precio de UN paquete (`envaseVenta`) de un artículo ya mapeado. Real de
- * catálogo Mercadona cuando existe — convertido desde `precioMercadona`, que
- * es precio-por-unidad-de-`formatoReferencia`, NO precio de paquete (ver
- * `types.ts`) — precio medio genérico en el resto. Nunca lanza ni produce
- * `NaN`/`Infinity`: cualquier dato inesperado (formato no reconocido, unidad
- * sin familia de conversión) cae al fallback genérico.
+ * Precio de UN paquete (`envaseVenta`) de un artículo ya mapeado. FRESCO-768:
+ * lee `item.precios` (precio del envase completo, ya convertido por el
+ * conector de cada cadena) en vez de convertir aquí un formato de referencia
+ * que solo entendía Mercadona. Sin precio real (envase estimado, ingrediente
+ * desconocido, cadena sin conector ejecutable) cae al precio medio genérico.
+ * Nunca lanza ni produce `NaN`/`Infinity`.
  */
 export function packPrice(item: MappedGroceryItem): number {
   const envaseVenta = resolveEnvaseVenta(item);
 
-  if (item.origenEnvase === 'mercadona' && item.precioMercadona) {
-    const referencia = parseFormatoReferencia(item.precioMercadona.formatoReferencia);
-
-    // "ud"/"unidad"/… no es masa ni volumen: el precio de referencia YA
-    // cubre 1 paquete completo, así que se usa directo en vez de caer al
-    // fallback genérico (finding #2).
-    if (esUnidadDeConteo(referencia.unidad) && referencia.cantidad > 0) {
-      return item.precioMercadona.precioReferencia * referencia.cantidad;
-    }
-
-    const cantidadEnvaseEnUnidadReferencia = convertirUnidad(envaseVenta.cantidad, envaseVenta.unidad, referencia.unidad);
-
-    if (cantidadEnvaseEnUnidadReferencia !== null && referencia.cantidad > 0) {
-      return item.precioMercadona.precioReferencia * (cantidadEnvaseEnUnidadReferencia / referencia.cantidad);
-    }
+  const real = item.precios[0];
+  if (real && Number.isFinite(real.precioEnvase) && real.precioEnvase > 0) {
+    return real.precioEnvase;
   }
 
   const precioUnitario = PRECIO_MEDIO_POR_UNIDAD[envaseVenta.unidad] ?? PRECIO_MEDIO_POR_UNIDAD.unidades;

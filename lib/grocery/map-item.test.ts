@@ -1,5 +1,6 @@
 import type { GroceryInput } from './types';
 import { describe, expect, test } from 'bun:test';
+import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingList, mapShoppingListItem } from './map-item';
 import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 
@@ -197,5 +198,26 @@ describe('mapShoppingListItem — invariants', () => {
     expect(out).toHaveLength(2);
     expect(out[0].confianza).toBe('alta');
     expect(out[1].confianza).toBe('baja');
+  });
+});
+
+describe('mapShoppingListItem — FRESCO-768 normalized prices', () => {
+  test('a Mercadona item carries one price in the common shape', () => {
+    const item = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
+
+    expect(item.origenEnvase).toBe('mercadona');
+    expect(item.precios).toHaveLength(1);
+    const [precio] = item.precios;
+    expect(precio.cadena).toBe('mercadona');
+    expect(precio.precioEnvase).toBeGreaterThan(0);
+    expect(precio.precioReferencia.por).toBe('l');
+    expect(precio.url).toBe(item.mercadonaUrl);
+  });
+
+  test('a Consum item and an unknown ingredient carry no prices', () => {
+    const consum = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'consum');
+    expect(consum).toBeDefined();
+    expect(mapShoppingListItem({ nombre: consum!.clave, cantidad: 1, unidad: 'g' }).precios).toEqual([]);
+    expect(mapShoppingListItem({ nombre: 'ingrediente-inexistente-xyz', cantidad: 1, unidad: 'g' }).precios).toEqual([]);
   });
 });

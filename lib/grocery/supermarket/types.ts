@@ -48,3 +48,16 @@ export interface PrecioReferencia {
   precio: number
   por: 'kg' | 'l' | 'unidad'
 }
+
+/**
+ * FRESCO-768 — one chain's price for a shopping-list item, in the common
+ * shape: the whole pack and the comparable per-kg / per-l / per-unit price.
+ */
+export interface PrecioNormalizado {
+  cadena: CadenaId
+  /** EUR for the WHOLE pack the item's `envasesEstimados` counts. */
+  precioEnvase: number
+  precioReferencia: PrecioReferencia
+  url: string | null
+  observadoEn: string
+}
