@@ -59,6 +59,31 @@ Then(/^ve una tarjeta "card-insight" con esa explicación$/, async ({ page }) =>
   await expect(card).not.toHaveText('');
 });
 
+// FRESCO-774: no-history fallback (FRESCO-333). The factory user is Pro with
+// zero marks, so nothing is seeded — the absence of history IS the precondition.
+Given(/^que un usuario Pro no tiene recetas cocinadas ni descartadas en las últimas 2 semanas$/, async ({ testUserFactory }) => {
+  currentTestUser = await testUserFactory({ plan: 'pro' });
+});
+
+When(/^genera el menú de la semana actual$/, async ({ page, request }) => {
+  if (!currentTestUser) { throw new Error('No hay un testUser para esta escena — el Given debió ejecutarse antes.'); }
+  await generateCurrentWeekPlan(request, currentTestUser);
+  await page.goto('/login');
+  await page.getByTestId('email_input').fill(currentTestUser.email);
+  await page.getByTestId('password_input').fill(currentTestUser.password);
+  await page.getByTestId('login_submit_button').click();
+  await page.waitForURL('**/menu');
+});
+
+Then(/^ve la tarjeta de aprendizaje con el mensaje de variedad y equilibrio nutricional, sin referencias a un historial inexistente$/, async ({ page }) => {
+  const card = page.getByTestId('learning_explanation_card');
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('variedad y equilibrio nutricional');
+  // The history sentences ("ya cocinaste", "descartaste", "ya te funcionaron")
+  // would be a lie for a user with no history.
+  await expect(card).not.toContainText(/cocinaste|descartaste|te funcionaron/);
+});
+
 Then(/^nunca se mezcla visualmente con el banner de advertencias$/, async ({ page }) => {
   const cardText = await page.getByTestId('learning_explanation_card').textContent();
   const banner = page.getByTestId('menu_advertencias_banner');
