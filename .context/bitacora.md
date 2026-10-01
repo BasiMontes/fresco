@@ -304,3 +304,8 @@ Historia archivada:
 - Qué: nueva sección con el vídeo de marca (`brag-FINAL.mp4`) entre "El problema real" y "Cómo funciona"; `preload="none"` + póster, sin autoplay. PR #422 en dev/staging/main (2c1e68a2).
 - Por qué: la landing pasaba del problema a los pasos sin explicar qué es Fresco.
 - Siguiente: FRESCO-760 (scraping de precios, spike anti-bloqueo en runner de Actions). Vigilar ancho de banda de Vercel si crece el tráfico (7 MB por reproducción).
+
+## 2026-10-01 - FRESCO-760 spike: runner de GitHub contra supermercados
+- Qué: probe manual (`workflow_dispatch`) de 6 cadenas desde un runner `github-hosted`. HTTP plano alcanza 5 de 6 (Mercadona, Dia, Alcampo, Lidl, Bonpreu); Carrefour da 403 por IP de centro de datos y se deja fuera de la v1. Playwright no ayuda (Dia pasa de 200 a 403).
+- Por qué: validar el riesgo de bloqueo antes de construir el scraping semanal de FRESCO-747.
+- Siguiente: ticket de construcción (solo Mercadona tiene endpoint de catálogo conocido; el resto requiere traza con devtools). ADR-0028 sigue en Proposed y bloquea el uso en producción hasta que se acepte.
