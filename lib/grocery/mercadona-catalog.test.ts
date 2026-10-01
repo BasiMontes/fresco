@@ -1,39 +1,20 @@
 import type { MercadonaProduct } from '../../scripts/gen-mercadona-catalog';
-import { existsSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
-import {
-  buildMercadonaCatalogMatch,
-  CACHE_DIR,
-  loadCatalog,
-  renderFile,
-} from '../../scripts/gen-mercadona-catalog';
+import { buildMercadonaCatalogMatch } from '../../scripts/gen-mercadona-catalog';
 import { BASE_QUANTITIES } from '../../supabase/functions/generate-shopping-list/consolidator';
 import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 
 /**
- * FRESCO-503 — mirrors `dictionary.test.ts`'s posture for
- * `mercadona-catalog.generated.ts`: the committed file must not drift from a
- * fresh generator run, and every entry must be well-formed.
+ * FRESCO-503 — every entry of `mercadona-catalog.generated.ts` must be
+ * well-formed, and the matching heuristic must behave on an inline fixture
+ * catalog. Needs no network and no local cache.
  *
- * The drift check needs the real Mercadona catalog payloads
- * (`scripts/.cache/mercadona-catalog/`, gitignored, populated by running
- * `bun scripts/gen-mercadona-catalog.ts`). It is SKIPPED, not failed, when
- * that cache is absent (e.g. a fresh clone, or a CI runner with no network
- * to Hugging Face) — same `skipIf` posture as `cli/updater-host-types.test.ts`
- * and `tests/db/edge-functions/generate-shopping-list.test.ts`. Well-
- * formedness and the matching-heuristic tests below need no network at all.
+ * FRESCO-762: there is deliberately no "committed file matches a fresh
+ * generator run" test here. The file is regenerated weekly from a moving
+ * dataset, so comparing it with a local, gitignored cache fails whenever that
+ * cache is a different week's snapshot. That check now lives in the generator
+ * as an explicit, opt-in mode: `bun scripts/gen-mercadona-catalog.ts --check`.
  */
-
-const CACHE_AVAILABLE = existsSync(CACHE_DIR);
-
-describe.skipIf(!CACHE_AVAILABLE)('mercadona-catalog.generated — in sync with the cached dataset', () => {
-  test('committed file matches a fresh generator run', async () => {
-    const catalog = await loadCatalog();
-    const fresh = renderFile(buildMercadonaCatalogMatch(catalog, BASE_QUANTITIES));
-    const committed = await Bun.file(new URL('./mercadona-catalog.generated.ts', import.meta.url)).text();
-    expect(committed).toBe(fresh);
-  });
-});
 
 describe('mercadona-catalog.generated — every entry is well-formed', () => {
   test('envaseVenta.cantidad is positive and unidad is g or ml', () => {
