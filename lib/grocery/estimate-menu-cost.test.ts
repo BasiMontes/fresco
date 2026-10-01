@@ -63,15 +63,18 @@ describe('packPrice', () => {
   test('ingrediente con match real de Mercadona (aceite de oliva) convierte precioReferencia (por L) al precio del envase de 1000 ml', () => {
     const real = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
     expect(real.origenEnvase).toBe('mercadona');
-    // FRESCO-762: el catálogo se refresca cada semana, así que el precio del
-    // catálogo real no se fija aquí; la conversión se prueba con un precio
-    // propio del test. El envase (1000 ml) sale del diccionario, que no cambia.
+    // FRESCO-762: el catálogo y el diccionario se regeneran cada semana, así
+    // que ni el precio ni el tamaño de envase reales se fijan aquí. La
+    // conversión se prueba con un precio propio del test y el envase del
+    // diccionario (en ml) leído en el momento.
+    const envase = INGREDIENT_DICTIONARY['aceite de oliva'].envaseVenta;
+    expect(envase.unidad).toBe('ml');
     const item = {
       ...real,
       precioMercadona: { precioReferencia: 3.9, formatoReferencia: 'L' },
     };
-    // precioReferencia 3.9 €/L, envase 1000 ml = 1 L -> 3.9 * (1000/1000) = 3.90 €.
-    expect(packPrice(item)).toBeCloseTo(3.9, 2);
+    // precioReferencia 3.9 €/L, envase en ml -> 3.9 * (envase / 1000) €.
+    expect(packPrice(item)).toBeCloseTo(3.9 * (envase.cantidad / 1000), 2);
   });
 
   test('ingrediente origenEnvase estimado (cebolla) usa el precio medio genérico por unidad', () => {
