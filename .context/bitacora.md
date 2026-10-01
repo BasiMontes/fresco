@@ -334,3 +334,8 @@ Historia archivada:
 - Qué: MappedGroceryItem gana precios (PrecioNormalizado: envase completo y precio por kg/l/unidad), rellenado desde los catálogos del paso 1 a través del registro; packPrice lee precios y ya no convierte el formato de referencia de Mercadona. PR #434.
 - Por qué: paso 2 de la migración de la capa de supermercado (ADR-0036). Sin cambio visible; test de equivalencia con la conversión antigua por ingrediente (medio céntimo). Los ítems de Consum llevan precios vacío mientras su conector siga pendiente (FRESCO-764).
 - Siguiente: FRESCO-769 (retirar campos por cadena) exige antes decidir Consum (ADR de riesgo o esperar respuesta, plazo ~6 oct); si no, desaparecen sus precios de la lista.
+
+## 2026-10-01 - FRESCO-764 ADR-0037 y conector de Consum registrado
+- Qué: ADR-0037 aceptado (conector de Consum bajo riesgo aceptado, espejo del ADR-0028) y conectorConsum pasa a riesgo-aceptado con permisoRef ADR-0037 y entra en el registro. PRs #435 y #436.
+- Por qué: el paso 3 de la capa de supermercado (FRESCO-769) quitaba los precios de Consum de la lista de la compra mientras Consum estuviera pendiente. La solicitud de consentimiento sigue sin respuesta; el riesgo se acepta a sabiendas.
+- Siguiente: el coste del menú ya usa el precio real de Consum (antes, media genérica): vigilar totales. FRESCO-769 desbloqueado. Revertir quitando conectorConsum de registry.ts si Consum dice que no o bloquea.
