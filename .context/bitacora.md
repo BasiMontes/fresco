@@ -319,3 +319,8 @@ Historia archivada:
 - Qué: no hacía falta tocar la app. Medido con limitación aplicada, el LCP real es de 1,0 a 1,1 s (Lighthouse) y 0,68 s (script propio); los 2,8 s del ticket venían del modo simulado de Lighthouse, que oscila de 1,6 a 3,4 s para el mismo despliegue. Se añade `scripts/measure-lcp.ts` y el workflow manual `lcp-budget` (mediana 816 ms en un runner, presupuesto 2.500 ms). El JS sin usar (141 KiB) es el SDK de Sentry ya diferido (ADR-0034), fuera de la ruta crítica.
 - Por qué: la medición simulada no permitía verificar el criterio de forma fiable.
 - Siguiente: no usar Lighthouse simulado como puerta de calidad; usar `lcp-budget` o `--throttling-method=devtools`.
+
+## 2026-10-01 - FRESCO-752 diseño de la capa de datos de supermercado
+- Qué: capa en `lib/grocery/supermarket/` (contrato de producto con el precio siempre del envase completo, conectores con puerta de permiso que falla cerrado, matching común, plan de refresco con presupuesto por cadena), 56 tests con datos sintéticos, propuesta en `.context/design/supermarket-data-layer.md` y ADR-0036 (Proposed). El SQL va solo en la propuesta, sin migración.
+- Por qué: hoy cada cadena tiene sus campos y precios que no significan lo mismo; añadir una cadena obliga a tocar todos los tipos.
+- Siguiente: FRESCO-767 a 770 (envolver catálogos en conectores, precios normalizados, retirar campos por cadena, esquema en Supabase). Ojo en 767: Consum está pendiente de consentimiento y el registro lo rechazaría. ADR-0036 y la captura del código postal esperan decisión del fundador.
