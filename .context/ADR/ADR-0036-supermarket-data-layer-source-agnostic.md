@@ -1,8 +1,8 @@
 # ADR-0036 — Supermarket price data: a source-agnostic connector contract and a Postgres price model
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-01, founder)
 - **Date:** 2026-10-01
-- **Deciders:** Founder (Basi Montes) — pending sign-off
+- **Deciders:** Founder (Basi Montes)
 - **Tags:** data-model, integrations, cross-cutting-invariant, legal-risk
 - **Supersedes:** —
 - **Superseded by:** —

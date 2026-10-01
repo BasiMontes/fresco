@@ -1,7 +1,7 @@
 # Supermarket data layer: design proposal
 
 - **Ticket:** FRESCO-752 (derived from the FRESCO-747 research)
-- **Status:** Proposal. The architectural decision is recorded in `ADR-0036` (Proposed).
+- **Status:** Proposal. The architectural decision is recorded in `ADR-0036` (Accepted).
 - **Code that ships with it:** `lib/grocery/supermarket/` (contract, units, connector registry, fake connector, matcher, refresh plan), all tested against synthetic fixtures.
 - **Out of scope:** calling any real supermarket (ADR-0028 and the FRESCO-764 consent tracking gate that), any paid provider (ADR-0027), migrating the existing consumers (see "Migration path").
 
