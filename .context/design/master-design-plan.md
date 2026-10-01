@@ -50,7 +50,7 @@ or placeholder remains; `n/a` = not a user-facing fidelity surface.
 
 | Screen | Route | Status | Notes |
 |---|---|---|---|
-| Landing / marketing site | `/` | built | 10 components in `components/landing/`. Rebuilt from an approved-content HTML mock with real tokens, not the mock's CSS (§5-A). |
+| Landing / marketing site | `/` | built | 11 components in `components/landing/`. Rebuilt from an approved-content HTML mock with real tokens, not the mock's CSS (§5-A). |
 | Login | `/login` | built | `app/login/page.tsx` + own `layout.tsx` (auth title). |
 | Signup (email/password → OTP → guest-conflict reassign) | `/signup` | built | Multi-step. `app/signup/page.tsx` + `layout.tsx`. |
 | Forgot password | `/forgot-password` | built | `app/forgot-password/page.tsx` + `layout.tsx`. |
@@ -114,13 +114,16 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 
 - **Purpose.** Anonymous entry point. Sells the "AI that learns from what you actually cook" promise,
   routes to `/onboarding` (primary) and `/signup` / `/login`.
-- **Layout.** `site-nav` → `hero` → `pain-points` → `how-it-works` → `learns-pro` → `impact-stats` →
+- **Layout.** `site-nav` → `hero` → `pain-points` → `brand-video` → `how-it-works` → `learns-pro` → `impact-stats` →
   `pricing` → `faq` → `final-cta` → `site-footer`.
 - **Tokens.** Cream `background`; Fraunces `h1`/`h2`; `button` (primary green) + `button-action`
   (orange, single hero CTA); `card` for pain-point / how-it-works tiles; amber-as-text uses
   `accent-2-700` per the Do's/Don'ts contrast rule.
-- **Components.** `components/landing/*` (10 files), composed by `app/page.tsx`. Every section
+- **Components.** `components/landing/*` (11 files), composed by `app/page.tsx`. Every section
   below the hero is wrapped in `components/ui/reveal.tsx` for a scroll-in settle (FRESCO-446).
+  `brand-video` (FRESCO-761) is a bare `<video>` with no heading: `preload="none"` + poster,
+  `controls`, never `autoPlay` (music only, no speech, so no caption track). Files live in
+  `public/video/`.
 - **Checklist.** [ ] one orange CTA only · [ ] amber text at `accent-2-700` not `secondary` ·
   [ ] header logo links to `/` and is legible over every section (DEFECT-FRESCO-169/173) ·
   [ ] footer copyright year not hard-coded (DEFECT-FRESCO-235) · [ ] "ya tengo cuenta" → `/login`
