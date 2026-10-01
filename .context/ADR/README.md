@@ -97,6 +97,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0034](./ADR-0034-defer-client-sentry-init.md) | Defer client-side Sentry init to idle time (dynamic import): ~358 KiB less unused JS on the critical path, at the cost of not capturing client errors that fire before the SDK's idle-scheduled load completes | Accepted | — | — |
 | [ADR-0035](./ADR-0035-supabase-session-cookie-stays-js-readable.md) | Supabase session cookie stays JS-readable (no `httpOnly`, no BFF): the enforcing nonce CSP of ADR-0019 plus 1h JWT and refresh-token rotation cover XSS token theft; a BFF would rewrite 32 client files and still not stop in-session abuse | Proposed | — | — |
 | [ADR-0036](./ADR-0036-supermarket-data-layer-source-agnostic.md) | Supermarket price data: one source-agnostic product contract (the price is always the whole pack), a permission gate enforced in code (fail-closed), and a Postgres price model; refresh only what menus need, in budgeted batches | Proposed | — | — |
+| [ADR-0037](./ADR-0037-consum-catalog-risk-accepted.md) | Consum catalog and prices: run the connector under accepted risk (mirrors ADR-0028 for Mercadona) while the written consent request is unanswered; revocable in one line | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first.
 
