@@ -1,10 +1,9 @@
-import { conectorMercadona } from './catalog-connectors';
+import { conectorConsum, conectorMercadona } from './catalog-connectors';
 import { crearRegistro } from './connector';
 
 /**
- * FRESCO-767 — the connectors the app may run. Consum is deliberately absent
- * (`pendiente`, FRESCO-764) until its consent answer arrives or an ADR accepts
- * the risk; `conectorConsum` stays exported from `catalog-connectors.ts` so it
- * can be added here in one line.
+ * FRESCO-767 — the connectors the app may run. Mercadona runs under ADR-0028
+ * and Consum under ADR-0037 (`riesgo-aceptado`, consent requests unanswered).
+ * If a chain answers no or blocks us, drop its connector from this list.
  */
-export const registroSupermercados = crearRegistro([conectorMercadona]);
+export const registroSupermercados = crearRegistro([conectorMercadona, conectorConsum]);
