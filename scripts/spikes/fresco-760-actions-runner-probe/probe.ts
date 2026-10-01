@@ -24,6 +24,8 @@ interface Target {
   url: string
   // 'api' = known JSON catalog endpoint, 'page' = public HTML landing page
   kind: 'api' | 'page'
+  // Extra request headers (http mode only), for APIs that expect the web app's own
+  headers?: Record<string, string>
 }
 
 interface Result {
@@ -42,6 +44,22 @@ const TARGETS: Target[] = [
   { chain: 'Alcampo', url: 'https://www.compraonline.alcampo.es/', kind: 'page' },
   { chain: 'Lidl', url: 'https://www.lidl.es/', kind: 'page' },
   { chain: 'Bonpreu', url: 'https://www.compraonline.bonpreuesclat.cat/', kind: 'page' },
+  // FRESCO-763: same request `scripts/gen-consum-catalog.ts` (FRESCO-520) makes.
+  {
+    chain: 'Consum',
+    url: 'https://tienda.consum.es/api/rest/V1.0/catalog/product?page=1&limit=30&offset=0&q=arroz',
+    kind: 'api',
+    headers: {
+      'x-tol-zone': '0',
+      'x-tol-channel': '1',
+      'x-tol-locale': 'es',
+      'x-tol-app': 'shop-front',
+      'x-tol-shipping-zone': '0D',
+      'x-tol-currency': 'EUR',
+      'accept': 'application/json',
+      'user-agent': 'Mozilla/5.0',
+    },
+  },
 ];
 
 const DELAY_MS = 3000;
@@ -77,7 +95,7 @@ function detectSignal(status: number, body: string): string {
 async function probeHttp(target: Target): Promise<Result> {
   const started = performance.now();
   try {
-    const response = await fetch(target.url, { redirect: 'follow' });
+    const response = await fetch(target.url, { redirect: 'follow', headers: target.headers });
     const body = await response.text();
     return {
       chain: target.chain,
