@@ -1,8 +1,8 @@
 # ADR-0028 — Mercadona catalog/price API: read is unblocked, production use is gated on a founder ToS decision
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-01, option (b), see the 2026-10-01 follow-up)
 - **Date:** 2026-09-16
-- **Deciders:** Founder (Basi Montes) — pending sign-off on the gated item below
+- **Deciders:** Founder (Basi Montes)
 - **Tags:** product-scope, data-access, roadmap, cross-cutting-invariant, legal-risk
 - **Supersedes:** —
 - **Superseded by:** —
@@ -106,6 +106,15 @@ We record two things, at two different confidence levels:
     without consent (production build on Mercadona read data may proceed
     under FRESCO-346); (c) reject it (FRESCO-346 stays scoped to what
     ADR-0027 already allowed: export + affiliate, no real price shown).
+  - **Decision (2026-10-01).** The founder accepted option (b) and, in
+    parallel, has requested Mercadona's written consent (option (a)). The
+    consent request is unanswered; silence is not consent, so the risk is
+    accepted knowingly, not resolved. The first build (FRESCO-762) reads the
+    community dataset `datania/mercadona-catalog`, not Mercadona's API, so it
+    adds no requests to Mercadona. Any later code that calls Mercadona's
+    endpoints directly still needs this ADR's risk read, plus a reply from
+    Mercadona if one arrives. Extending the same decision to other chains is
+    NOT covered: this ADR only analyses Mercadona's terms (FRESCO-763).
   - Carrefour/Dia/Alcampo were not verified this spike (blind endpoint
     guesses all failed, as expected — a real check needs a headed-browser
     devtools trace, the same method that found the Bonpreu/Mercadona
