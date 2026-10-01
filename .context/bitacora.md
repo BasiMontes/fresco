@@ -354,3 +354,7 @@ Historia archivada:
 - Qué: PR #441. The runner gets its own registry with a Mercadona connector that reads the community dataset datania/mercadona-catalog (not Mercadona API): own product id, real snapshot date, prices at most a week old. Initial load stores Mercadona ids (decimal ids like 81649.1 included) with one match per ingredient. App registry untouched. ADR-0028 follow-up and design doc updated.
 - Por qué: founder chose the dataset over the API (ADR-0028: calling Mercadona endpoints directly reopens the legal risk read). Verified end to end on the local stack: 12 prices stored with the snapshot date.
 - Siguiente: FRESCO-772 (Consum live connector); repo secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY; first --apply on prod needs founder approval; per-chain pacing when Consum lands.
+## 2026-10-01 - FRESCO-774 e2e fallback aprendizaje Pro
+- Qué: escenario @aprendizaje que cubre al usuario Pro sin historial viendo el mensaje de respaldo (steps en aprendizaje-pro.steps.ts), PR #444.
+- Por qué: FRESCO-333 solo tenía test unitario; el fallo real estaba en el guard de index.ts.
+- Siguiente: falta check Free opcional y probar en rojo reintroduciendo el guard.
