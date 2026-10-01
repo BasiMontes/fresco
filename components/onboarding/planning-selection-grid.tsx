@@ -111,7 +111,9 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
         canScrollRight && 'mask-[linear-gradient(to_right,black_92%,transparent)] [-webkit-mask-image:linear-gradient(to_right,black_92%,transparent)]',
       )}
     >
-      <table className="w-full min-w-76 border-collapse">
+      {/* FRESCO-773: floor lowered from min-w-76 (304px) so the 7 days fit the
+          296px card at 360px with no scroll; below that, scroll + fade remain. */}
+      <table className="w-full min-w-72 border-collapse">
         <thead>
           <tr>
             <th scope="col" className="w-20" />
@@ -125,10 +127,10 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
         <tbody>
           {MEAL_OPTIONS.map(meal => (
             <tr key={meal.value}>
-              <th scope="row" aria-label={meal.label} className="py-1.5 pr-2 text-left align-middle">
+              <th scope="row" aria-label={meal.label} className="py-1.5 pr-1 text-left align-middle">
                 <span className="flex flex-col gap-0.5">
                   <span className="text-body-sm font-sans font-normal text-text">{meal.label}</span>
-                  <span className="flex gap-1.5 text-caption font-sans text-tertiary">
+                  <span className="flex gap-1 text-caption font-sans text-tertiary">
                     <button
                       type="button"
                       data-testid="planning_meal_select_all"
