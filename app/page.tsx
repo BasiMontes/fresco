@@ -1,3 +1,4 @@
+import { BrandVideo } from '@/components/landing/brand-video';
 import { Faq } from '@/components/landing/faq';
 import { FAQS } from '@/components/landing/faq-data';
 import { FinalCta } from '@/components/landing/final-cta';
@@ -38,6 +39,7 @@ export default function GuestLandingPage() {
             (disabled under prefers-reduced-motion). */}
         <Hero />
         <Reveal><PainPoints /></Reveal>
+        <Reveal><BrandVideo /></Reveal>
         <Reveal><HowItWorks /></Reveal>
         <Reveal><LearnsPro /></Reveal>
         <Reveal><ImpactStats /></Reveal>
