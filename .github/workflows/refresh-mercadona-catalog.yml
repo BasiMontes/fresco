@@ -34,6 +34,11 @@ jobs:
         run: bun scripts/check-mercadona-dataset-freshness.ts
       - name: Regenerate the catalog
         run: bun scripts/gen-mercadona-catalog.ts
+      # The repo's pre-push hook (husky) also runs on the runner, and its
+      # agents:compat:check needs the gitignored .claude/skills alias, which
+      # only exists after this generator has run.
+      - name: Link the Claude skills alias
+        run: bun run agents:compat
       - name: Open a PR when prices changed
         env:
           GH_TOKEN: ${{ secrets.CATALOG_REFRESH_TOKEN }}
