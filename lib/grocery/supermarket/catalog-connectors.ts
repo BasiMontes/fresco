@@ -1,3 +1,4 @@
+import type { MercadonaMatch } from '../mercadona-catalog.generated';
 import type { SupermarketConnector } from './connector';
 import type { Envase, ProductoSupermercado, UnidadBase, ZonaId } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
@@ -80,6 +81,35 @@ export function productosDeCatalogo(cadena: string): ProductoSupermercado[] {
   return [...(PRODUCTOS_POR_CADENA.get(cadena)?.values() ?? [])];
 }
 
+/** Mercadona's own product id, from its product URL (`.../product/4640/aceite-...`). Some ids have a decimal part (`81649.1`). */
+export function idMercadonaDeUrl(url: string | null): string | null {
+  return url?.match(/\/product\/(\d+(?:\.\d+)?)(?:\/|$)/)?.[1] ?? null;
+}
+
+/** A catalog product together with the ingredient it is matched to (`ingredient_product_match`). */
+export interface ProductoParaCarga {
+  ingrediente: string
+  producto: ProductoSupermercado
+}
+
+/**
+ * The committed catalog of a chain as rows for the initial load into the
+ * database (FRESCO-770, FRESCO-771). Unlike the connector, whose `idExterno` is
+ * the ingredient key, Mercadona products carry Mercadona's own id, taken from
+ * the product URL, so the live connector can look them up. Two ingredients may
+ * share one product, hence a list of pairs rather than a map. A Mercadona
+ * product whose URL has no id is left out. Does NOT check permission.
+ */
+export function productosParaCarga(cadena: string): ProductoParaCarga[] {
+  return productosDeCatalogo(cadena).flatMap((producto) => {
+    if (cadena !== 'mercadona') {
+      return [{ ingrediente: producto.idExterno, producto }];
+    }
+    const id = idMercadonaDeUrl(producto.url);
+    return id === null ? [] : [{ ingrediente: producto.idExterno, producto: { ...producto, idExterno: id } }];
+  });
+}
+
 function crearConectorDeCatalogo(
   base: Pick<SupermarketConnector, 'cadena' | 'permiso' | 'permisoRef'>,
   entradas: readonly EntradaCatalogo[],
@@ -113,7 +143,7 @@ function crearConectorDeCatalogo(
  * one whole pack, whatever its weight (ready-to-eat lentils: 4 EUR per 485 g
  * bowl), so it is multiplied by its quantity, exactly like `packPrice` does.
  */
-function precioEnvaseMercadona(match: (typeof MERCADONA_CATALOG_MATCH)[string]): number {
+export function precioEnvaseMercadona(match: Pick<MercadonaMatch, 'envaseVenta' | 'precioMercadona'>): number {
   const { precioReferencia, formatoReferencia } = match.precioMercadona;
   const referencia = parseFormatoReferencia(formatoReferencia);
   if (referencia.unidad === 'ud') {
@@ -126,8 +156,11 @@ function precioEnvaseMercadona(match: (typeof MERCADONA_CATALOG_MATCH)[string]):
   return precio ?? 0;
 }
 
+/** Mercadona's legal state, shared by every connector of the chain so they cannot drift. */
+export const PERMISO_MERCADONA = { permiso: 'riesgo-aceptado', permisoRef: 'ADR-0028' } as const;
+
 export const conectorMercadona = crearConectorDeCatalogo(
-  { cadena: 'mercadona', permiso: 'riesgo-aceptado', permisoRef: 'ADR-0028' },
+  { cadena: 'mercadona', ...PERMISO_MERCADONA },
   Object.entries(MERCADONA_CATALOG_MATCH).map(([clave, match]) => ({
     clave,
     envaseVenta: match.envaseVenta,

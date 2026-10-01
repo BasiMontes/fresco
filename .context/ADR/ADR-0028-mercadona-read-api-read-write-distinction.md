@@ -115,6 +115,12 @@ We record two things, at two different confidence levels:
     endpoints directly still needs this ADR's risk read, plus a reply from
     Mercadona if one arrives. Extending the same decision to other chains is
     NOT covered: this ADR only analyses Mercadona's terms (FRESCO-763).
+  - **Live connector (2026-10-01, FRESCO-771).** The refresh runner's Mercadona
+    connector reads the same community dataset as FRESCO-762, not Mercadona's
+    API, so it still adds no request to Mercadona. The founder chose this over
+    calling the API directly: prices are at most a week old (the dataset is
+    exported on Mondays) in exchange for keeping the legal risk read where it
+    was. Calling Mercadona's endpoints directly remains gated by this ADR.
   - Carrefour/Dia/Alcampo were not verified this spike (blind endpoint
     guesses all failed, as expected — a real check needs a headed-browser
     devtools trace, the same method that found the Bonpreu/Mercadona
