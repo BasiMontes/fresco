@@ -324,3 +324,8 @@ Historia archivada:
 - Qué: capa en `lib/grocery/supermarket/` (contrato de producto con el precio siempre del envase completo, conectores con puerta de permiso que falla cerrado, matching común, plan de refresco con presupuesto por cadena), 56 tests con datos sintéticos, propuesta en `.context/design/supermarket-data-layer.md` y ADR-0036 (Proposed). El SQL va solo en la propuesta, sin migración.
 - Por qué: hoy cada cadena tiene sus campos y precios que no significan lo mismo; añadir una cadena obliga a tocar todos los tipos.
 - Siguiente: FRESCO-767 a 770 (envolver catálogos en conectores, precios normalizados, retirar campos por cadena, esquema en Supabase). Ojo en 767: Consum está pendiente de consentimiento y el registro lo rechazaría. ADR-0036 y la captura del código postal esperan decisión del fundador.
+
+## 2026-10-01 - FRESCO-767 conectores Mercadona y Consum
+- Qué: los catálogos generados de Mercadona y Consum envueltos como SupermarketConnector (lib/grocery/supermarket/catalog-connectors.ts); solo Mercadona registrado (registry.ts). PR #433.
+- Por qué: paso 1 de la migración de la capa de supermercado (ADR-0036). Sin cambio visible; test de equivalencia con el precio actual para cada ingrediente. Decisión A: Consum fuera del registro hasta FRESCO-764.
+- Siguiente: paso 2 (precios normalizados en MappedGroceryItem y estimate-menu-cost); registrar Consum cuando haya respuesta o ADR.
