@@ -299,3 +299,8 @@ Historia archivada:
 - Qué: el paso 3 acaba en "Ver resumen" y un resumen de solo lectura (paso 4, no cuenta como paso de datos) agrupa las respuestas con un icono de editar por bloque; "Empezar" genera el menú (PR #417, 2ba844a0). De la validación salieron FRESCO-756 (#418, hueco reservado bajo el banner de cookies) y FRESCO-757 (#419, barra inferior móvil sobre el banner).
 - Por qué: confirmar alergias y datos antes de generar, y corregir sin pulsar Atrás paso a paso. El banner fijo tapaba los botones inferiores en móvil, previo a este cambio.
 - Siguiente: el banner publica su altura real (--cookie-banner-h) y la barra la usa; queda sin validar en vivo la rama "ya existe menú" del resumen (exige un 409 en la base compartida).
+
+## 2026-10-01 - FRESCO-761 brand video en la landing
+- Qué: nueva sección con el vídeo de marca (`brag-FINAL.mp4`) entre "El problema real" y "Cómo funciona"; `preload="none"` + póster, sin autoplay. PR #422 en dev/staging/main (2c1e68a2).
+- Por qué: la landing pasaba del problema a los pasos sin explicar qué es Fresco.
+- Siguiente: FRESCO-760 (scraping de precios, spike anti-bloqueo en runner de Actions). Vigilar ancho de banda de Vercel si crece el tráfico (7 MB por reproducción).
