@@ -91,16 +91,17 @@ describe('contrato de los conectores', () => {
 });
 
 describe('registroSupermercados', () => {
-  test('solo mercadona es ejecutable: Consum sigue pendiente (FRESCO-764)', () => {
-    expect(registroSupermercados.activos().map(c => c.cadena)).toEqual(['mercadona']);
+  test('mercadona (ADR-0028) y consum (ADR-0037) son ejecutables', () => {
+    expect(registroSupermercados.activos().map(c => c.cadena).sort()).toEqual(['consum', 'mercadona']);
     expect(registroSupermercados.get('mercadona')).toBe(conectorMercadona);
-    expect(() => registroSupermercados.get('consum')).toThrow();
+    expect(registroSupermercados.get('consum')).toBe(conectorConsum);
   });
 
-  test('conectorConsum declara su permiso pendiente y el registro lo rechazaria', () => {
-    expect(conectorConsum.permiso).toBe('pendiente');
-    expect(conectorConsum.permisoRef).toBe('FRESCO-764');
-    expect(puedeEjecutarse(conectorConsum)).toBe(false);
-    expect(puedeEjecutarse(conectorMercadona)).toBe(true);
+  test('cada conector cita el ADR que justifica su permiso', () => {
+    expect(conectorMercadona.permiso).toBe('riesgo-aceptado');
+    expect(conectorMercadona.permisoRef).toBe('ADR-0028');
+    expect(conectorConsum.permiso).toBe('riesgo-aceptado');
+    expect(conectorConsum.permisoRef).toBe('ADR-0037');
+    expect(puedeEjecutarse(conectorConsum)).toBe(true);
   });
 });

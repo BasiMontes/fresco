@@ -129,7 +129,7 @@ export const conectorMercadona = crearConectorDeCatalogo(
 
 /** Consum prices the whole pack already, so `precio` passes through. */
 export const conectorConsum = crearConectorDeCatalogo(
-  { cadena: 'consum', permiso: 'pendiente', permisoRef: 'FRESCO-764' },
+  { cadena: 'consum', permiso: 'riesgo-aceptado', permisoRef: 'ADR-0037' },
   Object.entries(CONSUM_CATALOG_MATCH).map(([clave, match]) => ({
     clave,
     envaseVenta: match.envaseVenta,

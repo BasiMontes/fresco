@@ -214,10 +214,17 @@ describe('mapShoppingListItem — FRESCO-768 normalized prices', () => {
     expect(precio.url).toBe(item.mercadonaUrl);
   });
 
-  test('a Consum item and an unknown ingredient carry no prices', () => {
+  test('a Consum item carries its pack price as is (ADR-0037)', () => {
     const consum = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'consum');
     expect(consum).toBeDefined();
-    expect(mapShoppingListItem({ nombre: consum!.clave, cantidad: 1, unidad: 'g' }).precios).toEqual([]);
+    const item = mapShoppingListItem({ nombre: consum!.clave, cantidad: 1, unidad: 'g' });
+    expect(item.precios).toHaveLength(1);
+    expect(item.precios[0].cadena).toBe('consum');
+    expect(item.precios[0].precioEnvase).toBe(consum!.precioConsum!.precio);
+    expect(item.precios[0].url).toBe(item.consumUrl);
+  });
+
+  test('an unknown ingredient carries no prices', () => {
     expect(mapShoppingListItem({ nombre: 'ingrediente-inexistente-xyz', cantidad: 1, unidad: 'g' }).precios).toEqual([]);
   });
 });

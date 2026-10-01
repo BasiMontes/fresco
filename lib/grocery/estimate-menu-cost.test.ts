@@ -95,12 +95,13 @@ describe('packPrice', () => {
     expect(comprobados).toBeGreaterThan(0);
   });
 
-  test('un ingrediente de Consum no lleva precios: su conector no es ejecutable (FRESCO-764)', () => {
+  // ADR-0037: con el conector de Consum ejecutable, su precio de envase real
+  // entra en el coste (antes caía al precio medio genérico).
+  test('un ingrediente de Consum cuesta su precio de envase real, no el genérico', () => {
     const entry = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'consum');
     expect(entry).toBeDefined();
     const item = mapShoppingListItem({ nombre: entry!.clave, cantidad: 1, unidad: 'g' });
-    expect(item.precios).toEqual([]);
-    expect(item.precioConsum).not.toBeNull();
+    expect(packPrice(item)).toBe(entry!.precioConsum!.precio);
   });
 
   test('ingrediente origenEnvase estimado (cebolla) usa el precio medio genérico por unidad', () => {

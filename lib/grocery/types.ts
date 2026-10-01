@@ -113,7 +113,7 @@ export interface MappedGroceryItem {
   /**
    * FRESCO-768 — the same prices in the common shape, one per chain the
    * connector registry lets run. Empty for an estimated pack, an unknown
-   * ingredient, or a chain whose connector is not runnable (Consum, FRESCO-764).
+   * ingredient, or a chain whose connector is not runnable (see the registry).
    * The four chain-specific fields above go away in FRESCO-769.
    */
   precios: PrecioNormalizado[]
