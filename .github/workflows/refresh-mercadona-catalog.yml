@@ -34,16 +34,21 @@ jobs:
         run: bun scripts/check-mercadona-dataset-freshness.ts
       - name: Regenerate the catalog
         run: bun scripts/gen-mercadona-catalog.ts
+      # The ingredient dictionary is generated from the catalog (pack sizes), so
+      # it must be regenerated in the same PR or its drift test fails.
+      - name: Regenerate the ingredient dictionary
+        run: bun scripts/gen-grocery-dictionary.ts
       # The repo's pre-push hook (husky) also runs on the runner, and its
       # agents:compat:check needs the gitignored .claude/skills alias, which
-      # only exists after this generator has run.
+      # only exists after `bun run agents:compat`.
       - name: Link the Claude skills alias
         run: bun run agents:compat
       - name: Open a PR when prices changed
         env:
           GH_TOKEN: ${{ secrets.CATALOG_REFRESH_TOKEN }}
         run: |
-          if git diff --quiet -- lib/grocery/mercadona-catalog.generated.ts; then
+          files="lib/grocery/mercadona-catalog.generated.ts lib/grocery/ingredient-dictionary.ts"
+          if git diff --quiet -- $files; then
             echo "No price changes."
             exit 0
           fi
@@ -57,9 +62,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
-          git add lib/grocery/mercadona-catalog.generated.ts
+          git add $files
           git commit -m "chore(FRESCO-762): refresh the Mercadona catalog prices"
           git push origin "$branch"
           gh pr create --base staging \
             --title "chore(FRESCO-762): refresh the Mercadona catalog prices" \
-            --body "Weekly regeneration of \`lib/grocery/mercadona-catalog.generated.ts\` from the community dataset. Jira: FRESCO-762"
+            --body "Weekly regeneration of \`lib/grocery/mercadona-catalog.generated.ts\` and \`lib/grocery/ingredient-dictionary.ts\` from the community dataset. Jira: FRESCO-762"
