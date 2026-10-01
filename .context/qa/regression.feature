@@ -962,6 +962,17 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve una tarjeta "card-insight" con esa explicación
     Y nunca se mezcla visualmente con el banner de advertencias
 
+  @aprendizaje @edge-case @automatizado
+  # Automatizado: tests/steps/aprendizaje-pro.steps.ts (FRESCO-774, backend real)
+  # FRESCO-333 (PR #443): el guard de historial en generate-meal-plan/index.ts
+  # hacía inalcanzable el texto de respaldo de buildLearningExplanation, así
+  # que un Pro sin historial reciente no recibía tarjeta. Solo lo cubría el
+  # test unitario; este escenario falla si se reintroduce el guard.
+  Escenario: Un usuario Pro sin historial ve el mensaje de respaldo de aprendizaje
+    Dado que un usuario Pro no tiene recetas cocinadas ni descartadas en las últimas 2 semanas
+    Cuando genera el menú de la semana actual
+    Entonces ve la tarjeta de aprendizaje con el mensaje de variedad y equilibrio nutricional, sin referencias a un historial inexistente
+
   # ==========================================================================
   # Lista de la compra (EPIC-FRESCO-12 / STORY-FRESCO-13)
   # ==========================================================================
