@@ -44,10 +44,14 @@ Given(/^que Laura ve una receta recomendada en \/notifications$/, async ({ page,
 });
 
 When(/^pulsa "Guardar en favoritos" en esa tarjeta$/, async ({ page }) => {
+  // The heart flips optimistically, so wait for the real write to land before
+  // the Then step navigates away and reads /favorites.
+  const saved = page.waitForResponse(res => res.url().includes('/rest/v1/favorites') && res.request().method() === 'POST');
   await page.getByTestId('notifications_recommended_recipes_notice')
     .getByRole('button', { name: 'Guardar en favoritos' })
     .first()
     .click();
+  await saved;
 });
 
 Then(/^la receta se añade a sus favoritos, visible en \/favorites$/, async ({ page }) => {

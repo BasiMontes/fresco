@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -71,8 +72,18 @@ Given(/^que el usuario ya marcó un plato como cocinado o descartado$/, async ({
   await page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`).click();
   await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveText('Cocinado', { timeout: MARK_RESULT_TIMEOUT_MS });
   // FRESCO-373: the mark commits to the backend after a 5s undo window — wait
-  // for that to land before a scenario reloads / checks persistence.
+  // for that to land before a scenario reloads / checks persistence. The
+  // snackbar disappearing only means the timer fired; the write is still in
+  // flight, so poll the row itself or a slow edge function races the reload.
   await expect(page.getByTestId('mark_undo_snackbar')).toHaveCount(0, { timeout: 15_000 });
+  await expect.poll(async () => {
+    const res = await request.get(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/meal_plan_recipes?select=estado,meal_plans!inner(user_id)&dia=eq.lunes&tipo_plato=eq.comida&meal_plans.user_id=eq.${ctx.testUser.id}`,
+      { headers: restHeaders(ctx.testUser.accessToken) },
+    );
+    const [row] = await res.json() as { estado: string }[];
+    return row?.estado;
+  }, { timeout: MARK_RESULT_TIMEOUT_MS }).toBe('cocinada');
 });
 
 When(/^recarga la página y observa ese mismo plato$/, async ({ page }) => {
