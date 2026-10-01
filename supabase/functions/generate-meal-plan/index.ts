@@ -191,9 +191,10 @@ Deno.serve(async (req: Request) => {
         .filter((r): r is Recipe => r !== undefined)
         .slice(0, MAX_DESTACADAS_IN_PROMPT)
 
-      if (destacadas.length > 0 || recentRecipeIds.length > 0) {
-        explicacionAprendizaje = buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas })
-      }
+      // FRESCO-333: no guard on "has history" — a Pro user with none still
+      // gets the generic variety/balance sentence from
+      // `buildLearningExplanation` (AC: fallback message, never a missing card).
+      explicacionAprendizaje = buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas })
     }
 
     // 9. Persist meal_plans
