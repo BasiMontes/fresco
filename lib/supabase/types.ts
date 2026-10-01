@@ -75,6 +75,38 @@ export type Database = {
           },
         ]
       }
+      ingredient_product_match: {
+        Row: {
+          confianza: string
+          confirmado: boolean
+          creado_en: string
+          ingrediente: string
+          producto_id: number
+        }
+        Insert: {
+          confianza: string
+          confirmado?: boolean
+          creado_en?: string
+          ingrediente: string
+          producto_id: number
+        }
+        Update: {
+          confianza?: string
+          confirmado?: boolean
+          creado_en?: string
+          ingrediente?: string
+          producto_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_product_match_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "supermarket_product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredient_substitutions: {
         Row: {
           alergenos: string[]
@@ -435,6 +467,190 @@ export type Database = {
           },
         ]
       }
+      supermarket_chain: {
+        Row: {
+          habilitada: boolean
+          nombre: string
+          permiso: string
+          permiso_ref: string | null
+          slug: string
+        }
+        Insert: {
+          habilitada?: boolean
+          nombre: string
+          permiso: string
+          permiso_ref?: string | null
+          slug: string
+        }
+        Update: {
+          habilitada?: boolean
+          nombre?: string
+          permiso?: string
+          permiso_ref?: string | null
+          slug?: string
+        }
+        Relationships: []
+      }
+      supermarket_price: {
+        Row: {
+          disponible: boolean
+          observado_en: string
+          precio_envase: number
+          producto_id: number
+          zona: string
+        }
+        Insert: {
+          disponible: boolean
+          observado_en: string
+          precio_envase: number
+          producto_id: number
+          zona: string
+        }
+        Update: {
+          disponible?: boolean
+          observado_en?: string
+          precio_envase?: number
+          producto_id?: number
+          zona?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supermarket_price_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "supermarket_product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supermarket_price_history: {
+        Row: {
+          disponible: boolean
+          observado_en: string
+          precio_envase: number
+          producto_id: number
+          zona: string
+        }
+        Insert: {
+          disponible: boolean
+          observado_en: string
+          precio_envase: number
+          producto_id: number
+          zona: string
+        }
+        Update: {
+          disponible?: boolean
+          observado_en?: string
+          precio_envase?: number
+          producto_id?: number
+          zona?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supermarket_price_history_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "supermarket_product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supermarket_product: {
+        Row: {
+          cadena: string
+          envase_cantidad: number
+          envase_unidad: string
+          id: number
+          id_externo: string
+          marca: string | null
+          nombre: string
+          url: string | null
+          visto_por_primera_vez: string
+          visto_por_ultima_vez: string
+        }
+        Insert: {
+          cadena: string
+          envase_cantidad: number
+          envase_unidad: string
+          id?: never
+          id_externo: string
+          marca?: string | null
+          nombre: string
+          url?: string | null
+          visto_por_primera_vez?: string
+          visto_por_ultima_vez?: string
+        }
+        Update: {
+          cadena?: string
+          envase_cantidad?: number
+          envase_unidad?: string
+          id?: never
+          id_externo?: string
+          marca?: string | null
+          nombre?: string
+          url?: string | null
+          visto_por_primera_vez?: string
+          visto_por_ultima_vez?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supermarket_product_cadena_fkey"
+            columns: ["cadena"]
+            isOneToOne: false
+            referencedRelation: "supermarket_chain"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      supermarket_zone: {
+        Row: {
+          cadena: string
+          zona: string
+        }
+        Insert: {
+          cadena: string
+          zona: string
+        }
+        Update: {
+          cadena?: string
+          zona?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supermarket_zone_cadena_fkey"
+            columns: ["cadena"]
+            isOneToOne: false
+            referencedRelation: "supermarket_chain"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      supermarket_zone_postcode: {
+        Row: {
+          cadena: string
+          codigo_postal: string
+          zona: string
+        }
+        Insert: {
+          cadena: string
+          codigo_postal: string
+          zona: string
+        }
+        Update: {
+          cadena?: string
+          codigo_postal?: string
+          zona?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supermarket_zone_postcode_cadena_zona_fkey"
+            columns: ["cadena", "zona"]
+            isOneToOne: false
+            referencedRelation: "supermarket_zone"
+            referencedColumns: ["cadena", "zona"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           adultos: number
@@ -569,6 +785,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_recipe_status_update: {
+        Args: {
+          p_estado: Database["public"]["Enums"]["estado_receta_menu"]
+          p_rating?: number
+          p_recipe_id?: string
+          p_slot_id: string
+        }
+        Returns: undefined
+      }
       check_and_increment_rate_limit: {
         Args: {
           p_endpoint: string
@@ -669,6 +894,31 @@ export type Database = {
         Returns: {
           alergenos: string[]
           ingrediente_sustituto: string
+        }[]
+      }
+      get_supermarket_demand: {
+        Args: { p_desde: string }
+        Returns: {
+          huecos: number
+          ingrediente: string
+        }[]
+      }
+      get_supermarket_prices: {
+        Args: { p_ingredientes: string[]; p_zona?: string }
+        Returns: {
+          cadena: string
+          confianza: string
+          confirmado: boolean
+          disponible: boolean
+          envase_cantidad: number
+          envase_unidad: string
+          id_externo: string
+          ingrediente: string
+          marca: string
+          nombre: string
+          observado_en: string
+          precio_envase: number
+          url: string
         }[]
       }
       get_user_cooked_recipe_ids: {
