@@ -1,6 +1,11 @@
 import type { GroceryInput } from './types';
 import { describe, expect, test } from 'bun:test';
 import { mapShoppingList, mapShoppingListItem } from './map-item';
+import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
+
+// FRESCO-762: the catalog is refreshed weekly, so pack sizes asserted below
+// are read from it instead of hardcoded — a refresh must not break these.
+const LECHE_PACK_ML = MERCADONA_CATALOG_MATCH.leche.envaseVenta.cantidad;
 
 describe('mapShoppingListItem — FRESCO-488 acceptance criteria', () => {
   test('AC: ingrediente en unidad no comprable (espinacas 400 g)', () => {
@@ -50,7 +55,7 @@ describe('mapShoppingListItem — unit handling', () => {
     const r = mapShoppingListItem({ nombre: 'leche', cantidad: 1, unidad: 'l' });
     expect(r.cantidadNormalizada).toBe(1000);
     expect(r.unidadVenta).toBe('ml');
-    expect(r.envasesEstimados).toBe(1); // 1000 ml / 1000 ml brick
+    expect(r.envasesEstimados).toBe(Math.ceil(1000 / LECHE_PACK_ML));
   });
 
   test('dientes convert to a cabeza pack', () => {
@@ -67,7 +72,7 @@ describe('mapShoppingListItem — unit handling', () => {
 
   test('quantity over one pack rounds up', () => {
     const r = mapShoppingListItem({ nombre: 'leche', cantidad: 2500, unidad: 'ml' });
-    expect(r.envasesEstimados).toBe(3); // ceil(2500 / 1000)
+    expect(r.envasesEstimados).toBe(Math.ceil(2500 / LECHE_PACK_ML));
   });
 
   test('accent-insensitive lookup', () => {
