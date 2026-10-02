@@ -407,3 +407,8 @@ Historia archivada:
 - Qué: workflow semanal db-backup (pg_dump cifrado AES-256, restauración verificada con recuento de filas, subida a R2) + scripts/db-backup.ts; ADR-0020 con RPO/RTO y procedimiento; hotfix.md corregido (forward-fix, sin down-migrations). PR #459.
 - Por qué: audit-6 A6-D2, proyecto único en Free sin PITR. Decisión del fundador: seguir en Free hasta que los ingresos cubran Pro.
 - Siguiente: secrets (SUPABASE_DB_URL, BACKUP_PASSPHRASE, R2_*), bucket R2 con ciclo de 90 días y primer workflow_dispatch como evidencia de prod; luego Finalizada.
+
+## 2026-10-02 - FRESCO-785 enlaces de supermercado al producto equivocado
+- Qué: filtro compartido lib/grocery/product-plausibility.ts (exclusión de categorías, producto cabeza del nombre, guarda de especie) en ambos generadores de catálogo y en el matcher; catálogos regenerados. PRs #461 y #462, en staging/dev/main (c4b465ff). Revisados los 199 ingredientes del diccionario y la lista real de staging.
+- Por qué: los generadores elegían el producto de nombre más corto que contuviera el término (fideos a virutas de chocolate, carne picada a cerdo, ternera a sopa deshidratada). Sin match fiable ya no hay enlace ni precio.
+- Siguiente: FRESCO-824 (el precio mostrado sale de una tabla por gramo y Leche 1 l da 0,00€); dudosos de criterio de producto (alubias, cacahuetes, queso, sal, pasta); filtrado por dieta del perfil (opción B) sin ticket.
