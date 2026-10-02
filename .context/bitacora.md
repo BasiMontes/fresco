@@ -390,3 +390,7 @@ Historia archivada:
 - Qué: tests de requireAdminUser (8), proxy() con nonce CSP (5) y contrato HTTP de delete-catalog-recipe, get-shopping-list-suggestions y send-weekly-reengagement-push; las 8 Edge Functions con test. Suelo de test:db-integration 130 a 147. PR #454 en staging/dev/main.
 - Por qué: auditoría 6 (A6-T2, A6-T10); un refactor de ADMIN_USER_ID dejaba a cualquier usuario borrar recetas con CI en verde.
 - Siguiente: la mutación includes por !includes solo se verificó en unit, no en HTTP (el runtime local no recarga); pasar a Finalizada tras QA.
+## 2026-10-02 - FRESCO-786 /calendar sin desborde a 768 px
+- Qué: el número de días visibles del calendario sale ahora del ancho del contenedor (ResizeObserver + visibleDayCountFor) y no del de la ventana; scrollWidth 884 a 768 a 768 px. 5 unit tests y escenario e2e @tablet. PR #455 en staging/dev/main.
+- Por qué: auditoría 6 (A6-L2), la barra lateral deja 442 px a 768 px y el grid pedía 2 columnas de 15rem.
+- Siguiente: de 768 a 1023 px se ve 1 día y de 1024 a 1279 px 2 (antes 2 y 3); FRESCO-787 añadirá el proyecto Playwright tablet; pasar a Finalizada tras QA.
