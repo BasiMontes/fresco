@@ -348,7 +348,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
             {' '}
             {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
           </p>
-          <p className="text-right text-h5 font-heading text-primary">
+          <p data-testid="shopping_list_summary_total" className="text-right text-h5 font-heading text-primary">
             {costeMenu !== undefined
               ? formatPrecio(costeMenu)
               : `${list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}–${formatPrecio(list.resumen.coste_estimado_max)}`}
