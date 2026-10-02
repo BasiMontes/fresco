@@ -394,3 +394,7 @@ Historia archivada:
 - Qué: el número de días visibles del calendario sale ahora del ancho del contenedor (ResizeObserver + visibleDayCountFor) y no del de la ventana; scrollWidth 884 a 768 a 768 px. 5 unit tests y escenario e2e @tablet. PR #455 en staging/dev/main.
 - Por qué: auditoría 6 (A6-L2), la barra lateral deja 442 px a 768 px y el grid pedía 2 columnas de 15rem.
 - Siguiente: de 768 a 1023 px se ve 1 día y de 1024 a 1279 px 2 (antes 2 y 3); FRESCO-787 añadirá el proyecto Playwright tablet; pasar a Finalizada tras QA.
+## 2026-10-02 - FRESCO-787 proyectos Playwright móvil y tableta
+- Qué: proyectos mobile (360) y tablet (768); escenarios de no desborde en onboarding, /menu, /calendar y /shopping-list y 44 px en la barra inferior. Aserción muestreada (el expect.poll dejaba pasar el bug). Probado con una rama que reintroduce el desborde de FRESCO-786: falla el e2e de tableta. PR #456 en staging/dev/main.
+- Por qué: auditoría 6 (A6-T6), los fallos de layout a 360/768 px pasaban CI en verde porque solo corría Desktop Chrome.
+- Siguiente: tap targets de 44 px solo cubiertos en la barra inferior (iconos 36 px, casillas 26 px, flechas 35 px pendientes, FRESCO-819); vigilar test:e2e (5m36 a 6m03, umbral 6m30); pasar a Finalizada tras QA.
