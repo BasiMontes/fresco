@@ -159,7 +159,7 @@ export default async function ProfilePage() {
           PushSubscription), so this stays client-rendered rather than
           server-read like the cards around it — same reasoning as why
           NombreForm/PreferencesForm are themselves 'use client'. */}
-      <PushNotificationsToggle />
+      <PushNotificationsToggle isGuest={user?.is_anonymous ?? false} />
 
       <AppearanceCard />
 

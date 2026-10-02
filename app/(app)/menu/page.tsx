@@ -248,7 +248,7 @@ export default async function MenuPage() {
 
       <div className="space-y-4">
         <CalendarSuggestionBanner />
-        <PushPromptBanner />
+        <PushPromptBanner isGuest={user?.is_anonymous ?? false} />
       </div>
 
       {/* FRESCO-451 (slice 4/5): gap-8 left each StatTile's top hairline

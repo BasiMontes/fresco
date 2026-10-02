@@ -75,6 +75,8 @@ export interface FakeEdgeClient {
   updates: Array<[string, Record<string, unknown>]>
   /** `[name, args]` for every `.rpc(name, args)` that ran. */
   rpcCalls: Array<[string, unknown]>
+  /** `[table, id]` for every `.from(t).delete().eq('id', id)` that ran. */
+  deletes: Array<[string, unknown]>
   deletedUserIds: string[]
 }
 
@@ -86,6 +88,7 @@ export interface FakeEdgeClient {
 export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClient {
   const updates: FakeEdgeClient['updates'] = [];
   const rpcCalls: FakeEdgeClient['rpcCalls'] = [];
+  const deletes: FakeEdgeClient['deletes'] = [];
   const deletedUserIds: string[] = [];
 
   function selectChain(table: string): Record<string, unknown> {
@@ -118,6 +121,22 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
     return chain;
   }
 
+  function deleteChain(table: string): Record<string, unknown> {
+    let id: unknown;
+    const terminate = async () => {
+      deletes.push([table, id]);
+      return { error: null };
+    };
+    const chain: Record<string, unknown> = {
+      eq: (_column: string, value: unknown) => {
+        id = value;
+        return chain;
+      },
+      then: async (f: (v: unknown) => unknown) => terminate().then(f),
+    };
+    return chain;
+  }
+
   const client = {
     auth: {
       getUser: async () => ({ data: { user: config.user ?? null }, error: config.authError ?? null }),
@@ -135,10 +154,11 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
     from: (table: string) => ({
       select: () => selectChain(table),
       update: (payload: Record<string, unknown>) => updateChain(table, payload),
+      delete: () => deleteChain(table),
     }),
   };
 
-  return { client, updates, rpcCalls, deletedUserIds };
+  return { client, updates, rpcCalls, deletes, deletedUserIds };
 }
 
 /** A `Request` shaped like what the Supabase Edge Runtime hands the handler. */

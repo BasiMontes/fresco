@@ -7,7 +7,12 @@ import { clientEnv } from '@/lib/env';
 import { getCurrentPushSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush, WebPushError } from '@/lib/push/web-push-client';
 import { createClient } from '@/lib/supabase/client';
 
-type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unconfigured';
+type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unconfigured' | 'guest';
+
+interface PushNotificationsToggleProps {
+  /** FRESCO-779: guest (anonymous) sessions cannot store a push subscription, so the control is disabled for them. */
+  isGuest?: boolean
+}
 
 /**
  * `/profile` — FRESCO-241 PR2. Opt-in toggle for the weekly re-engagement
@@ -17,8 +22,8 @@ type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unco
  * save button reverting a form value; a switch failing to flip has no
  * "value" to revert, an inline error line is enough here.
  */
-export function PushNotificationsToggle() {
-  const [status, setStatus] = useState<ToggleStatus>('checking');
+export function PushNotificationsToggle({ isGuest = false }: PushNotificationsToggleProps = {}) {
+  const [status, setStatus] = useState<ToggleStatus>(isGuest ? 'guest' : 'checking');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,6 +31,10 @@ export function PushNotificationsToggle() {
     let cancelled = false;
 
     async function checkInitialState() {
+      if (isGuest) {
+        return;
+      }
+
       if (!isPushSupported()) {
         if (!cancelled) {
           setStatus('unsupported');
@@ -52,10 +61,10 @@ export function PushNotificationsToggle() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isGuest]);
 
   async function handleToggle() {
-    if (isBusy || status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'unconfigured') {
+    if (isBusy || status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'unconfigured' || status === 'guest') {
       return;
     }
 
@@ -98,7 +107,7 @@ export function PushNotificationsToggle() {
   }
 
   const isOn = status === 'on';
-  const isDisabled = isBusy || status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'unconfigured';
+  const isDisabled = isBusy || status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'unconfigured' || status === 'guest';
 
   return (
     <Card className="mt-4" data-testid="pushNotificationsToggle">
@@ -110,6 +119,7 @@ export function PushNotificationsToggle() {
           <div>
             <p className="text-body-md">Recordatorios semanales</p>
             <p className="text-body-sm text-tertiary" data-testid="push_notifications_description">
+              {status === 'guest' && 'Crea una cuenta para recibir recordatorios semanales.'}
               {status === 'unsupported' && 'Tu navegador no admite notificaciones push.'}
               {status === 'unconfigured' && 'Las notificaciones push todavía no están configuradas.'}
               {status === 'denied' && 'Has bloqueado las notificaciones. Actívalas desde los ajustes del navegador para recibir recordatorios.'}
