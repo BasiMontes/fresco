@@ -412,3 +412,8 @@ Historia archivada:
 - Qué: filtro compartido lib/grocery/product-plausibility.ts (exclusión de categorías, producto cabeza del nombre, guarda de especie) en ambos generadores de catálogo y en el matcher; catálogos regenerados. PRs #461 y #462, en staging/dev/main (c4b465ff). Revisados los 199 ingredientes del diccionario y la lista real de staging.
 - Por qué: los generadores elegían el producto de nombre más corto que contuviera el término (fideos a virutas de chocolate, carne picada a cerdo, ternera a sopa deshidratada). Sin match fiable ya no hay enlace ni precio.
 - Siguiente: FRESCO-824 (el precio mostrado sale de una tabla por gramo y Leche 1 l da 0,00€); dudosos de criterio de producto (alubias, cacahuetes, queso, sal, pasta); filtrado por dieta del perfil (opción B) sin ticket.
+
+## 2026-10-02 - FRESCO-807 la lista de la compra ya no suma días pasados
+- Qué: generate-shopping-list filtra los huecos del plan a hoy en adelante (fecha de Madrid + fecha_inicio del plan) con el helper remaining-days.ts. El menú conserva la semana entera (opción B del fundador). PR #463, en staging/dev/main (7621dac1). Verificado en staging: lista de 29 artículos y 40,87–55,30 € pasa a 12 artículos y 8,19–11,09 €, solo viernes a domingo.
+- Por qué: el viernes se sumaban los ingredientes de lunes a jueves y se proponían compras innecesarias. Un plan de semana ya terminada conserva todos los huecos.
+- Siguiente: opción C (ofrecer la semana siguiente si quedan pocos días) sin ticket; el script de verificación borró las 5 listas de la cuenta PRE, no solo la actual (cuenta de pruebas, sin datos reales).
