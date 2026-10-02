@@ -84,13 +84,43 @@ Then(/^el grid muestra días más allá del lunes$/, async ({ page }) => {
 //
 // A 768 px la barra lateral deja ~442 px de contenido. Antes el grid mostraba
 // 2 días (decidido por el ancho de la ventana) y la página crecía a 884 px.
+// FRESCO-787: el viewport lo fija ahora el proyecto Playwright `mobile` (360)
+// o `tablet` (768) según la etiqueta del escenario, no un paso.
 
-When(/^la ventana mide 768 píxeles de ancho$/, async ({ page }) => {
-  await page.setViewportSize({ width: 768, height: 1024 });
-});
+// Muestrea varias veces en vez de aceptar el primer `true`: justo tras montar,
+// el grid del calendario todavía muestra 1 día y el desborde aparece unos ms
+// después, cuando el hook mide el contenedor. Con `expect.poll` un único
+// acierto temprano dejaba pasar el bug (lo demostró la rama de prueba de
+// FRESCO-787, que reintroducía el desborde de FRESCO-786 con la CI en verde).
+const OVERFLOW_SAMPLES = 8;
+const OVERFLOW_SAMPLE_INTERVAL_MS = 200;
 
 Then(/^la página no tiene scroll horizontal$/, async ({ page }) => {
-  await expect.poll(async () =>
-    page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
-  ).toBe(true);
+  await page.waitForLoadState('load');
+  for (let i = 0; i < OVERFLOW_SAMPLES; i += 1) {
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth, `scrollWidth (sample ${i + 1}) must not exceed clientWidth`).toBeLessThanOrEqual(clientWidth);
+    await page.waitForTimeout(OVERFLOW_SAMPLE_INTERVAL_MS);
+  }
+});
+
+// ── Objetivos táctiles (FRESCO-787) ────────────────────────────────────────
+
+Then(/^cada pestaña de la barra de navegación inferior mide al menos 44 px$/, async ({ page }) => {
+  const tabs = page.getByTestId('bottom_tab_bar').getByRole('link');
+  await expect(tabs.first()).toBeVisible();
+  const sizes = await tabs.evaluateAll(links =>
+    links.map((link) => {
+      const { width, height } = link.getBoundingClientRect();
+      return { name: link.textContent?.trim() ?? '', width, height };
+    }),
+  );
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const { name, width, height } of sizes) {
+    expect(width, `${name} width`).toBeGreaterThanOrEqual(44);
+    expect(height, `${name} height`).toBeGreaterThanOrEqual(44);
+  }
 });
