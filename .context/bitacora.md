@@ -366,3 +366,7 @@ Historia archivada:
 - Qué: revocado INSERT a authenticated en meal_plans y meal_plan_recipes (migración 20261002072502), generate-meal-plan escribe con service-role y shopping_lists exige que meal_plan_id sea del usuario; fixtures e2e y de BD sembrando como service role; tests de BD y pgTAP. PR #446, verificado en prod con has_table_privilege.
 - Por qué: un usuario podía forjar slots (estado, rating, recipe_id, sustitucion) y crear planes sin rate limit ni filtro de alérgenos. Misma cura que FRESCO-776: quitar la puerta en vez de vigilarla.
 - Siguiente: FRESCO-778 (trials sin tarjeta), 779 (endpoint de push), 780 (claves de .env.ci). Lección: el barrido de fixtures debe ser programático, el primer e2e cayó por un fichero que no vi.
+## 2026-10-02 - FRESCO-778 una prueba gratuita de Pro por cuenta en el checkout (A6-S3)
+- Qué: POST /api/stripe/checkout rechaza invitados (403) y a quien ya es Pro (409), limita a 10/h por usuario y, si el perfil ya tiene stripe_customer_id o stripe_subscription_id, abre el Checkout sin prueba, con tarjeta y reutilizando el cliente. 9 tests unitarios y un escenario @requiere-stripe-real. PR #447, solo Vercel.
+- Por qué: la ruta abría una prueba sin tarjeta nueva en cada llamada, así que una cuenta o un enjambre de invitados encadenaba Pro gratis.
+- Siguiente: FRESCO-822 (el CTA sigue diciendo prueba gratis a quien ya la usó), 779 (endpoint de push), 780 (claves de .env.ci). Residual: varias cuentas con emails distintos siguen pudiendo coger una prueba sin tarjeta.
