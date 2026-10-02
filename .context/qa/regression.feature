@@ -853,6 +853,17 @@ Característica: Flujo completo de usuario en Fresco
     # dentro de nada que se mueva. Ya no hace falta touch real ni contexto
     # mobile-emulado para probarlo.
 
+  @calendario @tablet @automatizado
+  # Automatizado: tests/steps/calendario.steps.ts
+  Escenario: El calendario no desborda horizontalmente en una tableta de 768 px
+    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
+    Cuando la ventana mide 768 píxeles de ancho
+    Entonces la página no tiene scroll horizontal
+    # FRESCO-786 — a 768 px la barra lateral deja ~442 px de contenido y el
+    # grid pedía 2 columnas de 15rem (593 px): la página crecía a 884 px y la
+    # flecha de día siguiente pisaba la cabecera. El número de días visibles
+    # ahora sale del ancho del contenedor, no del de la ventana.
+
   @calendario @edge-case @verificado-manual-2026-07-31
   Escenario: Dos arrastres simultáneos sobre huecos que se solapan
     Dado que un primer intercambio todavía no ha terminado de guardarse
