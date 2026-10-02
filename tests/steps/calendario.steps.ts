@@ -84,13 +84,29 @@ Then(/^el grid muestra días más allá del lunes$/, async ({ page }) => {
 //
 // A 768 px la barra lateral deja ~442 px de contenido. Antes el grid mostraba
 // 2 días (decidido por el ancho de la ventana) y la página crecía a 884 px.
-
-When(/^la ventana mide 768 píxeles de ancho$/, async ({ page }) => {
-  await page.setViewportSize({ width: 768, height: 1024 });
-});
+// FRESCO-787: el viewport lo fija ahora el proyecto Playwright `mobile` (360)
+// o `tablet` (768) según la etiqueta del escenario, no un paso.
 
 Then(/^la página no tiene scroll horizontal$/, async ({ page }) => {
   await expect.poll(async () =>
     page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
   ).toBe(true);
+});
+
+// ── Objetivos táctiles (FRESCO-787) ────────────────────────────────────────
+
+Then(/^cada pestaña de la barra de navegación inferior mide al menos 44 px$/, async ({ page }) => {
+  const tabs = page.getByTestId('bottom_tab_bar').getByRole('link');
+  await expect(tabs.first()).toBeVisible();
+  const sizes = await tabs.evaluateAll(links =>
+    links.map((link) => {
+      const { width, height } = link.getBoundingClientRect();
+      return { name: link.textContent?.trim() ?? '', width, height };
+    }),
+  );
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const { name, width, height } of sizes) {
+    expect(width, `${name} width`).toBeGreaterThanOrEqual(44);
+    expect(height, `${name} height`).toBeGreaterThanOrEqual(44);
+  }
 });

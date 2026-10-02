@@ -853,11 +853,10 @@ Característica: Flujo completo de usuario en Fresco
     # dentro de nada que se mueva. Ya no hace falta touch real ni contexto
     # mobile-emulado para probarlo.
 
-  @calendario @tablet @automatizado
+  @calendario @mobile @tablet @automatizado
   # Automatizado: tests/steps/calendario.steps.ts
-  Escenario: El calendario no desborda horizontalmente en una tableta de 768 px
+  Escenario: El calendario no desborda horizontalmente en móvil ni en tableta
     Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
-    Cuando la ventana mide 768 píxeles de ancho
     Entonces la página no tiene scroll horizontal
     # FRESCO-786 — a 768 px la barra lateral deja ~442 px de contenido y el
     # grid pedía 2 columnas de 15rem (593 px): la página crecía a 884 px y la
@@ -1950,6 +1949,47 @@ Característica: Flujo completo de usuario en Fresco
   Escenario: /profile no tiene violaciones de accesibilidad serias
     Dado que Laura está en /profile
     Entonces la pantalla no tiene violaciones de accesibilidad serias
+
+  # --------------------------------------------------------------------------
+  # Viewport móvil (360x740) y tableta (768x1024) — FRESCO-787 (A6-T6).
+  # Playwright corre estos escenarios SOLO en los proyectos `mobile` y
+  # `tablet` (ver playwright.config.ts), no en el de escritorio. Cada uno
+  # asserta que la página no gana scroll horizontal: un cambio de padding o de
+  # ancho mínimo que reintroduzca el desborde (A6-L2, A6-L4) rompe el e2e.
+  # --------------------------------------------------------------------------
+
+  @mobile @tablet @onboarding @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts + tests/steps/calendario.steps.ts (FRESCO-787)
+  Escenario: El asistente de onboarding no desborda horizontalmente en ninguno de sus 3 pasos
+    Dado que el usuario tiene sesión iniciada
+    Cuando visita /onboarding
+    Entonces la página no tiene scroll horizontal
+    Cuando avanza al siguiente paso del onboarding
+    Entonces la página no tiene scroll horizontal
+    Cuando avanza al siguiente paso del onboarding
+    Entonces la página no tiene scroll horizontal
+
+  @mobile @tablet @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts + tests/steps/calendario.steps.ts (FRESCO-787)
+  Escenario: /menu no desborda horizontalmente en móvil ni en tableta
+    Dado que el usuario está en /menu (Inicio)
+    Entonces la página no tiene scroll horizontal
+
+  @mobile @tablet @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts + tests/steps/calendario.steps.ts (FRESCO-787)
+  Escenario: La lista de la compra no desborda horizontalmente en móvil ni en tableta
+    Dado que el usuario tiene una lista de la compra generada
+    Entonces la página no tiene scroll horizontal
+
+  @mobile @automatizado
+  # Automatizado: tests/steps/calendario.steps.ts (FRESCO-787)
+  Escenario: La barra de navegación inferior tiene objetivos táctiles de al menos 44 px en móvil
+    Dado que el usuario está en /menu (Inicio)
+    Entonces cada pestaña de la barra de navegación inferior mide al menos 44 px
+    # Alcance deliberadamente estrecho: es el único control principal que hoy
+    # cumple 44 px. Los iconos de 36 px, las casillas de 26 px y las flechas de
+    # 35 px siguen por debajo (medido a 360 px en /menu, /calendar,
+    # /shopping-list y /onboarding) y se subirán cuando se corrijan.
 
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
