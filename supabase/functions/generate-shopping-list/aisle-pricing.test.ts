@@ -1,6 +1,7 @@
 import type { IngredienteConsolidado } from './types.ts'
 import { describe, expect, test } from 'bun:test'
-import { classifyShoppingList } from './aisle-pricing.ts'
+import { BASE_QUANTITIES } from './consolidator.ts'
+import { classifyShoppingList, precioItem } from './aisle-pricing.ts'
 
 /** Minimal valid IngredienteConsolidado fixture — already-summed shopping-list line. */
 function makeIngrediente(overrides: Partial<IngredienteConsolidado> = {}): IngredienteConsolidado {
@@ -86,5 +87,40 @@ describe('classifyShoppingList (FR-4.2/4.3 — deterministic, no Gemini call)', 
     // thousands, so these bounds are tight enough to catch a reintroduction.
     expect(result.resumen.coste_estimado_min).toBeGreaterThan(15)
     expect(result.resumen.coste_estimado_max).toBeLessThan(100)
+  })
+})
+
+// FRESCO-824: consolidator.ts upscales g -> kg and ml -> l from 1000, but
+// PRICE_OVERRIDE is per g/ml. Without converting back, "1 l leche" priced at
+// 0.0011 EUR and rounded to 0.00.
+describe('precioItem (FRESCO-824 — kg/l quantities against per-g/ml prices)', () => {
+  test('prices 1 l of leche from the per-ml table, not as 0.00', () => {
+    expect(precioItem('leche', 'l', 1)).toBeCloseTo(1.1, 2)
+  })
+
+  test('prices 1.6 kg of boniato (no override) with the per-kg fallback', () => {
+    expect(precioItem('boniato', 'kg', 1.6)).toBeCloseTo(9.6, 2)
+  })
+
+  test('prices 1.5 kg of pollo from the per-g table', () => {
+    expect(precioItem('pollo', 'kg', 1.5)).toBeCloseTo(7.5, 2)
+  })
+
+  test('keeps g/ml quantities unchanged', () => {
+    expect(precioItem('leche', 'ml', 500)).toBeCloseTo(0.55, 2)
+  })
+
+  test('every g/ml ingredient prices the same in kg/l as in g/ml', () => {
+    for (const [nombre, { unidad }] of Object.entries(BASE_QUANTITIES)) {
+      if (unidad !== 'g' && unidad !== 'ml') continue
+      const enBase = precioItem(nombre, unidad, 2000)
+      const enGrande = precioItem(nombre, unidad === 'g' ? 'kg' : 'l', 2)
+      expect(enGrande).toBeCloseTo(enBase, 6)
+    }
+  })
+
+  test('classifyShoppingList shows a non-zero price for 1 l of leche', () => {
+    const result = classifyShoppingList([makeIngrediente({ nombre: 'leche', cantidad: 1, unidad: 'l' })])
+    expect(result.pasillos[0].items[0].precio_estimado).toBeGreaterThan(0)
   })
 })
