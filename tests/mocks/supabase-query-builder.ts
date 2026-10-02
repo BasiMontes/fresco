@@ -26,16 +26,25 @@ export interface TableFixture {
   updateError?: unknown
 }
 
+export type FakeRpc = (name: string, args: unknown) => Promise<{ data: unknown, error: unknown }>;
+
 export interface FakeSupabase {
   client: {
     from: (table: string) => unknown
+    rpc: FakeRpc
     auth?: unknown
   }
   updates: RecordedUpdate[]
+  /** `[name, args]` for every `.rpc(name, args)` that ran. */
+  rpcCalls: Array<[string, unknown]>
 }
 
-export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: unknown): FakeSupabase {
+/** Default `rpc`: every call resolves `{ data: true }` (e.g. a rate-limit check that allows). */
+const ALLOW_ALL_RPC: FakeRpc = async () => ({ data: true, error: null });
+
+export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: unknown, rpc: FakeRpc = ALLOW_ALL_RPC): FakeSupabase {
   const updates: RecordedUpdate[] = [];
+  const rpcCalls: Array<[string, unknown]> = [];
 
   function selectResult(table: string) {
     const fx = tables[table] ?? {};
@@ -81,8 +90,12 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
         update: (payload: Record<string, unknown>) => updateChain(table, payload),
       };
     },
+    rpc: async (name: string, args: unknown) => {
+      rpcCalls.push([name, args]);
+      return rpc(name, args);
+    },
     ...(auth ? { auth } : {}),
   };
 
-  return { client, updates };
+  return { client, updates, rpcCalls };
 }

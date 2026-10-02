@@ -58,4 +58,83 @@ describe('POST /api/stripe/checkout', () => {
     sessionsCreate.mockRejectedValue(new Error('stripe down'));
     expect((await POST(req())).status).toBe(500);
   });
+
+  describe('FRESCO-778 — one free trial per account (audit-6 A6-S3)', () => {
+    const signedIn = { id: 'user_1', is_anonymous: false };
+    const authAs = (user: Record<string, unknown>) => ({ getUser: async () => ({ data: { user } }) });
+    const withProfile = (profile: Record<string, unknown>, user: Record<string, unknown> = signedIn) =>
+      fakeSupabase({ user_profiles: { rows: profile } }, authAs(user));
+    const lastSessionParams = () => sessionsCreate.mock.calls.at(-1)![0] as Record<string, unknown>;
+
+    test('a first-time user gets the 7-day card-less trial and no customer is pinned', async () => {
+      supa = withProfile({ plan: 'free', stripe_customer_id: null, stripe_subscription_id: null });
+
+      expect((await POST(req())).status).toBe(200);
+      const params = lastSessionParams();
+      expect(params.subscription_data).toEqual({ trial_period_days: 7 });
+      expect(params.payment_method_collection).toBe('if_required');
+      expect(params).not.toHaveProperty('customer');
+    });
+
+    test('an anonymous guest cannot start a checkout', async () => {
+      supa = withProfile({ plan: 'free', stripe_customer_id: null, stripe_subscription_id: null }, { id: 'guest_1', is_anonymous: true });
+
+      expect((await POST(req())).status).toBe(403);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('a user who is already Pro gets a 409 and no second session', async () => {
+      supa = withProfile({ plan: 'pro', stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1' });
+
+      expect((await POST(req())).status).toBe(409);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('a returning customer reuses their Stripe customer and gets NO trial (card required)', async () => {
+      supa = withProfile({ plan: 'free', stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1' });
+
+      expect((await POST(req())).status).toBe(200);
+      const params = lastSessionParams();
+      expect(params.customer).toBe('cus_1');
+      expect(params).not.toHaveProperty('subscription_data');
+      expect(params.payment_method_collection).toBe('always');
+    });
+
+    test('a stored subscription id alone is enough to mark the trial as used', async () => {
+      supa = withProfile({ plan: 'free', stripe_customer_id: null, stripe_subscription_id: 'sub_1' });
+
+      await POST(req());
+      expect(lastSessionParams()).not.toHaveProperty('subscription_data');
+    });
+
+    test('a stored customer id alone is enough to mark the trial as used', async () => {
+      supa = withProfile({ plan: 'free', stripe_customer_id: 'cus_1', stripe_subscription_id: null });
+
+      await POST(req());
+      expect(lastSessionParams()).not.toHaveProperty('subscription_data');
+      expect(lastSessionParams().customer).toBe('cus_1');
+    });
+
+    test('429 when the per-user rate limit is exhausted, before any Stripe call', async () => {
+      supa = fakeSupabase({ user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } } }, authAs(signedIn), async () => ({ data: false, error: null }));
+
+      expect((await POST(req())).status).toBe(429);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+      expect(supa.rpcCalls[0]).toEqual(['check_and_increment_rate_limit', { p_user_id: 'user_1', p_endpoint: 'stripe-checkout', p_limit: 10, p_window_seconds: 3600 }]);
+    });
+
+    test('500 (fail closed) when the rate-limit check itself errors', async () => {
+      supa = fakeSupabase({ user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } } }, authAs(signedIn), async () => ({ data: null, error: new Error('rpc down') }));
+
+      expect((await POST(req())).status).toBe(500);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('500 when the profile cannot be read, rather than granting a trial blindly', async () => {
+      supa = fakeSupabase({ user_profiles: { selectError: new Error('db down') } }, authAs(signedIn));
+
+      expect((await POST(req())).status).toBe(500);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+  });
 });

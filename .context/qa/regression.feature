@@ -1548,6 +1548,22 @@ Característica: Flujo completo de usuario en Fresco
     # sin cobertura e2e antes que acoplar el test al DOM hospedado de
     # Stripe.
 
+  @suscripcion @automatizado @requiere-stripe-real
+  Escenario: Quien ya usó su prueba gratuita no recibe otra
+    Dado que Laura ya usó su prueba gratuita de Pro
+    Cuando llega a la pantalla de pago de Stripe Checkout
+    Entonces Stripe le pide la tarjeta desde el primer día y reutiliza su cliente
+    # FRESCO-778 (audit-6 A6-S3). Antes, POST /api/stripe/checkout abría
+    # una prueba sin tarjeta nueva en cada llamada (sin customer, sin mirar
+    # el historial, sin excluir invitados), así que una misma cuenta podía
+    # encadenar pruebas gratis. Ahora el perfil con `stripe_customer_id` o
+    # `stripe_subscription_id` (el webhook los escribe en el primer checkout
+    # completado y nada los borra) ya usó la prueba: se le pide tarjeta
+    # (`payment_method_collection: 'always'`) y se reutiliza su cliente de
+    # Stripe. Se verifica leyendo la Checkout Session real, igual que
+    # "Trial sin tarjeta". Cubierto también por los tests unitarios de la
+    # ruta (invitados 403, ya Pro 409, límite 429).
+
   @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Pago completado activa Pro
     Dado que Laura completó el pago de la suscripción Pro

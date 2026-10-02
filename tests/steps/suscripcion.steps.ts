@@ -394,3 +394,34 @@ Then(/^se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta$/, 
   const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
   expect(session.payment_method_collection).toBe('if_required');
 });
+
+// --- FRESCO-778 (audit-6 A6-S3): the free trial is once per account ---
+
+Given(/^que Laura ya usó su prueba gratuita de Pro$/, async ({ page, request, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const customer = await stripe.customers.create({ metadata: { test_user_id: testUser.id } });
+  ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
+
+  // What the webhook leaves behind after a first completed checkout and a
+  // later cancellation: plan back to Free, Stripe ids kept. Service-role
+  // headers required: `protect_subscription_columns` (ADR-0007).
+  const res = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}`, {
+    headers: serviceRoleHeaders(),
+    data: { plan: 'free', stripe_customer_id: customer.id, stripe_subscription_id: `sub_trial_used_${testUser.id.slice(0, 8)}`, payment_failed_at: null },
+  });
+  if (!res.ok()) { throw new Error(`Failed to seed a used-trial profile: ${res.status()} ${await res.text()}`); }
+
+  await loginAsTestUser(page, testUser);
+});
+
+Then(/^Stripe le pide la tarjeta desde el primer día y reutiliza su cliente$/, async ({ suscripcionCtx: ctx }) => {
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
+  expect(session.payment_method_collection).toBe('always');
+  expect(session.customer).toBe(ctx.stripeCustomerIds[0]);
+});
