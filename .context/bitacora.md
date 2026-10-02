@@ -417,3 +417,7 @@ Historia archivada:
 - Qué: generate-shopping-list filtra los huecos del plan a hoy en adelante (fecha de Madrid + fecha_inicio del plan) con el helper remaining-days.ts. El menú conserva la semana entera (opción B del fundador). PR #463, en staging/dev/main (7621dac1). Verificado en staging: lista de 29 artículos y 40,87–55,30 € pasa a 12 artículos y 8,19–11,09 €, solo viernes a domingo.
 - Por qué: el viernes se sumaban los ingredientes de lunes a jueves y se proponían compras innecesarias. Un plan de semana ya terminada conserva todos los huecos.
 - Siguiente: opción C (ofrecer la semana siguiente si quedan pocos días) sin ticket; el script de verificación borró las 5 listas de la cuenta PRE, no solo la actual (cuenta de pruebas, sin datos reales).
+## 2026-10-02 - FRESCO-824 shopping list kg/l prices
+- Qué: nuevo precioItem convierte kg/l a g/ml antes de aplicar PRICE_OVERRIDE; Leche 1 l pasa de 0,00 a 1,10 EUR. PR #464 nivelado a dev/staging/main, función generate-shopping-list autodesplegada.
+- Por qué: el consolidator sube g/ml a kg/l desde 1000 pero la tabla de precios es por g/ml.
+- Siguiente: revisión manual de la lista completa en staging; FRESCO-827 unifica la fuente del precio (tabla vs catálogo).
