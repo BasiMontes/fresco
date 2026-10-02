@@ -3,6 +3,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { DiaSemana, ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
+import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
 import {
   Beef,
   Carrot,
@@ -48,6 +49,12 @@ export interface ShoppingListViewProps {
    * Edge Function stored with the list.
    */
   costeMenu?: number
+  /**
+   * FRESCO-826 — the shopper's diet and allergens, so a supermarket product
+   * that conflicts with them shows no link and no catalog price. Absent means
+   * nothing to check against.
+   */
+  perfil?: PerfilCompra
 }
 
 const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
@@ -147,7 +154,7 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * server-side in the page by diffing against the previous meal plan's list).
  * No recency column is persisted — the prior list already exists.
  */
-export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu }: ShoppingListViewProps) {
+export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu, perfil }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -431,7 +438,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
                     // the same per-item pattern to Consum. `precios` only
                     // carries the chain whose pack the dictionary entry is
                     // (FRESCO-768), so at most one of the two renders per row.
-                    const mapped = mapShoppingListItem(item);
+                    const mapped = mapShoppingListItem(item, perfil);
                     const { precios } = mapped;
                     const precio = precioLinea(item, mapped);
                     const enlaceMercadona = precios.find(p => p.cadena === 'mercadona')?.url;

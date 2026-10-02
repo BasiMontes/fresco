@@ -1,7 +1,9 @@
+import type { PerfilCompra } from './product-compatibility';
 import type { PrecioNormalizado } from './supermarket/types';
 import type { CanonicalIngredient, GroceryInput, MappedGroceryItem } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
+import { esProductoCompatible, nombreProductoDesdeUrl } from './product-compatibility';
 import { productoDeCatalogo } from './supermarket/catalog-connectors';
 import { registroSupermercados } from './supermarket/registry';
 import { precioPorUnidadReferencia } from './supermarket/units';
@@ -79,13 +81,19 @@ export function recoverFromRecipeContext(
  * counts (`origenEnvase`): another chain's catalog may also hold the
  * ingredient, but with a different pack, and mixing them would price one pack
  * and count another.
+ *
+ * FRESCO-826: a product incompatible with the shopper's diet or allergens is
+ * dropped, so the ingredient shows no link and no catalog price (the catalog
+ * holds one product per ingredient, there is no other candidate).
  */
-function preciosNormalizados(entry: CanonicalIngredient): PrecioNormalizado[] {
+function preciosNormalizados(entry: CanonicalIngredient, perfil: PerfilCompra | undefined): PrecioNormalizado[] {
   const precios: PrecioNormalizado[] = [];
   for (const conector of registroSupermercados.activos()) {
     if (conector.cadena !== entry.origenEnvase) { continue; }
     const producto = productoDeCatalogo(conector.cadena, entry.clave);
     if (!producto) { continue; }
+    const nombre = producto.nombre === entry.clave ? nombreProductoDesdeUrl(producto.url) : producto.nombre;
+    if (!esProductoCompatible(entry.clave, nombre, perfil)) { continue; }
     precios.push({
       cadena: producto.cadena,
       precioEnvase: producto.precioEnvase,
@@ -102,7 +110,7 @@ function packCount(cantidad: number, porPaquete: number): number {
   return Math.max(1, Math.ceil(cantidad / porPaquete));
 }
 
-export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
+export function mapShoppingListItem(item: GroceryInput, perfil?: PerfilCompra): MappedGroceryItem {
   const clave = normalizeNombre(item.nombre);
   const { cantidad: cantidadNormalizada, unidad: unidadNormalizada } = toBaseUnit(
     item.cantidad,
@@ -143,11 +151,11 @@ export function mapShoppingListItem(item: GroceryInput): MappedGroceryItem {
     envasesEstimados: packCount(cantidadNormalizada, entry.envaseVenta.cantidad),
     confianza: remapAplicado || !familiasCoinciden ? 'media' : 'alta',
     origenEnvase: entry.origenEnvase,
-    precios: preciosNormalizados(entry),
+    precios: preciosNormalizados(entry, perfil),
   };
 }
 
 /** Convenience: map a whole persisted list's items in one call. */
-export function mapShoppingList(items: readonly GroceryInput[]): MappedGroceryItem[] {
-  return items.map(mapShoppingListItem);
+export function mapShoppingList(items: readonly GroceryInput[], perfil?: PerfilCompra): MappedGroceryItem[] {
+  return items.map(item => mapShoppingListItem(item, perfil));
 }

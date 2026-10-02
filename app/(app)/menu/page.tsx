@@ -23,6 +23,7 @@ import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/r
 import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
+import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
 import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { getSpendTrend } from '@/lib/menu/get-spend-trend';
 import { fromPlanningSelection } from '@/lib/planning-selection';
@@ -172,7 +173,10 @@ export default async function MenuPage() {
   // FRESCO-340/792: the weekly cost shown in the "Gasto semanal estimado"
   // tile. Same helper the shopping list summary uses, so both screens show
   // one number; `undefined` (calculation failed) hides the tile.
-  const costeEstimado = costeSemanalEstimado(plan.menu, dietaryPreferences?.num_personas);
+  const costeEstimado = costeSemanalEstimado(plan.menu, {
+    numPersonas: dietaryPreferences?.num_personas,
+    perfil: perfilCompraDesde(dietaryPreferences),
+  });
 
   // FRESCO-535: persist this week's cost the first time it's computed, so
   // the trend chart above has a real historical point for this week going

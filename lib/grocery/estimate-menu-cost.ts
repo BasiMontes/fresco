@@ -1,3 +1,4 @@
+import type { PerfilCompra } from './product-compatibility';
 import type { GroceryInput, MappedGroceryItem } from './types';
 import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
@@ -180,9 +181,9 @@ export function consolidateRecipeIngredients(menu: MenuGrid, numPersonas: number
  * diccionario o un menú completamente vacío siguen produciendo un número
  * válido (`0` para un menú vacío), nunca `NaN`/excepción.
  */
-export function estimateMenuCost(menu: MenuGrid, numPersonas: number): number {
+export function estimateMenuCost(menu: MenuGrid, { numPersonas, perfil }: { numPersonas: number, perfil?: PerfilCompra }): number {
   const inputs = consolidateRecipeIngredients(menu, numPersonas);
-  const items = mapShoppingList(inputs);
+  const items = mapShoppingList(inputs, perfil);
   const total = items.reduce((suma, item) => suma + packPrice(item) * item.envasesEstimados, 0);
   return redondear2(total);
 }
