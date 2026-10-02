@@ -28,6 +28,8 @@ const CATEGORY_EXCLUSIONS: readonly CategoryExclusion[] = [
   { tokens: ['reposteria', 'bolleria', 'pasteleria', 'postres', 'postre', 'trenza', 'bizcocho', 'galleta', 'galletas', 'donut', 'croissant', 'napolitana'] },
   { tokens: ['chocolate', 'cacao'], onlyFor: /^(fideos|nueces|almendras|avellanas|pasas|cacahuetes)\b/ },
   { tokens: ['fiambre', 'embutido', 'cocido', 'cocida'], onlyFor: /\b(pechuga|pollo|pavo|ternera|cerdo|lomo|carne)\b/ },
+  { tokens: ['carlotena', 'noel', 'asado', 'asada', 'asados', 'asadas'], onlyFor: /\b(?:pechuga|pollo|pavo|ternera|cerdo|lomo|carne|muslo|muslos)\b/ },
+  { tokens: ['tahini', 'pasta'], onlyFor: /^sesamo\b/ },
   { tokens: ['lonchas', 'loncheado', 'loncheada'], onlyFor: /\b(pechuga|pollo|pavo|ternera|cerdo|lomo|carne)\b/ },
   { tokens: ['ahumado', 'ahumada', 'ahumados', 'ahumadas'] },
   // Not the ingredient: pet food, prepared dairy, infusions, sweets, ready meals and bakery.
@@ -35,7 +37,7 @@ const CATEGORY_EXCLUSIONS: readonly CategoryExclusion[] = [
   { tokens: ['bifidus', 'yogur', 'yogurt', 'activia', 'helado', 'batido'] },
   { tokens: ['infusion', 'caramelo', 'caramelos', 'aros', 'cereales', 'barrita', 'snack', 'chicle', 'chicles', 'gragea', 'grissini', 'mollejas', 'sabor', 'vaso', 'orientales', 'instantaneos'] },
   { tokens: ['nuggets', 'bocaditos', 'bites', 'pizza', 'salteado', 'relleno', 'rellenos', 'arroz', 'pate', 'higado'] },
-  { tokens: ['kebab', 'brocheta', 'brochetas', 'rebozada', 'rebozado', 'empanada', 'empanado', 'bolonesa', 'carbonara', 'rosegones', 'jardinera', 'tarrito', 'tarritos', 'yarroz', 'empanadilla', 'empanadillas', 'burger', 'hamburguesa', 'peskitos', 'palitos', 'petalos', 'infantil', 'mickey', 'higaditos', 'pan', 'hogaza', 'rebanado', 'tostadas'] },
+  { tokens: ['kebab', 'brocheta', 'brochetas', 'rebozada', 'rebozado', 'empanada', 'empanado', 'bolonesa', 'carbonara', 'rosegones', 'jardinera', 'tarrito', 'tarritos', 'yarroz', 'empanadilla', 'empanadillas', 'burger', 'hamburguesa', 'peskitos', 'palitos', 'petalos', 'infantil', 'mickey', 'higaditos', 'sopa', 'deshidratada', 'ramen', 'harina', 'pan', 'hogaza', 'rebanado', 'tostadas'] },
 ];
 
 /** Species a meat product may name. `mixta` is a pork and beef blend, so it counts as one. */
@@ -55,13 +57,13 @@ const SPECIES_TOKENS: readonly string[] = [
 ];
 
 /** Ingredients the species guard looks at: raw meat, not cold cuts or the species-named ones. */
-const GENERIC_MEAT = /\b(?:carne|pechuga|filete|filetes|chuleta|chuletas|solomillo|picada|picado|hamburguesa)\b/;
+const GENERIC_MEAT = /\b(?:jamon|carne|pechuga|filete|filetes|chuleta|chuletas|solomillo|picada|picado|hamburguesa)\b/;
 
 function words(texto: string): Set<string> {
   return new Set(normalizeNombre(texto).split(/[^a-z0-9]+/).filter(Boolean));
 }
 
-const PROTEINA = /\b(?:carne|pollo|pavo|ternera|cerdo|cordero|merluza|salmon|bacalao|atun|gambas|pescado|lomo|pechuga)\b/;
+const PROTEINA = /\b(?:carne|pollo|pavo|ternera|cerdo|cordero|merluza|salmon|bacalao|atun|gambas|calamares|pescado|lomo|pechuga)\b/;
 
 const ARTICULOS = new Set(['de', 'del', 'la', 'el', 'los', 'las']);
 
@@ -107,7 +109,7 @@ export function esProductoPlausible(ingrediente: string, nombreProducto: string)
   if (!esCabezaDelProducto(clave, nombreProducto)) { return false; }
 
   // "merluza con pisto", "ternera con verduras": a protein plus a garnish is a ready meal.
-  if (PROTEINA.test(clave) && /\bcon\b(?! (?:piel|hueso|huesos|espinas)\b)/.test(normalizeNombre(nombreProducto)) && !/\bcon\b/.test(clave)) {
+  if (PROTEINA.test(clave) && /\bcon\b(?! (?:piel|hueso|huesos|espinas)\b)|\ben salsa\b/.test(normalizeNombre(nombreProducto)) && !/\bcon\b/.test(clave)) {
     return false;
   }
 

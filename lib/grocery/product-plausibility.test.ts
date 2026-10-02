@@ -43,6 +43,34 @@ describe('esProductoPlausible — real products stay eligible', () => {
   });
 });
 
+// Found auditing every dictionary ingredient through the real mapper (FRESCO-785, round 2).
+describe('esProductoPlausible — wrong products found by the full dictionary audit', () => {
+  const rechazados: [string, string][] = [
+    ['ternera', 'Sopa deshidratada ternera estrellitas'],
+    ['miso', 'Miso ramen bag'],
+    ['muslo de pollo', 'Mini muslo de pollo 98% La Carloteña asado al horno'],
+    ['jamon', 'Jamón de pavo Hacendado'],
+    ['calamares', 'Calamares en salsa americana'],
+    ['maiz blanco', 'Harina maíz blanco precocida Hacendado'],
+    ['sesamo', 'Pasta sésamo tahini Hacendado'],
+  ];
+
+  test.each(rechazados)('%s rejects "%s"', (ingrediente, producto) => {
+    expect(esProductoPlausible(ingrediente, producto)).toBe(false);
+  });
+
+  const validos: [string, string][] = [
+    ['jamon cocido', 'Jamón cocido Hacendado lonchas'],
+    ['sesamo', 'Semillas de sésamo'],
+    ['harina de trigo', 'Harina de trigo Hacendado'],
+    ['calamares', 'Calamares troceados congelados'],
+  ];
+
+  test.each(validos)('%s accepts "%s"', (ingrediente, producto) => {
+    expect(esProductoPlausible(ingrediente, producto)).toBe(true);
+  });
+});
+
 describe('esProductoPlausible — species guard (Halal without reading the profile)', () => {
   test('a generic meat ingredient rejects a pork product', () => {
     expect(esProductoPlausible('carne picada', 'Carne picada cerdo bandeja')).toBe(false);
