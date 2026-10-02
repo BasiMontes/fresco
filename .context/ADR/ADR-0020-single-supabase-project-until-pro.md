@@ -146,12 +146,14 @@ database is only read, so the isolation invariant above still holds.
 if the repository is lost), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
 `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, plus the 90-day lifecycle rule on the bucket.
 
-**Supabase Pro (daily backups + PITR).** Decision: stay on Free for now and move
-to Pro **before the first real paying user**, which is reopen trigger 4 above
-restated as a hard gate, not a judgement call. Reason: weekly logical backups
-bound the loss to a week, which is acceptable for a closed cohort and not for
-paying users. *Proposed 2026-10-02 by the implementing session; pending founder
-confirmation in FRESCO-784.*
+**Supabase Pro (daily backups + PITR).** Decision (founder, 2026-10-02): stay on
+Free until the product's revenue covers Pro (about $25/month); the move is
+driven by profitability, not by the first paying user. Accepted cost: while on
+Free, even with paying users, the worst case is losing up to a week of data
+(RPO above). The weekly verified backup is what makes that acceptable, so a
+failed or missing `db-backup` run is treated as an incident, not noise. Reopen
+trigger 4 above (real users or revenue) still applies to the project split, but
+no longer forces the Pro upgrade by itself.
 
 ## Alternatives considered
 
