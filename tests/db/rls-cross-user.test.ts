@@ -81,7 +81,7 @@ describe.skipIf(!(RUN && reachable))('cross-user RLS denial (real DB)', () => {
       method: 'POST',
       token: A.token,
       prefer: 'return=representation',
-      body: { user_id: A.id, endpoint: 'https://push.example/a', p256dh: 'key-a', auth: 'auth-a' },
+      body: { user_id: A.id, endpoint: 'https://fcm.googleapis.com/fcm/send/rls-a', p256dh: 'key-a', auth: 'auth-a' },
     });
     pushId = (push.body as { id: string }[])[0].id;
   });
@@ -272,7 +272,7 @@ describe.skipIf(!(RUN && reachable))('cross-user RLS denial (real DB)', () => {
     expectRlsInsertDenied(await rest('push_subscriptions', {
       method: 'POST',
       token: B.token,
-      body: { user_id: A.id, endpoint: 'https://push.example/hack', p256dh: 'k', auth: 'a' },
+      body: { user_id: A.id, endpoint: 'https://fcm.googleapis.com/fcm/send/rls-hack', p256dh: 'k', auth: 'a' },
     }));
 
     const check = await rest('push_subscriptions', { token: A.token, query: `id=eq.${pushId}&select=id` });

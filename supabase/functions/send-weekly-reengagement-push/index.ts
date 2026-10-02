@@ -22,6 +22,7 @@ import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { requireServiceRoleCaller } from '../_shared/auth.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
+import { isAllowedPushEndpoint } from '../_shared/push-endpoint.ts'
 import { captureServerEvent } from '../_shared/posthog.ts'
 import { getCurrentIsoWeek } from './iso-week.ts'
 import type { PushSubscriptionRow, SendWeeklyPushRemindersResponse } from './types.ts'
@@ -38,6 +39,16 @@ const FN_NAME = 'send-weekly-reengagement-push'
 const RE_ENGAGEMENT_TITLE = '¿Ya planificaste esta semana?'
 const RE_ENGAGEMENT_BODY = 'Todavía no has planificado tu menú semanal — hazlo en un par de minutos.'
 const RE_ENGAGEMENT_URL = '/menu'
+
+// FRESCO-779 (audit-6 A6-S2): the sender used to POST to every stored endpoint
+// one at a time with no timeout, so a single slow or hostile server stalled the
+// whole weekly batch. Each send now has a hard timeout, runs in a bounded
+// parallel batch, and the loop stops starting new batches once its time budget
+// is spent (Edge Functions have a wall-clock limit; whatever is skipped goes
+// out with next week's run, which is the same trade as a missed cron).
+const SEND_TIMEOUT_MS = 10_000
+const SEND_CONCURRENCY = 10
+const BATCH_BUDGET_MS = 110_000
 
 Deno.serve(async (req: Request) => {
   try {
@@ -81,23 +92,36 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('Error consultando las suscripciones a notificar', 500)
     }
 
-    const targets = (subscriptionsData ?? []) as PushSubscriptionRow[]
+    const rows = (subscriptionsData ?? []) as PushSubscriptionRow[]
+
+    // FRESCO-779 defence in depth: the database CHECK is the door, but a row
+    // that predates it or was written by something other than a client must not
+    // turn this function into a request forger. Skip anything off the allowlist.
+    const targets = rows.filter(sub => isAllowedPushEndpoint(sub.endpoint))
+    if (targets.length < rows.length) {
+      logger.warn('Skipped push_subscriptions rows with a non-push-service endpoint', {
+        fn: FN_NAME,
+        skipped: rows.length - targets.length,
+        subscriptionIds: rows.filter(sub => !isAllowedPushEndpoint(sub.endpoint)).map(sub => sub.id),
+      })
+    }
     const usersTargeted = new Set(targets.map(sub => sub.user_id)).size
 
-    // 4. Send, per subscription. One bad subscription must never abort the
-    // rest of the batch — each send is independently caught (idempotency
-    // note: this trusts pg_cron to run the job once a week, per Step 6's
-    // "confianza en el scheduler" option — no per-week "already sent"
-    // dedup record; a rare cron double-fire in the same week would just
-    // mean an extra notification, not a correctness bug).
+    // 4. Send. One bad subscription must never abort the rest of the batch —
+    // each send is independently caught (idempotency note: this trusts pg_cron
+    // to run the job once a week, per Step 6's "confianza en el scheduler"
+    // option — no per-week "already sent" dedup record; a rare cron double-fire
+    // in the same week would just mean an extra notification, not a
+    // correctness bug).
     let notificationsSent = 0
     let staleSubscriptionsRemoved = 0
 
-    for (const sub of targets) {
+    const deliver = async (sub: PushSubscriptionRow): Promise<void> => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          JSON.stringify({ title: RE_ENGAGEMENT_TITLE, body: RE_ENGAGEMENT_BODY, url: RE_ENGAGEMENT_URL })
+          JSON.stringify({ title: RE_ENGAGEMENT_TITLE, body: RE_ENGAGEMENT_BODY, url: RE_ENGAGEMENT_URL }),
+          { timeout: SEND_TIMEOUT_MS }
         )
         notificationsSent++
 
@@ -159,6 +183,19 @@ Deno.serve(async (req: Request) => {
           })
         }
       }
+    }
+
+    const startedAt = Date.now()
+    for (let i = 0; i < targets.length; i += SEND_CONCURRENCY) {
+      if (Date.now() - startedAt > BATCH_BUDGET_MS) {
+        logger.warn('Push batch time budget spent, remaining subscriptions skipped until next run', {
+          fn: FN_NAME,
+          skipped: targets.length - i,
+        })
+        break
+      }
+      // `deliver` catches its own errors, so `Promise.all` never rejects.
+      await Promise.all(targets.slice(i, i + SEND_CONCURRENCY).map(deliver))
     }
 
     const response: SendWeeklyPushRemindersResponse = {

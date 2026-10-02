@@ -25,11 +25,19 @@ import { createClient } from '@/lib/supabase/client';
  * needed, since a user who already answered (granted or denied) never sees
  * this again regardless of the signal.
  */
-export function PushPromptBanner() {
+interface PushPromptBannerProps {
+  /** FRESCO-779: guest (anonymous) sessions cannot store a push subscription, so the nudge is never offered to them. */
+  isGuest?: boolean
+}
+
+export function PushPromptBanner({ isGuest = false }: PushPromptBannerProps = {}) {
   const [visible, setVisible] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
+    if (isGuest) {
+      return;
+    }
     if (!consumeFirstMenuSignal()) {
       return;
     }
@@ -38,9 +46,10 @@ export function PushPromptBanner() {
     }
     setVisible(true);
     captureEvent(POSTHOG_EVENTS.PUSH_PROMPT_SHOWN);
-    // Empty deps: this check only ever matters on the render right after the
-    // onboarding redirect that set the signal — never re-run on re-render.
-  }, []);
+    // `isGuest` is fixed for the session this renders in; the check only ever
+    // matters on the render right after the onboarding redirect that set the
+    // signal — never re-run on re-render.
+  }, [isGuest]);
 
   if (!visible) {
     return null;
