@@ -402,3 +402,8 @@ Historia archivada:
 - Qué: ADR-0032/0033/0035 a Accepted, el ADR de harnesses duplicado como 0002 pasa a ADR-0038, ADR-0036 sin texto desfasado, y scripts/check-adrs.ts (adr:check dentro de repo:check) que falla por número duplicado, fichero sin indexar, estado distinto del README o Proposed de más de 14 días. PR #458 en staging/dev/main.
 - Por qué: auditoría 6 (A6-A2, A6-A10), patrón A5-H4 reaparecido: decisiones Proposed con el código ya en main.
 - Siguiente: ADR-0035 se aceptó por decisión del fundador en la sesión; pasar a Finalizada tras QA.
+
+## 2026-10-02 - FRESCO-784 backup y restauración de la BD
+- Qué: workflow semanal db-backup (pg_dump cifrado AES-256, restauración verificada con recuento de filas, subida a R2) + scripts/db-backup.ts; ADR-0020 con RPO/RTO y procedimiento; hotfix.md corregido (forward-fix, sin down-migrations). PR #459.
+- Por qué: audit-6 A6-D2, proyecto único en Free sin PITR. Decisión del fundador: seguir en Free hasta que los ingresos cubran Pro.
+- Siguiente: secrets (SUPABASE_DB_URL, BACKUP_PASSPHRASE, R2_*), bucket R2 con ciclo de 90 días y primer workflow_dispatch como evidencia de prod; luego Finalizada.
