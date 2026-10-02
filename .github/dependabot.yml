@@ -27,8 +27,13 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # FRESCO-783: one catch-all group let a single failing major bump close the
+    # whole PR (#403 lasted 49 minutes), taking every safe patch with it. Majors
+    # get their own PR; minor/patch stay batched.
     groups:
-      dependencies:
-        patterns: ['*']
+      minor-and-patch:
+        update-types: [minor, patch]
+      major:
+        update-types: [major]
     commit-message:
       prefix: chore
