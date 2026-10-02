@@ -27,8 +27,9 @@ const INGREDIENTE = 'ingrediente-prueba-770';
 interface ChainRow { slug: string, permiso: string, permiso_ref: string | null, habilitada: boolean }
 interface PriceRow { cadena: string, id_externo: string, precio_envase: number, ingrediente: string }
 
-async function chains(token: string): Promise<ChainRow[]> {
-  const res = await rest('supermarket_chain', { token, query: 'select=*&order=slug.asc' });
+/** Chain state as the system sees it. Users cannot read this table since FRESCO-798, so it is a service-role read. */
+async function chains(): Promise<ChainRow[]> {
+  const res = await rest('supermarket_chain', { serviceRole: true, query: 'select=*&order=slug.asc' });
   expect(res.status).toBe(200);
   return res.body as ChainRow[];
 }
@@ -88,9 +89,10 @@ describe.skipIf(!(RUN && reachable))('supermarket price model (real DB)', () => 
   });
 
   describe('access', () => {
-    test('an authenticated user can read the chains', async () => {
-      const rows = await chains(user.token);
-      expect(rows.map(r => r.slug)).toEqual(['alcampo', 'consum', 'dia', 'mercadona']);
+    test('an authenticated user cannot read supermarket_chain at all (permiso / permiso_ref stay internal)', async () => {
+      const res = await rest('supermarket_chain', { token: user.token, query: 'select=slug,permiso,permiso_ref' });
+      expect([401, 403]).toContain(res.status);
+      expect(JSON.stringify(res.body)).not.toContain('ADR-0028');
     });
 
     test('an authenticated user cannot write a product, and nothing is created', async () => {
@@ -115,7 +117,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price model (real DB)', () => 
       });
       // RLS has no update policy: the PATCH matches zero rows or is refused outright.
       expect(res.status === 200 ? res.body : []).toEqual([]);
-      const dia = (await chains(user.token)).find(c => c.slug === 'dia');
+      const dia = (await chains()).find(c => c.slug === 'dia');
       expect(dia?.habilitada).toBe(false);
     });
 
@@ -125,28 +127,95 @@ describe.skipIf(!(RUN && reachable))('supermarket price model (real DB)', () => 
     });
   });
 
+  describe('direct reads honour the legal gate (FRESCO-798)', () => {
+    async function direct(table: string, query: string) {
+      return rest(table, { token: user.token, query });
+    }
+
+    test('supermarket_product: only the products of runnable chains are readable, the pending chain returns 0 rows', async () => {
+      const res = await direct('supermarket_product', `select=cadena,id_externo&id_externo=like.${PREFIX}*&order=cadena.asc`);
+      expect(res.status).toBe(200);
+      expect((res.body as { cadena: string }[]).map(r => r.cadena)).toEqual(['consum', 'mercadona']);
+
+      const dia = await direct('supermarket_product', `select=id&cadena=eq.dia&id_externo=like.${PREFIX}*`);
+      expect(dia.body).toEqual([]);
+    });
+
+    test('supermarket_price: the pending chain price is not readable, the runnable ones are', async () => {
+      const dia = await rest('supermarket_product', { serviceRole: true, query: `select=id&cadena=eq.dia&id_externo=like.${PREFIX}*` });
+      const diaId = (dia.body as { id: number }[])[0].id;
+
+      const hidden = await direct('supermarket_price', `select=producto_id&producto_id=eq.${diaId}`);
+      expect(hidden.status).toBe(200);
+      expect(hidden.body).toEqual([]);
+
+      const visible = await direct('supermarket_price', 'select=producto_id,precio_envase&precio_envase=in.(2.5,3.1)');
+      expect((visible.body as unknown[]).length).toBeGreaterThanOrEqual(2);
+    });
+
+    test('ingredient_product_match: only matches of runnable chains are readable', async () => {
+      const res = await direct('ingredient_product_match', `select=producto_id&ingrediente=eq.${INGREDIENTE}`);
+      expect(res.status).toBe(200);
+      expect((res.body as unknown[]).length).toBe(2);
+    });
+
+    test('supermarket_zone: only the zones of runnable chains are readable', async () => {
+      const res = await direct('supermarket_zone', 'select=cadena&order=cadena.asc');
+      expect(res.status).toBe(200);
+      expect((res.body as { cadena: string }[]).map(r => r.cadena)).toEqual(['consum', 'mercadona']);
+    });
+
+    test('supermarket_price_history is service_role only: a user gets no access and no rows', async () => {
+      const merc = await rest('supermarket_product', { serviceRole: true, query: `select=id&cadena=eq.mercadona&id_externo=like.${PREFIX}*` });
+      const mercId = (merc.body as { id: number }[])[0].id;
+      const seeded = await rest('supermarket_price_history', {
+        method: 'POST',
+        serviceRole: true,
+        prefer: 'return=minimal',
+        body: { producto_id: mercId, zona: 'default', precio_envase: 2.5, disponible: true, observado_en: new Date().toISOString() },
+      });
+      expect(seeded.status).toBe(201);
+
+      const res = await direct('supermarket_price_history', 'select=producto_id');
+      expect([401, 403]).toContain(res.status);
+      expect(Array.isArray(res.body) ? res.body : []).toEqual([]);
+    });
+
+    test('a chain switched off hides its rows from a direct read too, even though they are still stored', async () => {
+      expect((await setChain('consum', { habilitada: false })).status).toBeLessThan(300);
+      const res = await direct('supermarket_product', `select=cadena&id_externo=like.${PREFIX}*&order=cadena.asc`);
+      expect((res.body as { cadena: string }[]).map(r => r.cadena)).toEqual(['mercadona']);
+      expect((await setChain('consum', { habilitada: true })).status).toBeLessThan(300);
+    });
+
+    test('the private gate function is not reachable through the Data API', async () => {
+      const res = await rpc('supermarket_chain_activa', { p_cadena: 'mercadona' }, { token: user.token });
+      expect([404, 406]).toContain(res.status);
+    });
+  });
+
   describe('the legal gate lives in the database', () => {
     test('a chain cannot be enabled while its permission is pending', async () => {
       const res = await setChain('dia', { habilitada: true });
       expect(res.status).toBeGreaterThanOrEqual(400);
-      expect((await chains(user.token)).find(c => c.slug === 'dia')?.habilitada).toBe(false);
+      expect((await chains()).find(c => c.slug === 'dia')?.habilitada).toBe(false);
     });
 
     test('a runnable permission without a cited reference is rejected', async () => {
       const res = await setChain('dia', { permiso: 'concedido', permiso_ref: '   ' });
       expect(res.status).toBeGreaterThanOrEqual(400);
-      const dia = (await chains(user.token)).find(c => c.slug === 'dia');
+      const dia = (await chains()).find(c => c.slug === 'dia');
       expect(dia?.permiso).toBe('pendiente');
     });
 
     test('an enabled chain cannot be moved back to a non-runnable permission', async () => {
       const res = await setChain('mercadona', { permiso: 'pendiente' });
       expect(res.status).toBeGreaterThanOrEqual(400);
-      expect((await chains(user.token)).find(c => c.slug === 'mercadona')?.permiso).toBe('riesgo-aceptado');
+      expect((await chains()).find(c => c.slug === 'mercadona')?.permiso).toBe('riesgo-aceptado');
     });
 
     test('the seed matches the code registry: same permission, same reference, enabled exactly when runnable', async () => {
-      const rows = await chains(user.token);
+      const rows = await chains();
       const estado = registroSupermercados.estado();
       expect(estado.length).toBeGreaterThan(0);
       for (const conector of estado) {
@@ -160,7 +229,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price model (real DB)', () => 
 
     test('chains with no connector yet are seeded as pending and disabled', async () => {
       const conectores = new Set(registroSupermercados.estado().map(c => c.cadena));
-      const sinConector = (await chains(user.token)).filter(c => !conectores.has(c.slug));
+      const sinConector = (await chains()).filter(c => !conectores.has(c.slug));
       expect(sinConector.length).toBeGreaterThan(0);
       for (const c of sinConector) {
         expect(c.permiso).toBe('pendiente');
