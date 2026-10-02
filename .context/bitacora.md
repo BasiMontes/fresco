@@ -433,3 +433,7 @@ Historia archivada:
 - Qué: retiradas las tarjetas fijas de ahorro/tiempo y el ~45€ de /menu; nuevo lib/grocery/weekly-cost.ts (costeSemanalEstimado) como única fuente del gasto semanal en /menu y en el resumen de la lista. PR #467 nivelado a dev/staging/main.
 - Por qué: audit-6 A6-P5/A6-L3, cifras sin fuente iguales para todos y dos totales distintos para la misma semana.
 - Siguiente: comprobar /menu y /shopping-list en fresco-pre cuando Vercel levante el límite (827 y 792 sin verificar en staging); el resumen de la lista es ahora el total semanal, no la suma de sus líneas.
+## 2026-10-02 - FRESCO-826 diet/allergen-compatible supermarket links
+- Qué: nuevo lib/grocery/product-compatibility.ts (esProductoCompatible, perfilCompraDesde); el mapper, la vista de la lista y costeSemanalEstimado reciben el perfil y descartan el producto enlazado si choca con dieta o alérgenos (sin enlace ni precio de catálogo). PR #468 nivelado a dev/staging/main.
+- Por qué: la guarda de FRESCO-785 no miraba el perfil; los catálogos guardan un solo producto por ingrediente, así que no hay candidatos entre los que filtrar y el nombre sale del slug de la URL.
+- Siguiente: revisión manual en staging con tres perfiles (halal, vegano, vegetariano) cuando Vercel levante el límite; FRESCO-826 sigue en Merged hasta entonces.
