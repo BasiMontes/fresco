@@ -386,3 +386,7 @@ Historia archivada:
 - Qué: bun audit 13 (7 high) a 0 con next/posthog-js patch + overrides; 7 paquetes CLI a devDependencies; job semanal dependency-audit.yml; Dependabot bun en grupos minor-and-patch/major; alertas y security updates activados en GitHub. PR #450 en staging/dev/main.
 - Por qué: auditoría 6 (A6-D1, A6-A9), nada en CI ni Dependabot detectaba advisories.
 - Siguiente: pasar a Finalizada tras QA; revisar el primer PR de Dependabot por grupos.
+## 2026-10-02 - FRESCO-782 tests for admin gate, CSP proxy and untested Edge Functions
+- Qué: tests de requireAdminUser (8), proxy() con nonce CSP (5) y contrato HTTP de delete-catalog-recipe, get-shopping-list-suggestions y send-weekly-reengagement-push; las 8 Edge Functions con test. Suelo de test:db-integration 130 a 147. PR #454 en staging/dev/main.
+- Por qué: auditoría 6 (A6-T2, A6-T10); un refactor de ADMIN_USER_ID dejaba a cualquier usuario borrar recetas con CI en verde.
+- Siguiente: la mutación includes por !includes solo se verificó en unit, no en HTTP (el runtime local no recarga); pasar a Finalizada tras QA.
