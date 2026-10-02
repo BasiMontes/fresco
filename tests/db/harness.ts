@@ -143,8 +143,8 @@ export async function serviceRoleKey(): Promise<string> {
   return key;
 }
 
-/** GET `/rest/v1/` → 200 means PostgREST (and Postgres behind it) is up. */
-export async function stackReachable(): Promise<boolean> {
+/** One probe: GET `/rest/v1/` → 200 means PostgREST (and Postgres behind it) is up. */
+async function probeStack(): Promise<boolean> {
   try {
     const res = await nativeFetch(`${resolveUrl()}/rest/v1/`, {
       headers: { apikey: await anonKey() },
@@ -155,6 +155,56 @@ export async function stackReachable(): Promise<boolean> {
   catch {
     return false;
   }
+}
+
+export interface ResolveStackOptions {
+  /** `true` when the suite was explicitly asked to run (`RUN_DB_INTEGRATION=1`): an unreachable stack is then an ERROR, never a skip. */
+  required: boolean
+  attempts?: number
+  delayMs?: number
+  /** Injected in unit tests. */
+  probe?: () => Promise<boolean>
+  sleep?: (ms: number) => Promise<void>
+}
+
+/**
+ * FRESCO-781 (audit-6 A6-T3): fail CLOSED. Every `tests/db/*.test.ts` guards its
+ * `describe` with `skipIf(!(RUN && reachable))`, so a stack that did not answer
+ * a single 2.5 s probe used to skip the whole suite and let CI go green with
+ * `0 pass / 117 skip` — the very net that closed the audit-4 and audit-5
+ * BLOCKERs. When the run is required we retry (a stack that is still starting
+ * is normal) and then THROW; only a run that was never requested may skip.
+ */
+export async function resolveStackReachable(opts: ResolveStackOptions): Promise<boolean> {
+  const attempts = opts.attempts ?? 5;
+  const delayMs = opts.delayMs ?? 2000;
+  const probe = opts.probe ?? probeStack;
+  const sleep = opts.sleep ?? (async (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)));
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (await probe()) {
+      return true;
+    }
+    if (attempt < attempts) {
+      await sleep(delayMs);
+    }
+  }
+
+  if (opts.required) {
+    throw new Error(
+      `[db-harness] RUN_DB_INTEGRATION=1 but the local Supabase stack did not answer after ${attempts} attempts — refusing to skip the DB-integration suite silently. Start it with \`supabase start\` (CI: the "Start local Supabase" step).`,
+    );
+  }
+  return false;
+}
+
+// Cached per process: every test file calls `stackReachable()` at import time,
+// and a dead stack must cost one retry window, not one per file.
+let cachedReachability: Promise<boolean> | undefined;
+
+export async function stackReachable(): Promise<boolean> {
+  cachedReachability ??= resolveStackReachable({ required: process.env.RUN_DB_INTEGRATION === '1' });
+  return cachedReachability;
 }
 
 async function request(path: string, opts: RequestOptions = {}): Promise<RpcResult> {
