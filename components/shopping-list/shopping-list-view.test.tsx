@@ -181,3 +181,32 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
     expect(screen.getByText(/99,00–99,00€/)).toBeTruthy();
   });
 });
+
+describe('ShoppingListView — diet-compatible supermarket links (FRESCO-826)', () => {
+  const LIST_CALDO: ShoppingListPersistido = {
+    id: 'list4',
+    pasillos: [{
+      nombre: 'Conservas y salsas',
+      orden: 1,
+      items: [
+        // Mercadona links "caldo pollo hacendado brick" for this ingredient.
+        { nombre: 'caldo', cantidad: 500, unidad: 'ml', comprado: false, precio_estimado: 1.5 },
+      ],
+    }],
+    resumen: { total_items: 1, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('without a profile the chicken stock keeps its supermarket link (baseline)', () => {
+    renderWithProviders(<ShoppingListView list={LIST_CALDO} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_0_mercadona_link')).toBeTruthy();
+  });
+
+  test('a vegan profile shows no link for the chicken stock and falls back to the stored estimate', () => {
+    renderWithProviders(<ShoppingListView list={LIST_CALDO} perfil={{ vegano: true }} />);
+
+    expect(screen.queryByTestId('shopping_list_item_0_0_mercadona_link')).toBeNull();
+    expect(screen.queryByTestId('shopping_list_item_0_0_consum_link')).toBeNull();
+    expect(screen.getByText(/1,50€/)).toBeTruthy();
+  });
+});

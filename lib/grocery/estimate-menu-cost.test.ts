@@ -301,7 +301,7 @@ describe('consolidateRecipeIngredients', () => {
 
 describe('estimateMenuCost', () => {
   test('menú con los 21 slots vacíos devuelve coste 0', () => {
-    expect(estimateMenuCost(emptyMenu(), 4)).toBe(0);
+    expect(estimateMenuCost(emptyMenu(), { numPersonas: 4 })).toBe(0);
   });
 
   test('un ingrediente con match real de Mercadona (aceite de oliva) produce el total esperado a mano', () => {
@@ -314,7 +314,7 @@ describe('estimateMenuCost', () => {
 
     // porcionReceta 50 ml, factor 4/4 = 1 -> 50 ml; envase 1000 ml -> 1 paquete;
     // precioReferencia 3.9 €/L -> 3.9 * (1000 ml -> 1 L / 1) = 3.90 €.
-    expect(estimateMenuCost(menu, 4)).toBe(3.9);
+    expect(estimateMenuCost(menu, { numPersonas: 4 })).toBe(3.9);
   });
 
   test('el mismo ingrediente en 2+ recetas no compra 2 paquetes si 1 basta (dedupe real)', () => {
@@ -332,7 +332,7 @@ describe('estimateMenuCost', () => {
 
     // 50 ml + 50 ml = 100 ml consolidados -> sigue cabiendo en 1 envase de 1000 ml (3.90 €).
     // Sin consolidar serían 2 envases sueltos: 2 x 3.90 € = 7.80 €.
-    expect(estimateMenuCost(menu, 4)).toBe(3.9);
+    expect(estimateMenuCost(menu, { numPersonas: 4 })).toBe(3.9);
   });
 
   test('recipe.meta.raciones en 0 no revienta con Infinity, cae al fallback de 4', () => {
@@ -343,7 +343,7 @@ describe('estimateMenuCost', () => {
       meta: metaConRaciones(0),
     });
 
-    const total = estimateMenuCost(menu, 4);
+    const total = estimateMenuCost(menu, { numPersonas: 4 });
     expect(Number.isFinite(total)).toBe(true);
     expect(total).toBe(3.9); // raciones 0 -> fallback 4, numPersonas 4 -> factor 1, igual que el caso base
   });
@@ -356,7 +356,7 @@ describe('estimateMenuCost', () => {
       meta: metaConRaciones(4),
     });
 
-    const total = estimateMenuCost(menu, 4);
+    const total = estimateMenuCost(menu, { numPersonas: 4 });
     expect(Number.isNaN(total)).toBe(false);
     expect(Number.isFinite(total)).toBe(true);
     expect(total).toBeGreaterThan(0);
@@ -372,8 +372,8 @@ describe('estimateMenuCost', () => {
 
     // garbanzos: porcionReceta 400 g, envase 420 g, precioReferencia 3.215 €/kg.
     // factor 4/4=1 -> 400 g -> 1 paquete. factor 8/4=2 -> 800 g -> 2 paquetes (cruza el límite).
-    const total4 = estimateMenuCost(menu, 4);
-    const total8 = estimateMenuCost(menu, 8);
+    const total4 = estimateMenuCost(menu, { numPersonas: 4 });
+    const total8 = estimateMenuCost(menu, { numPersonas: 8 });
 
     const precioPorPaquete = 3.215 * (420 / 1000); // 420 g convertidos a kg
     expect(total4).toBeCloseTo(Math.round(precioPorPaquete * 100) / 100, 2);
@@ -402,7 +402,7 @@ describe('estimateMenuCost', () => {
       meta: metaConRaciones(4),
     });
 
-    const total = estimateMenuCost(menu, 4);
+    const total = estimateMenuCost(menu, { numPersonas: 4 });
 
     // Precio por paquete de "salmón ahumado": 37 €/kg * (100 g -> 0.1 kg) = 3.70 €.
     const precioPorPaqueteAhumado = 37 * (100 / 1000);
