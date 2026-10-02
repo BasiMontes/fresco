@@ -111,6 +111,7 @@ git_strategy:
     direct_push_to_protected: allowed # forbidden | confirm | allowed — matches observed practice: direct pushes to main happen routinely, no confirm ceremony
     admin_bypass: false # team POLICY: may a repo admin bypass PR/protection for urgent changes? actual capability still depends on the GitHub user's role — the skill re-confirms at runtime
     require_pr_reviews: 0 # null | 0 | N — min approvals before merge to a protected branch (informational) — solo maintainer, no reviewers
+    required_checks: [repo:check, test:unit, test:e2e, test:db-integration, deno:check] # FRESCO-781 (audit-6 A6-T3/A6-D4): status checks a PR must pass on every protected branch. `git:policy` does NOT manage these (it carries them forward), so `bun run git:checks verify` compares this list to the classic branch protection and `apply --yes` only ADDS what is missing. Job names must match the `name:` in .github/workflows/pr-check.yml
     docs_changes: direct-to-main-ok # FRESCO-314: docs-only changes (docs/**, .context/**, root *.md, .agents/*.md) MAY land on `main` directly through the dev->ff->main mirror, no PR required. A doc that documents a specific code change SHOULD ride in that change's PR instead (sprint-development gotcha #6). Session logs (.context/bitacora.md), ADRs, and business/PBI cache updates are the standing direct-to-main case
   branch_prefixes:
     precedence: [feat, fix, refactor, test, docs, chore]
@@ -182,6 +183,7 @@ external_consumers:
   - updater # key of the structured `updater:` block, read directly by cli/update-boilerplate.ts (resolveProtectedWatchlist) at the start of every `bun run up`, never resolved through {{VAR}} templating
   - protected_paths # key of the structured `updater:` block, read directly by cli/lib/updater-drift.ts (projectProtectedPaths), never resolved through {{VAR}} templating
   - strategy_source # key of the structured `git_strategy.meta:` block, read directly by .agents/skills/git-flow-master (bootstrap trigger + Strategy Setup persist) — never resolved through {{VAR}} templating
+  - required_checks # key of the structured `git_strategy.policy:` block, read directly by scripts/required-checks.ts (`bun run git:checks`) — never resolved through {{VAR}} templating
 
 # Per-environment config. Add/remove environments freely (production, dev, qa, uat, etc.).
 # Each environment must define ALL three keys: web_url, api_url, db_project_ref.

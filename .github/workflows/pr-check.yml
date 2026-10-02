@@ -159,7 +159,26 @@ jobs:
         # (the 1000-row recipe catalog the harness seeds meal-plan slots from).
         run: supabase db reset
 
-      - run: bun run test:db
+      - name: Run DB-integration tests (and refuse a silent skip)
+        # FRESCO-781 (audit-6 A6-T3). Two guards on top of the harness, which
+        # already THROWS (instead of skipping) when RUN_DB_INTEGRATION=1 and
+        # the stack never answers: bun reports a `skip` line whenever any test
+        # was skipped, and the passed count must not fall below the floor, so a
+        # suite that quietly shrank cannot pass either. Raise the floor as tests
+        # are added (138 at the time of writing).
+        run: |
+          set -o pipefail
+          bun run test:db 2>&1 | tee db-integration.log
+          if grep -Eq '^ *[0-9]+ skip$' db-integration.log; then
+            echo "::error::DB-integration tests were SKIPPED; the suite must run in full"
+            exit 1
+          fi
+          passed=$(grep -E '^ *[0-9]+ pass$' db-integration.log | tail -1 | grep -oE '[0-9]+' || true)
+          floor=130
+          if [ "${passed:-0}" -lt "$floor" ]; then
+            echo "::error::only ${passed:-0} DB-integration tests passed (floor $floor)"
+            exit 1
+          fi
 
       - name: Stop Supabase
         if: always()

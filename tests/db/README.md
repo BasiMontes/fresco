@@ -34,6 +34,17 @@ supabase db reset        # fresh migrations + seed.sql (the 1000-recipe catalog)
 bun run test:db          # = RUN_DB_INTEGRATION=1 bun test tests/db/
 ```
 
+## Fail closed (FRESCO-781)
+
+Skipping is only for a run that was never asked for. With `RUN_DB_INTEGRATION=1`
+the harness retries the stack probe (5 attempts, 2 s apart) and then **throws**
+(`refusing to skip the DB-integration suite silently`) instead of skipping, so a
+stack that did not start can no longer turn the whole suite green with
+`0 pass / N skip`. CI adds two more guards in the `test:db-integration` job: any
+`skip` line in bun's summary fails it, and so does fewer than 130 passing tests
+(raise the floor as tests are added). `tests/db/harness.unit.test.ts` pins the
+policy without needing a stack.
+
 ## Isolation from the default `bun test`
 
 Every file guards its `describe` with
