@@ -30,6 +30,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
+import { costeResumen, precioLinea } from '@/lib/grocery/line-price';
 import { mapShoppingListItem } from '@/lib/grocery/map-item';
 import { createClient } from '@/lib/supabase/client';
 import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
@@ -194,6 +195,10 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
     (count, pasillo) => count + pasillo.items.filter(item => !item.comprado).length,
     0,
   );
+  // FRESCO-827: the total is summed from the same per-line prices the rows
+  // show (linked product's whole-pack price, stored estimate as fallback),
+  // not from the Edge Function's per-gram snapshot.
+  const resumenCoste = React.useMemo(() => costeResumen(pasillos.flatMap(p => p.items)), [pasillos]);
 
   const compradosCoords = pasillos.flatMap((pasillo, pasilloIdx) =>
     pasillo.items
@@ -342,9 +347,9 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
             {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
           </p>
           <p className="text-right text-h5 font-heading text-primary">
-            {list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}
+            {resumenCoste.min.toFixed(2).replace('.', ',')}
             –
-            {formatPrecio(list.resumen.coste_estimado_max)}
+            {formatPrecio(resumenCoste.max)}
           </p>
         </div>
       </Card>
@@ -424,7 +429,9 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                     // the same per-item pattern to Consum. `precios` only
                     // carries the chain whose pack the dictionary entry is
                     // (FRESCO-768), so at most one of the two renders per row.
-                    const { precios } = mapShoppingListItem(item);
+                    const mapped = mapShoppingListItem(item);
+                    const { precios } = mapped;
+                    const precio = precioLinea(item, mapped);
                     const enlaceMercadona = precios.find(p => p.cadena === 'mercadona')?.url;
                     const enlaceConsum = precios.find(p => p.cadena === 'consum')?.url;
                     return (
@@ -499,10 +506,10 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
                             {item.cantidad}
                             {' '}
                             {formatUnidad(item.cantidad, item.unidad)}
-                            {item.precio_estimado !== undefined && (
+                            {precio !== undefined && (
                               <>
                                 {' · '}
-                                {formatPrecio(item.precio_estimado)}
+                                {formatPrecio(precio)}
                               </>
                             )}
                           </span>
