@@ -29,6 +29,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { esProductoPlausible } from '../lib/grocery/product-plausibility.ts';
 import { SYNONYM_OVERRIDE } from '../lib/grocery/retail-packs.ts';
 import { normalizeNombre } from '../lib/text/normalize-nombre.ts';
 import { BASE_QUANTITIES } from '../supabase/functions/generate-shopping-list/consolidator.ts';
@@ -144,20 +145,21 @@ const MAX_PACK_TO_PORTION_RATIO = 20;
 
 function matchOneTerm(
   term: string,
+  clave: string,
   catalog: MercadonaProduct[],
   sizeFormat: string,
   portionInSizeFormatUnit: number,
 ): MercadonaProduct | null {
   const needle = normalize(term);
   if (!needle) { return null; }
-  const wordBoundary = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  const wordBoundary = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:e?s)?\\b`);
   const candidates = catalog.filter((p) => {
     const pi = p.price_instructions;
     if (pi.size_format !== sizeFormat) { return false; }
     if (!(pi.unit_size !== null && pi.unit_size > 0)) { return false; }
     if (!(Number.parseFloat(pi.reference_price) > 0)) { return false; }
     if (pi.unit_size > portionInSizeFormatUnit * MAX_PACK_TO_PORTION_RATIO) { return false; }
-    return wordBoundary.test(normalize(p.display_name));
+    return wordBoundary.test(normalize(p.display_name)) && esProductoPlausible(clave, p.display_name);
   });
   if (candidates.length === 0) { return null; }
   // Mercadona names products "<core noun> <descriptor> <brand>", so the term
@@ -186,7 +188,7 @@ function findBestMatch(
 ): MercadonaProduct | null {
   const terms = [clave, ...(SYNONYM_OVERRIDE[clave] ?? [])];
   for (const term of terms) {
-    const match = matchOneTerm(term, catalog, sizeFormat, portionInSizeFormatUnit);
+    const match = matchOneTerm(term, clave, catalog, sizeFormat, portionInSizeFormatUnit);
     if (match) { return match; }
   }
   return null;

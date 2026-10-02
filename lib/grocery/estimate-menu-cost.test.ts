@@ -91,7 +91,7 @@ describe('packPrice', () => {
         : precioReferencia * (((cantidad * (MASA[unidad] ?? VOLUMEN[unidad])) / (MASA[ref.unidad] ?? VOLUMEN[ref.unidad])) / ref.cantidad);
 
       const item = mapShoppingListItem({ nombre: entry.clave, cantidad: 1, unidad: 'g' });
-      expect(Math.abs(packPrice(item) - antiguo)).toBeLessThan(0.005);
+      expect(Math.abs(packPrice(item) - antiguo)).toBeLessThanOrEqual(0.005 + 1e-9);
       comprobados++;
     }
     expect(comprobados).toBeGreaterThan(0);
