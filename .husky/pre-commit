@@ -1,3 +1,6 @@
+# FRESCO-828: refuse placeholder commit identities (*@example.com) before any slow check.
+sh scripts/check-git-identity.sh || exit 1
+
 bunx lint-staged
 
 # Light-weight repo health checks on every commit (fast, cover full repo).
