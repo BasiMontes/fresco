@@ -382,3 +382,7 @@ Historia archivada:
 - Qué: el harness de tests/db ya no salta en silencio (con RUN_DB_INTEGRATION=1 reintenta y lanza), el job de CI falla con cualquier skip o menos de 130 tests, y main, staging y dev exigen ahora test:db-integration y deno:check además de los tres de antes. Declarados en git_strategy.policy.required_checks y gestionados con `bun run git:checks verify|apply` (solo añade). PR #449, protección aplicada con confirmación.
 - Por qué: la red que cerró los BLOCKER de audit-4 y audit-5 no era obligatoria y fallaba en abierto (0 pass / 117 skip daba verde). git:policy no modela los checks requeridos, de ahí el script de proyecto.
 - Siguiente: ola 1 de EPIC FRESCO-775 (13 tickets): FRESCO-783 vulnerabilidades, 822 CTA de prueba gratis, 782 tests de Edge sin cobertura, 794 legal (necesita decisiones del fundador).
+## 2026-10-02 - FRESCO-783 dependency vulnerabilities closed
+- Qué: bun audit 13 (7 high) a 0 con next/posthog-js patch + overrides; 7 paquetes CLI a devDependencies; job semanal dependency-audit.yml; Dependabot bun en grupos minor-and-patch/major; alertas y security updates activados en GitHub. PR #450 en staging/dev/main.
+- Por qué: auditoría 6 (A6-D1, A6-A9), nada en CI ni Dependabot detectaba advisories.
+- Siguiente: pasar a Finalizada tras QA; revisar el primer PR de Dependabot por grupos.
