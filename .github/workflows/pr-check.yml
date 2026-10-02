@@ -165,7 +165,7 @@ jobs:
         # the stack never answers: bun reports a `skip` line whenever any test
         # was skipped, and the passed count must not fall below the floor, so a
         # suite that quietly shrank cannot pass either. Raise the floor as tests
-        # are added (138 at the time of writing).
+        # are added (155 at the time of writing).
         run: |
           set -o pipefail
           bun run test:db 2>&1 | tee db-integration.log
@@ -174,7 +174,7 @@ jobs:
             exit 1
           fi
           passed=$(grep -E '^ *[0-9]+ pass$' db-integration.log | tail -1 | grep -oE '[0-9]+' || true)
-          floor=130
+          floor=147
           if [ "${passed:-0}" -lt "$floor" ]; then
             echo "::error::only ${passed:-0} DB-integration tests passed (floor $floor)"
             exit 1
