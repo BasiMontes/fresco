@@ -421,3 +421,7 @@ Historia archivada:
 - Qué: nuevo precioItem convierte kg/l a g/ml antes de aplicar PRICE_OVERRIDE; Leche 1 l pasa de 0,00 a 1,10 EUR. PR #464 nivelado a dev/staging/main, función generate-shopping-list autodesplegada.
 - Por qué: el consolidator sube g/ml a kg/l desde 1000 pero la tabla de precios es por g/ml.
 - Siguiente: revisión manual de la lista completa en staging; FRESCO-827 unifica la fuente del precio (tabla vs catálogo).
+## 2026-10-02 - FRESCO-827 single price source in shopping list
+- Qué: nuevo lib/grocery/line-price.ts (precioLinea, costeResumen); líneas y total del resumen usan el precio de envase del producto enlazado (ADR-0036) con respaldo al precio_estimado guardado. PR #465 nivelado a dev/staging/main.
+- Por qué: la línea mostraba una estimación por gramo distinta del producto enlazado y el total salía de un tercer número.
+- Siguiente: revisar la lista completa en staging; FRESCO-792 (cifras de /menu) comparte fuente de precio.
