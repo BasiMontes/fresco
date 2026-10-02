@@ -79,3 +79,18 @@ When(/^pulsa la flecha de día siguiente$/, async ({ page }) => {
 Then(/^el grid muestra días más allá del lunes$/, async ({ page }) => {
   await expect(page.getByText('Martes')).toBeVisible();
 });
+
+// ── Sin desbordamiento horizontal en tableta (FRESCO-786) ──────────────────
+//
+// A 768 px la barra lateral deja ~442 px de contenido. Antes el grid mostraba
+// 2 días (decidido por el ancho de la ventana) y la página crecía a 884 px.
+
+When(/^la ventana mide 768 píxeles de ancho$/, async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+});
+
+Then(/^la página no tiene scroll horizontal$/, async ({ page }) => {
+  await expect.poll(async () =>
+    page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+  ).toBe(true);
+});
