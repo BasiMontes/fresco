@@ -445,3 +445,7 @@ Historia archivada:
 - Qué: migración 20261002200000: private.supermarket_chain_activa(cadena) como única puerta de permiso (DEFINER, esquema no expuesto, sin identidad); políticas de product/zone/zone_postcode/price/match pasan por ella, price_history solo service_role, supermarket_chain sin SELECT para authenticated; get_supermarket_prices (INVOKER) usa la misma función. PR #470 nivelado y migración aplicada en la base compartida (ledger y políticas verificados en vivo).
 - Por qué: audit-6 A6-S6, un SELECT directo se saltaba la puerta legal del RPC y supermarket_chain exponía permiso/permiso_ref.
 - Siguiente: FRESCO-798 sigue en Merged (cierra con la métrica: test de 0 filas ya en CI); nada lee estas tablas como usuario hoy, así que sin efecto visible.
+## 2026-10-02 - FRESCO-828 commit identity (external audit 6)
+- Qué: scripts/check-git-identity.sh como primer paso de .husky/pre-commit (rechaza autor o committer @example.com, probado de extremo a extremo); override local test/test@example.com de .git/config retirado, nombre local Basilio Montes; nombre del perfil de GitHub cambiado a Basilio Montes para que los squash salgan firmados bien. PR #471 nivelado.
+- Por qué: auditoría externa 6, 86 commits en main como test@example.com sin PR; la causa era una sección [user] local que pisaba la identidad global.
+- Siguiente: FRESCO-828 sigue en Merged hasta comprobar 0 commits @example.com en main con uso real; FRESCO-829 (git:promote), 830 (gates a las skills), 831 (menores), 832 (reconciliar auditorías) abiertos.
