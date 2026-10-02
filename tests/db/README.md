@@ -24,7 +24,7 @@ bypasses of exactly this class (FRESCO-360, FRESCO-361, FRESCO-362).
 | `meal-plan-recipes-integrity.test.ts` | FRESCO-776. The owner of a slot cannot PATCH `estado` / `rating` / `recipe_id` / `sustitucion_ingrediente` directly (`P0001`), and `apply_recipe_status_update` no longer exists for a client (404, row unchanged). The regression test audit-5 shipped without. |
 | `meal-plan-insert-paths.test.ts` | FRESCO-777. `authenticated` cannot INSERT into `meal_plans` / `meal_plan_recipes` (permission denied, `42501`), including a forged slot (`estado: cocinada`, rating, substitution), and `shopping_lists` only accepts a `meal_plan_id` the caller owns on INSERT and UPDATE. Fixtures seed through the service-role path (`seedMealPlan`, `seedSlots`). |
 | `push-subscriptions-validation.test.ts` | FRESCO-779. `push_subscriptions` only accepts https endpoints on real push services (FCM, Mozilla, Apple, WNS) and rejects look-alike hosts, userinfo, ports, plain http and over-long URLs; key material is bounded base64url; a user is capped at 10 subscriptions; a guest (anonymous) session cannot insert. The same vectors run through the TypeScript copy the weekly sender uses and the test fails if the two disagree. |
-| `edge-functions/*.test.ts` | HTTP negative-contract tests (FRESCO-464 PR2) for the 5 Edge Functions with a real auth/rate-limit/ownership surface (`generate-meal-plan`, `generate-shopping-list`, `reassign-guest-data`, `delete-account`, `update-recipe-status`): 401 (missing/garbage token), 429 (rate limit, pre-saturated via the same RPC the function calls), 400/404/409/422 body and ownership validation. Calls the real Functions runtime via `callFunction()` — never mocked. |
+| `edge-functions/*.test.ts` | HTTP negative-contract tests (FRESCO-464 PR2) for all 8 Edge Functions (`generate-meal-plan`, `generate-shopping-list`, `reassign-guest-data`, `delete-account`, `update-recipe-status`, plus, from FRESCO-782, `delete-catalog-recipe`, `get-shopping-list-suggestions`, `send-weekly-reengagement-push`): 401 (missing/garbage token), 403 (`delete-catalog-recipe`, caller outside the admin allowlist), 429 (rate limit, pre-saturated via the same RPC the function calls), 400/404/409/422 body and ownership validation. `send-weekly-reengagement-push` only exercises its rejection paths (401 for anon key, garbage token and user JWT) because the happy path would send real notifications. Calls the real Functions runtime via `callFunction()` — never mocked. |
 
 ## Run it locally
 
@@ -41,7 +41,7 @@ the harness retries the stack probe (5 attempts, 2 s apart) and then **throws**
 (`refusing to skip the DB-integration suite silently`) instead of skipping, so a
 stack that did not start can no longer turn the whole suite green with
 `0 pass / N skip`. CI adds two more guards in the `test:db-integration` job: any
-`skip` line in bun's summary fails it, and so does fewer than 130 passing tests
+`skip` line in bun's summary fails it, and so does fewer than 147 passing tests
 (raise the floor as tests are added). `tests/db/harness.unit.test.ts` pins the
 policy without needing a stack.
 
