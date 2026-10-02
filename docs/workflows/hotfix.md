@@ -12,7 +12,7 @@
 |---|---|
 | Prod is broken, fix is not obvious | **Rollback first** (§1), debug after |
 | You know the one-line fix | **Forward-fix** (§2) — faster than rollback + re-deploy |
-| Bug is in a DB migration / stateful change | Rollback does **not** undo DB changes — roll back the deploy, then run the down-migration separately |
+| Bug is in a DB migration / stateful change | Rollback does **not** undo DB changes, and there are no down-migrations in `supabase/migrations/`. Roll back the deploy, then **forward-fix the database** with a new migration that corrects it (§5) |
 | Bug is an env var, not code | Fix via `vercel env`, redeploy from cache — no rollback, no commit |
 
 ## 1. Rollback (buy time)
@@ -85,6 +85,21 @@ on the `deployment_status` event (FRESCO-311). Watch it:
 2. Jira: the fix ticket → `Finalizada`; set `severity` + `root_cause` on it.
 3. If a broken deploy was rolled back, label it in the Vercel dashboard so it
    is not re-promoted.
+
+## 5. Database damage — forward-fix, restore only as a last resort
+
+The repo has no down-migrations and a Vercel rollback never touches the database.
+
+| What went wrong | Path |
+|---|---|
+| A migration added or changed something badly | **Forward-fix**: new migration that corrects it, applied with the normal `supabase db push`. Never edit an applied migration |
+| Rows were deleted or overwritten (bad script, `DELETE` without `WHERE`) | Restore **only the affected tables** from the latest backup into a scratch database, then copy the rows back with a reviewed script |
+| The whole database is unusable | Full restore into a new Supabase project from the latest backup, repoint the env vars |
+
+Backups, their age (RPO) and the restore procedure: `.context/ADR/ADR-0020-single-supabase-project-until-pro.md`
+→ "Backup and restore". Before any bulk write to prod (`prune-duplicate-recipes`,
+`merge-near-duplicate-recipes`, a destructive migration), check that the last
+`db-backup` run is recent and green: `gh run list --workflow=db-backup.yml -L1`.
 
 ## Worked example — FRESCO-297 (2026-08-27)
 
