@@ -15,6 +15,7 @@ import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { consolidateIngredientes } from './consolidator.ts'
 import { classifyShoppingList } from './aisle-pricing.ts'
+import { filtrarDiasVigentes, hoyEnMadrid } from './remaining-days.ts'
 import type {
   GenerateShoppingListRequest,
   GenerateShoppingListResponse,
@@ -42,7 +43,7 @@ Deno.serve(async (req: Request) => {
     // 3. Plan must exist and belong to the caller
     const { data: plan, error: planError } = await supabase
       .from('meal_plans')
-      .select('id, semana_iso, user_id')
+      .select('id, semana_iso, user_id, fecha_inicio')
       .eq('id', meal_plan_id)
       .eq('user_id', user.id)
       .single()
@@ -87,8 +88,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. Flatten into raw (pre-consolidation) ingredients
+    // FRESCO-807: the plan holds the whole week, but days already behind us
+    // must not inflate the total nor suggest purchases. The menu keeps them.
+    const slotsVigentes = filtrarDiasVigentes({ slots, fechaInicio: plan.fecha_inicio, hoy: hoyEnMadrid() })
     const rawIngredientes: RawIngrediente[] = []
-    for (const slot of slots) {
+    for (const slot of slotsVigentes) {
       const recipe = slot.recipes
       if (!recipe) continue
 
