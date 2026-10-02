@@ -1,6 +1,6 @@
 # ADR-0033 — Per-slot ingredient substitution: nullable jsonb column, RLS-scoped RPC with no identity parameter
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-02, founder; implemented in e005c9d4, FRESCO-534, on main since 2026-09-25)
 - **Date:** 2026-09-25
 - **Deciders:** AI workflow (sprint-development Stage 1, FRESCO-534), founder approval pending
 - **Tags:** data-model, security, food-safety

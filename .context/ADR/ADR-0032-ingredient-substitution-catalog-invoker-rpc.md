@@ -1,6 +1,6 @@
 # ADR-0032 — Ingredient substitution: global curated catalog + SECURITY INVOKER RPC, never mutate `recipes`
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-02, founder; implemented in d4b26790, FRESCO-715, on main since 2026-09-25)
 - **Date:** 2026-09-25
 - **Deciders:** AI workflow (sprint-development Stage 1, FRESCO-715), founder approval pending
 - **Tags:** data-model, security, food-safety, cross-cutting-invariant

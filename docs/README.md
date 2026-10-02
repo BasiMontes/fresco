@@ -15,7 +15,7 @@ Esta documentación está orientada a **humanos** — para aprender conceptos, e
 | Documento                                                                                             | Descripción                                                                                                                                                                                                            |
 | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Una fuente, tres harnesses](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html) | Cómo el mismo repositorio corre en Claude Code, OpenCode y Codex desde una sola fuente: qué es canónico, qué se genera, y qué pasa al actualizar un proyecto creado antes del cambio. Página publicada, con diagramas. |
-| [ADR-0002](../.context/ADR/ADR-0002-multi-harness-single-source.md)                                   | Registro de la decisión (contexto, alternativas descartadas, consecuencias). En inglés.                                                                                                                                |
+| [ADR-0038](../.context/ADR/ADR-0038-multi-harness-single-source.md)                                   | Registro de la decisión (contexto, alternativas descartadas, consecuencias). En inglés.                                                                                                                                |
 
 ---
 

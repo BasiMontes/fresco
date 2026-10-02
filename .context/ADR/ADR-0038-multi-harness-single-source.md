@@ -1,4 +1,4 @@
-# ADR-0002 — One instruction source and one skill store for three harnesses
+# ADR-0038 — One instruction source and one skill store for three harnesses
 
 - **Status:** Accepted
 - **Date:** 2026-09-03

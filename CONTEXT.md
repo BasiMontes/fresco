@@ -100,7 +100,7 @@ This is the load-bearing distinction in the repo. They look adjacent but serve o
 
 The repo runs on **Claude Code, OpenCode, and Codex (CLI + Desktop)**. There is exactly one copy of every instruction and every skill. Where the harnesses genuinely differ (MCP file format, hook API, whether slash commands exist at all) each keeps a thin versioned adapter. Nothing is duplicated.
 
-> Visual walkthrough: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html) (Spanish, published page with diagrams; source `packages/pages-home/harnesses.es.html`). Decision record: [`ADR-0002`](.context/ADR/ADR-0002-multi-harness-single-source.md).
+> Visual walkthrough: [**Una fuente, tres harnesses**](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html) (Spanish, published page with diagrams; source `packages/pages-home/harnesses.es.html`). Decision record: [`ADR-0038`](.context/ADR/ADR-0038-multi-harness-single-source.md).
 
 | Surface          | Claude Code                                     | OpenCode                                    | Codex CLI + Desktop                      |
 | ---------------- | ----------------------------------------------- | ------------------------------------------- | ---------------------------------------- |
@@ -337,7 +337,7 @@ The main conversation is a **command center**, not an executor. Sub-agents do th
 
 ### One source, three harnesses
 
-Instructions and skills exist exactly once (`AGENTS.md`, `.agents/skills/`); Claude Code, OpenCode and Codex each reach them through a generated shim, alias or native discovery, and only the surfaces where hosts genuinely differ (MCP format, hook API, slash-command existence) carry a thin adapter. The alternative, one copy per harness, was tried implicitly (the repo was Claude-only with `.claude/` as the source) and rejected because every duplicated instruction drifts. Rationale, alternatives and the migration path for older projects: [`ADR-0002`](.context/ADR/ADR-0002-multi-harness-single-source.md); wiring: §2.1 above.
+Instructions and skills exist exactly once (`AGENTS.md`, `.agents/skills/`); Claude Code, OpenCode and Codex each reach them through a generated shim, alias or native discovery, and only the surfaces where hosts genuinely differ (MCP format, hook API, slash-command existence) carry a thin adapter. The alternative, one copy per harness, was tried implicitly (the repo was Claude-only with `.claude/` as the source) and rejected because every duplicated instruction drifts. Rationale, alternatives and the migration path for older projects: [`ADR-0038`](.context/ADR/ADR-0038-multi-harness-single-source.md); wiring: §2.1 above.
 
 ### One generator per file under `.context/`
 
@@ -405,7 +405,7 @@ Use this table to decide what to re-generate after what kind of change.
 | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `README.md`                                                                                  | Project overview for humans (start here for visitors)                                         |
 | `AGENTS.md`                                                                                  | Operational context loaded each session, on every supported harness (`CLAUDE.md` is its shim) |
-| `.context/ADR/ADR-0002-multi-harness-single-source.md`                                       | Why instructions and skills exist once and how each harness reaches them                      |
+| `.context/ADR/ADR-0038-multi-harness-single-source.md`                                       | Why instructions and skills exist once and how each harness reaches them                      |
 | `docs/agentic-development-engineering.md`                                                    | Deep dive on the Agentic Development Engineering philosophy                                   |
 | `docs/onboarding.html`                                                                       | Onboarding for new contributors (single-file HTML, served by `bun run onboarding`)            |
 | `.context/README.md`                                                                         | Generator map for `.context/` artifacts                                                       |
