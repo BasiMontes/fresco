@@ -425,3 +425,7 @@ Historia archivada:
 - Qué: nuevo lib/grocery/line-price.ts (precioLinea, costeResumen); líneas y total del resumen usan el precio de envase del producto enlazado (ADR-0036) con respaldo al precio_estimado guardado. PR #465 nivelado a dev/staging/main.
 - Por qué: la línea mostraba una estimación por gramo distinta del producto enlazado y el total salía de un tercer número.
 - Siguiente: revisar la lista completa en staging; FRESCO-792 (cifras de /menu) comparte fuente de precio.
+## 2026-10-02 - FRESCO-804 Vercel deploy budget
+- Qué: ignoreCommand path-based (scripts/vercel-ignore-build.sh, falla hacia construir, compara contra VERCEL_GIT_PREVIOUS_SHA) + dev deployments apagados en vercel.json. PR #466 nivelado a dev/staging/main.
+- Por qué: Vercel Free (100 despliegues/día) volvió a bloquear staging y producción; cada ff construía 3 ramas y los commits de docs también.
+- Siguiente: contar despliegues en el panel tras un día de trabajo (criterio de cierre, FRESCO-804 sigue en Merged); verificar FRESCO-827 en fresco-pre cuando Vercel levante el límite (~24h); fresco-dev queda congelado.
