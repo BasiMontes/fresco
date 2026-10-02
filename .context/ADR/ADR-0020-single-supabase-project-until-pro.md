@@ -141,8 +141,8 @@ database is only read, so the isolation invariant above still holds.
    vars, redeploy.
 5. To rehearse without touching anything hosted: `bun scripts/db-backup.ts verify --in <file> --counts <counts.json>`.
 
-**Required setup (repository secrets, owner action).** `SUPABASE_DB_URL`,
-`BACKUP_PASSPHRASE` (keep a copy outside GitHub, or the backups cannot be opened
+**Required setup (repository secrets, owner action).** `SUPABASE_DB_PASSWORD`
+(already present; the workflow builds the pooler URL from it), `BACKUP_PASSPHRASE` (keep a copy outside GitHub, or the backups cannot be opened
 if the repository is lost), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
 `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, plus the 90-day lifecycle rule on the bucket.
 
