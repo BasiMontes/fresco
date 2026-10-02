@@ -70,10 +70,26 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
   },
+  // FRESCO-787 (audit-6 A6-T6): the layout bugs found at 360/768px (A6-L2,
+  // A6-L4) passed CI because the only project was Desktop Chrome. `@mobile`
+  // and `@tablet` scenarios run ONLY in their own viewport project and are
+  // excluded from the desktop one, so the extra cost is bounded by how many
+  // scenarios carry those tags (ADR-0018: keep the median under 6m30).
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      grepInvert: /@mobile|@tablet/,
+    },
+    {
+      name: 'mobile',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 } },
+      grep: /@mobile/,
+    },
+    {
+      name: 'tablet',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 } },
+      grep: /@tablet/,
     },
   ],
 });
