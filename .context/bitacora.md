@@ -378,3 +378,7 @@ Historia archivada:
 - Qué: revisadas las cadenas con forma de clave de .env.ci y seed-e2e-users.ts: 2 JWT demo de Supabase iguales byte a byte a los del stack local, y Stripe sk_test_ y whsec_ dummy de 41 caracteres. Sin sk_live_ ni claves largas en el historial. Sin rotación.
 - Por qué: el agente de audit-6 no pudo decodificarlas y quedaba la duda de si alguna era real.
 - Siguiente: la ola 0 de EPIC FRESCO-775 queda completa (776 a 780). Ola 1 empezando por FRESCO-781 (checks requeridos de BD), 822 (CTA de prueba gratis) y 783 (vulnerabilidades).
+## 2026-10-02 - FRESCO-781 red de BD a prueba de saltos y checks requeridos (A6-T3, A6-D4)
+- Qué: el harness de tests/db ya no salta en silencio (con RUN_DB_INTEGRATION=1 reintenta y lanza), el job de CI falla con cualquier skip o menos de 130 tests, y main, staging y dev exigen ahora test:db-integration y deno:check además de los tres de antes. Declarados en git_strategy.policy.required_checks y gestionados con `bun run git:checks verify|apply` (solo añade). PR #449, protección aplicada con confirmación.
+- Por qué: la red que cerró los BLOCKER de audit-4 y audit-5 no era obligatoria y fallaba en abierto (0 pass / 117 skip daba verde). git:policy no modela los checks requeridos, de ahí el script de proyecto.
+- Siguiente: ola 1 de EPIC FRESCO-775 (13 tickets): FRESCO-783 vulnerabilidades, 822 CTA de prueba gratis, 782 tests de Edge sin cobertura, 794 legal (necesita decisiones del fundador).

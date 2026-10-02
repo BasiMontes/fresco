@@ -1,8 +1,9 @@
 # Branch protection snapshot
 
-> Captured 2026-08-30 via `gh api repos/BasiMontes/fresco/branches/<branch>/protection`.
+> Captured 2026-10-02 via `gh api repos/BasiMontes/fresco/branches/<branch>/protection` (FRESCO-781: `test:db-integration` and `deno:check` added as required checks).
 > Purpose: give auditors (and any clone-only reader) visibility into GitHub required checks — FRESCO-319 blind spot #3.
-> Regenerate: `gh api repos/BasiMontes/fresco/branches/main/protection`.
+> Regenerate: `gh api repos/BasiMontes/fresco/branches/main/protection`. Compare with the declaration: `bun run git:checks verify` (declared in `git_strategy.policy.required_checks`, `.agents/project.yaml`).
+> Rulesets are covered separately by `bun run git:policy verify`; this file only holds the classic protection.
 
 ## `main`
 
@@ -15,7 +16,9 @@
     "contexts": [
       "repo:check",
       "test:unit",
-      "test:e2e"
+      "test:e2e",
+      "test:db-integration",
+      "deno:check"
     ],
     "contexts_url": "https://api.github.com/repos/BasiMontes/fresco/branches/main/protection/required_status_checks/contexts",
     "checks": [
@@ -29,6 +32,14 @@
       },
       {
         "context": "test:e2e",
+        "app_id": 15368
+      },
+      {
+        "context": "test:db-integration",
+        "app_id": 15368
+      },
+      {
+        "context": "deno:check",
         "app_id": 15368
       }
     ]
@@ -76,7 +87,9 @@
     "contexts": [
       "repo:check",
       "test:unit",
-      "test:e2e"
+      "test:e2e",
+      "test:db-integration",
+      "deno:check"
     ],
     "contexts_url": "https://api.github.com/repos/BasiMontes/fresco/branches/staging/protection/required_status_checks/contexts",
     "checks": [
@@ -90,6 +103,14 @@
       },
       {
         "context": "test:e2e",
+        "app_id": 15368
+      },
+      {
+        "context": "test:db-integration",
+        "app_id": 15368
+      },
+      {
+        "context": "deno:check",
         "app_id": 15368
       }
     ]
@@ -137,7 +158,9 @@
     "contexts": [
       "repo:check",
       "test:unit",
-      "test:e2e"
+      "test:e2e",
+      "test:db-integration",
+      "deno:check"
     ],
     "contexts_url": "https://api.github.com/repos/BasiMontes/fresco/branches/dev/protection/required_status_checks/contexts",
     "checks": [
@@ -151,6 +174,14 @@
       },
       {
         "context": "test:e2e",
+        "app_id": 15368
+      },
+      {
+        "context": "test:db-integration",
+        "app_id": 15368
+      },
+      {
+        "context": "deno:check",
         "app_id": 15368
       }
     ]
@@ -193,4 +224,3 @@
   }
 }
 ```
-
