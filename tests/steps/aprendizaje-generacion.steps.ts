@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { isoWeekOf, mondayOfWeekContaining, restHeaders } from '../test-helpers';
+import { isoWeekOf, mondayOfWeekContaining, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @aprendizaje,
@@ -48,10 +48,11 @@ async function seedWeek(
   recipeIds: string[],
   estado: 'cocinada' | 'descartada',
 ): Promise<void> {
-  const headers = restHeaders(testUser.accessToken);
   const { semanaIso, fechaInicio } = weekIso(weekOffset);
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: testUser.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
   });
   const [plan] = await planRes.json() as { id: string }[];
@@ -62,7 +63,7 @@ async function seedWeek(
     tipo_plato: tipo,
     estado,
   })));
-  const res = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers, data: slots });
+  const res = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
   if (!res.ok()) { throw new Error(`seedWeek failed: ${res.status()} ${await res.text()}`); }
 }
 
@@ -80,10 +81,11 @@ async function seedCookedManyTimes(
   recipeId: string,
   count: number,
 ): Promise<void> {
-  const headers = restHeaders(testUser.accessToken);
   const { semanaIso, fechaInicio } = weekIso(weekOffset);
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: testUser.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
   });
   const [plan] = await planRes.json() as { id: string }[];
@@ -95,7 +97,7 @@ async function seedCookedManyTimes(
     tipo_plato: tipo,
     estado: 'cocinada' as const,
   }));
-  const res = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers, data: slots });
+  const res = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
   if (!res.ok()) { throw new Error(`seedCookedManyTimes failed: ${res.status()} ${await res.text()}`); }
 }
 

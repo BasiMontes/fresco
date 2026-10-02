@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, restHeaders } from '../test-helpers';
+import { currentWeekMonday, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @generacion-menu,
@@ -33,8 +33,10 @@ async function seedPlanWithNullSlot(request: APIRequestContext, testUser: TestUs
   const recipesRes = await request.get(`${SUPABASE_URL}/rest/v1/recipes?select=id&limit=1`, { headers });
   const [recipe] = await recipesRes.json() as { id: string }[];
 
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: {
       user_id: testUser.id,
       semana_iso: semanaIso,
@@ -50,7 +52,7 @@ async function seedPlanWithNullSlot(request: APIRequestContext, testUser: TestUs
     dia,
     tipo_plato: tipo,
   })));
-  const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers, data: slots });
+  const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
   if (!slotsRes.ok()) { throw new Error(`Failed to seed meal_plan_recipes: ${slotsRes.status()} ${await slotsRes.text()}`); }
 }
 

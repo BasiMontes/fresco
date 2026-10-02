@@ -363,9 +363,12 @@ export async function seedMealPlan(
 ): Promise<{ id: string, semanaIso: string }> {
   const semanaIso = opts.semanaIso ?? '2099-W01';
   const fechaInicio = opts.fechaInicio ?? '2099-01-05';
+  // FRESCO-777: `authenticated` cannot INSERT into meal_plans / meal_plan_recipes
+  // any more (only the generate-meal-plan Edge Function writes them), so the
+  // fixtures seed through the service-role path, like the other seed helpers.
   const res = await rest('meal_plans', {
     method: 'POST',
-    token: user.token,
+    serviceRole: true,
     prefer: 'return=representation',
     body: { user_id: user.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
   });
@@ -402,7 +405,7 @@ export async function seedSlots(
   }));
   const res = await rest('meal_plan_recipes', {
     method: 'POST',
-    token: user.token,
+    serviceRole: true,
     prefer: 'return=representation',
     body: rows,
   });

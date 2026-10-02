@@ -266,21 +266,22 @@ Given(/^que la cuenta destino declara alergia a "gluten"$/, async ({ testUserFac
 
 Given(/^una invitada tiene un menú con una receta que contiene "gluten" y otra que no$/, async ({ testUserFactory, request }) => {
   reassignCtx.from = await testUserFactory();
-  const headers = restHeaders(reassignCtx.from.accessToken);
 
   const glutenRecipeId = await firstRecipeId(request, reassignCtx.from, CONTAINS_GLUTEN);
   reassignCtx.cleanRecipeId = await firstRecipeId(request, reassignCtx.from, NOT_CONTAINS_GLUTEN);
 
   const { semanaIso, fechaInicio } = currentWeekMonday();
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: reassignCtx.from.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
   });
   if (!planRes.ok()) { throw new Error(`[seguridad-alimentaria] seed plan failed: ${planRes.status()} ${await planRes.text()}`); }
   const [plan] = await planRes.json() as { id: string }[];
 
   const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: [
       { meal_plan_id: plan.id, recipe_id: glutenRecipeId, dia: 'lunes', tipo_plato: 'comida' },
       { meal_plan_id: plan.id, recipe_id: reassignCtx.cleanRecipeId, dia: 'lunes', tipo_plato: 'cena' },
