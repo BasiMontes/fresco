@@ -196,7 +196,7 @@ environments:
     api_url: 'http://localhost:3000/api' # fill per project — API base URL for local env (e.g. http://localhost:3000/api)
     db_project_ref: jdqemhewjrjuopssdurn # Supabase project ref for local — Fresco project (eu-west-1)
   dev:
-    web_url: 'https://fresco-dev.vercel.app' # Auto-following Vercel domain bound to the `dev` branch (Git Branch binding — tracks branch HEAD, no manual `vercel alias set`). `dev` is where feature PRs land before promotion `dev` -> `staging` -> `main`. Listed here so the Edge CORS allowlist (`supabase/functions/_shared/cors.ts`) and any tooling that iterates `environments:` stops missing it (root cause of FRESCO-297).
+    web_url: 'https://fresco-dev.vercel.app' # Auto-following Vercel domain bound to the `dev` branch (Git Branch binding — tracks branch HEAD, no manual `vercel alias set`). `dev` is where feature PRs land before promotion `dev` -> `staging` -> `main`. Listed here so the Edge CORS allowlist (`supabase/functions/_shared/cors.ts`) and any tooling that iterates `environments:` stops missing it (root cause of FRESCO-297). FRESCO-804: `dev` deployments are DISABLED in `vercel.json` (`git.deploymentEnabled.dev: false`) to stay under the Free plan 100 deploys/day cap (`dev` is a byte-identical mirror of `staging` and no CI workflow targets it), so this alias is FROZEN at its last deploy. Use `fresco-pre` for anything current; re-enable by removing that key.
     api_url: 'https://fresco-dev.vercel.app/api'
     db_project_ref: jdqemhewjrjuopssdurn # SAME Supabase project as local/staging/production — shared DB, deliberate (no isolation split).
   staging:
