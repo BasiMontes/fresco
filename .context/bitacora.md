@@ -429,3 +429,7 @@ Historia archivada:
 - Qué: ignoreCommand path-based (scripts/vercel-ignore-build.sh, falla hacia construir, compara contra VERCEL_GIT_PREVIOUS_SHA) + dev deployments apagados en vercel.json. PR #466 nivelado a dev/staging/main.
 - Por qué: Vercel Free (100 despliegues/día) volvió a bloquear staging y producción; cada ff construía 3 ramas y los commits de docs también.
 - Siguiente: contar despliegues en el panel tras un día de trabajo (criterio de cierre, FRESCO-804 sigue en Merged); verificar FRESCO-827 en fresco-pre cuando Vercel levante el límite (~24h); fresco-dev queda congelado.
+## 2026-10-02 - FRESCO-792 one weekly cost, no invented figures
+- Qué: retiradas las tarjetas fijas de ahorro/tiempo y el ~45€ de /menu; nuevo lib/grocery/weekly-cost.ts (costeSemanalEstimado) como única fuente del gasto semanal en /menu y en el resumen de la lista. PR #467 nivelado a dev/staging/main.
+- Por qué: audit-6 A6-P5/A6-L3, cifras sin fuente iguales para todos y dos totales distintos para la misma semana.
+- Siguiente: comprobar /menu y /shopping-list en fresco-pre cuando Vercel levante el límite (827 y 792 sin verificar en staging); el resumen de la lista es ahora el total semanal, no la suma de sus líneas.
