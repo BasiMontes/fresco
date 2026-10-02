@@ -113,11 +113,10 @@ export function CalendarGrid({
     setPendingSlots,
   });
 
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const { visibleDays, setStartIndex, canGoPrevDay, canGoNextDay } = useVisibleDayWindow(planningDays, containerRef);
+  const { visibleDays, setStartIndex, canGoPrevDay, canGoNextDay } = useVisibleDayWindow(planningDays);
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       {/* FRESCO-516: shares the grid's day-header row instead of its own row
           above it — that row used to be nearly empty (buttons right-aligned,
           nothing to their left), reading as a band of dead white space above
