@@ -23,7 +23,7 @@ import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/r
 import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
-import { estimateMenuCost } from '@/lib/grocery/estimate-menu-cost';
+import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { getSpendTrend } from '@/lib/menu/get-spend-trend';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
@@ -156,11 +156,10 @@ export default async function MenuPage() {
           reading as a disconnected dash instead of "one unit divided by
           hairlines" (stat-tile.tsx's own intent) — gap-4 keeps them close
           enough to cohere. */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4">
           {recetasDisponibles !== null && (
             <AvailableRecipesCard count={recetasDisponibles} />
           )}
-          <SavingsEstimateCards />
         </div>
         <SpendTrendChart trend={spendTrend} />
         <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
@@ -170,21 +169,10 @@ export default async function MenuPage() {
 
   const hoy = plan.menu.lunes;
 
-  // FRESCO-340: real weekly cost estimate for the "Gasto semanal estimado"
-  // tile. `estimateMenuCost` is a pure function (never throws per its own
-  // contract), but this try/catch matches the same fail-soft pattern used by
-  // every other computed value on this page — a real error falls back to
-  // `undefined`, which keeps `SavingsEstimateCards`'s existing `'~45€'`
-  // placeholder instead of crashing the page.
-  const costeEstimado = (() => {
-    try {
-      return estimateMenuCost(plan.menu, dietaryPreferences?.num_personas ?? 2);
-    }
-    catch (error) {
-      console.error('[/menu] estimateMenuCost failed, falling back to placeholder', error);
-      return undefined;
-    }
-  })();
+  // FRESCO-340/792: the weekly cost shown in the "Gasto semanal estimado"
+  // tile. Same helper the shopping list summary uses, so both screens show
+  // one number; `undefined` (calculation failed) hides the tile.
+  const costeEstimado = costeSemanalEstimado(plan.menu, dietaryPreferences?.num_personas);
 
   // FRESCO-535: persist this week's cost the first time it's computed, so
   // the trend chart above has a real historical point for this week going
@@ -255,7 +243,7 @@ export default async function MenuPage() {
           reading as a disconnected dash instead of "one unit divided by
           hairlines" (stat-tile.tsx's own intent) — gap-4 keeps them close
           enough to cohere. */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4">
         {recetasDisponibles !== null && (
           <AvailableRecipesCard count={recetasDisponibles} />
         )}

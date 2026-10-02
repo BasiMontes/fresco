@@ -5,7 +5,9 @@ import { ShoppingListGenerator } from '@/components/shopping-list/shopping-list-
 import { ShoppingListView } from '@/components/shopping-list/shopping-list-view';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getNombresNuevos, getShoppingListForPlan } from '@/lib/api/shopping-list';
+import { getUserDietaryPreferences } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -64,7 +66,12 @@ export default async function ShoppingListPage() {
     // try/catch here.
     const nuevosNombres = await getNombresNuevos(supabase, plan.semanaIso, list.pasillos, user?.id);
 
-    return <ShoppingListView list={list} nuevosNombres={nuevosNombres} />;
+    // FRESCO-792: same weekly figure `/menu` shows. A profile read failure
+    // just means the default household size, same as `/menu`.
+    const preferences = await getUserDietaryPreferences(supabase, user?.id).catch(() => null);
+    const costeMenu = costeSemanalEstimado(plan.menu, preferences?.num_personas);
+
+    return <ShoppingListView list={list} nuevosNombres={nuevosNombres} costeMenu={costeMenu} />;
   }
   catch (error) {
     console.error('[/shopping-list] getShoppingListForPlan failed, falling back to generator', error);

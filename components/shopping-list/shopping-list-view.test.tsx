@@ -1,6 +1,6 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import { describe, expect, test } from 'bun:test';
-import { costeResumen, precioLinea } from '@/lib/grocery/line-price';
+import { precioLinea } from '@/lib/grocery/line-price';
 import { formatPrecio } from '@/lib/utils';
 import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { ShoppingListView } from './shopping-list-view';
@@ -168,11 +168,16 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
     expect(screen.queryByText(/0,00€/)).toBeNull();
   });
 
-  test('the summary total is the sum of the row prices, not the stored snapshot', () => {
+  test('the summary shows the weekly cost it is given, not the stored snapshot', () => {
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} costeMenu={42.5} />);
+
+    expect(screen.getByText('42,50€')).toBeTruthy();
+    expect(screen.queryByText(/99,00€/)).toBeNull();
+  });
+
+  test('falls back to the stored range when no weekly cost could be computed', () => {
     renderWithProviders(<ShoppingListView list={LIST_PRICES} />);
 
-    const { max } = costeResumen(ITEMS);
-    expect(screen.getByText(new RegExp(formatPrecio(max).replace('.', '\\.')))).toBeTruthy();
-    expect(screen.queryByText(/99,00€/)).toBeNull();
+    expect(screen.getByText(/99,00–99,00€/)).toBeTruthy();
   });
 });

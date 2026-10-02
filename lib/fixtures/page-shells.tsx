@@ -53,7 +53,7 @@ export function MenuPageFixture() {
 
       <CalendarSuggestionBanner />
       <AvailableRecipesCard count={625} />
-      <SavingsEstimateCards />
+      <SavingsEstimateCards costeEstimado={45} />
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(['desayuno', 'comida', 'cena'] as const).map(slot => (

@@ -2,9 +2,6 @@ import type { MappedGroceryItem } from './types';
 import type { ShoppingListItem } from '@/lib/api/types';
 import { mapShoppingListItem } from './map-item';
 
-/** +/- band around the point estimate: "mejor esfuerzo, nunca exacto". Mirrors `COSTE_MARGEN` in `generate-shopping-list/aisle-pricing.ts`. */
-export const COSTE_MARGEN = 0.15;
-
 function redondear2(valor: number): number {
   return Math.round(valor * 100) / 100;
 }
@@ -30,10 +27,4 @@ export function precioLinea(item: ShoppingListItem, mapped: MappedGroceryItem = 
     return redondear2(envase * envases);
   }
   return item.precio_estimado;
-}
-
-/** Summary range for a whole list, summed from the same per-line prices the rows show so total and lines cannot disagree. */
-export function costeResumen(items: readonly ShoppingListItem[]): { min: number, max: number } {
-  const total = items.reduce((suma, item) => suma + (precioLinea(item) ?? 0), 0);
-  return { min: redondear2(total * (1 - COSTE_MARGEN)), max: redondear2(total * (1 + COSTE_MARGEN)) };
 }

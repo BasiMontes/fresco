@@ -3,34 +3,28 @@ import { renderWithProviders, screen } from '@/tests/component-render';
 import { SavingsEstimateCards } from './savings-estimate-cards';
 
 /**
- * FRESCO-340 — the "Gasto semanal estimado" tile swaps its fixed `'~45€'`
- * placeholder for a real computed value when `costeEstimado` is passed in.
- * No test existed for this component before this story.
+ * FRESCO-792 — the three fixed placeholder tiles are gone. The one remaining
+ * tile shows the computed weekly cost; with no cost there is nothing to show.
  */
 describe('SavingsEstimateCards', () => {
-  test('without costeEstimado, renders the FRESCO-58 placeholder unchanged', () => {
-    renderWithProviders(<SavingsEstimateCards />);
-
-    expect(screen.getByText('~45€')).toBeInTheDocument();
-    expect(screen.getByText('~15€')).toBeInTheDocument();
-    expect(screen.getByText('~3h')).toBeInTheDocument();
-  });
-
-  test('with costeEstimado, renders the formatted real value for the first tile only', () => {
+  test('with costeEstimado, renders only the formatted weekly cost tile', () => {
     renderWithProviders(<SavingsEstimateCards costeEstimado={32.5} />);
 
     expect(screen.getByText('32,50€')).toBeInTheDocument();
-    expect(screen.queryByText('~45€')).not.toBeInTheDocument();
-
-    // The other two tiles never change, regardless of the prop.
-    expect(screen.getByText('~15€')).toBeInTheDocument();
-    expect(screen.getByText('~3h')).toBeInTheDocument();
+    expect(screen.getByText('Gasto semanal estimado')).toBeInTheDocument();
+    expect(screen.getAllByTestId('savings_estimate_cards')).toHaveLength(1);
   });
 
-  test('costeEstimado of 0 still renders the real value, not the placeholder', () => {
+  test('costeEstimado of 0 still renders the real value', () => {
     renderWithProviders(<SavingsEstimateCards costeEstimado={0} />);
 
     expect(screen.getByText('0,00€')).toBeInTheDocument();
-    expect(screen.queryByText('~45€')).not.toBeInTheDocument();
+  });
+
+  test('without costeEstimado, renders nothing — no invented figures', () => {
+    renderWithProviders(<SavingsEstimateCards />);
+
+    expect(screen.queryByTestId('savings_estimate_cards')).not.toBeInTheDocument();
+    expect(screen.queryByText(/~\d/)).not.toBeInTheDocument();
   });
 });

@@ -144,8 +144,9 @@ Then(/^es llevada a la pantalla de Recetas$/, async ({ page }) => {
   await expect(page).toHaveURL(/\/recipes$/);
 });
 
-Then(/^ve una estimación de gasto semanal, una de ahorro y una de tiempo recuperado, cada una indicando que es un valor orientativo$/, async ({ page }) => {
-  await expect(page.getByTestId('savings_estimate_cards')).toHaveCount(3);
+Then(/^ve una única estimación de gasto semanal, calculada a partir de su menú, y ninguna cifra fija de ahorro ni de tiempo$/, async ({ page }) => {
+  await expect(page.getByTestId('savings_estimate_cards')).toHaveCount(1);
+  await expect(page.getByText(/Ahorro orientativo|Tiempo recuperado/)).toHaveCount(0);
 });
 
 Then(/^ve las recetas agregadas más recientemente al catálogo, dentro de las que puede comer según su perfil$/, async ({ page }) => {
