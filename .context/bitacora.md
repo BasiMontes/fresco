@@ -370,3 +370,7 @@ Historia archivada:
 - Qué: POST /api/stripe/checkout rechaza invitados (403) y a quien ya es Pro (409), limita a 10/h por usuario y, si el perfil ya tiene stripe_customer_id o stripe_subscription_id, abre el Checkout sin prueba, con tarjeta y reutilizando el cliente. 9 tests unitarios y un escenario @requiere-stripe-real. PR #447, solo Vercel.
 - Por qué: la ruta abría una prueba sin tarjeta nueva en cada llamada, así que una cuenta o un enjambre de invitados encadenaba Pro gratis.
 - Siguiente: FRESCO-822 (el CTA sigue diciendo prueba gratis a quien ya la usó), 779 (endpoint de push), 780 (claves de .env.ci). Residual: varias cuentas con emails distintos siguen pudiendo coger una prueba sin tarjeta.
+## 2026-10-02 - FRESCO-779 endpoints de push validados y envio semanal acotado (A6-S2)
+- Qué: CHECK de endpoint (https en FCM, Mozilla, Apple o WNS, longitud 2048), formato de claves, tope de 10 suscripciones por usuario e INSERT denegado a invitados (migración 20261002085259); el sender salta endpoints fuera de la lista, 10 s de timeout, lotes de 10 y presupuesto de 110 s; banner y switch de push ocultos o deshabilitados para invitados. PR #448, verificado en prod por catálogo.
+- Por qué: cualquier invitado podía guardar una URL arbitraria y el cron del domingo la llamaba desde Supabase (SSRF ciego) en serie y sin timeout, bloqueando el envío a los demás.
+- Siguiente: FRESCO-780 (claves de .env.ci, ultima de la ola 0), luego ola 1 empezando por FRESCO-781 (checks requeridos de BD) y FRESCO-822 (CTA de prueba gratis).
