@@ -1,8 +1,8 @@
 # ADR-0035 — Supabase session cookie stays JS-readable (no httpOnly / no BFF)
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-02, founder; the enforcing nonce CSP of ADR-0019 is live in production)
 - **Date:** 2026-09-29
-- **Deciders:** Founder (acceptance pending); AI workflow drafted
+- **Deciders:** Founder (accepted 2026-10-02); AI workflow drafted
 - **Tags:** security, authentication, session, cross-cutting-invariant
 - **Supersedes:** —
 - **Superseded by:** —
