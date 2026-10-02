@@ -78,14 +78,15 @@ describe('emparejarIngrediente', () => {
     expect(match?.confianza).toBe('alta');
   });
 
-  test('a match that only contains the term has lower confidence', () => {
+  // FRESCO-785: "Salsa con tomate frito y cebolla" is a sauce that contains the
+  // term, not the ingredient. No reliable match shows nothing rather than it.
+  test('a product that only has the term as an add-in is not a match', () => {
     const solo = PRODUCTOS_SINTETICOS.filter(p => p.idExterno === 'p-009');
     const match = emparejarIngrediente({
       ingrediente: ingrediente(['tomate'], { cantidad: 100, unidad: 'g' }),
       candidatos: solo,
     });
-    expect(match?.producto.idExterno).toBe('p-009');
-    expect(match?.confianza).toBe('media');
+    expect(match).toBeNull();
   });
 
   test('is deterministic: candidate order does not change the result', () => {

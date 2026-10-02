@@ -1,6 +1,7 @@
 import type { CanonicalIngredient, Confianza } from '../types';
 import type { Envase, ProductoSupermercado } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
+import { esProductoPlausible } from '../product-plausibility';
 import { precioPorUnidadReferencia } from './units';
 
 /**
@@ -77,8 +78,10 @@ export function emparejarIngrediente(input: EmparejarInput): Coincidencia | null
   );
 
   for (const [indice, termino] of ingrediente.terminos.entries()) {
-    const palabra = new RegExp(`\\b${escapeRegExp(termino)}`);
-    const conTermino = viables.filter(p => palabra.test(normalizeNombre(p.nombre)));
+    const palabra = new RegExp(`\\b${escapeRegExp(termino)}(?:e?s)?\\b`);
+    const conTermino = viables.filter(p =>
+      palabra.test(normalizeNombre(p.nombre)) && esProductoPlausible(ingrediente.terminos[0], p.nombre),
+    );
     if (conTermino.length === 0) {
       continue;
     }
