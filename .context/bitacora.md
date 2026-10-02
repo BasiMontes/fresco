@@ -358,3 +358,7 @@ Historia archivada:
 - Qué: escenario @aprendizaje que cubre al usuario Pro sin historial viendo el mensaje de respaldo (steps en aprendizaje-pro.steps.ts), PR #444.
 - Por qué: FRESCO-333 solo tenía test unitario; el fallo real estaba en el guard de index.ts.
 - Siguiente: falta check Free opcional y probar en rojo reintroduciendo el guard.
+## 2026-10-02 - FRESCO-776 cierre del BLOCKER A6-S1 (RPC que reabria meal_plan_recipes)
+- Qué: eliminado `apply_recipe_status_update` (migración 20261002065911) y `update-recipe-status` escribe con service-role tras sus validaciones; tests de BD del PATCH directo y del RPC (404), pgTAP y unitarios. PR #445, en prod verificado en `pg_proc`.
+- Por qué: el RPC era INVOKER, ejecutable por cualquier usuario y fijaba él mismo el GUC de confianza del trigger, saltando rate limit, estado terminal y filtro de alérgenos. Se borra en vez de reescribir como DEFINER para no duplicar la política en SQL.
+- Siguiente: FRESCO-777 (INSERT abiertos de meal_plans/meal_plan_recipes), 778 (trials), 779 (push endpoint), 780 (claves de .env.ci); EPIC FRESCO-775 con 46 hijas.
