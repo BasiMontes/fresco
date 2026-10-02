@@ -683,14 +683,13 @@ Característica: Flujo completo de usuario en Fresco
 
   @panel-inicio @verificado-manual-2026-08-03 @automatizado
   # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)
-  Escenario: Inicio muestra las tres estimaciones orientativas
+  Escenario: Inicio muestra una única estimación de gasto semanal, sin cifras fijas
     Dado que Laura abre Inicio
     Cuando mira las cards de estimación
-    Entonces ve una estimación de gasto semanal, una de ahorro y una de tiempo recuperado, cada una indicando que es un valor orientativo
-    # Cifras placeholder genéricas (no calculadas por usuario, per Business
-    # Rule de FRESCO-58) — pendientes de validación real de negocio, marcadas
-    # en la propia UI ("Cifras de referencia general, pendientes de validar
-    # con datos reales de mercado").
+    Entonces ve una única estimación de gasto semanal, calculada a partir de su menú, y ninguna cifra fija de ahorro ni de tiempo
+    # FRESCO-792 (audit-6 A6-P5): las tarjetas "Ahorro orientativo" (~15€) y
+    # "Tiempo recuperado" (~3h) eran placeholders sin fuente iguales para todos
+    # los usuarios y se retiraron. Sin menú no se muestra ninguna cifra.
 
   @panel-inicio @verificado-manual-2026-08-03 @automatizado
   # Automatizado: tests/steps/panel-inicio.steps.ts (FRESCO-355)

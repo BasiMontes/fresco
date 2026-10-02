@@ -30,7 +30,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
-import { costeResumen, precioLinea } from '@/lib/grocery/line-price';
+import { precioLinea } from '@/lib/grocery/line-price';
 import { mapShoppingListItem } from '@/lib/grocery/map-item';
 import { createClient } from '@/lib/supabase/client';
 import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
@@ -42,6 +42,12 @@ export interface ShoppingListViewProps {
    * Optional: absent (or empty) means no "Nuevo" badges this render.
    */
   nuevosNombres?: ReadonlySet<string>
+  /**
+   * FRESCO-792 — the weekly cost from `costeSemanalEstimado`, the same number
+   * `/menu` shows. Absent (calculation failed) falls back to the range the
+   * Edge Function stored with the list.
+   */
+  costeMenu?: number
 }
 
 const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
@@ -141,7 +147,7 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * server-side in the page by diffing against the previous meal plan's list).
  * No recency column is persisted — the prior list already exists.
  */
-export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: ShoppingListViewProps) {
+export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -195,10 +201,6 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
     (count, pasillo) => count + pasillo.items.filter(item => !item.comprado).length,
     0,
   );
-  // FRESCO-827: the total is summed from the same per-line prices the rows
-  // show (linked product's whole-pack price, stored estimate as fallback),
-  // not from the Edge Function's per-gram snapshot.
-  const resumenCoste = React.useMemo(() => costeResumen(pasillos.flatMap(p => p.items)), [pasillos]);
 
   const compradosCoords = pasillos.flatMap((pasillo, pasilloIdx) =>
     pasillo.items
@@ -347,9 +349,9 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES }: Shoppi
             {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
           </p>
           <p className="text-right text-h5 font-heading text-primary">
-            {resumenCoste.min.toFixed(2).replace('.', ',')}
-            –
-            {formatPrecio(resumenCoste.max)}
+            {costeMenu !== undefined
+              ? formatPrecio(costeMenu)
+              : `${list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}–${formatPrecio(list.resumen.coste_estimado_max)}`}
           </p>
         </div>
       </Card>
