@@ -37,6 +37,11 @@ const CATEGORY_EXCLUSIONS: readonly CategoryExclusion[] = [
   { tokens: ['bifidus', 'yogur', 'yogurt', 'activia', 'helado', 'batido'] },
   { tokens: ['infusion', 'caramelo', 'caramelos', 'aros', 'cereales', 'barrita', 'snack', 'chicle', 'chicles', 'gragea', 'grissini', 'mollejas', 'sabor', 'vaso', 'orientales', 'instantaneos'] },
   { tokens: ['nuggets', 'bocaditos', 'bites', 'pizza', 'salteado', 'relleno', 'rellenos', 'arroz', 'pate', 'higado'] },
+  // FRESCO-825: variants that are not the plain ingredient. Prepared dish, flavoured nut, spice-rack salt, shaped kids' pasta.
+  { tokens: ['tomate'], onlyFor: /^alubias\b/ },
+  { tokens: ['miel', 'crunch', 'tijuana', 'frito', 'fritos', 'salado', 'salados', 'sal'], onlyFor: /^cacahuetes\b/ },
+  { tokens: ['molinillo', 'negra', 'himalaya'], onlyFor: /^sal$/ },
+  { tokens: ['tiburones', 'formas', 'figuras', 'fresca', 'frescas', 'rellena', 'rellenas', 'sarraceno', 'alforfon'], onlyFor: /^pasta$/ },
   { tokens: ['kebab', 'brocheta', 'brochetas', 'rebozada', 'rebozado', 'empanada', 'empanado', 'bolonesa', 'carbonara', 'rosegones', 'jardinera', 'tarrito', 'tarritos', 'yarroz', 'empanadilla', 'empanadillas', 'burger', 'hamburguesa', 'peskitos', 'palitos', 'petalos', 'infantil', 'mickey', 'higaditos', 'sopa', 'deshidratada', 'ramen', 'harina', 'pan', 'hogaza', 'rebanado', 'tostadas'] },
 ];
 
@@ -94,8 +99,16 @@ function nombraAlgunaEspecie(palabras: Set<string>): boolean {
   return SPECIES_TOKENS.some(t => palabras.has(t));
 }
 
+/**
+ * FRESCO-825: ingredients too generic to name one product. "queso" can be a
+ * cottage tub, a grated bag or a wedge, and any single pick is a guess, so the
+ * ingredient has no link and no catalog price rather than a misleading one.
+ */
+const GENERICOS_AMBIGUOS = new Set(['queso']);
+
 export function esProductoPlausible(ingrediente: string, nombreProducto: string): boolean {
   const clave = normalizeNombre(ingrediente);
+  if (GENERICOS_AMBIGUOS.has(clave)) { return false; }
   const claveWords = words(clave);
   const productoWords = words(nombreProducto);
 

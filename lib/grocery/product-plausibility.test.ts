@@ -192,3 +192,42 @@ describe('generated catalogs — no wrong product for the observed or most used 
     expect(cerdoSinPedirlo).toEqual([]);
   });
 });
+
+/**
+ * FRESCO-825 — the five links that were not strictly the wrong product but not
+ * the product a shopper expects. Decision per ingredient: exclude the variant
+ * (the link moves to the plain product, or drops when none is left), or do not
+ * link a generic that is too ambiguous to name one product.
+ */
+describe('FRESCO-825 — ambiguous or variant products by ingredient', () => {
+  const casos: { ingrediente: string, producto: string, plausible: boolean }[] = [
+    { ingrediente: 'alubias', producto: 'Alubias con tomate Heinz bote', plausible: false },
+    { ingrediente: 'alubias', producto: 'Alubias cocidas Hacendado', plausible: true },
+    { ingrediente: 'cacahuetes', producto: 'Cacahuetes con miel', plausible: false },
+    { ingrediente: 'cacahuetes', producto: 'Cacahuetes Tijuana crunch', plausible: false },
+    { ingrediente: 'cacahuetes', producto: 'Cacahuetes tostados con cascara', plausible: true },
+    { ingrediente: 'queso', producto: 'Queso cottage Valblu tarrina', plausible: false },
+    { ingrediente: 'queso', producto: 'Queso rallado hilo', plausible: false },
+    { ingrediente: 'queso rallado', producto: 'Queso rallado hilo', plausible: true },
+    { ingrediente: 'sal', producto: 'Molinillo sal negra frasco', plausible: false },
+    { ingrediente: 'sal', producto: 'Sal fina Hacendado paquete', plausible: true },
+    { ingrediente: 'pasta', producto: 'Pasta tiburones paquete', plausible: false },
+    { ingrediente: 'pasta', producto: 'Pasta fresca rellena 4 quesos', plausible: false },
+    { ingrediente: 'pasta', producto: 'Pasta de trigo sarraceno alforfon', plausible: false },
+    { ingrediente: 'pasta', producto: 'Pasta fusilli Armando paquete', plausible: true },
+  ];
+
+  test.each(casos)('$ingrediente: "$producto" plausible=$plausible', ({ ingrediente, producto, plausible }) => {
+    expect(esProductoPlausible(ingrediente, producto)).toBe(plausible);
+  });
+
+  test('the generated catalogs resolve the five cases to the decided product or no link', () => {
+    expect(MERCADONA_CATALOG_MATCH.alubias).toBeUndefined();
+    expect(MERCADONA_CATALOG_MATCH.queso).toBeUndefined();
+    expect(CONSUM_CATALOG_MATCH.queso).toBeUndefined();
+    expect(CONSUM_CATALOG_MATCH.sal).toBeUndefined();
+    expect(CONSUM_CATALOG_MATCH.pasta).toBeUndefined();
+    expect(CONSUM_CATALOG_MATCH.cacahuetes.url).toContain('cacahuetes-tostados-con-cascara');
+    expect(MERCADONA_CATALOG_MATCH.pasta.shareUrl).toContain('fusilli');
+  });
+});
