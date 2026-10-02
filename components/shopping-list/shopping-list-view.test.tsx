@@ -1,5 +1,7 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import { describe, expect, test } from 'bun:test';
+import { costeResumen, precioLinea } from '@/lib/grocery/line-price';
+import { formatPrecio } from '@/lib/utils';
 import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { ShoppingListView } from './shopping-list-view';
 
@@ -139,5 +141,38 @@ describe('ShoppingListView — receipt ticket on "Compra realizada"', () => {
     await user.click(screen.getByTestId('receipt_ticket_done_button'));
 
     expect(screen.getByTestId('receipt_ticket_dialog')).toHaveClass('is-closing');
+  });
+});
+
+describe('ShoppingListView — one price source for lines and total (FRESCO-827)', () => {
+  const ITEMS = [
+    // Stored estimate is the pre-fix 0 on purpose: the row must ignore it
+    // when a catalog product is linked.
+    { nombre: 'leche', cantidad: 1, unidad: 'l', comprado: false, precio_estimado: 0 },
+    { nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml', comprado: false, precio_estimado: 0.45 },
+  ];
+  const LIST_PRICES: ShoppingListPersistido = {
+    id: 'list3',
+    pasillos: [{ nombre: 'Lácteos y huevos', orden: 1, items: ITEMS }],
+    // Stale Edge Function snapshot, deliberately different from the lines.
+    resumen: { total_items: 2, coste_estimado_min: 99, coste_estimado_max: 99, moneda: 'EUR' },
+  };
+
+  test('each row shows the linked product price, never the stored 0,00', () => {
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} />);
+
+    for (const item of ITEMS) {
+      const esperado = formatPrecio(precioLinea(item) as number);
+      expect(screen.getByText(new RegExp(`${esperado}$`.replace('.', '\\.')), { exact: false })).toBeTruthy();
+    }
+    expect(screen.queryByText(/0,00€/)).toBeNull();
+  });
+
+  test('the summary total is the sum of the row prices, not the stored snapshot', () => {
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} />);
+
+    const { max } = costeResumen(ITEMS);
+    expect(screen.getByText(new RegExp(formatPrecio(max).replace('.', '\\.')))).toBeTruthy();
+    expect(screen.queryByText(/99,00€/)).toBeNull();
   });
 });
