@@ -441,3 +441,7 @@ Historia archivada:
 - Qué: decisión por ingrediente en product-plausibility.ts (alubias sin tomate, cacahuetes sin miel/aromatizados, sal sin molinillo/negra, pasta sin formas/fresca/rellena, queso genérico sin enlace) y catálogos Mercadona/Consum + ingredient-dictionary regenerados offline desde la caché local. PR #469 nivelado a dev/staging/main.
 - Por qué: cinco enlaces de FRESCO-785 no eran erróneos pero tampoco el producto esperado.
 - Siguiente: comprobar en staging que alubias, queso, sal y pasta(Consum) caen al precio estimado cuando Vercel levante el límite; el refresco semanal de Mercadona conserva la decisión.
+## 2026-10-02 - FRESCO-798 supermarket RLS permission gate
+- Qué: migración 20261002200000: private.supermarket_chain_activa(cadena) como única puerta de permiso (DEFINER, esquema no expuesto, sin identidad); políticas de product/zone/zone_postcode/price/match pasan por ella, price_history solo service_role, supermarket_chain sin SELECT para authenticated; get_supermarket_prices (INVOKER) usa la misma función. PR #470 nivelado y migración aplicada en la base compartida (ledger y políticas verificados en vivo).
+- Por qué: audit-6 A6-S6, un SELECT directo se saltaba la puerta legal del RPC y supermarket_chain exponía permiso/permiso_ref.
+- Siguiente: FRESCO-798 sigue en Merged (cierra con la métrica: test de 0 filas ya en CI); nada lee estas tablas como usuario hoy, así que sin efecto visible.
