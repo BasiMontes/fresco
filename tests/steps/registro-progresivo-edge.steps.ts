@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restHeaders } from '../test-helpers';
+import { currentUserId, getAccessToken, isoWeekOf, mondayOfWeekContaining, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @registro-progresivo,
@@ -81,8 +81,10 @@ async function seedProUserCurrentWeekPlan(request: import('@playwright/test').AP
   if (!recipe) { throw new Error('No recipes available in the catalog to seed the fixture.'); }
 
   const monday = mondayOfWeekContaining(new Date());
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${url}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: {
       user_id: userId,
       semana_iso: isoWeekOf(new Date()),
@@ -94,7 +96,7 @@ async function seedProUserCurrentWeekPlan(request: import('@playwright/test').AP
   const [plan] = await planRes.json() as { id: string }[];
 
   const slots = DIAS.flatMap(dia => TIPOS.map(tipo => ({ meal_plan_id: plan.id, recipe_id: recipe.id, dia, tipo_plato: tipo })));
-  const slotsRes = await request.post(`${url}/rest/v1/meal_plan_recipes`, { headers, data: slots });
+  const slotsRes = await request.post(`${url}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
   if (!slotsRes.ok()) { throw new Error(`Failed to seed PRO_USER's slots: ${slotsRes.status()} ${await slotsRes.text()}`); }
 }
 

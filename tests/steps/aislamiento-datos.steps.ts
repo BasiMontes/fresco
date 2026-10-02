@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { restHeaders } from '../test-helpers';
+import { restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @seguridad,
@@ -77,13 +77,15 @@ async function seedVictimPlan(request: APIRequestContext, victim: TestUser): Pro
   const headers = restHeaders(victim.accessToken);
   const recipesRes = await request.get(`${SUPABASE_URL}/rest/v1/recipes?select=id&limit=1`, { headers });
   const [recipe] = await recipesRes.json() as { id: string }[];
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: victim.id, semana_iso: '2026-W99', fecha_inicio: '2026-12-14', advertencias: [] },
   });
   const [plan] = await planRes.json() as { id: string }[];
   const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: [
       { meal_plan_id: plan.id, recipe_id: recipe.id, dia: 'lunes', tipo_plato: 'desayuno' },
       { meal_plan_id: plan.id, recipe_id: recipe.id, dia: 'martes', tipo_plato: 'desayuno' },
@@ -131,8 +133,10 @@ Given(/^que otra cuenta real tiene una lista de la compra con un ítem sin compr
   comprarCtx.victim = victim;
   const headers = restHeaders(victim.accessToken);
 
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: victim.id, semana_iso: '2026-W99', fecha_inicio: '2026-12-14', advertencias: [] },
   });
   const [plan] = await planRes.json() as { id: string }[];

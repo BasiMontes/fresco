@@ -180,8 +180,10 @@ export async function seedFullWeekMenu(request: APIRequestContext, testUser: Tes
     recipesByTipo[tipo] = recipe;
   }
 
+  // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
+  // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: testUser.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
   });
   if (!planRes.ok()) { throw new Error(`Failed to seed meal_plans: ${planRes.status()} ${await planRes.text()}`); }
@@ -193,7 +195,7 @@ export async function seedFullWeekMenu(request: APIRequestContext, testUser: Tes
     dia,
     tipo_plato: tipo,
   })));
-  const slotsRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plan_recipes`, { headers, data: slots });
+  const slotsRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
   if (!slotsRes.ok()) { throw new Error(`Failed to seed meal_plan_recipes: ${slotsRes.status()} ${await slotsRes.text()}`); }
 
   return { comidaNombre: recipesByTipo.comida.nombre, cenaNombre: recipesByTipo.cena.nombre };
@@ -215,7 +217,7 @@ export async function seedLastWeekCookedHistory(request: APIRequestContext, test
   const lastMonday = mondayOfWeekContaining(new Date());
   lastMonday.setUTCDate(lastMonday.getUTCDate() - 7);
   const lastWeekPlanRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plans`, {
-    headers: { ...headers, Prefer: 'return=representation' },
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: {
       user_id: testUser.id,
       semana_iso: isoWeekOf(lastMonday),
@@ -235,7 +237,7 @@ export async function seedLastWeekCookedHistory(request: APIRequestContext, test
     tipo_plato: tipo,
     estado: 'cocinada' as const,
   })));
-  const seedRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plan_recipes`, { headers, data: lastWeekSlots });
+  const seedRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: lastWeekSlots });
   if (!seedRes.ok()) { throw new Error(`Failed to seed last week's history: ${seedRes.status()} ${await seedRes.text()}`); }
 }
 

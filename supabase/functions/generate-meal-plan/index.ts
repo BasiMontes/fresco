@@ -11,6 +11,7 @@
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
+import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { logger } from '../_shared/logger.ts'
 import { buildLearningExplanation } from './prompt.ts'
@@ -197,8 +198,15 @@ Deno.serve(async (req: Request) => {
       explicacionAprendizaje = buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas })
     }
 
-    // 9. Persist meal_plans
-    const { data: mealPlan, error: planError } = await supabase
+    // 9. Persist meal_plans. FRESCO-777 (audit-6 A6-S4): `authenticated` no
+    // longer holds INSERT on meal_plans / meal_plan_recipes — a client could
+    // forge slots (estado, rating, recipe_id, sustitucion_ingrediente) or
+    // create plans without this function's rate limit, entitlement and
+    // allergen filter. Everything above already authenticated the caller and
+    // validated the menu, so the write goes through the service-role client,
+    // with `user_id` taken from the verified JWT, never from the request body.
+    const admin = createServiceRoleClient()
+    const { data: mealPlan, error: planError } = await admin
       .from('meal_plans')
       .insert({
         user_id: user.id,
@@ -233,10 +241,10 @@ Deno.serve(async (req: Request) => {
       })
     )
 
-    const { error: slotsError } = await supabase.from('meal_plan_recipes').insert(slots)
+    const { error: slotsError } = await admin.from('meal_plan_recipes').insert(slots)
 
     if (slotsError) {
-      await supabase.from('meal_plans').delete().eq('id', mealPlan.id)
+      await admin.from('meal_plans').delete().eq('id', mealPlan.id)
       logger.error('Slot insert failed, rolled back meal_plan', {
         fn: FN_NAME,
         mealPlanId: mealPlan.id,
