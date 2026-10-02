@@ -106,6 +106,55 @@ of these becomes true:
    occurs — the risk this ADR accepts has materialised and the cost has been
    paid once already.
 
+## Backup and restore (amendment 2026-10-02, FRESCO-784)
+
+The decision above accepts one shared database with no point-in-time recovery.
+That is only defensible if a bad migration or a bulk script can be undone some
+other way. This section is that way. It amends the ADR without changing the
+decision: Vercel rollback never touches the database, and `supabase/migrations/`
+has no down-migrations, so the recovery path is a restored backup.
+
+**Mechanism.** `.github/workflows/db-backup.yml`, weekly (Sundays 03:17 UTC) and
+on demand, runs `scripts/db-backup.ts`: `pg_dump` of `public`, `auth`, `storage`
+and `supabase_migrations`, encrypted with AES-256, restored into a throwaway
+Postgres, row counts compared table by table, and only then uploaded to a private
+Cloudflare R2 bucket. A dump that does not restore is never uploaded. The source
+database is only read, so the isolation invariant above still holds.
+
+| Measure | Value | Source |
+|---|---|---|
+| RPO (data you can lose) | up to 7 days, plus whatever happened since the last run | weekly schedule |
+| RTO (time to be back) | estimated under 1 hour for a restore into a new project plus repointing env vars | **not measured on prod**; the full dump, restore and count check took about 30 s on the local stack (53 tables, 1000 recipes) |
+| Retention | 90 days | R2 lifecycle rule on the bucket |
+| Not covered | Storage **files** (the `storage` schema holds only their metadata), Edge Function code (lives in git), Vercel env vars | scope of `pg_dump` |
+
+**Restore procedure.**
+
+1. Download the newest `fresco-db-<stamp>.dump.enc` from the R2 bucket.
+2. Decrypt: `openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:BACKUP_PASSPHRASE -in fresco-db-<stamp>.dump.enc -out restore.dump`.
+3. Restore into a **scratch** database first, never straight over prod:
+   `pg_restore --no-owner --no-privileges -d <scratch-url> restore.dump`. One
+   `schema "public" already exists` error is normal on a non-empty target.
+4. For lost rows: copy the affected tables from scratch into prod with a reviewed
+   script. For a lost project: create a new Supabase project, restore into it,
+   repoint `.agents/project.yaml` (`environments[*].db_project_ref`) and the env
+   vars, redeploy.
+5. To rehearse without touching anything hosted: `bun scripts/db-backup.ts verify --in <file> --counts <counts.json>`.
+
+**Required setup (repository secrets, owner action).** `SUPABASE_DB_URL`,
+`BACKUP_PASSPHRASE` (keep a copy outside GitHub, or the backups cannot be opened
+if the repository is lost), `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, plus the 90-day lifecycle rule on the bucket.
+
+**Supabase Pro (daily backups + PITR).** Decision (founder, 2026-10-02): stay on
+Free until the product's revenue covers Pro (about $25/month); the move is
+driven by profitability, not by the first paying user. Accepted cost: while on
+Free, even with paying users, the worst case is losing up to a week of data
+(RPO above). The weekly verified backup is what makes that acceptable, so a
+failed or missing `db-backup` run is treated as an incident, not noise. Reopen
+trigger 4 above (real users or revenue) still applies to the project split, but
+no longer forces the Pro upgrade by itself.
+
 ## Alternatives considered
 
 - **Use the second free-tier project for an isolated production now.**
