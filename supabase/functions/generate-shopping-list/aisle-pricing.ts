@@ -348,6 +348,18 @@ export function precioUnitario(nombreNormalizado: string, unidad: string): numbe
   return PRICE_OVERRIDE[nombreNormalizado] ?? PRICE_PER_UNIT_TYPE[unidad] ?? PRICE_PER_UNIT_TYPE.unidades
 }
 
+/**
+ * Price of a consolidated line. `PRICE_OVERRIDE` is per g/ml, but the
+ * consolidator upscales to kg/l from 1000, so a kg/l quantity must go back to
+ * g/ml first (FRESCO-824). The `kg`/`l` fallback entries are already per
+ * kg/l, so only overrides need the conversion.
+ */
+export function precioItem(nombreNormalizado: string, unidad: string, cantidad: number): number {
+  const override = PRICE_OVERRIDE[nombreNormalizado]
+  const factor = override !== undefined && (unidad === 'kg' || unidad === 'l') ? 1000 : 1
+  return precioUnitario(nombreNormalizado, unidad) * cantidad * factor
+}
+
 export interface ClassifiedShoppingList {
   pasillos: ShoppingListPasillo[]
   resumen: {
@@ -371,20 +383,20 @@ export function classifyShoppingList(ingredientes: IngredienteConsolidado[]): Cl
   for (const ingrediente of ingredientes) {
     const nombreNormalizado = normalizeNombre(ingrediente.nombre)
     const pasillo = pasilloFor(nombreNormalizado)
-    const precioItem = precioUnitario(nombreNormalizado, ingrediente.unidad) * ingrediente.cantidad
+    const precioLinea = precioItem(nombreNormalizado, ingrediente.unidad, ingrediente.cantidad)
     const item: ShoppingListItem = {
       nombre: ingrediente.nombre,
       cantidad: ingrediente.cantidad,
       unidad: ingrediente.unidad,
       comprado: false,
-      precio_estimado: Math.round(precioItem * 100) / 100,
+      precio_estimado: Math.round(precioLinea * 100) / 100,
       usos: ingrediente.usos,
     }
 
     if (!porPasillo.has(pasillo)) porPasillo.set(pasillo, [])
     porPasillo.get(pasillo)!.push(item)
 
-    costeTotal += precioItem
+    costeTotal += precioLinea
   }
 
   const pasillos: ShoppingListPasillo[] = PASILLOS
