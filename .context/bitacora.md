@@ -398,3 +398,7 @@ Historia archivada:
 - Qué: proyectos mobile (360) y tablet (768); escenarios de no desborde en onboarding, /menu, /calendar y /shopping-list y 44 px en la barra inferior. Aserción muestreada (el expect.poll dejaba pasar el bug). Probado con una rama que reintroduce el desborde de FRESCO-786: falla el e2e de tableta. PR #456 en staging/dev/main.
 - Por qué: auditoría 6 (A6-T6), los fallos de layout a 360/768 px pasaban CI en verde porque solo corría Desktop Chrome.
 - Siguiente: tap targets de 44 px solo cubiertos en la barra inferior (iconos 36 px, casillas 26 px, flechas 35 px pendientes, FRESCO-819); vigilar test:e2e (5m36 a 6m03, umbral 6m30); pasar a Finalizada tras QA.
+## 2026-10-02 - FRESCO-789 ADR al día y check adr:check
+- Qué: ADR-0032/0033/0035 a Accepted, el ADR de harnesses duplicado como 0002 pasa a ADR-0038, ADR-0036 sin texto desfasado, y scripts/check-adrs.ts (adr:check dentro de repo:check) que falla por número duplicado, fichero sin indexar, estado distinto del README o Proposed de más de 14 días. PR #458 en staging/dev/main.
+- Por qué: auditoría 6 (A6-A2, A6-A10), patrón A5-H4 reaparecido: decisiones Proposed con el código ya en main.
+- Siguiente: ADR-0035 se aceptó por decisión del fundador en la sesión; pasar a Finalizada tras QA.
