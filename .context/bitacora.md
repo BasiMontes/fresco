@@ -437,3 +437,7 @@ Historia archivada:
 - Qué: nuevo lib/grocery/product-compatibility.ts (esProductoCompatible, perfilCompraDesde); el mapper, la vista de la lista y costeSemanalEstimado reciben el perfil y descartan el producto enlazado si choca con dieta o alérgenos (sin enlace ni precio de catálogo). PR #468 nivelado a dev/staging/main.
 - Por qué: la guarda de FRESCO-785 no miraba el perfil; los catálogos guardan un solo producto por ingrediente, así que no hay candidatos entre los que filtrar y el nombre sale del slug de la URL.
 - Siguiente: revisión manual en staging con tres perfiles (halal, vegano, vegetariano) cuando Vercel levante el límite; FRESCO-826 sigue en Merged hasta entonces.
+## 2026-10-02 - FRESCO-825 ambiguous supermarket product links
+- Qué: decisión por ingrediente en product-plausibility.ts (alubias sin tomate, cacahuetes sin miel/aromatizados, sal sin molinillo/negra, pasta sin formas/fresca/rellena, queso genérico sin enlace) y catálogos Mercadona/Consum + ingredient-dictionary regenerados offline desde la caché local. PR #469 nivelado a dev/staging/main.
+- Por qué: cinco enlaces de FRESCO-785 no eran erróneos pero tampoco el producto esperado.
+- Siguiente: comprobar en staging que alubias, queso, sal y pasta(Consum) caen al precio estimado cuando Vercel levante el límite; el refresco semanal de Mercadona conserva la decisión.
