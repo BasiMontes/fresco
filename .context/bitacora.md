@@ -374,3 +374,7 @@ Historia archivada:
 - Qué: CHECK de endpoint (https en FCM, Mozilla, Apple o WNS, longitud 2048), formato de claves, tope de 10 suscripciones por usuario e INSERT denegado a invitados (migración 20261002085259); el sender salta endpoints fuera de la lista, 10 s de timeout, lotes de 10 y presupuesto de 110 s; banner y switch de push ocultos o deshabilitados para invitados. PR #448, verificado en prod por catálogo.
 - Por qué: cualquier invitado podía guardar una URL arbitraria y el cron del domingo la llamaba desde Supabase (SSRF ciego) en serie y sin timeout, bloqueando el envío a los demás.
 - Siguiente: FRESCO-780 (claves de .env.ci, ultima de la ola 0), luego ola 1 empezando por FRESCO-781 (checks requeridos de BD) y FRESCO-822 (CTA de prueba gratis).
+## 2026-10-02 - FRESCO-780 claves de .env.ci y seed verificadas, todas de prueba (A6-S12)
+- Qué: revisadas las cadenas con forma de clave de .env.ci y seed-e2e-users.ts: 2 JWT demo de Supabase iguales byte a byte a los del stack local, y Stripe sk_test_ y whsec_ dummy de 41 caracteres. Sin sk_live_ ni claves largas en el historial. Sin rotación.
+- Por qué: el agente de audit-6 no pudo decodificarlas y quedaba la duda de si alguna era real.
+- Siguiente: la ola 0 de EPIC FRESCO-775 queda completa (776 a 780). Ola 1 empezando por FRESCO-781 (checks requeridos de BD), 822 (CTA de prueba gratis) y 783 (vulnerabilidades).
