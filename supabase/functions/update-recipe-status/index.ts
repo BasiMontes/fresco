@@ -18,6 +18,7 @@
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
+import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { logger } from '../_shared/logger.ts'
@@ -128,23 +129,30 @@ Deno.serve(async (req: Request) => {
     // 7. Apply the update — recipe_learning_trigger reacts to this in the DB.
     // A4-L7: buildUpdatePayload decides which fields the target estado
     // permits (recipe_id on `sustituida` only, rating off `sustituida`).
-    // Audit-5 BLOCKER fix: meal_plan_recipes now rejects a raw client
-    // `.update()` on these columns (protect_meal_plan_recipes_integrity,
-    // 20260928170000) — apply_recipe_status_update is the trusted RPC that
-    // opens the transaction-local GUC for this one write. Still the user's
-    // own JWT throughout (RLS mpr_update_own keeps enforcing ownership).
+    // meal_plan_recipes rejects a client `.update()` on estado / rating /
+    // recipe_id (protect_meal_plan_recipes_integrity), so the write goes
+    // through the service-role client — the one caller the trigger trusts that
+    // is not a client-invokable function (A6-S1: the RPC that used to do this
+    // let any signed-in user lift the protection). It only runs AFTER the
+    // checks above (JWT, rate limit, ownership, terminal state, allergen and
+    // duplicate re-filter) and is scoped to the one slot we just verified. The
+    // `estado not in (terminal)` filter closes the window between the guard in
+    // step 5 and this write: zero rows back means the slot changed meanwhile.
     const updatePayload = buildUpdatePayload(estado, rating, nueva_recipe_id)
 
-    const { error: updateError } = await supabase.rpc('apply_recipe_status_update', {
-      p_slot_id: meal_plan_recipe_id,
-      p_estado: updatePayload.estado as string,
-      p_rating: (updatePayload.rating as number | undefined) ?? null,
-      p_recipe_id: (updatePayload.recipe_id as string | undefined) ?? null,
-    })
+    const { data: updatedRows, error: updateError } = await createServiceRoleClient()
+      .from('meal_plan_recipes')
+      .update(updatePayload)
+      .eq('id', meal_plan_recipe_id)
+      .not('estado', 'in', `(${[...TERMINAL_STATES].join(',')})`)
+      .select('id')
 
     if (updateError) {
       logger.error('Failed to update meal_plan_recipes', { fn: FN_NAME, error: updateError.message })
       throw new HttpError('Error actualizando el estado', 500)
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+      throw new HttpError('El estado de esta receta cambió mientras se procesaba la petición', 409)
     }
 
     const response: UpdateRecipeStatusResponse = { ok: true, estado }

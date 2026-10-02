@@ -63,6 +63,8 @@ export interface FakeEdgeClientConfig {
   selectError?: Record<string, unknown>
   /** Keyed by table → the error the terminal `.eq()` of an `update` resolves with. */
   updateError?: Record<string, unknown>
+  /** Keyed by table → the rows an `update(...).select()` chain resolves to (default: one row). */
+  updateRows?: Record<string, unknown[]>
   /** `auth.admin.deleteUser()` result. */
   adminDeleteError?: unknown
 }
@@ -105,10 +107,12 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
   function updateChain(table: string, payload: Record<string, unknown>): Record<string, unknown> {
     const terminate = async () => {
       updates.push([table, payload]);
-      return { error: config.updateError?.[table] ?? null };
+      return { data: config.updateRows?.[table] ?? [{ id: 'updated' }], error: config.updateError?.[table] ?? null };
     };
     const chain: Record<string, unknown> = {
       eq: () => chain,
+      not: () => chain,
+      select: () => chain,
       then: async (f: (v: unknown) => unknown) => terminate().then(f),
     };
     return chain;

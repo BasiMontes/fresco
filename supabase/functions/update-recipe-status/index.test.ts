@@ -10,8 +10,10 @@ import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, type F
  */
 
 let supa: FakeEdgeClient
+let svc: FakeEdgeClient
 captureDenoServe()
 mock.module('../_shared/supabase-client.ts', () => ({ createRequestClient: () => supa.client }))
+mock.module('../_shared/service-role-client.ts', () => ({ createServiceRoleClient: () => svc.client }))
 
 await import('./index.ts')
 const handler: EdgeHandler = getEdgeHandler()
@@ -25,6 +27,7 @@ function slotRow(over: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: slotRow() } })
+  svc = fakeEdgeClient()
 })
 
 function call(body: unknown, init = {}) {
@@ -94,24 +97,35 @@ describe('update-recipe-status/index.ts', () => {
   })
 
   test('500 when the meal_plan_recipes update errors', async () => {
-    // Audit-5 BLOCKER fix (20260928170000): the write now goes through
-    // apply_recipe_status_update, not a raw .from('meal_plan_recipes').update().
-    supa = fakeEdgeClient({
-      user: USER,
-      rpc: { ...OK_RATE, apply_recipe_status_update: { error: new Error('db down') } },
-      rows: { meal_plan_recipes: slotRow() },
-    })
+    svc = fakeEdgeClient({ updateError: { meal_plan_recipes: new Error('db down') } })
     const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada' }))
     expect(res.status).toBe(500)
+  })
+
+  test('409 when the slot reached a terminal state between the guard and the write', async () => {
+    svc = fakeEdgeClient({ updateRows: { meal_plan_recipes: [] } })
+    const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada' }))
+    expect(res.status).toBe(409)
   })
 
   test('200 and { ok: true, estado } on the happy path', async () => {
     const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating: 4 })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true, estado: 'cocinada' })
-    expect(supa.rpcCalls.at(-1)).toEqual([
-      'apply_recipe_status_update',
-      { p_slot_id: 'mpr_1', p_estado: 'cocinada', p_rating: 4, p_recipe_id: null },
-    ])
+    expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'cocinada', rating: 4 }]])
+  })
+
+  test('the protected write never goes through the caller client or a client-callable RPC (audit-6 A6-S1)', async () => {
+    await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating: 4 })
+    expect(supa.updates).toEqual([])
+    expect(supa.rpcCalls.map(([name]) => name)).not.toContain('apply_recipe_status_update')
+  })
+
+  test('nothing is written when a guard rejects the request', async () => {
+    svc = fakeEdgeClient()
+    supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: slotRow({ estado: 'cocinada' }) } })
+    const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'descartada' }))
+    expect(res.status).toBe(409)
+    expect(svc.updates).toEqual([])
   })
 })

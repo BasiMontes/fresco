@@ -785,15 +785,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      apply_recipe_status_update: {
-        Args: {
-          p_estado: Database["public"]["Enums"]["estado_receta_menu"]
-          p_rating?: number
-          p_recipe_id?: string
-          p_slot_id: string
-        }
-        Returns: undefined
-      }
       check_and_increment_rate_limit: {
         Args: {
           p_endpoint: string
