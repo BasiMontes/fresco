@@ -449,3 +449,8 @@ Historia archivada:
 - Qué: scripts/check-git-identity.sh como primer paso de .husky/pre-commit (rechaza autor o committer @example.com, probado de extremo a extremo); override local test/test@example.com de .git/config retirado, nombre local Basilio Montes; nombre del perfil de GitHub cambiado a Basilio Montes para que los squash salgan firmados bien. PR #471 nivelado.
 - Por qué: auditoría externa 6, 86 commits en main como test@example.com sin PR; la causa era una sección [user] local que pisaba la identidad global.
 - Siguiente: FRESCO-828 sigue en Merged hasta comprobar 0 commits @example.com en main con uso real; FRESCO-829 (git:promote), 830 (gates a las skills), 831 (menores), 832 (reconciliar auditorías) abiertos.
+
+## 2026-10-03 - FRESCO-837 identidad test@example.com: causa raiz y arreglo
+- Qué: los tests del updater escribian `user.email test@example.com` en el .git/config real cuando el hook pre-push corre desde un worktree enlazado (git exporta GIT_DIR). PR #472: entorno sin GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE en los 3 tests, unset en .husky/pre-push y test de regresion. Tambien creados FRESCO-833..837 (huecos de la auditoria externa, tres duplicados) y 16 tickets pasados a Finalizada (828 y 837 siguen abiertos: faltan 7 dias sin commits @example.com y revisar 736/738). Duplicados creados por error: 833, 834 y 836 repiten 829, 830 y 831.
+- Por qué: auditoria externa (Ely, 3,8/5) hallazgo MEDIO: 78 commits directos a main sin trazabilidad. FRESCO-828 solo bloqueaba el sintoma.
+- Siguiente: ejecutar FRESCO-829 (git:promote) y FRESCO-830 (gates de skills); regla guardada: no subir a main sin checks verdes ni commits por PR con identidad real.
