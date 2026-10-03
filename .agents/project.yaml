@@ -166,7 +166,13 @@ autonomous_delivery:
 
 # Files `bun run up` must keep as THIS project's own, beyond the built-in watchlist.
 updater:
-  protected_paths: []
+  # FRESCO-830 / ADR-0039: skill files that carry Fresco-owned doctrine (reproduction-or-rejection FRESCO-313, Definition of Done FRESCO-404, AC testability I22 FRESCO-320). scripts/skill-gates.test.ts fails if a gate or an entry here disappears.
+  protected_paths:
+    - .agents/skills/sprint-development/SKILL.md
+    - .agents/skills/sprint-development/references/bug-fix-workflow.md
+    - .agents/skills/product-management/SKILL.md
+    - .agents/skills/product-management/references/acceptance-criteria.md
+    - .agents/skills/product-management/references/story-refinement.md
 
 # Variables declared above that are consumed OUTSIDE the {{TEMPLATE}} system
 # (env vars in scripts/, shell `yq` reads embedded in skill docs, etc.).
