@@ -117,6 +117,18 @@ git_strategy:
     precedence: [feat, fix, refactor, test, docs, chore]
     naming_with_key: '{prefix}/{ISSUE-KEY}-{kebab-slug}'
     naming_without_key: '{prefix}/{kebab-slug}'
+  # Differences between what `policy:` declares and what the host does, ACCEPTED in writing by the owner so a later session does not re-raise them as drift (git-flow-master Step 1b, option c).
+  accepted_divergences:
+    - id: admin-bypass-on-promotion
+      accepted: 2026-10-03 # by Basi, FRESCO-831 / external audit 6
+      what: >-
+        admin_bypass is false but enforce_admins is false on main, staging and dev, so the admin who promotes skips the 5 required checks, and the mirror push to dev skips its PR requirement (GitHub prints "Changes must be made through a pull request" and accepts the push)
+      why: >-
+        promotion is a fast-forward mirror push, never a PR (promote_method ff-only), so enforce_admins true would block it. Turning it on would force a PR-based promotion flow, which the owner declined
+      compensating_control: >-
+        `bun run git:promote` refuses a SHA without a finished successful staging PR Check, a placeholder identity, or a code commit without (#PR) (FRESCO-829, docs/workflows/promotion.md). It is a script, not a host rule: a hand-typed `git push origin main` is not blocked
+      revisit_when: >-
+        a second committer joins, or a promoted SHA reaches main with a red staging run despite git:promote
   meta:
     setup_version: 4 # v4 2026-08-30 (FRESCO-314): squash-only enforced on GitHub, docs_changes policy added, hotfix runbook written
     created: 2026-07-24 # YYYY-MM-DD — first commit of this repo (6271533); the git_strategy block has existed since project bootstrap
