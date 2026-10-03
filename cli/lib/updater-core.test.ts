@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
+
+import { gitEnvWithoutRepoOverrides } from './test-git-env.ts';
 import {
   classifyFile,
   componentOwnedPaths,
@@ -41,7 +43,7 @@ function temporaryRoot(): string {
 }
 
 function git(root: string, args: string[]): string {
-  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: gitEnvWithoutRepoOverrides() });
   if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
   return res.stdout;
 }
