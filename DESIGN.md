@@ -1,7 +1,7 @@
 ---
 version: beta
 name: Fresco
-description: Menús semanales con IA que aprende de lo que realmente cocinas. Warm cream-and-clay editorial system pairing corporate green with corporate orange for Spain's household meal planners. v2 (FRESCO-436) — calm editorial direction, Fraunces display, one-accent discipline, hairline-first surfaces.
+description: Menús semanales que aprenden de lo que realmente cocinas. Warm cream-and-clay editorial system pairing corporate green with corporate orange for Spain's household meal planners. v2 (FRESCO-436) — calm editorial direction, Fraunces display, one-accent discipline, hairline-first surfaces.
 colors:
   primary: '#0F4E0E'
   secondary: '#DF8C26'
@@ -266,7 +266,7 @@ Four rules, derived directly from the Tesis above (FRESCO-449). They govern ever
 
 Fresco is a Spain-focused weekly meal-planning app for **Laura, the exhausted planner** — a 30–40-year-old who cooks five-plus days a week and hits the same recurring wall every Sunday afternoon: "what do I cook this week?" (`.context/business/business-model.md`, `.context/PRD/user-personas.md`). The product's entire pitch is that it gets easier the more you use it, because it learns from what your household actually cooks, not from a preference form you filled out once. A design system for that promise cannot look like a cold utility tool — it has to feel like the difference between a spreadsheet and a kitchen counter.
 
-The visual theme, in the founder's own words from the brand canvas, is direct: **"Cálido, redondeado, verde + naranja"** — warm, rounded, green + orange (`design/handoff/fresco/brand-guide.dc.html`). The brand tagline frames the product identity end to end: *"Menús semanales con IA que aprende de lo que realmente cocinas"* (Weekly menus with AI that learns from what you actually cook). Every token in this system exists to make that tagline felt on first paint, not just claimed in copy.
+The visual theme, in the founder's own words from the brand canvas, is direct: **"Cálido, redondeado, verde + naranja"** — warm, rounded, green + orange (`design/handoff/fresco/brand-guide.dc.html`). The brand tagline frames the product identity end to end: *"Menús semanales que aprenden de lo que realmente cocinas"* (Weekly menus with AI that learns from what you actually cook). Every token in this system exists to make that tagline felt on first paint, not just claimed in copy.
 
 Concretely: a warm cream background (`#FAF3E3`) instead of clinical white, a hand-picked corporate green (`#0F4E0E`) for trust and primary action, and a corporate orange (`#DF8C26`) reserved for the single highest-intent moment on a screen. Corners are soft but not bouncy — **v2 (FRESCO-436)** dialled the card/panel radii back toward an editorial read while keeping buttons and tags as full pills (the brand-shape signal); see §Shapes. This system was originally authored in Claude Design (`claude.ai/design`) and exported as a brand-guide canvas; **v1** of this file wrapped those tokens verbatim. **v2** is the first deliberate departure — a calm editorial direction (Fraunces display, one-accent discipline, hairline-first surfaces, an unhurried motion intent over the existing transitions-dev tokens) ratified screen-by-screen under epic FRESCO-436. Where a value now differs from the `design/handoff/fresco/brand-guide.dc.html` canvas, the change is annotated inline with its ticket.
 

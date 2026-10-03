@@ -64,6 +64,21 @@ describe('PlanningSelectionGrid', () => {
     expect(onChange).toHaveBeenCalledWith({ ...EMPTY, martes: ['comida'] });
   });
 
+  test('the bulk "Todos" and "Ninguno" buttons keep a 44 px tap target (FRESCO-836)', () => {
+    render();
+
+    const buttons = [
+      ...screen.getAllByTestId('planning_meal_select_all'),
+      ...screen.getAllByTestId('planning_meal_select_none'),
+    ];
+
+    expect(buttons).toHaveLength(6);
+    for (const button of buttons) {
+      expect(button.className).toContain('min-h-11');
+      expect(button.className).toContain('min-w-11');
+    }
+  });
+
   test('"Todos" on a meal row selects that meal for all seven days', async () => {
     const user = setupUser();
     const onChange = mock(() => {});

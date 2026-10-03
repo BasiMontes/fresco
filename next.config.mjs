@@ -38,6 +38,8 @@ const posthogAssetsHost = posthogIngestHost?.replace('.i.posthog.com', '-assets.
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Do not advertise the framework in every response (FRESCO-836).
+  poweredByHeader: false,
   // Pin the workspace root to this repo — a stray lockfile one level up
   // (/Users/basimontes/fresco/package-lock.json, outside this project) would
   // otherwise make Next.js/Turbopack infer the wrong root.

@@ -34,8 +34,8 @@ delete the broken deploy. Then go to §2 for the real fix.
 ## 2. Forward-fix
 
 ```bash
-# 1. branch off dev (dev == main right now — they're mirrors)
-git checkout dev && git pull origin dev
+# 1. branch off staging (PRs land on staging; dev and main are mirrors of it)
+git checkout staging && git pull origin staging
 git checkout -b fix/FRESCO-<id>-<slug>
 
 # 2. make the fix. verify locally (scripts from package.json):
@@ -48,23 +48,24 @@ git commit -m "fix(FRESCO-<id>): <what>"
 
 # 4a. NORMAL urgency — open a PR, let CI gate it
 git push -u origin fix/FRESCO-<id>-<slug>
-gh pr create --base dev --fill
+gh pr create --base staging --fill
 gh pr merge --squash --delete-branch   # squash is the only method enabled
 
-# 4b. TRUE emergency, CI too slow — push straight to dev, then mirror forward
-git checkout dev && git merge --ff-only fix/FRESCO-<id>-<slug>
-git push origin dev
+# 4b. TRUE emergency, CI too slow — push straight to staging, then mirror forward
+git checkout staging && git merge --ff-only fix/FRESCO-<id>-<slug>
+git push origin staging
 ```
 
 ## 3. Propagate to production
 
-`dev` → `staging` → `main` are fast-forward mirror pushes (never `--no-ff`,
-never squash on the mirror hop):
+`staging` is mirrored to `dev` and `main` by fast-forward pushes (never
+`--no-ff`, never squash on the mirror hop). `bun run git:promote` is the gate:
+a dry run by default, `--yes` pushes, and it refuses when the last PR Check on
+the `staging` SHA is not a success (FRESCO-829):
 
 ```bash
-git push origin origin/dev:refs/heads/staging
-git fetch origin
-git push origin origin/staging:refs/heads/main
+bun run git:promote          # dry run: shows what would move and why it may refuse
+bun run git:promote --yes    # ff-only mirror of origin/staging to dev and main
 ```
 
 Then confirm the branches match and prod redeployed:
