@@ -12,7 +12,7 @@ updates:
     directory: /
     # dev is the integration branch (dev -> staging -> main); PRs to main
     # bypass that flow. Default target is the repo default branch, so pin it.
-    target-branch: dev
+    target-branch: staging
     schedule:
       interval: weekly
       day: monday
@@ -23,7 +23,7 @@ updates:
       prefix: ci
   - package-ecosystem: bun
     directory: /
-    target-branch: dev
+    target-branch: staging
     schedule:
       interval: weekly
       day: monday

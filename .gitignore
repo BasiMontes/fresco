@@ -172,3 +172,6 @@ cookies.txt
 !.context/PBI/README.md
 !.context/PBI/templates/
 .context/qa/agiletest-import-*.csv
+
+# brag skill output (videos, frames): local only (FRESCO-836)
+brag-output*/

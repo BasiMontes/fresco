@@ -98,6 +98,9 @@ git_strategy:
     e2e'd; before `git push origin main`, confirm that `staging` push's
     `test:e2e` run is green (`strict` stays `false`, so a stale-branch
     squash is still possible — this run is what catches it).
+    2026-09-08: PRs target `staging`, not `dev`; `dev` and `main` are
+    ff-only mirrors of `staging`, and `bun run git:promote` (FRESCO-829)
+    is the gate for that mirror push (FRESCO-836).
   branches:
     production: main # release / default branch
     integration: null # no disciplined integration tier in practice — dev/staging are env mirrors, not a promotion hop (see protected: below)

@@ -1,6 +1,7 @@
 import type { Database } from './types';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { clientEnv } from '@/lib/env';
+import 'server-only';
 
 // Service-role Supabase client — bypasses RLS via `SUPABASE_SERVICE_ROLE_KEY`.
 // NEVER import this from a Client Component or any code path reachable by the
