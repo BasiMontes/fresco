@@ -27,16 +27,16 @@ Verificado con `rg` sobre `2026-10-02-audit-6/`: la 6 interna **no** menciona `x
 
 | Punto | Solape con la 6 interna | Ticket | Estado |
 |---|---|---|---|
-| `hotfix.md:51`, `dependabot.yml` y `git_strategy` dicen `dev`, los PRs van a `staging` | Ninguno | FRESCO-836 | Rechazos, sin motivo documentado |
-| `admin_bypass: false` convive con el bypass de admin en el mirror push | Ninguno | FRESCO-831 (divergencia aceptada, #475) | Entregado |
-| 16 tests de Edge Functions fuera de cualquier typecheck | Ninguno | FRESCO-836 | Rechazos, sin motivo documentado |
-| `lib/supabase/service.ts` sin `import 'server-only'` | Ninguno | FRESCO-836 | Rechazos, sin motivo documentado |
-| Botones "Todos" y "Ninguno" de `/profile` a 14 px | Ninguno (FRESCO-787 añade el proyecto móvil/tablet, no este caso) | FRESCO-836 | Rechazos, sin motivo documentado |
-| `/admin/recipes` responde 200 con "no encontrada" | Contradice A5-H8a de la interna (404 real); repetir la comprobación | FRESCO-836 | Rechazos, sin motivo documentado |
-| Cabecera `x-powered-by: Next.js` | Ninguno | FRESCO-836 | Rechazos, sin motivo documentado |
-| 14,7 MB de `brag-output*`, `step2-vegano.yml`, `landing-top.png`, `tasks/` | Ninguno (la interna solo anota `brag-output/` sin trackear) | FRESCO-836 | Rechazos, sin motivo documentado |
-| `DESIGN.md:4` dice "Menús semanales con IA" | Ninguno | FRESCO-836 | Rechazos, sin motivo documentado |
-| `ADR-0002-multi-harness-single-source.md` choca con el ADR-0002 propio | A6-A2 | FRESCO-789 | Finalizada |
+| `hotfix.md:51`, `dependabot.yml` y `git_strategy` dicen `dev`, los PRs van a `staging` | Ninguno | FRESCO-836 (#478) | Resuelto |
+| `admin_bypass: false` convive con el bypass de admin en el mirror push | Ninguno | FRESCO-831 (#475) | Resuelto |
+| 16 tests de Edge Functions fuera de cualquier typecheck | Ninguno | FRESCO-840 | Pendiente |
+| `lib/supabase/service.ts` sin `import 'server-only'` | Ninguno | FRESCO-836 (#478) | Resuelto |
+| Botones "Todos" y "Ninguno" de `/profile` a 14 px | Ninguno (FRESCO-787 añade el proyecto móvil/tablet, no este caso) | FRESCO-836 (#478), con test de clases | Resuelto |
+| `/admin/recipes` responde 200 con "no encontrada" | Contradice A5-H8a de la interna (404 real); causa probable: el Suspense de `app/(app)/loading.tsx` | FRESCO-840 | Pendiente |
+| Cabecera `x-powered-by: Next.js` | Ninguno | FRESCO-836 (#478) | Resuelto |
+| 14,7 MB de `brag-output*`, `step2-vegano.yml`, `landing-top.png`, `tasks/` | Ninguno (la interna solo anota `brag-output/` sin trackear) | FRESCO-836 (#478): ficheros borrados, `brag-output*/` ignorado | Resuelto |
+| `DESIGN.md:4` dice "Menús semanales con IA" | Ninguno | FRESCO-836 (#478) | Resuelto |
+| `ADR-0002-multi-harness-single-source.md` choca con el ADR-0002 propio | A6-A2 | FRESCO-789 | Resuelto |
 
 ## Fuera de alcance de esta tabla
 
@@ -44,4 +44,4 @@ Los cinco hallazgos de la auditoría 4 que la externa no pudo comprobar sin Jira
 
 ## Cobertura
 
-Los 10 hallazgos con peso tienen ticket. De la lista "para cuando pases cerca", 2 puntos están resueltos (FRESCO-831, FRESCO-789) y 8 dependen de FRESCO-836, que está en Rechazos sin motivo escrito. Hasta que 836 se reabra o documente su descarte, el criterio de cierre de FRESCO-832 ("ticket o motivo de descarte") queda cumplido a medias para esos 8.
+Los 10 hallazgos con peso tienen ticket. De la lista "para cuando pases cerca", 8 puntos están resueltos y 2 pendientes en FRESCO-840 (typecheck de los tests de Edge y 404 real en `/admin/recipes`). FRESCO-836 queda como ticket de la lista; sus dos puntos sin resolver tienen ticket propio.
