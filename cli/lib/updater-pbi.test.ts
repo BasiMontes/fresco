@@ -7,6 +7,8 @@ import { dirname, join } from 'node:path';
 
 import { describe, expect, test } from 'bun:test';
 
+import { gitEnvWithoutRepoOverrides } from './test-git-env.ts';
+
 import {
   buildPbiMigrationPrompt,
   buildPbiPromptFileContent,
@@ -131,7 +133,7 @@ describe('the afterApply hook', () => {
   // the eight parity rows. The hook now writes the recipe and reports one
   // fact; the terminal gets nothing from it.
   function git(root: string, args: string[]): void {
-    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
+    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: gitEnvWithoutRepoOverrides() });
     if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
   }
   function write(root: string, rel: string, body: string): void {
