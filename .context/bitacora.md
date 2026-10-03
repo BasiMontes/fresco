@@ -464,3 +464,8 @@ Historia archivada:
 - Qué: PR #476 devuelve a .agents/skills los gates que el sync del 7 de septiembre descarto: reproduccion o rechazo (FRESCO-313), Definition of Done por la metrica (FRESCO-404) y testeabilidad I22 (FRESCO-320). Los 5 ficheros quedan en updater.protected_paths, scripts/skill-gates.test.ts falla si desaparece un gate o su proteccion, y ADR-0039 sustituye a ADR-0016. Tambien FRESCO-839 (gates 281/282/321 tambien perdidos) y FRESCO-838 (urllib3).
 - Por qué: auditoria externa (Ely, 3,8/5) hallazgo ALTO "gates de cierre perdidos"; la regla existia pero vivia en ficheros que un sync podia pisar sin aviso.
 - Siguiente: FRESCO-839 (resto de gates), 831 (menores), 832, 835 y 837 (revisar 736/738 y 7 dias sin @example.com); 828 y 829 en Merged hasta cumplir su metrica. Leccion: verificar "falta X" con git grep sobre ficheros versionados, rg omite rutas ignoradas.
+
+## 2026-10-03 - FRESCO-832 y FRESCO-836: auditorias 6 reconciliadas y lista menor cerrada
+- Qué: PR #477 (tabla de solapes 6 interna vs 6 externa, README con regla de tendencia) y PR #478 (8 de 10 puntos de "para cuando pases cerca": staging en docs/dependabot, server-only, poweredByHeader, tap target 44px, DESIGN.md, ficheros muertos). FRESCO-840 abierto para typecheck de tests Edge y 404 real en /admin/recipes.
+- Por qué: la nota absoluta de dos auditorias con distinta mirada no mide tendencia; los hallazgos externos debian tener ticket o motivo.
+- Siguiente: git:promote a dev/main; FRESCO-833/834/836 siguen en Rechazos sin motivo escrito.
