@@ -52,6 +52,7 @@
     "context:hydrate": "bun scripts/sync-jira-issues.ts pull --include-comments",
     "git:checks": "bun scripts/required-checks.ts",
     "git:policy": "bun scripts/git-policy.ts",
+    "git:promote": "bun scripts/git-promote.ts",
     "jira:components": "bun scripts/sync-jira-components.ts",
     "jira:url": "bun scripts/atlassian-url.ts"
   },

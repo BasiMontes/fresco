@@ -227,5 +227,6 @@ Sin `gh` autenticado (`gh auth status`), el flujo funciona pero pierdes automati
 ## Navegación
 
 - [Ambientes](./environments.md) - Entender dev, staging, production
+- [Promotion gate](./promotion.md) - `bun run git:promote`, the only way to promote staging to dev and main
 - [TMLC](https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/workflows/test-manual-lifecycle.md) - Ciclo de vida del testing manual
 - [TALC](https://github.com/upex-galaxy/agentic-qa-boilerplate/blob/main/docs/workflows/test-automation-lifecycle.md) - Ciclo de vida de la automatización
