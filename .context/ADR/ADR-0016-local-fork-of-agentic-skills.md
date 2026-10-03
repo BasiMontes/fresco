@@ -1,11 +1,11 @@
 # ADR-0016 — Local fork of the agentic skills; we do not track upstream
 
-- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Superseded by ADR-0039 <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-08-30
 - **Deciders:** Basi Montes
 - **Tags:** tooling, skills, boilerplate, cross-cutting
 - **Supersedes:** —
-- **Superseded by:** —
+- **Superseded by:** ADR-0039
 
 ---
 

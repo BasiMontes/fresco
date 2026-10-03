@@ -457,6 +457,8 @@ Which would you prefer?
 | Cannot reproduce              | Request more info or close | → Need Info / Cannot Reproduce |
 | Deferred (low priority/risk)  | Document and defer         | → Deferred                     |
 
+**Reproduction-or-rejection gate (FRESCO-313, HALLAZGO MEDIO D).** A defect does not reach ANY terminal status (`Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate`) until it carries EITHER numbered reproduction steps (in the description or a comment) OR a documented reason it cannot/should not be reproduced (env difference, WAD with the code cited, duplicate link, deferred rationale). A one-line defect with no repro and no rejection rationale is not closable — add the missing half first. This is the agent-side reinforcement of the Jira workflow validator the owner configures on the Error workflow; apply it even where the validator is not yet in place. This gate + its Phase 7 close confirmation are the **defect-specific instance** of the project-wide close policy in `.context/backlog/definition-of-done.md` (FRESCO-404): close on the metric, not the mechanism.
+
 **For "Real Bug" - Check if Hotfix needed:**
 
 ```markdown
@@ -777,6 +779,8 @@ Next steps:
   value={"value": "Bugfix"}  // or "Hotfix"
 )
 ```
+
+**Confirm reproduction steps or a rejection rationale exist** (FRESCO-313 contract). Do not transition to `Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate` unless the defect carries numbered reproduction steps OR a documented reason it cannot/should not be reproduced (see the reproduction-or-rejection gate in Phase 3). A bare one-line defect is not closable.
 
 **Step 2: Add Fix Documentation Comment**
 
@@ -1493,6 +1497,7 @@ Before presenting the final report, verify:
 - [ ] Bug analyzed with full context
 - [ ] Reproduction documented
 - [ ] Triage decision made and documented
+- [ ] Reproduction steps OR a documented rejection rationale present before any terminal transition — FRESCO-313
 - [ ] Root Cause custom fields updated
 - [ ] Fix documentation comment added
 - [ ] Issue transitioned to Ready For QA

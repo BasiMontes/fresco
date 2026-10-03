@@ -637,6 +637,8 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 13. **Binding rules travel in the briefing**: a prohibition that lives only in a `references/*.md` never reaches a stage subagent. Restate the identity contract, the prohibition list, and the hygiene contract in briefing component 7 for every dispatch that could trip them (`agentic-dev-core/references/orchestration-doctrine.md` → "Rule reachability").
 14. **Every report carries `secrets_materialized:` + `cleaned:`** — `cleaned: no` is a blocker, surfaced to the user, never passed over silently.
 15. **Status is queried, config is read**: ticket availability comes from a live tracker query, project configuration comes from the actual file (`.agents/project.yaml`, `package.json`, `.env.example`). Never from prose, a cached doc, or a skill's worked example.
+16. **Reproduction-or-rejection gate** (FRESCO-313): a defect does not reach any terminal status (`Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate`) without EITHER numbered reproduction steps OR a documented reason it cannot/should not be reproduced (env difference, WAD with code cited, duplicate link, deferred rationale). Agent-side reinforcement of the Jira workflow validator the owner configures on the Error workflow — apply even where the validator is not yet in place. See `references/bug-fix-workflow.md` Phase 3 gate + Phase 7 confirm.
+17. **Definition of Done — close on the metric, not the mechanism** (FRESCO-404): a ticket does not reach `Finalizada` until the problem that created it is measurably zero — the AC-covering test passes / the verification query returns 0 / the defect's finding is gone — unless the remaining work is a **named, ticketed, concrete** follow-up (`Relates`-linked). A deferral goes to `Rechazos` with an ADR or process-note pointer, never `Finalizada`. Gotcha 16 is the defect-specific instance. Full policy: `.context/backlog/definition-of-done.md`.
 
 ---
 
@@ -690,6 +692,7 @@ If any required var is unset, ensure `.agents/project.yaml` exists (clone the fu
 - **S20.** NEVER open the workload-forecast gate on a bare `Chain strategy` label. With `risk = High`, the value is accepted only with a `Decision trace` that walks the git-flow-master chained-PR tree; missing, empty, or conclusion-only traces count as `pending` and block Stage 2. The planner never picks the strategy itself.
 - **S21.** NEVER recommend, plan, or start a ticket on the strength of roadmap prose. Query the tracker live for the candidate and its direct blockers first (Phase 0b). `.context/dev-roadmap.md` owns dependency edges and mockup gates; it never owns current status, and a recent timestamp on it is not evidence about any ticket's status today.
 - **S22.** NEVER approve a UI story on HTTP-probe evidence alone. Tier 0 probes cover routes, redirects, and server-rendered markup; layout, computed tokens, client-rendered states, breakpoints, and interactive AC flows require the browser tier (`references/live-ui-validation.md` §7).
+- **S23.** NEVER transition a defect to a terminal status (`Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate`) with neither reproduction steps nor a documented rejection rationale. A bare one-line defect is not closable — add the missing half first (FRESCO-313).
 
 ---
 

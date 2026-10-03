@@ -76,7 +76,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0013](./ADR-0013-posthog-product-analytics.md) | PostHog as the product-analytics vendor (EU region, client + server capture) | Accepted | — | — |
 | [ADR-0014](./ADR-0014-testing-architecture-playwright-bdd.md) | Testing architecture stays `playwright-bdd`; do not migrate to KATA | Superseded | — | ADR-0018 |
 | [ADR-0015](./ADR-0015-stripe-subscription-reconciliation-job.md) | Daily `pg_cron`→`pg_net`→Next.js route reconciles `user_profiles` subscription state against Stripe | Accepted | — | — |
-| [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Accepted | — | — |
+| [ADR-0016](./ADR-0016-local-fork-of-agentic-skills.md) | Local fork of the agentic skills; we do not track upstream (`bun run up`) | Superseded | — | ADR-0039 |
 | [ADR-0017](./ADR-0017-ci-e2e-local-supabase-stack.md) | CI e2e runs against an ephemeral local Supabase stack, not the prod project | Accepted | — | — |
 | [ADR-0018](./ADR-0018-e2e-test-architecture-revisit-threshold.md) | E2E test architecture revisit: CI wall-clock is the binding revisit trigger, not scenario count | Accepted | ADR-0014 | — |
 | [ADR-0019](./ADR-0019-security-response-headers-and-csp.md) | Explicit security response headers + enforcing nonce-based Content-Security-Policy | Accepted | — | — |
@@ -99,6 +99,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0036](./ADR-0036-supermarket-data-layer-source-agnostic.md) | Supermarket price data: one source-agnostic product contract (the price is always the whole pack), a permission gate enforced in code (fail-closed), and a Postgres price model; refresh only what menus need, in budgeted batches | Accepted | — | — |
 | [ADR-0037](./ADR-0037-consum-catalog-risk-accepted.md) | Consum catalog and prices: run the connector under accepted risk (mirrors ADR-0028 for Mercadona) while the written consent request is unanswered; revocable in one line | Accepted | — | — |
 | [ADR-0038](./ADR-0038-multi-harness-single-source.md) | One instruction source (`AGENTS.md`) and one skill store (`.agents/skills/`) for three harnesses (Claude Code, OpenCode, Codex); each reaches them through a generated shim, alias or native discovery. Renumbered from a duplicate ADR-0002 (FRESCO-789) | Accepted | — | — |
+| [ADR-0039](./ADR-0039-skills-sync-with-protected-doctrine.md) | Skills are synced from the boilerplate; project-owned doctrine is protected from the sync (`updater.protected_paths` + a grep test) | Accepted | ADR-0016 | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 
