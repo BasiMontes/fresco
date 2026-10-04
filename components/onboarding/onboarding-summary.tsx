@@ -44,7 +44,7 @@ function withFreeText(labels: string[], text: string): string[] {
   return trimmed ? [...labels, trimmed] : labels;
 }
 
-function plural(count: number, singular: string, pluralForm: string): string {
+function plural({ count, singular, pluralForm }: { count: number, singular: string, pluralForm: string }): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
@@ -175,7 +175,7 @@ export function OnboardingSummary({ headingRef }: OnboardingSummaryProps) {
 
       <SummarySection id="household" title="Tu hogar" onEdit={() => editFromSummary(3)}>
         <SummaryRow label="Quiénes cocináis">
-          {`${plural(adultos, 'adulto', 'adultos')} · ${plural(ninos, 'niño', 'niños')}`}
+          {`${plural({ count: adultos, singular: 'adulto', pluralForm: 'adultos' })} · ${plural({ count: ninos, singular: 'niño', pluralForm: 'niños' })}`}
         </SummaryRow>
         <SummaryRow label="Presupuesto semanal">
           {presupuestoSemanaEuros === null ? <Empty /> : `${presupuestoSemanaEuros} €`}

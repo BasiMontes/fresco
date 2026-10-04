@@ -216,7 +216,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
       .map(({ pasilloIdx: pIdx, itemIdx: iIdx }) => [pIdx, iIdx] as const),
   );
 
-  function setComprado(pasilloIdx: number, itemIdx: number, comprado: boolean) {
+  function setComprado({ pasilloIdx, itemIdx, comprado }: { pasilloIdx: number, itemIdx: number, comprado: boolean }) {
     setPasillos(current =>
       current.map((pasillo, pIdx) =>
         pIdx !== pasilloIdx
@@ -231,16 +231,16 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
     );
   }
 
-  async function handleToggle(pasilloIdx: number, itemIdx: number, nextComprado: boolean) {
+  async function handleToggle({ pasilloIdx, itemIdx, nextComprado }: { pasilloIdx: number, itemIdx: number, nextComprado: boolean }) {
     setErrorMessage(null);
-    setComprado(pasilloIdx, itemIdx, nextComprado);
+    setComprado({ pasilloIdx, itemIdx, comprado: nextComprado });
 
     try {
       await toggleShoppingListItem(supabase, { listId: list.id, pasilloIdx, itemIdx, comprado: nextComprado });
     }
     catch (error) {
       console.error('[ShoppingListView] toggleShoppingListItem failed, reverting', error);
-      setComprado(pasilloIdx, itemIdx, !nextComprado);
+      setComprado({ pasilloIdx, itemIdx, comprado: !nextComprado });
       setErrorMessage('No se pudo guardar el cambio. Vuelve a intentarlo.');
 
       if (shakeTimerRef.current) {
@@ -476,7 +476,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
                                 <Checkbox
                                   data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
                                   checked={item.comprado}
-                                  onChange={e => void handleToggle(pasilloIdx, itemIdx, e.target.checked)}
+                                  onChange={e => void handleToggle({ pasilloIdx, itemIdx, nextComprado: e.target.checked })}
                                   aria-labelledby={`shopping_list_item_${pasilloIdx}_${itemIdx}_name`}
                                 />
                               </div>

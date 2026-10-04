@@ -15,7 +15,7 @@ const REAL_SHAPE_FIXTURE = `<!DOCTYPE html><html lang="es"><head></head><body>
 describe('substituteNonce', () => {
   it('replaces every occurrence across external and inline script tags', () => {
     const newNonce = 'ZmZmZmZmZmYtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAw';
-    const result = substituteNonce(REAL_SHAPE_FIXTURE, OLD_NONCE, newNonce);
+    const result = substituteNonce(REAL_SHAPE_FIXTURE, { oldNonce: OLD_NONCE, newNonce });
 
     expect(result).not.toContain(OLD_NONCE);
     expect(result.split(newNonce).length - 1).toBe(4);
@@ -23,7 +23,7 @@ describe('substituteNonce', () => {
 
   it('touches nothing outside the nonce value itself', () => {
     const newNonce = 'ZmZmZmZmZmYtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAw';
-    const result = substituteNonce(REAL_SHAPE_FIXTURE, OLD_NONCE, newNonce);
+    const result = substituteNonce(REAL_SHAPE_FIXTURE, { oldNonce: OLD_NONCE, newNonce });
     const expectedLengthDelta = (newNonce.length - OLD_NONCE.length) * 4;
 
     expect(result.length).toBe(REAL_SHAPE_FIXTURE.length + expectedLengthDelta);
@@ -32,7 +32,7 @@ describe('substituteNonce', () => {
   });
 
   it('refuses a silent no-op when oldNonce is absent', () => {
-    expect(() => substituteNonce('<html></html>', OLD_NONCE, 'new')).toThrow(
+    expect(() => substituteNonce('<html></html>', { oldNonce: OLD_NONCE, newNonce: 'new' })).toThrow(
       'oldNonce not found',
     );
   });

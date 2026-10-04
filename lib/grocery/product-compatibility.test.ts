@@ -29,7 +29,7 @@ describe('esProductoCompatible — diet table (real catalog products)', () => {
 
   for (const { dieta, perfil, ingrediente, producto, compatible } of casos) {
     test(`${dieta}: ${producto} for "${ingrediente}" is ${compatible ? 'compatible' : 'incompatible'}`, () => {
-      expect(esProductoCompatible(ingrediente, producto, perfil)).toBe(compatible);
+      expect(esProductoCompatible({ ingrediente, nombreProducto: producto, perfil })).toBe(compatible);
     });
   }
 });
@@ -56,46 +56,46 @@ describe('esProductoCompatible — allergen table', () => {
 
   for (const { alergeno, ingrediente, producto, compatible } of casos) {
     test(`${alergeno}: ${producto} for "${ingrediente}" is ${compatible ? 'compatible' : 'incompatible'}`, () => {
-      expect(esProductoCompatible(ingrediente, producto, { alergenos: [alergeno] })).toBe(compatible);
+      expect(esProductoCompatible({ ingrediente, nombreProducto: producto, perfil: { alergenos: [alergeno] } })).toBe(compatible);
     });
   }
 });
 
 describe('esProductoCompatible — edge rules', () => {
   test('no profile means compatible', () => {
-    expect(esProductoCompatible('caldo', 'caldo pollo hacendado brick', undefined)).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'caldo', nombreProducto: 'caldo pollo hacendado brick', perfil: undefined })).toBe(true);
   });
 
   test('a profile with no active restriction means compatible', () => {
-    expect(esProductoCompatible('caldo', 'caldo pollo hacendado brick', { vegano: false, alergenos: [] })).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'caldo', nombreProducto: 'caldo pollo hacendado brick', perfil: { vegano: false, alergenos: [] } })).toBe(true);
   });
 
   test('an unreadable product name means compatible (nothing to judge)', () => {
-    expect(esProductoCompatible('caldo', '  ', { vegano: true })).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'caldo', nombreProducto: '  ', perfil: { vegano: true } })).toBe(true);
   });
 
   test('a word the ingredient itself names is not held against the product', () => {
-    expect(esProductoCompatible('leche de almendra', 'leche de almendra sin azucar', { vegano: true })).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'leche de almendra', nombreProducto: 'leche de almendra sin azucar', perfil: { vegano: true } })).toBe(true);
   });
 
   test('a "sin lactosa" product is compatible with a lactose restriction', () => {
-    expect(esProductoCompatible('leche', 'leche entera sin lactosa', { sinLactosa: true, alergenos: ['lactosa'] })).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'leche', nombreProducto: 'leche entera sin lactosa', perfil: { sinLactosa: true, alergenos: ['lactosa'] } })).toBe(true);
   });
 
   test('a "vegetal" product is compatible with a vegan profile', () => {
-    expect(esProductoCompatible('hamburguesa', 'hamburguesa vegetal', { vegano: true })).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'hamburguesa', nombreProducto: 'hamburguesa vegetal', perfil: { vegano: true } })).toBe(true);
   });
 
   test('matches plural forms of the flagged word', () => {
-    expect(esProductoCompatible('arroz', 'arroz con gambas', { alergenos: ['crustaceos'] })).toBe(false);
-    expect(esProductoCompatible('arroz', 'arroz con langostinos', { alergenos: ['crustaceos'] })).toBe(false);
+    expect(esProductoCompatible({ ingrediente: 'arroz', nombreProducto: 'arroz con gambas', perfil: { alergenos: ['crustaceos'] } })).toBe(false);
+    expect(esProductoCompatible({ ingrediente: 'arroz', nombreProducto: 'arroz con langostinos', perfil: { alergenos: ['crustaceos'] } })).toBe(false);
   });
 
   test('several restrictions at once: any one violation makes it incompatible', () => {
     const perfil: PerfilCompra = { vegetariano: true, alergenos: ['cacahuetes'] };
 
-    expect(esProductoCompatible('salsa', 'salsa cacahuete', perfil)).toBe(false);
-    expect(esProductoCompatible('salsa', 'salsa tomate', perfil)).toBe(true);
+    expect(esProductoCompatible({ ingrediente: 'salsa', nombreProducto: 'salsa cacahuete', perfil })).toBe(false);
+    expect(esProductoCompatible({ ingrediente: 'salsa', nombreProducto: 'salsa tomate', perfil })).toBe(true);
   });
 });
 

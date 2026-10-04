@@ -24,8 +24,7 @@ export class SpendTrendError extends Error {}
  */
 export async function getSpendTrend(
   client: SupabaseClient<Database>,
-  semanaIso: string = getIsoWeek(),
-  userId?: string,
+  { semanaIso = getIsoWeek(), userId }: { semanaIso?: string, userId?: string } = {},
 ): Promise<SpendTrendPoint[]> {
   let resolvedUserId = userId;
 

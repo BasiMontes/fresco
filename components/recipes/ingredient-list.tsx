@@ -57,7 +57,7 @@ export function IngredientList({ ingredientes, slotId, initialSustitucion }: Ing
     const previous = sustitucion;
     setSustitucion({ original: ingrediente, sustituto });
     try {
-      await confirmSubstitution(supabase, slotId, ingrediente, sustituto);
+      await confirmSubstitution(supabase, { slotId, ingredienteOriginal: ingrediente, ingredienteSustituto: sustituto });
       setOpenFor(null);
     }
     catch (caught) {

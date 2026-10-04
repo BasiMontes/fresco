@@ -81,7 +81,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
 
   describe('initial load', () => {
     test('stores products, one match each and an unknown-date price, in the default zone', async () => {
-      const resultado = await cargarProductos(db, [carga('a'), carga('b')]);
+      const resultado = await cargarProductos(db, { items: [carga('a'), carga('b')] });
       expect(resultado).toEqual({ productos: 2, omitidos: 0 });
 
       const { precio, historial } = await precioActual('a');
@@ -94,16 +94,18 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
     });
 
     test('is idempotent: running it twice leaves one row per product', async () => {
-      await cargarProductos(db, [carga('a'), carga('b')]);
+      await cargarProductos(db, { items: [carga('a'), carga('b')] });
       const { count } = await db.from('supermarket_product').select('*', { count: 'exact', head: true }).like('id_externo', `${PREFIX}%`);
       expect(count).toBe(2);
     });
 
     test('two ingredients that share one product give one product and a match each', async () => {
-      const resultado = await cargarProductos(db, [
-        carga('compartido', {}, `${PREFIX}aceite`),
-        carga('compartido', {}, `${PREFIX}aceite de oliva`),
-      ]);
+      const resultado = await cargarProductos(db, {
+        items: [
+          carga('compartido', {}, `${PREFIX}aceite`),
+          carga('compartido', {}, `${PREFIX}aceite de oliva`),
+        ],
+      });
       expect(resultado).toEqual({ productos: 1, omitidos: 0 });
 
       const { count } = await db.from('supermarket_product').select('*', { count: 'exact', head: true }).eq('id_externo', `${PREFIX}compartido`);
@@ -113,7 +115,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
     });
 
     test('skips a price that does not survive numeric(10, 2) above zero', async () => {
-      const resultado = await cargarProductos(db, [carga('barato', { precioEnvase: 0.004 })]);
+      const resultado = await cargarProductos(db, { items: [carga('barato', { precioEnvase: 0.004 })] });
       expect(resultado).toEqual({ productos: 0, omitidos: 1 });
     });
   });
@@ -144,7 +146,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
     });
 
     test('re-running the initial load never overwrites a newer observation', async () => {
-      await cargarProductos(db, [carga('a')]);
+      await cargarProductos(db, { items: [carga('a')] });
       const { precio } = await precioActual('a');
       expect(precio?.precio_envase).toBe(3);
       expect(new Date(precio!.observado_en).toISOString()).toBe('2026-10-02T12:00:00.000Z');
@@ -158,7 +160,7 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
   describe('leerProductosSeguidos', () => {
     test('tracks only products of an enabled chain that a menu needs', async () => {
       const demanda = new Map([[`${PREFIX}a`, 3]]);
-      const seguidos = await leerProductosSeguidos(db, demanda, new Set(['mercadona']));
+      const seguidos = await leerProductosSeguidos(db, { demandaPorIngrediente: demanda, habilitadas: new Set(['mercadona']) });
       const propios = seguidos.filter(s => s.idExterno.startsWith(PREFIX));
       expect(propios.map(s => s.idExterno)).toEqual([`${PREFIX}a`]);
       expect(propios[0]).toMatchObject({ cadena: 'mercadona', zona: ZONA_BD, demanda: 3 });
@@ -167,19 +169,19 @@ describe.skipIf(!(RUN && reachable))('supermarket price store (real DB)', () => 
 
     test('a chain that is not enabled is never tracked, whatever the demand', async () => {
       const demanda = new Map([[`${PREFIX}a`, 3]]);
-      expect(await leerProductosSeguidos(db, demanda, new Set(['consum']))).toEqual([]);
-      expect(await leerProductosSeguidos(db, demanda, new Set())).toEqual([]);
+      expect(await leerProductosSeguidos(db, { demandaPorIngrediente: demanda, habilitadas: new Set(['consum']) })).toEqual([]);
+      expect(await leerProductosSeguidos(db, { demandaPorIngrediente: demanda, habilitadas: new Set() })).toEqual([]);
     });
 
     test('with no demand there is nothing to track', async () => {
-      expect(await leerProductosSeguidos(db, new Map(), new Set(['mercadona']))).toEqual([]);
+      expect(await leerProductosSeguidos(db, { demandaPorIngrediente: new Map(), habilitadas: new Set(['mercadona']) })).toEqual([]);
     });
   });
 
   test('the whole loop: plan, run with a connector, and the price lands in the database', async () => {
     const ahora = new Date('2026-10-10T12:00:00.000Z');
     const demanda = new Map([[`${PREFIX}b`, 2]]);
-    const seguidos = (await leerProductosSeguidos(db, demanda, new Set(['mercadona']))).filter(s => s.idExterno.startsWith(PREFIX));
+    const seguidos = (await leerProductosSeguidos(db, { demandaPorIngrediente: demanda, habilitadas: new Set(['mercadona']) })).filter(s => s.idExterno.startsWith(PREFIX));
     expect(seguidos).toHaveLength(1);
 
     const plan = planificarRefresco({

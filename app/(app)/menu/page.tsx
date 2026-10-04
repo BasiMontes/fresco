@@ -127,7 +127,7 @@ export default async function MenuPage() {
     }),
     // FRESCO-535: same fail-soft pattern as the other reads on this page — a
     // read failure just hides the trend chart rather than crashing the page.
-    getSpendTrend(supabase, semanaIso, user?.id).catch((error) => {
+    getSpendTrend(supabase, { semanaIso, userId: user?.id }).catch((error) => {
       console.error('[/menu] getSpendTrend failed, hiding the trend chart', error);
       return [];
     }),

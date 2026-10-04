@@ -115,7 +115,7 @@ export function useSlotMarking({ supabase, slotIds, estados, setEstados, setErro
    * The UI updates optimistically; the backend write is deferred by a 5s
    * undo window (snackbar). Marking a second slot flushes the first.
    */
-  const handleMarkEstado = React.useCallback((dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada') => {
+  const handleMarkEstado = React.useCallback(({ dia, tipo, estado }: { dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada' }) => {
     const id = slotId({ dia, tipo });
     if (pendingSlots.has(id)) {
       return;

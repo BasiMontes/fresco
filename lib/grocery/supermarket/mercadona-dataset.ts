@@ -56,8 +56,7 @@ const UNIDAD_POR_FORMATO: Readonly<Record<string, UnidadBase>> = { kg: 'g', l: '
  */
 export function productoDeDataset(
   p: ProductoDatasetMercadona,
-  observadoEn: string,
-  zona: ZonaId = ZONA_DATASET,
+  { observadoEn, zona = ZONA_DATASET }: { observadoEn: string, zona?: ZonaId },
 ): ProductoSupermercado | null {
   const pi = p.price_instructions;
   const unidad = pi.size_format === null ? undefined : UNIDAD_POR_FORMATO[pi.size_format];
@@ -110,7 +109,7 @@ export function crearConectorMercadonaDataset(
         throw new TypeError(`the dataset snapshot date is not a valid instant: "${fecha}"`);
       }
       const lista = catalogo
-        .map(p => productoDeDataset(p, fecha, zona))
+        .map(p => productoDeDataset(p, { observadoEn: fecha, zona }))
         .filter((p): p is ProductoSupermercado => p !== null);
       return { porId: new Map(lista.map(p => [p.idExterno, p])), lista };
     })();

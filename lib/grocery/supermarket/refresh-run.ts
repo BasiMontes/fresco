@@ -59,15 +59,13 @@ export async function ejecutarRefresco(
 ): Promise<InformeRefresco> {
   const porCadena: ResultadoCadena[] = [];
   for (const [cadena, peticiones] of Object.entries(plan.porCadena)) {
-    porCadena.push(await refrescarCadena(cadena, peticiones, plan.pausaEntrePeticionesMs, deps));
+    porCadena.push(await refrescarCadena({ cadena, peticiones, pausaMs: plan.pausaEntrePeticionesMs }, deps));
   }
   return { porCadena, aplazadosPorPresupuesto: plan.aplazados };
 }
 
 async function refrescarCadena(
-  cadena: CadenaId,
-  peticiones: PlanRefresco['porCadena'][string],
-  pausaMs: number,
+  { cadena, peticiones, pausaMs }: { cadena: CadenaId, peticiones: PlanRefresco['porCadena'][string], pausaMs: number },
   { registro, guardar, esperar }: DependenciasRefresco,
 ): Promise<ResultadoCadena> {
   const resultado: ResultadoCadena = {

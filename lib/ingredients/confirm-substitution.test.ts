@@ -30,7 +30,7 @@ describe('confirmSubstitution', () => {
   test('calls the RPC with the slot and both ingredient names', async () => {
     const { client, rpcCalls } = createRpcMockClient();
 
-    await confirmSubstitution(client, 'slot-1', 'leche', 'leche de avena');
+    await confirmSubstitution(client, { slotId: 'slot-1', ingredienteOriginal: 'leche', ingredienteSustituto: 'leche de avena' });
 
     expect(rpcCalls).toEqual([{
       fn: 'confirm_ingredient_substitution',
@@ -41,7 +41,7 @@ describe('confirmSubstitution', () => {
   test('a rejection from the RPC (unsafe candidate, wrong slot, ineligible state) is surfaced, never swallowed', async () => {
     const { client } = createRpcMockClient({ errorMessage: 'candidate is not a currently safe substitute' });
 
-    const error = await expectRejection(confirmSubstitution(client, 'slot-1', 'leche', 'leche de avena'));
+    const error = await expectRejection(confirmSubstitution(client, { slotId: 'slot-1', ingredienteOriginal: 'leche', ingredienteSustituto: 'leche de avena' }));
 
     expect(error).toBeInstanceOf(IngredientSubstitutionError);
     expect((error as Error).message).toContain('candidate is not a currently safe substitute');
