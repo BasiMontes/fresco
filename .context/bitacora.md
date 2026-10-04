@@ -493,3 +493,7 @@ Historia archivada:
 - Qué: PR #489 y #490 migran las 31 funciones de producto con 3+ posicionales a objeto de opciones; PR #491 activa max-params en error, complexity en aviso, un candado de capas (components/ no importa Supabase, con 27 excepciones que solo pueden encogerse) y cycles:check en repo:check. Nivelado dev/staging/main en a2ed86c5.
 - Por qué: auditoría 6 (A6-A1): las reglas de §10 eran convención oral y nada impedía que crecieran. Métrica de cierre: 0 funciones con 3+ posicionales en producto, lint en verde con la regla en error, 0 ciclos.
 - Siguiente: FRESCO-810 quita las 27 excepciones del candado de capas; scripts/ y cli/ (145 firmas) quedan exentos a propósito.
+## 2026-10-04 - FRESCO-841 spend vs average line
+- Qué: línea % frente a la media de 4 semanas bajo el gasto semanal estimado; gráfico de tendencia retirado (PR #492)
+- Por qué: decisión del fundador, el gráfico no aportaba; sin mockup (§5-V)
+- Siguiente: FRESCO-842 espera bundle de Claude Design; verificación visual en vivo pendiente
