@@ -99,6 +99,7 @@ Given(/^que un visitante sin cuenta rellena email y contraseña en \/signup$/, a
   // (!acceptedTerms) return` blocks the real signUp() call (and this
   // route/waitForRequest never fires) before it ever reaches the network,
   // no matter how the rest of the form is filled.
+  await page.getByTestId('confirm_age_checkbox').check();
   await page.getByTestId('accept_terms_checkbox').check();
 });
 
@@ -151,6 +152,7 @@ Given(/^que un visitante introduce una contraseña filtrada conocida en \/signup
 
   await page.getByTestId('email_input').fill(`qa-pwned-${Date.now()}@example.com`);
   await page.getByTestId('password_input').fill(BREACHED_PASSWORD);
+  await page.getByTestId('confirm_age_checkbox').check();
   await page.getByTestId('accept_terms_checkbox').check();
 });
 
@@ -197,6 +199,7 @@ Given(/^que un visitante intenta darse de alta con un email ya existente$/, asyn
 
   await page.getByTestId('email_input').fill('ya-registrado@example.com');
   await page.getByTestId('password_input').fill('Qa-Existing-Account-123!');
+  await page.getByTestId('confirm_age_checkbox').check();
   await page.getByTestId('accept_terms_checkbox').check();
 });
 

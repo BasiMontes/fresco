@@ -455,6 +455,16 @@ Característica: Flujo completo de usuario en Fresco
     Y ve su menú completo de 21 comidas en /menu, sin ningún prompt de registro
     # Confirmado en vivo: JWT decodificado con is_anonymous: true.
 
+  @invitado @seguridad @automatizado
+  # Automatizado: tests/steps/invitado.steps.ts (FRESCO-794). Los textos de las
+  # casillas son PROVISIONALES (borrador FRESCO-365, sin validar por el abogado).
+  Escenario: Una visitante no puede empezar sin confirmar su edad ni aceptar los términos
+    Dado que una visitante sin cuenta ni sesión abre el onboarding
+    Cuando pulsa "Continuar como invitada" sin marcar la edad ni los términos
+    Entonces ve el aviso de que debe confirmar su edad y el de que debe aceptar los términos
+    Y no se crea ninguna sesión y sigue en la elección de identidad
+    Y al marcar las dos casillas puede continuar como invitada
+
   @invitado @notificaciones @verificado-manual-2026-09-01
   Escenario: Tras generar su primer menú, se le pide permiso de notificaciones push en un momento de valor
     Dado que una visitante sin cuenta ni sesión completa el onboarding y genera su primer menú
