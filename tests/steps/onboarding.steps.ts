@@ -196,6 +196,11 @@ When(/^pulsa el icono de editar de "Alimentación" y marca un alérgeno$/, async
   await page.getByTestId('summary_edit_diet').click();
   await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+2\s+de\s+3/);
   await page.getByTestId('alergeno_option').first().click();
+  // FRESCO-794: an allergen is health data (art. 9), so "Ver resumen" stays disabled until the
+  // explicit consent is ticked. The box is controlled and only checks once the consent is recorded,
+  // so click and wait for it to report checked instead of `.check()`.
+  await page.getByTestId('health_consent_checkbox').click();
+  await expect(page.getByTestId('health_consent_checkbox')).toBeChecked();
 });
 
 Then(/^el paso ofrece "Ver resumen" en lugar de "Siguiente"$/, async ({ page }) => {
@@ -249,4 +254,30 @@ Then(/^llega a \/menu y la semana sigue teniendo un único menú$/, async ({ pag
     { headers: restHeaders(testUser.accessToken) },
   );
   expect((await res.json() as unknown[]).length).toBe(1);
+});
+
+// FRESCO-794 (ADR-0040): allergies and diet are health data (GDPR art. 9), so the diet step asks for
+// explicit consent once any is picked and the wizard does not go on without it. The wording is
+// provisional (lawyer draft, not yet validated).
+When(/^llega al paso de dieta del onboarding y marca un alérgeno$/, async ({ page }) => {
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+1\s+de\s+3/);
+  await page.getByTestId('next_button').click();
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+2\s+de\s+3/);
+  await expect(page.getByTestId('health_consent_block')).toHaveCount(0);
+  await page.getByTestId('alergeno_option').first().click();
+});
+
+Then(/^ve la casilla de consentimiento de datos de salud sin marcar y no puede avanzar$/, async ({ page }) => {
+  await expect(page.getByTestId('health_consent_block')).toBeVisible();
+  await expect(page.getByTestId('health_consent_checkbox')).not.toBeChecked();
+  await expect(page.getByTestId('next_button')).toBeDisabled();
+});
+
+Then(/^al marcar la casilla puede avanzar al paso 3$/, async ({ page }) => {
+  await page.getByTestId('health_consent_checkbox').click();
+  await expect(page.getByTestId('health_consent_checkbox')).toBeChecked();
+  await expect(page.getByTestId('next_button')).toBeEnabled();
+  await page.getByTestId('next_button').click();
+  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+3\s+de\s+3/);
 });

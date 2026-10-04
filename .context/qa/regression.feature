@@ -250,6 +250,15 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el paso ofrece "Ver resumen" en lugar de "Siguiente"
     Y al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado
 
+  @onboarding @seguridad @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-794). Los alérgenos y la dieta son datos de
+  # salud (art. 9 RGPD): sin consentimiento explícito no se avanza. Texto PROVISIONAL (borrador FRESCO-365).
+  Escenario: Marcar alergias o dieta exige el consentimiento explícito de datos de salud
+    Dado que el usuario tiene sesión iniciada
+    Cuando llega al paso de dieta del onboarding y marca un alérgeno
+    Entonces ve la casilla de consentimiento de datos de salud sin marcar y no puede avanzar
+    Y al marcar la casilla puede avanzar al paso 3
+
   @onboarding @generacion-menu @automatizado
   # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-759). Reutiliza los pasos de generación del
   # primer escenario; el segundo "Empezar" recibe el conflicto real de generate-meal-plan.

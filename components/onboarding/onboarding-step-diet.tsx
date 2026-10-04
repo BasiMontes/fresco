@@ -2,10 +2,16 @@
 
 import type * as React from 'react';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
+import { useState } from 'react';
+import { LegalModal } from '@/components/legal/legal-modal';
 import { LockInfoTooltip } from '@/components/onboarding/lock-info-tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
+import { CONSENT_TEXTS } from '@/lib/legal/consent';
+import { postConsents } from '@/lib/legal/consent-client';
+import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
 import { alergenoLockMessage, COCINA_OPTIONS, DIETA_OPTIONS, UNSELECTED_CHIP_CLASS } from '@/lib/onboarding/wizard-options';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
@@ -35,6 +41,8 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
     dietaTextoLibre,
     ingredientesOdiadosTextoLibre,
     cocinasTextoLibre,
+    healthDataConsent,
+    setHealthDataConsent,
     toggleDieta,
     toggleAlergeno,
     toggleIngredienteOdiado,
@@ -43,6 +51,44 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
     setIngredientesOdiadosTextoLibre,
     setCocinasTextoLibre,
   } = useOnboardingStore();
+
+  // FRESCO-794 (ADR-0040): allergies and diet are health data (GDPR art. 9). The
+  // box appears once the user picks any of them, is not pre-ticked, and the
+  // wizard does not go on without it (`app/onboarding/page.tsx`). Ticking it
+  // records the consent straight away; nothing is kept for a user who refuses.
+  const needsHealthConsent = collectsHealthData({
+    dietaVegetariano,
+    dietaVegano,
+    dietaSinGluten,
+    dietaSinLactosa,
+    dietaSinHuevo,
+    dietaKeto,
+    dietaHalal,
+    alergenos,
+    dietaTextoLibre,
+  });
+  const [isRecordingConsent, setIsRecordingConsent] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+
+  async function handleConsentChange(checked: boolean) {
+    setConsentError(null);
+    if (!checked) {
+      // Unticking only blocks going on while health data is filled in; the
+      // registry is append-only and withdrawal is a separate decision (ADR-0040).
+      setHealthDataConsent(false);
+      return;
+    }
+    setIsRecordingConsent(true);
+    const recorded = await postConsents(['health_data']);
+    setIsRecordingConsent(false);
+    if (recorded) {
+      setHealthDataConsent(true);
+    }
+    else {
+      setConsentError('No pudimos registrar tu consentimiento. Inténtalo de nuevo.');
+    }
+  }
 
   const dietaState: Record<DietaFlag, boolean> = {
     dietaVegetariano,
@@ -125,6 +171,48 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
           );
         })}
       </div>
+
+      {needsHealthConsent && (
+        <div data-testid="health_consent_block" className="mt-4 rounded-md border border-border p-3">
+          <p className="text-body-sm text-tertiary">
+            Tus alergias y tu dieta son datos de salud. Solo los usamos para excluir las recetas que no te convienen, y necesitamos tu consentimiento explícito para guardarlos. Más información en la
+            {' '}
+            <button
+              type="button"
+              data-testid="health_consent_privacy_link"
+              onClick={() => setPrivacyOpen(true)}
+              className="text-primary underline"
+            >
+              Política de Privacidad
+            </button>
+            .
+          </p>
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
+            <span className="flex size-6 shrink-0 items-center justify-center">
+              {/* FRESCO-451: a single agree toggle, so the square variant. */}
+              <Checkbox
+                data-testid="health_consent_checkbox"
+                checked={healthDataConsent}
+                disabled={isRecordingConsent}
+                onChange={e => void handleConsentChange(e.target.checked)}
+                className="rounded-sm"
+              />
+            </span>
+            <span>{CONSENT_TEXTS.health_data}</span>
+          </label>
+          {consentError && (
+            <p data-testid="health_consent_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
+              {consentError}
+            </p>
+          )}
+          {!healthDataConsent && !consentError && (
+            <p data-testid="health_consent_required_hint" role="status" aria-live="polite" className="mt-2 text-body-sm text-tertiary">
+              Marca la casilla para continuar.
+            </p>
+          )}
+        </div>
+      )}
+      <LegalModal open={privacyOpen} onOpenChange={setPrivacyOpen} section="privacidad" />
 
       <h2 className="mt-6 text-h5">¿Algún ingrediente que no te guste?</h2>
       <div className="mt-3 flex flex-wrap gap-2">
