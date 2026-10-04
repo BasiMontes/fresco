@@ -88,8 +88,7 @@ export async function getFavoriteRecipes(
  */
 export async function addFavorite(
   client: SupabaseClient<Database>,
-  recipeId: string,
-  userId?: string,
+  { recipeId, userId }: { recipeId: string, userId?: string },
 ): Promise<void> {
   let resolvedUserId = userId;
 
@@ -115,8 +114,7 @@ export async function addFavorite(
 /** Unfavorites a catalog recipe for the CURRENTLY authenticated user. */
 export async function removeFavorite(
   client: SupabaseClient<Database>,
-  recipeId: string,
-  userId?: string,
+  { recipeId, userId }: { recipeId: string, userId?: string },
 ): Promise<void> {
   let resolvedUserId = userId;
 

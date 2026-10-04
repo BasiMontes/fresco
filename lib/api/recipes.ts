@@ -90,8 +90,7 @@ export async function getAvailableRecipesCount(
  */
 export async function getLatestAvailableRecipes(
   client: SupabaseClient<Database>,
-  userId?: string,
-  limit = 6,
+  { userId, limit = 6 }: { userId?: string, limit?: number } = {},
 ): Promise<Recipe[]> {
   let resolvedUserId = userId;
 
@@ -158,8 +157,7 @@ const EMPTY_FACETS: CatalogFacets = { mealTypes: {}, cocinas: {}, dietas: {}, al
  */
 export async function getCatalog(
   client: SupabaseClient<Database>,
-  params: GetCatalogParams = {},
-  userId?: string,
+  { userId, ...params }: GetCatalogParams & { userId?: string } = {},
 ): Promise<CatalogPage> {
   let resolvedUserId = userId;
 
@@ -275,8 +273,7 @@ export type UpdateRecetaPropiaInput = CreateRecetaPropiaInput;
  */
 export async function updateRecetaPropia(
   client: SupabaseClient<Database>,
-  id: string,
-  input: UpdateRecetaPropiaInput,
+  { id, input }: { id: string, input: UpdateRecetaPropiaInput },
 ): Promise<RecetaPropia> {
   const { data: { user }, error: userError } = await client.auth.getUser();
 
@@ -355,8 +352,7 @@ export type RecipeDetail
  */
 export async function getRecipeDetail(
   client: SupabaseClient<Database>,
-  id: string,
-  userId?: string,
+  { id, userId }: { id: string, userId?: string },
 ): Promise<RecipeDetail | null> {
   let resolvedUserId = userId;
 

@@ -88,7 +88,7 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: Crea
         pasos: linesToItems(pasosText),
       };
       const savedReceta = isEditMode
-        ? await updateRecetaPropia(client, receta.id, input)
+        ? await updateRecetaPropia(client, { id: receta.id, input })
         : await createRecetaPropia(client, input);
       onCreated(savedReceta);
       reset();

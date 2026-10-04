@@ -140,8 +140,7 @@ function reshapeMenu(rows: MealPlanJoinRow['meal_plan_recipes']): ReshapedMenu {
  */
 export async function getMealPlanForWeek(
   client: SupabaseClient<Database>,
-  semanaIso: string = getIsoWeek(),
-  userId?: string,
+  { semanaIso = getIsoWeek(), userId }: { semanaIso?: string, userId?: string } = {},
 ): Promise<MenuSemanalPersistido | null> {
   let resolvedUserId = userId;
 
@@ -304,8 +303,7 @@ export async function copyMealPlanToCurrentWeek(
  */
 export async function swapMealPlanSlots(
   client: SupabaseClient<Database>,
-  slotAId: string,
-  slotBId: string,
+  { slotAId, slotBId }: { slotAId: string, slotBId: string },
 ): Promise<void> {
   const { error } = await client.rpc('swap_meal_plan_slots', {
     p_slot_a_id: slotAId,

@@ -64,7 +64,8 @@ export default async function RecipesPage({
       alergenos: appliedFilters.alergenos,
       limit: page * RECIPE_PAGE_SIZE,
       offset: 0,
-    }, user?.id).catch((error) => {
+      userId: user?.id,
+    }).catch((error) => {
       console.error('[/recipes] getCatalog failed, falling back to empty state', error);
       return { recipes: [], total: 0, facets: { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} } };
     }),

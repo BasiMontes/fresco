@@ -205,7 +205,7 @@ describe('getLatestAvailableRecipes', () => {
   test('passes a custom limit through', async () => {
     const { client, limitCalls } = createLatestMockClient({ userId: 'user-123', rows: [] });
 
-    await getLatestAvailableRecipes(client, undefined, 3);
+    await getLatestAvailableRecipes(client, { limit: 3 });
 
     expect(limitCalls).toEqual([3]);
   });
@@ -213,7 +213,7 @@ describe('getLatestAvailableRecipes', () => {
   test('with a userId argument, skips the internal auth.getUser() call and queries by the given id', async () => {
     const { client, getUserCalls, rpcCalls } = createLatestMockClient({ rows: [] });
 
-    await getLatestAvailableRecipes(client, 'user-456');
+    await getLatestAvailableRecipes(client, { userId: 'user-456' });
 
     expect(getUserCalls).toHaveLength(0);
     expect(rpcCalls).toEqual([{ fn: 'get_filtered_recipes', args: { p_user_id: 'user-456' } }]);
@@ -315,7 +315,7 @@ describe('getCatalog', () => {
   test('with a userId argument, skips the internal auth.getUser() call', async () => {
     const { client, getUserCalls, rpcCalls } = createCatalogMockClient({});
 
-    await getCatalog(client, {}, 'user-456');
+    await getCatalog(client, { userId: 'user-456' });
 
     expect(getUserCalls).toHaveLength(0);
     expect((rpcCalls[0]?.args as { p_user_id: string }).p_user_id).toBe('user-456');
@@ -511,10 +511,13 @@ describe('updateRecetaPropia', () => {
     const updatedReceta = { ...SAMPLE_RECETA_PROPIA, nombre: 'Tortilla mejorada' };
     const { client, updateCalls, eqCalls } = createUpdateMockClient({ userId: 'user-123', row: updatedReceta });
 
-    const result = await updateRecetaPropia(client, 'receta-1', {
-      nombre: 'Tortilla mejorada',
-      ingredientes: ['huevo', 'patata'],
-      pasos: ['pelar patatas', 'batir huevos'],
+    const result = await updateRecetaPropia(client, {
+      id: 'receta-1',
+      input: {
+        nombre: 'Tortilla mejorada',
+        ingredientes: ['huevo', 'patata'],
+        pasos: ['pelar patatas', 'batir huevos'],
+      },
     });
 
     expect(result).toEqual(updatedReceta);
@@ -531,13 +534,13 @@ describe('updateRecetaPropia', () => {
   test('throws RecipesError on a real database error', async () => {
     const { client } = createUpdateMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
 
-    await expectRejection(updateRecetaPropia(client, 'receta-1', { nombre: 'x', ingredientes: [], pasos: [] }));
+    await expectRejection(updateRecetaPropia(client, { id: 'receta-1', input: { nombre: 'x', ingredientes: [], pasos: [] } }));
   });
 
   test('throws RecipesError when there is no authenticated session', async () => {
     const { client } = createUpdateMockClient({});
 
-    await expectRejection(updateRecetaPropia(client, 'receta-1', { nombre: 'x', ingredientes: [], pasos: [] }));
+    await expectRejection(updateRecetaPropia(client, { id: 'receta-1', input: { nombre: 'x', ingredientes: [], pasos: [] } }));
   });
 });
 
@@ -666,7 +669,7 @@ describe('getRecipeDetail', () => {
   test('returns the personal recipe when the id matches recetas_propias, without querying the catalog', async () => {
     const { client, rpcCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: SAMPLE_RECETA_PROPIA });
 
-    const result = await getRecipeDetail(client, 'receta-1');
+    const result = await getRecipeDetail(client, { id: 'receta-1' });
 
     expect(result).toEqual({ kind: 'propia', receta: SAMPLE_RECETA_PROPIA });
     expect(rpcCalls).toHaveLength(0);
@@ -675,7 +678,7 @@ describe('getRecipeDetail', () => {
   test('falls back to the catalog when the id does not match a personal recipe, passing p_recipe_id to narrow the RPC', async () => {
     const { client, rpcCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: SAMPLE_ROW });
 
-    const result = await getRecipeDetail(client, 'recipe-1');
+    const result = await getRecipeDetail(client, { id: 'recipe-1' });
 
     expect(result).toEqual({ kind: 'catalogo', receta: expect.objectContaining({ id: 'recipe-1', nombre: 'Risotto de setas' }) });
     expect(rpcCalls).toEqual([{ fn: 'get_filtered_recipes', args: { p_user_id: 'user-123', p_recipe_id: 'recipe-1' } }]);
@@ -684,7 +687,7 @@ describe('getRecipeDetail', () => {
   test('returns null when the id matches neither table', async () => {
     const { client } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: null });
 
-    const result = await getRecipeDetail(client, 'unknown-id');
+    const result = await getRecipeDetail(client, { id: 'unknown-id' });
 
     expect(result).toBeNull();
   });
@@ -692,25 +695,25 @@ describe('getRecipeDetail', () => {
   test('throws RecipesError on a recetas_propias lookup error', async () => {
     const { client } = createDetailMockClient({ userId: 'user-123', propiaErrorMessage: 'connection reset' });
 
-    await expectRejection(getRecipeDetail(client, 'receta-1'));
+    await expectRejection(getRecipeDetail(client, { id: 'receta-1' }));
   });
 
   test('throws RecipesError on a catalog lookup error', async () => {
     const { client } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoErrorMessage: 'connection reset' });
 
-    await expectRejection(getRecipeDetail(client, 'recipe-1'));
+    await expectRejection(getRecipeDetail(client, { id: 'recipe-1' }));
   });
 
   test('throws RecipesError when there is no authenticated session', async () => {
     const { client } = createDetailMockClient({});
 
-    await expectRejection(getRecipeDetail(client, 'recipe-1'));
+    await expectRejection(getRecipeDetail(client, { id: 'recipe-1' }));
   });
 
   test('with a userId argument, skips the internal auth.getUser() call', async () => {
     const { client, getUserCalls } = createDetailMockClient({ propiaRow: null, catalogoRow: null });
 
-    await getRecipeDetail(client, 'recipe-1', 'user-456');
+    await getRecipeDetail(client, { id: 'recipe-1', userId: 'user-456' });
 
     expect(getUserCalls).toHaveLength(0);
   });

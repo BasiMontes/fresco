@@ -174,7 +174,7 @@ describe('toggleShoppingListItem', () => {
   test('resolves without throwing and forwards the correct RPC params when the call succeeds', async () => {
     const { client, rpcCalls } = createRpcMockClient();
 
-    const result = await toggleShoppingListItem(client, 'list-1', 0, 1, true);
+    const result = await toggleShoppingListItem(client, { listId: 'list-1', pasilloIdx: 0, itemIdx: 1, comprado: true });
 
     expect(result).toBeUndefined();
     expect(rpcCalls).toEqual([{
@@ -188,6 +188,6 @@ describe('toggleShoppingListItem', () => {
   test('throws ShoppingListError with the underlying message when the RPC fails', async () => {
     const { client } = createRpcMockClient({ errorMessage: 'row not found' });
 
-    await expectRejection(toggleShoppingListItem(client, 'list-1', 0, 1, true));
+    await expectRejection(toggleShoppingListItem(client, { listId: 'list-1', pasilloIdx: 0, itemIdx: 1, comprado: true }));
   });
 });

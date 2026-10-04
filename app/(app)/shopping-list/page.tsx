@@ -33,7 +33,7 @@ export default async function ShoppingListPage() {
 
   let plan: MenuSemanalPersistido | null;
   try {
-    plan = await getMealPlanForWeek(supabase, undefined, user?.id);
+    plan = await getMealPlanForWeek(supabase, { userId: user?.id });
   }
   catch (error) {
     // Same judgment call as /menu and /calendar (STORY-FRESCO-7 batch 2):
@@ -65,7 +65,7 @@ export default async function ShoppingListPage() {
     // FRESCO-194 — "Nuevo" badge: which items weren't on last week's list.
     // `getNombresNuevos` is fail-soft (empty set on any error), so no extra
     // try/catch here.
-    const nuevosNombres = await getNombresNuevos(supabase, plan.semanaIso, list.pasillos, user?.id);
+    const nuevosNombres = await getNombresNuevos(supabase, { semanaIsoActual: plan.semanaIso, pasillosActuales: list.pasillos, userId: user?.id });
 
     // FRESCO-792: same weekly figure `/menu` shows. A profile read failure
     // just means the default household size, same as `/menu`.

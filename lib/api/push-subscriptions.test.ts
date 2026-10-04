@@ -60,7 +60,7 @@ describe('savePushSubscription', () => {
   test('inserts the subscription keyed by the authenticated user id', async () => {
     const { client, insertCalls } = createMockClient({ userId: 'user-123' });
 
-    await savePushSubscription(client, SAMPLE_SUBSCRIPTION);
+    await savePushSubscription(client, { subscription: SAMPLE_SUBSCRIPTION });
 
     expect(insertCalls).toHaveLength(1);
     expect(insertCalls[0]).toEqual({ user_id: 'user-123', ...SAMPLE_SUBSCRIPTION });
@@ -69,19 +69,19 @@ describe('savePushSubscription', () => {
   test('throws PushSubscriptionError when there is no authenticated session', async () => {
     const { client } = createMockClient({});
 
-    await expectRejection(savePushSubscription(client, SAMPLE_SUBSCRIPTION));
+    await expectRejection(savePushSubscription(client, { subscription: SAMPLE_SUBSCRIPTION }));
   });
 
   test('swallows a 23505 unique-violation (already subscribed) instead of throwing', async () => {
     const { client } = createMockClient({ userId: 'user-123', insertErrorCode: '23505', insertErrorMessage: 'duplicate key' });
 
-    await savePushSubscription(client, SAMPLE_SUBSCRIPTION);
+    await savePushSubscription(client, { subscription: SAMPLE_SUBSCRIPTION });
   });
 
   test('throws PushSubscriptionError for any other insert failure', async () => {
     const { client } = createMockClient({ userId: 'user-123', insertErrorMessage: 'connection reset' });
 
-    await expectRejection(savePushSubscription(client, SAMPLE_SUBSCRIPTION));
+    await expectRejection(savePushSubscription(client, { subscription: SAMPLE_SUBSCRIPTION }));
   });
 });
 

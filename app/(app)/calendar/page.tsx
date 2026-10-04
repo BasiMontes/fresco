@@ -69,7 +69,7 @@ export default async function CalendarPage({
   // Both are also passed the already-resolved `user.id`, cutting the
   // redundant internal auth.getUser() round trip each would otherwise make.
   const [plan, userPlan, dietaryPreferences] = await Promise.all([
-    getMealPlanForWeek(supabase, semanaIso, user?.id).catch((error) => {
+    getMealPlanForWeek(supabase, { semanaIso, userId: user?.id }).catch((error) => {
       // Same judgment call as `/menu` (STORY-FRESCO-7 batch 2):
       // `getMealPlanForWeek` fails fast (throws) on a real read error,
       // including "no authenticated session" — a real gap remains only for a

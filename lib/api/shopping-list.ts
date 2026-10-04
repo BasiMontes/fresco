@@ -84,10 +84,7 @@ export async function getShoppingListForPlan(
  */
 export async function toggleShoppingListItem(
   client: SupabaseClient<Database>,
-  listId: string,
-  pasilloIdx: number,
-  itemIdx: number,
-  comprado: boolean,
+  { listId, pasilloIdx, itemIdx, comprado }: { listId: string, pasilloIdx: number, itemIdx: number, comprado: boolean },
 ): Promise<void> {
   const { error } = await client.rpc('jsonb_set_comprado', {
     p_list_id: listId,
@@ -136,9 +133,7 @@ export async function clearComprados(
  */
 export async function addShoppingListItem(
   client: SupabaseClient<Database>,
-  listId: string,
-  pasilloNombre: string,
-  item: ShoppingListItem,
+  { listId, pasilloNombre, item }: { listId: string, pasilloNombre: string, item: ShoppingListItem },
 ): Promise<void> {
   const { error } = await client.rpc('jsonb_add_item', {
     p_list_id: listId,
@@ -196,15 +191,13 @@ export function diffNombresNuevos(actuales: Pasillos, previos: Pasillos): Set<st
  */
 export async function getNombresNuevos(
   client: SupabaseClient<Database>,
-  semanaIsoActual: string,
-  pasillosActuales: Pasillos,
-  userId?: string,
+  { semanaIsoActual, pasillosActuales, userId }: { semanaIsoActual: string, pasillosActuales: Pasillos, userId?: string },
 ): Promise<Set<string>> {
   try {
     const semanaPrevia = addIsoWeeks(semanaIsoActual, -1);
     // FRESCO-483: pass the already-resolved user through so the prior-week
     // lookup skips a redundant `auth.getUser()` round trip.
-    const planPrevio = await getMealPlanForWeek(client, semanaPrevia, userId);
+    const planPrevio = await getMealPlanForWeek(client, { semanaIso: semanaPrevia, userId });
     if (!planPrevio) {
       return new Set();
     }

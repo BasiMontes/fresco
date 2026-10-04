@@ -30,10 +30,10 @@ export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onTog
 
     try {
       if (next) {
-        await addFavorite(supabase, recipe.id);
+        await addFavorite(supabase, { recipeId: recipe.id });
       }
       else {
-        await removeFavorite(supabase, recipe.id);
+        await removeFavorite(supabase, { recipeId: recipe.id });
       }
       // FRESCO-171: only notify the parent once the write is confirmed —
       // never optimistically, so a failed toggle (caught below) can't leave

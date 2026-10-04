@@ -53,12 +53,12 @@ export default async function HistorialPage({
     }
 
     const [plan, currentWeekPlan] = await Promise.all([
-      getMealPlanForWeek(supabase, requestedSemana, user?.id).catch((error) => {
+      getMealPlanForWeek(supabase, { semanaIso: requestedSemana, userId: user?.id }).catch((error) => {
         console.error('[/historial] getMealPlanForWeek failed', error);
         return null;
       }),
       // Only to decide whether "Usar este menú" needs the replace confirmation.
-      getMealPlanForWeek(supabase, getIsoWeek(), user?.id).catch((error) => {
+      getMealPlanForWeek(supabase, { semanaIso: getIsoWeek(), userId: user?.id }).catch((error) => {
         console.error('[/historial] current-week read failed, assuming no menu', error);
         return null;
       }),

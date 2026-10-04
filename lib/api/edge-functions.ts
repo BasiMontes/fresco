@@ -43,8 +43,7 @@ class EdgeFunctionError extends Error {
 
 async function callEdgeFunction<TResponse>(
   functionName: string,
-  body: unknown,
-  accessToken: string | null,
+  { body, accessToken }: { body: unknown, accessToken: string | null },
 ): Promise<TResponse> {
   // Read (and, on first call, validate) here rather than at module scope —
   // fails fast the moment an Edge Function is actually invoked, without
@@ -96,7 +95,7 @@ export async function generateMealPlan(
   request: GenerateMealPlanRequest,
   accessToken: string | null,
 ): Promise<GenerateMealPlanResponse> {
-  return callEdgeFunction<GenerateMealPlanResponse>('generate-meal-plan', request, accessToken);
+  return callEdgeFunction<GenerateMealPlanResponse>('generate-meal-plan', { body: request, accessToken });
 }
 
 /** POST /generate-shopping-list — api-contracts.md §2. */
@@ -106,8 +105,7 @@ export async function generateShoppingList(
 ): Promise<GenerateShoppingListResponse> {
   return callEdgeFunction<GenerateShoppingListResponse>(
     'generate-shopping-list',
-    request,
-    accessToken,
+    { body: request, accessToken },
   );
 }
 
@@ -118,8 +116,7 @@ export async function getShoppingListSuggestions(
 ): Promise<GetShoppingListSuggestionsResponse> {
   return callEdgeFunction<GetShoppingListSuggestionsResponse>(
     'get-shopping-list-suggestions',
-    request,
-    accessToken,
+    { body: request, accessToken },
   );
 }
 
@@ -130,8 +127,7 @@ export async function updateRecipeStatus(
 ): Promise<UpdateRecipeStatusResponse> {
   return callEdgeFunction<UpdateRecipeStatusResponse>(
     'update-recipe-status',
-    request,
-    accessToken,
+    { body: request, accessToken },
   );
 }
 
@@ -147,7 +143,7 @@ export async function reassignGuestData(
   request: ReassignGuestDataRequest,
   accessToken: string,
 ): Promise<ReassignGuestDataResponse> {
-  return callEdgeFunction<ReassignGuestDataResponse>('reassign-guest-data', request, accessToken);
+  return callEdgeFunction<ReassignGuestDataResponse>('reassign-guest-data', { body: request, accessToken });
 }
 
 /**
@@ -166,7 +162,7 @@ export async function deleteAccount(
   reauthToken?: string,
 ): Promise<DeleteAccountResponse> {
   const body: DeleteAccountRequest = reauthToken ? { reauthToken } : {};
-  return callEdgeFunction<DeleteAccountResponse>('delete-account', body, accessToken);
+  return callEdgeFunction<DeleteAccountResponse>('delete-account', { body, accessToken });
 }
 
 /**
@@ -181,7 +177,7 @@ export async function deleteCatalogRecipe(
   request: DeleteCatalogRecipeRequest,
   accessToken: string | null,
 ): Promise<DeleteCatalogRecipeResponse> {
-  return callEdgeFunction<DeleteCatalogRecipeResponse>('delete-catalog-recipe', request, accessToken);
+  return callEdgeFunction<DeleteCatalogRecipeResponse>('delete-catalog-recipe', { body: request, accessToken });
 }
 
 export { EdgeFunctionError };
