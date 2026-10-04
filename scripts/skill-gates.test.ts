@@ -35,6 +35,34 @@ const GATES = [
     ],
   },
   {
+    name: 'structured QA fields on new work (FRESCO-281)',
+    expectations: [
+      { file: `${SD}/SKILL.md`, text: 'Structured QA fields on new work' },
+      { file: `${SD}/SKILL.md`, text: 'FRESCO-281' },
+      { file: `${SD}/references/bug-fix-workflow.md`, text: 'FRESCO-281 structured-QA-field contract' },
+      { file: `${SD}/references/bug-fix-workflow.md`, text: 'Confirm Severity + Error Type are set' },
+      { file: `${SD}/references/story-plan.md`, text: 'Escribir a Jira (obligatorio en Stage 1)' },
+    ],
+  },
+  {
+    name: 'defect linked to its feature with evidence (FRESCO-282)',
+    expectations: [
+      { file: `${SD}/SKILL.md`, text: 'Defect → feature link + evidence' },
+      { file: `${SD}/SKILL.md`, text: 'FRESCO-282' },
+      { file: `${SD}/references/bug-fix-workflow.md`, text: 'FRESCO-282 traceability contract' },
+      { file: `${SD}/references/bug-fix-workflow.md`, text: 'Confirm the feature link + evidence are in place' },
+    ],
+  },
+  {
+    name: 'Gherkin AC automated in the same PR (FRESCO-321)',
+    expectations: [
+      { file: `${SD}/SKILL.md`, text: 'Gherkin AC → automated in the same PR' },
+      { file: `${SD}/SKILL.md`, text: 'FRESCO-321' },
+      { file: `${SD}/SKILL.md`, text: 'ADR-0018 budget clause' },
+      { file: `${SD}/references/spec-compliance-matrix.md`, text: 'FRESCO-321' },
+    ],
+  },
+  {
     name: 'AC testability, failing-test question (I22, FRESCO-320)',
     expectations: [
       { file: `${PM}/SKILL.md`, text: '**I22.**' },

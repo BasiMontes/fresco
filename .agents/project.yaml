@@ -173,6 +173,8 @@ updater:
   protected_paths:
     - .agents/skills/sprint-development/SKILL.md
     - .agents/skills/sprint-development/references/bug-fix-workflow.md
+    - .agents/skills/sprint-development/references/story-plan.md
+    - .agents/skills/sprint-development/references/spec-compliance-matrix.md
     - .agents/skills/product-management/SKILL.md
     - .agents/skills/product-management/references/acceptance-criteria.md
     - .agents/skills/product-management/references/story-refinement.md
