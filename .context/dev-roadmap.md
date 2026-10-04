@@ -367,11 +367,12 @@ Real Jira `Blocks` links between tickets that the §4 sort deliberately does NOT
 
 ## 5. Mockup-gate registry (Critical Rule #15)
 
-`.context/design/master-design-plan.md` exists (created 2026-08-29, FRESCO-294) and its §8 maps every UI story to a §4 screen spec. As of 2026-10-04 no §8 row is mockup-gated: the screens are built live-UI-first ("Live UI as built. No mockup" in each §4 provenance line), so the registry is empty because nothing is gated, not because the plan is missing. A story with UI but no §8 row is out of compliance with Critical Rule #15 and gets its row as part of the story.
+`.context/design/master-design-plan.md` exists (created 2026-08-29, FRESCO-294) and its §8 maps every UI story to a §4 screen spec. Most screens were built live-UI-first ("Live UI as built. No mockup" in each §4 provenance line), so nothing was gated. Since 2026-10-04 two stories are: FRESCO-841 and FRESCO-842 were opened after the founder rejected two shipped screens, and they must go through the screen phase of `/design-system` before any code. A story with UI but no §8 row is out of compliance with Critical Rule #15 and gets its row as part of the story.
 
 | Mockup needed | Screen ref | Blocks | Status |
 |---|---|---|---|
-| — | — | — | No story is mockup-gated (master-design-plan §8 has no 🔒 rows) |
+| Spend-trend card redesign | 4.7 Home (`spend-trend-chart`) | FRESCO-841 | 🔒 mockup-gated: mockup pending |
+| "Everything bought" state of the shopping list | 4.9 Shopping list | FRESCO-842 | 🔒 mockup-gated: mockup pending |
 
 ---
 

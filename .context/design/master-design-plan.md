@@ -605,6 +605,8 @@ stories) are listed at the end.
 | FRESCO-447 | Photo treatment: unified crop ratio + grade | EPIC-FRESCO-436 Visual redesign | 4.11 Recipe detail | 4.7 Home, 4.8 Calendar, 4.10 Recipe library, 4.12 Favorites |
 | FRESCO-340 | Coste estimado: mostrar el coste aproximado del menú semanal | EPIC-FRESCO-331 [DRAFT] Horizonte 2 | 4.7 Home (`savings-estimate-cards`, real value replaces the FRESCO-58 placeholder) | — |
 | FRESCO-345 | Integración supermercado: exportar la lista (copiar / CSV / abrir app) | EPIC-FRESCO-332 [DRAFT] Horizonte 3 | 4.9 Shopping list (`export-actions` — nueva fila de acciones) | — |
+| FRESCO-841 | Tendencia de gasto: leer la evolución con semanas y cifras visibles | EPIC-FRESCO-484 Platform polish | 4.7 Home (`spend-trend-chart`) 🔒 mockup-gated | — |
+| FRESCO-842 | Lista de la compra: ver qué hacer cuando ya no quedan pendientes | EPIC-FRESCO-484 Platform polish | 4.9 Shopping list (estado "todo comprado") 🔒 mockup-gated | 4.7 Home, 4.8 Calendar, 4.10 Recipe library (destinos de las acciones) |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -614,7 +616,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 44 stories enumerated · **44 mapped to at least one screen** · **0 omitted as non-UI**
+**Count:** 46 stories enumerated · **46 mapped to at least one screen** · **0 omitted as non-UI** · **2 `🔒 mockup-gated`** (FRESCO-841, FRESCO-842: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.
