@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { cache } from 'react';
 import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/dietary-options';
+import { isTrialAvailable } from '@/lib/legal/pro-terms';
 
 /**
  * Onboarding-owned subset of `user_profiles` columns (FR-1.1). Fields the DB
@@ -244,6 +245,43 @@ export const getUserPlan = cache(async (
   }
 
   return data?.plan ?? 'free';
+});
+
+/**
+ * Whether the CURRENTLY authenticated user still has the Pro free trial
+ * (FRESCO-822). A profile that carries a Stripe customer or subscription id has
+ * already been through a checkout, so the trial is used up (`isTrialAvailable`,
+ * the same rule `/api/stripe/checkout` applies). Same read pattern as
+ * `getUserPlan`; callers decide what a failed read means, and for a promise the
+ * safe answer is "not available".
+ */
+export const getUserTrialAvailable = cache(async (
+  client: SupabaseClient<Database>,
+  userId?: string,
+): Promise<boolean> => {
+  let resolvedUserId = userId;
+
+  if (!resolvedUserId) {
+    const { data: { user }, error: userError } = await client.auth.getUser();
+
+    if (userError || !user) {
+      throw new UserProfileError('No hay una sesión autenticada para leer el perfil.');
+    }
+
+    resolvedUserId = user.id;
+  }
+
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('stripe_customer_id, stripe_subscription_id')
+    .eq('id', resolvedUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil: ${error.message}`);
+  }
+
+  return isTrialAvailable(data);
 });
 
 /**

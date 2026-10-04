@@ -6,12 +6,12 @@ import { ManageSubscriptionButton } from '@/components/profile/manage-subscripti
 import { MenuHistoryCard } from '@/components/profile/menu-history-card';
 import { NombreForm } from '@/components/profile/nombre-form';
 import { PreferencesForm } from '@/components/profile/preferences-form';
+import { ProUpsellCard } from '@/components/profile/pro-upsell-card';
 import { PushNotificationsToggle } from '@/components/profile/push-notifications-toggle';
-import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tag } from '@/components/ui/tag';
 import { listPastMealPlanWeeks } from '@/lib/api/meal-plan';
-import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, isPaymentFailedAlertActive } from '@/lib/api/user-profile';
+import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, getUserTrialAvailable, isPaymentFailedAlertActive } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
 import { createClient } from '@/lib/supabase/server';
@@ -47,7 +47,7 @@ export default async function ProfilePage() {
   // rather than paying for 3 sequential round trips. Each keeps its own
   // fallback via `.catch()` (same conservative-default judgment calls as
   // before) so one call's rejection can't take the others down with it.
-  const [plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks] = await Promise.all([
+  const [plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable] = await Promise.all([
     getUserPlan(supabase, user?.id).catch((error) => {
       // Same judgment call as every other page reading server-side profile
       // data: a real read failure defaults to the more conservative 'free'
@@ -94,6 +94,13 @@ export default async function ProfilePage() {
       // history card's content (empty state) rather than crashing the page.
       console.error('[/profile] listPastMealPlanWeeks failed, defaulting to none', error);
       return [];
+    }),
+    getUserTrialAvailable(supabase, user?.id).catch((error) => {
+      // FRESCO-822: unlike the reads above, the safe default here is NOT the
+      // permissive one. If we cannot tell whether the trial is still available we
+      // must not promise it: the checkout charges from day one to anyone who used it.
+      console.error('[/profile] getUserTrialAvailable failed, defaulting to no trial promise', error);
+      return false;
     }),
   ]);
 
@@ -199,21 +206,7 @@ export default async function ProfilePage() {
 
       <MenuHistoryCard weeks={pastWeeks} plan={plan} />
 
-      {plan === 'free' && (
-        <Card variant="pro" className="mt-4">
-          <CardHeader>
-            <CardTitle>Pásate a Fresco Pro</CardTitle>
-          </CardHeader>
-          <CardContent className="text-body-sm text-tertiary">
-            Con Pro, cada menú aprende de lo que cocinas y descartas la semana anterior — cuanto
-            más lo uses, menos tienes que pensar. 7 días de prueba gratis, sin tarjeta. Después,
-            €4.99/mes.
-          </CardContent>
-          <div className="mt-3">
-            <UpgradeToProButton />
-          </div>
-        </Card>
-      )}
+      {plan === 'free' && <ProUpsellCard trialAvailable={trialAvailable} />}
 
       {/* STORY-FRESCO-232: payment-failed aviso — only ever shown alongside
           the Pro card below (plan stays 'pro' during Stripe's own retry

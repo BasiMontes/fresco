@@ -1551,6 +1551,21 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-228: actualizar a Pro desde el perfil ---
 
+  @suscripcion @automatizado
+  # Automatizado: tests/steps/suscripcion.steps.ts (FRESCO-822). No llama a Stripe: la tarjeta se
+  # renderiza en servidor desde el perfil (`getUserTrialAvailable`).
+  Escenario: Quien aún tiene la prueba gratuita la ve ofrecida en su perfil
+    Dado que Laura está en su perfil con plan Free
+    Entonces ve la prueba gratis de 7 días y el botón "Empezar prueba gratis"
+
+  @suscripcion @automatizado
+  # Automatizado: tests/steps/suscripcion.steps.ts (FRESCO-822). Quien ya pasó por un checkout (tiene
+  # cliente o suscripción de Stripe en su perfil) vuelve a Pro sin prueba y con cobro desde el primer
+  # día (FRESCO-778), así que la UI no puede prometer la prueba.
+  Escenario: Quien ya usó la prueba gratuita no la ve ofrecida en su perfil
+    Dado que Laura ya usó su prueba gratuita de Pro y está en su perfil con plan Free
+    Entonces no ve ninguna promesa de prueba gratis y el botón dice "Volver a Pro"
+
   @suscripcion @seguridad @automatizado @requiere-stripe-real
   # Automatizado: tests/steps/suscripcion.steps.ts (FRESCO-794). Corre en la suite de Stripe real
   # porque el precio sale de la API de Stripe (`GET /api/stripe/pro-price`). Los textos son
