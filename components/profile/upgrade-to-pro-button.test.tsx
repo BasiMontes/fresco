@@ -1,0 +1,152 @@
+import type { ProPriceInfo } from '@/lib/legal/pro-summary';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
+import { UpgradeToProButton } from './upgrade-to-pro-button';
+
+/**
+ * FRESCO-794 (ADR-0040) — the Pro CTA no longer jumps straight to Stripe: it opens
+ * the pre-contract summary, and only after the withdrawal waiver is ticked,
+ * recorded and the checkout session created does it redirect. Only `fetch` is
+ * stubbed (`/api/stripe/pro-price`, `/api/consents`, `/api/stripe/checkout`).
+ */
+
+const realFetch = globalThis.fetch;
+
+const PRICE: ProPriceInfo = { amount: 4.99, currency: 'eur', interval: 'month', intervalCount: 1, taxIncluded: false, trialDays: 7 };
+
+let price: ProPriceInfo = PRICE;
+let priceStatus = 200;
+let consentStatus = 200;
+let calls: Array<{ url: string, body: unknown }> = [];
+
+beforeEach(() => {
+  price = PRICE;
+  priceStatus = 200;
+  consentStatus = 200;
+  calls = [];
+  window.location.hash = '';
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    calls.push({ url, body: init?.body ? JSON.parse(init.body as string) : null });
+    if (url === '/api/stripe/pro-price') {
+      return new Response(JSON.stringify(price), { status: priceStatus });
+    }
+    if (url === '/api/consents') {
+      return new Response(null, { status: consentStatus });
+    }
+    if (url === '/api/stripe/checkout') {
+      return new Response(JSON.stringify({ url: '#stripe-checkout' }), { status: 200 });
+    }
+    return new Response(null, { status: 404 });
+  }) as typeof fetch;
+});
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
+const urls = () => calls.map(c => c.url);
+
+async function openSummary() {
+  const user = setupUser();
+  renderWithProviders(<UpgradeToProButton />);
+  await user.click(screen.getByTestId('upgrade_to_pro_button'));
+  await waitFor(() => expect(screen.getByTestId('pro_checkout_trial')).toBeTruthy());
+  return user;
+}
+
+describe('UpgradeToProButton + pre-contract summary', () => {
+  test('clicking the CTA opens the summary and does not start the checkout', async () => {
+    await openSummary();
+
+    expect(screen.getByTestId('pro_checkout_dialog')).toBeTruthy();
+    expect(urls()).toEqual(['/api/stripe/pro-price']);
+  });
+
+  test('the price comes from Stripe and never claims the tax is included unless Stripe says so', async () => {
+    await openSummary();
+    const text = screen.getByTestId('pro_checkout_price').textContent?.replaceAll(/\s/g, ' ');
+
+    expect(text).toContain('4,99 € al mes');
+    expect(text).not.toContain('IVA');
+  });
+
+  test('says "IVA incluido" when the price is tax-inclusive', async () => {
+    price = { ...PRICE, taxIncluded: true };
+    await openSummary();
+
+    expect(screen.getByTestId('pro_checkout_price').textContent).toContain('IVA incluido');
+  });
+
+  test('a user with the trial available is told about it', async () => {
+    await openSummary();
+    expect(screen.getByTestId('pro_checkout_trial').textContent).toContain('7 días de prueba gratis, sin tarjeta');
+  });
+
+  test('a used trial is stated plainly', async () => {
+    price = { ...PRICE, trialDays: null };
+    await openSummary();
+
+    expect(screen.getByTestId('pro_checkout_trial').textContent).toContain('Ya usaste tu prueba gratuita');
+  });
+
+  test('names the provider and a contact, with the sentences properly separated', async () => {
+    await openSummary();
+
+    const provider = screen.getByTestId('pro_checkout_provider').textContent ?? '';
+    expect(provider).toContain('notificaciones. Contacto: hola.frescoapp@gmail.com.');
+  });
+
+  test('"Continuar al pago" stays disabled until the withdrawal waiver is ticked', async () => {
+    const user = await openSummary();
+    const confirm = screen.getByTestId<HTMLButtonElement>('pro_checkout_confirm_button');
+
+    expect(screen.getByTestId<HTMLInputElement>('pro_checkout_withdrawal_checkbox').checked).toBe(false);
+    expect(confirm.disabled).toBe(true);
+
+    await user.click(screen.getByTestId('pro_checkout_withdrawal_checkbox'));
+    expect(confirm.disabled).toBe(false);
+  });
+
+  test('confirming records the waiver first, then creates the checkout and redirects', async () => {
+    const user = await openSummary();
+    await user.click(screen.getByTestId('pro_checkout_withdrawal_checkbox'));
+
+    await user.click(screen.getByTestId('pro_checkout_confirm_button'));
+
+    await waitFor(() => expect(window.location.hash).toBe('#stripe-checkout'));
+    expect(urls()).toEqual(['/api/stripe/pro-price', '/api/consents', '/api/stripe/checkout']);
+    expect(calls[1].body).toEqual({ kinds: ['withdrawal_waiver'] });
+  });
+
+  test('if the waiver cannot be recorded, nothing is charged: no checkout, an error, and the box stays usable', async () => {
+    consentStatus = 500;
+    const user = await openSummary();
+    await user.click(screen.getByTestId('pro_checkout_withdrawal_checkbox'));
+
+    await user.click(screen.getByTestId('pro_checkout_confirm_button'));
+
+    await waitFor(() => expect(screen.getByTestId('upgrade_to_pro_error_message')).toBeTruthy());
+    expect(urls()).not.toContain('/api/stripe/checkout');
+    expect(window.location.hash).toBe('');
+    expect(screen.getByTestId<HTMLButtonElement>('pro_checkout_confirm_button').disabled).toBe(false);
+  });
+
+  test('if the price cannot be loaded, the user cannot confirm', async () => {
+    priceStatus = 500;
+    const user = setupUser();
+    renderWithProviders(<UpgradeToProButton />);
+    await user.click(screen.getByTestId('upgrade_to_pro_button'));
+    await waitFor(() => expect(screen.getByTestId('pro_checkout_price').textContent).toContain('No se pudo cargar el precio'));
+    await user.click(screen.getByTestId('pro_checkout_withdrawal_checkbox'));
+
+    expect(screen.getByTestId<HTMLButtonElement>('pro_checkout_confirm_button').disabled).toBe(true);
+  });
+
+  test('cancelling closes the summary without recording or charging anything', async () => {
+    const user = await openSummary();
+
+    await user.click(screen.getByTestId('pro_checkout_cancel_button'));
+
+    expect(urls()).toEqual(['/api/stripe/pro-price']);
+  });
+});

@@ -39,6 +39,8 @@ We will record consents in **one append-only table, `public.user_consents`**: `u
   - The texts are PROVISIONAL, taken from the lawyer draft and not validated by a lawyer. FRESCO-794 stays open until the lawyer's report is attached or the founder defers it in writing.
   - `service_role` has read-only access, for audits and the data export. The export (`GET /api/profile/export`) should include a user's consents; not done here.
   - Withdrawing a consent (the right to withdraw as easily as it was given) needs its own decision: this table is append-only, so a withdrawal would be a new kind or a new table, not a delete.
+  - **Go-live prerequisite, VAT.** The pre-contract summary before Stripe Checkout (`components/profile/pro-checkout-summary.tsx`) reads the price from Stripe (`GET /api/stripe/pro-price`) and says "IVA incluido" only when the Price declares `tax_behavior: 'inclusive'`. On 2026-10-04 the test-mode Pro Price (4,99 € / month) has `tax_behavior: 'unspecified'`, so the summary makes no tax claim. The lawyer draft leaves the VAT treatment open (clause 6.2); before charging real users the live Price must be set to `inclusive` (or the VAT handling decided) so the summary can state the total price with taxes (arts. 20.1 and 60.2.c TRLGDCU).
+  - The checkbox for the immediate-execution request (`withdrawal_waiver`, art. 103.m) is recorded before the redirect to Stripe; if it cannot be recorded, no checkout is created. Its scope for a monthly subscription is an open decision in the draft (clause 7.4).
 
 ## References
 

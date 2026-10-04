@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { ProCheckoutSummary } from '@/components/profile/pro-checkout-summary';
 import { Button } from '@/components/ui/button';
+import { postConsents } from '@/lib/legal/consent-client';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 
 interface CheckoutResponse {
@@ -21,7 +23,9 @@ export interface UpgradeToProButtonProps {
 }
 
 /**
- * `/profile`'s "Pásate a Fresco Pro" card CTA (STORY-FRESCO-228). Posts to
+ * `/profile`'s "Pásate a Fresco Pro" card CTA (STORY-FRESCO-228). Opens the
+ * pre-contract summary (FRESCO-794, `ProCheckoutSummary`); once the user ticks
+ * the withdrawal waiver and confirms, the waiver is recorded and this posts to
  * `POST /api/stripe/checkout`, then does a full-page redirect to the
  * returned Stripe-hosted Checkout url (ADR-0007 — the redirect itself is the
  * whole client-side job here; the return page never writes `plan`, the
@@ -36,10 +40,18 @@ export interface UpgradeToProButtonProps {
 export function UpgradeToProButton({ label = 'Empezar prueba gratis', size = 'md', className }: UpgradeToProButtonProps = {}) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
-  async function handleClick() {
+  async function handleConfirm() {
     setIsRedirecting(true);
     setError(null);
+    // FRESCO-794 (ADR-0040): the immediate-execution request is recorded BEFORE
+    // the user is sent to pay; no record, no checkout.
+    if (!(await postConsents(['withdrawal_waiver']))) {
+      setError('No pudimos registrar tu solicitud. Inténtalo de nuevo.');
+      setIsRedirecting(false);
+      return;
+    }
     // FRESCO-366: the `checkout` funnel step — fired before the redirect so it
     // lands even though the Stripe-hosted page is a full navigation away.
     captureEvent(POSTHOG_EVENTS.CHECKOUT_STARTED);
@@ -68,15 +80,20 @@ export function UpgradeToProButton({ label = 'Empezar prueba gratis', size = 'md
         size={size}
         data-testid="upgrade_to_pro_button"
         disabled={isRedirecting}
-        onClick={() => void handleClick()}
+        onClick={() => {
+          setError(null);
+          setSummaryOpen(true);
+        }}
       >
         {isRedirecting ? 'Redirigiendo…' : label}
       </Button>
-      {error && (
-        <p data-testid="upgrade_to_pro_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
-          {error}
-        </p>
-      )}
+      <ProCheckoutSummary
+        open={summaryOpen}
+        onOpenChange={setSummaryOpen}
+        onConfirm={() => void handleConfirm()}
+        isSubmitting={isRedirecting}
+        error={error}
+      />
     </div>
   );
 }
