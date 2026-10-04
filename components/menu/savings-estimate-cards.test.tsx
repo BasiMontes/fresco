@@ -27,4 +27,14 @@ describe('SavingsEstimateCards', () => {
     expect(screen.queryByTestId('savings_estimate_cards')).not.toBeInTheDocument();
     expect(screen.queryByText(/~\d/)).not.toBeInTheDocument();
   });
+
+  test('FRESCO-841: shows the comparison line under the tile, and nothing when absent', () => {
+    const { rerender } = renderWithProviders(<SavingsEstimateCards costeEstimado={40.8} comparison="+2 % frente a tu media de 4 semanas" />);
+
+    expect(screen.getByTestId('savings_estimate_cards_note')).toHaveTextContent('+2 % frente a tu media de 4 semanas');
+
+    rerender(<SavingsEstimateCards costeEstimado={40.8} comparison={null} />);
+
+    expect(screen.queryByTestId('savings_estimate_cards_note')).not.toBeInTheDocument();
+  });
 });

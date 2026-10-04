@@ -6,6 +6,8 @@ export interface StatTileProps {
   'icon': LucideIcon
   'value': ReactNode
   'label': string
+  /** Optional muted second line under the label (e.g. a comparison). */
+  'note'?: string
   /** When given, the whole tile becomes a tap target linking here. */
   'href'?: string
   'data-testid'?: string
@@ -21,12 +23,13 @@ export interface StatTileProps {
  */
 const TILE_CLASS = 'flex flex-col items-start gap-1 border-t border-border pt-3';
 
-export function StatTile({ icon: Icon, value, label, href, 'data-testid': testId }: StatTileProps) {
+export function StatTile({ icon: Icon, value, label, note, href, 'data-testid': testId }: StatTileProps) {
   const content = (
     <>
       <Icon className="size-4 text-tertiary" aria-hidden="true" />
       <p className="text-h2">{value}</p>
       <p className="text-body-sm text-tertiary">{label}</p>
+      {note ? <p className="text-body-sm text-tertiary" data-testid={testId ? `${testId}_note` : undefined}>{note}</p> : null}
     </>
   );
 
