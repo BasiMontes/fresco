@@ -473,3 +473,7 @@ Historia archivada:
 - Qué: PR #480 (tsconfig.edge-tests.json, encadenado en types:check) y PR #481 (puerta de admin en proxy.ts, 404 real). Nivelado dev/staging/main en fb73525f.
 - Por qué: higiene de la auditoría externa 6. El 200 en /admin/recipes se reprodujo en local y staging; la auditoría interna no lo vio.
 - Siguiente: verificar el 404 en producción tras el deploy y pasar 840 a Finalizada; 833/834 ya tienen motivo de rechazo.
+## 2026-10-04 - FRESCO-839 gates de 281, 282 y 321 restaurados
+- Qué: PR #482, gotchas 18 a 20 y anti-patrones S24 y S25 en sprint-development, pasos de bug-fix-workflow, fragmentos de story-plan y spec-compliance-matrix; tres gates nuevos en skill-gates.test.ts. Nivelado dev/staging/main en 94b11797.
+- Por qué: el sync del 7 de septiembre los descartó y FRESCO-830 no los cubría. El 321 se adaptó a ADR-0018 (manda el tiempo de test:e2e, no el conteo de escenarios).
+- Siguiente: pasar 839 a Finalizada tras revisar los criterios; queda FRESCO-835 (documentación) y la comprobación de FRESCO-837 hacia el 2026-10-10.
