@@ -74,6 +74,8 @@ export default antfu({
     // as the mandatory `deno:check` CI job (FRESCO-375 / A4-H4) — not this
     // project's ESLint config.
     'supabase/functions/**',
+    // Ambient declarations for tsconfig.edge-tests.json only (FRESCO-840).
+    'supabase/edge-tests-types/**',
     // Impeccable design-hook cache — local-only (ignored via
     // .git/info/exclude, not the shared .gitignore), machine-written on
     // every post-edit hook run. ESLint's own ignore glob (like Prettier's

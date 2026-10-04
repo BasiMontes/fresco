@@ -24,7 +24,7 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
     rating_promedio: null,
     ultima_vez_en_menu: null,
     ...overrides,
-  }
+  } as Recipe
 }
 
 describe('buildLearningExplanation (ADR-0005 — deterministic, no Gemini call; FRESCO-120 — real cocinada/descartada signal)', () => {

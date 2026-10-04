@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false, "plugins": [] },
+  "include": [
+    "supabase/edge-tests-types/*.d.ts",
+    "supabase/functions/**/*.test.ts",
+    "tests/mocks/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
