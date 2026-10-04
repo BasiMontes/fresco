@@ -1,7 +1,6 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import type { LegalSection } from '@/components/legal/legal-modal';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import Image from 'next/image';
 
@@ -9,16 +8,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
+import { ConsentCheckboxes } from '@/components/legal/consent-checkboxes';
 import { LegalLinks } from '@/components/legal/legal-links';
-import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
 import { clientEnv } from '@/lib/env';
+import { CONSENT_PENDING_KEY, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
 import { getDistinctId } from '@/lib/posthog/distinct-id';
 import { aliasUser, captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
@@ -67,13 +66,14 @@ export default function SignupPage() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
-  // FRESCO-53: reuses FRESCO-51's `LegalModal` directly (not `LegalLinks` —
-  // this owns its own open/section state so a link inside the checkbox
-  // row can deep-link straight to the relevant document).
+  // FRESCO-53: the Terms / Privacy checkbox row. FRESCO-794 moved its markup and
+  // its `LegalModal` into `ConsentCheckboxes` (shared with the onboarding
+  // identity step); only the checked state and the error live here.
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
-  const [legalModalOpen, setLegalModalOpen] = useState(false);
-  const [legalModalSection, setLegalModalSection] = useState<LegalSection>('terminos');
+  // FRESCO-794 (ADR-0040): age 14+ confirmation, never pre-ticked.
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [ageError, setAgeError] = useState<string | null>(null);
   // FRESCO-114: see login/page.tsx — a ref guard catches a synchronous
   // double-click that `disabled={isSubmitting}` alone misses.
   const isSubmittingRef = useRef(false);
@@ -257,9 +257,11 @@ export default function SignupPage() {
     event.preventDefault();
     if (isSubmittingRef.current) { return; }
     setTermsError(null);
+    setAgeError(null);
     setSignupError(null);
-    if (!acceptedTerms) {
-      setTermsError('Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
+    if (!ageConfirmed || !acceptedTerms) {
+      setAgeError(ageConfirmed ? null : 'Confirma que tienes 14 años o más para continuar.');
+      setTermsError(acceptedTerms ? null : 'Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
       return;
     }
     // FRESCO-123: reject a weak password before the anonymous-conversion
@@ -293,6 +295,12 @@ export default function SignupPage() {
       // preserves the same `user_id`, so the menu she already generated
       // stays hers. `signUp` would create an unrelated new user instead.
       if (user?.is_anonymous) {
+        // FRESCO-794: the guest session exists, so the consents are recorded now,
+        // before anything changes. A failure here changes nothing and can be retried.
+        if (!(await postConsents(REGISTRATION_CONSENTS))) {
+          setSignupError('No pudimos registrar tu aceptación. Inténtalo de nuevo.');
+          return;
+        }
         // FRESCO-89: only link the email here — the password is set after
         // she verifies it (see `handleVerifyOtp`). Sending both together
         // used to return a false 200 (change queued, never applied).
@@ -328,7 +336,13 @@ export default function SignupPage() {
         // confirmation link's domain from this value ({{ .RedirectTo }}),
         // not from Auth's global Site URL — which stays fixed to production
         // even for staging signups. See app/auth/confirm/route.ts.
-        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+          // FRESCO-794: usually no session yet (email confirmation), so the
+          // consents wait in the metadata and `/onboarding` records them on the
+          // first signed-in visit (`flushPendingConsents`).
+          data: { [CONSENT_PENDING_KEY]: REGISTRATION_CONSENTS },
+        },
       });
       if (error) {
         setSignupError(translateAuthError(error));
@@ -482,67 +496,19 @@ export default function SignupPage() {
                         autoComplete="new-password"
                         showPolicyHint
                       />
-                      <label className="mt-1 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
-                        <span className="flex size-6 shrink-0 items-center justify-center">
-                          {/* FRESCO-451 (slice 4/5): the shared Checkbox's
-                              default circular indicator reads as a radio
-                              button here — a single agree/disagree toggle,
-                              not one option among several, so it gets the
-                              square shape instead. */}
-                          <Checkbox
-                            data-testid="accept_terms_checkbox"
-                            checked={acceptedTerms}
-                            onChange={e => setAcceptedTerms(e.target.checked)}
-                            className="rounded-sm"
-                          />
-                        </span>
-                        <span>
-                          Al crear una cuenta, aceptas nuestros
-                          {' '}
-                          <button
-                            type="button"
-                            data-testid="accept_terms_link_terminos"
-                            onClick={() => {
-                              setLegalModalSection('terminos');
-                              setLegalModalOpen(true);
-                            }}
-                            className="text-primary underline"
-                          >
-                            Términos de Servicio
-                          </button>
-                          {' '}
-                          y nuestra
-                          {' '}
-                          <button
-                            type="button"
-                            data-testid="accept_terms_link_privacidad"
-                            onClick={() => {
-                              setLegalModalSection('privacidad');
-                              setLegalModalOpen(true);
-                            }}
-                            className="text-primary underline"
-                          >
-                            Política de Privacidad.
-                          </button>
-                        </span>
-                      </label>
-
-                      {termsError && (
-                        <p data-testid="accept_terms_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-                          {termsError}
-                        </p>
-                      )}
+                      <ConsentCheckboxes
+                        ageConfirmed={ageConfirmed}
+                        termsAccepted={acceptedTerms}
+                        onAgeChange={setAgeConfirmed}
+                        onTermsChange={setAcceptedTerms}
+                        ageError={ageError}
+                        termsError={termsError}
+                      />
 
                       <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
                         {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
                       </Button>
                     </form>
-
-                    <LegalModal
-                      open={legalModalOpen}
-                      onOpenChange={setLegalModalOpen}
-                      section={legalModalSection}
-                    />
 
                     {signupError && (
                       <p data-testid="signup_error_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">

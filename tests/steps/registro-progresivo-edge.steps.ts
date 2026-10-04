@@ -38,6 +38,9 @@ const TIPOS = ['desayuno', 'comida', 'cena'] as const;
  */
 async function ensureAnonymousSession(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/onboarding');
+  // FRESCO-794: age 14+ and Terms/Privacy come before anything is created.
+  await page.getByTestId('confirm_age_checkbox').check();
+  await page.getByTestId('accept_terms_checkbox').check();
   await page.getByTestId('onboarding_continue_as_guest_button').click();
   await expect
     .poll(async () => {
@@ -242,6 +245,7 @@ Given(/^que una invitada rellena \/signup con un email nuevo y una password dema
   await page.goto('/signup');
   await page.getByTestId('email_input').fill(`hola.frescoapp+e2e-${crypto.randomUUID()}@gmail.com`);
   await page.getByTestId('password_input').fill(SHORT_PASSWORD);
+  await page.getByTestId('confirm_age_checkbox').check();
   await page.getByTestId('accept_terms_checkbox').check();
 });
 
@@ -303,6 +307,7 @@ Given(/^que la invitada está en la pantalla de OTP$/, async ({ page }) => {
   await page.goto('/signup');
   await page.getByTestId('email_input').fill(newEmail);
   await page.getByTestId('password_input').fill(`E2e-Otp-Screen-${Date.now()}!`);
+  await page.getByTestId('confirm_age_checkbox').check();
   await page.getByTestId('accept_terms_checkbox').check();
   await page.getByTestId('signup_submit_button').click();
   await expect(page.getByTestId('otp_code_input')).toBeVisible();

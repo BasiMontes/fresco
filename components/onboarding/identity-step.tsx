@@ -4,11 +4,13 @@ import type { FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ConsentCheckboxes } from '@/components/legal/consent-checkboxes';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmailInput } from '@/components/ui/email-input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { translateAuthError } from '@/lib/auth-errors';
+import { CONSENT_PENDING_KEY, flushPendingConsents, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
 import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
@@ -40,6 +42,12 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
+  // FRESCO-794 (ADR-0040): neither is pre-ticked, and nothing is created (no
+  // guest session, no account) until both are. The wording is provisional.
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [ageError, setAgeError] = useState<string | null>(null);
+  const [termsError, setTermsError] = useState<string | null>(null);
   // FRESCO-252: plays the entrance stagger (logo -> heading -> actions) once,
   // on mount — `useEffect` fires after the first paint, so the CSS transition
   // (see `.t-stagger` in globals.css) actually animates from its initial
@@ -49,16 +57,38 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
     setEntered(true);
   }, []);
 
+  /** FRESCO-794: both consents ticked, or say which one is missing. */
+  function consentsGiven(): boolean {
+    setAgeError(ageConfirmed ? null : 'Confirma que tienes 14 años o más para continuar.');
+    setTermsError(termsAccepted ? null : 'Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar.');
+    return ageConfirmed && termsAccepted;
+  }
+
   async function handleGuest() {
-    setIsSubmitting(true);
     setError(null);
+    if (!consentsGiven()) {
+      return;
+    }
+    setIsSubmitting(true);
     try {
       const client = createClient();
-      const { error: guestError } = await client.auth.signInAnonymously();
-      if (guestError) {
-        // ADR-0003: anonymous sign-ins are rate-limited (30/hour) on this
-        // project — a real, previously-observed failure mode.
-        setError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
+      // FRESCO-794: a retry after a failed consent write reuses the guest session
+      // that already exists instead of burning another anonymous sign-in
+      // (ADR-0003: 30/hour on this project).
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        const { error: guestError } = await client.auth.signInAnonymously();
+        if (guestError) {
+          // ADR-0003: anonymous sign-ins are rate-limited (30/hour) on this
+          // project — a real, previously-observed failure mode.
+          setError('No pudimos iniciar tu visita como invitada. Recarga la página e inténtalo de nuevo.');
+          return;
+        }
+      }
+      // FRESCO-794: no consent on record, no progress. The session already
+      // exists, so a failure here is a real one and the click can be retried.
+      if (!(await postConsents(REGISTRATION_CONSENTS))) {
+        setError('No pudimos registrar tu aceptación. Inténtalo de nuevo.');
         return;
       }
       // identify() fires independently, asynchronously, via the provider's onAuthStateChange — ordering vs. this capture is unguaranteed but safe (PostHog merges anonymous-device history on first identify regardless of order).
@@ -76,8 +106,11 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
 
   async function handleCreateAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setIsSubmitting(true);
     setError(null);
+    if (!consentsGiven()) {
+      return;
+    }
+    setIsSubmitting(true);
     // Mirrors /signup's own pre-check (FRESCO-123): reject a weak password
     // before hitting the network — same threshold the server enforces
     // (FRESCO-363 / A4-H8, `lib/validation/password-policy.ts`).
@@ -99,7 +132,14 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         password,
         // FRESCO-264 — see app/signup/page.tsx for why this must be
         // /auth/confirm, not a bare path.
-        options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+          // FRESCO-794: the project requires email confirmation, so there is
+          // usually no session yet to record the consents with. They wait in the
+          // user's metadata and `/onboarding` records them on the first signed-in
+          // visit (`flushPendingConsents`).
+          data: { [CONSENT_PENDING_KEY]: REGISTRATION_CONSENTS },
+        },
       });
       if (signUpError) {
         setError(translateAuthError(signUpError));
@@ -124,6 +164,10 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         setPendingConfirmation(true);
         return;
       }
+      // A session already exists (no confirmation needed): record now. If that
+      // fails the consents stay parked in the metadata and the onboarding page
+      // retries them.
+      await flushPendingConsents(client);
       onResolved();
     }
     finally {
@@ -184,6 +228,14 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
             <form onSubmit={event => void handleCreateAccount(event)} className="flex flex-col gap-3">
               <EmailInput value={email} onChange={setEmail} />
               <PasswordInput value={password} onChange={setPassword} autoComplete="new-password" />
+              <ConsentCheckboxes
+                ageConfirmed={ageConfirmed}
+                termsAccepted={termsAccepted}
+                onAgeChange={setAgeConfirmed}
+                onTermsChange={setTermsAccepted}
+                ageError={ageError}
+                termsError={termsError}
+              />
               <Button data-testid="onboarding_create_account_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
                 {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta y continuar'}
               </Button>
@@ -231,6 +283,14 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
 
         <div className="t-stagger-line t-stagger-line--3 mt-8">
           <div className="flex flex-col gap-4">
+            <ConsentCheckboxes
+              ageConfirmed={ageConfirmed}
+              termsAccepted={termsAccepted}
+              onAgeChange={setAgeConfirmed}
+              onTermsChange={setTermsAccepted}
+              ageError={ageError}
+              termsError={termsError}
+            />
             <Button
               data-testid="onboarding_create_account_button"
               variant="default"

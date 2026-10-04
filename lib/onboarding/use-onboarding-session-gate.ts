@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushPendingConsents } from '@/lib/legal/consent-client';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -38,6 +39,16 @@ export function useOnboardingSessionGate() {
     }
     void checkSession();
   }, []);
+
+  // FRESCO-794 (ADR-0040): an account created while email confirmation was
+  // pending parked its consents in the user's metadata (`IdentityStep`). The
+  // first time that user is signed in here, record them. A no-op for everyone
+  // else, and a failure is retried on the next visit.
+  useEffect(() => {
+    if (identityResolved) {
+      void flushPendingConsents(createClient());
+    }
+  }, [identityResolved]);
 
   return { identityResolved, setIdentityResolved, wizardShown };
 }
