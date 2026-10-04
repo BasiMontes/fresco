@@ -651,6 +651,30 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          accepted_at: string
+          id: string
+          kind: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          kind: string
+          user_id?: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           adultos: number
