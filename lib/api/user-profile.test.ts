@@ -3,7 +3,7 @@ import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
-import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, hasUserProfile, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
+import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, getUserTrialAvailable, hasUserProfile, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
   num_personas: 3,
@@ -590,5 +590,68 @@ describe('markRoutesNoticeDismissed', () => {
     const { client } = createMarkRoutesNoticeDismissedMockClient({ userId: 'user-123', updateErrorMessage: 'constraint violation' });
 
     await expectRejection(markRoutesNoticeDismissed(client));
+  });
+});
+
+/** Mock client for `getUserTrialAvailable()`: `.select().eq().maybeSingle()` resolving the Stripe-id columns. */
+function createTrialMockClient(options: { userId?: string, row?: { stripe_customer_id: string | null, stripe_subscription_id: string | null } | null, dbErrorMessage?: string } = {}) {
+  const mock = {
+    auth: {
+      getUser: async () => (
+        options.userId
+          ? { data: { user: { id: options.userId } }, error: null }
+          : { data: { user: null }, error: null }
+      ),
+    },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => ({
+            data: options.dbErrorMessage ? null : (options.row ?? null),
+            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
+          }),
+        }),
+      }),
+    }),
+  };
+
+  return { client: mock as unknown as SupabaseClient<Database> };
+}
+
+describe('getUserTrialAvailable (FRESCO-822)', () => {
+  test('available for a user with no Stripe history', async () => {
+    const { client } = createTrialMockClient({ userId: 'user-1', row: { stripe_customer_id: null, stripe_subscription_id: null } });
+
+    expect(await getUserTrialAvailable(client)).toBe(true);
+  });
+
+  test('available when no profile row exists yet', async () => {
+    const { client } = createTrialMockClient({ userId: 'user-1', row: null });
+
+    expect(await getUserTrialAvailable(client)).toBe(true);
+  });
+
+  test('used up once a Stripe customer is on file', async () => {
+    const { client } = createTrialMockClient({ userId: 'user-1', row: { stripe_customer_id: 'cus_1', stripe_subscription_id: null } });
+
+    expect(await getUserTrialAvailable(client)).toBe(false);
+  });
+
+  test('used up once a Stripe subscription is on file', async () => {
+    const { client } = createTrialMockClient({ userId: 'user-1', row: { stripe_customer_id: null, stripe_subscription_id: 'sub_1' } });
+
+    expect(await getUserTrialAvailable(client)).toBe(false);
+  });
+
+  test('throws UserProfileError on a real database error, so the caller can choose the safe default', async () => {
+    const { client } = createTrialMockClient({ userId: 'user-1', dbErrorMessage: 'connection reset' });
+
+    await expectRejection(getUserTrialAvailable(client));
+  });
+
+  test('throws UserProfileError when there is no authenticated session', async () => {
+    const { client } = createTrialMockClient({});
+
+    await expectRejection(getUserTrialAvailable(client));
   });
 });

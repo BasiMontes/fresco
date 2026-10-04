@@ -18,6 +18,13 @@ export interface UpgradeToProButtonProps {
    * way, this only overrides the visible text.
    */
   label?: string
+  /**
+   * FRESCO-822: whether this user still has the free trial. `true` -> "Empezar
+   * prueba gratis"; `false` -> "Volver a Pro"; unknown (`undefined`) -> neutral
+   * "Pásate a Pro". A label that promises a trial is only used when it is known
+   * to be true, because the checkout charges from day one to anyone who used it.
+   */
+  trialAvailable?: boolean
   size?: 'sm' | 'md'
   className?: string
 }
@@ -37,10 +44,11 @@ export interface UpgradeToProButtonProps {
  * every other async profile action is an inline `role="alert"` message next
  * to the button, so this follows that instead of introducing a new one.
  */
-export function UpgradeToProButton({ label = 'Empezar prueba gratis', size = 'md', className }: UpgradeToProButtonProps = {}) {
+export function UpgradeToProButton({ label, trialAvailable, size = 'md', className }: UpgradeToProButtonProps = {}) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const buttonLabel = label ?? (trialAvailable === true ? 'Empezar prueba gratis' : trialAvailable === false ? 'Volver a Pro' : 'Pásate a Pro');
 
   async function handleConfirm() {
     setIsRedirecting(true);
@@ -85,7 +93,7 @@ export function UpgradeToProButton({ label = 'Empezar prueba gratis', size = 'md
           setSummaryOpen(true);
         }}
       >
-        {isRedirecting ? 'Redirigiendo…' : label}
+        {isRedirecting ? 'Redirigiendo…' : buttonLabel}
       </Button>
       <ProCheckoutSummary
         open={summaryOpen}

@@ -366,6 +366,39 @@ Then(/^es llevada a completar el pago de la suscripción Pro en Stripe Checkout 
   await page.waitForURL(/^https:\/\/checkout\.stripe\.com\//);
 });
 
+// --- FRESCO-822: the free trial is only promised to who still has it ---
+// Server-rendered from the profile row (`getUserTrialAvailable`), so no Stripe call is involved.
+
+Given(/^que Laura ya usó su prueba gratuita de Pro y está en su perfil con plan Free$/, async ({ request, page, testUserFactory, suscripcionCtx: ctx }) => {
+  const testUser = await createLaura(testUserFactory);
+  ctx.testUser = testUser;
+
+  // The webhook writes these ids on the first completed checkout and nothing clears them, so they are the "trial used" marker.
+  const ids = fakeStripeIds(testUser.id);
+  const res = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}`, {
+    headers: serviceRoleHeaders(),
+    data: { plan: 'free', stripe_customer_id: ids.stripeCustomerId, stripe_subscription_id: ids.stripeSubscriptionId },
+  });
+  if (!res.ok()) { throw new Error(`Failed to mark the trial as used: ${res.status()} ${await res.text()}`); }
+
+  await loginAsTestUser(page, testUser);
+  await page.goto('/profile');
+});
+
+Then(/^ve la prueba gratis de 7 días y el botón "Empezar prueba gratis"$/, async ({ page }) => {
+  const card = page.getByTestId('pro_upsell_card');
+  await expect(card).toContainText('7 días de prueba gratis, sin tarjeta');
+  await expect(page.getByTestId('upgrade_to_pro_button')).toHaveText('Empezar prueba gratis');
+});
+
+Then(/^no ve ninguna promesa de prueba gratis y el botón dice "Volver a Pro"$/, async ({ page }) => {
+  const card = page.getByTestId('pro_upsell_card');
+  await expect(card).toBeVisible();
+  await expect(card).not.toContainText(/prueba gratis/i);
+  await expect(card).toContainText('se cobra desde el primer día');
+  await expect(page.getByTestId('upgrade_to_pro_button')).toHaveText('Volver a Pro');
+});
+
 // --- STORY-FRESCO-231: "Acceder a gestión de suscripción" ---
 
 Given(/^su cliente de Stripe existe realmente$/, async ({ request, suscripcionCtx: ctx }) => {

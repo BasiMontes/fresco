@@ -54,6 +54,24 @@ async function openSummary() {
   return user;
 }
 
+describe('UpgradeToProButton label (FRESCO-822)', () => {
+  test.each([
+    ['a user who still has the trial', true, 'Empezar prueba gratis'],
+    ['a user who already used it', false, 'Volver a Pro'],
+    ['an unknown state: no trial is promised', undefined, 'Pásate a Pro'],
+  ])('%s', (_label, trialAvailable, expected) => {
+    renderWithProviders(<UpgradeToProButton trialAvailable={trialAvailable} />);
+
+    expect(screen.getByTestId('upgrade_to_pro_button').textContent).toBe(expected);
+  });
+
+  test('an explicit label wins (the sidebar passes "Mejorar plan")', () => {
+    renderWithProviders(<UpgradeToProButton label="Mejorar plan" trialAvailable={false} />);
+
+    expect(screen.getByTestId('upgrade_to_pro_button').textContent).toBe('Mejorar plan');
+  });
+});
+
 describe('UpgradeToProButton + pre-contract summary', () => {
   test('clicking the CTA opens the summary and does not start the checkout', async () => {
     await openSummary();
