@@ -1,5 +1,40 @@
 import antfu from '@antfu/eslint-config';
 
+// FRESCO-788 (audit-6 A6-A1): components that, today, reach Supabase directly.
+// AGENTS.md section 10 keeps data access behind lib/, and FRESCO-810 moves each of these
+// calls out. The lock below applies to every OTHER file under components/, so
+// nothing new can grow the list; remove an entry here in the same change that
+// removes its import.
+const COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS = [
+  'components/admin/admin-recipe-search.tsx',
+  'components/admin/delete-catalog-recipe-button.tsx',
+  'components/auth/identity-cookie-sync.tsx',
+  'components/calendar/calendar-grid.tsx',
+  'components/calendar/delete-week-button.tsx',
+  'components/calendar/generate-week-button.tsx',
+  'components/calendar/use-calendar-drag-drop.ts',
+  'components/calendar/use-slot-marking.ts',
+  'components/historial/reuse-menu-button.tsx',
+  'components/landing/site-nav.tsx',
+  'components/layout/sidebar-account.tsx',
+  'components/menu/push-prompt-banner.tsx',
+  'components/notifications/routes-notice.tsx',
+  'components/onboarding/identity-step.tsx',
+  'components/profile/ayuda-section.tsx',
+  'components/profile/danger-zone.tsx',
+  'components/profile/delete-account-dialog.tsx',
+  'components/profile/nombre-form.tsx',
+  'components/profile/preferences-form.tsx',
+  'components/profile/push-notifications-toggle.tsx',
+  'components/recipe/favorite-recipe-card.tsx',
+  'components/recipe/favorite-toggle-button.tsx',
+  'components/recipes/create-recipe-form.tsx',
+  'components/recipes/delete-recipe-button.tsx',
+  'components/recipes/ingredient-list.tsx',
+  'components/shopping-list/shopping-list-generator.tsx',
+  'components/shopping-list/shopping-list-view.tsx',
+];
+
 export default antfu({
   // TypeScript configuration
   typescript: {
@@ -192,6 +227,39 @@ export default antfu({
           '@utils/*',
         ],
         message: 'cli/ must be import-closed: the updater re-execs the new cli/ before other components are synced, so an import that escapes cli/ breaks `bun run up` for repos more than one release behind. Move the shared module into cli/lib/ instead.',
+      }],
+    }],
+  },
+}, {
+  // --- AGENTS.md section 10, enforced for product code (FRESCO-788, audit-6 A6-A1) ---
+  //
+  // Both rules were oral convention until audit-6 counted 31 functions with 3 or
+  // more positional parameters in product code; they are 0 now and this keeps
+  // them there. Scope is app/, components/ and lib/. scripts/ and cli/ are
+  // internal tooling (145 such signatures when this was measured) and are exempt
+  // on purpose; tests and generated files are not product code either.
+  files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'lib/**/*.{ts,tsx}'],
+  ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+  rules: {
+    'max-params': ['error', 2],
+    // A warning, not an error: 17 functions are over 15 today. It surfaces new
+    // growth in the editor without blocking work on code that already is.
+    'complexity': ['warn', 15],
+  },
+}, {
+  // --- Component layer lock (FRESCO-788) ---
+  //
+  // components/ must not import the Supabase wrapper or the SDK: data access lives
+  // behind lib/ (AGENTS.md section 10). The files in COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS
+  // already do and are left alone until FRESCO-810 moves their calls; every other
+  // file under components/ is locked.
+  files: ['components/**/*.{ts,tsx}'],
+  ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', ...COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{
+        group: ['@/lib/supabase', '@/lib/supabase/*', '@supabase/*'],
+        message: 'Components must not reach Supabase directly (AGENTS.md section 10: data access lives behind lib/). Put the call in lib/ and import that. This file is not on COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS in eslint.config.js: the list only shrinks (FRESCO-810), it does not grow.',
       }],
     }],
   },
