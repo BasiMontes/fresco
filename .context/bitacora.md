@@ -477,3 +477,7 @@ Historia archivada:
 - Qué: PR #482, gotchas 18 a 20 y anti-patrones S24 y S25 en sprint-development, pasos de bug-fix-workflow, fragmentos de story-plan y spec-compliance-matrix; tres gates nuevos en skill-gates.test.ts. Nivelado dev/staging/main en 94b11797.
 - Por qué: el sync del 7 de septiembre los descartó y FRESCO-830 no los cubría. El 321 se adaptó a ADR-0018 (manda el tiempo de test:e2e, no el conteo de escenarios).
 - Siguiente: pasar 839 a Finalizada tras revisar los criterios; queda FRESCO-835 (documentación) y la comprobación de FRESCO-837 hacia el 2026-10-10.
+## 2026-10-04 - FRESCO-835 documentación de sistema al día
+- Qué: PR #483. dev-roadmap (epics de auditoría 3 a 6, 5 aristas Blocks que faltaban, §5 corregido), glosario (39 ADR, términos de sustitución), seguimiento append-only en ADR-0033 y línea de ADR aceptado en la DoD. Nivelado dev/staging/main en 01a2e778.
+- Por qué: hallazgo medio de la auditoría externa 6; la documentación se había quedado en el 3 de septiembre. Los 4 ADR del ticket ya estaban Accepted por FRESCO-789.
+- Siguiente: la deuda de la lista externa 6 queda cerrada salvo FRESCO-837, que espera al 2026-10-10 (rutina trig_01QNoTiWxPCyGXhwYXo4QrJt); el sort del roadmap no se re-barrió fuera de los epics de remediación.
