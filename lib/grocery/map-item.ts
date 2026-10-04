@@ -93,7 +93,7 @@ function preciosNormalizados(entry: CanonicalIngredient, perfil: PerfilCompra | 
     const producto = productoDeCatalogo(conector.cadena, entry.clave);
     if (!producto) { continue; }
     const nombre = producto.nombre === entry.clave ? nombreProductoDesdeUrl(producto.url) : producto.nombre;
-    if (!esProductoCompatible(entry.clave, nombre, perfil)) { continue; }
+    if (!esProductoCompatible({ ingrediente: entry.clave, nombreProducto: nombre, perfil })) { continue; }
     precios.push({
       cadena: producto.cadena,
       precioEnvase: producto.precioEnvase,

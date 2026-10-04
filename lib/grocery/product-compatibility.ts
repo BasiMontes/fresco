@@ -93,7 +93,7 @@ function contiene(conjunto: Set<string>, termino: string): boolean {
   return conjunto.has(termino) || conjunto.has(`${termino}s`) || conjunto.has(`${termino}es`);
 }
 
-function infringe(lista: readonly string[], producto: Set<string>, ingrediente: Set<string>): boolean {
+function infringe(lista: readonly string[], { producto, ingrediente }: { producto: Set<string>, ingrediente: Set<string> }): boolean {
   return lista.some(t => contiene(producto, t) && !contiene(ingrediente, t));
 }
 
@@ -102,11 +102,11 @@ function infringe(lista: readonly string[], producto: Set<string>, ingrediente: 
  * adds. No profile, no restrictions, or no readable name all mean compatible
  * (nothing to judge against); the menu filter stays the allergen safety net.
  */
-export function esProductoCompatible(
-  ingrediente: string,
-  nombreProducto: string,
-  perfil: PerfilCompra | undefined,
-): boolean {
+export function esProductoCompatible({ ingrediente, nombreProducto, perfil }: {
+  ingrediente: string
+  nombreProducto: string
+  perfil: PerfilCompra | undefined
+}): boolean {
   if (!perfil || !nombreProducto.trim()) { return true; }
 
   const producto = palabras(nombreProducto);
@@ -119,16 +119,16 @@ export function esProductoCompatible(
 
   const alergenos = new Set(perfil.alergenos ?? []);
 
-  if (perfil.vegano && !vegetal && infringe(PALABRAS_POR_DIETA.vegano, producto, ing)) { return false; }
-  if (perfil.vegetariano && !vegetal && infringe(PALABRAS_POR_DIETA.vegetariano, producto, ing)) { return false; }
-  if (perfil.halal && infringe(PALABRAS_POR_DIETA.halal, producto, ing)) { return false; }
-  if ((perfil.sinGluten || alergenos.has('gluten')) && !sinGluten && infringe(GLUTEN, producto, ing)) { return false; }
-  if ((perfil.sinLactosa || alergenos.has('lactosa')) && !sinLactosa && infringe(LACTEOS, producto, ing)) { return false; }
-  if ((perfil.sinHuevo || alergenos.has('huevo')) && !sinHuevo && infringe(HUEVO, producto, ing)) { return false; }
+  if (perfil.vegano && !vegetal && infringe(PALABRAS_POR_DIETA.vegano, { producto, ingrediente: ing })) { return false; }
+  if (perfil.vegetariano && !vegetal && infringe(PALABRAS_POR_DIETA.vegetariano, { producto, ingrediente: ing })) { return false; }
+  if (perfil.halal && infringe(PALABRAS_POR_DIETA.halal, { producto, ingrediente: ing })) { return false; }
+  if ((perfil.sinGluten || alergenos.has('gluten')) && !sinGluten && infringe(GLUTEN, { producto, ingrediente: ing })) { return false; }
+  if ((perfil.sinLactosa || alergenos.has('lactosa')) && !sinLactosa && infringe(LACTEOS, { producto, ingrediente: ing })) { return false; }
+  if ((perfil.sinHuevo || alergenos.has('huevo')) && !sinHuevo && infringe(HUEVO, { producto, ingrediente: ing })) { return false; }
 
   for (const [alergeno, lista] of Object.entries(PALABRAS_POR_ALERGENO)) {
     if (['gluten', 'lactosa', 'huevo'].includes(alergeno)) { continue; } // handled above, with their "sin ..." escape
-    if (alergenos.has(alergeno) && infringe(lista, producto, ing)) { return false; }
+    if (alergenos.has(alergeno) && infringe(lista, { producto, ingrediente: ing })) { return false; }
   }
   return true;
 }

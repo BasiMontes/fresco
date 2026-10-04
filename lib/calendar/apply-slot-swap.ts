@@ -33,7 +33,7 @@ export type MenuGrid = Record<DiaSemana, Record<TipoPlato, Recipe | null>>;
  * documented no-op: the returned grid is a new object but value-equivalent
  * to the input.
  */
-export function applySlotSwap(menu: MenuGrid, a: SlotKey, b: SlotKey): MenuGrid {
+export function applySlotSwap(menu: MenuGrid, { a, b }: { a: SlotKey, b: SlotKey }): MenuGrid {
   const next = { ...menu };
 
   const recipeA = menu[a.dia][a.tipo];

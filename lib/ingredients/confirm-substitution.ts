@@ -15,9 +15,7 @@ import { IngredientSubstitutionError } from './get-safe-substitutes';
  */
 export async function confirmSubstitution(
   client: SupabaseClient<Database>,
-  slotId: string,
-  ingredienteOriginal: string,
-  ingredienteSustituto: string,
+  { slotId, ingredienteOriginal, ingredienteSustituto }: { slotId: string, ingredienteOriginal: string, ingredienteSustituto: string },
 ): Promise<void> {
   const { error } = await client.rpc('confirm_ingredient_substitution', {
     p_slot_id: slotId,

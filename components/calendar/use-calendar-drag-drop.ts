@@ -94,7 +94,7 @@ export function useCalendarDragDrop({ supabase, slotIds, setMenu, setErrorMessag
       return;
     }
 
-    setMenu(current => applySlotSwap(current, from, to));
+    setMenu(current => applySlotSwap(current, { a: from, b: to }));
     setErrorMessage(null);
     setPendingSlots(current => new Set(current).add(fromId).add(toId));
 
@@ -104,7 +104,7 @@ export function useCalendarDragDrop({ supabase, slotIds, setMenu, setErrorMessag
     void swapMealPlanSlots(supabase, { slotAId, slotBId })
       .catch((error) => {
         console.error('[CalendarGrid] swapMealPlanSlots failed, reverting', error);
-        setMenu(current => applySlotSwap(current, from, to));
+        setMenu(current => applySlotSwap(current, { a: from, b: to }));
         // FRESCO-47: `MealPlanError` wraps a real RPC rejection (stale data —
         // the slot or its meal plan changed under us, e.g. another tab) —
         // distinct from a network/timeout failure, which throws a plain

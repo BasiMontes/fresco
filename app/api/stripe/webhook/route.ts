@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         await handleCheckoutSessionCompleted(event.data.object);
         break;
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object, event.data.previous_attributes, event.id);
+        await handleSubscriptionUpdated({ subscription: event.data.object, previousAttributes: event.data.previous_attributes, eventId: event.id });
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object, event.id);
@@ -113,7 +113,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   if (!priceId) {
     throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
   }
-  const update = resolveProUpdateFromSession(session, subscription, priceId);
+  const update = resolveProUpdateFromSession({ session, subscription, expectedPriceId: priceId });
 
   const supabase = createServiceClient();
 
@@ -195,7 +195,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string): Promise<void> {
+async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string }): Promise<void> {
   const paymentStatus = resolvePaymentStatusUpdate(subscription);
   if (!paymentStatus) {
     // Status outside {past_due, unpaid, active} (e.g. `canceled`,

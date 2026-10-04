@@ -126,14 +126,14 @@ async function main(): Promise<void> {
       console.log('dry run: nothing written (pass --apply)');
       return;
     }
-    const resultado = await cargarProductos(db, productos, ZONA_BD);
+    const resultado = await cargarProductos(db, { items: productos, zona: ZONA_BD });
     console.log(`loaded ${resultado.productos} products, skipped ${resultado.omitidos} with an unusable price`);
     return;
   }
 
   const desde = new Date(Date.now() - DIAS_HACIA_ATRAS * 86_400_000).toISOString().slice(0, 10);
   const demanda = await leerDemandaDeMenu(db, desde);
-  const seguidos = await leerProductosSeguidos(db, demanda, ejecutables, ZONA_BD);
+  const seguidos = await leerProductosSeguidos(db, { demandaPorIngrediente: demanda, habilitadas: ejecutables, zona: ZONA_BD });
   const plan = planificarRefresco({
     productos: seguidos,
     ahora: new Date(),

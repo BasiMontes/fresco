@@ -212,7 +212,7 @@ export function CalendarGrid({
                     estado={estados[dia][tipo]}
                     dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
                     pending={pendingSlots.has(slotId({ dia, tipo }))}
-                    onMark={estado => void handleMarkEstado(dia, tipo, estado)}
+                    onMark={estado => void handleMarkEstado({ dia, tipo, estado })}
                     // FRESCO-183/FRESCO-271: only the visible day window is
                     // ever rendered now (see `useVisibleDayWindow`), so
                     // every currently-rendered slot is by definition in the

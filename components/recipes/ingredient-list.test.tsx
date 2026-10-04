@@ -51,7 +51,7 @@ describe('IngredientList', () => {
 
     expect(await screen.findByText('leche de avena')).toBeInTheDocument();
     expect(screen.queryByTestId('ingredient_substitute_trigger_leche')).toBeNull();
-    expect(confirmSubstitutionMock).toHaveBeenCalledWith({}, 'slot-1', 'leche', 'leche de avena');
+    expect(confirmSubstitutionMock).toHaveBeenCalledWith({}, { slotId: 'slot-1', ingredienteOriginal: 'leche', ingredienteSustituto: 'leche de avena' });
   });
 
   test('a rejected confirmation reverts the optimistic update and shows the error', async () => {

@@ -19,8 +19,7 @@ export interface SlotSubstitutionContext {
  */
 export async function getSlotSubstitutionContext(
   client: SupabaseClient<Database>,
-  slotId: string | undefined,
-  recipeId: string,
+  { slotId, recipeId }: { slotId: string | undefined, recipeId: string },
 ): Promise<SlotSubstitutionContext | null> {
   if (!slotId) {
     return null;

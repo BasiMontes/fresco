@@ -48,7 +48,7 @@ export default async function RecipeDetailPage({ params, searchParams }: {
     console.error('[/recipes/[id]] getFavoriteRecipeIds failed, defaulting to not-favorited', error);
   }
 
-  const substitutionContext = detail ? await getSlotSubstitutionContext(supabase, slot, id) : null;
+  const substitutionContext = detail ? await getSlotSubstitutionContext(supabase, { slotId: slot, recipeId: id }) : null;
 
   return (
     <div className="mx-auto max-w-2xl">

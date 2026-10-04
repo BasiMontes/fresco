@@ -140,11 +140,11 @@ export interface ProUpdateFromSession {
  * retry storms) — so a thrown error here surfaces as a logged, non-fatal
  * failure, not a crash.
  */
-export function resolveProUpdateFromSession(
-  session: Stripe.Checkout.Session,
-  subscription: Stripe.Subscription,
-  expectedPriceId: string,
-): ProUpdateFromSession {
+export function resolveProUpdateFromSession({ session, subscription, expectedPriceId }: {
+  session: Stripe.Checkout.Session
+  subscription: Stripe.Subscription
+  expectedPriceId: string
+}): ProUpdateFromSession {
   const userId = session.client_reference_id;
   if (!userId) {
     throw new Error('Checkout session is missing client_reference_id — cannot map it to a user_profiles row.');

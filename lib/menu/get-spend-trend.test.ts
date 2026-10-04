@@ -45,7 +45,7 @@ describe('getSpendTrend', () => {
   test('returns exactly 8 points, chronological, current week last', async () => {
     const { client } = createMockClient({ userId: 'user-123', rows: [] });
 
-    const result = await getSpendTrend(client, CURRENT_WEEK);
+    const result = await getSpendTrend(client, { semanaIso: CURRENT_WEEK });
 
     expect(result).toHaveLength(8);
     expect(result[7].semanaIso).toBe(CURRENT_WEEK);
@@ -59,7 +59,7 @@ describe('getSpendTrend', () => {
       rows: [{ semana_iso: weekWithData, coste_estimado: 42.5 }],
     });
 
-    const result = await getSpendTrend(client, CURRENT_WEEK);
+    const result = await getSpendTrend(client, { semanaIso: CURRENT_WEEK });
 
     const gapWeek = result.find(point => point.semanaIso === CURRENT_WEEK);
     const dataWeek = result.find(point => point.semanaIso === weekWithData);
@@ -74,7 +74,7 @@ describe('getSpendTrend', () => {
       rows: [{ semana_iso: CURRENT_WEEK, coste_estimado: null }],
     });
 
-    const result = await getSpendTrend(client, CURRENT_WEEK);
+    const result = await getSpendTrend(client, { semanaIso: CURRENT_WEEK });
 
     expect(result.find(point => point.semanaIso === CURRENT_WEEK)?.costeEstimado).toBeNull();
   });
@@ -82,12 +82,12 @@ describe('getSpendTrend', () => {
   test('throws SpendTrendError when the read fails', async () => {
     const { client } = createMockClient({ userId: 'user-123', errorMessage: 'connection reset' });
 
-    await expectRejection(getSpendTrend(client, CURRENT_WEEK));
+    await expectRejection(getSpendTrend(client, { semanaIso: CURRENT_WEEK }));
   });
 
   test('throws SpendTrendError when there is no authenticated session', async () => {
     const { client } = createMockClient({});
 
-    await expectRejection(getSpendTrend(client, CURRENT_WEEK));
+    await expectRejection(getSpendTrend(client, { semanaIso: CURRENT_WEEK }));
   });
 });

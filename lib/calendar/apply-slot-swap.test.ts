@@ -48,11 +48,10 @@ describe('applySlotSwap', () => {
   test('swaps two different-day slots, leaving the other 19 untouched', () => {
     const menu = buildFullGrid();
 
-    const result = applySlotSwap(
-      menu,
-      { dia: 'lunes', tipo: 'cena' },
-      { dia: 'martes', tipo: 'comida' },
-    );
+    const result = applySlotSwap(menu, {
+      a: { dia: 'lunes', tipo: 'cena' },
+      b: { dia: 'martes', tipo: 'comida' },
+    });
 
     expect(result.lunes.cena?.id).toBe('recipe-martes-comida');
     expect(result.martes.comida?.id).toBe('recipe-lunes-cena');
@@ -68,11 +67,10 @@ describe('applySlotSwap', () => {
   test('swaps same-day different-tipo slots', () => {
     const menu = buildFullGrid();
 
-    const result = applySlotSwap(
-      menu,
-      { dia: 'miercoles', tipo: 'desayuno' },
-      { dia: 'miercoles', tipo: 'cena' },
-    );
+    const result = applySlotSwap(menu, {
+      a: { dia: 'miercoles', tipo: 'desayuno' },
+      b: { dia: 'miercoles', tipo: 'cena' },
+    });
 
     expect(result.miercoles.desayuno?.id).toBe('recipe-miercoles-cena');
     expect(result.miercoles.cena?.id).toBe('recipe-miercoles-desayuno');
@@ -85,11 +83,10 @@ describe('applySlotSwap', () => {
     const originalLunesCena = menu.lunes.cena;
     const originalMartesComida = menu.martes.comida;
 
-    const result = applySlotSwap(
-      menu,
-      { dia: 'lunes', tipo: 'cena' },
-      { dia: 'martes', tipo: 'comida' },
-    );
+    const result = applySlotSwap(menu, {
+      a: { dia: 'lunes', tipo: 'cena' },
+      b: { dia: 'martes', tipo: 'comida' },
+    });
 
     // The input grid, and its day objects, are unchanged.
     expect(menu.lunes.cena).toBe(originalLunesCena);
@@ -108,8 +105,8 @@ describe('applySlotSwap', () => {
     const slotA = { dia: 'lunes', tipo: 'cena' } as const;
     const slotB = { dia: 'martes', tipo: 'comida' } as const;
 
-    const swapped = applySlotSwap(menu, slotA, slotB);
-    const reverted = applySlotSwap(swapped, slotA, slotB);
+    const swapped = applySlotSwap(menu, { a: slotA, b: slotB });
+    const reverted = applySlotSwap(swapped, { a: slotA, b: slotB });
 
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
@@ -122,7 +119,7 @@ describe('applySlotSwap', () => {
     const menu = buildFullGrid();
     const slot = { dia: 'jueves', tipo: 'comida' } as const;
 
-    const result = applySlotSwap(menu, slot, slot);
+    const result = applySlotSwap(menu, { a: slot, b: slot });
 
     expect(result.jueves.comida?.id).toBe('recipe-jueves-comida');
     expect(result).not.toBe(menu);
@@ -132,11 +129,10 @@ describe('applySlotSwap', () => {
     const menu = buildFullGrid();
     const originalDomingo = menu.domingo;
 
-    const result = applySlotSwap(
-      menu,
-      { dia: 'lunes', tipo: 'cena' },
-      { dia: 'martes', tipo: 'comida' },
-    );
+    const result = applySlotSwap(menu, {
+      a: { dia: 'lunes', tipo: 'cena' },
+      b: { dia: 'martes', tipo: 'comida' },
+    });
 
     expect(result.domingo).toBe(originalDomingo);
   });

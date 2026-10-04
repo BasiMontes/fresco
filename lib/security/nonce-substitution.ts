@@ -16,7 +16,7 @@
  * returned HTML's script nonces no longer match the CSP header this function's
  * caller is about to set, which is a broken page, not a slow one.
  */
-export function substituteNonce(html: string, oldNonce: string, newNonce: string): string {
+export function substituteNonce(html: string, { oldNonce, newNonce }: { oldNonce: string, newNonce: string }): string {
   if (!html.includes(oldNonce)) {
     throw new Error('substituteNonce: oldNonce not found in html -- refusing a silent no-op');
   }

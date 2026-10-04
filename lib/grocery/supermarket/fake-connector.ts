@@ -12,13 +12,13 @@ import { normalizeNombre } from '@/lib/text/normalize-nombre';
 const OBSERVADO_EN = '2026-10-01T06:00:00.000Z';
 const ZONA_FALSA: ZonaId = 'zona-1';
 
-function producto(
-  idExterno: string,
-  nombre: string,
-  envase: ProductoSupermercado['envase'],
-  precioEnvase: number,
-  extra: Partial<ProductoSupermercado> = {},
-): ProductoSupermercado {
+function producto({ idExterno, nombre, envase, precioEnvase, extra = {} }: {
+  idExterno: string
+  nombre: string
+  envase: ProductoSupermercado['envase']
+  precioEnvase: number
+  extra?: Partial<ProductoSupermercado>
+}): ProductoSupermercado {
   return {
     cadena: 'tiendafalsa',
     idExterno,
@@ -36,17 +36,17 @@ function producto(
 
 /** Invented products, none taken from a real chain. */
 export const PRODUCTOS_SINTETICOS: readonly ProductoSupermercado[] = [
-  producto('p-001', 'Arroz redondo bolsa', { cantidad: 1000, unidad: 'g' }, 1.45),
-  producto('p-002', 'Arroz basmati paquete', { cantidad: 500, unidad: 'g' }, 1.6),
-  producto('p-003', 'Arroz integral bolsa', { cantidad: 1000, unidad: 'g' }, 1.9),
-  producto('p-004', 'Leche entera brik', { cantidad: 1000, unidad: 'ml' }, 0.95),
-  producto('p-005', 'Leche semidesnatada pack de 6', { cantidad: 6000, unidad: 'ml' }, 5.4),
-  producto('p-006', 'Aceite de oliva virgen extra botella', { cantidad: 1000, unidad: 'ml' }, 8.9),
-  producto('p-007', 'Aceite de girasol botella', { cantidad: 1000, unidad: 'ml' }, 2.1),
-  producto('p-008', 'Tomate frito brik', { cantidad: 400, unidad: 'g' }, 0.89),
-  producto('p-009', 'Salsa con tomate frito y cebolla', { cantidad: 350, unidad: 'g' }, 1.2),
-  producto('p-010', 'Huevos camperos docena', { cantidad: 12, unidad: 'unidad' }, 3.1),
-  producto('p-011', 'Pasta espagueti paquete', { cantidad: 500, unidad: 'g' }, 0.99, { disponible: false }),
+  producto({ idExterno: 'p-001', nombre: 'Arroz redondo bolsa', envase: { cantidad: 1000, unidad: 'g' }, precioEnvase: 1.45 }),
+  producto({ idExterno: 'p-002', nombre: 'Arroz basmati paquete', envase: { cantidad: 500, unidad: 'g' }, precioEnvase: 1.6 }),
+  producto({ idExterno: 'p-003', nombre: 'Arroz integral bolsa', envase: { cantidad: 1000, unidad: 'g' }, precioEnvase: 1.9 }),
+  producto({ idExterno: 'p-004', nombre: 'Leche entera brik', envase: { cantidad: 1000, unidad: 'ml' }, precioEnvase: 0.95 }),
+  producto({ idExterno: 'p-005', nombre: 'Leche semidesnatada pack de 6', envase: { cantidad: 6000, unidad: 'ml' }, precioEnvase: 5.4 }),
+  producto({ idExterno: 'p-006', nombre: 'Aceite de oliva virgen extra botella', envase: { cantidad: 1000, unidad: 'ml' }, precioEnvase: 8.9 }),
+  producto({ idExterno: 'p-007', nombre: 'Aceite de girasol botella', envase: { cantidad: 1000, unidad: 'ml' }, precioEnvase: 2.1 }),
+  producto({ idExterno: 'p-008', nombre: 'Tomate frito brik', envase: { cantidad: 400, unidad: 'g' }, precioEnvase: 0.89 }),
+  producto({ idExterno: 'p-009', nombre: 'Salsa con tomate frito y cebolla', envase: { cantidad: 350, unidad: 'g' }, precioEnvase: 1.2 }),
+  producto({ idExterno: 'p-010', nombre: 'Huevos camperos docena', envase: { cantidad: 12, unidad: 'unidad' }, precioEnvase: 3.1 }),
+  producto({ idExterno: 'p-011', nombre: 'Pasta espagueti paquete', envase: { cantidad: 500, unidad: 'g' }, precioEnvase: 0.99, extra: { disponible: false } }),
 ];
 
 interface OpcionesConectorFalso {

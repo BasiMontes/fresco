@@ -85,9 +85,11 @@ export async function leerDemandaDeMenu(db: Db, desde: string): Promise<Map<stri
  */
 export async function leerProductosSeguidos(
   db: Db,
-  demandaPorIngrediente: ReadonlyMap<string, number>,
-  habilitadas: ReadonlySet<CadenaId>,
-  zona: ZonaId = ZONA_BD,
+  { demandaPorIngrediente, habilitadas, zona = ZONA_BD }: {
+    demandaPorIngrediente: ReadonlyMap<string, number>
+    habilitadas: ReadonlySet<CadenaId>
+    zona?: ZonaId
+  },
 ): Promise<ProductoSeguido[]> {
   const coincidencias = (await leerTodo(
     (a, b) => db.from('ingredient_product_match').select('ingrediente, producto_id').order('ingrediente').order('producto_id').range(a, b),
@@ -202,8 +204,7 @@ export interface ResultadoCarga {
  */
 export async function cargarProductos(
   db: Db,
-  items: readonly ProductoParaCarga[],
-  zona: ZonaId = ZONA_BD,
+  { items, zona = ZONA_BD }: { items: readonly ProductoParaCarga[], zona?: ZonaId },
 ): Promise<ResultadoCarga> {
   const clave = (p: ProductoSupermercado): string => `${p.cadena}\u0000${p.idExterno}`;
   const validos = items.filter(i => Math.round(i.producto.precioEnvase * 100) > 0);

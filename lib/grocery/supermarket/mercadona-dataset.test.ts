@@ -22,24 +22,24 @@ function dataset(
 
 describe('productoDeDataset', () => {
   test('a weight product: the pack in grams and the price of the whole pack', () => {
-    const p = productoDeDataset(dataset('1', { unit_size: 0.45, reference_price: '4.440', reference_format: 'kg' }), FECHA);
+    const p = productoDeDataset(dataset('1', { unit_size: 0.45, reference_price: '4.440', reference_format: 'kg' }), { observadoEn: FECHA });
     expect(p).toMatchObject({ cadena: 'mercadona', idExterno: '1', envase: { cantidad: 450, unidad: 'g' }, observadoEn: FECHA, zona: ZONA_DATASET });
     expect(p?.precioEnvase).toBe(2); // 4.44 EUR/kg x 0.45 kg = 1.998, rounded to the cent
   });
 
   test('a volume product: the pack in millilitres', () => {
-    const p = productoDeDataset(dataset('2', { unit_size: 1, size_format: 'l', reference_price: '3.900', reference_format: 'L' }), FECHA);
+    const p = productoDeDataset(dataset('2', { unit_size: 1, size_format: 'l', reference_price: '3.900', reference_format: 'L' }), { observadoEn: FECHA });
     expect(p?.envase).toEqual({ cantidad: 1000, unidad: 'ml' });
     expect(p?.precioEnvase).toBeCloseTo(3.9, 5);
   });
 
   test('a price per 100 g is converted to the whole pack', () => {
-    const p = productoDeDataset(dataset('3', { unit_size: 0.4, reference_price: '0.500', reference_format: '100 g' }), FECHA);
+    const p = productoDeDataset(dataset('3', { unit_size: 0.4, reference_price: '0.500', reference_format: '100 g' }), { observadoEn: FECHA });
     expect(p?.precioEnvase).toBeCloseTo(2, 5);
   });
 
   test('a count reference ("ud") is the price of the whole pack, as in the static connector', () => {
-    const p = productoDeDataset(dataset('4', { unit_size: 0.485, reference_price: '4.000', reference_format: 'ud' }), FECHA);
+    const p = productoDeDataset(dataset('4', { unit_size: 0.485, reference_price: '4.000', reference_format: 'ud' }), { observadoEn: FECHA });
     expect(p?.precioEnvase).toBe(4);
   });
 
@@ -53,7 +53,7 @@ describe('productoDeDataset', () => {
     ['a price that is not a number', { reference_price: 'n/d' }],
     ['a reference format that cannot be converted', { reference_format: '???' }],
   ])('drops a product with %s', (_motivo, pi) => {
-    expect(productoDeDataset(dataset('x', pi), FECHA)).toBeNull();
+    expect(productoDeDataset(dataset('x', pi), { observadoEn: FECHA })).toBeNull();
   });
 });
 
