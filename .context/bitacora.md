@@ -481,3 +481,7 @@ Historia archivada:
 - Qué: PR #483. dev-roadmap (epics de auditoría 3 a 6, 5 aristas Blocks que faltaban, §5 corregido), glosario (39 ADR, términos de sustitución), seguimiento append-only en ADR-0033 y línea de ADR aceptado en la DoD. Nivelado dev/staging/main en 01a2e778.
 - Por qué: hallazgo medio de la auditoría externa 6; la documentación se había quedado en el 3 de septiembre. Los 4 ADR del ticket ya estaban Accepted por FRESCO-789.
 - Siguiente: la deuda de la lista externa 6 queda cerrada salvo FRESCO-837, que espera al 2026-10-10 (rutina trig_01QNoTiWxPCyGXhwYXo4QrJt); el sort del roadmap no se re-barrió fuera de los epics de remediación.
+## 2026-10-04 - FRESCO-794 mecánica de consentimientos (4 PRs, textos provisionales)
+- Qué: PR #484 registro user_consents + POST /api/consents + ADR-0040 (Proposed); #485 casilla 14+ y Términos/Privacidad en onboarding y /signup; #486 consentimiento Art. 9 en el paso de dieta; #487 resumen precontractual y casilla de ejecución inmediata antes de Stripe. Nivelado dev/staging/main en 119bfd10; migración aplicada en producción.
+- Por qué: auditoría 6 (A6-P1, A6-P6): nada registraba el consentimiento. Decisión del fundador: construir la mecánica ya con los textos del borrador FRESCO-365 sin validar. Stripe sigue en modo prueba, así que el BLOCKER no impacta aún.
+- Siguiente: 794 sigue en WIP hasta informe del abogado o diferimiento escrito. Antes de cobrar: Price de Stripe con tax_behavior inclusive, correo en soporte duradero, reabrir 434, corregir autónomo; decidir /profile y usuarios existentes.
