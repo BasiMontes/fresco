@@ -489,3 +489,7 @@ Historia archivada:
 - Qué: PR #488. getUserTrialAvailable (misma regla isTrialAvailable del checkout), tarjeta ProUpsellCard extraída y etiqueta del botón según elegibilidad (Empezar prueba gratis / Volver a Pro / Pásate a Pro). Si la lectura falla no se promete la prueba. Dos escenarios e2e y tests de componente. Nivelado dev/staging/main en 822f8c88.
 - Por qué: seguimiento de A6-S3 (FRESCO-778): el checkout cobraba desde el primer día a quien ya usó la prueba mientras la UI le prometía 7 días gratis.
 - Siguiente: FRESCO-837 espera al 2026-10-10; de la ola 1 de la auditoría 6 quedan 788, 790 (Consum, plazo ~2026-10-06), 791, 793 y 794 (Blocked a la espera del abogado).
+## 2026-10-04 - FRESCO-788 reglas de §10 automatizadas (3 PRs)
+- Qué: PR #489 y #490 migran las 31 funciones de producto con 3+ posicionales a objeto de opciones; PR #491 activa max-params en error, complexity en aviso, un candado de capas (components/ no importa Supabase, con 27 excepciones que solo pueden encogerse) y cycles:check en repo:check. Nivelado dev/staging/main en a2ed86c5.
+- Por qué: auditoría 6 (A6-A1): las reglas de §10 eran convención oral y nada impedía que crecieran. Métrica de cierre: 0 funciones con 3+ posicionales en producto, lint en verde con la regla en error, 0 ciclos.
+- Siguiente: FRESCO-810 quita las 27 excepciones del candado de capas; scripts/ y cli/ (145 firmas) quedan exentos a propósito.
