@@ -59,6 +59,8 @@ export interface OnboardingState {
   presupuestoSemanaEuros: number | null
   planningSelection: PlanningSelection
   nivelExperiencia: NivelExperienciaCulinaria | null
+  /** FRESCO-794: explicit consent for health data (art. 9), recorded when the box is ticked in the diet step. */
+  healthDataConsent: boolean
   setStep: (step: OnboardingStep) => void
   editFromSummary: (step: 1 | 2 | 3) => void
   goToSummary: () => void
@@ -77,6 +79,7 @@ export interface OnboardingState {
   setPresupuestoSemanaEuros: (value: number | null) => void
   setPlanningSelection: (value: PlanningSelection) => void
   setNivelExperiencia: (value: NivelExperienciaCulinaria) => void
+  setHealthDataConsent: (value: boolean) => void
   reset: () => void
 }
 
@@ -104,6 +107,7 @@ const initialState = {
   presupuestoSemanaEuros: null as number | null,
   planningSelection: toPlanningSelection(ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT),
   nivelExperiencia: null as NivelExperienciaCulinaria | null,
+  healthDataConsent: false,
 };
 
 function toggleInArray<T>(list: T[], value: T): T[] {
@@ -215,6 +219,7 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setPresupuestoSemanaEuros: value => set({ presupuestoSemanaEuros: value }),
   setPlanningSelection: value => set({ planningSelection: value }),
   setNivelExperiencia: value => set({ nivelExperiencia: value }),
+  setHealthDataConsent: value => set({ healthDataConsent: value }),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -248,5 +253,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     presupuestoSemanaEuros: state.presupuestoSemanaEuros,
     planningSelection: state.planningSelection,
     nivelExperiencia: state.nivelExperiencia,
+    healthDataConsent: state.healthDataConsent,
   }),
 }));

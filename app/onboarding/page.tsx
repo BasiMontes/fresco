@@ -13,6 +13,7 @@ import { OnboardingStepIdentity } from '@/components/onboarding/onboarding-step-
 import { OnboardingSummary } from '@/components/onboarding/onboarding-summary';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { isHealthConsentSatisfied } from '@/lib/onboarding/health-data-consent';
 import { useGenerateMealPlan } from '@/lib/onboarding/use-generate-meal-plan';
 import { useOnboardingFunnelTracking } from '@/lib/onboarding/use-onboarding-funnel-tracking';
 import { useOnboardingSessionGate } from '@/lib/onboarding/use-onboarding-session-gate';
@@ -62,6 +63,10 @@ export default function OnboardingPage() {
     setStep,
     goToSummary,
   } = useOnboardingStore();
+
+  // FRESCO-794 (ADR-0040): allergies and diet are health data (art. 9); the
+  // wizard goes on only once the user has ticked the explicit consent in step 2.
+  const healthConsentOk = useOnboardingStore(isHealthConsentSatisfied);
 
   const household = validateHousehold({ adultos, ninos });
   // FRESCO-371: presupuesto is optional again (A4-H14). Null/unset is valid;
@@ -242,7 +247,7 @@ export default function OnboardingPage() {
                         onClick={() => {
                           void handleGenerate();
                         }}
-                        disabled={isGenerating || !household.valid || !presupuestoValid || hasInvalidPlanning}
+                        disabled={isGenerating || !household.valid || !presupuestoValid || hasInvalidPlanning || !healthConsentOk}
                       >
                         {isGenerating
                           ? (
@@ -260,6 +265,7 @@ export default function OnboardingPage() {
                   ? (
                       <Button
                         data-testid="next_button"
+                        disabled={step === 2 && !healthConsentOk}
                         onClick={() => {
                           // FRESCO-366 / FRESCO-371: which wizard steps get abandoned.
                           captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
@@ -279,7 +285,7 @@ export default function OnboardingPage() {
                           }
                           goToSummary();
                         }}
-                        disabled={!household.valid || !presupuestoValid || hasInvalidPlanning}
+                        disabled={!household.valid || !presupuestoValid || hasInvalidPlanning || (step === 2 && !healthConsentOk)}
                       >
                         Ver resumen
                       </Button>
