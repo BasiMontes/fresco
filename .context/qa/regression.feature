@@ -1155,6 +1155,19 @@ Característica: Flujo completo de usuario en Fresco
     Cuando se ejecuta el job de reconciliación de suscripciones
     Entonces esa fila queda degradada a plan Free
 
+  @seguridad @edge-case @verificado-manual-2026-10-04
+  # FRESCO-840: el `notFound()` de la página corría bajo el Suspense de
+  # `app/(app)/loading.tsx`, con la respuesta ya en streaming, así que el estado
+  # quedaba en 200 (reproducido en local y en staging con la cuenta no admin).
+  # La decisión se toma ahora en `proxy.ts`, antes del render. Cubierto por
+  # `proxy.test.ts` (gateado por `bun test` en CI); la rama admin no se verificó
+  # en vivo porque la cuenta de automatización no es admin.
+  Escenario: Un usuario sin rol admin recibe un 404 real en el catálogo de administración
+    Dado que un usuario con sesión no figura en la lista de administradores
+    Cuando abre la ruta /admin/recipes
+    Entonces la respuesta tiene estado 404
+    Y ve la página de "no encontrada"
+
   # ==========================================================================
   # Biblioteca de Recetas (EPIC-FRESCO-64 / STORY-FRESCO-65)
   # ==========================================================================
