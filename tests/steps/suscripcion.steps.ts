@@ -334,6 +334,34 @@ When(/^toca el botón de actualizar a Pro$/, async ({ page }) => {
   await page.getByTestId('upgrade_to_pro_button').click();
 });
 
+// FRESCO-794 (ADR-0040): the CTA opens the pre-contract summary first. The withdrawal waiver
+// (art. 103.m) is ticked and recorded before the redirect, so the box is clicked and awaited rather
+// than `.check()`ed. The wording is provisional (lawyer draft, not yet validated).
+When(/^confirma el resumen de la suscripción pidiendo la ejecución inmediata$/, async ({ page }) => {
+  await expect(page.getByTestId('pro_checkout_trial')).toBeVisible();
+  await page.getByTestId('pro_checkout_withdrawal_checkbox').click();
+  await expect(page.getByTestId('pro_checkout_withdrawal_checkbox')).toBeChecked();
+  await page.getByTestId('pro_checkout_confirm_button').click();
+});
+
+Then(/^ve el resumen con el precio, la prueba, la renovación mensual y el desistimiento$/, async ({ page }) => {
+  const dialog = page.getByTestId('pro_checkout_dialog');
+  await expect(dialog).toBeVisible();
+  await expect(page.getByTestId('pro_checkout_price')).toContainText('€');
+  await expect(page.getByTestId('pro_checkout_trial')).toContainText('días de prueba gratis');
+  await expect(dialog).toContainText('Se renueva automáticamente cada mes');
+  await expect(dialog).toContainText('derecho a desistir del contrato en 14 días');
+});
+
+Then(/^no puede continuar al pago hasta marcar la solicitud de ejecución inmediata$/, async ({ page }) => {
+  const confirm = page.getByTestId('pro_checkout_confirm_button');
+  await expect(page.getByTestId('pro_checkout_withdrawal_checkbox')).not.toBeChecked();
+  await expect(confirm).toBeDisabled();
+  await page.getByTestId('pro_checkout_withdrawal_checkbox').click();
+  await expect(page.getByTestId('pro_checkout_withdrawal_checkbox')).toBeChecked();
+  await expect(confirm).toBeEnabled();
+});
+
 Then(/^es llevada a completar el pago de la suscripción Pro en Stripe Checkout real$/, async ({ page }) => {
   await page.waitForURL(/^https:\/\/checkout\.stripe\.com\//);
 });

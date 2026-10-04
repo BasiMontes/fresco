@@ -1551,10 +1551,21 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-228: actualizar a Pro desde el perfil ---
 
+  @suscripcion @seguridad @automatizado @requiere-stripe-real
+  # Automatizado: tests/steps/suscripcion.steps.ts (FRESCO-794). Corre en la suite de Stripe real
+  # porque el precio sale de la API de Stripe (`GET /api/stripe/pro-price`). Los textos son
+  # PROVISIONALES (borrador FRESCO-365, sin validar por el abogado).
+  Escenario: El resumen precontractual precede al pago y exige solicitar la ejecución inmediata
+    Dado que Laura está en su perfil con plan Free
+    Cuando toca el botón de actualizar a Pro
+    Entonces ve el resumen con el precio, la prueba, la renovación mensual y el desistimiento
+    Y no puede continuar al pago hasta marcar la solicitud de ejecución inmediata
+
   @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Iniciar checkout desde el perfil
     Dado que Laura está en su perfil con plan Free
     Cuando toca el botón de actualizar a Pro
+    Y confirma el resumen de la suscripción pidiendo la ejecución inmediata
     Entonces es llevada a completar el pago de la suscripción Pro en Stripe Checkout real
     # FRESCO-228. Verificado en producción real (fresco-pro.vercel.app),
     # no simulado. Confirmado junto con el resto de la épica el
