@@ -9,6 +9,8 @@ import { NextRequest } from 'next/server';
  * builder and `NextResponse` are the real ones.
  */
 let getSessionCalls = 0;
+let getUserCalls = 0;
+let currentUser: { id: string } | null = null;
 
 await mock.module('@supabase/ssr', () => ({
   createServerClient: () => ({
@@ -16,6 +18,10 @@ await mock.module('@supabase/ssr', () => ({
       getSession: async () => {
         getSessionCalls += 1;
         return { data: { session: null }, error: null };
+      },
+      getUser: async () => {
+        getUserCalls += 1;
+        return { data: { user: currentUser }, error: null };
       },
     },
   }),
@@ -33,6 +39,9 @@ function nonceOf(csp: string): string | null {
 
 beforeEach(() => {
   getSessionCalls = 0;
+  getUserCalls = 0;
+  currentUser = null;
+  process.env.ADMIN_USER_ID = 'admin-1';
 });
 
 describe('proxy — Content-Security-Policy', () => {
@@ -74,6 +83,47 @@ describe('proxy — session refresh', () => {
     await proxy(requestTo('/calendar'));
 
     expect(getSessionCalls).toBe(2);
+  });
+});
+
+/**
+ * FRESCO-840: a `notFound()` thrown inside `app/(app)/admin/recipes/page.tsx`
+ * runs under the route group's `loading.tsx` Suspense, after the response has
+ * started streaming, so the status stays 200. The decision has to be taken here,
+ * before render. Only a signed-in non-admin is rewritten; no session falls
+ * through so `(app)/layout.tsx` keeps redirecting to /login.
+ */
+describe('proxy — admin routes answer a real 404 to non-admins', () => {
+  it('returns 404 for a signed-in non-admin on /admin/recipes', async () => {
+    currentUser = { id: 'user-2' };
+    const res = await proxy(requestTo('/admin/recipes'));
+
+    expect(res.status).toBe(404);
+    expect(res.headers.get('Content-Security-Policy')).toBeTruthy();
+    expect(getUserCalls).toBe(1);
+  });
+
+  it('lets the admin through untouched', async () => {
+    currentUser = { id: 'admin-1' };
+    const res = await proxy(requestTo('/admin/recipes'));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('falls through when there is no session, so the layout can redirect to /login', async () => {
+    const res = await proxy(requestTo('/admin/recipes'));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('adds no GoTrue round trip outside /admin', async () => {
+    currentUser = { id: 'user-2' };
+    await proxy(requestTo('/menu'));
+    await proxy(requestTo('/administrador'));
+
+    expect(getUserCalls).toBe(0);
   });
 });
 
