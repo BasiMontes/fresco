@@ -342,6 +342,48 @@ Then read the materialized files under `.context/PBI/` — every per-field `.md`
 - Related Bugs: [List or "None"]
 ```
 
+**Step 2b: Backfill Severity + Error Type if empty (FRESCO-281 structured-QA-field contract)**
+
+These two fields are option-type, have no 255-char limit, and are the currency of severity triage + defect-density JQL. On new work they must not stay blank.
+
+- If `{{jira.severity}}` is empty → set it now from observed impact, using the `### SEVERITY to Priority Mapping` table in the Reference section above. Values: `critica | mayor | moderada | menor | trivial`.
+- If `{{jira.error_type}}` is empty → set it now from the bug taxonomy. Values: `content | crash | data | functional | integration | performance | security | visual`.
+
+```
+[ISSUE_TRACKER_TOOL] update_issue_field(
+  issue_key="[BUG_ID]",
+  field={{jira.severity}},
+  value={"value": "[severity]"}
+)
+[ISSUE_TRACKER_TOOL] update_issue_field(
+  issue_key="[BUG_ID]",
+  field={{jira.error_type}},
+  value={"value": "[error type]"}
+)
+```
+
+If either field is absent on the instance, write the value to its fallback comment per `.agents/jira-required.yaml`. Do NOT retro-fill bugs already closed — new work only. `{{jira.root_cause}}` stays empty here; it is set at close (Phase 7).
+
+**Step 2c: Link the defect to the affected feature + attach minimal evidence (FRESCO-282 traceability contract)**
+
+A defect with no link to the story/epic it regressed is invisible to defect-density-per-feature JQL — the headline shift-left metric. On new work this is MANDATORY, not optional. Do it now if the affected feature is already obvious from the report; otherwise the latest it can happen is the moment root-cause analysis (Phase 4) names the file/feature — and it is a hard gate before close (Phase 7). No retroactive sweep of already-closed defects — new work only.
+
+1. **Link to the affected story/epic.** Identify the story or epic whose behavior this defect broke (from the report, the linked story, or — later — the root-cause file → owning feature). Then:
+   - Symmetric case (default) → `Relates` link between the defect and the affected story/epic.
+   - Clearly one epic's regression, no specific story → set the defect's `parent` to that epic instead.
+
+   ```
+   [ISSUE_TRACKER_TOOL] link create --type "Relates" [BUG_ID] <-> [AFFECTED-STORY-OR-EPIC]
+   ```
+   `Relates` is symmetric — flag order does not matter. For an asymmetric type (`Blocks`, `Causes`) mind the empirical `--out`/`--in` inversion and verify with `link list` — see `.agents/skills/acli/references/workitem.md` § Directionality. Resolve the link-type name via `{{jira.link_types.<slug>}}` against `.agents/jira-required.yaml` (`relates`, `blocks`, `causes`), never hardcode.
+
+2. **Attach minimal evidence.** A screenshot ALWAYS; additionally a HAR / network capture when the defect is a network or API defect (`error_type` ∈ `integration | data | performance`, or any 4xx/5xx / payload-shape symptom). Upload the file and populate `{{jira.evidence}}`:
+
+   ```
+   bun .agents/skills/acli/scripts/jira-attach-media.ts [BUG_ID] ./repro.png --caption "Repro — <state>" --publish
+   ```
+   Then record the evidence in `{{jira.evidence}}` (link/description of what was attached). If the field is absent on the instance, write it to the `## Evidence` fallback comment per `.agents/jira-required.yaml`. HAR files attach the same way (`--publish` posts the inline note; the `.har` rides in the Attachments panel).
+
 **Step 3: Check for duplicates**
 
 ```
@@ -779,6 +821,10 @@ Next steps:
   value={"value": "Bugfix"}  // or "Hotfix"
 )
 ```
+
+**Confirm Severity + Error Type are set** (FRESCO-281 contract). They should already be filled from Phase 1 Step 2b; if either is still empty, set it now before transitioning — a closed bug with a blank Severity or Error Type breaks the defect-density-per-feature dashboards this contract exists to enable.
+
+**Confirm the feature link + evidence are in place** (FRESCO-282 contract). The defect must carry a `Relates` link (or `parent`) to the story/epic it regressed, and `{{jira.evidence}}` (or its fallback comment) must hold at least a screenshot — plus a HAR for network/API defects. Root-cause analysis (Phase 4) has now named the affected file/feature, so if the link was deferred at intake, create it now — before transitioning. A closed defect with no feature link cannot be counted in defect-density-per-feature.
 
 **Confirm reproduction steps or a rejection rationale exist** (FRESCO-313 contract). Do not transition to `Finalizada` / `Rechazos` / `Won't Fix` / `Duplicate` unless the defect carries numbered reproduction steps OR a documented reason it cannot/should not be reproduced (see the reproduction-or-rejection gate in Phase 3). A bare one-line defect is not closable.
 
@@ -1497,6 +1543,8 @@ Before presenting the final report, verify:
 - [ ] Bug analyzed with full context
 - [ ] Reproduction documented
 - [ ] Triage decision made and documented
+- [ ] `{{jira.severity}}` + `{{jira.error_type}}` set (backfilled at intake if empty) — FRESCO-281
+- [ ] Defect linked (`Relates` or `parent`) to the affected story/epic + `{{jira.evidence}}` holds a screenshot (HAR too for network/API defects) — FRESCO-282
 - [ ] Reproduction steps OR a documented rejection rationale present before any terminal transition — FRESCO-313
 - [ ] Root Cause custom fields updated
 - [ ] Fix documentation comment added
