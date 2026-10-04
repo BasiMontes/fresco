@@ -101,7 +101,7 @@ export function useCalendarDragDrop({ supabase, slotIds, setMenu, setErrorMessag
     const slotAId = slotIds[from.dia][from.tipo];
     const slotBId = slotIds[to.dia][to.tipo];
 
-    void swapMealPlanSlots(supabase, slotAId, slotBId)
+    void swapMealPlanSlots(supabase, { slotAId, slotBId })
       .catch((error) => {
         console.error('[CalendarGrid] swapMealPlanSlots failed, reverting', error);
         setMenu(current => applySlotSwap(current, from, to));

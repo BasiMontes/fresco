@@ -36,10 +36,10 @@ export function FavoriteToggleButton({ recipeId, initialIsFavorite, className }:
 
     try {
       if (next) {
-        await addFavorite(supabase, recipeId);
+        await addFavorite(supabase, { recipeId });
       }
       else {
-        await removeFavorite(supabase, recipeId);
+        await removeFavorite(supabase, { recipeId });
       }
     }
     catch (error) {

@@ -59,7 +59,7 @@ export default async function NotificationsPage() {
       console.error('[/notifications] getShouldShowRoutesNotice failed, defaulting to hidden', error);
       return false;
     }),
-    getLatestAvailableRecipes(supabase, user?.id, RECOMMENDED_RECIPES_LIMIT).catch((error) => {
+    getLatestAvailableRecipes(supabase, { userId: user?.id, limit: RECOMMENDED_RECIPES_LIMIT }).catch((error) => {
       console.error('[/notifications] getLatestAvailableRecipes failed, defaulting to hidden', error);
       return [];
     }),

@@ -236,7 +236,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
     setComprado(pasilloIdx, itemIdx, nextComprado);
 
     try {
-      await toggleShoppingListItem(supabase, list.id, pasilloIdx, itemIdx, nextComprado);
+      await toggleShoppingListItem(supabase, { listId: list.id, pasilloIdx, itemIdx, comprado: nextComprado });
     }
     catch (error) {
       console.error('[ShoppingListView] toggleShoppingListItem failed, reverting', error);
@@ -321,7 +321,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
     });
 
     try {
-      await addShoppingListItem(supabase, list.id, suggestion.pasillo, newItem);
+      await addShoppingListItem(supabase, { listId: list.id, pasilloNombre: suggestion.pasillo, item: newItem });
     }
     catch (error) {
       console.error('[ShoppingListView] addShoppingListItem failed, reverting', error);

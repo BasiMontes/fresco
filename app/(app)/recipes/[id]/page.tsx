@@ -29,7 +29,7 @@ export default async function RecipeDetailPage({ params, searchParams }: {
 
   let detail: Awaited<ReturnType<typeof getRecipeDetail>>;
   try {
-    detail = await getRecipeDetail(supabase, id, user?.id);
+    detail = await getRecipeDetail(supabase, { id, userId: user?.id });
   }
   catch (error) {
     console.error('[/recipes/[id]] getRecipeDetail failed, falling back to not-found state', error);

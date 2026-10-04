@@ -127,7 +127,7 @@ describe('getMealPlanForWeek', () => {
   test('reshapes a persisted plan into the DiaSemana/TipoPlato menu grid', async () => {
     const { client } = createMockClient({ userId: 'user-123', planRow: SAMPLE_JOIN_ROW });
 
-    const result = await getMealPlanForWeek(client, SEMANA_ISO);
+    const result = await getMealPlanForWeek(client, { semanaIso: SEMANA_ISO });
 
     expect(result).not.toBeNull();
     expect(result?.mealPlanId).toBe('plan-1');
@@ -157,7 +157,7 @@ describe('getMealPlanForWeek', () => {
   test('returns null when no plan exists yet for that week', async () => {
     const { client } = createMockClient({ userId: 'user-123', planRow: null });
 
-    const result = await getMealPlanForWeek(client, SEMANA_ISO);
+    const result = await getMealPlanForWeek(client, { semanaIso: SEMANA_ISO });
 
     expect(result).toBeNull();
   });
@@ -165,25 +165,25 @@ describe('getMealPlanForWeek', () => {
   test('throws MealPlanError on a real database error', async () => {
     const { client } = createMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
 
-    await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
+    await expectRejection(getMealPlanForWeek(client, { semanaIso: SEMANA_ISO }));
   });
 
   test('throws MealPlanError when there is no authenticated session', async () => {
     const { client } = createMockClient({});
 
-    await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
+    await expectRejection(getMealPlanForWeek(client, { semanaIso: SEMANA_ISO }));
   });
 
   test('throws MealPlanError when the persisted plan is missing slots (NFR-REL-2 partial-write gap)', async () => {
     const { client } = createMockClient({ userId: 'user-123', planRow: INCOMPLETE_JOIN_ROW });
 
-    await expectRejection(getMealPlanForWeek(client, SEMANA_ISO));
+    await expectRejection(getMealPlanForWeek(client, { semanaIso: SEMANA_ISO }));
   });
 
   test('surfaces a slot with a null recipe as null, not a thrown error (FR-8.2 / AC Scenario 4, FRESCO-23)', async () => {
     const { client } = createMockClient({ userId: 'user-123', planRow: UNSAFE_SLOT_JOIN_ROW });
 
-    const result = await getMealPlanForWeek(client, SEMANA_ISO);
+    const result = await getMealPlanForWeek(client, { semanaIso: SEMANA_ISO });
 
     expect(result).not.toBeNull();
     expect(result?.menu.lunes.desayuno).toBeNull();
@@ -214,7 +214,7 @@ describe('swapMealPlanSlots', () => {
   test('resolves without throwing when the RPC succeeds', async () => {
     const { client } = createRpcMockClient();
 
-    const result = await swapMealPlanSlots(client, 'slot-a-id', 'slot-b-id');
+    const result = await swapMealPlanSlots(client, { slotAId: 'slot-a-id', slotBId: 'slot-b-id' });
 
     expect(result).toBeUndefined();
   });
@@ -222,7 +222,7 @@ describe('swapMealPlanSlots', () => {
   test('throws MealPlanError with the underlying message when the RPC fails', async () => {
     const { client } = createRpcMockClient({ errorMessage: 'foreign key violation' });
 
-    await expectRejection(swapMealPlanSlots(client, 'slot-a-id', 'slot-b-id'));
+    await expectRejection(swapMealPlanSlots(client, { slotAId: 'slot-a-id', slotBId: 'slot-b-id' }));
   });
 });
 

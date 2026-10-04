@@ -25,8 +25,7 @@ export interface PushSubscriptionKeys {
  */
 export async function savePushSubscription(
   client: SupabaseClient<Database>,
-  subscription: PushSubscriptionKeys,
-  userId?: string,
+  { subscription, userId }: { subscription: PushSubscriptionKeys, userId?: string },
 ): Promise<void> {
   let resolvedUserId = userId;
 

@@ -117,9 +117,11 @@ export async function subscribeToPush({ client, vapidPublicKey }: SubscribeToPus
   }
 
   await savePushSubscription(client, {
-    endpoint: subscription.endpoint,
-    p256dh: keys.p256dh,
-    auth: keys.auth,
+    subscription: {
+      endpoint: subscription.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+    },
   });
 
   return subscription;

@@ -83,13 +83,13 @@ export default async function MenuPage() {
       console.error('[/menu] getAvailableRecipesCount failed, hiding the card', error);
       return null;
     }),
-    getLatestAvailableRecipes(supabase, user?.id).catch((error) => {
+    getLatestAvailableRecipes(supabase, { userId: user?.id }).catch((error) => {
       // Same fail-soft pattern as the other value-indicator reads on this
       // page: hides the section instead of crashing the page.
       console.error('[/menu] getLatestAvailableRecipes failed, hiding the section', error);
       return [] as Recipe[];
     }),
-    getMealPlanForWeek(supabase, undefined, user?.id).catch((error) => {
+    getMealPlanForWeek(supabase, { userId: user?.id }).catch((error) => {
       // `getMealPlanForWeek` fails fast (throws) on a real read error,
       // including "no authenticated session" — a real gap remains only for a
       // visit with literally zero session at all (no page currently forces one
