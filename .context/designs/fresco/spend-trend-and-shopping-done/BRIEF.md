@@ -1,5 +1,5 @@
 # Design brief — Fresco / spend-trend-and-shopping-done
-Tool session: NEW project (mode FULL). If you continue an existing project in your tool, tell the agent and it will trim this to FOLLOW-UP.
+Tool session: NEW project in Claude Design (mode FULL, first batch; the tool knows nothing about the product yet, so the whole contract is inlined)
 Date: 2026-10-04 · Stories: FRESCO-841, FRESCO-842 · Method: Mode B (the brief is handed to the user; no design MCP was used)
 
 ## Mission
@@ -66,9 +66,5 @@ Thesis that governs every decision: *Fresco is a weekly ritual, not an app. You 
 Attach to your first message the two reference screenshots of today's state (the home spend-trend card on a phone, and the shopping list with 0 pending). They show what is being replaced.
 
 **Claude Design** (`claude.ai/design`): paste this whole brief as your first message in the chat pane. Iterate until satisfied. Then Export (top-right) -> **Save as folder** -> place the bundle contents into `.context/designs/fresco/spend-trend-and-shopping-done/` in the repo. (If you use "Send to local coding agent", tell the agent that destination path.)
-
-**Open Design** (local app, see `.agents/skills/design-system/references/open-design-app.md` to bring it up): create a project, pick a screen-type skill (e.g. `web-prototype`), paste this brief into the brief field. Iterate, then copy the final artifacts from `./.od/artifacts/<timestamp>-<slug>/` into `.context/designs/fresco/spend-trend-and-shopping-done/`.
-
-**Any other tool**: produce HTML/CSS (preferred) or high-fidelity images, one file per screen named by its slug, into the same destination folder.
 
 When the files are in place, come back to the agent session and confirm. The screen-mapping phase resumes from there: the §4 spec and the §8 row for FRESCO-841 and FRESCO-842 are written from what comes back, and only then does development start.
