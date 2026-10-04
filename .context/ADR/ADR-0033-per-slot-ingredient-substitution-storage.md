@@ -100,3 +100,16 @@ changed between opening the picker and confirming.
   this decision's implementation.
 - FRESCO-534 (this story), FRESCO-715 (foundation), FRESCO-716 (sibling, reads
   this column).
+
+## Follow-up (2026-10-04, FRESCO-835): RLS scopes the row, not the column
+
+The Decision above says "RLS on the write statement itself is the enforcement mechanism". Audit-5 finding A5-B2 showed that is not enough on its own. `mpr_update_own` scopes the `UPDATE` to the caller's own row, but with a table-wide `grant update on meal_plan_recipes to authenticated` and no column restriction, an owner could write `sustitucion_ingrediente` directly through PostgREST. That skips the allergen re-check inside `confirm_ingredient_substitution`, and `generate-shopping-list` trusts the column verbatim.
+
+What holds today:
+
+- **Column integrity is a trigger, not RLS.** `protect_meal_plan_recipes_integrity` (`BEFORE UPDATE`, migration `20260928170000`) rejects any change to `estado`, `rating`, `recipe_id` or `sustitucion_ingrediente` unless the writer is `service_role` or an admin login, or the transaction-local GUC `app.mpr_trusted_write` is `on`.
+- **`confirm_ingredient_substitution` stays `SECURITY INVOKER` with no identity parameter**, and sets the GUC around its own `UPDATE`, after its allergen re-check. RLS still decides which row the caller may touch; it does not decide what may be written into it.
+- **A function that sets the trusted GUC must validate what it writes itself.** FRESCO-776 (audit-6 A6-S1) dropped `apply_recipe_status_update`, a sibling that set the GUC and then ran an unvalidated `UPDATE`, which reopened the same bypass. That is the failure mode to avoid when adding another writer.
+- **INSERT paths on `meal_plans` and `meal_plan_recipes` were closed separately** (FRESCO-777, migration `20261002072502`).
+
+The Decision itself (`INVOKER` RPC, no identity parameter, non-disclosing "not found") is unchanged.
