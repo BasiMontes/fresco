@@ -497,3 +497,8 @@ Historia archivada:
 - Qué: línea % frente a la media de 4 semanas bajo el gasto semanal estimado; gráfico de tendencia retirado (PR #492)
 - Por qué: decisión del fundador, el gráfico no aportaba; sin mockup (§5-V)
 - Siguiente: FRESCO-842 espera bundle de Claude Design; verificación visual en vivo pendiente
+
+## 2026-10-04 - FRESCO-791 landing claims aligned with Pro/Free
+- Qué: reescrita la línea de tiempo Pro, "Menú variado" y bullet de precios; "no repetir lo cocinado/descartado" ahora solo Pro. Test components/landing/landing-claims.test.ts exige fuente en código por claim (PR #493).
+- Por qué: A6-P3/A6-P4, la landing prometía aprendizaje y no-repetición que Free no tiene y Pro solo aplica con marcas.
+- Siguiente: ticket en Merged; pasar a Finalizada tras QA en prod (revisión del fundador ya adjunta en Jira).
