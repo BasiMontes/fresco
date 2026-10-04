@@ -469,3 +469,7 @@ Historia archivada:
 - Qué: PR #477 (tabla de solapes 6 interna vs 6 externa, README con regla de tendencia) y PR #478 (8 de 10 puntos de "para cuando pases cerca": staging en docs/dependabot, server-only, poweredByHeader, tap target 44px, DESIGN.md, ficheros muertos). FRESCO-840 abierto para typecheck de tests Edge y 404 real en /admin/recipes.
 - Por qué: la nota absoluta de dos auditorias con distinta mirada no mide tendencia; los hallazgos externos debian tener ticket o motivo.
 - Siguiente: git:promote a dev/main; FRESCO-833/834/836 siguen en Rechazos sin motivo escrito.
+## 2026-10-04 - FRESCO-840 typecheck de tests de Edge y 404 real en /admin
+- Qué: PR #480 (tsconfig.edge-tests.json, encadenado en types:check) y PR #481 (puerta de admin en proxy.ts, 404 real). Nivelado dev/staging/main en fb73525f.
+- Por qué: higiene de la auditoría externa 6. El 200 en /admin/recipes se reprodujo en local y staging; la auditoría interna no lo vio.
+- Siguiente: verificar el 404 en producción tras el deploy y pasar 840 a Finalizada; 833/834 ya tienen motivo de rechazo.
