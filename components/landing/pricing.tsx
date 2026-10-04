@@ -7,7 +7,7 @@ import { LandingCtaLink } from './landing-cta-link';
 // no menu-count limit exists on either tier (5 generations/hour for both,
 // one plan per ISO week), and there is no "history" feature. Free keeps
 // everything except the learning loop.
-const FREE_FEATURES = [
+export const FREE_FEATURES = [
   'Menú semanal completo',
   'Lista de la compra automática',
   'Filtros de dieta y alergias',
@@ -20,9 +20,9 @@ const FREE_FEATURES = [
 // planificaste esta semana?", about planning, not about marking cooked
 // recipes). The learning claim it duplicated is already covered truthfully
 // by the first bullet below.
-const PRO_FEATURES = [
+export const PRO_FEATURES = [
   'Aprende de lo que cocinas y lo que descartas',
-  'No repite las recetas de las últimas semanas',
+  'No repite las recetas que cocinaste o descartaste hace poco',
   'Te explica por qué eligió cada receta',
 ];
 

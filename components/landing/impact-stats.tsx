@@ -6,7 +6,7 @@ import { Clock, ListChecks, Repeat } from 'lucide-react';
 // source exists (see the sibling note in components/menu/savings-estimate-cards.tsx).
 // Replaced with three statements about how the product actually works, each
 // verifiable against the app itself.
-const HIGHLIGHTS = [
+export const HIGHLIGHTS = [
   {
     icon: Clock,
     value: 'En 30 segundos',
@@ -14,8 +14,8 @@ const HIGHLIGHTS = [
   },
   {
     icon: Repeat,
-    value: 'Sin repetir',
-    description: 'No vuelven las recetas de las últimas semanas. En Pro, además aprende de lo que cocinas.',
+    value: 'Menú variado',
+    description: 'Sin comidas ni cenas repetidas dentro de la misma semana. En Pro, además, no vuelven las que ya cocinaste o descartaste.',
   },
   {
     icon: ListChecks,
