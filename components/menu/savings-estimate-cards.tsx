@@ -10,6 +10,8 @@ export interface SavingsEstimateCardsProps {
    * nothing: a figure with no menu behind it would be invented.
    */
   costeEstimado?: number
+  /** FRESCO-841 — comparison line from `formatSpendVsAverage`; absent = no line. */
+  comparison?: string | null
 }
 
 /**
@@ -23,7 +25,7 @@ export interface SavingsEstimateCardsProps {
  * grid in `/menu`'s page component. FRESCO-444 — top-hairline `StatTile`, not
  * a filled `Card`.
  */
-export function SavingsEstimateCards({ costeEstimado }: SavingsEstimateCardsProps = {}) {
+export function SavingsEstimateCards({ costeEstimado, comparison }: SavingsEstimateCardsProps = {}) {
   if (costeEstimado === undefined) { return null; }
 
   return (
@@ -31,6 +33,7 @@ export function SavingsEstimateCards({ costeEstimado }: SavingsEstimateCardsProp
       icon={Wallet}
       value={formatPrecio(costeEstimado)}
       label="Gasto semanal estimado"
+      note={comparison ?? undefined}
       data-testid="savings_estimate_cards"
     />
   );

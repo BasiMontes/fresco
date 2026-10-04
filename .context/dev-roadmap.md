@@ -371,7 +371,7 @@ Real Jira `Blocks` links between tickets that the §4 sort deliberately does NOT
 
 | Mockup needed | Screen ref | Blocks | Status |
 |---|---|---|---|
-| Spend-trend card redesign | 4.7 Home (`spend-trend-chart`) | FRESCO-841 | 🔒 mockup-gated: mockup pending |
+| Spend-vs-average line (replaces chart) | 4.7 Home | FRESCO-841 | spec-only build, §5-V (no mockup) |
 | "Everything bought" state of the shopping list | 4.9 Shopping list | FRESCO-842 | 🔒 mockup-gated: mockup pending |
 
 ---

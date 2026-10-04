@@ -12,7 +12,6 @@ import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { PushOpenedTracker } from '@/components/menu/push-opened-tracker';
 import { PushPromptBanner } from '@/components/menu/push-prompt-banner';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
-import { SpendTrendChart } from '@/components/menu/spend-trend-chart';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { buttonVariants } from '@/components/ui/button';
@@ -26,6 +25,7 @@ import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
 import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { getSpendTrend } from '@/lib/menu/get-spend-trend';
+import { formatSpendVsAverage } from '@/lib/menu/spend-vs-average';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
@@ -128,7 +128,7 @@ export default async function MenuPage() {
     // FRESCO-535: same fail-soft pattern as the other reads on this page — a
     // read failure just hides the trend chart rather than crashing the page.
     getSpendTrend(supabase, { semanaIso, userId: user?.id }).catch((error) => {
-      console.error('[/menu] getSpendTrend failed, hiding the trend chart', error);
+      console.error('[/menu] getSpendTrend failed, hiding the spend comparison', error);
       return [];
     }),
   ]);
@@ -162,7 +162,6 @@ export default async function MenuPage() {
             <AvailableRecipesCard count={recetasDisponibles} />
           )}
         </div>
-        <SpendTrendChart trend={spendTrend} />
         <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
       </div>
     );
@@ -179,7 +178,7 @@ export default async function MenuPage() {
   });
 
   // FRESCO-535: persist this week's cost the first time it's computed, so
-  // the trend chart above has a real historical point for this week going
+  // the spend comparison has a real historical point for this week going
   // forward. `coste_estimado is null` makes the DB write itself idempotent —
   // a later render of the same week never overwrites the first value it
   // wrote, per the story's own AC (a snapshot reflects what was estimated AT
@@ -251,9 +250,11 @@ export default async function MenuPage() {
         {recetasDisponibles !== null && (
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
-        <SavingsEstimateCards costeEstimado={costeEstimado} />
+        <SavingsEstimateCards
+          costeEstimado={costeEstimado}
+          comparison={costeEstimado === undefined ? null : formatSpendVsAverage(costeEstimado, spendTrend)}
+        />
       </div>
-      <SpendTrendChart trend={spendTrend} />
 
       {(user?.is_anonymous || (plan.advertencias && plan.advertencias.length > 0) || plan.explicacionAprendizaje) && (
         <div className="space-y-4">

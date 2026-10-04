@@ -1,9 +1,9 @@
 # Design brief — Fresco / spend-trend-and-shopping-done
 Tool session: NEW project in Claude Design (mode FULL, first batch; the tool knows nothing about the product yet, so the whole contract is inlined)
-Date: 2026-10-04 · Stories: FRESCO-841, FRESCO-842 · Method: Mode B (the brief is handed to the user; no design MCP was used)
+Date: 2026-10-04 · Stories: FRESCO-842 (FRESCO-841 dropped from this batch 2026-10-04: replaced by a text line, no mockup) · Method: Mode B (the brief is handed to the user; no design MCP was used)
 
 ## Mission
-Design 2 screens (two states of screens that already exist) for Fresco, a weekly meal-planning web app. We describe WHAT each screen must accomplish; HOW it looks is your call: layout, composition, hierarchy, component choices and micro-interactions are fully delegated to you. Your only hard boundary is the design contract below: never invent colors, fonts or spacing values outside it. When done, export and return the files as described in "Export & return".
+Design 1 screen state (of a screen that already exists) for Fresco, a weekly meal-planning web app. We describe WHAT each screen must accomplish; HOW it looks is your call: layout, composition, hierarchy, component choices and micro-interactions are fully delegated to you. Your only hard boundary is the design contract below: never invent colors, fonts or spacing values outside it. When done, export and return the files as described in "Export & return".
 
 ## Product context
 Fresco generates a weekly menu (3 meals x 7 days) that learns from what the household actually cooks, and builds the shopping list from it. The user is a person who is tired of deciding what to cook every week. Tone: a calm printed weekly planner, not a dashboard. Spanish (Spain) UI.
@@ -21,24 +21,7 @@ Thesis that governs every decision: *Fresco is a weekly ritual, not an app. You 
 - **Voice (applies to every string on the screens):** Spanish (Spain), always informal "tú". Calm, not hype: no exclamation marks and no emoji. Direct, no padding. Concrete, never generic. Example of the register: "No hay recetas guardadas todavía." The only place the tone rises is the learning insight card, which is not part of these screens.
 
 ## Screens requested
-### 1. home-spend-trend-card — Weekly spend trend card on the home screen
-- Route: `/menu` (the home dashboard). The card sits among the home cards, next to the existing "Gasto semanal estimado" tile.
-- Purpose: let the user see how her estimated weekly grocery spend has evolved over the last weeks, and whether it truly goes up or down.
-- User stories: FRESCO-841 — Tendencia de gasto: leer la evolución con semanas y cifras visibles (reworks FRESCO-535, which shipped without design).
-- The user must be able to:
-  - read, from the card alone and without hovering or tapping, the week and the amount in euros of every week that has data;
-  - judge the evolution honestly: a 2 € difference on a 45 € week must not look like a surge;
-  - see a week without a menu as an explicit gap, never as 0 €;
-  - understand at a glance when there is not enough history yet.
-- What is wrong today (so you can fix it, not copy it): with few weeks of data the line is squeezed against the right edge and the last point is clipped; the scale runs from the series minimum to its maximum, so any two close amounts fill the whole height; the amounts exist only in a hover tooltip, which does not exist on a phone.
-- States the ACs demand:
-  - **Not enough history** (0 or 1 week with data): the message "Todavía no hay suficientes semanas para mostrar una tendencia de gasto." and no chart.
-  - **Short series** (exactly 2 consecutive weeks, e.g. 45,00 € and 47,00 €): both points whole and inside the card; the horizontal span covers only the weeks that exist.
-  - **Full series** (up to the last 8 weeks, e.g. 38,00 / 41,50 / 40,00 / 44,20 €).
-  - **Series with a gap** (weeks 1, 2 and 4 have a menu, week 3 does not).
-- Viewport: mobile 390px first (that is where it fails today), and desktop 1440px.
-
-### 2. shopping-list-all-bought — Shopping list when nothing is left to buy
+### 1. shopping-list-all-bought — Shopping list when nothing is left to buy
 - Route: `/shopping-list`.
 - Purpose: tell the user she is done with this week's shopping and offer a natural next step, instead of leaving an almost empty screen.
 - User stories: FRESCO-842 — Lista de la Compra: ver qué hacer cuando ya no quedan pendientes.
@@ -56,14 +39,14 @@ Thesis that governs every decision: *Fresco is a weekly ritual, not an app. You 
 - Viewport: desktop 1440px and mobile 390px.
 
 ## Hard constraints
-- Name each screen file or frame with its `{screen-slug}` exactly: `home-spend-trend-card` and `shopping-list-all-bought` (one file per screen, each containing its states). The repo maps files by slug.
+- Name each screen file or frame with its `{screen-slug}` exactly: `shopping-list-all-bought` (one file containing its states). The repo maps files by slug.
 - No new tokens. A value not in the frozen contract is a defect, not a creative choice.
 - UI copy is Spanish (Spain) even if this brief is in English.
 - Accessibility AA: text contrast and non-text contrast (a chart line and its points must be distinguishable without relying on color alone), tap targets that work on a phone.
 - Respect reduced motion: nothing bounces; if anything animates, it is short and quiet.
 
 ## Export & return
-Attach to your first message the two reference screenshots of today's state (the home spend-trend card on a phone, and the shopping list with 0 pending). They show what is being replaced.
+Attach to your first message the reference screenshot of today's state (the shopping list with 0 pending). It shows what is being replaced.
 
 **Claude Design** (`claude.ai/design`): paste this whole brief as your first message in the chat pane. Iterate until satisfied. Then Export (top-right) -> **Save as folder** -> place the bundle contents into `.context/designs/fresco/spend-trend-and-shopping-done/` in the repo. (If you use "Send to local coding agent", tell the agent that destination path.)
 
