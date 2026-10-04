@@ -3,11 +3,11 @@ import { ALLOWED_PUSH_ENDPOINTS, REJECTED_PUSH_ENDPOINTS } from './push-endpoint
 import { isAllowedPushEndpoint, MAX_PUSH_ENDPOINT_LENGTH } from './push-endpoint.ts'
 
 describe('isAllowedPushEndpoint (FRESCO-779)', () => {
-  test.each(ALLOWED_PUSH_ENDPOINTS)('accepts the real push service endpoint %s', (endpoint) => {
+  test.each([...ALLOWED_PUSH_ENDPOINTS])('accepts the real push service endpoint %s', (endpoint) => {
     expect(isAllowedPushEndpoint(endpoint)).toBe(true)
   })
 
-  test.each(REJECTED_PUSH_ENDPOINTS)('rejects %j', (endpoint) => {
+  test.each([...REJECTED_PUSH_ENDPOINTS])('rejects %j', (endpoint) => {
     expect(isAllowedPushEndpoint(endpoint)).toBe(false)
   })
 

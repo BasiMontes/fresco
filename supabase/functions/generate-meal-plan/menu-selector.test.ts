@@ -42,7 +42,7 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     tiempo_max_finde_min: 60,
     presupuesto_semana_euros: null,
     ...overrides,
-  }
+  } as UserProfile
 }
 
 function makeRecipe(id: string, tipoPlato: TipoPlatoSlot, overrides: Partial<Recipe> = {}): Recipe {
@@ -66,7 +66,7 @@ function makeRecipe(id: string, tipoPlato: TipoPlatoSlot, overrides: Partial<Rec
     rating_promedio: null,
     ultima_vez_en_menu: null,
     ...overrides,
-  }
+  } as Recipe
 }
 
 /** A generous, varied catalog — enough real candidates per tipo_plato that no slot needs the sentinel. */
@@ -286,7 +286,7 @@ describe('selectMenu — planning_selection exclusions (FRESCO-199)', () => {
       meta: { ...r.meta!, coste_estimado: 'alto' as const },
     }))
     const allExcludedProfile = makeProfile({
-      planning_selection: Object.fromEntries(DIAS.map(dia => [dia, []])) as Record<DiaSemana, TipoPlatoSlot[]>,
+      planning_selection: Object.fromEntries(DIAS.map(dia => [dia, [] as TipoPlatoSlot[]])) as Record<DiaSemana, TipoPlatoSlot[]>,
       presupuesto_semana_euros: 1,
     })
     const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: allExcludedProfile })

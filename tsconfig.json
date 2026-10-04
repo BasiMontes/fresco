@@ -47,6 +47,9 @@
     // program. Type-checked + linted separately by `bun run deno:check`
     // (config: supabase/functions/deno.json), enforced as the mandatory
     // `deno:check` CI job — FRESCO-375 / A4-H4.
-    "supabase/functions"
+    "supabase/functions",
+    // Ambient Deno/web-push declarations used only by tsconfig.edge-tests.json
+    // (type-check of the Edge Function tests) — FRESCO-840.
+    "supabase/edge-tests-types"
   ]
 }
