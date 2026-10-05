@@ -7,6 +7,17 @@
 /** Days of the free trial. Passed to Stripe as `trial_period_days` (`/api/stripe/checkout`) and shown in the summary. */
 export const PRO_TRIAL_DAYS = 7;
 
+/**
+ * `subscription_data` of the card-less trial (FRESCO-813, audit-6 A6-P10). With no
+ * card on file Stripe cancels the subscription when the trial ends, so
+ * `customer.subscription.deleted` drops the user back to Free. One definition:
+ * `/api/stripe/checkout` sends it and the real-Stripe scenario replays it.
+ */
+export const PRO_TRIAL_SUBSCRIPTION_DATA = {
+  trial_period_days: PRO_TRIAL_DAYS,
+  trial_settings: { end_behavior: { missing_payment_method: 'cancel' as const } },
+};
+
 export interface TrialHistory {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null

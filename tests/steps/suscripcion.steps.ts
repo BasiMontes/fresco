@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import type { TestUser, TestUserFactory } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { PRO_TRIAL_DAYS, PRO_TRIAL_SUBSCRIPTION_DATA } from '../../lib/legal/pro-terms';
 import { test } from '../fixtures';
 import { sessionLoginEnabled, signInBrowserViaSession } from '../session-login';
 import { postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
@@ -493,4 +494,49 @@ Then(/^Stripe le pide la tarjeta desde el primer día y reutiliza su cliente$/, 
   const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
   expect(session.payment_method_collection).toBe('always');
   expect(session.customer).toBe(ctx.stripeCustomerIds[0]);
+});
+
+// --- FRESCO-813 (audit-6 A6-P10): a card-less trial that ends cancels the subscription ---
+
+Given(/^que Laura empezó su prueba de Pro sin tarjeta$/, async ({ suscripcionCtx: ctx }) => {
+  // Pure Stripe scenario: no app user needed, the clock-bound customer is the whole fixture.
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  // A test clock lets us jump past the trial instead of waiting 7 real days.
+  const clock = await stripe.testHelpers.testClocks.create({ frozen_time: Math.floor(Date.now() / 1000) });
+  ctx.stripeTestClockId = clock.id;
+  const customer = await stripe.customers.create({ test_clock: clock.id, metadata: { test_scenario: 'FRESCO-813-trial-end' } });
+  ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
+  // Same `subscription_data` the checkout route sends, so a change there is covered here.
+  const subscription = await stripe.subscriptions.create({
+    customer: customer.id,
+    items: [{ price: process.env.STRIPE_PRICE_ID_PRO_MONTH! }],
+    ...PRO_TRIAL_SUBSCRIPTION_DATA,
+  });
+  ctx.stripeSubscriptionId = subscription.id;
+  expect(subscription.status).toBe('trialing');
+});
+
+When(/^pasan los 7 días de prueba sin que añada tarjeta$/, async ({ suscripcionCtx: ctx }) => {
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const clock = await stripe.testHelpers.testClocks.retrieve(ctx.stripeTestClockId);
+  const afterTrial = clock.frozen_time + (PRO_TRIAL_DAYS + 1) * 24 * 60 * 60;
+  await stripe.testHelpers.testClocks.advance(clock.id, { frozen_time: afterTrial });
+  await expect.poll(async () => (await stripe.testHelpers.testClocks.retrieve(clock.id)).status, { timeout: 60_000 }).toBe('ready');
+});
+
+Then(/^su suscripción queda cancelada y no se le cobra nada$/, async ({ suscripcionCtx: ctx }) => {
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  try {
+    const subscription = await stripe.subscriptions.retrieve(ctx.stripeSubscriptionId);
+    expect(subscription.status).toBe('canceled');
+    // The trial opens a 0 EUR invoice; nothing may ever have been charged.
+    const invoice = await stripe.invoices.retrieve(subscription.latest_invoice as string);
+    expect(invoice.amount_paid).toBe(0);
+  }
+  finally {
+    await stripe.testHelpers.testClocks.del(ctx.stripeTestClockId).catch(() => {});
+  }
 });
