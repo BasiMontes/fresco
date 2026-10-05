@@ -60,7 +60,9 @@ interface IdentityLinesProps {
 const IDENTITY_CLASSES = {
   trigger: {
     name: 'truncate text-label text-background',
-    email: 'mt-0.5 truncate text-caption text-background/70',
+    // /85 on purpose: 11px text needs 4.5:1 (WCAG AA). Measured on the pill, hover
+    // included, /70 gave 4.32 (light) and 4.05 (dark); /85 gives 4.93 and 4.95.
+    email: 'mt-0.5 truncate text-caption text-background/85',
     plan: 'mt-0.5 truncate text-caption',
   },
   panel: {
