@@ -7,19 +7,35 @@ import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/components/legal/legal-content-da
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog } from '@/components/ui/dialog';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { CONSENT_TEXTS } from '@/lib/legal/consent';
-import { describeProPrice } from '@/lib/legal/pro-summary';
+import { annualSavings, describeProPrice, formatProAmount } from '@/lib/legal/pro-summary';
 
 export interface ProCheckoutSummaryProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Called when the user confirms with the withdrawal waiver ticked. The parent records it and starts the checkout. */
-  onConfirm: () => void
+  /** Called when the user confirms with the withdrawal waiver ticked, with the billing period they picked. The parent records the waiver and starts the checkout. */
+  onConfirm: (interval: ProInterval) => void
   isSubmitting: boolean
   error: string | null
 }
 
 type PriceState = { status: 'loading' } | { status: 'error' } | { status: 'ready', info: ProPriceInfo };
+
+export type ProInterval = 'month' | 'year';
+
+const INTERVAL_OPTIONS = [
+  { value: 'month', label: 'Mensual' },
+  { value: 'year', label: 'Anual' },
+];
+
+async function fetchProPrice(interval: ProInterval): Promise<ProPriceInfo> {
+  const res = await fetch(interval === 'year' ? '/api/stripe/pro-price?interval=year' : '/api/stripe/pro-price');
+  if (!res.ok) {
+    throw new Error(`pro-price ${interval} ${res.status}`);
+  }
+  return await res.json() as ProPriceInfo;
+}
 
 /**
  * FRESCO-794 (ADR-0040; lawyer draft clauses 6, 7 and 8, brief §5 item 9) — what
@@ -34,11 +50,18 @@ type PriceState = { status: 'loading' } | { status: 'error' } | { status: 'ready
  * performed (art. 103.m TRLGDCU). Not pre-ticked; "Continuar al pago" stays
  * disabled until it is ticked and the price has loaded.
  *
+ * FRESCO-844: when the annual price is configured (the `?interval=year` request
+ * answers), a Mensual/Anual selector appears and the price, savings and renewal
+ * lines follow it. No annual price, no selector: the dialog is the monthly one.
+ *
  * The wording is PROVISIONAL (lawyer draft, not validated), and the scope of the
- * waiver for a monthly subscription is an open decision in that draft (7.4).
+ * waiver for a monthly subscription is an open decision in that draft (7.4); the
+ * annual renewal and withdrawal wording is part of that same pending review.
  */
 export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting, error }: ProCheckoutSummaryProps) {
   const [price, setPrice] = useState<PriceState>({ status: 'loading' });
+  const [annual, setAnnual] = useState<ProPriceInfo | null>(null);
+  const [interval, setInterval] = useState<ProInterval>('month');
   const [waiverAccepted, setWaiverAccepted] = useState(false);
 
   // Each time the dialog opens: ask Stripe's price again and start with the box unticked.
@@ -49,13 +72,17 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
     let cancelled = false;
     setWaiverAccepted(false);
     setPrice({ status: 'loading' });
+    setAnnual(null);
+    setInterval('month');
+    // The annual price is optional: if it cannot be read there is simply no selector.
+    void fetchProPrice('year').then((info) => {
+      if (!cancelled) {
+        setAnnual(info);
+      }
+    }).catch(() => {});
     void (async () => {
       try {
-        const res = await fetch('/api/stripe/pro-price');
-        if (!res.ok) {
-          throw new Error(`pro-price ${res.status}`);
-        }
-        const info = await res.json() as ProPriceInfo;
+        const info = await fetchProPrice('month');
         if (!cancelled) {
           setPrice({ status: 'ready', info });
         }
@@ -73,11 +100,23 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
   }, [open]);
 
   const canConfirm = price.status === 'ready' && waiverAccepted && !isSubmitting;
+  const selected = interval === 'year' && annual ? annual : price.status === 'ready' ? price.info : null;
+  const savings = price.status === 'ready' && annual && interval === 'year' ? annualSavings(price.info, annual) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} aria-label="Resumen de tu suscripción a Fresco Pro" data-testid="pro_checkout_dialog">
       <h2 className="text-h4">Antes de continuar</h2>
       <p className="mt-1 text-body-sm text-tertiary">Resumen de tu suscripción a Fresco Pro.</p>
+
+      {price.status === 'ready' && annual && (
+        <SegmentedControl
+          aria-label="Plan de facturación"
+          className="mt-4"
+          options={INTERVAL_OPTIONS}
+          value={interval}
+          onChange={value => setInterval(value === 'year' ? 'year' : 'month')}
+        />
+      )}
 
       <ul className="mt-4 flex flex-col gap-3 text-body-sm text-tertiary">
         <li>
@@ -88,7 +127,8 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
         <li data-testid="pro_checkout_price">
           <strong className="text-text">Precio.</strong>
           {' '}
-          {price.status === 'ready' && describeProPrice(price.info)}
+          {selected && describeProPrice(selected)}
+          {savings !== null && ` Ahorras ${formatProAmount(savings, annual?.currency ?? 'eur')} al año frente a pagar 12 meses.`}
           {price.status === 'loading' && 'Cargando…'}
           {price.status === 'error' && 'No se pudo cargar el precio. Cierra y vuelve a abrir este resumen.'}
         </li>
@@ -104,7 +144,11 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
         <li>
           <strong className="text-text">Renovación.</strong>
           {' '}
-          Se renueva automáticamente cada mes hasta que la canceles. Puedes cancelarla cuando quieras desde tu perfil, en «Gestionar mi suscripción».
+          Se renueva automáticamente cada
+          {' '}
+          {interval === 'year' ? 'año' : 'mes'}
+          {' '}
+          hasta que la canceles. Puedes cancelarla cuando quieras desde tu perfil, en «Gestionar mi suscripción».
         </li>
         <li>
           <strong className="text-text">Desistimiento.</strong>
@@ -149,7 +193,7 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
         <Button type="button" variant="secondary" data-testid="pro_checkout_cancel_button" disabled={isSubmitting} onClick={() => onOpenChange(false)}>
           Cancelar
         </Button>
-        <Button type="button" variant="action" data-testid="pro_checkout_confirm_button" disabled={!canConfirm} onClick={onConfirm}>
+        <Button type="button" variant="action" data-testid="pro_checkout_confirm_button" disabled={!canConfirm} onClick={() => onConfirm(interval)}>
           {isSubmitting ? 'Redirigiendo…' : 'Continuar al pago'}
         </Button>
       </div>

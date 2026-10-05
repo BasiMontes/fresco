@@ -43,3 +43,16 @@ export function describeProPrice(info: Pick<ProPriceInfo, 'amount' | 'currency' 
   const base = `${formatProAmount(info.amount, info.currency)} ${formatProPeriod(info.interval, info.intervalCount)}`;
   return info.taxIncluded ? `${base} (IVA incluido)` : base;
 }
+
+/**
+ * What paying yearly saves against twelve monthly payments, in the price's currency,
+ * or `null` when there is no saving (or the two prices are not comparable). Both
+ * amounts come from Stripe, so the figure cannot drift from what is charged.
+ */
+export function annualSavings(monthly: Pick<ProPriceInfo, 'amount' | 'currency'>, annual: Pick<ProPriceInfo, 'amount' | 'currency'>): number | null {
+  if (monthly.currency !== annual.currency) {
+    return null;
+  }
+  const saved = Math.round((monthly.amount * 12 - annual.amount) * 100) / 100;
+  return saved > 0 ? saved : null;
+}
