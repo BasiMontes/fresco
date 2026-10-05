@@ -124,4 +124,66 @@ describe('SidebarAccount', () => {
       expect(screen.queryByTestId('sidebar_account_popover')).toBeNull();
     });
   });
+
+  // FRESCO-849 — pill trigger with name, email and plan.
+  describe('identity lines', () => {
+    test('the trigger shows name, email and plan label', () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+
+      expect(screen.getByTestId('user_name')).toHaveTextContent('Laura');
+      expect(screen.getByTestId('user_email')).toHaveTextContent('laura@fresco.app');
+      expect(screen.getByTestId('plan_label')).toHaveTextContent('Plan Free');
+    });
+
+    test('a pro user sees Plan Pro', () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} plan="pro" />);
+
+      expect(screen.getByTestId('plan_label')).toHaveTextContent('Plan Pro');
+    });
+
+    test('a guest without email gets no email line, only name and plan', () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} email="" isAnonymous nombre="Invitado" />);
+
+      expect(screen.queryByTestId('user_email')).toBeNull();
+      expect(screen.getByTestId('user_name')).toHaveTextContent('Invitado');
+      expect(screen.getByTestId('plan_label')).toBeInTheDocument();
+    });
+
+    test('collapsed rail renders only the avatar, with no text lines', () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} collapsed />);
+
+      expect(screen.getByTestId('user_avatar')).toBeInTheDocument();
+      expect(screen.queryByTestId('user_name')).toBeNull();
+      expect(screen.queryByTestId('user_email')).toBeNull();
+      expect(screen.queryByTestId('plan_label')).toBeNull();
+    });
+
+    test('email and plan share the caption size and the name keeps the label size, on the trigger and in the menu', async () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+      await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
+
+      // Guards the tailwind-merge trap: `cn()` drops `text-caption` / `text-label`
+      // next to a text colour, which rendered these lines at the 16px default.
+      for (const id of ['user_email', 'plan_label', 'popover_user_email']) {
+        expect(screen.getByTestId(id)).toHaveClass('text-caption');
+      }
+      expect(screen.getByTestId('user_name')).toHaveClass('text-label');
+    });
+
+    test('the menu entries use the same label size as the name, not the larger body size', async () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+      await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
+
+      for (const id of ['popover_item_perfil', 'popover_item_configuracion', 'popover_item_ayuda']) {
+        expect(screen.getByTestId(id)).toHaveClass('text-label');
+      }
+    });
+
+    test('the open menu repeats the email in its header', async () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+      await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
+
+      expect(screen.getByTestId('popover_user_email')).toHaveTextContent('laura@fresco.app');
+    });
+  });
 });
