@@ -120,7 +120,7 @@ async function main(): Promise<void> {
   }
 
   if (opciones.cargarCatalogos) {
-    const productos = [...ejecutables].flatMap(c => productosParaCarga(c));
+    const productos = registro.activos().filter(c => ejecutables.has(c.cadena)).flatMap(c => productosParaCarga(c));
     console.log(`initial load: ${productos.length} products from the committed catalogs of ${[...ejecutables].sort().join(', ')}`);
     if (!opciones.apply) {
       console.log('dry run: nothing written (pass --apply)');

@@ -4,6 +4,7 @@ import type { Envase, ProductoSupermercado, UnidadBase, ZonaId } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
 import { MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
+import { puedeEjecutarse } from './connector';
 import { parseFormatoReferencia, precioEnvaseDesdeReferencia } from './units';
 
 /**
@@ -61,24 +62,30 @@ function coincide(clave: string, termino: string): boolean {
   return ` ${clave}`.includes(` ${termino}`);
 }
 
-const PRODUCTOS_POR_CADENA = new Map<string, ReadonlyMap<string, ProductoSupermercado>>();
+/**
+ * The catalog a connector serves, kept per connector instead of in a global
+ * map by chain id: the only way to read it is through the gated functions
+ * below, which check the connector's permission every time.
+ */
+const CATALOGOS = new WeakMap<SupermarketConnector, ReadonlyMap<string, ProductoSupermercado>>();
+
+function catalogoEjecutable(conector: SupermarketConnector): ReadonlyMap<string, ProductoSupermercado> | null {
+  return puedeEjecutarse(conector) ? (CATALOGOS.get(conector) ?? null) : null;
+}
 
 /**
  * Synchronous read of the same catalog a connector serves (FRESCO-768):
  * `mapShoppingListItem` is pure and sync, the connector methods are async.
- * It does NOT check permission: callers must go through the registry first.
+ * FRESCO-808: gated. A connector that may not run returns `null`, the same as
+ * a product the catalog does not hold.
  */
-export function productoDeCatalogo(cadena: string, clave: string): ProductoSupermercado | null {
-  return PRODUCTOS_POR_CADENA.get(cadena)?.get(clave) ?? null;
+export function productoDeCatalogo(conector: SupermarketConnector, clave: string): ProductoSupermercado | null {
+  return catalogoEjecutable(conector)?.get(clave) ?? null;
 }
 
-/**
- * Every product of a chain's committed catalog (FRESCO-770, initial load into
- * the database). Same data the connector serves, and the same caveat: it does
- * NOT check permission, callers must go through the registry first.
- */
-function productosDeCatalogo(cadena: string): ProductoSupermercado[] {
-  return [...(PRODUCTOS_POR_CADENA.get(cadena)?.values() ?? [])];
+/** Every product of a connector's committed catalog (FRESCO-770). Gated like `productoDeCatalogo`: `[]` if the connector may not run. */
+function productosDeCatalogo(conector: SupermarketConnector): ProductoSupermercado[] {
+  return [...(catalogoEjecutable(conector)?.values() ?? [])];
 }
 
 /** Mercadona's own product id, from its product URL (`.../product/4640/aceite-...`). Some ids have a decimal part (`81649.1`). */
@@ -93,25 +100,25 @@ export interface ProductoParaCarga {
 }
 
 /**
- * The committed catalog of a chain as rows for the initial load into the
- * database (FRESCO-770, FRESCO-771). Unlike the connector, whose `idExterno` is
- * the ingredient key, Mercadona products carry Mercadona's own id, taken from
- * the product URL, so the live connector can look them up. Two ingredients may
- * share one product, hence a list of pairs rather than a map. A Mercadona
- * product whose URL has no id is left out. Does NOT check permission.
+ * The committed catalog of a connector as rows for the initial load into the
+ * database (FRESCO-770, FRESCO-771). The connector decides which id a product
+ * is stored under (`idParaCarga`: Mercadona's own id, taken from the product
+ * URL, so the live connector can look it up) and whether it can be stored at
+ * all. Two ingredients may share one product, hence a list of pairs rather than
+ * a map. Gated: `[]` if the connector may not run.
  */
-export function productosParaCarga(cadena: string): ProductoParaCarga[] {
-  return productosDeCatalogo(cadena).flatMap((producto) => {
-    if (cadena !== 'mercadona') {
+export function productosParaCarga(conector: SupermarketConnector): ProductoParaCarga[] {
+  return productosDeCatalogo(conector).flatMap((producto) => {
+    if (!conector.idParaCarga) {
       return [{ ingrediente: producto.idExterno, producto }];
     }
-    const id = idMercadonaDeUrl(producto.url);
+    const id = conector.idParaCarga(producto);
     return id === null ? [] : [{ ingrediente: producto.idExterno, producto: { ...producto, idExterno: id } }];
   });
 }
 
-function crearConectorDeCatalogo(
-  base: Pick<SupermarketConnector, 'cadena' | 'permiso' | 'permisoRef'>,
+export function crearConectorDeCatalogo(
+  base: Pick<SupermarketConnector, 'cadena' | 'nombre' | 'permiso' | 'permisoRef' | 'idParaCarga'>,
   entradas: readonly EntradaCatalogo[],
 ): SupermarketConnector {
   const productos = entradas
@@ -119,22 +126,25 @@ function crearConectorDeCatalogo(
     .filter((p): p is ProductoSupermercado => p !== null)
     .sort((a, b) => a.idExterno.localeCompare(b.idExterno));
   const porId = new Map(productos.map(p => [p.idExterno, p]));
-  PRODUCTOS_POR_CADENA.set(base.cadena, porId);
 
-  return {
+  const conector: SupermarketConnector = {
     ...base,
     capacidades: { buscar: true, disponibilidad: false },
+    // Fail-closed on every read path, not only through the registry: a
+    // connector that may not run serves nothing, even when called directly.
     async buscarProductos(termino, zona) {
       const aguja = normalizeNombre(termino);
-      if (zona !== ZONA_CATALOGO || aguja === '') {
+      if (!puedeEjecutarse(base) || zona !== ZONA_CATALOGO || aguja === '') {
         return [];
       }
       return productos.filter(p => coincide(p.idExterno, aguja));
     },
     async obtenerProducto(idExterno, zona) {
-      return zona === ZONA_CATALOGO ? (porId.get(idExterno) ?? null) : null;
+      return puedeEjecutarse(base) && zona === ZONA_CATALOGO ? (porId.get(idExterno) ?? null) : null;
     },
   };
+  CATALOGOS.set(conector, porId);
+  return conector;
 }
 
 /**
@@ -156,11 +166,26 @@ export function precioEnvaseMercadona(match: Pick<MercadonaMatch, 'envaseVenta' 
   return precio ?? 0;
 }
 
-/** Mercadona's legal state, shared by every connector of the chain so they cannot drift. */
-export const PERMISO_MERCADONA = { permiso: 'riesgo-aceptado', permisoRef: 'ADR-0028' } as const;
+/**
+ * The legal state of each chain, declared once. Every connector of a chain
+ * spreads its entry from here so they cannot drift, and
+ * `tests/db/supermarket-price-model.test.ts` fails if the `supermarket_chain`
+ * seed disagrees (FRESCO-808: one source of truth in code, one guard on the
+ * database copy the RLS gate needs).
+ */
+export const PERMISOS_CADENA = {
+  mercadona: { permiso: 'riesgo-aceptado', permisoRef: 'ADR-0028' },
+  consum: { permiso: 'riesgo-aceptado', permisoRef: 'ADR-0037' },
+} as const satisfies Record<string, Pick<SupermarketConnector, 'permiso' | 'permisoRef'>>;
 
 export const conectorMercadona = crearConectorDeCatalogo(
-  { cadena: 'mercadona', ...PERMISO_MERCADONA },
+  {
+    cadena: 'mercadona',
+    nombre: 'Mercadona',
+    ...PERMISOS_CADENA.mercadona,
+    // The generated catalog carries no product id; Mercadona's own sits in the product URL.
+    idParaCarga: producto => idMercadonaDeUrl(producto.url),
+  },
   Object.entries(MERCADONA_CATALOG_MATCH).map(([clave, match]) => ({
     clave,
     envaseVenta: match.envaseVenta,
@@ -171,7 +196,7 @@ export const conectorMercadona = crearConectorDeCatalogo(
 
 /** Consum prices the whole pack already, so `precio` passes through. */
 export const conectorConsum = crearConectorDeCatalogo(
-  { cadena: 'consum', permiso: 'riesgo-aceptado', permisoRef: 'ADR-0037' },
+  { cadena: 'consum', nombre: 'Consum', ...PERMISOS_CADENA.consum },
   Object.entries(CONSUM_CATALOG_MATCH).map(([clave, match]) => ({
     clave,
     envaseVenta: match.envaseVenta,

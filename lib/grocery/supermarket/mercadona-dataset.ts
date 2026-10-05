@@ -1,7 +1,7 @@
 import type { SupermarketConnector } from './connector';
 import type { ProductoSupermercado, UnidadBase, ZonaId } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
-import { PERMISO_MERCADONA, precioEnvaseMercadona } from './catalog-connectors';
+import { PERMISOS_CADENA, precioEnvaseMercadona } from './catalog-connectors';
 
 /**
  * FRESCO-771 — the Mercadona connector that brings prices the committed
@@ -118,7 +118,8 @@ export function crearConectorMercadonaDataset(
 
   return {
     cadena: 'mercadona',
-    ...PERMISO_MERCADONA,
+    nombre: 'Mercadona',
+    ...PERMISOS_CADENA.mercadona,
     capacidades: { buscar: true, disponibilidad: false },
     async buscarProductos(termino, zonaPedida) {
       const aguja = normalizeNombre(termino);

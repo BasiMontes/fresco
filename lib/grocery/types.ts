@@ -1,5 +1,5 @@
 import type { ShoppingListPasillo } from '@schemas';
-import type { PrecioNormalizado } from './supermarket/types';
+import type { CadenaId, PrecioNormalizado } from './supermarket/types';
 
 /**
  * FRESCO-488 — the ingredient→product mapping layer.
@@ -42,7 +42,7 @@ export interface PrecioMercadona {
 }
 
 /** Where `envaseVenta` came from — lets downstream stories (FRESCO-340, FRESCO-345) tell a real price from an estimate. */
-export type OrigenEnvase = 'mercadona' | 'consum' | 'estimado';
+export type OrigenEnvase = CadenaId | 'estimado';
 
 /**
  * Real Consum reference price sourced from the catalog (FRESCO-520).

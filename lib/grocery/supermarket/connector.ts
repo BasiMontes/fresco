@@ -19,10 +19,19 @@ export interface CapacidadesConector {
 
 export interface SupermarketConnector {
   readonly cadena: CadenaId
+  /** The chain's display name, as the shopper reads it ("Mercadona"). Consumers print this, never a chain id. */
+  readonly nombre: string
   readonly permiso: EstadoPermiso
   /** The ADR or tracker card that justifies `permiso`, e.g. `ADR-0028` or `FRESCO-532`. */
   readonly permisoRef: string
   readonly capacidades: CapacidadesConector
+  /**
+   * The id a product is stored under in the database, when the chain's own id
+   * is not the catalog key (Mercadona: the id inside the product URL). Absent:
+   * the catalog key is the id. `null`: the product cannot be stored, so it is
+   * left out of the initial load.
+   */
+  readonly idParaCarga?: (producto: ProductoSupermercado) => string | null
   buscarProductos: (termino: string, zona: ZonaId) => Promise<ProductoSupermercado[]>
   obtenerProducto: (idExterno: string, zona: ZonaId) => Promise<ProductoSupermercado | null>
 }
