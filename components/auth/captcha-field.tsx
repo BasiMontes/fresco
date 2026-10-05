@@ -1,7 +1,7 @@
 'use client';
 
 import type { Captcha } from '@/lib/auth/use-captcha';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TURNSTILE_SITE_KEY } from '@/lib/auth/captcha';
 
 interface TurnstileRenderOptions {
@@ -9,8 +9,11 @@ interface TurnstileRenderOptions {
   'callback': (token: string) => void
   'expired-callback': () => void
   'error-callback': () => void
+  'before-interactive-callback': () => void
   'theme': 'auto'
   'language': string
+  'size': 'flexible'
+  'appearance': 'interaction-only'
 }
 
 interface TurnstileApi {
@@ -65,6 +68,9 @@ async function loadTurnstile(): Promise<TurnstileApi> {
  */
 export function CaptchaField({ captcha }: { captcha: Captcha }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // True only when Cloudflare asks the person to do something. Almost every
+  // visitor passes silently, and then the widget takes no room on the page.
+  const [interactive, setInteractive] = useState(false);
   const { enabled, resetKey, setToken } = captcha;
 
   useEffect(() => {
@@ -74,6 +80,7 @@ export function CaptchaField({ captcha }: { captcha: Captcha }) {
     }
     let cancelled = false;
     let widgetId: string | undefined;
+    setInteractive(false);
 
     loadTurnstile()
       .then((api) => {
@@ -85,8 +92,13 @@ export function CaptchaField({ captcha }: { captcha: Captcha }) {
           'callback': token => setToken(token),
           'expired-callback': () => setToken(null),
           'error-callback': () => setToken(null),
+          'before-interactive-callback': () => setInteractive(true),
           'theme': 'auto',
           'language': 'es',
+          // `interaction-only`: hidden unless a challenge needs the person.
+          // `flexible`: when it does show, it fills the form width.
+          'size': 'flexible',
+          'appearance': 'interaction-only',
         });
       })
       .catch(() => setToken(null));
@@ -102,5 +114,7 @@ export function CaptchaField({ captcha }: { captcha: Captcha }) {
   if (!enabled) {
     return null;
   }
-  return <div ref={containerRef} data-testid="captcha_widget" className="min-h-[65px]" />;
+  // `sr-only` takes the container out of the layout (no height, no flex gap)
+  // while it stays in the DOM for Turnstile to render into.
+  return <div ref={containerRef} data-testid="captcha_widget" className={interactive ? 'min-h-[65px]' : 'sr-only'} />;
 }
