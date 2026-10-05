@@ -174,7 +174,7 @@ jobs:
             exit 1
           fi
           passed=$(grep -E '^ *[0-9]+ pass$' db-integration.log | tail -1 | grep -oE '[0-9]+' || true)
-          floor=147
+          floor=164
           if [ "${passed:-0}" -lt "$floor" ]; then
             echo "::error::only ${passed:-0} DB-integration tests passed (floor $floor)"
             exit 1

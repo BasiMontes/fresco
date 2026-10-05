@@ -270,6 +270,21 @@ export type Database = {
           },
         ]
       }
+      rate_limit_endpoints: {
+        Row: {
+          endpoint: string
+          max_per_hour: number
+        }
+        Insert: {
+          endpoint: string
+          max_per_hour: number
+        }
+        Update: {
+          endpoint?: string
+          max_per_hour?: number
+        }
+        Relationships: []
+      }
       rate_limit_exempt_users: {
         Row: {
           note: string | null

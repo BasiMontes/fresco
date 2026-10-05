@@ -62,7 +62,7 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
   test('check_and_increment_rate_limit — B cannot spend A\'s quota', async () => {
     const spoof = await rpc('check_and_increment_rate_limit', {
       p_user_id: A.id,
-      p_endpoint: 'spoof-probe',
+      p_endpoint: 'update-recipe-status',
       p_limit: 5,
       p_window_seconds: 3600,
     }, { token: B.token });
@@ -70,7 +70,7 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
 
     const legit = await rpc('check_and_increment_rate_limit', {
       p_user_id: B.id,
-      p_endpoint: 'legit-probe',
+      p_endpoint: 'update-recipe-status',
       p_limit: 5,
       p_window_seconds: 3600,
     }, { token: B.token });
