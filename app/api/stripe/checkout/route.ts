@@ -5,6 +5,14 @@ import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
 const RATE_LIMIT_ENDPOINT = 'stripe-checkout';
+
+/**
+ * FRESCO-845: the hosted Checkout page is the one screen of the funnel Stripe
+ * renders, so the few pieces we control are set here: Spanish locale and a short
+ * line under the pay button in the app's voice. The logo, colours and account name
+ * live in the Stripe Dashboard (Settings > Branding), not in code.
+ */
+const CHECKOUT_SUBMIT_MESSAGE = 'Cancelas cuando quieras desde tu perfil, en «Gestionar mi suscripción». Gracias por cocinar con Fresco.';
 const RATE_LIMIT_PER_HOUR = 10;
 const RATE_LIMIT_WINDOW_SECONDS = 3600;
 
@@ -98,6 +106,8 @@ export async function POST(request: NextRequest) {
         : { subscription_data: PRO_TRIAL_SUBSCRIPTION_DATA, payment_method_collection: 'if_required' as const }),
       ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       client_reference_id: user.id,
+      locale: 'es',
+      custom_text: { submit: { message: CHECKOUT_SUBMIT_MESSAGE } },
       success_url: `${origin}/profile?checkout=success`,
       cancel_url: `${origin}/profile?checkout=cancelled`,
     });
