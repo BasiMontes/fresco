@@ -529,3 +529,7 @@ Historia archivada:
 - Qué: knip dentro de repo:check (knip:check, config explicita), borrados 2 simbolos muertos, 9 sin export, deps declaradas; nonce-substitution se conserva por ADR-0031, matcher documentado como no cableado. PR #506 nivelada en dev/staging/main.
 - Por qué: audit-6 A6-A8, codigo sin importador acumulandose sin gate.
 - Siguiente: FRESCO-846 (cablear matcher); knip normal no detecta codigo solo-test, revisar tras 846.
+## 2026-10-05 - FRESCO-812 evidencia de cierre en tickets
+- Qué: jira:closure-evidence (cerrados 7d sin comentario, sale 1 si hay), regla de comentario de cierre en sprint-development (compacta, Gotcha 21, S26) y DoD, 23 tickets cerrados comentados con su commit de entrega. Metrica 85 resueltos, 0 sin comentario. PR #508 nivelada.
+- Por qué: audit-6 A6-P8, 25% de cierres sin comentario ni evidencia.
+- Siguiente: automatizar el bloqueo (regla de Jira o cron en CI que llame al script); un comentario es indicador, no prueba.
