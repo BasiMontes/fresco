@@ -127,9 +127,16 @@ jobs:
         # gets silently reclaimed onto the production deploy (see
         # .agents/project.yaml). The deployment's own URL is the only
         # reliable target.
+        #
+        # FRESCO-799: production has the Turnstile captcha, and Supabase then
+        # rejects any password sign-in without a token, from the API as well as
+        # the /login form. E2E_SESSION_LOGIN=1 makes the suite obtain its
+        # sessions from the admin API instead (tests/session-login.ts), using
+        # the service-role key this job already holds for the test-user factory.
         run: bun run test:e2e:smoke
         env:
           PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url || github.event.deployment_status.environment_url }}
+          E2E_SESSION_LOGIN: '1'
 
       - name: Upload Playwright report
         if: always()

@@ -3,6 +3,7 @@ import type { TestUser, TestUserFactory } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { sessionLoginEnabled, signInBrowserViaSession } from '../session-login';
 import { postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
@@ -306,6 +307,13 @@ When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con s
 // --- STORY-FRESCO-228: "Iniciar checkout desde el perfil" ---
 
 async function loginAsTestUser(page: Page, testUser: TestUser): Promise<void> {
+  // FRESCO-799: see tests/session-login.ts — no password sign-in against a
+  // hosted backend that has the captcha on.
+  if (sessionLoginEnabled()) {
+    await signInBrowserViaSession(page, testUser.email);
+    await page.goto('/menu');
+    return;
+  }
   await page.goto('/login');
   await page.getByTestId('email_input').fill(testUser.email);
   await page.getByTestId('password_input').fill(testUser.password);
