@@ -74,24 +74,22 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
     setPrice({ status: 'loading' });
     setAnnual(null);
     setInterval('month');
-    // The annual price is optional: if it cannot be read there is simply no selector.
-    void fetchProPrice('year').then((info) => {
-      if (!cancelled) {
-        setAnnual(info);
-      }
-    }).catch(() => {});
+    // Both prices are requested together and shown together (FRESCO-851): with the
+    // annual price landing after the monthly one, the interval selector popped in
+    // late and pushed the dialog's content down. The annual price is optional: if
+    // it cannot be read there is simply no selector.
     void (async () => {
-      try {
-        const info = await fetchProPrice('month');
-        if (!cancelled) {
-          setPrice({ status: 'ready', info });
-        }
+      const [monthly, yearly] = await Promise.allSettled([fetchProPrice('month'), fetchProPrice('year')]);
+      if (cancelled) {
+        return;
       }
-      catch (error_) {
-        console.error('[ProCheckoutSummary] could not load the price', error_);
-        if (!cancelled) {
-          setPrice({ status: 'error' });
-        }
+      setAnnual(yearly.status === 'fulfilled' ? yearly.value : null);
+      if (monthly.status === 'fulfilled') {
+        setPrice({ status: 'ready', info: monthly.value });
+      }
+      else {
+        console.error('[ProCheckoutSummary] could not load the price', monthly.reason);
+        setPrice({ status: 'error' });
       }
     })();
     return () => {
