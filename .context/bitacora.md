@@ -507,3 +507,8 @@ Historia archivada:
 - Qué: topes de tamaño, cuotas (200 recetas propias, 1000 favoritos) y registro rate_limit_endpoints (#496); token Turnstile en los formularios de auth, inerte sin site key (#497); smoke y suite Stripe con login por sesión admin, E2E_SESSION_LOGIN=1 (#498). Nivelado dev/staging/main en 39ec861d; smoke de prod en verde.
 - Por qué: A6-S7, el login anónimo es gratis y los límites por usuario se evadían rotando invitados; el limitador aceptaba endpoint y límite del cliente.
 - Siguiente: FRESCO-799 sigue en WIP hasta activar el captcha en Supabase (site key en Vercel, smoke contra fresco-pre, captura). FRESCO-843 cubre la suite manual contra hosted.
+
+## 2026-10-05 - FRESCO-799 Turnstile widget layout in prod
+- Qué: el widget de Turnstile ya no desborda las páginas de auth: se colapsa al obtener el token (interaction-only), toma el tema de la app y el ritmo vertical de /login, /forgot-password y /signup escala con la altura de la ventana (#499, #500). Nivelado dev/staging/main en a866376b; smoke de prod en verde.
+- Por qué: el fundador vio en producción que el widget ocupaba 77 px y los enlaces legales quedaban fuera de una ventana de 570 px; mi primera corrección no bastaba y la medición lo demostró.
+- Siguiente: activar Turnstile en Supabase (secret solo allí), captura en FRESCO-799 y repetir el smoke de prod con el captcha activo; borrar NEXT_PUBLIC_TURNSTILE_SECRET_KEY de Vercel.
