@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-04T11:54:37.307Z`
+> Generated: `2026-10-05T14:26:42.968Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-dev-core/references/skill-resolver.md`
 
@@ -612,6 +612,7 @@ Skills indexed: 34
 - **Atomic commits**, semantic prefixes, no AI-attribution lines, never `--no-verify`, never force-push a pushed branch, never push to `main` without explicit confirmation.
 - **Scope discipline**: touch only what the story states. No "while I'm here" refactors.
 - **Reviewer findings are adjudicated**, not auto-applied: each is verified against the diff + AC, or dismissed with a one-line reason.
+- **No terminal status without a closing comment.** Before moving ANY ticket to `Finalizada` (or another done status), post a comment carrying the evidence: the PR or commit, and the check that proves the work (test, query result, screenshot). A ticket with zero comments is not closable. `bun run jira:closure-evidence` measures it (tickets resolved in the last 7 days with no comment must be 0). FRESCO-812.
 
 **Read full SKILL.md when**: the stage you are running needs its full walkthrough, a gate fires, or the briefing tells you to load the full skill.
 
