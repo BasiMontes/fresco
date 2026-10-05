@@ -27,6 +27,8 @@
 // prices at most a week old). Consum has none yet (FRESCO-772), so it is not
 // planned.
 
+import type { ConnectorRegistry } from '../lib/grocery/supermarket/connector.ts';
+import type { Db } from '../lib/grocery/supermarket/price-store.ts';
 import type { Database } from '../lib/supabase/types.ts';
 import { createClient } from '@supabase/supabase-js';
 import { productosParaCarga } from '../lib/grocery/supermarket/catalog-connectors.ts';
@@ -46,7 +48,7 @@ import { registroSupermercados } from '../lib/grocery/supermarket/registry.ts';
 import { DATASET_API, datasetAgeDays, isStale, MAX_AGE_DAYS } from './check-mercadona-dataset-freshness.ts';
 import { loadCatalog } from './gen-mercadona-catalog.ts';
 
-interface Opciones {
+export interface Opciones {
   apply: boolean
   cargarCatalogos: boolean
   maxPeticiones: number
@@ -57,7 +59,7 @@ interface Opciones {
 const USO = 'usage: bun scripts/refresh-supermarket-prices.ts [--apply] [--cargar-catalogos] [--max-peticiones=N] [--max-edad-horas=N] [--pausa-ms=N]';
 const DIAS_HACIA_ATRAS = 7;
 
-function leerOpciones(argv: readonly string[]): Opciones {
+export function leerOpciones(argv: readonly string[]): Opciones {
   const opciones: Opciones = { apply: false, cargarCatalogos: false, maxPeticiones: 30, maxEdadHoras: 168, pausaMs: 3000 };
   const numeros: Record<string, 'maxPeticiones' | 'maxEdadHoras' | 'pausaMs'> = {
     '--max-peticiones': 'maxPeticiones',
@@ -92,20 +94,23 @@ const registroEnVivo = crearRegistro([
   crearConectorMercadonaDataset({ cargarCatalogo: loadCatalog, fechaSnapshot: fechaSnapshotMercadona }),
 ]);
 
-async function main(): Promise<void> {
-  const opciones = leerOpciones(process.argv.slice(2));
-  const url = process.env.SUPABASE_URL;
-  const clave = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !clave) {
-    console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
-    process.exit(2);
-  }
-  const db = createClient<Database>(url, clave, { auth: { persistSession: false, autoRefreshToken: false } });
+export interface Dependencias {
+  db: Db
+  /** Registry of live connectors: the only one the refresh may contact. */
+  registroEnVivo: ConnectorRegistry
+  /** Registry of static connectors, used by the initial load. */
+  registroCatalogos: ConnectorRegistry
+  ahora: () => Date
+  esperar: (ms: number) => Promise<void>
+}
 
+/** The runner's logic. `main` only wires it to the environment, so a test can drive it with fakes. */
+export async function ejecutar(opciones: Opciones, deps: Dependencias): Promise<void> {
+  const { db, registroEnVivo, registroCatalogos, ahora, esperar } = deps;
   const habilitadas = await leerCadenasHabilitadas(db);
   // The initial load reads the committed catalogs (static connectors); the
   // refresh needs a live connector.
-  const registro = opciones.cargarCatalogos ? registroSupermercados : registroEnVivo;
+  const registro = opciones.cargarCatalogos ? registroCatalogos : registroEnVivo;
   const enCodigo = new Set(registro.activos().map(c => c.cadena));
   const ejecutables = new Set([...habilitadas].filter(c => enCodigo.has(c)));
   console.log(`chains enabled in the database: ${[...habilitadas].sort().join(', ') || '(none)'}`);
@@ -131,12 +136,12 @@ async function main(): Promise<void> {
     return;
   }
 
-  const desde = new Date(Date.now() - DIAS_HACIA_ATRAS * 86_400_000).toISOString().slice(0, 10);
+  const desde = new Date(ahora().getTime() - DIAS_HACIA_ATRAS * 86_400_000).toISOString().slice(0, 10);
   const demanda = await leerDemandaDeMenu(db, desde);
   const seguidos = await leerProductosSeguidos(db, { demandaPorIngrediente: demanda, habilitadas: ejecutables, zona: ZONA_BD });
   const plan = planificarRefresco({
     productos: seguidos,
-    ahora: new Date(),
+    ahora: ahora(),
     politica: {
       maxEdadPrecioHoras: opciones.maxEdadHoras,
       maxPeticionesPorCadena: opciones.maxPeticiones,
@@ -155,7 +160,7 @@ async function main(): Promise<void> {
   const informe = await ejecutarRefresco(plan, {
     registro: registroEnVivo,
     guardar: async (producto) => { await guardarObservacion(db, producto); },
-    esperar: async ms => Bun.sleep(ms),
+    esperar,
   });
   for (const r of informe.porCadena) {
     console.log(`${r.cadena}: ${r.estado}, ${r.observaciones} stored, ${r.sinDatos} without data, ${r.fallos} failed, ${r.esperasPorLimite} rate limits, ${r.aplazadas} deferred`);
@@ -165,4 +170,24 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+async function main(): Promise<void> {
+  const opciones = leerOpciones(process.argv.slice(2));
+  const url = process.env.SUPABASE_URL;
+  const clave = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !clave) {
+    console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
+    process.exit(2);
+  }
+  const db = createClient<Database>(url, clave, { auth: { persistSession: false, autoRefreshToken: false } });
+  await ejecutar(opciones, {
+    db,
+    registroEnVivo,
+    registroCatalogos: registroSupermercados,
+    ahora: () => new Date(),
+    esperar: async ms => Bun.sleep(ms),
+  });
+}
+
+if (import.meta.main) {
+  await main();
+}
