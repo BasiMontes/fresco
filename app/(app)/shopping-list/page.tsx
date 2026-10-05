@@ -8,6 +8,7 @@ import { getNombresNuevos, getShoppingListForPlan } from '@/lib/api/shopping-lis
 import { getUserDietaryPreferences } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
+import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
 import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { createClient } from '@/lib/supabase/server';
 
@@ -73,7 +74,10 @@ export default async function ShoppingListPage() {
     const perfil = perfilCompraDesde(preferences);
     const costeMenu = costeSemanalEstimado(plan.menu, { numPersonas: preferences?.num_personas, perfil });
 
-    return <ShoppingListView list={list} nuevosNombres={nuevosNombres} costeMenu={costeMenu} perfil={perfil} />;
+    // FRESCO-808: prices and supermarket links resolved here, so the catalogs stay out of the client bundle.
+    const compra = resolverCompra({ pasillos: list.pasillos, perfil });
+
+    return <ShoppingListView list={list} nuevosNombres={nuevosNombres} costeMenu={costeMenu} compra={compra} />;
   }
   catch (error) {
     console.error('[/shopping-list] getShoppingListForPlan failed, falling back to generator', error);

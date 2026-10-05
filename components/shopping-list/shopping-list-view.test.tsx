@@ -1,6 +1,9 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
+import type { CompraPorItem } from '@/lib/grocery/compra';
+import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
 import { describe, expect, test } from 'bun:test';
 import { precioLinea } from '@/lib/grocery/line-price';
+import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
 import { formatPrecio } from '@/lib/utils';
 import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { ShoppingListView } from './shopping-list-view';
@@ -17,6 +20,11 @@ import { ShoppingListView } from './shopping-list-view';
  * that file's note), so the actual `clearComprados` network round-trip is
  * left untested here, deferred to e2e.
  */
+
+/** What the page does on the server: resolve prices and links, then hand them to the view. */
+function compraDe(list: ShoppingListPersistido, perfil?: PerfilCompra): CompraPorItem {
+  return resolverCompra({ pasillos: list.pasillos, perfil });
+}
 
 const LIST: ShoppingListPersistido = {
   id: 'list1',
@@ -70,21 +78,21 @@ describe('ShoppingListView — supermarket links per item (FRESCO-521)', () => {
   };
 
   test('an item matched only in Mercadona shows the Mercadona link, not Consum (regression)', () => {
-    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} />);
+    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} compra={compraDe(LIST_WITH_LINKS)} />);
 
     expect(screen.getByTestId('shopping_list_item_0_0_mercadona_link')).toBeTruthy();
     expect(screen.queryByTestId('shopping_list_item_0_0_consum_link')).toBeNull();
   });
 
   test('an item matched only in Consum shows the Consum link, not Mercadona', () => {
-    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} />);
+    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} compra={compraDe(LIST_WITH_LINKS)} />);
 
     expect(screen.getByTestId('shopping_list_item_0_1_consum_link')).toBeTruthy();
     expect(screen.queryByTestId('shopping_list_item_0_1_mercadona_link')).toBeNull();
   });
 
   test('an item with no catalog match shows no supermarket link', () => {
-    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} />);
+    renderWithProviders(<ShoppingListView list={LIST_WITH_LINKS} compra={compraDe(LIST_WITH_LINKS)} />);
 
     expect(screen.queryByTestId('shopping_list_item_0_2_mercadona_link')).toBeNull();
     expect(screen.queryByTestId('shopping_list_item_0_2_consum_link')).toBeNull();
@@ -98,7 +106,7 @@ describe('ShoppingListView — supermarket links per item (FRESCO-521)', () => {
         items: LIST_WITH_LINKS.pasillos[0].items.map(item => ({ ...item, comprado: true })),
       }],
     };
-    renderWithProviders(<ShoppingListView list={boughtList} />);
+    renderWithProviders(<ShoppingListView list={boughtList} compra={compraDe(boughtList)} />);
 
     expect(screen.queryByTestId('shopping_list_item_0_0_mercadona_link')).toBeNull();
     expect(screen.queryByTestId('shopping_list_item_0_1_consum_link')).toBeNull();
@@ -159,7 +167,7 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
   };
 
   test('each row shows the linked product price, never the stored 0,00', () => {
-    renderWithProviders(<ShoppingListView list={LIST_PRICES} />);
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} compra={compraDe(LIST_PRICES)} />);
 
     for (const item of ITEMS) {
       const esperado = formatPrecio(precioLinea(item) as number);
@@ -169,14 +177,14 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
   });
 
   test('the summary shows the weekly cost it is given, not the stored snapshot', () => {
-    renderWithProviders(<ShoppingListView list={LIST_PRICES} costeMenu={42.5} />);
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} compra={compraDe(LIST_PRICES)} costeMenu={42.5} />);
 
     expect(screen.getByText('42,50€')).toBeTruthy();
     expect(screen.queryByText(/99,00€/)).toBeNull();
   });
 
   test('falls back to the stored range when no weekly cost could be computed', () => {
-    renderWithProviders(<ShoppingListView list={LIST_PRICES} />);
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} compra={compraDe(LIST_PRICES)} />);
 
     expect(screen.getByText(/99,00–99,00€/)).toBeTruthy();
   });
@@ -197,16 +205,74 @@ describe('ShoppingListView — diet-compatible supermarket links (FRESCO-826)', 
   };
 
   test('without a profile the chicken stock keeps its supermarket link (baseline)', () => {
-    renderWithProviders(<ShoppingListView list={LIST_CALDO} />);
+    renderWithProviders(<ShoppingListView list={LIST_CALDO} compra={compraDe(LIST_CALDO)} />);
 
     expect(screen.getByTestId('shopping_list_item_0_0_mercadona_link')).toBeTruthy();
   });
 
   test('a vegan profile shows no link for the chicken stock and falls back to the stored estimate', () => {
-    renderWithProviders(<ShoppingListView list={LIST_CALDO} perfil={{ vegano: true }} />);
+    renderWithProviders(<ShoppingListView list={LIST_CALDO} compra={compraDe(LIST_CALDO, { vegano: true })} />);
 
     expect(screen.queryByTestId('shopping_list_item_0_0_mercadona_link')).toBeNull();
     expect(screen.queryByTestId('shopping_list_item_0_0_consum_link')).toBeNull();
     expect(screen.getByText(/1,50€/)).toBeTruthy();
+  });
+});
+
+describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', () => {
+  const LIST_FALSA: ShoppingListPersistido = {
+    id: 'list5',
+    pasillos: [{
+      nombre: 'Pasta, arroz y legumbres',
+      orden: 1,
+      items: [{ nombre: 'arroz', cantidad: 500, unidad: 'g', comprado: false, precio_estimado: 0.5 }],
+    }],
+    resumen: { total_items: 1, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+  const claveArroz = 'Pasta, arroz y legumbres::arroz';
+  const compraFalsa = (antiguedadDias: number | null): CompraPorItem => ({
+    [claveArroz]: {
+      precio: 1.2,
+      enlaces: [{ cadena: 'cadenafalsa', nombreCadena: 'Cadena falsa', url: 'https://cadena.example/arroz', antiguedadDias }],
+    },
+  });
+
+  test('a chain the component has never heard of gets a link named after it', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(null)} />);
+
+    const enlace = screen.getByTestId('shopping_list_item_0_0_cadenafalsa_link');
+    expect(enlace).toHaveAttribute('href', 'https://cadena.example/arroz');
+    expect(enlace).toHaveAttribute('aria-label', 'Abrir Arroz en Cadena falsa');
+  });
+
+  test('shows how old the price is when the source says so', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(3)} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('precio de hace 3 días');
+  });
+
+  test.each([[0, 'precio de hoy'], [1, 'precio de ayer']])('%i days old reads "%s"', (dias, texto) => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(dias)} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent(texto);
+  });
+
+  test('shows no age at all when the source gives no date', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(null)} />);
+
+    expect(screen.queryByTestId('shopping_list_item_0_0_precio_antiguedad')).toBeNull();
+  });
+
+  test('without resolved purchase data a row shows its stored estimate and no link', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} />);
+
+    expect(screen.getByText(/0,50€/)).toBeTruthy();
+    expect(screen.queryByTestId('shopping_list_item_0_0_cadenafalsa_link')).toBeNull();
+  });
+
+  test('the client component imports no catalog or mapper, so the catalogs stay out of the browser bundle', async () => {
+    const fuente = await Bun.file(new URL('./shopping-list-view.tsx', import.meta.url)).text();
+
+    expect(fuente).not.toMatch(/from '@\/lib\/grocery\/(map-item|line-price|shopping-list-compra|supermarket\/(registry|catalog-connectors))'/);
   });
 });
