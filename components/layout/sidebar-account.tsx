@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
-import { UpgradeToProButton } from '@/components/profile/upgrade-to-pro-button';
+import { ProCheckoutSummary } from '@/components/profile/pro-checkout-summary';
+import { useProCheckout } from '@/components/profile/use-pro-checkout';
 import { Button } from '@/components/ui/button';
 import { Popover } from '@/components/ui/popover';
 import { PLAN_LABELS } from '@/lib/plan-labels';
@@ -167,6 +168,11 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
     }
   }
 
+  // FRESCO-850: the Pro summary dialog is owned HERE, outside the popover. It is
+  // portalled to <body>, so a click inside it reads as an "outside click" to the
+  // popover; rendered as the popover's child, that closed the menu and unmounted
+  // the dialog mid-use. The menu entry only opens it (and the menu closes).
+  const checkout = useProCheckout();
   const initial = nombre?.trim().charAt(0).toUpperCase();
   // FRESCO-510 — the trial upsell only makes sense for a user who isn't
   // already paying; pro/family are already the outcome this card sells.
@@ -251,7 +257,16 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
 
           {showProUpsell && (
             <div className="px-2 py-1">
-              <UpgradeToProButton label="Mejorar plan" size="sm" className="w-full" />
+              <Button
+                type="button"
+                variant="action"
+                size="sm"
+                data-testid="upgrade_to_pro_button"
+                className="w-full"
+                onClick={() => closeMenuThen(checkout.openSummary)}
+              >
+                Mejorar plan
+              </Button>
             </div>
           )}
 
@@ -299,6 +314,14 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
           </Button>
         </Popover>
       </div>
+
+      <ProCheckoutSummary
+        open={checkout.summaryOpen}
+        onOpenChange={checkout.setSummaryOpen}
+        onConfirm={interval => void checkout.confirm(interval)}
+        isSubmitting={checkout.isRedirecting}
+        error={checkout.error}
+      />
 
       {logoutError && (
         <p data-testid="sidebar_logout_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">

@@ -186,4 +186,49 @@ describe('SidebarAccount', () => {
       expect(screen.getByTestId('popover_user_email')).toHaveTextContent('laura@fresco.app');
     });
   });
+
+  // FRESCO-850 — the Pro summary opened from the menu used to live inside the
+  // popover. The dialog is portalled to <body>, so a click inside it read as an
+  // "outside click", closed the popover and unmounted the dialog with it.
+  describe('"Mejorar plan" summary dialog', () => {
+    const realFetch = globalThis.fetch;
+    const PRICE = { amount: 4.99, currency: 'eur', interval: 'month', intervalCount: 1, taxIncluded: false, trialDays: 7 };
+
+    beforeEach(() => {
+      globalThis.fetch = (async (url: string) => {
+        if (url === '/api/stripe/pro-price') {
+          return new Response(JSON.stringify(PRICE), { status: 200 });
+        }
+        return new Response(null, { status: 500 });
+      }) as typeof fetch;
+    });
+
+    afterEach(() => {
+      globalThis.fetch = realFetch;
+    });
+
+    async function openSummary() {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+      const user = setupUser();
+      await user.click(screen.getByTestId('sidebar_account_trigger'));
+      await user.click(screen.getByTestId('upgrade_to_pro_button'));
+      await waitFor(() => expect(screen.getByTestId('pro_checkout_dialog')).toBeInTheDocument());
+      return user;
+    }
+
+    test('opens the summary dialog and closes the menu behind it', async () => {
+      await openSummary();
+
+      expect(screen.queryByTestId('sidebar_account_popover')).toBeNull();
+    });
+
+    test('ticking the waiver checkbox inside the dialog does not close it', async () => {
+      const user = await openSummary();
+
+      await user.click(screen.getByTestId('pro_checkout_withdrawal_checkbox'));
+
+      expect(screen.getByTestId('pro_checkout_dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('pro_checkout_withdrawal_checkbox')).toBeChecked();
+    });
+  });
 });
