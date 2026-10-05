@@ -1,6 +1,7 @@
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { isTrialAvailable, PRO_TRIAL_DAYS } from '@/lib/legal/pro-terms';
-import { stripe } from '@/lib/stripe';
+import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -16,7 +17,7 @@ import { createClient } from '@/lib/supabase/server';
  *
  * Same gate as `checkout/route.ts`: a signed-in, non-guest user. Read-only.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -28,9 +29,11 @@ export async function GET() {
     return NextResponse.json({ error: 'Crea una cuenta para pasarte a Fresco Pro.' }, { status: 403 });
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
+  // FRESCO-844: `?interval=year` asks for the annual price; anything else is monthly.
+  const interval = parseProInterval(request.nextUrl.searchParams.get('interval'));
+  const priceId = getProPriceId(interval);
   if (!priceId) {
-    console.error('[/api/stripe/pro-price] STRIPE_PRICE_ID_PRO_MONTH is not set');
+    console.error(`[/api/stripe/pro-price] no Stripe price configured for interval ${interval}`);
     return NextResponse.json({ error: 'No se pudo cargar el precio.' }, { status: 500 });
   }
 

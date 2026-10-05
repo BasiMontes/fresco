@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { afterEach, describe, expect, test } from 'bun:test';
-import { resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret } from './stripe';
+import { getProPriceIds, parseProInterval, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret } from './stripe';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -317,5 +317,46 @@ describe('resolveAppUrl', () => {
   test('local (no VERCEL_ENV) → localhost:3000', () => {
     clearEnv();
     expect(resolveAppUrl()).toBe('http://localhost:3000');
+  });
+});
+
+describe('FRESCO-844 — monthly and annual Pro prices', () => {
+  const ANNUAL = 'price_pro_annual';
+  const annualSubscription = () => fakeSubscription({ items: { data: [{ price: { id: ANNUAL }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'] });
+
+  const saved = { month: process.env.STRIPE_PRICE_ID_PRO_MONTH, year: process.env.STRIPE_PRICE_ID_PRO_ANUAL };
+  const restore = (key: string, value: string | undefined) => value === undefined ? delete process.env[key] : (process.env[key] = value);
+
+  afterEach(() => {
+    restore('STRIPE_PRICE_ID_PRO_MONTH', saved.month);
+    restore('STRIPE_PRICE_ID_PRO_ANUAL', saved.year);
+  });
+
+  test('getProPriceIds lists monthly then annual, and is empty without the monthly baseline', () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_MONTH;
+    process.env.STRIPE_PRICE_ID_PRO_ANUAL = ANNUAL;
+    expect(getProPriceIds()).toEqual([]);
+
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
+    expect(getProPriceIds()).toEqual([PRO_PRICE_ID, ANNUAL]);
+
+    delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
+    expect(getProPriceIds()).toEqual([PRO_PRICE_ID]);
+  });
+
+  test('parseProInterval only trusts an explicit year', () => {
+    expect([parseProInterval('year'), parseProInterval('month'), parseProInterval('week'), parseProInterval(undefined)]).toEqual(['year', 'month', 'month', 'month']);
+  });
+
+  test('an annual subscription is granted, renewed and kept by the reconcile when its price is in the set', () => {
+    const ids = [PRO_PRICE_ID, ANNUAL];
+    expect(resolveProUpdateFromSession({ session: fakeSession(), subscription: annualSubscription(), expectedPriceId: ids }).stripeSubscriptionId).toBe('sub_xyz');
+    expect(resolveRenewalUpdate(annualSubscription(), ids).stripeCustomerId).toBe('cus_abc');
+    expect(resolveReconciledState(annualSubscription(), ids).action).toBe('pro');
+  });
+
+  test('a price outside the set is still refused', () => {
+    expect(() => resolveRenewalUpdate(annualSubscription(), [PRO_PRICE_ID])).toThrow('does not match expected Pro price');
+    expect(resolveReconciledState(annualSubscription(), [PRO_PRICE_ID]).action).toBe('skip');
   });
 });

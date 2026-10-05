@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { resolveReconciledState, stripe } from '@/lib/stripe';
+import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
 /**
@@ -54,8 +54,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
   }
 
-  const proPriceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
-  if (!proPriceId) {
+  const proPriceIds = getProPriceIds();
+  if (proPriceIds.length === 0) {
     console.error('[/api/cron/stripe-reconcile] STRIPE_PRICE_ID_PRO_MONTH is not set');
     return NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
   }
@@ -85,7 +85,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     let target: ReturnType<typeof resolveReconciledState>;
     try {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      target = resolveReconciledState(subscription, proPriceId);
+      target = resolveReconciledState(subscription, proPriceIds);
     }
     catch (error) {
       if (error instanceof Stripe.errors.StripeError && error.code === 'resource_missing') {

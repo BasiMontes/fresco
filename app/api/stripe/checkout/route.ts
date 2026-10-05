@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
-import { stripe } from '@/lib/stripe';
+import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
 const RATE_LIMIT_ENDPOINT = 'stripe-checkout';
@@ -47,10 +47,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Crea una cuenta para pasarte a Fresco Pro.' }, { status: 403 });
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
+  // FRESCO-844: the body is optional; no body (or anything but 'year') is the monthly plan.
+  const body: unknown = await request.json().catch(() => null);
+  const interval = parseProInterval((body as { interval?: unknown } | null)?.interval);
+  const priceId = getProPriceId(interval);
   if (!priceId) {
-    console.error('[/api/stripe/checkout] STRIPE_PRICE_ID_PRO_MONTH is not set');
-    return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
+    console.error(`[/api/stripe/checkout] no Stripe price configured for interval ${interval}`);
+    return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: interval === 'year' ? 400 : 500 });
   }
 
   // ADR-0010: atomic check-and-increment, fail closed — only an explicit `true` passes.

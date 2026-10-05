@@ -18,12 +18,13 @@ void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: { checkout: { s
 
 const { POST } = await import('./route');
 
-function req() {
-  return new NextRequest('https://test.fresco.local/api/stripe/checkout', { method: 'POST' });
+function req(body?: unknown) {
+  return new NextRequest('https://test.fresco.local/api/stripe/checkout', { method: 'POST', ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 }
 
 beforeEach(() => {
   process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
+  process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
   sessionsCreate.mockClear();
   sessionsCreate.mockResolvedValue({ id: 'cs_1', url: 'https://checkout.stripe/x' });
   supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
@@ -39,6 +40,21 @@ describe('POST /api/stripe/checkout', () => {
   test('500 when STRIPE_PRICE_ID_PRO_MONTH is not configured', async () => {
     delete process.env.STRIPE_PRICE_ID_PRO_MONTH;
     expect((await POST(req())).status).toBe(500);
+  });
+
+  test('FRESCO-844: no body or an unknown interval is the monthly price, {interval: year} is the annual one', async () => {
+    await POST(req());
+    await POST(req({ interval: 'week' }));
+    await POST(req({ interval: 'year' }));
+
+    const prices = sessionsCreate.mock.calls.map(c => (c[0] as { line_items: { price: string }[] }).line_items[0].price);
+    expect(prices).toEqual(['price_pro_month', 'price_pro_month', 'price_pro_year']);
+  });
+
+  test('FRESCO-844: 400 for the annual plan when its price is not configured, Stripe is not called', async () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
+    expect((await POST(req({ interval: 'year' }))).status).toBe(400);
+    expect(sessionsCreate).not.toHaveBeenCalled();
   });
 
   test('returns the hosted Checkout URL and passes the user id as client_reference_id', async () => {

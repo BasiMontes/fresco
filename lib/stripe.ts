@@ -110,6 +110,53 @@ export const stripe: Stripe = new Proxy({} as Stripe, {
   },
 });
 
+/** Billing period of a Pro subscription (FRESCO-844). */
+export type ProInterval = 'month' | 'year';
+
+/** One Pro price id, or the set of price ids that all count as Pro. */
+export type ProPriceIds = string | readonly string[];
+
+const PRO_PRICE_ENV: Record<ProInterval, string> = {
+  month: 'STRIPE_PRICE_ID_PRO_MONTH',
+  year: 'STRIPE_PRICE_ID_PRO_ANUAL',
+};
+
+/** Anything but an explicit `'year'` is the monthly plan: callers pass untrusted input straight in. */
+export function parseProInterval(value: unknown): ProInterval {
+  return value === 'year' ? 'year' : 'month';
+}
+
+/**
+ * The Stripe price id for a Pro billing period, or `null` when this environment
+ * has no price configured for it. The monthly price is always required by the
+ * routes; the annual one is optional so an environment without it keeps working.
+ */
+export function getProPriceId(interval: ProInterval): string | null {
+  return process.env[PRO_PRICE_ENV[interval]] || null;
+}
+
+/**
+ * Every configured Pro price id. The webhook and the reconcile cron grant Pro
+ * for ANY of these. The monthly price is the baseline: without it the
+ * environment counts as not configured (empty list), whatever else is set.
+ */
+export function getProPriceIds(): string[] {
+  const month = getProPriceId('month');
+  if (!month) {
+    return [];
+  }
+  const year = getProPriceId('year');
+  return year ? [month, year] : [month];
+}
+
+function isProPrice(actualPriceId: string | undefined, expected: ProPriceIds): boolean {
+  return actualPriceId !== undefined && [expected].flat().includes(actualPriceId);
+}
+
+function describePrices(expected: ProPriceIds): string {
+  return [expected].flat().join(' | ');
+}
+
 export interface ProUpdateFromSession {
   userId: string
   stripeCustomerId: string
@@ -143,7 +190,7 @@ export interface ProUpdateFromSession {
 export function resolveProUpdateFromSession({ session, subscription, expectedPriceId }: {
   session: Stripe.Checkout.Session
   subscription: Stripe.Subscription
-  expectedPriceId: string
+  expectedPriceId: ProPriceIds
 }): ProUpdateFromSession {
   const userId = session.client_reference_id;
   if (!userId) {
@@ -165,8 +212,8 @@ export function resolveProUpdateFromSession({ session, subscription, expectedPri
   // that and a Pro grant, since Checkout Session creation trusts whatever
   // price id the client requested.
   const actualPriceId = subscription.items.data[0]?.price.id;
-  if (actualPriceId !== expectedPriceId) {
-    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${expectedPriceId} — refusing to grant Pro.`);
+  if (!isProPrice(actualPriceId, expectedPriceId)) {
+    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${describePrices(expectedPriceId)} — refusing to grant Pro.`);
   }
 
   return {
@@ -205,7 +252,7 @@ export interface RenewalUpdate {
  * branching on `cancel_at_period_end` needed. The eventual downgrade happens
  * via `resolveCancellationCustomerId` on `customer.subscription.deleted`.
  */
-export function resolveRenewalUpdate(subscription: Stripe.Subscription, expectedPriceId: string): RenewalUpdate {
+export function resolveRenewalUpdate(subscription: Stripe.Subscription, expectedPriceId: ProPriceIds): RenewalUpdate {
   if (subscription.status !== 'active') {
     throw new Error(`Subscription ${subscription.id} is not active (status: ${subscription.status}) — refusing to resolve a renewal update.`);
   }
@@ -220,8 +267,8 @@ export function resolveRenewalUpdate(subscription: Stripe.Subscription, expected
   // price -- same class of gap PR #100's review closed on the initial
   // checkout path.
   const actualPriceId = subscription.items.data[0]?.price.id;
-  if (actualPriceId !== expectedPriceId) {
-    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${expectedPriceId} — refusing to renew Pro.`);
+  if (!isProPrice(actualPriceId, expectedPriceId)) {
+    throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${describePrices(expectedPriceId)} — refusing to renew Pro.`);
   }
 
   const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
@@ -327,7 +374,7 @@ export type ReconciledState
     | { action: 'downgrade' }
     | { action: 'skip', reason: string };
 
-export function resolveReconciledState(subscription: Stripe.Subscription, expectedPriceId: string): ReconciledState {
+export function resolveReconciledState(subscription: Stripe.Subscription, expectedPriceId: ProPriceIds): ReconciledState {
   const { status } = subscription;
 
   if (status === 'canceled' || status === 'unpaid' || status === 'incomplete_expired') {
@@ -340,8 +387,8 @@ export function resolveReconciledState(subscription: Stripe.Subscription, expect
     // Same guard the webhook's grant/renewal paths apply — never let a
     // non-Pro subscription keep a `user_profiles` row on `plan: 'pro'`.
     const actualPriceId = item?.price.id;
-    if (actualPriceId !== expectedPriceId) {
-      return { action: 'skip', reason: `subscription ${subscription.id} price ${actualPriceId ?? '(none)'} is not the Pro price ${expectedPriceId}` };
+    if (!isProPrice(actualPriceId, expectedPriceId)) {
+      return { action: 'skip', reason: `subscription ${subscription.id} price ${actualPriceId ?? '(none)'} is not the Pro price ${describePrices(expectedPriceId)}` };
     }
 
     // `current_period_end` lives on the SubscriptionItem on the pinned API
