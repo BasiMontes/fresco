@@ -521,3 +521,7 @@ Historia archivada:
 - Qué: consulta SQL versionada scripts/queries/mvp-success-bar.sql + eventos payment_failed y plan_downgraded en el webhook de Stripe (PR #501, 34154c90 en dev/staging/main).
 - Por qué: audit-6 A6-P7, la barra 3 de 10 dependia de eventos de cliente con sesgo de consentimiento.
 - Siguiente: confirmar en Stripe active vs trialing al abrir cohorte; QA y paso a Finalizada con la evidencia adjunta.
+## 2026-10-05 - FRESCO-813 fin de trial sin tarjeta y base contractual de eventos
+- Qué: checkout fija end_behavior cancel (PRO_TRIAL_SUBSCRIPTION_DATA), Privacidad declara eventos de facturación/push por contrato, escenario de reloj de pruebas en la suite de Stripe real. PR #502 nivelada en dev/staging/main.
+- Por qué: audit-6 A6-P9/P10, trial sin tarjeta con fin implícito y eventos de servidor sin base declarada.
+- Siguiente: FRESCO-844 (plan anual, corregir precio recurrente en Stripe primero); texto legal sigue provisional hasta el abogado.
