@@ -38,6 +38,7 @@ the missing evidence first, or accept the residue explicitly.
 | **Feature story** | every AC scenario is covered by a passing test, manual evidence, or an explicit `exempt:<reason>` | Stage 3 Spec Compliance Matrix with no `uncovered` rows (`/sprint-development`); Gherkin AC scenarios automated in the same PR unless the ADR-0018 budget clause applies (binding trigger: `test:e2e` wall-clock). **ADR accepted**: when the story implements a decision recorded as a `Proposed` ADR, that ADR is flipped to `Accepted` (dated, with the implementing commit) in the same PR, never left `Proposed` once the code is in production (FRESCO-835) |
 | **Decision / deferral** | the decision is recorded where it belongs | goes to `Rechazos` with a pointer to the ADR or process note — **never** `Finalizada`. A deferral is not a completion |
 | **Process / docs task** | the artifact exists at its stated path **and** the things it claims to wire are actually wired | the doc, plus each cross-reference it promises (skill pointer, README section, ADR backlink) verified present |
+| **Any ticket** (all kinds) | a closing comment exists | at least one comment at close that points to the PR/commit and the proof; `bun run jira:closure-evidence` lists tickets resolved in the last 7 days with none and must print 0 (FRESCO-812, audit-6 A6-P8) |
 
 ## Accepted residue
 
