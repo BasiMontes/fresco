@@ -533,3 +533,7 @@ Historia archivada:
 - Qué: jira:closure-evidence (cerrados 7d sin comentario, sale 1 si hay), regla de comentario de cierre en sprint-development (compacta, Gotcha 21, S26) y DoD, 23 tickets cerrados comentados con su commit de entrega. Metrica 85 resueltos, 0 sin comentario. PR #508 nivelada.
 - Por qué: audit-6 A6-P8, 25% de cierres sin comentario ni evidencia.
 - Siguiente: automatizar el bloqueo (regla de Jira o cron en CI que llame al script); un comentario es indicador, no prueba.
+## 2026-10-05 - FRESCO-814 business maps refreshed
+- Qué: data-map, feature-map y master-plan regenerados tras la capa de supermercado; epic-tree rehidratado. PR #509.
+- Por qué: audit-6 A6-P11, mapas desfasados desde sept.
+- Siguiente: business-api-map.md desfasado (nuevos RPCs, /api/consents); user-journeys.md sin tocar.
