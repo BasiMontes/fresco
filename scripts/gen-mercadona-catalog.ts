@@ -27,10 +27,12 @@
 // It fails when the local cache is a different week's snapshot, so refresh the
 // cache first (delete scripts/.cache/mercadona-catalog) when it is old.
 
+import type { ProductoSupermercado } from '../lib/grocery/supermarket/types.ts';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { esProductoPlausible } from '../lib/grocery/product-plausibility.ts';
 import { SYNONYM_OVERRIDE } from '../lib/grocery/retail-packs.ts';
+import { emparejarIngrediente } from '../lib/grocery/supermarket/matcher.ts';
+import { productoDeDataset } from '../lib/grocery/supermarket/mercadona-dataset.ts';
 import { normalizeNombre } from '../lib/text/normalize-nombre.ts';
 import { BASE_QUANTITIES } from '../supabase/functions/generate-shopping-list/consolidator.ts';
 
@@ -125,74 +127,8 @@ export async function loadCatalog(): Promise<MercadonaProduct[]> {
   return [...products.values()];
 }
 
-function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-}
-
-/** `porcionReceta.unidad` -> the Mercadona `size_format` it corresponds to (Decision 2: g/ml only). */
-const UNIT_TO_SIZE_FORMAT: Record<string, string> = { g: 'kg', ml: 'l' };
-
-/**
- * Max multiple of the recipe's own portion a matched pack may weigh/hold
- * before it's rejected as implausible (Stage 3 review fix — a whole/bulk SKU
- * like a 7.5 kg jamón serrano lot was winning the "shortest name" tie-break
- * for a 100 g recipe portion, purely on string length, with no regard for
- * whether anyone buys that pack for one recipe). 20x keeps legitimate
- * multi-buy packs (e.g. a 2.5 kg rice bag for a 200 g portion) eligible while
- * rejecting outliers like the 75x jamón serrano case.
- */
-const MAX_PACK_TO_PORTION_RATIO = 20;
-
-function matchOneTerm(
-  term: string,
-  clave: string,
-  catalog: MercadonaProduct[],
-  sizeFormat: string,
-  portionInSizeFormatUnit: number,
-): MercadonaProduct | null {
-  const needle = normalize(term);
-  if (!needle) { return null; }
-  const wordBoundary = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:e?s)?\\b`);
-  const candidates = catalog.filter((p) => {
-    const pi = p.price_instructions;
-    if (pi.size_format !== sizeFormat) { return false; }
-    if (!(pi.unit_size !== null && pi.unit_size > 0)) { return false; }
-    if (!(Number.parseFloat(pi.reference_price) > 0)) { return false; }
-    if (pi.unit_size > portionInSizeFormatUnit * MAX_PACK_TO_PORTION_RATIO) { return false; }
-    return wordBoundary.test(normalize(p.display_name)) && esProductoPlausible(clave, p.display_name);
-  });
-  if (candidates.length === 0) { return null; }
-  // Mercadona names products "<core noun> <descriptor> <brand>", so the term
-  // appearing as the FIRST word is a much stronger relevance signal than raw
-  // name length (FRESCO-488 spike finding).
-  const startsWithTerm = (p: MercadonaProduct) => normalize(p.display_name).startsWith(needle);
-  candidates.sort((a, b) => {
-    const aStarts = startsWithTerm(a) ? 0 : 1;
-    const bStarts = startsWithTerm(b) ? 0 : 1;
-    if (aStarts !== bStarts) { return aStarts - bStarts; }
-    if (a.display_name.length !== b.display_name.length) { return a.display_name.length - b.display_name.length; }
-    // Same display name (single bottle vs. multi-buy pack share it, e.g.
-    // "Leche entera Hacendado" at 1L and at 6L) — prefer the smaller pack,
-    // the size a shopper more plausibly wants for one recipe ingredient.
-    return (a.price_instructions.unit_size ?? 0) - (b.price_instructions.unit_size ?? 0);
-  });
-  return candidates[0];
-}
-
-/** Canonical term first, then each `SYNONYM_OVERRIDE` alternate — first match wins (Decision 3). */
-function findBestMatch(
-  clave: string,
-  catalog: MercadonaProduct[],
-  sizeFormat: string,
-  portionInSizeFormatUnit: number,
-): MercadonaProduct | null {
-  const terms = [clave, ...(SYNONYM_OVERRIDE[clave] ?? [])];
-  for (const term of terms) {
-    const match = matchOneTerm(term, clave, catalog, sizeFormat, portionInSizeFormatUnit);
-    if (match) { return match; }
-  }
-  return null;
-}
+/** The matcher ignores the observation instant; a fixed one keeps the build deterministic. */
+const OBSERVADO_EN = new Date(0).toISOString();
 
 /**
  * Pure matcher: given the raw catalog + the recipe-portion table, returns
@@ -203,22 +139,29 @@ export function buildMercadonaCatalogMatch(
   catalog: MercadonaProduct[],
   porciones: Record<string, { cantidad: number, unidad: string }>,
 ): Record<string, MercadonaMatch> {
+  // Products the common shape cannot price faithfully (pieces, no pack size) are dropped here, as they are at runtime.
+  const porId = new Map(catalog.map(p => [p.id, p]));
+  const candidatos = catalog
+    .map(p => productoDeDataset(p, { observadoEn: OBSERVADO_EN }))
+    .filter((p): p is ProductoSupermercado => p !== null);
+
   const out: Record<string, MercadonaMatch> = {};
   for (const clave of Object.keys(porciones).sort((a, b) => a.localeCompare(b, 'es'))) {
-    const sizeFormat = UNIT_TO_SIZE_FORMAT[porciones[clave].unidad];
-    if (!sizeFormat) { continue; } // count-based unit — out of scope (Decision 2)
+    const { cantidad, unidad } = porciones[clave];
+    if (unidad !== 'g' && unidad !== 'ml') { continue; } // count-based unit — out of scope (Decision 2)
 
-    const portionInSizeFormatUnit = porciones[clave].cantidad / 1000; // g/ml -> kg/l
-    const match = findBestMatch(normalizeNombre(clave), catalog, sizeFormat, portionInSizeFormatUnit);
-    if (!match) { continue; } // no catalog equivalent (or none within a plausible pack size) — absent from the table, never a placeholder
+    const normalizada = normalizeNombre(clave);
+    const coincidencia = emparejarIngrediente({
+      ingrediente: { terminos: [normalizada, ...(SYNONYM_OVERRIDE[normalizada] ?? [])], porcion: { cantidad, unidad } },
+      candidatos,
+    });
+    if (!coincidencia) { continue; } // no catalog equivalent (or none within a plausible pack size) — absent from the table, never a placeholder
 
+    const match = porId.get(coincidencia.producto.idExterno) as MercadonaProduct;
     const pi = match.price_instructions;
-    const cantidad = Math.round((pi.unit_size as number) * 1000);
-    if (cantidad <= 0) { continue; } // e.g. saffron sold in sub-gram sachets — rounds to 0, never a garbage/zero pack size
-    const precioReferencia = Number.parseFloat(pi.reference_price);
     out[clave] = {
-      envaseVenta: { cantidad, unidad: porciones[clave].unidad },
-      precioMercadona: { precioReferencia, formatoReferencia: pi.reference_format },
+      envaseVenta: { cantidad: coincidencia.producto.envase.cantidad, unidad },
+      precioMercadona: { precioReferencia: Number.parseFloat(pi.reference_price), formatoReferencia: pi.reference_format },
       shareUrl: match.share_url,
     };
   }
