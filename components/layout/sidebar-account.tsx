@@ -1,7 +1,7 @@
 'use client';
 
 import type { UserProfile } from '@schemas';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { ChevronsUpDown, LogOut, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -36,6 +36,57 @@ export interface AccountUser {
   plan: UserProfile['plan']
   /** Whether this is a guest session (`user.is_anonymous`), from `auth.getUser()`. */
   isAnonymous: boolean
+}
+
+interface IdentityLinesProps {
+  nombre: string | null
+  email: string
+  plan: UserProfile['plan']
+  /** On the green sidebar (`trigger`) the text is light; on the popover panel it is dark. */
+  tone: 'trigger' | 'panel'
+  /** Test ids differ per surface so each line stays addressable. */
+  testIds?: { name?: string, email?: string, plan?: string }
+}
+
+/**
+ * FRESCO-849 — the three identity lines (name, email, plan), shared by the
+ * pill trigger and the popover header. The email line is dropped when there
+ * is none (a guest session has no email).
+ */
+// Static class strings on purpose, NOT `cn()`: tailwind-merge does not know the
+// project's custom font sizes (`text-label`, `text-caption`), reads them as a
+// text colour and drops them when a real colour follows, so every line fell
+// back to the 16px default (FRESCO-849 review).
+const IDENTITY_CLASSES = {
+  trigger: {
+    name: 'truncate text-label text-background',
+    email: 'mt-0.5 truncate text-caption text-background/70',
+    plan: 'mt-0.5 truncate text-caption',
+  },
+  panel: {
+    name: 'truncate text-label text-text',
+    email: 'mt-0.5 truncate text-caption text-tertiary',
+    plan: 'mt-0.5 truncate text-caption text-tertiary',
+  },
+} as const;
+
+function IdentityLines({ nombre, email, plan, tone, testIds = {} }: IdentityLinesProps) {
+  const classes = IDENTITY_CLASSES[tone];
+  return (
+    <span className="min-w-0 flex-1">
+      <p data-testid={testIds.name} className={classes.name}>
+        {nombre || 'Sin nombre'}
+      </p>
+      {email && (
+        <p data-testid={testIds.email} className={classes.email}>
+          {email}
+        </p>
+      )}
+      <p data-testid={testIds.plan} className={classes.plan}>
+        {PLAN_LABELS[plan]}
+      </p>
+    </span>
+  );
 }
 
 export interface SidebarAccountProps extends AccountUser {
@@ -76,7 +127,7 @@ export interface SidebarAccountProps extends AccountUser {
  * convention of independent local copies of this same 3-line pattern
  * (`danger-zone.tsx`, `app/update-password/page.tsx`).
  */
-export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }: SidebarAccountProps) {
+export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = false }: SidebarAccountProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -137,8 +188,10 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
           aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen(current => !current)}
           className={cn(
-            'flex items-center gap-3 rounded-card text-left transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary',
-            collapsed ? 'rounded-full p-0' : 'w-full p-1',
+            'flex items-center gap-3 text-left transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary',
+            // FRESCO-849: expanded, the trigger is a pill (translucent fill +
+            // hairline border on the green sidebar); collapsed it stays a bare avatar.
+            collapsed ? 'rounded-full p-0' : 'w-full rounded-2xl border border-background/20 bg-background/10 p-2 hover:bg-background/15',
           )}
         >
           <span
@@ -149,14 +202,16 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             {initial || <UserIcon className="size-4" />}
           </span>
           {!collapsed && (
-            <span className="min-w-0 flex-1">
-              <p data-testid="user_name" className="truncate text-label text-background">
-                {nombre || 'Sin nombre'}
-              </p>
-              <p data-testid="plan_label" className="mt-0.5 truncate text-caption">
-                {PLAN_LABELS[plan]}
-              </p>
-            </span>
+            <>
+              <IdentityLines
+                nombre={nombre}
+                email={email}
+                plan={plan}
+                tone="trigger"
+                testIds={{ name: 'user_name', email: 'user_email', plan: 'plan_label' }}
+              />
+              <ChevronsUpDown aria-hidden="true" className="size-4 shrink-0 text-background/70" />
+            </>
           )}
         </button>
 
@@ -187,10 +242,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-body-md font-semibold text-on-brand">
               {initial || <UserIcon className="size-4" />}
             </span>
-            <span className="min-w-0 flex-1">
-              <p className="truncate text-label text-text">{nombre || 'Sin nombre'}</p>
-              <p className="mt-0.5 truncate text-caption text-tertiary">{PLAN_LABELS[plan]}</p>
-            </span>
+            <IdentityLines nombre={nombre} email={email} plan={plan} tone="panel" testIds={{ email: 'popover_user_email' }} />
           </div>
 
           <div role="separator" className="my-1 border-t border-border" />
@@ -205,7 +257,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             href="/profile"
             data-testid="popover_item_perfil"
             onClick={() => setIsMenuOpen(false)}
-            className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
+            className="flex items-center rounded-card px-3 py-2 text-label text-text hover:bg-neutral-100"
           >
             Perfil
           </Link>
@@ -214,7 +266,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             href="/profile#ayuda-configuracion"
             data-testid="popover_item_configuracion"
             onClick={() => setIsMenuOpen(false)}
-            className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
+            className="flex items-center rounded-card px-3 py-2 text-label text-text hover:bg-neutral-100"
           >
             Configuración
           </Link>
@@ -225,7 +277,7 @@ export function SidebarAccount({ nombre, plan, isAnonymous, collapsed = false }:
             href="/profile#ayuda"
             data-testid="popover_item_ayuda"
             onClick={() => setIsMenuOpen(false)}
-            className="flex items-center rounded-card px-3 py-2 text-body-md text-text hover:bg-neutral-100"
+            className="flex items-center rounded-card px-3 py-2 text-label text-text hover:bg-neutral-100"
           >
             Ayuda
           </Link>
