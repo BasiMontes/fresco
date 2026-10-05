@@ -10,7 +10,7 @@ interface TurnstileRenderOptions {
   'expired-callback': () => void
   'error-callback': () => void
   'before-interactive-callback': () => void
-  'theme': 'auto'
+  'theme': 'auto' | 'light' | 'dark'
   'language': string
   'size': 'flexible'
   'appearance': 'interaction-only'
@@ -62,6 +62,16 @@ async function loadTurnstile(): Promise<TurnstileApi> {
 }
 
 /**
+ * The theme the person chose in the app (`app/layout.tsx` sets `data-theme` on
+ * `<html>` only for an explicit light/dark choice). `auto` follows the OS, which
+ * showed a dark widget on a light page for someone whose OS is dark.
+ */
+function appTheme(): TurnstileRenderOptions['theme'] {
+  const theme = document.documentElement.dataset.theme;
+  return theme === 'light' || theme === 'dark' ? theme : 'auto';
+}
+
+/**
  * The Turnstile widget. Renders nothing when no site key is configured.
  * The token lands in `captcha.token`; a form is submittable once
  * `captcha.ready` is true. Call `captcha.reset()` after every auth request.
@@ -89,11 +99,15 @@ export function CaptchaField({ captcha }: { captcha: Captcha }) {
         }
         widgetId = api.render(container, {
           'sitekey': TURNSTILE_SITE_KEY,
-          'callback': token => setToken(token),
+          'callback': (token) => {
+            setToken(token);
+            // Passed: the person has nothing left to do here, give the space back.
+            setInteractive(false);
+          },
           'expired-callback': () => setToken(null),
           'error-callback': () => setToken(null),
           'before-interactive-callback': () => setInteractive(true),
-          'theme': 'auto',
+          'theme': appTheme(),
           'language': 'es',
           // `interaction-only`: hidden unless a challenge needs the person.
           // `flexible`: when it does show, it fills the form width.

@@ -65,10 +65,10 @@ function ForgotPasswordPageInner() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
-      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-start px-4 pb-4 pt-[clamp(0.75rem,4vh,6rem)]">
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(0.75rem,3vh,2rem)]" priority />
 
-      <Card className="p-6 md:p-8">
+      <Card className="p-6 md:p-8 md:[@media(max-height:700px)]:p-6">
         <h1 className="text-h3">Recupera tu contraseña</h1>
         {/* FRESCO-451: this used to render unconditionally, so the
             "success" confirmation below stacked a near-identical second

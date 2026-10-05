@@ -24,7 +24,7 @@ export function LegalLinks() {
     <>
       {/* FRESCO-478: text-body-sm (13px) not text-caption (11px) — AC bans
           reading text below 12px; py-3 gives each link a ~44px tap target. */}
-      <p className="mt-4 text-center text-body-sm text-tertiary">
+      <p className="mt-4 text-center text-body-sm text-tertiary [@media(max-height:700px)]:mt-2">
         <button type="button" data-testid="legal_links_terms" onClick={() => openSection('terminos')} className="inline-block py-3 underline">
           Términos
         </button>
