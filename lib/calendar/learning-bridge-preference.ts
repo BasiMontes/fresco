@@ -11,7 +11,7 @@
 export const LEARNING_BRIDGE_DISMISSED_COOKIE = 'learning_bridge_dismissed';
 
 /** 1 year — a UI preference, safe to persist long (matches the sidebar cookie). */
-export const LEARNING_BRIDGE_DISMISSED_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+const LEARNING_BRIDGE_DISMISSED_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 /** Server- or client-side: is the card dismissed for this raw cookie value? */
 export function parseLearningBridgeDismissed(value: string | undefined | null): boolean {

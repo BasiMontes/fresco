@@ -21,7 +21,7 @@ import { parseFormatoReferencia, precioEnvaseDesdeReferencia } from './units';
  */
 
 export const ZONA_CATALOGO: ZonaId = 'catalogo';
-export const OBSERVADO_EN_DESCONOCIDO = '1970-01-01T00:00:00.000Z';
+const OBSERVADO_EN_DESCONOCIDO = '1970-01-01T00:00:00.000Z';
 
 const UNIDADES_BASE: readonly UnidadBase[] = ['g', 'ml', 'unidad'];
 
@@ -77,7 +77,7 @@ export function productoDeCatalogo(cadena: string, clave: string): ProductoSuper
  * the database). Same data the connector serves, and the same caveat: it does
  * NOT check permission, callers must go through the registry first.
  */
-export function productosDeCatalogo(cadena: string): ProductoSupermercado[] {
+function productosDeCatalogo(cadena: string): ProductoSupermercado[] {
   return [...(PRODUCTOS_POR_CADENA.get(cadena)?.values() ?? [])];
 }
 

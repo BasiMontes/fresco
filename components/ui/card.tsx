@@ -67,7 +67,3 @@ export function CardDescription({
 export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(className)} {...props} />;
 }
-
-export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('mt-3 flex items-center gap-2', className)} {...props} />;
-}

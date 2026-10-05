@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { toRecipe } from '@/lib/api/recipes';
 
-export class FavoritesError extends Error {
+class FavoritesError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'FavoritesError';

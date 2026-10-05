@@ -20,7 +20,7 @@
 export const IDENTITY_NOMBRE_COOKIE = 'fresco_nombre';
 
 /** 30 days — a convenience hint, re-written on every sign-in. */
-export const IDENTITY_NOMBRE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const IDENTITY_NOMBRE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
 /**
  * Fired on `window` whenever the cookie is written or cleared, so a

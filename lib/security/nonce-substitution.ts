@@ -9,6 +9,10 @@
 //
 // NOT wired into proxy.ts or any request path -- this is investigation
 // evidence for FRESCO-541, not production code yet.
+//
+// Kept on purpose (FRESCO-811, audit-6 A6-A8): ADR-0031 (Accepted) ships this as
+// groundwork for the edge-cache work, so its only importer is its own test. If
+// that work is dropped, supersede ADR-0031 and delete this file and its test.
 
 /**
  * Replaces every occurrence of `oldNonce` in `html` with `newNonce`. Throws if
