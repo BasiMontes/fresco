@@ -537,3 +537,7 @@ Historia archivada:
 - Qué: data-map, feature-map y master-plan regenerados tras la capa de supermercado; epic-tree rehidratado. PR #509.
 - Por qué: audit-6 A6-P11, mapas desfasados desde sept.
 - Siguiente: business-api-map.md desfasado (nuevos RPCs, /api/consents); user-journeys.md sin tocar.
+## 2026-10-05 - FRESCO-846 shared supermarket matcher wired
+- Qué: gen-mercadona-catalog y gen-consum-catalog usan emparejarIngrediente; desempate del matcher = el de los generadores. PR #510.
+- Por qué: audit-6 A6-A8, ADR-0036 decisión 5 no se cumplía (nadie importaba matcher.ts).
+- Siguiente: fideos en Consum pasó a fideos chinos (revisar si molesta); FRESCO-808 y 801 siguen en el Sprint 0 de supermercado.
