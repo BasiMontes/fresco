@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { sessionLoginEnabled, signInBrowserViaSession } from '../session-login';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @login,
@@ -21,6 +22,16 @@ Given(/^que existe un usuario registrado con email y contraseña válidos$/, asy
 });
 
 When(/^introduce esas credenciales en \/login y confirma el formulario$/, async ({ page }) => {
+  // FRESCO-799: against a hosted backend with the captcha on, the form cannot
+  // be submitted by a CI browser (Turnstile). The canary keeps proving what it
+  // exists for, auth + Supabase connectivity + the app reading the session,
+  // with a session minted from the admin API; the form itself is exercised by
+  // the local-stack e2e job, which has no captcha.
+  if (sessionLoginEnabled()) {
+    await signInBrowserViaSession(page, process.env.DEV_USER_EMAIL!);
+    await page.goto('/menu');
+    return;
+  }
   await page.goto('/login');
   await page.getByTestId('email_input').fill(process.env.DEV_USER_EMAIL!);
   await page.getByTestId('password_input').fill(process.env.DEV_USER_PASSWORD!);

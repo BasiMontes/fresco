@@ -79,6 +79,10 @@ jobs:
         run: bun run test:e2e:stripe
         env:
           PLAYWRIGHT_BASE_URL: https://fresco-pre.vercel.app
+          # FRESCO-799: staging shares the Supabase project with production, so
+          # once its captcha is on, password sign-ins need a token. Sessions come
+          # from the admin API instead (tests/session-login.ts).
+          E2E_SESSION_LOGIN: '1'
 
       - name: Upload Playwright report
         if: always()

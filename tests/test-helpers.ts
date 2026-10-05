@@ -1,5 +1,6 @@
 import type { APIRequestContext } from '@playwright/test';
 import Stripe from 'stripe';
+import { mintSession, sessionLoginEnabled } from './session-login';
 
 /**
  * Shared REST/date helpers for `tests/steps/*.steps.ts` — extracted after
@@ -16,6 +17,11 @@ import Stripe from 'stripe';
  */
 
 export async function getAccessToken(request: APIRequestContext, email: string, password: string): Promise<string> {
+  // FRESCO-799: with the hosted captcha on, a password grant needs a Turnstile
+  // token no CI job can produce — see `tests/session-login.ts`.
+  if (sessionLoginEnabled()) {
+    return (await mintSession(email)).accessToken;
+  }
   const response = await request.post(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
     {

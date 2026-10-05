@@ -276,9 +276,16 @@ jobs:
         # public local-dev demo constants) is appended last so its
         # NEXT_PUBLIC_SUPABASE_URL / SUPABASE_* / *_USER_* values win over the
         # production ones in the restored secret.
+        #
+        # FRESCO-799: the Turnstile site key is forced empty last. The local
+        # stack has no captcha, and with a key set every auth form keeps its
+        # submit button disabled until Cloudflare's widget is solved, which
+        # would put an external service and a headless-browser challenge in
+        # the path of every e2e login.
         run: |
           printf '%s\n' "$ENV_FILE" > .env
           cat .env.ci >> .env
+          printf 'NEXT_PUBLIC_TURNSTILE_SITE_KEY=\n' >> .env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
