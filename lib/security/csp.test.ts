@@ -61,6 +61,13 @@ describe('buildContentSecurityPolicy', () => {
     expect(connect).toContain('https://api.pwnedpasswords.com');
   });
 
+  it('lets Cloudflare Turnstile frame and call back, without opening framing or scripts to any other host (FRESCO-799)', () => {
+    const csp = buildContentSecurityPolicy({ nonce: 'n', isDev: false }, ENV);
+    expect(directive(csp, 'frame-src')).toBe('frame-src \'self\' https://challenges.cloudflare.com');
+    expect(directive(csp, 'connect-src')).toContain('https://challenges.cloudflare.com');
+    expect(directive(csp, 'script-src')).not.toContain('cloudflare');
+  });
+
   it('includes report-uri only when a report URI is given (report-to is deprecated by Chrome — Reporting-Endpoints header covers it, see proxy.ts)', () => {
     const withReport = buildContentSecurityPolicy({ nonce: 'n', isDev: false, reportUri: 'https://r/report' }, ENV);
     expect(withReport).toContain('report-uri https://r/report');

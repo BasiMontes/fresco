@@ -6,10 +6,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { captchaOptions } from '@/lib/auth/captcha';
+import { useCaptcha } from '@/lib/auth/use-captcha';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -37,6 +40,8 @@ function ForgotPasswordPageInner() {
   // FRESCO-114: see login/page.tsx — a ref guard catches a synchronous
   // double-click that `disabled={isSubmitting}` alone misses.
   const isSubmittingRef = useRef(false);
+  // FRESCO-799: one Turnstile token per auth request; reset after each.
+  const captcha = useCaptcha();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,10 +54,11 @@ function ForgotPasswordPageInner() {
       // request always resolves the same way client-side regardless of
       // whether `email` has an account — Supabase's own API already never
       // reveals this either way, so no branching is needed here at all.
-      await client.auth.resetPasswordForEmail(email);
+      await client.auth.resetPasswordForEmail(email, captchaOptions(captcha.token));
       setSubmitted(true);
     }
     finally {
+      captcha.reset();
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -100,7 +106,8 @@ function ForgotPasswordPageInner() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                 />
-                <Button data-testid="forgot_password_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+                <CaptchaField captcha={captcha} />
+                <Button data-testid="forgot_password_submit_button" type="submit" className="mt-2" disabled={isSubmitting || !captcha.ready}>
                   {isSubmitting ? 'Enviando…' : 'Enviar enlace'}
                 </Button>
               </form>

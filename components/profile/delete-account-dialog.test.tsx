@@ -20,7 +20,7 @@ const deleteAccountMock = mock(async (_accessToken: string, _reauthToken?: strin
 const getSessionMock = mock(async (): Promise<{ data: { session: { access_token: string } | null } }> => (
   { data: { session: { access_token: 'guest-token' } } }
 ));
-const signInWithPasswordMock = mock(async (_creds: { email: string, password: string }): Promise<
+const signInWithPasswordMock = mock(async (_creds: { email: string, password: string, options?: { captchaToken?: string } }): Promise<
   { data: { session: { access_token: string } | null }, error: Error | null }
 > => ({ data: { session: { access_token: 'user-token' } }, error: null }));
 const signOutMock = mock(async () => ({ error: null }));
@@ -145,7 +145,7 @@ describe('DeleteAccountDialog — handleDelete', () => {
     await confirmAsRegisteredUser();
 
     await waitFor(() => {
-      expect(signInWithPasswordMock).toHaveBeenCalledWith({ email: 'laura@fresco.app', password: 'hunter2000' });
+      expect(signInWithPasswordMock).toHaveBeenCalledWith({ email: 'laura@fresco.app', password: 'hunter2000', options: { captchaToken: undefined } });
       expect(deleteAccountMock).toHaveBeenCalledWith('user-token', 'user-token');
       expect(signOutMock).toHaveBeenCalled();
       expect(routerMock.push).toHaveBeenCalledWith('/login?account_deleted=1');

@@ -2,10 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { deleteAccount, EdgeFunctionError } from '@/lib/api/edge-functions';
+import { captchaOptions } from '@/lib/auth/captcha';
+import { useCaptcha } from '@/lib/auth/use-captcha';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
 
@@ -48,10 +51,13 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
   const [password, setPassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // FRESCO-799: the re-authentication below is a password sign-in, so it needs
+  // a Turnstile token. A guest never signs in here and gets no widget.
+  const captcha = useCaptcha();
 
   const confirmationTarget = isAnonymous ? GUEST_CONFIRMATION_PHRASE : email;
   const phraseMatches = typedConfirmation.trim().length > 0 && typedConfirmation.trim() === confirmationTarget;
-  const isConfirmed = phraseMatches && (isAnonymous || password.length > 0);
+  const isConfirmed = phraseMatches && (isAnonymous || (password.length > 0 && captcha.ready));
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -74,7 +80,8 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
         // A4-L11: re-authenticate through native Supabase Auth. The fresh
         // token both authenticates this request and proves recency to the
         // Edge Function.
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        const { data, error } = await client.auth.signInWithPassword({ email, password, options: captchaOptions(captcha.token) });
+        captcha.reset();
         if (error || !data.session) {
           setDeleteError('La contraseña no es correcta.');
           return;
@@ -131,16 +138,21 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
       />
 
       {!isAnonymous && (
-        <Input
-          className="mt-3"
-          data-testid="delete_account_password_input"
-          type="password"
-          placeholder="Tu contraseña"
-          aria-label="Introduce tu contraseña para confirmar"
-          autoComplete="current-password"
-          value={password}
-          onChange={event => setPassword(event.target.value)}
-        />
+        <>
+          <Input
+            className="mt-3"
+            data-testid="delete_account_password_input"
+            type="password"
+            placeholder="Tu contraseña"
+            aria-label="Introduce tu contraseña para confirmar"
+            autoComplete="current-password"
+            value={password}
+            onChange={event => setPassword(event.target.value)}
+          />
+          <div className="mt-3">
+            <CaptchaField captcha={captcha} />
+          </div>
+        </>
       )}
 
       {deleteError && (
