@@ -517,3 +517,7 @@ Historia archivada:
 - Qué: Turnstile activado en Supabase hosted (captura adjunta a Jira); password grant sin token da 400 captcha_failed en producción; smoke de prod 3/3 con E2E_SESSION_LOGIN=1 y login + modo invitada verificados por el fundador. Cuotas, topes y registro de endpoints ya en prod (#496-#500). Ticket Finalizada.
 - Por qué: A6-S7, el login anónimo gratis permitía rotar identidades para evadir los límites por usuario; el criterio de cierre exigía test de BD y captcha activo con captura.
 - Siguiente: FRESCO-843 (suite manual completa contra hosted con captcha); borrar NEXT_PUBLIC_TURNSTILE_SECRET_KEY de Vercel (la secret solo vive en Supabase).
+## 2026-10-05 - FRESCO-793 barra de exito MVP medible
+- Qué: consulta SQL versionada scripts/queries/mvp-success-bar.sql + eventos payment_failed y plan_downgraded en el webhook de Stripe (PR #501, 34154c90 en dev/staging/main).
+- Por qué: audit-6 A6-P7, la barra 3 de 10 dependia de eventos de cliente con sesgo de consentimiento.
+- Siguiente: confirmar en Stripe active vs trialing al abrir cohorte; QA y paso a Finalizada con la evidencia adjunta.
