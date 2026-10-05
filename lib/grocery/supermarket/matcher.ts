@@ -2,7 +2,6 @@ import type { CanonicalIngredient, Confianza } from '../types';
 import type { Envase, ProductoSupermercado } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 import { esProductoPlausible } from '../product-plausibility';
-import { precioPorUnidadReferencia } from './units';
 
 /**
  * FRESCO-752 — ingredient to product matching, independent of the chain.
@@ -13,8 +12,12 @@ import { precioPorUnidadReferencia } from './units';
  * chain shares it: same unit family, a plausible pack against the recipe
  * portion, the term as a whole word, canonical term before synonyms.
  *
- * Not wired into the runner yet (FRESCO-811, audit-6 A6-A8): only its test imports
- * it, so decision 5 of ADR-0036 is not met in practice. Wiring it is FRESCO-846.
+ * FRESCO-846: both catalog generators (`gen-mercadona-catalog.ts`,
+ * `gen-consum-catalog.ts`) call it, so ADR-0036 decision 5 holds in practice.
+ * Ties go to the product whose name starts with the term, then the shorter
+ * name (the plain product, not a derived or mixed one), then the smaller pack,
+ * then the cheaper pack, then the id. Cheapest-per-unit was tried and rejected: it picked frozen,
+ * bulk and derived products (FRESCO-846 catalog review).
  */
 
 /** Max multiple of the recipe portion a matched pack may hold; rejects bulk SKUs (FRESCO-503 review fix). */
@@ -90,11 +93,11 @@ export function emparejarIngrediente(input: EmparejarInput): Coincidencia | null
     }
 
     const empieza = (p: ProductoSupermercado) => (normalizeNombre(p.nombre).startsWith(termino) ? 0 : 1);
-    const porPrecio = (p: ProductoSupermercado) => precioPorUnidadReferencia(p).precio;
     const ordenados = [...conTermino].sort((a, b) =>
       empieza(a) - empieza(b)
-      || porPrecio(a) - porPrecio(b)
+      || a.nombre.length - b.nombre.length
       || a.envase.cantidad - b.envase.cantidad
+      || a.precioEnvase - b.precioEnvase
       || a.idExterno.localeCompare(b.idExterno),
     );
 
