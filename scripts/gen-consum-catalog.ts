@@ -37,10 +37,11 @@
 // skipped, not failed, when the local cache is absent — see that file's
 // header comment).
 
+import type { ProductoSupermercado } from '../lib/grocery/supermarket/types.ts';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { esProductoPlausible } from '../lib/grocery/product-plausibility.ts';
 import { SYNONYM_OVERRIDE } from '../lib/grocery/retail-packs.ts';
+import { emparejarIngrediente } from '../lib/grocery/supermarket/matcher.ts';
 import { normalizeNombre } from '../lib/text/normalize-nombre.ts';
 import { BASE_QUANTITIES } from '../supabase/functions/generate-shopping-list/consolidator.ts';
 
@@ -125,68 +126,30 @@ export function parsePackSize(description: string): ParsedSize | null {
   return null;
 }
 
-function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
-}
+/** The matcher ignores the observation instant; a fixed one keeps the build deterministic. */
+const OBSERVADO_EN = new Date(0).toISOString();
 
 /**
- * Max multiple of the recipe's own portion a matched pack may weigh/hold
- * before it's rejected as implausible — same guard and same ratio as
- * `gen-mercadona-catalog.ts` (Stage 3 review fix on that story).
+ * One Consum product as the common shape, or `null` when it cannot be priced
+ * faithfully (no pack size in the description, or no price). Consum prices the
+ * whole pack, so the price passes through.
  */
-const MAX_PACK_TO_PORTION_RATIO = 20;
-
-function matchOneTerm(
-  term: string,
-  clave: string,
-  candidates: ConsumProduct[],
-  targetUnit: 'g' | 'ml',
-  portionInTargetUnit: number,
-): { product: ConsumProduct, size: ParsedSize } | null {
-  const needle = normalize(term);
-  if (!needle) { return null; }
-  const wordBoundary = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:e?s)?\\b`);
-  const eligible: { product: ConsumProduct, size: ParsedSize }[] = [];
-  for (const p of candidates) {
-    if (!wordBoundary.test(normalize(p.productData.name))) { continue; }
-    if (!esProductoPlausible(clave, p.productData.name)) { continue; }
-    const size = parsePackSize(p.productData.description);
-    if (!size || size.unidad !== targetUnit) { continue; }
-    const precio = p.priceData.prices[0]?.value.centAmount;
-    if (!(precio > 0)) { continue; }
-    if (size.cantidad > portionInTargetUnit * MAX_PACK_TO_PORTION_RATIO) { continue; }
-    eligible.push({ product: p, size });
-  }
-  if (eligible.length === 0) { return null; }
-  // Consum names products "<core noun> <descriptor> <brand>", same signal
-  // FRESCO-503 found for Mercadona: first-word match beats raw name length.
-  const startsWithTerm = (p: ConsumProduct) => normalize(p.productData.name).startsWith(needle);
-  eligible.sort((a, b) => {
-    const aStarts = startsWithTerm(a.product) ? 0 : 1;
-    const bStarts = startsWithTerm(b.product) ? 0 : 1;
-    if (aStarts !== bStarts) { return aStarts - bStarts; }
-    const aLen = a.product.productData.name.length;
-    const bLen = b.product.productData.name.length;
-    if (aLen !== bLen) { return aLen - bLen; }
-    return a.size.cantidad - b.size.cantidad;
-  });
-  return eligible[0];
-}
-
-/** Canonical term first, then each `SYNONYM_OVERRIDE` alternate — first match wins. */
-function findBestMatch(
-  candidatesByTerm: Map<string, ConsumProduct[]>,
-  clave: string,
-  targetUnit: 'g' | 'ml',
-  portionInTargetUnit: number,
-): { product: ConsumProduct, size: ParsedSize } | null {
-  const terms = [clave, ...(SYNONYM_OVERRIDE[clave] ?? [])];
-  for (const term of terms) {
-    const candidates = candidatesByTerm.get(term) ?? [];
-    const match = matchOneTerm(term, clave, candidates, targetUnit, portionInTargetUnit);
-    if (match) { return match; }
-  }
-  return null;
+function productoDeConsum(p: ConsumProduct): ProductoSupermercado | null {
+  const envase = parsePackSize(p.productData.description);
+  const precioEnvase = p.priceData.prices[0]?.value.centAmount;
+  if (!envase || !(precioEnvase > 0)) { return null; }
+  return {
+    cadena: 'consum',
+    idExterno: p.code,
+    nombre: p.productData.name,
+    marca: null,
+    envase,
+    precioEnvase,
+    url: p.productData.url,
+    disponible: true,
+    zona: 'default',
+    observadoEn: OBSERVADO_EN,
+  };
 }
 
 /**
@@ -200,16 +163,28 @@ export function buildConsumCatalogMatch(
 ): Record<string, ConsumMatch> {
   const out: Record<string, ConsumMatch> = {};
   for (const clave of Object.keys(porciones).sort((a, b) => a.localeCompare(b, 'es'))) {
-    const unidad = porciones[clave].unidad;
+    const { cantidad, unidad } = porciones[clave];
     if (unidad !== 'g' && unidad !== 'ml') { continue; } // count-based unit — out of scope (Decision 2)
 
-    const match = findBestMatch(candidatesByTerm, normalizeNombre(clave), unidad, porciones[clave].cantidad);
-    if (!match) { continue; } // no catalog equivalent (or none within a plausible pack size) — absent from the table, never a placeholder
+    // Canonical term first, then each `SYNONYM_OVERRIDE` alternate (Decision 3).
+    const normalizada = normalizeNombre(clave);
+    const terminos = [normalizada, ...(SYNONYM_OVERRIDE[normalizada] ?? [])];
+    const crudos = new Map<string, ConsumProduct>();
+    for (const termino of terminos) {
+      for (const p of candidatesByTerm.get(termino) ?? []) { crudos.set(p.code, p); }
+    }
+    const candidatos = [...crudos.values()]
+      .map(productoDeConsum)
+      .filter((p): p is ProductoSupermercado => p !== null);
 
+    const coincidencia = emparejarIngrediente({ ingrediente: { terminos, porcion: { cantidad, unidad } }, candidatos });
+    if (!coincidencia) { continue; } // no catalog equivalent (or none within a plausible pack size) — absent from the table, never a placeholder
+
+    const match = crudos.get(coincidencia.producto.idExterno) as ConsumProduct;
     out[clave] = {
-      envaseVenta: { cantidad: match.size.cantidad, unidad: match.size.unidad },
-      precioConsum: { precio: match.product.priceData.prices[0].value.centAmount },
-      url: match.product.productData.url,
+      envaseVenta: { cantidad: coincidencia.producto.envase.cantidad, unidad: coincidencia.producto.envase.unidad },
+      precioConsum: { precio: coincidencia.producto.precioEnvase },
+      url: match.productData.url,
     };
   }
   return out;

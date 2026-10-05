@@ -8,7 +8,7 @@ function ingrediente(terminos: string[], porcion: IngredienteParaMatching['porci
 }
 
 describe('emparejarIngrediente', () => {
-  test('picks the cheapest pack per kg among products that start with the term', () => {
+  test('picks a plausible pack among products that start with the term', () => {
     const match = emparejarIngrediente({
       ingrediente: ingrediente(['arroz'], { cantidad: 200, unidad: 'g' }),
       candidatos: PRODUCTOS_SINTETICOS,
@@ -87,6 +87,33 @@ describe('emparejarIngrediente', () => {
       candidatos: solo,
     });
     expect(match).toBeNull();
+  });
+
+  describe('tie-break (FRESCO-846): the plain product wins, not the cheapest per kg', () => {
+    const base = { ...PRODUCTOS_SINTETICOS[0], disponible: true, envase: { cantidad: 500, unidad: 'g' as const } };
+    const porcion = { cantidad: 200, unidad: 'g' as const };
+
+    test('a shorter name beats a cheaper derived or mixed product', () => {
+      const match = emparejarIngrediente({
+        ingrediente: ingrediente(['brocoli'], porcion),
+        candidatos: [
+          { ...base, idExterno: 'a', nombre: 'Brocoli ultracongelado paquete', precioEnvase: 0.9 },
+          { ...base, idExterno: 'b', nombre: 'Brocoli pieza', precioEnvase: 1.8 },
+        ],
+      });
+      expect(match?.producto.idExterno).toBe('b');
+    });
+
+    test('same name: the smaller pack wins, then the cheaper one, then the id', () => {
+      const candidatos = [
+        { ...base, idExterno: 'z', nombre: 'Leche entera brik', envase: { cantidad: 1000, unidad: 'g' as const }, precioEnvase: 1.4 },
+        { ...base, idExterno: 'y', nombre: 'Leche entera brik', envase: { cantidad: 1000, unidad: 'g' as const }, precioEnvase: 0.96 },
+        { ...base, idExterno: 'x', nombre: 'Leche entera brik', envase: { cantidad: 1000, unidad: 'g' as const }, precioEnvase: 0.96 },
+        { ...base, idExterno: 'w', nombre: 'Leche entera brik', envase: { cantidad: 2000, unidad: 'g' as const }, precioEnvase: 0.5 },
+      ];
+      const match = emparejarIngrediente({ ingrediente: ingrediente(['leche'], { cantidad: 200, unidad: 'g' }), candidatos });
+      expect(match?.producto.idExterno).toBe('x');
+    });
   });
 
   test('is deterministic: candidate order does not change the result', () => {
