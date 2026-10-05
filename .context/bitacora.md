@@ -545,3 +545,7 @@ Historia archivada:
 - Qué: PR A #511 (puerta de permiso en todas las vías de lectura, idParaCarga, OrigenEnvase abierto, PERMISOS_CADENA) y PR B #512 (mapeo en servidor, enlace genérico por cadena, antigüedad del dato, catálogos fuera del bundle).
 - Por qué: audit-6 A6-A3/A4/A12/A14, ADR-0036 "añadir cadena = añadir conector" no se cumplía.
 - Siguiente: localhost no puede llamar a las Edge Functions (CORS, FRESCO-364), la pasada en navegador exige generar menú en fresco-pre; fresco-dev está congelado (FRESCO-804). FRESCO-801 y FRESCO-790 siguen en el Sprint 0 de supermercado.
+## 2026-10-05 - FRESCO-801 runner de precios: test y dry-run en verde
+- Qué: ejecutar() inyectable + 7 tests (PR #513); secretos SUPABASE_URL/SERVICE_ROLE_KEY en el repo; dry-run en Actions verde (run 37352315458); causas de los 3 fallos de refresh-mercadona-catalog comentadas.
+- Por qué: audit-6 A6-D5/A6-T9, el runner nunca se había ejecutado y no tenía test.
+- Siguiente: primer --apply con visto bueno del fundador; conector Consum (FRESCO-772).
