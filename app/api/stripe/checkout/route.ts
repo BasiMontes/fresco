@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { isTrialAvailable, PRO_TRIAL_DAYS } from '@/lib/legal/pro-terms';
+import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       ...(trialAlreadyUsed
         ? { payment_method_collection: 'always' as const }
-        : { subscription_data: { trial_period_days: PRO_TRIAL_DAYS }, payment_method_collection: 'if_required' as const }),
+        : { subscription_data: PRO_TRIAL_SUBSCRIPTION_DATA, payment_method_collection: 'if_required' as const }),
       ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
       client_reference_id: user.id,
       success_url: `${origin}/profile?checkout=success`,

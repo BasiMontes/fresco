@@ -34,6 +34,9 @@ export interface SuscripcionCtx {
   testUser: TestUser
   /** FRESCO-376: every real Stripe test-mode Customer a `@requiere-stripe-real` step creates — the `suscripcionCtx` fixture teardown deletes them so CI/staging runs don't accumulate orphan customers on the Stripe account. Stays empty (no-op teardown) for the webhook-only scenarios and for `bun run test:e2e`, which excludes `@requiere-stripe-real`. */
   stripeCustomerIds: string[]
+  /** FRESCO-813: the Stripe test clock + subscription of the end-of-trial scenario; the Then step deletes the clock. */
+  stripeTestClockId: string
+  stripeSubscriptionId: string
 }
 
 export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: AprendizajeCtx, suscripcionCtx: SuscripcionCtx, testUserFactory: TestUserFactory }>({

@@ -71,7 +71,10 @@ describe('POST /api/stripe/checkout', () => {
 
       expect((await POST(req())).status).toBe(200);
       const params = lastSessionParams();
-      expect(params.subscription_data).toEqual({ trial_period_days: 7 });
+      expect(params.subscription_data).toEqual({
+        trial_period_days: 7,
+        trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
+      });
       expect(params.payment_method_collection).toBe('if_required');
       expect(params).not.toHaveProperty('customer');
     });

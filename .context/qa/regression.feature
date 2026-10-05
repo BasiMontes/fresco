@@ -1616,6 +1616,17 @@ Característica: Flujo completo de usuario en Fresco
     # Stripe.
 
   @suscripcion @automatizado @requiere-stripe-real
+  # FRESCO-813 (audit-6 A6-P10). El checkout fija `trial_settings.end_behavior.
+  # missing_payment_method: 'cancel'`; sin tarjeta, al acabar la prueba Stripe cancela y el
+  # webhook (`customer.subscription.deleted`) la devuelve a Free. Se verifica con un reloj de
+  # pruebas de Stripe (sin esperar 7 días reales) sobre la misma `subscription_data` que
+  # envía la ruta (`PRO_TRIAL_SUBSCRIPTION_DATA`).
+  Escenario: Fin de la prueba sin tarjeta cancela la suscripción
+    Dado que Laura empezó su prueba de Pro sin tarjeta
+    Cuando pasan los 7 días de prueba sin que añada tarjeta
+    Entonces su suscripción queda cancelada y no se le cobra nada
+
+  @suscripcion @automatizado @requiere-stripe-real
   Escenario: Quien ya usó su prueba gratuita no recibe otra
     Dado que Laura ya usó su prueba gratuita de Pro
     Cuando llega a la pantalla de pago de Stripe Checkout
