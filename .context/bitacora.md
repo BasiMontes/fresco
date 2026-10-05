@@ -512,3 +512,8 @@ Historia archivada:
 - Qué: el widget de Turnstile ya no desborda las páginas de auth: se colapsa al obtener el token (interaction-only), toma el tema de la app y el ritmo vertical de /login, /forgot-password y /signup escala con la altura de la ventana (#499, #500). Nivelado dev/staging/main en a866376b; smoke de prod en verde.
 - Por qué: el fundador vio en producción que el widget ocupaba 77 px y los enlaces legales quedaban fuera de una ventana de 570 px; mi primera corrección no bastaba y la medición lo demostró.
 - Siguiente: activar Turnstile en Supabase (secret solo allí), captura en FRESCO-799 y repetir el smoke de prod con el captcha activo; borrar NEXT_PUBLIC_TURNSTILE_SECRET_KEY de Vercel.
+
+## 2026-10-05 - FRESCO-799 cerrada: captcha activo en producción
+- Qué: Turnstile activado en Supabase hosted (captura adjunta a Jira); password grant sin token da 400 captcha_failed en producción; smoke de prod 3/3 con E2E_SESSION_LOGIN=1 y login + modo invitada verificados por el fundador. Cuotas, topes y registro de endpoints ya en prod (#496-#500). Ticket Finalizada.
+- Por qué: A6-S7, el login anónimo gratis permitía rotar identidades para evadir los límites por usuario; el criterio de cierre exigía test de BD y captcha activo con captura.
+- Siguiente: FRESCO-843 (suite manual completa contra hosted con captcha); borrar NEXT_PUBLIC_TURNSTILE_SECRET_KEY de Vercel (la secret solo vive en Supabase).
