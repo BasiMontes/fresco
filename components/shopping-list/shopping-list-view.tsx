@@ -3,7 +3,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { DiaSemana, ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
-import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
+import type { CompraPorItem } from '@/lib/grocery/shopping-list-compra';
 import {
   Beef,
   Carrot,
@@ -31,8 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
-import { precioLinea } from '@/lib/grocery/line-price';
-import { mapShoppingListItem } from '@/lib/grocery/map-item';
+import { claveItemCompra } from '@/lib/grocery/shopping-list-compra';
 import { createClient } from '@/lib/supabase/client';
 import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
 
@@ -50,14 +49,24 @@ export interface ShoppingListViewProps {
    */
   costeMenu?: number
   /**
-   * FRESCO-826 — the shopper's diet and allergens, so a supermarket product
-   * that conflicts with them shows no link and no catalog price. Absent means
-   * nothing to check against.
+   * FRESCO-808 — price and supermarket links per row, resolved on the server
+   * (`resolverCompra`, which also applies the shopper's diet and allergens,
+   * FRESCO-826). The view prints whatever chains it holds and knows none by
+   * name. Absent (or a row missing from it) falls back to the stored estimate
+   * with no link.
    */
-  perfil?: PerfilCompra
+  compra?: CompraPorItem
 }
 
 const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
+
+/** How old the linked price is, or `null` when the source gives no date (nothing is better than a made-up age). */
+function textoAntiguedad(dias: number | null): string | null {
+  if (dias === null) { return null; }
+  if (dias === 0) { return 'precio de hoy'; }
+  if (dias === 1) { return 'precio de ayer'; }
+  return `precio de hace ${dias} días`;
+}
 
 /** Same mapping `calendar-grid.tsx` uses for `DiaSemana` values — kept local rather than shared since this is the only other consumer today. */
 const DIA_LABELS: Record<DiaSemana, string> = {
@@ -154,7 +163,7 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * server-side in the page by diffing against the previous meal plan's list).
  * No recency column is persisted — the prior list already exists.
  */
-export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu, perfil }: ShoppingListViewProps) {
+export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu, compra }: ShoppingListViewProps) {
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -430,19 +439,15 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
                     const usosLabel = formatUsos(item.usos);
                     const flatIndex
                       = pasillos.slice(0, pasilloIdx).reduce((n, p) => n + p.items.length, 0) + itemIdx;
-                    // FRESCO-518 tier 1 — deep-link straight to the matched
-                    // Mercadona product page instead of a generic "abrir en
-                    // Mercadona" home link. No price for the chain (no catalog
-                    // match, or a count-based unit — Decision 2 of FRESCO-503)
-                    // simply omits the link for that row. FRESCO-521 extends
-                    // the same per-item pattern to Consum. `precios` only
-                    // carries the chain whose pack the dictionary entry is
-                    // (FRESCO-768), so at most one of the two renders per row.
-                    const mapped = mapShoppingListItem(item, perfil);
-                    const { precios } = mapped;
-                    const precio = precioLinea(item, mapped);
-                    const enlaceMercadona = precios.find(p => p.cadena === 'mercadona')?.url;
-                    const enlaceConsum = precios.find(p => p.cadena === 'consum')?.url;
+                    // FRESCO-518 / FRESCO-521 / FRESCO-808 — deep-link straight
+                    // to the matched product page of each chain that priced
+                    // this row (none: no link, the stored estimate shows).
+                    // The links come from the server, one per chain; this
+                    // component names no chain.
+                    const linea = compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })];
+                    const precio = linea?.precio ?? item.precio_estimado;
+                    const enlaces = linea?.enlaces ?? [];
+                    const antiguedad = textoAntiguedad(enlaces[0]?.antiguedadDias ?? null);
                     return (
                       <li
                         key={item.nombre}
@@ -521,6 +526,12 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
                                 {formatPrecio(precio)}
                               </>
                             )}
+                            {antiguedad && (
+                              <span data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_precio_antiguedad`}>
+                                {' · '}
+                                {antiguedad}
+                              </span>
+                            )}
                           </span>
                           {/* FRESCO-212: which dish(es) + day(s) need this
                               ingredient — absent for lists persisted before
@@ -535,30 +546,19 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
                             </span>
                           )}
                         </div>
-                        {enlaceMercadona && !item.comprado && (
+                        {!item.comprado && enlaces.map(enlace => (
                           <a
-                            href={enlaceMercadona}
+                            key={enlace.cadena}
+                            href={enlace.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={`Abrir ${capitalize(item.nombre)} en Mercadona`}
-                            data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_mercadona_link`}
+                            aria-label={`Abrir ${capitalize(item.nombre)} en ${enlace.nombreCadena}`}
+                            data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_${enlace.cadena}_link`}
                             className="shrink-0 rounded-lg border border-border p-1.5 text-tertiary transition-colors hover:text-text"
                           >
                             <ShoppingCart className="size-4" aria-hidden="true" />
                           </a>
-                        )}
-                        {enlaceConsum && !item.comprado && (
-                          <a
-                            href={enlaceConsum}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`Abrir ${capitalize(item.nombre)} en Consum`}
-                            data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_consum_link`}
-                            className="shrink-0 rounded-lg border border-border p-1.5 text-tertiary transition-colors hover:text-text"
-                          >
-                            <ShoppingCart className="size-4" aria-hidden="true" />
-                          </a>
-                        )}
+                        ))}
                       </li>
                     );
                   })}

@@ -55,6 +55,8 @@ export interface PrecioReferencia {
  */
 export interface PrecioNormalizado {
   cadena: CadenaId
+  /** The chain's display name, from its connector. */
+  nombreCadena: string
   /** EUR for the WHOLE pack the item's `envasesEstimados` counts. */
   precioEnvase: number
   precioReferencia: PrecioReferencia

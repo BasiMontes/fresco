@@ -102,6 +102,7 @@ export function preciosNormalizados(input: {
     if (!esProductoCompatible({ ingrediente: entry.clave, nombreProducto: nombre, perfil })) { continue; }
     precios.push({
       cadena: producto.cadena,
+      nombreCadena: conector.nombre,
       precioEnvase: producto.precioEnvase,
       precioReferencia: precioPorUnidadReferencia({ precioEnvase: producto.precioEnvase, envase: producto.envase }),
       url: producto.url,
