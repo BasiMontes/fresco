@@ -3,7 +3,7 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { DiaSemana, ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
-import type { CompraPorItem } from '@/lib/grocery/shopping-list-compra';
+import type { CompraPorItem } from '@/lib/grocery/compra';
 import {
   Beef,
   Carrot,
@@ -31,7 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
-import { claveItemCompra } from '@/lib/grocery/shopping-list-compra';
+import { claveItemCompra } from '@/lib/grocery/compra';
 import { createClient } from '@/lib/supabase/client';
 import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
 

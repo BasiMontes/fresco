@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { antiguedadEnDias, claveItemCompra, resolverCompra } from './shopping-list-compra';
+import { antiguedadEnDias, claveItemCompra } from './compra';
+import { resolverCompra } from './shopping-list-compra';
 
 const AHORA = new Date('2026-10-05T12:00:00.000Z');
 

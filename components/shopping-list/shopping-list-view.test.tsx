@@ -1,6 +1,6 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
+import type { CompraPorItem } from '@/lib/grocery/compra';
 import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
-import type { CompraPorItem } from '@/lib/grocery/shopping-list-compra';
 import { describe, expect, test } from 'bun:test';
 import { precioLinea } from '@/lib/grocery/line-price';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
@@ -273,6 +273,6 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
   test('the client component imports no catalog or mapper, so the catalogs stay out of the browser bundle', async () => {
     const fuente = await Bun.file(new URL('./shopping-list-view.tsx', import.meta.url)).text();
 
-    expect(fuente).not.toMatch(/from '@\/lib\/grocery\/(map-item|line-price|supermarket\/(registry|catalog-connectors))'/);
+    expect(fuente).not.toMatch(/from '@\/lib\/grocery\/(map-item|line-price|shopping-list-compra|supermarket\/(registry|catalog-connectors))'/);
   });
 });
