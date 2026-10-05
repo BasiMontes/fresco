@@ -1,4 +1,5 @@
 import type { PerfilCompra } from './product-compatibility';
+import type { ConnectorRegistry } from './supermarket/connector';
 import type { PrecioNormalizado } from './supermarket/types';
 import type { CanonicalIngredient, GroceryInput, MappedGroceryItem } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
@@ -86,11 +87,16 @@ export function recoverFromRecipeContext(
  * dropped, so the ingredient shows no link and no catalog price (the catalog
  * holds one product per ingredient, there is no other candidate).
  */
-function preciosNormalizados(entry: CanonicalIngredient, perfil: PerfilCompra | undefined): PrecioNormalizado[] {
+export function preciosNormalizados(input: {
+  entry: Pick<CanonicalIngredient, 'clave' | 'origenEnvase'>
+  perfil?: PerfilCompra
+  registro?: Pick<ConnectorRegistry, 'activos'>
+}): PrecioNormalizado[] {
+  const { entry, perfil, registro = registroSupermercados } = input;
   const precios: PrecioNormalizado[] = [];
-  for (const conector of registroSupermercados.activos()) {
+  for (const conector of registro.activos()) {
     if (conector.cadena !== entry.origenEnvase) { continue; }
-    const producto = productoDeCatalogo(conector.cadena, entry.clave);
+    const producto = productoDeCatalogo(conector, entry.clave);
     if (!producto) { continue; }
     const nombre = producto.nombre === entry.clave ? nombreProductoDesdeUrl(producto.url) : producto.nombre;
     if (!esProductoCompatible({ ingrediente: entry.clave, nombreProducto: nombre, perfil })) { continue; }
@@ -151,7 +157,7 @@ export function mapShoppingListItem(item: GroceryInput, perfil?: PerfilCompra): 
     envasesEstimados: packCount(cantidadNormalizada, entry.envaseVenta.cantidad),
     confianza: remapAplicado || !familiasCoinciden ? 'media' : 'alta',
     origenEnvase: entry.origenEnvase,
-    precios: preciosNormalizados(entry, perfil),
+    precios: preciosNormalizados({ entry, perfil }),
   };
 }
 

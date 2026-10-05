@@ -62,6 +62,7 @@ export function crearConectorFalso(opciones: OpcionesConectorFalso = {}): Superm
 
   return {
     cadena,
+    nombre: 'Tienda falsa',
     permiso: opciones.permiso ?? 'concedido',
     permisoRef: opciones.permisoRef ?? 'FIXTURE-0',
     capacidades: { buscar: true, disponibilidad: true },

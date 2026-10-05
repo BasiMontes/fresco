@@ -2,10 +2,11 @@ import { describe, expect, test } from 'bun:test';
 import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
 import { packPrice } from '../estimate-menu-cost';
 import { INGREDIENT_DICTIONARY } from '../ingredient-dictionary';
-import { mapShoppingListItem } from '../map-item';
+import { mapShoppingListItem, preciosNormalizados } from '../map-item';
 import { MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
-import { conectorConsum, conectorMercadona, idMercadonaDeUrl, productosParaCarga, ZONA_CATALOGO } from './catalog-connectors';
-import { puedeEjecutarse } from './connector';
+import { conectorConsum, conectorMercadona, crearConectorDeCatalogo, idMercadonaDeUrl, productoDeCatalogo, productosParaCarga, ZONA_CATALOGO } from './catalog-connectors';
+import { crearRegistro, puedeEjecutarse } from './connector';
+import { crearConectorFalso } from './fake-connector';
 import { registroSupermercados } from './registry';
 
 /**
@@ -125,11 +126,11 @@ describe('idMercadonaDeUrl', () => {
 describe('productosParaCarga', () => {
   test('no Mercadona catalog entry is lost for lack of a usable id', () => {
     const catalogo = Object.keys(MERCADONA_CATALOG_MATCH).length;
-    expect(productosParaCarga('mercadona')).toHaveLength(catalogo);
+    expect(productosParaCarga(conectorMercadona)).toHaveLength(catalogo);
   });
 
   test('Mercadona products carry Mercadona\'s own id and keep the ingredient they were found for', () => {
-    const carga = productosParaCarga('mercadona');
+    const carga = productosParaCarga(conectorMercadona);
     const salmon = carga.find(c => c.ingrediente === 'salmon');
     expect(salmon?.producto.idExterno).toBe('81649.1');
     for (const { producto } of carga) {
@@ -138,12 +139,73 @@ describe('productosParaCarga', () => {
   });
 
   test('other chains keep the ingredient key as their id until they have a live connector', () => {
-    for (const { ingrediente, producto } of productosParaCarga('consum')) {
+    for (const { ingrediente, producto } of productosParaCarga(conectorConsum)) {
       expect(producto.idExterno).toBe(ingrediente);
     }
   });
 
-  test('an unknown chain has nothing to load', () => {
-    expect(productosParaCarga('no-existe')).toEqual([]);
+  test('a connector with no catalog has nothing to load', () => {
+    expect(productosParaCarga(crearConectorFalso())).toEqual([]);
+  });
+});
+
+/**
+ * FRESCO-808: a connector that may not run serves nothing, by ANY path, not
+ * only through the registry. Built from the same catalog as Consum's, so the
+ * only thing that differs from a working connector is the permission.
+ */
+describe('permission gate on every read path', () => {
+  const entradas = [{ clave: 'arroz', envaseVenta: { cantidad: 1000, unidad: 'g' }, precioEnvase: 1.2, url: 'https://tienda.example/arroz' }];
+  const base = { cadena: 'cadenafalsa', nombre: 'Cadena falsa' } as const;
+  const conectorCon = (permiso: 'concedido' | 'riesgo-aceptado' | 'pendiente' | 'rechazado', permisoRef: string) =>
+    crearConectorDeCatalogo({ ...base, permiso, permisoRef }, entradas);
+
+  test('a runnable connector serves its catalog (control)', async () => {
+    const conector = conectorCon('concedido', 'FIXTURE-1');
+    expect(await conector.obtenerProducto('arroz', ZONA_CATALOGO)).not.toBeNull();
+    expect(await conector.buscarProductos('arroz', ZONA_CATALOGO)).toHaveLength(1);
+    expect(productoDeCatalogo(conector, 'arroz')).not.toBeNull();
+    expect(productosParaCarga(conector)).toHaveLength(1);
+  });
+
+  test.each([
+    ['pendiente', 'FIXTURE-1'],
+    ['rechazado', 'FIXTURE-1'],
+    ['concedido', '   '],
+    ['riesgo-aceptado', ''],
+  ] as const)('permission "%s" with reference "%s" returns nothing by any path', async (permiso, permisoRef) => {
+    const conector = conectorCon(permiso, permisoRef);
+    expect(await conector.obtenerProducto('arroz', ZONA_CATALOGO)).toBeNull();
+    expect(await conector.buscarProductos('arroz', ZONA_CATALOGO)).toEqual([]);
+    expect(productoDeCatalogo(conector, 'arroz')).toBeNull();
+    expect(productosParaCarga(conector)).toEqual([]);
+  });
+});
+
+/**
+ * FRESCO-808 close criterion: adding a chain is a connector plus one registry
+ * entry. A made-up chain flows through pricing and the open `OrigenEnvase`
+ * without touching a component or a type.
+ */
+describe('a chain nobody wrote code for', () => {
+  const conector = crearConectorDeCatalogo(
+    { cadena: 'cadenafalsa', nombre: 'Cadena falsa', permiso: 'concedido', permisoRef: 'FIXTURE-1' },
+    [{ clave: 'arroz', envaseVenta: { cantidad: 1000, unidad: 'g' }, precioEnvase: 1.2, url: 'https://cadena.example/arroz' }],
+  );
+  const registro = crearRegistro([conector]);
+
+  test('prices an ingredient whose pack comes from it', () => {
+    const entry = { clave: 'arroz', origenEnvase: 'cadenafalsa' };
+    const precios = preciosNormalizados({ entry, registro });
+    expect(precios).toHaveLength(1);
+    expect(precios[0]).toMatchObject({ cadena: 'cadenafalsa', precioEnvase: 1.2, url: 'https://cadena.example/arroz' });
+  });
+
+  test('a chain whose pack is not the entry\'s is not priced', () => {
+    expect(preciosNormalizados({ entry: { clave: 'arroz', origenEnvase: 'mercadona' }, registro })).toEqual([]);
+  });
+
+  test('the chain declares the name the shopper reads', () => {
+    expect(registro.get('cadenafalsa').nombre).toBe('Cadena falsa');
   });
 });
