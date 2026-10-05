@@ -57,6 +57,15 @@ describe('POST /api/stripe/checkout', () => {
     expect(sessionsCreate).not.toHaveBeenCalled();
   });
 
+  test('FRESCO-845: the hosted page is in Spanish with the Fresco line under the pay button', async () => {
+    await POST(req());
+
+    const params = sessionsCreate.mock.calls[0][0] as { locale: string, custom_text: { submit: { message: string } } };
+    expect(params.locale).toBe('es');
+    expect(params.custom_text.submit.message).toContain('Fresco');
+    expect(params.custom_text.submit.message.length).toBeLessThanOrEqual(1200);
+  });
+
   test('returns the hosted Checkout URL and passes the user id as client_reference_id', async () => {
     const res = await POST(req());
 
