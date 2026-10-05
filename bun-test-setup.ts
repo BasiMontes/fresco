@@ -69,6 +69,15 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||= 'test-anon-key';
 process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL ||= 'https://test.functions.supabase.co';
 
 /**
+ * FRESCO-799: a developer's `.env` carries the real Turnstile site key, and
+ * `bun test` auto-loads it. With a key set the auth forms render the widget and
+ * keep their submit buttons disabled until it is solved, so every form test
+ * would depend on the machine it runs on. Forced empty (not `||=`): the tests
+ * cover the no-captcha path, and the captcha path is unit-tested on its own.
+ */
+process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = '';
+
+/**
  * posthog-js's browser bundle attaches DOM listeners at import time
  * (autocapture bootstrap) and crashes under Bun's test runner on Linux CI
  * (`t.addEventListener is not a function`) even though it's silent locally.

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
 import { ConsentCheckboxes } from '@/components/legal/consent-checkboxes';
 import { LegalLinks } from '@/components/legal/legal-links';
@@ -16,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
+import { captchaOptions } from '@/lib/auth/captcha';
+import { useCaptcha } from '@/lib/auth/use-captcha';
 import { clientEnv } from '@/lib/env';
 import { CONSENT_PENDING_KEY, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
 import { getDistinctId } from '@/lib/posthog/distinct-id';
@@ -77,6 +80,8 @@ export default function SignupPage() {
   // FRESCO-114: see login/page.tsx — a ref guard catches a synchronous
   // double-click that `disabled={isSubmitting}` alone misses.
   const isSubmittingRef = useRef(false);
+  // FRESCO-799: one Turnstile token per auth request; reset after each.
+  const captcha = useCaptcha();
 
   /**
    * ADR-0004 (FRESCO-20) + ADR-0022 (FRESCO-395 / A4-L4): the guest proves
@@ -110,7 +115,9 @@ export default function SignupPage() {
       const { data: proofData, error: proofError } = await proofClient.auth.signInWithPassword({
         email,
         password: conflictPassword,
+        options: captchaOptions(captcha.token),
       });
+      captcha.reset();
       if (proofError || !proofData.session) {
         setReassignError(translateAuthError(proofError));
         return;
@@ -128,7 +135,14 @@ export default function SignupPage() {
       // this anonymous id is gone.
       const anonymousDistinctId = getDistinctId();
 
-      const { data: signInData, error } = await client.auth.signInWithPassword({ email, password: conflictPassword });
+      // FRESCO-799: switch the main client to the account the proof sign-in just
+      // authenticated by adopting that session, not by a second password
+      // sign-in — a Turnstile token is single-use, so a second sign-in would
+      // need a second challenge for the same proof.
+      const { data: signInData, error } = await client.auth.setSession({
+        access_token: proofData.session.access_token,
+        refresh_token: proofData.session.refresh_token,
+      });
       if (error) {
         setReassignError(translateAuthError(error));
         return;
@@ -337,6 +351,7 @@ export default function SignupPage() {
         // not from Auth's global Site URL — which stays fixed to production
         // even for staging signups. See app/auth/confirm/route.ts.
         options: {
+          ...captchaOptions(captcha.token),
           emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
           // FRESCO-794: usually no session yet (email confirmation), so the
           // consents wait in the metadata and `/onboarding` records them on the
@@ -384,6 +399,7 @@ export default function SignupPage() {
       router.push('/onboarding');
     }
     finally {
+      captcha.reset();
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -421,11 +437,12 @@ export default function SignupPage() {
                     value={conflictPassword}
                     onChange={e => setConflictPassword(e.target.value)}
                   />
+                  <CaptchaField captcha={captcha} />
                   <Button
                     data-testid="signup_reassign_button"
                     type="submit"
                     variant="secondary"
-                    disabled={isReassigning || !conflictPassword}
+                    disabled={isReassigning || !conflictPassword || !captcha.ready}
                   >
                     {isReassigning ? 'Verificando…' : 'Continuar con esta cuenta'}
                   </Button>
@@ -505,7 +522,8 @@ export default function SignupPage() {
                         termsError={termsError}
                       />
 
-                      <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+                      <CaptchaField captcha={captcha} />
+                      <Button data-testid="signup_submit_button" type="submit" className="mt-2" disabled={isSubmitting || !captcha.ready}>
                         {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta'}
                       </Button>
                     </form>

@@ -2,10 +2,13 @@
 
 import { ChevronRight, Cookie, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { captchaOptions } from '@/lib/auth/captcha';
+import { useCaptcha } from '@/lib/auth/use-captcha';
 import { createClient } from '@/lib/supabase/client';
 
 interface FaqItem {
@@ -98,6 +101,8 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState(false);
+  // FRESCO-799: one Turnstile token per auth request; reset after each.
+  const captcha = useCaptcha();
 
   // FRESCO-514 — the sidebar account popover's "Configuración" / "Ayuda"
   // items link here as `/profile#ayuda-configuracion` / `/profile#ayuda`
@@ -116,7 +121,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
     setResetError(false);
     try {
       const client = createClient();
-      const { error } = await client.auth.resetPasswordForEmail(email);
+      const { error } = await client.auth.resetPasswordForEmail(email, captchaOptions(captcha.token));
       // FRESCO-167: a real API failure (rate-limit, network, 5xx) must not
       // be silenced as success — only "email doesn't exist" stays hidden,
       // per the anti-enumeration posture this flow shares with
@@ -130,6 +135,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
       setResetSent(true);
     }
     finally {
+      captcha.reset();
       setIsSendingReset(false);
     }
   }
@@ -208,12 +214,13 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
                 )
               : (
                   <>
+                    <CaptchaField captcha={captcha} />
                     <Button
                       type="button"
                       variant="secondary"
                       size="sm"
                       data-testid="cambiar_contrasena_button"
-                      disabled={isSendingReset}
+                      disabled={isSendingReset || !captcha.ready}
                       onClick={() => void handleSendPasswordReset()}
                     >
                       {isSendingReset ? 'Enviando…' : 'Cambiar contraseña'}

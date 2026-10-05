@@ -37,6 +37,8 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
   over_email_send_rate_limit: 'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
   same_password: 'La nueva contraseña debe ser distinta a la actual.',
   otp_expired: 'El código expiró o no es válido. Solicita uno nuevo.',
+  // FRESCO-799: Turnstile token rejected (expired, reused, or the check failed).
+  captcha_failed: 'No pudimos verificar que eres una persona. Espera un momento e inténtalo de nuevo.',
 };
 
 const GENERIC_AUTH_ERROR = 'Algo salió mal. Inténtalo de nuevo en unos segundos.';

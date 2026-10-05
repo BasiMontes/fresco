@@ -7,12 +7,15 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Suspense, useRef, useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { translateAuthError } from '@/lib/auth-errors';
+import { captchaOptions } from '@/lib/auth/captcha';
+import { useCaptcha } from '@/lib/auth/use-captcha';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';
@@ -77,6 +80,8 @@ function LoginPageInner() {
   // counter (never sent anywhere, resets on success or page reload) purely
   // to surface a visible warning after a few failures in a row.
   const [failedAttempts, setFailedAttempts] = useState(0);
+  // FRESCO-799: one Turnstile token per auth request; reset after each.
+  const captcha = useCaptcha();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -88,8 +93,9 @@ function LoginPageInner() {
     setResendConfirmationMessage(null);
     try {
       const client = createClient();
-      const { error } = await client.auth.signInWithPassword({ email, password });
+      const { error } = await client.auth.signInWithPassword({ email, password, options: captchaOptions(captcha.token) });
       if (error) {
+        captcha.reset();
         setLoginError(translateAuthError(error));
         setFailedAttempts(count => count + 1);
         // FRESCO-190: surface a resend affordance instead of leaving her
@@ -116,6 +122,7 @@ function LoginPageInner() {
     }
     catch {
       // A thrown (vs. returned) error — network failure reaching Supabase.
+      captcha.reset();
       setLoginError(translateAuthError(null));
       isSubmittingRef.current = false;
       setIsSubmitting(false);
@@ -128,7 +135,7 @@ function LoginPageInner() {
     setResendConfirmationMessage(null);
     try {
       const client = createClient();
-      const { error } = await client.auth.resend({ type: 'signup', email: unconfirmedEmail });
+      const { error } = await client.auth.resend({ type: 'signup', email: unconfirmedEmail, options: captchaOptions(captcha.token) });
       if (error) {
         setLoginError(translateAuthError(error));
         return;
@@ -136,6 +143,7 @@ function LoginPageInner() {
       setResendConfirmationMessage('Te enviamos un nuevo enlace de confirmación.');
     }
     finally {
+      captcha.reset();
       setIsResendingConfirmation(false);
     }
   }
@@ -199,7 +207,8 @@ function LoginPageInner() {
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
-          <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+          <CaptchaField captcha={captcha} />
+          <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting || !captcha.ready}>
             {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
           </Button>
         </form>
@@ -235,7 +244,7 @@ function LoginPageInner() {
               type="button"
               data-testid="resend_confirmation_button"
               onClick={() => void handleResendConfirmation()}
-              disabled={isResendingConfirmation}
+              disabled={isResendingConfirmation || !captcha.ready}
               // FRESCO-478: 44px tap target (WCAG 2.5.5).
               className="inline-flex min-h-[44px] items-center text-body-sm text-primary underline"
             >

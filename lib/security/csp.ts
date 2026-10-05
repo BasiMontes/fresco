@@ -73,6 +73,12 @@ const SENTRY_HOSTS = [
   'https://*.ingest.de.sentry.io',
 ];
 
+// FRESCO-799: Cloudflare Turnstile (captcha on anonymous sign-in / sign-up).
+// The widget renders in an iframe from this origin and talks back to it. The
+// loader script needs no `script-src` entry: it is injected by our nonce'd
+// bundle, which `'strict-dynamic'` trusts.
+const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+
 const dedupe = (list: (string | null | undefined)[]): string[] => [...new Set(list.filter((v): v is string => Boolean(v)))];
 
 export interface BuildCspOptions {
@@ -114,6 +120,7 @@ export function buildContentSecurityPolicy(
     ...SENTRY_HOSTS,
     // FRESCO-32: client-side leaked-password check (lib/validation/pwned-password.ts).
     'https://api.pwnedpasswords.com',
+    TURNSTILE_ORIGIN,
   ];
 
   const directives = [
@@ -122,7 +129,7 @@ export function buildContentSecurityPolicy(
     'object-src \'none\'',
     'frame-ancestors \'none\'',
     'form-action \'self\'',
-    'frame-src \'self\'',
+    `frame-src 'self' ${TURNSTILE_ORIGIN}`,
     'manifest-src \'self\'',
     'worker-src \'self\' blob:',
     'font-src \'self\'',

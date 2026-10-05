@@ -4,12 +4,15 @@ import type { FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { ConsentCheckboxes } from '@/components/legal/consent-checkboxes';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmailInput } from '@/components/ui/email-input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { translateAuthError } from '@/lib/auth-errors';
+import { captchaOptions } from '@/lib/auth/captcha';
+import { useCaptcha } from '@/lib/auth/use-captcha';
 import { CONSENT_PENDING_KEY, flushPendingConsents, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { createClient } from '@/lib/supabase/client';
@@ -48,6 +51,8 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [ageError, setAgeError] = useState<string | null>(null);
   const [termsError, setTermsError] = useState<string | null>(null);
+  // FRESCO-799: one Turnstile token per auth request; reset after each.
+  const captcha = useCaptcha();
   // FRESCO-252: plays the entrance stagger (logo -> heading -> actions) once,
   // on mount — `useEffect` fires after the first paint, so the CSS transition
   // (see `.t-stagger` in globals.css) actually animates from its initial
@@ -77,7 +82,8 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       // (ADR-0003: 30/hour on this project).
       const { data: { session } } = await client.auth.getSession();
       if (!session) {
-        const { error: guestError } = await client.auth.signInAnonymously();
+        const { error: guestError } = await client.auth.signInAnonymously({ options: captchaOptions(captcha.token) });
+        captcha.reset();
         if (guestError) {
           // ADR-0003: anonymous sign-ins are rate-limited (30/hour) on this
           // project — a real, previously-observed failure mode.
@@ -133,6 +139,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
         // FRESCO-264 — see app/signup/page.tsx for why this must be
         // /auth/confirm, not a bare path.
         options: {
+          ...captchaOptions(captcha.token),
           emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
           // FRESCO-794: the project requires email confirmation, so there is
           // usually no session yet to record the consents with. They wait in the
@@ -171,6 +178,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       onResolved();
     }
     finally {
+      captcha.reset();
       setIsSubmitting(false);
     }
   }
@@ -236,7 +244,8 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
                 ageError={ageError}
                 termsError={termsError}
               />
-              <Button data-testid="onboarding_create_account_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
+              <CaptchaField captcha={captcha} />
+              <Button data-testid="onboarding_create_account_submit_button" type="submit" className="mt-2" disabled={isSubmitting || !captcha.ready}>
                 {isSubmitting ? 'Creando cuenta…' : 'Crear cuenta y continuar'}
               </Button>
             </form>
@@ -291,6 +300,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
               ageError={ageError}
               termsError={termsError}
             />
+            <CaptchaField captcha={captcha} />
             <Button
               data-testid="onboarding_create_account_button"
               variant="default"
@@ -303,7 +313,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
               data-testid="onboarding_continue_as_guest_button"
               variant="secondary"
               onClick={() => void handleGuest()}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !captcha.ready}
             >
               {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
             </Button>
