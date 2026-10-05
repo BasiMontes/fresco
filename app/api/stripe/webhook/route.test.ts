@@ -144,6 +144,26 @@ describe('POST /api/stripe/webhook — customer.subscription.updated', () => {
     expect(write!.payload.payment_failed_at).toBeString();
   });
 
+  test('past_due fires payment_failed once per retry cycle (FRESCO-793)', async () => {
+    constructEvent.mockReturnValue(updatedEvent(subscription({ status: 'past_due' })));
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', payment_failed_at: null, stripe_subscription_id: 'sub_1' } } });
+
+    await POST(req({}));
+
+    const call = captureServerEvent.mock.calls[0][0] as { event: string, distinctId: string };
+    expect(call.event).toBe('payment_failed');
+    expect(call.distinctId).toBe('user_1');
+  });
+
+  test('past_due does not re-fire payment_failed while the aviso is already set (FRESCO-793)', async () => {
+    constructEvent.mockReturnValue(updatedEvent(subscription({ status: 'past_due' })));
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', payment_failed_at: '2026-10-01T00:00:00Z', stripe_subscription_id: 'sub_1' } } });
+
+    await POST(req({}));
+
+    expect(captureServerEvent).not.toHaveBeenCalled();
+  });
+
   test('recovered active clears payment_failed_at and keeps Pro', async () => {
     constructEvent.mockReturnValue(updatedEvent(subscription({ status: 'active' }), { status: 'past_due' }));
     supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', stripe_subscription_id: 'sub_1' } } });
@@ -162,6 +182,7 @@ describe('POST /api/stripe/webhook — customer.subscription.updated', () => {
     await POST(req({}));
 
     expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'free', payment_failed_at: null });
+    expect((captureServerEvent.mock.calls[0][0] as { event: string }).event).toBe('plan_downgraded');
   });
 
   test('trial converting to paid fires trial_converted_to_paid', async () => {
@@ -198,6 +219,21 @@ describe('POST /api/stripe/webhook — customer.subscription.deleted', () => {
     const call = captureServerEvent.mock.calls[0][0] as { event: string, properties: { reason: string } };
     expect(call.event).toBe('subscription_cancelled');
     expect(call.properties.reason).toBe('payment_failed');
+    expect((captureServerEvent.mock.calls[1][0] as { event: string }).event).toBe('plan_downgraded');
+  });
+
+  test('does not count plan_downgraded twice when the unpaid branch already downgraded (FRESCO-793)', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_3b',
+      type: 'customer.subscription.deleted',
+      data: { object: subscription({ cancellation_details: { reason: 'payment_failed' } }) },
+    });
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'free', stripe_subscription_id: 'sub_1' } } });
+
+    await POST(req({}));
+
+    const events = captureServerEvent.mock.calls.map(c => (c[0] as { event: string }).event);
+    expect(events).toEqual(['subscription_cancelled']);
   });
 });
 

@@ -65,6 +65,11 @@ export const POSTHOG_EVENTS = {
   TRIAL_CONVERTED_TO_PAID: 'trial_converted_to_paid',
   SUBSCRIPTION_RENEWED: 'subscription_renewed',
   SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
+  // FRESCO-793 (A6-P7): closes the churn loop server-side. `payment_failed`
+  // is the first failed charge of a retry cycle; `plan_downgraded` is the
+  // Pro -> Free transition (once, whichever Stripe event caused it).
+  PAYMENT_FAILED: 'payment_failed',
+  PLAN_DOWNGRADED: 'plan_downgraded',
 } as const;
 
 export type PosthogEventName = (typeof POSTHOG_EVENTS)[keyof typeof POSTHOG_EVENTS];
