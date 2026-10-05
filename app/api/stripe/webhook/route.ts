@@ -207,7 +207,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   const supabase = createServiceClient();
   const { data: profile, error: lookupError } = await supabase
     .from('user_profiles')
-    .select('id, stripe_subscription_id')
+    .select('id, plan, payment_failed_at, stripe_subscription_id')
     .eq('stripe_customer_id', paymentStatus.stripeCustomerId)
     .maybeSingle();
 
@@ -239,6 +239,16 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     if (updateError) {
       throw updateError;
     }
+    // FRESCO-793 (A6-P7): churn-loop signal. Stripe can re-send a `past_due`
+    // update while the aviso is already set (any other field change), so only
+    // the first failure of a retry cycle counts.
+    if (!profile.payment_failed_at) {
+      await captureServerEvent({
+        distinctId: profile.id,
+        event: POSTHOG_EVENTS.PAYMENT_FAILED,
+        properties: { stripe_subscription_id: subscription.id },
+      });
+    }
     return;
   }
 
@@ -262,6 +272,15 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     // Stripe sends next (its dunning default) still matches and fires the
     // single cancellation event, with `reason: 'payment_failed'`. Emitting
     // one here too would double-count the same involuntary churn.
+    // FRESCO-793: the plan change itself IS this branch, so it carries
+    // `plan_downgraded` (and the `deleted` handler skips it, see below).
+    if (profile.plan !== 'free') {
+      await captureServerEvent({
+        distinctId: profile.id,
+        event: POSTHOG_EVENTS.PLAN_DOWNGRADED,
+        properties: { reason: 'payment_failed', $set: { plan: 'free' } },
+      });
+    }
     return;
   }
 
@@ -305,7 +324,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   const supabase = createServiceClient();
   const { data: profile, error: lookupError } = await supabase
     .from('user_profiles')
-    .select('id, stripe_subscription_id')
+    .select('id, plan, stripe_subscription_id')
     .eq('stripe_customer_id', stripeCustomerId)
     .maybeSingle();
 
@@ -344,4 +363,15 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
       $set: { plan: 'free' },
     },
   });
+
+  // FRESCO-793 (A6-P7): the Pro -> Free transition, once. The `unpaid`
+  // branch of handleSubscriptionUpdated already downgraded and fired it, so a
+  // row that is already Free here must not count a second time.
+  if (profile.plan !== 'free') {
+    await captureServerEvent({
+      distinctId: profile.id,
+      event: POSTHOG_EVENTS.PLAN_DOWNGRADED,
+      properties: { reason: subscription.cancellation_details?.reason ?? 'unknown', $set: { plan: 'free' } },
+    });
+  }
 }
