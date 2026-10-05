@@ -502,3 +502,8 @@ Historia archivada:
 - Qué: reescrita la línea de tiempo Pro, "Menú variado" y bullet de precios; "no repetir lo cocinado/descartado" ahora solo Pro. Test components/landing/landing-claims.test.ts exige fuente en código por claim (PR #493).
 - Por qué: A6-P3/A6-P4, la landing prometía aprendizaje y no-repetición que Free no tiene y Pro solo aplica con marcas.
 - Siguiente: ticket en Merged; pasar a Finalizada tras QA en prod (revisión del fundador ya adjunta en Jira).
+
+## 2026-10-05 - FRESCO-799 client write quotas + Turnstile plumbing
+- Qué: topes de tamaño, cuotas (200 recetas propias, 1000 favoritos) y registro rate_limit_endpoints (#496); token Turnstile en los formularios de auth, inerte sin site key (#497); smoke y suite Stripe con login por sesión admin, E2E_SESSION_LOGIN=1 (#498). Nivelado dev/staging/main en 39ec861d; smoke de prod en verde.
+- Por qué: A6-S7, el login anónimo es gratis y los límites por usuario se evadían rotando invitados; el limitador aceptaba endpoint y límite del cliente.
+- Siguiente: FRESCO-799 sigue en WIP hasta activar el captcha en Supabase (site key en Vercel, smoke contra fresco-pre, captura). FRESCO-843 cubre la suite manual contra hosted.
