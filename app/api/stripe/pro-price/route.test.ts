@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { NextRequest } from 'next/server';
 import * as realStripe from '@/lib/stripe';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
@@ -28,12 +29,17 @@ function ctx(user: { id: string, is_anonymous?: boolean } | null, profileRow: un
   );
 }
 
+function req(query = '') {
+  return new NextRequest(`http://localhost/api/stripe/pro-price${query}`);
+}
+
 async function body() {
-  return await (await GET()).json() as { taxIncluded: boolean, trialDays: number | null };
+  return await (await GET(req())).json() as { taxIncluded: boolean, trialDays: number | null };
 }
 
 beforeEach(() => {
   process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
+  process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
   pricesRetrieve.mockClear();
   pricesRetrieve.mockResolvedValue(MONTHLY);
   supa = ctx({ id: 'user_1' });
@@ -42,23 +48,39 @@ beforeEach(() => {
 describe('GET /api/stripe/pro-price', () => {
   test('401 without a session, and Stripe is not called', async () => {
     supa = ctx(null);
-    expect((await GET()).status).toBe(401);
+    expect((await GET(req())).status).toBe(401);
     expect(pricesRetrieve).not.toHaveBeenCalled();
   });
 
   test('403 for a guest', async () => {
     supa = ctx({ id: 'guest', is_anonymous: true });
-    expect((await GET()).status).toBe(403);
+    expect((await GET(req())).status).toBe(403);
     expect(pricesRetrieve).not.toHaveBeenCalled();
   });
 
   test('500 when the price id is not configured', async () => {
     delete process.env.STRIPE_PRICE_ID_PRO_MONTH;
-    expect((await GET()).status).toBe(500);
+    expect((await GET(req())).status).toBe(500);
+  });
+
+  test('FRESCO-844: ?interval=year reads the annual price, anything else the monthly one', async () => {
+    pricesRetrieve.mockResolvedValue({ unit_amount: 4499, currency: 'eur', recurring: { interval: 'year', interval_count: 1 }, tax_behavior: 'unspecified' });
+    const res = await GET(req('?interval=year'));
+    expect(pricesRetrieve).toHaveBeenLastCalledWith('price_pro_year');
+    expect(await res.json()).toMatchObject({ amount: 44.99, interval: 'year' });
+
+    await GET(req('?interval=week'));
+    expect(pricesRetrieve).toHaveBeenLastCalledWith('price_pro_month');
+  });
+
+  test('FRESCO-844: 500 for ?interval=year when the annual price is not configured', async () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
+    expect((await GET(req('?interval=year'))).status).toBe(500);
+    expect(pricesRetrieve).not.toHaveBeenCalled();
   });
 
   test('reads the amount, currency and period from Stripe, in euros not cents', async () => {
-    const res = await GET();
+    const res = await GET(req());
 
     expect(res.status).toBe(200);
     expect(pricesRetrieve).toHaveBeenCalledWith('price_pro_month');
@@ -86,7 +108,7 @@ describe('GET /api/stripe/pro-price', () => {
 
   test('500 for a price that is not a fixed recurring amount', async () => {
     pricesRetrieve.mockResolvedValueOnce({ ...MONTHLY, unit_amount: null, recurring: null });
-    expect((await GET()).status).toBe(500);
+    expect((await GET(req())).status).toBe(500);
   });
 
   test('500 when Stripe fails', async () => {
@@ -94,7 +116,7 @@ describe('GET /api/stripe/pro-price', () => {
     const original = console.error;
     console.error = () => {};
     try {
-      expect((await GET()).status).toBe(500);
+      expect((await GET(req())).status).toBe(500);
     }
     finally {
       console.error = original;

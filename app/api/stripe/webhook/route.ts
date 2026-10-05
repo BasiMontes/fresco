@@ -4,7 +4,7 @@ import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
 import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent, resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
-import { resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
+import { getProPriceIds, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
 // FRESCO-429 (TRLGDCU art. 98.7): formats the actual amount Stripe charged —
@@ -109,11 +109,11 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 
   const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
-  if (!priceId) {
-    throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
+  const priceIds = getProPriceIds();
+  if (priceIds.length === 0) {
+    throw new Error('No Pro price id is configured (STRIPE_PRICE_ID_PRO_MONTH).');
   }
-  const update = resolveProUpdateFromSession({ session, subscription, expectedPriceId: priceId });
+  const update = resolveProUpdateFromSession({ session, subscription, expectedPriceId: priceIds });
 
   const supabase = createServiceClient();
 
@@ -284,11 +284,11 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     return;
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH;
-  if (!priceId) {
-    throw new Error('STRIPE_PRICE_ID_PRO_MONTH is not configured.');
+  const priceIds = getProPriceIds();
+  if (priceIds.length === 0) {
+    throw new Error('No Pro price id is configured (STRIPE_PRICE_ID_PRO_MONTH).');
   }
-  const update = resolveRenewalUpdate(subscription, priceId);
+  const update = resolveRenewalUpdate(subscription, priceIds);
 
   const { error: updateError } = await supabase
     .from('user_profiles')
