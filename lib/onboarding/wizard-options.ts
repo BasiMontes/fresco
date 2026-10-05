@@ -64,7 +64,7 @@ export const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
 // badges, not this chip-wall) lets `selected`'s primary fill actually pop.
 export const UNSELECTED_CHIP_CLASS = 'border-border text-tertiary';
 
-export const ALERGENO_LABELS: Record<string, string> = {
+const ALERGENO_LABELS: Record<string, string> = {
   vegano: 'vegano',
   vegetariano: 'vegetariano',
   sinGluten: 'tu dieta sin gluten',

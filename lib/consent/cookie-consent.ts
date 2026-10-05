@@ -15,7 +15,7 @@ export type CookieConsentDecision = 'accepted' | 'rejected';
 export const COOKIE_CONSENT_COOKIE = 'fresco_cookie_consent';
 
 /** 1 year — matches `THEME_COOKIE_MAX_AGE`'s rationale (a durable preference). */
-export const COOKIE_CONSENT_MAX_AGE = 60 * 60 * 24 * 365;
+const COOKIE_CONSENT_MAX_AGE = 60 * 60 * 24 * 365;
 
 export function isCookieConsentDecision(value: unknown): value is CookieConsentDecision {
   return value === 'accepted' || value === 'rejected';

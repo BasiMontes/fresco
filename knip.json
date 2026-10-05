@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["tests/steps/**/*.ts", "tests/*.ts"],
+  "ignore": [".agents/**", "api/config/env.ts", "lib/supabase/types.ts"],
+  "ignoreIssues": {
+    "cli/**": ["files", "exports", "types"],
+    "scripts/**": ["files", "exports", "types"],
+    "tests/**": ["files", "exports", "types"],
+    "supabase/**": ["files", "exports", "types"],
+    "public/**": ["files"]
+  },
+  "ignoreDependencies": ["postcss-load-config", "web-push"],
+  "ignoreBinaries": ["resend", "acli", "vercel", "codex", "supabase", "psql"],
+  "ignoreUnresolved": ["bun-types", "cli/doctor.ts", "cli/install.ts"],
+  "rules": { "types": "off", "enumMembers": "off", "duplicates": "off" }
+}

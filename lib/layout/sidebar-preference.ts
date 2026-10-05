@@ -12,18 +12,11 @@
 export const SIDEBAR_COLLAPSED_COOKIE = 'sidebar_collapsed';
 
 /** 1 year — a UI preference, safe to persist long (matches the theme cookie). */
-export const SIDEBAR_COLLAPSED_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+const SIDEBAR_COLLAPSED_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 /** Server- or client-side: is the sidebar collapsed for this raw cookie value? */
 export function parseSidebarCollapsed(value: string | undefined | null): boolean {
   return value === '1';
-}
-
-/** Client-side read of the current preference from `document.cookie`. */
-export function readSidebarCollapsedClient(): boolean {
-  if (typeof document === 'undefined') { return false; }
-  const match = document.cookie.match(new RegExp(`(?:^|; )${SIDEBAR_COLLAPSED_COOKIE}=([^;]*)`));
-  return parseSidebarCollapsed(match?.[1]);
 }
 
 /** Client-side write — the server picks it up on the next request. */

@@ -12,6 +12,9 @@ import { precioPorUnidadReferencia } from './units';
  * (FRESCO-503) already proved, lifted onto the normalized contract so every
  * chain shares it: same unit family, a plausible pack against the recipe
  * portion, the term as a whole word, canonical term before synonyms.
+ *
+ * Not wired into the runner yet (FRESCO-811, audit-6 A6-A8): only its test imports
+ * it, so decision 5 of ADR-0036 is not met in practice. Wiring it is FRESCO-846.
  */
 
 /** Max multiple of the recipe portion a matched pack may hold; rejects bulk SKUs (FRESCO-503 review fix). */

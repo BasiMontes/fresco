@@ -372,7 +372,7 @@ export function RecipeLibrary({
 }
 
 /** Catalog itself came back empty for this profile — distinct from a no-results search (see `RecipeLibrary` above). */
-export function EmptyCatalogState() {
+function EmptyCatalogState() {
   return (
     <EmptyState
       data-testid="recipe_catalog_empty_state"
