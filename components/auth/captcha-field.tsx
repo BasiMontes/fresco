@@ -99,7 +99,11 @@ export function CaptchaField({ captcha }: { captcha: Captcha }) {
         }
         widgetId = api.render(container, {
           'sitekey': TURNSTILE_SITE_KEY,
-          'callback': token => setToken(token),
+          'callback': (token) => {
+            setToken(token);
+            // Passed: the person has nothing left to do here, give the space back.
+            setInteractive(false);
+          },
           'expired-callback': () => setToken(null),
           'error-callback': () => setToken(null),
           'before-interactive-callback': () => setInteractive(true),

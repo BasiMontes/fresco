@@ -149,13 +149,13 @@ function LoginPageInner() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-start px-4 pb-4 pt-[clamp(1rem,6vh,6rem)]">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-start px-4 pb-4 pt-[clamp(0.75rem,4vh,6rem)]">
       {navigating && <AuthTransitionOverlay label="Entrando en tu cuenta…" />}
       {/* FRESCO-481: the green wordmark reads dim on the near-black dark
           ground — swap to the cream negative mark (the same one the sidebar
           uses on its green panel). Both rendered, theme toggles visibility. */}
-      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(1rem,3.5vh,2rem)] brand-mark--light" priority />
-      <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(1rem,3.5vh,2rem)] brand-mark--dark" priority />
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(0.75rem,3vh,2rem)] brand-mark--light" priority />
+      <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(0.75rem,3vh,2rem)] brand-mark--dark" priority />
 
       <Card className="p-6 md:p-8 md:[@media(max-height:700px)]:p-6">
         <h1 className="text-h3">Inicia sesión</h1>
@@ -181,7 +181,7 @@ function LoginPageInner() {
           </p>
         )}
 
-        <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+        <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3 [@media(max-height:700px)]:mt-4">
           {/* FRESCO-315: real <label for> — the accessible name was carried
                 only by aria-label duplicating the placeholder (WCAG 3.3.2 /
                 4.1.2). sr-only keeps the minimalist card design unchanged. */}

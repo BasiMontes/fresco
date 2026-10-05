@@ -406,11 +406,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-start px-4 pb-4 pt-[clamp(1rem,6vh,6rem)]">
+    <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-start px-4 pb-4 pt-[clamp(0.75rem,4vh,6rem)]">
       {navigating && <AuthTransitionOverlay label="Preparando tu cuenta…" />}
       {/* FRESCO-481: cream negative mark on the near-black dark ground. */}
-      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(1rem,3.5vh,2rem)] brand-mark--light" priority />
-      <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(1rem,3.5vh,2rem)] brand-mark--dark" priority />
+      <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(0.75rem,3vh,2rem)] brand-mark--light" priority />
+      <Image src="/brand/logo-negativo.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-[clamp(0.75rem,3vh,2rem)] brand-mark--dark" priority />
 
       <Card className="p-6 md:p-8 md:[@media(max-height:700px)]:p-6">
         {emailConflict
