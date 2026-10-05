@@ -541,3 +541,7 @@ Historia archivada:
 - Qué: gen-mercadona-catalog y gen-consum-catalog usan emparejarIngrediente; desempate del matcher = el de los generadores. PR #510.
 - Por qué: audit-6 A6-A8, ADR-0036 decisión 5 no se cumplía (nadie importaba matcher.ts).
 - Siguiente: fideos en Consum pasó a fideos chinos (revisar si molesta); FRESCO-808 y 801 siguen en el Sprint 0 de supermercado.
+## 2026-10-05 - FRESCO-808 chain-agnostic supermarket layer
+- Qué: PR A #511 (puerta de permiso en todas las vías de lectura, idParaCarga, OrigenEnvase abierto, PERMISOS_CADENA) y PR B #512 (mapeo en servidor, enlace genérico por cadena, antigüedad del dato, catálogos fuera del bundle).
+- Por qué: audit-6 A6-A3/A4/A12/A14, ADR-0036 "añadir cadena = añadir conector" no se cumplía.
+- Siguiente: localhost no puede llamar a las Edge Functions (CORS, FRESCO-364), la pasada en navegador exige generar menú en fresco-pre; fresco-dev está congelado (FRESCO-804). FRESCO-801 y FRESCO-790 siguen en el Sprint 0 de supermercado.
