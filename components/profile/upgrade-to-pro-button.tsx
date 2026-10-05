@@ -1,5 +1,6 @@
 'use client';
 
+import type { ProInterval } from '@/components/profile/pro-checkout-summary';
 import { useState } from 'react';
 import { ProCheckoutSummary } from '@/components/profile/pro-checkout-summary';
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,7 @@ export function UpgradeToProButton({ label, trialAvailable, size = 'md', classNa
   const [summaryOpen, setSummaryOpen] = useState(false);
   const buttonLabel = label ?? (trialAvailable === true ? 'Empezar prueba gratis' : trialAvailable === false ? 'Volver a Pro' : 'Pásate a Pro');
 
-  async function handleConfirm() {
+  async function handleConfirm(interval: ProInterval) {
     setIsRedirecting(true);
     setError(null);
     // FRESCO-794 (ADR-0040): the immediate-execution request is recorded BEFORE
@@ -64,7 +65,7 @@ export function UpgradeToProButton({ label, trialAvailable, size = 'md', classNa
     // lands even though the Stripe-hosted page is a full navigation away.
     captureEvent(POSTHOG_EVENTS.CHECKOUT_STARTED);
     try {
-      const response = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const response = await fetch('/api/stripe/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ interval }) });
       const data = await response.json() as CheckoutResponse;
 
       if (!response.ok || !data.url) {
@@ -98,7 +99,7 @@ export function UpgradeToProButton({ label, trialAvailable, size = 'md', classNa
       <ProCheckoutSummary
         open={summaryOpen}
         onOpenChange={setSummaryOpen}
-        onConfirm={() => void handleConfirm()}
+        onConfirm={interval => void handleConfirm(interval)}
         isSubmitting={isRedirecting}
         error={error}
       />
