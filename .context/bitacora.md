@@ -549,3 +549,7 @@ Historia archivada:
 - Qué: ejecutar() inyectable + 7 tests (PR #513); secretos SUPABASE_URL/SERVICE_ROLE_KEY en el repo; dry-run en Actions verde (run 37352315458); causas de los 3 fallos de refresh-mercadona-catalog comentadas.
 - Por qué: audit-6 A6-D5/A6-T9, el runner nunca se había ejecutado y no tenía test.
 - Siguiente: primer --apply con visto bueno del fundador; conector Consum (FRESCO-772).
+## 2026-10-05 - FRESCO-800 seed.sql regenerado y aviso de drift con escalado
+- Qué: seed.sql regenerado desde prod (1173 recetas, PR #514); el reporte de drift ahora llega al issue (stderr capturado) y un issue abierto se escala con dueño, SLA de 7 días y etiqueta sla-breached; catalogRecipeIds ordena por id. #349 cerrado, run de verificación 37375463251 en verde.
+- Por qué: audit-6 A6-D3, el job llevaba 4 lunes en rojo con el issue vacío y sin comentarios.
+- Siguiente: el job de ledger tiene el mismo patrón de salto silencioso; el pr-check de staging se promovió con override por incidente de Actions (repo:check sin runner).
