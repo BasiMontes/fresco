@@ -430,7 +430,7 @@ export async function seedMealPlan(
 
 /** N catalog recipe ids (the local stack's seed loads 1000). */
 export async function catalogRecipeIds(user: DbTestUser, count: number): Promise<string[]> {
-  const res = await rest('recipes', { token: user.token, query: `select=id&limit=${count}` });
+  const res = await rest('recipes', { token: user.token, query: 'select=id&order=id.asc&limit=' });
   if (!Array.isArray(res.body) || res.body.length < count) {
     throw new Error(`[db-harness] catalogRecipeIds: expected ${count}, got ${JSON.stringify(res.body)}`);
   }
