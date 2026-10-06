@@ -3,16 +3,13 @@
 import type { Recipe } from '@schemas';
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import type { SlotKey } from '@/lib/calendar/apply-slot-swap';
-import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Ban, Check, GripVertical, UtensilsCrossed, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
+import { SlotContent } from '@/components/calendar/slot-content';
+import { SlotDragHandle } from '@/components/calendar/slot-drag-handle';
+import { SlotEstadoBadge, SlotMarkControls } from '@/components/calendar/slot-mark-controls';
+import { useSlotDnd } from '@/components/calendar/use-slot-dnd';
 import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
-import { Button } from '@/components/ui/button';
-import { Tag } from '@/components/ui/tag';
-import { slotId } from '@/lib/calendar/apply-slot-swap';
-import { firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { cn } from '@/lib/utils';
 
 export interface SlotCellProps {
@@ -36,10 +33,7 @@ export interface SlotCellProps {
 
 /**
  * One grid cell — both a drag source and a drop target for its own
- * `(dia, tipo)` slot. `useDraggable`/`useDroppable` are two independent
- * dnd-kit hooks; their `setNodeRef` callbacks are chained onto the same DOM
- * node via `setRefs` below (dnd-kit tracks draggable/droppable ids in
- * separate registries, so reusing the same composite id for both is safe).
+ * `(dia, tipo)` slot (`useSlotDnd`).
  *
  * FRESCO-80 — full `RecipeCard`-style treatment (image area, category
  * kicker, title, one diet tag) instead of the old compact icon+name row.
@@ -58,11 +52,14 @@ export interface SlotCellProps {
  * favourite heart sits) via the media's `overlay` slot. Mark-status controls
  * stay pinned to the bottom (`mt-auto`) — STORY-FRESCO-15, a buttons row
  * competing for width with a long title collapses the title's wrapper.
+ *
+ * FRESCO-809 — split: drag wiring in `useSlotDnd` + `SlotDragHandle`, body in
+ * `SlotContent`, mark controls in `slot-mark-controls.tsx`. This file only
+ * composes them and owns the navigation + root styling.
  */
 export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDisabled, onMark, priority }: SlotCellProps) {
   const router = useRouter();
   const slotKey: SlotKey = { dia, tipo };
-  const id = slotId(slotKey);
 
   // FR-8.2 / AC Scenario 4 (FRESCO-23): a slot with no safe recipe can't be
   // dragged (nothing to move) or dropped onto (nothing to swap into) — out
@@ -70,29 +67,11 @@ export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDis
   // `applySlotSwap()` a null-aware swap it has no real use case for yet.
   const disabled = pending || recipe === null;
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef: setDragRef,
-    transform,
-    isDragging,
-  } = useDraggable({ id, data: slotKey, disabled });
+  const { setRefs, attributes, listeners, transform, isDragging, isOver } = useSlotDnd({ slotKey, disabled, dropDisabled });
 
-  // A slot never accepts a drop from a different `tipo` (see `draggingTipo`
-  // in the parent) — disabling the droppable outright, not just styling it
-  // differently, means dnd-kit's own `over` never resolves to this cell, so
-  // there is nothing for `handleDragEnd`'s guard to even need to catch.
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id, data: slotKey, disabled: disabled || dropDisabled });
-
-  const setRefs = React.useCallback(
-    (node: HTMLElement | null) => {
-      setDragRef(node);
-      setDropRef(node);
-    },
-    [setDragRef, setDropRef],
-  );
-
-  const dietaLabel = recipe ? firstActiveDietaLabel(recipe.dieta) : null;
+  const openRecipe = recipe && !disabled
+    ? () => router.push(`/recipes/${recipe.id}?slot=${dbSlotId}`)
+    : undefined;
 
   return (
     <div
@@ -119,19 +98,19 @@ export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDis
        * `click`, but a native button's `keydown` bubbles independently of
        * that, so the guard is the actual fix, not the stopPropagation.
        */
-      onClick={recipe && !disabled ? () => router.push(`/recipes/${recipe.id}?slot=${dbSlotId}`) : undefined}
-      role={recipe && !disabled ? 'link' : undefined}
-      tabIndex={recipe && !disabled ? 0 : undefined}
-      onKeyDown={recipe && !disabled
+      onClick={openRecipe}
+      role={openRecipe ? 'link' : undefined}
+      tabIndex={openRecipe ? 0 : undefined}
+      onKeyDown={openRecipe
         ? (event) => {
             if (event.key === 'Enter' && event.target === event.currentTarget) {
-              router.push(`/recipes/${recipe.id}?slot=${dbSlotId}`);
+              openRecipe();
             }
           }
         : undefined}
       className={cn(
         'flex flex-col rounded-card border border-border bg-surface-raised shadow-sm transition-shadow',
-        !disabled && recipe && 'cursor-pointer hover:shadow-md',
+        openRecipe && 'cursor-pointer hover:shadow-md',
         isDragging && 'z-10 opacity-50',
         isOver && 'ring-2 ring-accent-500',
         pending && 'cursor-wait opacity-70',
@@ -145,128 +124,25 @@ export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDis
           categoria={recipe.clasificacion?.categoria}
           priority={priority}
           sizes="240px"
+          // FRESCO-159 — no drag handle for desayuno: user-reported finding,
+          // breakfast slots don't need drag & drop. Not rendering the handle
+          // is sufficient to disable dragging entirely — no need to also flip
+          // `useDraggable`'s `disabled`.
           overlay={tipo !== 'desayuno' && (
-            /*
-              FRESCO-159 — no drag handle for desayuno: user-reported
-              finding, breakfast slots don't need drag & drop. Not
-              rendering the handle is sufficient to disable dragging
-              entirely — no need to also flip `useDraggable`'s `disabled`.
-
-              Drag activation listeners live ONLY on this handle, not the
-              whole cell (dnd-kit's documented "drag handle" pattern) —
-              spreading them on the outer div, as before FRESCO-15, made
-              the entire cell a drag source, so the PointerSensor captured
-              every pointerdown on the mark buttons below and the drag
-              gesture fired instead of their onClick.
-            */
-            <Button
-              type="button"
-              variant="icon"
-              size="sm"
-              {...listeners}
-              {...attributes}
-              aria-label="Arrastrar para reordenar"
-              disabled={disabled}
-              // STORY-FRESCO-88 — dnd-kit's own pointer handling (via
-              // `listeners`) must still fire, so no `preventDefault()`
-              // here; only stop the `click` from bubbling into the
-              // cell's navigation `onClick`.
-              onClick={event => event.stopPropagation()}
-              // FRESCO-170 — no `touch-none` here (was `cursor-grab
-              // touch-none`): `touch-action: none` disables the browser's
-              // native touch scrolling unconditionally for any touch that
-              // starts on this element, regardless of dnd-kit's own
-              // activation logic. The `sensors` activationConstraints
-              // arbitrate scroll-vs-drag intent instead.
-              className="absolute left-2 top-2 cursor-grab disabled:cursor-not-allowed"
-            >
-              <GripVertical className="size-6" />
-            </Button>
+            <SlotDragHandle listeners={listeners} attributes={attributes} disabled={disabled} />
           )}
         />
       )}
 
       <div className="flex flex-1 flex-col p-3">
-        {recipe
-          ? (
-              <>
-                <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-                <h3 className={cn('line-clamp-2 text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h3>
-                {dietaLabel && (
-                  <div className="mt-1">
-                    <Tag variant="accent">{dietaLabel}</Tag>
-                  </div>
-                )}
-              </>
-            )
-          : estado === 'excluida'
-            ? (
-                // FRESCO-451: a bare italic line read as an unfinished slot,
-                // not a designed empty state — a small icon (mirroring
-                // `EmptyState`'s icon-above-copy shape, scaled down for this
-                // compact cell) gives it the same visual language.
-                <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
-                  <Ban className="size-5 text-tertiary" aria-hidden="true" />
-                  <p data-testid={`calendar_slot_${dia}_${tipo}_excluida`} className="text-body-sm italic text-tertiary">
-                    Excluida por ti
-                  </p>
-                </div>
-              )
-            : (
-                <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
-                  <UtensilsCrossed className="size-5 text-tertiary" aria-hidden="true" />
-                  <p data-testid={`calendar_slot_${dia}_${tipo}_sin_receta`} className="text-body-sm italic text-tertiary">
-                    Sin receta
-                  </p>
-                </div>
-              )}
+        <SlotContent dia={dia} tipo={tipo} recipe={recipe} estado={estado} />
 
         {recipe && estado === 'pendiente' && (
-          // FRESCO-373 (A4-M27): was a pair of ~24px icon-only buttons pinned
-          // bottom-right — the single interaction the paid tier depends on.
-          // Now two full-width labelled buttons, ≥44px tall (WCAG 2.5.5).
-          <div className="mt-auto flex gap-2 pt-3">
-            <button
-              type="button"
-              data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
-              aria-label="Marcar como cocinado"
-              disabled={pending}
-              onClick={(event) => {
-                event.stopPropagation();
-                onMark('cocinada');
-              }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-65"
-            >
-              <Check className="size-4 shrink-0" />
-              Cocinado
-            </button>
-            <button
-              type="button"
-              data-testid={`calendar_slot_${dia}_${tipo}_mark_descartada`}
-              aria-label="Marcar como descartado"
-              disabled={pending}
-              onClick={(event) => {
-                event.stopPropagation();
-                onMark('descartada');
-              }}
-              className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-error hover:text-error disabled:pointer-events-none disabled:opacity-65"
-            >
-              <X className="size-4 shrink-0" />
-              Descartar
-            </button>
-          </div>
+          <SlotMarkControls dia={dia} tipo={tipo} pending={pending} onMark={onMark} />
         )}
 
         {recipe && estado !== 'pendiente' && (
-          <p
-            data-testid={`calendar_slot_${dia}_${tipo}_estado_badge`}
-            className={cn(
-              'mt-auto pt-2 text-right text-caption uppercase',
-              estado === 'cocinada' ? 'text-primary' : 'text-tertiary',
-            )}
-          >
-            {estado === 'cocinada' ? 'Cocinado' : 'Descartado'}
-          </p>
+          <SlotEstadoBadge dia={dia} tipo={tipo} estado={estado} />
         )}
       </div>
     </div>
