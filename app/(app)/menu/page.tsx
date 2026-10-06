@@ -270,7 +270,7 @@ export default async function MenuPage() {
           )}
 
           <AlertBanner
-            advertencias={plan.explicacionAprendizaje ? [...(plan.advertencias ?? []), plan.explicacionAprendizaje] : plan.advertencias}
+            advertencias={plan.advertencias}
             data-testid="menu_advertencias_banner"
           />
 
