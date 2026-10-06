@@ -608,6 +608,7 @@ stories) are listed at the end.
 | FRESCO-345 | Integración supermercado: exportar la lista (copiar / CSV / abrir app) | EPIC-FRESCO-332 [DRAFT] Horizonte 3 | 4.9 Shopping list (`export-actions` — nueva fila de acciones) | — |
 | FRESCO-841 | Tendencia de gasto: ver cuánto cambia frente a mi media de 4 semanas | EPIC-FRESCO-484 Platform polish | 4.7 Home (`savings-estimate-cards`, spend-vs-average line) · spec-only build, §5-V | — |
 | FRESCO-842 | Lista de la compra: ver qué hacer cuando ya no quedan pendientes | EPIC-FRESCO-484 Platform polish | 4.9 Shopping list (estado "todo comprado") 🔒 mockup-gated | 4.7 Home, 4.8 Calendar, 4.10 Recipe library (destinos de las acciones) |
+| FRESCO-854 | Histórico de menús: poder volver a /calendar desde la lista de semanas | EPIC-FRESCO-484 Platform polish | `/historial` (lista) has no §4 spec yet · built LIVE-UI-FIRST on the FRESCO-451 icon-only circular back button already used by favorites, notifications and the `/historial?semana=` detail | 4.8 Calendar (destino del botón) |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 

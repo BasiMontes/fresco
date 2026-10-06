@@ -2,6 +2,7 @@ import { ArrowLeft, History } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { GenerateWeekButton } from '@/components/calendar/generate-week-button';
+import { HistoryListHeader } from '@/components/historial/history-list-header';
 import { MenuReadonlyGrid } from '@/components/historial/menu-readonly-grid';
 import { ReuseMenuButton } from '@/components/historial/reuse-menu-button';
 import { WeekHistoryList } from '@/components/historial/week-history-list';
@@ -117,11 +118,7 @@ export default async function HistorialPage({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-h2">Histórico de menús</h1>
-      <p className="text-h6 uppercase text-tertiary">Semanas anteriores</p>
-      <p className="mt-1 text-body-md text-tertiary">
-        Tus menús de semanas anteriores, con lo que marcaste como cocinado o descartado.
-      </p>
+      <HistoryListHeader />
 
       <div className="mt-6">
         {weeks.length === 0
