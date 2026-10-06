@@ -1,0 +1,58 @@
+name: Randomized unit tests
+
+# FRESCO-796 (A6-T5): the default order hides tests that depend on the one
+# before them (audit 6 measured 15 to 65 failures under a random order while
+# every file passed alone). A new or renamed test file reorders the load and
+# can turn an unrelated PR red, so the order-independence of the suite is
+# checked here, nightly, with the seed printed. It is not a step of `pr-check`
+# on purpose: a random seed in the PR gate would make the gate itself flaky.
+#
+# `--parallel` implies `--isolate` (fresh global per file). Bun's `mock.module`
+# is process-wide and `mock.restore()` does not undo it, so without isolation a
+# mock from one file answers for the real module in the next.
+#
+# To reproduce a red run locally: bun run test:random --seed=<seed from the log>
+
+on:
+  schedule:
+    - cron: '41 3 * * *' # every night 03:41 UTC
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Seed to replay (empty: pick one)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  randomized:
+    name: bun test --randomize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.3.14'
+
+      - name: Cache bun dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.bun/install/cache
+            node_modules
+          key: bun-deps-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - run: bun install --frozen-lockfile
+
+      - name: Run the suite in a random order
+        env:
+          REPLAY_SEED: ${{ inputs.seed }}
+        run: |
+          SEED="${REPLAY_SEED:-$(date +%s)}"
+          echo "seed: ${SEED}"
+          echo "### Randomized unit tests" >> "$GITHUB_STEP_SUMMARY"
+          echo "Seed: \`${SEED}\`. Reproduce with \`bun run test:random --seed=${SEED}\`." >> "$GITHUB_STEP_SUMMARY"
+          bun run test:random --seed="${SEED}"
