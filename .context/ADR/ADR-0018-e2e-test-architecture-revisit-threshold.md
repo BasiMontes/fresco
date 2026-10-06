@@ -52,6 +52,14 @@ We will **keep everything ADR-0014 decided** — `playwright-bdd` + Spanish Gher
 - **Negative / trade-offs:** we are deliberately accepting a suite that will eventually need the parallelism work — this ADR defers it, it does not remove it; scenario count and wall-clock will keep climbing and the early-warning **will** fire within a batch or two; traceability from scenario → Jira ticket stays informal (`@verificado-manual-YYYY-MM-DD` + `# Automatizado: <file> (FRESCO-XXX)` comments), not structured.
 - **Neutral / follow-ups:** `playwright.config.ts`'s `workers: 1` rationale comment and `.context/qa/README.md`'s ratchet section are updated to point here; the parallelism migration is pre-filed intent, to be ticketed when the early-warning fires; the four racer step files are named above so the migration scope is not re-discovered.
 
+## Update 2026-10-06 (FRESCO-795): the early-warning fired and the migration landed
+
+The Decision above describes the state on 2026-08-31 and is kept as written. Since then:
+
+- The early-warning fired at 75 scenarios / 6m40s and FRESCO-356 delivered the committed response: the four racer step files use `testUserFactory`, `regression.feature` carries `@mode:parallel`, and `playwright.config.ts` runs `fullyParallel: true` with `workers` 4 (CI) / 2 (local).
+- So `workers: 1` and `fullyParallel: false` are no longer the current configuration; only the revisit trigger (CI wall-clock, ~6m30s / ~8m) is still in force.
+- Rule for new scenarios: every automated scenario provisions its own user with `testUserFactory` and seeds its own data (`.context/qa/README.md`).
+
 ## Alternatives considered
 
 - **Do the parallelism migration now, as the revisit response.** Rejected for timing, not merit: it is ~1–1.5 days of work whose only benefit (faster CI) is not yet needed — CI is ~5.5min. Doing it now front-loads cost for a benefit ~2 batches away, and risks regressions in a suite that is currently green and being actively extended. It is the right move the moment wall-clock justifies it — hence the pre-scoped commitment above.
