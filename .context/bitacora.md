@@ -578,3 +578,8 @@ Historia archivada:
 - Qué: la rejilla "Comidas a planificar" cabe a 360 px (270/270): botones Todos/Ninguno apilados en móvil, primera columna 64 px, celdas con 1 px de padding, sin ancho mínimo; el escenario móvil de onboarding mide ahora la rejilla y no solo la página. PR #524 nivelada, 805 en Control de calidad.
 - Por qué: audit-6 A6-L4; FRESCO-773 afirmó que cabía pero el contenedor real mide 270 px y la tabla 310; el check de página no veía el scroll interno (overflow-x-auto).
 - Siguiente: a 320 px sigue el scroll con degradado; filas 44 px más altas en móvil; el onboarding alojado está tras Turnstile, no se puede capturar en fresco-pre sin humano; flakies abiertos: FRESCO-852 y FRESCO-855.
+
+## 2026-10-06 - FRESCO-806 onboarding con perfil guardado
+- Qué: `/onboarding` rellena el asistente con el perfil guardado (hidratación en la puerta de sesión; lo escrito gana; si no se puede leer, pantalla de reintento en vez de asistente vacío); "Empezar" ya no pisa dieta, alérgenos ni nombre. PR #525 nivelada, 806 en Control de calidad, seguimiento FRESCO-856.
+- Por qué: audit-6 A6-L5; el defecto era peor que "moderada": `handleGenerate` hacía upsert del estado por defecto sobre el perfil real, borrando alérgenos.
+- Siguiente: la casilla de consentimiento de datos de salud no se precarga (FRESCO-856); no verificado en alojados por Turnstile; los usuarios factory del e2e tienen fila de perfil, por eso se precarga y no se redirige.
