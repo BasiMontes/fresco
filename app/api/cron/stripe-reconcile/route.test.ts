@@ -29,7 +29,8 @@ void mock.module('@/lib/stripe', () => ({
   stripe: { subscriptions: { retrieve: retrieveMock } },
 }));
 
-const { GET, sweepOrphanPaidPlans } = await import('./route');
+const { GET } = await import('./route');
+const { sweepOrphanPaidPlans } = await import('@/lib/billing/reconcile');
 
 const PRO_PRICE_ID = 'price_pro_month';
 
