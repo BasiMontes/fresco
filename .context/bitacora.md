@@ -573,3 +573,8 @@ Historia archivada:
 - Qué: el e2e de PR ya no usa ENV_FILE (`.env` = `.env.ci` + 4 valores falsos, 124/124 sin secretos); test de política `scripts/ci-secrets-policy.test.ts` (sin secretos en workflows de pull_request, acciones fijadas por SHA); `sha_pinning_required` activado en el repo; smoke y stripe-e2e prefieren `LIVE_E2E_ENV_FILE` con fallback. PR #521 nivelada, 802 en Control de calidad, residuo en FRESCO-853.
 - Por qué: audit-6 A6-D6, repo público y un PR del mismo repo ejecuta el workflow con los secretos al alcance.
 - Siguiente: FRESCO-853 (crear LIVE_E2E_ENV_FILE, borrar ENV_FILE, token de Supabase acotado) es del dueño; el permiso del agente bloquea leer `.env*`, incluso `.env.ci`.
+
+## 2026-10-06 - FRESCO-805 rejilla de onboarding a 360 px
+- Qué: la rejilla "Comidas a planificar" cabe a 360 px (270/270): botones Todos/Ninguno apilados en móvil, primera columna 64 px, celdas con 1 px de padding, sin ancho mínimo; el escenario móvil de onboarding mide ahora la rejilla y no solo la página. PR #524 nivelada, 805 en Control de calidad.
+- Por qué: audit-6 A6-L4; FRESCO-773 afirmó que cabía pero el contenedor real mide 270 px y la tabla 310; el check de página no veía el scroll interno (overflow-x-auto).
+- Siguiente: a 320 px sigue el scroll con degradado; filas 44 px más altas en móvil; el onboarding alojado está tras Turnstile, no se puede capturar en fresco-pre sin humano; flakies abiertos: FRESCO-852 y FRESCO-855.
