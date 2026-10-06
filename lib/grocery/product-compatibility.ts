@@ -97,6 +97,46 @@ function infringe(lista: readonly string[], { producto, ingrediente }: { product
   return lista.some(t => contiene(producto, t) && !contiene(ingrediente, t));
 }
 
+interface Restriccion {
+  /** The shopper's profile asks for this restriction, and the product does not escape it. */
+  aplica: boolean
+  /** Words the restriction forbids in the product name. */
+  palabras: readonly string[]
+}
+
+/** Allergens that are checked with their own "sin ..." escape in `restriccionesDe`, not in the generic loop. */
+const ALERGENOS_CON_ESCAPE = ['gluten', 'lactosa', 'huevo'];
+
+/**
+ * Every restriction the profile can raise, in the order they are judged:
+ * diets first, then the three allergens that have a "sin ..." escape, then the
+ * rest of the allergen table.
+ */
+function restriccionesDe({ perfil, producto, textoProducto }: {
+  perfil: PerfilCompra
+  producto: Set<string>
+  textoProducto: string
+}): Restriccion[] {
+  const alergenos = new Set(perfil.alergenos ?? []);
+  const vegetal = producto.has('vegetal') || producto.has('vegano') || producto.has('vegana');
+  const sinLactosa = textoProducto.includes(LIBRE_DE.lacteos);
+  const sinGluten = textoProducto.includes(LIBRE_DE.gluten);
+  const sinHuevo = textoProducto.includes(LIBRE_DE.huevo);
+
+  return [
+    { aplica: Boolean(perfil.vegano) && !vegetal, palabras: PALABRAS_POR_DIETA.vegano },
+    { aplica: Boolean(perfil.vegetariano) && !vegetal, palabras: PALABRAS_POR_DIETA.vegetariano },
+    { aplica: Boolean(perfil.halal), palabras: PALABRAS_POR_DIETA.halal },
+    { aplica: Boolean(perfil.sinGluten || alergenos.has('gluten')) && !sinGluten, palabras: GLUTEN },
+    { aplica: Boolean(perfil.sinLactosa || alergenos.has('lactosa')) && !sinLactosa, palabras: LACTEOS },
+    { aplica: Boolean(perfil.sinHuevo || alergenos.has('huevo')) && !sinHuevo, palabras: HUEVO },
+    // The three allergens above are handled with their "sin ..." escape.
+    ...Object.entries(PALABRAS_POR_ALERGENO)
+      .filter(([alergeno]) => !ALERGENOS_CON_ESCAPE.includes(alergeno))
+      .map(([alergeno, palabras]) => ({ aplica: alergenos.has(alergeno), palabras })),
+  ];
+}
+
 /**
  * Compatible when no active restriction is violated by a word the product
  * adds. No profile, no restrictions, or no readable name all mean compatible
@@ -110,27 +150,11 @@ export function esProductoCompatible({ ingrediente, nombreProducto, perfil }: {
   if (!perfil || !nombreProducto.trim()) { return true; }
 
   const producto = palabras(nombreProducto);
-  const ing = palabras(ingrediente);
+  const contexto = { producto, ingrediente: palabras(ingrediente) };
   const textoProducto = normalizeNombre(nombreProducto);
-  const vegetal = producto.has('vegetal') || producto.has('vegano') || producto.has('vegana');
-  const sinLactosa = textoProducto.includes(LIBRE_DE.lacteos);
-  const sinGluten = textoProducto.includes(LIBRE_DE.gluten);
-  const sinHuevo = textoProducto.includes(LIBRE_DE.huevo);
 
-  const alergenos = new Set(perfil.alergenos ?? []);
-
-  if (perfil.vegano && !vegetal && infringe(PALABRAS_POR_DIETA.vegano, { producto, ingrediente: ing })) { return false; }
-  if (perfil.vegetariano && !vegetal && infringe(PALABRAS_POR_DIETA.vegetariano, { producto, ingrediente: ing })) { return false; }
-  if (perfil.halal && infringe(PALABRAS_POR_DIETA.halal, { producto, ingrediente: ing })) { return false; }
-  if ((perfil.sinGluten || alergenos.has('gluten')) && !sinGluten && infringe(GLUTEN, { producto, ingrediente: ing })) { return false; }
-  if ((perfil.sinLactosa || alergenos.has('lactosa')) && !sinLactosa && infringe(LACTEOS, { producto, ingrediente: ing })) { return false; }
-  if ((perfil.sinHuevo || alergenos.has('huevo')) && !sinHuevo && infringe(HUEVO, { producto, ingrediente: ing })) { return false; }
-
-  for (const [alergeno, lista] of Object.entries(PALABRAS_POR_ALERGENO)) {
-    if (['gluten', 'lactosa', 'huevo'].includes(alergeno)) { continue; } // handled above, with their "sin ..." escape
-    if (alergenos.has(alergeno) && infringe(lista, { producto, ingrediente: ing })) { return false; }
-  }
-  return true;
+  return !restriccionesDe({ perfil, producto, textoProducto })
+    .some(restriccion => restriccion.aplica && infringe(restriccion.palabras, contexto));
 }
 
 /**
