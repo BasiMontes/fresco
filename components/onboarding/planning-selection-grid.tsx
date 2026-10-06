@@ -113,10 +113,10 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
     >
       {/* FRESCO-773: floor lowered from min-w-76 (304px) so the 7 days fit the
           296px card at 360px with no scroll; below that, scroll + fade remain. */}
-      <table className="w-full min-w-72 border-collapse">
+      <table className="w-full border-collapse">
         <thead>
           <tr>
-            <th scope="col" className="w-20" />
+            <th scope="col" className="w-16 sm:w-20" />
             {DAY_OPTIONS.map(day => (
               <th key={day.value} scope="col" className="pb-1 text-center text-caption font-sans uppercase text-tertiary">
                 {day.label}
@@ -130,12 +130,12 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
               <th scope="row" aria-label={meal.label} className="py-1.5 pr-1 text-left align-middle">
                 <span className="flex flex-col gap-0.5">
                   <span className="text-body-sm font-sans font-normal text-text">{meal.label}</span>
-                  <span className="flex gap-1 text-caption font-sans text-tertiary">
+                  <span className="flex flex-col items-start sm:flex-row sm:gap-1 text-caption font-sans text-tertiary">
                     <button
                       type="button"
                       data-testid="planning_meal_select_all"
                       aria-label={`Marcar ${meal.label.toLowerCase()} todos los días`}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-2 hover:text-primary hover:underline"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-start underline-offset-2 hover:text-primary hover:underline sm:justify-center"
                       onClick={() => setMeal(meal.value, true)}
                     >
                       Todos
@@ -144,7 +144,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                       type="button"
                       data-testid="planning_meal_select_none"
                       aria-label={`Desmarcar ${meal.label.toLowerCase()} todos los días`}
-                      className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-2 hover:text-primary hover:underline"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-start underline-offset-2 hover:text-primary hover:underline sm:justify-center"
                       onClick={() => setMeal(meal.value, false)}
                     >
                       Ninguno
@@ -155,7 +155,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
               {DAY_OPTIONS.map((day) => {
                 const checked = (value[day.value] ?? []).includes(meal.value);
                 return (
-                  <td key={day.value} className="px-0.5 py-1.5 text-center">
+                  <td key={day.value} className="px-px py-1.5 text-center sm:px-0.5">
                     <Checkbox
                       data-testid="planning_selection_cell"
                       checked={checked}
