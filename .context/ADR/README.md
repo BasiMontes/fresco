@@ -101,6 +101,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0038](./ADR-0038-multi-harness-single-source.md) | One instruction source (`AGENTS.md`) and one skill store (`.agents/skills/`) for three harnesses (Claude Code, OpenCode, Codex); each reaches them through a generated shim, alias or native discovery. Renumbered from a duplicate ADR-0002 (FRESCO-789) | Accepted | — | — |
 | [ADR-0039](./ADR-0039-skills-sync-with-protected-doctrine.md) | Skills are synced from the boilerplate; project-owned doctrine is protected from the sync (`updater.protected_paths` + a grep test) | Accepted | ADR-0016 | — |
 | [ADR-0040](./ADR-0040-consent-registry-append-only.md) | Consent registry: an append-only `user_consents` table written under the user's own RLS with a column-level INSERT grant; the version is the server's | Proposed | — | — |
+| [ADR-0041](./ADR-0041-ui-data-access-through-lib-client-api.md) | The UI reaches data through plain `lib/` functions (`lib/client-api`); `components/` owns hooks and never imports a Supabase client; route handlers orchestrate, they do not query | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 

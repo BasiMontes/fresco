@@ -17,8 +17,8 @@ const SECTION_LABEL: Record<LegalSection, string> = {
   cookies: 'Política de Cookies',
 };
 
-/** Re-exported for `lib/email/templates/subscription-confirmation.ts` (FRESCO-429) — the actual data lives in `legal-content-data.ts` (kept import-cycle-free from `legal-content.tsx`'s render components). */
-export { CONTACT_EMAIL, LEGAL_ENTITY } from '@/components/legal/legal-content-data';
+/** Re-exported for `app/sobre-nosotros/page.tsx` — the actual data lives in `legal-content-data.ts` (kept import-cycle-free from `legal-content.tsx`'s render components). The email template reads both constants from `lib/legal/entity.ts` (FRESCO-810). */
+export { CONTACT_EMAIL } from '@/components/legal/legal-content-data';
 
 export interface LegalModalProps {
   open: boolean

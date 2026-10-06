@@ -3,7 +3,7 @@
 import { Skeleton } from 'boneyard-js/react';
 import { useSearchParams } from 'next/navigation';
 import * as React from 'react';
-import { CalendarPageFixture, MenuPageFixture, RecipeDetailPageFixture, RecipesPageFixture, ShoppingListPageFixture } from '@/lib/fixtures/page-shells';
+import { CalendarPageFixture, MenuPageFixture, RecipeDetailPageFixture, RecipesPageFixture, ShoppingListPageFixture } from '@/components/__fixtures__/page-shells';
 import '@/bones/registry';
 
 /**
