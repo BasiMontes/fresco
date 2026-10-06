@@ -110,6 +110,9 @@ const initialState = {
   healthDataConsent: false,
 };
 
+/** The wizard's starting values; `/onboarding` compares against them to know nothing was typed yet (FRESCO-806). */
+export const ONBOARDING_INITIAL_STATE = initialState;
+
 function toggleInArray<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter(item => item !== value) : [...list, value];
 }

@@ -126,6 +126,60 @@ export async function hasUserProfile(
 }
 
 /**
+ * FRESCO-806 (audit-6 A6-L5) — every column the onboarding wizard edits, as the
+ * database holds them. `/onboarding` pre-fills the wizard from this for a user
+ * who already has a profile: without it the wizard started empty and "Empezar"
+ * upserted that emptiness over their allergens and diet.
+ */
+export type SavedOnboardingProfile = Pick<
+  UserProfile,
+  | 'nombre'
+  | 'sexo'
+  | 'objetivo'
+  | 'adultos'
+  | 'ninos'
+  | 'dieta_vegetariano'
+  | 'dieta_vegano'
+  | 'dieta_sin_gluten'
+  | 'dieta_sin_lactosa'
+  | 'dieta_sin_huevo'
+  | 'dieta_keto'
+  | 'dieta_halal'
+  | 'alergenos'
+  | 'ingredientes_odiados'
+  | 'cocinas_favoritas'
+  | 'dieta_texto_libre'
+  | 'ingredientes_odiados_texto_libre'
+  | 'cocinas_texto_libre'
+  | 'presupuesto_semana_euros'
+  | 'planning_selection'
+  | 'nivel_experiencia'
+>;
+
+/**
+ * The CURRENTLY authenticated user's saved onboarding profile, or `null` when
+ * no `user_profiles` row exists yet (a first-time visitor). Throws on a read
+ * failure: the caller must not fall back to an empty wizard, because "Empezar"
+ * would then overwrite a profile it could not read.
+ */
+export async function getUserOnboardingProfile(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<SavedOnboardingProfile | null> {
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('nombre, sexo, objetivo, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, dieta_texto_libre, ingredientes_odiados_texto_libre, cocinas_texto_libre, presupuesto_semana_euros, planning_selection, nivel_experiencia')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new UserProfileError(`No se pudo leer el perfil guardado: ${error.message}`);
+  }
+
+  return data as SavedOnboardingProfile | null;
+}
+
+/**
  * Onboarding defaults (mirrors `lib/store/onboarding-store.ts`'s
  * `initialState` for `adultos`/`ninos`) — used only as the fallback when no
  * `user_profiles` row exists yet, same conservative-default judgment call as

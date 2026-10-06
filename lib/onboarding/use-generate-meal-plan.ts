@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
 import { getPlanTierForAnalytics, upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
+import { wizardToProfilePayload } from '@/lib/onboarding/saved-profile';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { markFirstMenuGenerated } from '@/lib/push/first-menu-signal';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
@@ -34,30 +35,6 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
   const [generateError, setGenerateError] = useState<string | null>(null);
   const hasExistingMenu = generateError === EXISTING_MENU_FOR_WEEK_MESSAGE;
 
-  const {
-    nombre,
-    sexo,
-    objetivo,
-    dietaVegetariano,
-    dietaVegano,
-    dietaSinGluten,
-    dietaSinLactosa,
-    dietaSinHuevo,
-    dietaKeto,
-    dietaHalal,
-    alergenos,
-    ingredientesOdiados,
-    cocinasFavoritas,
-    adultos,
-    ninos,
-    dietaTextoLibre,
-    ingredientesOdiadosTextoLibre,
-    cocinasTextoLibre,
-    presupuestoSemanaEuros,
-    planningSelection,
-    nivelExperiencia,
-  } = useOnboardingStore();
-
   async function handleGenerate() {
     setIsGenerating(true);
     setGenerateError(null);
@@ -71,32 +48,7 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
       // A session (real or anonymous guest, FRESCO-17) is guaranteed by the
       // mount effect above before this handler is reachable.
-      await upsertUserProfile(client, {
-        nombre,
-        sexo,
-        objetivo,
-        num_personas: adultos + ninos,
-        adultos,
-        ninos,
-        dieta_vegetariano: dietaVegetariano,
-        dieta_vegano: dietaVegano,
-        dieta_sin_gluten: dietaSinGluten,
-        dieta_sin_lactosa: dietaSinLactosa,
-        dieta_sin_huevo: dietaSinHuevo,
-        dieta_keto: dietaKeto,
-        dieta_halal: dietaHalal,
-        alergenos,
-        ingredientes_odiados: ingredientesOdiados,
-        cocinas_favoritas: cocinasFavoritas,
-        dieta_texto_libre: dietaTextoLibre,
-        ingredientes_odiados_texto_libre: ingredientesOdiadosTextoLibre,
-        cocinas_texto_libre: cocinasTextoLibre,
-        // DB check constraint: presupuesto_semana_euros > 0 — 0/negative
-        // rejected, only a genuine positive value or null is valid.
-        presupuesto_semana_euros: presupuestoSemanaEuros,
-        planning_selection: planningSelection,
-        nivel_experiencia: nivelExperiencia,
-      });
+      await upsertUserProfile(client, wizardToProfilePayload(useOnboardingStore.getState()));
 
       const now = new Date();
       const semanaIso = getIsoWeek(now);

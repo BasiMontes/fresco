@@ -281,3 +281,57 @@ Then(/^al marcar la casilla puede avanzar al paso 3$/, async ({ page }) => {
   await page.getByTestId('next_button').click();
   await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+3\s+de\s+3/);
 });
+
+// FRESCO-806 (audit-6 A6-L5) — "Un usuario con perfil guardado ve sus preferencias en el onboarding
+// y "Empezar" no las pisa". The wizard used to start empty for a user who already had a profile and
+// "Empezar" then saved that emptiness over their diet and allergens.
+
+const SAVED_NOMBRE = 'Perfil Guardado';
+
+Given(/^tiene un perfil guardado con dieta halal, alérgeno huevo y un nombre$/, async ({ request }) => {
+  const testUser = ctx.testUser!;
+  const res = await request.patch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}`,
+    {
+      headers: { ...restHeaders(testUser.accessToken), Prefer: 'return=minimal' },
+      data: { nombre: SAVED_NOMBRE, dieta_halal: true, alergenos: ['huevo'] },
+    },
+  );
+  expect(res.ok(), `seeding the saved profile: ${res.status()}`).toBe(true);
+});
+
+When(/^llega al resumen del onboarding con su perfil guardado$/, async ({ page }) => {
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  // Step 1 already carries the saved name.
+  await expect(page.getByTestId('nombre_input')).toHaveValue(SAVED_NOMBRE);
+  await page.getByTestId('next_button').click();
+  // Step 2 carries the saved diet and allergens; the health-data consent is given again here.
+  await page.getByTestId('health_consent_checkbox').click();
+  await expect(page.getByTestId('health_consent_checkbox')).toBeChecked();
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('view_summary_button').click();
+});
+
+Then(/^el resumen muestra su perfil guardado y no uno vacío$/, async ({ page }) => {
+  await expect(page.getByTestId('onboarding_summary')).toBeVisible();
+  await expect(page.getByTestId('summary_section_diet')).toContainText('Halal');
+  await expect(page.getByTestId('summary_section_diet')).not.toContainText('Sin restricciones');
+  await expect(page.getByTestId('summary_allergens').getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByTestId('summary_allergens')).toContainText('Huevo');
+  await expect(page.getByTestId('summary_allergens')).not.toContainText('Ninguno indicado');
+});
+
+When(/^pulsa "Empezar" con su perfil guardado$/, async ({ page }) => {
+  await page.getByTestId('generate_menu_button').click();
+  await page.waitForURL('**/menu', { timeout: 60_000 });
+});
+
+Then(/^su perfil guardado sigue igual$/, async ({ request }) => {
+  const testUser = ctx.testUser!;
+  const res = await request.get(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}&select=nombre,dieta_halal,alergenos`,
+    { headers: restHeaders(testUser.accessToken) },
+  );
+  expect(await res.json()).toEqual([{ nombre: SAVED_NOMBRE, dieta_halal: true, alergenos: ['huevo'] }]);
+});
