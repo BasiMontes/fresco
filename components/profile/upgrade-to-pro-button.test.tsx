@@ -18,6 +18,7 @@ const ANNUAL: ProPriceInfo = { amount: 44.99, currency: 'eur', interval: 'year',
 
 let price: ProPriceInfo = PRICE;
 let annualPrice: ProPriceInfo | null = null;
+let annualDelayMs = 0;
 let priceStatus = 200;
 let consentStatus = 200;
 let calls: Array<{ url: string, body: unknown }> = [];
@@ -25,6 +26,7 @@ let calls: Array<{ url: string, body: unknown }> = [];
 beforeEach(() => {
   price = PRICE;
   annualPrice = null;
+  annualDelayMs = 0;
   priceStatus = 200;
   consentStatus = 200;
   calls = [];
@@ -35,6 +37,7 @@ beforeEach(() => {
       return new Response(JSON.stringify(price), { status: priceStatus });
     }
     if (url === '/api/stripe/pro-price?interval=year') {
+      await new Promise(resolve => setTimeout(resolve, annualDelayMs));
       return annualPrice ? new Response(JSON.stringify(annualPrice), { status: 200 }) : new Response(null, { status: 500 });
     }
     if (url === '/api/consents') {
@@ -192,6 +195,16 @@ describe('UpgradeToProButton + annual plan (FRESCO-844)', () => {
     await waitFor(() => expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' })).toBeTruthy());
     expect(screen.getByRole('radio', { name: 'Mensual' }).getAttribute('aria-checked')).toBe('true');
     expect(screen.getByTestId('pro_checkout_price').textContent?.replaceAll(/\s/g, ' ')).toContain('4,99 € al mes');
+  });
+
+  // FRESCO-851 — the selector used to pop in after the price when the annual
+  // request was the slower one, pushing the dialog's content down.
+  test('the selector is already there when the price shows, even if the annual price is slower', async () => {
+    annualPrice = ANNUAL;
+    annualDelayMs = 80;
+    await openSummary();
+
+    expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' })).toBeTruthy();
   });
 
   test('picking Anual shows the Stripe annual price, the saving against 12 months and the yearly renewal', async () => {
