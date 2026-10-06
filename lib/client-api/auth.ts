@@ -36,6 +36,27 @@ export async function signInWithPassword({ email, password, captchaToken }: Pass
   return createClient().auth.signInWithPassword({ email, password, options: captchaOptions(captchaToken) });
 }
 
+/** Anonymous (guest) sign-in. */
+export async function signInAnonymously({ captchaToken }: { captchaToken: string | null }) {
+  return createClient().auth.signInAnonymously({ options: captchaOptions(captchaToken) });
+}
+
+interface SignUpArgs extends PasswordCredentials {
+  /** Where the confirmation email link sends the user; built by the caller from its own origin. */
+  emailRedirectTo: string
+  /** Stored in the new user's metadata (FRESCO-794: consents waiting for the first signed-in visit). */
+  metadata: Record<string, unknown>
+}
+
+/** Creates an account. With email confirmation on, the result usually carries no session. */
+export async function signUp({ email, password, captchaToken, emailRedirectTo, metadata }: SignUpArgs) {
+  return createClient().auth.signUp({
+    email,
+    password,
+    options: { ...captchaOptions(captchaToken), emailRedirectTo, data: metadata },
+  });
+}
+
 /** Sends the password-reset email. */
 export async function sendPasswordReset({ email, captchaToken }: { email: string, captchaToken: string | null }) {
   return createClient().auth.resetPasswordForEmail(email, captchaOptions(captchaToken));

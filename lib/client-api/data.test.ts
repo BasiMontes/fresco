@@ -14,11 +14,13 @@ let fake = createMockClient({ userId: 'user-1' });
 void mock.module('@/lib/supabase/client', () => ({ createClient: () => fake.client }));
 
 const { addFavorite, removeFavorite } = await import('@/lib/client-api/favorites');
+const { searchCatalogRecipes } = await import('@/lib/client-api/admin-recipes');
+const { flushPendingConsents } = await import('@/lib/client-api/consents');
 const { copyMealPlanToCurrentWeek, deleteMealPlan, swapMealPlanSlots } = await import('@/lib/client-api/meal-plan');
 const { createRecetaPropia, deleteRecetaPropia } = await import('@/lib/client-api/recipes');
 const { addShoppingListItem, clearComprados, toggleShoppingListItem } = await import('@/lib/client-api/shopping-list');
 const { confirmSubstitution, getSafeSubstitutes } = await import('@/lib/client-api/substitutions');
-const { getPlanTierForAnalytics, updateNombre, upsertUserProfile } = await import('@/lib/client-api/user-profile');
+const { getPlanTierForAnalytics, markRoutesNoticeDismissed, updateNombre, upsertUserProfile } = await import('@/lib/client-api/user-profile');
 
 beforeEach(() => {
   fake = createMockClient({ userId: 'user-1' });
@@ -162,5 +164,32 @@ describe('getPlanTierForAnalytics', () => {
     fake = createMockClient({ errorMessage: 'boom' });
 
     expect(await getPlanTierForAnalytics('user-1')).toBe('free');
+  });
+});
+
+describe('admin catalog search', () => {
+  test('searchCatalogRecipes runs the OR-filtered search through the browser client', async () => {
+    fake = createMockClient({ data: [] });
+
+    await searchCatalogRecipes('lentejas');
+
+    expect(fake.callsOf('or')).toHaveLength(1);
+  });
+});
+
+describe('routes notice', () => {
+  test('markRoutesNoticeDismissed marks the notice dismissed on the signed-in profile', async () => {
+    await markRoutesNoticeDismissed();
+
+    expect(fake.callsOf('update')).toEqual([[{ aviso_rutas_descartado: true }]]);
+    expect(fake.callsOf('eq')).toEqual([['id', 'user-1']]);
+  });
+});
+
+describe('pending consents', () => {
+  test('flushPendingConsents reads the signed-in user to see what is parked in their metadata', async () => {
+    await flushPendingConsents();
+
+    expect(fake.callsOf('auth.getUser')).toHaveLength(1);
   });
 });
