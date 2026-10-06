@@ -11,6 +11,7 @@ import { OnboardingStepDiet } from '@/components/onboarding/onboarding-step-diet
 import { OnboardingStepHousehold } from '@/components/onboarding/onboarding-step-household';
 import { OnboardingStepIdentity } from '@/components/onboarding/onboarding-step-identity';
 import { OnboardingSummary } from '@/components/onboarding/onboarding-summary';
+import { ProfileLoadError } from '@/components/onboarding/profile-load-error';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { isHealthConsentSatisfied } from '@/lib/onboarding/health-data-consent';
@@ -51,7 +52,7 @@ import { validateHousehold } from '@/lib/validation/onboarding';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { identityResolved, setIdentityResolved, wizardShown } = useOnboardingSessionGate();
+  const { identityResolved, setIdentityResolved, wizardShown, profileLoadFailed, retryLoadProfile } = useOnboardingSessionGate();
 
   const {
     step,
@@ -104,6 +105,11 @@ export default function OnboardingPage() {
         <Loader2 data-testid="onboarding_identity_loading" className="size-6 animate-spin text-tertiary" aria-hidden="true" />
       </div>
     );
+  }
+
+  // FRESCO-806: could not read the saved profile: never show an empty wizard.
+  if (profileLoadFailed) {
+    return <ProfileLoadError onRetry={retryLoadProfile} />;
   }
 
   if (!identityResolved) {

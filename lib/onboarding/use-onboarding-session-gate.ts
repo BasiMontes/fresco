@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { flushPendingConsents } from '@/lib/legal/consent-client';
+import { hydrateFromSavedProfile } from '@/lib/onboarding/hydrate-saved-profile';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -31,14 +32,32 @@ export function useOnboardingSessionGate() {
   // sign-in. A just-registered user arriving from `/signup`, or a returning
   // guest whose anonymous session already persisted, skips straight to the
   // wizard below.
+  //
+  // FRESCO-806 (audit-6 A6-L5): a user who already has a profile finds it in
+  // the wizard. Without this the wizard started empty and "Empezar" upserted
+  // that emptiness over their allergens and diet. A read failure must NOT fall
+  // back to an empty wizard (the same overwrite), so it surfaces as
+  // `profileLoadFailed` and the page offers a retry instead.
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     async function checkSession() {
       const client = createClient();
       const { data: { session } } = await client.auth.getSession();
+      if (session) {
+        try {
+          await hydrateFromSavedProfile({ client, userId: session.user.id });
+          setProfileLoadFailed(false);
+        }
+        catch (error) {
+          console.error('[onboarding] could not read the saved profile', error);
+          setProfileLoadFailed(true);
+        }
+      }
       setIdentityResolved(!!session);
     }
     void checkSession();
-  }, []);
+  }, [attempt]);
 
   // FRESCO-794 (ADR-0040): an account created while email confirmation was
   // pending parked its consents in the user's metadata (`IdentityStep`). The
@@ -50,5 +69,14 @@ export function useOnboardingSessionGate() {
     }
   }, [identityResolved]);
 
-  return { identityResolved, setIdentityResolved, wizardShown };
+  return {
+    identityResolved,
+    setIdentityResolved,
+    wizardShown,
+    profileLoadFailed,
+    retryLoadProfile: () => {
+      setIdentityResolved(null);
+      setAttempt(n => n + 1);
+    },
+  };
 }
