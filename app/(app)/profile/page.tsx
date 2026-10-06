@@ -1,19 +1,14 @@
-import { User as UserIcon } from 'lucide-react';
 import { AppearanceCard } from '@/components/profile/appearance-card';
-import { AyudaSection } from '@/components/profile/ayuda-section';
-import { AccountActions, DangerZone } from '@/components/profile/danger-zone';
-import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
 import { MenuHistoryCard } from '@/components/profile/menu-history-card';
 import { NombreForm } from '@/components/profile/nombre-form';
-import { PreferencesForm } from '@/components/profile/preferences-form';
-import { ProUpsellCard } from '@/components/profile/pro-upsell-card';
+import { ProfileAccountCards } from '@/components/profile/profile-account-cards';
+import { ProfileIdentityCard } from '@/components/profile/profile-identity-card';
+import { ProfilePlanCards } from '@/components/profile/profile-plan-cards';
+import { ProfilePreferencesAndHelp } from '@/components/profile/profile-preferences-and-help';
 import { PushNotificationsToggle } from '@/components/profile/push-notifications-toggle';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tag } from '@/components/ui/tag';
-import { listPastMealPlanWeeks } from '@/lib/api/meal-plan';
-import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, getUserTrialAvailable, isPaymentFailedAlertActive } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
-import { getPlanTagVariant, PLAN_LABELS } from '@/lib/plan-labels';
+import { PLAN_LABELS } from '@/lib/plan-labels';
+import { loadProfilePageData } from '@/lib/profile/load-profile-page-data';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -37,74 +32,16 @@ import { createClient } from '@/lib/supabase/server';
  * (`AyudaSection`) instead of the inert "Próximamente" rows they used to be:
  * `Privacidad` reuses the existing `LegalModal` as-is, and `Configuración`/
  * `FAQ` follow that same modal pattern rather than becoming full page routes.
+ *
+ * FRESCO-809 — reads live in `loadProfilePageData`, each card group in
+ * `components/profile/profile-*`; this page only wires them together.
  */
 export default async function ProfilePage() {
   const supabase = await createClient();
   // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
   const { data: { user } } = await getAuthUser();
 
-  // The three reads below are mutually independent — run them concurrently
-  // rather than paying for 3 sequential round trips. Each keeps its own
-  // fallback via `.catch()` (same conservative-default judgment calls as
-  // before) so one call's rejection can't take the others down with it.
-  const [plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable] = await Promise.all([
-    getUserPlan(supabase, user?.id).catch((error) => {
-      // Same judgment call as every other page reading server-side profile
-      // data: a real read failure defaults to the more conservative 'free'
-      // (shows the upsell) rather than crashing the page.
-      console.error('[/profile] getUserPlan failed, defaulting to free', error);
-      return 'free' as const;
-    }),
-    getPaymentFailedAt(supabase, user?.id).catch((error) => {
-      // Same conservative-default judgment call: a real read failure hides
-      // the aviso rather than crashing the page.
-      console.error('[/profile] getPaymentFailedAt failed, defaulting to null', error);
-      return null;
-    }),
-    getUserNombre(supabase, user?.id).catch((error) => {
-      // Same conservative fallback as `plan` above: a real read failure falls
-      // back to `null` (the form renders empty) rather than crashing the page.
-      console.error('[/profile] getUserNombre failed, defaulting to null', error);
-      return null;
-    }),
-    getUserDietaryPreferences(supabase, user?.id).catch((error) => {
-      // Same conservative-default judgment call as `plan`/`nombre` above: a
-      // real read failure falls back to a safe empty state (`PreferencesForm`
-      // still renders, just unchecked) rather than crashing the page or
-      // silently hiding the whole section.
-      console.error('[/profile] getUserDietaryPreferences failed, defaulting to empty preferences', error);
-      return {
-        num_personas: 2,
-        adultos: 2,
-        ninos: 0,
-        dieta_vegetariano: false,
-        dieta_vegano: false,
-        dieta_sin_gluten: false,
-        dieta_sin_lactosa: false,
-        dieta_sin_huevo: false,
-        dieta_keto: false,
-        dieta_halal: false,
-        alergenos: [],
-        ingredientes_odiados: [],
-        cocinas_favoritas: [],
-      };
-    }),
-    listPastMealPlanWeeks(supabase, user?.id).catch((error) => {
-      // Same conservative fallback as the reads above: a failure hides the
-      // history card's content (empty state) rather than crashing the page.
-      console.error('[/profile] listPastMealPlanWeeks failed, defaulting to none', error);
-      return [];
-    }),
-    getUserTrialAvailable(supabase, user?.id).catch((error) => {
-      // FRESCO-822: unlike the reads above, the safe default here is NOT the
-      // permissive one. If we cannot tell whether the trial is still available we
-      // must not promise it: the checkout charges from day one to anyone who used it.
-      console.error('[/profile] getUserTrialAvailable failed, defaulting to no trial promise', error);
-      return false;
-    }),
-  ]);
-
-  const initial = nombre?.trim().charAt(0).toUpperCase();
+  const { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable } = await loadProfilePageData(supabase, user?.id);
 
   // `user.created_at` comes back from `auth.getUser()` above — no extra
   // query. Formatted with `Intl.DateTimeFormat` (no date-formatting utility
@@ -114,51 +51,13 @@ export default async function ProfilePage() {
     ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(user.created_at))
     : null;
 
+  const isAnonymous = user?.is_anonymous ?? false;
+
   return (
     <div className="mx-auto max-w-4xl">
       <h1 className="text-h2">Perfil</h1>
 
-      <h2 className="sr-only">Tu cuenta</h2>
-      <Card className="mt-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div
-              aria-hidden="true"
-              className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-h5 text-on-brand"
-            >
-              {initial || <UserIcon className="size-6" />}
-            </div>
-            <div className="min-w-0">
-              {/* FRESCO-451 (slice 5/5): the no-name case read as a bare,
-                  unfinished "Hola" — matches /menu's "¡Hola!" / "¡Hola,
-                  {nombre}!" pattern instead. */}
-              <p className="truncate text-h5">
-                {nombre ? `¡Hola, ${nombre}!` : '¡Hola!'}
-              </p>
-              {/* FRESCO-218: reflect the onboarding identity choice
-                  (FRESCO-197) here — a guest sees a plain "Invitada" badge
-                  (no email exists to show), an upgraded/registered user sees
-                  her real email plus a masked password row. The dots are a
-                  fixed placeholder, never the real password — Supabase never
-                  exposes it, hashed or otherwise; this is purely a visual
-                  confirmation that credentials are set. */}
-              {user?.is_anonymous
-                ? (
-                    <Tag data-testid="profile_identity_guest_tag" variant="neutral" className="mt-1">
-                      Invitada
-                    </Tag>
-                  )
-                : (
-                    <div className="mt-0.5 flex flex-col gap-0.5">
-                      <p data-testid="profile_identity_email" className="truncate text-body-sm text-tertiary">{user?.email}</p>
-                      <p data-testid="profile_identity_password_masked" className="text-body-sm tracking-widest text-tertiary">••••••••</p>
-                    </div>
-                  )}
-            </div>
-          </div>
-          <Tag variant={getPlanTagVariant(plan)} className="shrink-0">{PLAN_LABELS[plan]}</Tag>
-        </div>
-      </Card>
+      <ProfileIdentityCard nombre={nombre} email={user?.email} isAnonymous={isAnonymous} plan={plan} />
 
       <NombreForm nombreInicial={nombre} />
 
@@ -166,107 +65,22 @@ export default async function ProfilePage() {
           PushSubscription), so this stays client-rendered rather than
           server-read like the cards around it — same reasoning as why
           NombreForm/PreferencesForm are themselves 'use client'. */}
-      <PushNotificationsToggle isGuest={user?.is_anonymous ?? false} />
+      <PushNotificationsToggle isGuest={isAnonymous} />
 
       <AppearanceCard />
 
-      {/* FRESCO-451: found live while verifying the planning-grid scroll
-          fade — a CSS grid item's default min-width is `auto`, so without
-          `min-w-0` this Card grew to fit PlanningSelectionGrid's 304px
-          table instead of shrinking to its grid track, pushing the whole
-          PAGE into horizontal overflow rather than scrolling just the
-          table inside it. */}
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>Preferencias</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PreferencesForm initialPreferences={dietaryPreferences} />
-          </CardContent>
-        </Card>
-
-        {/* FRESCO-514 — whole-card scroll target for the sidebar account
-            popover's plain "Ayuda" item (`/profile#ayuda`); distinct from
-            the row-level `#ayuda-configuracion` target inside AyudaSection
-            itself. */}
-        <Card id="ayuda" className="min-w-0">
-          <CardHeader>
-            <CardTitle>Ayuda</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AyudaSection
-              email={user?.email ?? 'Invitada'}
-              planLabel={PLAN_LABELS[plan]}
-              memberSince={memberSince}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      <ProfilePreferencesAndHelp
+        dietaryPreferences={dietaryPreferences}
+        email={user?.email ?? 'Invitada'}
+        planLabel={PLAN_LABELS[plan]}
+        memberSince={memberSince}
+      />
 
       <MenuHistoryCard weeks={pastWeeks} plan={plan} />
 
-      {plan === 'free' && <ProUpsellCard trialAvailable={trialAvailable} />}
+      <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} />
 
-      {/* STORY-FRESCO-232: payment-failed aviso — only ever shown alongside
-          the Pro card below (plan stays 'pro' during Stripe's own retry
-          window, see lib/stripe.ts `resolvePaymentStatusUpdate`), never
-          alongside the upsell above. Points at that card's
-          `ManageSubscriptionButton` (FRESCO-231) rather than rendering a
-          second instance here — the Billing Portal it opens is also where
-          the payment method gets updated, no separate flow needed. */}
-      {isPaymentFailedAlertActive(plan, paymentFailedAt) && (
-        <Card variant="danger" className="mt-4" data-testid="payment_failed_notice">
-          <CardHeader>
-            <CardTitle>Tu último pago falló</CardTitle>
-          </CardHeader>
-          <CardContent className="text-body-sm text-tertiary">
-            No pudimos cobrar tu suscripción Pro. Actualiza tu método de pago desde
-            &ldquo;Gestionar mi suscripción&rdquo; más abajo para que no pierdas el acceso —
-            seguimos intentando el cobro mientras tanto.
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STORY-FRESCO-231: symmetric card for Pro users — exactly one of this
-          card and the upsell above ever renders, gated on the same `plan`.
-          "Manage" delegates entirely to the Stripe-hosted Billing Portal
-          (next invoice date/amount, cancel/reactivate, payment method) —
-          no custom UI needed for any of that here. */}
-      {plan === 'pro' && (
-        <Card variant="pro" className="mt-4">
-          <CardHeader>
-            <CardTitle>Tu suscripción</CardTitle>
-          </CardHeader>
-          <CardContent className="text-body-sm text-tertiary">
-            Ya eres Fresco Pro. Desde aquí puedes ver tu próxima factura, cambiar tu método de
-            pago o cancelar cuando quieras.
-          </CardContent>
-          <div className="mt-3">
-            <ManageSubscriptionButton />
-          </div>
-        </Card>
-      )}
-
-      {/* FRESCO-220: logout + CSV export moved out of the danger-styled
-          card below — neither is a destructive action. */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Cuenta</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AccountActions />
-        </CardContent>
-      </Card>
-
-      <Card variant="danger" className="mt-4">
-        <CardHeader>
-          <CardTitle>Zona de peligro</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DangerZone email={user?.email ?? ''} isAnonymous={user?.is_anonymous ?? false} />
-        </CardContent>
-      </Card>
+      <ProfileAccountCards email={user?.email ?? ''} isAnonymous={isAnonymous} />
     </div>
   );
 }
