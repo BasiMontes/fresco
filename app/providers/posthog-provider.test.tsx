@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import type { PostHogProvider as PostHogProviderType } from './posthog-provider';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import posthog from 'posthog-js';
 import { CookieConsentProvider, useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { clearAllCookies, renderWithProviders, screen, setupUser } from '@/tests/component-render';
-import { PostHogProvider } from './posthog-provider';
 
 /** Exposes accept/reject as clickable buttons so a test can drive a full decision cycle. */
 function ConsentControls() {
@@ -22,8 +22,24 @@ function ConsentControls() {
  * are real assertions, not just "does not throw".
  */
 describe('PostHogProvider — consent gate', () => {
-  // Matches lib/posthog/server.test.ts's own precedent for this env var.
-  process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
+  // FRESCO-796: set per test, not while the describe is collected. `process.env`
+  // is shared by every test file a worker runs, and `lib/posthog/*.test.ts`
+  // delete this key, so a value set at collection time was gone by the time
+  // these tests ran whenever one of those files ran in between.
+  const originalKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+
+  // FRESCO-796: the provider keeps an `initialized` flag at module level (so
+  // StrictMode cannot init twice). Whichever test accepted consent first set it
+  // for the rest of the file, so "calls init" failed whenever another accepting
+  // test ran before it. A fresh instance per test (the query string makes Bun
+  // load the module again) gives every test the first-render state.
+  let freshCount = 0;
+  let PostHogProvider: typeof PostHogProviderType;
+  beforeEach(async () => {
+    process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
+    freshCount += 1;
+    ({ PostHogProvider } = await import(`./posthog-provider?fresh=${freshCount}`) as typeof import('./posthog-provider'));
+  });
 
   // The "regression" test below is the only one in this file that actually
   // writes the consent cookie (via accept()/reject() clicks) — clean up so
@@ -35,6 +51,12 @@ describe('PostHogProvider — consent gate', () => {
   // file's very first "starts with no decision" assertion.
   afterEach(() => {
     clearAllCookies();
+    if (originalKey === undefined) {
+      delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
+    }
+    else {
+      process.env.NEXT_PUBLIC_POSTHOG_KEY = originalKey;
+    }
   });
 
   test('does not call posthog.init while consent is undecided', () => {
