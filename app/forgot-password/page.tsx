@@ -7,12 +7,12 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
+import { useCaptcha } from '@/components/auth/use-captcha';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { captchaOptions } from '@/lib/auth/captcha';
-import { useCaptcha } from '@/lib/auth/use-captcha';
 import { createClient } from '@/lib/supabase/client';
 
 /**

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { flushPendingConsents } from '@/lib/legal/consent-client';
-import { hydrateFromSavedProfile } from '@/lib/onboarding/hydrate-saved-profile';
-import { createClient } from '@/lib/supabase/client';
+import { getSession } from '@/lib/client-api/auth';
+import { flushPendingConsents } from '@/lib/client-api/consents';
+import { hydrateFromSavedProfile } from '@/lib/client-api/onboarding';
 
 /**
  * FRESCO-17/FRESCO-197/FRESCO-255 — resolves whether `/onboarding` shows the
@@ -42,11 +42,10 @@ export function useOnboardingSessionGate() {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     async function checkSession() {
-      const client = createClient();
-      const { data: { session } } = await client.auth.getSession();
+      const session = await getSession();
       if (session) {
         try {
-          await hydrateFromSavedProfile({ client, userId: session.user.id });
+          await hydrateFromSavedProfile({ userId: session.user.id });
           setProfileLoadFailed(false);
         }
         catch (error) {
@@ -65,7 +64,7 @@ export function useOnboardingSessionGate() {
   // else, and a failure is retried on the next visit.
   useEffect(() => {
     if (identityResolved) {
-      void flushPendingConsents(createClient());
+      void flushPendingConsents();
     }
   }, [identityResolved]);
 

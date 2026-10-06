@@ -1,17 +1,14 @@
 import type { FormEvent } from 'react';
-import type { useCaptcha } from '@/lib/auth/use-captcha';
+import type { useCaptcha } from '@/components/auth/use-captcha';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { translateAuthError } from '@/lib/auth-errors';
-import { captchaOptions } from '@/lib/auth/captcha';
+import { getCurrentUser, requestEmailChange, signUp } from '@/lib/client-api/auth';
 import { CONSENT_PENDING_KEY, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
-
-type SupabaseBrowserClient = ReturnType<typeof createClient>;
 
 interface UseSignupSubmitArgs {
   email: string
@@ -46,7 +43,7 @@ export function useSignupSubmit({ email, password, captcha, setEmailConflict, se
    * preserves the same `user_id`, so the menu she already generated
    * stays hers. `signUp` would create an unrelated new user instead.
    */
-  async function convertGuestToAccount(client: SupabaseBrowserClient) {
+  async function convertGuestToAccount() {
     // FRESCO-794: the guest session exists, so the consents are recorded now,
     // before anything changes. A failure here changes nothing and can be retried.
     if (!(await postConsents(REGISTRATION_CONSENTS))) {
@@ -56,7 +53,7 @@ export function useSignupSubmit({ email, password, captcha, setEmailConflict, se
     // FRESCO-89: only link the email here — the password is set after
     // she verifies it (see `useSignupOtp`). Sending both together
     // used to return a false 200 (change queued, never applied).
-    const { error } = await client.auth.updateUser({ email });
+    const { error } = await requestEmailChange(email);
     if (error) {
       if (error.code === 'email_exists') {
         // AC (edge case): the email belongs to a different, existing
@@ -79,23 +76,21 @@ export function useSignupSubmit({ email, password, captcha, setEmailConflict, se
     setStep('otp');
   }
 
-  async function registerNewAccount(client: SupabaseBrowserClient) {
-    const { data, error } = await client.auth.signUp({
+  async function registerNewAccount() {
+    const { data, error } = await signUp({
       email,
       password,
+      captchaToken: captcha.token,
       // FRESCO-264 — must route through /auth/confirm (this env's own
       // domain), not a bare path. Supabase's mailer template builds the
       // confirmation link's domain from this value ({{ .RedirectTo }}),
       // not from Auth's global Site URL — which stays fixed to production
       // even for staging signups. See app/auth/confirm/route.ts.
-      options: {
-        ...captchaOptions(captcha.token),
-        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
-        // FRESCO-794: usually no session yet (email confirmation), so the
-        // consents wait in the metadata and `/onboarding` records them on the
-        // first signed-in visit (`flushPendingConsents`).
-        data: { [CONSENT_PENDING_KEY]: REGISTRATION_CONSENTS },
-      },
+      emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+      // FRESCO-794: usually no session yet (email confirmation), so the
+      // consents wait in the metadata and `/onboarding` records them on the
+      // first signed-in visit (`flushPendingConsents`).
+      metadata: { [CONSENT_PENDING_KEY]: REGISTRATION_CONSENTS },
     });
     if (error) {
       setSignupError(translateAuthError(error));
@@ -171,14 +166,13 @@ export function useSignupSubmit({ email, password, captcha, setEmailConflict, se
     }
     setEmailConflict(false);
     try {
-      const client = createClient();
-      const { data: { user } } = await client.auth.getUser();
+      const user = await getCurrentUser();
 
       if (user?.is_anonymous) {
-        await convertGuestToAccount(client);
+        await convertGuestToAccount();
         return;
       }
-      await registerNewAccount(client);
+      await registerNewAccount();
     }
     finally {
       captcha.reset();

@@ -2,8 +2,8 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { translateAuthError } from '@/lib/auth-errors';
+import { requestEmailChange, updatePassword, verifyEmailChangeOtp } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
-import { createClient } from '@/lib/supabase/client';
 
 interface UseSignupOtpArgs {
   email: string
@@ -47,12 +47,7 @@ export function useSignupOtp({ email, password, setEmailConflict, setNavigating 
     setIsVerifyingOtp(true);
     setOtpError(null);
     try {
-      const client = createClient();
-      const { error: verifyError } = await client.auth.verifyOtp({
-        email,
-        token: otpCode,
-        type: 'email_change',
-      });
+      const { error: verifyError } = await verifyEmailChangeOtp({ email, token: otpCode });
       if (verifyError) {
         if (verifyError.code === 'email_exists') {
           setEmailConflict(true);
@@ -65,7 +60,7 @@ export function useSignupOtp({ email, password, setEmailConflict, setNavigating 
         setOtpError(translateAuthError(verifyError));
         return;
       }
-      const { error: passwordError } = await client.auth.updateUser({ password });
+      const { error: passwordError } = await updatePassword(password);
       if (passwordError) {
         if (passwordError.code === 'email_exists') {
           setEmailConflict(true);
@@ -104,8 +99,7 @@ export function useSignupOtp({ email, password, setEmailConflict, setNavigating 
     setOtpError(null);
     setResendMessage(null);
     try {
-      const client = createClient();
-      const { error } = await client.auth.updateUser({ email });
+      const { error } = await requestEmailChange(email);
       if (error) {
         setOtpError(translateAuthError(error));
         return;

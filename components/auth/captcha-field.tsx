@@ -1,6 +1,6 @@
 'use client';
 
-import type { Captcha } from '@/lib/auth/use-captcha';
+import type { Captcha } from '@/components/auth/use-captcha';
 import { useEffect, useRef, useState } from 'react';
 import { TURNSTILE_SITE_KEY } from '@/lib/auth/captcha';
 

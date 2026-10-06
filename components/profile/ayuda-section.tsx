@@ -3,11 +3,11 @@
 import { ChevronRight, Cookie, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
+import { useCaptcha } from '@/components/auth/use-captcha';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { useCaptcha } from '@/lib/auth/use-captcha';
 import { sendPasswordReset } from '@/lib/client-api/auth';
 
 interface FaqItem {

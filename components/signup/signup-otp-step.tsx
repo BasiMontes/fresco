@@ -1,4 +1,4 @@
-import type { useSignupOtp } from '@/lib/signup/use-signup-otp';
+import type { useSignupOtp } from '@/components/signup/use-signup-otp';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 

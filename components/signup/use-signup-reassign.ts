@@ -1,14 +1,11 @@
-import type { useCaptcha } from '@/lib/auth/use-captcha';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import type { useCaptcha } from '@/components/auth/use-captcha';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EdgeFunctionError, reassignGuestData } from '@/lib/api/edge-functions';
 import { translateAuthError } from '@/lib/auth-errors';
-import { captchaOptions } from '@/lib/auth/captcha';
-import { clientEnv } from '@/lib/env';
+import { adoptSession, getSession, proveAccountOwnership } from '@/lib/client-api/auth';
 import { getDistinctId } from '@/lib/posthog/distinct-id';
 import { aliasUser, captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
-import { createClient } from '@/lib/supabase/client';
 
 interface UseSignupReassignArgs {
   email: string
@@ -36,8 +33,7 @@ export function useSignupReassign({ email, captcha, setNavigating }: UseSignupRe
     setIsReassigning(true);
     setReassignError(null);
     try {
-      const client = createClient();
-      const { data: { session } } = await client.auth.getSession();
+      const session = await getSession();
       if (!session) {
         setReassignError('Tu sesión de invitada expiró. Recarga la página e inténtalo de nuevo.');
         return;
@@ -46,15 +42,10 @@ export function useSignupReassign({ email, captcha, setNavigating }: UseSignupRe
       // Ownership proof against native Supabase Auth (its own rate limiting +
       // leaked-password protection) on a client kept out of storage, so the
       // guest session above is untouched.
-      const proofClient = createSupabaseClient(
-        clientEnv.NEXT_PUBLIC_SUPABASE_URL,
-        clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        { auth: { persistSession: false, autoRefreshToken: false } },
-      );
-      const { data: proofData, error: proofError } = await proofClient.auth.signInWithPassword({
+      const { data: proofData, error: proofError } = await proveAccountOwnership({
         email,
         password: conflictPassword,
-        options: captchaOptions(captcha.token),
+        captchaToken: captcha.token,
       });
       captcha.reset();
       if (proofError || !proofData.session) {
@@ -78,9 +69,9 @@ export function useSignupReassign({ email, captcha, setNavigating }: UseSignupRe
       // authenticated by adopting that session, not by a second password
       // sign-in — a Turnstile token is single-use, so a second sign-in would
       // need a second challenge for the same proof.
-      const { data: signInData, error } = await client.auth.setSession({
-        access_token: proofData.session.access_token,
-        refresh_token: proofData.session.refresh_token,
+      const { data: signInData, error } = await adoptSession({
+        accessToken: proofData.session.access_token,
+        refreshToken: proofData.session.refresh_token,
       });
       if (error) {
         setReassignError(translateAuthError(error));

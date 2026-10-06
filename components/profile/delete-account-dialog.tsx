@@ -3,11 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
+import { useCaptcha } from '@/components/auth/use-captcha';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { deleteAccount, EdgeFunctionError } from '@/lib/api/edge-functions';
-import { useCaptcha } from '@/lib/auth/use-captcha';
 import { getAccessToken, signInWithPassword, signOut } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 

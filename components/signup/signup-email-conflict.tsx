@@ -1,5 +1,5 @@
-import type { useCaptcha } from '@/lib/auth/use-captcha';
-import type { useSignupReassign } from '@/lib/signup/use-signup-reassign';
+import type { useCaptcha } from '@/components/auth/use-captcha';
+import type { useSignupReassign } from '@/components/signup/use-signup-reassign';
 import Link from 'next/link';
 import { CaptchaField } from '@/components/auth/captcha-field';
 import { Button } from '@/components/ui/button';

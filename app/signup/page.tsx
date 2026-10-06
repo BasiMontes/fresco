@@ -2,17 +2,17 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
+import { useCaptcha } from '@/components/auth/use-captcha';
 import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { SignupEmailConflict } from '@/components/signup/signup-email-conflict';
 import { SignupFormStep } from '@/components/signup/signup-form-step';
 import { SignupOtpStep } from '@/components/signup/signup-otp-step';
 import { SignupPendingConfirmation } from '@/components/signup/signup-pending-confirmation';
+import { useSignupOtp } from '@/components/signup/use-signup-otp';
+import { useSignupReassign } from '@/components/signup/use-signup-reassign';
+import { useSignupSubmit } from '@/components/signup/use-signup-submit';
 import { Card } from '@/components/ui/card';
-import { useCaptcha } from '@/lib/auth/use-captcha';
-import { useSignupOtp } from '@/lib/signup/use-signup-otp';
-import { useSignupReassign } from '@/lib/signup/use-signup-reassign';
-import { useSignupSubmit } from '@/lib/signup/use-signup-submit';
 
 /**
  * `/signup` — EPIC-FRESCO-7 (Progressive Signup, US 7.1): a guest is asked
