@@ -568,3 +568,8 @@ Historia archivada:
 - Qué: `scripts/e2e-flaky-budget.ts` cuenta los escenarios flaky del e2e (avisa desde 1, falla desde 3); el step del moat exige banner y tarjeta a la vista y la tarjeta fuera del banner (ambos escenarios siembran un aviso real); DoD: test del fix en el mismo PR. PR #520 nivelada, 797 en Control de calidad, FRESCO-852 abierto por el primer flaky detectado.
 - Por qué: audit-6 A6-T7/T8, `retries: 1` ocultaba flakes y el step del moat no comprobaba nada (el banner nunca se mostraba).
 - Siguiente: e2e en 6m26s, cerca del umbral de ADR-0018 (6m30); service_role no tiene UPDATE sobre meal_plans, sembrar con el token del usuario.
+
+## 2026-10-06 - FRESCO-802 secretos de CI
+- Qué: el e2e de PR ya no usa ENV_FILE (`.env` = `.env.ci` + 4 valores falsos, 124/124 sin secretos); test de política `scripts/ci-secrets-policy.test.ts` (sin secretos en workflows de pull_request, acciones fijadas por SHA); `sha_pinning_required` activado en el repo; smoke y stripe-e2e prefieren `LIVE_E2E_ENV_FILE` con fallback. PR #521 nivelada, 802 en Control de calidad, residuo en FRESCO-853.
+- Por qué: audit-6 A6-D6, repo público y un PR del mismo repo ejecuta el workflow con los secretos al alcance.
+- Siguiente: FRESCO-853 (crear LIVE_E2E_ENV_FILE, borrar ENV_FILE, token de Supabase acotado) es del dueño; el permiso del agente bloquea leer `.env*`, incluso `.env.ci`.
