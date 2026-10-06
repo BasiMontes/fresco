@@ -63,7 +63,8 @@ jobs:
         # job is for).
         run: printf '%s' "$ENV_FILE" > .env
         env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
+          # FRESCO-802: same reduced secret as post-deploy-smoke.yml, with the same fallback.
+          ENV_FILE: ${{ secrets.LIVE_E2E_ENV_FILE || secrets.ENV_FILE }}
 
       - name: Warm up the staging app
         # Same rationale as post-deploy-smoke.yml's warm-up (FRESCO-322): Vercel's

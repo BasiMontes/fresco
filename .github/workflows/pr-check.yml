@@ -194,9 +194,9 @@ jobs:
     # branch protection lets a stale PR branch merge. `staging` is the last
     # hop before the `staging -> main` ff, so its e2e run is the gate on the
     # exact commit that reaches production. NOT run on push to `main` - that
-    # is a byte-identical ff of the same staging SHA. e2e needs
-    # secrets.ENV_FILE + a full ephemeral local Supabase stack (FRESCO-310),
-    # so it stays off the other push targets. A skipped job with
+    # is a byte-identical ff of the same staging SHA. e2e needs a full
+    # ephemeral local Supabase stack (FRESCO-310) and NO secret at all
+    # (FRESCO-802), so it stays off the other push targets only for cost. A skipped job with
     # `needs: repo-check` does not fail the run.
     if: >-
       github.event_name == 'pull_request'
@@ -269,13 +269,21 @@ jobs:
       # (~17 s) costs as much as the fresh `ghcr.io` pull it replaces (the
       # GitHub-hosted runners have fast registry egress). `supabase start`
       # pulls the images itself on every run - left as-is.
-      - name: Restore .env from secret and apply CI overlay
+      - name: Build .env from the committed CI overlay (no secret)
+        # FRESCO-802 (audit-6 A6-D6): this job used to restore the WHOLE
+        # production `.env` from `secrets.ENV_FILE`, then let `.env.ci`
+        # override the Supabase / Stripe / PostHog / Sentry keys. Every other
+        # key (Resend, cron, admin id, Stripe price ids...) still reached the
+        # runner, and this job runs the code of any same-repo pull request.
+        # Now the file is built only from `.env.ci` (committed, Supabase's
+        # public local-dev demo constants and dummy third-party values) plus
+        # the dummies below for what the app and the suite read and `.env.ci`
+        # does not set. No `secrets.*` is referenced anywhere in this workflow
+        # (`scripts/ci-secrets-policy.test.ts` fails the build if one appears).
+        #
         # `test:e2e` re-sources `.env` itself
-        # (`bash -c 'set -a; . ./.env; set +a; ...'`), so the local-stack
-        # overrides must live IN `.env`. `.env.ci` (committed - Supabase's
-        # public local-dev demo constants) is appended last so its
-        # NEXT_PUBLIC_SUPABASE_URL / SUPABASE_* / *_USER_* values win over the
-        # production ones in the restored secret.
+        # (`bash -c 'set -a; . ./.env; set +a; ...'`), so everything must live
+        # IN `.env`.
         #
         # FRESCO-799: the Turnstile site key is forced empty last. The local
         # stack has no captcha, and with a key set every auth form keeps its
@@ -283,11 +291,26 @@ jobs:
         # would put an external service and a headless-browser challenge in
         # the path of every e2e login.
         run: |
-          printf '%s\n' "$ENV_FILE" > .env
-          cat .env.ci >> .env
+          cat .env.ci > .env
+          cat >> .env <<'DUMMIES'
+
+          # FRESCO-802: dummies, not credentials. The Stripe, Resend and cron
+          # calls in this job never leave the runner or hit a real account.
+          STRIPE_PRICE_ID_PRO_MONTH=price_ci_dummy_month
+          STRIPE_WEBHOOK_SECRET_PRE=whsec_ci_dummy_pre
+          RESEND_API_KEY=re_ci_dummy_not_a_real_key
+          CRON_SECRET=ci-dummy-cron-secret
+          DUMMIES
           printf 'NEXT_PUBLIC_TURNSTILE_SITE_KEY=\n' >> .env
-        env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+          # Evidence for the closing criterion of FRESCO-802: the NAMES (never the
+          # values) of every variable this job can read, in the job summary.
+          {
+            echo '### Variables available to the e2e job (names only)'
+            echo
+            list_names() { grep -E '^[A-Za-z_][A-Za-z0-9_]*=' .env | cut -d= -f1 | sort -u; }
+            list_names | sed 's/^/- `/; s/$/`/'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # FRESCO-357: `bun run build` does not need the database - kick it off
       # in the background now and let it overlap the Supabase stack bring-up

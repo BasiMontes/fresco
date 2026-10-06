@@ -92,7 +92,10 @@ jobs:
         # `suscripcionCtx` fixture (tests/fixtures.ts), so it never lingers.
         run: printf '%s' "$ENV_FILE" > .env
         env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
+          # FRESCO-802: prefer the reduced secret (only the names the suite reads,
+          # see docs/workflows/ci-secrets.md); fall back to the full one until the
+          # owner has created it, then delete `ENV_FILE`.
+          ENV_FILE: ${{ secrets.LIVE_E2E_ENV_FILE || secrets.ENV_FILE }}
 
       - name: Report target
         run: |
