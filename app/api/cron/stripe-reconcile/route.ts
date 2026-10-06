@@ -1,5 +1,7 @@
+import type { ReconcilableProfile } from '@/lib/billing/reconcile';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
@@ -61,12 +63,11 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   const supabase = createServiceClient();
-  const { data: profiles, error: loadError } = await supabase
-    .from('user_profiles')
-    .select('id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id')
-    .not('stripe_subscription_id', 'is', null);
-
-  if (loadError) {
+  let profiles: ReconcilableProfile[];
+  try {
+    profiles = await listSubscribedProfiles(supabase);
+  }
+  catch (loadError) {
     console.error('[/api/cron/stripe-reconcile] failed to load user_profiles', loadError);
     return NextResponse.json({ error: 'Error consultando perfiles.' }, { status: 500 });
   }
@@ -75,7 +76,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   let reconciled = 0;
   const drifted: DriftEntry[] = [];
 
-  for (const profile of profiles ?? []) {
+  for (const profile of profiles) {
     const subscriptionId = profile.stripe_subscription_id;
     if (!subscriptionId) {
       continue;
@@ -137,12 +138,10 @@ export async function GET(request: Request): Promise<NextResponse> {
       continue;
     }
 
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update(desired)
-      .eq('id', profile.id);
-
-    if (updateError) {
+    try {
+      await applyReconciledState(supabase, { profileId: profile.id, desired });
+    }
+    catch (updateError) {
       console.error(`[/api/cron/stripe-reconcile] failed to reconcile user ${profile.id}`, updateError);
       continue;
     }
@@ -155,47 +154,4 @@ export async function GET(request: Request): Promise<NextResponse> {
   const sweptOrphans = await sweepOrphanPaidPlans(supabase);
 
   return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
-}
-
-/**
- * FRESCO-360: the second safety net behind the `protect_subscription_columns`
- * INSERT guard. Any `user_profiles` row that claims a paid plan but carries no
- * `stripe_subscription_id` was never created by the Stripe webhook (the only
- * writer of subscription state, ADR-0007) — most likely a row planted by the
- * A4-B1 client-INSERT bypass. Downgrade it to `free`. Shape mirrors the
- * webhook's `customer.subscription.deleted` handler: flip `plan`, clear the
- * payment-failed aviso, leave `plan_expires_at` as-is. Returns the row count.
- *
- * The main reconcile loop above filters on `stripe_subscription_id IS NOT NULL`
- * and never sees these rows.
- */
-export async function sweepOrphanPaidPlans(supabase: ReturnType<typeof createServiceClient>): Promise<number> {
-  const { data: orphans, error } = await supabase
-    .from('user_profiles')
-    .select('id, plan')
-    .in('plan', ['pro', 'family'])
-    .is('stripe_subscription_id', null);
-
-  if (error) {
-    console.error('[/api/cron/stripe-reconcile] failed to load orphan pro/family rows', error);
-    return 0;
-  }
-
-  let swept = 0;
-  for (const orphan of orphans ?? []) {
-    const { error: downgradeError } = await supabase
-      .from('user_profiles')
-      .update({ plan: 'free', payment_failed_at: null })
-      .eq('id', orphan.id);
-
-    if (downgradeError) {
-      console.error(`[/api/cron/stripe-reconcile] failed to sweep orphan row ${orphan.id}`, downgradeError);
-      continue;
-    }
-
-    swept++;
-    console.warn(`[/api/cron/stripe-reconcile] swept orphan ${orphan.plan} row with no Stripe subscription`, orphan.id);
-  }
-
-  return swept;
 }

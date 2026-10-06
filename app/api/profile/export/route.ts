@@ -1,4 +1,6 @@
+import type { UserDataExport } from '@/lib/api/profile-export';
 import { NextResponse } from 'next/server';
+import { readUserDataForExport } from '@/lib/api/profile-export';
 import { rowsToCsv } from '@/lib/csv/export-csv';
 import { createClient } from '@/lib/supabase/server';
 
@@ -37,30 +39,26 @@ export async function GET() {
     return NextResponse.json({ error: 'No hay una sesión autenticada.' }, { status: 401 });
   }
 
-  const [profileResult, mealPlansResult, shoppingListsResult, recetasResult] = await Promise.all([
-    supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('meal_plans').select('*, meal_plan_recipes(*)').eq('user_id', user.id),
-    supabase.from('shopping_lists').select('*').eq('user_id', user.id),
-    supabase.from('recetas_propias').select('*').eq('user_id', user.id),
-  ]);
-
-  const firstError = profileResult.error ?? mealPlansResult.error ?? shoppingListsResult.error ?? recetasResult.error;
-  if (firstError) {
-    console.error('[/api/profile/export] read failed', firstError);
+  let exported: UserDataExport;
+  try {
+    exported = await readUserDataForExport(supabase, user.id);
+  }
+  catch (readError) {
+    console.error('[/api/profile/export] read failed', readError);
     return NextResponse.json({ error: 'No se pudieron leer tus datos.' }, { status: 500 });
   }
 
-  const mealPlans = (mealPlansResult.data ?? []) as MealPlanRow[];
+  const mealPlans = exported.mealPlans as MealPlanRow[];
   const mealPlanRecipes = mealPlans.flatMap(({ id, meal_plan_recipes: recipes }) =>
     (recipes ?? []).map(recipe => ({ meal_plan_id: id, ...recipe })));
   const mealPlansWithoutNesting = mealPlans.map(({ meal_plan_recipes: _recipes, ...rest }) => rest);
 
   const sections: { name: string, rows: Record<string, unknown>[] }[] = [
-    { name: 'user_profile', rows: profileResult.data ? [profileResult.data] : [] },
+    { name: 'user_profile', rows: exported.profile ? [exported.profile] : [] },
     { name: 'meal_plans', rows: mealPlansWithoutNesting },
     { name: 'meal_plan_recipes', rows: mealPlanRecipes },
-    { name: 'shopping_lists', rows: shoppingListsResult.data ?? [] },
-    { name: 'recetas_propias', rows: recetasResult.data ?? [] },
+    { name: 'shopping_lists', rows: exported.shoppingLists },
+    { name: 'recetas_propias', rows: exported.recetasPropias },
   ];
 
   const csvBlocks = sections
