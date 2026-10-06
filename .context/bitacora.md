@@ -563,3 +563,8 @@ Historia archivada:
 - Qué: `bun run test:random` (`bun test --parallel --randomize`) da 0 fallos en 7 semillas locales y 1 en CI; job nocturno `test-randomized.yml` con semilla impresa. Arreglados los tests de PostHog (espías, process.env, estado de módulo). PR #519 nivelada, 796 en Control de calidad.
 - Por qué: audit-6 A6-T5, `--randomize` fallaba 14-102 tests porque `mock.module` es global al proceso y sobrevive a `mock.restore()`.
 - Siguiente: `bun test --randomize` a secas sigue rojo (Bun); re-registrar mocks en afterAll se midió y es 547 s vs 25 s, descartado. Decidir si el criterio se da por cumplido con test:random.
+
+## 2026-10-06 - FRESCO-797 presupuesto de flakiness y moat
+- Qué: `scripts/e2e-flaky-budget.ts` cuenta los escenarios flaky del e2e (avisa desde 1, falla desde 3); el step del moat exige banner y tarjeta a la vista y la tarjeta fuera del banner (ambos escenarios siembran un aviso real); DoD: test del fix en el mismo PR. PR #520 nivelada, 797 en Control de calidad, FRESCO-852 abierto por el primer flaky detectado.
+- Por qué: audit-6 A6-T7/T8, `retries: 1` ocultaba flakes y el step del moat no comprobaba nada (el banner nunca se mostraba).
+- Siguiente: e2e en 6m26s, cerca del umbral de ADR-0018 (6m30); service_role no tiene UPDATE sobre meal_plans, sembrar con el token del usuario.
