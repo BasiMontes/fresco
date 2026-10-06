@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
+import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
+import { getBillingState } from '@/lib/billing/billing-state';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
@@ -26,13 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No hay una sesión autenticada.' }, { status: 401 });
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('plan, stripe_customer_id')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profileError) {
+  let profile: BillingState | null;
+  try {
+    profile = await getBillingState(supabase, user.id);
+  }
+  catch (profileError) {
     console.error('[/api/stripe/portal] failed to read profile', profileError);
     return NextResponse.json({ error: 'No se pudo comprobar tu suscripción.' }, { status: 500 });
   }

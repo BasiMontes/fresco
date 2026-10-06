@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
+import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
+import { getBillingState } from '@/lib/billing/billing-state';
 import { isTrialAvailable, PRO_TRIAL_DAYS } from '@/lib/legal/pro-terms';
 import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
@@ -37,12 +39,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No se pudo cargar el precio.' }, { status: 500 });
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('stripe_customer_id, stripe_subscription_id')
-    .eq('id', user.id)
-    .maybeSingle();
-  if (profileError) {
+  let profile: BillingState | null;
+  try {
+    profile = await getBillingState(supabase, user.id);
+  }
+  catch (profileError) {
     console.error('[/api/stripe/pro-price] failed to read profile', profileError);
     return NextResponse.json({ error: 'No se pudo cargar el precio.' }, { status: 500 });
   }

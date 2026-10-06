@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
+import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
+import { getBillingState } from '@/lib/billing/billing-state';
 import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
 import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
@@ -79,12 +81,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Has alcanzado el límite de intentos, inténtalo de nuevo en unos minutos.' }, { status: 429 });
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('user_profiles')
-    .select('plan, stripe_customer_id, stripe_subscription_id')
-    .eq('id', user.id)
-    .maybeSingle();
-  if (profileError) {
+  let profile: BillingState | null;
+  try {
+    profile = await getBillingState(supabase, user.id);
+  }
+  catch (profileError) {
     console.error('[/api/stripe/checkout] failed to read profile', profileError);
     return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
   }
