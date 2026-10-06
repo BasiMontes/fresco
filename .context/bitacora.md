@@ -558,3 +558,8 @@ Historia archivada:
 - Qué: check-coverage.ts imprime cobertura cargada y honesta (129 ficheros sin test como cero) y aplica dos suelos: cargada 85,5/87,0, honesta líneas 49,0. Docs alineados (coverage-ratchet, ADR-0018 addendum, regression.feature). PR #517 nivelada en dev/staging/main, 795 en Control de calidad.
 - Por qué: audit-6 A6-T4/T11, el 87,8 % se podía subir borrando un import de test; la real ronda 50 %.
 - Siguiente: margen del suelo honesto solo 0,6 pp (CI midió 49,63); subirlo al ir cubriendo páginas grandes (signup, recipe-library, preferences-form).
+
+## 2026-10-06 - FRESCO-796 tests independientes del orden
+- Qué: `bun run test:random` (`bun test --parallel --randomize`) da 0 fallos en 7 semillas locales y 1 en CI; job nocturno `test-randomized.yml` con semilla impresa. Arreglados los tests de PostHog (espías, process.env, estado de módulo). PR #519 nivelada, 796 en Control de calidad.
+- Por qué: audit-6 A6-T5, `--randomize` fallaba 14-102 tests porque `mock.module` es global al proceso y sobrevive a `mock.restore()`.
+- Siguiente: `bun test --randomize` a secas sigue rojo (Bun); re-registrar mocks en afterAll se midió y es 547 s vs 25 s, descartado. Decidir si el criterio se da por cumplido con test:random.
