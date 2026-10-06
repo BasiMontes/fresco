@@ -63,8 +63,12 @@ export default defineConfig({
   // report and a `blob` bundle so the pr-check job can upload them as an
   // artifact — otherwise the `trace: 'on-first-retry'` zip is destroyed with
   // the runner and a flaky failure leaves nothing to debug from.
+  // FRESCO-797 (A6-T7): `json` is what `scripts/e2e-flaky-budget.ts` reads to
+  // count the scenarios that only passed on a retry. It lives in `test-results/`
+  // (not `playwright-report/`, which the html reporter owns) so the existing
+  // artifact upload keeps it.
   reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }], ['blob']]
+    ? [['list'], ['html', { open: 'never' }], ['blob'], ['json', { outputFile: 'test-results/e2e-results.json' }]]
     : 'list',
   use: {
     baseURL,
