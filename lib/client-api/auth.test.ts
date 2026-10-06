@@ -23,7 +23,7 @@ void mock.module('@/lib/supabase/client', () => ({
   }),
 }));
 
-const { getAccessToken, sendPasswordReset, signInWithPassword, signOut } = await import('@/lib/client-api/auth');
+const { getAccessToken, getSession, sendPasswordReset, signInWithPassword, signOut } = await import('@/lib/client-api/auth');
 
 beforeEach(() => {
   signOutMock.mockClear();
@@ -37,6 +37,18 @@ describe('signOut', () => {
     await signOut();
 
     expect(signOutMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('getSession', () => {
+  test('returns the current browser session', async () => {
+    expect(await getSession()).toEqual({ access_token: 'tok-1' });
+  });
+
+  test('returns null when there is none', async () => {
+    getSessionMock.mockResolvedValueOnce({ data: { session: null } });
+
+    expect(await getSession()).toBeNull();
   });
 });
 

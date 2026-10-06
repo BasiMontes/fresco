@@ -14,9 +14,11 @@ let fake = createMockClient({ userId: 'user-1' });
 void mock.module('@/lib/supabase/client', () => ({ createClient: () => fake.client }));
 
 const { addFavorite, removeFavorite } = await import('@/lib/client-api/favorites');
+const { copyMealPlanToCurrentWeek, deleteMealPlan, swapMealPlanSlots } = await import('@/lib/client-api/meal-plan');
 const { createRecetaPropia, deleteRecetaPropia } = await import('@/lib/client-api/recipes');
+const { addShoppingListItem, clearComprados, toggleShoppingListItem } = await import('@/lib/client-api/shopping-list');
 const { confirmSubstitution, getSafeSubstitutes } = await import('@/lib/client-api/substitutions');
-const { updateNombre, upsertUserProfile } = await import('@/lib/client-api/user-profile');
+const { getPlanTierForAnalytics, updateNombre, upsertUserProfile } = await import('@/lib/client-api/user-profile');
 
 beforeEach(() => {
   fake = createMockClient({ userId: 'user-1' });
@@ -104,5 +106,61 @@ describe('user profile', () => {
 
     expect(fake.callsOf('from')).toEqual([['user_profiles']]);
     expect(fake.callsOf('upsert')).toEqual([[{ id: 'user-1', ...profile }]]);
+  });
+});
+
+describe('meal plans', () => {
+  test('deleteMealPlan deletes by id AND owner', async () => {
+    await deleteMealPlan('plan-1');
+
+    expect(fake.callsOf('from')).toEqual([['meal_plans']]);
+    expect(fake.callsOf('eq')).toEqual([['id', 'plan-1'], ['user_id', 'user-1']]);
+  });
+
+  test('swapMealPlanSlots calls the swap RPC', async () => {
+    await swapMealPlanSlots({ slotAId: 'a', slotBId: 'b' });
+
+    expect(fake.callsOf('rpc')[0]?.[0]).toBe('swap_meal_plan_slots');
+  });
+
+  test('copyMealPlanToCurrentWeek calls the copy RPC', async () => {
+    await copyMealPlanToCurrentWeek('plan-1');
+
+    expect(fake.callsOf('rpc')[0]?.[0]).toBe('copy_meal_plan_to_week');
+  });
+});
+
+describe('shopping list', () => {
+  test('toggleShoppingListItem calls the set-comprado RPC', async () => {
+    await toggleShoppingListItem({ listId: 'l-1', pasilloIdx: 0, itemIdx: 1, comprado: true });
+
+    expect(fake.callsOf('rpc')[0]?.[0]).toBe('jsonb_set_comprado');
+  });
+
+  test('clearComprados calls the clear RPC', async () => {
+    await clearComprados('l-1');
+
+    expect(fake.callsOf('rpc')[0]?.[0]).toBe('jsonb_clear_comprados');
+  });
+
+  test('addShoppingListItem calls the add-item RPC', async () => {
+    await addShoppingListItem({ listId: 'l-1', pasilloNombre: 'Lácteos', item: { nombre: 'leche', cantidad: 1, unidad: 'l', comprado: false } });
+
+    expect(fake.callsOf('rpc')[0]?.[0]).toBe('jsonb_add_item');
+  });
+});
+
+describe('getPlanTierForAnalytics', () => {
+  test('reads the plan of that user', async () => {
+    fake = createMockClient({ data: { plan: 'pro' } });
+
+    expect(await getPlanTierForAnalytics('user-1')).toBe('pro');
+    expect(fake.callsOf('eq')).toEqual([['id', 'user-1']]);
+  });
+
+  test('never throws: a failed read counts as free', async () => {
+    fake = createMockClient({ errorMessage: 'boom' });
+
+    expect(await getPlanTierForAnalytics('user-1')).toBe('free');
   });
 });
