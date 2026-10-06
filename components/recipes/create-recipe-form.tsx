@@ -6,8 +6,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { createRecetaPropia, updateRecetaPropia } from '@/lib/api/recipes';
-import { createClient } from '@/lib/supabase/client';
+import { createRecetaPropia, updateRecetaPropia } from '@/lib/client-api/recipes';
 
 /** One line per item — matches how a user naturally types a list in a plain textarea. */
 function linesToItems(value: string): string[] {
@@ -81,15 +80,14 @@ export function CreateRecipeForm({ open, onOpenChange, onCreated, receta }: Crea
     setIsSaving(true);
     setSaveError(null);
     try {
-      const client = createClient();
       const input = {
         nombre: trimmedNombre,
         ingredientes: linesToItems(ingredientesText),
         pasos: linesToItems(pasosText),
       };
       const savedReceta = isEditMode
-        ? await updateRecetaPropia(client, { id: receta.id, input })
-        : await createRecetaPropia(client, input);
+        ? await updateRecetaPropia({ id: receta.id, input })
+        : await createRecetaPropia(input);
       onCreated(savedReceta);
       reset();
       onOpenChange(false);

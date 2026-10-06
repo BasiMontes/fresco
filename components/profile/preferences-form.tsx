@@ -8,11 +8,10 @@ import { useEffect, useRef, useState } from 'react';
 import { PlanningSelectionGrid } from '@/components/onboarding/planning-selection-grid';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
-import { upsertUserProfile } from '@/lib/api/user-profile';
+import { upsertUserProfile } from '@/lib/client-api/user-profile';
 import { ALERGENO_OPTIONS, impliedAlergenos } from '@/lib/constants/dietary-options';
 import { toPlanningSelection } from '@/lib/planning-selection';
 import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 
 /**
  * FRESCO-248 — reads a `--shake-*`/`--revert-*` CSS custom property off
@@ -244,8 +243,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
     setSaveError(null);
     setSaved(false);
     try {
-      const client = createClient();
-      await upsertUserProfile(client, preferences);
+      await upsertUserProfile(preferences);
       setSaved(true);
     }
     catch (error) {

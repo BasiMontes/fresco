@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { deleteRecetaPropia, RecipesError } from '@/lib/api/recipes';
-import { createClient } from '@/lib/supabase/client';
+import { RecipesError } from '@/lib/api/recipes';
+import { deleteRecetaPropia } from '@/lib/client-api/recipes';
 
 /**
  * FRESCO-236 — deletes the currently-viewed personal recipe. Same Cancel/
@@ -20,13 +20,12 @@ export function DeleteRecipeButton({ recetaId }: { recetaId: string }) {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const supabase = React.useMemo(() => createClient(), []);
 
   async function handleDelete() {
     setPending(true);
     setError(null);
     try {
-      await deleteRecetaPropia(supabase, recetaId);
+      await deleteRecetaPropia(recetaId);
       router.push('/recipes');
     }
     catch (caught) {

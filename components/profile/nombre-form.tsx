@@ -7,8 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { updateNombre } from '@/lib/api/user-profile';
-import { createClient } from '@/lib/supabase/client';
+import { updateNombre } from '@/lib/client-api/user-profile';
 
 /**
  * FRESCO-248 — reads a `--shake-*`/`--revert-*` CSS custom property off
@@ -136,8 +135,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
     setSaveError(null);
     setSaved(false);
     try {
-      const client = createClient();
-      await updateNombre(client, trimmed);
+      await updateNombre(trimmed);
       setSaved(true);
       // FRESCO-179: /profile's greeting card and the sidebar both read
       // `nombre` server-side (AppGroupLayout, /profile page.tsx) — without

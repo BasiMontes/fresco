@@ -4,8 +4,7 @@ import { Heart } from 'lucide-react';
 import * as React from 'react';
 import { LIKE_PARTICLE_COUNT, triggerLikeBurst } from '@/components/recipe/like-burst';
 import { Button } from '@/components/ui/button';
-import { addFavorite, removeFavorite } from '@/lib/api/favorites';
-import { createClient } from '@/lib/supabase/client';
+import { addFavorite, removeFavorite } from '@/lib/client-api/favorites';
 import { cn } from '@/lib/utils';
 
 export interface FavoriteToggleButtonProps {
@@ -21,7 +20,6 @@ export interface FavoriteToggleButtonProps {
  */
 export function FavoriteToggleButton({ recipeId, initialIsFavorite, className }: FavoriteToggleButtonProps) {
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
-  const supabase = React.useMemo(() => createClient(), []);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
 
   async function handleToggle() {
@@ -36,10 +34,10 @@ export function FavoriteToggleButton({ recipeId, initialIsFavorite, className }:
 
     try {
       if (next) {
-        await addFavorite(supabase, { recipeId });
+        await addFavorite({ recipeId });
       }
       else {
-        await removeFavorite(supabase, { recipeId });
+        await removeFavorite({ recipeId });
       }
     }
     catch (error) {
