@@ -1,13 +1,14 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
-import { getPlanTierForAnalytics, upsertUserProfile, UserProfileError } from '@/lib/api/user-profile';
+import { UserProfileError } from '@/lib/api/user-profile';
+import { getSession } from '@/lib/client-api/auth';
+import { getPlanTierForAnalytics, upsertUserProfile } from '@/lib/client-api/user-profile';
 import { getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { wizardToProfilePayload } from '@/lib/onboarding/saved-profile';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { markFirstMenuGenerated } from '@/lib/push/first-menu-signal';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 
 // FRESCO-104: distinct from the generic fallback below — a 409 here can
 // never be resolved by retrying (the week already has a plan), so it gets
@@ -44,18 +45,17 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
     captureEvent(POSTHOG_EVENTS.ONBOARDING_COMPLETED, { total_steps: 3 });
     captureEvent(POSTHOG_EVENTS.MENU_GENERATION_STARTED);
     try {
-      const client = createClient();
       // AC-4 / FR-1.1: persist the full onboarding profile before continuing.
       // A session (real or anonymous guest, FRESCO-17) is guaranteed by the
       // mount effect above before this handler is reachable.
-      await upsertUserProfile(client, wizardToProfilePayload(useOnboardingStore.getState()));
+      await upsertUserProfile(wizardToProfilePayload(useOnboardingStore.getState()));
 
       const now = new Date();
       const semanaIso = getIsoWeek(now);
       const fechaInicio = getIsoWeekMonday(now);
       // Guest or registered, a session now always exists (mount effect
       // above) — this just reads whichever token it is.
-      const { data: { session } } = await client.auth.getSession();
+      const session = await getSession();
       await generateMealPlan(
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
         session?.access_token ?? null,
@@ -65,7 +65,7 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // FRESCO-366: `semana_iso` + `tier` let the funnel/retention reports
       // slice "primer menú generado" by week and by plan.
       const tier = session?.user?.id
-        ? await getPlanTierForAnalytics(client, session.user.id)
+        ? await getPlanTierForAnalytics(session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
       // FRESCO-152: brief explicit confirmation before leaving — the

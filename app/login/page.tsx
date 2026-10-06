@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Suspense, useRef, useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
+import { useCaptcha } from '@/components/auth/use-captcha';
 import { AuthTransitionOverlay } from '@/components/layout/auth-transition-overlay';
 import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,6 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { translateAuthError } from '@/lib/auth-errors';
 import { captchaOptions } from '@/lib/auth/captcha';
-import { useCaptcha } from '@/lib/auth/use-captcha';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { createClient } from '@/lib/supabase/client';

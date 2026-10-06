@@ -12,11 +12,11 @@ import { OnboardingStepIdentity } from '@/components/onboarding/onboarding-step-
 import { OnboardingStepIndicator } from '@/components/onboarding/onboarding-step-indicator';
 import { OnboardingSummary } from '@/components/onboarding/onboarding-summary';
 import { ProfileLoadError } from '@/components/onboarding/profile-load-error';
+import { useGenerateMealPlan } from '@/components/onboarding/use-generate-meal-plan';
+import { useOnboardingFunnelTracking } from '@/components/onboarding/use-onboarding-funnel-tracking';
+import { useOnboardingSessionGate } from '@/components/onboarding/use-onboarding-session-gate';
+import { useOnboardingValidation } from '@/components/onboarding/use-onboarding-validation';
 import { Card } from '@/components/ui/card';
-import { useGenerateMealPlan } from '@/lib/onboarding/use-generate-meal-plan';
-import { useOnboardingFunnelTracking } from '@/lib/onboarding/use-onboarding-funnel-tracking';
-import { useOnboardingSessionGate } from '@/lib/onboarding/use-onboarding-session-gate';
-import { useOnboardingValidation } from '@/lib/onboarding/use-onboarding-validation';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 /**

@@ -1,4 +1,4 @@
-import type { OnboardingValidation } from '@/lib/onboarding/use-onboarding-validation';
+import type { OnboardingValidation } from '@/components/onboarding/use-onboarding-validation';
 import type { OnboardingStep } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';

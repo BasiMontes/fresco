@@ -12,6 +12,10 @@ const getSessionMock = mock(async (): Promise<{ data: { session: { access_token:
 const signInMock = mock(async (_credentials: unknown) => ({ data: { session: null }, error: null }));
 const resetMock = mock(async (_email: string, _options: unknown) => ({ error: null }));
 
+const getUserMock = mock(async (): Promise<{ data: { user: { id: string, is_anonymous: boolean } | null } }> => ({ data: { user: { id: 'user-1', is_anonymous: true } } }));
+const updateUserMock = mock(async (_attributes: unknown) => ({ data: { user: null }, error: null }));
+const verifyOtpMock = mock(async (_params: unknown) => ({ data: { session: null }, error: null }));
+const setSessionMock = mock(async (_tokens: unknown) => ({ data: { user: null }, error: null }));
 const anonymousMock = mock(async (_options: unknown) => ({ data: { session: null }, error: null }));
 const signUpMock = mock(async (_args: unknown) => ({ data: { user: null, session: null }, error: null }));
 
@@ -23,12 +27,16 @@ void mock.module('@/lib/supabase/client', () => ({
       signInWithPassword: signInMock,
       resetPasswordForEmail: resetMock,
       signInAnonymously: anonymousMock,
+      getUser: getUserMock,
+      updateUser: updateUserMock,
+      verifyOtp: verifyOtpMock,
+      setSession: setSessionMock,
       signUp: signUpMock,
     },
   }),
 }));
 
-const { getAccessToken, getSession, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp } = await import('@/lib/client-api/auth');
+const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
 
 beforeEach(() => {
   signOutMock.mockClear();
@@ -36,6 +44,10 @@ beforeEach(() => {
   signInMock.mockClear();
   resetMock.mockClear();
   anonymousMock.mockClear();
+  getUserMock.mockClear();
+  updateUserMock.mockClear();
+  verifyOtpMock.mockClear();
+  setSessionMock.mockClear();
   signUpMock.mockClear();
 });
 
@@ -120,5 +132,43 @@ describe('signUp', () => {
         data: { consents_pending: ['terms'] },
       },
     });
+  });
+});
+
+describe('guest-to-account conversion (FRESCO-89)', () => {
+  test('getCurrentUser returns the signed-in user, a guest included', async () => {
+    expect(await getCurrentUser()).toEqual({ id: 'user-1', is_anonymous: true });
+  });
+
+  test('getCurrentUser returns null when there is no session', async () => {
+    getUserMock.mockResolvedValueOnce({ data: { user: null } });
+
+    expect(await getCurrentUser()).toBeNull();
+  });
+
+  test('requestEmailChange links only the email (the password waits for the verified code)', async () => {
+    await requestEmailChange('a@b.es');
+
+    expect(updateUserMock).toHaveBeenCalledWith({ email: 'a@b.es' });
+  });
+
+  test('verifyEmailChangeOtp verifies the code as an email_change', async () => {
+    await verifyEmailChangeOtp({ email: 'a@b.es', token: '123456' });
+
+    expect(verifyOtpMock).toHaveBeenCalledWith({ email: 'a@b.es', token: '123456', type: 'email_change' });
+  });
+
+  test('updatePassword sets only the password', async () => {
+    await updatePassword('secret-pass');
+
+    expect(updateUserMock).toHaveBeenCalledWith({ password: 'secret-pass' });
+  });
+});
+
+describe('adoptSession', () => {
+  test('switches the main client to the given tokens instead of signing in again', async () => {
+    await adoptSession({ accessToken: 'acc', refreshToken: 'ref' });
+
+    expect(setSessionMock).toHaveBeenCalledWith({ access_token: 'acc', refresh_token: 'ref' });
   });
 });

@@ -1,4 +1,6 @@
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { captchaOptions } from '@/lib/auth/captcha';
+import { clientEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -55,6 +57,52 @@ export async function signUp({ email, password, captchaToken, emailRedirectTo, m
     password,
     options: { ...captchaOptions(captchaToken), emailRedirectTo, data: metadata },
   });
+}
+
+/** The signed-in user (a guest included), or `null` when there is no session. */
+export async function getCurrentUser() {
+  const { data: { user } } = await createClient().auth.getUser();
+  return user;
+}
+
+/**
+ * FRESCO-89, step 1 of the guest-to-account conversion (also the "resend"):
+ * links `email` to the current anonymous user; Supabase mails a code to it.
+ */
+export async function requestEmailChange(email: string) {
+  return createClient().auth.updateUser({ email });
+}
+
+/** FRESCO-89, step 2: verifies the code mailed to the new address. */
+export async function verifyEmailChangeOtp({ email, token }: { email: string, token: string }) {
+  return createClient().auth.verifyOtp({ email, token, type: 'email_change' });
+}
+
+/** FRESCO-89, step 3: sets the password, only allowed once the email is verified. */
+export async function updatePassword(password: string) {
+  return createClient().auth.updateUser({ password });
+}
+
+/**
+ * ADR-0004 / ADR-0022: proves the caller owns an existing account by signing in
+ * on a throwaway in-memory client (`persistSession: false`), so the live guest
+ * session stays untouched until the data move is done.
+ */
+export async function proveAccountOwnership({ email, password, captchaToken }: PasswordCredentials) {
+  const proofClient = createSupabaseClient(
+    clientEnv.NEXT_PUBLIC_SUPABASE_URL,
+    clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  return proofClient.auth.signInWithPassword({ email, password, options: captchaOptions(captchaToken) });
+}
+
+/**
+ * FRESCO-799: switches the main client to an already-authenticated session
+ * instead of signing in a second time (a Turnstile token is single-use).
+ */
+export async function adoptSession({ accessToken, refreshToken }: { accessToken: string, refreshToken: string }) {
+  return createClient().auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
 }
 
 /** Sends the password-reset email. */

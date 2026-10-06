@@ -1,5 +1,5 @@
-import type { useCaptcha } from '@/lib/auth/use-captcha';
-import type { useSignupSubmit } from '@/lib/signup/use-signup-submit';
+import type { useCaptcha } from '@/components/auth/use-captcha';
+import type { useSignupSubmit } from '@/components/signup/use-signup-submit';
 import Link from 'next/link';
 import { CaptchaField } from '@/components/auth/captcha-field';
 import { ConsentCheckboxes } from '@/components/legal/consent-checkboxes';

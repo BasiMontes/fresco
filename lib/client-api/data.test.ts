@@ -16,6 +16,7 @@ void mock.module('@/lib/supabase/client', () => ({ createClient: () => fake.clie
 const { addFavorite, removeFavorite } = await import('@/lib/client-api/favorites');
 const { searchCatalogRecipes } = await import('@/lib/client-api/admin-recipes');
 const { flushPendingConsents } = await import('@/lib/client-api/consents');
+const { hydrateFromSavedProfile } = await import('@/lib/client-api/onboarding');
 const { copyMealPlanToCurrentWeek, deleteMealPlan, swapMealPlanSlots } = await import('@/lib/client-api/meal-plan');
 const { createRecetaPropia, deleteRecetaPropia } = await import('@/lib/client-api/recipes');
 const { addShoppingListItem, clearComprados, toggleShoppingListItem } = await import('@/lib/client-api/shopping-list');
@@ -191,5 +192,15 @@ describe('pending consents', () => {
     await flushPendingConsents();
 
     expect(fake.callsOf('auth.getUser')).toHaveLength(1);
+  });
+});
+
+describe('onboarding', () => {
+  test('hydrateFromSavedProfile reads the saved profile of that user through the browser client', async () => {
+    fake = createMockClient({ data: null });
+
+    expect(await hydrateFromSavedProfile({ userId: 'user-1' })).toBe('no-profile');
+    expect(fake.callsOf('from')).toEqual([['user_profiles']]);
+    expect(fake.callsOf('eq')).toEqual([['id', 'user-1']]);
   });
 });
