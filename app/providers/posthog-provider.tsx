@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
+import { getPlanTierForAnalytics } from '@/lib/api/user-profile/plan';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { loadPosthog } from '@/lib/posthog/load';
 import { derivePersonProperties } from '@/lib/posthog/person-properties';
@@ -121,20 +122,12 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
         }
         identifiedKey.current = identKey;
 
+        // Fail-soft (§10 Errors) — `getPlanTierForAnalytics` never throws: a
+        // profile-read blip must never break identity linkage, `plan` just
+        // stays at its 'free' default.
         let plan: PlanUsuario = 'free';
         if (user.is_anonymous !== true) {
-          try {
-            const { data } = await client
-              .from('user_profiles')
-              .select('plan')
-              .eq('id', user.id)
-              .maybeSingle();
-            plan = data?.plan ?? 'free';
-          }
-          catch {
-            // Fail-soft (§10 Errors) — a profile-read blip must never break
-            // identity linkage; `plan` just stays at its 'free' default.
-          }
+          plan = await getPlanTierForAnalytics(client, user.id);
         }
 
         identifyUser(user.id, derivePersonProperties(user, plan));
