@@ -583,3 +583,8 @@ Historia archivada:
 - Qué: `/onboarding` rellena el asistente con el perfil guardado (hidratación en la puerta de sesión; lo escrito gana; si no se puede leer, pantalla de reintento en vez de asistente vacío); "Empezar" ya no pisa dieta, alérgenos ni nombre. PR #525 nivelada, 806 en Control de calidad, seguimiento FRESCO-856.
 - Por qué: audit-6 A6-L5; el defecto era peor que "moderada": `handleGenerate` hacía upsert del estado por defecto sobre el perfil real, borrando alérgenos.
 - Siguiente: la casilla de consentimiento de datos de salud no se precarga (FRESCO-856); no verificado en alojados por Turnstile; los usuarios factory del e2e tienen fila de perfil, por eso se precarga y no se redirige.
+
+## 2026-10-06 - FRESCO-809 troceo del código de producto
+- Qué: SlotCell, signup, OnboardingPage, MenuPage, ProfilePage, ShoppingListView, esProductoCompatible y user-profile.ts partidos en 5 PRs (#526-#530); un solo `createMockClient` en `lib/fixtures`; ESLint exige ya `complexity` 25 y `max-lines` 450 como error en `app/`, `components/` y `lib/`. 809 en Finalizada.
+- Por qué: audit-6 A6-A5/A6-A6; cierre por la métrica (0 funciones de producto >25, 0 ficheros de producto >450, 1 `createMockClient`), evidencia en el comentario de Jira.
+- Siguiente: las funciones entre 16 y 25 ya no avisan en el editor (el `warn 15` se sustituyó por `error 25`); `cli/` y `scripts/` quedan fuera del gate; dos fallos de infraestructura del runner e2e (puerto 54322) en #528 y #530, pasaron al relanzar.
