@@ -5,6 +5,8 @@
 // fire before this idle-scheduled load resolves are NOT captured by Sentry.
 // Server + edge instrumentation (sentry.server.config.ts, sentry.edge.config.ts)
 // are untouched and still capture everything per ADR-0009.
+import { sentryRelease } from '@/lib/observability/release';
+
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 let sentryPromise: Promise<typeof import('@sentry/nextjs')> | null = null;
@@ -13,6 +15,8 @@ async function loadSentry() {
   sentryPromise ??= import('@sentry/nextjs').then(async (Sentry) => {
     Sentry.init({
       dsn,
+      // FRESCO-803: ties every error to the deploy that produced it.
+      release: sentryRelease(),
       environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
       // Low sample rate to stay within the free tier's performance-monitoring quota.
       tracesSampleRate: 0.1,
