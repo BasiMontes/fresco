@@ -33,6 +33,17 @@ When(/^avanza al siguiente paso del onboarding$/, async ({ page }) => {
   await page.getByTestId('next_button').click();
 });
 
+// FRESCO-805 (A6-L4): the page-level "no horizontal scroll" check passed while
+// the "Comidas a planificar" grid scrolled INSIDE its own container (SAB faded,
+// DOM out of view), because that container is `overflow-x-auto` and so never
+// widens the page. Measure the grid itself.
+Then(/^la rejilla de comidas y días cabe sin scroll propio$/, async ({ page }) => {
+  const grid = page.getByTestId('planning_selection_grid');
+  await expect(grid).toBeVisible();
+  const { scrollWidth, clientWidth } = await grid.evaluate(el => ({ scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }));
+  expect(scrollWidth, 'the 7 days must fit without scrolling inside the grid').toBeLessThanOrEqual(clientWidth);
+});
+
 Then(/^la pantalla no tiene violaciones de accesibilidad serias$/, async ({ page }) => {
   await expectNoA11yViolations(page);
 });

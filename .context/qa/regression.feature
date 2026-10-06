@@ -2028,7 +2028,7 @@ Característica: Flujo completo de usuario en Fresco
   # --------------------------------------------------------------------------
 
   @mobile @tablet @onboarding @automatizado
-  # Automatizado: tests/steps/a11y.steps.ts + tests/steps/calendario.steps.ts (FRESCO-787)
+  # Automatizado: tests/steps/a11y.steps.ts + tests/steps/calendario.steps.ts (FRESCO-787, FRESCO-805)
   Escenario: El asistente de onboarding no desborda horizontalmente en ninguno de sus 3 pasos
     Dado que el usuario tiene sesión iniciada
     Cuando visita /onboarding
@@ -2037,6 +2037,9 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la página no tiene scroll horizontal
     Cuando avanza al siguiente paso del onboarding
     Entonces la página no tiene scroll horizontal
+    # FRESCO-805 (A6-L4): la rejilla es overflow-x-auto, así que su desborde no
+    # ensancha la página; se mide la rejilla en sí (7 días sin scroll propio).
+    Y la rejilla de comidas y días cabe sin scroll propio
 
   @mobile @tablet @automatizado
   # Automatizado: tests/steps/a11y.steps.ts + tests/steps/calendario.steps.ts (FRESCO-787)
