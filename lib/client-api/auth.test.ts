@@ -12,6 +12,9 @@ const getSessionMock = mock(async (): Promise<{ data: { session: { access_token:
 const signInMock = mock(async (_credentials: unknown) => ({ data: { session: null }, error: null }));
 const resetMock = mock(async (_email: string, _options: unknown) => ({ error: null }));
 
+const anonymousMock = mock(async (_options: unknown) => ({ data: { session: null }, error: null }));
+const signUpMock = mock(async (_args: unknown) => ({ data: { user: null, session: null }, error: null }));
+
 void mock.module('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
@@ -19,17 +22,21 @@ void mock.module('@/lib/supabase/client', () => ({
       getSession: getSessionMock,
       signInWithPassword: signInMock,
       resetPasswordForEmail: resetMock,
+      signInAnonymously: anonymousMock,
+      signUp: signUpMock,
     },
   }),
 }));
 
-const { getAccessToken, getSession, sendPasswordReset, signInWithPassword, signOut } = await import('@/lib/client-api/auth');
+const { getAccessToken, getSession, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp } = await import('@/lib/client-api/auth');
 
 beforeEach(() => {
   signOutMock.mockClear();
   getSessionMock.mockClear();
   signInMock.mockClear();
   resetMock.mockClear();
+  anonymousMock.mockClear();
+  signUpMock.mockClear();
 });
 
 describe('signOut', () => {
@@ -83,5 +90,35 @@ describe('sendPasswordReset', () => {
     await sendPasswordReset({ email: 'a@b.es', captchaToken: 'cap-2' });
 
     expect(resetMock).toHaveBeenCalledWith('a@b.es', { captchaToken: 'cap-2' });
+  });
+});
+
+describe('signInAnonymously', () => {
+  test('starts a guest session with the captcha token as options.captchaToken', async () => {
+    await signInAnonymously({ captchaToken: 'cap-3' });
+
+    expect(anonymousMock).toHaveBeenCalledWith({ options: { captchaToken: 'cap-3' } });
+  });
+});
+
+describe('signUp', () => {
+  test('creates the account with the confirmation redirect, the captcha token and the metadata', async () => {
+    await signUp({
+      email: 'a@b.es',
+      password: 'secret-pass',
+      captchaToken: 'cap-4',
+      emailRedirectTo: 'https://fresco.test/auth/confirm?next=/onboarding',
+      metadata: { consents_pending: ['terms'] },
+    });
+
+    expect(signUpMock).toHaveBeenCalledWith({
+      email: 'a@b.es',
+      password: 'secret-pass',
+      options: {
+        captchaToken: 'cap-4',
+        emailRedirectTo: 'https://fresco.test/auth/confirm?next=/onboarding',
+        data: { consents_pending: ['terms'] },
+      },
+    });
   });
 });

@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { clearNombreCookie, readNombreCookie, writeNombreCookie } from '@/lib/auth/identity-cookie';
-import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
-import { hasSupabaseSessionCookie } from '@/lib/supabase/session-cookie';
+import { hasSupabaseSessionCookie, readProfileNombre, watchAuthState } from '@/lib/client-api/identity';
 
 /**
  * Keeps the `fresco_nombre` cookie (`lib/auth/identity-cookie.ts`) in sync
@@ -46,33 +45,26 @@ export function IdentityCookieSync() {
   useEffect(() => {
     if (!hasSupabaseSessionCookie()) { return; }
 
+    const controller = new AbortController();
     let unsubscribe: (() => void) | undefined;
-    let active = true;
 
-    void loadSupabaseClient().then(({ createClient }) => {
-      if (!active) { return; }
-      const client = createClient();
-
-      async function syncNombre(userId: string): Promise<void> {
-        if (syncedUid.current === userId && readNombreCookie()) { return; }
-        syncedUid.current = userId;
-        try {
-          const { data } = await client
-            .from('user_profiles')
-            .select('nombre')
-            .eq('id', userId)
-            .maybeSingle();
-          const nombre = data?.nombre?.trim();
-          if (nombre) { writeNombreCookie(nombre); }
-          else { clearNombreCookie(); }
-        }
-        catch {
-          // Fail-soft (§10 Errors): a profile-read blip just leaves the nav
-          // without a greeting — it still shows "Ir a mi menú" via getSession().
-        }
+    async function syncNombre(userId: string): Promise<void> {
+      if (syncedUid.current === userId && readNombreCookie()) { return; }
+      syncedUid.current = userId;
+      try {
+        const nombre = (await readProfileNombre(userId))?.trim();
+        if (nombre) { writeNombreCookie(nombre); }
+        else { clearNombreCookie(); }
       }
+      catch {
+        // Fail-soft (§10 Errors): a profile-read blip just leaves the nav
+        // without a greeting — it still shows "Ir a mi menú" via getSession().
+      }
+    }
 
-      const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+    void watchAuthState({
+      signal: controller.signal,
+      onChange: (event, session) => {
         const user = session?.user;
 
         if (event === 'SIGNED_OUT' || !user) {
@@ -87,13 +79,14 @@ export function IdentityCookieSync() {
         }
 
         void syncNombre(user.id);
-      });
-
-      unsubscribe = () => subscription.unsubscribe();
+      },
+    }).then((stop) => {
+      if (controller.signal.aborted) { stop(); }
+      else { unsubscribe = stop; }
     });
 
     return () => {
-      active = false;
+      controller.abort();
       unsubscribe?.();
     };
   }, []);

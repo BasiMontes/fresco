@@ -11,11 +11,11 @@ import { Card } from '@/components/ui/card';
 import { EmailInput } from '@/components/ui/email-input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { translateAuthError } from '@/lib/auth-errors';
-import { captchaOptions } from '@/lib/auth/captcha';
 import { useCaptcha } from '@/lib/auth/use-captcha';
-import { CONSENT_PENDING_KEY, flushPendingConsents, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
+import { getSession, signInAnonymously, signUp } from '@/lib/client-api/auth';
+import { flushPendingConsents } from '@/lib/client-api/consents';
+import { CONSENT_PENDING_KEY, postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
-import { createClient } from '@/lib/supabase/client';
 import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
@@ -76,13 +76,12 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
     }
     setIsSubmitting(true);
     try {
-      const client = createClient();
       // FRESCO-794: a retry after a failed consent write reuses the guest session
       // that already exists instead of burning another anonymous sign-in
       // (ADR-0003: 30/hour on this project).
-      const { data: { session } } = await client.auth.getSession();
+      const session = await getSession();
       if (!session) {
-        const { error: guestError } = await client.auth.signInAnonymously({ options: captchaOptions(captcha.token) });
+        const { error: guestError } = await signInAnonymously({ captchaToken: captcha.token });
         captcha.reset();
         if (guestError) {
           // ADR-0003: anonymous sign-ins are rate-limited (30/hour) on this
@@ -132,21 +131,18 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       return;
     }
     try {
-      const client = createClient();
-      const { data, error: signUpError } = await client.auth.signUp({
+      const { data, error: signUpError } = await signUp({
         email,
         password,
+        captchaToken: captcha.token,
         // FRESCO-264 — see app/signup/page.tsx for why this must be
         // /auth/confirm, not a bare path.
-        options: {
-          ...captchaOptions(captcha.token),
-          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
-          // FRESCO-794: the project requires email confirmation, so there is
-          // usually no session yet to record the consents with. They wait in the
-          // user's metadata and `/onboarding` records them on the first signed-in
-          // visit (`flushPendingConsents`).
-          data: { [CONSENT_PENDING_KEY]: REGISTRATION_CONSENTS },
-        },
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+        // FRESCO-794: the project requires email confirmation, so there is
+        // usually no session yet to record the consents with. They wait in the
+        // user's metadata and `/onboarding` records them on the first signed-in
+        // visit (`flushPendingConsents`).
+        metadata: { [CONSENT_PENDING_KEY]: REGISTRATION_CONSENTS },
       });
       if (signUpError) {
         setError(translateAuthError(signUpError));
@@ -174,7 +170,7 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
       // A session already exists (no confirmation needed): record now. If that
       // fails the consents stay parked in the metadata and the onboarding page
       // retries them.
-      await flushPendingConsents(client);
+      await flushPendingConsents();
       onResolved();
     }
     finally {

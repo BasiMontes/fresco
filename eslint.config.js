@@ -6,14 +6,6 @@ import antfu from '@antfu/eslint-config';
 // nothing new can grow the list; remove an entry here in the same change that
 // removes its import.
 const COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS = [
-  'components/admin/admin-recipe-search.tsx',
-  'components/admin/delete-catalog-recipe-button.tsx',
-  'components/auth/identity-cookie-sync.tsx',
-  'components/landing/site-nav.tsx',
-  'components/layout/sidebar-account.tsx',
-  'components/menu/push-prompt-banner.tsx',
-  'components/notifications/routes-notice.tsx',
-  'components/onboarding/identity-step.tsx',
 ];
 
 export default antfu({

@@ -7,8 +7,7 @@ import * as React from 'react';
 import { DeleteCatalogRecipeButton } from '@/components/admin/delete-catalog-recipe-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
-import { searchCatalogRecipes } from '@/lib/api/admin-recipes';
-import { createClient } from '@/lib/supabase/client';
+import { searchCatalogRecipes } from '@/lib/client-api/admin-recipes';
 
 /** Debounce window before a keystroke triggers a search round trip. */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -46,8 +45,7 @@ export function AdminRecipeSearch() {
     setError(null);
 
     const timeout = setTimeout(() => {
-      const supabase = createClient();
-      searchCatalogRecipes(supabase, trimmed)
+      searchCatalogRecipes(trimmed)
         .then((data) => {
           if (!cancelled) { setResults(data); }
         })

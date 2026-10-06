@@ -4,8 +4,7 @@ import { BookOpen, Calendar, Home, ShoppingCart, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { markRoutesNoticeDismissed } from '@/lib/api/user-profile';
-import { createClient } from '@/lib/supabase/client';
+import { markRoutesNoticeDismissed } from '@/lib/client-api/user-profile';
 
 /** Same icon/label/route triplet as `components/layout/sidebar.tsx`'s Menú/Calendario/Lista items. */
 const ROUTES = [
@@ -42,7 +41,7 @@ export function RoutesNotice() {
           type="button"
           onClick={() => {
             setVisible(false);
-            markRoutesNoticeDismissed(createClient()).catch((error) => {
+            markRoutesNoticeDismissed().catch((error) => {
               console.error('[RoutesNotice] markRoutesNoticeDismissed failed', error);
             });
           }}
