@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
-import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
+import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, getUserTrialAvailable, hasUserProfile, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
 const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
@@ -20,22 +20,6 @@ const SAMPLE_PAYLOAD: OnboardingProfilePayload = {
   ingredientes_odiados: ['cebolla'],
   cocinas_favoritas: ['española'],
 };
-
-function createMockClient(options: { userId?: string, upsertErrorMessage?: string } = {}) {
-  const upsertCalls: unknown[] = [];
-
-  const mock = {
-    auth: mockAuthGetUser(options.userId),
-    from: () => ({
-      upsert: async (payload: unknown) => {
-        upsertCalls.push(payload);
-        return { error: options.upsertErrorMessage ? { message: options.upsertErrorMessage } : null };
-      },
-    }),
-  };
-
-  return { client: mock as unknown as SupabaseClient<Database>, upsertCalls };
-}
 
 /**
  * bun-types' `.rejects.toThrow()` is typed as returning `void` (not a
@@ -56,12 +40,12 @@ async function expectRejection(promise: Promise<unknown>): Promise<void> {
 
 describe('upsertUserProfile', () => {
   test('builds the expected payload shape, keyed by the authenticated user id', async () => {
-    const { client, upsertCalls } = createMockClient({ userId: 'user-123' });
+    const { client, callsOf } = createMockClient({ userId: 'user-123' });
 
     await upsertUserProfile(client, SAMPLE_PAYLOAD);
 
-    expect(upsertCalls).toHaveLength(1);
-    expect(upsertCalls[0]).toEqual({ id: 'user-123', ...SAMPLE_PAYLOAD });
+    expect(callsOf('upsert')).toHaveLength(1);
+    expect(callsOf('upsert')[0]?.[0]).toEqual({ id: 'user-123', ...SAMPLE_PAYLOAD });
   });
 
   test('throws UserProfileError when there is no authenticated session', async () => {
@@ -71,23 +55,23 @@ describe('upsertUserProfile', () => {
   });
 
   test('throws UserProfileError when the upsert itself fails', async () => {
-    const { client } = createMockClient({ userId: 'user-123', upsertErrorMessage: 'constraint violation' });
+    const { client } = createMockClient({ userId: 'user-123', errorMessage: 'constraint violation' });
 
     await expectRejection(upsertUserProfile(client, SAMPLE_PAYLOAD));
   });
 
   test('throws UserProfileError for an allergen outside the curated allow-list, without calling upsert', async () => {
-    const { client, upsertCalls } = createMockClient({ userId: 'user-123' });
+    const { client, callsOf } = createMockClient({ userId: 'user-123' });
 
     await expectRejection(upsertUserProfile(client, { ...SAMPLE_PAYLOAD, alergenos: ['not-a-real-allergen'] }));
-    expect(upsertCalls).toHaveLength(0);
+    expect(callsOf('upsert')).toHaveLength(0);
   });
 
   test('throws UserProfileError for a disliked ingredient outside the curated allow-list, without calling upsert', async () => {
-    const { client, upsertCalls } = createMockClient({ userId: 'user-123' });
+    const { client, callsOf } = createMockClient({ userId: 'user-123' });
 
     await expectRejection(upsertUserProfile(client, { ...SAMPLE_PAYLOAD, ingredientes_odiados: ['not-a-real-ingredient'] }));
-    expect(upsertCalls).toHaveLength(0);
+    expect(callsOf('upsert')).toHaveLength(0);
   });
 });
 

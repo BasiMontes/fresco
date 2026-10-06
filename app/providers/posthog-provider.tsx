@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { loadPosthog } from '@/lib/posthog/load';
 import { derivePersonProperties } from '@/lib/posthog/person-properties';
 import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
 
@@ -19,13 +20,6 @@ let initialized = false;
 // initial JS of every page even though `posthog.init()` never runs until
 // cookie consent is `'accepted'` — never true on a fresh/anonymous visit,
 // which is exactly what a Lighthouse-style audit measures.
-let posthogModulePromise: Promise<typeof import('posthog-js')> | null = null;
-
-async function loadPosthog(): Promise<typeof import('posthog-js')> {
-  posthogModulePromise ??= import('posthog-js');
-  return posthogModulePromise;
-}
-
 /**
  * ADR-0013: the app's first client provider (`app/layout.tsx` had none
  * before this). Initializes `posthog-js` once — a silent no-op when

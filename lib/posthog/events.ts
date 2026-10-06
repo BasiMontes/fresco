@@ -21,16 +21,10 @@
  */
 
 import type { PosthogEventName } from './event-names';
+import { loadPosthog } from './load';
 
 export { POSTHOG_EVENTS } from './event-names';
 export type { PosthogEventName } from './event-names';
-
-let posthogModulePromise: Promise<typeof import('posthog-js')> | null = null;
-
-async function loadPosthog(): Promise<typeof import('posthog-js')> {
-  posthogModulePromise ??= import('posthog-js');
-  return posthogModulePromise;
-}
 
 /**
  * Client-side capture — silent no-op when `NEXT_PUBLIC_POSTHOG_KEY` is unset

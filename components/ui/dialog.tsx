@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { readCssDurationMs } from './css-duration';
 
 /**
  * Hand-rolled accessible modal primitive (FRESCO-51) — no dialog/overlay
@@ -23,21 +24,6 @@ export interface DialogProps {
 }
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
-
-/**
- * Reads a CSS time custom property as milliseconds. Not a plain
- * `parseFloat(getPropertyValue(...))` — found live: Chromium can serialize
- * a `150ms` custom property back out as `.15s` (shorter-form CSS time
- * serialization), and `parseFloat('.15s')` silently reads `0.15`, which
- * collapses the close transition to near-zero instead of 150ms. Unit-aware
- * so it's correct whether the browser hands back `ms` or `s`.
- */
-function readCssDurationMs(propertyName: string, fallbackMs: number): number {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(propertyName).trim();
-  const value = Number.parseFloat(raw);
-  if (!raw || Number.isNaN(value)) { return fallbackMs; }
-  return raw.endsWith('ms') ? value : value * 1000;
-}
 
 export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId }: DialogProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);

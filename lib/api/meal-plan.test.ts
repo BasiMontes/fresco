@@ -3,6 +3,7 @@ import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
 import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
+import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 import { copyMealPlanToCurrentWeek, deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
@@ -82,30 +83,6 @@ const INCOMPLETE_JOIN_ROW = {
   ],
 };
 
-function createMockClient(options: {
-  userId?: string
-  planRow?: unknown | null
-  dbErrorMessage?: string
-} = {}) {
-  const mock = {
-    auth: mockAuthGetUser(options.userId),
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            maybeSingle: async () => ({
-              data: options.dbErrorMessage ? null : (options.planRow ?? null),
-              error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
-            }),
-          }),
-        }),
-      }),
-    }),
-  };
-
-  return { client: mock as unknown as SupabaseClient<Database> };
-}
-
 /**
  * bun-types' `.rejects.toThrow()` is typed as returning `void` (not a
  * `Promise`), so `await expect(promise).rejects.toThrow(...)` trips this
@@ -125,7 +102,7 @@ async function expectRejection(promise: Promise<unknown>): Promise<void> {
 
 describe('getMealPlanForWeek', () => {
   test('reshapes a persisted plan into the DiaSemana/TipoPlato menu grid', async () => {
-    const { client } = createMockClient({ userId: 'user-123', planRow: SAMPLE_JOIN_ROW });
+    const { client } = createMockClient({ userId: 'user-123', data: SAMPLE_JOIN_ROW });
 
     const result = await getMealPlanForWeek(client, { semanaIso: SEMANA_ISO });
 
@@ -155,7 +132,7 @@ describe('getMealPlanForWeek', () => {
   });
 
   test('returns null when no plan exists yet for that week', async () => {
-    const { client } = createMockClient({ userId: 'user-123', planRow: null });
+    const { client } = createMockClient({ userId: 'user-123', data: null });
 
     const result = await getMealPlanForWeek(client, { semanaIso: SEMANA_ISO });
 
@@ -163,7 +140,7 @@ describe('getMealPlanForWeek', () => {
   });
 
   test('throws MealPlanError on a real database error', async () => {
-    const { client } = createMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+    const { client } = createMockClient({ userId: 'user-123', errorMessage: 'connection reset' });
 
     await expectRejection(getMealPlanForWeek(client, { semanaIso: SEMANA_ISO }));
   });
@@ -175,13 +152,13 @@ describe('getMealPlanForWeek', () => {
   });
 
   test('throws MealPlanError when the persisted plan is missing slots (NFR-REL-2 partial-write gap)', async () => {
-    const { client } = createMockClient({ userId: 'user-123', planRow: INCOMPLETE_JOIN_ROW });
+    const { client } = createMockClient({ userId: 'user-123', data: INCOMPLETE_JOIN_ROW });
 
     await expectRejection(getMealPlanForWeek(client, { semanaIso: SEMANA_ISO }));
   });
 
   test('surfaces a slot with a null recipe as null, not a thrown error (FR-8.2 / AC Scenario 4, FRESCO-23)', async () => {
-    const { client } = createMockClient({ userId: 'user-123', planRow: UNSAFE_SLOT_JOIN_ROW });
+    const { client } = createMockClient({ userId: 'user-123', data: UNSAFE_SLOT_JOIN_ROW });
 
     const result = await getMealPlanForWeek(client, { semanaIso: SEMANA_ISO });
 

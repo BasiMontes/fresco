@@ -1,33 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
-import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
+import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 import { getSpendTrend, SpendTrendError } from './get-spend-trend';
 
 const CURRENT_WEEK = getIsoWeek();
-
-function createMockClient(options: {
-  userId?: string
-  rows?: { semana_iso: string, coste_estimado: number | null }[]
-  errorMessage?: string
-} = {}) {
-  const mock = {
-    auth: mockAuthGetUser(options.userId),
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          in: async () => ({
-            data: options.errorMessage ? null : (options.rows ?? []),
-            error: options.errorMessage ? { message: options.errorMessage } : null,
-          }),
-        }),
-      }),
-    }),
-  };
-
-  return { client: mock as unknown as SupabaseClient<Database> };
-}
 
 async function expectRejection(promise: Promise<unknown>) {
   let threw = false;
@@ -43,7 +19,7 @@ async function expectRejection(promise: Promise<unknown>) {
 
 describe('getSpendTrend', () => {
   test('returns exactly 8 points, chronological, current week last', async () => {
-    const { client } = createMockClient({ userId: 'user-123', rows: [] });
+    const { client } = createMockClient({ userId: 'user-123', data: [] });
 
     const result = await getSpendTrend(client, { semanaIso: CURRENT_WEEK });
 
@@ -56,7 +32,7 @@ describe('getSpendTrend', () => {
     const weekWithData = addIsoWeeks(CURRENT_WEEK, -1);
     const { client } = createMockClient({
       userId: 'user-123',
-      rows: [{ semana_iso: weekWithData, coste_estimado: 42.5 }],
+      data: [{ semana_iso: weekWithData, coste_estimado: 42.5 }],
     });
 
     const result = await getSpendTrend(client, { semanaIso: CURRENT_WEEK });
@@ -71,7 +47,7 @@ describe('getSpendTrend', () => {
   test('a meal_plans row with coste_estimado still null surfaces as a gap too', async () => {
     const { client } = createMockClient({
       userId: 'user-123',
-      rows: [{ semana_iso: CURRENT_WEEK, coste_estimado: null }],
+      data: [{ semana_iso: CURRENT_WEEK, coste_estimado: null }],
     });
 
     const result = await getSpendTrend(client, { semanaIso: CURRENT_WEEK });

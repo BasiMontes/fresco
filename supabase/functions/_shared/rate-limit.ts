@@ -4,8 +4,8 @@
 // public.rate_limit_exempt_users, so an adopting Edge Function only has to
 // pass its own `endpoint` string and per-user `limit`.
 //
-// generate-meal-plan predates this file and keeps its own local copy
-// (generate-meal-plan/rate-limit.ts); new call sites use this one.
+// generate-meal-plan keeps a thin wrapper (generate-meal-plan/rate-limit.ts)
+// that only supplies its own 429 message; the verdict logic lives here.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { HttpError } from './http.ts'
@@ -16,9 +16,12 @@ import { HttpError } from './http.ts'
  * ADR-0010 Decision 2): an ambiguous result never silently lets a request
  * through.
  */
-export function assertRateLimitAllowed(allowed: boolean | null | undefined): void {
+export function assertRateLimitAllowed(
+  allowed: boolean | null | undefined,
+  message = 'Has alcanzado el límite de peticiones, inténtalo de nuevo en unos minutos',
+): void {
   if (allowed !== true) {
-    throw new HttpError('Has alcanzado el límite de peticiones, inténtalo de nuevo en unos minutos', 429)
+    throw new HttpError(message, 429)
   }
 }
 

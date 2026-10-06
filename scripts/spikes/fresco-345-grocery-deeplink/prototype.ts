@@ -18,6 +18,8 @@
 //     "select items as pasillos from shopping_lists where id = '<id>';" \
 //     | jq '.rows[0].pasillos' > fixture-shopping-list.json
 
+import { normalizeNombre } from '../../../lib/text/normalize-nombre.ts';
+
 interface Uso {
   dia: string
   receta: string
@@ -46,21 +48,6 @@ interface DeepLinkRow {
   unitGap: boolean
   carrefour: string
   dia: string
-}
-
-// Copy of `lib/text/normalize-nombre.ts` — kept local so the spike has zero
-// imports into app code.
-function normalizeNombre(nombre: string): string {
-  return nombre
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[áàä]/g, 'a')
-    .replace(/[éèë]/g, 'e')
-    .replace(/[íìï]/g, 'i')
-    .replace(/[óòö]/g, 'o')
-    .replace(/[úùü]/g, 'u')
-    .replace(/ñ/g, 'n');
 }
 
 // Deep-link builders. Verify the query param in a real browser before shipping

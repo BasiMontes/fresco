@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { CookieConsentDecision } from '@/lib/consent/cookie-consent';
 import { createContext, use, useCallback, useMemo, useState } from 'react';
 import { clearPostHogStorage, writeCookieConsent } from '@/lib/consent/cookie-consent';
+import { loadPosthog } from '@/lib/posthog/load';
 
 // FRESCO-496: this provider wraps every route (`app/layout.tsx`), so a
 // static `import posthog from 'posthog-js'` here shipped the whole SDK in
@@ -11,13 +12,6 @@ import { clearPostHogStorage, writeCookieConsent } from '@/lib/consent/cookie-co
 // explicit withdrawal after a prior accept — never on first paint. Lazy,
 // cached-after-first-resolution import instead, same pattern as
 // `app/providers/posthog-provider.tsx` and `lib/posthog/events.ts`.
-let posthogModulePromise: Promise<typeof import('posthog-js')> | null = null;
-
-async function loadPosthog(): Promise<typeof import('posthog-js')> {
-  posthogModulePromise ??= import('posthog-js');
-  return posthogModulePromise;
-}
-
 interface CookieConsentContextValue {
   /** `null` = no decision yet — the banner should be visible. */
   decision: CookieConsentDecision | null

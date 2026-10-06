@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
+import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 import { createRecetaPropia, deleteRecetaPropia, getAvailableRecipesCount, getCatalog, getLatestAvailableRecipes, getRecetasPropias, getRecipeDetail, RecipesError, updateRecetaPropia } from './recipes';
 
 async function expectRejection(promise: Promise<unknown>): Promise<void> {
@@ -12,32 +13,6 @@ async function expectRejection(promise: Promise<unknown>): Promise<void> {
     thrownError = error;
   }
   expect(thrownError).toBeInstanceOf(RecipesError);
-}
-
-/** Minimal mock client exposing `.rpc()` — all `getAvailableRecipesCount()` calls. */
-function createMockClient(options: { userId?: string, count?: number | null, dbErrorMessage?: string } = {}) {
-  const getUserCalls: unknown[] = [];
-  const rpcCalls: unknown[] = [];
-
-  const mock = {
-    auth: {
-      getUser: async () => {
-        getUserCalls.push(undefined);
-        return options.userId
-          ? { data: { user: { id: options.userId } }, error: null }
-          : { data: { user: null }, error: null };
-      },
-    },
-    rpc: async (fn: string, args: unknown, rpcOptions: unknown) => {
-      rpcCalls.push({ fn, args, rpcOptions });
-      return {
-        count: options.dbErrorMessage ? null : (options.count ?? null),
-        error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
-      };
-    },
-  };
-
-  return { client: mock as unknown as SupabaseClient<Database>, getUserCalls, rpcCalls };
 }
 
 describe('getAvailableRecipesCount', () => {
@@ -58,7 +33,7 @@ describe('getAvailableRecipesCount', () => {
   });
 
   test('throws RecipesError on a real database error', async () => {
-    const { client } = createMockClient({ userId: 'user-123', dbErrorMessage: 'connection reset' });
+    const { client } = createMockClient({ userId: 'user-123', errorMessage: 'connection reset' });
 
     await expectRejection(getAvailableRecipesCount(client));
   });
@@ -70,29 +45,29 @@ describe('getAvailableRecipesCount', () => {
   });
 
   test('without a userId argument, resolves the user via an internal auth.getUser() call', async () => {
-    const { client, getUserCalls, rpcCalls } = createMockClient({ userId: 'user-123', count: 5 });
+    const { client, callsOf } = createMockClient({ userId: 'user-123', count: 5 });
 
     await getAvailableRecipesCount(client);
 
-    expect(getUserCalls).toHaveLength(1);
-    expect(rpcCalls).toEqual([{
-      fn: 'get_filtered_recipes',
-      args: { p_user_id: 'user-123' },
-      rpcOptions: { head: true, count: 'exact' },
-    }]);
+    expect(callsOf('auth.getUser')).toHaveLength(1);
+    expect(callsOf('rpc')).toEqual([[
+      'get_filtered_recipes',
+      { p_user_id: 'user-123' },
+      { head: true, count: 'exact' },
+    ]]);
   });
 
   test('with a userId argument, skips the internal auth.getUser() call and queries by the given id', async () => {
-    const { client, getUserCalls, rpcCalls } = createMockClient({ count: 5 });
+    const { client, callsOf } = createMockClient({ count: 5 });
 
     await getAvailableRecipesCount(client, 'user-456');
 
-    expect(getUserCalls).toHaveLength(0);
-    expect(rpcCalls).toEqual([{
-      fn: 'get_filtered_recipes',
-      args: { p_user_id: 'user-456' },
-      rpcOptions: { head: true, count: 'exact' },
-    }]);
+    expect(callsOf('auth.getUser')).toHaveLength(0);
+    expect(callsOf('rpc')).toEqual([[
+      'get_filtered_recipes',
+      { p_user_id: 'user-456' },
+      { head: true, count: 'exact' },
+    ]]);
   });
 });
 

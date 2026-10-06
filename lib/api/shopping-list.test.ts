@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerateShoppingListResponse } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
+import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 import { diffNombresNuevos, getShoppingListForPlan, normalizeNombre, ShoppingListError, toggleShoppingListItem } from './shopping-list';
 
 const MEAL_PLAN_ID = 'plan-1';
@@ -30,24 +31,6 @@ const SAMPLE_LIST_ROW = {
   coste_estimado_min: 12.5,
   coste_estimado_max: 18.9,
 };
-
-/** Minimal mock client exposing `.select().eq().maybeSingle()` — all `getShoppingListForPlan()` calls. */
-function createMockClient(options: { listRow?: unknown | null, dbErrorMessage?: string } = {}) {
-  const mock = {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({
-            data: options.dbErrorMessage ? null : (options.listRow ?? null),
-            error: options.dbErrorMessage ? { message: options.dbErrorMessage } : null,
-          }),
-        }),
-      }),
-    }),
-  };
-
-  return { client: mock as unknown as SupabaseClient<Database> };
-}
 
 /** Minimal mock client exposing only `.rpc()` — all `toggleShoppingListItem()` calls. */
 function createRpcMockClient(options: { errorMessage?: string } = {}) {
@@ -83,7 +66,7 @@ async function expectRejection(promise: Promise<unknown>): Promise<void> {
 
 describe('getShoppingListForPlan', () => {
   test('reshapes a persisted list row into pasillos + a recomputed resumen', async () => {
-    const { client } = createMockClient({ listRow: SAMPLE_LIST_ROW });
+    const { client } = createMockClient({ data: SAMPLE_LIST_ROW });
 
     const result = await getShoppingListForPlan(client, MEAL_PLAN_ID);
 
@@ -99,7 +82,7 @@ describe('getShoppingListForPlan', () => {
   });
 
   test('returns null when no list has been generated yet for that plan', async () => {
-    const { client } = createMockClient({ listRow: null });
+    const { client } = createMockClient({ data: null });
 
     const result = await getShoppingListForPlan(client, MEAL_PLAN_ID);
 
@@ -107,13 +90,13 @@ describe('getShoppingListForPlan', () => {
   });
 
   test('throws ShoppingListError on a real database error', async () => {
-    const { client } = createMockClient({ dbErrorMessage: 'connection reset' });
+    const { client } = createMockClient({ errorMessage: 'connection reset' });
 
     await expectRejection(getShoppingListForPlan(client, MEAL_PLAN_ID));
   });
 
   test('recomputes total_items as 0 for an empty pasillos array', async () => {
-    const { client } = createMockClient({ listRow: { ...SAMPLE_LIST_ROW, items: [] } });
+    const { client } = createMockClient({ data: { ...SAMPLE_LIST_ROW, items: [] } });
 
     const result = await getShoppingListForPlan(client, MEAL_PLAN_ID);
 
