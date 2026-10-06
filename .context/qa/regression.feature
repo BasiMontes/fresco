@@ -251,6 +251,18 @@ Característica: Flujo completo de usuario en Fresco
     Y al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado
 
   @onboarding @seguridad @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-806, A6-L5). Antes el asistente arrancaba vacío
+  # para quien ya tenía perfil y "Empezar" guardaba ese vacío encima de su dieta y sus alérgenos.
+  Escenario: Un usuario con perfil guardado ve sus preferencias en el onboarding y "Empezar" no las pisa
+    Dado que el usuario tiene sesión iniciada
+    Y tiene un perfil guardado con dieta halal, alérgeno huevo y un nombre
+    Y no tiene todavía un menú generado para la semana actual
+    Cuando llega al resumen del onboarding con su perfil guardado
+    Entonces el resumen muestra su perfil guardado y no uno vacío
+    Cuando pulsa "Empezar" con su perfil guardado
+    Entonces su perfil guardado sigue igual
+
+  @onboarding @seguridad @automatizado
   # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-794). Los alérgenos y la dieta son datos de
   # salud (art. 9 RGPD): sin consentimiento explícito no se avanza. Texto PROVISIONAL (borrador FRESCO-365).
   Escenario: Marcar alergias o dieta exige el consentimiento explícito de datos de salud
