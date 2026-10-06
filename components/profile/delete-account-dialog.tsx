@@ -7,10 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { deleteAccount, EdgeFunctionError } from '@/lib/api/edge-functions';
-import { captchaOptions } from '@/lib/auth/captcha';
 import { useCaptcha } from '@/lib/auth/use-captcha';
+import { getAccessToken, signInWithPassword, signOut } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 
 /** Fixed phrase a guest types to confirm deletion — guests have no real email to type instead. */
 const GUEST_CONFIRMATION_PHRASE = 'BORRAR CUENTA';
@@ -63,24 +62,22 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      const client = createClient();
-
       let accessToken: string;
       let reauthToken: string | undefined;
 
       if (isAnonymous) {
-        const { data: { session } } = await client.auth.getSession();
-        if (!session) {
+        const token = await getAccessToken();
+        if (!token) {
           setDeleteError('No hay una sesión activa. Recarga la página e inténtalo de nuevo.');
           return;
         }
-        accessToken = session.access_token;
+        accessToken = token;
       }
       else {
         // A4-L11: re-authenticate through native Supabase Auth. The fresh
         // token both authenticates this request and proves recency to the
         // Edge Function.
-        const { data, error } = await client.auth.signInWithPassword({ email, password, options: captchaOptions(captcha.token) });
+        const { data, error } = await signInWithPassword({ email, password, captchaToken: captcha.token });
         captcha.reset();
         if (error || !data.session) {
           setDeleteError('La contraseña no es correcta.');
@@ -91,7 +88,7 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
       }
 
       await deleteAccount(accessToken, reauthToken);
-      await client.auth.signOut();
+      await signOut();
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
       // onboarding draft so it doesn't leak into whoever logs in next on
       // this browser tab.

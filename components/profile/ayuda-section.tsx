@@ -7,9 +7,8 @@ import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { LegalModal } from '@/components/legal/legal-modal';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { captchaOptions } from '@/lib/auth/captcha';
 import { useCaptcha } from '@/lib/auth/use-captcha';
-import { createClient } from '@/lib/supabase/client';
+import { sendPasswordReset } from '@/lib/client-api/auth';
 
 interface FaqItem {
   question: string
@@ -120,8 +119,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
     setIsSendingReset(true);
     setResetError(false);
     try {
-      const client = createClient();
-      const { error } = await client.auth.resetPasswordForEmail(email, captchaOptions(captcha.token));
+      const { error } = await sendPasswordReset({ email, captchaToken: captcha.token });
       // FRESCO-167: a real API failure (rate-limit, network, 5xx) must not
       // be silenced as success — only "email doesn't exist" stays hidden,
       // per the anti-enumeration posture this flow shares with

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { DeleteAccountDialog } from '@/components/profile/delete-account-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { signOut } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 
 /**
  * `/profile` "Cuenta" row group (FRESCO-220): logout + CSV data export
@@ -22,8 +22,7 @@ export function AccountActions() {
     setIsLoggingOut(true);
     setLogoutError(null);
     try {
-      const client = createClient();
-      await client.auth.signOut();
+      await signOut();
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
       // onboarding draft so it doesn't leak into whoever logs in next on
       // this browser tab.

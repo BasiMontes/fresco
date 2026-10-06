@@ -5,9 +5,8 @@ import type { Sustitucion } from '@/lib/ingredients/get-slot-substitution-contex
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { confirmSubstitution } from '@/lib/ingredients/confirm-substitution';
-import { getSafeSubstitutes, IngredientSubstitutionError } from '@/lib/ingredients/get-safe-substitutes';
-import { createClient } from '@/lib/supabase/client';
+import { confirmSubstitution, getSafeSubstitutes } from '@/lib/client-api/substitutions';
+import { IngredientSubstitutionError } from '@/lib/ingredients/get-safe-substitutes';
 
 interface IngredientListProps {
   ingredientes: string[]
@@ -30,7 +29,6 @@ export function IngredientList({ ingredientes, slotId, initialSustitucion }: Ing
   const [loadingCandidates, setLoadingCandidates] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const supabase = React.useMemo(() => createClient(), []);
 
   async function openDialog(ingrediente: string): Promise<void> {
     setOpenFor(ingrediente);
@@ -38,7 +36,7 @@ export function IngredientList({ ingredientes, slotId, initialSustitucion }: Ing
     setError(null);
     setLoadingCandidates(true);
     try {
-      const result = await getSafeSubstitutes(supabase, ingrediente);
+      const result = await getSafeSubstitutes(ingrediente);
       setCandidates(result);
     }
     catch (caught) {
@@ -57,7 +55,7 @@ export function IngredientList({ ingredientes, slotId, initialSustitucion }: Ing
     const previous = sustitucion;
     setSustitucion({ original: ingrediente, sustituto });
     try {
-      await confirmSubstitution(supabase, { slotId, ingredienteOriginal: ingrediente, ingredienteSustituto: sustituto });
+      await confirmSubstitution({ slotId, ingredienteOriginal: ingrediente, ingredienteSustituto: sustituto });
       setOpenFor(null);
     }
     catch (caught) {

@@ -20,17 +20,6 @@ const COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS = [
   'components/menu/push-prompt-banner.tsx',
   'components/notifications/routes-notice.tsx',
   'components/onboarding/identity-step.tsx',
-  'components/profile/ayuda-section.tsx',
-  'components/profile/danger-zone.tsx',
-  'components/profile/delete-account-dialog.tsx',
-  'components/profile/nombre-form.tsx',
-  'components/profile/preferences-form.tsx',
-  'components/profile/push-notifications-toggle.tsx',
-  'components/recipe/favorite-recipe-card.tsx',
-  'components/recipe/favorite-toggle-button.tsx',
-  'components/recipes/create-recipe-form.tsx',
-  'components/recipes/delete-recipe-button.tsx',
-  'components/recipes/ingredient-list.tsx',
   'components/shopping-list/shopping-list-generator.tsx',
 ];
 

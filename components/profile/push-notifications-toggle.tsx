@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { subscribeToPush, unsubscribeFromPush } from '@/lib/client-api/push';
 import { clientEnv } from '@/lib/env';
-import { getCurrentPushSubscription, isPushSupported, subscribeToPush, unsubscribeFromPush, WebPushError } from '@/lib/push/web-push-client';
-import { createClient } from '@/lib/supabase/client';
+import { getCurrentPushSubscription, isPushSupported, WebPushError } from '@/lib/push/web-push-client';
 
 type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unconfigured' | 'guest';
 
@@ -73,7 +73,7 @@ export function PushNotificationsToggle({ isGuest = false }: PushNotificationsTo
 
     try {
       if (status === 'on') {
-        await unsubscribeFromPush(createClient());
+        await unsubscribeFromPush();
         setStatus('off');
       }
       else {
@@ -82,7 +82,7 @@ export function PushNotificationsToggle({ isGuest = false }: PushNotificationsTo
           setStatus('unconfigured');
           return;
         }
-        await subscribeToPush({ client: createClient(), vapidPublicKey });
+        await subscribeToPush({ vapidPublicKey });
         setStatus('on');
       }
     }

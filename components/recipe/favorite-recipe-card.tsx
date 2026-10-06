@@ -3,8 +3,7 @@
 import type { RecipeCardData } from '@/components/recipe/recipe-card';
 import * as React from 'react';
 import { RecipeCard } from '@/components/recipe/recipe-card';
-import { addFavorite, removeFavorite } from '@/lib/api/favorites';
-import { createClient } from '@/lib/supabase/client';
+import { addFavorite, removeFavorite } from '@/lib/client-api/favorites';
 
 export interface FavoriteRecipeCardProps {
   recipe: RecipeCardData
@@ -22,7 +21,6 @@ export interface FavoriteRecipeCardProps {
  */
 export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onToggleFavorite }: FavoriteRecipeCardProps) {
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
-  const supabase = React.useMemo(() => createClient(), []);
 
   async function handleToggle() {
     const next = !isFavorite;
@@ -30,10 +28,10 @@ export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onTog
 
     try {
       if (next) {
-        await addFavorite(supabase, { recipeId: recipe.id });
+        await addFavorite({ recipeId: recipe.id });
       }
       else {
-        await removeFavorite(supabase, { recipeId: recipe.id });
+        await removeFavorite({ recipeId: recipe.id });
       }
       // FRESCO-171: only notify the parent once the write is confirmed —
       // never optimistically, so a failed toggle (caught below) can't leave
