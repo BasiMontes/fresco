@@ -1,26 +1,23 @@
 'use client';
 
-import type { OnboardingStep } from '@/lib/store/onboarding-store';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { IdentityStep } from '@/components/onboarding/identity-step';
+import { OnboardingFooter } from '@/components/onboarding/onboarding-footer';
+import { OnboardingGenerateStatus } from '@/components/onboarding/onboarding-generate-status';
 import { OnboardingStepDiet } from '@/components/onboarding/onboarding-step-diet';
 import { OnboardingStepHousehold } from '@/components/onboarding/onboarding-step-household';
 import { OnboardingStepIdentity } from '@/components/onboarding/onboarding-step-identity';
+import { OnboardingStepIndicator } from '@/components/onboarding/onboarding-step-indicator';
 import { OnboardingSummary } from '@/components/onboarding/onboarding-summary';
 import { ProfileLoadError } from '@/components/onboarding/profile-load-error';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { isHealthConsentSatisfied } from '@/lib/onboarding/health-data-consent';
 import { useGenerateMealPlan } from '@/lib/onboarding/use-generate-meal-plan';
 import { useOnboardingFunnelTracking } from '@/lib/onboarding/use-onboarding-funnel-tracking';
 import { useOnboardingSessionGate } from '@/lib/onboarding/use-onboarding-session-gate';
-import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { useOnboardingValidation } from '@/lib/onboarding/use-onboarding-validation';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { validateHousehold } from '@/lib/validation/onboarding';
 
 /**
  * `/onboarding` — EPIC-FRESCO-1 (US 1.1/1.2: 3-step onboarding, kept short
@@ -51,42 +48,15 @@ import { validateHousehold } from '@/lib/validation/onboarding';
  */
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const { identityResolved, setIdentityResolved, wizardShown, profileLoadFailed, retryLoadProfile } = useOnboardingSessionGate();
+  const step = useOnboardingStore(state => state.step);
 
-  const {
-    step,
-    adultos,
-    ninos,
-    presupuestoSemanaEuros,
-    planningSelection,
-    returnToSummary,
-    setStep,
-    goToSummary,
-  } = useOnboardingStore();
-
-  // FRESCO-794 (ADR-0040): allergies and diet are health data (art. 9); the
-  // wizard goes on only once the user has ticked the explicit consent in step 2.
-  const healthConsentOk = useOnboardingStore(isHealthConsentSatisfied);
-
-  const household = validateHousehold({ adultos, ninos });
-  // FRESCO-371: presupuesto is optional again (A4-H14). Null/unset is valid;
-  // a typed-in value still has to be > 0 (matches the DB check constraint).
-  const presupuestoValid = presupuestoSemanaEuros === null || presupuestoSemanaEuros > 0;
-  // FRESCO-165/166 — QA sweep found "Ninguno" (days) left 0 days selected
-  // with "Generar mi menú" still enabled: it generated a menu anyway. Worse,
-  // deselecting all 3 meals didn't block generation either, and because
-  // `upsertUserProfile()` below persists `planning_selection` BEFORE
-  // `generateMealPlan()` runs, a user who reached that state and hit
-  // a generation failure (e.g. 409 "plan already exists") was left with a
-  // permanently-saved empty preference — `/menu` reads today's meals from
-  // that (now-corrupted) preference, not from the real stored plan, so it
-  // rendered with zero meal cards and no explanation. Blocking submission
-  // here prevents the empty-preference profile write from ever happening.
-  const hasInvalidPlanning = Object.values(planningSelection).every(meals => meals.length === 0);
+  const validation = useOnboardingValidation();
+  const { household, presupuestoValid, hasInvalidPlanning } = validation;
 
   const { markShouldReset } = useOnboardingFunnelTracking({ identityResolved, step });
-  const { isGenerating, generateSuccess, generateError, hasExistingMenu, handleGenerate } = useGenerateMealPlan({ markShouldReset });
+  const generation = useGenerateMealPlan({ markShouldReset });
+  const { isGenerating, generateSuccess, generateError, hasExistingMenu } = generation;
 
   // A11y: the wizard swaps step content in place (single route) — without
   // this, a screen-reader/keyboard user gets no signal the content changed
@@ -148,16 +118,7 @@ export default function OnboardingPage() {
           className="t-stagger-line t-stagger-line--1 mx-auto brand-mark--dark"
         />
 
-        <div className="t-stagger-line t-stagger-line--2 mt-6">
-          <p data-testid="step_indicator_label" className="text-caption uppercase text-tertiary">
-            {step === 4 ? 'Resumen' : `Paso ${step} de 3`}
-          </p>
-          <div className="mt-2 flex gap-1">
-            {[1, 2, 3].map(s => (
-              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? 'bg-primary' : 'bg-surface'}`} />
-            ))}
-          </div>
-        </div>
+        <OnboardingStepIndicator step={step} />
 
         <div className="t-stagger-line t-stagger-line--3 mt-6">
           <Card className="p-6 md:p-8">
@@ -173,130 +134,15 @@ export default function OnboardingPage() {
             )}
             {step === 4 && <OnboardingSummary headingRef={stepHeadingRef} />}
 
-            {step === 4 && generateError && !hasExistingMenu && (
-              <div className="mt-4">
-                <p data-testid="generate_error_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-                  {generateError}
-                </p>
-              </div>
-            )}
+            <OnboardingGenerateStatus
+              step={step}
+              generateError={generateError}
+              generateSuccess={generateSuccess}
+              isGenerating={isGenerating}
+              hasExistingMenu={hasExistingMenu}
+            />
 
-            {/* FRESCO-152: when a plan already exists, the error text stays
-            informational but the *action* moves into the primary CTA below
-            ("Ver mi menú", de-emphasized) instead of also living here as a
-            separate link — one action, not two competing ones. */}
-            {step === 4 && hasExistingMenu && (
-              <p data-testid="generate_error_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
-                {generateError}
-              </p>
-            )}
-
-            {generateSuccess
-              ? (
-                  <p data-testid="generate_success_message" role="status" aria-live="polite" className="mt-4 text-body-sm text-primary">
-                    Se ha generado tu menú correctamente. Te llevamos a verlo…
-                  </p>
-                )
-              : isGenerating && (
-              // ADR-0005: menu-slot selection is now a deterministic algorithm
-              // (~2-3s observed live), not a per-call Gemini generation — the
-              // old "puede tardar hasta un minuto" copy overstated the real
-              // wait once that shipped. Kept the spinner + hint pattern itself
-              // (still reassuring during any wait, however short), just
-              // corrected what it claims.
-                <p data-testid="generating_hint" role="status" aria-live="polite" className="mt-4 text-body-sm text-tertiary">
-                  Preparando tu menú…
-                </p>
-              )}
-
-            <div className="mt-6 flex justify-between">
-              <Button
-                data-testid="back_button"
-                variant="secondary"
-                // FRESCO-296: on step 1 "Atrás" is no longer a dead end — it
-                // exits the wizard back to the landing page. Steps 2-3 keep
-                // walking back through the wizard. FRESCO-755: a step opened
-                // from the summary's edit icon returns to the summary instead.
-                onClick={() => {
-                  if (returnToSummary) {
-                    goToSummary();
-                  }
-                  else if (step === 1) {
-                    router.push('/');
-                  }
-                  else {
-                    setStep((step - 1) as OnboardingStep);
-                  }
-                }}
-              >
-                Atrás
-              </Button>
-              {step === 4
-                // FRESCO-152: once a plan already exists for this week,
-                // "Empezar" can't succeed — the primary action becomes a
-                // de-emphasized "Ver mi menú" instead of repeating a CTA that
-                // structurally cannot work.
-                ? hasExistingMenu
-                  ? (
-                      <Button
-                        data-testid="view_existing_menu_button"
-                        variant="ghost"
-                        onClick={() => router.push('/menu')}
-                      >
-                        Ver mi menú
-                      </Button>
-                    )
-                  : (
-                      <Button
-                        data-testid="generate_menu_button"
-                        variant="action"
-                        onClick={() => {
-                          void handleGenerate();
-                        }}
-                        disabled={isGenerating || !household.valid || !presupuestoValid || hasInvalidPlanning || !healthConsentOk}
-                      >
-                        {isGenerating
-                          ? (
-                              <>
-                                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                                {generateSuccess ? '¡Menú generado!' : 'Generando menú…'}
-                              </>
-                            )
-                          : (
-                              'Empezar'
-                            )}
-                      </Button>
-                    )
-                : step < 3 && !returnToSummary
-                  ? (
-                      <Button
-                        data-testid="next_button"
-                        disabled={step === 2 && !healthConsentOk}
-                        onClick={() => {
-                          // FRESCO-366 / FRESCO-371: which wizard steps get abandoned.
-                          captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
-                          setStep((step + 1) as OnboardingStep);
-                        }}
-                      >
-                        Siguiente
-                      </Button>
-                    )
-                  : (
-                      <Button
-                        data-testid="view_summary_button"
-                        onClick={() => {
-                          // Re-confirming an edited step is not a new completion.
-                          if (!returnToSummary) {
-                            captureEvent(POSTHOG_EVENTS.ONBOARDING_STEP_COMPLETED, { step, total_steps: 3 });
-                          }
-                          goToSummary();
-                        }}
-                        disabled={!household.valid || !presupuestoValid || hasInvalidPlanning || (step === 2 && !healthConsentOk)}
-                      >
-                        Ver resumen
-                      </Button>
-                    )}
-            </div>
+            <OnboardingFooter validation={validation} generation={generation} />
           </Card>
         </div>
       </div>
