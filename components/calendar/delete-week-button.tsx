@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { deleteMealPlan, MealPlanError } from '@/lib/api/meal-plan';
-import { createClient } from '@/lib/supabase/client';
+import { MealPlanError } from '@/lib/api/meal-plan';
+import { deleteMealPlan } from '@/lib/client-api/meal-plan';
 
 /**
  * FRESCO-62 — deletes the currently-viewed week's plan. `router.refresh()`
@@ -30,13 +30,12 @@ export function DeleteWeekButton({ mealPlanId }: { mealPlanId: string }) {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const supabase = React.useMemo(() => createClient(), []);
 
   async function handleDelete() {
     setPending(true);
     setError(null);
     try {
-      await deleteMealPlan(supabase, mealPlanId);
+      await deleteMealPlan(mealPlanId);
       router.refresh();
     }
     catch (caught) {

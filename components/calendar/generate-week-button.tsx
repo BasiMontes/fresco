@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { EdgeFunctionError, generateMealPlan } from '@/lib/api/edge-functions';
-import { getPlanTierForAnalytics } from '@/lib/api/user-profile';
+import { getSession } from '@/lib/client-api/auth';
+import { getPlanTierForAnalytics } from '@/lib/client-api/user-profile';
 import { getIsoWeekMonday } from '@/lib/date/iso-week';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
-import { createClient } from '@/lib/supabase/client';
 
 const PAST_WEEK_MESSAGE = 'No se pueden planificar semanas que ya han pasado.';
 
@@ -47,7 +47,6 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const supabase = React.useMemo(() => createClient(), []);
   const isPastWeek = fechaInicio < getIsoWeekMonday();
 
   async function handleGenerate() {
@@ -63,7 +62,7 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
     // the North-star KPI measures. Same event pair, same fail-soft guard.
     captureEvent(POSTHOG_EVENTS.MENU_GENERATION_STARTED);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await getSession();
       await generateMealPlan(
         { semana_iso: semanaIso, fecha_inicio: fechaInicio },
         session?.access_token ?? null,
@@ -72,7 +71,7 @@ export function GenerateWeekButton({ semanaIso, fechaInicio, redirectTo }: { sem
       // button press — mirrors app/onboarding/page.tsx's handleGenerate.
       // FRESCO-366: `semana_iso` + `tier` slice the funnel by week and plan.
       const tier = session?.user?.id
-        ? await getPlanTierForAnalytics(supabase, session.user.id)
+        ? await getPlanTierForAnalytics(session.user.id)
         : 'free';
       captureEvent(POSTHOG_EVENTS.MENU_GENERATION_COMPLETED, { semana_iso: semanaIso, tier });
       if (redirectTo) {
