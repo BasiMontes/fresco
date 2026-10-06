@@ -261,6 +261,25 @@ export async function generateCurrentWeekPlan(request: APIRequestContext, testUs
 }
 
 /**
+ * Puts a warning on `testUser`'s CURRENT week plan (`meal_plans.advertencias`),
+ * the same field the generator fills when a food-safety filter could not be
+ * honored. Fixtures need it when a scenario must see the `/menu` warning banner
+ * next to something else: with `advertencias: []` the banner is not rendered at
+ * all, and "never mixes with the banner" would have nothing to check (FRESCO-797).
+ * Run it AFTER `generateCurrentWeekPlan`, which creates the row.
+ */
+export async function seedPlanWarning(request: APIRequestContext, testUser: TestUser, advertencia: string): Promise<void> {
+  const { semanaIso } = currentWeekMonday();
+  const res = await request.patch(
+    `${supabaseUrl()}/rest/v1/meal_plans?user_id=eq.${testUser.id}&semana_iso=eq.${semanaIso}`,
+    { headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' }, data: { advertencias: [advertencia] } },
+  );
+  if (!res.ok()) { throw new Error(`Failed to seed the plan warning: ${res.status()} ${await res.text()}`); }
+  const rows = await res.json() as unknown[];
+  if (rows.length === 0) { throw new Error('seedPlanWarning found no current-week plan to update — generate it first.'); }
+}
+
+/**
  * FRESCO-367: seeds the shopping list for `testUser`'s current-week plan via
  * the real Edge Function (deterministic — no LLM). Used by the `@lista-compra`
  * scenarios that need "a list already exists" without paying that generation
