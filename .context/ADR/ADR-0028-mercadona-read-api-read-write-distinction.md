@@ -130,6 +130,15 @@ We record two things, at two different confidence levels:
     prerequisite before FRESCO-346 can show a price against a specific
     recipe ingredient — this ADR unblocks the data source, not the mapping.
 
+## Update 2026-10-06 (FRESCO-790): the dataset's licence covers its code, not Mercadona's data
+
+The Decision above is unchanged. This records a distinction the ADR did not make explicit:
+
+- The community dataset we read, `datania/mercadona-catalog`, carries an **MIT licence** (checked on GitHub, 2026-10-06). Its description says what it holds: the catalog "de la API pública de la tienda online de Mercadona".
+- An MIT licence is the repository owner's grant over **their own work** (the scripts and the repository as published). It cannot grant rights the owner does not hold, and Mercadona's product data and prices are Mercadona's. So MIT tells us we may reuse the dataset's code; it says nothing about our right to display Mercadona's data, and it does not remove a possible database right (derecho sui generis) of the data's maker over the extraction and reuse of a substantial part of the catalog.
+- Fresco's use therefore rests on the accepted risk in this ADR, not on the licence. The lawyer's opinion on database rights requested by FRESCO-790 should cover both chains.
+- Revocation is the same as for Consum: delete the connector from `lib/grocery/supermarket/registry.ts` (procedure and test in ADR-0037's update of the same date) and drop the generated Mercadona catalog.
+
 ## Alternatives considered
 
 - **Fold this into `ADR-0027` by editing it.** Rejected: ADRs are
