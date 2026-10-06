@@ -32,7 +32,6 @@ const COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS = [
   'components/recipes/delete-recipe-button.tsx',
   'components/recipes/ingredient-list.tsx',
   'components/shopping-list/shopping-list-generator.tsx',
-  'components/shopping-list/shopping-list-view.tsx',
 ];
 
 export default antfu({
@@ -271,6 +270,23 @@ export default antfu({
       patterns: [{
         group: ['@/lib/supabase', '@/lib/supabase/*', '@supabase/*'],
         message: 'Components must not reach Supabase directly (AGENTS.md section 10: data access lives behind lib/). Put the call in lib/ and import that. This file is not on COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS in eslint.config.js: the list only shrinks (FRESCO-810), it does not grow.',
+      }],
+    }],
+  },
+}, {
+  // --- lib/ does not depend on the UI layers (FRESCO-810, ADR-0041) ---
+  //
+  // `lib/` is framework-agnostic data and domain code; the UI depends on it, never
+  // the other way round. `lib/fixtures/page-shells.tsx` (13 component imports) and
+  // an email template that read two constants from a component were the last two
+  // inversions; both moved, and this keeps `lib/` clean.
+  files: ['lib/**/*.{ts,tsx}'],
+  ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{
+        group: ['@/components', '@/components/*', '@/app', '@/app/*'],
+        message: 'lib/ must not import from components/ or app/ (ADR-0041): the UI depends on lib/, never the reverse. Move the shared value into lib/ and import it from there.',
       }],
     }],
   },

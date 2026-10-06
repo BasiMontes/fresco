@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/components/legal/legal-modal';
+import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/lib/legal/entity';
 import { renderSubscriptionConfirmationEmailHtml } from './subscription-confirmation';
 
 /**

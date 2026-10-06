@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/components/legal/legal-modal';
+import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/lib/legal/entity';
 
 /*
   impeccable-disable design-system-font design-system-font-size design-system-color design-system-radius
