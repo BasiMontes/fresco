@@ -76,6 +76,9 @@ const nextConfig = {
   // ADR-0009: force-expose VERCEL_ENV to the client, independent of Vercel's project toggle.
   env: {
     NEXT_PUBLIC_VERCEL_ENV: process.env.VERCEL_ENV,
+    // FRESCO-803: the commit this build was made from, for Sentry's `release`
+    // (see lib/observability/release.ts). Undefined outside Vercel.
+    NEXT_PUBLIC_RELEASE: process.env.VERCEL_GIT_COMMIT_SHA,
   },
   // FRESCO-366: PostHog sends `/ingest/...` with no trailing slash — without
   // this Next would 308-redirect those requests and the SDK would follow to
