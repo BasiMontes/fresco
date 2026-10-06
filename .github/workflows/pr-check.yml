@@ -307,6 +307,11 @@ jobs:
         # `supabase start` was the single biggest step (~90 s) and none of
         # these are on any tested path (no storage/realtime refs in tests/,
         # recipe photos are external URLs, email confirmations are off).
+        # FRESCO-797 (A6-T7): hang guard, not tuning. Typical is ~90 s; 5 of 60
+        # recent runs went past 530 s in total on image-pull retries. 8 minutes
+        # still lets a slow pull finish but stops a stuck one from burning the
+        # 6-hour default.
+        timeout-minutes: 8
         run: supabase start -x realtime,storage-api,imgproxy,studio,inbucket,logflare,vector
 
       - name: Apply migrations + seed
@@ -373,6 +378,21 @@ jobs:
           npx --yes wait-on http://localhost:3000 --timeout 60000
 
       - run: bun run test:e2e
+
+      # FRESCO-797 (A6-T7): `retries: 1` keeps a flaky scenario green, so the
+      # job summary now counts them (warn from 1, fail from 3). `if: always()`
+      # so a red run still lists its flaky scenarios; the report is REQUIRED
+      # only when the run passed, otherwise the budget could be skipped silently.
+      - name: e2e flakiness budget
+        if: always()
+        env:
+          REQUIRE_REPORT: ${{ job.status == 'success' }}
+        run: |
+          if [ "$REQUIRE_REPORT" = "true" ]; then
+            bun scripts/e2e-flaky-budget.ts --require-report
+          else
+            bun scripts/e2e-flaky-budget.ts
+          fi
 
       - name: Upload Playwright report + traces
         # FRESCO-387 (A4-M14): `retries: 1` + `trace: 'on-first-retry'` produce
