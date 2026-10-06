@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { deleteCatalogRecipe, EdgeFunctionError } from '@/lib/api/edge-functions';
-import { createClient } from '@/lib/supabase/client';
+import { getAccessToken } from '@/lib/client-api/auth';
 
 export interface DeleteCatalogRecipeButtonProps {
   recipeId: string
@@ -33,9 +33,8 @@ export function DeleteCatalogRecipeButton({ recipeId, recipeName, onDeleted }: D
     setPending(true);
     setError(null);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      await deleteCatalogRecipe({ recipe_id: recipeId }, session?.access_token ?? null);
+      const accessToken = await getAccessToken();
+      await deleteCatalogRecipe({ recipe_id: recipeId }, accessToken);
       onDeleted(recipeId);
     }
     catch (caught) {

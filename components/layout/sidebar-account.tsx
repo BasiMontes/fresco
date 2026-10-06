@@ -10,9 +10,9 @@ import { ProCheckoutSummary } from '@/components/profile/pro-checkout-summary';
 import { useProCheckout } from '@/components/profile/use-pro-checkout';
 import { Button } from '@/components/ui/button';
 import { Popover } from '@/components/ui/popover';
+import { signOut } from '@/lib/client-api/auth';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 /**
@@ -150,8 +150,7 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
     setIsLoggingOut(true);
     setLogoutError(null);
     try {
-      const client = createClient();
-      await client.auth.signOut();
+      await signOut();
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
       // onboarding draft so it doesn't leak into whoever logs in next on
       // this browser tab.

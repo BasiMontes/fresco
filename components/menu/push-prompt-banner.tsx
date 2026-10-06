@@ -4,11 +4,11 @@ import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { subscribeToPush } from '@/lib/client-api/push';
 import { clientEnv } from '@/lib/env';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { consumeFirstMenuSignal } from '@/lib/push/first-menu-signal';
-import { isPushSupported, subscribeToPush, WebPushError } from '@/lib/push/web-push-client';
-import { createClient } from '@/lib/supabase/client';
+import { isPushSupported, WebPushError } from '@/lib/push/web-push-client';
 
 /**
  * FRESCO-372 (A4-H15): asks for push permission at the actual moment of
@@ -63,7 +63,7 @@ export function PushPromptBanner({ isGuest = false }: PushPromptBannerProps = {}
         setVisible(false);
         return;
       }
-      await subscribeToPush({ client: createClient(), vapidPublicKey });
+      await subscribeToPush({ vapidPublicKey });
       captureEvent(POSTHOG_EVENTS.PUSH_PERMISSION_GRANTED);
       setVisible(false);
     }

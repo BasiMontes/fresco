@@ -8,8 +8,7 @@ import { useEffect, useState } from 'react';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { IDENTITY_COOKIE_EVENT, readNombreCookie } from '@/lib/auth/identity-cookie';
-import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
-import { hasSupabaseSessionCookie } from '@/lib/supabase/session-cookie';
+import { getSessionLazy, hasSupabaseSessionCookie } from '@/lib/client-api/identity';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
@@ -59,12 +58,10 @@ export function SiteNav() {
   useEffect(() => {
     let active = true;
     if (hasSupabaseSessionCookie()) {
-      void loadSupabaseClient()
-        .then(async ({ createClient }) => createClient().auth.getSession())
-        .then(({ data: { session } }) => {
-          if (!active) { return; }
-          setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
-        });
+      void getSessionLazy().then((session) => {
+        if (!active) { return; }
+        setIdentity({ hasSession: Boolean(session), nombre: readNombreCookie() });
+      });
     }
 
     // `IdentityCookieSync` writes the name cookie from an async query that
