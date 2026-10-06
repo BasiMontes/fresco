@@ -17,6 +17,8 @@
 // Read lazily inside main() — not at module load — so importing
 // `cleanRecipeName` for unit tests (CI's test job has no Supabase secrets)
 // never trips this check.
+import { capitalize } from '../lib/utils.ts';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const APPLY = process.argv.includes('--apply');
@@ -73,11 +75,6 @@ function collapseConnectors(input: string): string {
     out = out.replace(TRAILING_CONNECTOR, '').trim();
   } while (out !== prev);
   return out;
-}
-
-function capitalize(input: string): string {
-  if (!input) { return input; }
-  return input[0].toUpperCase() + input.slice(1);
 }
 
 // Drops whole trailing descriptor clauses (from the last "con"/"y" onward)
