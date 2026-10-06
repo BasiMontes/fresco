@@ -983,7 +983,8 @@ Característica: Flujo completo de usuario en Fresco
 
   @aprendizaje @verificado-manual-2026-07-31 @automatizado
   # Automatizado: tests/steps/aprendizaje-pro.steps.ts (playwright-bdd,
-  # cuenta de test dedicada PRO_USER_EMAIL, real Gemini call — sin mock)
+  # backend real, sin mock; el motor de generación es determinista desde
+  # ADR-0005, no hay llamada a Gemini)
   Escenario: El usuario Pro ve la tarjeta de explicación en /menu
     Dado que un usuario Pro tiene explicacion_aprendizaje no nula en su menú
     Cuando visita /menu
