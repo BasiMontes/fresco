@@ -16,7 +16,7 @@ export const CONSENT_KINDS = ['age_14', 'terms', 'privacy', 'health_data', 'with
 export type ConsentKind = (typeof CONSENT_KINDS)[number];
 
 /** Version stamped on every row the API records. Server-side only: the client never sends it. */
-export const LEGAL_TEXTS_VERSION = 'provisional-2026-10-04';
+export const LEGAL_TEXTS_VERSION = 'provisional-2026-10-06';
 
 /** Checkbox copy for the consents that have their own sentence (Terms and Privacy share one checkbox with links). */
 export const CONSENT_TEXTS = {
