@@ -23,6 +23,26 @@
  * script reports the **line-weighted** total (ΣhitLines / ΣfoundLines),
  * which is the honest number.
  *
+ * ## Two numbers, two floors (FRESCO-795, audit-6 A6-T4)
+ *
+ * lcov only lists files some test actually loads, so the figure above is a
+ * ratchet over the LOADED set: it goes up by deleting an import as easily as
+ * by adding a test. 130 of 316 source files (about half the code, e.g.
+ * `app/signup/page.tsx`, `generate-meal-plan/index.ts`) were outside it.
+ * The script therefore prints both:
+ *
+ *   - LOADED coverage  (functions + lines)  floor `FLOOR`
+ *   - HONEST coverage  (lines only)         floor `HONEST_FLOOR_LINES`
+ *
+ * HONEST = hit lines / (lcov lines + non-empty, non-comment lines of every
+ * source file under `app/ components/ lib/ supabase/functions/` that lcov
+ * never listed). It is an approximation, deliberately on the low side: those
+ * files add every non-empty line, not only executable ones, so the true
+ * number sits a few points higher. A ratchet needs a stable, conservative
+ * number, not a precise one. Functions have no honest figure: counting them
+ * in unloaded files needs an AST parse, not worth it for a floor.
+ * Generated files (`GENERATED_FILES`) never enter the denominator.
+ *
  * ## The floor
  *
  * `FLOOR` below is the line-weighted total on the day this landed, rounded
@@ -74,16 +94,32 @@ import { join } from 'node:path';
  *   gates; the weighted TOTAL dipped ~1 pp only because the newly-loaded
  *   files carry uncovered handlers. Net positive — a documented,
  *   reviewed one-off dip, per .context/qa/coverage-ratchet.md.
+ * 2026-10-06 (FRESCO-795): raised to functions 85.5 / lines 87.0 (measured
+ *   86.63 / 87.57 on the loaded set; the previous 84.5 / 86.2 had drifted
+ *   below the doc's 82 / 84). Honest floor introduced beside it.
  */
-const FLOOR = { functions: 84.5, lines: 86.2 } as const;
+const FLOOR = { functions: 85.5, lines: 87.0 } as const;
+
+/**
+ * Floor for the HONEST line coverage (unloaded files counted as zero). Only
+ * raised. 2026-10-06 (FRESCO-795): measured 49.6 % (hit 9570 of 19293 lines),
+ * floored at 49.0 to absorb runner noise.
+ */
+const HONEST_FLOOR_LINES = 49.0;
+
+/** Directories whose source files make up the honest denominator. */
+const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
+
+/** Generated code: not written by hand, so not a testing signal. */
+const GENERATED_FILES = new Set(['lib/supabase/types.ts']);
 
 /** Path prefixes whose files are not part of the ratchet. */
 const IGNORE_PREFIXES = ['tests/', 'scripts/', 'cli/', 'bun-test-setup.ts'];
 
-interface Totals { fnFound: number, fnHit: number, lineFound: number, lineHit: number }
+interface Totals { fnFound: number, fnHit: number, lineFound: number, lineHit: number, loaded: Set<string> }
 
 function parseLcov(lcov: string): Totals {
-  const t: Totals = { fnFound: 0, fnHit: 0, lineFound: 0, lineHit: 0 };
+  const t: Totals = { fnFound: 0, fnHit: 0, lineFound: 0, lineHit: 0, loaded: new Set() };
   let currentFileIgnored = false;
 
   for (const raw of lcov.split('\n')) {
@@ -91,6 +127,7 @@ function parseLcov(lcov: string): Totals {
     if (line.startsWith('SF:')) {
       const path = line.slice(3);
       currentFileIgnored = IGNORE_PREFIXES.some(p => path.startsWith(p));
+      if (!currentFileIgnored) { t.loaded.add(path); }
       continue;
     }
     if (currentFileIgnored) {
@@ -111,6 +148,34 @@ function parseLcov(lcov: string): Totals {
 
 function pct(hit: number, found: number): number {
   return found === 0 ? 100 : Math.round((10_000 * hit) / found) / 100;
+}
+
+function isSourceFile(path: string): boolean {
+  return /\.tsx?$/.test(path)
+    && !/\.(?:test|spec)\.tsx?$/.test(path)
+    && !path.endsWith('.d.ts')
+    && !path.includes('__tests__/')
+    && !GENERATED_FILES.has(path);
+}
+
+/** Non-empty, non-comment lines of every tracked source file lcov never listed. */
+async function countUnloadedLines(loaded: Set<string>): Promise<{ files: number, lines: number }> {
+  const ls = Bun.spawn(['git', 'ls-files', ...SOURCE_DIRS], { stdout: 'pipe', stderr: 'inherit' });
+  const listing = await new Response(ls.stdout).text();
+  await ls.exited;
+
+  let files = 0;
+  let lines = 0;
+  for (const path of listing.split('\n').filter(isSourceFile)) {
+    if (loaded.has(path)) { continue; }
+    const source = await Bun.file(path).text();
+    files += 1;
+    lines += source.split('\n').filter((raw) => {
+      const l = raw.trim();
+      return l !== '' && !l.startsWith('//') && !l.startsWith('/*') && !l.startsWith('*');
+    }).length;
+  }
+  return { files, lines };
 }
 
 async function main(): Promise<void> {
@@ -140,12 +205,18 @@ async function main(): Promise<void> {
   const functions = pct(totals.fnHit, totals.fnFound);
   const lines = pct(totals.lineHit, totals.lineFound);
 
+  const unloaded = await countUnloadedLines(totals.loaded);
+  const honestLines = pct(totals.lineHit, totals.lineFound + unloaded.lines);
+
   console.log('');
-  console.log('─'.repeat(52));
-  console.log('  Total unit-test coverage (line-weighted, excl. tests/, scripts/, cli/)');
+  console.log('─'.repeat(64));
+  console.log('  Unit-test coverage (line-weighted, excl. tests/, scripts/, cli/)');
+  console.log('  LOADED  files some test imports');
   console.log(`    functions  ${functions.toFixed(2)} %   (floor ${FLOOR.functions.toFixed(2)} %)`);
   console.log(`    lines      ${lines.toFixed(2)} %   (floor ${FLOOR.lines.toFixed(2)} %)`);
-  console.log('─'.repeat(52));
+  console.log(`  HONEST  loaded + ${unloaded.files} files no test imports, counted as 0 hit`);
+  console.log(`    lines      ${honestLines.toFixed(2)} %   (floor ${HONEST_FLOOR_LINES.toFixed(2)} %)`);
+  console.log('─'.repeat(64));
 
   if (printOnly) {
     process.exit(0);
@@ -154,6 +225,7 @@ async function main(): Promise<void> {
   const below: string[] = [];
   if (functions < FLOOR.functions) { below.push(`functions ${functions.toFixed(2)} % < floor ${FLOOR.functions.toFixed(2)} %`); }
   if (lines < FLOOR.lines) { below.push(`lines ${lines.toFixed(2)} % < floor ${FLOOR.lines.toFixed(2)} %`); }
+  if (honestLines < HONEST_FLOOR_LINES) { below.push(`honest lines ${honestLines.toFixed(2)} % < floor ${HONEST_FLOOR_LINES.toFixed(2)} %`); }
 
   if (below.length > 0) {
     console.error('');
@@ -166,10 +238,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const headroom = Math.min(functions - FLOOR.functions, lines - FLOOR.lines);
+  const headroom = Math.min(functions - FLOOR.functions, lines - FLOOR.lines, honestLines - HONEST_FLOOR_LINES);
   if (headroom >= 1.5) {
     console.log(`  ✓ ${headroom.toFixed(1)} pp of headroom — consider raising FLOOR to`);
-    console.log(`    { functions: ${Math.floor(functions * 10) / 10}, lines: ${Math.floor(lines * 10) / 10} } in this or a follow-up PR.`);
+    console.log(`    { functions: ${Math.floor(functions * 10) / 10}, lines: ${Math.floor(lines * 10) / 10} } and HONEST_FLOOR_LINES to ${Math.floor(honestLines * 10) / 10} in this or a follow-up PR.`);
   }
   else {
     console.log('  ✓ coverage holds at or above the floor.');
