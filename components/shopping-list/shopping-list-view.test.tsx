@@ -276,3 +276,36 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
     expect(fuente).not.toMatch(/from '@\/lib\/grocery\/(map-item|line-price|shopping-list-compra|supermarket\/(registry|catalog-connectors))'/);
   });
 });
+
+describe('ShoppingListView — price disclaimer (FRESCO-790)', () => {
+  const LIST_ARROZ: ShoppingListPersistido = {
+    ...LIST,
+    pasillos: [{
+      nombre: 'Despensa',
+      orden: 1,
+      items: [{ nombre: 'arroz', cantidad: 500, unidad: 'g', comprado: false, precio_estimado: 0.5 }],
+    }],
+  };
+  const enlace = (nombreCadena: string) => ({ cadena: nombreCadena.toLowerCase(), nombreCadena, url: `https://${nombreCadena.toLowerCase()}.example/arroz`, antiguedadDias: 2 });
+
+  test('says the prices are indicative and names every chain that priced a row', () => {
+    const compra: CompraPorItem = { 'Despensa::arroz': { precio: 0.5, enlaces: [enlace('Mercadona'), enlace('Consum')] } };
+    renderWithProviders(<ShoppingListView list={LIST_ARROZ} compra={compra} />);
+    expect(screen.getByTestId('shopping_list_price_disclaimer')).toHaveTextContent(
+      'Precios orientativos de Consum y Mercadona, con la fecha en que se observaron junto a cada artículo. Pueden variar en tienda.',
+    );
+  });
+
+  test('a chain that no longer prices anything is not named', () => {
+    const compra: CompraPorItem = { 'Despensa::arroz': { precio: 0.5, enlaces: [enlace('Mercadona')] } };
+    renderWithProviders(<ShoppingListView list={LIST_ARROZ} compra={compra} />);
+    const texto = screen.getByTestId('shopping_list_price_disclaimer').textContent ?? '';
+    expect(texto).toContain('Mercadona');
+    expect(texto).not.toContain('Consum');
+  });
+
+  test('without any linked chain it still says the prices are indicative', () => {
+    renderWithProviders(<ShoppingListView list={LIST_ARROZ} compra={{ 'Despensa::arroz': { precio: 0.5, enlaces: [] } }} />);
+    expect(screen.getByTestId('shopping_list_price_disclaimer')).toHaveTextContent('Precios orientativos. Pueden variar en tienda.');
+  });
+});

@@ -106,6 +106,10 @@ export const TERMS_SECTIONS: LegalSubsection[] = [
     body: 'Fresco genera menús semanales personalizados a partir de tu dieta, alergias e ingredientes que no te gustan, produce una lista de la compra organizada por pasillo a partir de ese menú, y (Plan Pro) aprende de lo que realmente cocinas y descartas para ajustar futuros menús.',
   },
   {
+    title: 'Precios y enlaces de supermercados',
+    body: 'La lista de la compra muestra precios y enlaces a productos de supermercados a título orientativo. Los precios proceden de los catálogos públicos de cada cadena, se muestran con la fecha en que se observaron y pueden haber cambiado o no coincidir con los de tienda: la cadena es quien fija el precio, la disponibilidad y las condiciones de venta. Fresco no vende esos productos ni tiene relación comercial con esas cadenas, y, en la medida permitida por la ley, no responde de la exactitud de sus precios. Los nombres y marcas de las cadenas pertenecen a sus titulares.',
+  },
+  {
     title: 'Cuentas de Usuario',
     body: 'Eres responsable de mantener la confidencialidad de tu cuenta. Al registrarte, aceptas usar el Servicio solo para fines personales y legales, y no intentar interferir con su funcionamiento. El Servicio no está dirigido a menores de 14 años.',
   },

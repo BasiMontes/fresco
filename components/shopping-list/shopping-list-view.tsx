@@ -31,7 +31,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { addShoppingListItem, clearComprados, normalizeNombre, toggleShoppingListItem } from '@/lib/api/shopping-list';
-import { claveItemCompra } from '@/lib/grocery/compra';
+import { claveItemCompra, nombresDeCadenas } from '@/lib/grocery/compra';
 import { createClient } from '@/lib/supabase/client';
 import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
 
@@ -164,6 +164,7 @@ function getPasilloIcon(nombre: string): LucideIcon {
  * No recency column is persisted — the prior list already exists.
  */
 export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu, compra }: ShoppingListViewProps) {
+  const fuentesPrecios = nombresDeCadenas(compra);
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -370,6 +371,14 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
               : `${list.resumen.coste_estimado_min.toFixed(2).replace('.', ',')}–${formatPrecio(list.resumen.coste_estimado_max)}`}
           </p>
         </div>
+        {/* FRESCO-790 (A6-P2): every price here is an indication, not an offer.
+            The chains are read from the data, so a chain switched off in the
+            registry (ADR-0037) disappears from this line too. */}
+        <p data-testid="shopping_list_price_disclaimer" className="mt-3 text-caption text-tertiary">
+          {fuentesPrecios
+            ? `Precios orientativos de ${fuentesPrecios}, con la fecha en que se observaron junto a cada artículo. Pueden variar en tienda.`
+            : 'Precios orientativos. Pueden variar en tienda.'}
+        </p>
       </Card>
 
       {errorMessage && (
