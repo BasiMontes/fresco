@@ -44,6 +44,17 @@ We will run the Consum connector under `riesgo-aceptado`, citing this ADR as `pe
   - Re-read Consum's full legal notice before accepting; this draft quotes it from a search excerpt.
   - The `permiso` of the registered connector changes from `pendiente` to `riesgo-aceptado` with `permisoRef: 'ADR-0037'` once this ADR is Accepted.
 
+## Update 2026-10-06 (FRESCO-790): terms read end to end, kill-switch proved
+
+The Decision above is unchanged and stays `riesgo-aceptado`. What this update adds:
+
+- **Consum's terms, read end to end.** The full page `consum.es/condiciones-de-uso` was extracted and read on 2026-10-06 (about 68,000 characters), not from a search excerpt. The clause the ADR relied on is confirmed word for word: no section of the site may be "reproducido, distribuido, transmitido, copiado, comunicado públicamente ni transformado, en todo o en parte [...] sin consentimiento de CONSUM", and any use "queda sujeta a la necesidad de solicitar autorización previa de CONSUM y/o terceros titulares legítimos". Nothing softens it.
+- **What the terms do not say.** They say nothing about automated access, robots or scraping, nothing about third-party use of catalog data, and nothing that disclaims price accuracy. Section 6 says the prices shown are PVP with VAT included and that Consum guarantees, to its own online customers, the price of the day the order was placed. So a price shown in Fresco on a later day can differ from the one Consum would charge, which is why the shopping list now says the prices are indicative.
+- **Links.** The legal notice has a "HIPERENLACES" section: links to consum.es are authorized only under conditions listed there, and any other link "requerirá de la autorización escrita de CONSUM". The list of conditions did not survive the page extraction, so it is NOT verified whether our deep links to `tienda.consum.es` product pages meet them. They are covered by this same accepted risk and by the same revocation.
+- **Kill-switch.** The revocation described above is now a tested procedure, documented in `lib/grocery/supermarket/registry.ts`: delete the connector from the array and no price and no link reach the shopper (shopping list, weekly cost, savings cards). `lib/grocery/map-item.test.ts` ("Consum kill-switch (ADR-0037)") covers removal, `permiso: 'rechazado'`, a missing `permisoRef`, and Mercadona staying untouched.
+- **Shown to the user.** The shopping-list summary says the prices are indicative, names the chains that priced a row and points to the date on each item; the Terms of Service have a section "Precios y enlaces de supermercados" that says the same without naming any chain.
+- **Still open.** No reply from Consum to the 2026-09-29 request (FRESCO-764, deadline about 2026-10-06). The lawyer's opinion on database rights, or a dated decision to keep accepting the risk, is still pending (FRESCO-790).
+
 ## Alternatives considered
 
 - **Keep Consum out of the registry and drop its prices at step 3.** Safest legally and fully reversible, but removes a price the app shows today and weakens the "real prices" promise for users near a Consum store.

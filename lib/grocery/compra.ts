@@ -22,6 +22,18 @@ export interface LineaCompra {
 
 export type CompraPorItem = Readonly<Record<string, LineaCompra>>;
 
+/**
+ * FRESCO-790 — the chains that priced at least one row, as the shopper reads
+ * them: "Mercadona", "Mercadona y Consum", "A, B y C". Empty when no row has a
+ * link. Derived from the data so a chain that is switched off (ADR-0037) drops
+ * out of the text without touching any component.
+ */
+export function nombresDeCadenas(compra: CompraPorItem | undefined): string {
+  const nombres = [...new Set(Object.values(compra ?? {}).flatMap(linea => linea.enlaces.map(e => e.nombreCadena)))].sort();
+  if (nombres.length <= 1) { return nombres.join(''); }
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+}
+
 const MS_POR_DIA = 86_400_000;
 
 /** Key of one row: aisle plus name, because the same name can sit in two aisles. */

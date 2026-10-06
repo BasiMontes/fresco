@@ -2,8 +2,10 @@ import type { GroceryInput } from './types';
 import { describe, expect, test } from 'bun:test';
 import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
-import { mapShoppingList, mapShoppingListItem } from './map-item';
+import { mapShoppingList, mapShoppingListItem, preciosNormalizados } from './map-item';
 import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
+import { conectorConsum, conectorMercadona } from './supermarket/catalog-connectors';
+import { crearRegistro } from './supermarket/connector';
 
 // FRESCO-762: the catalog is refreshed weekly, so pack sizes asserted below
 // are read from it instead of hardcoded — a refresh must not break these.
@@ -229,5 +231,40 @@ describe('mapShoppingListItem — FRESCO-768 normalized prices', () => {
 
   test('an unknown ingredient carries no prices', () => {
     expect(mapShoppingListItem({ nombre: 'ingrediente-inexistente-xyz', cantidad: 1, unidad: 'g' }).precios).toEqual([]);
+  });
+});
+
+// FRESCO-790 (A6-P2): ADR-0037 promises that if Consum asks us to stop, the
+// switch is ONE line in `supermarket/registry.ts`. These tests prove the claim
+// at the point where every price is resolved (`preciosNormalizados`, which the
+// shopping list, the cost estimate and the savings cards all go through): with
+// Consum out of the registry, or not in a runnable state, no Consum price and
+// no Consum link reaches the shopper, and Mercadona is untouched.
+describe('Consum kill-switch (ADR-0037)', () => {
+  const consum = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'consum')!;
+  const mercadona = Object.values(INGREDIENT_DICTIONARY).find(e => e.origenEnvase === 'mercadona')!;
+
+  test('the registry as shipped prices a Consum ingredient (the switch is on)', () => {
+    expect(preciosNormalizados({ entry: consum }).map(p => p.cadena)).toEqual(['consum']);
+  });
+
+  test('removing the Consum connector from the registry removes its prices and links', () => {
+    const registro = crearRegistro([conectorMercadona]);
+    expect(preciosNormalizados({ entry: consum, registro })).toEqual([]);
+  });
+
+  test('a Consum connector marked "rechazado" is dropped even though it is still registered', () => {
+    const registro = crearRegistro([conectorMercadona, { ...conectorConsum, permiso: 'rechazado' }]);
+    expect(preciosNormalizados({ entry: consum, registro })).toEqual([]);
+  });
+
+  test('a Consum connector without a cited reference is dropped (fail-closed)', () => {
+    const registro = crearRegistro([conectorMercadona, { ...conectorConsum, permisoRef: '' }]);
+    expect(preciosNormalizados({ entry: consum, registro })).toEqual([]);
+  });
+
+  test('switching Consum off leaves Mercadona prices intact', () => {
+    const registro = crearRegistro([conectorMercadona]);
+    expect(preciosNormalizados({ entry: mercadona, registro }).map(p => p.cadena)).toEqual(['mercadona']);
   });
 });
