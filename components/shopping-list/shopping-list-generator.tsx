@@ -6,8 +6,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EdgeFunctionError, generateShoppingList } from '@/lib/api/edge-functions';
+import { getAccessToken } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
-import { createClient } from '@/lib/supabase/client';
 
 export interface ShoppingListGeneratorProps {
   mealPlanId: string
@@ -43,9 +43,8 @@ export function ShoppingListGenerator({ mealPlanId, autoGenerate = false }: Shop
     setIsGenerating(true);
     setErrorMessage(null);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const result = await generateShoppingList({ meal_plan_id: mealPlanId }, session?.access_token ?? null);
+      const accessToken = await getAccessToken();
+      const result = await generateShoppingList({ meal_plan_id: mealPlanId }, accessToken);
       // FRESCO-366 / FRESCO-367: fired only on a real success. `auto`
       // distinguishes the automatic first-visit generation from a manual
       // retry; item count + cost estimate are the AC-required instrumentation.

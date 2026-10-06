@@ -2,8 +2,8 @@ import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
 import * as React from 'react';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
-import { addShoppingListItem, clearComprados, toggleShoppingListItem } from '@/lib/api/shopping-list';
-import { createClient } from '@/lib/supabase/client';
+import { getAccessToken } from '@/lib/client-api/auth';
+import { addShoppingListItem, clearComprados, toggleShoppingListItem } from '@/lib/client-api/shopping-list';
 
 interface UseShoppingListArgs {
   list: ShoppingListPersistido
@@ -28,7 +28,6 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const supabase = React.useMemo(() => createClient(), []);
   const pasillosOriginales = React.useMemo(() => new Set(list.pasillos.map(p => p.nombre)), [list.pasillos]);
 
   React.useEffect(() => {
@@ -36,10 +35,10 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
 
     async function loadSuggestions() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = await getAccessToken();
         const { suggestions: fetched } = await getShoppingListSuggestions(
           { shopping_list_id: list.id },
-          session?.access_token ?? null,
+          accessToken,
         );
         if (!cancelled) { setSuggestions(fetched); }
       }
@@ -55,7 +54,7 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     return () => {
       cancelled = true;
     };
-  }, [list.id, supabase]);
+  }, [list.id]);
 
   const pendientes = pasillos.reduce(
     (count, pasillo) => count + pasillo.items.filter(item => !item.comprado).length,
@@ -84,7 +83,7 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     setComprado({ pasilloIdx, itemIdx, comprado: nextComprado });
 
     try {
-      await toggleShoppingListItem(supabase, { listId: list.id, pasilloIdx, itemIdx, comprado: nextComprado });
+      await toggleShoppingListItem({ listId: list.id, pasilloIdx, itemIdx, comprado: nextComprado });
     }
     catch (error) {
       console.error('[ShoppingListView] toggleShoppingListItem failed, reverting', error);
@@ -112,7 +111,7 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     );
 
     try {
-      await clearComprados(supabase, list.id);
+      await clearComprados(list.id);
     }
     catch (error) {
       console.error('[ShoppingListView] clearComprados failed, reverting', error);
@@ -141,7 +140,7 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     });
 
     try {
-      await addShoppingListItem(supabase, { listId: list.id, pasilloNombre: suggestion.pasillo, item: newItem });
+      await addShoppingListItem({ listId: list.id, pasilloNombre: suggestion.pasillo, item: newItem });
     }
     catch (error) {
       console.error('[ShoppingListView] addShoppingListItem failed, reverting', error);

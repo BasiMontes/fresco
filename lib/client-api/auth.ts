@@ -12,9 +12,15 @@ export async function signOut(): Promise<void> {
   await createClient().auth.signOut();
 }
 
+/** The current browser session, or `null` when there is none. */
+export async function getSession() {
+  const { data: { session } } = await createClient().auth.getSession();
+  return session;
+}
+
 /** The current session's access token, or `null` when there is no session. */
 export async function getAccessToken(): Promise<string | null> {
-  const { data: { session } } = await createClient().auth.getSession();
+  const session = await getSession();
   return session?.access_token ?? null;
 }
 

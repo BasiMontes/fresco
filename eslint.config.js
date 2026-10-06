@@ -9,18 +9,11 @@ const COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS = [
   'components/admin/admin-recipe-search.tsx',
   'components/admin/delete-catalog-recipe-button.tsx',
   'components/auth/identity-cookie-sync.tsx',
-  'components/calendar/calendar-grid.tsx',
-  'components/calendar/delete-week-button.tsx',
-  'components/calendar/generate-week-button.tsx',
-  'components/calendar/use-calendar-drag-drop.ts',
-  'components/calendar/use-slot-marking.ts',
-  'components/historial/reuse-menu-button.tsx',
   'components/landing/site-nav.tsx',
   'components/layout/sidebar-account.tsx',
   'components/menu/push-prompt-banner.tsx',
   'components/notifications/routes-notice.tsx',
   'components/onboarding/identity-step.tsx',
-  'components/shopping-list/shopping-list-generator.tsx',
 ];
 
 export default antfu({

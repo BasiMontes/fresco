@@ -1,5 +1,4 @@
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid, SlotKey } from '@/lib/calendar/apply-slot-swap';
 import {
@@ -10,11 +9,11 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import * as React from 'react';
-import { MealPlanError, swapMealPlanSlots } from '@/lib/api/meal-plan';
+import { MealPlanError } from '@/lib/api/meal-plan';
 import { applySlotSwap, slotId } from '@/lib/calendar/apply-slot-swap';
+import { swapMealPlanSlots } from '@/lib/client-api/meal-plan';
 
 export interface UseCalendarDragDropArgs {
-  supabase: SupabaseClient
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
   setMenu: React.Dispatch<React.SetStateAction<MenuGrid>>
   setErrorMessage: (message: string | null) => void
@@ -30,7 +29,7 @@ export interface UseCalendarDragDropArgs {
  * god-component split) — no behavior change from the original inline
  * implementation.
  */
-export function useCalendarDragDrop({ supabase, slotIds, setMenu, setErrorMessage, pendingSlots, setPendingSlots }: UseCalendarDragDropArgs) {
+export function useCalendarDragDrop({ slotIds, setMenu, setErrorMessage, pendingSlots, setPendingSlots }: UseCalendarDragDropArgs) {
   // Tracks the `tipo` of the slot currently being dragged so every OTHER
   // `SlotCell` can disable itself as a drop target for the duration — a
   // franja never accepts a recipe from a different meal type (see the
@@ -101,7 +100,7 @@ export function useCalendarDragDrop({ supabase, slotIds, setMenu, setErrorMessag
     const slotAId = slotIds[from.dia][from.tipo];
     const slotBId = slotIds[to.dia][to.tipo];
 
-    void swapMealPlanSlots(supabase, { slotAId, slotBId })
+    void swapMealPlanSlots({ slotAId, slotBId })
       .catch((error) => {
         console.error('[CalendarGrid] swapMealPlanSlots failed, reverting', error);
         setMenu(current => applySlotSwap(current, { a: from, b: to }));

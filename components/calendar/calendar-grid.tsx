@@ -11,7 +11,6 @@ import { useSlotMarking } from '@/components/calendar/use-slot-marking';
 import { useVisibleDayWindow } from '@/components/calendar/use-visible-day-window';
 import { Button } from '@/components/ui/button';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
-import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 const DIA_LABELS: Record<DiaSemana, string> = {
@@ -92,10 +91,8 @@ export function CalendarGrid({
   // Stage 3 review; fixed by making overlapping drags impossible rather than
   // reconciling them after the fact.
   const [pendingSlots, setPendingSlots] = React.useState<ReadonlySet<string>>(new Set());
-  const supabase = React.useMemo(() => createClient(), []);
 
   const { sensors, draggingTipo, handleDragStart, handleDragEnd } = useCalendarDragDrop({
-    supabase,
     slotIds,
     setMenu,
     setErrorMessage,
@@ -104,7 +101,6 @@ export function CalendarGrid({
   });
 
   const { pendingMark, handleMarkEstado, handleUndoMark } = useSlotMarking({
-    supabase,
     slotIds,
     estados,
     setEstados,

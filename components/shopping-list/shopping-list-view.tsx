@@ -11,9 +11,9 @@ import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisl
 import { ShoppingListSuggestions } from '@/components/shopping-list/shopping-list-suggestions';
 import { ShoppingListSummary } from '@/components/shopping-list/shopping-list-summary';
 import { useShakeItem } from '@/components/shopping-list/use-shake-item';
+import { useShoppingList } from '@/components/shopping-list/use-shopping-list';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { nombresDeCadenas } from '@/lib/grocery/compra';
-import { useShoppingList } from '@/lib/shopping-list/use-shopping-list';
 
 export interface ShoppingListViewProps {
   list: ShoppingListPersistido

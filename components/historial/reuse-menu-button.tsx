@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { copyMealPlanToCurrentWeek } from '@/lib/api/meal-plan';
-import { createClient } from '@/lib/supabase/client';
+import { copyMealPlanToCurrentWeek } from '@/lib/client-api/meal-plan';
 
 /**
  * FRESCO-427 — "Usar este menú en la semana actual", on the read-only detail
@@ -28,13 +27,12 @@ export function ReuseMenuButton({ sourceMealPlanId, currentWeekHasMenu }: {
   const [pending, setPending] = React.useState(false);
   const [done, setDone] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const supabase = React.useMemo(() => createClient(), []);
 
   async function handleCopy() {
     setPending(true);
     setError(null);
     try {
-      await copyMealPlanToCurrentWeek(supabase, sourceMealPlanId);
+      await copyMealPlanToCurrentWeek(sourceMealPlanId);
       setDone(true);
       setTimeout(() => router.push('/calendar'), 1200);
     }

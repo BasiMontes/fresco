@@ -1,8 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import * as React from 'react';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
+import { getAccessToken } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 
 /** FRESCO-373 (A4-M27): how long the "Deshacer" snackbar stays before the mark commits. */
@@ -11,7 +11,6 @@ const UNDO_WINDOW_MS = 5000;
 type EstadosGrid = Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
 
 export interface UseSlotMarkingArgs {
-  supabase: SupabaseClient
   slotIds: Record<DiaSemana, Record<TipoPlato, string>>
   estados: EstadosGrid
   setEstados: React.Dispatch<React.SetStateAction<EstadosGrid>>
@@ -34,7 +33,7 @@ export interface PendingMark {
  * Extracted from `CalendarGrid` (A5-M1, god-component split) — no behavior
  * change from the original inline implementation.
  */
-export function useSlotMarking({ supabase, slotIds, estados, setEstados, setErrorMessage, pendingSlots, setPendingSlots }: UseSlotMarkingArgs) {
+export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, pendingSlots, setPendingSlots }: UseSlotMarkingArgs) {
   // FRESCO-373: a mark still in its undo window when the user leaves the
   // page must not be lost — commit it. `pagehide` covers a real navigation /
   // reload (React's unmount cleanup does not run reliably then); the return
@@ -51,10 +50,10 @@ export function useSlotMarking({ supabase, slotIds, estados, setEstados, setErro
     const id = slotId({ dia: mark.dia, tipo: mark.tipo });
     setPendingSlots(current => new Set(current).add(id));
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = await getAccessToken();
       await updateRecipeStatus(
         { meal_plan_recipe_id: slotIds[mark.dia][mark.tipo], estado: mark.estado },
-        session?.access_token ?? null,
+        accessToken,
       );
       captureEvent(
         mark.estado === 'cocinada'
@@ -86,7 +85,7 @@ export function useSlotMarking({ supabase, slotIds, estados, setEstados, setErro
         return next;
       });
     }
-  }, [supabase, slotIds, setEstados, setErrorMessage, setPendingSlots]);
+  }, [slotIds, setEstados, setErrorMessage, setPendingSlots]);
 
   const flushPendingMark = React.useCallback(() => {
     if (commitTimerRef.current) {
