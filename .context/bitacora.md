@@ -553,3 +553,8 @@ Historia archivada:
 - Qué: seed.sql regenerado desde prod (1173 recetas, PR #514); el reporte de drift ahora llega al issue (stderr capturado) y un issue abierto se escala con dueño, SLA de 7 días y etiqueta sla-breached; catalogRecipeIds ordena por id. #349 cerrado, run de verificación 37375463251 en verde.
 - Por qué: audit-6 A6-D3, el job llevaba 4 lunes en rojo con el issue vacío y sin comentarios.
 - Siguiente: el job de ledger tiene el mismo patrón de salto silencioso; el pr-check de staging se promovió con override por incidente de Actions (repo:check sin runner).
+
+## 2026-10-06 - FRESCO-795 cobertura honesta
+- Qué: check-coverage.ts imprime cobertura cargada y honesta (129 ficheros sin test como cero) y aplica dos suelos: cargada 85,5/87,0, honesta líneas 49,0. Docs alineados (coverage-ratchet, ADR-0018 addendum, regression.feature). PR #517 nivelada en dev/staging/main, 795 en Control de calidad.
+- Por qué: audit-6 A6-T4/T11, el 87,8 % se podía subir borrando un import de test; la real ronda 50 %.
+- Siguiente: margen del suelo honesto solo 0,6 pp (CI midió 49,63); subirlo al ir cubriendo páginas grandes (signup, recipe-library, preferences-form).
