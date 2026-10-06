@@ -1,6 +1,6 @@
 # ADR-0041 — The UI reaches data through plain `lib/` functions; `components/` owns hooks, never a Supabase client
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-06
 - **Deciders:** Basi Montes
 - **Tags:** architecture, layering, data-access, cross-cutting-invariant
