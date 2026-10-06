@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { readCssDurationMs } from './css-duration';
 
 /**
  * Full-screen filter/sort panel (FRESCO-273) — slides up from the bottom
@@ -27,13 +28,6 @@ export interface FilterDrawerProps {
 }
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
-
-function readCssDurationMs(propertyName: string, fallbackMs: number): number {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(propertyName).trim();
-  const value = Number.parseFloat(raw);
-  if (!raw || Number.isNaN(value)) { return fallbackMs; }
-  return raw.endsWith('ms') ? value : value * 1000;
-}
 
 export function FilterDrawer({ open, onOpenChange, title, onClearAll, hasActiveFilters, footer, children, 'aria-label': ariaLabel, 'data-testid': dataTestId }: FilterDrawerProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);
