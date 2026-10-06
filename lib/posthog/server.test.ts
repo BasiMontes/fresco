@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { PostHog } from 'posthog-node';
 import { captureServerEvent } from './server';
 
@@ -19,6 +19,9 @@ describe('lib/posthog/server', () => {
   });
 
   afterEach(() => {
+    // FRESCO-796: a spy that outlives its test keeps counting calls, so under a
+    // random order the "does nothing" cases saw the calls of the "does it" ones.
+    mock.restore();
     if (originalKey === undefined) {
       delete process.env.NEXT_PUBLIC_POSTHOG_KEY;
     }

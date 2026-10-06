@@ -82,9 +82,19 @@ A hit is not a failure — it means "the last human check of this manual-only pa
 |---|---|---|---|---|
 | Unit | `bun test` (`test:coverage`, ratchet floor) | fully mocked | `unit` | pure logic, wrappers, component render |
 | **DB-integration** (FRESCO-464, ADR-0026) | `bun run test:db` (`RUN_DB_INTEGRATION=1`) | **real Postgres — Supabase CLI local stack only** | `db-integration` (separate from `e2e`) | cross-user RLS denial per user-data table; `SECURITY DEFINER` actor-bind spoofs. `tests/db/README.md`. |
+| Unit, random order (FRESCO-796) | `bun run test:random [--seed=N]` (`bun test --parallel --randomize`) | fully mocked | `test-randomized.yml` (nightly cron + manual dispatch, seed printed) | order-independence of the unit suite |
 | pgTAP | `supabase test db` | real Postgres as superuser | inside `e2e` | pure in-database logic (learning trigger) — cannot test JWT-scoped authz |
 | e2e | `bun run test:e2e` (`playwright-bdd`) | ephemeral local stack (ADR-0017) | `e2e` | full user journeys — this file's `regression.feature` |
 | e2e — `@requiere-stripe-real` (FRESCO-735) | `bun run test:e2e:stripe` | real Supabase project + real Stripe test-mode API, against staging | `stripe-e2e.yml` (weekly cron + manual dispatch) | Stripe Checkout/Portal redirects, trial-without-card session, checkout.session.completed → Pro activation |
+
+### Unit tests must not depend on order (FRESCO-796)
+
+The default `bun test` order hides order dependence: audit 6 measured 15 to 102 failures under `--randomize` while every file passed alone. Two causes, and what to do about each:
+
+- **`mock.module` is process-wide and `mock.restore()` does not undo it.** A mock registered in one file (`@/lib/stripe`, `@/lib/supabase/server`, `@/lib/posthog/server`...) answers for the real module in every file that runs after it. `--parallel` implies `--isolate` (fresh global per file), which is why `test:random` uses it. Re-registering the real module in `afterAll` was tried and is NOT an option: each re-registration invalidates the module graph and the suite went from 25 s to 547 s.
+- **State that outlives a test.** `spyOn` without `mock.restore()` keeps counting calls; `process.env` is shared by every file a worker runs, so set what a test needs in `beforeEach` and restore it in `afterEach`, never while the `describe` is collected; module-level state (`let initialized`) needs a fresh module per test (`await import('./x?fresh=' + n)`).
+
+Plain `bun test --randomize` (no `--isolate`) is still red because of the first cause. Use `bun run test:random`. `test:coverage` stays sequential: its numbers move under `--parallel` (loaded lines 87.6 to 84.9), so the floors in `coverage-ratchet.md` are calibrated on the sequential run.
 
 ## Related
 
