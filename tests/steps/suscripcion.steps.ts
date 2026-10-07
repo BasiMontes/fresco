@@ -465,6 +465,29 @@ Then(/^se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta$/, 
   expect(session.payment_method_collection).toBe('if_required');
 });
 
+// --- FRESCO-844: annual Pro plan ---
+
+When(/^elige el plan anual y llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripcionCtx: ctx }) => {
+  const response = await page.request.post('/api/stripe/checkout', { data: { interval: 'year' } });
+  const body = await response.json() as { url?: string, error?: string };
+  if (!response.ok() || !body.url) { throw new Error(`Annual checkout session creation failed: ${response.status()} ${JSON.stringify(body)}`); }
+
+  const sessionId = new URL(body.url).pathname.split('/').pop();
+  if (!sessionId) { throw new Error(`Could not extract session id from Checkout url: ${body.url}`); }
+  ctx.checkoutSessionId = sessionId;
+});
+
+Then(/^el pago es una suscripción con el precio anual de Pro, que se cobra cada año$/, async ({ suscripcionCtx: ctx }) => {
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId, { expand: ['line_items.data.price'] });
+  expect(session.mode).toBe('subscription');
+  const price = session.line_items?.data[0]?.price;
+  expect(price?.id).toBe(process.env.STRIPE_PRICE_ID_PRO_ANUAL);
+  expect(price?.recurring?.interval).toBe('year');
+  expect(price?.recurring?.interval_count).toBe(1);
+});
+
 // --- FRESCO-778 (audit-6 A6-S3): the free trial is once per account ---
 
 Given(/^que Laura ya usó su prueba gratuita de Pro$/, async ({ page, request, testUserFactory, suscripcionCtx: ctx }) => {

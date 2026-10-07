@@ -1629,6 +1629,16 @@ Característica: Flujo completo de usuario en Fresco
     # Stripe.
 
   @suscripcion @automatizado @requiere-stripe-real
+  # Automatizado: tests/steps/suscripcion.steps.ts (FRESCO-844). Mismo enfoque que "Trial sin
+  # tarjeta": POST /api/stripe/checkout con `{ interval: 'year' }` y lectura de la Checkout
+  # Session real vía la API de Stripe, sin llenar el formulario hospedado. El criterio "webhook
+  # y reconcile la tratan como Pro" lo cubren los tests unitarios de `lib/stripe.ts`.
+  Escenario: Checkout anual crea una suscripción de Pro con cobro anual
+    Dado que Laura empieza el proceso de actualizar a Pro
+    Cuando elige el plan anual y llega a la pantalla de pago de Stripe Checkout
+    Entonces el pago es una suscripción con el precio anual de Pro, que se cobra cada año
+
+  @suscripcion @automatizado @requiere-stripe-real
   # FRESCO-813 (audit-6 A6-P10). El checkout fija `trial_settings.end_behavior.
   # missing_payment_method: 'cancel'`; sin tarjeta, al acabar la prueba Stripe cancela y el
   # webhook (`customer.subscription.deleted`) la devuelve a Free. Se verifica con un reloj de
