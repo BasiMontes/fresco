@@ -45,6 +45,9 @@ jobs:
       github.event.deployment_status.state == 'success'
       && startsWith(github.event.deployment_status.environment, 'Production')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     # Same shared single Supabase backend (jdqemhewjrjuopssdurn) as the e2e
     # job in pr-check.yml. Reuse that job's concurrency group so this run and
     # a concurrent PR e2e run never mutate the shared rows at the same time.
@@ -149,3 +152,23 @@ jobs:
           path: playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Open an issue when the run fails
+        # FRESCO-817 (A6-T13): a scheduled/post-deploy run nobody is watching
+        # failed silently. One open issue per label; later failures comment on
+        # it instead of stacking new ones.
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create smoke-failure --color b60205 --description "Post-deploy smoke run failed" 2>/dev/null || true
+          existing=$(gh issue list --label smoke-failure --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Failed again: $RUN_URL"
+            exit 0
+          fi
+          gh issue create \
+            --title "Post-deploy @smoke run failed" \
+            --label smoke-failure \
+            --body "The @smoke suite failed against a Production deploy; consider a Vercel rollback. Run: $RUN_URL"
