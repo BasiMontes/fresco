@@ -20,7 +20,25 @@ export function cn(...inputs: ClassValue[]) {
  * symbol.
  */
 export function formatPrecio(precio: number): string {
-  return `${precio.toFixed(2).replace('.', ',')}€`;
+  return `${formatImporte(precio)}€`;
+}
+
+/**
+ * FRESCO-819 (A6-L8) — the bare amount in `es-ES` ("3,50", "1.234,50"), two
+ * decimals, for a range where only the last figure carries the symbol
+ * ("3,50–4,20€"). `formatPrecio` builds on it so there is one decimal rule.
+ */
+export function formatImporte(importe: number): string {
+  return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(importe);
+}
+
+/**
+ * FRESCO-819 (A6-L8) — a shopping quantity in `es-ES`: decimal comma, no
+ * trailing zeros, at most two decimals ("1,6", "2", "0,25"). A raw `{cantidad}`
+ * printed "1.6 kg" with an English decimal point next to "40,87€".
+ */
+export function formatCantidad(cantidad: number): string {
+  return new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 }).format(cantidad);
 }
 
 /**

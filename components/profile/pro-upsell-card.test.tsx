@@ -16,7 +16,7 @@ describe('ProUpsellCard — trial available', () => {
     renderWithProviders(<ProUpsellCard trialAvailable />);
 
     expect(card().textContent).toContain('7 días de prueba gratis, sin tarjeta');
-    expect(card().textContent).toContain('€4.99/mes');
+    expect(card().textContent).toContain('4,99€/mes');
     expect(card().textContent).toContain('Pásate a Fresco Pro');
     expect(cta().textContent).toBe('Empezar prueba gratis');
   });
@@ -35,7 +35,7 @@ describe('ProUpsellCard — trial already used', () => {
     renderWithProviders(<ProUpsellCard trialAvailable={false} />);
 
     expect(card().textContent).toContain('Vuelve a Fresco Pro');
-    expect(card().textContent).toContain('€4.99/mes');
+    expect(card().textContent).toContain('4,99€/mes');
     expect(card().textContent).toContain('se cobra desde el primer día');
     expect(cta().textContent).toBe('Volver a Pro');
   });

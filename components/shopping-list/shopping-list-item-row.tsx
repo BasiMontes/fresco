@@ -5,7 +5,7 @@ import { ShoppingCart } from 'lucide-react';
 import { formatUsos, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
 import { Checkbox } from '@/components/ui/checkbox';
 import { normalizeNombre } from '@/lib/api/shopping-list';
-import { capitalize, cn, formatPrecio, formatUnidad } from '@/lib/utils';
+import { capitalize, cn, formatCantidad, formatPrecio, formatUnidad } from '@/lib/utils';
 
 interface ShoppingListItemRowProps {
   item: ShoppingListItem
@@ -32,10 +32,11 @@ function ItemQuantityLine({ item, precio, antiguedad, testIdPrefix }: {
 }) {
   return (
     <span className="text-body-sm text-tertiary">
-      {item.cantidad}
+      {formatCantidad(item.cantidad)}
       {' '}
       {formatUnidad(item.cantidad, item.unidad)}
-      {precio !== undefined && (
+      {/* FRESCO-819 (A6-L8): a 0 price means "unknown", never "free" ("Leche 1 l · 0,00€"). */}
+      {precio !== undefined && precio > 0 && (
         <>
           {' · '}
           {formatPrecio(precio)}
