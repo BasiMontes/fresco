@@ -4,7 +4,14 @@ import { Check } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export type CheckboxProps = React.InputHTMLAttributes<HTMLInputElement>;
+export type CheckboxProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  /**
+   * FRESCO-819: keep the tap target at the 24px box. Only for a dense grid where
+   * a 44px+ target would overlap its neighbours (the planning grid: 7 columns in
+   * ~270px at 360px wide). Every other call site gets the 44px+ target.
+   */
+  compact?: boolean
+};
 
 /**
  * Circular checkbox (FRESCO-191) — a real `<input type="checkbox">` for
@@ -22,7 +29,7 @@ export type CheckboxProps = React.InputHTMLAttributes<HTMLInputElement>;
  * no visual effect no matter what value was given.
  */
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, compact = false, ...props }, ref) => (
     // FRESCO-491: 24px box (WCAG 2.5.8 tap target). Bare-checkbox call sites
     // — the onboarding planning grid, the shopping list — were at 20px, the
     // label-wrapped ones (signup, recipe filters) were fine either way.
@@ -30,7 +37,12 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
       <input
         ref={ref}
         type="checkbox"
-        className="peer absolute inset-0 size-6 cursor-pointer opacity-0"
+        // FRESCO-819 (A6-L10): the invisible input is the tap target, 44px+ and
+        // centred on the 24px visible box, so the drawing does not change.
+        className={cn(
+          'peer absolute cursor-pointer opacity-0',
+          compact ? 'inset-0 size-6' : 'left-1/2 top-1/2 size-11 -translate-x-1/2 -translate-y-1/2',
+        )}
         {...props}
       />
       <span

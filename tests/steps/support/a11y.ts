@@ -72,3 +72,68 @@ export async function expectNoA11yViolations(
     );
   }
 }
+
+/** FRESCO-819 (A6-L10): WCAG 2.5.5 / Apple HIG touch target, the audit's 44 px floor. */
+export const MIN_TOUCH_TARGET_PX = 44;
+
+/**
+ * `data-testid`s known to be under the floor, one ticket each — never add one
+ * without a ticket. Emptied as tickets close.
+ * - `planning_selection_cell`: 7 columns in ~270px at 360px, no room for 44px
+ *   without a layout redesign (FRESCO-864).
+ */
+export const KNOWN_TOUCH_TARGET_ALLOWLIST: string[] = ['planning_selection_cell'];
+
+const INTERACTIVE_SELECTOR = [
+  'a[href]',
+  'button',
+  'input:not([type="hidden"])',
+  'select',
+  'textarea',
+  'summary',
+  '[role="button"]',
+  '[role="link"]',
+  '[role="checkbox"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="menuitem"]',
+].join(', ');
+
+/**
+ * Fails when any visible interactive element is smaller than `minPx` in either
+ * dimension, and names each offender (tag, data-testid, size, text). A native
+ * checkbox/radio is measured through its `<label>`, which is the real hit area
+ * when one wraps or points at it. 1 px visually-hidden nodes (sr-only skip
+ * links) are not targets and are skipped.
+ */
+export async function expectTouchTargetsAtLeast(
+  page: Page,
+  minPx: number = MIN_TOUCH_TARGET_PX,
+  allowlist: string[] = KNOWN_TOUCH_TARGET_ALLOWLIST,
+): Promise<void> {
+  const offenders = await page.evaluate(({ selector, min, allowed }) => {
+    const found: string[] = [];
+    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+      const style = getComputedStyle(element);
+      if (style.visibility === 'hidden' || style.display === 'none') { continue; }
+      if (allowed.includes(element.getAttribute('data-testid') ?? '')) { continue; }
+      let target: HTMLElement = element;
+      if (element instanceof HTMLInputElement && (element.type === 'checkbox' || element.type === 'radio')) {
+        const label = element.closest('label') ?? (element.id ? document.querySelector<HTMLElement>(`label[for="${element.id}"]`) : null);
+        if (label) { target = label; }
+      }
+      const { width, height } = target.getBoundingClientRect();
+      if (width <= 1 && height <= 1) { continue; }
+      if (width < min || height < min) {
+        const testId = element.getAttribute('data-testid');
+        const text = (element.textContent ?? element.getAttribute('aria-label') ?? '').trim().slice(0, 30);
+        found.push(`${element.tagName.toLowerCase()}${testId ? `[${testId}]` : ''} ${Math.round(width)}x${Math.round(height)} "${text}"`);
+      }
+    }
+    return found;
+  }, { selector: INTERACTIVE_SELECTOR, min: minPx, allowed: allowlist });
+
+  if (offenders.length > 0) {
+    throw new Error(`[a11y] ${offenders.length} elemento(s) interactivo(s) < ${minPx}px en ${page.url()}:\n${offenders.map(line => `- ${line}`).join('\n')}`);
+  }
+}

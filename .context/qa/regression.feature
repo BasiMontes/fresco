@@ -2075,6 +2075,20 @@ Característica: Flujo completo de usuario en Fresco
     # 35 px siguen por debajo (medido a 360 px en /menu, /calendar,
     # /shopping-list y /onboarding) y se subirán cuando se corrijan.
 
+  @mobile @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-819, A6-L10)
+  Escenario: La lista de la compra tiene objetivos táctiles de al menos 44 px en móvil
+    Dado que el usuario tiene una lista de la compra generada
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+    Y todos los elementos interactivos miden al menos 44 px
+
+  @mobile @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-819, A6-L10)
+  Escenario: /profile tiene objetivos táctiles de al menos 44 px en móvil
+    Dado que Laura está en /profile
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+    Y todos los elementos interactivos miden al menos 44 px
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)

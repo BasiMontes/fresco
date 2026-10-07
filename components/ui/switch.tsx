@@ -38,19 +38,27 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       disabled={disabled}
       data-testid={dataTestId}
       onClick={() => onCheckedChange(!checked)}
+      // FRESCO-819 (A6-L10): the button is the 44px+ tap target; the 24px track
+      // is drawn inside it, and the focus ring follows the track (`group`).
       className={cn(
-        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'border-primary bg-primary' : 'border-border bg-neutral-600',
+        'group inline-flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
-          'inline-block size-5 translate-x-0.5 rounded-full bg-surface-raised shadow transition-transform',
-          checked && 'translate-x-5',
+          'relative inline-flex h-6 w-11 items-center rounded-full border transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2',
+          checked ? 'border-primary bg-primary' : 'border-border bg-neutral-600',
         )}
-      />
+      >
+        <span
+          className={cn(
+            'inline-block size-5 translate-x-0.5 rounded-full bg-surface-raised shadow transition-transform',
+            checked && 'translate-x-5',
+          )}
+        />
+      </span>
     </button>
   ),
 );
