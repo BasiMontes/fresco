@@ -623,3 +623,8 @@ Historia archivada:
 - Qué: toRecipe y shopping_lists.items validan jsonb con zod en la frontera; 0 `as unknown as` en lib/api; scripts/ y cli/ marcados linguist-vendored. PR #545, 7c2a80af en dev/staging/main.
 - Por qué: audit-6 A6-A11/A6-A15. Un enum estricto de clasificacion habria ocultado 531 de 1173 recetas (19 categorias y 9 cocinas reales fuera de los tipos), asi que categoria/cocina pasan a string.
 - Siguiente: ticket Finalizada con evidencia. Receta con jsonb invalido se descarta y se loguea [recipes]; vigilar ese log.
+
+## 2026-10-07 - FRESCO-859 re-suscripcion sin trial concede Pro
+- Qué: resolveProUpdateFromSession usa trial_end si la suscripcion esta trialing y current_period_end del item si esta active. PR #546, b32c1dbc en dev/staging/main. Probado con Stripe real en modo test (trialing y re-suscripcion active sin trial).
+- Por qué: una re-suscripcion no tiene trial_end, el resolver lanzaba, el webhook respondia 200 y el cliente pagaba sin Pro (audit-6, hallazgo colateral de FRESCO-816).
+- Siguiente: el webhook sigue respondiendo 200 ante errores de proceso por diseño (sin reintento de Stripe); vigilar el log [/api/stripe/webhook] failed to process event.
