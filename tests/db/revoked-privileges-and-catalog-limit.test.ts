@@ -57,6 +57,16 @@ describe('revoked privileges migration (static)', () => {
   });
 });
 
+describe('definer search_path migration (static)', () => {
+  const sql = readFileSync('supabase/migrations/20261007160000_definer_functions_search_path_pg_temp.sql', 'utf8');
+
+  test('puts pg_temp last on every SECURITY DEFINER function whose search_path is exactly public', () => {
+    expect(sql).toContain('p.prosecdef');
+    expect(sql).toContain('\'search_path=public\' = any (coalesce(p.proconfig, \'{}\'))');
+    expect(sql).toContain('set search_path = public, pg_temp');
+  });
+});
+
 describe.skipIf(!(RUN && reachable))('revoked privileges and catalog limit (real DB)', () => {
   const ctx = createDbTestContext();
   let user: DbTestUser;

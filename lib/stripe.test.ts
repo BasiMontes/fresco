@@ -14,6 +14,7 @@ function fakeSession(overrides: Partial<Stripe.Checkout.Session> = {}): Stripe.C
   return {
     client_reference_id: 'user-123',
     customer: 'cus_abc',
+    payment_status: 'no_payment_required',
     ...overrides,
   } as unknown as Stripe.Checkout.Session;
 }
@@ -51,6 +52,32 @@ describe('resolveProUpdateFromSession', () => {
     });
 
     expect(result.stripeCustomerId).toBe('cus_expanded');
+  });
+
+  test('grants Pro for a paid session and for one that needed no payment (the trial), A6-S10', () => {
+    for (const payment_status of ['paid', 'no_payment_required'] as const) {
+      expect(resolveProUpdateFromSession({ session: fakeSession({ payment_status }), subscription: fakeSubscription(), expectedPriceId: PRO_PRICE_ID }).userId).toBe('user-123');
+    }
+  });
+
+  test('refuses an unpaid session, so a delayed payment method grants nothing until the money arrives (A6-S10)', () => {
+    expect(() => resolveProUpdateFromSession({ session: fakeSession({ payment_status: 'unpaid' }), subscription: fakeSubscription(), expectedPriceId: PRO_PRICE_ID }))
+      .toThrow('payment_status is unpaid');
+  });
+
+  test('grants Pro for a trialing or active subscription only (A6-S10)', () => {
+    for (const status of ['trialing', 'active'] as const) {
+      expect(resolveProUpdateFromSession({ session: fakeSession(), subscription: fakeSubscription({ status }), expectedPriceId: PRO_PRICE_ID }).stripeSubscriptionId).toBe('sub_xyz');
+    }
+    for (const status of ['canceled', 'incomplete', 'incomplete_expired', 'unpaid', 'past_due'] as const) {
+      expect(() => resolveProUpdateFromSession({ session: fakeSession(), subscription: fakeSubscription({ status }), expectedPriceId: PRO_PRICE_ID }))
+        .toThrow(`is ${status}, not trialing or active`);
+    }
+  });
+
+  test('refuses a session with no payment_status at all (fail closed)', () => {
+    expect(() => resolveProUpdateFromSession({ session: fakeSession({ payment_status: undefined }), subscription: fakeSubscription(), expectedPriceId: PRO_PRICE_ID }))
+      .toThrow('not settled');
   });
 
   test('throws when client_reference_id is missing', () => {

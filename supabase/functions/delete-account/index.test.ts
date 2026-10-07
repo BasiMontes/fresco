@@ -3,7 +3,7 @@ import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, getEdg
 
 /**
  * FRESCO-411 — orchestration coverage for `delete-account/index.ts`
- * (FRESCO-70 + ADR-0023 recent-re-auth). Pure `reauth.ts` helpers keep
+ * (FRESCO-70 + ADR-0023 recent-re-auth). Pure `_shared/token-recency.ts` helpers keep
  * their own tests; this pins the handler: auth → rate-limit → (registered
  * only) recent-re-auth → service-role `admin.deleteUser`, and the guest
  * short-circuit.
@@ -22,7 +22,7 @@ mock.module('../_shared/service-role-client.ts', () => ({ createServiceRoleClien
 await import('./index.ts')
 const handler: EdgeHandler = getEdgeHandler()
 
-/** Unsigned JWT with the given `iat` (seconds) + `sub` — `reauth.ts` only reads the payload. */
+/** Unsigned JWT with the given `iat` (seconds) + `sub` — `token-recency.ts` only reads the payload. */
 function jwt(payload: Record<string, unknown>): string {
   const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url')
   return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(payload)}.sig`

@@ -1,53 +1,61 @@
-import { describe, expect, it } from 'bun:test'
-import { isTokenRecent, MAX_TOKEN_AGE_SECONDS, readIssuedAt } from './token-recency.ts'
+import { describe, expect, test } from 'bun:test'
+import { isTokenRecent, jwtIssuedAt } from './token-recency.ts'
 
-const NOW = 1_800_000_000
-
-function base64Url(value: string): string {
-  return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+/** Minimal unsigned JWT with the given payload — only the payload segment is
+ * ever read by these helpers, so header and signature are placeholders. */
+function fakeJwt(payload: Record<string, unknown>): string {
+  const b64url = (obj: unknown) =>
+    btoa(JSON.stringify(obj)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return `${b64url({ alg: 'HS256', typ: 'JWT' })}.${b64url(payload)}.sig`
 }
 
-function tokenWith(claims: Record<string, unknown>): string {
-  return `${base64Url('{"alg":"HS256"}')}.${base64Url(JSON.stringify(claims))}.signature`
-}
+const NOW = 1_700_000_000
 
-describe('readIssuedAt', () => {
-  it('reads iat from a base64url payload', () => {
-    expect(readIssuedAt(tokenWith({ iat: NOW }))).toBe(NOW)
+describe('jwtIssuedAt', () => {
+  test('reads a numeric iat', () => {
+    expect(jwtIssuedAt(fakeJwt({ iat: NOW }))).toBe(NOW)
   })
 
-  it('returns null for a token with no iat, a non-numeric iat, or no readable payload', () => {
-    expect(readIssuedAt(tokenWith({ sub: 'user-1' }))).toBeNull()
-    expect(readIssuedAt(tokenWith({ iat: 'yesterday' }))).toBeNull()
-    expect(readIssuedAt('not-a-jwt')).toBeNull()
-    expect(readIssuedAt('a.%%%.c')).toBeNull()
-    expect(readIssuedAt('')).toBeNull()
+  test('returns null for a token with no iat', () => {
+    expect(jwtIssuedAt(fakeJwt({ sub: 'user-1' }))).toBeNull()
+  })
+
+  test('returns null for a non-numeric iat', () => {
+    expect(jwtIssuedAt(fakeJwt({ iat: 'soon' }))).toBeNull()
+  })
+
+  test('returns null for a malformed token', () => {
+    expect(jwtIssuedAt('not-a-jwt')).toBeNull()
+    expect(jwtIssuedAt('')).toBeNull()
+    expect(jwtIssuedAt('a.b')).toBe(null) // payload "b" is not valid base64 JSON
   })
 })
 
-describe('isTokenRecent', () => {
-  it('accepts a token issued just now and one right at the limit', () => {
-    expect(isTokenRecent(tokenWith({ iat: NOW }), { nowSeconds: NOW })).toBe(true)
-    expect(isTokenRecent(tokenWith({ iat: NOW - MAX_TOKEN_AGE_SECONDS }), { nowSeconds: NOW })).toBe(true)
+describe('isTokenRecent (A4-L11 freshness window)', () => {
+  const MAX_AGE = 5 * 60
+
+  test('accepts a token issued just now', () => {
+    expect(isTokenRecent(fakeJwt({ iat: NOW }), MAX_AGE, NOW)).toBe(true)
   })
 
-  it('rejects a token older than the window', () => {
-    expect(isTokenRecent(tokenWith({ iat: NOW - MAX_TOKEN_AGE_SECONDS - 1 }), { nowSeconds: NOW })).toBe(false)
-    expect(isTokenRecent(tokenWith({ iat: NOW - 3600 }), { nowSeconds: NOW })).toBe(false)
+  test('accepts a token issued within the window', () => {
+    expect(isTokenRecent(fakeJwt({ iat: NOW - 4 * 60 }), MAX_AGE, NOW)).toBe(true)
   })
 
-  it('tolerates a small clock skew but not a token from the future', () => {
-    expect(isTokenRecent(tokenWith({ iat: NOW + 30 }), { nowSeconds: NOW })).toBe(true)
-    expect(isTokenRecent(tokenWith({ iat: NOW + 3600 }), { nowSeconds: NOW })).toBe(false)
+  test('rejects a token issued outside the window (a leaked older access token)', () => {
+    expect(isTokenRecent(fakeJwt({ iat: NOW - 6 * 60 }), MAX_AGE, NOW)).toBe(false)
   })
 
-  it('rejects a token it cannot read an iat from', () => {
-    expect(isTokenRecent(tokenWith({ sub: 'user-1' }), { nowSeconds: NOW })).toBe(false)
-    expect(isTokenRecent('garbage', { nowSeconds: NOW })).toBe(false)
+  test('tolerates minor clock skew (token 30s in the future)', () => {
+    expect(isTokenRecent(fakeJwt({ iat: NOW + 30 }), MAX_AGE, NOW)).toBe(true)
   })
 
-  it('honours a custom window and uses the real clock by default', () => {
-    expect(isTokenRecent(tokenWith({ iat: NOW - 100 }), { nowSeconds: NOW, maxAgeSeconds: 60 })).toBe(false)
-    expect(isTokenRecent(tokenWith({ iat: Math.floor(Date.now() / 1000) }))).toBe(true)
+  test('rejects a token far in the future (forged iat)', () => {
+    expect(isTokenRecent(fakeJwt({ iat: NOW + 3600 }), MAX_AGE, NOW)).toBe(false)
+  })
+
+  test('rejects a token with no readable iat', () => {
+    expect(isTokenRecent(fakeJwt({ sub: 'user-1' }), MAX_AGE, NOW)).toBe(false)
+    expect(isTokenRecent('garbage', MAX_AGE, NOW)).toBe(false)
   })
 })
