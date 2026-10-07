@@ -165,3 +165,18 @@ Todas `verify_jwt=true` salvo `send-weekly-reengagement-push` (false, `requireSe
 ## Nota de método
 
 Los exploits de S1/S2/S3 se derivan de definiciones vivas (`pg_get_functiondef`, `pg_policies`, `pg_constraint`, grants) y del código; no se ejecutaron por la regla de solo lectura. Recomendado: reproducirlos en el stack local de CI como tests rojos antes de corregir.
+
+## Seguimiento FRESCO-816 (2026-10-07)
+
+Resolución de los hallazgos BAJO A6-S8, S9, S10, S11, S13 y S14.
+
+| Hallazgo | Estado | Qué se hizo / evidencia |
+|---|---|---|
+| A6-S8 | Corregido | Comparación en tiempo constante en `requireServiceRoleCaller` (`_shared/timing-safe.ts`) y en `stripe-reconcile` (`lib/auth/timing-safe-equal.ts`), con test (PR #539) |
+| A6-S9 | Corregido | Migración `20261007120000`: `REVOKE` de `TRUNCATE`/`TRIGGER`/`REFERENCES`/`MAINTAIN` a `anon` y `authenticated` (tablas existentes y default privileges) y de `EXECUTE` en todas las funciones trigger. Verificado en producción con `has_table_privilege` / `has_function_privilege`: 0 y 0 (PR #538) |
+| A6-S10 | Corregido | `checkout.session.completed` exige `payment_status` `paid` o `no_payment_required` y suscripción `trialing` o `active` (fail closed); `checkout.session.async_payment_succeeded` concede Pro cuando llega el dinero. Idempotencia por `event.id` en `stripe_webhook_events` (migración `20261007150000`, cerrada a los roles de cliente): un reenvío se responde 200 sin ejecutar; un fallo devuelve el claim para que un reenvío se procese. Los eventos anteriores a la tabla quedan cubiertos por el estado en vivo de la suscripción |
+| A6-S11 | **Aceptado, deuda condicionada** | La protección contra contraseñas filtradas (`auth_leaked_password_protection`) requiere el plan Pro de Supabase, que el proyecto no tiene contratado (deuda conocida de A4-H8). Mitigación vigente: comprobación HIBP (range API) en cliente y `minimum_password_length = 10` (FRESCO-363). **Se revisa** cuando el proyecto pase a Supabase Pro: activar la protección en hosted y retirar esta nota |
+| A6-S13 | Corregido | `reassign-guest-data` exige que el token de la cuenta destino tenga `iat` de hace menos de 5 minutos, con el mismo helper que `delete-account` (`_shared/token-recency.ts`), con test (PR #539) |
+| A6-S14 | Corregido | `get_catalog` con tope de `p_limit` de 1000 (el catálogo activo son 601 recetas; el cliente pide `page * 30` acumulado); `pg_temp` al final del `search_path` de las 18 funciones DEFINER propias (`rls_auto_enable` es de Supabase y no se toca); `JsonLd` escapa `<` y los separadores U+2028/U+2029 |
+
+**Límite conocido de S14**: si el catálogo activo supera 1000 recetas hay que subir el tope de `get_catalog` o paginar por offset en el cliente.
