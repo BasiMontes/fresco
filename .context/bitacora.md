@@ -608,3 +608,8 @@ Historia archivada:
 - Qué: borrados los steps muertos de FRESCO-89 (0 test.skip(true)), esperas fijas sustituidas por condiciones, issue automático al fallar stripe-e2e y post-deploy-smoke (PR #541, nivelado dev/staging/main).
 - Por qué: cerrar A6-T12/T13; los escenarios eran @solo-manual y su código solo cargaba skips. Ojo: un step borrado era compartido con un escenario @automatizado, bddgen lo caza.
 - Siguiente: vigilar el primer fallo real de los workflows para confirmar que el issue se abre; el resto de BAJOS de audit-6 sigue en sus tickets.
+
+## 2026-10-07 - FRESCO-818 higiene de hallazgos BAJO de audit-6 (DevOps)
+- Qué: cierre sin código; D9/D10/D11/D13/D14 ya resueltos o por diseño, borrada la rama huérfana test/FRESCO-464-get-recent-recipe-ids-spoof (su test apuntaba a una RPC eliminada).
+- Por qué: el criterio literal 'ramas remotas = 3' choca con los PRs abiertos de Dependabot; se reinterpretó como 'sin ramas remotas huérfanas' (0 hoy).
+- Siguiente: decidir qué hacer con los PRs de Dependabot #451/#495/#507 (mergear o cerrar) como trabajo aparte.
