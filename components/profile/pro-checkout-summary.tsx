@@ -126,7 +126,7 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
           <strong className="text-text">Precio.</strong>
           {' '}
           {selected && describeProPrice(selected)}
-          {savings !== null && ` Ahorras ${formatProAmount(savings, annual?.currency ?? 'eur')} al año frente a pagar 12 meses.`}
+          {savings !== null && `. Ahorras ${formatProAmount(savings, annual?.currency ?? 'eur')} al año frente a pagar 12 meses.`}
           {price.status === 'loading' && 'Cargando…'}
           {price.status === 'error' && 'No se pudo cargar el precio. Cierra y vuelve a abrir este resumen.'}
         </li>
