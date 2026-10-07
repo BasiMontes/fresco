@@ -613,3 +613,8 @@ Historia archivada:
 - Qué: cierre sin código; D9/D10/D11/D13/D14 ya resueltos o por diseño, borrada la rama huérfana test/FRESCO-464-get-recent-recipe-ids-spoof (su test apuntaba a una RPC eliminada).
 - Por qué: el criterio literal 'ramas remotas = 3' choca con los PRs abiertos de Dependabot; se reinterpretó como 'sin ramas remotas huérfanas' (0 hoy).
 - Siguiente: decidir qué hacer con los PRs de Dependabot #451/#495/#507 (mergear o cerrar) como trabajo aparte.
+
+## 2026-10-07 - FRESCO-819 higiene BAJO de audit-6 (App)
+- Qué: PR #543 (cantidades y precios en es-ES, precio 0 oculto) y PR #544 (zonas táctiles de 44 px en /shopping-list y /profile a 360 px, 58 y 46 infractores a 0, escenarios @mobile @a11y en CI). Cookie L11 sin cambio: ADR-0035 + HSTS.
+- Por qué: cerrar A6-L8/L10/L11; la rejilla de planificación no cabe a 44 px sin rediseño (allowlist con ticket).
+- Siguiente: FRESCO-861/862/863/864 (derivados). test:e2e en 6m11s, cerca del aviso de ADR-0018 (~6m30).
