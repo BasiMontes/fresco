@@ -26,6 +26,10 @@ const FN_NAME = 'reassign-guest-data'
 // room for a retry after a transient failure without being a useful oracle.
 const RATE_LIMIT_PER_HOUR = 5
 
+// A6-S13: the client signs in to the target account and calls straight away, so a few
+// minutes is generous (same window as delete-account's re-authentication).
+const TARGET_TOKEN_MAX_AGE_SECONDS = 5 * 60
+
 Deno.serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req)
   if (preflight) return preflight
@@ -75,7 +79,7 @@ Deno.serve(async (req: Request) => {
     // FRESCO-816 (A6-S13): ownership is proven by signing in now. A token that is
     // valid but was issued earlier (it lasts up to an hour) is not that proof, so
     // it gets the same generic 401 as a token that does not resolve.
-    if (!isTokenRecent(targetAccessToken)) {
+    if (!isTokenRecent(targetAccessToken, TARGET_TOKEN_MAX_AGE_SECONDS)) {
       throw new HttpError('Credenciales inválidas para esa cuenta.', 401)
     }
 

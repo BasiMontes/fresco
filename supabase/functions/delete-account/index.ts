@@ -22,7 +22,7 @@ import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
-import { isTokenRecent } from './reauth.ts'
+import { isTokenRecent } from '../_shared/token-recency.ts'
 import type { DeleteAccountRequest, DeleteAccountResponse } from './types.ts'
 
 const FN_NAME = 'delete-account'
