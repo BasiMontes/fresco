@@ -17,6 +17,7 @@ const updateUserMock = mock(async (_attributes: unknown) => ({ data: { user: nul
 const verifyOtpMock = mock(async (_params: unknown) => ({ data: { session: null }, error: null }));
 const setSessionMock = mock(async (_tokens: unknown) => ({ data: { user: null }, error: null }));
 const anonymousMock = mock(async (_options: unknown) => ({ data: { session: null }, error: null }));
+const resendMock = mock(async (_args: unknown) => ({ data: { user: null, session: null }, error: null }));
 const signUpMock = mock(async (_args: unknown) => ({ data: { user: null, session: null }, error: null }));
 
 void mock.module('@/lib/supabase/client', () => ({
@@ -32,14 +33,16 @@ void mock.module('@/lib/supabase/client', () => ({
       verifyOtp: verifyOtpMock,
       setSession: setSessionMock,
       signUp: signUpMock,
+      resend: resendMock,
     },
   }),
 }));
 
-const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
+const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, resendSignupConfirmation, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
 
 beforeEach(() => {
   signOutMock.mockClear();
+  resendMock.mockClear();
   getSessionMock.mockClear();
   signInMock.mockClear();
   resetMock.mockClear();
@@ -170,5 +173,13 @@ describe('adoptSession', () => {
     await adoptSession({ accessToken: 'acc', refreshToken: 'ref' });
 
     expect(setSessionMock).toHaveBeenCalledWith({ access_token: 'acc', refresh_token: 'ref' });
+  });
+});
+
+describe('resendSignupConfirmation', () => {
+  test('asks Supabase to resend the signup email, with the captcha token', async () => {
+    await resendSignupConfirmation({ email: 'a@b.es', captchaToken: 'cap-3' });
+
+    expect(resendMock).toHaveBeenCalledWith({ type: 'signup', email: 'a@b.es', options: { captchaToken: 'cap-3' } });
   });
 });

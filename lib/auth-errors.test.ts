@@ -1,6 +1,6 @@
 import { AuthApiError } from '@supabase/supabase-js';
 import { describe, expect, it } from 'bun:test';
-import { translateAuthError } from '@/lib/auth-errors';
+import { isEmailNotConfirmed, translateAuthError } from '@/lib/auth-errors';
 
 describe('translateAuthError', () => {
   it('maps a failed captcha to its own Spanish message (FRESCO-799)', () => {
@@ -12,5 +12,14 @@ describe('translateAuthError', () => {
     const generic = 'Algo salió mal. Inténtalo de nuevo en unos segundos.';
     expect(translateAuthError(new AuthApiError('nope', 500, 'unexpected_failure'))).toBe(generic);
     expect(translateAuthError(null)).toBe(generic);
+  });
+});
+
+describe('isEmailNotConfirmed', () => {
+  it('is true only for an auth error carrying the email_not_confirmed code', () => {
+    expect(isEmailNotConfirmed(new AuthApiError('Email not confirmed', 400, 'email_not_confirmed'))).toBe(true);
+    expect(isEmailNotConfirmed(new AuthApiError('nope', 400, 'invalid_credentials'))).toBe(false);
+    expect(isEmailNotConfirmed(new Error('email_not_confirmed'))).toBe(false);
+    expect(isEmailNotConfirmed(null)).toBe(false);
   });
 });

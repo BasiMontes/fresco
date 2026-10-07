@@ -1,7 +1,6 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { isAuthError } from '@supabase/supabase-js';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -14,11 +13,10 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { translateAuthError } from '@/lib/auth-errors';
-import { captchaOptions } from '@/lib/auth/captcha';
+import { isEmailNotConfirmed, translateAuthError } from '@/lib/auth-errors';
+import { resendSignupConfirmation, signInWithPassword } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 
 /**
  * `/login` — sign-in counterpart to `/signup` for an existing account.
@@ -92,15 +90,14 @@ function LoginPageInner() {
     setUnconfirmedEmail(null);
     setResendConfirmationMessage(null);
     try {
-      const client = createClient();
-      const { error } = await client.auth.signInWithPassword({ email, password, options: captchaOptions(captcha.token) });
+      const { error } = await signInWithPassword({ email, password, captchaToken: captcha.token });
       if (error) {
         captcha.reset();
         setLoginError(translateAuthError(error));
         setFailedAttempts(count => count + 1);
         // FRESCO-190: surface a resend affordance instead of leaving her
         // stuck on a generic error with no path back to her account.
-        if (isAuthError(error) && error.code === 'email_not_confirmed') {
+        if (isEmailNotConfirmed(error)) {
           setUnconfirmedEmail(email);
         }
         isSubmittingRef.current = false;
@@ -134,8 +131,7 @@ function LoginPageInner() {
     setIsResendingConfirmation(true);
     setResendConfirmationMessage(null);
     try {
-      const client = createClient();
-      const { error } = await client.auth.resend({ type: 'signup', email: unconfirmedEmail, options: captchaOptions(captcha.token) });
+      const { error } = await resendSignupConfirmation({ email: unconfirmedEmail, captchaToken: captcha.token });
       if (error) {
         setLoginError(translateAuthError(error));
         return;

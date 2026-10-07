@@ -8,8 +8,8 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
+import { getSession, signOut, updatePassword } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { createClient } from '@/lib/supabase/client';
 import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
@@ -37,8 +37,7 @@ export default function UpdatePasswordPage() {
   const isSubmittingRef = React.useRef(false);
 
   React.useEffect(() => {
-    const client = createClient();
-    void client.auth.getSession().then(({ data: { session } }) => {
+    void getSession().then((session) => {
       setHasSession(session !== null);
     });
   }, []);
@@ -70,13 +69,12 @@ export default function UpdatePasswordPage() {
         setError(PWNED_PASSWORD_MESSAGE);
         return;
       }
-      const client = createClient();
-      const { error: updateError } = await client.auth.updateUser({ password });
+      const { error: updateError } = await updatePassword(password);
       if (updateError) {
         setError(updateError.message);
         return;
       }
-      await client.auth.signOut();
+      await signOut();
       // FRESCO-150: sessionStorage isn't scoped per-account — clear any
       // onboarding draft so it doesn't leak into whoever logs in next on
       // this browser tab.
