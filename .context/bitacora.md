@@ -618,3 +618,8 @@ Historia archivada:
 - Qué: PR #543 (cantidades y precios en es-ES, precio 0 oculto) y PR #544 (zonas táctiles de 44 px en /shopping-list y /profile a 360 px, 58 y 46 infractores a 0, escenarios @mobile @a11y en CI). Cookie L11 sin cambio: ADR-0035 + HSTS.
 - Por qué: cerrar A6-L8/L10/L11; la rejilla de planificación no cabe a 44 px sin rediseño (allowlist con ticket).
 - Siguiente: FRESCO-861/862/863/864 (derivados). test:e2e en 6m11s, cerca del aviso de ADR-0018 (~6m30).
+
+## 2026-10-07 - FRESCO-820 jsonb validado con zod y scripts/cli vendored
+- Qué: toRecipe y shopping_lists.items validan jsonb con zod en la frontera; 0 `as unknown as` en lib/api; scripts/ y cli/ marcados linguist-vendored. PR #545, 7c2a80af en dev/staging/main.
+- Por qué: audit-6 A6-A11/A6-A15. Un enum estricto de clasificacion habria ocultado 531 de 1173 recetas (19 categorias y 9 cocinas reales fuera de los tipos), asi que categoria/cocina pasan a string.
+- Siguiente: ticket Finalizada con evidencia. Receta con jsonb invalido se descarta y se loguea [recipes]; vigilar ese log.
