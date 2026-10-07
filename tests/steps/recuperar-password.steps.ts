@@ -82,7 +82,9 @@ When(/^intenta confirmar el formulario de recuperación$/, async ({ page }) => {
     }
   });
   await page.getByTestId('forgot_password_submit_button').click();
-  await page.waitForTimeout(500);
+  // Let any request the click might have triggered land before the Then step
+  // asserts there was none.
+  await page.waitForLoadState('networkidle');
 });
 
 Then(/^el navegador bloquea el envío con la validación nativa del campo \(required \+ type=email\), sin llamar al backend$/, async ({ page }) => {

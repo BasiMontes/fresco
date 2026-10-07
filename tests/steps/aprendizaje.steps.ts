@@ -127,6 +127,9 @@ Then(/^ve que en Free las marcas no cambian sus menús, con un CTA a Pro$/, asyn
 // ── FRESCO-373 (A4-M27): undo window ────────────────────────────────────────
 
 When(/^marca ese plato como cocinado y pulsa "Deshacer" en el snackbar$/, async ({ page, aprendizajeCtx: ctx }) => {
+  // Fake clock so the Then step can run out the 5s undo window instantly
+  // instead of sleeping through it.
+  await page.clock.install();
   await page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`).click();
   await page.getByTestId('mark_undo_button').click();
 });
@@ -138,9 +141,11 @@ Then(/^el plato vuelve a estado pendiente con sus controles de marcado$/, async 
 });
 
 Then(/^al recargar la página el plato sigue pendiente$/, async ({ page, aprendizajeCtx: ctx }) => {
-  // The undo cancelled the deferred write, so nothing was persisted. A short
-  // settle first, so a beforeunload/pagehide flush (if any) would have fired.
-  await page.waitForTimeout(1_000);
+  // The undo cancelled the deferred write, so nothing was persisted. Run out
+  // the whole undo window (UNDO_WINDOW_MS = 5s in use-slot-marking.ts) on the
+  // fake clock: a timer that was not cancelled would fire and write now.
+  await page.clock.fastForward(5_500);
+  await page.waitForLoadState('networkidle');
   await page.reload();
   await expect(page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`)).toBeVisible({ timeout: MARK_RESULT_TIMEOUT_MS });
   await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveCount(0);

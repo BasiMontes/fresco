@@ -116,8 +116,9 @@ When(/^hace dos clicks sincrónicos sobre "Iniciar sesión" sin esperar entre am
     btn.click();
   });
   await page.waitForURL('**/menu');
-  // A late second request would arrive after navigation — give it a beat.
-  await page.waitForTimeout(500);
+  // A late second request would arrive after navigation — wait until the
+  // network is quiet before counting.
+  await page.waitForLoadState('networkidle');
 });
 
 Then(/^solo se dispara una llamada de autenticación$/, async () => {

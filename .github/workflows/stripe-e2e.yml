@@ -37,6 +37,9 @@ jobs:
   stripe-e2e:
     name: test:e2e:stripe
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     # Shared with post-deploy-smoke.yml: both hit the same real Supabase project and the
     # same Stripe account, so a queued run waits rather than racing a concurrent smoke run.
     concurrency:
@@ -93,3 +96,23 @@ jobs:
           path: playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Open an issue when the run fails
+        # FRESCO-817 (A6-T13): a scheduled/post-deploy run nobody is watching
+        # failed silently. One open issue per label; later failures comment on
+        # it instead of stacking new ones.
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create stripe-e2e-failure --color b60205 --description "Weekly Stripe e2e run failed" 2>/dev/null || true
+          existing=$(gh issue list --label stripe-e2e-failure --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Failed again: $RUN_URL"
+            exit 0
+          fi
+          gh issue create \
+            --title "Weekly Stripe e2e run failed" \
+            --label stripe-e2e-failure \
+            --body "The scheduled @requiere-stripe-real suite against staging failed. Run: $RUN_URL"
