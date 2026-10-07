@@ -603,3 +603,8 @@ Historia archivada:
 - Qué: S8 (comparación constante), S9 (REVOKE TRUNCATE/TRIGGER/REFERENCES/MAINTAIN + EXECUTE en funciones trigger), S10 (payment_status + estado de suscripción + idempotencia por event.id en stripe_webhook_events), S11 aceptado con nota, S13 (iat <5 min en reassign-guest-data), S14 (tope get_catalog 1000, pg_temp en 18 DEFINER, JsonLd escapa <). PRs #538, #539, #540, todo en prod.
 - Por qué: audit-6 eje seguridad; cierre por evidencia en producción (has_table_privilege, ledger de migraciones).
 - Siguiente: re-suscripción sin trial parece no conceder Pro (resolveProUpdateFromSession exige trial_end, deducido del código, sin reproducir); quedan 817-821, 837, 844 en la épica 775.
+
+## 2026-10-07 - FRESCO-817 higiene de hallazgos BAJO de audit-6
+- Qué: borrados los steps muertos de FRESCO-89 (0 test.skip(true)), esperas fijas sustituidas por condiciones, issue automático al fallar stripe-e2e y post-deploy-smoke (PR #541, nivelado dev/staging/main).
+- Por qué: cerrar A6-T12/T13; los escenarios eran @solo-manual y su código solo cargaba skips. Ojo: un step borrado era compartido con un escenario @automatizado, bddgen lo caza.
+- Siguiente: vigilar el primer fallo real de los workflows para confirmar que el issue se abre; el resto de BAJOS de audit-6 sigue en sus tickets.
