@@ -1,6 +1,7 @@
 import type { ReconcilableProfile } from '@/lib/billing/reconcile';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { timingSafeEqual } from '@/lib/auth/timing-safe-equal';
 import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -52,7 +53,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
   }
 
-  if (request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
+  // FRESCO-816 (A6-S8): constant-time, so the response time never says how much of a guess was right.
+  if (!timingSafeEqual(request.headers.get('authorization') ?? '', `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
   }
 
