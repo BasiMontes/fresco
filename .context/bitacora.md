@@ -598,3 +598,8 @@ Historia archivada:
 - Qué: 124 cerrada por evidencia (CHECK en prod, 0 nombres vacíos), 183 reabierta a Listo (defecto real sin motivo de rechazo), 31 rechazada con motivo (54 % mismatch Unsplash), 712 se mantiene WAD enlazada a 805. WIP sin actualizar >7d = 0; bugs reales en Rechazos = 0.
 - Por qué: audit-6 A6-P12, Rechazos usado como aparcamiento; cierre por la métrica (definition-of-done).
 - Siguiente: 65 tickets abiertos sin story points; 169 historias sin epic (todas cerradas, solo línea base); FRESCO-435 sigue en Rechazos aunque el pipeline de fotos se replantea ahí.
+
+## 2026-10-07 - FRESCO-816 cerrada: higiene BAJO de seguridad (audit-6)
+- Qué: S8 (comparación constante), S9 (REVOKE TRUNCATE/TRIGGER/REFERENCES/MAINTAIN + EXECUTE en funciones trigger), S10 (payment_status + estado de suscripción + idempotencia por event.id en stripe_webhook_events), S11 aceptado con nota, S13 (iat <5 min en reassign-guest-data), S14 (tope get_catalog 1000, pg_temp en 18 DEFINER, JsonLd escapa <). PRs #538, #539, #540, todo en prod.
+- Por qué: audit-6 eje seguridad; cierre por evidencia en producción (has_table_privilege, ledger de migraciones).
+- Siguiente: re-suscripción sin trial parece no conceder Pro (resolveProUpdateFromSession exige trial_end, deducido del código, sin reproducir); quedan 817-821, 837, 844 en la épica 775.
