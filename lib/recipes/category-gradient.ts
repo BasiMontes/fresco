@@ -33,6 +33,10 @@ const CATEGORY_GRADIENTS: Record<CategoriaReceta, GradientStops> = {
   guiso: { from: 'var(--color-neutral-400)', to: 'var(--color-neutral-500)' },
 };
 
+// Looked up by plain string: the live `recipes.clasificacion.categoria` has
+// values (`bowls`, `tostadas`, ...) outside `CategoriaReceta` (FRESCO-820).
+const GRADIENTS_BY_CATEGORY: ReadonlyMap<string, GradientStops> = new Map(Object.entries(CATEGORY_GRADIENTS));
+
 const DEFAULT_GRADIENT: GradientStops = {
   from: 'var(--color-neutral-200)',
   to: 'var(--color-neutral-100)',
@@ -43,7 +47,7 @@ const DEFAULT_GRADIENT: GradientStops = {
  * Falls back to a neutral light gradient for `null`/unrecognized input
  * (mirrors `getCategoryIcon`'s `ChefHat` fallback).
  */
-export function categoryGradient(categoria: CategoriaReceta | null | undefined): string {
-  const stops = (categoria && CATEGORY_GRADIENTS[categoria]) || DEFAULT_GRADIENT;
+export function categoryGradient(categoria: string | null | undefined): string {
+  const stops = (categoria && GRADIENTS_BY_CATEGORY.get(categoria)) || DEFAULT_GRADIENT;
   return `linear-gradient(145deg, ${stops.from}, ${stops.to})`;
 }

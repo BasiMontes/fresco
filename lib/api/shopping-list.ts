@@ -2,10 +2,20 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerateShoppingListResponse, ShoppingListItem } from '@/lib/api/types';
 import type { Database, Json } from '@/lib/supabase/types';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
+import { shoppingListPasillosSchema } from '@/lib/api/recipe-row-schema';
 import { addIsoWeeks } from '@/lib/date/iso-week';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
 
 type Pasillos = GenerateShoppingListResponse['pasillos'];
+
+/**
+ * `ShoppingListItem` is a real jsonb value (all fields serializable); its type
+ * just has no index signature, so it is not assignable to `Json`. A JSON round
+ * trip also drops `undefined` optionals, which `Json` does not allow.
+ */
+function toJson(value: ShoppingListItem): Json {
+  return JSON.parse(JSON.stringify(value));
+}
 
 export class ShoppingListError extends Error {
   constructor(message: string) {
@@ -52,11 +62,13 @@ export async function getShoppingListForPlan(
     return null;
   }
 
-  // Cast, not a runtime validation — `items` is jsonb typed as `Json`, but
-  // its real shape is guaranteed by `generate-shopping-list/index.ts`, the
-  // only writer of this column. Same trust boundary as `meal-plan.ts`'s
-  // `toRecipe()`.
-  const pasillos = data.items as unknown as GenerateShoppingListResponse['pasillos'];
+  const parsed = shoppingListPasillosSchema.safeParse(data.items);
+
+  if (!parsed.success) {
+    throw new ShoppingListError(`La lista de la compra guardada no tiene el formato esperado: ${parsed.error.message}`);
+  }
+
+  const pasillos: Pasillos = parsed.data;
   const totalItems = pasillos.reduce((acc, pasillo) => acc + pasillo.items.length, 0);
 
   return {
@@ -138,10 +150,7 @@ export async function addShoppingListItem(
   const { error } = await client.rpc('jsonb_add_item', {
     p_list_id: listId,
     p_pasillo_nombre: pasilloNombre,
-    // `ShoppingListItem` is a real jsonb value (all fields serializable) —
-    // the mismatch is only that its type has no index signature, not that
-    // the shape is wrong.
-    p_item: item as unknown as Json,
+    p_item: toJson(item),
   });
 
   if (error) {

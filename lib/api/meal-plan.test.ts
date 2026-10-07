@@ -21,7 +21,7 @@ const SAMPLE_RECIPE_ROW = {
   alergenos: [],
   ingredientes_principales: ['lentejas'],
   ingredientes_que_puede_desagradar: [],
-  temporada: ['otoño'],
+  temporada: ['otono'],
   pasos_resumen: ['Cocer'],
   veces_cocinada: 3,
   veces_descartada: 0,

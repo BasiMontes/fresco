@@ -1,6 +1,7 @@
 import type { RecetaPropia, Recipe } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import { recipeJsonbSchema } from '@/lib/api/recipe-row-schema';
 
 /** Raw `public.recipes` row shape — jsonb columns typed as `Json`, per `lib/supabase/types.ts`. */
 export type RecipeRow = Database['public']['Tables']['recipes']['Row'];
@@ -14,24 +15,30 @@ export class RecipesError extends Error {
 
 /**
  * Reshapes a raw `recipes` row (jsonb columns typed as `Json`) into the
- * strongly-typed `@schemas` `Recipe` shape. A cast, not a runtime validation
- * — mirrors the same trust boundary `generate-meal-plan/index.ts` already
- * takes on the backend (`.returns<Recipe[]>()` on the same table). Shared
- * with `lib/api/meal-plan.ts` — one place for this mapping instead of two
- * copies that could silently drift.
+ * strongly-typed `@schemas` `Recipe` shape, validating the jsonb columns at
+ * the boundary (FRESCO-820). A row whose jsonb no longer matches the shape is
+ * dropped (`null`) and logged, so one malformed recipe never empties a whole
+ * list. Shared with `lib/api/meal-plan.ts` — one place for this mapping
+ * instead of two copies that could silently drift.
  */
-export function toRecipe(row: RecipeRow): Recipe {
-  return {
-    ...row,
-    meta: row.meta as unknown as Recipe['meta'],
-    clasificacion: row.clasificacion as unknown as Recipe['clasificacion'],
-    dieta: row.dieta as unknown as Recipe['dieta'],
-    alergenos: row.alergenos as unknown as Recipe['alergenos'],
-    ingredientes_principales: row.ingredientes_principales as unknown as Recipe['ingredientes_principales'],
-    ingredientes_que_puede_desagradar: row.ingredientes_que_puede_desagradar as unknown as Recipe['ingredientes_que_puede_desagradar'],
-    temporada: row.temporada as unknown as Recipe['temporada'],
-    pasos_resumen: row.pasos_resumen as unknown as Recipe['pasos_resumen'],
-  };
+export function toRecipe(row: RecipeRow): Recipe | null {
+  const parsed = recipeJsonbSchema.safeParse(row);
+
+  if (!parsed.success) {
+    console.error(`[recipes] Receta descartada, jsonb inválido (id=${row.id}): ${parsed.error.message}`);
+    return null;
+  }
+
+  return { ...row, ...parsed.data };
+}
+
+/** `toRecipe` over a list, skipping the rows it drops. */
+export function toRecipes(rows: RecipeRow[]): Recipe[] {
+  return rows.flatMap((row) => {
+    const recipe = toRecipe(row);
+
+    return recipe ? [recipe] : [];
+  });
 }
 
 /**
@@ -113,7 +120,7 @@ export async function getLatestAvailableRecipes(
     throw new RecipesError(`No se pudieron leer las últimas recetas: ${error.message}`);
   }
 
-  return (data ?? []).map(toRecipe);
+  return toRecipes(data ?? []);
 }
 
 /** Card-sized projection of a catalog recipe — everything the browse grid renders, nothing the detail page fetches separately. */
@@ -386,8 +393,9 @@ export async function getRecipeDetail(
   if (catalogoError) {
     throw new RecipesError(`No se pudo leer la receta: ${catalogoError.message}`);
   }
-  if (catalogo) {
-    return { kind: 'catalogo', receta: toRecipe(catalogo) };
+  const receta = catalogo ? toRecipe(catalogo) : null;
+  if (receta) {
+    return { kind: 'catalogo', receta };
   }
 
   return null;

@@ -1,4 +1,3 @@
-import type { CategoriaReceta } from '@schemas';
 import type * as React from 'react';
 
 import Image from 'next/image';
@@ -44,7 +43,7 @@ import { cn } from '@/lib/utils';
 export interface RecipeCardMediaProps {
   fotoUrl: string | null | undefined
   nombre: string
-  categoria: CategoriaReceta | null | undefined
+  categoria: string | null | undefined
   priority?: boolean
   sizes?: string
   overlay?: React.ReactNode
