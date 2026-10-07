@@ -66,6 +66,22 @@ describe('POST /api/stripe/checkout', () => {
     expect(params.custom_text.submit.message.length).toBeLessThanOrEqual(1200);
   });
 
+  test('FRESCO-845: the hosted page carries the Fresco brand (name, colours, pill button, icon) on every session', async () => {
+    await POST(req());
+    await POST(req({ interval: 'year' }));
+
+    for (const [params] of sessionsCreate.mock.calls) {
+      const { branding_settings: branding } = params as { branding_settings: { display_name: string, button_color: string, background_color: string, border_style: string, icon: { type: string, url: string } } };
+      expect(branding.display_name).toBe('Fresco');
+      expect(branding.button_color).toMatch(/^#[0-9A-F]{6}$/);
+      expect(branding.background_color).toMatch(/^#[0-9A-F]{6}$/);
+      expect(branding.border_style).toBe('pill');
+      // Stripe fetches the icon when the session is created, so it must be a public https URL.
+      expect(branding.icon.type).toBe('url');
+      expect(branding.icon.url).toMatch(/^https:\/\/.+\.png$/);
+    }
+  });
+
   test('returns the hosted Checkout URL and passes the user id as client_reference_id', async () => {
     const res = await POST(req());
 
