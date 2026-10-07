@@ -20,3 +20,10 @@
 *.woff2 binary
 *.ttf   binary
 *.eot   binary
+
+# Boilerplate tooling synced from upstream (`bun run up`), not product code.
+# Marked vendored so GitHub language stats and diff tooling skip it; the
+# product size limits (eslint.config.js, `max-lines` / `complexity`) only
+# cover app/, components/ and lib/ (FRESCO-820, audit-6 A6-A15).
+scripts/** linguist-vendored
+cli/**     linguist-vendored

@@ -1,5 +1,3 @@
-import type { CategoriaReceta } from '@schemas';
-
 import { categoryGradient } from '@/lib/recipes/category-gradient';
 import { cn } from '@/lib/utils';
 
@@ -27,7 +25,7 @@ function initialFrom(name: string): string {
 
 export interface RecipePlaceholderProps {
   name: string
-  categoria: CategoriaReceta | null | undefined
+  categoria: string | null | undefined
   className?: string
   /**
    * FRESCO-451: a fixed `text-5xl` glyph read fine on a ~240px card but

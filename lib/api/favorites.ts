@@ -1,7 +1,7 @@
 import type { Recipe } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
-import { toRecipe } from '@/lib/api/recipes';
+import { toRecipes } from '@/lib/api/recipes';
 
 class FavoritesError extends Error {
   constructor(message: string) {
@@ -75,10 +75,9 @@ export async function getFavoriteRecipes(
     throw new FavoritesError(`No se pudieron leer tus favoritos: ${error.message}`);
   }
 
-  return (data ?? [])
+  return toRecipes((data ?? [])
     .map(row => row.recipes)
-    .filter(row => row !== null)
-    .map(toRecipe);
+    .filter(row => row !== null));
 }
 
 /**

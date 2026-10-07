@@ -46,8 +46,13 @@ export interface RecipeMeta {
 
 export interface RecipeClasificacion {
   tipo_plato: TipoPlato
-  categoria: CategoriaReceta
-  cocina: TipoCocina
+  // FRESCO-820: typed `string`, like `Alergeno`. The live `recipes.clasificacion`
+  // holds 19 categories and 9 cuisines (`bowls`, `tostadas`, `casera`,
+  // `mediterranea`, ...) the unions below never listed, so a strict enum here
+  // would drop ~45% of the catalog at the zod boundary. `TipoCocina` stays the
+  // vocabulary of the user's `cocinas_favoritas`, not of a recipe's own cuisine.
+  categoria: string
+  cocina: string
   es_contundente: boolean
   es_ligero: boolean
   es_comfort_food: boolean
