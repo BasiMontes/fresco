@@ -109,3 +109,8 @@ export async function adoptSession({ accessToken, refreshToken }: { accessToken:
 export async function sendPasswordReset({ email, captchaToken }: { email: string, captchaToken: string | null }) {
   return createClient().auth.resetPasswordForEmail(email, captchaOptions(captchaToken));
 }
+
+/** Re-sends the signup confirmation email to an account that never confirmed it (FRESCO-190). */
+export async function resendSignupConfirmation({ email, captchaToken }: { email: string, captchaToken: string | null }) {
+  return createClient().auth.resend({ type: 'signup', email, options: captchaOptions(captchaToken) });
+}

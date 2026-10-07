@@ -1,9 +1,13 @@
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { getPlanTierForAnalytics } from '@/lib/api/user-profile/plan';
 import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
 
 // Re-exported here so a component that must stay light (the landing nav, the
 // root-layout identity sync) imports ONE module for both halves of its check.
 export { hasSupabaseSessionCookie } from '@/lib/supabase/session-cookie';
+
+/** The signed-in user, so a root-layout component can type it without importing the SDK. */
+export type { User as AuthUser } from '@supabase/supabase-js';
 
 /**
  * ADR-0041, with FRESCO-505 / FRESCO-539 kept intact: this module is safe to
@@ -56,4 +60,19 @@ export async function readProfileNombre(userId: string): Promise<string | null> 
     .eq('id', userId)
     .maybeSingle();
   return data?.nombre ?? null;
+}
+
+/**
+ * The plan tier for an analytics property, loading the client lazily. Never
+ * throws and falls back to `'free'` (see `getPlanTierForAnalytics`): the
+ * root-layout PostHog provider calls this, and analytics must never break it.
+ */
+export async function getPlanTierForAnalyticsLazy(userId: string) {
+  try {
+    const { createClient } = await loadSupabaseClient();
+    return await getPlanTierForAnalytics(createClient(), userId);
+  }
+  catch {
+    return 'free' as const;
+  }
 }

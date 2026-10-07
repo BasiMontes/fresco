@@ -434,7 +434,7 @@ Project values live in **`.agents/project.yaml`**: load once per session. NEVER 
 | **Parameters** | Max 2 positional. 3+ → object param. Enforced: `max-params` (error) in `app/`, `components/`, `lib/` |
 | **Utilities**  | Agnostic only, no domain coupling in shared modules                       |
 | **Imports**    | Always aliases (`@api/`, `@schemas/`, `@utils/`). No deep relative imports |
-| **Layers**     | `components/` never import Supabase: data access lives behind `lib/`. Enforced by an ESLint lock (`COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS` in `eslint.config.js` only shrinks, FRESCO-810). No import cycles: `bun run cycles:check` |
+| **Layers**     | `components/` never import Supabase: data access lives behind `lib/`. Enforced by ESLint locks in `eslint.config.js` (FRESCO-810): `components/**` and `app/**` cannot import the Supabase browser client or SDK (server pages keep `@/lib/supabase/server`), and `lib/**` holds no React hooks (`lib/no-react-hooks.test.ts` covers `React.useX`). No import cycles: `bun run cycles:check` |
 | **Types**      | Declare interfaces at top of file, after imports                           |
 | **Errors**     | Public methods: fail fast (throw). Utilities: silent fail (return null)    |
 

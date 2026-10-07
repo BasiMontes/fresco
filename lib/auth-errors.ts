@@ -43,6 +43,11 @@ const AUTH_ERROR_MESSAGES: Record<string, string> = {
 
 const GENERIC_AUTH_ERROR = 'Algo salió mal. Inténtalo de nuevo en unos segundos.';
 
+/** True when sign-in failed because the account's email was never confirmed (FRESCO-190). */
+export function isEmailNotConfirmed(error: unknown): boolean {
+  return isAuthError(error) && error.code === 'email_not_confirmed';
+}
+
 export function translateAuthError(error: unknown): string {
   if (isAuthError(error) && error.code && AUTH_ERROR_MESSAGES[error.code]) {
     return AUTH_ERROR_MESSAGES[error.code];

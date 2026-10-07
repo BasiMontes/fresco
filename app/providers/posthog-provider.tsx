@@ -1,15 +1,14 @@
 'use client';
 
 import type { PlanUsuario } from '@schemas';
-import type { User } from '@supabase/supabase-js';
 import type { ReactNode } from 'react';
+import type { AuthUser } from '@/lib/client-api/identity';
 import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
-import { getPlanTierForAnalytics } from '@/lib/api/user-profile/plan';
+import { getPlanTierForAnalyticsLazy, watchAuthState } from '@/lib/client-api/identity';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { loadPosthog } from '@/lib/posthog/load';
 import { derivePersonProperties } from '@/lib/posthog/person-properties';
-import { loadSupabaseClient } from '@/lib/supabase/client-lazy';
 
 // Module-level, not component state: React StrictMode double-invokes effects
 // in dev, and posthog.init() is not itself idempotent-safe to call twice.
@@ -101,39 +100,34 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
     });
 
     // FRESCO-505: same class of bug FRESCO-496 already fixed for
-    // `posthog-js` above, just missed here — `@/lib/supabase/client` pulls
-    // in the whole `@supabase/supabase-js` client (realtime + storage +
-    // postgrest + functions), and this effect only ever reaches it once
-    // cookie consent is accepted (the early return above), so a static
-    // import shipped that weight in every page's initial bundle for a call
-    // that a fresh, no-consent-yet visit — exactly what Lighthouse measures
-    // — never even runs.
-    let active = true;
-    let unsubscribe: (() => void) | undefined;
+    // `posthog-js` above. The Supabase client is ~530 KiB and this effect only
+    // reaches it once cookie consent is accepted (the early return above), so
+    // `watchAuthState` loads it lazily instead of a static import shipping that
+    // weight in every page's initial bundle for a call a fresh, no-consent-yet
+    // visit (exactly what Lighthouse measures) never runs.
+    const controller = new AbortController();
 
-    void loadSupabaseClient().then(({ createClient }) => {
-      if (!active) { return; }
-      const client = createClient();
+    async function identifyWithProperties(user: AuthUser): Promise<void> {
+      const identKey = `${user.id}:${user.is_anonymous === true}`;
+      if (identifiedKey.current === identKey) {
+        return;
+      }
+      identifiedKey.current = identKey;
 
-      async function identifyWithProperties(user: User): Promise<void> {
-        const identKey = `${user.id}:${user.is_anonymous === true}`;
-        if (identifiedKey.current === identKey) {
-          return;
-        }
-        identifiedKey.current = identKey;
-
-        // Fail-soft (§10 Errors) — `getPlanTierForAnalytics` never throws: a
-        // profile-read blip must never break identity linkage, `plan` just
-        // stays at its 'free' default.
-        let plan: PlanUsuario = 'free';
-        if (user.is_anonymous !== true) {
-          plan = await getPlanTierForAnalytics(client, user.id);
-        }
-
-        identifyUser(user.id, derivePersonProperties(user, plan));
+      // Fail-soft (§10 Errors) — `getPlanTierForAnalyticsLazy` never throws: a
+      // profile-read blip must never break identity linkage, `plan` just
+      // stays at its 'free' default.
+      let plan: PlanUsuario = 'free';
+      if (user.is_anonymous !== true) {
+        plan = await getPlanTierForAnalyticsLazy(user.id);
       }
 
-      const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      identifyUser(user.id, derivePersonProperties(user, plan));
+    }
+
+    const stopWatching = watchAuthState({
+      signal: controller.signal,
+      onChange: (event, session) => {
         const user = session?.user;
         if (user?.id) {
           void identifyWithProperties(user);
@@ -151,14 +145,12 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
         if (event === 'INITIAL_SESSION' && session?.user?.id) {
           captureEvent(POSTHOG_EVENTS.SESSION_STARTED);
         }
-      });
-
-      unsubscribe = () => subscription.unsubscribe();
+      },
     });
 
     return () => {
-      active = false;
-      unsubscribe?.();
+      controller.abort();
+      void stopWatching.then(stop => stop());
     };
   }, [decision]);
 

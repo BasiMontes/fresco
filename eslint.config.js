@@ -1,11 +1,23 @@
 import antfu from '@antfu/eslint-config';
 
-// FRESCO-788 (audit-6 A6-A1): components that, today, reach Supabase directly.
-// AGENTS.md section 10 keeps data access behind lib/, and FRESCO-810 moves each of these
-// calls out. The lock below applies to every OTHER file under components/, so
-// nothing new can grow the list; remove an entry here in the same change that
-// removes its import.
-const COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS = [
+const REACT_HOOK_NAMES = [
+  'use',
+  'useActionState',
+  'useCallback',
+  'useContext',
+  'useDeferredValue',
+  'useEffect',
+  'useId',
+  'useImperativeHandle',
+  'useInsertionEffect',
+  'useLayoutEffect',
+  'useMemo',
+  'useOptimistic',
+  'useReducer',
+  'useRef',
+  'useState',
+  'useSyncExternalStore',
+  'useTransition',
 ];
 
 export default antfu({
@@ -231,19 +243,34 @@ export default antfu({
     'max-lines': 'off',
   },
 }, {
-  // --- Component layer lock (FRESCO-788) ---
+  // --- Component layer lock (FRESCO-788, closed by FRESCO-810) ---
   //
   // components/ must not import the Supabase wrapper or the SDK: data access lives
-  // behind lib/ (AGENTS.md section 10). The files in COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS
-  // already do and are left alone until FRESCO-810 moves their calls; every other
-  // file under components/ is locked.
+  // behind lib/ (AGENTS.md section 10).
   files: ['components/**/*.{ts,tsx}'],
-  ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}', ...COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS],
+  ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
   rules: {
     'no-restricted-imports': ['error', {
       patterns: [{
         group: ['@/lib/supabase', '@/lib/supabase/*', '@supabase/*'],
-        message: 'Components must not reach Supabase directly (AGENTS.md section 10: data access lives behind lib/). Put the call in lib/ and import that. This file is not on COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS in eslint.config.js: the list only shrinks (FRESCO-810), it does not grow.',
+        message: 'Components must not reach Supabase directly (AGENTS.md section 10: data access lives behind lib/). Put the call in lib/ and import that.',
+      }],
+    }],
+  },
+}, {
+  // --- app/ does not reach the browser client or the SDK (FRESCO-810) ---
+  //
+  // Pages and route handlers go through `@/lib/client-api/*` in the browser. Server
+  // code (pages, layouts, routes) keeps using `@/lib/supabase/server` and
+  // `@/lib/supabase/service`, so only the browser client, its lazy loader and the SDK
+  // are restricted here.
+  files: ['app/**/*.{ts,tsx}'],
+  ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [{
+        group: ['@/lib/supabase/client', '@/lib/supabase/client-lazy', '@supabase/*'],
+        message: 'app/ must not import the Supabase browser client or the SDK (FRESCO-810). In the browser use @/lib/client-api/*; on the server use @/lib/supabase/server.',
       }],
     }],
   },
@@ -254,10 +281,18 @@ export default antfu({
   // the other way round. `lib/fixtures/page-shells.tsx` (13 component imports) and
   // an email template that read two constants from a component were the last two
   // inversions; both moved, and this keeps `lib/` clean.
+  //
+  // It also holds no React hooks: they live next to the component that uses them.
+  // This only sees named imports; `lib/no-react-hooks.test.ts` covers `React.useX`.
   files: ['lib/**/*.{ts,tsx}'],
   ignores: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
   rules: {
     'no-restricted-imports': ['error', {
+      paths: [{
+        name: 'react',
+        importNames: REACT_HOOK_NAMES,
+        message: 'lib/ holds no React hooks (FRESCO-810, ADR-0041): put the hook next to the component that uses it.',
+      }],
       patterns: [{
         group: ['@/components', '@/components/*', '@/app', '@/app/*'],
         message: 'lib/ must not import from components/ or app/ (ADR-0041): the UI depends on lib/, never the reverse. Move the shared value into lib/ and import it from there.',

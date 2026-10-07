@@ -12,8 +12,7 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { captchaOptions } from '@/lib/auth/captcha';
-import { createClient } from '@/lib/supabase/client';
+import { sendPasswordReset } from '@/lib/client-api/auth';
 
 /**
  * `/forgot-password` — FRESCO-52 step 1: request a recovery link.
@@ -49,12 +48,11 @@ function ForgotPasswordPageInner() {
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
-      const client = createClient();
       // Anti-enumeration (same posture as signup, ADR-0004-adjacent): the
       // request always resolves the same way client-side regardless of
       // whether `email` has an account — Supabase's own API already never
       // reveals this either way, so no branching is needed here at all.
-      await client.auth.resetPasswordForEmail(email, captchaOptions(captcha.token));
+      await sendPasswordReset({ email, captchaToken: captcha.token });
       setSubmitted(true);
     }
     finally {
