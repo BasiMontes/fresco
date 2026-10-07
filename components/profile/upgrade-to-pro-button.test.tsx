@@ -215,8 +215,8 @@ describe('UpgradeToProButton + annual plan (FRESCO-844)', () => {
     await user.click(screen.getByRole('radio', { name: 'Anual' }));
 
     const price = screen.getByTestId('pro_checkout_price').textContent?.replaceAll(/\s/g, ' ') ?? '';
-    expect(price).toContain('44,99 € por año');
-    expect(price).toContain('Ahorras 14,89 € al año');
+    // FRESCO-872: the two sentences are separated, not run together ("por año Ahorras").
+    expect(price).toContain('44,99 € por año. Ahorras 14,89 € al año frente a pagar 12 meses.');
     expect(screen.getByTestId('pro_checkout_dialog').textContent).toContain('cada año');
   });
 
