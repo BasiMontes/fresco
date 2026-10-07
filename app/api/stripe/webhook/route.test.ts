@@ -17,6 +17,8 @@ const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
 const sendSubscriptionConfirmationEmail = mock(async (_p: unknown) => {});
+const claimWebhookEvent = mock(async (_client: unknown, _event: unknown): Promise<boolean> => true);
+const releaseWebhookEvent = mock(async (_client: unknown, _eventId: string) => {});
 
 let supa = fakeSupabase();
 
@@ -28,6 +30,7 @@ void mock.module('@/lib/stripe', () => ({
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
 void mock.module('@/lib/posthog/server', () => ({ ...realPosthog, captureServerEvent }));
 void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail }));
+void mock.module('@/lib/billing/webhook-events', () => ({ claimWebhookEvent, releaseWebhookEvent }));
 
 const { POST } = await import('./route');
 
@@ -74,6 +77,9 @@ beforeEach(() => {
   subscriptionsRetrieve.mockReset();
   captureServerEvent.mockClear();
   sendSubscriptionConfirmationEmail.mockReset();
+  claimWebhookEvent.mockReset();
+  claimWebhookEvent.mockResolvedValue(true);
+  releaseWebhookEvent.mockReset();
   supa = fakeSupabase();
 });
 
@@ -97,7 +103,7 @@ describe('POST /api/stripe/webhook — checkout.session.completed', () => {
     constructEvent.mockReturnValue({
       id: 'evt_1',
       type: 'checkout.session.completed',
-      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
     });
     subscriptionsRetrieve.mockResolvedValue(sub);
     supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } });
@@ -116,7 +122,7 @@ describe('POST /api/stripe/webhook — checkout.session.completed', () => {
     constructEvent.mockReturnValue({
       id: 'evt_1',
       type: 'checkout.session.completed',
-      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
     });
     subscriptionsRetrieve.mockResolvedValue(subscription());
     supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: 'sub_1' } } });
@@ -267,7 +273,7 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
     constructEvent.mockReturnValue({
       id: 'evt_6',
       type: 'checkout.session.completed',
-      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
     });
     subscriptionsRetrieve.mockResolvedValue(sub);
     supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('pro@example.com'));
@@ -287,7 +293,7 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
     constructEvent.mockReturnValue({
       id: 'evt_7',
       type: 'checkout.session.completed',
-      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
     });
     subscriptionsRetrieve.mockResolvedValue(subscription());
     supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: 'sub_1' } } }, authWithEmail('pro@example.com'));
@@ -301,7 +307,7 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
     constructEvent.mockReturnValue({
       id: 'evt_8',
       type: 'checkout.session.completed',
-      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
     });
     subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
     supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('pro@example.com'));
@@ -317,7 +323,7 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
     constructEvent.mockReturnValue({
       id: 'evt_9',
       type: 'checkout.session.completed',
-      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1' } },
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
     });
     subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
     supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail(null));
@@ -326,5 +332,106 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
 
     expect(res.status).toBe(200);
     expect(sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/stripe/webhook — idempotency by event.id and payment_status (FRESCO-816, A6-S10)', () => {
+  function checkoutEvent(id: string, type: string, paymentStatus: string) {
+    return {
+      id,
+      type,
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: paymentStatus } },
+    };
+  }
+
+  test('claims the event by id and type before it runs', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_c1', 'checkout.session.completed', 'no_payment_required'));
+    subscriptionsRetrieve.mockResolvedValue(subscription());
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } });
+
+    await POST(req({}));
+
+    expect(claimWebhookEvent).toHaveBeenCalledTimes(1);
+    expect(claimWebhookEvent.mock.calls[0][1]).toEqual({ eventId: 'evt_c1', eventType: 'checkout.session.completed' });
+  });
+
+  test('a re-delivery of an event already claimed answers 200 and runs nothing', async () => {
+    claimWebhookEvent.mockResolvedValue(false);
+    constructEvent.mockReturnValue(checkoutEvent('evt_c1', 'checkout.session.completed', 'no_payment_required'));
+    subscriptionsRetrieve.mockResolvedValue(subscription());
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(supa.updates).toEqual([]);
+    expect(captureServerEvent).not.toHaveBeenCalled();
+    expect(releaseWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('answers 500 and processes nothing when the claim cannot be recorded, so Stripe retries', async () => {
+    claimWebhookEvent.mockRejectedValue(new Error('db down'));
+    constructEvent.mockReturnValue(checkoutEvent('evt_c1', 'checkout.session.completed', 'no_payment_required'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(500);
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(supa.updates).toEqual([]);
+  });
+
+  test('gives the claim back when the handler throws, so a resend of the failed event still runs', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_c2', 'checkout.session.completed', 'no_payment_required'));
+    subscriptionsRetrieve.mockRejectedValue(new Error('stripe down'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(releaseWebhookEvent.mock.calls[0][1]).toBe('evt_c2');
+  });
+
+  test('an event type the route does not act on is not claimed', async () => {
+    constructEvent.mockReturnValue({ id: 'evt_x', type: 'invoice.created', data: { object: {} } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(claimWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('an unpaid checkout (delayed payment method) grants no Pro and gives the claim back', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_u1', 'checkout.session.completed', 'unpaid'));
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'incomplete' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(updateFor('user_profiles')).toBeUndefined();
+    expect(captureServerEvent).not.toHaveBeenCalled();
+    expect(releaseWebhookEvent.mock.calls[0][1]).toBe('evt_u1');
+  });
+
+  test('checkout.session.async_payment_succeeded grants Pro once the money arrives', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_a1', 'checkout.session.async_payment_succeeded', 'paid'));
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'active', trial_end: NOW_S + 7 * 86_400 }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'pro', stripe_subscription_id: 'sub_1' });
+  });
+
+  test('a replayed checkout whose subscription has since been canceled re-grants nothing, even with no claim on file', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_old', 'checkout.session.completed', 'no_payment_required'));
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'canceled' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: 'sub_1' } } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(updateFor('user_profiles')).toBeUndefined();
+    expect(captureServerEvent).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import { NextResponse } from 'next/server';
 import { activateProPlan, applyRenewal, downgradeToFree, findProfileByStripeCustomer, getStoredSubscriptionId, markPaymentFailed } from '@/lib/billing/subscription';
+import { claimWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
@@ -34,6 +35,14 @@ function formatRenewalDate(isoTimestamp: string): string {
  * signature against the exact raw bytes Stripe sent; a re-serialized JSON
  * body would fail verification.
  *
+ * FRESCO-816 (audit-6 A6-S10): every handled event is claimed by `event.id` in
+ * `stripe_webhook_events` before it runs. A re-delivery (Stripe retries, a dashboard
+ * resend) finds the claim and is answered 200 without running the handler again; a
+ * handler that throws gives the claim back, so a resend of a failed event still runs.
+ * `checkout.session.completed` only grants Pro when the session is paid or no payment
+ * was due (`resolveProUpdateFromSession`); `checkout.session.async_payment_succeeded`
+ * is the same grant for a delayed payment method once the money arrives.
+ *
  * Handles `checkout.session.completed` (initial purchase), `customer.
  * subscription.updated` (renewal — keeps `plan: 'pro'` and refreshes
  * `plan_expires_at`; also carries the FRESCO-232 payment-failed signal —
@@ -58,6 +67,14 @@ function formatRenewalDate(isoTimestamp: string): string {
  * delivery, and retrying a bug just repeats the same failure. Manual replay
  * from the Stripe Dashboard is the recovery path for a logged failure.
  */
+/** Event types this route acts on; only these are claimed in `stripe_webhook_events`. */
+const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
+  'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+]);
+
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = resolveWebhookSecret();
@@ -78,9 +95,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Firma inválida.' }, { status: 400 });
   }
 
+  const handled = HANDLED_EVENT_TYPES.has(event.type);
+  const claims = createServiceClient();
+  if (handled) {
+    let claimed: boolean;
+    try {
+      claimed = await claimWebhookEvent(claims, { eventId: event.id, eventType: event.type });
+    }
+    catch (error) {
+      // Could not record the event: answer non-2xx so Stripe retries, rather than
+      // processing it without the guard.
+      console.error(`[/api/stripe/webhook] could not claim event ${event.id}`, error);
+      return NextResponse.json({ error: 'No se pudo registrar el evento.' }, { status: 500 });
+    }
+    if (!claimed) {
+      console.info(`[/api/stripe/webhook] event ${event.id} (${event.type}) already processed, skipping`);
+      return NextResponse.json({ received: true });
+    }
+  }
+
   try {
     switch (event.type) {
       case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
         await handleCheckoutSessionCompleted(event.data.object);
         break;
       case 'customer.subscription.updated':
@@ -98,6 +135,14 @@ export async function POST(request: Request) {
     // Signature already verified above — log + still 200 to avoid a Stripe
     // retry storm on a bug. See doc comment.
     console.error(`[/api/stripe/webhook] failed to process event ${event.id}`, error);
+    if (handled) {
+      try {
+        await releaseWebhookEvent(claims, event.id);
+      }
+      catch (releaseError) {
+        console.error(`[/api/stripe/webhook] could not release event ${event.id}; a resend of it will be skipped`, releaseError);
+      }
+    }
   }
 
   return NextResponse.json({ received: true });

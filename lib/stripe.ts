@@ -165,6 +165,12 @@ export interface ProUpdateFromSession {
   planExpiresAt: string
 }
 
+/** Checkout payment states that mean the money is in, or none was due (the trial). */
+const SETTLED_PAYMENT_STATUSES: ReadonlyArray<Stripe.Checkout.Session.PaymentStatus | undefined> = ['paid', 'no_payment_required'];
+
+/** Subscription states that may be granted Pro from a completed Checkout. */
+const LIVE_SUBSCRIPTION_STATUSES: ReadonlyArray<Stripe.Subscription.Status | undefined> = ['trialing', 'active'];
+
 /**
  * Pure mapping from a completed Checkout Session + its Subscription to the
  * `user_profiles` write the webhook handler (`checkout.session.completed`)
@@ -200,6 +206,21 @@ export function resolveProUpdateFromSession({ session, subscription, expectedPri
   const stripeCustomerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
   if (!stripeCustomerId) {
     throw new Error('Checkout session is missing a Stripe customer id.');
+  }
+
+  // FRESCO-816 (A6-S10): a completed Checkout is not a paid one. `unpaid` is a delayed
+  // payment method (bank debit) whose money has not arrived; Pro is granted only once
+  // Stripe says the session is `paid`, or `no_payment_required` (the trial). Anything
+  // else, including a missing value, is refused.
+  if (!SETTLED_PAYMENT_STATUSES.includes(session.payment_status)) {
+    throw new Error(`Checkout session payment_status is ${String(session.payment_status)}, not settled — refusing to grant Pro.`);
+  }
+
+  // FRESCO-816 (A6-S10): the subscription is read live, so a replayed or late
+  // `checkout.session.completed` that arrives after the subscription ended finds it
+  // `canceled` here and grants nothing, instead of re-granting Pro until the daily cron.
+  if (!LIVE_SUBSCRIPTION_STATUSES.includes(subscription.status)) {
+    throw new Error(`Subscription ${subscription.id} is ${String(subscription.status)}, not trialing or active — refusing to grant Pro.`);
   }
 
   if (!subscription.trial_end) {
