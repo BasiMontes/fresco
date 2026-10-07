@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { HttpError } from './http.ts'
+import { timingSafeEqual } from './timing-safe.ts'
 
 /**
  * Public method, fails fast (CLAUDE.md §10): throws HttpError(401) rather
@@ -57,7 +58,8 @@ export function requireServiceRoleCaller(req: Request): void {
   }
 
   const apiKeyHeader = req.headers.get('apikey')
-  if (apiKeyHeader !== expected) {
+  // FRESCO-816 (A6-S8): constant-time, so the response time never says how much of a guess was right.
+  if (apiKeyHeader === null || !timingSafeEqual(apiKeyHeader, expected)) {
     throw new HttpError('No autorizado', 401)
   }
 }

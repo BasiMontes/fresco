@@ -82,3 +82,16 @@ export function faqJsonLd(faqs: readonly FaqEntry[]) {
     })),
   };
 }
+
+/**
+ * FRESCO-816 (audit-6 A6-S14): the JSON placed inside a `<script type="application/ld+json">`.
+ * `JSON.stringify` leaves `<` as is, so a value containing `</script>` would end the block
+ * and let the rest run as markup. Escaping `<` (and the two line separators some parsers
+ * treat as newlines) keeps it data; the escaped text still parses to the same value.
+ */
+export function serializeJsonLd(data: object): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}

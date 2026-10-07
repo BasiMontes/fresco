@@ -17,6 +17,7 @@ import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
+import { isTokenRecent } from '../_shared/token-recency.ts'
 import type { ReassignGuestDataRequest, ReassignGuestDataResponse } from './types.ts'
 
 const FN_NAME = 'reassign-guest-data'
@@ -69,6 +70,13 @@ Deno.serve(async (req: Request) => {
 
     if (targetData.user.is_anonymous) {
       throw new HttpError('La cuenta destino debe ser una cuenta registrada.', 400)
+    }
+
+    // FRESCO-816 (A6-S13): ownership is proven by signing in now. A token that is
+    // valid but was issued earlier (it lasts up to an hour) is not that proof, so
+    // it gets the same generic 401 as a token that does not resolve.
+    if (!isTokenRecent(targetAccessToken)) {
+      throw new HttpError('Credenciales inválidas para esa cuenta.', 401)
     }
 
     const targetUserId = targetData.user.id
