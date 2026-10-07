@@ -309,3 +309,37 @@ describe('ShoppingListView — price disclaimer (FRESCO-790)', () => {
     expect(screen.getByTestId('shopping_list_price_disclaimer')).toHaveTextContent('Precios orientativos. Pueden variar en tienda.');
   });
 });
+
+describe('ShoppingListView — es-ES quantity and price lines (FRESCO-819)', () => {
+  const LIST_LECHE: ShoppingListPersistido = {
+    id: 'list-es',
+    pasillos: [
+      {
+        nombre: 'Lácteos',
+        orden: 1,
+        items: [
+          { nombre: 'Leche', cantidad: 1, unidad: 'l', comprado: false },
+          { nombre: 'Harina', cantidad: 1.6, unidad: 'kg', comprado: false },
+        ],
+      },
+    ],
+    resumen: { total_items: 2, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('a decimal quantity uses the Spanish decimal comma', () => {
+    renderWithProviders(<ShoppingListView list={LIST_LECHE} compra={{ 'Lácteos::Harina': { precio: 1.2, enlaces: [] } }} />);
+    expect(screen.getByText(/1,6\s+kg/)).toBeTruthy();
+    expect(screen.queryByText(/1\.6\s+kg/)).toBeNull();
+  });
+
+  test('a price of 0 is not shown on the item line', () => {
+    renderWithProviders(<ShoppingListView list={LIST_LECHE} compra={{ 'Lácteos::Leche': { precio: 0, enlaces: [] } }} />);
+    // The line is just quantity + unit: no " · 0,00€" tail (the summary total is a different element).
+    expect(screen.getByText(/^1\s+l$/)).toBeTruthy();
+  });
+
+  test('a positive price still shows on the item line', () => {
+    renderWithProviders(<ShoppingListView list={LIST_LECHE} compra={{ 'Lácteos::Leche': { precio: 1.2, enlaces: [] } }} />);
+    expect(screen.getByText(/^1\s+l\s+·\s+1,20€$/)).toBeTruthy();
+  });
+});

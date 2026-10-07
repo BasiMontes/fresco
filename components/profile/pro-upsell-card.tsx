@@ -26,8 +26,8 @@ export function ProUpsellCard({ trialAvailable }: ProUpsellCardProps) {
         más lo uses, menos tienes que pensar.
         {' '}
         {trialAvailable
-          ? `${PRO_TRIAL_DAYS} días de prueba gratis, sin tarjeta. Después, €4.99/mes.`
-          : 'Ya usaste tu prueba gratuita: el plan cuesta €4.99/mes y se cobra desde el primer día. Puedes cancelarlo cuando quieras.'}
+          ? `${PRO_TRIAL_DAYS} días de prueba gratis, sin tarjeta. Después, 4,99€/mes.`
+          : 'Ya usaste tu prueba gratuita: el plan cuesta 4,99€/mes y se cobra desde el primer día. Puedes cancelarlo cuando quieras.'}
       </CardContent>
       <div className="mt-3">
         <UpgradeToProButton trialAvailable={trialAvailable} />

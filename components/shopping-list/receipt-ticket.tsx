@@ -5,7 +5,7 @@ import { Check, Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { capitalize, cn, formatUnidad } from '@/lib/utils';
+import { capitalize, cn, formatCantidad, formatUnidad } from '@/lib/utils';
 
 export interface ReceiptTicketProps {
   open: boolean
@@ -140,7 +140,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
                 <li key={`${item.nombre}-${index}`} className="flex justify-between gap-3 py-0.5">
                   <span className="truncate">{capitalize(item.nombre)}</span>
                   <span className="shrink-0 text-tertiary">
-                    {item.cantidad}
+                    {formatCantidad(item.cantidad)}
                     {' '}
                     {formatUnidad(item.cantidad, item.unidad)}
                   </span>

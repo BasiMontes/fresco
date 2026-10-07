@@ -1,6 +1,6 @@
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { toCsvValue } from '@/lib/csv/export-csv';
-import { capitalize, formatUnidad } from '@/lib/utils';
+import { capitalize, formatCantidad, formatUnidad } from '@/lib/utils';
 
 /**
  * FRESCO-345 (Pieza A — export estructurado, comentario "Refinamiento v2" +
@@ -38,7 +38,7 @@ export function formatShoppingListAsText(pasillos: ShoppingListPasillo[]): strin
     .map((pasillo) => {
       const encabezado = pasillo.nombre.toUpperCase();
       const lineas = pasillo.items.map(
-        item => `- ${item.cantidad} ${formatUnidad(item.cantidad, item.unidad)} ${capitalize(item.nombre)}`,
+        item => `- ${formatCantidad(item.cantidad)} ${formatUnidad(item.cantidad, item.unidad)} ${capitalize(item.nombre)}`,
       );
       return [encabezado, ...lineas].join('\n');
     })

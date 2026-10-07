@@ -1,6 +1,6 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import { Card } from '@/components/ui/card';
-import { formatPrecio } from '@/lib/utils';
+import { formatImporte, formatPrecio } from '@/lib/utils';
 
 interface ShoppingListSummaryProps {
   pendientes: number
@@ -30,7 +30,7 @@ export function ShoppingListSummary({ pendientes, resumen, costeMenu, fuentesPre
         <p data-testid="shopping_list_summary_total" className="text-right text-h5 font-heading text-primary">
           {costeMenu !== undefined
             ? formatPrecio(costeMenu)
-            : `${resumen.coste_estimado_min.toFixed(2).replace('.', ',')}–${formatPrecio(resumen.coste_estimado_max)}`}
+            : `${formatImporte(resumen.coste_estimado_min)}–${formatPrecio(resumen.coste_estimado_max)}`}
         </p>
       </div>
       {/* FRESCO-790 (A6-P2): every price here is an indication, not an offer.
