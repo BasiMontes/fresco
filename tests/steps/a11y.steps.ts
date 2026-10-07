@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
-import { expectNoA11yViolations } from './support/a11y';
+import { expectNoA11yViolations, expectTouchTargetsAtLeast } from './support/a11y';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @a11y.
@@ -46,4 +46,11 @@ Then(/^la rejilla de comidas y días cabe sin scroll propio$/, async ({ page }) 
 
 Then(/^la pantalla no tiene violaciones de accesibilidad serias$/, async ({ page }) => {
   await expectNoA11yViolations(page);
+});
+
+// FRESCO-819 (A6-L10): axe's `nested-interactive` is already inside the serious
+// check above; this one adds the audit's 44 px touch-target floor, measured at
+// the 360 px viewport by the `mobile` project.
+Then(/^todos los elementos interactivos miden al menos 44 px$/, async ({ page }) => {
+  await expectTouchTargetsAtLeast(page);
 });

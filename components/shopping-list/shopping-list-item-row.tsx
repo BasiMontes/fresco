@@ -152,9 +152,12 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
           rel="noopener noreferrer"
           aria-label={`Abrir ${capitalize(item.nombre)} en ${enlace.nombreCadena}`}
           data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_${enlace.cadena}_link`}
-          className="shrink-0 rounded-lg border border-border p-1.5 text-tertiary transition-colors hover:text-text"
+          className="inline-flex size-11 shrink-0 items-center justify-center text-tertiary transition-colors hover:text-text"
         >
-          <ShoppingCart className="size-4" aria-hidden="true" />
+          {/* FRESCO-819 (A6-L10): the link is the 44px+ tap target; the bordered chip stays the same size inside it. */}
+          <span className="rounded-lg border border-border p-1.5">
+            <ShoppingCart className="size-4" aria-hidden="true" />
+          </span>
         </a>
       ))}
     </li>

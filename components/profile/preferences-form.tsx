@@ -272,6 +272,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
               key={field.key}
               type="button"
               data-testid="preferencia_dieta_option"
+              className="inline-flex min-h-11 items-center"
               disabled={isLocked}
               aria-pressed={preferences[field.key]}
               onClick={() => toggleDieta(field.key)}
@@ -293,6 +294,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
               key={option.value}
               type="button"
               data-testid="preferencia_alergeno_option"
+              className="inline-flex min-h-11 items-center"
               disabled={isLocked}
               aria-pressed={preferences.alergenos.includes(option.value)}
               onClick={() => toggleAlergeno(option.value)}

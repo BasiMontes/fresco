@@ -150,7 +150,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
             id={key === 'configuracion' ? 'ayuda-configuracion' : undefined}
             data-testid={`ayuda_row_${key}`}
             onClick={() => setOpenModal(key)}
-            className="flex items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
+            className="flex min-h-11 items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
           >
             <div className="flex items-center gap-2 text-body-md">
               <Icon className="size-4" aria-hidden="true" />
@@ -163,7 +163,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
           type="button"
           data-testid="ayuda_row_cookies"
           onClick={openCookieSettings}
-          className="flex items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
+          className="flex min-h-11 items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
         >
           <div className="flex items-center gap-2 text-body-md">
             <Cookie className="size-4" aria-hidden="true" />

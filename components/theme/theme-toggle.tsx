@@ -120,7 +120,9 @@ export function ThemeToggle({ tone = 'default', variant = 'segmented', className
               // tap target (WCAG 2.5.5); the `segmented` variant keeps its
               // compact 32px segments for the sidebar footer / profile row.
               'flex items-center justify-center rounded-[11.6px] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2',
-              variant === 'binary' ? 'size-11' : 'size-8',
+              // FRESCO-819 (A6-L10): the segmented segments are 44px+ on touch
+              // widths and drop back to the compact 32px from `md` up.
+              variant === 'binary' ? 'size-11' : 'size-11 md:size-8',
               isInverse
                 ? 'focus-visible:ring-background focus-visible:ring-offset-primary'
                 : 'focus-visible:ring-primary focus-visible:ring-offset-background',

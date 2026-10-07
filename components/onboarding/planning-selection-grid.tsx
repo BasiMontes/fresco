@@ -158,6 +158,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                   <td key={day.value} className="px-px py-1.5 text-center sm:px-0.5">
                     <Checkbox
                       data-testid="planning_selection_cell"
+                      compact
                       checked={checked}
                       onChange={() => toggleCell(day.value, meal.value)}
                       aria-label={`${meal.label} ${day.name}`}
