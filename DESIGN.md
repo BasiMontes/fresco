@@ -218,8 +218,9 @@ components:
     backgroundColor: '{colors.primary}'
     textColor: '{colors.background}'
   nav-bottom-tab:
-    backgroundColor: '{colors.background}'
+    backgroundColor: '{colors.surface-raised}'
     textColor: '{colors.primary}'
+    rounded: '{rounded.full}'
   icon:
     textColor: '{colors.primary}'
     size: 24px
@@ -426,7 +427,7 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 
 **Navigation** — one destination set (Home/Menu, Calendar, Recipes, Profile) surfaced two ways:
 - `nav-sidebar` (desktop): `{colors.primary}` background, active item highlighted with a pill (`rounded.full`) in white/cream — FRESCO-70 moved this off the dark `accent-900` end of the ramp onto the primary brand green itself, the one surface in the system where `primary` becomes a background rather than just a text/icon/border color. Use the `Logo negativo` lockup here, never the base logo — still clears WCAG AA (~9.9:1) against `#0F4E0E`.
-- `nav-bottom-tab` (mobile): background background-colored, `{colors.primary}` icons, dot-indicator active state rather than a pill or background fill — kept lighter-weight than the sidebar because mobile chrome competes for less space.
+- `nav-bottom-tab` (mobile): a floating pill (`{colors.surface-raised}`, hairline, `shadow.sm`, `rounded.full`) detached from the screen edges, `{colors.primary}` icons. The current destination expands into a `{colors.primary}`-at-15% pill (a tint: the `accent-100` step collapses into the bar colour in dark theme) with its label; the other destinations are icon-only. The pill moves with the `--tabs-*` motion tokens and drops the animation under `prefers-reduced-motion` (FRESCO-870).
 
 ## Do's and Don'ts
 

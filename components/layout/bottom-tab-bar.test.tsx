@@ -26,7 +26,43 @@ describe('BottomTabBar', () => {
   test('is offset by the cookie banner inset instead of pinned to the bottom edge', () => {
     renderWithProviders(<BottomTabBar />);
 
-    expect(screen.getByRole('navigation').className).toContain('bottom-(--cookie-banner-inset)');
+    expect(screen.getByRole('navigation').className).toContain('var(--cookie-banner-inset)');
+  });
+
+  // FRESCO-870: floating pill — detached from the edges, no top rule.
+  test('floats as a pill instead of a full-width bar with a top rule', () => {
+    renderWithProviders(<BottomTabBar />);
+
+    const nav = screen.getByRole('navigation');
+    expect(nav.className).toContain('rounded-full');
+    expect(nav.className).not.toContain('border-t');
+  });
+
+  test('only the current destination expands its label; the rest stay icon-only', () => {
+    navState.pathname = '/recipes';
+    renderWithProviders(<BottomTabBar />);
+
+    expect(screen.getByRole('link', { name: /Recetas/ })).toHaveAttribute('data-expanded', 'true');
+    ['Menú', 'Calendario', 'Lista', 'Perfil'].forEach(label =>
+      expect(screen.getByRole('link', { name: new RegExp(label) })).toHaveAttribute('data-expanded', 'false'),
+    );
+  });
+
+  test('every destination keeps its name for assistive tech and a 44px touch target', () => {
+    renderWithProviders(<BottomTabBar />);
+
+    screen.getAllByRole('link').forEach((link) => {
+      expect(link.className).toContain('h-11');
+      expect(link.className).toContain('min-w-11');
+      expect(link).toHaveAccessibleName();
+    });
+  });
+
+  test('animation is dropped under reduced motion', () => {
+    renderWithProviders(<BottomTabBar />);
+
+    const label = screen.getByText('Menú').parentElement;
+    expect(label?.className).toContain('motion-reduce:transition-none');
   });
 
   test('marks the tab matching the current path as current', () => {
