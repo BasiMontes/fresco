@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   faqJsonLd,
   organizationJsonLd,
+  serializeJsonLd,
   softwareApplicationJsonLd,
   websiteJsonLd,
 } from './structured-data';
@@ -94,5 +95,26 @@ describe('faqJsonLd', () => {
 
   test('produces an empty mainEntity for an empty FAQ source', () => {
     expect(faqJsonLd([]).mainEntity).toEqual([]);
+  });
+});
+
+describe('serializeJsonLd', () => {
+  test('escapes < so a value cannot close the script block (A6-S14)', () => {
+    const out = serializeJsonLd({ name: '</script><script>alert(1)</script>' });
+
+    expect(out).not.toContain('<');
+    expect(out).toContain('\\u003c/script>');
+  });
+
+  test('the escaped text parses back to exactly the same value', () => {
+    const data = { name: 'a </script> b', note: 'línea\u2028separada\u2029otra', n: 3, tags: ['<b>'] };
+
+    expect(JSON.parse(serializeJsonLd(data))).toEqual(data);
+  });
+
+  test('leaves the real schema.org blocks untouched when they have no <', () => {
+    const data = faqJsonLd([{ question: '¿Qué es Fresco?', answer: 'Un planificador de menús.' }]);
+
+    expect(serializeJsonLd(data)).toBe(JSON.stringify(data));
   });
 });
