@@ -593,3 +593,8 @@ Historia archivada:
 - Qué: PR 4 (#537, ea5dbd1e) migra login/forgot-password/update-password/posthog-provider a lib/client-api, añade candados ESLint en app/** y hooks en lib/**, y borra COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS. Medición final en 0 (rutas inline, componentes, excepciones, hooks en lib, lib→UI, importadores en app).
 - Por qué: sacar el acceso a Supabase de UI y rutas y que no vuelva (audit-6, ADR-0041); posthog-provider sigue lazy por FRESCO-505.
 - Siguiente: test de ruta de punta a punta del webhook de Stripe; FRESCO-857 (boilerplate) y FRESCO-858 (ramas).
+
+## 2026-10-07 - FRESCO-815 cerrada: higiene del backlog (A6-P12)
+- Qué: 124 cerrada por evidencia (CHECK en prod, 0 nombres vacíos), 183 reabierta a Listo (defecto real sin motivo de rechazo), 31 rechazada con motivo (54 % mismatch Unsplash), 712 se mantiene WAD enlazada a 805. WIP sin actualizar >7d = 0; bugs reales en Rechazos = 0.
+- Por qué: audit-6 A6-P12, Rechazos usado como aparcamiento; cierre por la métrica (definition-of-done).
+- Siguiente: 65 tickets abiertos sin story points; 169 historias sin epic (todas cerradas, solo línea base); FRESCO-435 sigue en Rechazos aunque el pipeline de fotos se replantea ahí.
