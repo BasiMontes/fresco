@@ -90,9 +90,43 @@ describe('resolveProUpdateFromSession', () => {
       .toThrow('Stripe customer id');
   });
 
-  test('throws when the subscription has no trial_end', () => {
-    expect(() => resolveProUpdateFromSession({ session: fakeSession(), subscription: fakeSubscription({ trial_end: null }), expectedPriceId: PRO_PRICE_ID }))
+  test('FRESCO-859: a resubscription without trial (active, no trial_end) expires at the current period end', () => {
+    const subscription = fakeSubscription({
+      status: 'active',
+      trial_end: null,
+      items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: 1_702_592_000 }] },
+    } as unknown as Partial<Stripe.Subscription>);
+
+    const update = resolveProUpdateFromSession({ session: fakeSession({ payment_status: 'paid' }), subscription, expectedPriceId: PRO_PRICE_ID });
+
+    expect(update.planExpiresAt).toBe(new Date(1_702_592_000 * 1000).toISOString());
+  });
+
+  test('a trialing subscription still expires at trial_end', () => {
+    const subscription = fakeSubscription({
+      status: 'trialing',
+      trial_end: 1_700_000_000,
+      items: { data: [{ price: { id: PRO_PRICE_ID }, current_period_end: 1_702_592_000 }] },
+    } as unknown as Partial<Stripe.Subscription>);
+
+    expect(resolveProUpdateFromSession({ session: fakeSession(), subscription, expectedPriceId: PRO_PRICE_ID }).planExpiresAt)
+      .toBe('2023-11-14T22:13:20.000Z');
+  });
+
+  test('throws when a trialing subscription has no trial_end', () => {
+    expect(() => resolveProUpdateFromSession({ session: fakeSession(), subscription: fakeSubscription({ status: 'trialing', trial_end: null }), expectedPriceId: PRO_PRICE_ID }))
       .toThrow('trial_end');
+  });
+
+  test('throws when an active subscription has no current_period_end', () => {
+    const subscription = fakeSubscription({
+      status: 'active',
+      trial_end: null,
+      items: { data: [{ price: { id: PRO_PRICE_ID } }] },
+    } as unknown as Partial<Stripe.Subscription>);
+
+    expect(() => resolveProUpdateFromSession({ session: fakeSession({ payment_status: 'paid' }), subscription, expectedPriceId: PRO_PRICE_ID }))
+      .toThrow('current_period_end');
   });
 
   test('throws when the subscription price does not match the expected Pro price', () => {
