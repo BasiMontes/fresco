@@ -9,7 +9,15 @@ import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, getEdg
  */
 
 const GUEST_AUTH = 'Bearer guest.jwt'
-const TARGET_TOKEN = 'target.session.token'
+const NOW_SECONDS = () => Math.floor(Date.now() / 1000)
+
+/** An unsigned JWT-shaped token carrying `iat`; the handler only reads the claim after `getUser()` accepted it. */
+function targetTokenIssued(secondsAgo: number): string {
+  const encode = (value: object) => btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return `${encode({ alg: 'HS256' })}.${encode({ iat: NOW_SECONDS() - secondsAgo })}.signature`
+}
+
+let TARGET_TOKEN = targetTokenIssued(5)
 let clientsByAuth: Record<string, ReturnType<typeof fakeEdgeClient>> = {}
 let serviceClient = fakeEdgeClient()
 
@@ -32,6 +40,7 @@ function wireTarget(user: { id: string, is_anonymous?: boolean } | null) {
 }
 
 beforeEach(() => {
+  TARGET_TOKEN = targetTokenIssued(5)
   clientsByAuth = {}
   serviceClient = fakeEdgeClient({ rpc: { reassign_guest_data: { data: 0 } } })
 })
@@ -83,6 +92,27 @@ describe('reassign-guest-data/index.ts', () => {
     wireTarget({ id: 'real_user' })
     serviceClient = fakeEdgeClient({ rpc: { reassign_guest_data: { error: new Error('rpc boom') } } })
     expect((await handler(edgeRequest(body(), { auth: GUEST_AUTH }))).status).toBe(500)
+  })
+
+  test('401 and nothing moves when the target token is valid but was issued long ago (A6-S13)', async () => {
+    TARGET_TOKEN = targetTokenIssued(3600)
+    wireGuest()
+    wireTarget({ id: 'real_user' })
+    const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
+
+    expect(res.status).toBe(401)
+    expect(serviceClient.rpcCalls).toEqual([])
+    expect(serviceClient.deletedUserIds).toEqual([])
+  })
+
+  test('401 when the target token carries no readable iat (A6-S13)', async () => {
+    TARGET_TOKEN = 'target.session.token'
+    wireGuest()
+    wireTarget({ id: 'real_user' })
+    const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
+
+    expect(res.status).toBe(401)
+    expect(serviceClient.rpcCalls).toEqual([])
   })
 
   test('200 { reassigned: true } and cleans up the orphaned guest identity', async () => {
