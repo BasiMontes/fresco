@@ -12,7 +12,12 @@ import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
 import { JsonLd } from '@/components/seo/json-ld';
 import { Reveal } from '@/components/ui/reveal';
+import { getProPrices } from '@/lib/billing/pro-prices';
 import { faqJsonLd, softwareApplicationJsonLd } from '@/lib/seo/structured-data';
+
+// FRESCO-871: the landing shows the Pro prices read from Stripe; re-render at most
+// hourly so a price change in Stripe reaches the public page without a deploy.
+export const revalidate = 3600;
 
 /**
  * Guest landing ("/") — EPIC-FRESCO-6 (Guest Mode). Content and structure
@@ -21,7 +26,9 @@ import { faqJsonLd, softwareApplicationJsonLd } from '@/lib/seo/structured-data'
  * `/onboarding` (signup-free) per user-journeys.md Journey 1, with
  * `/signup` kept as the returning-user escape hatch in the nav.
  */
-export default function GuestLandingPage() {
+export default async function GuestLandingPage() {
+  const prices = await getProPrices();
+
   return (
     <div className="min-h-screen bg-background">
       {/* FRESCO-472: SoftwareApplication + FAQPage JSON-LD. The FAQPage block
@@ -43,7 +50,7 @@ export default function GuestLandingPage() {
         <Reveal><HowItWorks /></Reveal>
         <Reveal><LearnsPro /></Reveal>
         <Reveal><ImpactStats /></Reveal>
-        <Reveal><Pricing /></Reveal>
+        <Reveal><Pricing prices={prices} /></Reveal>
         <Reveal><Faq /></Reveal>
         <Reveal><FinalCta /></Reveal>
       </main>

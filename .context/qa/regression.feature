@@ -1639,6 +1639,15 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el pago es una suscripción con el precio anual de Pro, que se cobra cada año
 
   @suscripcion @automatizado @requiere-stripe-real
+  # Automatizado: tests/steps/suscripcion.steps.ts (FRESCO-871). Corre en la suite de Stripe real
+  # porque los importes salen de la API de Stripe (`getProPrices`), no de texto escrito en la UI.
+  # La landing (`/`) lee los mismos precios; su estado con y sin precio anual lo cubre
+  # `components/landing/pricing.test.tsx`.
+  Escenario: La tarjeta de Pro del perfil ofrece el plan anual con los precios de Stripe
+    Dado que Laura está en su perfil con plan Free
+    Entonces la tarjeta de Pro le muestra el precio mensual y el anual que cobra Stripe
+
+  @suscripcion @automatizado @requiere-stripe-real
   # FRESCO-813 (audit-6 A6-P10). El checkout fija `trial_settings.end_behavior.
   # missing_payment_method: 'cancel'`; sin tarjeta, al acabar la prueba Stripe cancela y el
   # webhook (`customer.subscription.deleted`) la devuelve a Free. Se verifica con un reloj de

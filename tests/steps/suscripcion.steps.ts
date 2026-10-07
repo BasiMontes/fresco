@@ -488,6 +488,21 @@ Then(/^el pago es una suscripción con el precio anual de Pro, que se cobra cada
   expect(price?.recurring?.interval_count).toBe(1);
 });
 
+// FRESCO-871: the profile upsell card shows the prices Stripe returns (monthly and annual).
+Then(/^la tarjeta de Pro le muestra el precio mensual y el anual que cobra Stripe$/, async ({ page }) => {
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const [month, year] = await Promise.all([
+    stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_PRO_MONTH!),
+    stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_PRO_ANUAL!),
+  ]);
+  const euros = (cents: number | null) => `${((cents ?? 0) / 100).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€`;
+
+  const card = page.getByTestId('pro_upsell_card');
+  await expect(card).toContainText(`${euros(month.unit_amount)}/mes`);
+  await expect(card).toContainText(`${euros(year.unit_amount)}/año`);
+});
+
 // --- FRESCO-778 (audit-6 A6-S3): the free trial is once per account ---
 
 Given(/^que Laura ya usó su prueba gratuita de Pro$/, async ({ page, request, testUserFactory, suscripcionCtx: ctx }) => {
