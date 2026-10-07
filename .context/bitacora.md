@@ -588,3 +588,8 @@ Historia archivada:
 - Qué: SlotCell, signup, OnboardingPage, MenuPage, ProfilePage, ShoppingListView, esProductoCompatible y user-profile.ts partidos en 5 PRs (#526-#530); un solo `createMockClient` en `lib/fixtures`; ESLint exige ya `complexity` 25 y `max-lines` 450 como error en `app/`, `components/` y `lib/`. 809 en Finalizada.
 - Por qué: audit-6 A6-A5/A6-A6; cierre por la métrica (0 funciones de producto >25, 0 ficheros de producto >450, 1 `createMockClient`), evidencia en el comentario de Jira.
 - Siguiente: las funciones entre 16 y 25 ya no avisan en el editor (el `warn 15` se sustituyó por `error 25`); `cli/` y `scripts/` quedan fuera del gate; dos fallos de infraestructura del runner e2e (puerto 54322) en #528 y #530, pasaron al relanzar.
+
+## 2026-10-07 - FRESCO-810 cerrada: capas bloqueadas por lint
+- Qué: PR 4 (#537, ea5dbd1e) migra login/forgot-password/update-password/posthog-provider a lib/client-api, añade candados ESLint en app/** y hooks en lib/**, y borra COMPONENTS_WITH_DIRECT_SUPABASE_ACCESS. Medición final en 0 (rutas inline, componentes, excepciones, hooks en lib, lib→UI, importadores en app).
+- Por qué: sacar el acceso a Supabase de UI y rutas y que no vuelva (audit-6, ADR-0041); posthog-provider sigue lazy por FRESCO-505.
+- Siguiente: test de ruta de punta a punta del webhook de Stripe; FRESCO-857 (boilerplate) y FRESCO-858 (ramas).
