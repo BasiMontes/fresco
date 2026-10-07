@@ -182,9 +182,9 @@ const LIVE_SUBSCRIPTION_STATUSES: ReadonlyArray<Stripe.Subscription.Status | und
  *
  * `client_reference_id` is set to the authenticated Supabase user id at
  * Checkout Session creation time (`app/api/stripe/checkout/route.ts`) — see
- * ADR-0007. `plan_expires_at` reads the subscription's `trial_end` (STORY-
- * FRESCO-228 scope only covers the trial-start write; a later story updates
- * this again once the trial converts to `current_period_end`).
+ * ADR-0007. `plan_expires_at` reads the subscription's `trial_end` while it is
+ * `trialing` and its first `current_period_end` otherwise (FRESCO-859, a
+ * resubscription without trial); renewals take over from there.
  *
  * Throws — rather than returning a partial/undefined shape — if the session
  * or subscription is missing a field this flow depends on. The webhook route
@@ -223,10 +223,6 @@ export function resolveProUpdateFromSession({ session, subscription, expectedPri
     throw new Error(`Subscription ${subscription.id} is ${String(subscription.status)}, not trialing or active — refusing to grant Pro.`);
   }
 
-  if (!subscription.trial_end) {
-    throw new Error('Subscription is missing trial_end — cannot compute plan_expires_at.');
-  }
-
   // Code review on PR #100: without this check, ANY completed subscription
   // checkout in the Stripe account (not just the Pro price) would grant
   // `plan: 'pro'` — this is the only server-side check standing between
@@ -237,11 +233,21 @@ export function resolveProUpdateFromSession({ session, subscription, expectedPri
     throw new Error(`Subscription price ${actualPriceId ?? '(none)'} does not match expected Pro price ${describePrices(expectedPriceId)} — refusing to grant Pro.`);
   }
 
+  // FRESCO-859: a resubscription skips the trial (`isTrialAvailable`), so its
+  // subscription is `active` with no `trial_end`; the first paid period is what
+  // bounds Pro until the next renewal event. `current_period_end` lives on the
+  // SubscriptionItem on the pinned API version (see `resolveRenewalUpdate`).
+  const isTrialing = subscription.status === 'trialing';
+  const periodEndSeconds = isTrialing ? subscription.trial_end : subscription.items.data[0]?.current_period_end;
+  if (!periodEndSeconds) {
+    throw new Error(`Subscription is missing ${isTrialing ? 'trial_end' : 'current_period_end'} — cannot compute plan_expires_at.`);
+  }
+
   return {
     userId,
     stripeCustomerId,
     stripeSubscriptionId: subscription.id,
-    planExpiresAt: new Date(subscription.trial_end * 1000).toISOString(),
+    planExpiresAt: new Date(periodEndSeconds * 1000).toISOString(),
   };
 }
 
