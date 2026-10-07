@@ -1,4 +1,5 @@
 import type { UserProfile } from '@schemas';
+import type { ProPrices } from '@/lib/billing/pro-prices';
 import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
 import { ProUpsellCard } from '@/components/profile/pro-upsell-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +9,15 @@ interface ProfilePlanCardsProps {
   plan: UserProfile['plan']
   paymentFailedAt: string | null
   trialAvailable: boolean
+  /** The Pro prices for the upsell (only read for Free users); `null` when Stripe could not be read. */
+  prices: ProPrices | null
 }
 
 /** Free: the upsell. Pro: the payment-failed aviso (when active) and the subscription card. */
-export function ProfilePlanCards({ plan, paymentFailedAt, trialAvailable }: ProfilePlanCardsProps) {
+export function ProfilePlanCards({ plan, paymentFailedAt, trialAvailable, prices }: ProfilePlanCardsProps) {
   return (
     <>
-      {plan === 'free' && <ProUpsellCard trialAvailable={trialAvailable} />}
+      {plan === 'free' && <ProUpsellCard trialAvailable={trialAvailable} prices={prices} />}
 
       {/* STORY-FRESCO-232: payment-failed aviso — only ever shown alongside
           the Pro card below (plan stays 'pro' during Stripe's own retry

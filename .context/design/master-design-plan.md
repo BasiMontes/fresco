@@ -613,6 +613,7 @@ stories) are listed at the end.
 | FRESCO-870 | Navegación móvil: barra flotante con píldora activa animada | EPIC-FRESCO-244 Motion y Transiciones | App shell / navigation, mobile `bottom-tab-bar` · spec-only build, §5-W | — |
 | FRESCO-842 | Lista de la compra: ver qué hacer cuando ya no quedan pendientes | EPIC-FRESCO-484 Platform polish | 4.9 Shopping list (estado "todo comprado") 🔒 mockup-gated | 4.7 Home, 4.8 Calendar, 4.10 Recipe library (destinos de las acciones) |
 | FRESCO-854 | Histórico de menús: poder volver a /calendar desde la lista de semanas | EPIC-FRESCO-484 Platform polish | `/historial` (lista) has no §4 spec yet · built LIVE-UI-FIRST on the FRESCO-451 icon-only circular back button already used by favorites, notifications and the `/historial?semana=` detail | 4.8 Calendar (destino del botón) |
+| FRESCO-871 | Producto: mostrar el plan anual de Pro en la landing y en la tarjeta de /profile | EPIC-FRESCO-865 Pagos y suscripción Pro | 4.1 Landing (`pricing`, columna Pro: línea "o X€/año · ahorras Y€") y 4.13 Profile (`pro-upsell-card`) · built LIVE-UI-FIRST, sin mockup, tokens existentes | — |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 

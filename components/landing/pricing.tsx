@@ -1,4 +1,6 @@
+import type { ProPrices } from '@/lib/billing/pro-prices';
 import { buttonVariants } from '@/components/ui/button';
+import { formatEuros, yearlySavingsEuros } from '@/lib/billing/pro-prices';
 import { cn } from '@/lib/utils';
 import { LandingCtaLink } from './landing-cta-link';
 
@@ -42,7 +44,14 @@ function PlanFeature({ label, highlighted }: { label: string, highlighted?: bool
   );
 }
 
-export function Pricing() {
+// FRESCO-871: the amounts come from Stripe (`getProPrices`); this is what the
+// section says when they cannot be read, i.e. the page as it was before the annual plan.
+const FALLBACK_PRICES: ProPrices = { month: 4.99, year: null };
+
+export function Pricing({ prices }: { prices: ProPrices | null }) {
+  const { month, year } = prices ?? FALLBACK_PRICES;
+  const savings = prices ? yearlySavingsEuros(prices) : null;
+
   return (
     <section id="pricing" className="bg-primary">
       <div className="mx-auto max-w-5xl px-4 py-16 md:px-8">
@@ -75,9 +84,15 @@ export function Pricing() {
               </span>
             </div>
             <p className="mb-1 text-h1 text-primary">
-              4,99€
+              {formatEuros(month)}
               <span className="text-body-md font-normal text-tertiary">/mes</span>
             </p>
+            {year !== null && (
+              <p className="mb-1 text-body-sm text-text" data-testid="landing_pro_annual_price">
+                {`o ${formatEuros(year)}/año`}
+                {savings !== null && ` · ahorras ${formatEuros(savings)} al año`}
+              </p>
+            )}
             <p className="mb-5 text-body-sm text-tertiary">
               Fresco aprende de ti. Cada semana mejor que la anterior.
             </p>

@@ -7,6 +7,7 @@ import { ProfilePlanCards } from '@/components/profile/profile-plan-cards';
 import { ProfilePreferencesAndHelp } from '@/components/profile/profile-preferences-and-help';
 import { PushNotificationsToggle } from '@/components/profile/push-notifications-toggle';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { getProPrices } from '@/lib/billing/pro-prices';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { loadProfilePageData } from '@/lib/profile/load-profile-page-data';
 import { createClient } from '@/lib/supabase/server';
@@ -42,6 +43,8 @@ export default async function ProfilePage() {
   const { data: { user } } = await getAuthUser();
 
   const { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable } = await loadProfilePageData(supabase, user?.id);
+  // FRESCO-871: only the Free upsell shows prices, so Pro users never pay for the Stripe read.
+  const prices = plan === 'free' ? await getProPrices() : null;
 
   // `user.created_at` comes back from `auth.getUser()` above — no extra
   // query. Formatted with `Intl.DateTimeFormat` (no date-formatting utility
@@ -78,7 +81,7 @@ export default async function ProfilePage() {
 
       <MenuHistoryCard weeks={pastWeeks} plan={plan} />
 
-      <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} />
+      <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} prices={prices} />
 
       <ProfileAccountCards email={user?.email ?? ''} isAnonymous={isAnonymous} />
     </div>
