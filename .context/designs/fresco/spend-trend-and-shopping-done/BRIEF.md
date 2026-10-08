@@ -31,6 +31,7 @@ Thesis that governs every decision: *Fresco is a weekly ritual, not an app. You 
   - still see the existing weekly summary card (estimated total of the week's menu) and the existing copy / download CSV actions.
 - What is wrong today: with 0 items pending, only the summary card and the two export buttons remain; the rest of the screen is empty and offers nothing to do.
 - Proposed copy (you may refine the wording, keeping the voice rules): message "Has comprado todo lo de esta semana."; actions "Ver mi menú", "Ver las recetas", "Ver el calendario".
+- How the user gets to this state today: she ticks the last item, a floating "Compra realizada" button appears, she presses it, a printed-receipt ticket is shown, and when she closes the ticket the bought items are removed from the list. The new state is what she sees right after closing that ticket. Keep that flow as is; only the screen it lands on is being designed. In the attached screenshot the Copiar and Descargar CSV buttons look faded in this state; keep them present and legible.
 - Decision already taken, do not reopen it: no carousel of recommendations or suggested content (a "Sugerencias para ti" block was rejected earlier). The next steps are navigation to screens that already exist, nothing else.
 - States the ACs demand:
   - **All bought** (the new state, 0 items pending).
