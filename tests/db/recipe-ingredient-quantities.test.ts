@@ -39,7 +39,9 @@ describe.skipIf(!(RUN && reachable))('recipes.ingredientes_cantidades check (rea
 
   afterAll(async () => {
     for (const id of created) {
-      await rest('recipes', { method: 'DELETE', serviceRole: true, query: `id=eq.${id}` });
+      // service_role has no DELETE on recipes (only select/insert/update), so the
+      // throwaway row is soft-deleted the way the catalog does it (`activo`).
+      await rest('recipes', { method: 'PATCH', serviceRole: true, query: `id=eq.${id}`, body: { activo: false } });
     }
   });
 
