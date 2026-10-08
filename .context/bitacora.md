@@ -648,3 +648,8 @@ Historia archivada:
 - Qué: el paso de dieta anuncia con fecha un consentimiento health_data ya registrado para los textos vigentes, sin casilla premarcada y con 'Volver a decidir'. Mergeado a staging (PR #560), NO a main.
 - Por qué: tras FRESCO-806 quien volvía con alérgenos guardados tenía que marcar la casilla otra vez; una casilla premarcada no es consentimiento válido y el registro aún no tiene retirada (ADR-0040).
 - Siguiente: el abogado debe confirmar que un consentimiento ya dado vale en un paso nuevo; hasta entonces no nivelar main (un git:promote lo arrastraría). Luego cerrar FRESCO-856.
+
+## 2026-10-08 - FRESCO-842 lista de la compra: qué hacer cuando ya no quedan pendientes
+- Qué: con 0 artículos, /shopping-list muestra "Has comprado todo lo de esta semana." y enlaces a menú, recetas y calendario (PR #562). Build spec-only, divergencia §5-X; validado en vivo a 1440 y 360 px. En dev, staging y main.
+- Por qué: tras "Compra realizada" quedaba solo la tarjeta Resumen y el resto vacío; el mockup de Claude Design nunca se devolvió y el fundador eligió la ruta (b).
+- Siguiente: si llega el mockup de `spend-trend-and-shopping-done`, ajustar en historia aparte; el estado "sin lista" y el tema oscuro no se probaron en vivo.
