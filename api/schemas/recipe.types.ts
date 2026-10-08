@@ -35,6 +35,17 @@ export type TipoCocina
   = | 'española' | 'italiana' | 'mexicana' | 'asiática'
     | 'mediterránea' | 'latina' | 'internacional';
 
+export type UnidadIngrediente
+  = | 'g' | 'ml' | 'unidades' | 'dientes' | 'cucharadas' | 'cucharaditas' | 'pizca' | 'al gusto';
+
+export interface IngredienteCantidad {
+  /** Repeats an entry of `ingredientes_principales` verbatim. */
+  nombre: string
+  /** Positive number; `0` only with `unidad: 'al gusto'`. */
+  cantidad: number
+  unidad: UnidadIngrediente
+}
+
 export interface RecipeMeta {
   tiempo_prep_min: number
   tiempo_coccion_min: number
@@ -93,6 +104,8 @@ export interface Recipe {
   dieta: RecipeDieta | null
   alergenos: Alergeno[] | null
   ingredientes_principales: string[] | null
+  /** FRESCO-863 / ADR-0042: quantity per recipe for `meta.raciones` servings; `null` until backfilled. */
+  ingredientes_cantidades?: IngredienteCantidad[] | null
   ingredientes_que_puede_desagradar: string[] | null
   temporada: Temporada[] | null
   pasos_resumen: string[] | null
