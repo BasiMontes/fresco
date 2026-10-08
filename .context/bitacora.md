@@ -628,3 +628,13 @@ Historia archivada:
 - Qué: resolveProUpdateFromSession usa trial_end si la suscripcion esta trialing y current_period_end del item si esta active. PR #546, b32c1dbc en dev/staging/main. Probado con Stripe real en modo test (trialing y re-suscripcion active sin trial).
 - Por qué: una re-suscripcion no tiene trial_end, el resolver lanzaba, el webhook respondia 200 y el cliente pagaba sin Pro (audit-6, hallazgo colateral de FRESCO-816).
 - Siguiente: el webhook sigue respondiendo 200 ante errores de proceso por diseño (sin reintento de Stripe); vigilar el log [/api/stripe/webhook] failed to process event.
+
+## 2026-10-08 - FRESCO-823 simulacro de restauración
+- Qué: workflow manual db-restore-drill restaura el último backup de R2 en un proyecto Supabase temporal; RTO de datos medido en 76 s (1173 recetas = prod); ADR-0020 actualizado.
+- Por qué: el RTO del ADR era una estimación sin medir.
+- Siguiente: FRESCO-873 (backup del 4-oct falló sin avisar) y FRESCO-874 (cronometrar pasos manuales).
+
+## 2026-10-08 - FRESCO-873 backup semanal robusto
+- Qué: sonda de Postgres listo por TCP en db-backup (fallo del 4-oct) y issue automática si un backup falla; backup manual en verde con copia nueva en R2.
+- Por qué: el backup programado falló en silencio y la copia más nueva tenía 6 días.
+- Siguiente: la ruta de aviso por fallo no se ha ejercitado aún; FRESCO-874 sigue pendiente.
