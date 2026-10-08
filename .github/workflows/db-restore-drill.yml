@@ -77,8 +77,13 @@ jobs:
 
       - name: Restore into the scratch project
         run: |
-          host="$(curl -fsS "https://api.supabase.com/v1/projects/${DRILL_REF}/config/database/pooler" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" | jq -r '[.[] | select(.pool_mode == "session")][0].db_host')"
+          pooler="$(curl -fsS "https://api.supabase.com/v1/projects/${DRILL_REF}/config/database/pooler" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}")"
+          echo "Pooler response fields: $(echo "$pooler" | jq -c 'map(keys)')"
+          # db_host comes back null on fresh projects; the host is also inside connection_string.
+          host="$(echo "$pooler" | jq -r '[.[] | select(.pool_mode == "session")][0] | (.db_host // (.connection_string | capture("@(?<h>[^:/]+)").h))')"
+          [ -n "$host" ] && [ "$host" != "null" ] || { echo "Could not resolve the pooler host"; exit 1; }
+          echo "::add-mask::${host}"
           encoded="$(printf '%s' "$DRILL_DB_PASSWORD" | jq -sRr @uri)"
           url="postgresql://postgres.${DRILL_REF}:${encoded}@${host}:5432/postgres"
           echo "::add-mask::${url}"
