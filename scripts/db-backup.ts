@@ -131,12 +131,23 @@ async function dumpToFile({ url, file }: { url: string, file: string }): Promise
   await run(['docker', 'run', '--rm', ...HOST_ARGS, '-v', `${dir}:/out`, PG_IMAGE, 'pg_dump', url, '--format=custom', '--no-owner', '--no-privileges', ...schemaArgs, '--file', `/out/${name}`]);
 }
 
+/**
+ * Readiness probe for the scratch Postgres. The official image first runs a temporary
+ * init server that listens on the unix socket only, shuts it down and starts the real
+ * one; a socket probe passes during init and the next psql lands in the restart gap
+ * ("socket /var/run/postgresql/.s.PGSQL.5432 does not exist", FRESCO-873). Only the
+ * final server listens on TCP, so probing over TCP waits for the real one.
+ */
+export function readinessProbeArgs(container: string): string[] {
+  return ['docker', 'exec', container, 'psql', '-h', '127.0.0.1', '-U', 'postgres', '-tAc', 'select 1'];
+}
+
 async function restoreAndCount(dumpFile: string): Promise<{ counts: RowCounts, restoreErrors: number }> {
   const container = `fresco-backup-verify-${process.pid}`;
   try {
     await run(['docker', 'run', '-d', '--rm', '--name', container, '-e', 'POSTGRES_PASSWORD=verify', PG_IMAGE]);
     for (let i = 0; ; i++) {
-      const ready = await run(['docker', 'exec', container, 'psql', '-U', 'postgres', '-tAc', 'select 1'], { allowFail: true });
+      const ready = await run(readinessProbeArgs(container), { allowFail: true });
       if (ready.out.trim() === '1') { break; }
       if (i > 60) { throw new Error('Scratch Postgres did not become ready in 60s'); }
       await Bun.sleep(1000);
