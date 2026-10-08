@@ -43,8 +43,6 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
     cocinasTextoLibre,
     healthDataConsent,
     setHealthDataConsent,
-    healthConsentPriorAt,
-    setHealthConsentPriorAt,
     toggleDieta,
     toggleAlergeno,
     toggleIngredienteOdiado,
@@ -90,18 +88,6 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
     else {
       setConsentError('No pudimos registrar tu consentimiento. Inténtalo de nuevo.');
     }
-  }
-
-  // FRESCO-856: a consent already given for the current texts is announced with its
-  // date instead of asking again. Nothing is ticked for the user and nothing is
-  // written; "Volver a decidir" brings the unticked box back.
-  const priorConsentDate = healthConsentPriorAt
-    ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(healthConsentPriorAt))
-    : null;
-
-  function handleRedecide() {
-    setHealthConsentPriorAt(null);
-    setHealthDataConsent(false);
   }
 
   const dietaState: Record<DietaFlag, boolean> = {
@@ -201,51 +187,29 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
             </button>
             .
           </p>
-          {priorConsentDate
-            ? (
-                <p data-testid="health_consent_prior_notice" className="mt-3 text-body-sm text-tertiary">
-                  Ya diste tu consentimiento para tratar tus datos de alergias y dieta el
-                  {' '}
-                  {priorConsentDate}
-                  .
-                  {' '}
-                  <button
-                    type="button"
-                    data-testid="health_consent_redecide_button"
-                    onClick={handleRedecide}
-                    className="text-primary underline"
-                  >
-                    Volver a decidir
-                  </button>
-                </p>
-              )
-            : (
-                <>
-                  <label className="mt-3 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
-                    <span className="flex size-6 shrink-0 items-center justify-center">
-                      {/* FRESCO-451: a single agree toggle, so the square variant. */}
-                      <Checkbox
-                        data-testid="health_consent_checkbox"
-                        checked={healthDataConsent}
-                        disabled={isRecordingConsent}
-                        onChange={e => void handleConsentChange(e.target.checked)}
-                        className="rounded-sm"
-                      />
-                    </span>
-                    <span>{CONSENT_TEXTS.health_data}</span>
-                  </label>
-                  {consentError && (
-                    <p data-testid="health_consent_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
-                      {consentError}
-                    </p>
-                  )}
-                  {!healthDataConsent && !consentError && (
-                    <p data-testid="health_consent_required_hint" role="status" aria-live="polite" className="mt-2 text-body-sm text-tertiary">
-                      Marca la casilla para continuar.
-                    </p>
-                  )}
-                </>
-              )}
+          <label className="mt-3 flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
+            <span className="flex size-6 shrink-0 items-center justify-center">
+              {/* FRESCO-451: a single agree toggle, so the square variant. */}
+              <Checkbox
+                data-testid="health_consent_checkbox"
+                checked={healthDataConsent}
+                disabled={isRecordingConsent}
+                onChange={e => void handleConsentChange(e.target.checked)}
+                className="rounded-sm"
+              />
+            </span>
+            <span>{CONSENT_TEXTS.health_data}</span>
+          </label>
+          {consentError && (
+            <p data-testid="health_consent_error_message" role="alert" aria-live="assertive" className="mt-2 text-body-sm text-error">
+              {consentError}
+            </p>
+          )}
+          {!healthDataConsent && !consentError && (
+            <p data-testid="health_consent_required_hint" role="status" aria-live="polite" className="mt-2 text-body-sm text-tertiary">
+              Marca la casilla para continuar.
+            </p>
+          )}
         </div>
       )}
       <LegalModal open={privacyOpen} onOpenChange={setPrivacyOpen} section="privacidad" />

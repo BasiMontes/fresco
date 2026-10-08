@@ -61,8 +61,6 @@ export interface OnboardingState {
   nivelExperiencia: NivelExperienciaCulinaria | null
   /** FRESCO-794: explicit consent for health data (art. 9), recorded when the box is ticked in the diet step. */
   healthDataConsent: boolean
-  /** FRESCO-856: when the user already gave that consent (current texts version), so the diet step can say so instead of asking again. `null` = ask. */
-  healthConsentPriorAt: string | null
   setStep: (step: OnboardingStep) => void
   editFromSummary: (step: 1 | 2 | 3) => void
   goToSummary: () => void
@@ -82,7 +80,6 @@ export interface OnboardingState {
   setPlanningSelection: (value: PlanningSelection) => void
   setNivelExperiencia: (value: NivelExperienciaCulinaria) => void
   setHealthDataConsent: (value: boolean) => void
-  setHealthConsentPriorAt: (value: string | null) => void
   reset: () => void
 }
 
@@ -111,7 +108,6 @@ const initialState = {
   planningSelection: toPlanningSelection(ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT),
   nivelExperiencia: null as NivelExperienciaCulinaria | null,
   healthDataConsent: false,
-  healthConsentPriorAt: null as string | null,
 };
 
 /** The wizard's starting values; `/onboarding` compares against them to know nothing was typed yet (FRESCO-806). */
@@ -227,7 +223,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   setPlanningSelection: value => set({ planningSelection: value }),
   setNivelExperiencia: value => set({ nivelExperiencia: value }),
   setHealthDataConsent: value => set({ healthDataConsent: value }),
-  setHealthConsentPriorAt: value => set({ healthConsentPriorAt: value }),
   reset: () => set(initialState),
 }), {
   // FRESCO-94: an accidental F5 mid-onboarding wiped the wizard's answers
@@ -262,6 +257,5 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     planningSelection: state.planningSelection,
     nivelExperiencia: state.nivelExperiencia,
     healthDataConsent: state.healthDataConsent,
-    healthConsentPriorAt: state.healthConsentPriorAt,
   }),
 }));

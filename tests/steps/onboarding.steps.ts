@@ -1,7 +1,6 @@
 import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
-import { LEGAL_TEXTS_VERSION } from '../../lib/legal/consent';
 import { test } from '../fixtures';
 import { currentWeekMonday, restHeaders } from '../test-helpers';
 
@@ -335,38 +334,4 @@ Then(/^su perfil guardado sigue igual$/, async ({ request }) => {
     { headers: restHeaders(testUser.accessToken) },
   );
   expect(await res.json()).toEqual([{ nombre: SAVED_NOMBRE, dieta_halal: true, alergenos: ['huevo'] }]);
-});
-
-// FRESCO-856 — "Quien ya dio el consentimiento de datos de salud no tiene que marcarlo otra vez".
-// The consent is recorded under the user's own session (ADR-0040: the INSERT grant is (kind, version),
-// user_id defaults to auth.uid()), exactly as the wizard does when the box is ticked.
-
-Given(/^ya dio el consentimiento de datos de salud con los textos vigentes$/, async ({ request }) => {
-  const testUser = ctx.testUser!;
-  const res = await request.post(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_consents`,
-    {
-      headers: { ...restHeaders(testUser.accessToken), Prefer: 'return=minimal' },
-      data: { kind: 'health_data', version: LEGAL_TEXTS_VERSION },
-    },
-  );
-  expect(res.ok(), `seeding the health-data consent: ${res.status()}`).toBe(true);
-});
-
-When(/^llega al paso de dieta del onboarding con su perfil guardado$/, async ({ page }) => {
-  await page.goto('/onboarding');
-  await expect(page.getByTestId('nombre_input')).toHaveValue(SAVED_NOMBRE);
-  await page.getByTestId('next_button').click();
-  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+2\s+de\s+3/);
-});
-
-Then(/^ve cuándo dio su consentimiento y no hay casilla que marcar$/, async ({ page }) => {
-  await expect(page.getByTestId('health_consent_prior_notice')).toContainText('Ya diste tu consentimiento');
-  await expect(page.getByTestId('health_consent_checkbox')).toHaveCount(0);
-});
-
-Then(/^puede avanzar al paso 3 sin marcar nada$/, async ({ page }) => {
-  await expect(page.getByTestId('next_button')).toBeEnabled();
-  await page.getByTestId('next_button').click();
-  await expect(page.getByTestId('step_indicator_label')).toHaveText(/Paso\s+3\s+de\s+3/);
 });
