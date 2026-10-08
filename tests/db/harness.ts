@@ -428,9 +428,22 @@ export async function seedMealPlan(
   return { id: (res.body[0] as { id: string }).id, semanaIso };
 }
 
-/** N catalog recipe ids (the local stack's seed loads 1000). */
-export async function catalogRecipeIds(user: DbTestUser, count: number): Promise<string[]> {
-  const res = await rest('recipes', { token: user.token, query: 'select=id&order=id.asc&limit=' });
+/**
+ * N catalog recipe ids (the local stack's seed loads 1000). Active recipes only
+ * (FRESCO-879): `recipes` also holds soft-deleted rows (`activo = false`, which
+ * `get_filtered_recipes` never returns), and a test that picks one as the
+ * recipe to place or substitute fails with a validation error instead of the
+ * behaviour it is about. `includeInactive` is for the one caller that only needs
+ * many existing ids as favorite targets (the 1000-favorites quota), where the
+ * ~600 active recipes are not enough.
+ */
+export async function catalogRecipeIds(
+  user: DbTestUser,
+  count: number,
+  { includeInactive = false }: { includeInactive?: boolean } = {},
+): Promise<string[]> {
+  const active = includeInactive ? '' : '&activo=eq.true';
+  const res = await rest('recipes', { token: user.token, query: `select=id${active}&order=id.asc&limit=` });
   if (!Array.isArray(res.body) || res.body.length < count) {
     throw new Error(`[db-harness] catalogRecipeIds: expected ${count}, got ${JSON.stringify(res.body)}`);
   }
