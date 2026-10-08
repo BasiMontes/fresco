@@ -27,6 +27,7 @@ const VALID_ROW: RecipeRow = {
   dieta: null,
   alergenos: ['lacteos'],
   ingredientes_principales: ['arroz', 'setas'],
+  ingredientes_cantidades: null,
   ingredientes_que_puede_desagradar: null,
   temporada: ['otono', 'todo_el_ano'],
   pasos_resumen: null,
@@ -41,6 +42,32 @@ const VALID_ROW: RecipeRow = {
 describe('toRecipe (jsonb boundary)', () => {
   test('keeps a row whose jsonb columns match the domain shape', () => {
     expect(toRecipe(VALID_ROW)?.meta?.coste_estimado).toBe('medio');
+  });
+
+  test('keeps ingredient quantities that match the domain shape (FRESCO-863)', () => {
+    const withQuantities: RecipeRow = {
+      ...VALID_ROW,
+      ingredientes_cantidades: [
+        { nombre: 'arroz', cantidad: 300, unidad: 'g' },
+        { nombre: 'setas', cantidad: 0, unidad: 'al gusto' },
+      ],
+    };
+
+    expect(toRecipe(withQuantities)?.ingredientes_cantidades).toEqual([
+      { nombre: 'arroz', cantidad: 300, unidad: 'g' },
+      { nombre: 'setas', cantidad: 0, unidad: 'al gusto' },
+    ]);
+  });
+
+  test('drops a row whose ingredient quantity uses an unknown unit (FRESCO-863)', () => {
+    const spy = spyOn(console, 'error').mockImplementation(() => {});
+    const badUnit: RecipeRow = {
+      ...VALID_ROW,
+      ingredientes_cantidades: [{ nombre: 'arroz', cantidad: 3, unidad: 'tazas' }],
+    };
+
+    expect(toRecipe(badUnit)).toBeNull();
+    spy.mockRestore();
   });
 
   test('keeps live clasificacion values the old unions never listed (bowls, casera)', () => {

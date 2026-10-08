@@ -372,6 +372,7 @@ export type Database = {
           dieta: Json | null
           foto_url: string | null
           id: string
+          ingredientes_cantidades: Json | null
           ingredientes_principales: Json | null
           ingredientes_que_puede_desagradar: Json | null
           meta: Json | null
@@ -395,6 +396,7 @@ export type Database = {
           dieta?: Json | null
           foto_url?: string | null
           id?: string
+          ingredientes_cantidades?: Json | null
           ingredientes_principales?: Json | null
           ingredientes_que_puede_desagradar?: Json | null
           meta?: Json | null
@@ -418,6 +420,7 @@ export type Database = {
           dieta?: Json | null
           foto_url?: string | null
           id?: string
+          ingredientes_cantidades?: Json | null
           ingredientes_principales?: Json | null
           ingredientes_que_puede_desagradar?: Json | null
           meta?: Json | null
@@ -891,6 +894,7 @@ export type Database = {
           dieta: Json | null
           foto_url: string | null
           id: string
+          ingredientes_cantidades: Json | null
           ingredientes_principales: Json | null
           ingredientes_que_puede_desagradar: Json | null
           meta: Json | null

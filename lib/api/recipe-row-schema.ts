@@ -1,4 +1,5 @@
 import type {
+  IngredienteCantidad,
   Recipe,
   RecipeClasificacion,
   RecipeDieta,
@@ -60,6 +61,12 @@ const temporadaSchema = z.enum([
 
 const stringListSchema = z.array(z.string());
 
+const ingredienteCantidadSchema = z.object({
+  nombre: z.string(),
+  cantidad: z.number().nonnegative(),
+  unidad: z.enum(['g', 'ml', 'unidades', 'dientes', 'cucharadas', 'cucharaditas', 'pizca', 'al gusto']),
+}) satisfies z.ZodType<IngredienteCantidad>;
+
 /** The eight jsonb columns of `recipes`, each nullable like its `Recipe` field. */
 export const recipeJsonbSchema = z.object({
   meta: recipeMetaSchema.nullable(),
@@ -67,6 +74,7 @@ export const recipeJsonbSchema = z.object({
   dieta: recipeDietaSchema.nullable(),
   alergenos: stringListSchema.nullable(),
   ingredientes_principales: stringListSchema.nullable(),
+  ingredientes_cantidades: z.array(ingredienteCantidadSchema).nullish(),
   ingredientes_que_puede_desagradar: stringListSchema.nullable(),
   temporada: z.array(temporadaSchema).nullable(),
   pasos_resumen: stringListSchema.nullable(),
@@ -77,6 +85,7 @@ export const recipeJsonbSchema = z.object({
   | 'dieta'
   | 'alergenos'
   | 'ingredientes_principales'
+  | 'ingredientes_cantidades'
   | 'ingredientes_que_puede_desagradar'
   | 'temporada'
   | 'pasos_resumen'

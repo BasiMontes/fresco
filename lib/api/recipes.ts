@@ -29,7 +29,7 @@ export function toRecipe(row: RecipeRow): Recipe | null {
     return null;
   }
 
-  return { ...row, ...parsed.data };
+  return { ...row, ...parsed.data, ingredientes_cantidades: parsed.data.ingredientes_cantidades ?? null };
 }
 
 /** `toRecipe` over a list, skipping the rows it drops. */
