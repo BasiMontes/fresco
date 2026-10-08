@@ -298,7 +298,9 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   lateral drawer FRESCO-274) → results grid of `recipe-card` / `personal-recipe-card` →
   "Crear propia" opens `create-recipe-form` dialog (name required, `maxLength=100` —
   DEFECT-FRESCO-107/118/124; ≥1 ingredient — DEFECT-FRESCO-125/186; save feedback —
-  DEFECT-FRESCO-185).
+  DEFECT-FRESCO-185). When the catalog read fails, the page shows `recipe-library-load-error`
+  (`empty-state` with "No hemos podido cargar el catálogo" and a "Reintentar" button that
+  refreshes the page) instead of an empty catalogue — FRESCO-855, live UI as built, no mockup.
 - **Tokens.** `recipe-card`; `tag` variants for facet chips (2px size-stable on select —
   DEFECT-FRESCO-258/272); `segmented-control` for tabs; `input` for search; `dialog`
   (`components/ui/dialog.tsx`) for create; `filter-drawer` (`components/ui/filter-drawer.tsx`).
