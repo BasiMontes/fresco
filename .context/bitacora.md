@@ -90,3 +90,8 @@ Historia archivada:
 - Qué: con 0 artículos, /shopping-list muestra "Has comprado todo lo de esta semana." y enlaces a menú, recetas y calendario (PR #562). Build spec-only, divergencia §5-X; validado en vivo a 1440 y 360 px. En dev, staging y main.
 - Por qué: tras "Compra realizada" quedaba solo la tarjeta Resumen y el resto vacío; el mockup de Claude Design nunca se devolvió y el fundador eligió la ruta (b).
 - Siguiente: si llega el mockup de `spend-trend-and-shopping-done`, ajustar en historia aparte; el estado "sin lista" y el tema oscuro no se probaron en vivo.
+
+## 2026-10-08 - FRESCO-856 revertido en staging y main
+- Qué: PR #565 revierte el aviso de consentimiento de salud ya dado (#560). Había llegado a main por error en la promoción de FRESCO-842, que arrastró el commit; ya no está activo en producción.
+- Por qué: la bitácora pedía no nivelar main hasta que el abogado confirme que un consentimiento ya dado vale en un paso nuevo; hasta entonces se vuelve a pedir la casilla.
+- Siguiente: si el abogado confirma, revertir el revert (24375b6e en su PR) para reaplicar FRESCO-856. Antes de cada git:promote, mirar git log main..staging por si arrastra algo retenido.
