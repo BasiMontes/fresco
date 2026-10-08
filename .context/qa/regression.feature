@@ -1079,6 +1079,16 @@ Característica: Flujo completo de usuario en Fresco
     # vía `jsonb_clear_comprados` en vez de desmarcarlos ("volvían como
     # pendientes" leía como que no pasaba nada).
 
+  @lista-compra @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
+  Escenario: Con todo comprado la lista ofrece los siguientes pasos
+    Dado que el usuario tiene una lista de la compra generada
+    Cuando marca todos los productos como comprados y cierra el recibo
+    Entonces ve que ha comprado todo lo de la semana
+    Y puede ir a su menú, a las recetas y al calendario
+    # FRESCO-842: antes quedaba solo la tarjeta Resumen y la pantalla vacía.
+    # Spec-only (sin mockup), divergencia §5-X de master-design-plan.md.
+
   @lista-compra @verificado-manual-2026-08-14 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
   Escenario: Sugerencias basadas en favoritos permiten añadir un producto a la lista

@@ -142,6 +142,33 @@ Then(/^el botón "Compra realizada" desaparece$/, async ({ page }) => {
   await expect(page.getByTestId('shopping_list_clear_comprados_button')).toHaveCount(0);
 });
 
+// ── Todo comprado (FRESCO-842) ───────────────────────────────────────────────
+
+When(/^marca todos los productos como comprados y cierra el recibo$/, async ({ page }) => {
+  const items = page.locator('main input[type="checkbox"][data-testid^="shopping_list_item_"]');
+  await expect(items.first()).toBeVisible({ timeout: 30_000 });
+  const total = await items.count();
+  for (let i = 0; i < total; i++) {
+    await items.nth(i).check();
+  }
+  await expect(page.locator('main input[type="checkbox"][data-testid^="shopping_list_item_"]:not(:checked)')).toHaveCount(0);
+  await page.getByTestId('shopping_list_clear_comprados_button').click();
+  await expect(page.getByTestId('receipt_ticket_dialog')).toBeVisible();
+  await page.getByTestId('receipt_ticket_done_button').click();
+  await expect(page.getByTestId('receipt_ticket_dialog')).toHaveCount(0);
+});
+
+Then(/^ve que ha comprado todo lo de la semana$/, async ({ page }) => {
+  await expect(page.getByTestId('shopping_list_all_bought')).toContainText('Has comprado todo lo de esta semana.');
+});
+
+Then(/^puede ir a su menú, a las recetas y al calendario$/, async ({ page }) => {
+  const state = page.getByTestId('shopping_list_all_bought');
+  await expect(state.getByRole('link', { name: 'Ver mi menú' })).toHaveAttribute('href', '/menu');
+  await expect(state.getByRole('link', { name: 'Ver las recetas' })).toHaveAttribute('href', '/recipes');
+  await expect(state.getByRole('link', { name: 'Ver el calendario' })).toHaveAttribute('href', '/calendar');
+});
+
 // ── Sugerencias basadas en favoritos (FRESCO-194) ───────────────────────────
 
 Given(
