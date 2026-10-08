@@ -638,3 +638,13 @@ Historia archivada:
 - Qué: sonda de Postgres listo por TCP en db-backup (fallo del 4-oct) y issue automática si un backup falla; backup manual en verde con copia nueva en R2.
 - Por qué: el backup programado falló en silencio y la copia más nueva tenía 6 días.
 - Siguiente: la ruta de aviso por fallo no se ha ejercitado aún; FRESCO-874 sigue pendiente.
+
+## 2026-10-08 - FRESCO-860 test intermitente del diálogo de borrar cuenta
+- Qué: el push('/calendar') diferido de ReuseMenuButton (1,2 s, sin cancelar) caía dentro del test del diálogo; ahora se cancela al desmontar.
+- Por qué: el fallo intermitente del pre-push bloqueaba promociones y empujaba a --no-verify.
+- Siguiente: sin test unitario nuevo (mock global filtraría); vigilar si reaparece algún push perdido en la suite.
+
+## 2026-10-08 - FRESCO-856 aviso de consentimiento de salud ya dado
+- Qué: el paso de dieta anuncia con fecha un consentimiento health_data ya registrado para los textos vigentes, sin casilla premarcada y con 'Volver a decidir'. Mergeado a staging (PR #560), NO a main.
+- Por qué: tras FRESCO-806 quien volvía con alérgenos guardados tenía que marcar la casilla otra vez; una casilla premarcada no es consentimiento válido y el registro aún no tiene retirada (ADR-0040).
+- Siguiente: el abogado debe confirmar que un consentimiento ya dado vale en un paso nuevo; hasta entonces no nivelar main (un git:promote lo arrastraría). Luego cerrar FRESCO-856.
