@@ -32,7 +32,7 @@ async function seedMenuAndLoginToShoppingList(
   page: import('@playwright/test').Page,
   request: import('@playwright/test').APIRequestContext,
   testUserFactory: () => Promise<TestUser>,
-  opts: { seedList?: boolean } = {},
+  opts: { seedList?: boolean, openList?: boolean } = {},
 ): Promise<TestUser> {
   const testUser = await testUserFactory();
   await generateCurrentWeekPlan(request, testUser);
@@ -48,12 +48,18 @@ async function seedMenuAndLoginToShoppingList(
   await page.getByTestId('password_input').fill(testUser.password);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL('**/menu');
-  await page.goto('/shopping-list');
+  // FRESCO-852: a scenario whose own `When` opens the list stays on `/menu`.
+  // Navigating here too mounted the auto-generating list twice (two overlapping
+  // generation calls for one plan), the race that made the first-visit scenario
+  // flaky.
+  if (opts.openList !== false) {
+    await page.goto('/shopping-list');
+  }
   return testUser;
 }
 
 Given(/^que el usuario tiene un menú semanal generado$/, async ({ page, request, testUserFactory }) => {
-  await seedMenuAndLoginToShoppingList(page, request, testUserFactory);
+  await seedMenuAndLoginToShoppingList(page, request, testUserFactory, { openList: false });
 });
 
 When(/^abre la lista de la compra$/, async ({ page }) => {

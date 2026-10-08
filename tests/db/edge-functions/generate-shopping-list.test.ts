@@ -119,3 +119,36 @@ describe.skipIf(!(RUN && reachable))('generate-shopping-list — reflects a conf
     expect(totalFor(body, 'tofu firme')).toBe(0);
   });
 });
+
+/**
+ * FRESCO-852 — the first `/shopping-list` visit fires the generation on mount
+ * and a second visit (reload, second tab, the e2e's double navigation) can fire
+ * it again before the first lands. The function checks "no list yet" and then
+ * inserts, so two overlapping calls both pass the check and the loser hits
+ * `unique_plan_lista`. That loser must answer 409 ("ya existe"), which the
+ * client turns into a re-read; a 500 leaves the page on the error state while
+ * the list exists.
+ */
+describe.skipIf(!(RUN && reachable))('generate-shopping-list — concurrent generation for the same plan (real functions runtime)', () => {
+  const ctx = createDbTestContext();
+
+  afterAll(async () => ctx.cleanupAll());
+
+  test('overlapping calls end with exactly one 200 and 409 for the rest, never a 500', async () => {
+    const user = await ctx.createUser();
+    const recipe = await findGambasRecipe(user);
+    const plan = await seedMealPlan(user, { semanaIso: '2099-W07', fechaInicio: '2099-02-16' });
+    await seedSlots(user, plan.id, [
+      { recipeId: recipe.id, tipoPlato: 'comida' },
+      { recipeId: recipe.id, tipoPlato: 'cena' },
+    ]);
+
+    const responses = await Promise.all(
+      Array.from({ length: 5 }, async () => callFunction(ENDPOINT, { token: user.token, body: { meal_plan_id: plan.id } })),
+    );
+    const statuses = responses.map(res => res.status).sort();
+
+    expect(statuses.filter(status => status === 200)).toHaveLength(1);
+    expect(statuses.filter(status => status !== 200 && status !== 409)).toEqual([]);
+  });
+});
