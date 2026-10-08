@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { getUserOnboardingProfile } from '@/lib/api/user-profile';
+import { getHealthDataConsentDate } from '@/lib/legal/consent-store';
 import { isWizardUntouched, profileToWizardData } from '@/lib/onboarding/saved-profile';
 import { ONBOARDING_INITIAL_STATE, useOnboardingStore } from '@/lib/store/onboarding-store';
 
@@ -16,7 +17,13 @@ export type HydrationResult = 'hydrated' | 'no-profile' | 'kept-edits';
  * - Otherwise the saved values become the wizard's values, so the summary shows
  *   them and "Empezar" saves them back unchanged instead of overwriting them.
  *
- * A read error is thrown, never swallowed: see `useOnboardingSessionGate`.
+ * - FRESCO-856: when the user already gave the health-data consent for the
+ *   current texts, the wizard carries it (with its date) so the diet step can say
+ *   so instead of asking again. Nothing is recorded here: only ticking the box
+ *   writes a consent. Applies only when the profile is loaded into an untouched
+ *   wizard; edits in progress keep their own consent state.
+ *
+ * A profile read error is thrown, never swallowed: see `useOnboardingSessionGate`.
  */
 export async function hydrateFromSavedProfile({ client, userId }: { client: SupabaseClient<Database>, userId: string }): Promise<HydrationResult> {
   const saved = await getUserOnboardingProfile(client, userId);
@@ -27,5 +34,9 @@ export async function hydrateFromSavedProfile({ client, userId }: { client: Supa
     return 'kept-edits';
   }
   useOnboardingStore.setState(profileToWizardData(saved, ONBOARDING_INITIAL_STATE));
+  const consentedAt = await getHealthDataConsentDate(client);
+  if (consentedAt) {
+    useOnboardingStore.setState({ healthDataConsent: true, healthConsentPriorAt: consentedAt });
+  }
   return 'hydrated';
 }
