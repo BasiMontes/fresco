@@ -271,6 +271,18 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve la casilla de consentimiento de datos de salud sin marcar y no puede avanzar
     Y al marcar la casilla puede avanzar al paso 3
 
+  @onboarding @seguridad @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-856). Quien ya dio el consentimiento de datos de
+  # salud con los textos vigentes lo ve anunciado con su fecha, sin casilla premarcada, y avanza. Con
+  # consentimiento de una versión anterior o sin él la casilla sale sin marcar (cubierto por tests unitarios).
+  Escenario: Quien ya dio el consentimiento de datos de salud no tiene que marcarlo otra vez
+    Dado que el usuario tiene sesión iniciada
+    Y tiene un perfil guardado con dieta halal, alérgeno huevo y un nombre
+    Y ya dio el consentimiento de datos de salud con los textos vigentes
+    Cuando llega al paso de dieta del onboarding con su perfil guardado
+    Entonces ve cuándo dio su consentimiento y no hay casilla que marcar
+    Y puede avanzar al paso 3 sin marcar nada
+
   @onboarding @generacion-menu @automatizado
   # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-759). Reutiliza los pasos de generación del
   # primer escenario; el segundo "Empezar" recibe el conflicto real de generate-meal-plan.

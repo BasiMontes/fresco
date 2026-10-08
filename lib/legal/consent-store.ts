@@ -18,3 +18,26 @@ export async function recordConsents(client: SupabaseClient<Database>, kinds: Co
       { onConflict: 'user_id,kind,version', ignoreDuplicates: true },
     );
 }
+
+/**
+ * When the signed-in user gave the health-data consent for the CURRENT texts
+ * version, or `null` (FRESCO-856, ADR-0040). A consent given for an older version
+ * does not count: a new version is what makes the wizard ask again. Only reads;
+ * the owner is the session (RLS lets a user read their own rows).
+ *
+ * A read error also answers `null`: the safe failure is to ask for the consent
+ * again, never to assume it.
+ */
+export async function getHealthDataConsentDate(client: SupabaseClient<Database>): Promise<string | null> {
+  const { data, error } = await client
+    .from('user_consents')
+    .select('accepted_at')
+    .eq('kind', 'health_data')
+    .eq('version', LEGAL_TEXTS_VERSION)
+    .maybeSingle();
+  if (error) {
+    console.error('[consents] could not read the health-data consent', error);
+    return null;
+  }
+  return data?.accepted_at ?? null;
+}

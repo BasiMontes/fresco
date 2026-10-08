@@ -14,6 +14,7 @@ export type OnboardingData = Omit<
   | 'step'
   | 'returnToSummary'
   | 'healthDataConsent'
+  | 'healthConsentPriorAt'
   | `set${string}`
   | `toggle${string}`
   | 'editFromSummary'

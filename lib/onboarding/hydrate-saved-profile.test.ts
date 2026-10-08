@@ -5,9 +5,15 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { hydrateFromSavedProfile } from '@/lib/onboarding/hydrate-saved-profile';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
-function clientReturning(result: { data: unknown, error: { message: string } | null }): SupabaseClient<Database> {
-  const chain = { select: () => chain, eq: () => chain, maybeSingle: async () => result };
-  return { from: () => chain } as unknown as SupabaseClient<Database>;
+interface QueryResult { data: unknown, error: { message: string } | null }
+
+/** `result` answers the profile read; `consent` (none by default) answers the `user_consents` read. */
+function clientReturning(result: QueryResult, consent: QueryResult = { data: null, error: null }): SupabaseClient<Database> {
+  function chainFor(answer: QueryResult) {
+    const chain = { select: () => chain, eq: () => chain, maybeSingle: async () => answer };
+    return chain;
+  }
+  return { from: (table: string) => chainFor(table === 'user_consents' ? consent : result) } as unknown as SupabaseClient<Database>;
 }
 
 const SAVED = {
@@ -60,6 +66,42 @@ describe('hydrateFromSavedProfile (FRESCO-806)', () => {
     expect(result).toBe('kept-edits');
     expect(useOnboardingStore.getState().nombre).toBe('Escrito a mano');
     expect(useOnboardingStore.getState().dietaHalal).toBe(false);
+  });
+
+  test('a health-data consent already given for the current texts is carried into the wizard with its date (FRESCO-856)', async () => {
+    const client = clientReturning({ data: SAVED, error: null }, { data: { accepted_at: '2026-10-06T10:00:00Z' }, error: null });
+    await hydrateFromSavedProfile({ client, userId: 'u1' });
+    const state = useOnboardingStore.getState();
+    expect(state.healthDataConsent).toBe(true);
+    expect(state.healthConsentPriorAt).toBe('2026-10-06T10:00:00Z');
+  });
+
+  test('no consent for the current texts leaves the box unticked (FRESCO-856)', async () => {
+    await hydrateFromSavedProfile({ client: clientReturning({ data: SAVED, error: null }), userId: 'u1' });
+    const state = useOnboardingStore.getState();
+    expect(state.healthDataConsent).toBe(false);
+    expect(state.healthConsentPriorAt).toBeNull();
+  });
+
+  test('a failed consent read still hydrates the profile and asks for the consent again (FRESCO-856)', async () => {
+    const client = clientReturning({ data: SAVED, error: null }, { data: null, error: { message: 'boom' } });
+    expect(await hydrateFromSavedProfile({ client, userId: 'u1' })).toBe('hydrated');
+    const state = useOnboardingStore.getState();
+    expect(state.alergenos).toEqual(['huevo']);
+    expect(state.healthDataConsent).toBe(false);
+  });
+
+  test('a user with no profile keeps the box unticked even if a consent exists (FRESCO-856)', async () => {
+    const client = clientReturning({ data: null, error: null }, { data: { accepted_at: '2026-10-06T10:00:00Z' }, error: null });
+    await hydrateFromSavedProfile({ client, userId: 'u1' });
+    expect(useOnboardingStore.getState().healthDataConsent).toBe(false);
+  });
+
+  test('edits already in the wizard keep their own consent state (FRESCO-856)', async () => {
+    useOnboardingStore.getState().setNombre('Escrito a mano');
+    const client = clientReturning({ data: SAVED, error: null }, { data: { accepted_at: '2026-10-06T10:00:00Z' }, error: null });
+    await hydrateFromSavedProfile({ client, userId: 'u1' });
+    expect(useOnboardingStore.getState().healthDataConsent).toBe(false);
   });
 
   test('a read error is thrown, never turned into an empty wizard', async () => {
