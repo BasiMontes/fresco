@@ -1,5 +1,6 @@
 'use client';
 
+import type { IngredienteCantidad } from '@schemas';
 import type { SafeIngredientSubstitute } from '@/lib/ingredients/get-safe-substitutes';
 import type { Sustitucion } from '@/lib/ingredients/get-slot-substitution-context';
 import * as React from 'react';
@@ -7,9 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { confirmSubstitution, getSafeSubstitutes } from '@/lib/client-api/substitutions';
 import { IngredientSubstitutionError } from '@/lib/ingredients/get-safe-substitutes';
+import { formatCantidad } from '@/lib/recipes/format-quantity';
 
 interface IngredientListProps {
   ingredientes: string[]
+  /** FRESCO-863 — catalog quantities, matched to `ingredientes` by name. Absent or `null` renders names only. */
+  cantidades?: IngredienteCantidad[] | null
   /** Present only when this recipe is being viewed FROM a specific planned meal (FRESCO-534) — a Biblioteca-browse open never shows the "Sustituir" action. */
   slotId?: string
   initialSustitucion?: Sustitucion | null
@@ -22,7 +26,8 @@ interface IngredientListProps {
  * substituted it renders as replaced, with no further action — reversing a
  * confirmed substitution is explicitly out of this story's scope.
  */
-export function IngredientList({ ingredientes, slotId, initialSustitucion }: IngredientListProps) {
+export function IngredientList({ ingredientes, cantidades, slotId, initialSustitucion }: IngredientListProps) {
+  const cantidadPorNombre = new Map((cantidades ?? []).map(item => [item.nombre, item]));
   const [sustitucion, setSustitucion] = React.useState<Sustitucion | null>(initialSustitucion ?? null);
   const [openFor, setOpenFor] = React.useState<string | null>(null);
   const [candidates, setCandidates] = React.useState<SafeIngredientSubstitute[] | null>(null);
@@ -73,9 +78,18 @@ export function IngredientList({ ingredientes, slotId, initialSustitucion }: Ing
       <ul className="mt-2 list-disc space-y-1 pl-5 text-body-md" data-testid="recipe_detail_ingredientes">
         {ingredientes.map((ingrediente) => {
           const isSubstituted = sustitucion?.original === ingrediente;
+          // A substituted line drops its quantity: the amount was estimated for
+          // the original ingredient and does not carry over to the replacement.
+          const cantidad = isSubstituted ? undefined : cantidadPorNombre.get(ingrediente);
           return (
             <li key={ingrediente} className="flex items-center justify-between gap-2">
               <span>
+                {cantidad && (
+                  <span className="font-semibold tabular-nums" data-testid="recipe_detail_ingrediente_cantidad">
+                    {formatCantidad(cantidad)}
+                    {' '}
+                  </span>
+                )}
                 {isSubstituted && sustitucion
                   ? (
                       <>

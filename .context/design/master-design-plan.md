@@ -319,7 +319,10 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Purpose.** Full recipe view: image, title, tags, meta, ingredients, steps. Favourite toggle.
 - **Layout.** `ArrowLeft` + "Volver" link (shared pattern, not a circular icon-only button — §5-F)
   → image area (`rounded.image`) → title (`h3`, Figtree, line-clamp 2) → tag row → meta line
-  ("50 min · fácil · 2,80€/persona") → ingredients list → numbered steps →
+  ("50 min · fácil · 2,80€/persona") → ingredients list (catalog recipes: quantity in semibold
+  before the name, "400 g gambas" / "4 dientes ajo" / "al gusto sal", countables as "2 ud.";
+  no quantity on a substituted line or on personal recipes — FRESCO-863, live UI as built, no
+  mockup) → numbered steps →
   `favorite-toggle-button`. Personal recipes render the same layout with **no** edit/delete/rate/
   menu-add/share (deliberate scope cut — feature-map gap 3).
 - **Tokens.** `recipe-card` image treatment — `aspect-[4/3]` + `.recipe-photo` grade + `RecipePlaceholder`,
