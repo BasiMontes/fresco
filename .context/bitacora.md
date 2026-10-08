@@ -95,3 +95,7 @@ Historia archivada:
 - Qué: PR #565 revierte el aviso de consentimiento de salud ya dado (#560). Había llegado a main por error en la promoción de FRESCO-842, que arrastró el commit; ya no está activo en producción.
 - Por qué: la bitácora pedía no nivelar main hasta que el abogado confirme que un consentimiento ya dado vale en un paso nuevo; hasta entonces se vuelve a pedir la casilla.
 - Siguiente: si el abogado confirma, revertir el revert (b5343ca4) para reaplicar FRESCO-856. Antes de cada git:promote, mirar git log main..staging por si arrastra algo retenido.
+## 2026-10-08 - FRESCO-863 cantidades de ingredientes en la ficha de receta
+- Qué: columna recipes.ingredientes_cantidades (ADR-0042, Proposed), migración de datos con las 601 recetas activas (estimación IA validada por script) y la ficha muestra cantidad y unidad (PR #567, #568, #569, main en 8ed8f99b).
+- Por qué: audit-6 A6-L8, la ficha listaba ingredientes sin cantidades; cierre medido en producción: 0 de 601 activas sin cantidades.
+- Siguiente: aceptar ADR-0042; mover la lista de la compra de BASE_QUANTITIES a la columna nueva (ticket aparte); recetas del catálogo con ingredientes que no cuadran con el nombre (bizcocho con pan integral, sopa de ajo sin pan ni caldo).
