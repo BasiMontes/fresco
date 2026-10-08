@@ -1,0 +1,120 @@
+name: db-restore-drill
+
+# FRESCO-823 (ADR-0020, "Backup and restore"). Manual restore drill: take the newest
+# backup from R2, restore it into a THROWAWAY Supabase project and time every step, so
+# the RTO in the ADR is a measurement instead of an estimate.
+#
+# The workflow creates the scratch project itself (random database password generated in
+# the run, never stored) and deletes it in the last step even if an earlier one failed.
+# The production project is never touched: it is not an input of this workflow.
+#
+# Repository secrets used (all already present for db-backup):
+#   SUPABASE_ACCESS_TOKEN  creates and deletes the scratch project
+#   BACKUP_PASSPHRASE      decrypts the dump
+#   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_ORG_ID: uwajmudkrbdveypyuuqa
+  DRILL_REGION: eu-west-1
+  PG_IMAGE: postgres:17
+
+concurrency:
+  group: db-restore-drill
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Start the clock
+        run: echo "T0=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Download and decrypt the newest backup
+        run: |
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          key="$(aws s3 ls "s3://${R2_BUCKET}/" --endpoint-url "$endpoint" | awk '{print $4}' | grep '\.dump\.enc$' | sort | tail -1)"
+          echo "Newest backup: ${key}"
+          aws s3 cp "s3://${R2_BUCKET}/${key}" "$RUNNER_TEMP/restore.dump.enc" --endpoint-url "$endpoint"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:BACKUP_PASSPHRASE \
+            -in "$RUNNER_TEMP/restore.dump.enc" -out "$RUNNER_TEMP/restore.dump"
+          echo "T_DOWNLOADED=$(date +%s)" >> "$GITHUB_ENV"
+          echo "BACKUP_KEY=${key}" >> "$GITHUB_ENV"
+
+      - name: Create the scratch Supabase project
+        run: |
+          pw="$(openssl rand -base64 33 | tr -d '/+=' | cut -c1-32)"
+          echo "::add-mask::${pw}"
+          echo "DRILL_DB_PASSWORD=${pw}" >> "$GITHUB_ENV"
+          body="$(jq -n --arg pw "$pw" --arg org "$SUPABASE_ORG_ID" --arg region "$DRILL_REGION" \
+            '{name: "fresco-restore-drill", organization_id: $org, region: $region, db_pass: $pw}')"
+          ref="$(curl -fsS -X POST https://api.supabase.com/v1/projects \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" -H 'Content-Type: application/json' \
+            -d "$body" | jq -r '.id')"
+          echo "DRILL_REF=${ref}" >> "$GITHUB_ENV"
+          for i in $(seq 1 90); do
+            status="$(curl -fsS "https://api.supabase.com/v1/projects/${ref}" -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" | jq -r '.status')"
+            echo "attempt ${i}: ${status}"
+            [ "$status" = "ACTIVE_HEALTHY" ] && break
+            sleep 10
+          done
+          [ "$status" = "ACTIVE_HEALTHY" ] || { echo "Scratch project never became healthy"; exit 1; }
+          echo "T_PROJECT_READY=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Restore into the scratch project
+        run: |
+          host="$(curl -fsS "https://api.supabase.com/v1/projects/${DRILL_REF}/config/database/pooler" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" | jq -r '[.[] | select(.pool_mode == "session")][0].db_host')"
+          encoded="$(printf '%s' "$DRILL_DB_PASSWORD" | jq -sRr @uri)"
+          url="postgresql://postgres.${DRILL_REF}:${encoded}@${host}:5432/postgres"
+          echo "::add-mask::${url}"
+          # pg_restore exits non-zero on harmless errors (extension-owned objects), so the
+          # error lines are counted and the table count below is the real verdict.
+          docker run --rm -v "$RUNNER_TEMP:/in" "$PG_IMAGE" \
+            pg_restore --no-owner --no-privileges -d "$url" /in/restore.dump 2> "$RUNNER_TEMP/restore.err" || true
+          echo "pg_restore errors: $(grep -c '^pg_restore: error:' "$RUNNER_TEMP/restore.err" || true)"
+          grep '^pg_restore: error:' "$RUNNER_TEMP/restore.err" | head -5 | cut -c1-200 || true
+          tables="$(docker run --rm "$PG_IMAGE" psql "$url" -At -c "select count(*) from information_schema.tables where table_schema = 'public'")"
+          recipes="$(docker run --rm "$PG_IMAGE" psql "$url" -At -c "select count(*) from public.recipes")"
+          echo "RESTORED_TABLES=${tables}" >> "$GITHUB_ENV"
+          echo "RESTORED_RECIPES=${recipes}" >> "$GITHUB_ENV"
+          echo "T_RESTORED=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Report the timings
+        run: |
+          {
+            echo "## Restore drill (FRESCO-823)"
+            echo
+            echo "Backup restored: \`${BACKUP_KEY}\`"
+            echo
+            echo "| Step | Seconds |"
+            echo "|---|---|"
+            echo "| Download + decrypt | $((T_DOWNLOADED - T0)) |"
+            echo "| Create scratch project until healthy | $((T_PROJECT_READY - T_DOWNLOADED)) |"
+            echo "| pg_restore + count check | $((T_RESTORED - T_PROJECT_READY)) |"
+            echo "| **Total** | **$((T_RESTORED - T0))** |"
+            echo
+            echo "Public tables restored: ${RESTORED_TABLES}. Recipes: ${RESTORED_RECIPES}."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete the scratch project
+        if: always()
+        run: |
+          [ -n "${DRILL_REF:-}" ] || { echo "No scratch project was created"; exit 0; }
+          curl -fsS -X DELETE "https://api.supabase.com/v1/projects/${DRILL_REF}" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" > /dev/null
+          echo "Deleted scratch project ${DRILL_REF}"
