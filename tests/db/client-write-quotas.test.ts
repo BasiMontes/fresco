@@ -180,7 +180,7 @@ describe.skipIf(!(RUN && reachable))('client write quotas and caps (real DB)', (
 
     test('a user holds at most 1000 favorites', async () => {
       const quotaUser = await ctx.createUser();
-      const recipes = await catalogRecipeIds(quotaUser, 1000);
+      const recipes = await catalogRecipeIds(quotaUser, 1000, { includeInactive: true });
       for (let batch = 0; batch < 4; batch++) {
         const rows = recipes.slice(batch * 250, (batch + 1) * 250).map(recipe_id => ({ user_id: quotaUser.id, recipe_id }));
         const res = await rest('favorites', { method: 'POST', token: quotaUser.token, prefer: 'return=minimal', body: rows });
