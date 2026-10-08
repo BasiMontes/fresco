@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { compareCounts, parseCounts } from './db-backup';
+import { compareCounts, parseCounts, readinessProbeArgs } from './db-backup';
 
 describe('parseCounts', () => {
   test('reads schema.table,count lines and ignores blanks', () => {
@@ -40,5 +40,16 @@ describe('compareCounts', () => {
     expect(compareCounts({ before, after: before, restored })).toEqual([
       { table: 'auth.users', restored: null, min: 5, max: 5 },
     ]);
+  });
+});
+
+describe('readinessProbeArgs', () => {
+  test('probes over TCP, which only the final server answers', () => {
+    // The official image first runs a temporary init server that listens on the unix
+    // socket only, then restarts. A socket probe passes during init and the next psql
+    // lands in the restart gap (the 2026-10-04 scheduled backup failed this way).
+    const args = readinessProbeArgs('verify-container');
+    expect(args[args.indexOf('-h') + 1]).toBe('127.0.0.1');
+    expect(args).toContain('verify-container');
   });
 });

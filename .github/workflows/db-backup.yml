@@ -43,6 +43,9 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write # only for the failure notice at the end
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,3 +82,20 @@ jobs:
           endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           aws s3 cp "$RUNNER_TEMP/fresco-db.dump.enc" "s3://${R2_BUCKET}/fresco-db-${stamp}.dump.enc" --endpoint-url "$endpoint"
           aws s3 cp "$RUNNER_TEMP/fresco-db.dump.enc.counts.json" "s3://${R2_BUCKET}/fresco-db-${stamp}.counts.json" --endpoint-url "$endpoint"
+      # FRESCO-873: the scheduled run of 2026-10-04 failed and nobody noticed for days.
+      # ADR-0020 treats a failed backup as an incident, so a failure opens (or adds to) one
+      # GitHub issue instead of relying on someone reading the Actions tab.
+      - name: Open an issue when the backup fails
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="db-backup failed"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"${title}\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "Failed again: ${run_url}"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
+              --body "The ${GITHUB_EVENT_NAME} run failed: ${run_url}. Until a run succeeds the newest backup in R2 keeps getting older (ADR-0020, Backup and restore). Close this issue once a run has uploaded a new dump."
+          fi
