@@ -81,7 +81,9 @@ jobs:
             -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}")"
           echo "Pooler response fields: $(echo "$pooler" | jq -c 'map(keys)')"
           # db_host comes back null on fresh projects; the host is also inside connection_string.
-          host="$(echo "$pooler" | jq -r '[.[] | select(.pool_mode == "session")][0] | (.db_host // (.connection_string | capture("@(?<h>[^:/]+)").h))')"
+          # The response is camelCase on fresh projects (connectionString) and its pool_mode is
+          # not necessarily "session"; the pooler host serves port 5432 (session) either way.
+          host="$(echo "$pooler" | jq -r '[.[] | (.db_host // ((.connectionString // .connection_string // "") | (capture("@(?<h>[^:/]+)")? | .h)))] | map(select(. != null)) | .[0] // empty')"
           [ -n "$host" ] && [ "$host" != "null" ] || { echo "Could not resolve the pooler host"; exit 1; }
           echo "::add-mask::${host}"
           encoded="$(printf '%s' "$DRILL_DB_PASSWORD" | jq -sRr @uri)"
