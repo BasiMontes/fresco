@@ -124,7 +124,8 @@ database is only read, so the isolation invariant above still holds.
 | Measure | Value | Source |
 |---|---|---|
 | RPO (data you can lose) | up to 7 days, plus whatever happened since the last run | weekly schedule |
-| RTO (time to be back) | estimated under 1 hour for a restore into a new project plus repointing env vars | **not measured on prod**; the full dump, restore and count check took about 30 s on the local stack (53 tables, 1000 recipes) |
+| RTO, data restore (measured) | about 76 s from a cold start: 6 s download and decrypt, 8 s to create the scratch project, 62 s `pg_restore` plus count check | restore drill of 2026-10-08 (FRESCO-823), see below |
+| RTO, whole recovery (estimate) | still estimated under 1 hour; the data step is now measured, the manual steps around it are not | Storage files, Auth settings, Edge Function deploy and secrets, Vercel env vars and the Stripe webhook were not timed |
 | Retention | 90 days | R2 lifecycle rule on the bucket |
 | Not covered | Storage **files** (the `storage` schema holds only their metadata), Edge Function code (lives in git), Vercel env vars | scope of `pg_dump` |
 
@@ -133,13 +134,36 @@ database is only read, so the isolation invariant above still holds.
 1. Download the newest `fresco-db-<stamp>.dump.enc` from the R2 bucket.
 2. Decrypt: `openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass env:BACKUP_PASSPHRASE -in fresco-db-<stamp>.dump.enc -out restore.dump`.
 3. Restore into a **scratch** database first, never straight over prod:
-   `pg_restore --no-owner --no-privileges -d <scratch-url> restore.dump`. One
-   `schema "public" already exists` error is normal on a non-empty target.
+   `pg_restore --no-owner --no-privileges -d <scratch-url> restore.dump`. Expect
+   a few hundred errors on a Supabase target (305 in the drill): `schema "auth" /
+   "public" / "storage" already exists` and `permission denied for schema auth`
+   come from Supabase-owned schemas. They are harmless; the verdict is the
+   row-count comparison, not the exit code.
 4. For lost rows: copy the affected tables from scratch into prod with a reviewed
    script. For a lost project: create a new Supabase project, restore into it,
    repoint `.agents/project.yaml` (`environments[*].db_project_ref`) and the env
    vars, redeploy.
 5. To rehearse without touching anything hosted: `bun scripts/db-backup.ts verify --in <file> --counts <counts.json>`.
+
+**Restore drill (FRESCO-823, 2026-10-08).** `.github/workflows/db-restore-drill.yml`
+(manual trigger) restores the newest R2 backup into a throwaway Supabase project
+and deletes it at the end; it needs no new secrets and never touches prod. Run
+`37744418230` restored `fresco-db-2026-10-02T150941Z` (785 KiB encrypted) in the
+timings above. Result: 1173 recipes restored, equal to prod. 18 public tables
+came back against 21 in prod; the three missing are consistent with the three
+tables created by migrations after that backup (`user_consents`,
+client-write-quota and `stripe_webhook_events` migrations), which is an inference
+and not a per-table check. Re-run the drill after any change to the restore
+procedure and before moving to Supabase Pro.
+
+What the dump does not carry and a real recovery would have to redo by hand
+(untimed, so the whole-recovery RTO stays an estimate): Storage files, Auth
+provider and email settings, Edge Function deploys and their secrets, Vercel env
+vars, the Stripe webhook endpoint and its signing secret.
+
+Finding of the drill: the scheduled backup of 2026-10-04 failed unnoticed (the
+verification Postgres was not accepting connections), so the newest copy was six
+days old at drill time. Tracked in FRESCO-873.
 
 **Required setup (repository secrets, owner action).** `SUPABASE_DB_PASSWORD`
 (already present; the workflow builds the pooler URL from it), `BACKUP_PASSPHRASE` (keep a copy outside GitHub, or the backups cannot be opened
