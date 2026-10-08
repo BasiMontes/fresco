@@ -29,14 +29,42 @@ interface Ctx {
 const ctx: Ctx = { testUser: null, totalCount: 0, createdRecipeName: '' };
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
+/**
+ * FRESCO-855: what the page is showing right now, for the failure message. This
+ * scenario was flaky in CI with only "element(s) not found" to go on; the next
+ * occurrence should say whether the page was the load error, the empty state,
+ * a redirect or something else.
+ */
+async function describeLibraryState(page: Page): Promise<string> {
+  const present = async (testId: string) => (await page.getByTestId(testId).count()) > 0;
+  const body = (await page.locator('body').innerText().catch(() => 'sin body')).replace(/\s+/g, ' ').slice(0, 300);
+  return JSON.stringify({
+    url: page.url(),
+    grid: await present('recipe_library_grid'),
+    loadError: await present('recipe_library_load_error'),
+    searchEmptyState: await present('recipe_search_empty_state'),
+    body,
+  });
+}
+
 async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void> {
   await page.goto('/login');
   await page.getByTestId('email_input').fill(testUser.email);
   await page.getByTestId('password_input').fill(testUser.password);
   await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  try {
+    await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  }
+  catch (error) {
+    throw new Error(`Biblioteca: el login no llegó a /menu ni /onboarding. Estado: ${await describeLibraryState(page)}`, { cause: error });
+  }
   await page.goto('/recipes');
-  await expect(page.getByTestId('recipe_library_grid')).toBeVisible();
+  try {
+    await expect(page.getByTestId('recipe_library_grid')).toBeVisible();
+  }
+  catch (error) {
+    throw new Error(`Biblioteca: /recipes no mostró el grid. Estado: ${await describeLibraryState(page)}`, { cause: error });
+  }
 }
 
 /** The "N recetas encontradas" figure the library shows under the controls. */

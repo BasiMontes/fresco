@@ -1,6 +1,7 @@
 import type { RecipeDieta } from '@schemas';
 import type { RecipeFilterState } from '@/lib/recipes/recipe-filters';
 import { RecipeLibrary } from '@/components/recipes/recipe-library';
+import { RecipeLibraryLoadError } from '@/components/recipes/recipe-library-load-error';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getCatalog, getRecetasPropias } from '@/lib/api/recipes';
 import { getAuthUser } from '@/lib/auth/current-user';
@@ -66,8 +67,11 @@ export default async function RecipesPage({
       offset: 0,
       userId: user?.id,
     }).catch((error) => {
-      console.error('[/recipes] getCatalog failed, falling back to empty state', error);
-      return { recipes: [], total: 0, facets: { mealTypes: {}, cocinas: {}, dietas: {}, alergenos: {} } };
+      // FRESCO-855: `null`, not an empty catalog. An empty one rendered "no hay
+      // recetas" for what is usually a transient failure; the page shows an
+      // error with a retry instead.
+      console.error('[/recipes] getCatalog failed, showing the load error', error);
+      return null;
     }),
     getRecetasPropias(supabase, user?.id).catch((error) => {
       console.error('[/recipes] getRecetasPropias failed, falling back to empty list', error);
@@ -87,16 +91,20 @@ export default async function RecipesPage({
       </p>
 
       <h2 className="sr-only">Recetas del catálogo</h2>
-      <RecipeLibrary
-        recipes={catalog.recipes}
-        total={catalog.total}
-        page={page}
-        facets={catalog.facets}
-        appliedFilters={appliedFilters}
-        query={query}
-        recetasPropias={recetasPropias}
-        favoriteRecipeIds={favoriteIds}
-      />
+      {catalog
+        ? (
+            <RecipeLibrary
+              recipes={catalog.recipes}
+              total={catalog.total}
+              page={page}
+              facets={catalog.facets}
+              appliedFilters={appliedFilters}
+              query={query}
+              recetasPropias={recetasPropias}
+              favoriteRecipeIds={favoriteIds}
+            />
+          )
+        : <RecipeLibraryLoadError />}
     </div>
   );
 }
