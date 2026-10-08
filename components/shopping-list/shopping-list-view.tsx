@@ -8,6 +8,7 @@ import { CompraRealizadaButton } from '@/components/shopping-list/compra-realiza
 import { ExportActions } from '@/components/shopping-list/export-actions';
 import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisle';
+import { ShoppingListAllBought } from '@/components/shopping-list/shopping-list-all-bought';
 import { ShoppingListSuggestions } from '@/components/shopping-list/shopping-list-suggestions';
 import { ShoppingListSummary } from '@/components/shopping-list/shopping-list-summary';
 import { useShakeItem } from '@/components/shopping-list/use-shake-item';
@@ -119,6 +120,8 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
       )}
 
       <ShoppingListSuggestions suggestions={suggestions} onAdd={suggestion => void handleAddSuggestion(suggestion)} />
+
+      {pasillos.length === 0 && <ShoppingListAllBought />}
 
       {/* `pb-24` keeps the last aisle card clear of the floating "Compra
           realizada" button below, once it's showing. */}

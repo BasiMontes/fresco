@@ -343,3 +343,32 @@ describe('ShoppingListView — es-ES quantity and price lines (FRESCO-819)', () 
     expect(screen.getByText(/^1\s+l\s+·\s+1,20€$/)).toBeTruthy();
   });
 });
+
+describe('ShoppingListView — all-bought state (FRESCO-842)', () => {
+  const EMPTY_LIST: ShoppingListPersistido = {
+    id: 'list-empty',
+    pasillos: [],
+    resumen: { total_items: 0, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('with nothing left to buy it says so and links to menu, recipes and calendar', () => {
+    renderWithProviders(<ShoppingListView list={EMPTY_LIST} />);
+
+    expect(screen.getByTestId('shopping_list_all_bought')).toHaveTextContent('Has comprado todo lo de esta semana.');
+    expect(screen.getByRole('link', { name: 'Ver mi menú' })).toHaveAttribute('href', '/menu');
+    expect(screen.getByRole('link', { name: 'Ver las recetas' })).toHaveAttribute('href', '/recipes');
+    expect(screen.getByRole('link', { name: 'Ver el calendario' })).toHaveAttribute('href', '/calendar');
+  });
+
+  test('keeps the weekly summary card next to the new state', () => {
+    renderWithProviders(<ShoppingListView list={EMPTY_LIST} />);
+
+    expect(screen.getByText('Resumen')).toBeTruthy();
+  });
+
+  test('does not show while items are still on the list, bought or not', () => {
+    renderWithProviders(<ShoppingListView list={LIST} />);
+
+    expect(screen.queryByTestId('shopping_list_all_bought')).toBeNull();
+  });
+});
