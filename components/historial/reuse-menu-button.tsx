@@ -27,6 +27,12 @@ export function ReuseMenuButton({ sourceMealPlanId, currentWeekHasMenu }: {
   const [pending, setPending] = React.useState(false);
   const [done, setDone] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const redirectTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // FRESCO-860: the delayed redirect must not outlive the button. Left running it navigates
+  // a user who already left the screen, and in the unit suite it landed in whichever test ran
+  // 1.2 s later (a stray `router.push('/calendar')`).
+  React.useEffect(() => () => clearTimeout(redirectTimer.current), []);
 
   async function handleCopy() {
     setPending(true);
@@ -34,7 +40,7 @@ export function ReuseMenuButton({ sourceMealPlanId, currentWeekHasMenu }: {
     try {
       await copyMealPlanToCurrentWeek(sourceMealPlanId);
       setDone(true);
-      setTimeout(() => router.push('/calendar'), 1200);
+      redirectTimer.current = setTimeout(() => router.push('/calendar'), 1200);
     }
     catch (caught) {
       console.error('[ReuseMenuButton] copyMealPlanToCurrentWeek failed', caught);
