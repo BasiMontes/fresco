@@ -127,7 +127,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from, slotId, sustituc
       {receta.descripcion_corta && <p className="mt-4 text-body-md">{receta.descripcion_corta}</p>}
 
       <h2 className="mt-6 text-h4">Ingredientes</h2>
-      <IngredientList ingredientes={ingredientes} slotId={slotId} initialSustitucion={sustitucionIngrediente} />
+      <IngredientList ingredientes={ingredientes} cantidades={receta.ingredientes_cantidades} slotId={slotId} initialSustitucion={sustitucionIngrediente} />
 
       <h2 className="mt-6 text-h4">Preparación</h2>
       <ol className="mt-2 list-decimal space-y-2 pl-5 text-body-md" data-testid="recipe_detail_pasos">
