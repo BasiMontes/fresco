@@ -144,6 +144,12 @@ Deno.serve(async (req: Request) => {
       .select('id')
       .single()
 
+    // FRESCO-852: the "no list yet" check above and this insert are not atomic,
+    // so two overlapping calls for the same plan (reload, second tab) both pass
+    // the check and the loser hits `unique_plan_lista` (23505). That is the same
+    // "ya existe" outcome as the check, not a server error: answering 409 lets
+    // the client re-read the list the winner just saved.
+    if (saveError?.code === '23505') throw new HttpError('Ya existe una lista para este plan', 409)
     if (saveError || !savedList) throw new HttpError('Error guardando la lista de compra', 500)
 
     const response: GenerateShoppingListResponse = {
