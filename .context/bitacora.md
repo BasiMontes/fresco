@@ -94,4 +94,4 @@ Historia archivada:
 ## 2026-10-08 - FRESCO-856 revertido en staging y main
 - Qué: PR #565 revierte el aviso de consentimiento de salud ya dado (#560). Había llegado a main por error en la promoción de FRESCO-842, que arrastró el commit; ya no está activo en producción.
 - Por qué: la bitácora pedía no nivelar main hasta que el abogado confirme que un consentimiento ya dado vale en un paso nuevo; hasta entonces se vuelve a pedir la casilla.
-- Siguiente: si el abogado confirma, revertir el revert (24375b6e en su PR) para reaplicar FRESCO-856. Antes de cada git:promote, mirar git log main..staging por si arrastra algo retenido.
+- Siguiente: si el abogado confirma, revertir el revert (b5343ca4) para reaplicar FRESCO-856. Antes de cada git:promote, mirar git log main..staging por si arrastra algo retenido.
