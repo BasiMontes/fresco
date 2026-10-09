@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
 import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
-import { copyMealPlanToCurrentWeek, deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
+import { assignRecipeToSlot, copyMealPlanToCurrentWeek, deleteMealPlan, getMealPlanForWeek, listPastMealPlanWeeks, MealPlanError, swapMealPlanSlots } from './meal-plan';
 
 const SEMANA_ISO = '2026-W30';
 
@@ -200,6 +200,29 @@ describe('swapMealPlanSlots', () => {
     const { client } = createRpcMockClient({ errorMessage: 'foreign key violation' });
 
     await expectRejection(swapMealPlanSlots(client, { slotAId: 'slot-a-id', slotBId: 'slot-b-id' }));
+  });
+});
+
+describe('assignRecipeToSlot', () => {
+  test('calls assign_recipe_to_slot with the slot and recipe ids, resolving void', async () => {
+    let captured: { fn: string, args: Record<string, unknown> } | null = null;
+    const client = {
+      rpc: async (fn: string, args: Record<string, unknown>) => {
+        captured = { fn, args };
+        return { data: null, error: null };
+      },
+    } as unknown as SupabaseClient<Database>;
+
+    const result = await assignRecipeToSlot(client, { slotId: 'slot-1', recipeId: 'recipe-1' });
+
+    expect(result).toBeUndefined();
+    expect(captured).toEqual({ fn: 'assign_recipe_to_slot', args: { p_slot_id: 'slot-1', p_recipe_id: 'recipe-1' } });
+  });
+
+  test('throws MealPlanError with the underlying message when the RPC fails', async () => {
+    const { client } = createRpcMockClient({ errorMessage: 'assign_recipe_to_slot: slot is in a past day' });
+
+    await expectRejection(assignRecipeToSlot(client, { slotId: 'slot-1', recipeId: 'recipe-1' }));
   });
 });
 

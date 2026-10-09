@@ -316,6 +316,29 @@ export async function swapMealPlanSlots(
 }
 
 /**
+ * Puts a catalog recipe into one of the CURRENTLY authenticated user's open
+ * meal-plan slots (FRESCO-878, Biblioteca "añadir al menú"). Everything that
+ * makes it safe lives in the `assign_recipe_to_slot` SQL function, not here:
+ * slot ownership (RLS), same `tipo_plato`, an open slot of today or later,
+ * and the food-safety filters of the profile.
+ *
+ * Public method — fails fast (throws `MealPlanError`) on any RPC error.
+ */
+export async function assignRecipeToSlot(
+  client: SupabaseClient<Database>,
+  { slotId, recipeId }: { slotId: string, recipeId: string },
+): Promise<void> {
+  const { error } = await client.rpc('assign_recipe_to_slot', {
+    p_slot_id: slotId,
+    p_recipe_id: recipeId,
+  });
+
+  if (error) {
+    throw new MealPlanError(`No se pudo añadir la receta al menú: ${error.message}`);
+  }
+}
+
+/**
  * Deletes the CURRENTLY authenticated user's own `meal_plans` row (FRESCO-62,
  * `/calendar` "eliminar el menú de la semana" control). `meal_plan_recipes`
  * cascades (`on delete cascade`, `20260725120100_create_fresco_core_tables.sql`)

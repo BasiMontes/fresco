@@ -845,6 +845,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_recipe_to_slot: {
+        Args: { p_recipe_id: string; p_slot_id: string }
+        Returns: undefined
+      }
       check_and_increment_rate_limit: {
         Args: {
           p_endpoint: string
