@@ -256,6 +256,45 @@ function toBaseUnit(cantidad: number, unidad: string): { cantidad: number; unida
   return { cantidad, unidad }
 }
 
+// A spoon is a volume (ml) or a mass (g) depending on what the ingredient is
+// priced in. These are the usual kitchen equivalences; the price table keys
+// on the ingredient's base unit, so the spoon is converted into it.
+const ML_PER_CUCHARADA = 15
+const ML_PER_CUCHARADITA = 5
+
+// Units that say "some", not "how much": there is no quantity to sum.
+const UNIDADES_SIN_CANTIDAD = new Set(['pizca', 'al gusto'])
+
+/**
+ * The quantity one row asks for, before scaling by people. The recipe's own
+ * quantity wins (FRESCO-875/ADR-0042); BASE_QUANTITIES only answers for a
+ * recipe without one, or for a unit that is not a quantity.
+ */
+function cantidadDeReceta(
+  raw: RawIngrediente,
+  base: { cantidad: number; unidad: string } | undefined
+): { cantidad: number; unidad: string } {
+  const { cantidad, unidad } = raw
+  const tieneCantidad = cantidad !== undefined && unidad !== undefined
+    && cantidad > 0 && !UNIDADES_SIN_CANTIDAD.has(unidad)
+
+  if (!tieneCantidad) {
+    return { cantidad: base?.cantidad ?? 1, unidad: base?.unidad ?? 'unidades' }
+  }
+
+  const mlOGramos = unidad === 'cucharadas' ? ML_PER_CUCHARADA : unidad === 'cucharaditas' ? ML_PER_CUCHARADITA : 0
+  if (mlOGramos > 0) {
+    if (base?.unidad === 'g' || base?.unidad === 'ml') {
+      return { cantidad: cantidad * mlOGramos, unidad: base.unidad }
+    }
+    // No mass/volume base to convert into: keep the spoon, as one sumable unit.
+    return unidad === 'cucharaditas'
+      ? { cantidad: cantidad / 3, unidad: 'cucharadas' }
+      : { cantidad, unidad }
+  }
+  return { cantidad, unidad }
+}
+
 function fromBaseUnit(cantidad: number, unidad: string): { cantidad: number; unidad: string } {
   if (unidad === 'g' && cantidad >= 1000) return { cantidad: cantidad / 1000, unidad: 'kg' }
   if (unidad === 'ml' && cantidad >= 1000) return { cantidad: cantidad / 1000, unidad: 'l' }
@@ -309,8 +348,7 @@ export function consolidateIngredientes(
     const base = BASE_QUANTITIES[key]
     const factor = raw.raciones_usuario / raw.raciones_receta
 
-    const cantidadBase = base?.cantidad ?? 1
-    const unidadBase = base?.unidad ?? 'unidades'
+    const { cantidad: cantidadBase, unidad: unidadBase } = cantidadDeReceta(raw, base)
     const { cantidad: cantBase, unidad: unitBase } = toBaseUnit(
       Math.ceil(cantidadBase * factor),
       unidadBase
