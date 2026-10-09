@@ -104,3 +104,18 @@ Historia archivada:
 - Qué: /recipes ya no convierte un fallo de lectura en "no hay recetas"; muestra error con reintento y el paso e2e de Biblioteca vuelca el estado de la página si falla (PR #572, 13455a22, en dev/staging/main).
 - Por qué: flaky e2e recipe_library_grid no aparecía en 5 s; causa raíz no demostrada, fix es de diagnóstico.
 - Siguiente: si el flaky reaparece, leer el estado volcado en el log de CI antes de tocar nada más.
+
+## 2026-10-09 - FRESCO-790 cerrada: riesgo de Consum aceptado con revisión fechada
+- Qué: ADR-0037 con decisión del fundador de mantener `riesgo-aceptado`, revisión el 2026-11-06 y dictamen de abogado obligatorio antes del lanzamiento público (PR #575). Capturas de la cláusula en /legal/terminos y /shopping-list adjuntas en Jira.
+- Por qué: criterio de cierre admite decisión documentada con fecha en vez de dictamen; Consum sin respuesta desde 2026-09-29.
+- Siguiente: revisar el 2026-11-06 o antes si Consum contesta (FRESCO-764); FRESCO-772 sigue bloqueada.
+
+## 2026-10-09 - FRESCO-875 cerrada: la lista de la compra usa las cantidades de cada receta
+- Qué: generate-shopping-list lee recipes.ingredientes_cantidades, escala por personas y suma por ingrediente; BASE_QUANTITIES solo como respaldo (PR #576, 8a34a901, desplegada en Supabase).
+- Por qué: seguimiento de FRESCO-863/ADR-0042; la tabla fija daba la misma cantidad para cualquier receta.
+- Siguiente: promover a main cuando quieras; el coste de líneas con unidad no convertible usa el precio genérico por tipo de unidad.
+
+## 2026-10-09 - FRESCO-878 entregada: añadir una receta al menú desde la Biblioteca
+- Qué: función assign_recipe_to_slot (INVOKER, sin parámetro de identidad), icono de calendario y modal en /recipes, dos escenarios e2e (PR #577, #578, #579). Migración ya aplicada en producción.
+- Por qué: no había forma de poner una receta del catálogo en un hueco; recipe_id ya no se escribe desde el cliente.
+- Siguiente: probarlo en fresco-pro con un usuario real y pasar a Finalizada; promover #579 a main.
