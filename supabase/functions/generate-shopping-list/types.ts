@@ -13,6 +13,11 @@ export interface RawIngrediente {
   receta_id: string
   raciones_receta: number // base servings the recipe's ingredient quantities assume
   raciones_usuario: number // household size, from user_profiles.num_personas
+  // FRESCO-875/ADR-0042: this recipe's own quantity for `raciones_receta`
+  // servings. Absent when the recipe has none: the consolidator then falls
+  // back to BASE_QUANTITIES.
+  cantidad?: number
+  unidad?: string
   // FRESCO-212: dish + day provenance, carried through consolidation so the
   // UI can show "used for X, on Y" per ingredient row.
   receta_nombre: string
@@ -42,5 +47,7 @@ export interface SlotWithRecipeRow {
     nombre: string
     meta: { raciones?: number } | null
     ingredientes_principales: string[] | null
+    /** FRESCO-875/ADR-0042 — jsonb, unvalidated here: `indexCantidades` drops whatever is not a valid entry. */
+    ingredientes_cantidades: unknown
   } | null
 }

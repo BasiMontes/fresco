@@ -32,6 +32,16 @@ We will add a **new nullable jsonb column `recipes.ingredientes_cantidades`**: a
 - **Negative / trade-offs:** two ingredient lists per recipe that can drift. A DB check or test must assert that every `nombre` in the new column exists in `ingredientes_principales`. Quantities are AI estimates shown as cooking data, so the review sample and the plausibility ranges are the quality gate.
 - **Revisit when:** the shopping list moves to the new column, at which point `ingredientes_principales` could become derived from it.
 
+## Update 2026-10-09 (FRESCO-875): the shopping list reads the new column
+
+Decision point 4 is done. `generate-shopping-list` now reads `recipes.ingredientes_cantidades` and sums each recipe's own quantity, scaled by `num_personas / meta.raciones`. `BASE_QUANTITIES` answers only for an ingredient the recipe does not quantify.
+
+- **Substitutions** (ADR-0033) look the quantity up by the ORIGINAL ingredient name, so the substitute inherits the quantity of what it replaces.
+- **Spoons** (`cucharadas`, `cucharaditas`) are converted to the ingredient's base unit (15 and 5, `g` or `ml`) so the price table, keyed on that unit, stays coherent. With no mass or volume base they stay as `cucharadas`.
+- **`pizca` and `al gusto`** are not quantities: they fall back to `BASE_QUANTITIES`.
+- **Invalid jsonb entries** (non-positive, non-numeric, no unit) are dropped by `indexCantidades`, never thrown on.
+- **Known limit:** when a recipe's unit cannot be converted into the ingredient's base unit (for example `unidades` against a `g` base), the line keeps the recipe's unit and is priced with the generic per-unit-type fallback. The estimated cost is "best effort" by design and gets less accurate there.
+
 ## Alternatives considered
 
 - **Reshape `ingredientes_principales` to objects:** one source of truth, but breaks every reader and the by-name substitution and allergen matching at once. Rejected as too risky for the value.

@@ -13,8 +13,10 @@ import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
+import { normalizeNombre } from '../_shared/normalize.ts'
 import { consolidateIngredientes } from './consolidator.ts'
 import { classifyShoppingList } from './aisle-pricing.ts'
+import { indexCantidades } from './recipe-quantities.ts'
 import { filtrarDiasVigentes, hoyEnMadrid } from './remaining-days.ts'
 import type {
   GenerateShoppingListRequest,
@@ -79,7 +81,7 @@ Deno.serve(async (req: Request) => {
     // query, which assumed a typed `raciones` column that doesn't exist here).
     const { data: slots, error: slotsError } = await supabase
       .from('meal_plan_recipes')
-      .select('recipe_id, dia, sustitucion_ingrediente, recipes ( id, nombre, meta, ingredientes_principales )')
+      .select('recipe_id, dia, sustitucion_ingrediente, recipes ( id, nombre, meta, ingredientes_principales, ingredientes_cantidades )')
       .eq('meal_plan_id', meal_plan_id)
       .returns<SlotWithRecipeRow[]>()
 
@@ -98,6 +100,7 @@ Deno.serve(async (req: Request) => {
 
       const racionesReceta = recipe.meta?.raciones ?? 4
       const ingredientes = recipe.ingredientes_principales ?? []
+      const cantidades = indexCantidades(recipe.ingredientes_cantidades)
       const sustitucion = slot.sustitucion_ingrediente
 
       for (const ingrediente of ingredientes) {
@@ -110,11 +113,17 @@ Deno.serve(async (req: Request) => {
           ? sustitucion.sustituto
           : ingrediente
 
+        // FRESCO-875/ADR-0042: looked up by the ORIGINAL name, so a substitute
+        // inherits the quantity of the ingredient it replaces.
+        const cantidadReceta = cantidades.get(normalizeNombre(ingrediente))
+
         rawIngredientes.push({
           nombre,
           receta_id: recipe.id,
           raciones_receta: racionesReceta,
           raciones_usuario: numPersonas,
+          cantidad: cantidadReceta?.cantidad,
+          unidad: cantidadReceta?.unidad,
           receta_nombre: recipe.nombre,
           dia: slot.dia,
         })

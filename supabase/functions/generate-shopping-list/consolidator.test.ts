@@ -250,4 +250,97 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       expect(consolidateIngredientes([])).toEqual([])
     })
   })
+
+  describe('recipe quantities (FRESCO-875, ADR-0042)', () => {
+    test('uses the recipe quantity instead of BASE_QUANTITIES, scaled by people', () => {
+      const result = consolidateIngredientes([
+        // patata base would be 400 g; the recipe says 600 g for 2 servings
+        makeRaw({ nombre: 'patata', raciones_receta: 2, raciones_usuario: 4, cantidad: 600, unidad: 'g' }),
+      ])
+
+      // 600 g * (4 / 2) = 1200 g -> 1.2 kg
+      expect(result).toEqual([{
+        nombre: 'patata',
+        cantidad: 1.2,
+        unidad: 'kg',
+        usos: [{ receta: 'Receta de prueba', dia: 'lunes' }],
+      }])
+    })
+
+    test('sums the real quantities of two recipes that share an ingredient', () => {
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'patata', receta_id: 'r1', receta_nombre: 'Tortilla', dia: 'lunes', cantidad: 500, unidad: 'g' }),
+        makeRaw({ nombre: 'patata', receta_id: 'r2', receta_nombre: 'Patatas bravas', dia: 'jueves', cantidad: 300, unidad: 'g' }),
+      ])
+
+      expect(result).toEqual([{
+        nombre: 'patata',
+        cantidad: 800,
+        unidad: 'g',
+        usos: [
+          { receta: 'Tortilla', dia: 'lunes' },
+          { receta: 'Patatas bravas', dia: 'jueves' },
+        ],
+      }])
+    })
+
+    test('never reads BASE_QUANTITIES for an ingredient the recipe quantifies', () => {
+      // ajo base is 3 dientes; the recipe asks for 1 diente. A BASE read would give 3.
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'ajo', cantidad: 1, unidad: 'dientes' }),
+      ])
+
+      expect(result[0]).toMatchObject({ cantidad: 1, unidad: 'dientes' })
+    })
+
+    test('falls back to BASE_QUANTITIES for a recipe without quantities', () => {
+      const result = consolidateIngredientes([makeRaw({ nombre: 'patata' })])
+
+      expect(result[0]).toMatchObject({ cantidad: 400, unidad: 'g' })
+    })
+
+    test('mixes quantified and unquantified recipes of the same ingredient in one line', () => {
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'patata', receta_id: 'r1', cantidad: 500, unidad: 'g' }),
+        makeRaw({ nombre: 'patata', receta_id: 'r2' }), // base 400 g
+      ])
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ cantidad: 900, unidad: 'g' })
+    })
+
+    test('converts cucharadas to the base unit (ml) so the price unit stays coherent', () => {
+      // aceite de oliva base unit is ml; 2 cucharadas = 30 ml
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'aceite de oliva', cantidad: 2, unidad: 'cucharadas' }),
+      ])
+
+      expect(result[0]).toMatchObject({ cantidad: 30, unidad: 'ml' })
+    })
+
+    test('converts cucharaditas to the base unit (g): 3 cucharaditas of sal = 15 g', () => {
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'sal', cantidad: 3, unidad: 'cucharaditas' }),
+      ])
+
+      expect(result[0]).toMatchObject({ cantidad: 15, unidad: 'g' })
+    })
+
+    test('keeps cucharadas as cucharadas when the ingredient has no mass or volume base', () => {
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'ingrediente raro', cantidad: 2, unidad: 'cucharadas' }),
+      ])
+
+      expect(result[0]).toMatchObject({ cantidad: 2, unidad: 'cucharadas' })
+    })
+
+    test.each(['pizca', 'al gusto'])('"%s" is not a quantity: falls back to BASE_QUANTITIES', (unidad) => {
+      const result = consolidateIngredientes([
+        makeRaw({ nombre: 'sal', cantidad: 1, unidad }),
+      ])
+
+      // sal base = 5 g
+      expect(result[0]).toMatchObject({ cantidad: 5, unidad: 'g' })
+    })
+  })
 })
