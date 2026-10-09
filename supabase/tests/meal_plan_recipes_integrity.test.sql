@@ -16,7 +16,7 @@
 -- Run by `supabase test db` (CI: the e2e job in .github/workflows/pr-check.yml).
 
 begin;
-select plan(5);
+select plan(6);
 
 select hasnt_function(
   'public', 'apply_recipe_status_update',
@@ -38,6 +38,14 @@ select isnt_definer(
   'confirm_ingredient_substitution stays SECURITY INVOKER (RLS still scopes the slot)'
 );
 
+-- FRESCO-878: assign_recipe_to_slot sets the GUC only AFTER validating (open slot
+-- of today or later, same tipo_plato, get_filtered_recipes), and as INVOKER so RLS
+-- scopes the slot. It must never become DEFINER without an actor bind.
+select isnt_definer(
+  'public', 'assign_recipe_to_slot', array['uuid', 'uuid'],
+  'assign_recipe_to_slot stays SECURITY INVOKER (RLS still scopes the slot)'
+);
+
 -- No remaining function may hand a client the means to set the GUC around an
 -- unvalidated write: every definer function that sets it must also own-check.
 select is(
@@ -49,10 +57,11 @@ select is(
       and p.proname not in (
         'swap_meal_plan_slots',
         'confirm_ingredient_substitution',
+        'assign_recipe_to_slot',
         'protect_meal_plan_recipes_integrity'
       )),
   0,
-  'only the three vetted functions mention app.mpr_trusted_write'
+  'only the four vetted functions mention app.mpr_trusted_write'
 );
 
 select * from finish();
