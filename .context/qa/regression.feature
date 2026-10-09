@@ -631,6 +631,17 @@ Característica: Flujo completo de usuario en Fresco
     # redirige hasta confirmar; cuenta real → logout directo sin diálogo,
     # comportamiento preexistente intacto.
 
+  @invitado @edge-case @solo-manual
+  # Solo manual (FRESCO-882): crear una invitada con perfil exige una generación real de
+  # menú (hasta 200 s) y el job test:e2e ya está en su early-warning (ADR-0018). La lógica
+  # (invitada ve el aviso, cuenta registrada sale directa, confirmar cierra sesión) está
+  # cubierta por components/profile/danger-zone.test.tsx. Re-comprobar si el setup de una
+  # invitada con perfil deja de depender de Gemini.
+  Escenario: Cerrar sesión como invitada desde /profile en móvil advierte antes de borrar el menú generado
+    Dado que una invitada generó un menú y tiene sesión anónima activa
+    Cuando pulsa "Salir" en /profile a 360 px
+    Entonces se le advierte que va a perder el menú generado y sigue en /profile hasta que confirma
+
   # ==========================================================================
   # Panel de Inicio — saludo personalizado (EPIC-FRESCO-54 / STORY-FRESCO-55)
   # ==========================================================================

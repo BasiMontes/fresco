@@ -3,6 +3,7 @@
 import { Download, LogOut, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { GuestLogoutDialog } from '@/components/layout/guest-logout-dialog';
 import { DeleteAccountDialog } from '@/components/profile/delete-account-dialog';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { signOut } from '@/lib/client-api/auth';
@@ -13,10 +14,16 @@ import { useOnboardingStore } from '@/lib/store/onboarding-store';
  * (FRESCO-163) — split out of `DangerZone` below, neither is actually a
  * destructive action, so neither belongs in the danger-styled card.
  */
-export function AccountActions() {
+export interface AccountActionsProps {
+  /** Guest/anonymous session: logging out discards the generated menu, so it needs the same confirmation as the sidebar (FRESCO-882). */
+  isAnonymous: boolean
+}
+
+export function AccountActions({ isAnonymous }: AccountActionsProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [showGuestConfirm, setShowGuestConfirm] = useState(false);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -37,47 +44,61 @@ export function AccountActions() {
   }
 
   return (
-    <div className="flex flex-col divide-y divide-border">
-      {/* FRESCO-862: from `md` up the sidebar account menu already offers logout, so a second one
+    <>
+      <div className="flex flex-col divide-y divide-border">
+        {/* FRESCO-862: from `md` up the sidebar account menu already offers logout, so a second one
           on the same screen is a duplicate. Below `md` there is no sidebar (the bottom tab bar has
           no logout), so this row stays the only way out on mobile. */}
-      <div className="flex items-center justify-between gap-3 py-3 first:pt-0 md:hidden">
-        <div className="flex items-center gap-2 text-body-md text-text">
-          <LogOut className="size-4 text-tertiary" aria-hidden="true" />
-          Cerrar sesión
+        <div className="flex items-center justify-between gap-3 py-3 first:pt-0 md:hidden">
+          <div className="flex items-center gap-2 text-body-md text-text">
+            <LogOut className="size-4 text-tertiary" aria-hidden="true" />
+            Cerrar sesión
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            data-testid="logout_button"
+            disabled={isLoggingOut}
+            onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
+          >
+            {isLoggingOut ? 'Saliendo…' : 'Cerrar sesión'}
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          data-testid="logout_button"
-          disabled={isLoggingOut}
-          onClick={() => void handleLogout()}
-        >
-          {isLoggingOut ? 'Saliendo…' : 'Cerrar sesión'}
-        </Button>
-      </div>
-      {logoutError && (
-        <p data-testid="logout_error_message" role="alert" aria-live="assertive" className="pt-2 text-body-sm text-error md:hidden">
-          {logoutError}
-        </p>
-      )}
+        {logoutError && (
+          <p data-testid="logout_error_message" role="alert" aria-live="assertive" className="pt-2 text-body-sm text-error md:hidden">
+            {logoutError}
+          </p>
+        )}
 
-      <div className="flex items-center justify-between gap-3 py-3 last:pb-0 md:pt-0">
-        <div className="flex items-center gap-2 text-body-md text-text">
-          <Download className="size-4 text-tertiary" aria-hidden="true" />
-          Backup CSV
+        <div className="flex items-center justify-between gap-3 py-3 last:pb-0 md:pt-0">
+          <div className="flex items-center gap-2 text-body-md text-text">
+            <Download className="size-4 text-tertiary" aria-hidden="true" />
+            Backup CSV
+          </div>
+          <a
+            href="/api/profile/export"
+            download
+            data-testid="export_data_link"
+            className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+          >
+            Descargar
+          </a>
         </div>
-        <a
-          href="/api/profile/export"
-          download
-          data-testid="export_data_link"
-          className={buttonVariants({ variant: 'secondary', size: 'sm' })}
-        >
-          Descargar
-        </a>
       </div>
-    </div>
+
+      {isAnonymous && (
+        <GuestLogoutDialog
+          open={showGuestConfirm}
+          onOpenChange={setShowGuestConfirm}
+          isLoggingOut={isLoggingOut}
+          onConfirm={() => {
+            setShowGuestConfirm(false);
+            void handleLogout();
+          }}
+        />
+      )}
+    </>
   );
 }
 

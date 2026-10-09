@@ -16,7 +16,7 @@ export function ProfileAccountCards({ email, isAnonymous }: ProfileAccountCardsP
           <CardTitle>Cuenta</CardTitle>
         </CardHeader>
         <CardContent>
-          <AccountActions />
+          <AccountActions isAnonymous={isAnonymous} />
         </CardContent>
       </Card>
 

@@ -134,3 +134,13 @@ Historia archivada:
 - Qué: 7 PR (#583 a #589) en 4 familias: sésamo/perejil/comino con alérgeno, 42 títulos con condimento (13 renombradas, 29 copias desactivadas), consulta de revisión sin falsos positivos, 25 recetas con ingrediente añadido, sopas/césares/rollitos/bizcocho/arepa/gachas corregidos. Producción: nombre 80 a 0, descripcion 78 a 6 con nota.
 - Por qué: el barrido de FRESCO-876 dejó casos que eran decisión de producto; el filtro de seguridad alimentaria lee dieta y alergenos.
 - Siguiente: FRESCO-837 se cierra el 2026-10-10 si sigue 0 commits example.com. Cada PR de datos lleva también seed.sql (CI crea la base con migraciones y luego el seed).
+
+## 2026-10-09 - FRESCO-862 cerrada: un solo Cerrar sesión en /profile de escritorio
+- Qué: la fila de salir de la tarjeta Cuenta se oculta desde md (la barra lateral ya la ofrece) y se mantiene en móvil, donde es la única salida; ratificado en §5-Y del plan de diseño. Test de componente y dos escenarios e2e (móvil y escritorio). PR #591.
+- Por qué: audit-6 A6-L9, dos Cerrar sesión iguales en la misma pantalla; quitarlo en todas partes habría dejado a móvil sin logout.
+- Siguiente: FRESCO-882 (la fila de /profile no pasa por guest-logout-dialog) y FRESCO-864 (rejilla Comidas a planificar a 44 px).
+
+## 2026-10-09 - FRESCO-882 cerrada: aviso de invitada al cerrar sesión desde /profile
+- Qué: AccountActions recibe isAnonymous y abre el mismo GuestLogoutDialog que la barra lateral antes de salir; una cuenta registrada sale directa. Test de componente (invitada, registrada, confirmación) y escenario @solo-manual por el coste de generar un menú real en e2e (ADR-0018).
+- Por qué: desde FRESCO-862 el botón de /profile solo se ve en móvil, y ahí una invitada perdía su menú sin aviso.
+- Siguiente: FRESCO-864 (rejilla Comidas a planificar a 44 px) y FRESCO-837 (cierra el 2026-10-10).
