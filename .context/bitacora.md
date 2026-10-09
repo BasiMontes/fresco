@@ -119,3 +119,18 @@ Historia archivada:
 - Qué: función assign_recipe_to_slot (INVOKER, sin parámetro de identidad), icono de calendario y modal en /recipes, dos escenarios e2e (PR #577, #578, #579). Migración ya aplicada en producción.
 - Por qué: no había forma de poner una receta del catálogo en un hueco; recipe_id ya no se escribe desde el cliente.
 - Siguiente: probarlo en fresco-pro con un usuario real y pasar a Finalizada; promover #579 a main.
+
+## 2026-10-09 - FRESCO-876 cerrada: cuatro listas de ingredientes corregidas y restricción anti-duplicados
+- Qué: panqueques, croissant, bacalao a la vizcaína y tempeh corregidos con respaldo en su descripción; restricción recipes_ingredientes_principales_distinct en producción; consulta de revisión en scripts/queries/ (PR #581).
+- Por qué: el barrido de 601 recetas dejó casos sin evidencia en los datos (sopa de ajo, César, bizcocho, arepa, rollitos, ~50 nombres con ingrediente ausente) que son decisión de producto.
+- Siguiente: FRESCO-880 decide renombrar, reescribir o desactivar esas recetas.
+
+## 2026-10-09 - FRESCO-861 cerrada: títulos sin "con" repetido y categorías dentro del contrato
+- Qué: 122 nombres y 246 descripciones corregidos; CategoriaReceta pasa de 12 a 18; bowl a bowls, vegetal a verdura, 26 desayunos de ensalada a bowls/batidos/lacteos; restricciones recipes_nombre_sin_con_repetido y recipes_categoria_en_contrato (PR #582). Consulta de verificación: 0 filas en producción.
+- Por qué: datos del catálogo que se veían mal en la app (audit-6 A6-L9).
+- Siguiente: FRESCO-881 decide las combinaciones categoría y tipo de plato que no encajan; FRESCO-880 las recetas con ingredientes incoherentes.
+
+## 2026-10-09 - FRESCO-880 catalogo: recetas cuyo nombre o descripcion no cuadran con sus ingredientes
+- Qué: 7 PR (#583 a #589) en 4 familias: sésamo/perejil/comino con alérgeno, 42 títulos con condimento (13 renombradas, 29 copias desactivadas), consulta de revisión sin falsos positivos, 25 recetas con ingrediente añadido, sopas/césares/rollitos/bizcocho/arepa/gachas corregidos. Producción: nombre 80 a 0, descripcion 78 a 6 con nota.
+- Por qué: el barrido de FRESCO-876 dejó casos que eran decisión de producto; el filtro de seguridad alimentaria lee dieta y alergenos.
+- Siguiente: FRESCO-837 se cierra el 2026-10-10 si sigue 0 commits example.com. Cada PR de datos lleva también seed.sql (CI crea la base con migraciones y luego el seed).
