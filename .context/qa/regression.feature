@@ -1464,6 +1464,23 @@ Característica: Flujo completo de usuario en Fresco
     # → 60 al "Ver más", search "pollo" → 78, filtro Cena → 330, badge, URL
     # actualizada, estado vacío de búsqueda distinto del de catálogo vacío.
 
+
+  @biblioteca @automatizado
+  # Automatizado: tests/steps/biblioteca-anadir-menu.steps.ts (FRESCO-878)
+  Escenario: Añadir una receta de la Biblioteca al menú
+    Dado que Laura tiene un menú semanal con huecos pendientes
+    Cuando pulsa el icono de calendario de una receta de comida y elige un hueco de comida
+    Y acepta
+    Entonces ese hueco pasa a mostrar la receta elegida
+    Y ve una confirmación de que la comida se ha sustituido
+
+  @biblioteca @automatizado
+  # Automatizado: tests/steps/biblioteca-anadir-menu.steps.ts (FRESCO-878)
+  Escenario: Solo se ofrecen huecos del mismo tipo de plato
+    Dado una receta de tipo cena en la Biblioteca
+    Cuando abre el modal de añadir al menú
+    Entonces solo puede elegir huecos de cena
+
   # ==========================================================================
   # Perfil
   # ==========================================================================
