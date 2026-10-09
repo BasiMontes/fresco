@@ -1519,12 +1519,20 @@ Característica: Flujo completo de usuario en Fresco
     Cuando pulsa "Descargar" en Backup JSON
     Entonces recibe un fichero con su perfil, menús, listas de la compra y recetas propias reales
 
-  @perfil @verificado-manual-2026-08-04 @automatizado
+  @perfil @mobile @verificado-manual-2026-08-04 @automatizado
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
+  # FRESCO-862: a 360 px no hay sidebar, así que /profile es la única salida y el
+  # escenario corre en el proyecto móvil.
   Escenario: Cerrar sesión desde el perfil
     Dado que Laura está en /profile con sesión activa
     Cuando pulsa "Salir"
     Entonces la cookie de sesión se elimina y vuelve a /login
+
+  @perfil @automatizado
+  # Automatizado: tests/steps/perfil.steps.ts (FRESCO-862)
+  Escenario: En escritorio /profile no repite "Cerrar sesión", queda el del menú de cuenta
+    Dado que Laura está en /profile con sesión activa
+    Entonces /profile no muestra su propio botón "Salir" y el menú de cuenta del sidebar sí
 
   @perfil @edge-case @verificado-manual-2026-08-04 @automatizado
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-463, nunca confirma el borrado)

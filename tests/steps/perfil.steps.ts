@@ -59,6 +59,13 @@ When(/^pulsa "Salir"$/, async ({ page }) => {
 
 // ── Then ─────────────────────────────────────────────────────────────────
 
+// FRESCO-862: from `md` up the sidebar account menu offers logout; the profile row is
+// `md:hidden` so the screen does not show two "Cerrar sesión".
+Then(/^\/profile no muestra su propio botón "Salir" y el menú de cuenta del sidebar sí$/, async ({ page }) => {
+  await expect(page.getByTestId('logout_button')).toBeHidden();
+  await expect(page.getByTestId('sidebar_account_trigger')).toBeVisible();
+});
+
 Then(/^la preferencia queda guardada y sigue activa tras recargar la página$/, async ({ page }) => {
   await expect(page.getByTestId('preferencias_saved_message')).toBeVisible();
   await page.reload();
