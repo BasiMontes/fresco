@@ -30,7 +30,10 @@ export type Temporada = 'primavera' | 'verano' | 'otono' | 'invierno' | 'todo_el
 export type TipoPlato = 'desayuno' | 'comida' | 'cena' | 'snack';
 export type CategoriaReceta
   = | 'pasta' | 'arroz' | 'legumbres' | 'carne' | 'pescado' | 'verdura'
-    | 'huevos' | 'sopa' | 'ensalada' | 'sandwich' | 'pizza' | 'guiso';
+    | 'huevos' | 'sopa' | 'ensalada' | 'sandwich' | 'pizza' | 'guiso'
+    // FRESCO-861: the live catalogue's own categories, now part of the contract.
+    // `recipes_categoria_en_contrato` (database) refuses anything outside this list.
+    | 'bowls' | 'batidos' | 'reposteria' | 'tostadas' | 'lacteos' | 'wrap';
 export type TipoCocina
   = | 'española' | 'italiana' | 'mexicana' | 'asiática'
     | 'mediterránea' | 'latina' | 'internacional';
