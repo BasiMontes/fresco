@@ -10,6 +10,8 @@ export interface FavoriteRecipeCardProps {
   initialIsFavorite: boolean
   className?: string
   onToggleFavorite?: (recipeId: string, isFavorite: boolean) => void
+  /** FRESCO-878 — passed through to `RecipeCard`: shows the "añadir al menú" icon next to the heart. */
+  onAddToMenu?: () => void
 }
 
 /**
@@ -19,7 +21,7 @@ export interface FavoriteRecipeCardProps {
  * update + revert-on-failure, same pattern as `ShoppingListView`'s
  * `comprado` checkbox.
  */
-export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onToggleFavorite }: FavoriteRecipeCardProps) {
+export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onToggleFavorite, onAddToMenu }: FavoriteRecipeCardProps) {
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
 
   async function handleToggle() {
@@ -45,5 +47,5 @@ export function FavoriteRecipeCard({ recipe, initialIsFavorite, className, onTog
     }
   }
 
-  return <RecipeCard recipe={recipe} isFavorite={isFavorite} onToggleFavorite={() => { void handleToggle(); }} className={className} />;
+  return <RecipeCard recipe={recipe} isFavorite={isFavorite} onToggleFavorite={() => { void handleToggle(); }} onAddToMenu={onAddToMenu} className={className} />;
 }

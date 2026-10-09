@@ -74,4 +74,26 @@ describe('RecipeCard', () => {
     await user.click(screen.getByRole('button', { name: 'Quitar de favoritos' }));
     expect(toggled).toBe(1);
   });
+  test('shows no "añadir al menú" icon unless the surface asks for one (FRESCO-878)', () => {
+    renderWithProviders(<RecipeCard recipe={RECIPE} />);
+    expect(screen.queryByTestId('recipe_card_add_to_menu_button')).toBeNull();
+  });
+
+  test('the "añadir al menú" icon fires onAddToMenu without toggling the favourite (FRESCO-878)', async () => {
+    const user = setupUser();
+    let added = 0;
+    let toggled = 0;
+    renderWithProviders(
+      <RecipeCard
+        recipe={RECIPE}
+        isFavorite
+        onToggleFavorite={() => { toggled += 1; }}
+        onAddToMenu={() => { added += 1; }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Añadir al menú' }));
+    expect(added).toBe(1);
+    expect(toggled).toBe(0);
+  });
 });

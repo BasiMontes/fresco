@@ -301,12 +301,18 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   DEFECT-FRESCO-185). When the catalog read fails, the page shows `recipe-library-load-error`
   (`empty-state` with "No hemos podido cargar el catálogo" and a "Reintentar" button that
   refreshes the page) instead of an empty catalogue — FRESCO-855, live UI as built, no mockup.
+  Every catalogue `recipe-card` also carries a calendar icon (`CalendarPlus`, `icon` button, same
+  36px footprint as the heart, placed to its left) that opens `add-to-menu-dialog`: a `dialog`
+  with the open slots of the current week for that recipe's meal type (radio list, "Ahora: …"
+  under each), an "Añadir al menú" primary action, an in-dialog confirmation with "Ver calendario",
+  and a note when the week's shopping list was already generated — FRESCO-878, live UI as built,
+  no mockup. Personal recipes carry no icon (same cut as §5-H).
 - **Tokens.** `recipe-card`; `tag` variants for facet chips (2px size-stable on select —
   DEFECT-FRESCO-258/272); `segmented-control` for tabs; `input` for search; `dialog`
   (`components/ui/dialog.tsx`) for create; `filter-drawer` (`components/ui/filter-drawer.tsx`).
 - **Components.** `components/recipes/recipe-library.tsx`, `filter-section.tsx`,
-  `create-recipe-form.tsx`, `personal-recipe-card.tsx`, `personal-recipe-actions.tsx`,
-  `delete-recipe-button.tsx`; `components/recipe/recipe-card.tsx`.
+  `create-recipe-form.tsx`, `add-to-menu-dialog.tsx`, `personal-recipe-card.tsx`,
+  `personal-recipe-actions.tsx`, `delete-recipe-button.tsx`; `components/recipe/recipe-card.tsx`.
 - **Checklist.** [ ] "Tus recetas" tab respects the active search + filters (DEFECT-FRESCO-115) ·
   [ ] filter chips update the results and the URL (DEFECT-FRESCO-181) · [ ] no duplicate accessible
   name on "ver más recetas" (DEFECT-FRESCO-112) · [ ] recipe meta spacing (DEFECT-FRESCO-116) ·
@@ -622,6 +628,7 @@ stories) are listed at the end.
 | FRESCO-842 | Lista de la compra: ver qué hacer cuando ya no quedan pendientes | EPIC-FRESCO-484 Platform polish | 4.9 Shopping list (estado "todo comprado") · spec-only build, §5-X | 4.7 Home, 4.8 Calendar, 4.10 Recipe library (destinos de las acciones) |
 | FRESCO-854 | Histórico de menús: poder volver a /calendar desde la lista de semanas | EPIC-FRESCO-484 Platform polish | `/historial` (lista) has no §4 spec yet · built LIVE-UI-FIRST on the FRESCO-451 icon-only circular back button already used by favorites, notifications and the `/historial?semana=` detail | 4.8 Calendar (destino del botón) |
 | FRESCO-871 | Producto: mostrar el plan anual de Pro en la landing y en la tarjeta de /profile | EPIC-FRESCO-865 Pagos y suscripción Pro | 4.1 Landing (`pricing`, columna Pro: línea "o X€/año · ahorras Y€") y 4.13 Profile (`pro-upsell-card`) · built LIVE-UI-FIRST, sin mockup, tokens existentes | — |
+| FRESCO-878 | Biblioteca: añadir una receta al menú semanal desde su tarjeta (icono de calendario y modal de día y comida) | EPIC-FRESCO-484 Platform polish | 4.10 Recipe library (`recipe-card` con icono de calendario + `add-to-menu-dialog`) · built LIVE-UI-FIRST, sin mockup, `dialog` y tokens existentes | 4.8 Calendar (destino del botón "Ver calendario") |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 

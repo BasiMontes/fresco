@@ -1,6 +1,7 @@
 'use client';
 
 import type { RecetaPropia, RecipeDieta, TipoCocina } from '@schemas';
+import type { AddToMenuRecipe } from '@/components/recipes/add-to-menu-dialog';
 import type { CatalogCard, CatalogFacets } from '@/lib/api/recipes';
 import type { MealTab, RecipeFilterState } from '@/lib/recipes/recipe-filters';
 import { BookOpen, Plus, Search, SlidersHorizontal } from 'lucide-react';
@@ -8,6 +9,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { FavoriteRecipeCard } from '@/components/recipe/favorite-recipe-card';
+import { AddToMenuDialog } from '@/components/recipes/add-to-menu-dialog';
 import { CreateRecipeForm } from '@/components/recipes/create-recipe-form';
 import { FilterSection } from '@/components/recipes/filter-section';
 import { PersonalRecipeCard } from '@/components/recipes/personal-recipe-card';
@@ -81,6 +83,13 @@ function applyFilterParams(search: URLSearchParams, filters: RecipeFilterState):
   }
 }
 
+/** The "añadir al menú" action of a catalog card, or `undefined` when the recipe has no meal type to match a slot against. */
+function toAddToMenuRecipe(recipe: CatalogCard, open: (recipe: AddToMenuRecipe) => void): (() => void) | undefined {
+  const tipoPlato = recipe.clasificacion?.tipo_plato;
+  if (tipoPlato !== 'desayuno' && tipoPlato !== 'comida' && tipoPlato !== 'cena') { return undefined; }
+  return () => open({ id: recipe.id, nombre: recipe.nombre, tipoPlato });
+}
+
 export interface RecipeLibraryProps {
   recipes: CatalogCard[]
   total: number
@@ -111,6 +120,7 @@ export function RecipeLibrary({
   const [filterDrawerOpen, setFilterDrawerOpen] = React.useState(false);
   const [misRecetas, setMisRecetas] = React.useState(recetasPropias);
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [addToMenuRecipe, setAddToMenuRecipe] = React.useState<AddToMenuRecipe | null>(null);
   // FRESCO-246 — one instance covers both grids; recipe ids are unique across
   // "Tus recetas" and the catalogue, so a card only ever animates once.
   const getCardEnterProps = useListEnterAnimation();
@@ -348,10 +358,15 @@ export function RecipeLibrary({
                 href={`/recipes/${recipe.id}`}
                 {...getCardEnterProps(recipe.id, index)}
               >
-                <FavoriteRecipeCard recipe={recipe} initialIsFavorite={favoriteRecipeIds.has(recipe.id)} />
+                <FavoriteRecipeCard
+                  recipe={recipe}
+                  initialIsFavorite={favoriteRecipeIds.has(recipe.id)}
+                  onAddToMenu={toAddToMenuRecipe(recipe, setAddToMenuRecipe)}
+                />
               </Link>
             ))}
           </div>
+          <AddToMenuDialog recipe={addToMenuRecipe} onClose={() => setAddToMenuRecipe(null)} />
           {hasMore && (
             <div className="mt-6 flex justify-center">
               <Button
