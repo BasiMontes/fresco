@@ -38,7 +38,10 @@ export function AccountActions() {
 
   return (
     <div className="flex flex-col divide-y divide-border">
-      <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
+      {/* FRESCO-862: from `md` up the sidebar account menu already offers logout, so a second one
+          on the same screen is a duplicate. Below `md` there is no sidebar (the bottom tab bar has
+          no logout), so this row stays the only way out on mobile. */}
+      <div className="flex items-center justify-between gap-3 py-3 first:pt-0 md:hidden">
         <div className="flex items-center gap-2 text-body-md text-text">
           <LogOut className="size-4 text-tertiary" aria-hidden="true" />
           Cerrar sesión
@@ -55,12 +58,12 @@ export function AccountActions() {
         </Button>
       </div>
       {logoutError && (
-        <p data-testid="logout_error_message" role="alert" aria-live="assertive" className="pt-2 text-body-sm text-error">
+        <p data-testid="logout_error_message" role="alert" aria-live="assertive" className="pt-2 text-body-sm text-error md:hidden">
           {logoutError}
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-3 py-3 last:pb-0">
+      <div className="flex items-center justify-between gap-3 py-3 last:pb-0 md:pt-0">
         <div className="flex items-center gap-2 text-body-md text-text">
           <Download className="size-4 text-tertiary" aria-hidden="true" />
           Backup CSV
