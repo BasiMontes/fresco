@@ -99,3 +99,8 @@ Historia archivada:
 - Qué: columna recipes.ingredientes_cantidades (ADR-0042, Proposed), migración de datos con las 601 recetas activas (estimación IA validada por script) y la ficha muestra cantidad y unidad (PR #567, #568, #569, main en 8ed8f99b).
 - Por qué: audit-6 A6-L8, la ficha listaba ingredientes sin cantidades; cierre medido en producción: 0 de 601 activas sin cantidades.
 - Siguiente: aceptar ADR-0042; mover la lista de la compra de BASE_QUANTITIES a la columna nueva (ticket aparte); recetas del catálogo con ingredientes que no cuadran con el nombre (bizcocho con pan integral, sopa de ajo sin pan ni caldo).
+
+## 2026-10-09 - FRESCO-855 cerrada: error con reintento si falla la lectura del catalogo
+- Qué: /recipes ya no convierte un fallo de lectura en "no hay recetas"; muestra error con reintento y el paso e2e de Biblioteca vuelca el estado de la página si falla (PR #572, 13455a22, en dev/staging/main).
+- Por qué: flaky e2e recipe_library_grid no aparecía en 5 s; causa raíz no demostrada, fix es de diagnóstico.
+- Siguiente: si el flaky reaparece, leer el estado volcado en el log de CI antes de tocar nada más.
