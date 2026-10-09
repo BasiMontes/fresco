@@ -2,7 +2,7 @@
 
 import type { Recipe } from '@schemas';
 
-import { Heart } from 'lucide-react';
+import { CalendarPlus, Heart } from 'lucide-react';
 import * as React from 'react';
 import { LIKE_PARTICLE_COUNT, triggerLikeBurst } from '@/components/recipe/like-burst';
 import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
@@ -65,10 +65,12 @@ export interface RecipeCardProps {
   recipe: RecipeCardData
   isFavorite?: boolean
   onToggleFavorite?: () => void
+  /** FRESCO-878 — when set, a calendar icon next to the heart opens "añadir al menú" for this recipe. */
+  onAddToMenu?: () => void
   className?: string
 }
 
-export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: RecipeCardProps) {
+export function RecipeCard({ recipe, isFavorite, onToggleFavorite, onAddToMenu, className }: RecipeCardProps) {
   const dietaLabel = firstActiveDietaLabel(recipe.dieta);
   const favoriteButtonRef = React.useRef<HTMLButtonElement>(null);
 
@@ -79,38 +81,57 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, className }: 
         nombre={recipe.nombre}
         categoria={recipe.clasificacion?.categoria}
         overlay={(
-          <Button
-            ref={favoriteButtonRef}
-            variant="icon"
-            size="sm"
-            aria-label={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-            data-liked={Boolean(isFavorite)}
-            onClick={(event) => {
+          <>
+            {onAddToMenu && (
+              <Button
+                variant="icon"
+                size="sm"
+                aria-label="Añadir al menú"
+                data-testid="recipe_card_add_to_menu_button"
+                onClick={(event) => {
+                  // Same as the heart: the card sits inside a Link to the detail page.
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onAddToMenu();
+                }}
+                className="absolute right-12 top-2"
+              >
+                <CalendarPlus className="size-6" />
+              </Button>
+            )}
+            <Button
+              ref={favoriteButtonRef}
+              variant="icon"
+              size="sm"
+              aria-label={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+              data-liked={Boolean(isFavorite)}
+              onClick={(event) => {
               // FRESCO-69 — the card is now wrapped in a Link to the detail
               // page; without this the favorite button's click would bubble
               // into a navigation instead of toggling the favorite.
-              event.preventDefault();
-              event.stopPropagation();
-              // AC-1: `isFavorite` here is still the pre-click value (state
-              // update happens in the parent, after this handler returns), so
-              // a `false` value means this click is a like — the burst should
-              // only play on that transition, matching favorite-toggle-button.tsx.
-              if (!isFavorite) {
-                triggerLikeBurst(favoriteButtonRef.current);
-              }
-              onToggleFavorite?.();
-            }}
-            className="t-like absolute right-2 top-2"
-          >
-            <span className="t-like-icon">
-              <Heart className="t-like-heart size-6" />
-            </span>
-            <span className="t-like-particles" aria-hidden="true" data-testid="recipe_card_favorite_particles">
-              {Array.from({ length: LIKE_PARTICLE_COUNT }, (_, index) => (
-                <i key={index} />
-              ))}
-            </span>
-          </Button>
+                event.preventDefault();
+                event.stopPropagation();
+                // AC-1: `isFavorite` here is still the pre-click value (state
+                // update happens in the parent, after this handler returns), so
+                // a `false` value means this click is a like — the burst should
+                // only play on that transition, matching favorite-toggle-button.tsx.
+                if (!isFavorite) {
+                  triggerLikeBurst(favoriteButtonRef.current);
+                }
+                onToggleFavorite?.();
+              }}
+              className="t-like absolute right-2 top-2"
+            >
+              <span className="t-like-icon">
+                <Heart className="t-like-heart size-6" />
+              </span>
+              <span className="t-like-particles" aria-hidden="true" data-testid="recipe_card_favorite_particles">
+                {Array.from({ length: LIKE_PARTICLE_COUNT }, (_, index) => (
+                  <i key={index} />
+                ))}
+              </span>
+            </Button>
+          </>
         )}
       />
       <div className="flex flex-1 flex-col p-3">
