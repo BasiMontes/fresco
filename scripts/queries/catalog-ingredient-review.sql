@@ -16,11 +16,35 @@
 -- "fresas"), so a person reads what is left. Fix the data only when the recipe's
 -- own text (description, steps) backs the change; otherwise the decision is rename,
 -- rewrite or deactivate.
+--
+-- FRESCO-880: `no_es_ingrediente` lists words that name a DISH ("pisto", "lasaña") or a
+-- CLASS / SYNONYM of something the list already holds ("carne" for ternera, "setas" for
+-- champiñones). They appear as an ingredient in a handful of recipes, which made them part
+-- of the vocabulary and flagged every title that says "Risotto de setas". Each one carries
+-- the reason it is not a missing ingredient; add a term only with its reason.
 
-with vocab as (
+with no_es_ingrediente(termino, motivo) as (
+  values
+    ('caldo',        'preparation, not a shopping item: the broth is made from the listed ingredients'),
+    ('pisto',        'dish name: its components (calabacín, pimiento, tomate) are the list'),
+    ('hummus',       'dish name: its components (garbanzos, tahini) are the list'),
+    ('lasaña',       'dish name: pasta and the filling are the list'),
+    ('tortitas',     'dish name: the batter (avena, huevo, plátano) is the list'),
+    ('salsa verde',  'dish name: parsley, garlic and oil are the sauce'),
+    ('carne',        'class: the list names the cut (ternera, cerdo…)'),
+    ('pescado blanco','class: the list names the fish (rape, merluza…)'),
+    ('setas',        'class: champiñones and portobello are setas'),
+    ('champiñones',  'class: portobello is a champiñón'),
+    ('ajetes',       'synonym: tender garlic shoots, ajo is listed'),
+    ('frutos secos', 'class: the list names the nut (nueces, almendras…)'),
+    ('carne picada', 'class: the list names the meat (ternera, cerdo…)'),
+    ('bechamel',     'preparation: made from the listed leche and queso')
+),
+vocab as (
   select distinct lower(btrim(e)) as ing
   from public.recipes r, jsonb_array_elements_text(r.ingredientes_principales) e
   where length(btrim(e)) >= 4
+    and lower(btrim(e)) not in (select termino from no_es_ingrediente)
 ),
 named_but_absent as (
   select 'descripcion' as seccion, r.id, r.nombre, v.ing
