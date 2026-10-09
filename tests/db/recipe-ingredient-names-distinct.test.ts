@@ -9,7 +9,7 @@
  */
 
 import { afterAll, describe, expect, test } from 'bun:test';
-import { rest, stackReachable } from './harness';
+import { rest, restAll, stackReachable } from './harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -71,9 +71,12 @@ describe.skipIf(!(RUN && reachable))('recipes.ingredientes_principales distinct 
   });
 
   test('no catalog recipe lists an ingredient twice', async () => {
-    const res = await rest('recipes', { serviceRole: true, query: 'select=nombre,ingredientes_principales&limit=2000' });
-    const rows = res.body as { nombre: string, ingredientes_principales: string[] | null }[];
-    expect(rows.length).toBeGreaterThan(0);
+    const rows = await restAll<{ nombre: string, ingredientes_principales: string[] | null }>('recipes', {
+      serviceRole: true,
+      select: 'nombre,ingredientes_principales',
+      order: 'id',
+    });
+    expect(rows.length).toBeGreaterThan(1000);
 
     const duplicated = rows
       .filter((row) => {

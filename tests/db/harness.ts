@@ -261,6 +261,30 @@ export async function rest(
   return request(`/rest/v1/${table}${qs}`, opts);
 }
 
+/**
+ * Every row of a table, read in pages: PostgREST caps one response at 1000 rows
+ * (`max_rows`), so a bare `limit=3000` silently returns the first 1000. A check
+ * that must cover the WHOLE catalogue (more than 1000 recipes) reads it with this.
+ */
+export async function restAll<Row>(
+  table: string,
+  opts: RequestOptions & { select: string, order: string },
+): Promise<Row[]> {
+  const PAGE = 1000;
+  const rows: Row[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const res = await rest(table, {
+      ...opts,
+      query: `select=${opts.select}&order=${opts.order}&limit=${PAGE}&offset=${offset}`,
+    });
+    const page = res.body as Row[];
+    rows.push(...page);
+    if (page.length < PAGE) {
+      return rows;
+    }
+  }
+}
+
 export interface FunctionCallResult {
   status: number
   /** Parsed JSON body when the response had one, else the raw text, else null. */
