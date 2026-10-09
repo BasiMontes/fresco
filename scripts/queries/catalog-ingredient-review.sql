@@ -38,7 +38,8 @@ with no_es_ingrediente(termino, motivo) as (
     ('ajetes',       'synonym: tender garlic shoots, ajo is listed'),
     ('frutos secos', 'class: the list names the nut (nueces, almendras…)'),
     ('carne picada', 'class: the list names the meat (ternera, cerdo…)'),
-    ('bechamel',     'preparation: made from the listed leche and queso')
+    ('bechamel',     'preparation: made from the listed leche and queso'),
+    ('alubias',      'synonym: fabes are alubias')
 ),
 vocab as (
   select distinct lower(btrim(e)) as ing
