@@ -55,6 +55,16 @@ The Decision above is unchanged and stays `riesgo-aceptado`. What this update ad
 - **Shown to the user.** The shopping-list summary says the prices are indicative, names the chains that priced a row and points to the date on each item; the Terms of Service have a section "Precios y enlaces de supermercados" that says the same without naming any chain.
 - **Still open.** No reply from Consum to the 2026-09-29 request (FRESCO-764, deadline about 2026-10-06). The lawyer's opinion on database rights, or a dated decision to keep accepting the risk, is still pending (FRESCO-790).
 
+## Update 2026-10-09 (FRESCO-790): risk acceptance dated, review scheduled
+
+The founder decided on 2026-10-09 to keep accepting the risk instead of commissioning the lawyer's opinion now. The Decision stays `riesgo-aceptado`; this update only gives it an owner, a date and a condition.
+
+- **Decision.** Keep showing Consum prices and links under `riesgo-aceptado`, with the indicative-prices clause visible on `/shopping-list` and in the Terms.
+- **Review date.** 2026-11-06, or earlier if Consum answers the 2026-09-29 request (FRESCO-764) or sends any objection.
+- **Condition for public launch.** A lawyer's opinion on database rights is required BEFORE the public launch. Accepting the risk now does not waive it.
+- **Revocation.** Unchanged: delete the connector from the array in `lib/grocery/supermarket/registry.ts`. Tested in `lib/grocery/map-item.test.ts` ("Consum kill-switch (ADR-0037)").
+- **Still blocked.** FRESCO-772 (live Consum connector) does not start until Consum answers.
+
 ## Alternatives considered
 
 - **Keep Consum out of the registry and drop its prices at step 3.** Safest legally and fully reversible, but removes a price the app shows today and weakens the "real prices" promise for users near a Consum store.
