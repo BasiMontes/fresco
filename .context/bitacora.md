@@ -189,3 +189,8 @@ Historia archivada:
 - Qué: 83 recetas activas con el guion "Preparar X / Cocinar con ... / Sazonar al gusto / Servir caliente" pasan a tener pasos propios, escritos solo con sus ingredientes mas aceite, sal y agua. PR #606, main en 575d1883; produccion: 570 activas, 0 con el guion. Test de BD que impide que vuelva.
 - Por qué: al preparar el kit de lanzamiento (FRESCO-889) se vio que abrir una receta no servia para cocinar; en el lanzamiento es lo primero que ve un visitante.
 - Siguiente: lote B descartado (la app solo usa tiempo_total_min). Pendiente sin ticket: nombres "con verduras salteadas" sin esas verduras en los ingredientes y recetas duplicadas con otro nombre. FRESCO-897 (cuentas Pro) espera al fundador.
+
+## 2026-10-11 - FRESCO-898: recetas duplicadas y nombres enganosos del catalogo
+- Qué: 30 grupos de recetas con los mismos ingredientes y pasos (62 recetas) se funden en 30; 32 duplicados desactivados, 9 casillas de menu de dos cuentas de pruebas pasadas a la receta conservada, 2 fotos copiadas. Las 23 recetas "con verduras salteadas" sin esas verduras desaparecen. PR #607, main en 7858db69; produccion: 538 activas, 0 duplicados, 0 con el sufijo.
+- Por qué: al revisar la muestra de FRESCO-896 se vio que un menu podia sacar el mismo plato dos veces con nombres distintos.
+- Siguiente: observacion sin ticket, 29 casillas de menu de semanas pasadas y 3 favoritos apuntan a recetas inactivas de trabajos anteriores. FRESCO-897 (cuentas Pro) espera al fundador.
