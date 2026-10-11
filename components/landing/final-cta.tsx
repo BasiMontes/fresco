@@ -1,5 +1,6 @@
 import { buttonVariants } from '@/components/ui/button';
 import { LandingCtaLink } from './landing-cta-link';
+import { WaitlistForm } from './waitlist-form';
 
 /**
  * No logo here — `SiteFooter` right below already shows one, a second mark
@@ -34,6 +35,7 @@ export function FinalCta() {
       <p className="mt-4 text-body-sm text-tertiary">
         7 días de Pro gratis · Sin tarjeta · Cancela cuando quieras
       </p>
+      <WaitlistForm />
     </section>
   );
 }
