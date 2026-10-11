@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { describe, expect, mock, test } from 'bun:test';
-import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
+import { renderWithProviders, screen, setupUser, within } from '@/tests/component-render';
 import { PlanningSelectionGrid } from './planning-selection-grid';
 
 /**
@@ -32,14 +32,14 @@ function render(props: Partial<ComponentProps<typeof PlanningSelectionGrid>> = {
 }
 
 describe('PlanningSelectionGrid', () => {
-  test('days are the column headers and meal types the row headers', () => {
+  test('one group per meal type, each with its seven day labels', () => {
     render();
 
-    for (const day of ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']) {
-      expect(screen.getByRole('columnheader', { name: day })).toBeInTheDocument();
-    }
     for (const meal of ['Desayuno', 'Almuerzo', 'Cena']) {
-      expect(screen.getByRole('rowheader', { name: meal })).toBeInTheDocument();
+      const group = screen.getByRole('group', { name: meal });
+      for (const day of ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']) {
+        expect(within(group).getByText(day)).toBeInTheDocument();
+      }
     }
   });
 
@@ -77,6 +77,27 @@ describe('PlanningSelectionGrid', () => {
       expect(button.className).toContain('min-h-11');
       expect(button.className).toContain('min-w-11');
     }
+  });
+
+  test('every day cell sits in a label of at least 44 px (FRESCO-864)', () => {
+    render();
+
+    const cells = screen.getAllByTestId('planning_selection_cell');
+    expect(cells).toHaveLength(21);
+    for (const cell of cells) {
+      const label = cell.closest('label');
+      expect(label).not.toBeNull();
+      expect(label?.className).toContain('min-h-11');
+      expect(label?.className).toContain('min-w-11');
+    }
+  });
+
+  test('lays the days out 4 per row on mobile and 7 from sm up', () => {
+    render();
+
+    const grid = screen.getByLabelText('Cena domingo').closest('label')?.parentElement;
+    expect(grid?.className).toContain('grid-cols-4');
+    expect(grid?.className).toContain('sm:grid-cols-7');
   });
 
   test('"Todos" on a meal row selects that meal for all seven days', async () => {
