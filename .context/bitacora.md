@@ -144,3 +144,13 @@ Historia archivada:
 - Qué: AccountActions recibe isAnonymous y abre el mismo GuestLogoutDialog que la barra lateral antes de salir; una cuenta registrada sale directa. Test de componente (invitada, registrada, confirmación) y escenario @solo-manual por el coste de generar un menú real en e2e (ADR-0018).
 - Por qué: desde FRESCO-862 el botón de /profile solo se ve en móvil, y ahí una invitada perdía su menú sin aviso.
 - Siguiente: FRESCO-864 (rejilla Comidas a planificar a 44 px) y FRESCO-837 (cierra el 2026-10-10).
+
+## 2026-10-09 - FRESCO-858 cerrada: ramas, worktrees y stash limpios
+- Qué: de 24 ramas locales a 3 (dev, staging, main, las tres en 93eab22c), 1 solo worktree y 0 stash. Las ramas con commits propios o PR cerrada se comprobaron una a una contra main y la decisión quedó en el comentario del ticket.
+- Por qué: el remoto estaba limpio pero lo acumulado vivía en local, con trabajo posiblemente sin subir.
+- Siguiente: FRESCO-837 (cierra el 2026-10-10), FRESCO-864 y FRESCO-881. Las 3 ramas de Dependabot (#451, #495, #507) son decisión de dependencias.
+
+## 2026-10-11 - FRESCO-837 cerrado: identidad de prueba fuera de main
+- Qué: FRESCO-837 a Finalizada. Origen corregido en PR #472 (los tests del updater ya no escriben la identidad de prueba en .git/config); 0 commits con esa identidad como autor en origin/main y ramas remotas desde 2026-10-03 (ventana de 7 días cerrada el 10-10).
+- Por qué: criterio 3 del ticket (7 días limpios) cumplido; comentario de cierre con PR y prueba (gotcha 21). FRESCO-776/828/792 comprobados: ya Finalizada.
+- Siguiente: ninguno.
