@@ -159,3 +159,8 @@ Historia archivada:
 - Qué: 69 recetas corregidas con la migración 20261011130000 (PR #594): verduras salteadas a cena, ensaladas a comida, tofu y tempeh a legumbres, masas dulces a reposteria, poke bowls a bowls, y tostadas y wraps fuera de sandwich. Comprobado en producción tras aplicar la migración. Se añadió el test tests/db/recipe-category-dish-type.test.ts y la consulta scripts/queries/catalog-category-dish-type-fit.sql.
 - Por qué: FRESCO-861 dejó todas las categorías dentro del contrato, pero no que encajaran con el tipo de plato; cada familia la decidió el dueño de producto.
 - Siguiente: FRESCO-847 (mapa de API, PR #595) en revisión; FRESCO-864 sigue en Control de calidad a la espera de ver a 360 px el onboarding.
+
+## 2026-10-11 - FRESCO-847, FRESCO-848 y FRESCO-821 cerrados: documentación al día con el producto
+- Qué: el mapa de API de negocio recoge la capa de supermercado, los consentimientos y el resumen de Pro (PR #595); los user-journeys describen el producto actual con tres recorridos nuevos (PR #596); el PRD anota la excepción del onboarding de 4 pasos y los 14 borradores [DRAFT] salieron de Listo a Blocked (PR #597). FRESCO-883 recoge el seguimiento del NIF y el Gmail.
+- Por qué: la auditoría 6 (A6-P11, P13 a P15) señaló documentación de julio y un Listo que mezclaba ideas aparcadas con trabajo real.
+- Siguiente: FRESCO-864 sigue en Control de calidad a la espera de ver a 360 px el onboarding y /profile. Quedan en Listo FRESCO-877, 843, 853, 857, 874, 717 y 753.
