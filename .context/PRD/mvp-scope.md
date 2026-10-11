@@ -10,6 +10,7 @@ Epics below are listed **in the founder's stated priority order**, matching `bus
 
 - US 1.1: As a new user, I want to complete a 3-step onboarding (diet, favorite cuisines, household size) so the system has enough information to generate my first menu.
 - US 1.2: As a new user, I want onboarding to be short (3 steps only) so I don't abandon before reaching any value.
+  - **Exception, accepted (FRESCO-755, audit-6 A6-P14, 2026-10-11):** after the 3 data steps the product shows a read-only **summary** of what she entered (a 4th screen, `step === 4`), with an edit shortcut per block and the button that generates the first menu. It collects no data and the funnel still reports 3 steps (`total_steps: 3`), so the "3 steps only" promise holds for what she has to fill in; the summary is a confirmation screen, not a step.
 
 ### EPIC-FRESCO-2: AI Weekly Menu Generation
 
