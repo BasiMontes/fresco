@@ -164,3 +164,8 @@ Historia archivada:
 - Qué: el mapa de API de negocio recoge la capa de supermercado, los consentimientos y el resumen de Pro (PR #595); los user-journeys describen el producto actual con tres recorridos nuevos (PR #596); el PRD anota la excepción del onboarding de 4 pasos y los 14 borradores [DRAFT] salieron de Listo a Blocked (PR #597). FRESCO-883 recoge el seguimiento del NIF y el Gmail.
 - Por qué: la auditoría 6 (A6-P11, P13 a P15) señaló documentación de julio y un Listo que mezclaba ideas aparcadas con trabajo real.
 - Siguiente: FRESCO-864 sigue en Control de calidad a la espera de ver a 360 px el onboarding y /profile. Quedan en Listo FRESCO-877, 843, 853, 857, 874, 717 y 753.
+
+## 2026-10-11 - FRESCO-877 cerrado: Fresco frente a la checklist de lanzamiento
+- Qué: informe .context/audits/2026-10-11-launch-checklist.md (PR #598) con los 66 puntos de la checklist clasificados: de los 35 que aplican antes del lanzamiento cumplimos 16, 9 a medias y 10 faltan. Se creó el epic FRESCO-884 (Preparación del lanzamiento público) con 9 cards: FRESCO-885 a 893.
+- Por qué: saber cuánto falta para un lanzamiento público y convertir los huecos en trabajo con dueño. Los huecos grandes son el plan de lanzamiento (FRESCO-885) y el dominio propio (FRESCO-886), ambos empiezan por una decisión del fundador.
+- Siguiente: FRESCO-864 sigue en Control de calidad a la espera de ver a 360 px el onboarding y /profile. Quedan en Listo FRESCO-843, 853, 857, 874, 717 y 753, más las 9 cards del epic FRESCO-884.
