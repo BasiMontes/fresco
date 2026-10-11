@@ -1,7 +1,14 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+
+// FRESCO-894: a 404 inherited the home page's <title>, so a tab or a crawler could not tell a
+// broken link from the front page. Same "Page · Fresco" shape as the other routes.
+export const metadata: Metadata = {
+  title: 'Página no encontrada · Fresco',
+};
 
 export default function NotFound() {
   return (
