@@ -179,3 +179,8 @@ Historia archivada:
 - Qué: formulario de lista de espera (solo correo, consentimiento explicito, tabla waitlist_signups con RLS insert-only) bajo el CTA final, y cuatro preguntas nuevas en el FAQ (precio, datos, comparativa, limites). PRs #603 y #604, main en 94f6a6ab.
 - Por qué: sin lista de espera el dia uno dependia de desconocidos; el FAQ debia contestar de antemano las preguntas publicas (checklist de lanzamiento FRESCO-877).
 - Siguiente: FRESCO-889 (capturas y kit de textos); enviar el aviso de lanzamiento queda bloqueado por el dominio propio (FRESCO-886). Abrir los PRs contra staging, no dev.
+
+## 2026-10-11 - FRESCO-889: kit de lanzamiento (capturas y textos)
+- Qué: tres capturas de la app real, descripcion corta y larga y primer comentario del autor, en docs/brand/launch-kit/ y enlazados desde el manual de marca. PR #605, main en 87367138.
+- Por qué: las fichas de directorios y las publicaciones de lanzamiento necesitan material reutilizable escrito una vez (checklist FRESCO-877).
+- Siguiente: repetir las capturas de lista de la compra y aprendizaje de Pro con cuentas adecuadas; ticketar la calidad de las recetas de ejemplo. Login con Turnstile: el humano entra en la ventana de playwright-cli.
