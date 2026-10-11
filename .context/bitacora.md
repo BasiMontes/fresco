@@ -184,3 +184,8 @@ Historia archivada:
 - Qué: tres capturas de la app real, descripcion corta y larga y primer comentario del autor, en docs/brand/launch-kit/ y enlazados desde el manual de marca. PR #605, main en 87367138.
 - Por qué: las fichas de directorios y las publicaciones de lanzamiento necesitan material reutilizable escrito una vez (checklist FRESCO-877).
 - Siguiente: repetir las capturas de lista de la compra y aprendizaje de Pro con cuentas adecuadas; ticketar la calidad de las recetas de ejemplo. Login con Turnstile: el humano entra en la ventana de playwright-cli.
+
+## 2026-10-11 - FRESCO-896: pasos genericos del catalogo sustituidos
+- Qué: 83 recetas activas con el guion "Preparar X / Cocinar con ... / Sazonar al gusto / Servir caliente" pasan a tener pasos propios, escritos solo con sus ingredientes mas aceite, sal y agua. PR #606, main en 575d1883; produccion: 570 activas, 0 con el guion. Test de BD que impide que vuelva.
+- Por qué: al preparar el kit de lanzamiento (FRESCO-889) se vio que abrir una receta no servia para cocinar; en el lanzamiento es lo primero que ve un visitante.
+- Siguiente: lote B descartado (la app solo usa tiempo_total_min). Pendiente sin ticket: nombres "con verduras salteadas" sin esas verduras en los ingredientes y recetas duplicadas con otro nombre. FRESCO-897 (cuentas Pro) espera al fundador.
