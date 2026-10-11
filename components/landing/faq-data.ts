@@ -34,4 +34,20 @@ export const FAQS = [
     question: '¿Funciona para familias numerosas?',
     answer: 'Sí. Las cantidades de la lista de la compra se escalan automáticamente según el número de personas en tu hogar.',
   },
+  {
+    question: '¿Cuánto cuesta Fresco?',
+    answer: 'El plan Free es gratis para siempre y no pide tarjeta. El plan Pro es una suscripción que se renueva sola, con 7 días de prueba. Puedes cancelar cuando quieras desde tu perfil y mantienes el acceso hasta el final del periodo ya pagado. El importe exacto lo ves en Stripe antes de confirmar.',
+  },
+  {
+    question: '¿Qué haces con mis datos personales y de salud?',
+    answer: 'Guardamos tu email, tu dieta, tus alergias y el tamaño de tu hogar. Las alergias son un dato de salud y las usamos solo con tu consentimiento, solo para excluirlas de tus menús. Los datos están alojados en la Unión Europea. Puedes acceder, corregir, exportar o borrar tu cuenta desde tu perfil.',
+  },
+  {
+    question: '¿En qué se diferencia de un chat de IA o de otras apps de menús?',
+    answer: 'Un chat de IA te contesta, pero no recuerda tus alergias de forma fiable ni te organiza la compra. En Fresco los filtros de alergias y de dieta se aplican antes de generar nada, y la lista sale ya ordenada por pasillos, con las cantidades escaladas a tu hogar. Cambias una receta sin rehacer toda la semana.',
+  },
+  {
+    question: '¿Qué no hace Fresco todavía?',
+    answer: 'Fresco no hace el pedido en el supermercado por ti. La lista incluye enlaces y precios orientativos de algunas cadenas, que pueden haber cambiado.',
+  },
 ] as const;

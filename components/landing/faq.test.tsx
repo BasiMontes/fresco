@@ -13,9 +13,17 @@ describe('Faq', () => {
     renderWithProviders(<Faq />);
 
     const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBeGreaterThanOrEqual(6);
+    expect(buttons.length).toBeGreaterThanOrEqual(10);
     buttons.forEach(button => expect(button).toHaveAttribute('aria-expanded', 'false'));
     expect(screen.queryByText(/El plan Free es gratis para siempre/)).toBeNull();
+  });
+
+  test('FRESCO-891: answers the price, privacy, comparison and missing-feature questions', () => {
+    renderWithProviders(<Faq />);
+
+    for (const name of [/Cuánto cuesta Fresco/, /datos personales y de salud/, /chat de IA/, /Qué no hace Fresco todavía/]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
   });
 
   test('opens a question on click and marks it expanded', async () => {
