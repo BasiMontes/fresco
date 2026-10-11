@@ -174,3 +174,8 @@ Historia archivada:
 - Qué: FRESCO-885 fija el lanzamiento público el martes 1 de diciembre de 2026, sin Product Hunt y con canales en español (Instagram, TikTok y comunidades de recetas); plan en .context/launch-plan.md (PR #601). FRESCO-892 midió Core Web Vitals en producción (LCP y CLS bien; TBT alto en /login y /signup, card FRESCO-895). FRESCO-893 añade favicon.ico (PR #599) y FRESCO-894 da título propio al 404 (PR #600), los dos comprobados en producción.
 - Por qué: cerrar huecos de la checklist de lanzamiento (FRESCO-877) y dar fecha y orden al resto del epic FRESCO-884.
 - Siguiente: FRESCO-886 (dominio propio) en WIP, a la espera de elegir nombre; el abogado (textos legales y opinión sobre Consum) es el camino crítico y aún no tiene responsable. Quedan FRESCO-887 a 891 y 895, más FRESCO-864 en Control de calidad.
+
+## 2026-10-11 - FRESCO-888 y FRESCO-891: lista de espera y FAQ ampliado en produccion
+- Qué: formulario de lista de espera (solo correo, consentimiento explicito, tabla waitlist_signups con RLS insert-only) bajo el CTA final, y cuatro preguntas nuevas en el FAQ (precio, datos, comparativa, limites). PRs #603 y #604, main en 94f6a6ab.
+- Por qué: sin lista de espera el dia uno dependia de desconocidos; el FAQ debia contestar de antemano las preguntas publicas (checklist de lanzamiento FRESCO-877).
+- Siguiente: FRESCO-889 (capturas y kit de textos); enviar el aviso de lanzamiento queda bloqueado por el dominio propio (FRESCO-886). Abrir los PRs contra staging, no dev.
