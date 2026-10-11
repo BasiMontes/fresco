@@ -78,11 +78,9 @@ export const MIN_TOUCH_TARGET_PX = 44;
 
 /**
  * `data-testid`s known to be under the floor, one ticket each — never add one
- * without a ticket. Emptied as tickets close.
- * - `planning_selection_cell`: 7 columns in ~270px at 360px, no room for 44px
- *   without a layout redesign (FRESCO-864).
+ * without a ticket. Emptied as tickets close (FRESCO-864 emptied it).
  */
-export const KNOWN_TOUCH_TARGET_ALLOWLIST: string[] = ['planning_selection_cell'];
+export const KNOWN_TOUCH_TARGET_ALLOWLIST: string[] = [];
 
 const INTERACTIVE_SELECTOR = [
   'a[href]',
