@@ -169,3 +169,8 @@ Historia archivada:
 - Qué: informe .context/audits/2026-10-11-launch-checklist.md (PR #598) con los 66 puntos de la checklist clasificados: de los 35 que aplican antes del lanzamiento cumplimos 16, 9 a medias y 10 faltan. Se creó el epic FRESCO-884 (Preparación del lanzamiento público) con 9 cards: FRESCO-885 a 893.
 - Por qué: saber cuánto falta para un lanzamiento público y convertir los huecos en trabajo con dueño. Los huecos grandes son el plan de lanzamiento (FRESCO-885) y el dominio propio (FRESCO-886), ambos empiezan por una decisión del fundador.
 - Siguiente: FRESCO-864 sigue en Control de calidad a la espera de ver a 360 px el onboarding y /profile. Quedan en Listo FRESCO-843, 853, 857, 874, 717 y 753, más las 9 cards del epic FRESCO-884.
+
+## 2026-10-11 - Epic de lanzamiento: FRESCO-885, 892, 893 y 894 cerrados
+- Qué: FRESCO-885 fija el lanzamiento público el martes 1 de diciembre de 2026, sin Product Hunt y con canales en español (Instagram, TikTok y comunidades de recetas); plan en .context/launch-plan.md (PR #601). FRESCO-892 midió Core Web Vitals en producción (LCP y CLS bien; TBT alto en /login y /signup, card FRESCO-895). FRESCO-893 añade favicon.ico (PR #599) y FRESCO-894 da título propio al 404 (PR #600), los dos comprobados en producción.
+- Por qué: cerrar huecos de la checklist de lanzamiento (FRESCO-877) y dar fecha y orden al resto del epic FRESCO-884.
+- Siguiente: FRESCO-886 (dominio propio) en WIP, a la espera de elegir nombre; el abogado (textos legales y opinión sobre Consum) es el camino crítico y aún no tiene responsable. Quedan FRESCO-887 a 891 y 895, más FRESCO-864 en Control de calidad.
