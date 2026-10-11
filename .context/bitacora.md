@@ -154,3 +154,8 @@ Historia archivada:
 - Qué: FRESCO-837 a Finalizada. Origen corregido en PR #472 (los tests del updater ya no escriben la identidad de prueba en .git/config); 0 commits con esa identidad como autor en origin/main y ramas remotas desde 2026-10-03 (ventana de 7 días cerrada el 10-10).
 - Por qué: criterio 3 del ticket (7 días limpios) cumplido; comentario de cierre con PR y prueba (gotcha 21). FRESCO-776/828/792 comprobados: ya Finalizada.
 - Siguiente: ninguno.
+
+## 2026-10-11 - FRESCO-881 cerrado: categoría y tipo de plato encajan en cinco familias
+- Qué: 69 recetas corregidas con la migración 20261011130000 (PR #594): verduras salteadas a cena, ensaladas a comida, tofu y tempeh a legumbres, masas dulces a reposteria, poke bowls a bowls, y tostadas y wraps fuera de sandwich. Comprobado en producción tras aplicar la migración. Se añadió el test tests/db/recipe-category-dish-type.test.ts y la consulta scripts/queries/catalog-category-dish-type-fit.sql.
+- Por qué: FRESCO-861 dejó todas las categorías dentro del contrato, pero no que encajaran con el tipo de plato; cada familia la decidió el dueño de producto.
+- Siguiente: FRESCO-847 (mapa de API, PR #595) en revisión; FRESCO-864 sigue en Control de calidad a la espera de ver a 360 px el onboarding.
