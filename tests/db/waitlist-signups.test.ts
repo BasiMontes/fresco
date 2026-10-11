@@ -42,13 +42,13 @@ describe.skipIf(!(RUN && reachable))('waitlist_signups (real DB)', () => {
     expect(Date.now() - new Date(row.created_at).getTime()).toBeLessThan(60_000);
   });
 
-  test('anon cannot backdate a signup or choose the id', async () => {
+  test('anon cannot backdate a signup or choose the id (PostgREST answers 401 to anon, 403 to authenticated)', async () => {
     const backdated = await signup({ email: freshEmail(), consent_version: 'v', created_at: '2020-01-01T00:00:00Z' });
-    expect(backdated.status).toBe(403);
+    expect(backdated.status).toBe(401);
     expect(code(backdated)).toBe(PERMISSION_DENIED);
 
     const withId = await signup({ email: freshEmail(), consent_version: 'v', id: crypto.randomUUID() });
-    expect(withId.status).toBe(403);
+    expect(withId.status).toBe(401);
     expect(code(withId)).toBe(PERMISSION_DENIED);
   });
 
