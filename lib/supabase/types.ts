@@ -711,6 +711,27 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_signups: {
+        Row: {
+          consent_version: string
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          consent_version: string
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          consent_version?: string
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           adultos: number
