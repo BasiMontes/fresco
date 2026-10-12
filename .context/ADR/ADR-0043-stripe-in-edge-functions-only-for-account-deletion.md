@@ -26,12 +26,15 @@ Until now Stripe has lived only in the Next.js app (ADR-0007: Checkout hosted, w
 
 The code lives in `supabase/functions/_shared/stripe-billing.ts` (`cancelStripeBillingForCustomer`), using `npm:stripe` pinned in `supabase/functions/deno.json` to the same version as the app, with the same `apiVersion`, over the fetch HTTP client. The client is built lazily from the `STRIPE_SECRET_KEY` function secret, read only when a customer id exists; a missing key with a customer id is a failure (502), never a silent skip.
 
-**Refund policy (founder decision, replaces an earlier "no refund" draft):** cancellation is immediate and the user gets the proportional refund of the unused period, as the published terms promise ("la parte proporcional no disfrutada", `components/legal/legal-content-data.ts:129`). The deletion dialog says so. Rules, fail-closed:
+**Refund policy (founder decision, replaces an earlier "no refund" draft):** cancellation is immediate and the user gets the proportional refund of the unused period, as the published terms promise ("la parte proporcional no disfrutada", `components/legal/legal-content-data.ts:129`). The deletion dialog says so. Rules:
 
-- Refund only if the latest paid invoice has `amount_paid > 0` (trials and unpaid invoices refund nothing).
-- Unused fraction = `max(0, period_end - T) / (period_end - period_start)`, capped at 1, using the period covered by the invoice lines. `T` is now for a subscription just cancelled, and `ended_at` for one already ended, so a retry is deterministic and a subscription that ran to period end refunds 0.
-- Amount = `round(amount_paid * fraction)`, never more than `amount_paid` minus what is already refunded. If the payment already has non-failed refunds, skip (no top-up).
-- Order: cancel, refund, delete customer, delete user. A refund failure other than `resource_missing` answers 502 and the account is kept. The refund carries idempotency key `delete-account-refund:<uid>:<invoiceId>` and the existing-refund check, so a retry never refunds twice.
+- Refund only if the most recent paid invoice with `amount_paid > 0` (looked up among the last 5) exists; trials and unpaid invoices refund nothing.
+- Unused fraction = `max(0, period_end - T) / (period_end - period_start)`, capped at 1. The period comes only from the invoice's recurring subscription lines (`parent.type = subscription_item_details`, not a proration, positive amount, same subscription); proration, one-off and credit lines are ignored.
+- `T` is the `ended_at` returned by `subscriptions.cancel` on the first run (now only if absent) and the subscription's own `ended_at` on a retry, so both runs compute the same amount, and a subscription that ran to period end refunds 0.
+- **Cancellation marker:** this flow cancels with `cancellation_details.comment = "delete-account:<userId>"`. An already `canceled` subscription is refunded only when its comment carries the marker for this same user, so an old portal or dunning cancellation is never refunded from a past date, while a retry the next day still completes the job.
+- **Top-up semantics:** target = `round(amount_paid * fraction)`; refund `max(0, target - alreadyRefunded)`, never above `amount_paid - alreadyRefunded` (failed or canceled refunds do not count). Idempotency key `delete-account-refund:<uid>:<invoiceId>:<amount>`. Retries therefore never refund twice: top-up semantics make the second run's amount 0, and the amount-keyed idempotency covers a request still in flight.
+- Order: cancel, refund, delete customer, delete user. A refund failure other than the exceptions below answers 502 and the account is kept.
+- **Exception, erasure wins:** if the payment can no longer be refunded, the deletion goes ahead and the owner refunds by hand. This applies when Stripe answers `charge_already_refunded`, `charge_disputed` or `refund_disputed_payment` (codes confirmed in Stripe's error-codes reference; no broad `invalid_request_error` catch-all), when the payment is older than Stripe's 180-day card refund window (checked up front from `status_transitions.paid_at`, because the exact error code for an expired charge is not confirmed), when the payment is out of band (`payment_record`) or has no `payment_intent`/`charge`, and when the invoice has no identifiable subscription line. In each case `logger.error` records user, customer, subscription, invoice and `amountOwed`, which reaches Sentry.
 
 **Open legal question:** the terms also promise a full refund within 14 days of contracting unless the user waived it (consent `withdrawal_waiver`). This ADR implements only the proportional refund; the 14-day case is not handled.
 
@@ -42,6 +45,10 @@ The code lives in `supabase/functions/_shared/stripe-billing.ts` (`cancelStripeB
 - **Positive:** deleting an account ends billing and removes the Stripe customer. A Stripe outage cannot leave an orphan subscription, because the account survives until Stripe confirms.
 - **Negative / trade-offs:** deletion now depends on Stripe availability for users with a customer id; the user must retry. The Edge Functions get a heavier dependency and a new secret (`STRIPE_SECRET_KEY`) that must be set per Supabase project. Under ADR-0020 there is one Supabase project for all environments, so it holds one Stripe mode's key; ids from the other mode are handled by the `resource_missing` rule, which means a test-mode customer is not cleaned up from live and the reverse.
 - **Neutral / follow-ups:** setting the secret on Supabase is an owner action. Privacy-policy text and an e2e scenario against real Stripe are out of scope here.
+
+## Known limitations
+
+- A user whose `stripe_customer_id` is still null (the webhook has not written it yet) is skipped, so a subscription created moments before deletion is not cancelled. Tracked in FRESCO-909; the customer-by-email lookup is deferred.
 
 ## Alternatives considered
 
