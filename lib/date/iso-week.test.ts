@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { afterAll, afterEach, beforeAll, describe, expect, setSystemTime, test } from 'bun:test';
 import { addIsoWeeks, formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from './iso-week';
 
 function utc(year: number, month: number, day: number): Date {
@@ -57,6 +57,31 @@ describe('getIsoWeekMonday', () => {
 
   test('defaults to the current date when called with no argument', () => {
     expect(getIsoWeekMonday()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+// FRESCO-899: the no-argument calls resolve "the current week" in the Madrid
+// calendar, the same frame `hoyEnMadrid()` uses to decide which slots are still
+// open. Sunday 2026-10-11 23:30 UTC is already Monday 2026-10-12 01:30 in Madrid.
+describe('current week with no argument (Madrid frame)', () => {
+  afterEach(() => setSystemTime());
+
+  test('Sunday 23:30 UTC is already the next week in Madrid', () => {
+    setSystemTime(new Date('2026-10-11T23:30:00Z'));
+
+    expect(getIsoWeek()).toBe('2026-W42');
+    expect(getIsoWeekMonday()).toBe('2026-10-12');
+  });
+
+  test('Sunday 21:30 UTC is still the old week in Madrid (summer time, UTC+2)', () => {
+    setSystemTime(new Date('2026-10-11T21:30:00Z'));
+
+    expect(getIsoWeek()).toBe('2026-W41');
+    expect(getIsoWeekMonday()).toBe('2026-10-05');
+  });
+
+  test('explicit dates keep reading in the UTC frame', () => {
+    expect(getIsoWeek(new Date('2026-10-11T23:30:00Z'))).toBe('2026-W41');
   });
 });
 
