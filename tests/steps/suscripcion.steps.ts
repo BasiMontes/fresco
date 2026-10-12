@@ -139,6 +139,9 @@ for (const [givenText, thenText] of [
       client_reference_id: userId,
       customer: customer.id,
       subscription: subscription.id,
+      // A real trial checkout reports `no_payment_required`; the webhook refuses
+      // any session without a settled payment status (FRESCO-816).
+      payment_status: 'no_payment_required',
     });
     if (!checkoutRes.ok()) { throw new Error(`Webhook rejected checkout.session.completed: ${checkoutRes.status()} ${await checkoutRes.text()}`); }
   });
