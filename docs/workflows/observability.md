@@ -11,7 +11,14 @@ FRESCO-803 (audit-6 A6-D7). Before this, a partial outage (an Edge Function answ
 
 The health check is deliberately shallow. It does not call Stripe or the Edge Functions: a monitor hitting them every few minutes would cost real requests. Those failures are covered by the Sentry alerts below.
 
-## Uptime monitor (free, external): owner action
+## Uptime monitor
+
+**In place: `.github/workflows/uptime-monitor.yml`** (no account needed, the repo is public so the minutes are free). Every 5 minutes it calls `/api/health` on production, retrying 3 times 15 seconds apart. If it still does not answer `200` it opens ONE issue labelled `uptime-failure` (later failures comment on it), and it closes the issue when the probe recovers. GitHub notifies the owner of the new issue.
+
+- **Limit**: GitHub schedules are best-effort. A run can start late or be skipped, so this is a floor, not a guarantee. Add the external monitor below for a stronger one.
+- **Drill**: Actions > Uptime monitor > Run workflow, with `path` set to `/api/health-drill` (does not exist, answers `404`). It opens an issue labelled `uptime-drill`, separate from the real one. Close it by hand afterwards.
+
+### External monitor (optional, owner action)
 
 Any free HTTP monitor works; UptimeRobot's free plan (5 minute interval) is enough.
 
