@@ -29,7 +29,7 @@ import type { DeleteAccountRequest, DeleteAccountResponse } from './types.ts'
 
 const FN_NAME = 'delete-account'
 
-const STRIPE_BLOCKED_MESSAGE = 'No hemos podido cancelar tu suscripción, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.'
+const STRIPE_BLOCKED_MESSAGE = 'No hemos podido cancelar tu suscripción ni gestionar la devolución, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.'
 
 // A real user deletes her account at most once. 5/h leaves room for a retry
 // after a transient failure without being a useful brute-force surface for

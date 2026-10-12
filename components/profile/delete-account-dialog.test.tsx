@@ -95,13 +95,13 @@ describe('DeleteAccountDialog', () => {
     expect(screen.getByTestId('delete_account_confirm_button')).toBeEnabled();
   });
 
-  test('warns a registered user that Fresco Pro is cancelled at once, without a refund (FRESCO-942)', () => {
+  test('warns a registered user that Fresco Pro is cancelled at once with a prorated refund (FRESCO-942)', () => {
     renderWithProviders(
       <DeleteAccountDialog open onOpenChange={() => {}} email="laura@fresco.app" isAnonymous={false} />,
     );
 
     expect(screen.getByTestId('delete_account_pro_notice')).toHaveTextContent(
-      'Si tienes Fresco Pro, se cancelará al instante y no se reembolsa el periodo ya pagado.',
+      'Si tienes Fresco Pro, se cancelará al instante y te devolveremos la parte proporcional del periodo que no hayas disfrutado.',
     );
   });
 
@@ -210,7 +210,7 @@ describe('DeleteAccountDialog — handleDelete', () => {
   });
 
   test('shows the Stripe-blocked 502 message from the function and keeps the user on the page (FRESCO-942)', async () => {
-    const blocked = 'No hemos podido cancelar tu suscripción, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.';
+    const blocked = 'No hemos podido cancelar tu suscripción ni gestionar la devolución, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.';
     deleteAccountMock.mockImplementation(async () => {
       throw new (await import('@/lib/api/edge-functions')).EdgeFunctionError(502, { error: blocked });
     });

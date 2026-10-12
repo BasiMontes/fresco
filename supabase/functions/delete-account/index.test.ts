@@ -24,7 +24,9 @@ mock.module('../_shared/service-role-client.ts', () => ({ createServiceRoleClien
 // `deletedUsersAtStripeDel` proves `auth.admin.deleteUser` had not run yet.
 let stripeCalls: string[] = []
 let stripeSubs: Array<{ id: string, status: string }> = []
-let stripeFailure: { on: 'list' | 'cancel' | 'del', error: unknown } | null = null
+let stripeFailure: { on: 'list' | 'cancel' | 'del' | 'refund', error: unknown } | null = null
+let stripeInvoices: unknown[] = []
+let refundLedger: Array<{ amount: number, status: string }> = []
 let deletedUsersAtStripeDel: number | null = null
 const RealStripe = (await import('stripe')).default
 // Extends the real class so statics (`errors`, `createFetchHttpClient`) survive: `mock.module` leaks across test files.
@@ -33,6 +35,25 @@ class FakeStripe extends RealStripe {
     super(key, config)
     Object.defineProperty(this, 'subscriptions', { value: this.fakeSubscriptions })
     Object.defineProperty(this, 'customers', { value: this.fakeCustomers })
+    Object.defineProperty(this, 'invoices', { value: this.fakeInvoices })
+    Object.defineProperty(this, 'refunds', { value: this.fakeRefunds })
+  }
+
+  fakeInvoices = {
+    list: async (params: { subscription: string }) => {
+      stripeCalls.push(`invoices:${params.subscription}`)
+      return { data: stripeInvoices }
+    },
+  }
+
+  fakeRefunds = {
+    list: async () => ({ data: refundLedger }),
+    create: async (params: { amount: number }) => {
+      stripeCalls.push(`refund:${params.amount}`)
+      if (stripeFailure?.on === 'refund') throw stripeFailure.error
+      refundLedger.push({ amount: params.amount, status: 'succeeded' })
+      return { id: 're_1' }
+    },
   }
 
   fakeSubscriptions = {
@@ -76,11 +97,13 @@ beforeEach(() => {
   stripeCalls = []
   stripeSubs = []
   stripeFailure = null
+  stripeInvoices = []
+  refundLedger = []
   deletedUsersAtStripeDel = null
   process.env.STRIPE_SECRET_KEY = 'sk_test_fake'
 })
 
-const STRIPE_BLOCKED_MESSAGE = 'No hemos podido cancelar tu suscripción, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.'
+const STRIPE_BLOCKED_MESSAGE = 'No hemos podido cancelar tu suscripción ni gestionar la devolución, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.'
 
 /** A service client whose `user_profiles` row carries a Stripe customer id (or an explicit null/absent row). */
 function withProfile(row: { stripe_customer_id: string | null } | null, extra: Parameters<typeof fakeEdgeClient>[0] = {}) {
@@ -177,7 +200,7 @@ describe('delete-account/index.ts', () => {
       stripeSubs = [{ id: 'sub_1', status: 'active' }]
       const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
       expect(res.status).toBe(200)
-      expect(stripeCalls).toEqual(['list:cus_1', 'cancel:sub_1', 'del:cus_1'])
+      expect(stripeCalls.filter(c => !c.startsWith('invoices:'))).toEqual(['list:cus_1', 'cancel:sub_1', 'del:cus_1'])
       expect(deletedUsersAtStripeDel).toBe(0)
       expect(serviceClient.deletedUserIds).toEqual(['user_1'])
     })
@@ -226,6 +249,53 @@ describe('delete-account/index.ts', () => {
       expect(res.status).toBe(500)
       expect(stripeCalls).toEqual([])
       expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    const NOW_S2 = Math.floor(Date.now() / 1000)
+    const paidMonthly = () => [{
+      id: 'in_1',
+      amount_paid: 1000,
+      lines: { data: [{ period: { start: NOW_S2 - 15 * 86_400, end: NOW_S2 + 15 * 86_400 } }] },
+      payments: { data: [{ status: 'paid', payment: { type: 'payment_intent', payment_intent: 'pi_1' } }] },
+    }]
+
+    test('order: cancel, then prorated refund, then customer deletion, all before the user', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: 'cus_1' })
+      stripeSubs = [{ id: 'sub_1', status: 'active' }]
+      stripeInvoices = paidMonthly()
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+      expect(res.status).toBe(200)
+      expect(stripeCalls.filter(c => !c.startsWith('invoices:'))).toEqual(['list:cus_1', 'cancel:sub_1', 'refund:500', 'del:cus_1'])
+      expect(deletedUsersAtStripeDel).toBe(0)
+      expect(serviceClient.deletedUserIds).toEqual(['user_1'])
+    })
+
+    test('502 and NO deletion when the refund fails', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: 'cus_1' })
+      stripeSubs = [{ id: 'sub_1', status: 'active' }]
+      stripeInvoices = paidMonthly()
+      stripeFailure = { on: 'refund', error: Object.assign(new Error('refund down'), { type: 'StripeConnectionError' }) }
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+      expect(res.status).toBe(502)
+      expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    test('a retry after the refund succeeded but deleteUser failed does not refund twice', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: 'cus_1' }, { adminDeleteError: new Error('supabase admin down') })
+      stripeSubs = [{ id: 'sub_1', status: 'active' }]
+      stripeInvoices = paidMonthly()
+      const first = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+      expect(first.status).toBe(500)
+
+      const retryToken = registered('user_1')
+      withProfile({ stripe_customer_id: 'cus_1' })
+      stripeSubs = [{ id: 'sub_1', status: 'canceled' }]
+      const second = await handler(edgeRequest({ reauthToken: retryToken }, { auth: MAIN_AUTH }))
+      expect(second.status).toBe(200)
+      expect(stripeCalls.filter(c => c.startsWith('refund:'))).toEqual(['refund:500'])
     })
 
     test('a guest with no customer id never touches Stripe', async () => {

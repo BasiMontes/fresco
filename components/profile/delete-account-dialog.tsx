@@ -124,7 +124,7 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
       </p>
       {!isAnonymous && (
         <p className="mt-2 text-body-sm text-tertiary" data-testid="delete_account_pro_notice">
-          Si tienes Fresco Pro, se cancelará al instante y no se reembolsa el periodo ya pagado.
+          Si tienes Fresco Pro, se cancelará al instante y te devolveremos la parte proporcional del periodo que no hayas disfrutado.
         </p>
       )}
 
