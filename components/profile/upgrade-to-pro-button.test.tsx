@@ -19,6 +19,7 @@ const ANNUAL: ProPriceInfo = { amount: 44.99, currency: 'eur', interval: 'year',
 let price: ProPriceInfo = PRICE;
 let annualPrice: ProPriceInfo | null = null;
 let annualDelayMs = 0;
+let monthlyDelayMs = 0;
 let priceStatus = 200;
 let consentStatus = 200;
 let calls: Array<{ url: string, body: unknown }> = [];
@@ -27,6 +28,7 @@ beforeEach(() => {
   price = PRICE;
   annualPrice = null;
   annualDelayMs = 0;
+  monthlyDelayMs = 0;
   priceStatus = 200;
   consentStatus = 200;
   calls = [];
@@ -34,6 +36,7 @@ beforeEach(() => {
   globalThis.fetch = (async (url: string, init?: RequestInit) => {
     calls.push({ url, body: init?.body ? JSON.parse(init.body as string) : null });
     if (url === '/api/stripe/pro-price') {
+      await new Promise(resolve => setTimeout(resolve, monthlyDelayMs));
       return new Response(JSON.stringify(price), { status: priceStatus });
     }
     if (url === '/api/stripe/pro-price?interval=year') {
@@ -205,6 +208,56 @@ describe('UpgradeToProButton + annual plan (FRESCO-844)', () => {
     await openSummary();
 
     expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' })).toBeTruthy();
+  });
+
+  // FRESCO-904 — measured in a real browser: with the price still loading the dialog
+  // opened without the selector and without the trial line, then grew 139 px when
+  // they arrived. The selector is there from the first paint (disabled until the
+  // price is known) and the trial line's room is reserved, invisible and hidden
+  // from assistive technology.
+  describe('while the price is still loading (FRESCO-904)', () => {
+    async function openWhileLoading() {
+      annualPrice = ANNUAL;
+      monthlyDelayMs = 150;
+      const user = setupUser();
+      renderWithProviders(<UpgradeToProButton />);
+      await user.click(screen.getByTestId('upgrade_to_pro_button'));
+      await waitFor(() => expect(screen.getByTestId('pro_checkout_dialog')).toBeTruthy());
+      return user;
+    }
+
+    test('the selector is already in the dialog, disabled', async () => {
+      await openWhileLoading();
+
+      expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' })).toBeTruthy();
+      expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' }).closest('fieldset')?.disabled).toBe(true);
+      expect(screen.queryByTestId('pro_checkout_trial')).toBeNull();
+    });
+
+    test('the trial line has its room reserved, hidden from assistive technology', async () => {
+      await openWhileLoading();
+
+      const placeholder = screen.getByTestId('pro_checkout_trial_placeholder');
+      expect(placeholder.getAttribute('aria-hidden')).toBe('true');
+      expect(placeholder.className).toContain('invisible');
+    });
+
+    test('once the price arrives the selector is enabled and the placeholder gives way to the real line', async () => {
+      await openWhileLoading();
+
+      await waitFor(() => expect(screen.getByTestId('pro_checkout_trial')).toBeTruthy());
+      expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' }).closest('fieldset')?.disabled).toBe(false);
+      expect(screen.queryByTestId('pro_checkout_trial_placeholder')).toBeNull();
+    });
+
+    test('if the price cannot be loaded there is no leftover selector or placeholder', async () => {
+      priceStatus = 500;
+      await openWhileLoading();
+
+      await waitFor(() => expect(screen.getByTestId('pro_checkout_price').textContent).toContain('No se pudo cargar el precio'));
+      expect(screen.queryByRole('radiogroup', { name: 'Plan de facturación' })).toBeNull();
+      expect(screen.queryByTestId('pro_checkout_trial_placeholder')).toBeNull();
+    });
   });
 
   test('picking Anual shows the Stripe annual price, the saving against 12 months and the yearly renewal', async () => {

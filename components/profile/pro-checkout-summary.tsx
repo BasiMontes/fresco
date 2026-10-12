@@ -29,6 +29,16 @@ const INTERVAL_OPTIONS = [
   { value: 'year', label: 'Anual' },
 ];
 
+/** What the "Prueba." line says for a given number of trial days (`null`: the trial is already used). */
+function trialCopy(trialDays: number | null): string {
+  return trialDays === null
+    ? 'Ya usaste tu prueba gratuita: el primer cobro se realiza al contratar.'
+    : `${trialDays} días de prueba gratis, sin tarjeta. Si no facilitas un medio de pago durante la prueba, la suscripción no se activa y vuelves al plan Free sin ningún cargo.`;
+}
+
+/** Days of trial assumed only to size the reserved room while the price loads; never shown. */
+const PLACEHOLDER_TRIAL_DAYS = 7;
+
 async function fetchProPrice(interval: ProInterval): Promise<ProPriceInfo> {
   const res = await fetch(interval === 'year' ? '/api/stripe/pro-price?interval=year' : '/api/stripe/pro-price');
   if (!res.ok) {
@@ -53,6 +63,12 @@ async function fetchProPrice(interval: ProInterval): Promise<ProPriceInfo> {
  * FRESCO-844: when the annual price is configured (the `?interval=year` request
  * answers), a Mensual/Anual selector appears and the price, savings and renewal
  * lines follow it. No annual price, no selector: the dialog is the monthly one.
+ *
+ * FRESCO-904: while the price loads the selector is already in the dialog,
+ * disabled, and the trial line's room is reserved (invisible, hidden from
+ * assistive technology), so nothing is added or moved when the price lands
+ * (it used to grow 139 px). If the annual price turns out not to exist, or the
+ * price fails to load, both go away.
  *
  * The wording is PROVISIONAL (lawyer draft, not validated), and the scope of the
  * waiver for a monthly subscription is an open decision in that draft (7.4); the
@@ -106,14 +122,18 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
       <h2 className="text-h4">Antes de continuar</h2>
       <p className="mt-1 text-body-sm text-tertiary">Resumen de tu suscripción a Fresco Pro.</p>
 
-      {price.status === 'ready' && annual && (
-        <SegmentedControl
-          aria-label="Plan de facturación"
-          className="mt-4"
-          options={INTERVAL_OPTIONS}
-          value={interval}
-          onChange={value => setInterval(value === 'year' ? 'year' : 'month')}
-        />
+      {(price.status === 'loading' || (price.status === 'ready' && annual)) && (
+        // `contents`: the fieldset only carries `disabled` down to the buttons (the
+        // control has no disabled prop of its own) and adds no box.
+        <fieldset disabled={price.status !== 'ready'} className="contents">
+          <SegmentedControl
+            aria-label="Plan de facturación"
+            className="mt-4"
+            options={INTERVAL_OPTIONS}
+            value={interval}
+            onChange={value => setInterval(value === 'year' ? 'year' : 'month')}
+          />
+        </fieldset>
       )}
 
       <ul className="mt-4 flex flex-col gap-3 text-body-sm text-tertiary">
@@ -130,13 +150,18 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
           {price.status === 'loading' && 'Cargando…'}
           {price.status === 'error' && 'No se pudo cargar el precio. Cierra y vuelve a abrir este resumen.'}
         </li>
+        {price.status === 'loading' && (
+          <li data-testid="pro_checkout_trial_placeholder" aria-hidden="true" className="invisible">
+            <strong>Prueba.</strong>
+            {' '}
+            {trialCopy(PLACEHOLDER_TRIAL_DAYS)}
+          </li>
+        )}
         {price.status === 'ready' && (
           <li data-testid="pro_checkout_trial">
             <strong className="text-text">Prueba.</strong>
             {' '}
-            {price.info.trialDays === null
-              ? 'Ya usaste tu prueba gratuita: el primer cobro se realiza al contratar.'
-              : `${price.info.trialDays} días de prueba gratis, sin tarjeta. Si no facilitas un medio de pago durante la prueba, la suscripción no se activa y vuelves al plan Free sin ningún cargo.`}
+            {trialCopy(price.info.trialDays)}
           </li>
         )}
         <li>
