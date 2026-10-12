@@ -23,7 +23,7 @@ mock.module('../_shared/service-role-client.ts', () => ({ createServiceRoleClien
 // `_shared/stripe-billing.ts` runs. `stripeCalls` records call ORDER;
 // `deletedUsersAtStripeDel` proves `auth.admin.deleteUser` had not run yet.
 let stripeCalls: string[] = []
-let stripeSubs: Array<{ id: string, status: string }> = []
+let stripeSubs: Array<{ id: string, status: string, ended_at?: number, cancellation_details?: { comment: string } }> = []
 let stripeFailure: { on: 'list' | 'cancel' | 'del' | 'refund', error: unknown } | null = null
 let stripeInvoices: unknown[] = []
 let refundLedger: Array<{ amount: number, status: string }> = []
@@ -255,7 +255,11 @@ describe('delete-account/index.ts', () => {
     const paidMonthly = () => [{
       id: 'in_1',
       amount_paid: 1000,
-      lines: { data: [{ period: { start: NOW_S2 - 15 * 86_400, end: NOW_S2 + 15 * 86_400 } }] },
+      lines: { data: [{
+        amount: 1000,
+        period: { start: NOW_S2 - 15 * 86_400, end: NOW_S2 + 15 * 86_400 },
+        parent: { type: 'subscription_item_details', subscription_item_details: { proration: false, subscription: 'sub_1' } },
+      }] },
       payments: { data: [{ status: 'paid', payment: { type: 'payment_intent', payment_intent: 'pi_1' } }] },
     }]
 
@@ -292,7 +296,7 @@ describe('delete-account/index.ts', () => {
 
       const retryToken = registered('user_1')
       withProfile({ stripe_customer_id: 'cus_1' })
-      stripeSubs = [{ id: 'sub_1', status: 'canceled' }]
+      stripeSubs = [{ id: 'sub_1', status: 'canceled', ended_at: NOW_S2, cancellation_details: { comment: 'delete-account:user_1' } }]
       const second = await handler(edgeRequest({ reauthToken: retryToken }, { auth: MAIN_AUTH }))
       expect(second.status).toBe(200)
       expect(stripeCalls.filter(c => c.startsWith('refund:'))).toEqual(['refund:500'])

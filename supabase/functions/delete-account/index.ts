@@ -97,7 +97,8 @@ Deno.serve(async (req: Request) => {
     // FRESCO-942 (audit C-01, ADR-0043): end the Stripe billing BEFORE the
     // user row goes — the cascade below erases `stripe_customer_id`, after
     // which nothing could ever cancel the subscription. Immediate
-    // cancellation, no refund, no proration. If Stripe cannot be reached the
+    // cancellation plus a prorated refund of the unused period (published
+    // terms). If Stripe cannot be reached the
     // account is NOT deleted (the user retries). No plan columns are written
     // here: ADR-0007 keeps the webhook as their only writer.
     const { data: profile, error: profileError } = await serviceClient
