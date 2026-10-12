@@ -18,8 +18,10 @@
 
 import type { DbTestUser } from './harness';
 import { readFileSync } from 'node:fs';
+import { createClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { createDbTestContext, rest, stackReachable } from './harness';
+import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent, WEBHOOK_CLAIM_TTL_MS } from '@/lib/billing/webhook-events';
+import { createDbTestContext, nativeFetch, resolveUrl, rest, serviceRoleKey, stackReachable } from './harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -27,6 +29,8 @@ const reachable = RUN ? await stackReachable() : false;
 const PERMISSION_DENIED = '42501';
 const UNIQUE_VIOLATION = '23505';
 const EVENT_ID = `evt_fresco816_${Date.now()}`;
+const LIB_EVENT_ID = `evt_fresco909_lib_${Date.now()}`;
+const LIB_RACE_EVENT_ID = `evt_fresco909_race_${Date.now()}`;
 const CAS_EVENT_ID = `evt_fresco909_${Date.now()}`;
 const MIGRATION = 'supabase/migrations/20261012110000_stripe_webhook_events_claim_state.sql';
 
@@ -58,6 +62,8 @@ describe.skipIf(!(RUN && reachable))('stripe_webhook_events (real DB)', () => {
   afterAll(async () => {
     await release(EVENT_ID);
     await release(CAS_EVENT_ID);
+    await release(LIB_EVENT_ID);
+    await release(LIB_RACE_EVENT_ID);
     await ctx.cleanupAll();
   });
 
@@ -163,5 +169,65 @@ describe.skipIf(!(RUN && reachable))('stripe_webhook_events (real DB)', () => {
     expect(backfill).toBeGreaterThan(guard);
     expect(backfill).toBeLessThan(endIf);
     expect(sql).toContain('grant select, insert, update, delete on public.stripe_webhook_events to service_role');
+  });
+
+  describe('claimWebhookEvent against the real database (FRESCO-909)', () => {
+    async function serviceClient() {
+      return createClient(resolveUrl(), await serviceRoleKey(), { global: { fetch: nativeFetch }, auth: { persistSession: false } });
+    }
+    // The claim ages past the TTL by moving the library's clock, so the stored claimed_at
+    // keeps the microseconds the default now() gave it: the compare-and-swap must match them.
+    const future = () => Date.now() + WEBHOOK_CLAIM_TTL_MS + 60_000;
+    const seedWithDefaultNow = async (eventId: string) => rest('stripe_webhook_events', {
+      method: 'POST',
+      serviceRole: true,
+      prefer: 'return=minimal',
+      body: { event_id: eventId, event_type: 'checkout.session.completed' },
+    });
+    const readRow = async (eventId: string) => {
+      const res = await rest('stripe_webhook_events', { serviceRole: true, query: `event_id=eq.${eventId}&select=claimed_at,completed_at` });
+      return (res.body as Array<{ claimed_at: string, completed_at: string | null }>)[0];
+    };
+
+    test('a claim stamped by the default now() is taken over once expired: the timestamptz equality round-trips through PostgREST', async () => {
+      const client = await serviceClient();
+      expect((await seedWithDefaultNow(LIB_EVENT_ID)).status).toBe(201);
+
+      const fresh = await claimWebhookEvent(client, { eventId: LIB_EVENT_ID, eventType: 'checkout.session.completed' });
+      expect(fresh.state).toBe('in_flight');
+
+      const result = await claimWebhookEvent(client, { eventId: LIB_EVENT_ID, eventType: 'checkout.session.completed', now: future() });
+      expect(result.state).toBe('taken_over');
+      if (result.state !== 'taken_over') {
+        throw new Error('unreachable');
+      }
+      expect(new Date((await readRow(LIB_EVENT_ID)).claimed_at).getTime()).toBe(new Date(result.claimedAt).getTime());
+    });
+
+    test('a stale worker cannot release or complete the claim that replaced its own; the holder can complete it', async () => {
+      const client = await serviceClient();
+      const before = await readRow(LIB_EVENT_ID);
+      const stale = { eventId: LIB_EVENT_ID, claimedAt: new Date(new Date(before.claimed_at).getTime() - 600_000).toISOString() };
+
+      await releaseWebhookEvent(client, stale);
+      await completeWebhookEvent(client, stale);
+      const after = await readRow(LIB_EVENT_ID);
+      expect(after).toEqual(before);
+
+      await completeWebhookEvent(client, { eventId: LIB_EVENT_ID, claimedAt: before.claimed_at });
+      expect((await readRow(LIB_EVENT_ID)).completed_at).not.toBeNull();
+      const done = await claimWebhookEvent(client, { eventId: LIB_EVENT_ID, eventType: 'checkout.session.completed', now: future() });
+      expect(done.state).toBe('already_done');
+    });
+
+    test('two concurrent takeovers of one expired claim: exactly one is taken_over', async () => {
+      const client = await serviceClient();
+      expect((await seedWithDefaultNow(LIB_RACE_EVENT_ID)).status).toBe(201);
+
+      const results = await Promise.all(Array.from({ length: 2 }, async () => claimWebhookEvent(client, { eventId: LIB_RACE_EVENT_ID, eventType: 'customer.subscription.updated', now: future() })));
+
+      expect(results.filter(r => r.state === 'taken_over')).toHaveLength(1);
+      expect(results.filter(r => r.state === 'in_flight')).toHaveLength(1);
+    });
   });
 });
