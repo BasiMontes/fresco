@@ -1,0 +1,93 @@
+name: Uptime monitor (production /api/health)
+
+# FRESCO-803 (A6-D7): nothing watched production, so an outage was only noticed
+# when a user or a test hit it. This is the free, account-less monitor: GitHub
+# calls `/api/health` every 5 minutes and opens ONE issue (later failures comment
+# on it) when production does not answer 200; the issue is closed when it recovers.
+#
+# Limits, stated plainly: GitHub schedules are best-effort. A run can start late
+# or be skipped under load, so this is a floor, not a guarantee. An external
+# monitor (UptimeRobot free plan) can be added later without changing this one.
+#
+# Drill: run it by hand with a path that does not exist (e.g. `/api/health-drill`)
+# to prove the alert works. A drill uses its own label so it never touches the
+# real outage issue.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      path:
+        description: 'Path to probe. Anything other than /api/health is a drill.'
+        required: false
+        default: '/api/health'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime-monitor
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: probe production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Production `web_url` in `.agents/project.yaml`.
+      BASE_URL: https://fresco-pro.vercel.app
+      PROBE_PATH: ${{ inputs.path || '/api/health' }}
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Probe, retrying before declaring an outage
+        id: probe
+        run: |
+          if ! printf '%s' "$PROBE_PATH" | grep -Eq '^/[A-Za-z0-9/_-]*$'; then
+            echo "Refusing odd probe path"
+            exit 2
+          fi
+          code=000
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 "$BASE_URL$PROBE_PATH" || echo 000)
+            echo "attempt $attempt: HTTP $code"
+            [ "$code" = "200" ] && break
+            [ "$attempt" -lt 3 ] && sleep 15
+          done
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$PROBE_PATH" = "/api/health" ]; then
+            echo "label=uptime-failure" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=uptime-drill" >> "$GITHUB_OUTPUT"
+          fi
+          [ "$code" = "200" ]
+
+      - name: Open or update the outage issue
+        if: failure() && steps.probe.outputs.code != ''
+        env:
+          LABEL: ${{ steps.probe.outputs.label }}
+          CODE: ${{ steps.probe.outputs.code }}
+        run: |
+          gh label create "$LABEL" --color b60205 --description "Uptime monitor alert" 2>/dev/null || true
+          existing=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Still failing (HTTP $CODE): $RUN_URL"
+            exit 0
+          fi
+          gh issue create \
+            --title "Production health check failing (HTTP $CODE)" \
+            --label "$LABEL" \
+            --body "$BASE_URL$PROBE_PATH did not answer 200 after 3 attempts. Run: $RUN_URL. What to check first: docs/workflows/observability.md."
+
+      - name: Close the outage issue when it recovers
+        if: success()
+        env:
+          LABEL: ${{ steps.probe.outputs.label }}
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "Recovered, probe answered 200: $RUN_URL"
+          fi
