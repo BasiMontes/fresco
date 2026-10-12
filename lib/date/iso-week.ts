@@ -15,14 +15,24 @@
  * UTC-anchored `Date` from `getDateFromIsoWeek()` back through `getIsoWeek()` —
  * landed on the wrong week for any runtime in a negative UTC offset (e.g.
  * `America/Los_Angeles`: a Monday 00:00Z `Date` read as the previous Sunday).
- * Spain (UTC+1/+2) never hit it. Consequence of the all-UTC frame: the
- * no-argument calls (`getIsoWeek()`, `getIsoWeekMonday()`) now resolve "the
- * current ISO week" against UTC rather than the caller's wall clock — for a
- * browser in Spain that differs only during the 00:00–01:00/02:00 local
- * window, an accepted low-severity trade-off for a single consistent frame.
+ * Spain (UTC+1/+2) never hit it.
+ *
+ * FRESCO-899: an explicit `Date` is still read in UTC, but the no-argument
+ * calls (`getIsoWeek()`, `getIsoWeekMonday()`) resolve "the current ISO week"
+ * from today's calendar date in Madrid (`hoyEnMadrid()`), the same frame that
+ * decides which menu slots are already behind us. Reading it from UTC left the
+ * app on the old week for the first 1-2 hours of every Monday in Spain, while
+ * "today" was already Monday, so no slot was left to offer.
  */
 
+import { hoyEnMadrid } from './madrid-date';
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Today's Madrid calendar date as a UTC-midnight `Date`, ready for the UTC-frame helpers. */
+function todayInMadrid(): Date {
+  return new Date(`${hoyEnMadrid()}T00:00:00Z`);
+}
 
 /**
  * ISO 8601 weekday number for `date`, Monday = 1 ... Sunday = 7 (unlike
@@ -52,7 +62,7 @@ function toUtcDateOnly(date: Date): Date {
  * year boundary (e.g. 31 Dec can fall in week 1 of the *next* year, and
  * 1 Jan can fall in week 52/53 of the *previous* year).
  */
-export function getIsoWeek(date: Date = new Date()): string {
+export function getIsoWeek(date: Date = todayInMadrid()): string {
   const target = toUtcDateOnly(date);
   // Shift to the Thursday of this ISO week — the ISO week-year is always
   // that Thursday's calendar year.
@@ -68,7 +78,7 @@ export function getIsoWeek(date: Date = new Date()): string {
 /**
  * Returns the Monday of `date`'s ISO week, as `'YYYY-MM-DD'`.
  */
-export function getIsoWeekMonday(date: Date = new Date()): string {
+export function getIsoWeekMonday(date: Date = todayInMadrid()): string {
   const target = toUtcDateOnly(date);
   target.setUTCDate(target.getUTCDate() - getIsoWeekday(target) + 1);
   return target.toISOString().slice(0, 10);
