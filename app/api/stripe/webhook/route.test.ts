@@ -18,7 +18,8 @@ const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
 const sendSubscriptionConfirmationEmail = mock(async (_p: unknown) => {});
-const claimWebhookEvent = mock(async (_client: unknown, _event: unknown): Promise<unknown> => ({ state: 'claimed' }));
+const CLAIMED_AT = '2026-10-12T10:00:00.123456+00:00';
+const claimWebhookEvent = mock(async (_client: unknown, _event: unknown): Promise<unknown> => ({ state: 'claimed', claimedAt: CLAIMED_AT }));
 const completeWebhookEvent = mock(async (_client: unknown, _eventId: string) => {});
 const releaseWebhookEvent = mock(async (_client: unknown, _eventId: string) => {});
 const captureException = mock((_error: unknown, _hint?: unknown) => 'id');
@@ -83,7 +84,7 @@ beforeEach(() => {
   captureServerEvent.mockClear();
   sendSubscriptionConfirmationEmail.mockReset();
   claimWebhookEvent.mockReset();
-  claimWebhookEvent.mockResolvedValue({ state: 'claimed' });
+  claimWebhookEvent.mockResolvedValue({ state: 'claimed', claimedAt: CLAIMED_AT });
   completeWebhookEvent.mockReset();
   releaseWebhookEvent.mockReset();
   captureException.mockClear();
@@ -395,7 +396,7 @@ describe('POST /api/stripe/webhook — idempotency by event.id and payment_statu
     const res = await POST(req({}));
 
     expect(res.status).toBe(200);
-    expect(releaseWebhookEvent.mock.calls[0][1]).toBe('evt_c2');
+    expect(releaseWebhookEvent.mock.calls[0][1]).toEqual({ eventId: 'evt_c2', claimedAt: CLAIMED_AT });
   });
 
   test('an event type the route does not act on is not claimed', async () => {
@@ -417,7 +418,7 @@ describe('POST /api/stripe/webhook — idempotency by event.id and payment_statu
     expect(res.status).toBe(200);
     expect(updateFor('user_profiles')).toBeUndefined();
     expect(captureServerEvent).not.toHaveBeenCalled();
-    expect(releaseWebhookEvent.mock.calls[0][1]).toBe('evt_u1');
+    expect(releaseWebhookEvent.mock.calls[0][1]).toEqual({ eventId: 'evt_u1', claimedAt: CLAIMED_AT });
   });
 
   test('checkout.session.async_payment_succeeded grants Pro once the money arrives', async () => {
@@ -461,19 +462,19 @@ describe('POST /api/stripe/webhook — expirable claim and completed state (FRES
 
   test('a claim left by a crashed run, past the TTL, is retaken: Pro is granted and the event is completed', async () => {
     arrange('evt_crash');
-    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900 });
+    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900, claimedAt: CLAIMED_AT });
 
     const res = await POST(req({}));
 
     expect(res.status).toBe(200);
     expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'pro', stripe_subscription_id: 'sub_1' });
-    expect(completeWebhookEvent.mock.calls[0][1]).toBe('evt_crash');
+    expect(completeWebhookEvent.mock.calls[0][1]).toEqual({ eventId: 'evt_crash', claimedAt: CLAIMED_AT });
     expect(releaseWebhookEvent).not.toHaveBeenCalled();
   });
 
   test('the takeover of an expired claim is reported to Sentry as a warning with the claim age and the event tags', async () => {
     arrange('evt_crash');
-    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900 });
+    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900, claimedAt: CLAIMED_AT });
 
     await POST(req({}));
 
@@ -484,16 +485,31 @@ describe('POST /api/stripe/webhook — expirable claim and completed state (FRES
     expect(hint.extra).toEqual({ claim_age_seconds: 900 });
   });
 
-  test('a fresh claim held by another worker is not retaken: 200 and nothing runs', async () => {
+  test('a fresh claim held by another worker is not retaken: 409 so Stripe retries later, nothing runs', async () => {
+    // A 2xx would tell Stripe the event was delivered and stop its retries while the claim
+    // may be dead for up to the TTL; 409 keeps Stripe's backoff going until it completes or expires.
     arrange('evt_busy');
     claimWebhookEvent.mockResolvedValue({ state: 'in_flight' });
 
     const res = await POST(req({}));
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'Evento en proceso.' });
     expect(subscriptionsRetrieve).not.toHaveBeenCalled();
     expect(supa.updates).toEqual([]);
     expect(completeWebhookEvent).not.toHaveBeenCalled();
+    expect(releaseWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('a failure reporting the takeover to Sentry never leaves the claim open: the event still runs and completes', async () => {
+    arrange('evt_sentry');
+    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900, claimedAt: CLAIMED_AT });
+    captureMessage.mockImplementationOnce(() => { throw new Error('sentry down'); });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(completeWebhookEvent).toHaveBeenCalledTimes(1);
     expect(releaseWebhookEvent).not.toHaveBeenCalled();
   });
 
@@ -513,7 +529,7 @@ describe('POST /api/stripe/webhook — expirable claim and completed state (FRES
 
     await POST(req({}));
 
-    expect(completeWebhookEvent.mock.calls[0][1]).toBe('evt_ok');
+    expect(completeWebhookEvent.mock.calls[0][1]).toEqual({ eventId: 'evt_ok', claimedAt: CLAIMED_AT });
   });
 
   test('when completing the event fails the route still answers 200 and reports it', async () => {
@@ -534,7 +550,7 @@ describe('POST /api/stripe/webhook — expirable claim and completed state (FRES
     const res = await POST(req({}));
 
     expect(res.status).toBe(200);
-    expect(releaseWebhookEvent.mock.calls[0][1]).toBe('evt_fail');
+    expect(releaseWebhookEvent.mock.calls[0][1]).toEqual({ eventId: 'evt_fail', claimedAt: CLAIMED_AT });
     expect(completeWebhookEvent).not.toHaveBeenCalled();
     const [, hint] = captureException.mock.calls[0] as [unknown, { tags: Record<string, string> }];
     expect(hint.tags).toEqual({ stripe_event_id: 'evt_fail', stripe_event_type: 'checkout.session.completed' });

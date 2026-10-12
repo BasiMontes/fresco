@@ -9,6 +9,8 @@ import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent, WEBHOOK_C
  * client records what each call asked the table to do and answers with chosen results.
  */
 
+const INSERTED_AT = '2026-10-12T10:00:00.123456+00:00';
+
 type DbError = { code?: string, message: string } | null;
 
 interface Fake {
@@ -22,7 +24,7 @@ interface Fake {
 
 interface Recorded {
   inserted: unknown[]
-  deletedWhere: Array<[string, unknown]>
+  deletedWhere: Array<[string, string, unknown]>
   updates: Array<{ patch: Record<string, unknown>, filters: Array<[string, string, unknown]> }>
 }
 
@@ -30,9 +32,13 @@ function fakeClient(overrides: Partial<Fake> = {}): { client: SupabaseClient<Dat
   const fake: Fake = { insertError: null, row: null, casRows: [], writeError: null, ...overrides };
   const recorded: Recorded = { inserted: [], deletedWhere: [], updates: [] };
   const table = mock((_name: string) => ({
-    insert: async (row: unknown) => {
+    insert: (row: unknown) => {
       recorded.inserted.push(row);
-      return { error: fake.insertError };
+      return {
+        select: () => ({
+          single: async () => ({ data: fake.insertError ? null : { claimed_at: INSERTED_AT }, error: fake.insertError }),
+        }),
+      };
     },
     select: () => ({
       eq: () => ({ maybeSingle: async () => ({ data: fake.row, error: null }) }),
@@ -54,12 +60,20 @@ function fakeClient(overrides: Partial<Fake> = {}): { client: SupabaseClient<Dat
       };
       return chain;
     },
-    delete: () => ({
-      eq: async (column: string, value: unknown) => {
-        recorded.deletedWhere.push([column, value]);
-        return { error: fake.writeError };
-      },
-    }),
+    delete: () => {
+      const chain = {
+        eq: (column: string, value: unknown) => {
+          recorded.deletedWhere.push(['eq', column, value]);
+          return chain;
+        },
+        is: (column: string, value: unknown) => {
+          recorded.deletedWhere.push(['is', column, value]);
+          return chain;
+        },
+        then: (resolve: (v: { error: DbError }) => void) => resolve({ error: fake.writeError }),
+      };
+      return chain;
+    },
   }));
   return { client: { from: table } as unknown as SupabaseClient<Database>, recorded };
 }
@@ -71,7 +85,7 @@ describe('claimWebhookEvent', () => {
   test('a free event is inserted with its id and type and reported as claimed', async () => {
     const { client, recorded } = fakeClient();
 
-    expect(await claimWebhookEvent(client, EVENT)).toEqual({ state: 'claimed' });
+    expect(await claimWebhookEvent(client, EVENT)).toEqual({ state: 'claimed', claimedAt: INSERTED_AT });
     expect(recorded.inserted).toEqual([{ event_id: 'evt_1', event_type: 'checkout.session.completed' }]);
   });
 
@@ -104,9 +118,10 @@ describe('claimWebhookEvent', () => {
     });
 
     const result = await claimWebhookEvent(client, EVENT);
+    expect(recorded.updates).toHaveLength(1);
 
     expect(result.state).toBe('taken_over');
-    expect(result).toMatchObject({ claimAgeSeconds: expect.any(Number) });
+    expect(result).toMatchObject({ claimAgeSeconds: 360, claimedAt: recorded.updates[0].patch.claimed_at });
     expect(recorded.updates).toHaveLength(1);
     expect(recorded.updates[0].patch).toHaveProperty('claimed_at');
     expect(recorded.updates[0].filters).toEqual([
@@ -133,36 +148,45 @@ describe('claimWebhookEvent', () => {
   });
 });
 
+describe('claim retries', () => {
+  test('a row that keeps vanishing between the insert and the read gives up after 3 attempts and throws', async () => {
+    const { client, recorded } = fakeClient({ insertError: { code: '23505', message: 'duplicate key value' }, row: null });
+
+    await expect(claimWebhookEvent(client, EVENT)).rejects.toBeDefined();
+    expect(recorded.inserted).toHaveLength(3);
+  });
+});
+
 describe('completeWebhookEvent', () => {
-  test('stamps completed_at on that event id only', async () => {
+  test('stamps completed_at only on the claim this worker holds', async () => {
     const { client, recorded } = fakeClient();
 
-    await completeWebhookEvent(client, 'evt_9');
+    await completeWebhookEvent(client, { eventId: 'evt_9', claimedAt: INSERTED_AT });
 
     expect(recorded.updates).toHaveLength(1);
     expect(recorded.updates[0].patch).toHaveProperty('completed_at');
-    expect(recorded.updates[0].filters).toEqual([['eq', 'event_id', 'evt_9']]);
+    expect(recorded.updates[0].filters).toEqual([['eq', 'event_id', 'evt_9'], ['eq', 'claimed_at', INSERTED_AT]]);
   });
 
   test('throws on a write error', async () => {
     const { client } = fakeClient({ writeError: { message: 'boom' } });
 
-    await expect(completeWebhookEvent(client, 'evt_9')).rejects.toMatchObject({ message: 'boom' });
+    await expect(completeWebhookEvent(client, { eventId: 'evt_9', claimedAt: INSERTED_AT })).rejects.toMatchObject({ message: 'boom' });
   });
 });
 
 describe('releaseWebhookEvent', () => {
-  test('deletes the row for that event id only', async () => {
+  test('deletes the row only while it is still the uncompleted claim this worker holds', async () => {
     const { client, recorded } = fakeClient();
 
-    await releaseWebhookEvent(client, 'evt_9');
+    await releaseWebhookEvent(client, { eventId: 'evt_9', claimedAt: INSERTED_AT });
 
-    expect(recorded.deletedWhere).toEqual([['event_id', 'evt_9']]);
+    expect(recorded.deletedWhere).toEqual([['eq', 'event_id', 'evt_9'], ['eq', 'claimed_at', INSERTED_AT], ['is', 'completed_at', null]]);
   });
 
   test('throws on a write error', async () => {
     const { client } = fakeClient({ writeError: { message: 'boom' } });
 
-    await expect(releaseWebhookEvent(client, 'evt_9')).rejects.toMatchObject({ message: 'boom' });
+    await expect(releaseWebhookEvent(client, { eventId: 'evt_9', claimedAt: INSERTED_AT })).rejects.toMatchObject({ message: 'boom' });
   });
 });
