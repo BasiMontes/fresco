@@ -89,6 +89,28 @@ describe('AddToMenuDialog', () => {
     expect(screen.queryByTestId('add_to_menu_stale_list_notice')).toBeNull();
   });
 
+  // FRESCO-905 — "sustituye a la desayuno": the article was fixed to "a la" and the
+  // meal type glued on, which only agrees with the feminine ones.
+  test.each([
+    ['desayuno', 'al desayuno'],
+    ['comida', 'a la comida'],
+    ['cena', 'a la cena'],
+  ] as const)('the confirmation agrees with the meal type: %s', async (tipoPlato, expected) => {
+    planResult = {
+      data: { ...PLAN, meal_plan_recipes: [{ id: 'slot-x', dia: 'lunes', tipo_plato: tipoPlato, estado: 'pendiente', recipes: null }] },
+      error: null,
+    };
+    const user = setupUser();
+    renderWithProviders(<AddToMenuDialog recipe={{ ...RECIPE, tipoPlato }} onClose={() => {}} />);
+
+    const [slot] = await screen.findAllByTestId('add_to_menu_slot_option');
+    await user.click(slot);
+    await user.click(screen.getByTestId('add_to_menu_confirm_button'));
+
+    const success = await screen.findByTestId('add_to_menu_success');
+    expect(success.textContent?.replaceAll(/\s+/g, ' ').trim()).toBe(`Hecho: «Paella de verduras» sustituye ${expected} del lunes, 5 de enero.`);
+  });
+
   test('warns that an already generated shopping list does not include the change', async () => {
     listaResult = { data: { id: 'list-1' }, error: null };
     const user = setupUser();
