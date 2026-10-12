@@ -1,7 +1,8 @@
 import type Stripe from 'stripe';
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { activateProPlan, applyRenewal, downgradeToFree, findProfileByStripeCustomer, getStoredSubscriptionId, markPaymentFailed } from '@/lib/billing/subscription';
-import { claimWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
+import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
@@ -39,6 +40,10 @@ function formatRenewalDate(isoTimestamp: string): string {
  * `stripe_webhook_events` before it runs. A re-delivery (Stripe retries, a dashboard
  * resend) finds the claim and is answered 200 without running the handler again; a
  * handler that throws gives the claim back, so a resend of a failed event still runs.
+ * FRESCO-909 (audit C-03): the claim also expires. It is stamped `completed_at` once the
+ * handler succeeds; a claim with no completion older than the TTL (the run died after the
+ * claim: timeout, crash, deploy) is retaken by the next delivery, while a younger one is
+ * answered 200 and left to its worker.
  * `checkout.session.completed` only grants Pro when the session is paid or no payment
  * was due (`resolveProUpdateFromSession`); `checkout.session.async_payment_succeeded`
  * is the same grant for a delayed payment method once the money arrives.
@@ -75,6 +80,9 @@ const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
   'customer.subscription.deleted',
 ]);
 
+/** Vercel's default would also allow it; stated so the claim TTL (webhook-events.ts) stays above it. Hobby allows up to 300 s with Fluid compute. */
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = resolveWebhookSecret();
@@ -97,20 +105,30 @@ export async function POST(request: Request) {
 
   const handled = HANDLED_EVENT_TYPES.has(event.type);
   const claims = createServiceClient();
+  const eventTags = { stripe_event_id: event.id, stripe_event_type: event.type };
   if (handled) {
-    let claimed: boolean;
+    let claim: Awaited<ReturnType<typeof claimWebhookEvent>>;
     try {
-      claimed = await claimWebhookEvent(claims, { eventId: event.id, eventType: event.type });
+      claim = await claimWebhookEvent(claims, { eventId: event.id, eventType: event.type });
     }
     catch (error) {
       // Could not record the event: answer non-2xx so Stripe retries, rather than
       // processing it without the guard.
       console.error(`[/api/stripe/webhook] could not claim event ${event.id}`, error);
+      Sentry.captureException(error, { tags: eventTags });
       return NextResponse.json({ error: 'No se pudo registrar el evento.' }, { status: 500 });
     }
-    if (!claimed) {
-      console.info(`[/api/stripe/webhook] event ${event.id} (${event.type}) already processed, skipping`);
+    if (claim.state === 'already_done' || claim.state === 'in_flight') {
+      console.info(`[/api/stripe/webhook] event ${event.id} (${event.type}) ${claim.state === 'already_done' ? 'already processed' : 'being processed by another run'}, skipping`);
       return NextResponse.json({ received: true });
+    }
+    if (claim.state === 'taken_over') {
+      console.warn(`[/api/stripe/webhook] event ${event.id} (${event.type}) had an expired claim (${claim.claimAgeSeconds}s old); retaking it`);
+      Sentry.captureMessage('Stripe webhook retook an expired event claim', {
+        level: 'warning',
+        tags: eventTags,
+        extra: { claim_age_seconds: claim.claimAgeSeconds },
+      });
     }
   }
 
@@ -130,17 +148,30 @@ export async function POST(request: Request) {
         // No-op — every event type this handler doesn't react to yet.
         break;
     }
+    if (handled) {
+      try {
+        await completeWebhookEvent(claims, event.id);
+      }
+      catch (completeError) {
+        // The work is done; an open claim only means a later delivery retakes it after
+        // the TTL and repeats writes that are idempotent. Still answer 200.
+        console.error(`[/api/stripe/webhook] could not mark event ${event.id} completed`, completeError);
+        Sentry.captureException(completeError, { tags: eventTags });
+      }
+    }
   }
   catch (error) {
     // Signature already verified above — log + still 200 to avoid a Stripe
     // retry storm on a bug. See doc comment.
     console.error(`[/api/stripe/webhook] failed to process event ${event.id}`, error);
+    Sentry.captureException(error, { tags: eventTags });
     if (handled) {
       try {
         await releaseWebhookEvent(claims, event.id);
       }
       catch (releaseError) {
-        console.error(`[/api/stripe/webhook] could not release event ${event.id}; a resend of it will be skipped`, releaseError);
+        console.error(`[/api/stripe/webhook] could not release event ${event.id}; a resend of it will be skipped until the claim expires`, releaseError);
+        Sentry.captureException(releaseError, { tags: eventTags });
       }
     }
   }

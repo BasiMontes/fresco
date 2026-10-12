@@ -1,4 +1,5 @@
 import type { RecordedUpdate } from '@/tests/mocks/supabase-query-builder';
+import * as realSentry from '@sentry/nextjs';
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import * as realPosthog from '@/lib/posthog/server';
 import * as realStripe from '@/lib/stripe';
@@ -17,8 +18,11 @@ const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
 const sendSubscriptionConfirmationEmail = mock(async (_p: unknown) => {});
-const claimWebhookEvent = mock(async (_client: unknown, _event: unknown): Promise<boolean> => true);
+const claimWebhookEvent = mock(async (_client: unknown, _event: unknown): Promise<unknown> => ({ state: 'claimed' }));
+const completeWebhookEvent = mock(async (_client: unknown, _eventId: string) => {});
 const releaseWebhookEvent = mock(async (_client: unknown, _eventId: string) => {});
+const captureException = mock((_error: unknown, _hint?: unknown) => 'id');
+const captureMessage = mock((_message: string, _hint?: unknown) => 'id');
 
 let supa = fakeSupabase();
 
@@ -30,7 +34,8 @@ void mock.module('@/lib/stripe', () => ({
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
 void mock.module('@/lib/posthog/server', () => ({ ...realPosthog, captureServerEvent }));
 void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail }));
-void mock.module('@/lib/billing/webhook-events', () => ({ claimWebhookEvent, releaseWebhookEvent }));
+void mock.module('@/lib/billing/webhook-events', () => ({ claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent }));
+void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException, captureMessage }));
 
 const { POST } = await import('./route');
 
@@ -78,8 +83,11 @@ beforeEach(() => {
   captureServerEvent.mockClear();
   sendSubscriptionConfirmationEmail.mockReset();
   claimWebhookEvent.mockReset();
-  claimWebhookEvent.mockResolvedValue(true);
+  claimWebhookEvent.mockResolvedValue({ state: 'claimed' });
+  completeWebhookEvent.mockReset();
   releaseWebhookEvent.mockReset();
+  captureException.mockClear();
+  captureMessage.mockClear();
   supa = fakeSupabase();
 });
 
@@ -356,7 +364,7 @@ describe('POST /api/stripe/webhook — idempotency by event.id and payment_statu
   });
 
   test('a re-delivery of an event already claimed answers 200 and runs nothing', async () => {
-    claimWebhookEvent.mockResolvedValue(false);
+    claimWebhookEvent.mockResolvedValue({ state: 'already_done' });
     constructEvent.mockReturnValue(checkoutEvent('evt_c1', 'checkout.session.completed', 'no_payment_required'));
     subscriptionsRetrieve.mockResolvedValue(subscription());
 
@@ -433,5 +441,113 @@ describe('POST /api/stripe/webhook — idempotency by event.id and payment_statu
     expect(res.status).toBe(200);
     expect(updateFor('user_profiles')).toBeUndefined();
     expect(captureServerEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/stripe/webhook — expirable claim and completed state (FRESCO-909, C-03)', () => {
+  function checkoutEvent(id: string) {
+    return {
+      id,
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'paid' } },
+    };
+  }
+
+  function arrange(id: string) {
+    constructEvent.mockReturnValue(checkoutEvent(id));
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'active' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } });
+  }
+
+  test('a claim left by a crashed run, past the TTL, is retaken: Pro is granted and the event is completed', async () => {
+    arrange('evt_crash');
+    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900 });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'pro', stripe_subscription_id: 'sub_1' });
+    expect(completeWebhookEvent.mock.calls[0][1]).toBe('evt_crash');
+    expect(releaseWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('the takeover of an expired claim is reported to Sentry as a warning with the claim age and the event tags', async () => {
+    arrange('evt_crash');
+    claimWebhookEvent.mockResolvedValue({ state: 'taken_over', claimAgeSeconds: 900 });
+
+    await POST(req({}));
+
+    const [message, hint] = captureMessage.mock.calls[0] as [string, { level: string, tags: Record<string, string>, extra: Record<string, unknown> }];
+    expect(message).toContain('expired');
+    expect(hint.level).toBe('warning');
+    expect(hint.tags).toEqual({ stripe_event_id: 'evt_crash', stripe_event_type: 'checkout.session.completed' });
+    expect(hint.extra).toEqual({ claim_age_seconds: 900 });
+  });
+
+  test('a fresh claim held by another worker is not retaken: 200 and nothing runs', async () => {
+    arrange('evt_busy');
+    claimWebhookEvent.mockResolvedValue({ state: 'in_flight' });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(supa.updates).toEqual([]);
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
+    expect(releaseWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('a completed event is not repeated and is not completed again', async () => {
+    arrange('evt_done');
+    claimWebhookEvent.mockResolvedValue({ state: 'already_done' });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('a freshly claimed event is completed after the handler succeeds', async () => {
+    arrange('evt_ok');
+
+    await POST(req({}));
+
+    expect(completeWebhookEvent.mock.calls[0][1]).toBe('evt_ok');
+  });
+
+  test('when completing the event fails the route still answers 200 and reports it', async () => {
+    arrange('evt_nocomplete');
+    completeWebhookEvent.mockRejectedValue(new Error('db down'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    const [, hint] = captureException.mock.calls[0] as [unknown, { tags: Record<string, string> }];
+    expect(hint.tags).toEqual({ stripe_event_id: 'evt_nocomplete', stripe_event_type: 'checkout.session.completed' });
+  });
+
+  test('a handler failure releases the claim, does not complete it, and is reported with the event tags', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_fail'));
+    subscriptionsRetrieve.mockRejectedValue(new Error('stripe down'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(releaseWebhookEvent.mock.calls[0][1]).toBe('evt_fail');
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
+    const [, hint] = captureException.mock.calls[0] as [unknown, { tags: Record<string, string> }];
+    expect(hint.tags).toEqual({ stripe_event_id: 'evt_fail', stripe_event_type: 'checkout.session.completed' });
+  });
+
+  test('a failed release is reported too, and the route still answers 200', async () => {
+    constructEvent.mockReturnValue(checkoutEvent('evt_norelease'));
+    subscriptionsRetrieve.mockRejectedValue(new Error('stripe down'));
+    releaseWebhookEvent.mockRejectedValue(new Error('db down'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(captureException).toHaveBeenCalledTimes(2);
   });
 });
