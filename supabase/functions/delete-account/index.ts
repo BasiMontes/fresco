@@ -22,10 +22,14 @@ import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
+import { captureEdgeException } from '../_shared/sentry.ts'
 import { isTokenRecent } from '../_shared/token-recency.ts'
+import { cancelStripeBillingForCustomer } from '../_shared/stripe-billing.ts'
 import type { DeleteAccountRequest, DeleteAccountResponse } from './types.ts'
 
 const FN_NAME = 'delete-account'
+
+const STRIPE_BLOCKED_MESSAGE = 'No hemos podido cancelar tu suscripción ni gestionar la devolución, así que no hemos borrado tu cuenta. Inténtalo de nuevo en unos minutos; si sigue fallando, escríbenos.'
 
 // A real user deletes her account at most once. 5/h leaves room for a retry
 // after a transient failure without being a useful brute-force surface for
@@ -89,6 +93,39 @@ Deno.serve(async (req: Request) => {
     // client that can call `auth.admin.deleteUser()` (same posture as
     // `reassign-guest-data`'s cleanup step).
     const serviceClient = createServiceRoleClient()
+
+    // FRESCO-942 (audit C-01, ADR-0043): end the Stripe billing BEFORE the
+    // user row goes — the cascade below erases `stripe_customer_id`, after
+    // which nothing could ever cancel the subscription. Immediate
+    // cancellation plus a prorated refund of the unused period (published
+    // terms). If Stripe cannot be reached the
+    // account is NOT deleted (the user retries). No plan columns are written
+    // here: ADR-0007 keeps the webhook as their only writer.
+    const { data: profile, error: profileError } = await serviceClient
+      .from('user_profiles')
+      .select('stripe_customer_id')
+      .eq('id', user.id)
+      .maybeSingle<{ stripe_customer_id: string | null }>()
+    if (profileError) {
+      logger.error('user_profiles read failed', { fn: FN_NAME, userId: user.id, error: profileError.message })
+      throw new HttpError('No se pudo eliminar la cuenta.', 500)
+    }
+    if (profile?.stripe_customer_id) {
+      try {
+        await cancelStripeBillingForCustomer({ customerId: profile.stripe_customer_id, userId: user.id })
+      } catch (err) {
+        const errorId = crypto.randomUUID()
+        logger.error('Stripe cancellation failed; account not deleted', {
+          fn: FN_NAME,
+          userId: user.id,
+          error: err instanceof Error ? err.message : String(err),
+          error_id: errorId,
+        })
+        await captureEdgeException(err, { fn: FN_NAME, errorId, userId: user.id, url: req.url, method: req.method })
+        throw new HttpError(STRIPE_BLOCKED_MESSAGE, 502)
+      }
+    }
+
     const { error: deleteError } = await serviceClient.auth.admin.deleteUser(user.id)
 
     if (deleteError) {

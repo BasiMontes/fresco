@@ -122,6 +122,11 @@ export function DeleteAccountDialog({ open, onOpenChange, email, isAnonymous }: 
         <strong className="text-text">{confirmationTarget}</strong>
         {isAnonymous ? ' para confirmar.' : ' y tu contraseña para confirmar.'}
       </p>
+      {!isAnonymous && (
+        <p className="mt-2 text-body-sm text-tertiary" data-testid="delete_account_pro_notice">
+          Si tienes Fresco Pro, se cancelará al instante y te devolveremos la parte proporcional del periodo que no hayas disfrutado.
+        </p>
+      )}
 
       <Input
         className="mt-4"
