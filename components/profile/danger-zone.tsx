@@ -34,6 +34,8 @@ export function AccountActions({ isAnonymous }: AccountActionsProps) {
       // onboarding draft so it doesn't leak into whoever logs in next on
       // this browser tab.
       useOnboardingStore.getState().reset();
+      // FRESCO-946: see `sidebar-account.tsx` — same stale (app) layout leak.
+      router.refresh();
       router.push('/login');
     }
     catch (error) {

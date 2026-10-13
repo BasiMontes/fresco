@@ -32,6 +32,7 @@ describe('SidebarAccount', () => {
   beforeEach(() => {
     signOutMock.mockClear();
     routerMock.push.mockClear();
+    routerMock.refresh.mockClear();
   });
 
   afterEach(() => {
@@ -86,6 +87,21 @@ describe('SidebarAccount', () => {
         expect(routerMock.push).toHaveBeenCalledWith('/login');
       });
       expect(screen.queryByTestId('guest_logout_dialog')).toBeNull();
+    });
+
+    // FRESCO-946 — the client router cache keeps the shared (app) layout of the
+    // previous session, so the next account signing in on this tab saw the
+    // previous name and email in the sidebar. Sign-out must drop that cache
+    // BEFORE navigating away.
+    test('invalidates the client router cache before leaving, so the next account never sees this one', async () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} isAnonymous={false} />);
+      const user = await openMenu();
+
+      await user.click(screen.getByTestId('sidebar_logout_button'));
+
+      await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/login'));
+      expect(routerMock.refresh).toHaveBeenCalledTimes(1);
+      expect(routerMock.refresh.mock.invocationCallOrder[0]).toBeLessThan(routerMock.push.mock.invocationCallOrder[0] ?? 0);
     });
 
     test('a guest is routed through the confirmation dialog instead of logging out immediately', async () => {

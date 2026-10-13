@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
-import '@/tests/mocks/next-navigation';
+import { routerMock } from '@/tests/mocks/next-navigation';
 
 /**
  * FRESCO-862 — `/profile` must not show two "Cerrar sesión" on desktop. From
@@ -49,6 +49,8 @@ describe('AccountActions logout row layout', () => {
 describe('AccountActions logout confirmation', () => {
   beforeEach(() => {
     signOutMock.mockClear();
+    routerMock.push.mockClear();
+    routerMock.refresh.mockClear();
   });
 
   test('a registered account signs out directly, without the guest warning', async () => {
@@ -59,6 +61,20 @@ describe('AccountActions logout confirmation', () => {
 
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
     expect(screen.queryByTestId('guest_logout_dialog')).toBeNull();
+  });
+
+  // FRESCO-946 — same stale-layout leak as the sidebar: the client router cache
+  // must be dropped before leaving, or the next account on this tab sees the
+  // previous name and email.
+  test('invalidates the client router cache before leaving, so the next account never sees this one', async () => {
+    const user = setupUser();
+    renderWithProviders(<AccountActions isAnonymous={false} />);
+
+    await user.click(screen.getByTestId('logout_button'));
+
+    await waitFor(() => expect(routerMock.push).toHaveBeenCalledWith('/login'));
+    expect(routerMock.refresh).toHaveBeenCalledTimes(1);
+    expect(routerMock.refresh.mock.invocationCallOrder[0]).toBeLessThan(routerMock.push.mock.invocationCallOrder[0] ?? 0);
   });
 
   test('a guest sees the data-loss warning first and nothing is signed out yet', async () => {
