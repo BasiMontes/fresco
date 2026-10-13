@@ -82,6 +82,20 @@ export interface StripeBillingClient {
   customers: {
     del: (id: string) => Promise<unknown>
   }
+  checkout: {
+    sessions: {
+      list: (
+        params: { status: 'complete', created: { gte: number }, limit: number, starting_after?: string },
+      ) => Promise<{ data: StripeCheckoutSession[], has_more: boolean }>
+    }
+  }
+}
+
+/** The slice of a Checkout Session the customer lookup reads. */
+interface StripeCheckoutSession {
+  id: string
+  client_reference_id?: string | null
+  customer?: string | { id: string } | null
 }
 
 export interface CancelStripeBillingInput {
@@ -93,10 +107,22 @@ export interface CancelStripeBillingInput {
   nowSeconds?: number
 }
 
+/**
+ * The Stripe key is not configured in this environment. A distinct class so a caller that can
+ * safely go on without Stripe (the customer lookup for an account with no stored customer id)
+ * can tell it from a Stripe outage, which must keep failing closed.
+ */
+export class StripeNotConfiguredError extends Error {
+  constructor() {
+    super('STRIPE_SECRET_KEY is not set')
+    this.name = 'StripeNotConfiguredError'
+  }
+}
+
 async function createStripeClient(): Promise<StripeBillingClient> {
   const secretKey = Deno.env.get('STRIPE_SECRET_KEY')
   if (!secretKey) {
-    throw new Error('STRIPE_SECRET_KEY is not set')
+    throw new StripeNotConfiguredError()
   }
   const { default: Stripe } = await import('stripe')
   return new Stripe(secretKey, {
@@ -312,4 +338,48 @@ export async function cancelStripeBillingForCustomer(input: CancelStripeBillingI
   await tolerateMissing(async () => {
     await stripe.customers.del(customerId)
   }, 'Stripe customer already gone', { userId, customerId })
+}
+
+/** How far back `findStripeCustomerForUser` looks: wider than the webhook retry window and the daily sweep. */
+const CHECKOUT_LOOKBACK_SECONDS = 72 * 3600
+
+export interface FindStripeCustomerInput {
+  userId: string
+  /** Test seam. In production the client is built lazily from `STRIPE_SECRET_KEY`. */
+  stripe?: StripeBillingClient
+  /** Test seam: "now" in epoch seconds. */
+  nowSeconds?: number
+}
+
+/**
+ * FRESCO-945 (review of FRESCO-942): the Stripe customer of a user whose profile has no
+ * `stripe_customer_id` yet. Only the webhook writes that column, so someone who paid and deletes
+ * the account before the webhook lands (or while it fails) would otherwise keep being billed
+ * once the cascade erased the only link. Stripe cannot filter Checkout Sessions by
+ * `client_reference_id`, so this lists the completed sessions of the last 72 hours and filters
+ * here. Returns the customer of the most recent match, or null when there is none.
+ *
+ * Throws on any Stripe error (the caller refuses to delete the account, as for a failed
+ * cancellation) and throws `StripeNotConfiguredError` when the key is missing. Writes nothing
+ * (ADR-0007, ADR-0043).
+ */
+export async function findStripeCustomerForUser(input: FindStripeCustomerInput): Promise<string | null> {
+  const { userId } = input
+  const stripe = input.stripe ?? await createStripeClient()
+  const since = (input.nowSeconds ?? Math.floor(Date.now() / 1000)) - CHECKOUT_LOOKBACK_SECONDS
+
+  let startingAfter: string | undefined
+  for (;;) {
+    const page = await stripe.checkout.sessions.list({
+      status: 'complete',
+      created: { gte: since },
+      limit: 100,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    })
+    // Newest first, so the first match is the most recent session.
+    const match = page.data.find(session => session.client_reference_id === userId && idOf(session.customer ?? undefined) !== null)
+    if (match) return idOf(match.customer ?? undefined)
+    if (!page.has_more || page.data.length === 0) return null
+    startingAfter = page.data[page.data.length - 1].id
+  }
 }

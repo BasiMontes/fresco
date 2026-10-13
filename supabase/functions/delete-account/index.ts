@@ -24,7 +24,7 @@ import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { logger } from '../_shared/logger.ts'
 import { captureEdgeException } from '../_shared/sentry.ts'
 import { isTokenRecent } from '../_shared/token-recency.ts'
-import { cancelStripeBillingForCustomer } from '../_shared/stripe-billing.ts'
+import { cancelStripeBillingForCustomer, findStripeCustomerForUser, StripeNotConfiguredError } from '../_shared/stripe-billing.ts'
 import { deletePostHogPerson } from '../_shared/posthog-erasure.ts'
 import { recordAccountErasure, type AccountErasureOutcome } from '../_shared/account-erasure.ts'
 import type { DeleteAccountRequest, DeleteAccountResponse } from './types.ts'
@@ -112,9 +112,35 @@ Deno.serve(async (req: Request) => {
       logger.error('user_profiles read failed', { fn: FN_NAME, userId: user.id, error: profileError.message })
       throw new HttpError('No se pudo eliminar la cuenta.', 500)
     }
-    if (profile?.stripe_customer_id) {
+    // FRESCO-945: only the webhook writes `stripe_customer_id`, so a registered user who paid
+    // moments ago may not have one yet. Without it the cascade below would erase the only link to
+    // a subscription that keeps billing, so look the customer up in Stripe by checkout session.
+    let customerId = profile?.stripe_customer_id ?? null
+    if (!customerId && !user.is_anonymous) {
       try {
-        await cancelStripeBillingForCustomer({ customerId: profile.stripe_customer_id, userId: user.id })
+        customerId = await findStripeCustomerForUser({ userId: user.id })
+      } catch (err) {
+        if (err instanceof StripeNotConfiguredError) {
+          // No Stripe in this environment, so there is nothing to look up. Failing closed here
+          // would stop EVERY account from being deleted; it is reported instead.
+          logger.warn('Stripe is not configured; skipping the customer lookup', { fn: FN_NAME, userId: user.id })
+          await captureEdgeException(err, { fn: FN_NAME, errorId: crypto.randomUUID(), userId: user.id, url: req.url, method: req.method })
+        } else {
+          const errorId = crypto.randomUUID()
+          logger.error('Stripe customer lookup failed; account not deleted', {
+            fn: FN_NAME,
+            userId: user.id,
+            error: err instanceof Error ? err.message : String(err),
+            error_id: errorId,
+          })
+          await captureEdgeException(err, { fn: FN_NAME, errorId, userId: user.id, url: req.url, method: req.method })
+          throw new HttpError(STRIPE_BLOCKED_MESSAGE, 502)
+        }
+      }
+    }
+    if (customerId) {
+      try {
+        await cancelStripeBillingForCustomer({ customerId, userId: user.id })
       } catch (err) {
         const errorId = crypto.randomUUID()
         logger.error('Stripe cancellation failed; account not deleted', {
@@ -141,7 +167,7 @@ Deno.serve(async (req: Request) => {
     // leave because an analytics call failed. It is recorded for a retry instead.
     const outcome: AccountErasureOutcome = {
       userId: user.id,
-      stripe: profile?.stripe_customer_id ? 'cancelled' : 'none',
+      stripe: customerId ? 'cancelled' : 'none',
       posthog: 'failed',
     }
     try {

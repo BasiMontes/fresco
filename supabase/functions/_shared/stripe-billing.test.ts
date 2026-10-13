@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { captureDenoServe } from '@/tests/mocks/edge-function'
-import { cancelStripeBillingForCustomer, type StripeBillingClient } from './stripe-billing.ts'
+import { cancelStripeBillingForCustomer, findStripeCustomerForUser, StripeNotConfiguredError, type StripeBillingClient } from './stripe-billing.ts'
 
 /**
  * FRESCO-942 (audit C-01, ADR-0043) — account deletion must end the Stripe
@@ -67,6 +67,11 @@ let existingRefunds: Array<{ amount: number, status: string }> = []
 let refundError: unknown = null
 let refundCalls: Array<{ params: Record<string, unknown>, options: unknown }> = []
 let cancelEndedAt: number | null = null
+// FRESCO-945: Checkout Sessions the customer lookup pages through, one array per page.
+type FakeSession = { id: string, client_reference_id?: string | null, customer?: string | { id: string } | null }
+let sessionPages: FakeSession[][] = []
+let sessionsError: unknown = null
+let sessionListParams: Array<Record<string, unknown>> = []
 
 const fakeStripe: StripeBillingClient = {
   subscriptions: {
@@ -115,6 +120,17 @@ const fakeStripe: StripeBillingClient = {
       return { id, deleted: true }
     },
   },
+  checkout: {
+    sessions: {
+      list: async (params) => {
+        calls.push('sessions.list')
+        sessionListParams.push(params)
+        if (sessionsError) throw sessionsError
+        const index = params.starting_after ? sessionPages.findIndex(page => page.some(session => session.id === params.starting_after)) + 1 : 0
+        return { data: sessionPages[index] ?? [], has_more: index < sessionPages.length - 1 }
+      },
+    },
+  },
 }
 
 const stripeError = (code: string) => Object.assign(new Error(`stripe ${code}`), { type: 'StripeInvalidRequestError', code })
@@ -131,6 +147,9 @@ beforeEach(() => {
   refundError = null
   refundCalls = []
   cancelEndedAt = null
+  sessionPages = []
+  sessionsError = null
+  sessionListParams = []
 })
 
 /** Call log without the read-only refund lookups, for the FRESCO-942 base-flow assertions. */
@@ -530,5 +549,83 @@ describe('cancelStripeBillingForCustomer', () => {
       await run()
       expect(calls).toContain('del:cus_1')
     })
+  })
+})
+
+describe('findStripeCustomerForUser (FRESCO-945)', () => {
+  test('asks for completed sessions of the last 72 hours, 100 at a time', async () => {
+    sessionPages = [[]]
+
+    await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })
+
+    expect(sessionListParams).toEqual([{ status: 'complete', created: { gte: NOW - 72 * 3600 }, limit: 100 }])
+  })
+
+  test('returns the customer of the session that carries this user id', async () => {
+    sessionPages = [[
+      { id: 'cs_other', client_reference_id: 'someone_else', customer: 'cus_other' },
+      { id: 'cs_mine', client_reference_id: 'user_1', customer: 'cus_mine' },
+    ]]
+
+    expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBe('cus_mine')
+  })
+
+  test('returns the most recent session when the user has several (newest first)', async () => {
+    sessionPages = [[
+      { id: 'cs_new', client_reference_id: 'user_1', customer: 'cus_new' },
+      { id: 'cs_old', client_reference_id: 'user_1', customer: 'cus_old' },
+    ]]
+
+    expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBe('cus_new')
+  })
+
+  test('accepts an expanded customer object', async () => {
+    sessionPages = [[{ id: 'cs_1', client_reference_id: 'user_1', customer: { id: 'cus_expanded' } }]]
+
+    expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBe('cus_expanded')
+  })
+
+  test('keeps paging until it finds the user, and stops there', async () => {
+    sessionPages = [
+      [{ id: 'cs_a', client_reference_id: 'x', customer: 'cus_x' }],
+      [{ id: 'cs_b', client_reference_id: 'user_1', customer: 'cus_mine' }],
+      [{ id: 'cs_c', client_reference_id: 'user_1', customer: 'cus_unreached' }],
+    ]
+
+    expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBe('cus_mine')
+    expect(sessionListParams.map(params => params.starting_after)).toEqual([undefined, 'cs_a'])
+  })
+
+  test('returns null when no session carries this user id, after reading every page', async () => {
+    sessionPages = [
+      [{ id: 'cs_a', client_reference_id: 'x', customer: 'cus_x' }],
+      [{ id: 'cs_b', client_reference_id: null, customer: 'cus_y' }],
+    ]
+
+    expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBeNull()
+    expect(sessionListParams).toHaveLength(2)
+  })
+
+  test('ignores a matching session that has no customer', async () => {
+    sessionPages = [[{ id: 'cs_1', client_reference_id: 'user_1', customer: null }]]
+
+    expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBeNull()
+  })
+
+  test('lets a Stripe error through so the caller can refuse to delete the account', async () => {
+    sessionsError = stripeError('rate_limit')
+
+    await expect(findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).rejects.toThrow('stripe rate_limit')
+  })
+
+  test('throws StripeNotConfiguredError, not a generic error, when the key is missing', async () => {
+    const saved = process.env.STRIPE_SECRET_KEY
+    delete process.env.STRIPE_SECRET_KEY
+    try {
+      await expect(findStripeCustomerForUser({ userId: 'user_1' })).rejects.toBeInstanceOf(StripeNotConfiguredError)
+    }
+    finally {
+      if (saved !== undefined) process.env.STRIPE_SECRET_KEY = saved
+    }
   })
 })
