@@ -205,31 +205,16 @@ Deno.serve(async (req: Request) => {
     // allergen filter. Everything above already authenticated the caller and
     // validated the menu, so the write goes through the service-role client,
     // with `user_id` taken from the verified JWT, never from the request body.
-    const admin = createServiceRoleClient()
-    const { data: mealPlan, error: planError } = await admin
-      .from('meal_plans')
-      .insert({
-        user_id: user.id,
-        semana_iso,
-        fecha_inicio,
-        advertencias,
-        explicacion_aprendizaje: explicacionAprendizaje,
-      })
-      .select('id')
-      .single()
-
-    if (planError || !mealPlan) throw new HttpError('Error guardando el plan en la BD', 500)
-
-    // 10. Persist the 21 slots. NFR-REL-2: Supabase Edge Functions have no
-    // native multi-table transaction, so a failed slot insert triggers a
-    // manual compensating delete of the orphaned meal_plans row.
+    // FRESCO-913 (audit C-09): the plan and its 21 slots are written by ONE database function, so a
+    // cut between the two can no longer leave a plan without slots (which blocked regenerating that
+    // week with a 409). The function also rejects a malformed week or a `fecha_inicio` that is not its
+    // Monday.
     const slots = DIAS.flatMap(dia =>
       TIPOS.map(tipo => {
         const recipeId = menu[dia][tipo]
         const isExcluded = recipeId === SLOT_EXCLUDED_SENTINEL
         const isUnsafe = recipeId === NO_SAFE_RECIPE_SENTINEL
         return {
-          meal_plan_id: mealPlan.id,
           recipe_id: isExcluded || isUnsafe ? null : recipeId,
           dia,
           tipo_plato: tipo,
@@ -241,17 +226,27 @@ Deno.serve(async (req: Request) => {
       })
     )
 
-    const { error: slotsError } = await admin.from('meal_plan_recipes').insert(slots)
+    const admin = createServiceRoleClient()
+    const { data: mealPlanId, error: planError } = await admin.rpc('create_meal_plan', {
+      p_user_id: user.id,
+      p_semana_iso: semana_iso,
+      p_fecha_inicio: fecha_inicio,
+      p_advertencias: advertencias,
+      p_explicacion_aprendizaje: explicacionAprendizaje,
+      p_slots: slots,
+    })
 
-    if (slotsError) {
-      await admin.from('meal_plans').delete().eq('id', mealPlan.id)
-      logger.error('Slot insert failed, rolled back meal_plan', {
-        fn: FN_NAME,
-        mealPlanId: mealPlan.id,
-        error: slotsError.message,
-      })
-      throw new HttpError('Error guardando las recetas del plan', 500)
+    if (planError || !mealPlanId) {
+      // 22023: the week or its start date is not valid. 23505: a concurrent request created the same
+      // week first (`unique_user_semana`).
+      if (planError?.code === '22023') throw new HttpError('semana_iso o fecha_inicio no son válidos', 400)
+      if (planError?.code === '23505') {
+        throw new HttpError(`Ya existe un plan para la semana ${semana_iso}. Elimínalo antes de regenerar.`, 409)
+      }
+      logger.error('create_meal_plan failed', { fn: FN_NAME, error: planError?.message })
+      throw new HttpError('Error guardando el plan en la BD', 500)
     }
+    const mealPlan = { id: mealPlanId as string }
 
     // 11. Enrich response with full recipe objects, not bare ids
     const menuEnriquecido = Object.fromEntries(
