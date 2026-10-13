@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, getEdgeHandler } from '@/tests/mocks/edge-function'
 
 /**
@@ -308,6 +308,112 @@ describe('delete-account/index.ts', () => {
       const res = await handler(edgeRequest({}, { auth: MAIN_AUTH }))
       expect(res.status).toBe(200)
       expect(stripeCalls).toEqual([])
+    })
+  })
+
+  describe('PostHog erasure and the erasure record (FRESCO-910)', () => {
+    const realFetch = globalThis.fetch
+    let posthogCalls: Array<{ method: string, deletedUsersAtCall: number }> = []
+    let posthogStatus: { lookup: number, remove: number } = { lookup: 200, remove: 202 }
+
+    beforeEach(() => {
+      posthogCalls = []
+      posthogStatus = { lookup: 200, remove: 202 }
+      process.env.POSTHOG_API_HOST = 'https://eu.posthog.com'
+      process.env.POSTHOG_PROJECT_ID = '4242'
+      process.env.POSTHOG_PERSONAL_API_KEY = 'phx_test'
+      globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const method = init?.method ?? 'GET'
+        posthogCalls.push({ method, deletedUsersAtCall: serviceClient.deletedUserIds.length })
+        if (method === 'GET') return new Response(JSON.stringify({ results: [{ id: 'person-1' }] }), { status: posthogStatus.lookup })
+        return new Response(null, { status: posthogStatus.remove })
+      }) as typeof fetch
+    })
+    afterEach(() => {
+      globalThis.fetch = realFetch
+      delete process.env.POSTHOG_API_HOST
+      delete process.env.POSTHOG_PROJECT_ID
+      delete process.env.POSTHOG_PERSONAL_API_KEY
+    })
+
+    test('erases the PostHog person only AFTER the account is deleted, and records it', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: null })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(200)
+      expect(posthogCalls.map(c => c.method)).toEqual(['GET', 'DELETE'])
+      expect(posthogCalls.every(c => c.deletedUsersAtCall === 1)).toBe(true)
+      expect(serviceClient.inserts).toHaveLength(1)
+      expect(serviceClient.inserts[0]?.[1]).toMatchObject({ stripe: 'none', posthog: 'deleted', pending_posthog_distinct_id: null })
+    })
+
+    test('the record carries a hash of the user id, never the id itself', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: null })
+
+      await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      const row = serviceClient.inserts[0]?.[1] as { user_hash: string }
+      expect(row.user_hash).toMatch(/^[0-9a-f]{64}$/)
+      expect(JSON.stringify(serviceClient.inserts)).not.toContain('user_1')
+    })
+
+    test('records Stripe as cancelled when the account had a customer', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: 'cus_1' })
+      stripeSubs = []
+
+      await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(serviceClient.inserts[0]?.[1]).toMatchObject({ stripe: 'cancelled', posthog: 'deleted' })
+    })
+
+    test('a PostHog failure does NOT hold the deletion back: 200, and the id is kept for a retry', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: null })
+      posthogStatus = { lookup: 500, remove: 202 }
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(200)
+      expect(await res.json()).toEqual({ deleted: true })
+      expect(serviceClient.deletedUserIds).toEqual(['user_1'])
+      expect(serviceClient.inserts[0]?.[1]).toMatchObject({ posthog: 'failed', pending_posthog_distinct_id: 'user_1' })
+    })
+
+    test('without PostHog credentials the deletion goes ahead and the record says not_configured', async () => {
+      delete process.env.POSTHOG_PERSONAL_API_KEY
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: null })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(200)
+      expect(posthogCalls).toEqual([])
+      expect(serviceClient.inserts[0]?.[1]).toMatchObject({ posthog: 'not_configured' })
+    })
+
+    test('a failed record write does not undo or fail the deletion', async () => {
+      const token = registered('user_1')
+      withProfile({ stripe_customer_id: null }, { insertError: { account_erasures: new Error('insert denied') } })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(200)
+      expect(serviceClient.deletedUserIds).toEqual(['user_1'])
+    })
+
+    test('when the account deletion fails nothing is erased in PostHog and no record is written', async () => {
+      const token = registered('user_1')
+      serviceClient = fakeEdgeClient({ adminDeleteError: new Error('supabase admin down') })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(500)
+      expect(posthogCalls).toEqual([])
+      expect(serviceClient.inserts).toEqual([])
     })
   })
 })

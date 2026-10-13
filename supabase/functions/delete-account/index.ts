@@ -25,6 +25,8 @@ import { logger } from '../_shared/logger.ts'
 import { captureEdgeException } from '../_shared/sentry.ts'
 import { isTokenRecent } from '../_shared/token-recency.ts'
 import { cancelStripeBillingForCustomer } from '../_shared/stripe-billing.ts'
+import { deletePostHogPerson } from '../_shared/posthog-erasure.ts'
+import { recordAccountErasure, type AccountErasureOutcome } from '../_shared/account-erasure.ts'
 import type { DeleteAccountRequest, DeleteAccountResponse } from './types.ts'
 
 const FN_NAME = 'delete-account'
@@ -131,6 +133,40 @@ Deno.serve(async (req: Request) => {
     if (deleteError) {
       logger.error('admin.deleteUser failed', { fn: FN_NAME, userId: user.id, error: deleteError.message })
       throw new HttpError('No se pudo eliminar la cuenta.', 500)
+    }
+
+    // FRESCO-910 (audit C-06, GDPR art. 17): the account is gone, so erase the person from
+    // PostHog too and leave a record that the erasure happened. Unlike Stripe, a failure here
+    // does NOT hold the deletion back: nobody should be kept in an account they asked to
+    // leave because an analytics call failed. It is recorded for a retry instead.
+    const outcome: AccountErasureOutcome = {
+      userId: user.id,
+      stripe: profile?.stripe_customer_id ? 'cancelled' : 'none',
+      posthog: 'failed',
+    }
+    try {
+      outcome.posthog = await deletePostHogPerson(user.id)
+    } catch (err) {
+      const errorId = crypto.randomUUID()
+      logger.error('PostHog person deletion failed; recorded for retry', {
+        fn: FN_NAME,
+        userId: user.id,
+        error: err instanceof Error ? err.message : String(err),
+        error_id: errorId,
+      })
+      await captureEdgeException(err, { fn: FN_NAME, errorId, userId: user.id, url: req.url, method: req.method })
+    }
+    try {
+      await recordAccountErasure(serviceClient, outcome)
+    } catch (err) {
+      const errorId = crypto.randomUUID()
+      logger.error('account erasure record failed; the account is already deleted', {
+        fn: FN_NAME,
+        userId: user.id,
+        error: err instanceof Error ? err.message : String(err),
+        error_id: errorId,
+      })
+      await captureEdgeException(err, { fn: FN_NAME, errorId, userId: user.id, url: req.url, method: req.method })
     }
 
     const response: DeleteAccountResponse = { deleted: true }
