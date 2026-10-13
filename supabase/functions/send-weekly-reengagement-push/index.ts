@@ -132,6 +132,7 @@ Deno.serve(async (req: Request) => {
         // Next.js app's module tree. Keep it in sync with
         // `POSTHOG_EVENTS.PUSH_SENT` by hand.
         await captureServerEvent({
+          supabase: serviceClient,
           distinctId: sub.user_id,
           event: 'push_sent',
           properties: { semana_iso: semanaIso },

@@ -70,6 +70,7 @@ export async function grantProFromCheckoutSession(client: Client, session: Strip
     // 7-day trial, so the normal event is `trial_started`; a non-trialing
     // status means the trial was skipped and it's paid from day one.
     await captureServerEvent({
+      supabase: client,
       distinctId: update.userId,
       event: resolveCheckoutFunnelEvent(subscription.status),
       properties: {

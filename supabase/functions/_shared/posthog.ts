@@ -14,15 +14,40 @@
 // never fail or slow down an actual push send — every call site awaits this
 // but the promise itself never rejects.
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { logger } from './logger.ts'
 
 export interface CaptureServerEventArgs {
+  /** A service-role client that can read `user_profiles.analytics_consent`. */
+  supabase: SupabaseClient
   distinctId: string
   event: string
   properties?: Record<string, unknown>
 }
 
-export async function captureServerEvent({ distinctId, event, properties }: CaptureServerEventArgs): Promise<void> {
+// FRESCO-919 (ADR-0044): the cookie-banner decision is stored in
+// `user_profiles.analytics_consent`. Opt-in and fail closed: only an explicit
+// `true` sends; a rejection, an unsynced profile, a missing row or a read error
+// all suppress the event. Mirrors `lib/posthog/server.ts`.
+async function hasAnalyticsConsent(supabase: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('analytics_consent')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    logger.warn('Could not read analytics consent, suppressing the event', {
+      fn: 'captureServerEvent',
+      error: error.message,
+    })
+    return false
+  }
+
+  return data?.analytics_consent === true
+}
+
+export async function captureServerEvent({ supabase, distinctId, event, properties }: CaptureServerEventArgs): Promise<void> {
   const apiKey = Deno.env.get('POSTHOG_API_KEY')
   const host = Deno.env.get('POSTHOG_HOST')
   if (!apiKey || !host) {
@@ -32,6 +57,10 @@ export async function captureServerEvent({ distinctId, event, properties }: Capt
   }
 
   try {
+    if (!(await hasAnalyticsConsent(supabase, distinctId))) {
+      return
+    }
+
     const res = await fetch(`${host}/capture/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
