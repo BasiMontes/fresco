@@ -43,6 +43,13 @@ export interface DbTestUser {
 export interface CreateDbTestUserOptions {
   /** @default 'free' */
   plan?: 'free' | 'pro' | 'family'
+  /**
+   * Record a `health_data` consent for the user (FRESCO-917). The database refuses a client
+   * write of allergies or diet without one, so a test that PATCHes `alergenos` / `dieta_*` with
+   * the user's own token needs this.
+   * @default false
+   */
+  healthDataConsent?: boolean
 }
 
 export interface RpcResult {
@@ -410,6 +417,17 @@ export function createDbTestContext(): DbTestContext {
     createdIds.push(id);
     const token = await passwordGrant(email, password);
     await seedProfileRow(id, token, options.plan ?? 'free');
+    if (options.healthDataConsent) {
+      const consent = await rest('user_consents', {
+        method: 'POST',
+        token,
+        prefer: 'return=minimal',
+        body: { kind: 'health_data', version: 'db-test' },
+      });
+      if (consent.status >= 300) {
+        throw new Error(`[db-harness] health_data consent for ${id} failed: ${consent.status} ${JSON.stringify(consent.body)}`);
+      }
+    }
     return { id, email, token };
   };
 

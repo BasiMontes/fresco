@@ -135,7 +135,7 @@ describe.skipIf(!(RUN && reachable))('assign_recipe_to_slot (real DB)', () => {
     const withAllergen = recipes.find(r => r.clasificacion?.tipo_plato === 'comida' && (r.alergenos?.length ?? 0) > 0);
     if (!withAllergen?.alergenos) { throw new Error('[test] no allowed comida recipe declares an allergen'); }
 
-    const allergic = await ctx.createUser();
+    const allergic = await ctx.createUser({ healthDataConsent: true });
     await rest('user_profiles', {
       method: 'PATCH',
       token: allergic.token,

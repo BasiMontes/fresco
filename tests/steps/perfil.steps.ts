@@ -43,6 +43,9 @@ Given(/^que Laura está en \/profile con sesión activa$/, async ({ page, testUs
 
 When(/^activa un chip de dieta y confirma "Actualizar Preferencias"$/, async ({ page }) => {
   await page.getByTestId('preferencia_dieta_option').first().click();
+  // FRESCO-917: a diet chip is health data; the form asks for the consent first.
+  await page.getByTestId('health_consent_checkbox').click();
+  await expect(page.getByTestId('health_consent_checkbox')).toBeChecked();
   await page.getByTestId('actualizar_preferencias_button').click();
 });
 

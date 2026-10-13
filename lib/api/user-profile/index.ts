@@ -1,5 +1,6 @@
 // FRESCO-809 — `user-profile.ts` (692 lines) split by domain. This barrel keeps
 // `@/lib/api/user-profile` as the one import path for every caller.
+export { getHasHealthDataConsent } from './consent';
 export { UserProfileError } from './errors';
 export { getUserNombre, updateNombre } from './nombre';
 export { getHasUnseenNotifications, getShouldShowRoutesNotice, getShouldShowWelcomeNotice, markRoutesNoticeDismissed, markWelcomeNoticeSeen } from './notices';

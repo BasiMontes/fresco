@@ -28,7 +28,7 @@ describe.skipIf(!(RUN && reachable))('user_profiles size bounds (real DB)', () =
   let user: DbTestUser;
 
   beforeAll(async () => {
-    user = await ctx.createUser();
+    user = await ctx.createUser({ healthDataConsent: true });
   });
 
   afterAll(async () => {

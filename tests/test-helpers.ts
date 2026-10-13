@@ -171,3 +171,20 @@ export async function postSignedStripeEvent(
     data: payload,
   });
 }
+
+/**
+ * Records a `health_data` consent for the signed-in user (FRESCO-917). The database refuses a
+ * client write of allergies or diet without one (`require_health_data_consent`), so a step that
+ * seeds `alergenos` / `dieta_*` with the user's own token calls this first. Written under the
+ * user's own session, exactly as the API route does (ADR-0040).
+ */
+export async function recordHealthDataConsent(accessToken: string): Promise<void> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_consents?on_conflict=user_id,kind,version`, {
+    method: 'POST',
+    headers: { ...restHeaders(accessToken), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    body: JSON.stringify({ kind: 'health_data', version: 'e2e-seed' }),
+  });
+  if (!res.ok) {
+    throw new Error(`[test-helpers] health_data consent failed: ${res.status} ${await res.text()}`);
+  }
+}

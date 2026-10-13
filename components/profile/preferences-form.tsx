@@ -5,11 +5,13 @@ import type { OnboardingProfilePayload } from '@/lib/api/user-profile';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { HealthConsentBlock } from '@/components/onboarding/health-consent-block';
 import { PlanningSelectionGrid } from '@/components/onboarding/planning-selection-grid';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/client-api/user-profile';
 import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos } from '@/lib/constants/dietary-options';
+import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
 import { toPlanningSelection } from '@/lib/planning-selection';
 import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
 
@@ -40,6 +42,12 @@ export interface PreferencesFormProps {
    * comment.
    */
   initialPreferences: OnboardingProfilePayload
+  /**
+   * FRESCO-917: whether the user already recorded the `health_data` consent
+   * (server-side read). The database refuses to store allergies or diet without
+   * it, so the form asks for it before saving when health data is filled in.
+   */
+  hasHealthDataConsent: boolean
 }
 
 type DietaKey = 'dieta_vegetariano' | 'dieta_vegano' | 'dieta_sin_gluten' | 'dieta_sin_lactosa' | 'dieta_sin_huevo' | 'dieta_keto' | 'dieta_halal';
@@ -122,8 +130,9 @@ function isPreferencesDirty(current: OnboardingProfilePayload, initial: Onboardi
  * current values are still carried in `preferences` state so a save
  * round-trips them unchanged through `upsertUserProfile`.
  */
-export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
+export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: PreferencesFormProps) {
   const [preferences, setPreferences] = useState(initialPreferences);
+  const [healthConsent, setHealthConsent] = useState(hasHealthDataConsent);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -188,6 +197,22 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
   }, []);
 
   const isDirty = isPreferencesDirty(preferences, initialPreferences);
+
+  // FRESCO-917: allergies and diet are health data (GDPR art. 9) and the database
+  // refuses to store them without the `health_data` consent, so a save with any of
+  // them filled in waits for the box, same as the onboarding wizard (ADR-0040).
+  const needsHealthConsent = collectsHealthData({
+    dietaVegetariano: preferences.dieta_vegetariano,
+    dietaVegano: preferences.dieta_vegano,
+    dietaSinGluten: preferences.dieta_sin_gluten,
+    dietaSinLactosa: preferences.dieta_sin_lactosa,
+    dietaSinHuevo: preferences.dieta_sin_huevo,
+    dietaKeto: preferences.dieta_keto,
+    dietaHalal: preferences.dieta_halal,
+    alergenos: preferences.alergenos,
+    dietaTextoLibre: preferences.dieta_texto_libre ?? '',
+  });
+  const isConsentMissing = needsHealthConsent && !healthConsent;
 
   function toggleDieta(key: DietaKey) {
     setSaved(false);
@@ -308,6 +333,10 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
         })}
       </div>
 
+      {needsHealthConsent && (
+        <HealthConsentBlock consented={healthConsent} onConsentedChange={setHealthConsent} />
+      )}
+
       {/* FRESCO-153/FRESCO-259: was set at onboarding but never editable
           afterward until FRESCO-153; the grid (FRESCO-259) replaced the
           separate "which meals"/"which days" toggle lists with direct
@@ -333,7 +362,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
       )}
 
       <div className="t-input-wrap mt-4" ref={wrapRef} data-testid="preferencias_save_wrap">
-        <Button type="submit" variant="default" disabled={isSaving || !isDirty} data-testid="actualizar_preferencias_button" className="t-input" ref={inputRef}>
+        <Button type="submit" variant="default" disabled={isSaving || !isDirty || isConsentMissing} data-testid="actualizar_preferencias_button" className="t-input" ref={inputRef}>
           {isSaving ? 'Guardando…' : 'Actualizar Preferencias'}
         </Button>
         <p data-testid="preferencias_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">

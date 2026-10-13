@@ -42,7 +42,7 @@ export default async function ProfilePage() {
   // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
   const { data: { user } } = await getAuthUser();
 
-  const { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable } = await loadProfilePageData(supabase, user?.id);
+  const { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable, hasHealthDataConsent } = await loadProfilePageData(supabase, user?.id);
   // FRESCO-871: only the Free upsell shows prices, so Pro users never pay for the Stripe read.
   const prices = plan === 'free' ? await getProPrices() : null;
 
@@ -74,6 +74,7 @@ export default async function ProfilePage() {
 
       <ProfilePreferencesAndHelp
         dietaryPreferences={dietaryPreferences}
+        hasHealthDataConsent={hasHealthDataConsent}
         email={user?.email ?? 'Invitada'}
         planLabel={PLAN_LABELS[plan]}
         memberSince={memberSince}
