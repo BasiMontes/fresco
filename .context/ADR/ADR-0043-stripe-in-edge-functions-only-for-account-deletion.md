@@ -63,3 +63,14 @@ The code lives in `supabase/functions/_shared/stripe-billing.ts` (`cancelStripeB
 - `.context/ADR/ADR-0007-stripe-checkout-hosted-webhook-driven-subscription.md`, `ADR-0015-stripe-subscription-reconciliation-job.md`, `ADR-0020-single-supabase-project-until-pro.md`, `ADR-0023-delete-account-recent-reauth.md`.
 - FRESCO-942; `.context/audits/2026-10-12-definitive/04-critical-audit.md` (C-01).
 - `supabase/functions/delete-account/index.ts`, `supabase/functions/_shared/stripe-billing.ts`, `components/legal/legal-content-data.ts:129`.
+
+## Addendum 2026-10-13 (FRESCO-945): the null-customer limitation is closed
+
+The "Known limitations" entry above is resolved. When `user_profiles.stripe_customer_id` is null and the caller is a registered account, `delete-account` now looks the customer up in Stripe before deleting (`findStripeCustomerForUser` in `_shared/stripe-billing.ts`): it lists the Checkout Sessions completed in the last 72 hours, filters by `client_reference_id === user.id` (Stripe cannot filter on that field), and passes the most recent match's customer to `cancelStripeBillingForCustomer`. Nothing is written to the profile (ADR-0007 still holds). With no match the account is deleted as before.
+
+Failure modes, decided separately because they have different costs:
+
+- **A Stripe error during the lookup fails closed** (502, account not deleted), like a failed cancellation: the alternative is deleting the only link to a subscription that may still bill.
+- **A missing `STRIPE_SECRET_KEY` does NOT fail closed for the lookup.** It is reported to Sentry and the account is deleted. The lookup now runs for every registered account without a stored customer id, which is most of them, so failing closed on a misconfigured environment would stop nearly everyone from deleting their account. An account that already has a customer id still fails closed without the key, as before.
+
+The 72-hour window is wider than the webhook retry window and the daily checkout sweep of ADR-0015 (FRESCO-909).

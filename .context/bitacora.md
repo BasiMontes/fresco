@@ -214,3 +214,8 @@ Historia archivada:
 - Qué: la exportación CSV incluye favoritos, consentimientos, push y correo (PR #628); delete-account borra la persona en PostHog y escribe account_erasures con el id hasheado (PR #629, migración 20261013140000 aplicada con db push; secretos de PostHog en Edge). Verificado en vivo con la cuenta de dev y con Stripe en modo de pruebas.
 - Por qué: auditoría definitiva 2026-10-12, C-06 (RGPD, derecho de acceso y de supresión).
 - Siguiente: FRESCO-947 reintento de borrados de PostHog fallidos; FRESCO-946 posible fuga del sidebar entre cuentas; recrear la cuenta de dev; el borrado completo con sesión y cliente de Stripe no se ejercitó por el captcha.
+
+## 2026-10-13 - FRESCO-944 login: área de Turnstile reservada y errores en línea
+- Qué: /login reserva el área del captcha (65 px) desde el primer render con estado en texto y Reintentar; el botón ya no se deshabilita en silencio, los requisitos que faltan se nombran en línea (PR #631 en staging). Medido en navegador: el botón no se mueve (antes 406 a 413).
+- Por qué: auditoría definitiva 2026-10-12, UX-01 y UX-02.
+- Siguiente: probar con el widget real en fresco-pre; FRESCO-946 (sidebar con datos de otra cuenta) y FRESCO-948 (sugerencias de la lista de la compra) creados en esta sesión;
