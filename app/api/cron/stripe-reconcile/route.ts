@@ -1,7 +1,9 @@
+import type { CheckoutSweepResult } from '@/lib/billing/checkout-sweep';
 import type { ReconcilableProfile } from '@/lib/billing/reconcile';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { timingSafeEqual } from '@/lib/auth/timing-safe-equal';
+import { sweepPaidCheckoutsWithoutPro } from '@/lib/billing/checkout-sweep';
 import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -29,6 +31,12 @@ import { createServiceClient } from '@/lib/supabase/service';
  * run. It never grants Pro for a non-Pro price and never rewrites
  * `stripe_customer_id` / `stripe_subscription_id` (matches the webhook's
  * `customer.subscription.deleted` handler, which keeps the ids for history).
+ *
+ * FRESCO-909 (audit C-03): the loop above only sees rows that already carry a
+ * subscription, so it cannot find a customer who paid while the webhook never landed.
+ * `sweepPaidCheckoutsWithoutPro` runs last and starts from Stripe instead: paid Checkout
+ * Sessions of the last 48 h whose user has not got that subscription on file. It grants
+ * through the webhook's own `grantProFromCheckoutSession`, so every guard travels with it.
  */
 
 export const dynamic = 'force-dynamic';
@@ -155,5 +163,15 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const sweptOrphans = await sweepOrphanPaidPlans(supabase);
 
-  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
+  // FRESCO-909 (audit C-03): the inverse direction. Fail-soft like the orphan sweep: a
+  // Stripe listing error must not turn the reconcile run above into a 500.
+  let checkoutSweep: CheckoutSweepResult | null = null;
+  try {
+    checkoutSweep = await sweepPaidCheckoutsWithoutPro(supabase);
+  }
+  catch (sweepError) {
+    console.error('[/api/cron/stripe-reconcile] paid-checkout sweep failed', sweepError);
+  }
+
+  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans, checkoutSweep });
 }
