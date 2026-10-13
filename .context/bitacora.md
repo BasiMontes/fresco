@@ -219,3 +219,8 @@ Historia archivada:
 - Qué: /login reserva el área del captcha (65 px) desde el primer render con estado en texto y Reintentar; el botón ya no se deshabilita en silencio, los requisitos que faltan se nombran en línea (PR #631 en staging). Medido en navegador: el botón no se mueve (antes 406 a 413).
 - Por qué: auditoría definitiva 2026-10-12, UX-01 y UX-02.
 - Siguiente: probar con el widget real en fresco-pre; FRESCO-946 (sidebar con datos de otra cuenta) y FRESCO-948 (sugerencias de la lista de la compra) creados en esta sesión;
+
+## 2026-10-13 - FRESCO-945 cliente de Stripe por sesión de Checkout al borrar la cuenta
+- Qué: si el perfil no tiene stripe_customer_id, delete-account busca el cliente en las sesiones de Checkout de las últimas 72 h por client_reference_id y cancela, devuelve la parte proporcional y borra el cliente (PR #632 en staging; delete-account v29). STRIPE_SECRET_KEY (clave de pruebas) cargada como secreto de Edge: no existía.
+- Por qué: seguimiento de FRESCO-942/909; quien pagaba y borraba la cuenta antes del webhook seguía cobrándose. Un error de Stripe en la búsqueda impide borrar (502); una clave ausente no, para no bloquear todos los borrados.
+- Siguiente: sustituir la clave por la live al pasar a producción; FRESCO-942 sigue en Merged (falta verificar el recorrido completo con sesión y cliente de Stripe, el captcha lo impide); un acierto real de la búsqueda no se ha ejercitado.
