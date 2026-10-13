@@ -107,3 +107,43 @@ app URL only.
   Vault-sourced-secret `pg_cron`+`pg_net` migration pattern to follow.
 - FRESCO-301 — the tech-debt ticket; `spec_implementation_plan` fallback comment carries the
   step-level plan.
+
+## Addendum 2026-10-13 (FRESCO-909, audit C-03): the inverse sweep
+
+The decision above stands. The job as accepted starts from `user_profiles` rows that already
+carry a `stripe_subscription_id`, so it can never find the customer this ADR's own Context
+section worries about most: one who paid while the webhook never landed. That row has no
+subscription id yet, and the job's `IS NOT NULL` filter skips it. C-03 made this concrete:
+a webhook event claimed by a worker that then died was recorded as processed and never
+retried, and the cron could not cure it.
+
+Two changes close the gap, without changing who may write subscription state:
+
+- **The webhook claim now expires** (`claimed_at` / `completed_at` on `stripe_webhook_events`,
+  PRs #622 and #623). A claim with no completion past the TTL is retaken by the next delivery;
+  a younger one is answered 409 so Stripe keeps retrying.
+- **The cron gains a second pass that starts from Stripe**
+  (`sweepPaidCheckoutsWithoutPro`, `lib/billing/checkout-sweep.ts`): it lists the subscription
+  Checkout Sessions completed in the last 48 h and, for any user whose stored subscription is
+  not the one they paid for, grants Pro through `grantProFromCheckoutSession`
+  (`lib/billing/grant-pro.ts`), the same function the webhook now calls.
+
+Constraints, so this stays inside the invariants above:
+
+- **One grant path.** The sweep does not re-implement the mapping: payment settled,
+  subscription live, Pro price and `client_reference_id` are all enforced inside
+  `grantProFromCheckoutSession`, which refuses otherwise. A refusal is counted and logged, not
+  written around.
+- **Only the newest session per user is considered**, so an older session never overwrites a
+  later subscription. A user whose stored id already matches is skipped, which also leaves a
+  deliberately downgraded row alone (the main loop owns drift on known subscriptions).
+- **Fail-soft and idempotent.** A session that errors never stops the rest, and a Stripe
+  listing error leaves the reconcile result of the run intact (`checkoutSweep: null`). With
+  healthy webhooks the pass grants 0 rows. Replaying a grant for an already-stored
+  subscription rewrites the same values and sends no second email or funnel event.
+- **The 48 h window** matches the daily cadence plus one missed run. Widen it if the cron is
+  ever expected to be down longer; the response field `checkoutSweep.granted` is the signal
+  that webhooks are losing events.
+
+This adds a third call site for the subscription columns (webhook, `resolveReconciledState`,
+the sweep), all routed through `lib/stripe.ts` helpers and `lib/billing/subscription.ts`.

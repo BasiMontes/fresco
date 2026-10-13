@@ -22,11 +22,14 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 const retrieveMock = mock(async (_id: string): Promise<Stripe.Subscription> => ({} as Stripe.Subscription));
 
+// FRESCO-909: the paid-checkout sweep runs last; by default Stripe lists no sessions.
+const listSessionsMock = mock((_params: unknown): AsyncIterable<Stripe.Checkout.Session> => (async function* () {})());
+
 let supa = fakeSupabase();
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
-  stripe: { subscriptions: { retrieve: retrieveMock } },
+  stripe: { subscriptions: { retrieve: retrieveMock }, checkout: { sessions: { list: listSessionsMock } } },
 }));
 
 const { GET } = await import('./route');
@@ -169,7 +172,18 @@ describe('GET /api/cron/stripe-reconcile — auth + config gate', () => {
   test('200 with a zero-drift summary when authorised and no profiles carry a subscription', async () => {
     const res = await GET(req({ authorization: 'Bearer cron_test' }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ checked: 0, reconciled: 0, sweptOrphans: 0 });
+    expect(await res.json()).toMatchObject({ checked: 0, reconciled: 0, sweptOrphans: 0, checkoutSweep: { scanned: 0, granted: 0, failed: 0 } });
+  });
+
+  test('FRESCO-909: still answers 200 with the reconcile result when the paid-checkout sweep cannot list sessions', async () => {
+    listSessionsMock.mockImplementationOnce(() => {
+      throw new Error('stripe unreachable');
+    });
+
+    const res = await GET(req({ authorization: 'Bearer cron_test' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ checked: 0, reconciled: 0, checkoutSweep: null });
   });
 });
 
