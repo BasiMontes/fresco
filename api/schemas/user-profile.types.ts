@@ -48,6 +48,8 @@ export interface UserProfile {
   dieta_texto_libre: string | null
   /** Onboarding step 2 (FRESCO-133). Free-text note for allergens not covered by the predefined chips. */
   alergenos_texto_libre: string | null
+  /** FRESCO-919 (ADR-0044). Cookie-banner analytics decision synced from the browser: true accepted, false rejected, null never synced (treated as no consent by server-side events). */
+  analytics_consent: boolean | null
   ingredientes_odiados: string[]
   /** Onboarding step 2 (FRESCO-133). Free-text note for disliked ingredients not covered by the predefined chips. */
   ingredientes_odiados_texto_libre: string | null

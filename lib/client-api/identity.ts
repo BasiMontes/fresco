@@ -63,6 +63,33 @@ export async function readProfileNombre(userId: string): Promise<string | null> 
 }
 
 /**
+ * FRESCO-919 (ADR-0044): writes the cookie-banner decision into the signed-in
+ * user's profile so server-side PostHog events can honour it. Reads first and
+ * writes only on a difference, so a page load that changes nothing costs one
+ * read. A user with no profile row yet is skipped: onboarding's upsert carries
+ * the decision when it creates the row. Throws only if the request itself
+ * rejects; the caller treats a failure as "try again next load".
+ */
+export async function syncAnalyticsConsent({ userId, accepted }: { userId: string, accepted: boolean }): Promise<void> {
+  const { createClient } = await loadSupabaseClient();
+  const client = createClient();
+  const { data } = await client
+    .from('user_profiles')
+    .select('analytics_consent')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!data || data.analytics_consent === accepted) {
+    return;
+  }
+
+  await client
+    .from('user_profiles')
+    .update({ analytics_consent: accepted })
+    .eq('id', userId);
+}
+
+/**
  * The plan tier for an analytics property, loading the client lazily. Never
  * throws and falls back to `'free'` (see `getPlanTierForAnalytics`): the
  * root-layout PostHog provider calls this, and analytics must never break it.

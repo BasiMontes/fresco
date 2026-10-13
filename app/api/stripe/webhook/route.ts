@@ -224,6 +224,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     // the first failure of a retry cycle counts.
     if (!profile.payment_failed_at) {
       await captureServerEvent({
+        supabase,
         distinctId: profile.id,
         event: POSTHOG_EVENTS.PAYMENT_FAILED,
         properties: { stripe_subscription_id: subscription.id },
@@ -249,6 +250,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     // `plan_downgraded` (and the `deleted` handler skips it, see below).
     if (profile.plan !== 'free') {
       await captureServerEvent({
+        supabase,
         distinctId: profile.id,
         event: POSTHOG_EVENTS.PLAN_DOWNGRADED,
         properties: { reason: 'payment_failed', $set: { plan: 'free' } },
@@ -275,6 +277,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   const funnelEvent = resolveActiveUpdateFunnelEvent(previousSubscriptionStatus(previousAttributes));
   if (funnelEvent) {
     await captureServerEvent({
+      supabase,
       distinctId: profile.id,
       event: funnelEvent,
       properties: {
@@ -307,6 +310,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   // reached term, or Stripe ended it). `cancellation_details.reason` is
   // `cancellation_requested` | `payment_disputed` | `payment_failed` | null.
   await captureServerEvent({
+    supabase,
     distinctId: profile.id,
     event: POSTHOG_EVENTS.SUBSCRIPTION_CANCELLED,
     properties: {
@@ -320,6 +324,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   // row that is already Free here must not count a second time.
   if (profile.plan !== 'free') {
     await captureServerEvent({
+      supabase,
       distinctId: profile.id,
       event: POSTHOG_EVENTS.PLAN_DOWNGRADED,
       properties: { reason: subscription.cancellation_details?.reason ?? 'unknown', $set: { plan: 'free' } },

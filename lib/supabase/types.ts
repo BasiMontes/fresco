@@ -761,6 +761,7 @@ export type Database = {
           adultos: number
           alergenos: string[]
           alergenos_texto_libre: string | null
+          analytics_consent: boolean | null
           aviso_bienvenida_visto: boolean
           aviso_rutas_descartado: boolean
           cocinas_favoritas: Database["public"]["Enums"]["tipo_cocina"][]
@@ -803,6 +804,7 @@ export type Database = {
           adultos?: number
           alergenos?: string[]
           alergenos_texto_libre?: string | null
+          analytics_consent?: boolean | null
           aviso_bienvenida_visto?: boolean
           aviso_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
@@ -845,6 +847,7 @@ export type Database = {
           adultos?: number
           alergenos?: string[]
           alergenos_texto_libre?: string | null
+          analytics_consent?: boolean | null
           aviso_bienvenida_visto?: boolean
           aviso_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]

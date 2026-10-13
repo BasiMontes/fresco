@@ -104,6 +104,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0041](./ADR-0041-ui-data-access-through-lib-client-api.md) | The UI reaches data through plain `lib/` functions (`lib/client-api`); `components/` owns hooks and never imports a Supabase client; route handlers orchestrate, they do not query | Accepted | — | — |
 | [ADR-0042](./ADR-0042-recipe-ingredient-quantities-parallel-column.md) | Catalog recipes carry ingredient quantities in a parallel `ingredientes_cantidades` column (checked in the DB), not by reshaping `ingredientes_principales` | Accepted | — | — |
 | [ADR-0043](./ADR-0043-stripe-in-edge-functions-only-for-account-deletion.md) | Stripe is called from Edge Functions only to cancel billing and delete the customer on account deletion; failure blocks the deletion | Proposed | — | — |
+| [ADR-0044](./ADR-0044-server-analytics-requires-stored-consent.md) | Server-side PostHog events are sent only when `user_profiles.analytics_consent` is true (the cookie-banner decision stored in the database); null and errors suppress | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 
