@@ -5,13 +5,15 @@ import 'server-only';
 
 // Service-role Supabase client — bypasses RLS via `SUPABASE_SERVICE_ROLE_KEY`.
 // NEVER import this from a Client Component or any code path reachable by the
-// browser. Two callers today, both subscription-state writers with no user
+// browser. Three callers today. The first two are subscription-state writers with no user
 // session to scope an RLS-bound client to:
 //   - `app/api/stripe/webhook/route.ts` (STORY-FRESCO-228) — the primary
 //     writer of `plan`/`stripe_customer_id`/`stripe_subscription_id`/
 //     `plan_expires_at` on an arbitrary user's `user_profiles` row (ADR-0007).
 //   - `app/api/cron/stripe-reconcile/route.ts` (ADR-0015) — the drift-correcting
 //     job that extends the same single-writer invariant under constraint.
+//   - `app/api/health/jobs/route.ts` (FRESCO-915) — reads `job_heartbeat`, a table closed to every
+//     client role, and answers with a status only, never a row.
 // Every other server-side read/write in this app goes through the cookie-based,
 // RLS-scoped client in `lib/supabase/server.ts` instead.
 
