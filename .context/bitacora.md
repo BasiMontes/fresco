@@ -224,3 +224,8 @@ Historia archivada:
 - Qué: si el perfil no tiene stripe_customer_id, delete-account busca el cliente en las sesiones de Checkout de las últimas 72 h por client_reference_id y cancela, devuelve la parte proporcional y borra el cliente (PR #632 en staging; delete-account v29). STRIPE_SECRET_KEY (clave de pruebas) cargada como secreto de Edge: no existía.
 - Por qué: seguimiento de FRESCO-942/909; quien pagaba y borraba la cuenta antes del webhook seguía cobrándose. Un error de Stripe en la búsqueda impide borrar (502); una clave ausente no, para no bloquear todos los borrados.
 - Siguiente: sustituir la clave por la live al pasar a producción; FRESCO-942 sigue en Merged (falta verificar el recorrido completo con sesión y cliente de Stripe, el captcha lo impide); un acierto real de la búsqueda no se ha ejercitado.
+
+## 2026-10-13 - FRESCO-915 latido del cron de reconciliación y monitor de GitHub
+- Qué: el cron escribe su latido en job_heartbeat y reporta sus fallos a Sentry (PR #633, migración 20261013150000 aplicada con db push); GET /api/health/jobs y workflow cron-heartbeat-monitor.yml cada hora (PR #634). Umbral 25 h; un job que nunca ha reportado queda en pending.
+- Por qué: auditoría definitiva 2026-10-12, C-11; cron.job_run_details marca succeeded aunque la ruta responda 401 o 500 y es la única red de pagos perdidos.
+- Siguiente: FRESCO-949, verificar tras promocionar a main el primer latido real, el simulacro del monitor y el caso stale; el criterio de alertar en menos de 26 h no se ejercitó de punta a punta.
