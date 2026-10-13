@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { isEmailNotConfirmed, translateAuthError } from '@/lib/auth-errors';
+import { hasLoginFieldErrors, NO_LOGIN_FIELD_ERRORS, validateLoginFields } from '@/lib/auth/login-validation';
 import { resendSignupConfirmation, signInWithPassword } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
@@ -50,6 +51,8 @@ function LoginPageInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // FRESCO-944: named reasons a submit did not go ahead, in line with the field they belong to.
+  const [fieldErrors, setFieldErrors] = useState(NO_LOGIN_FIELD_ERRORS);
   // FRESCO-482: set on a successful sign-in, never cleared — the whole page
   // unmounts when `/menu` mounts. Keeps the button in its loading state and
   // mounts a full-screen cover so the 1-3s wait for `/menu` doesn't look
@@ -84,6 +87,14 @@ function LoginPageInner() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmittingRef.current) { return; }
+    const errors = validateLoginFields({ email, password, captchaReady: captcha.ready });
+    setFieldErrors(errors);
+    if (hasLoginFieldErrors(errors)) {
+      // Send keyboard and screen-reader users to the first thing to fix.
+      const firstInvalid = errors.email ? 'login-email' : errors.password ? 'login-password' : null;
+      if (firstInvalid) { document.getElementById(firstInvalid)?.focus(); }
+      return;
+    }
     isSubmittingRef.current = true;
     setIsSubmitting(true);
     setLoginError(null);
@@ -177,7 +188,7 @@ function LoginPageInner() {
           </p>
         )}
 
-        <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3 [@media(max-height:700px)]:mt-4">
+        <form noValidate onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3 [@media(max-height:700px)]:mt-4">
           {/* FRESCO-315: real <label for> — the accessible name was carried
                 only by aria-label duplicating the placeholder (WCAG 3.3.2 /
                 4.1.2). sr-only keeps the minimalist card design unchanged. */}
@@ -189,9 +200,17 @@ function LoginPageInner() {
             placeholder="Correo electrónico"
             required
             autoComplete="email"
+            aria-invalid={fieldErrors.email !== null}
+            aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setFieldErrors(current => ({ ...current, email: null }));
+            }}
           />
+          {fieldErrors.email && (
+            <p id="login-email-error" data-testid="email_error" role="alert" className="-mt-1 text-body-sm text-error">{fieldErrors.email}</p>
+          )}
           <label htmlFor="login-password" className="sr-only">Contraseña</label>
           <Input
             id="login-password"
@@ -200,11 +219,22 @@ function LoginPageInner() {
             placeholder="Contraseña"
             required
             autoComplete="current-password"
+            aria-invalid={fieldErrors.password !== null}
+            aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFieldErrors(current => ({ ...current, password: null }));
+            }}
           />
-          <CaptchaField captcha={captcha} />
-          <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting || !captcha.ready}>
+          {fieldErrors.password && (
+            <p id="login-password-error" data-testid="password_error" role="alert" className="-mt-1 text-body-sm text-error">{fieldErrors.password}</p>
+          )}
+          <CaptchaField captcha={captcha} reserveSpace />
+          {fieldErrors.captcha && !captcha.ready && (
+            <p data-testid="captcha_error" role="alert" className="text-body-sm text-error">{fieldErrors.captcha}</p>
+          )}
+          <Button data-testid="login_submit_button" type="submit" className="mt-2" disabled={isSubmitting}>
             {isSubmitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
           </Button>
         </form>

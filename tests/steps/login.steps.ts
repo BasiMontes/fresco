@@ -124,3 +124,18 @@ When(/^hace dos clicks sincrónicos sobre "Iniciar sesión" sin esperar entre am
 Then(/^solo se dispara una llamada de autenticación$/, async () => {
   expect(tokenRequestUrls).toHaveLength(1);
 });
+
+// FRESCO-944: an empty submit names what is missing instead of a silently disabled button.
+// Nothing is written and no account is touched, and the local CI stack has no captcha.
+Given(/^que un usuario abre \/login sin rellenar nada$/, async ({ page }) => {
+  await page.goto('/login');
+});
+
+Then(/^ve un mensaje junto a cada campo vacío$/, async ({ page }) => {
+  await expect(page.getByTestId('email_error')).toContainText('correo');
+  await expect(page.getByTestId('password_error')).toContainText('contraseña');
+});
+
+Then(/^el botón "Iniciar sesión" sigue disponible$/, async ({ page }) => {
+  await expect(page.getByTestId('login_submit_button')).toBeEnabled();
+});
