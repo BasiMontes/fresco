@@ -76,6 +76,8 @@ const PALABRAS_POR_ALERGENO: Readonly<Record<string, readonly string[]>> = {
   sesamo: ['sesamo', 'tahini'],
   apio: ['apio'],
   sulfitos: ['vino', 'sulfitos'],
+  mostaza: ['mostaza'],
+  altramuces: ['altramuz', 'altramuces', 'lupino'],
 };
 
 /** A product that says it is free of the thing ("sin lactosa", "sin gluten") is compatible with that restriction. */

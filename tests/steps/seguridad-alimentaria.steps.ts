@@ -18,7 +18,9 @@ import { generateCurrentWeekPlan, seedFullWeekMenu } from '../test-user-factory'
 const { Given, When, Then } = createBdd(test);
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-// The full canonical vocabulary (mirrors ALERGENO_OPTIONS / the CHECK constraint).
+// The allergens the catalog actually tags (ALERGENO_OPTIONS minus `mostaza` and `altramuces`,
+// FRESCO-912): the scenario below requires each one to exclude at least one recipe, and no
+// active recipe carries those two yet. They are covered by tests/db/allergen-vocabulary.test.ts.
 const DECLARABLE_ALLERGENS = [
   'apio',
   'cacahuetes',

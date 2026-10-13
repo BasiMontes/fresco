@@ -9,7 +9,7 @@ import { PlanningSelectionGrid } from '@/components/onboarding/planning-selectio
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/client-api/user-profile';
-import { ALERGENO_OPTIONS, impliedAlergenos } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos } from '@/lib/constants/dietary-options';
 import { toPlanningSelection } from '@/lib/planning-selection';
 import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
 
@@ -286,6 +286,7 @@ export function PreferencesForm({ initialPreferences }: PreferencesFormProps) {
       </div>
 
       <h4 className="mt-4 text-h6 uppercase text-tertiary">Alérgenos a evitar</h4>
+      <p data-testid="preferencia_alergenos_aviso" className="mt-1 text-body-sm text-tertiary">{ALERGENOS_AVISO}</p>
       <div className="mt-2 flex flex-wrap gap-2">
         {ALERGENO_OPTIONS.map((option) => {
           const isLocked = impliedAlergenos({ vegano: preferences.dieta_vegano, vegetariano: preferences.dieta_vegetariano, sinGluten: preferences.dieta_sin_gluten }).includes(option.value);
