@@ -1,26 +1,14 @@
 import type Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { activateProPlan, applyRenewal, downgradeToFree, findProfileByStripeCustomer, getStoredSubscriptionId, markPaymentFailed } from '@/lib/billing/subscription';
+import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
+import { applyRenewal, downgradeToFree, findProfileByStripeCustomer, markPaymentFailed } from '@/lib/billing/subscription';
 import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
-import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
-import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent, resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
-import { getProPriceIds, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
+import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
+import { getProPriceIds, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
-
-// FRESCO-429 (TRLGDCU art. 98.7): formats the actual amount Stripe charged —
-// no separate VAT line is invented, since this checkout has no
-// `automatic_tax` configured to compute one.
-function formatChargedAmount(unitAmount: number | null | undefined, currency: string | undefined): string {
-  const amount = (unitAmount ?? 0) / 100;
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: (currency ?? 'eur').toUpperCase() }).format(amount);
-}
-
-function formatRenewalDate(isoTimestamp: string): string {
-  return new Date(isoTimestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 /**
  * POST /api/stripe/webhook — the ONLY writer of `user_profiles.plan` /
@@ -199,76 +187,7 @@ export async function POST(request: Request) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  if (!session.subscription) {
-    throw new Error('checkout.session.completed without a subscription id.');
-  }
-
-  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const priceIds = getProPriceIds();
-  if (priceIds.length === 0) {
-    throw new Error('No Pro price id is configured (STRIPE_PRICE_ID_PRO_MONTH).');
-  }
-  const update = resolveProUpdateFromSession({ session, subscription, expectedPriceId: priceIds });
-
-  const supabase = createServiceClient();
-
-  // FRESCO-240: Stripe retries checkout.session.completed on any non-2xx
-  // response (a transient network blip, a cold-start timeout) -- without
-  // this, a retry of an already-processed delivery re-fires the
-  // trial_started / trial_converted_to_paid event for the same subscription.
-  // If this exact subscription id is already on file, this delivery ran to
-  // completion once; a genuinely new subscription always changes it (was
-  // null, or a prior, different subscription on resubscribe).
-  const storedSubscriptionId = await getStoredSubscriptionId(supabase, update.userId);
-  const isNewSubscription = storedSubscriptionId !== update.stripeSubscriptionId;
-
-  await activateProPlan(supabase, {
-    userId: update.userId,
-    stripeCustomerId: update.stripeCustomerId,
-    stripeSubscriptionId: update.stripeSubscriptionId,
-    planExpiresAt: update.planExpiresAt,
-  });
-
-  if (isNewSubscription) {
-    // ADR-0013 / FRESCO-366: server-side only — this webhook has no browser,
-    // so posthog-js structurally cannot fire here. Checkout always opens a
-    // 7-day trial, so the normal event is `trial_started`; a non-trialing
-    // status means the trial was skipped and it's paid from day one.
-    await captureServerEvent({
-      distinctId: update.userId,
-      event: resolveCheckoutFunnelEvent(subscription.status),
-      properties: {
-        stripe_subscription_id: update.stripeSubscriptionId,
-        $set: { plan: 'pro' },
-      },
-    });
-
-    // FRESCO-429 (TRLGDCU art. 98.7): the durable-support subscription
-    // confirmation email. The subscription is already active at this point
-    // (write above already succeeded) — a send failure is logged for
-    // retry/review and never re-thrown, per AC3.
-    try {
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(update.userId);
-      const recipientEmail = userData?.user?.email;
-      if (userError || !recipientEmail) {
-        throw userError ?? new Error('no email on file for this user');
-      }
-
-      const price = subscription.items.data[0]?.price;
-      await sendSubscriptionConfirmationEmail({
-        to: recipientEmail,
-        priceFormatted: formatChargedAmount(price?.unit_amount, price?.currency),
-        // `update.planExpiresAt` is the same trial_end-derived timestamp the
-        // `user_profiles` write above just used — the next real charge date.
-        nextRenewalDateFormatted: formatRenewalDate(update.planExpiresAt),
-        manageSubscriptionUrl: `${resolveAppUrl()}/profile`,
-      });
-    }
-    catch (error) {
-      console.error(`[/api/stripe/webhook] subscription confirmation email failed for user ${update.userId} (subscription ${update.stripeSubscriptionId})`, error);
-    }
-  }
+  await grantProFromCheckoutSession(createServiceClient(), session);
 }
 
 async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string }): Promise<void> {
