@@ -37,6 +37,10 @@ export const ALLERGEN_KEYWORDS: Record<string, RegExp> = {
   frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos'),
   apio: words('apio'),
   sulfitos: words('vino'),
+  // FRESCO-912: the last two of the EU-14. No active recipe mentions either today, so
+  // these entries are the net that catches the first one that does.
+  mostaza: words('mostaza'),
+  altramuces: words('altramuz|altramuces|lupino|lupinos'),
 };
 
 /**

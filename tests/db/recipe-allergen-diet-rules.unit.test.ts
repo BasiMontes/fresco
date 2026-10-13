@@ -20,6 +20,12 @@ describe('allergen keywords catch the audit cases', () => {
     expect(auditRecipe(recipe(['leche de coco', 'leche']))).toEqual(['Receta: falta lactosa (ingrediente: leche)']);
   });
 
+  test('mostaza and altramuz require their own tag (FRESCO-912)', () => {
+    expect(auditRecipe(recipe(['mostaza de Dijon']))).toEqual(['Receta: falta mostaza (ingrediente: mostaza de Dijon)']);
+    expect(auditRecipe(recipe(['altramuces en salmuera']))).toEqual(['Receta: falta altramuces (ingrediente: altramuces en salmuera)']);
+    expect(auditRecipe(recipe(['mostaza'], { alergenos: ['mostaza'] }))).toEqual([]);
+  });
+
   test('tortilla de trigo requires gluten', () => {
     expect(auditRecipe(recipe(['tortilla de trigo']))).toEqual(['Receta: falta gluten (ingrediente: tortilla de trigo)']);
   });
