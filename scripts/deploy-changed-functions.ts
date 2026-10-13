@@ -20,10 +20,11 @@
  *   --import-map   passed explicitly — without it the remote bundler does not
  *                  resolve `@supabase/supabase-js` (matches the manual sweep on
  *                  the FRESCO-414 ticket).
- *   --no-verify-jwt is appended ONLY for `send-weekly-reengagement-push` — it
- *                  has no per-function entry in config.toml, so the flag must be
- *                  re-passed on every deploy or JWT verification silently
- *                  switches back on.
+ *   --no-verify-jwt is appended ONLY for the two pg_cron-invoked functions
+ *                  (`send-weekly-reengagement-push`, `retry-posthog-erasures`) —
+ *                  they have no per-function entry in config.toml, so the flag
+ *                  must be re-passed on every deploy or JWT verification
+ *                  silently switches back on.
  *
  * Env:
  *   SUPABASE_ACCESS_TOKEN   personal access token (required; `supabase link` +
@@ -44,7 +45,7 @@ import { $ } from 'bun';
 const PROJECT_REF = 'jdqemhewjrjuopssdurn';
 const FUNCTIONS_DIR = 'supabase/functions';
 const IMPORT_MAP = `${FUNCTIONS_DIR}/deno.json`;
-const NO_VERIFY_JWT = new Set(['send-weekly-reengagement-push']);
+const NO_VERIFY_JWT = new Set(['send-weekly-reengagement-push', 'retry-posthog-erasures']);
 const ZERO_SHA = '0000000000000000000000000000000000000000';
 /**
  * Not in the deployed bundle (`deno.json` excludes test files; `.md` is docs)
