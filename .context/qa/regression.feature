@@ -89,6 +89,23 @@ Característica: Flujo completo de usuario en Fresco
     # re-render, no alcanza a bloquear el mismo tick. Verificado en vivo: 3
     # clicks sincrónicos ahora producen 1 solo POST.
 
+  @login @edge-case @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-944)
+  Escenario: Enviar /login con los campos vacíos explica qué falta en lugar de dejar el botón deshabilitado
+    Dado que un usuario abre /login sin rellenar nada
+    Cuando confirma el formulario de /login
+    Entonces ve un mensaje junto a cada campo vacío
+    Y el botón "Iniciar sesión" sigue disponible
+    # FRESCO-944 (UX-01/UX-02): el botón se quedaba deshabilitado en silencio
+    # mientras el captcha no estaba resuelto. Ahora queda siempre disponible
+    # salvo mientras envía, y cada requisito que falta (campo vacío, correo mal
+    # formado, verificación sin terminar) se nombra en línea. Con captcha, el
+    # área de Turnstile ocupa su sitio desde el primer render (65 px) y dice en
+    # texto si la verificación está en curso, tarda, caducó o falló, con
+    # "Reintentar". El captcha no existe en el stack local de CI, así que este
+    # escenario cubre los campos; el layout del widget se validó en navegador
+    # con las claves de prueba de Cloudflare.
+
   @login @landing @verificado-manual-2026-09-10
   # FRESCO-486 (epic FRESCO-484): la nav de la landing mostraba los CTA de
   # invitado a todo el mundo. NO @automatizado: el estado logueado depende de
