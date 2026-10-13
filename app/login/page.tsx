@@ -126,6 +126,10 @@ function LoginPageInner() {
       // reset `isSubmitting` on the success path. The cover stays up until
       // `/menu` paints and unmounts this page.
       setNavigating(true);
+      // FRESCO-946: a new session starts here — drop any client router cache
+      // left by the previous one (logout, expired session, deleted account),
+      // or `/menu` would reuse its shared (app) layout.
+      router.refresh();
       router.push('/menu');
     }
     catch {
