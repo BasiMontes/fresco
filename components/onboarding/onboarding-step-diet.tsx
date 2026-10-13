@@ -8,7 +8,7 @@ import { LockInfoTooltip } from '@/components/onboarding/lock-info-tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
-import { ALERGENO_OPTIONS, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
 import { CONSENT_TEXTS } from '@/lib/legal/consent';
 import { postConsents } from '@/lib/legal/consent-client';
 import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
@@ -144,6 +144,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
       />
 
       <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
+      <p data-testid="alergenos_aviso" className="mt-1 text-body-sm text-tertiary">{ALERGENOS_AVISO}</p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {ALERGENO_OPTIONS.map((option) => {
           const dietaFlags = { vegano: dietaVegano, vegetariano: dietaVegetariano, sinGluten: dietaSinGluten };

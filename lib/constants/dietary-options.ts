@@ -13,9 +13,14 @@ export interface TagOption {
 // Before FRESCO-361 this list held only 6 of the catalog's tags, so a user
 // allergic to e.g. peanuts or soy literally could not declare it and got
 // served those recipes. `frutos_secos` was merged into `frutos_de_cascara`
-// in that same migration. Known gap: `mostaza` and `altramuces` (2 of the
-// EU-14) are not in the catalog — no source data to re-tag 1000 recipes;
-// tracked separately.
+// in that same migration.
+//
+// FRESCO-912 (audit C-08): `mostaza` and `altramuces` complete the 14
+// allergens the EU requires to be declared. No active recipe contains either
+// today (measured 2026-10-13), so declaring them filters nothing yet;
+// `tests/db/allergen-vocabulary.test.ts` fails the day a recipe mentions one
+// without carrying the tag. The list must match the CHECK constraints
+// `recipes_alergenos_vocab` and `ingredient_substitutions_alergenos_vocab`.
 export const ALERGENO_OPTIONS: TagOption[] = [
   { value: 'gluten', label: 'Gluten' },
   { value: 'lactosa', label: 'Lactosa' },
@@ -29,7 +34,13 @@ export const ALERGENO_OPTIONS: TagOption[] = [
   { value: 'sesamo', label: 'Sésamo' },
   { value: 'apio', label: 'Apio' },
   { value: 'sulfitos', label: 'Sulfitos' },
+  { value: 'mostaza', label: 'Mostaza' },
+  { value: 'altramuces', label: 'Altramuces' },
 ];
+
+// FRESCO-912: shown under the allergen chips (onboarding and profile). Says what the app
+// covers and what it cannot promise, so a declared allergy is never read as a guarantee.
+export const ALERGENOS_AVISO = 'Puedes indicar cualquiera de los 14 alérgenos de declaración obligatoria en la UE. Filtramos las recetas según los alérgenos que declara cada una; no podemos garantizar trazas ni ingredientes ocultos en productos elaborados, así que revisa siempre las etiquetas.';
 
 // Curated subset of the seeded `recipes.ingredientes_que_puede_desagradar`
 // vocabulary — same rationale as allergens above.
