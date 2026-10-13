@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { cache } from 'react';
-import { UserProfileError } from './errors';
+import { isCheckViolation, NOMBRE_TOO_LONG_MESSAGE, UserProfileError } from './errors';
 
 /**
  * Updates the CURRENTLY authenticated user's display name (FRESCO-55, `/menu`
@@ -34,6 +34,9 @@ export async function updateNombre(
     .eq('id', user.id);
 
   if (error) {
+    if (isCheckViolation(error)) {
+      throw new UserProfileError(NOMBRE_TOO_LONG_MESSAGE);
+    }
     throw new UserProfileError(`No se pudo guardar el nombre: ${error.message}`);
   }
 }
