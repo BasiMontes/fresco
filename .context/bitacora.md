@@ -229,3 +229,8 @@ Historia archivada:
 - Qué: el cron escribe su latido en job_heartbeat y reporta sus fallos a Sentry (PR #633, migración 20261013150000 aplicada con db push); GET /api/health/jobs y workflow cron-heartbeat-monitor.yml cada hora (PR #634). Umbral 25 h; un job que nunca ha reportado queda en pending.
 - Por qué: auditoría definitiva 2026-10-12, C-11; cron.job_run_details marca succeeded aunque la ruta responda 401 o 500 y es la única red de pagos perdidos.
 - Siguiente: FRESCO-949, verificar tras promocionar a main el primer latido real, el simulacro del monitor y el caso stale; el criterio de alertar en menos de 26 h no se ejercitó de punta a punta.
+
+## 2026-10-13 - FRESCO-913 plan semanal en una transacción
+- Qué: create_meal_plan crea el plan y sus slots en una transacción (SECURITY INVOKER, solo service_role); valida la semana ISO y que fecha_inicio sea su lunes; CHECK sobre semana_iso; generate-meal-plan la llama en lugar de dos inserts con compensación manual (PR #635; migración 20261013160000 aplicada con db push ANTES del merge; generate-meal-plan v49). Borrado el plan huérfano 2026-W99 de pro-user, resto de un test e2e.
+- Por qué: auditoría definitiva 2026-10-12, C-09; un corte entre los dos inserts dejaba un plan sin slots que bloqueaba regenerar esa semana con un 409.
+- Siguiente: ninguno propio; el e2e de aislamiento sembraba la semana inválida 2026-W99 y ahora usa 2026-W51.
