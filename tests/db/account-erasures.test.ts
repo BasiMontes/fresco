@@ -10,7 +10,12 @@
  *      id is refused), and a pending PostHog id exists if and only if the PostHog deletion
  *      failed.
  *
- * Rows written here stay: the service role is granted insert and select only, on purpose.
+ *   4. FRESCO-947: the retry sweep (service role) can move a failed PostHog row to `deleted`
+ *      only by clearing the id in the same write, can count attempts, and cannot rewrite the
+ *      hash, the Stripe outcome or the erasure date.
+ *
+ * Rows written here stay: the service role is granted insert, select and a column-level
+ * update, never delete, on purpose.
  *
  * Runs only when `RUN_DB_INTEGRATION=1` AND the local Supabase stack answers —
  * `bun run test:db`. See `tests/db/README.md`.
@@ -100,5 +105,78 @@ describe.skipIf(!(RUN && reachable))('account_erasures (real DB)', () => {
   test('stripe and posthog only take their documented values', async () => {
     expect((await insertAsService({ user_hash: sha256Hex(), stripe: 'refunded', posthog: 'deleted' })).status).toBe(400);
     expect((await insertAsService({ user_hash: sha256Hex(), stripe: 'none', posthog: 'maybe' })).status).toBe(400);
+  });
+
+  describe('retrying a failed PostHog deletion (FRESCO-947)', () => {
+    async function insertFailed(): Promise<string> {
+      const hash = sha256Hex();
+      const inserted = await insertAsService({ user_hash: hash, stripe: 'none', posthog: 'failed', pending_posthog_distinct_id: crypto.randomUUID() });
+      expect(inserted.status).toBe(201);
+      return hash;
+    }
+
+    async function patchAsService(hash: string, changes: Record<string, unknown>) {
+      return rest('account_erasures', { method: 'PATCH', serviceRole: true, query: `user_hash=eq.${hash}`, prefer: 'return=minimal', body: changes });
+    }
+
+    async function readRow(hash: string) {
+      const read = await rest('account_erasures', { serviceRole: true, query: `user_hash=eq.${hash}&select=posthog,pending_posthog_distinct_id,posthog_attempts,posthog_last_attempt_at` });
+      return (read.body as Array<{ posthog: string, pending_posthog_distinct_id: string | null, posthog_attempts: number, posthog_last_attempt_at: string | null }>)[0];
+    }
+
+    test('a new row starts with no attempts', async () => {
+      const hash = await insertFailed();
+
+      expect(await readRow(hash)).toMatchObject({ posthog: 'failed', posthog_attempts: 0, posthog_last_attempt_at: null });
+    });
+
+    test('a row leaves failed only by dropping its id in the same write', async () => {
+      const hash = await insertFailed();
+
+      const idKept = await patchAsService(hash, { posthog: 'deleted' });
+      expect(idKept.status).toBe(400);
+      expect((idKept.body as { code?: string }).code).toBe(CHECK_VIOLATION);
+
+      const done = await patchAsService(hash, { posthog: 'deleted', pending_posthog_distinct_id: null, posthog_last_attempt_at: new Date().toISOString() });
+      expect(done.status).toBe(204);
+      expect(await readRow(hash)).toMatchObject({ posthog: 'deleted', pending_posthog_distinct_id: null });
+    });
+
+    test('a failing retry counts an attempt and the row stays failed with its id', async () => {
+      const hash = await insertFailed();
+
+      const counted = await patchAsService(hash, { posthog_attempts: 1, posthog_last_attempt_at: new Date().toISOString() });
+      expect(counted.status).toBe(204);
+
+      const row = await readRow(hash);
+      expect(row).toMatchObject({ posthog: 'failed', posthog_attempts: 1 });
+      expect(row.pending_posthog_distinct_id).not.toBeNull();
+    });
+
+    test('the attempt counter cannot go negative', async () => {
+      const res = await patchAsService(await insertFailed(), { posthog_attempts: -1 });
+
+      expect(res.status).toBe(400);
+      expect((res.body as { code?: string }).code).toBe(CHECK_VIOLATION);
+    });
+
+    test('the sweep cannot rewrite the hash, the Stripe outcome or the erasure date', async () => {
+      const hash = await insertFailed();
+
+      for (const changes of [{ user_hash: sha256Hex() }, { stripe: 'cancelled' }, { erased_at: new Date().toISOString() }]) {
+        const res = await patchAsService(hash, changes);
+        expect(res.status).toBe(403);
+        expect((res.body as { code?: string }).code).toBe(PERMISSION_DENIED);
+      }
+    });
+
+    test('a signed-in user cannot touch the retry columns', async () => {
+      const hash = await insertFailed();
+
+      const res = await rest('account_erasures', { method: 'PATCH', token: user.token, query: `user_hash=eq.${hash}`, prefer: 'return=minimal', body: { posthog_attempts: 99 } });
+
+      expect(res.status).toBe(403);
+      expect((await readRow(hash)).posthog_attempts).toBe(0);
+    });
   });
 });

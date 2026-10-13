@@ -210,7 +210,7 @@ function printHuman(r: DriftReport): void {
   console.error(
     '  Fix: redeploy with `bun scripts/deploy-changed-functions.ts` (or\n'
     + '  `supabase functions deploy <fn> --use-api --import-map supabase/functions/deno.json`,\n'
-    + '  plus `--no-verify-jwt` for send-weekly-reengagement-push). See supabase/functions/README.md.',
+    + '  plus `--no-verify-jwt` for send-weekly-reengagement-push and retry-posthog-erasures). See supabase/functions/README.md.',
   );
 }
 
