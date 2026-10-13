@@ -26,6 +26,24 @@ Any free HTTP monitor works; UptimeRobot's free plan (5 minute interval) is enou
 2. Alert contact: the owner's email (the only person on call today).
 3. **Drill, to prove it alerts**: create a second monitor on `https://fresco-pro.vercel.app/api/health-drill` (a path that does not exist, so it answers `404`), wait for the "down" email, then delete it. Attach the email or the monitor's event log to the ticket.
 
+## Cron heartbeat
+
+FRESCO-915 (definitive audit C-11). The Stripe reconciliation cron (ADR-0015) is the only safety net for lost payments, and `cron.job_run_details` cannot tell you it stopped: `net.http_get` only enqueues, so the table says `succeeded` even when the route answers `401` (a rotated `CRON_SECRET`) or `500`.
+
+| Piece | Where | What it does |
+|---|---|---|
+| Heartbeat | table `job_heartbeat`, `lib/jobs/heartbeat.ts`, `app/api/cron/stripe-reconcile/route.ts` | the route upserts `last_success_at` for `stripe-reconcile` when a pass gets to the end. Not written when Stripe answered for none of the profiles checked. Closed to every client role; only the service role writes it. |
+| Status endpoint | `GET /api/health/jobs` (`app/api/health/jobs/route.ts`) | public, never cached. `200` when each monitored job is `ok` or `pending`, `503` when one is `stale` (no heartbeat for more than 25 h) or the heartbeats cannot be read. The body carries statuses only, no timestamps. |
+| Monitor | `.github/workflows/cron-heartbeat-monitor.yml` | every hour it calls `/api/health/jobs` on production, retrying 3 times, and opens ONE issue labelled `cron-heartbeat-failure` when it does not answer `200`; it closes the issue when it recovers. |
+| Sentry | the reconcile route | a missing `CRON_SECRET` or price id, a failed profile load, a failing row, a failed checkout sweep and a failed heartbeat write are reported with the tag `cron_job: stripe-reconcile`. A wrong secret answers `401` without reporting, so a probe cannot flood Sentry. |
+
+- **Timing**: the cron fires at 04:17 UTC daily, so a healthy heartbeat is about 24 h old. The limit is 25 h and the monitor probes hourly, so a stopped job raises an alert within roughly 26 h of its last success.
+- **`pending` is not an alert**: a job that has never reported (the table is new, or the cron has not run since this was deployed) is `pending`. Alerting on it would fire before the first scheduled run. The cost: a job that NEVER works from day one stays `pending`. The first real heartbeat closes that gap.
+- **Limit**: GitHub schedules are best-effort, like the uptime monitor above. A floor, not a guarantee.
+- **Drill**: Actions > Cron heartbeat monitor > Run workflow, with `path` set to `/api/health/jobs-drill` (does not exist, answers `404`). It opens an issue labelled `cron-heartbeat-drill`, separate from the real one. Close it by hand afterwards.
+- **If it fires**: open `https://fresco-pro.vercel.app/api/health/jobs`. `stale` means the cron stopped or never gets past authentication: check `CRON_SECRET` in the Vercel Production scope against the Supabase Vault secret the `pg_cron` job sends, and Sentry for events tagged `cron_job: stripe-reconcile`. `unknown` means the heartbeats could not be read: check Supabase.
+- **Adding a job**: write its heartbeat with `recordJobHeartbeat(client, 'job-name')` and add the name to `MONITORED_JOBS` in `lib/jobs/heartbeat.ts`.
+
 ## Sentry: minimum alerts (owner action)
 
 Project settings > Alerts, environment `production`, notify the owner by email:

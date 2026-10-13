@@ -1,0 +1,106 @@
+name: Cron heartbeat monitor (production /api/health/jobs)
+
+# FRESCO-915 (definitive audit C-11): the Stripe reconciliation cron is the only safety net for
+# lost payments, and `cron.job_run_details` reports `succeeded` even when the route answers 401
+# (a rotated CRON_SECRET) or 500, because `net.http_get` only enqueues. The route now writes its
+# own heartbeat; this workflow asks production, every hour, whether each scheduled job reported
+# recently. It opens ONE issue (later failures comment on it) when `/api/health/jobs` does not
+# answer 200, and closes it when it recovers.
+#
+# `/api/health/jobs` answers 503 when a job has not reported for more than 25 hours (a daily cron
+# plus an hour of slack) or when the heartbeats cannot be read, and 200 when every job is `ok` or
+# still `pending` (it has not run since the heartbeat was deployed). With an hourly probe a
+# stopped job raises an alert within roughly 26 hours of its last success.
+#
+# Limits, stated plainly: GitHub schedules are best-effort and can start late or be skipped, so
+# this is a floor, not a guarantee. A job that has NEVER reported stays `pending` and does not
+# alert; that is deliberate, or this would fire before the first scheduled run after a deploy.
+#
+# Drill: run it by hand with a path that does not exist (e.g. `/api/health/jobs-drill`) to prove
+# the alert works. A drill uses its own label so it never touches the real issue.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      path:
+        description: 'Path to probe. Anything other than /api/health/jobs is a drill.'
+        required: false
+        default: '/api/health/jobs'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: cron-heartbeat-monitor
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: probe production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Production `web_url` in `.agents/project.yaml`.
+      BASE_URL: https://fresco-pro.vercel.app
+      PROBE_PATH: ${{ inputs.path || '/api/health/jobs' }}
+      GH_TOKEN: ${{ github.token }}
+      # No checkout in this job, so `gh` cannot infer the repository from a clone.
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Probe, retrying before declaring a job stopped
+        id: probe
+        run: |
+          if ! printf '%s' "$PROBE_PATH" | grep -Eq '^/[A-Za-z0-9/_-]*$'; then
+            echo "Refusing odd probe path"
+            exit 2
+          fi
+          code=000
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o body.json -w '%{http_code}' --max-time 20 "$BASE_URL$PROBE_PATH" || echo 000)
+            echo "attempt $attempt: HTTP $code"
+            [ "$code" = "200" ] && break
+            [ "$attempt" -lt 3 ] && sleep 15
+          done
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          # The body is statuses only (ok, stale, pending), safe to print and to put in an issue.
+          if [ -s body.json ]; then
+            echo "body=$(head -c 300 body.json | tr -d '\n')" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$PROBE_PATH" = "/api/health/jobs" ]; then
+            echo "label=cron-heartbeat-failure" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=cron-heartbeat-drill" >> "$GITHUB_OUTPUT"
+          fi
+          [ "$code" = "200" ]
+
+      - name: Open or update the stopped-job issue
+        if: failure() && steps.probe.outputs.code != ''
+        env:
+          LABEL: ${{ steps.probe.outputs.label }}
+          CODE: ${{ steps.probe.outputs.code }}
+          BODY: ${{ steps.probe.outputs.body }}
+        run: |
+          gh label create "$LABEL" --color b60205 --description "Cron heartbeat monitor alert" 2>/dev/null || true
+          existing=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Still failing (HTTP $CODE, $BODY): $RUN_URL"
+            exit 0
+          fi
+          gh issue create \
+            --title "A scheduled job has stopped reporting (HTTP $CODE)" \
+            --label "$LABEL" \
+            --body "$BASE_URL$PROBE_PATH did not answer 200 after 3 attempts. Response: $BODY. Run: $RUN_URL. What to check first: docs/workflows/observability.md, section Cron heartbeat."
+
+      - name: Close the stopped-job issue when it recovers
+        if: success()
+        env:
+          LABEL: ${{ steps.probe.outputs.label }}
+        run: |
+          existing=$(gh issue list --label "$LABEL" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "Recovered, probe answered 200: $RUN_URL"
+          fi
