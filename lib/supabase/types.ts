@@ -134,6 +134,24 @@ export type Database = {
         }
         Relationships: []
       }
+      job_heartbeat: {
+        Row: {
+          job: string
+          last_success_at: string
+          updated_at: string
+        }
+        Insert: {
+          job: string
+          last_success_at: string
+          updated_at?: string
+        }
+        Update: {
+          job?: string
+          last_success_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meal_plan_recipes: {
         Row: {
           created_at: string

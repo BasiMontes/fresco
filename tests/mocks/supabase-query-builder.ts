@@ -24,9 +24,17 @@ export interface TableFixture {
   selectError?: unknown
   /** Error the terminal `.eq()` of an `update` on this table resolves with. */
   updateError?: unknown
+  /** Error an `upsert` on this table resolves with. */
+  upsertError?: unknown
 }
 
 export type FakeRpc = (name: string, args: unknown) => Promise<{ data: unknown, error: unknown }>;
+
+export interface RecordedUpsert {
+  table: string
+  payload: Record<string, unknown>
+  options: Record<string, unknown> | undefined
+}
 
 export interface FakeSupabase {
   client: {
@@ -35,6 +43,8 @@ export interface FakeSupabase {
     auth?: unknown
   }
   updates: RecordedUpdate[]
+  /** Every `.upsert(payload, options)` that ran. */
+  upserts: RecordedUpsert[]
   /** `[name, args]` for every `.rpc(name, args)` that ran. */
   rpcCalls: Array<[string, unknown]>
 }
@@ -44,6 +54,7 @@ const ALLOW_ALL_RPC: FakeRpc = async () => ({ data: true, error: null });
 
 export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: unknown, rpc: FakeRpc = ALLOW_ALL_RPC): FakeSupabase {
   const updates: RecordedUpdate[] = [];
+  const upserts: RecordedUpsert[] = [];
   const rpcCalls: Array<[string, unknown]> = [];
 
   function selectResult(table: string) {
@@ -88,6 +99,10 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
       return {
         select: () => selectChain(table),
         update: (payload: Record<string, unknown>) => updateChain(table, payload),
+        upsert: async (payload: Record<string, unknown>, options?: Record<string, unknown>) => {
+          upserts.push({ table, payload, options });
+          return { error: tables[table]?.upsertError ?? null };
+        },
       };
     },
     rpc: async (name: string, args: unknown) => {
@@ -97,5 +112,5 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
     ...(auth ? { auth } : {}),
   };
 
-  return { client, updates, rpcCalls };
+  return { client, updates, upserts, rpcCalls };
 }

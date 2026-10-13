@@ -1,4 +1,5 @@
 import type { createServiceClient } from '@/lib/supabase/service';
+import * as realSentry from '@sentry/nextjs';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import Stripe from 'stripe';
 import * as realStripe from '@/lib/stripe';
@@ -24,6 +25,10 @@ const retrieveMock = mock(async (_id: string): Promise<Stripe.Subscription> => (
 
 // FRESCO-909: the paid-checkout sweep runs last; by default Stripe lists no sessions.
 const listSessionsMock = mock((_params: unknown): AsyncIterable<Stripe.Checkout.Session> => (async function* () {})());
+
+// FRESCO-915: what the route reports to Sentry.
+const captureException = mock((_error: unknown, _context?: unknown) => 'event-id');
+void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException }));
 
 let supa = fakeSupabase();
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
@@ -310,5 +315,144 @@ describe('GET /api/cron/stripe-reconcile — reconcile loop', () => {
     const body = await res.json() as { checked: number, reconciled: number };
     expect(body.checked).toBe(1);
     expect(body.reconciled).toBe(0);
+  });
+});
+
+describe('GET /api/cron/stripe-reconcile — heartbeat and Sentry (FRESCO-915)', () => {
+  const OLD_ENV = { ...process.env };
+  const profile = { id: 'u1', plan: 'free', plan_expires_at: null, payment_failed_at: null, stripe_subscription_id: 'sub_1' };
+
+  beforeEach(() => {
+    process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
+    retrieveMock.mockReset();
+    captureException.mockClear();
+  });
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  function req(authorization = 'Bearer cron_test') {
+    return new Request('https://test.fresco.local/api/cron/stripe-reconcile', { headers: { authorization } });
+  }
+
+  const taggedAsThisJob = () => captureException.mock.calls.every(([, context]) =>
+    (context as { tags?: { cron_job?: string } }).tags?.cron_job === 'stripe-reconcile');
+
+  test('a completed pass writes the heartbeat of this job', async () => {
+    supa = fakeSupabase({ user_profiles: { rows: [] } });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(200);
+    expect(supa.upserts).toHaveLength(1);
+    expect(supa.upserts[0]).toMatchObject({ table: 'job_heartbeat', options: { onConflict: 'job' } });
+    expect(supa.upserts[0]?.payload.job).toBe('stripe-reconcile');
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  test('a pass that reconciled a row writes it too', async () => {
+    retrieveMock.mockImplementation(async () => activeSubscription());
+    supa = fakeSupabase({ user_profiles: { rows: [profile] } });
+
+    const body = await (await GET(req())).json() as { reconciled: number, failures: number };
+
+    expect(body).toMatchObject({ reconciled: 1, failures: 0 });
+    expect(supa.upserts).toHaveLength(1);
+  });
+
+  test('when Stripe answers for none of the profiles there is no heartbeat, and Sentry hears of it', async () => {
+    retrieveMock.mockImplementation(async () => {
+      throw new Error('stripe unreachable');
+    });
+    supa = fakeSupabase({ user_profiles: { rows: [profile] } });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(200);
+    expect((await res.json() as { failures: number }).failures).toBe(1);
+    expect(supa.upserts).toEqual([]);
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(taggedAsThisJob()).toBe(true);
+  });
+
+  test('one failing row among others does not stop the heartbeat', async () => {
+    retrieveMock
+      .mockImplementationOnce(async () => {
+        throw new Error('one bad row');
+      })
+      .mockImplementation(async () => activeSubscription());
+    supa = fakeSupabase({ user_profiles: { rows: [profile, { ...profile, id: 'u2', stripe_subscription_id: 'sub_2' }] } });
+
+    const body = await (await GET(req())).json() as { checked: number, failures: number };
+
+    expect(body).toMatchObject({ checked: 2, failures: 1 });
+    expect(supa.upserts).toHaveLength(1);
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  test('no heartbeat and a Sentry event when user_profiles cannot be loaded', async () => {
+    supa = fakeSupabase({ user_profiles: { rows: null, selectError: new Error('connection reset') } });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(500);
+    expect(supa.upserts).toEqual([]);
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(taggedAsThisJob()).toBe(true);
+  });
+
+  test('a missing CRON_SECRET answers 500, reports to Sentry and writes no heartbeat', async () => {
+    delete process.env.CRON_SECRET;
+    supa = fakeSupabase({ user_profiles: { rows: [] } });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(500);
+    expect(supa.upserts).toEqual([]);
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  test('a missing Pro price id answers 500, reports to Sentry and writes no heartbeat', async () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_MONTH;
+    supa = fakeSupabase({ user_profiles: { rows: [] } });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(500);
+    expect(supa.upserts).toEqual([]);
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  test('a wrong secret answers 401 with no heartbeat and nothing in Sentry (a probe must not be able to flood it)', async () => {
+    supa = fakeSupabase({ user_profiles: { rows: [] } });
+
+    const res = await GET(req('Bearer wrong'));
+
+    expect(res.status).toBe(401);
+    expect(supa.upserts).toEqual([]);
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  test('a failed heartbeat write is reported but does not fail the pass', async () => {
+    supa = fakeSupabase({ user_profiles: { rows: [] }, job_heartbeat: { upsertError: new Error('write denied') } });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(200);
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  test('a paid-checkout sweep that cannot list sessions is reported to Sentry, and the heartbeat still lands', async () => {
+    supa = fakeSupabase({ user_profiles: { rows: [] } });
+    listSessionsMock.mockImplementationOnce(() => {
+      throw new Error('stripe unreachable');
+    });
+
+    const res = await GET(req());
+
+    expect(res.status).toBe(200);
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(supa.upserts).toHaveLength(1);
   });
 });
