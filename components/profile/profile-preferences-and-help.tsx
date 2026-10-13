@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ProfilePreferencesAndHelpProps {
   dietaryPreferences: OnboardingProfilePayload
+  hasHealthDataConsent: boolean
   email: string
   planLabel: string
   memberSince: string | null
 }
 
-export function ProfilePreferencesAndHelp({ dietaryPreferences, email, planLabel, memberSince }: ProfilePreferencesAndHelpProps) {
+export function ProfilePreferencesAndHelp({ dietaryPreferences, hasHealthDataConsent, email, planLabel, memberSince }: ProfilePreferencesAndHelpProps) {
   return (
     /* FRESCO-451: found live while verifying the planning-grid scroll
        fade — a CSS grid item's default min-width is `auto`, so without
@@ -24,7 +25,7 @@ export function ProfilePreferencesAndHelp({ dietaryPreferences, email, planLabel
           <CardTitle>Preferencias</CardTitle>
         </CardHeader>
         <CardContent>
-          <PreferencesForm initialPreferences={dietaryPreferences} />
+          <PreferencesForm initialPreferences={dietaryPreferences} hasHealthDataConsent={hasHealthDataConsent} />
         </CardContent>
       </Card>
 

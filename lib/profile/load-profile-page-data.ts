@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { listPastMealPlanWeeks } from '@/lib/api/meal-plan';
-import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, getUserTrialAvailable } from '@/lib/api/user-profile';
+import { getHasHealthDataConsent, getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPlan, getUserTrialAvailable } from '@/lib/api/user-profile';
 
 /**
  * Every server-side read `/profile` needs. They are mutually independent —
@@ -10,7 +10,7 @@ import { getPaymentFailedAt, getUserDietaryPreferences, getUserNombre, getUserPl
  * calls as before) so one call's rejection can't take the others down with it.
  */
 export async function loadProfilePageData(supabase: SupabaseClient<Database>, userId: string | undefined) {
-  const [plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable] = await Promise.all([
+  const [plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable, hasHealthDataConsent] = await Promise.all([
     getUserPlan(supabase, userId).catch((error) => {
       // Same judgment call as every other page reading server-side profile
       // data: a real read failure defaults to the more conservative 'free'
@@ -65,7 +65,14 @@ export async function loadProfilePageData(supabase: SupabaseClient<Database>, us
       console.error('[/profile] getUserTrialAvailable failed, defaulting to no trial promise', error);
       return false;
     }),
+    getHasHealthDataConsent(supabase, userId).catch((error) => {
+      // FRESCO-917: unknown means ask again. Showing the consent box to someone
+      // who already consented is harmless (ticking it is idempotent); hiding it
+      // from someone who has not would leave them unable to save.
+      console.error('[/profile] getHasHealthDataConsent failed, defaulting to not consented', error);
+      return false;
+    }),
   ]);
 
-  return { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable };
+  return { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable, hasHealthDataConsent };
 }
