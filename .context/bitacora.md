@@ -194,3 +194,23 @@ Historia archivada:
 - Qué: 30 grupos de recetas con los mismos ingredientes y pasos (62 recetas) se funden en 30; 32 duplicados desactivados, 9 casillas de menu de dos cuentas de pruebas pasadas a la receta conservada, 2 fotos copiadas. Las 23 recetas "con verduras salteadas" sin esas verduras desaparecen. PR #607, main en 7858db69; produccion: 538 activas, 0 duplicados, 0 con el sufijo.
 - Por qué: al revisar la muestra de FRESCO-896 se vio que un menu podia sacar el mismo plato dos veces con nombres distintos.
 - Siguiente: observacion sin ticket, 29 casillas de menu de semanas pasadas y 3 favoritos apuntan a recetas inactivas de trabajos anteriores. FRESCO-897 (cuentas Pro) espera al fundador.
+
+## 2026-10-12 - FRESCO-942 y FRESCO-943 en staging; migración de recetas aplicada en producción
+- Qué: PR #620 (cancelar Stripe y devolver el periodo no disfrutado al borrar la cuenta) y PR #621 (41 recetas con etiquetas de alérgenos y dieta corregidas más test de coherencia) mergeadas a staging. La migración 20261012100000 se aplicó a la base compartida con db push: 47 hallazgos pasan a 0.
+- Por qué: auditoría definitiva 2026-10-12, hallazgos C-01 y C-02 (BLOCKER). Todas las auditorías previas leídas y 38 tickets creados con etiqueta auditoria-7.
+- Siguiente: cargar STRIPE_SECRET_KEY en Supabase Edge (delete-account ya desplegada, falla en cerrado sin él), probar la devolución con una cuenta de pruebas de Stripe, decidir con criterio legal el caso de los 14 días, y promocionar a main en lote.
+
+## 2026-10-13 - FRESCO-909 webhook claim caducable + barrido de checkouts pagados
+- Qué: claim de eventos Stripe caducable (claimed_at/completed_at, 409 en vuelo), grantProFromCheckoutSession extraído (lib/billing/grant-pro.ts) y barrido en el cron de reconciliación de sesiones pagadas 48 h sin Pro (lib/billing/checkout-sweep.ts). PRs #622 #623 #624 #625 en staging, ADR-0015 con addendum.
+- Por qué: audit C-03, un evento reclamado cuyo worker moría quedaba como procesado y el cron no podía curarlo (pago perdido).
+- Siguiente: promover staging a main; revisar checkoutSweep.granted en logs del cron tras la primera ejecución en producción.
+
+## 2026-10-13 - FRESCO-912 mostaza y altramuces en el vocabulario de alérgenos
+- Qué: los 14 alérgenos de la UE se pueden declarar y etiquetar (PR #627 en staging; migración 20261013120000 aplicada en producción con db push, restricciones y get_catalog verificados); aviso de cobertura en onboarding y perfil; mínimo de tests de BD 292 a 298.
+- Por qué: auditoría definitiva 2026-10-12, C-08. Hoy 0 de 538 recetas activas llevan mostaza o altramuz, así que declararlos aún no filtra nada; el test de coherencia del catálogo lo vigila.
+- Siguiente: ninguna receta cubre esos dos alérgenos todavía; promocionar staging a main en lote; ADR-0043 sigue Proposed (adr:check fallará hacia el 26-27 de octubre).
+
+## 2026-10-13 - FRESCO-910 exportación completa y supresión en PostHog con registro
+- Qué: la exportación CSV incluye favoritos, consentimientos, push y correo (PR #628); delete-account borra la persona en PostHog y escribe account_erasures con el id hasheado (PR #629, migración 20261013140000 aplicada con db push; secretos de PostHog en Edge). Verificado en vivo con la cuenta de dev y con Stripe en modo de pruebas.
+- Por qué: auditoría definitiva 2026-10-12, C-06 (RGPD, derecho de acceso y de supresión).
+- Siguiente: FRESCO-947 reintento de borrados de PostHog fallidos; FRESCO-946 posible fuga del sidebar entre cuentas; recrear la cuenta de dev; el borrado completo con sesión y cliente de Stripe no se ejercitó por el captcha.
