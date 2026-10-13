@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
+import { TEXTO_LIBRE_MAX_LENGTH } from '@/lib/constants/profile-limits';
 import { CONSENT_TEXTS } from '@/lib/legal/consent';
 import { postConsents } from '@/lib/legal/consent-client';
 import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
@@ -136,6 +137,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
       <Input
         data-testid="dieta_texto_libre_input"
         type="text"
+        maxLength={TEXTO_LIBRE_MAX_LENGTH}
         value={dietaTextoLibre}
         onChange={e => setDietaTextoLibre(e.target.value)}
         placeholder="¿Algo más que debamos saber?"

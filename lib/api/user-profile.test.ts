@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { OnboardingProfilePayload } from './user-profile';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
+import { NOMBRE_TOO_LONG_MESSAGE, PROFILE_TOO_LARGE_MESSAGE } from '@/lib/api/user-profile/errors';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 import { getShouldShowRoutesNotice, getShouldShowWelcomeNotice, getUserNombre, getUserPlan, getUserTrialAvailable, hasUserProfile, markRoutesNoticeDismissed, markWelcomeNoticeSeen, updateNombre, upsertUserProfile, UserProfileError } from './user-profile';
 
@@ -38,7 +39,33 @@ async function expectRejection(promise: Promise<unknown>): Promise<void> {
   expect(thrownError).toBeInstanceOf(UserProfileError);
 }
 
+async function rejectionMessage(promise: Promise<unknown>): Promise<string> {
+  try {
+    await promise;
+  }
+  catch (error) {
+    return (error as Error).message;
+  }
+  throw new Error('expected a rejection');
+}
+
 describe('upsertUserProfile', () => {
+  // FRESCO-914: `user_profiles` caps the size of a profile; a refused save says so in words.
+  test('says the profile is too large, not Postgres\' constraint text, when a CHECK refuses the save', async () => {
+    const { client } = createMockClient({ userId: 'user-123', errorMessage: 'new row for relation "user_profiles" violates check constraint "user_profiles_lists_bounds"', errorCode: '23514' });
+
+    const message = await rejectionMessage(upsertUserProfile(client, SAMPLE_PAYLOAD));
+
+    expect(message).toBe(PROFILE_TOO_LARGE_MESSAGE);
+    expect(message).not.toContain('constraint');
+  });
+
+  test('keeps the generic message, with the cause, for any other database error', async () => {
+    const { client } = createMockClient({ userId: 'user-123', errorMessage: 'connection reset', errorCode: '08006' });
+
+    expect(await rejectionMessage(upsertUserProfile(client, SAMPLE_PAYLOAD))).toContain('No se pudo guardar el perfil: connection reset');
+  });
+
   test('builds the expected payload shape, keyed by the authenticated user id', async () => {
     const { client, callsOf } = createMockClient({ userId: 'user-123' });
 
@@ -188,7 +215,7 @@ describe('hasUserProfile', () => {
 });
 
 /** Minimal mock client exposing `.update().eq()` — all `updateNombre()` calls. */
-function createUpdateNombreMockClient(options: { userId?: string, updateErrorMessage?: string } = {}) {
+function createUpdateNombreMockClient(options: { userId?: string, updateErrorMessage?: string, updateErrorCode?: string } = {}) {
   const updateCalls: unknown[] = [];
 
   const mock = {
@@ -203,7 +230,7 @@ function createUpdateNombreMockClient(options: { userId?: string, updateErrorMes
       update: (payload: unknown) => ({
         eq: async () => {
           updateCalls.push(payload);
-          return { error: options.updateErrorMessage ? { message: options.updateErrorMessage } : null };
+          return { error: options.updateErrorMessage ? { message: options.updateErrorMessage, code: options.updateErrorCode } : null };
         },
       }),
     }),
@@ -213,6 +240,15 @@ function createUpdateNombreMockClient(options: { userId?: string, updateErrorMes
 }
 
 describe('updateNombre', () => {
+  test('says the name is too long when the CHECK on the name refuses it (FRESCO-914)', async () => {
+    const { client } = createUpdateNombreMockClient({ userId: 'user-123', updateErrorMessage: 'violates check constraint "user_profiles_text_bounds"', updateErrorCode: '23514' });
+
+    const message = await rejectionMessage(updateNombre(client, 'a'.repeat(81)));
+
+    expect(message).toBe(NOMBRE_TOO_LONG_MESSAGE);
+    expect(message).toContain('80');
+  });
+
   test('updates the trimmed nombre for the authenticated user', async () => {
     const { client, updateCalls } = createUpdateNombreMockClient({ userId: 'user-123' });
 
