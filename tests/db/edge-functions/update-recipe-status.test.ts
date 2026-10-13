@@ -115,7 +115,7 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — HTTP negative con
   });
 
   test('422 substitution with a recipe carrying a declared allergen', async () => {
-    const user = await ctx.createUser();
+    const user = await ctx.createUser({ healthDataConsent: true });
     await rest('user_profiles', {
       method: 'PATCH',
       token: user.token,

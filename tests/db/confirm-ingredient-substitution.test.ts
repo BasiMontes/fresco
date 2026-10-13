@@ -65,7 +65,7 @@ describe.skipIf(!(RUN && reachable))('confirm_ingredient_substitution (real DB)'
   });
 
   test('a candidate that is no longer safe (declared soy allergy) is rejected, even though it was in the catalog', async () => {
-    const soyAllergic = await ctx.createUser();
+    const soyAllergic = await ctx.createUser({ healthDataConsent: true });
     await rest('user_profiles', {
       method: 'PATCH',
       token: soyAllergic.token,
