@@ -49,6 +49,10 @@ export type OnboardingProfilePayload = Pick<
   | 'presupuesto_semana_euros'
   | 'planning_selection'
   | 'nivel_experiencia'
+  // FRESCO-919: the cookie-banner analytics decision, added by the browser wrapper
+  // (`lib/client-api/user-profile.ts`) so a profile created at onboarding already
+  // carries it. Omitted = left untouched.
+  | 'analytics_consent'
 >>;
 
 /**
