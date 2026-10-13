@@ -1,6 +1,6 @@
 # ADR-0040 — Consent registry: an append-only `user_consents` table, written under the user's own RLS
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-04
 - **Deciders:** Basi Montes
 - **Tags:** privacy, gdpr, rls, consent, cross-cutting-invariant
