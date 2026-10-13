@@ -54,11 +54,16 @@ export async function GET() {
   const mealPlansWithoutNesting = mealPlans.map(({ meal_plan_recipes: _recipes, ...rest }) => rest);
 
   const sections: { name: string, rows: Record<string, unknown>[] }[] = [
+    // FRESCO-910: the address is on `auth.users`, not in any table the export reads.
+    { name: 'account', rows: user.email ? [{ email: user.email }] : [] },
     { name: 'user_profile', rows: exported.profile ? [exported.profile] : [] },
     { name: 'meal_plans', rows: mealPlansWithoutNesting },
     { name: 'meal_plan_recipes', rows: mealPlanRecipes },
     { name: 'shopping_lists', rows: exported.shoppingLists },
     { name: 'recetas_propias', rows: exported.recetasPropias },
+    { name: 'favorites', rows: exported.favorites },
+    { name: 'user_consents', rows: exported.consents },
+    { name: 'push_subscriptions', rows: exported.pushSubscriptions },
   ];
 
   const csvBlocks = sections
