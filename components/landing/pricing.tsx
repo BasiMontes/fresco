@@ -59,7 +59,7 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
         <h2 className="mb-8 text-h2 text-background">Sin letra pequeña. Sin trampa.</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col rounded-card border border-border bg-surface p-7">
-            <p className="text-h6 uppercase text-tertiary">Free</p>
+            <p className="text-h6 uppercase text-tertiary">Gratis</p>
             <p className="mb-1 text-h1 text-text">
               0€
               <span className="text-body-md font-normal text-tertiary">/mes</span>
@@ -80,7 +80,7 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
                   cream on amber measured 2,18:1 in dark. Same pairing the
                   `button-action` CTA uses on this same fill. */}
               <span className="rounded-full bg-secondary px-2.5 py-0.5 text-caption uppercase text-on-warning">
-                Popular
+                Más elegido
               </span>
             </div>
             <p className="mb-1 text-h1 text-primary">

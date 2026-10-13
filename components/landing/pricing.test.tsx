@@ -8,6 +8,18 @@ import { Pricing } from './pricing';
  * leaves the section as it was before the annual plan.
  */
 
+describe('Pricing — plan labels', () => {
+  // FRESCO-938 (UX-05): the Spanish product showed FREE and POPULAR in English.
+  test('names the free plan and the highlighted tag in Spanish', () => {
+    renderWithProviders(<Pricing prices={{ month: 4.99, year: null }} />);
+
+    expect(screen.getByText('Gratis')).toBeTruthy();
+    expect(screen.getByText('Más elegido')).toBeTruthy();
+    expect(screen.queryByText('Free')).toBeNull();
+    expect(screen.queryByText('Popular')).toBeNull();
+  });
+});
+
 describe('Pricing — Pro column', () => {
   test('shows the monthly price and the annual one with what it saves', () => {
     renderWithProviders(<Pricing prices={{ month: 4.99, year: 44.99 }} />);

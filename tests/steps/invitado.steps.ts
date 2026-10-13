@@ -26,7 +26,7 @@ Given(/^que una visitante sin cuenta ni sesión visita la landing$/, async ({ pa
 When(/^completa el onboarding de 3 pasos y genera su menú$/, async ({ page }) => {
   await page.goto('/onboarding');
   // FRESCO-197: the anonymous session is created by an explicit choice on
-  // the IdentityStep ("Continuar como invitada"), not a silent mount effect.
+  // the IdentityStep ("Probar sin cuenta"), not a silent mount effect.
   // FRESCO-794: age 14+ and Terms/Privacy come before anything is created.
   await page.getByTestId('confirm_age_checkbox').check();
   await page.getByTestId('accept_terms_checkbox').check();
@@ -70,7 +70,7 @@ Given(/^que una visitante sin cuenta ni sesión abre el onboarding$/, async ({ p
   expect(await hasAuthCookie(page)).toBe(false);
 });
 
-When(/^pulsa "Continuar como invitada" sin marcar la edad ni los términos$/, async ({ page }) => {
+When(/^pulsa "Probar sin cuenta" sin marcar la edad ni los términos$/, async ({ page }) => {
   await page.getByTestId('onboarding_continue_as_guest_button').click();
 });
 

@@ -26,7 +26,7 @@ export const POSTHOG_EVENTS = {
 
   // Acquisition + activation funnel (landing → signup → onboarding → menu).
   LANDING_CTA_CLICKED: 'landing_cta_clicked',
-  // FRESCO-374 (A4-M24): a guest-mode entry ("Continuar como invitada"). Kept
+  // FRESCO-374 (A4-M24): a guest-mode entry ("Probar sin cuenta"). Kept
   // OUT of `user_signed_up` so that event means "a real account was created"
   // only — a guest converting later still fires `user_signed_up`.
   GUEST_STARTED: 'guest_started',
