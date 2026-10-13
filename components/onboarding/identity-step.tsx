@@ -28,7 +28,7 @@ type IdentityChoice = 'guest' | 'account' | null;
 
 /**
  * FRESCO-197: the first thing a brand-new visitor to `/onboarding` sees —
- * "continuar como invitada" (no prompts at all, ADR-0003 `signInAnonymously`)
+ * "probar sin cuenta" (no prompts at all, ADR-0003 `signInAnonymously`)
  * vs "crear cuenta" (asks email + password only on this branch, using
  * FRESCO-198's `EmailInput`/`PasswordInput`).
  *
@@ -311,10 +311,10 @@ export function IdentityStep({ onResolved }: IdentityStepProps) {
               onClick={() => void handleGuest()}
               disabled={isSubmitting || !captcha.ready}
             >
-              {isSubmitting ? 'Entrando…' : 'Continuar como invitada'}
+              {isSubmitting ? 'Entrando…' : 'Probar sin cuenta'}
             </Button>
             <p data-testid="onboarding_guest_deletion_notice" className="text-center text-body-sm text-tertiary">
-              Como invitada, tu progreso se borra a los 3 días si no creas una cuenta.
+              Sin cuenta, tu progreso se borra a los 3 días si no creas una.
             </p>
           </div>
         </div>

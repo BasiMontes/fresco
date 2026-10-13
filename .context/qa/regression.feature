@@ -498,7 +498,7 @@ Característica: Flujo completo de usuario en Fresco
   # casillas son PROVISIONALES (borrador FRESCO-365, sin validar por el abogado).
   Escenario: Una visitante no puede empezar sin confirmar su edad ni aceptar los términos
     Dado que una visitante sin cuenta ni sesión abre el onboarding
-    Cuando pulsa "Continuar como invitada" sin marcar la edad ni los términos
+    Cuando pulsa "Probar sin cuenta" sin marcar la edad ni los términos
     Entonces ve el aviso de que debe confirmar su edad y el de que debe aceptar los términos
     Y no se crea ninguna sesión y sigue en la elección de identidad
     Y al marcar las dos casillas puede continuar como invitada
@@ -2005,7 +2005,7 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/landing.steps.ts (FRESCO-355)
   Escenario: La landing pública muestra el value proposition, precios y FAQ sin necesidad de sesión
     Dado que un visitante sin cuenta ni sesión visita /
-    Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Free y Pro) y FAQ
+    Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Gratis y Pro) y FAQ
     Y ambos CTA principales ("Generar mi primer menú", "Empezar gratis") llevan a /onboarding
 
   @landing @verificado-manual-2026-08-19 @automatizado

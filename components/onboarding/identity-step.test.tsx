@@ -54,6 +54,14 @@ afterEach(() => {
 });
 
 describe('IdentityStep — guest', () => {
+  // FRESCO-938 (UX-06): the guest entry used a fixed feminine label ("invitada").
+  test('the guest button and its notice are worded without gender', () => {
+    renderWithProviders(<IdentityStep onResolved={mock(() => {})} />);
+
+    expect(screen.getByTestId('onboarding_continue_as_guest_button').textContent).toBe('Probar sin cuenta');
+    expect(screen.getByTestId('onboarding_guest_deletion_notice').textContent).toBe('Sin cuenta, tu progreso se borra a los 3 días si no creas una.');
+  });
+
   test('without the consents ticked, it says what is missing and creates nothing', async () => {
     const onResolved = mock(() => {});
     const user = setupUser();
