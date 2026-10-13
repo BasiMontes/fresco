@@ -25,6 +25,7 @@ bypasses of exactly this class (FRESCO-360, FRESCO-361, FRESCO-362).
 | `meal-plan-insert-paths.test.ts` | FRESCO-777. `authenticated` cannot INSERT into `meal_plans` / `meal_plan_recipes` (permission denied, `42501`), including a forged slot (`estado: cocinada`, rating, substitution), and `shopping_lists` only accepts a `meal_plan_id` the caller owns on INSERT and UPDATE. Fixtures seed through the service-role path (`seedMealPlan`, `seedSlots`). |
 | `assign-recipe-to-slot.test.ts` | FRESCO-878. `assign_recipe_to_slot` (`SECURITY INVOKER`, no identity parameter): the owner puts an allowed recipe into an open slot; a foreign or missing slot, another `tipo_plato`, a recipe the profile filters out (allergen), a cooked / discarded / excluded slot, a past day and an anonymous caller are all refused with `P0001` (or 401/403) and leave the slot untouched. |
 | `recipe-ingredient-names-distinct.test.ts` | FRESCO-876. `recipes_ingredientes_principales_distinct`: a recipe cannot list the same ingredient twice (case and spaces ignored) on insert or update, and no catalog recipe does. |
+| `create-meal-plan.test.ts` | FRESCO-913. `create_meal_plan`, the one transaction that writes a weekly plan and its slots: creates both, refuses a malformed week, a `fecha_inicio` that is not its Monday or no slots (`22023`), rolls the plan back when the slots fail (bad day, duplicate slot, unknown recipe), answers a unique violation for a second plan in the same week, is executable by the service role only, and the table refuses a malformed week even when written directly. |
 | `job-heartbeat.test.ts` | FRESCO-915. `job_heartbeat`, the last successful run of each scheduled job: closed to every client role (a user cannot read it or forge a fresh heartbeat), upsertable by the service role (a second write updates the row), and the job name must be a short slug. |
 | `account-erasures.test.ts` | FRESCO-910. `account_erasures`, the record that an account was erased: closed to every client role, writable and readable by the service role, the user hash must be a SHA-256 digest (a raw id is refused), and a pending PostHog id exists if and only if the PostHog deletion failed. |
 | `allergen-vocabulary.test.ts` | FRESCO-912. The vocabulary covers the 14 EU allergens: a recipe can carry `mostaza` and `altramuces`, an unknown tag is still refused by `recipes_alergenos_vocab`, and a person who declares either no longer receives a recipe that carries it from `get_filtered_recipes`. |
@@ -53,7 +54,7 @@ the harness retries the stack probe (5 attempts, 2 s apart) and then **throws**
 (`refusing to skip the DB-integration suite silently`) instead of skipping, so a
 stack that did not start can no longer turn the whole suite green with
 `0 pass / N skip`. CI adds two more guards in the `test:db-integration` job: any
-`skip` line in bun's summary fails it, and so does fewer than 311 passing tests
+`skip` line in bun's summary fails it, and so does fewer than 325 passing tests
 (raise the floor as tests are added). `tests/db/harness.unit.test.ts` pins the
 policy without needing a stack.
 
