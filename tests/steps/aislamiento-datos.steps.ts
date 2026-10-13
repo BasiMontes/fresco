@@ -81,7 +81,7 @@ async function seedVictimPlan(request: APIRequestContext, victim: TestUser): Pro
   // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
     headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
-    data: { user_id: victim.id, semana_iso: '2026-W99', fecha_inicio: '2026-12-14', advertencias: [] },
+    data: { user_id: victim.id, semana_iso: '2026-W51', fecha_inicio: '2026-12-14', advertencias: [] },
   });
   const [plan] = await planRes.json() as { id: string }[];
   const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, {
@@ -137,7 +137,7 @@ Given(/^que otra cuenta real tiene una lista de la compra con un ítem sin compr
   // more (only generate-meal-plan writes them); fixtures seed as service role.
   const planRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plans`, {
     headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
-    data: { user_id: victim.id, semana_iso: '2026-W99', fecha_inicio: '2026-12-14', advertencias: [] },
+    data: { user_id: victim.id, semana_iso: '2026-W51', fecha_inicio: '2026-12-14', advertencias: [] },
   });
   const [plan] = await planRes.json() as { id: string }[];
 
