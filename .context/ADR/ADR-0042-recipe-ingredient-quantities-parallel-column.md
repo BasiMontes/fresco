@@ -1,6 +1,6 @@
 # ADR-0042 — Catalog recipes carry ingredient quantities in a parallel column, not by reshaping `ingredientes_principales`
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-08
 - **Deciders:** Basi Montes
 - **Tags:** data-model, recipes, migration
