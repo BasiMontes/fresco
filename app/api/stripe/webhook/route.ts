@@ -2,6 +2,7 @@ import type Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
+import { resolveChargeCustomerId, resolveRefundCancellation } from '@/lib/billing/refund';
 import { applyRenewal, downgradeToFree, findProfileByStripeCustomer, markPaymentFailed } from '@/lib/billing/subscription';
 import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
@@ -55,6 +56,13 @@ import { createServiceClient } from '@/lib/supabase/service';
  * this story's AC, cancellation should only take effect once the paid period
  * actually ends, which is `customer.subscription.deleted`.
  *
+ * FRESCO-900: `charge.refunded` — a charge refunded from the Stripe dashboard used to
+ * leave the subscription active (the account stayed Pro and the next cycle charged the
+ * person again). A FULL refund of the current period's charge now cancels the
+ * subscription (`resolveRefundCancellation`); `customer.subscription.deleted` then
+ * downgrades the account through the path above, so this handler never writes the
+ * profile itself. Partial refunds and refunds of earlier periods change nothing.
+ *
  * Once the signature verifies, a downstream failure (e.g. the Supabase
  * write) is logged with the Stripe event id and this still returns 200 —
  * deliberate, not an oversight: a non-2xx response makes Stripe retry
@@ -67,6 +75,7 @@ const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
   'checkout.session.async_payment_succeeded',
   'customer.subscription.updated',
   'customer.subscription.deleted',
+  'charge.refunded',
 ]);
 
 /**
@@ -150,6 +159,9 @@ export async function POST(request: Request) {
         break;
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object, event.id);
+        break;
+      case 'charge.refunded':
+        await handleChargeRefunded(event.data.object, event.id);
         break;
       default:
         // No-op — every event type this handler doesn't react to yet.
@@ -330,4 +342,42 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
       properties: { reason: subscription.cancellation_details?.reason ?? 'unknown', $set: { plan: 'free' } },
     });
   }
+}
+
+/**
+ * FRESCO-900: a full refund of this period's charge cancels the subscription (see the
+ * route doc). Ignored cases are logged, never thrown: they are not failures.
+ */
+async function handleChargeRefunded(charge: Stripe.Charge, eventId: string): Promise<void> {
+  // A partial refund is a goodwill gesture; skip before any lookup.
+  if (!charge.refunded) {
+    return;
+  }
+
+  const stripeCustomerId = resolveChargeCustomerId(charge);
+  if (!stripeCustomerId) {
+    console.warn(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}) has no customer; nothing to cancel`);
+    return;
+  }
+
+  const profile = await findProfileByStripeCustomer(createServiceClient(), stripeCustomerId);
+  if (!profile?.stripe_subscription_id) {
+    console.info(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}): no subscription on file for customer ${stripeCustomerId}; nothing to cancel`);
+    return;
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
+  const decision = resolveRefundCancellation({ charge, subscription });
+  if (decision.action === 'ignore') {
+    console.info(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}) left the subscription alone: ${decision.reason}`);
+    return;
+  }
+
+  // No proration and no final invoice: this cancellation must not create a second refund
+  // or a new charge. The comment makes it traceable in the Stripe dashboard.
+  await stripe.subscriptions.cancel(decision.subscriptionId, {
+    cancellation_details: { comment: `refund:${charge.id}` },
+    prorate: false,
+    invoice_now: false,
+  });
 }

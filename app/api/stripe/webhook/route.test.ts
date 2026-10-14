@@ -16,6 +16,7 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
+const subscriptionsCancel = mock(async (_id: string, _params?: unknown): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
 const sendSubscriptionConfirmationEmail = mock(async (_p: unknown) => {});
 const CLAIMED_AT = '2026-10-12T10:00:00.123456+00:00';
@@ -29,7 +30,7 @@ let supa = fakeSupabase();
 
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
-  stripe: { webhooks: { constructEvent }, subscriptions: { retrieve: subscriptionsRetrieve } },
+  stripe: { webhooks: { constructEvent }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel } },
   resolveWebhookSecret: () => 'whsec_test',
 }));
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
@@ -81,6 +82,8 @@ beforeEach(() => {
   process.env.STRIPE_PRICE_ID_PRO_MONTH = PRICE;
   constructEvent.mockReset();
   subscriptionsRetrieve.mockReset();
+  subscriptionsCancel.mockReset();
+  subscriptionsCancel.mockResolvedValue({});
   captureServerEvent.mockClear();
   sendSubscriptionConfirmationEmail.mockReset();
   claimWebhookEvent.mockReset();
@@ -249,6 +252,132 @@ describe('POST /api/stripe/webhook — customer.subscription.deleted', () => {
 
     const events = captureServerEvent.mock.calls.map(c => (c[0] as { event: string }).event);
     expect(events).toEqual(['subscription_cancelled']);
+  });
+});
+
+describe('POST /api/stripe/webhook — charge.refunded (FRESCO-900)', () => {
+  const PERIOD_START = NOW_S - 10 * 86_400;
+
+  function refundEvent(charge: Record<string, unknown> = {}) {
+    return {
+      id: 'evt_r1',
+      type: 'charge.refunded',
+      data: { object: { id: 'ch_1', customer: 'cus_1', refunded: true, amount: 499, amount_refunded: 499, created: NOW_S - 60, ...charge } },
+    };
+  }
+
+  function activeSubscription(overrides: Record<string, unknown> = {}) {
+    return subscription({
+      status: 'active',
+      items: { data: [{ price: { id: PRICE }, current_period_start: PERIOD_START, current_period_end: PERIOD_START + 30 * 86_400 }] },
+      ...overrides,
+    });
+  }
+
+  beforeEach(() => {
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
+    subscriptionsRetrieve.mockResolvedValue(activeSubscription());
+  });
+
+  test('a full refund of this period\'s charge cancels the subscription without prorating or invoicing', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(subscriptionsRetrieve).toHaveBeenCalledWith('sub_1');
+    expect(subscriptionsCancel).toHaveBeenCalledTimes(1);
+    expect(subscriptionsCancel).toHaveBeenCalledWith('sub_1', {
+      cancellation_details: { comment: 'refund:ch_1' },
+      prorate: false,
+      invoice_now: false,
+    });
+  });
+
+  test('it does not touch the profile: the downgrade comes from customer.subscription.deleted', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+
+    await POST(req({}));
+
+    expect(supa.updates).toHaveLength(0);
+  });
+
+  test('the event is claimed by its id and completed, like every other handled event', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+
+    await POST(req({}));
+
+    expect(claimWebhookEvent).toHaveBeenCalledTimes(1);
+    expect((claimWebhookEvent.mock.calls[0][1] as { eventId: string, eventType: string })).toEqual({ eventId: 'evt_r1', eventType: 'charge.refunded' });
+    expect(completeWebhookEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test('a partial refund does nothing, and does not even look the subscription up', async () => {
+    constructEvent.mockReturnValue(refundEvent({ refunded: false, amount_refunded: 100 }));
+
+    await POST(req({}));
+
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('a refund of a charge from an earlier period does nothing', async () => {
+    constructEvent.mockReturnValue(refundEvent({ created: PERIOD_START - 86_400 }));
+
+    await POST(req({}));
+
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('a subscription that already ended is left alone (the account deletion refund lands here)', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+    subscriptionsRetrieve.mockResolvedValue(activeSubscription({ status: 'canceled' }));
+
+    await POST(req({}));
+
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('a customer with no profile is ignored', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+    supa = fakeSupabase({ user_profiles: { rows: null } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('a profile with no subscription on file is ignored', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'free', stripe_subscription_id: null } } });
+
+    await POST(req({}));
+
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('a charge with no customer is ignored', async () => {
+    constructEvent.mockReturnValue(refundEvent({ customer: null }));
+
+    await POST(req({}));
+
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('when Stripe refuses the cancellation it logs, gives the claim back and still answers 200', async () => {
+    constructEvent.mockReturnValue(refundEvent());
+    subscriptionsCancel.mockRejectedValue(new Error('stripe down'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
   });
 });
 
