@@ -58,6 +58,16 @@ const nextConfig = {
     // landing page. Production builds only; no effect in `next dev`.
     inlineCss: true,
   },
+  // FRESCO-906: Next pulls `sharp` in as an optional dependency for its own image
+  // optimizer, and its native `libvips` binary (about 16 MB) was traced into every
+  // server function, so each deployment weighed ~1.7 GB of Functions Storage against
+  // the Free plan's 10 GB. The app never imports `sharp`, and on Vercel `next/image`
+  // is optimized by the platform rather than by these functions, so it is left out
+  // of the traces. If this app is ever self-hosted, remove this entry: there the
+  // Next server does the optimizing and needs `sharp`.
+  outputFileTracingExcludes: {
+    '/*': ['node_modules/sharp/**/*', 'node_modules/@img/**/*'],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },

@@ -27,26 +27,30 @@ export function SignupFormStep({ email, password, onEmailChange, onPasswordChang
       </p>
 
       <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
-        {/* FRESCO-315: real <label for> instead of an aria-label
-            that only duplicated the placeholder (WCAG 3.3.2 /
-            4.1.2). sr-only keeps the card design unchanged. */}
-        <label htmlFor="signup-email" className="sr-only">Correo electrónico</label>
-        <Input
-          id="signup-email"
-          data-testid="email_input"
-          type="email"
-          placeholder="Correo electrónico"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={e => onEmailChange(e.target.value)}
-        />
+        {/* FRESCO-315: real <label for> (WCAG 3.3.2 / 4.1.2).
+            FRESCO-936: visible and persistent; the placeholder alone
+            vanished on the first keystroke. */}
+        <div className="flex flex-col gap-1">
+          <label htmlFor="signup-email" className="text-label text-text">Correo electrónico</label>
+          <Input
+            id="signup-email"
+            data-testid="email_input"
+            type="email"
+            placeholder="nombre@correo.com"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={e => onEmailChange(e.target.value)}
+          />
+        </div>
         {/* FRESCO-448 (S9): was a bare <Input> — the highest-
             traffic signup path had the weakest password field
             (no show/hide, no strength meter, no policy hint,
             and a native minLength bubble). Now matches the
             onboarding "Crear cuenta" field. */}
         <PasswordInput
+          label="Contraseña"
+          placeholder="Crea una contraseña"
           value={password}
           onChange={onPasswordChange}
           data-testid="password_input"

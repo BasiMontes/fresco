@@ -145,7 +145,10 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Checklist.** [ ] accessible input labels (TECHDEBT-FRESCO-41) · [ ] `aria-live` on error/loading
   (TECHDEBT-FRESCO-45) · [ ] submit disabled while in-flight (DEFECT-FRESCO-114) · [ ] Supabase auth
   errors shown translated, not raw English (DEFECT-FRESCO-106) · [ ] vertical centring correct
-  (DEFECT-FRESCO-269).
+  (DEFECT-FRESCO-269) · [ ] Turnstile area reserved at 65px from the first render, with a text status
+  (checking / slow / expired / failed) and a "Reintentar" button, so the form never jumps and a failed
+  check is explained (FRESCO-944) · [ ] submit stays enabled except while sending; missing fields and an
+  unfinished check are named in line (FRESCO-944).
 - **Provenance.** Live UI as built. No mockup.
 
 ### 4.3 Signup — `/signup`

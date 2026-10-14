@@ -2,7 +2,7 @@ import type { UserProfile } from '@schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/dietary-options';
-import { UserProfileError } from './errors';
+import { isCheckViolation, PROFILE_TOO_LARGE_MESSAGE, UserProfileError } from './errors';
 
 /**
  * Onboarding-owned subset of `user_profiles` columns (FR-1.1). Fields the DB
@@ -49,6 +49,10 @@ export type OnboardingProfilePayload = Pick<
   | 'presupuesto_semana_euros'
   | 'planning_selection'
   | 'nivel_experiencia'
+  // FRESCO-919: the cookie-banner analytics decision, added by the browser wrapper
+  // (`lib/client-api/user-profile.ts`) so a profile created at onboarding already
+  // carries it. Omitted = left untouched.
+  | 'analytics_consent'
 >>;
 
 /**
@@ -87,6 +91,11 @@ export async function upsertUserProfile(
     .upsert({ id: user.id, ...profile });
 
   if (error) {
+    // FRESCO-914: `user_profiles` caps the size of what a profile can hold; say so in words instead of
+    // surfacing Postgres' constraint text.
+    if (isCheckViolation(error)) {
+      throw new UserProfileError(PROFILE_TOO_LARGE_MESSAGE);
+    }
     throw new UserProfileError(`No se pudo guardar el perfil: ${error.message}`);
   }
 }

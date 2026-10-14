@@ -4,6 +4,7 @@ import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
+import { AnalyticsConsentSync } from '@/components/auth/analytics-consent-sync';
 import { IdentityCookieSync } from '@/components/auth/identity-cookie-sync';
 import { TopProgressBar } from '@/components/layout/top-progress-bar';
 import { CookieConsentBanner } from '@/components/legal/cookie-consent-banner';
@@ -189,6 +190,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             cookie — outside CookieConsentProvider on purpose. */}
         <IdentityCookieSync />
         <CookieConsentProvider initialDecision={initialConsentDecision}>
+          {/* FRESCO-919: mirrors the banner decision into the profile for server-side events. */}
+          <AnalyticsConsentSync />
           <PostHogProvider>{children}</PostHogProvider>
           <CookieConsentBanner />
           <CookieSettingsDialog />

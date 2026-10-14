@@ -9,8 +9,8 @@ function respond(status: number): typeof fetch {
 
 describe('checkHealth (FRESCO-803)', () => {
   test('is ok when Supabase answers a read', async () => {
-    const report = await checkHealth({ ...base, fetchImpl: respond(200), commitSha: 'abcdef1234567890', environment: 'production' });
-    expect(report).toEqual({ status: 'ok', commit: 'abcdef1', environment: 'production', checks: { app: 'ok', supabase: 'ok' } });
+    const report = await checkHealth({ ...base, fetchImpl: respond(200) });
+    expect(report).toEqual({ status: 'ok', checks: { app: 'ok', supabase: 'ok' } });
   });
 
   test('is down when Supabase answers an error status', async () => {
@@ -48,7 +48,11 @@ describe('checkHealth (FRESCO-803)', () => {
     expect(text).not.toContain('secret detail');
   });
 
-  test('has no commit outside Vercel', async () => {
-    expect((await checkHealth({ ...base, fetchImpl: respond(200) })).commit).toBeNull();
+  // FRESCO-922 (audit C-20): the endpoint is public and unauthenticated, so the
+  // commit and the Vercel environment it used to print told anyone which build
+  // was live. Nothing reads them (the monitors look at the status code only).
+  test('does not publish the commit or the deployment environment', async () => {
+    const report = await checkHealth({ ...base, fetchImpl: respond(200) });
+    expect(Object.keys(report).sort()).toEqual(['checks', 'status']);
   });
 });

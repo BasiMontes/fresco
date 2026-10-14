@@ -1,9 +1,10 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
-import type { ShoppingListItem, ShoppingListSuggestion } from '@/lib/api/types';
+import type { ShoppingListSuggestion } from '@/lib/api/types';
 import * as React from 'react';
+import { addSuggestionToPasillos, countPendientes, removeAddedItem, suggestionFromAddedItem } from '@/components/shopping-list/added-suggestions';
 import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { getAccessToken } from '@/lib/client-api/auth';
-import { addShoppingListItem, clearComprados, toggleShoppingListItem } from '@/lib/client-api/shopping-list';
+import { addShoppingListItem, clearComprados, removeShoppingListItem, toggleShoppingListItem } from '@/lib/client-api/shopping-list';
 
 interface UseShoppingListArgs {
   list: ShoppingListPersistido
@@ -56,10 +57,7 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     };
   }, [list.id]);
 
-  const pendientes = pasillos.reduce(
-    (count, pasillo) => count + pasillo.items.filter(item => !item.comprado).length,
-    0,
-  );
+  const pendientes = countPendientes(pasillos);
 
   const compradosItems = pasillos.flatMap(pasillo => pasillo.items.filter(item => item.comprado));
 
@@ -120,24 +118,18 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     }
   }
 
+  /**
+   * FRESCO-948 — the item keeps living in its aisle (so the toggle coordinates
+   * are unchanged) but carries `origen: 'sugerencia'`, and the view shows it in
+   * the "Sugerencias para ti" section right under the card the person just
+   * tapped. Revert-on-failure like every other action here.
+   */
   async function handleAddSuggestion(suggestion: ShoppingListSuggestion) {
     setErrorMessage(null);
-    const newItem: ShoppingListItem = {
-      nombre: suggestion.nombre,
-      cantidad: suggestion.cantidad,
-      unidad: suggestion.unidad,
-      comprado: false,
-      precio_estimado: suggestion.precio_estimado,
-    };
+    const { item: newItem } = addSuggestionToPasillos([], suggestion);
 
     setSuggestions(current => current.filter(s => s.nombre !== suggestion.nombre));
-    setPasillos((current) => {
-      const idx = current.findIndex(p => p.nombre === suggestion.pasillo);
-      if (idx === -1) {
-        return [...current, { nombre: suggestion.pasillo, orden: current.length + 1, items: [newItem] }];
-      }
-      return current.map((p, i) => (i === idx ? { ...p, items: [...p.items, newItem] } : p));
-    });
+    setPasillos(current => addSuggestionToPasillos(current, suggestion).pasillos);
 
     try {
       await addShoppingListItem({ listId: list.id, pasilloNombre: suggestion.pasillo, item: newItem });
@@ -145,14 +137,33 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     catch (error) {
       console.error('[ShoppingListView] addShoppingListItem failed, reverting', error);
       setPasillos(current =>
-        current
-          .map(p => (p.nombre === suggestion.pasillo ? { ...p, items: p.items.filter(i => i !== newItem) } : p))
-          .filter(p => p.items.length > 0 || pasillosOriginales.has(p.nombre)),
+        removeAddedItem(current, { pasilloNombre: suggestion.pasillo, itemNombre: suggestion.nombre, pasillosOriginales }),
       );
       setSuggestions(current => [...current, suggestion]);
       setErrorMessage('No se pudo añadir el producto. Vuelve a intentarlo.');
     }
   }
 
-  return { pasillos, suggestions, errorMessage, pendientes, compradosItems, handleToggle, removeComprados, handleAddSuggestion };
+  /** FRESCO-948 — "Quitar": takes an added suggestion off the list and puts its card back in the carousel. */
+  async function handleRemoveSuggestion({ pasilloNombre, itemNombre }: { pasilloNombre: string, itemNombre: string }) {
+    setErrorMessage(null);
+    const snapshot = pasillos;
+    const target = snapshot.find(p => p.nombre === pasilloNombre)?.items.find(i => i.nombre === itemNombre && i.origen === 'sugerencia');
+    if (!target) { return; }
+
+    setPasillos(current => removeAddedItem(current, { pasilloNombre, itemNombre, pasillosOriginales }));
+    setSuggestions(current => [...current.filter(s => s.nombre !== itemNombre), suggestionFromAddedItem(pasilloNombre, target)]);
+
+    try {
+      await removeShoppingListItem({ listId: list.id, pasilloNombre, itemNombre });
+    }
+    catch (error) {
+      console.error('[ShoppingListView] removeShoppingListItem failed, reverting', error);
+      setPasillos(snapshot);
+      setSuggestions(current => current.filter(s => s.nombre !== itemNombre));
+      setErrorMessage('No se pudo quitar el producto. Vuelve a intentarlo.');
+    }
+  }
+
+  return { pasillos, suggestions, errorMessage, pendientes, compradosItems, handleToggle, removeComprados, handleAddSuggestion, handleRemoveSuggestion };
 }

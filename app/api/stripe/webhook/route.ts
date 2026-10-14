@@ -1,25 +1,14 @@
 import type Stripe from 'stripe';
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { activateProPlan, applyRenewal, downgradeToFree, findProfileByStripeCustomer, getStoredSubscriptionId, markPaymentFailed } from '@/lib/billing/subscription';
-import { claimWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
-import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
+import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
+import { applyRenewal, downgradeToFree, findProfileByStripeCustomer, markPaymentFailed } from '@/lib/billing/subscription';
+import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
-import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent, resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
-import { getProPriceIds, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
+import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
+import { getProPriceIds, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
-
-// FRESCO-429 (TRLGDCU art. 98.7): formats the actual amount Stripe charged —
-// no separate VAT line is invented, since this checkout has no
-// `automatic_tax` configured to compute one.
-function formatChargedAmount(unitAmount: number | null | undefined, currency: string | undefined): string {
-  const amount = (unitAmount ?? 0) / 100;
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: (currency ?? 'eur').toUpperCase() }).format(amount);
-}
-
-function formatRenewalDate(isoTimestamp: string): string {
-  return new Date(isoTimestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 /**
  * POST /api/stripe/webhook — the ONLY writer of `user_profiles.plan` /
@@ -37,8 +26,13 @@ function formatRenewalDate(isoTimestamp: string): string {
  *
  * FRESCO-816 (audit-6 A6-S10): every handled event is claimed by `event.id` in
  * `stripe_webhook_events` before it runs. A re-delivery (Stripe retries, a dashboard
- * resend) finds the claim and is answered 200 without running the handler again; a
+ * resend) of a completed event is answered 200 without running the handler again; a
  * handler that throws gives the claim back, so a resend of a failed event still runs.
+ * FRESCO-909 (audit C-03): the claim also expires. It is stamped `completed_at` once the
+ * handler succeeds; a claim with no completion older than the TTL (the run died after the
+ * claim: timeout, crash, deploy) is retaken by the next delivery, while a younger one is
+ * answered 409 (so Stripe keeps retrying) and left to its worker. The "200 on failure" policy
+ * below is only for handler failures.
  * `checkout.session.completed` only grants Pro when the session is paid or no payment
  * was due (`resolveProUpdateFromSession`); `checkout.session.async_payment_succeeded`
  * is the same grant for a delayed payment method once the money arrives.
@@ -75,6 +69,13 @@ const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
   'customer.subscription.deleted',
 ]);
 
+/**
+ * Explicit on purpose: without Fluid compute the Hobby default is 10 s, and a handler
+ * (Stripe lookup, writes, email) can take longer. 60 s is the limit the claim TTL
+ * (webhook-events.ts) is sized against; Fluid compute's higher limits are not relied upon.
+ */
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = resolveWebhookSecret();
@@ -97,20 +98,44 @@ export async function POST(request: Request) {
 
   const handled = HANDLED_EVENT_TYPES.has(event.type);
   const claims = createServiceClient();
+  let held: { eventId: string, claimedAt: string } | null = null;
+  const eventTags = { stripe_event_id: event.id, stripe_event_type: event.type };
   if (handled) {
-    let claimed: boolean;
+    let claim: Awaited<ReturnType<typeof claimWebhookEvent>>;
     try {
-      claimed = await claimWebhookEvent(claims, { eventId: event.id, eventType: event.type });
+      claim = await claimWebhookEvent(claims, { eventId: event.id, eventType: event.type });
     }
     catch (error) {
       // Could not record the event: answer non-2xx so Stripe retries, rather than
       // processing it without the guard.
       console.error(`[/api/stripe/webhook] could not claim event ${event.id}`, error);
+      Sentry.captureException(error, { tags: eventTags });
       return NextResponse.json({ error: 'No se pudo registrar el evento.' }, { status: 500 });
     }
-    if (!claimed) {
+    if (claim.state === 'already_done') {
       console.info(`[/api/stripe/webhook] event ${event.id} (${event.type}) already processed, skipping`);
       return NextResponse.json({ received: true });
+    }
+    if (claim.state === 'in_flight') {
+      // Not 2xx: a 2xx tells Stripe the event was delivered and stops its retries, but this
+      // claim may belong to a run that died and only becomes retakeable after the TTL.
+      // 409 keeps Stripe's backoff going until the run completes or the claim expires.
+      console.info(`[/api/stripe/webhook] event ${event.id} (${event.type}) is being processed by another run; asking Stripe to retry`);
+      return NextResponse.json({ error: 'Evento en proceso.' }, { status: 409 });
+    }
+    held = { eventId: event.id, claimedAt: claim.claimedAt };
+    if (claim.state === 'taken_over') {
+      console.warn(`[/api/stripe/webhook] event ${event.id} (${event.type}) had an expired claim (${claim.claimAgeSeconds}s old); retaking it`);
+      try {
+        Sentry.captureMessage('Stripe webhook retook an expired event claim', {
+          level: 'warning',
+          tags: eventTags,
+          extra: { claim_age_seconds: claim.claimAgeSeconds },
+        });
+      }
+      catch {
+        // Reporting must never stop the retaken event from running and completing.
+      }
     }
   }
 
@@ -130,17 +155,30 @@ export async function POST(request: Request) {
         // No-op — every event type this handler doesn't react to yet.
         break;
     }
+    if (held) {
+      try {
+        await completeWebhookEvent(claims, held);
+      }
+      catch (completeError) {
+        // The work is done; an open claim only means a later delivery retakes it after
+        // the TTL and repeats writes that are idempotent. Still answer 200.
+        console.error(`[/api/stripe/webhook] could not mark event ${event.id} completed`, completeError);
+        Sentry.captureException(completeError, { tags: eventTags });
+      }
+    }
   }
   catch (error) {
     // Signature already verified above — log + still 200 to avoid a Stripe
     // retry storm on a bug. See doc comment.
     console.error(`[/api/stripe/webhook] failed to process event ${event.id}`, error);
-    if (handled) {
+    Sentry.captureException(error, { tags: eventTags });
+    if (held) {
       try {
-        await releaseWebhookEvent(claims, event.id);
+        await releaseWebhookEvent(claims, held);
       }
       catch (releaseError) {
-        console.error(`[/api/stripe/webhook] could not release event ${event.id}; a resend of it will be skipped`, releaseError);
+        console.error(`[/api/stripe/webhook] could not release event ${event.id}; a resend of it will be skipped until the claim expires`, releaseError);
+        Sentry.captureException(releaseError, { tags: eventTags });
       }
     }
   }
@@ -149,76 +187,7 @@ export async function POST(request: Request) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  if (!session.subscription) {
-    throw new Error('checkout.session.completed without a subscription id.');
-  }
-
-  const subscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const priceIds = getProPriceIds();
-  if (priceIds.length === 0) {
-    throw new Error('No Pro price id is configured (STRIPE_PRICE_ID_PRO_MONTH).');
-  }
-  const update = resolveProUpdateFromSession({ session, subscription, expectedPriceId: priceIds });
-
-  const supabase = createServiceClient();
-
-  // FRESCO-240: Stripe retries checkout.session.completed on any non-2xx
-  // response (a transient network blip, a cold-start timeout) -- without
-  // this, a retry of an already-processed delivery re-fires the
-  // trial_started / trial_converted_to_paid event for the same subscription.
-  // If this exact subscription id is already on file, this delivery ran to
-  // completion once; a genuinely new subscription always changes it (was
-  // null, or a prior, different subscription on resubscribe).
-  const storedSubscriptionId = await getStoredSubscriptionId(supabase, update.userId);
-  const isNewSubscription = storedSubscriptionId !== update.stripeSubscriptionId;
-
-  await activateProPlan(supabase, {
-    userId: update.userId,
-    stripeCustomerId: update.stripeCustomerId,
-    stripeSubscriptionId: update.stripeSubscriptionId,
-    planExpiresAt: update.planExpiresAt,
-  });
-
-  if (isNewSubscription) {
-    // ADR-0013 / FRESCO-366: server-side only — this webhook has no browser,
-    // so posthog-js structurally cannot fire here. Checkout always opens a
-    // 7-day trial, so the normal event is `trial_started`; a non-trialing
-    // status means the trial was skipped and it's paid from day one.
-    await captureServerEvent({
-      distinctId: update.userId,
-      event: resolveCheckoutFunnelEvent(subscription.status),
-      properties: {
-        stripe_subscription_id: update.stripeSubscriptionId,
-        $set: { plan: 'pro' },
-      },
-    });
-
-    // FRESCO-429 (TRLGDCU art. 98.7): the durable-support subscription
-    // confirmation email. The subscription is already active at this point
-    // (write above already succeeded) — a send failure is logged for
-    // retry/review and never re-thrown, per AC3.
-    try {
-      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(update.userId);
-      const recipientEmail = userData?.user?.email;
-      if (userError || !recipientEmail) {
-        throw userError ?? new Error('no email on file for this user');
-      }
-
-      const price = subscription.items.data[0]?.price;
-      await sendSubscriptionConfirmationEmail({
-        to: recipientEmail,
-        priceFormatted: formatChargedAmount(price?.unit_amount, price?.currency),
-        // `update.planExpiresAt` is the same trial_end-derived timestamp the
-        // `user_profiles` write above just used — the next real charge date.
-        nextRenewalDateFormatted: formatRenewalDate(update.planExpiresAt),
-        manageSubscriptionUrl: `${resolveAppUrl()}/profile`,
-      });
-    }
-    catch (error) {
-      console.error(`[/api/stripe/webhook] subscription confirmation email failed for user ${update.userId} (subscription ${update.stripeSubscriptionId})`, error);
-    }
-  }
+  await grantProFromCheckoutSession(createServiceClient(), session);
 }
 
 async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string }): Promise<void> {
@@ -255,6 +224,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     // the first failure of a retry cycle counts.
     if (!profile.payment_failed_at) {
       await captureServerEvent({
+        supabase,
         distinctId: profile.id,
         event: POSTHOG_EVENTS.PAYMENT_FAILED,
         properties: { stripe_subscription_id: subscription.id },
@@ -280,6 +250,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     // `plan_downgraded` (and the `deleted` handler skips it, see below).
     if (profile.plan !== 'free') {
       await captureServerEvent({
+        supabase,
         distinctId: profile.id,
         event: POSTHOG_EVENTS.PLAN_DOWNGRADED,
         properties: { reason: 'payment_failed', $set: { plan: 'free' } },
@@ -306,6 +277,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   const funnelEvent = resolveActiveUpdateFunnelEvent(previousSubscriptionStatus(previousAttributes));
   if (funnelEvent) {
     await captureServerEvent({
+      supabase,
       distinctId: profile.id,
       event: funnelEvent,
       properties: {
@@ -338,6 +310,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   // reached term, or Stripe ended it). `cancellation_details.reason` is
   // `cancellation_requested` | `payment_disputed` | `payment_failed` | null.
   await captureServerEvent({
+    supabase,
     distinctId: profile.id,
     event: POSTHOG_EVENTS.SUBSCRIPTION_CANCELLED,
     properties: {
@@ -351,6 +324,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   // row that is already Free here must not count a second time.
   if (profile.plan !== 'free') {
     await captureServerEvent({
+      supabase,
       distinctId: profile.id,
       event: POSTHOG_EVENTS.PLAN_DOWNGRADED,
       properties: { reason: subscription.cancellation_details?.reason ?? 'unknown', $set: { plan: 'free' } },

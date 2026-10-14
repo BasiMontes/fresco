@@ -134,6 +134,24 @@ export type Database = {
         }
         Relationships: []
       }
+      job_heartbeat: {
+        Row: {
+          job: string
+          last_success_at: string
+          updated_at: string
+        }
+        Insert: {
+          job: string
+          last_success_at: string
+          updated_at?: string
+        }
+        Update: {
+          job?: string
+          last_success_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       meal_plan_recipes: {
         Row: {
           created_at: string
@@ -487,16 +505,22 @@ export type Database = {
       }
       stripe_webhook_events: {
         Row: {
+          claimed_at: string
+          completed_at: string | null
           event_id: string
           event_type: string
           processed_at: string
         }
         Insert: {
+          claimed_at?: string
+          completed_at?: string | null
           event_id: string
           event_type: string
           processed_at?: string
         }
         Update: {
+          claimed_at?: string
+          completed_at?: string | null
           event_id?: string
           event_type?: string
           processed_at?: string
@@ -737,6 +761,7 @@ export type Database = {
           adultos: number
           alergenos: string[]
           alergenos_texto_libre: string | null
+          analytics_consent: boolean | null
           aviso_bienvenida_visto: boolean
           aviso_rutas_descartado: boolean
           cocinas_favoritas: Database["public"]["Enums"]["tipo_cocina"][]
@@ -779,6 +804,7 @@ export type Database = {
           adultos?: number
           alergenos?: string[]
           alergenos_texto_libre?: string | null
+          analytics_consent?: boolean | null
           aviso_bienvenida_visto?: boolean
           aviso_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
@@ -821,6 +847,7 @@ export type Database = {
           adultos?: number
           alergenos?: string[]
           alergenos_texto_libre?: string | null
+          analytics_consent?: boolean | null
           aviso_bienvenida_visto?: boolean
           aviso_rutas_descartado?: boolean
           cocinas_favoritas?: Database["public"]["Enums"]["tipo_cocina"][]
@@ -1015,6 +1042,10 @@ export type Database = {
         Returns: undefined
       }
       jsonb_clear_comprados: { Args: { p_list_id: string }; Returns: undefined }
+      jsonb_remove_item: {
+        Args: { p_item_nombre: string; p_list_id: string; p_pasillo_nombre: string }
+        Returns: undefined
+      }
       jsonb_set_comprado: {
         Args: {
           p_comprado: boolean

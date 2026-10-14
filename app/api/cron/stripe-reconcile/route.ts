@@ -1,8 +1,12 @@
+import type { CheckoutSweepResult } from '@/lib/billing/checkout-sweep';
 import type { ReconcilableProfile } from '@/lib/billing/reconcile';
+import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { timingSafeEqual } from '@/lib/auth/timing-safe-equal';
+import { sweepPaidCheckoutsWithoutPro } from '@/lib/billing/checkout-sweep';
 import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
+import { recordJobHeartbeat, STRIPE_RECONCILE_JOB } from '@/lib/jobs/heartbeat';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
@@ -29,6 +33,18 @@ import { createServiceClient } from '@/lib/supabase/service';
  * run. It never grants Pro for a non-Pro price and never rewrites
  * `stripe_customer_id` / `stripe_subscription_id` (matches the webhook's
  * `customer.subscription.deleted` handler, which keeps the ids for history).
+ *
+ * FRESCO-909 (audit C-03): the loop above only sees rows that already carry a
+ * subscription, so it cannot find a customer who paid while the webhook never landed.
+ * `sweepPaidCheckoutsWithoutPro` runs last and starts from Stripe instead: paid Checkout
+ * Sessions of the last 48 h whose user has not got that subscription on file. It grants
+ * through the webhook's own `grantProFromCheckoutSession`, so every guard travels with it.
+ *
+ * FRESCO-915 (audit C-11): `cron.job_run_details` says `succeeded` even when this route answers
+ * 401 or 500 (`net.http_get` only enqueues), and this is the only safety net for lost payments. So
+ * a pass that gets to the end writes its own heartbeat (`job_heartbeat`), which a monitor reads,
+ * and the errors that stop or degrade a pass go to Sentry instead of only the console. A pass in
+ * which Stripe answered for none of the profiles does not count as a success.
  */
 
 export const dynamic = 'force-dynamic';
@@ -46,10 +62,18 @@ function sameInstant(a: string | null, b: string | null): boolean {
   return new Date(a).getTime() === new Date(b).getTime();
 }
 
+const SENTRY_TAGS = { cron_job: STRIPE_RECONCILE_JOB };
+
+/** Console line plus a Sentry event: a stopped or degraded pass must not be visible only in the logs. */
+function reportFailure(message: string, error: unknown): void {
+  console.error(`[/api/cron/stripe-reconcile] ${message}`, error);
+  Sentry.captureException(error instanceof Error ? error : new Error(message), { tags: SENTRY_TAGS, extra: { message } });
+}
+
 export async function GET(request: Request): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
-    console.error('[/api/cron/stripe-reconcile] CRON_SECRET is not configured for this environment');
+    reportFailure('CRON_SECRET is not configured for this environment', new Error('CRON_SECRET is not configured'));
     return NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
   }
 
@@ -60,7 +84,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const proPriceIds = getProPriceIds();
   if (proPriceIds.length === 0) {
-    console.error('[/api/cron/stripe-reconcile] STRIPE_PRICE_ID_PRO_MONTH is not set');
+    reportFailure('STRIPE_PRICE_ID_PRO_MONTH is not set', new Error('STRIPE_PRICE_ID_PRO_MONTH is not set'));
     return NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
   }
 
@@ -70,11 +94,12 @@ export async function GET(request: Request): Promise<NextResponse> {
     profiles = await listSubscribedProfiles(supabase);
   }
   catch (loadError) {
-    console.error('[/api/cron/stripe-reconcile] failed to load user_profiles', loadError);
+    reportFailure('failed to load user_profiles', loadError);
     return NextResponse.json({ error: 'Error consultando perfiles.' }, { status: 500 });
   }
 
   let checked = 0;
+  let failures = 0;
   let reconciled = 0;
   const drifted: DriftEntry[] = [];
 
@@ -97,7 +122,8 @@ export async function GET(request: Request): Promise<NextResponse> {
         target = { action: 'downgrade' };
       }
       else {
-        console.error(`[/api/cron/stripe-reconcile] failed to retrieve subscription ${subscriptionId} for user ${profile.id}`, error);
+        failures++;
+        reportFailure(`failed to retrieve subscription ${subscriptionId} for user ${profile.id}`, error);
         continue;
       }
     }
@@ -144,7 +170,8 @@ export async function GET(request: Request): Promise<NextResponse> {
       await applyReconciledState(supabase, { profileId: profile.id, desired });
     }
     catch (updateError) {
-      console.error(`[/api/cron/stripe-reconcile] failed to reconcile user ${profile.id}`, updateError);
+      failures++;
+      reportFailure(`failed to reconcile user ${profile.id}`, updateError);
       continue;
     }
 
@@ -155,5 +182,28 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const sweptOrphans = await sweepOrphanPaidPlans(supabase);
 
-  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans });
+  // FRESCO-909 (audit C-03): the inverse direction. Fail-soft like the orphan sweep: a
+  // Stripe listing error must not turn the reconcile run above into a 500.
+  let checkoutSweep: CheckoutSweepResult | null = null;
+  try {
+    checkoutSweep = await sweepPaidCheckoutsWithoutPro(supabase);
+  }
+  catch (sweepError) {
+    reportFailure('paid-checkout sweep failed', sweepError);
+  }
+
+  // FRESCO-915: the heartbeat means "this pass ran", so it is not written when Stripe answered for
+  // none of the profiles checked (an outage looks like a clean pass otherwise). One row that keeps
+  // failing does not stop it; that would raise a false alarm forever.
+  const stripeAnsweredNone = checked > 0 && failures === checked;
+  if (!stripeAnsweredNone) {
+    try {
+      await recordJobHeartbeat(supabase, STRIPE_RECONCILE_JOB);
+    }
+    catch (heartbeatError) {
+      reportFailure('could not write the job heartbeat', heartbeatError);
+    }
+  }
+
+  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans, checkoutSweep, failures });
 }

@@ -59,6 +59,80 @@ describe('PasswordInput', () => {
     expect(screen.queryByTestId('password_strength_indicator')).toBeNull();
   });
 
+  // FRESCO-936 — a visible label stays on screen while she types (WCAG 3.3.2),
+  // and the toggle must work from the keyboard.
+  describe('with a visible label', () => {
+    test('renders the label as text and ties it to the input', () => {
+      renderWithProviders(<PasswordInput value="" onChange={mock(() => {})} label="Contraseña" showStrength={false} />);
+
+      expect(screen.getByText('Contraseña', { selector: 'label' })).toBeVisible();
+      expect(screen.getByLabelText('Contraseña')).toBe(screen.getByTestId('password_input'));
+    });
+
+    test('uses the given id and forwards the validation attributes', () => {
+      renderWithProviders(
+        <PasswordInput
+          value=""
+          onChange={mock(() => {})}
+          label="Contraseña"
+          id="login-password"
+          aria-invalid
+          aria-describedby="login-password-error"
+          showStrength={false}
+        />,
+      );
+
+      const input = screen.getByTestId('password_input');
+      expect(input).toHaveAttribute('id', 'login-password');
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+      expect(input).toHaveAttribute('aria-describedby', 'login-password-error');
+    });
+
+    test('toggles with the keyboard and announces the state', async () => {
+      const user = setupUser();
+      renderWithProviders(<Harness />);
+      const input = screen.getByTestId('password_input');
+      const toggle = screen.getByTestId('password_toggle_visibility_button');
+
+      input.focus();
+      await user.tab();
+      expect(toggle).toHaveFocus();
+      expect(toggle).toHaveAccessibleName('Mostrar contraseña');
+
+      await user.keyboard('{Enter}');
+
+      expect(input).toHaveAttribute('type', 'text');
+      expect(toggle).toHaveAccessibleName('Ocultar contraseña');
+    });
+  });
+
+  // FRESCO-940 — the static policy hint sat at 11px (text-caption), under the
+  // 12px floor the audit flagged; it must use the 13px body-sm token.
+  test('renders the policy hint at body-sm size while the field is empty', async () => {
+    const user = setupUser();
+    function HintHarness() {
+      const [value, setValue] = useState('');
+      return <PasswordInput value={value} onChange={setValue} showPolicyHint />;
+    }
+    renderWithProviders(<HintHarness />);
+
+    const hint = screen.getByTestId('password_policy_hint');
+    expect(hint).toHaveTextContent('Mínimo 10 caracteres.');
+    expect(hint.className).toContain('text-body-sm');
+    expect(hint.className).not.toContain('text-caption');
+
+    await user.type(screen.getByTestId('password_input'), 'a');
+
+    expect(screen.queryByTestId('password_policy_hint')).toBeNull();
+  });
+
+  test('falls back to an aria-label when no visible label is given', () => {
+    renderWithProviders(<PasswordInput value="" onChange={mock(() => {})} placeholder="Nueva contraseña" />);
+
+    expect(screen.getByTestId('password_input')).toHaveAccessibleName('Nueva contraseña');
+    expect(screen.queryByText('Nueva contraseña', { selector: 'label' })).toBeNull();
+  });
+
   test('disables the input and the toggle when disabled', () => {
     renderWithProviders(<PasswordInput value="x" onChange={mock(() => {})} disabled />);
 

@@ -28,12 +28,13 @@ supabase functions deploy <slug> \
   on CI and usually locally) the plain `deploy` path fails.
 - **`--import-map supabase/functions/deno.json` is required** — without it the
   remote bundler does not resolve `@supabase/supabase-js` / `web-push`.
-- **`send-weekly-reengagement-push` needs `--no-verify-jwt`** appended. There is
-  no `[functions.*]` block in `config.toml`, so the flag is re-applied on every
-  deploy or JWT verification switches back on. `scripts/deploy-changed-functions.ts`
-  handles this automatically.
+- **`send-weekly-reengagement-push` and `retry-posthog-erasures` need
+  `--no-verify-jwt`** appended (both are called by pg_cron, not by a browser).
+  There is no `[functions.*]` block in `config.toml`, so the flag is re-applied
+  on every deploy or JWT verification switches back on.
+  `scripts/deploy-changed-functions.ts` handles this automatically.
 - A change in **`_shared/**`** or **`deno.json`** means redeploying *every*
-  function that imports it — in practice all eight.
+  function that imports it — in practice all nine.
 
 Or just run the script the workflow uses:
 

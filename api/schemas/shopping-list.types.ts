@@ -30,6 +30,14 @@ export interface ShoppingListItem {
    * provenance at all.
    */
   usos?: ShoppingListItemUso[]
+  /**
+   * FRESCO-948 — set to `'sugerencia'` when the item was added from "Sugerencias
+   * para ti". The list shows those items in their own section with an "Añadido"
+   * tag and a "Quitar" action that puts the card back in the carousel. Absent
+   * on every item that came from the meal plan, and on lists persisted before
+   * this field existed.
+   */
+  origen?: 'sugerencia'
 }
 
 export interface ShoppingListPasillo {

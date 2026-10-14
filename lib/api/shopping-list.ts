@@ -158,6 +158,29 @@ export async function addShoppingListItem(
   }
 }
 
+/**
+ * FRESCO-948 — undoes an add from "Sugerencias para ti": removes the item named
+ * `itemNombre` from the pasillo `pasilloNombre` (and drops the pasillo if that
+ * leaves it empty) via the `jsonb_remove_item` RPC. The function is
+ * `SECURITY INVOKER`, so RLS confines it to the caller's own list, and it only
+ * removes an item marked `origen: 'sugerencia'`: a meal-plan item is never
+ * removed through here.
+ */
+export async function removeShoppingListItem(
+  client: SupabaseClient<Database>,
+  { listId, pasilloNombre, itemNombre }: { listId: string, pasilloNombre: string, itemNombre: string },
+): Promise<void> {
+  const { error } = await client.rpc('jsonb_remove_item', {
+    p_list_id: listId,
+    p_pasillo_nombre: pasilloNombre,
+    p_item_nombre: itemNombre,
+  });
+
+  if (error) {
+    throw new ShoppingListError(`No se pudo quitar el producto: ${error.message}`);
+  }
+}
+
 // Re-exported for `components/shopping-list/shopping-list-view.tsx`, which
 // imports it from here. Single source lives in `lib/text/normalize-nombre.ts`.
 export { normalizeNombre };

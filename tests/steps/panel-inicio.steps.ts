@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { restHeaders } from '../test-helpers';
+import { recordHealthDataConsent, restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -66,6 +66,7 @@ Given(/^que el usuario tiene alérgenos e ingredientes marcados en su perfil$/, 
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
   await seedFullWeekMenu(request, testUser);
+  await recordHealthDataConsent(testUser.accessToken);
   await setProfile(testUser, { alergenos: ['gluten', 'pescado'] });
 });
 

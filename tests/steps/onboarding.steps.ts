@@ -2,7 +2,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, restHeaders } from '../test-helpers';
+import { currentWeekMonday, recordHealthDataConsent, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @onboarding
@@ -290,6 +290,7 @@ const SAVED_NOMBRE = 'Perfil Guardado';
 
 Given(/^tiene un perfil guardado con dieta halal, alérgeno huevo y un nombre$/, async ({ request }) => {
   const testUser = ctx.testUser!;
+  await recordHealthDataConsent(testUser.accessToken);
   const res = await request.patch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}`,
     {

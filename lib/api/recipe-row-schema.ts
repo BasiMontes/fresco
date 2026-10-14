@@ -101,6 +101,9 @@ const shoppingListItemSchema = z.object({
     receta: z.string(),
     dia: z.enum(['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']),
   })).optional(),
+  // FRESCO-948: without this key zod would strip the mark on read and the item
+  // would fall back into its aisle after a reload.
+  origen: z.literal('sugerencia').optional(),
 });
 
 /** `shopping_lists.items`: the aisle-grouped list written only by `generate-shopping-list`. */

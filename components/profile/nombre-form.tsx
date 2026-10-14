@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { updateNombre } from '@/lib/client-api/user-profile';
+import { NOMBRE_MAX_LENGTH } from '@/lib/constants/profile-limits';
 
 /**
  * FRESCO-248 — reads a `--shake-*`/`--revert-*` CSS custom property off
@@ -167,6 +168,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
           <Input
             data-testid="nombre_input"
             type="text"
+            maxLength={NOMBRE_MAX_LENGTH}
             placeholder="¿Cómo te llamamos?"
             value={nombre}
             onChange={(event) => {

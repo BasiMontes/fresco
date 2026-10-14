@@ -8,12 +8,12 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
  * path, and the multi-section CSV shape + download headers.
  */
 
-let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
+let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1', email: 'persona@example.com' } } }) });
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
 
 const { GET } = await import('./route');
 
-function withUser(user: { id: string } | null, tables = {}) {
+function withUser(user: { id: string, email?: string } | null, tables = {}) {
   return fakeSupabase(tables, { getUser: async () => ({ data: { user } }) });
 }
 
@@ -56,5 +56,27 @@ describe('GET /api/profile/export', () => {
     expect(body).toContain('meal_plan_id');
     // empty tables produce no section
     expect(body).not.toContain('# shopping_lists');
+  });
+
+  test('FRESCO-910: includes the address, favorites, consents and push subscriptions', async () => {
+    supa = withUser({ id: 'user_1', email: 'persona@example.com' }, {
+      favorites: { rows: [{ id: 'f_1', user_id: 'user_1', recipe_id: 'r_9' }] },
+      user_consents: { rows: [{ id: 'c_1', user_id: 'user_1', kind: 'terms', version: 'v1' }] },
+      push_subscriptions: { rows: [{ id: 'p_1', endpoint: 'https://push.example/abc' }] },
+    });
+
+    const body = await (await GET()).text();
+
+    expect(body).toContain('# account\nemail\npersona@example.com');
+    expect(body).toContain('# favorites\n');
+    expect(body).toContain('# user_consents\n');
+    expect(body).toContain('# push_subscriptions\n');
+    expect(body).toContain('https://push.example/abc');
+  });
+
+  test('FRESCO-910: a session without an address leaves out the account section', async () => {
+    supa = withUser({ id: 'user_1' }, { user_profiles: { rows: { id: 'user_1' } } });
+
+    expect(await (await GET()).text()).not.toContain('# account');
   });
 });

@@ -30,6 +30,9 @@ type Phase
 
 const DAY_FORMAT = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 
+/** "sustituye ___ desayuno / comida / cena": "desayuno" is masculine, the other two are feminine (FRESCO-905). */
+const ARTICLE_BY_TIPO: Record<OpenSlot['tipoPlato'], string> = { desayuno: 'al', comida: 'a la', cena: 'a la' };
+
 function slotLabel(slot: OpenSlot): string {
   return `${capitalize(DAY_FORMAT.format(new Date(`${slot.fecha}T00:00:00Z`)))} · ${capitalize(slot.tipoPlato)}`;
 }
@@ -185,7 +188,9 @@ export function AddToMenuDialog({ recipe, onClose }: AddToMenuDialogProps) {
           <p className="text-body-sm">
             Hecho: «
             {current?.nombre}
-            » sustituye a la
+            » sustituye
+            {' '}
+            {ARTICLE_BY_TIPO[phase.slot.tipoPlato]}
             {' '}
             {phase.slot.tipoPlato}
             {' '}

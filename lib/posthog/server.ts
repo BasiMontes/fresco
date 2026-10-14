@@ -6,9 +6,13 @@
  * this app treats as business-critical (FRESCO-366).
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/types';
 import { PostHog } from 'posthog-node';
 
 export interface ServerCaptureParams {
+  /** A client that can read `user_profiles.analytics_consent` (the service-role client in every caller). */
+  supabase: SupabaseClient<Database>
   distinctId: string
   event: string
   properties?: Record<string, unknown>
@@ -35,6 +39,21 @@ function getServerClient(): PostHog | null {
   return cachedClient;
 }
 
+async function hasAnalyticsConsent(supabase: SupabaseClient<Database>, userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('analytics_consent')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('[lib/posthog/server] could not read analytics consent, suppressing the event', error.message);
+    return false;
+  }
+
+  return data?.analytics_consent === true;
+}
+
 /**
  * Utility, not a public API boundary (§10 Errors convention) — a capture
  * failure here must never surface as a payment-processing error. The Stripe
@@ -43,12 +62,20 @@ function getServerClient(): PostHog | null {
  * analytics outage is never conflated with a real Supabase write failure in
  * the logs.
  */
-export async function captureServerEvent({ distinctId, event, properties }: ServerCaptureParams): Promise<void> {
+export async function captureServerEvent({ supabase, distinctId, event, properties }: ServerCaptureParams): Promise<void> {
   const client = getServerClient();
   if (!client) {
     return;
   }
   try {
+    // FRESCO-919 (ADR-0044): the cookie banner decision is stored in
+    // `user_profiles.analytics_consent`. Opt-in and fail closed: only an explicit
+    // `true` sends; a rejection, an unsynced profile, a missing row or a read
+    // error all suppress the event. The consent check lives here, not at each
+    // call site, so a new caller cannot forget it.
+    if (!(await hasAnalyticsConsent(supabase, distinctId))) {
+      return;
+    }
     client.capture({ distinctId, event, properties });
     await client.flush();
   }

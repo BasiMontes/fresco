@@ -35,7 +35,7 @@ describe.skipIf(!(RUN && reachable))('get_safe_ingredient_substitutes (real DB)'
   beforeAll(async () => {
     [noAllergies, soyAllergic, dislikesTofu] = await Promise.all([
       ctx.createUser(),
-      ctx.createUser(),
+      ctx.createUser({ healthDataConsent: true }),
       ctx.createUser(),
     ]);
     await Promise.all([

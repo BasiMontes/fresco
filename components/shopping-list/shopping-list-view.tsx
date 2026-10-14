@@ -4,17 +4,19 @@ import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { ShoppingListItem } from '@/lib/api/types';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import * as React from 'react';
+import { listAddedSuggestions } from '@/components/shopping-list/added-suggestions';
 import { CompraRealizadaButton } from '@/components/shopping-list/compra-realizada-button';
 import { ExportActions } from '@/components/shopping-list/export-actions';
 import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisle';
 import { ShoppingListAllBought } from '@/components/shopping-list/shopping-list-all-bought';
+import { ShoppingListItemRow } from '@/components/shopping-list/shopping-list-item-row';
 import { ShoppingListSuggestions } from '@/components/shopping-list/shopping-list-suggestions';
 import { ShoppingListSummary } from '@/components/shopping-list/shopping-list-summary';
 import { useShakeItem } from '@/components/shopping-list/use-shake-item';
 import { useShoppingList } from '@/components/shopping-list/use-shopping-list';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
-import { nombresDeCadenas } from '@/lib/grocery/compra';
+import { claveItemCompra, nombresDeCadenas } from '@/lib/grocery/compra';
 
 export interface ShoppingListViewProps {
   list: ShoppingListPersistido
@@ -77,11 +79,14 @@ const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
 export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu, compra }: ShoppingListViewProps) {
   const fuentesPrecios = nombresDeCadenas(compra);
   const { shakingItem, triggerShake } = useShakeItem();
-  const { pasillos, suggestions, errorMessage, pendientes, compradosItems, handleToggle, removeComprados, handleAddSuggestion }
+  const { pasillos, suggestions, errorMessage, pendientes, compradosItems, handleToggle, removeComprados, handleAddSuggestion, handleRemoveSuggestion }
     = useShoppingList({ list, onToggleFailure: triggerShake });
   // FRESCO-246 — item enter animation. A flat index across every aisle so the
   // first-render stagger runs down the whole list, not per aisle.
   const getItemEnterProps = useListEnterAnimation();
+
+  // FRESCO-948 — items added from "Sugerencias para ti", shown under the carousel.
+  const added = listAddedSuggestions(pasillos);
 
   // Receipt ticket (docs/superpowers/specs/2026-09-04-receipt-ticket-design.md)
   // — clicking "Compra realizada" no longer un-checks immediately. It
@@ -119,7 +124,27 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
         </p>
       )}
 
-      <ShoppingListSuggestions suggestions={suggestions} onAdd={suggestion => void handleAddSuggestion(suggestion)} />
+      <ShoppingListSuggestions
+        suggestions={suggestions}
+        onAdd={suggestion => void handleAddSuggestion(suggestion)}
+        hasAdded={added.length > 0}
+        added={added.map(({ pasilloNombre, pasilloIdx, itemIdx, item }, position) => (
+          <ShoppingListItemRow
+            key={`${pasilloNombre}::${item.nombre}`}
+            item={item}
+            pasilloNombre={pasilloNombre}
+            pasilloIdx={pasilloIdx}
+            itemIdx={itemIdx}
+            flatIndex={position}
+            shakeNonce={shakingItem !== null && shakingItem.pasilloIdx === pasilloIdx && shakingItem.itemIdx === itemIdx ? shakingItem.nonce : null}
+            nuevosNombres={nuevosNombres}
+            linea={compra?.[claveItemCompra({ pasillo: pasilloNombre, item: item.nombre })]}
+            getItemEnterProps={getItemEnterProps}
+            onToggle={args => void handleToggle(args)}
+            onRemoveSuggestion={args => void handleRemoveSuggestion(args)}
+          />
+        ))}
+      />
 
       {pasillos.length === 0 && <ShoppingListAllBought />}
 

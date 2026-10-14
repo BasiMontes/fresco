@@ -155,6 +155,10 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
       // onboarding draft so it doesn't leak into whoever logs in next on
       // this browser tab.
       useOnboardingStore.getState().reset();
+      // FRESCO-946: drop the client router cache — it keeps this session's
+      // shared (app) layout, so the next account on this tab would see this
+      // name and email in the sidebar.
+      router.refresh();
       router.push('/login');
     }
     catch (error) {

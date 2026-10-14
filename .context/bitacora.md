@@ -194,3 +194,43 @@ Historia archivada:
 - Qué: 30 grupos de recetas con los mismos ingredientes y pasos (62 recetas) se funden en 30; 32 duplicados desactivados, 9 casillas de menu de dos cuentas de pruebas pasadas a la receta conservada, 2 fotos copiadas. Las 23 recetas "con verduras salteadas" sin esas verduras desaparecen. PR #607, main en 7858db69; produccion: 538 activas, 0 duplicados, 0 con el sufijo.
 - Por qué: al revisar la muestra de FRESCO-896 se vio que un menu podia sacar el mismo plato dos veces con nombres distintos.
 - Siguiente: observacion sin ticket, 29 casillas de menu de semanas pasadas y 3 favoritos apuntan a recetas inactivas de trabajos anteriores. FRESCO-897 (cuentas Pro) espera al fundador.
+
+## 2026-10-12 - FRESCO-942 y FRESCO-943 en staging; migración de recetas aplicada en producción
+- Qué: PR #620 (cancelar Stripe y devolver el periodo no disfrutado al borrar la cuenta) y PR #621 (41 recetas con etiquetas de alérgenos y dieta corregidas más test de coherencia) mergeadas a staging. La migración 20261012100000 se aplicó a la base compartida con db push: 47 hallazgos pasan a 0.
+- Por qué: auditoría definitiva 2026-10-12, hallazgos C-01 y C-02 (BLOCKER). Todas las auditorías previas leídas y 38 tickets creados con etiqueta auditoria-7.
+- Siguiente: cargar STRIPE_SECRET_KEY en Supabase Edge (delete-account ya desplegada, falla en cerrado sin él), probar la devolución con una cuenta de pruebas de Stripe, decidir con criterio legal el caso de los 14 días, y promocionar a main en lote.
+
+## 2026-10-13 - FRESCO-909 webhook claim caducable + barrido de checkouts pagados
+- Qué: claim de eventos Stripe caducable (claimed_at/completed_at, 409 en vuelo), grantProFromCheckoutSession extraído (lib/billing/grant-pro.ts) y barrido en el cron de reconciliación de sesiones pagadas 48 h sin Pro (lib/billing/checkout-sweep.ts). PRs #622 #623 #624 #625 en staging, ADR-0015 con addendum.
+- Por qué: audit C-03, un evento reclamado cuyo worker moría quedaba como procesado y el cron no podía curarlo (pago perdido).
+- Siguiente: promover staging a main; revisar checkoutSweep.granted en logs del cron tras la primera ejecución en producción.
+
+## 2026-10-13 - FRESCO-912 mostaza y altramuces en el vocabulario de alérgenos
+- Qué: los 14 alérgenos de la UE se pueden declarar y etiquetar (PR #627 en staging; migración 20261013120000 aplicada en producción con db push, restricciones y get_catalog verificados); aviso de cobertura en onboarding y perfil; mínimo de tests de BD 292 a 298.
+- Por qué: auditoría definitiva 2026-10-12, C-08. Hoy 0 de 538 recetas activas llevan mostaza o altramuz, así que declararlos aún no filtra nada; el test de coherencia del catálogo lo vigila.
+- Siguiente: ninguna receta cubre esos dos alérgenos todavía; promocionar staging a main en lote; ADR-0043 sigue Proposed (adr:check fallará hacia el 26-27 de octubre).
+
+## 2026-10-13 - FRESCO-910 exportación completa y supresión en PostHog con registro
+- Qué: la exportación CSV incluye favoritos, consentimientos, push y correo (PR #628); delete-account borra la persona en PostHog y escribe account_erasures con el id hasheado (PR #629, migración 20261013140000 aplicada con db push; secretos de PostHog en Edge). Verificado en vivo con la cuenta de dev y con Stripe en modo de pruebas.
+- Por qué: auditoría definitiva 2026-10-12, C-06 (RGPD, derecho de acceso y de supresión).
+- Siguiente: FRESCO-947 reintento de borrados de PostHog fallidos; FRESCO-946 posible fuga del sidebar entre cuentas; recrear la cuenta de dev; el borrado completo con sesión y cliente de Stripe no se ejercitó por el captcha.
+
+## 2026-10-13 - FRESCO-944 login: área de Turnstile reservada y errores en línea
+- Qué: /login reserva el área del captcha (65 px) desde el primer render con estado en texto y Reintentar; el botón ya no se deshabilita en silencio, los requisitos que faltan se nombran en línea (PR #631 en staging). Medido en navegador: el botón no se mueve (antes 406 a 413).
+- Por qué: auditoría definitiva 2026-10-12, UX-01 y UX-02.
+- Siguiente: probar con el widget real en fresco-pre; FRESCO-946 (sidebar con datos de otra cuenta) y FRESCO-948 (sugerencias de la lista de la compra) creados en esta sesión;
+
+## 2026-10-13 - FRESCO-945 cliente de Stripe por sesión de Checkout al borrar la cuenta
+- Qué: si el perfil no tiene stripe_customer_id, delete-account busca el cliente en las sesiones de Checkout de las últimas 72 h por client_reference_id y cancela, devuelve la parte proporcional y borra el cliente (PR #632 en staging; delete-account v29). STRIPE_SECRET_KEY (clave de pruebas) cargada como secreto de Edge: no existía.
+- Por qué: seguimiento de FRESCO-942/909; quien pagaba y borraba la cuenta antes del webhook seguía cobrándose. Un error de Stripe en la búsqueda impide borrar (502); una clave ausente no, para no bloquear todos los borrados.
+- Siguiente: sustituir la clave por la live al pasar a producción; FRESCO-942 sigue en Merged (falta verificar el recorrido completo con sesión y cliente de Stripe, el captcha lo impide); un acierto real de la búsqueda no se ha ejercitado.
+
+## 2026-10-13 - FRESCO-915 latido del cron de reconciliación y monitor de GitHub
+- Qué: el cron escribe su latido en job_heartbeat y reporta sus fallos a Sentry (PR #633, migración 20261013150000 aplicada con db push); GET /api/health/jobs y workflow cron-heartbeat-monitor.yml cada hora (PR #634). Umbral 25 h; un job que nunca ha reportado queda en pending.
+- Por qué: auditoría definitiva 2026-10-12, C-11; cron.job_run_details marca succeeded aunque la ruta responda 401 o 500 y es la única red de pagos perdidos.
+- Siguiente: FRESCO-949, verificar tras promocionar a main el primer latido real, el simulacro del monitor y el caso stale; el criterio de alertar en menos de 26 h no se ejercitó de punta a punta.
+
+## 2026-10-13 - FRESCO-913 plan semanal en una transacción
+- Qué: create_meal_plan crea el plan y sus slots en una transacción (SECURITY INVOKER, solo service_role); valida la semana ISO y que fecha_inicio sea su lunes; CHECK sobre semana_iso; generate-meal-plan la llama en lugar de dos inserts con compensación manual (PR #635; migración 20261013160000 aplicada con db push ANTES del merge; generate-meal-plan v49). Borrado el plan huérfano 2026-W99 de pro-user, resto de un test e2e.
+- Por qué: auditoría definitiva 2026-10-12, C-09; un corte entre los dos inserts dejaba un plan sin slots que bloqueaba regenerar esa semana con un 409.
+- Siguiente: ninguno propio; el e2e de aislamiento sembraba la semana inválida 2026-W99 y ahora usa 2026-W51.
