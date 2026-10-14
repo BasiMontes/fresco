@@ -73,7 +73,7 @@
     "lucide-react": "^1.55.0",
     "next": "^16.4.0",
     "posthog-js": "^1.438.7",
-    "posthog-node": "^5.55.1",
+    "posthog-node": "^5.55.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "resend": "^6.32.1",
@@ -81,7 +81,7 @@
     "shiki": "^4.5.0",
     "stripe": "^23.0.0",
     "tailwind-merge": "^3.7.0",
-    "zod": "^4.6.5",
+    "zod": "^4.6.6",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
