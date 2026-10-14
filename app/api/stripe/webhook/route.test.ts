@@ -130,6 +130,39 @@ describe('POST /api/stripe/webhook — checkout.session.completed', () => {
     expect((captureServerEvent.mock.calls[0][0] as { event: string }).event).toBe('trial_started');
   });
 
+  test('trial_started carries the email domain and alias flag, never the address (FRESCO-923)', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_1',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('ana+prueba7@gmail.com'));
+
+    await POST(req({}));
+
+    const { properties } = captureServerEvent.mock.calls[0][0] as { properties: Record<string, unknown> };
+    expect(properties).toMatchObject({ email_domain: 'gmail.com', email_plus_alias: true });
+    expect(JSON.stringify(properties)).not.toContain('ana');
+  });
+
+  test('trial_started still fires, without the signals, when the user lookup fails (FRESCO-923)', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_1',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail(null));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    const call = captureServerEvent.mock.calls[0][0] as { event: string, properties: Record<string, unknown> };
+    expect(call.event).toBe('trial_started');
+    expect(call.properties).not.toHaveProperty('email_domain');
+  });
+
   test('does not re-fire the funnel event on a retry of an already-processed delivery', async () => {
     constructEvent.mockReturnValue({
       id: 'evt_1',
