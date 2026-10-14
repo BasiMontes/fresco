@@ -53,9 +53,9 @@ Both live in `scripts/check-coverage.ts` (`FLOOR`, `HONEST_FLOOR_LINES`).
 
 | Metric | Floor | Measured when set |
 |---|---|---|
-| loaded functions | 85.5 % | 86.63 % (2026-10-06, FRESCO-795) |
-| loaded lines | 87.0 % | 87.57 % (2026-10-06, FRESCO-795) |
-| honest lines | 49.0 % | 49.60 % (2026-10-06, FRESCO-795) |
+| loaded functions | 87.5 % | 88.12 % (2026-10-14, FRESCO-916) |
+| loaded lines | 88.7 % | 89.30 % (2026-10-14, FRESCO-916) |
+| honest lines | 54.5 % | 55.26 % (2026-10-14, FRESCO-916) |
 
 Set a touch below the measured value to absorb runner-vs-local noise (the
 measurement is deterministic run-to-run, but the CI runner can differ slightly).
@@ -72,6 +72,39 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
 - 2026-10-06 (FRESCO-795): loaded floor **raised** to functions 85.5 / lines 87.0
   (the script had drifted to 84.5 / 86.2 while this doc still said 82 / 84);
   honest line floor 49.0 introduced.
+- 2026-10-14 (FRESCO-916): all three **raised**: functions 87.5, lines 88.7, honest
+  lines 54.5 (measured 88.12 / 89.30 / 55.26). The honest floor had sat 6.3 pp below
+  the real number for a week, so a regression of that size would have passed CI. The
+  "consider raising" nudge fires at 1.5 pp of headroom; it had been showing since the
+  first week and nobody acted on it, which is why the tranches below have an owner
+  and a date.
+
+## Tranches (honest lines)
+
+The honest number is the one that cannot be gamed, so it is the one with a plan. Each
+tranche is a floor, raised in a PR of its own once the number has held for a few runs.
+
+| Tranche | Honest floor | Target date | State |
+|---|---|---|---|
+| 1 | 54.5 % | 2026-10-14 | **Done** (FRESCO-916): measured 55.26 %, the ticket's "55 % in a month" was already met |
+| 2 | 60 % | 2026-12-14 | Open. About 1,090 more covered lines (counted: 9,737 lines uncovered of about 21,800) |
+
+**Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
+847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,
+`supabase/functions` 659, `components/landing` 616, `components/onboarding` 545,
+`components/signup` 488. The 12 files that cost most, all of them loaded by no test:
+`components/recipes/recipe-library.tsx` (352), `app/qa/page.tsx` (252), `app/login/page.tsx`
+(233), `components/profile/ayuda-section.tsx` (204), `components/calendar/calendar-grid.tsx`
+(203), `components/landing/site-nav.tsx` (186), `components/recipes/recipe-detail.tsx`
+(183), `supabase/functions/generate-meal-plan/index.ts` (176), `components/landing/hero.tsx`
+(174), `components/ui/filter-drawer.tsx` (149), `app/(app)/calendar/page.tsx` (128) and
+`components/onboarding/onboarding-footer.tsx` (128). A component test of the first three or
+four of those would clear most of tranche 2.
+
+**Regression test for a closed finding.** A finding closed as BLOCKER or ALTO (audit
+severity, or a defect with `severity` critica or mayor) carries a regression test that
+fails without the fix, or a stated reason in the closing comment. The rule and what
+counts as a reason live in `.context/backlog/definition-of-done.md`.
 
 ## Raising the floor
 
