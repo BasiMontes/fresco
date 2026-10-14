@@ -55,6 +55,25 @@ A ticket may close with known remaining work **only if all three hold**:
 Absent any of the three, the residue is just unfinished work and the ticket stays
 open.
 
+## Defect traceability: measured, and forward only (decision 2026-10-14, FRESCO-926)
+
+The Defect row above asks for an epic (`parent`) and a link to what the defect regressed.
+That is now **measured** instead of trusted: `bun run jira:closure-evidence` also lists,
+over the same window, the defects (`Error`) resolved with no epic or no link, saying which
+of the two is missing, and exits 1 while there is any. Run it after a batch of closures,
+next to the closing-comment check; it must print 0 for both.
+
+**The history is not repaired.** On 2026-10-14, 136 of the 165 `Error` tickets had no
+`parent`, and none of the 136 was open. Closed work that nobody depends on is not worth 122
+case-by-case judgments about which feature each one regressed, and the answer would not
+change a number anyone reads. Defects closed before **2026-09-01** stay as they are. The
+defect-density-per-feature metric (Gotcha 24 of `/sprint-development`) counts from
+2026-09-01 on.
+
+**Since 2026-09-01** a defect gets its epic by theme, and a link only where the cause is
+evident: a link guessed to satisfy a check is worse than none. Reopen this if the metric is
+ever wanted for the older months.
+
 ## Where this plugs in
 
 - **`bug-fix-workflow.md`** — Phase 3 (reproduction-or-rejection gate) and Phase 7

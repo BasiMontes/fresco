@@ -11,6 +11,12 @@
  * 1 when there is any, 0 when there are none. A comment is the proxy: whether it really
  * proves the work is still a review call (`.context/backlog/definition-of-done.md`).
  *
+ * FRESCO-926 (audit A4-H17): the same window also lists the DEFECTS (`Error`) with no epic
+ * (`parent`) or no link to what they regressed. The Definition of Done already asked for
+ * both; this measures it. It looks forward only, by construction: the window is the last
+ * N days, and the closed history from before it stays as it is (decision recorded in
+ * `.context/backlog/definition-of-done.md`).
+ *
  * `acli` cannot return comments from a search, so this reads the REST search endpoint
  * (`comment.total`) with the same credentials as the other jira scripts. The host comes
  * from `.agents/project.yaml` through `cli/lib/atlassian-instance.ts`, never from the env.
@@ -24,11 +30,26 @@ export interface ClosedIssue {
   summary: string
   issueType: string
   commentCount: number
+  hasParent: boolean
+  linkCount: number
+}
+
+export type TraceabilityGap = 'epic' | 'link';
+
+export interface UntraceableDefect {
+  issue: ClosedIssue
+  missing: TraceabilityGap[]
 }
 
 interface SearchIssue {
   key: string
-  fields: { summary?: string, issuetype?: { name?: string }, comment?: { total?: number } }
+  fields: {
+    summary?: string
+    issuetype?: { name?: string }
+    comment?: { total?: number }
+    parent?: { key?: string } | null
+    issuelinks?: unknown[]
+  }
 }
 
 interface SearchPage {
@@ -41,6 +62,23 @@ const DEFAULT_DAYS = 7;
 /** The closed tickets that carry no comment at all: the ones with no verification note. */
 export function findClosedWithoutEvidence(issues: ClosedIssue[]): ClosedIssue[] {
   return issues.filter(issue => issue.commentCount === 0);
+}
+
+/** The name of the defect issue type in this Jira project (Spanish workspace). */
+const DEFECT_ISSUE_TYPE = 'Error';
+
+/**
+ * The defects with no epic or no link to what they regressed, and which of the two is
+ * missing. Other ticket kinds are never judged here: they have their own close gates.
+ */
+export function findDefectsWithoutTraceability(issues: ClosedIssue[]): UntraceableDefect[] {
+  return issues
+    .filter(issue => issue.issueType === DEFECT_ISSUE_TYPE)
+    .map((issue): UntraceableDefect => ({
+      issue,
+      missing: [...(issue.hasParent ? [] : ['epic' as const]), ...(issue.linkCount > 0 ? [] : ['link' as const])],
+    }))
+    .filter(entry => entry.missing.length > 0);
 }
 
 export function parseDays(argv: string[]): number {
@@ -68,7 +106,7 @@ async function fetchResolved(baseUrl: string, auth: string, jql: string): Promis
   const issues: ClosedIssue[] = [];
   let pageToken: string | undefined;
   do {
-    const params = new URLSearchParams({ jql, fields: 'summary,issuetype,comment', maxResults: '100' });
+    const params = new URLSearchParams({ jql, fields: 'summary,issuetype,comment,parent,issuelinks', maxResults: '100' });
     if (pageToken) {
       params.set('nextPageToken', pageToken);
     }
@@ -85,6 +123,8 @@ async function fetchResolved(baseUrl: string, auth: string, jql: string): Promis
         summary: issue.fields.summary ?? '',
         issueType: issue.fields.issuetype?.name ?? '?',
         commentCount: issue.fields.comment?.total ?? 0,
+        hasParent: Boolean(issue.fields.parent?.key),
+        linkCount: issue.fields.issuelinks?.length ?? 0,
       });
     }
     pageToken = page.nextPageToken;
@@ -105,12 +145,17 @@ async function main(): Promise<number> {
   const jql = `project = ${readProjectKey()} AND resolved >= -${days}d ORDER BY key ASC`;
   const closed = await fetchResolved(baseUrl, Buffer.from(`${email}:${token}`).toString('base64'), jql);
   const missing = findClosedWithoutEvidence(closed);
+  const untraceable = findDefectsWithoutTraceability(closed);
 
   console.log(`Closed in the last ${days} days: ${closed.length}. Without any comment: ${missing.length}.`);
   for (const issue of missing) {
     console.log(`  ${issue.key}  ${issue.issueType}  ${issue.summary.slice(0, 80)}`);
   }
-  return missing.length === 0 ? 0 : 1;
+  console.log(`Defects without an epic or a link: ${untraceable.length}.`);
+  for (const { issue, missing: gaps } of untraceable) {
+    console.log(`  ${issue.key}  missing ${gaps.join(' + ')}  ${issue.summary.slice(0, 70)}`);
+  }
+  return missing.length === 0 && untraceable.length === 0 ? 0 : 1;
 }
 
 if (import.meta.main) {
