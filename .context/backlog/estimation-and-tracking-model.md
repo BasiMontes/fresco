@@ -54,3 +54,36 @@ Switch back to (or add) point-based planning **only when**:
   window) and stakeholders ask "will X be done by Y".
 
 Until then: count what shipped, don't forecast what might.
+
+## Update 2026-10-14 (FRESCO-927, audit A1-07)
+
+The decision above is unchanged. This refreshes the numbers and settles the two things
+the audit still listed as open.
+
+**Where the numbers stand** (counted in Jira on 2026-10-14):
+
+| What | 2026-09-02 | 2026-10-14 |
+|---|---|---|
+| Stories with Story Points | about 6 of about 62 | 46 of 273 |
+| Open stories with Story Points | not counted | 12 of 14 |
+| Epics with Story Points | 0 of 24 | 0 of 41 |
+
+The two open stories without points are FRESCO-870 and FRESCO-442. FRESCO-870 was pointed
+on 2026-10-14 (2, from its merged PR #547: five files, +71/-21). FRESCO-442 is in
+Rechazos: pointing a rejected story is wasted work, so it stays empty on purpose. The
+audit's "25 of 215 (12 %)" was a count over the whole history, which this model never
+asked to fill: points are optional, and what matters is that the stories being worked
+have one.
+
+**ATP and ATR (`acceptance_test_plan`, `acceptance_test_results`): kept, not retired, not
+populated.** They are the Modality B fields (Jira-native test management) of the QA
+repository, and `/sprint-development` already defers them to that phase (Gotcha 18). In
+this repository nobody writes them, which is why they sit at 0 on every item. Retiring
+them would be a write to the Jira configuration that buys nothing and costs the QA repo
+its fields. Revisit when the QA repository starts using Modality B on this project.
+
+**One inconsistency to know about.** Gotcha 18 of `/sprint-development` says a story does
+not clear Stage 1 without `story_points` (FRESCO-281, structured QA fields), while this
+document says points are optional. In practice the story-points rule applies to the stories
+that skill plans, which is what happened here; the model above still holds for everything
+else. If the two should be one rule, that is a decision for the founder, not an edit.
