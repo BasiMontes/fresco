@@ -224,6 +224,32 @@ Esto se maneja con archivos `.env` o variables de entorno en el servidor.
 
 **En este boilerplate:** las URLs por ambiente NO viven en `.env` — se declaran en `.agents/project.yaml` (`environments:`), y los prompts las resuelven como `{{WEB_URL}}` / `{{API_URL}}` según el ambiente activo. En `.env` quedan solo credenciales y secretos.
 
+
+### Captcha (Cloudflare Turnstile) por ambiente
+
+FRESCO-907 (auditoría 2026-10-12, C-26). El captcha tiene dos mitades, y solo la del servidor protege algo: el widget del navegador por sí solo no impide que un bot llame directo a la API de Auth.
+
+| Ambiente | Widget (`NEXT_PUBLIC_TURNSTILE_SITE_KEY` en Vercel) | Servidor (ajuste de Supabase Auth) |
+|---|---|---|
+| Local | no: sin clave, el formulario no muestra widget | apagado a propósito (`[auth.captcha]` comentado en `supabase/config.toml`) |
+| Dev (`fresco-dev`) | sí: scope `preview` | **activo**: hay un solo proyecto de Supabase para todos los ambientes, así que es un único interruptor |
+| Staging (`fresco-pre`) | sí: scope `preview` | **activo**: el mismo interruptor |
+| Production (`fresco-pro`) | sí: scope `production` | **activo**: el mismo interruptor |
+
+`development` no tiene la clave en Vercel: ese scope solo lo usa `vercel env pull` para trabajo local, que corre sin captcha.
+
+**Cómo comprobar que el servidor lo exige** (verificado el 2026-10-13). Una llamada directa a Auth sin `captcha_token`, con credenciales falsas, debe responder `400` con `captcha_failed`:
+
+```bash
+curl -s -X POST "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/token?grant_type=password" \
+  -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" -H 'Content-Type: application/json' \
+  -d '{"email":"captcha-probe@example.invalid","password":"not-a-real-password"}'
+# {"error_code":"captcha_failed","msg":"captcha protection: request disallowed (no captcha_token found)"}
+```
+
+`/auth/v1/recover` responde igual. Con el captcha activo el login por contraseña por API necesita un token de Turnstile, y por eso los e2e contra un backend alojado obtienen su sesión con `tests/session-login.ts` (ver ese fichero).
+
+**El secreto del captcha vive solo en Supabase** (Authentication, Attack Protection), nunca en Vercel. Una variable con prefijo `NEXT_PUBLIC_` se incrusta en el JavaScript del navegador en cuanto el código la lee, así que ningún secreto puede llevar ese prefijo. `lib/no-public-secrets.test.ts` falla si el código, la configuración o un workflow nombra una variable `NEXT_PUBLIC_*` con `SECRET`, `PRIVATE`, `SERVICE_ROLE`, `PASSWORD` o `TOKEN`.
 ---
 
 ## Testing en Cada Ambiente
