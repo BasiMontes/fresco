@@ -2,7 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@supabase/supabase-js@2.112.4": "2.112.4",
-    "npm:stripe@22.6.2": "22.6.2",
+    "npm:stripe@23.0.0": "23.0.0",
     "npm:web-push@3": "3.6.7"
   },
   "npm": {
@@ -127,8 +127,8 @@
     "safer-buffer@2.1.2": {
       "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg=="
     },
-    "stripe@22.6.2": {
-      "integrity": "sha512-PwRE2scocvXqDKPiskMa5vRJEAEkq46W69XyUYmAwrNSLr675lQnfqLwnsndAWizwgihOWw/irLmoFRo3ez7ew=="
+    "stripe@23.0.0": {
+      "integrity": "sha512-MDE2A5ZVVluYURORaZEVghSmnLJc3w6aHAlZSxDQMsOjOb3V0O6ro/CiaeFlJS4N7uIVmsg98ocRsPmUK6YfyA=="
     },
     "tslib@2.8.1": {
       "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
@@ -148,7 +148,7 @@
   "workspace": {
     "dependencies": [
       "npm:@supabase/supabase-js@2.112.4",
-      "npm:stripe@22.6.2",
+      "npm:stripe@23.0.0",
       "npm:web-push@3"
     ]
   }
