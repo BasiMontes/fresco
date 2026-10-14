@@ -42,7 +42,8 @@ export function ContactContent() {
       <a
         href={`mailto:${CONTACT_EMAIL}`}
         data-testid="legal_contact_email_link"
-        className="mt-2 inline-block text-primary underline"
+        // FRESCO-940: stand-alone link, 44px tap target (WCAG 2.5.8 / 2.5.5).
+        className="mt-2 inline-flex min-h-[44px] items-center text-primary underline"
       >
         {CONTACT_EMAIL}
       </a>
@@ -68,7 +69,8 @@ export function CookiesContent() {
           <tbody>
             {COOKIE_TABLE.map(row => (
               <tr key={row.name} className="border-b border-border last:border-0">
-                <td className="py-2 pr-3 font-mono text-caption">{row.name}</td>
+                {/* FRESCO-940: 13px, not the 11px caption — under the 12px floor. */}
+                <td className="py-2 pr-3 font-mono text-body-sm">{row.name}</td>
                 <td className="py-2 pr-3">{row.provider}</td>
                 <td className="py-2 pr-3">{row.purpose}</td>
                 <td className="py-2 pr-3">{row.duration}</td>

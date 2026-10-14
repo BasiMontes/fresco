@@ -106,6 +106,26 @@ describe('PasswordInput', () => {
     });
   });
 
+  // FRESCO-940 — the static policy hint sat at 11px (text-caption), under the
+  // 12px floor the audit flagged; it must use the 13px body-sm token.
+  test('renders the policy hint at body-sm size while the field is empty', async () => {
+    const user = setupUser();
+    function HintHarness() {
+      const [value, setValue] = useState('');
+      return <PasswordInput value={value} onChange={setValue} showPolicyHint />;
+    }
+    renderWithProviders(<HintHarness />);
+
+    const hint = screen.getByTestId('password_policy_hint');
+    expect(hint).toHaveTextContent('Mínimo 10 caracteres.');
+    expect(hint.className).toContain('text-body-sm');
+    expect(hint.className).not.toContain('text-caption');
+
+    await user.type(screen.getByTestId('password_input'), 'a');
+
+    expect(screen.queryByTestId('password_policy_hint')).toBeNull();
+  });
+
   test('falls back to an aria-label when no visible label is given', () => {
     renderWithProviders(<PasswordInput value="" onChange={mock(() => {})} placeholder="Nueva contraseña" />);
 

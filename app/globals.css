@@ -1381,6 +1381,16 @@
       animation: fresco-insight-enter var(--duration-fast) var(--ease-smooth-out) both;
     }
   }
+  /* FRESCO-940 (audit UX-09): a printout or a PDF export never scrolls, so
+     sections that had not been reached would print blank. Same specificity as
+     the rule above, declared after it, so it wins. */
+  @media print {
+    [data-reveal] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
 
   /*
  * Hero photo marquee (FRESCO-459, epic FRESCO-436 tarjeta 9 follow-up).

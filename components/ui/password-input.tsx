@@ -111,7 +111,8 @@ export function PasswordInput({
       </div>
 
       {showPolicyHint && value.length === 0 && (
-        <p className="text-caption text-tertiary">
+        // FRESCO-940: text-body-sm (13px), not text-caption (11px) — under the 12px floor.
+        <p data-testid="password_policy_hint" className="text-body-sm text-tertiary">
           Mínimo
           {' '}
           {MIN_PASSWORD_LENGTH}
