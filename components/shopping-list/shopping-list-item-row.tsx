@@ -3,6 +3,7 @@ import type { ShoppingListItem } from '@/lib/api/types';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import { ShoppingCart } from 'lucide-react';
 import { formatUsos, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { normalizeNombre } from '@/lib/api/shopping-list';
 import { capitalize, cn, formatCantidad, formatPrecio, formatUnidad } from '@/lib/utils';
@@ -21,6 +22,8 @@ interface ShoppingListItemRowProps {
   linea: CompraPorItem[string] | undefined
   getItemEnterProps: (key: string, index: number) => ListEnterItemProps
   onToggle: (args: { pasilloIdx: number, itemIdx: number, nextComprado: boolean }) => void
+  /** FRESCO-948 — set only in the "Sugerencias para ti" section: shows the "Quitar" action that puts the card back. */
+  onRemoveSuggestion?: (args: { pasilloNombre: string, itemNombre: string }) => void
 }
 
 /** "2 ud · 3,50 € · precio de hoy": quantity, price (linked or stored estimate) and how old the linked price is. */
@@ -52,7 +55,7 @@ function ItemQuantityLine({ item, precio, antiguedad, testIdPrefix }: {
   );
 }
 
-export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, flatIndex, shakeNonce, nuevosNombres, linea, getItemEnterProps, onToggle }: ShoppingListItemRowProps) {
+export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, flatIndex, shakeNonce, nuevosNombres, linea, getItemEnterProps, onToggle, onRemoveSuggestion }: ShoppingListItemRowProps) {
   const usosLabel = formatUsos(item.usos);
   // FRESCO-518 / FRESCO-521 / FRESCO-808 — deep-link straight to the matched
   // product page of each chain that priced this row (none: no link, the
@@ -124,6 +127,17 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
               Nuevo
             </span>
           )}
+          {/* FRESCO-948 — tells the person this row is the item they just added
+              from a suggestion. Hairline chip like "Nuevo"; 13px, not the 11px
+              caption (FRESCO-940 floor). */}
+          {item.origen === 'sugerencia' && (
+            <span
+              data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_anadido`}
+              className="shrink-0 rounded-full border border-border px-2 py-0.5 text-body-sm text-tertiary"
+            >
+              Añadido
+            </span>
+          )}
         </div>
         <ItemQuantityLine
           item={item}
@@ -160,6 +174,20 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
           </span>
         </a>
       ))}
+      {/* FRESCO-948 — undo of "Añadir": the card goes back to the carousel. */}
+      {onRemoveSuggestion && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="min-h-[44px] shrink-0"
+          aria-label={`Quitar ${capitalize(item.nombre)} de la lista`}
+          data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_quitar`}
+          onClick={() => onRemoveSuggestion({ pasilloNombre, itemNombre: item.nombre })}
+        >
+          Quitar
+        </Button>
+      )}
     </li>
   );
 }

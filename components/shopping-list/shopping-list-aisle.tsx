@@ -21,6 +21,13 @@ interface ShoppingListAisleProps {
 export function ShoppingListAisle({ pasillo, pasilloIdx, flatOffset, shakingItem, nuevosNombres, compra, getItemEnterProps, onToggle }: ShoppingListAisleProps) {
   const PasilloIcon = getPasilloIcon(pasillo.nombre);
 
+  // FRESCO-948 — items added from "Sugerencias para ti" show in that section, not
+  // here. They stay in this aisle's array so `itemIdx` below is still the index the
+  // toggle RPC expects; an aisle that holds only those renders nothing.
+  if (!pasillo.items.some(item => item.origen !== 'sugerencia')) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <h3 className="flex items-center gap-2 border-b border-border pb-1 text-h6">
@@ -37,6 +44,7 @@ export function ShoppingListAisle({ pasillo, pasilloIdx, flatOffset, shakingItem
       <Card className="p-0">
         <ul className="flex flex-col divide-y divide-border">
           {pasillo.items.map((item, itemIdx) => {
+            if (item.origen === 'sugerencia') { return null; }
             const isShaking = shakingItem !== null && shakingItem.pasilloIdx === pasilloIdx && shakingItem.itemIdx === itemIdx;
             return (
               <ShoppingListItemRow
