@@ -3,7 +3,7 @@ import type { GenerateShoppingListResponse } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
-import { diffNombresNuevos, getShoppingListForPlan, normalizeNombre, ShoppingListError, toggleShoppingListItem } from './shopping-list';
+import { diffNombresNuevos, getShoppingListForPlan, normalizeNombre, removeShoppingListItem, ShoppingListError, toggleShoppingListItem } from './shopping-list';
 
 const MEAL_PLAN_ID = 'plan-1';
 
@@ -95,6 +95,32 @@ describe('getShoppingListForPlan', () => {
     await expectRejection(getShoppingListForPlan(client, MEAL_PLAN_ID));
   });
 
+  // FRESCO-948 — the `origen` mark is what puts an item in the "Sugerencias para
+  // ti" section. The read schema is a non-strict zod object, so a key it does not
+  // list is silently stripped: without `origen` there, a reload would drop the
+  // mark and the item would fall back into its aisle.
+  test('keeps the origen mark of an item added from a suggestion', async () => {
+    const pasillos: GenerateShoppingListResponse['pasillos'] = [
+      {
+        nombre: 'Especias',
+        orden: 1,
+        items: [{ nombre: 'Jengibre', cantidad: 1, unidad: 'ud', comprado: false, origen: 'sugerencia' }],
+      },
+    ];
+    const { client } = createMockClient({ data: { ...SAMPLE_LIST_ROW, items: pasillos } });
+
+    const result = await getShoppingListForPlan(client, MEAL_PLAN_ID);
+
+    expect(result?.pasillos[0].items[0].origen).toBe('sugerencia');
+  });
+
+  test('rejects an origen value other than "sugerencia"', async () => {
+    const pasillos = [{ nombre: 'Especias', orden: 1, items: [{ nombre: 'Jengibre', cantidad: 1, unidad: 'ud', comprado: false, origen: 'otra' }] }];
+    const { client } = createMockClient({ data: { ...SAMPLE_LIST_ROW, items: pasillos } });
+
+    await expectRejection(getShoppingListForPlan(client, MEAL_PLAN_ID));
+  });
+
   test('recomputes total_items as 0 for an empty pasillos array', async () => {
     const { client } = createMockClient({ data: { ...SAMPLE_LIST_ROW, items: [] } });
 
@@ -172,5 +198,26 @@ describe('toggleShoppingListItem', () => {
     const { client } = createRpcMockClient({ errorMessage: 'row not found' });
 
     await expectRejection(toggleShoppingListItem(client, { listId: 'list-1', pasilloIdx: 0, itemIdx: 1, comprado: true }));
+  });
+});
+
+describe('removeShoppingListItem', () => {
+  test('resolves without throwing and forwards the pasillo and item names to the RPC', async () => {
+    const { client, rpcCalls } = createRpcMockClient();
+
+    const result = await removeShoppingListItem(client, { listId: 'list-1', pasilloNombre: 'Especias', itemNombre: 'Jengibre' });
+
+    expect(result).toBeUndefined();
+    expect(rpcCalls).toEqual([{
+      p_list_id: 'list-1',
+      p_pasillo_nombre: 'Especias',
+      p_item_nombre: 'Jengibre',
+    }]);
+  });
+
+  test('throws ShoppingListError when the RPC fails', async () => {
+    const { client } = createRpcMockClient({ errorMessage: 'list not found or not owned by caller' });
+
+    await expectRejection(removeShoppingListItem(client, { listId: 'list-1', pasilloNombre: 'Especias', itemNombre: 'Jengibre' }));
   });
 });
