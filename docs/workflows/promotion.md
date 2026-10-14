@@ -36,6 +36,35 @@ bun run git:promote --yes --override-reason "test:e2e flake, green on re-run <ru
 
 Never promote on a `queued` or `in_progress` run, and never reason from tree equality instead of the run.
 
+## Cadence: accumulate in `staging`, promote in batches (FRESCO-925)
+
+**The rule.** PRs land on `staging` as they are ready. `main` gets them in a batch, through `bun run git:promote`, never one promotion per ticket and never on a run that has not finished. The founder asked for this on 2026-10-12.
+
+**Why.** Every push to `main` is a production deployment, and the Vercel Hobby plan caps deployments per day (100) and function storage (the 10 GB cap was hit on 2026-10-12, FRESCO-903 and FRESCO-906). The audit of 2026-10-12 counted 18 deployments one day and 30 the day before, 4 and 7 of them to production. Previews count too: every push to a PR branch makes one.
+
+**What a batch is.** Everything that is ready and green on `staging` at the moment you decide to promote. There is no fixed number per day, because a cap would also block an urgent fix. The exception is the hotfix path (`docs/workflows/hotfix.md`), which is its own promotion on purpose. When in doubt, wait for the next ticket to be ready before spending a production deployment.
+
+**What enforces it, and what does not.**
+
+| Part | Enforced by |
+|---|---|
+| What reaches `main` (a finished successful staging run, real identities, a PR for code) | The script `git:promote`: it refuses otherwise. |
+| How often you promote | Nothing automatic: it is a convention of one maintainer. A hard cap would block the one case where promoting twice in a day is right. |
+| `enforce_admins` on the protected branches | **Decided not to enable it** (accepted 2026-10-03, FRESCO-831). Promotion is a fast-forward mirror push, never a PR, so `enforce_admins` would block it; the compensating control is `git:promote`. The full text and the conditions to reopen it are in `.agents/project.yaml`, `git_strategy.accepted_divergences`. |
+
+**Measure it** instead of guessing (production deployments per day, and all of them, from the GitHub deployments API; it returns the latest 100, so it covers about the last three days):
+
+```bash
+gh api "repos/BasiMontes/fresco/deployments?per_page=100" \
+  -q '[.[] | select(.environment=="Production")] | group_by(.created_at[0:10]) | map({day: .[0].created_at[0:10], n: length})'
+gh api "repos/BasiMontes/fresco/deployments?per_page=100" \
+  -q 'group_by(.created_at[0:10]) | map({day: .[0].created_at[0:10], n: length})'
+```
+
+On 2026-10-13 and 2026-10-14 production got 3 and 2 deployments a day and all environments together 43 and 38, so the daily cap of 100 is the number to watch, not the production count: previews are most of it.
+
+**Revisit** if a day gets near 100 deployments, if a second committer joins, or if a promoted SHA reaches `main` with a red staging run despite `git:promote`.
+
 ## Related
 
 - Required checks on the protected branches: `bun run git:checks verify` (FRESCO-781).
