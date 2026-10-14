@@ -1042,6 +1042,10 @@ export type Database = {
         Returns: undefined
       }
       jsonb_clear_comprados: { Args: { p_list_id: string }; Returns: undefined }
+      jsonb_remove_item: {
+        Args: { p_item_nombre: string; p_list_id: string; p_pasillo_nombre: string }
+        Returns: undefined
+      }
       jsonb_set_comprado: {
         Args: {
           p_comprado: boolean
