@@ -1,36 +1,64 @@
 /**
- * FRESCO-496: split out of `./events.ts` on purpose. `getDistinctId` is the
- * one PostHog helper with a hard synchronous contract (see its own doc
- * comment) — `app/signup/page.tsx`'s guest-reassignment flow reads it
- * synchronously, in the same tick, right before a session-switching auth
- * call. Every other helper in `events.ts` is fire-and-forget and now lazy
- * (dynamic `import('posthog-js')`) so posthog-js's bundle is not part of the
- * initial JS on every route that merely captures an event (e.g. the guest
- * landing page's CTA click). Keeping this one function's static
- * `import posthog from 'posthog-js'` in its own module means only
- * `app/signup/page.tsx` (which imports this file directly, not through
- * `events.ts`) pulls posthog-js in eagerly — everywhere else stays lazy.
+ * FRESCO-496 split this out of `./events.ts` because `getDistinctId` has a hard
+ * synchronous contract: `app/signup/page.tsx`'s guest-reassignment flow reads it in
+ * the same tick, right before a session-switching auth call.
+ *
+ * FRESCO-895: it used to `import posthog from 'posthog-js'` to get it, which made the
+ * whole SDK (about 311 KB) part of the initial JS of `/signup` and nowhere else. It now
+ * reads the value posthog-js itself persists under `ph_<key>_posthog` (localStorage,
+ * cookie as fallback; the same key `clearPostHogStorage` removes on consent
+ * withdrawal), so no SDK code is loaded to answer it. Before consent nothing is
+ * persisted, so the result is `null`, which is what the SDK path gave too.
  */
 
-import posthog from 'posthog-js';
+interface PersistedPosthog {
+  distinct_id?: unknown
+}
 
-/**
- * Reads the current browser's PostHog distinct_id. `aliasUser` callers need
- * this captured BEFORE a session-switching auth call (e.g.
- * `signInWithPassword`) resolves — once it does, the provider's
- * `onAuthStateChange` has already re-identified under the new uid and the
- * prior anonymous id is gone. Fail-soft: silent no-op when
- * `NEXT_PUBLIC_POSTHOG_KEY` is unset or posthog-js itself throws.
- */
-export function getDistinctId(): string | null {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+function parsePersisted(raw: string | null): string | null {
+  if (!raw) {
     return null;
   }
   try {
-    return posthog.get_distinct_id();
+    const parsed = JSON.parse(raw) as PersistedPosthog | null;
+    return typeof parsed?.distinct_id === 'string' && parsed.distinct_id !== '' ? parsed.distinct_id : null;
   }
-  catch (error) {
-    console.error('[lib/posthog/distinct-id] getDistinctId failed', error);
+  catch {
     return null;
+  }
+}
+
+function readCookie(name: string): string | null {
+  const prefix = `${name}=`;
+  const entry = document.cookie.split('; ').find(part => part.startsWith(prefix));
+  if (!entry) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(entry.slice(prefix.length));
+  }
+  catch {
+    return null;
+  }
+}
+
+/**
+ * Reads the current browser's PostHog distinct_id. `aliasUser` callers need this
+ * captured BEFORE a session-switching auth call (e.g. `signInWithPassword`) resolves:
+ * once it does, the provider's `onAuthStateChange` has already re-identified under the
+ * new uid and the prior anonymous id is gone. Fail-soft: `null` when
+ * `NEXT_PUBLIC_POSTHOG_KEY` is unset, nothing was persisted, or storage is unreadable.
+ */
+export function getDistinctId(): string | null {
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+  if (!key || typeof document === 'undefined') {
+    return null;
+  }
+  const storageKey = `ph_${key}_posthog`;
+  try {
+    return parsePersisted(localStorage.getItem(storageKey)) ?? parsePersisted(readCookie(storageKey));
+  }
+  catch {
+    return parsePersisted(readCookie(storageKey));
   }
 }
