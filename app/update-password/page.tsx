@@ -2,14 +2,16 @@
 
 import type { FormEvent } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { LegalLinks } from '@/components/legal/legal-links';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
 import { getSession, signOut, updatePassword } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
+import { cn } from '@/lib/utils';
 import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
 import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-password';
 
@@ -104,12 +106,17 @@ export default function UpdatePasswordPage() {
         )}
 
         {hasSession === false && (
-          <p data-testid="update_password_no_session_message" role="alert" aria-live="assertive" className="text-body-sm text-error">
-            Este enlace ya no es válido. Solicita uno nuevo desde
-            {' '}
-            <a href="/forgot-password" className="text-primary underline">recuperar contraseña</a>
-            .
-          </p>
+          // FRESCO-940: the expired state had no heading and only a 15px inline
+          // link; it now has an h1 and a real exit button (44px).
+          <div data-testid="update_password_no_session_message" role="alert" aria-live="assertive">
+            <h1 className="text-h3">Este enlace ha caducado</h1>
+            <p className="mt-2 text-body-sm text-tertiary">
+              Los enlaces para elegir una nueva contraseña solo sirven durante un tiempo. Pide uno nuevo y te lo enviamos al correo.
+            </p>
+            <Link href="/forgot-password" className={cn(buttonVariants(), 'mt-6 w-full')}>
+              Pedir un enlace nuevo
+            </Link>
+          </div>
         )}
 
         {hasSession === true && (

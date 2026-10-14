@@ -112,7 +112,8 @@ function ForgotPasswordPageInner() {
             )}
 
         <p className="mt-4 text-center text-body-sm text-tertiary">
-          <Link href="/login" className="text-primary underline">
+          {/* FRESCO-940: stand-alone link, 44px tap target (was 15px tall). */}
+          <Link href="/login" className="inline-flex min-h-[44px] items-center text-primary underline">
             Volver a iniciar sesión
           </Link>
         </p>
