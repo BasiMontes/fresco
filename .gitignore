@@ -175,3 +175,8 @@ cookies.txt
 
 # brag skill output (videos, frames): local only (FRESCO-836)
 brag-output*/
+
+# impeccable design hook: the per-machine result cache is local only (FRESCO-929).
+# `.impeccable/config.json` stays tracked on purpose: it holds the team's
+# confirmed design-lint exemptions, each with its reason and file scope.
+.impeccable/hook.cache.json
