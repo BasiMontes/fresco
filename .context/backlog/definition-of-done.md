@@ -74,6 +74,25 @@ defect-density-per-feature metric (Gotcha 24 of `/sprint-development`) counts fr
 evident: a link guessed to satisfy a check is worse than none. Reopen this if the metric is
 ever wanted for the older months.
 
+## Regression test for a closed BLOCKER or ALTO finding (FRESCO-916, audit C-12)
+
+A finding closed as BLOCKER or ALTO (the audit's severity, or a defect with `severity`
+critica or mayor) is not done until a **regression test that fails without the fix**
+exists, and the closing comment says where it is: the test path, and the fact that it
+fails on the commit before the fix. The audit found closures with no such test, and the
+same defect came back (audit-5's RPC bypass reopened in audit-6).
+
+The only way out is a stated reason in the closing comment, `exempt:<reason>`, and it
+has to be specific: a change to configuration, CI or documentation that has no behavior
+to test; a data fix whose proof is the verification query returning 0 (the "Data /
+backlog task" row); a defect that only reproduces against a hosted service and is covered
+by a DB-integration or e2e scenario named in the comment. "Hard to test" is not a reason.
+
+This is a rule checked by the person who closes, not by a script: matching a finding to
+its pull request has no reliable key today. A mechanical check on `fix(` pull requests
+(a changed `*.test.*` file or an explicit exemption line in the body) is possible and
+left as a decision for the founder.
+
 ## Where this plugs in
 
 - **`bug-fix-workflow.md`** — Phase 3 (reproduction-or-rejection gate) and Phase 7

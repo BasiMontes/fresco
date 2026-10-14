@@ -97,15 +97,22 @@ import { join } from 'node:path';
  * 2026-10-06 (FRESCO-795): raised to functions 85.5 / lines 87.0 (measured
  *   86.63 / 87.57 on the loaded set; the previous 84.5 / 86.2 had drifted
  *   below the doc's 82 / 84). Honest floor introduced beside it.
+ * 2026-10-14 (FRESCO-916): raised to functions 87.5 / lines 88.7 (measured
+ *   88.12 / 89.30). The floor had sat 2.6 pp under the real number: a drop of
+ *   that size would have passed CI without a word.
  */
-const FLOOR = { functions: 85.5, lines: 87.0 } as const;
+const FLOOR = { functions: 87.5, lines: 88.7 } as const;
 
 /**
  * Floor for the HONEST line coverage (unloaded files counted as zero). Only
  * raised. 2026-10-06 (FRESCO-795): measured 49.6 % (hit 9570 of 19293 lines),
  * floored at 49.0 to absorb runner noise.
+ * 2026-10-14 (FRESCO-916): measured 55.26 %, floored at 54.5. This is the first
+ * tranche of the plan in `.context/qa/coverage-ratchet.md` ("Tranches"): the 49.0
+ * floor sat 6.3 pp under the real number, so a 6-point regression would not have
+ * failed. The next tranche is 60 %.
  */
-const HONEST_FLOOR_LINES = 49.0;
+const HONEST_FLOOR_LINES = 54.5;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
