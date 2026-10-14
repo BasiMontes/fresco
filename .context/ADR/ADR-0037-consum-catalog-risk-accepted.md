@@ -79,3 +79,4 @@ The founder decided on 2026-10-09 to keep accepting the risk instead of commissi
 - `scripts/gen-consum-catalog.ts`, `lib/grocery/consum-catalog.generated.ts` — how the data is obtained.
 - Jira FRESCO-764 (consent request), FRESCO-767 and FRESCO-768 (connectors and normalized prices), FRESCO-769 (removal of per-chain fields), FRESCO-520 (Consum prices).
 - `consum.es/condiciones-de-uso` — Consum's legal notice, consulted 2026-10-01.
+- `docs/workflows/supermarket-data-withdrawal.md` — runbook to withdraw a chain's prices and links within hours, and what each switch controls (FRESCO-921).

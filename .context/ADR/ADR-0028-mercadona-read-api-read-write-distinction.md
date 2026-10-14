@@ -165,3 +165,4 @@ The Decision above is unchanged. This records a distinction the ADR did not make
 - Jira FRESCO-531 (this spike), FRESCO-346 (price comparator, the consumer),
   FRESCO-488 (ingredient -> product mapping, still the prerequisite),
   FRESCO-518/519 (cart-write spike, stays closed, unaffected)
+- `docs/workflows/supermarket-data-withdrawal.md` — runbook to withdraw a chain's prices and links within hours, and what each switch controls (FRESCO-921).
