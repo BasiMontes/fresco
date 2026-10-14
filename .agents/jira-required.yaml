@@ -176,7 +176,8 @@ required:
     name: Error Type
     type: option
     fallback: { target: comment, label: Error Type }
-    options: [content, crash, data, functional, integration, performance, security, visual]
+    # Jira's own option is spelled `perfomance` (sic). Kept as it is: renaming it is a write to Jira.
+    options: [content, crash, data, functional, integration, perfomance, security, visual]
     description: Bug taxonomy by error category.
     used_by:
       - sync-jira-issues
@@ -189,17 +190,6 @@ required:
     fallback: { target: comment, label: Severity }
     options: [critica, mayor, menor, moderada, trivial]
     description: Bug severity classification (impact-based).
-    used_by:
-      - sync-jira-issues
-      - sprint-development/references/bug-fix-workflow.md
-      - agentic-qa-boilerplate (sprint-testing)
-
-  test_environment:
-    name: Test Environment 📦️
-    type: option
-    fallback: { target: comment, label: Test Environment }
-    options: [dev, production, qa, staging, uat]
-    description: Environment where the bug was reproduced or where the test ran.
     used_by:
       - sync-jira-issues
       - sprint-development/references/bug-fix-workflow.md
@@ -244,17 +234,6 @@ required:
       - sprint-development/references/bug-fix-workflow.md
       - agentic-qa-boilerplate (sprint-testing)
 
-  fix:
-    name: Fix
-    type: option
-    fallback: { target: comment, label: Fix }
-    options: [bugfix, hotfix]
-    description: Type of fix applied (bugfix vs urgent hotfix).
-    used_by:
-      - sync-jira-issues
-      - sprint-development/references/bug-fix-workflow.md
-      - agentic-qa-boilerplate (sprint-testing)
-
   # ---- TMS Modality B fields (Jira-native, no Xray) ----
   # QA-side fields kept here so a single Jira workspace can serve both repos.
   acceptance_test_plan:
@@ -268,6 +247,35 @@ required:
       Test Plan issue and may not need this field.
     used_by: [agentic-qa-boilerplate (sprint-testing, test-documentation)]
 
+optional:
+  # Fields that enhance the workflow but won't break it if missing.
+  # FRESCO-928: moved here from `required:`. Fresco has no Test / Xray issue types and
+  # these three fields are on no issue type's screen (only `Error` carries QA fields), so
+  # Jira exposes no option list for them and nothing in the repo writes them; each one
+  # already degrades to a comment through its `fallback`. Move one back to `required:`
+  # when it is put on a screen and used.
+  test_environment:
+    name: Test Environment 📦️
+    type: option
+    fallback: { target: comment, label: Test Environment }
+    options: [dev, production, qa, staging, uat]
+    description: Environment where the bug was reproduced or where the test ran.
+    used_by:
+      - sync-jira-issues
+      - sprint-development/references/bug-fix-workflow.md
+      - agentic-qa-boilerplate (sprint-testing)
+
+  fix:
+    name: Fix
+    type: option
+    fallback: { target: comment, label: Fix }
+    options: [bugfix, hotfix]
+    description: Type of fix applied (bugfix vs urgent hotfix).
+    used_by:
+      - sync-jira-issues
+      - sprint-development/references/bug-fix-workflow.md
+      - agentic-qa-boilerplate (sprint-testing)
+
   test_status:
     name: Test Status🧪
     type: option
@@ -276,8 +284,6 @@ required:
     description: Per-Test issue execution status (Jira-native TMS).
     used_by: [agentic-qa-boilerplate (test-documentation)]
 
-optional:
-  # Fields that enhance the workflow but won't break it if missing.
   to_be_automated:
     name: To Be Automated (QA)🧪
     type: option

@@ -42,7 +42,16 @@
     "id": "customfield_10193",
     "type": "option",
     "name": "Error Type",
-    "options": {}
+    "options": {
+      "content": "10084",
+      "crash": "10085",
+      "data": "10086",
+      "functional": "10087",
+      "integration": "10088",
+      "perfomance": "10089",
+      "security": "10090",
+      "visual": "10091"
+    }
   },
   "evidence": {
     "id": "customfield_10190",
@@ -97,18 +106,38 @@
     "id": "customfield_10196",
     "type": "option",
     "name": "Root Cause🐞",
-    "options": {}
+    "options": {
+      "code_error": "10102",
+      "config_env_error": "10103",
+      "data_error": "10104",
+      "environment_error": "10105",
+      "integration_error": "10106",
+      "requirement_error": "10107",
+      "third_party_error": "10108",
+      "working_as_designed": "10109"
+    }
   },
   "scope": {
     "id": "customfield_10179",
     "type": "string",
     "name": "Scope"
   },
+  "sesiones_de_agentes": {
+    "id": "customfield_10035",
+    "type": "array",
+    "name": "Sesiones de agentes"
+  },
   "severity": {
     "id": "customfield_10194",
     "type": "option",
     "name": "Severity 🚩",
-    "options": {}
+    "options": {
+      "critica": "10092",
+      "mayor": "10093",
+      "menor": "10094",
+      "moderada": "10095",
+      "trivial": "10096"
+    }
   },
   "spec_implementation_plan": {
     "id": "customfield_10186",
