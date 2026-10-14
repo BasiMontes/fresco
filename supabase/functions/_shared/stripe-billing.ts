@@ -13,7 +13,7 @@ import { logger } from './logger.ts'
 const FN_NAME = 'delete-account'
 
 // Same pin as `lib/stripe.ts`, so the Edge call and the app speak one API version.
-const STRIPE_API_VERSION = '2026-08-26.dahlia'
+const STRIPE_API_VERSION = '2026-09-30.endive'
 
 // Subscription states that still bill (or may bill) the customer. `canceled`
 // and `incomplete_expired` are terminal: nothing to cancel.

@@ -41,16 +41,8 @@ updates:
     # calls ts.readConfigFile, which no longer exists. Skip the major until
     # typescript-eslint supports it and the cycles script no longer needs the
     # compiler API; minor and patch releases still come through.
-    # FRESCO-952: stripe 23 pins a new Stripe API version ("2026-09-30.endive") and the
-    # code pins "2026-08-26.dahlia" in lib/stripe.ts and the e2e fixtures, so PR #661
-    # failed type checking everywhere, and its failure hid the other three majors in
-    # the group. An SDK major moves the API version the whole payments path runs on:
-    # it is upgraded by hand in FRESCO-952 (read the release notes, change the pinned
-    # version, run the Stripe scenarios in test mode), and this ignore is removed then.
     ignore:
       - dependency-name: typescript
-        update-types: ['version-update:semver-major']
-      - dependency-name: stripe
         update-types: ['version-update:semver-major']
     commit-message:
       prefix: chore

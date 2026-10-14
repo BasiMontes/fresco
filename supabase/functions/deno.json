@@ -2,7 +2,7 @@
   "//": "Deno config for the Supabase Edge Functions. `supabase/functions/` is excluded from the app's tsc and ESLint (see /tsconfig.json and /eslint.config.js) — this file plus the `deno:check` CI job (.github/workflows/pr-check.yml) is what actually type-checks and lints the Edge Functions. The `*.test.ts` files are excluded here because they are bun:test files: `bun run types:check:edge-tests` (/tsconfig.edge-tests.json, part of `types:check`) type-checks them instead — FRESCO-840. The Supabase Edge Runtime also reads this import map on deploy (deno_version = 2 in ../config.toml).",
   "imports": {
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.112.4",
-    "stripe": "npm:stripe@22.6.2",
+    "stripe": "npm:stripe@23.0.0",
     "web-push": "npm:web-push@3"
   },
   "exclude": ["**/*.test.ts"],

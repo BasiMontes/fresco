@@ -125,7 +125,7 @@ for (const [givenText, thenText] of [
     // re-fetches this subscription from Stripe's actual API. No reset to
     // Free needed first: this is a brand-new factory user, already Free.
     const StripeModule = (await import('stripe')).default;
-    const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+    const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
     const priceId = process.env.STRIPE_PRICE_ID_PRO_MONTH!;
     const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
     ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
@@ -417,7 +417,7 @@ Given(/^su cliente de Stripe existe realmente$/, async ({ request, suscripcionCt
   const userId = ctx.testUser.id;
 
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const customer = await stripe.customers.create({ metadata: { test_user_id: userId } });
   ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
 
@@ -463,7 +463,7 @@ When(/^llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripc
 
 Then(/^se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta$/, async ({ suscripcionCtx: ctx }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
   expect(session.payment_method_collection).toBe('if_required');
 });
@@ -482,7 +482,7 @@ When(/^elige el plan anual y llega a la pantalla de pago de Stripe Checkout$/, a
 
 Then(/^el pago es una suscripción con el precio anual de Pro, que se cobra cada año$/, async ({ suscripcionCtx: ctx }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId, { expand: ['line_items.data.price'] });
   expect(session.mode).toBe('subscription');
   const price = session.line_items?.data[0]?.price;
@@ -494,7 +494,7 @@ Then(/^el pago es una suscripción con el precio anual de Pro, que se cobra cada
 // FRESCO-871: the profile upsell card shows the prices Stripe returns (monthly and annual).
 Then(/^la tarjeta de Pro le muestra el precio mensual y el anual que cobra Stripe$/, async ({ page }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const [month, year] = await Promise.all([
     stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_PRO_MONTH!),
     stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_PRO_ANUAL!),
@@ -513,7 +513,7 @@ Given(/^que Laura ya usó su prueba gratuita de Pro$/, async ({ page, request, t
   ctx.testUser = testUser;
 
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const customer = await stripe.customers.create({ metadata: { test_user_id: testUser.id } });
   ctx.stripeCustomerIds.push(customer.id); // FRESCO-376: fixture teardown deletes it
 
@@ -531,7 +531,7 @@ Given(/^que Laura ya usó su prueba gratuita de Pro$/, async ({ page, request, t
 
 Then(/^Stripe le pide la tarjeta desde el primer día y reutiliza su cliente$/, async ({ suscripcionCtx: ctx }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const session = await stripe.checkout.sessions.retrieve(ctx.checkoutSessionId);
   expect(session.payment_method_collection).toBe('always');
   expect(session.customer).toBe(ctx.stripeCustomerIds[0]);
@@ -542,7 +542,7 @@ Then(/^Stripe le pide la tarjeta desde el primer día y reutiliza su cliente$/, 
 Given(/^que Laura empezó su prueba de Pro sin tarjeta$/, async ({ suscripcionCtx: ctx }) => {
   // Pure Stripe scenario: no app user needed, the clock-bound customer is the whole fixture.
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   // A test clock lets us jump past the trial instead of waiting 7 real days.
   const clock = await stripe.testHelpers.testClocks.create({ frozen_time: Math.floor(Date.now() / 1000) });
   ctx.stripeTestClockId = clock.id;
@@ -560,7 +560,7 @@ Given(/^que Laura empezó su prueba de Pro sin tarjeta$/, async ({ suscripcionCt
 
 When(/^pasan los 7 días de prueba sin que añada tarjeta$/, async ({ suscripcionCtx: ctx }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   const clock = await stripe.testHelpers.testClocks.retrieve(ctx.stripeTestClockId);
   const afterTrial = clock.frozen_time + (PRO_TRIAL_DAYS + 1) * 24 * 60 * 60;
   await stripe.testHelpers.testClocks.advance(clock.id, { frozen_time: afterTrial });
@@ -569,7 +569,7 @@ When(/^pasan los 7 días de prueba sin que añada tarjeta$/, async ({ suscripcio
 
 Then(/^su suscripción queda cancelada y no se le cobra nada$/, async ({ suscripcionCtx: ctx }) => {
   const StripeModule = (await import('stripe')).default;
-  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' });
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
   try {
     const subscription = await stripe.subscriptions.retrieve(ctx.stripeSubscriptionId);
     expect(subscription.status).toBe('canceled');
