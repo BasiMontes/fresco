@@ -372,3 +372,74 @@ describe('ShoppingListView — all-bought state (FRESCO-842)', () => {
     expect(screen.queryByTestId('shopping_list_all_bought')).toBeNull();
   });
 });
+
+describe('ShoppingListView — items added from "Sugerencias para ti" (FRESCO-948)', () => {
+  const WITH_ADDED: ShoppingListPersistido = {
+    id: 'list-added',
+    pasillos: [
+      {
+        nombre: 'Frutas y verduras',
+        orden: 1,
+        items: [{ nombre: 'Lechuga', cantidad: 1, unidad: 'unidades', comprado: false }],
+      },
+      {
+        nombre: 'Especias',
+        orden: 2,
+        items: [
+          { nombre: 'Pimienta', cantidad: 1, unidad: 'ud', comprado: false },
+          { nombre: 'jengibre', cantidad: 1, unidad: 'ud', comprado: false, precio_estimado: 1.2, origen: 'sugerencia' },
+        ],
+      },
+    ],
+    resumen: { total_items: 3, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('shows the added item in the suggestions section with an "Añadido" tag and a "Quitar" button', () => {
+    renderWithProviders(<ShoppingListView list={WITH_ADDED} />);
+
+    const section = screen.getByTestId('shopping_list_added_suggestions');
+    expect(section).toHaveTextContent('Jengibre');
+    expect(screen.getByTestId('shopping_list_item_1_1_anadido')).toHaveTextContent('Añadido');
+    expect(screen.getByRole('button', { name: 'Quitar Jengibre de la lista' })).toBeInTheDocument();
+  });
+
+  test('does not repeat the added item inside its aisle, and the aisle keeps its own items', () => {
+    renderWithProviders(<ShoppingListView list={WITH_ADDED} />);
+
+    expect(screen.getAllByText('Jengibre')).toHaveLength(1);
+    expect(screen.getByText('Pimienta')).toBeInTheDocument();
+  });
+
+  test('an aisle that holds only suggestion items renders no empty card', () => {
+    const onlyAdded: ShoppingListPersistido = {
+      ...WITH_ADDED,
+      pasillos: [
+        { nombre: 'Frutas y verduras', orden: 1, items: [{ nombre: 'Lechuga', cantidad: 1, unidad: 'unidades', comprado: false }] },
+        { nombre: 'Especias', orden: 2, items: [{ nombre: 'jengibre', cantidad: 1, unidad: 'ud', comprado: false, origen: 'sugerencia' }] },
+      ],
+    };
+    renderWithProviders(<ShoppingListView list={onlyAdded} />);
+
+    expect(screen.queryByRole('heading', { name: 'Especias' })).toBeNull();
+    expect(screen.getByTestId('shopping_list_added_suggestions')).toHaveTextContent('Jengibre');
+  });
+
+  test('the pending count includes the added item', () => {
+    renderWithProviders(<ShoppingListView list={WITH_ADDED} />);
+
+    expect(screen.getByText(/3\s+artículos pendientes/)).toBeInTheDocument();
+  });
+
+  test('the added item keeps its own checkbox, which still means "comprado"', () => {
+    renderWithProviders(<ShoppingListView list={WITH_ADDED} />);
+
+    expect(screen.getByRole('checkbox', { name: 'Jengibre' })).not.toBeChecked();
+  });
+
+  test('without added items there is no section and no "Quitar" button', () => {
+    renderWithProviders(<ShoppingListView list={LIST} />);
+
+    expect(screen.queryByTestId('shopping_list_added_suggestions')).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Quitar/ })).toBeNull();
+  });
+});
