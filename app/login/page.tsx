@@ -13,6 +13,7 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { isEmailNotConfirmed, translateAuthError } from '@/lib/auth-errors';
 import { hasLoginFieldErrors, NO_LOGIN_FIELD_ERRORS, validateLoginFields } from '@/lib/auth/login-validation';
 import { resendSignupConfirmation, signInWithPassword } from '@/lib/client-api/auth';
@@ -193,41 +194,42 @@ function LoginPageInner() {
         )}
 
         <form noValidate onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3 [@media(max-height:700px)]:mt-4">
-          {/* FRESCO-315: real <label for> — the accessible name was carried
-                only by aria-label duplicating the placeholder (WCAG 3.3.2 /
-                4.1.2). sr-only keeps the minimalist card design unchanged. */}
-          <label htmlFor="login-email" className="sr-only">Correo electrónico</label>
-          <Input
-            id="login-email"
-            data-testid="email_input"
-            type="email"
-            placeholder="Correo electrónico"
-            required
-            autoComplete="email"
-            aria-invalid={fieldErrors.email !== null}
-            aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setFieldErrors(current => ({ ...current, email: null }));
-            }}
-          />
+          {/* FRESCO-315: real <label for> (WCAG 3.3.2 / 4.1.2).
+                FRESCO-936: the label is now visible and stays on screen while
+                she types; the placeholder alone vanished on the first key. */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="login-email" className="text-label text-text">Correo electrónico</label>
+            <Input
+              id="login-email"
+              data-testid="email_input"
+              type="email"
+              placeholder="nombre@correo.com"
+              required
+              autoComplete="email"
+              aria-invalid={fieldErrors.email !== null}
+              aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors(current => ({ ...current, email: null }));
+              }}
+            />
+          </div>
           {fieldErrors.email && (
             <p id="login-email-error" data-testid="email_error" role="alert" className="-mt-1 text-body-sm text-error">{fieldErrors.email}</p>
           )}
-          <label htmlFor="login-password" className="sr-only">Contraseña</label>
-          <Input
+          {/* FRESCO-936: show/hide toggle, same control signup already had. */}
+          <PasswordInput
             id="login-password"
-            data-testid="password_input"
-            type="password"
-            placeholder="Contraseña"
-            required
+            label="Contraseña"
+            placeholder="Tu contraseña"
             autoComplete="current-password"
+            showStrength={false}
             aria-invalid={fieldErrors.password !== null}
             aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
+            onChange={(value) => {
+              setPassword(value);
               setFieldErrors(current => ({ ...current, password: null }));
             }}
           />

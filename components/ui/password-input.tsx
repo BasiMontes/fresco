@@ -1,7 +1,7 @@
 'use client';
 
 import { Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { MIN_PASSWORD_LENGTH } from '@/lib/validation/password-policy';
 import { getPasswordStrength, PASSWORD_STRENGTH_LABELS } from '@/lib/validation/password-strength';
@@ -20,6 +20,15 @@ export interface PasswordInputProps {
    */
   'showPolicyHint'?: boolean
   'disabled'?: boolean
+  /**
+   * FRESCO-936: visible label rendered above the field (WCAG 3.3.2 — the
+   * placeholder disappears on typing). Without it the field keeps its
+   * `aria-label`, so existing callers are unchanged.
+   */
+  'label'?: string
+  'id'?: string
+  'aria-invalid'?: boolean
+  'aria-describedby'?: string
 }
 
 const STRENGTH_BAR_COLOR: Record<ReturnType<typeof getPasswordStrength>, string> = {
@@ -51,18 +60,28 @@ export function PasswordInput({
   showStrength = true,
   showPolicyHint = false,
   disabled,
+  label,
+  id,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
   const strength = getPasswordStrength(value);
 
   return (
     <div className="flex flex-col gap-1">
+      {label && <label htmlFor={inputId} className="text-label text-text">{label}</label>}
       <div className="relative">
         <Input
+          id={inputId}
           data-testid={dataTestId}
           type={visible ? 'text' : 'password'}
           placeholder={placeholder}
-          aria-label={placeholder}
+          aria-label={label ? undefined : placeholder}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
           required
           // FRESCO-448 (S9): no native `minLength` — it fired the browser's
           // un-branded OS validation bubble ("Aumenta la longitud…") before
