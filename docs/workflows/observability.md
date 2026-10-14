@@ -77,3 +77,27 @@ The 2026-10-12 audit (C-20, C-21, C-25 and an optional note on the catalog) list
 | `/qa` (`app/qa/page.tsx`) | **Kept public.** It already has `robots: { index: false, follow: false }` (FRESCO-395) and renders `<PROJECT_REF>` instead of the real project ref. No redirect in production. | It is a public surface by design: the page exists so an external evaluator can test Fresco without help from the team. The `@smoke` scenario "La guía de testeabilidad en /qa es pública…" and the production warm-up in `.github/workflows/post-deploy-smoke.yml` both request it, so a production redirect would turn the post-deploy smoke red on every promotion. | The evaluator use ends, or the page starts to carry anything not meant for a stranger (credentials, real project identifiers). |
 | `POST /api/waitlist` | **No captcha and no rate limit, for now.** | The table is insert-only for the browser roles: the column grant is `(email, consent_version)`, `id` and `created_at` belong to the database, the address is unique on `lower(email)` with a length check, and `anon` can never read, change or delete a row (`supabase/migrations/20261011140000_waitlist_signups.sql`). The worst case is junk rows in a list that holds no personal data beyond an email, not exposure of anything. Adding a captcha means a new Turnstile secret in Vercel, server-side verification and a widget in the landing form; a per-IP cap in serverless needs a table of its own. | Before the public launch (epic FRESCO-884), or the first time the row count or the junk ratio looks wrong. |
 | `recipes` readable by `anon` | **Kept.** | It is the shared, founder-curated catalog, not user data (ADR-0032), and `/api/health` probes Supabase with a one-row read of it using the anon key, so closing it would also take the uptime monitor down. | Recipe content becomes part of the paid plan. |
+
+## Card-less trial and alias accounts (FRESCO-923)
+
+Audit C-22 (BAJO): the card-less trial is once per account (`lib/legal/pro-terms.ts`, FRESCO-778), but a new `name+anything@gmail.com` is a new account and gets another 7 days of Pro. Decided with the founder on 2026-10-14.
+
+| Question | Decision | Why |
+|---|---|---|
+| Ask for a card to start the trial? | **No, for now.** | Pro value is narrow (4 `isPro` gates in `generate-meal-plan`), so an abused trial costs little. A card wall would cut legitimate sign-ups before launch. |
+| How do we watch it? | `trial_started` carries `email_domain` and `email_plus_alias` | Server-side, from `lib/billing/grant-pro.ts` via `lib/billing/trial-email-signals.ts`. The address is never sent; the domain is kept only for public providers (gmail, outlook, hotmail, yahoo, icloud, proton), else `other`. |
+| When do we revisit? | More than **20 %** of `trial_started` with `email_plus_alias = true`, over at least **30** trials in the period | Below that the `+` alias is normal use (many people filter mail with it). Review monthly. |
+
+**PostHog query** (SQL insight, last 30 days):
+
+```sql
+select properties.email_domain as domain,
+       count() as trials,
+       countIf(properties.email_plus_alias = true) as aliased
+from events
+where event = 'trial_started' and timestamp > now() - interval 30 day
+group by domain
+order by trials desc
+```
+
+Events from before 2026-10-14 lack both properties. If the threshold is crossed, the options are a card at trial start (Stripe `payment_method_collection: 'always'` in `/api/stripe/checkout`) or blocking `+` aliases on first trial; both are a product decision.

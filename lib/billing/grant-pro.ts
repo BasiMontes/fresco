@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database } from '@/lib/supabase/types';
 import { activateProPlan, getStoredSubscriptionId } from '@/lib/billing/subscription';
+import { trialEmailSignals } from '@/lib/billing/trial-email-signals';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { captureServerEvent } from '@/lib/posthog/server';
 import { resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
@@ -19,6 +20,16 @@ function formatChargedAmount(unitAmount: number | null | undefined, currency: st
 
 function formatRenewalDate(isoTimestamp: string): string {
   return new Date(isoTimestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+async function lookupUserEmail(client: Client, userId: string): Promise<{ email: string | undefined, error: unknown }> {
+  try {
+    const { data, error } = await client.auth.admin.getUserById(userId);
+    return { email: error ? undefined : data?.user?.email, error };
+  }
+  catch (error) {
+    return { email: undefined, error };
+  }
 }
 
 /**
@@ -69,12 +80,17 @@ export async function grantProFromCheckoutSession(client: Client, session: Strip
     // so posthog-js structurally cannot fire here. Checkout always opens a
     // 7-day trial, so the normal event is `trial_started`; a non-trialing
     // status means the trial was skipped and it's paid from day one.
+    // FRESCO-923: the same lookup feeds the abuse signals on the event and the
+    // confirmation email below. A failed lookup only drops the signals.
+    const { email: recipientEmail, error: userError } = await lookupUserEmail(client, update.userId);
+
     await captureServerEvent({
       supabase: client,
       distinctId: update.userId,
       event: resolveCheckoutFunnelEvent(subscription.status),
       properties: {
         stripe_subscription_id: update.stripeSubscriptionId,
+        ...trialEmailSignals(recipientEmail),
         $set: { plan: 'pro' },
       },
     });
@@ -84,9 +100,7 @@ export async function grantProFromCheckoutSession(client: Client, session: Strip
     // (write above already succeeded) — a send failure is logged for
     // retry/review and never re-thrown, per AC3.
     try {
-      const { data: userData, error: userError } = await client.auth.admin.getUserById(update.userId);
-      const recipientEmail = userData?.user?.email;
-      if (userError || !recipientEmail) {
+      if (!recipientEmail) {
         throw userError ?? new Error('no email on file for this user');
       }
 
