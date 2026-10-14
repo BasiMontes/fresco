@@ -114,8 +114,8 @@ other way. This section is that way. It amends the ADR without changing the
 decision: Vercel rollback never touches the database, and `supabase/migrations/`
 has no down-migrations, so the recovery path is a restored backup.
 
-**Mechanism.** `.github/workflows/db-backup.yml`, weekly (Sundays 03:17 UTC) and
-on demand, runs `scripts/db-backup.ts`: `pg_dump` of `public`, `auth`, `storage`
+**Mechanism.** `.github/workflows/db-backup.yml`, daily (03:17 UTC; weekly until
+2026-10-14) and on demand, runs `scripts/db-backup.ts`: `pg_dump` of `public`, `auth`, `storage`
 and `supabase_migrations`, encrypted with AES-256, restored into a throwaway
 Postgres, row counts compared table by table, and only then uploaded to a private
 Cloudflare R2 bucket. A dump that does not restore is never uploaded. The source
@@ -123,7 +123,7 @@ database is only read, so the isolation invariant above still holds.
 
 | Measure | Value | Source |
 |---|---|---|
-| RPO (data you can lose) | up to 7 days, plus whatever happened since the last run | weekly schedule |
+| RPO (data you can lose) | up to 24 hours, plus whatever happened since the last run (7 days until 2026-10-14) | daily schedule, FRESCO-920 |
 | RTO, data restore (measured) | about 76 s from a cold start: 6 s download and decrypt, 8 s to create the scratch project, 62 s `pg_restore` plus count check | restore drill of 2026-10-08 (FRESCO-823), see below |
 | RTO, whole recovery (estimate) | still estimated under 1 hour; the data step is now measured, the manual steps around it are not | Storage files, Auth settings, Edge Function deploy and secrets, Vercel env vars and the Stripe webhook were not timed |
 | Retention | 90 days | R2 lifecycle rule on the bucket |
@@ -164,6 +164,28 @@ vars, the Stripe webhook endpoint and its signing secret.
 Finding of the drill: the scheduled backup of 2026-10-04 failed unnoticed (the
 verification Postgres was not accepting connections), so the newest copy was six
 days old at drill time. Tracked in FRESCO-873.
+
+**Update 2026-10-14 (FRESCO-920, audit C-17): daily backup, scheduled drill.**
+The decision above is unchanged; two numbers in it moved.
+
+- **Backup: weekly to daily.** There is no PITR on Free, so the schedule is the RPO.
+  A week meant up to 7 days of user data at risk; it is now up to 24 hours. A dump
+  weighs about 700 KiB and takes about 40 s, so the 90-day retention holds about 90
+  dumps, roughly 63 MB of the 10 GB R2 free tier: no cost. The source database is
+  still only read.
+- **Drill: manual to quarterly.** `db-restore-drill.yml` also runs on the 1st of
+  January, April, July and October (04:43 UTC), besides on demand. Each run opens an
+  issue with its timings (or a failure notice), so the result reaches the tracker;
+  whoever closes it copies the timings into the table above. It uses the spare
+  Free-tier project slot for a few minutes and deletes it at the end: if a run dies
+  before the last step, the next one cannot create its project, which the failure
+  notice makes visible.
+- **The accepted cost reads better.** "Losing up to a week of data" in the Supabase
+  Pro paragraph below is now "up to a day". The founder's decision (stay on Free
+  until revenue covers Pro) is not reopened by this.
+- **Still true:** the last measured data restore is the 76 s of the 2026-10-08 drill.
+  The first scheduled drill runs on 2027-01-01; a run on demand refreshes the number
+  earlier.
 
 **Required setup (repository secrets, owner action).** `SUPABASE_DB_PASSWORD`
 (already present; the workflow builds the pooler URL from it), `BACKUP_PASSPHRASE` (keep a copy outside GitHub, or the backups cannot be opened

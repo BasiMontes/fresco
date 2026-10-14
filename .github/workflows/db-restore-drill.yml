@@ -1,6 +1,6 @@
 name: db-restore-drill
 
-# FRESCO-823 (ADR-0020, "Backup and restore"). Manual restore drill: take the newest
+# FRESCO-823 (ADR-0020, "Backup and restore"). Restore drill: take the newest
 # backup from R2, restore it into a THROWAWAY Supabase project and time every step, so
 # the RTO in the ADR is a measurement instead of an estimate.
 #
@@ -12,8 +12,16 @@ name: db-restore-drill
 #   SUPABASE_ACCESS_TOKEN  creates and deletes the scratch project
 #   BACKUP_PASSPHRASE      decrypts the dump
 #   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+#
+# FRESCO-920 (audit C-17): it also runs by itself, once a quarter (1 January, April,
+# July and October). A backup nobody has restored is a hope, and a restore that only
+# runs when someone remembers stops being tested. Every run leaves its result in an
+# issue (timings on success, a failure notice otherwise), so it lands in the tracker
+# and not only in the Actions summary; the timings go into ADR-0020 by hand.
 
 on:
+  schedule:
+    - cron: '43 4 1 1,4,7,10 *' # 1 Jan, Apr, Jul, Oct at 04:43 UTC
   workflow_dispatch:
 
 permissions:
@@ -32,6 +40,9 @@ jobs:
   drill:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write # only for the result and failure notices at the end
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -116,8 +127,41 @@ jobs:
             echo "| **Total** | **$((T_RESTORED - T0))** |"
             echo
             echo "Public tables restored: ${RESTORED_TABLES}. Recipes: ${RESTORED_RECIPES}."
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee "$RUNNER_TEMP/drill-report.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "DRILL_TOTAL_SECONDS=$((T_RESTORED - T0))" >> "$GITHUB_ENV"
 
+      # FRESCO-920: the result of every run goes to the tracker, so a quarterly drill
+      # cannot pass or fail unseen. Copy the timings into ADR-0020 ("Backup and restore")
+      # and close the issue.
+      - name: Record the result in an issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          {
+            cat "$RUNNER_TEMP/drill-report.md"
+            echo
+            echo "Run: ${run_url} (${GITHUB_EVENT_NAME})."
+            echo 'To do: copy these timings into ADR-0020, section "Backup and restore", then close this issue.'
+          } > "$RUNNER_TEMP/drill-issue.md"
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Restore drill $(date -u +%Y-%m-%d): ${DRILL_TOTAL_SECONDS} s" \
+            --body-file "$RUNNER_TEMP/drill-issue.md"
+      - name: Open an issue when the drill fails
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="db-restore-drill failed"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"${title}\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "Failed again: ${run_url}"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
+              --body "The ${GITHUB_EVENT_NAME} run failed: ${run_url}. Until a drill succeeds the claim that a backup restores is unproven (ADR-0020, Backup and restore). The scratch project is deleted by the last step even on failure; check the Supabase dashboard if a project named fresco-restore-drill is still there."
+          fi
       - name: Delete the scratch project
         if: always()
         run: |

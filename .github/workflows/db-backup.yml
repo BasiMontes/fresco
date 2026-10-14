@@ -1,6 +1,6 @@
 name: db-backup
 
-# FRESCO-784 (audit-6 A6-D2, ADR-0020). Weekly logical backup of the shared
+# FRESCO-784 (audit-6 A6-D2, ADR-0020). Daily logical backup of the shared
 # Supabase project: pg_dump -> AES-256 encrypt -> prove it restores into a
 # throwaway Postgres with matching row counts -> upload to Cloudflare R2.
 #
@@ -20,10 +20,15 @@ name: db-backup
 #
 # Retention is a lifecycle rule on the bucket (expire objects after 90 days),
 # not logic here. Restore procedure: ADR-0020 -> "Backup and restore".
+#
+# FRESCO-920 (audit C-17): weekly became daily. The project has no PITR (Supabase
+# Free), so the schedule IS the RPO: a week meant losing up to 7 days of user data,
+# and a failed run (2026-10-04) went unnoticed for days. A dump weighs about 700 KiB
+# and takes about 40 s, so 90 daily dumps are about 63 MB of the 10 GB R2 free tier.
 
 on:
   schedule:
-    - cron: '17 3 * * 0' # Sundays 03:17 UTC
+    - cron: '17 3 * * *' # every day 03:17 UTC
   workflow_dispatch:
 
 permissions:
