@@ -147,13 +147,15 @@ export function SiteNav() {
                   <Link
                     href="/login"
                     // FRESCO-315: 44px comfortable tap target on mobile (was ~26px).
-                    className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'min-h-[44px]')}
+                    // FRESCO-937: below `sm` the row only fits logo + CTA + hamburger,
+                    // so the login link moves into the mobile sheet.
+                    className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'hidden min-h-[44px] sm:inline-flex')}
                   >
                     Ya tengo cuenta
                   </Link>
                   <LandingCtaLink
                     location="site_nav"
-                    className={cn(buttonVariants({ size: 'sm' }), 'hidden sm:inline-flex')}
+                    className={cn(buttonVariants({ size: 'sm' }), 'min-h-[44px]')}
                   >
                     Empezar gratis
                   </LandingCtaLink>
@@ -222,6 +224,17 @@ export function SiteNav() {
                 Ir a mi menú
               </Link>
             </div>
+          )}
+          {/* FRESCO-937: the header drops "Ya tengo cuenta" below `sm`; keep it reachable here. */}
+          {!identity.hasSession && (
+            <Link
+              href="/login"
+              onClick={() => setIsOpen(false)}
+              data-testid="site_nav_login_mobile"
+              className="border-b border-border px-4 py-4 text-body-md text-text sm:hidden"
+            >
+              Ya tengo cuenta
+            </Link>
           )}
           <div className="flex items-center justify-between border-b border-border px-4 py-4">
             <span className="text-body-md text-text">Tema</span>
