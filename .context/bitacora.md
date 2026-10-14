@@ -234,3 +234,23 @@ Historia archivada:
 - Qué: create_meal_plan crea el plan y sus slots en una transacción (SECURITY INVOKER, solo service_role); valida la semana ISO y que fecha_inicio sea su lunes; CHECK sobre semana_iso; generate-meal-plan la llama en lugar de dos inserts con compensación manual (PR #635; migración 20261013160000 aplicada con db push ANTES del merge; generate-meal-plan v49). Borrado el plan huérfano 2026-W99 de pro-user, resto de un test e2e.
 - Por qué: auditoría definitiva 2026-10-12, C-09; un corte entre los dos inserts dejaba un plan sin slots que bloqueaba regenerar esa semana con un 409.
 - Siguiente: ninguno propio; el e2e de aislamiento sembraba la semana inválida 2026-W99 y ahora usa 2026-W51.
+
+## 2026-10-13 - FRESCO-914 límites de tamaño en user_profiles
+- Qué: tres CHECK sobre user_profiles (listas de ingredientes y alérgenos hasta 30 elementos y 2400 bytes, cocinas_favoritas 30, nombre 80 caracteres, textos libres 500, planning_selection objeto JSON de 4096 bytes); mensajes claros al rechazar un guardado y maxLength en los campos (PR #636; migración 20261013170000 aplicada con db push, validada, 0 perfiles incumplen).
+- Por qué: auditoría definitiva 2026-10-12, C-10; un invitado podía guardar megabytes y get_filtered_recipes recorre ingredientes_odiados por cada receta.
+- Siguiente: el tope de 30 x 60 caracteres de la auditoría se aplicó como total de bytes (como FRESCO-799), no por elemento; si se quiere por elemento hace falta una función auxiliar inmutable.
+
+## 2026-10-13 - Promoción de staging a main (17 commits) y recreación de la cuenta de dev
+- Qué: dev, staging y main en b8770ad7 con git:promote (gate pasado, 17 commits, todos con PR; las 7 migraciones del lote ya estaban aplicadas y las Edge Functions desplegadas). Producción responde: /api/health 200 y /api/health/jobs 200 en estado pending. El Post-Deploy Smoke falló 1 de 3 porque la cuenta de dev se había borrado al verificar FRESCO-910; recreada (id nuevo 175e3b94-d14d-4279-b6a6-a4827f6990c6, perfil mínimo) y el smoke relanzado pasa 3 de 3.
+- Por qué: acumulado de staging por la regla de promover por lotes; la base ya llevaba migraciones que el código de producción aún no usaba.
+- Siguiente: FRESCO-949 (primer latido real del cron a las 04:17 UTC, simulacro del monitor con path /api/health/jobs-drill); FRESCO-942 sigue en Merged (falta el recorrido con sesión y cliente de Stripe); alinear la clave de Stripe de Edge con la de Vercel producción antes de pasar a live; no borrar las cuentas de prueba DEV/PRE/PRO para verificar flujos.
+
+## 2026-10-13 - FRESCO-917 consentimiento Art. 9 exigido en servidor
+- Qué: trigger require_health_data_consent en user_profiles (rechaza alergias/dieta sin consentimiento health_data), bloque de consentimiento compartido en /profile, 16 tests de BD. PR #639 en staging (d556249c), ticket en Control de calidad.
+- Por qué: auditoría C-13 (RGPD Art. 9), el consentimiento solo se pedía en la UI.
+- Siguiente: migración llega a la BD compartida al pasar a main; comprobar en producción que cuentas antiguas pueden consentir y guardar.
+
+## 2026-10-13 - FRESCO-919 eventos de PostHog del servidor respetan el rechazo de cookies
+- Qué: columna user_profiles.analytics_consent, captureServerEvent (Next y Edge) envía solo con true, AnalyticsConsentSync copia la decisión del banner al perfil, ADR-0044. PR #640 en staging (c04a61d7), ticket en Control de calidad.
+- Por qué: auditoría C-15, los eventos de servidor ignoraban la decisión de cookies del navegador.
+- Siguiente: la migración no está en la BD compartida hasta main; los entornos de staging y dev escriben la columna en onboarding y /profile y fallarían sin ella; actualizar textos de privacidad con la abogada.
