@@ -6,7 +6,7 @@ FRESCO-803 (audit-6 A6-D7). Before this, a partial outage (an Edge Function answ
 
 | Piece | Where | What it does |
 |---|---|---|
-| Health endpoint | `GET /api/health` (`app/api/health/route.ts`, `lib/health/check-health.ts`) | public, unauthenticated, never cached. `200` when the app answers and Supabase answers a one-row read of the public `recipes` catalog with the anon key; `503` otherwise. Body: `{ status, commit, environment, checks: { app, supabase } }`. It never contains a URL, key or error message |
+| Health endpoint | `GET /api/health` (`app/api/health/route.ts`, `lib/health/check-health.ts`) | public, unauthenticated, never cached. `200` when the app answers and Supabase answers a one-row read of the public `recipes` catalog with the anon key; `503` otherwise. Body: `{ status, checks: { app, supabase } }`. It never contains a URL, key, error message, the deployed commit or the Vercel environment (FRESCO-922) |
 | Sentry release | `lib/observability/release.ts`, the three SDK inits, `next.config.mjs` | `release` = the first 40 characters of `VERCEL_GIT_COMMIT_SHA`, inlined as `NEXT_PUBLIC_RELEASE` at build so the browser bundle has it too. No release outside Vercel |
 
 The health check is deliberately shallow. It does not call Stripe or the Edge Functions: a monitor hitting them every few minutes would cost real requests. Those failures are covered by the Sentry alerts below.
@@ -58,11 +58,22 @@ The Edge Functions report to the same Sentry project from Deno (`SENTRY_DSN`, `S
 
 ## When an alert fires
 
-1. `curl -i https://fresco-pro.vercel.app/api/health`: the body says whether it is the app or Supabase, and which commit is live.
+1. `curl -i https://fresco-pro.vercel.app/api/health`: the body says whether it is the app or Supabase. It does not say which commit is live (FRESCO-922); for that use `vercel ls` / `vercel inspect` or the Release of a Sentry event (step 2).
 2. In Sentry, the event's **Release** is the commit that produced it. If the errors start at the release of the latest deploy, roll back (`vercel rollback`, see the `vercel-cli` skill) and investigate afterwards.
 3. Supabase down: check status.supabase.com and the project's dashboard before touching the app.
 4. Stripe webhook failing: Stripe dashboard > Developers > Webhooks > recent deliveries shows the response our route gave.
 
 ## Checking the release (after the first deploy with this change)
 
-Any error from production in Sentry shows `Release: <40-character commit>`, and the same commit starts with the 7 characters `/api/health` reports as `commit`. If an event shows no release, the build did not receive `VERCEL_GIT_COMMIT_SHA`: check Project Settings > Environment Variables > "Automatically expose System Environment Variables".
+Any error from production in Sentry shows `Release: <40-character commit>`; compare it with the commit of the latest production deployment in `vercel ls`. `/api/health` no longer reports the commit (FRESCO-922). If an event shows no release, the build did not receive `VERCEL_GIT_COMMIT_SHA`: check Project Settings > Environment Variables > "Automatically expose System Environment Variables".
+
+## Public surface left open on purpose (FRESCO-922)
+
+The 2026-10-12 audit (C-20, C-21, C-25 and an optional note on the catalog) listed four things reachable without a session. Each has either a change or a decision, recorded here so the next audit does not reopen it without new facts. Decided with the founder on 2026-10-14.
+
+| Surface | State | Why | Revisit when |
+|---|---|---|---|
+| `GET /api/health` | **Changed.** The body is `{ status, checks }`; the commit and the Vercel environment are gone. | They told anyone which build was live and nothing reads them: both monitors read the status code only. | Never needed again unless a monitor must read the commit; then add a token, do not put it back in the public body. |
+| `/qa` (`app/qa/page.tsx`) | **Kept public.** It already has `robots: { index: false, follow: false }` (FRESCO-395) and renders `<PROJECT_REF>` instead of the real project ref. No redirect in production. | It is a public surface by design: the page exists so an external evaluator can test Fresco without help from the team. The `@smoke` scenario "La guía de testeabilidad en /qa es pública…" and the production warm-up in `.github/workflows/post-deploy-smoke.yml` both request it, so a production redirect would turn the post-deploy smoke red on every promotion. | The evaluator use ends, or the page starts to carry anything not meant for a stranger (credentials, real project identifiers). |
+| `POST /api/waitlist` | **No captcha and no rate limit, for now.** | The table is insert-only for the browser roles: the column grant is `(email, consent_version)`, `id` and `created_at` belong to the database, the address is unique on `lower(email)` with a length check, and `anon` can never read, change or delete a row (`supabase/migrations/20261011140000_waitlist_signups.sql`). The worst case is junk rows in a list that holds no personal data beyond an email, not exposure of anything. Adding a captcha means a new Turnstile secret in Vercel, server-side verification and a widget in the landing form; a per-IP cap in serverless needs a table of its own. | Before the public launch (epic FRESCO-884), or the first time the row count or the junk ratio looks wrong. |
+| `recipes` readable by `anon` | **Kept.** | It is the shared, founder-curated catalog, not user data (ADR-0032), and `/api/health` probes Supabase with a one-row read of it using the anon key, so closing it would also take the uptime monitor down. | Recipe content becomes part of the paid plan. |

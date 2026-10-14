@@ -18,8 +18,6 @@ export async function GET() {
   const report = await checkHealth({
     supabaseUrl: clientEnv.NEXT_PUBLIC_SUPABASE_URL,
     anonKey: clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    commitSha: process.env.VERCEL_GIT_COMMIT_SHA,
-    environment: process.env.VERCEL_ENV,
   });
 
   if (report.status !== 'ok') {
