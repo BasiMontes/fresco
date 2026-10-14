@@ -3,6 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { loginToApp } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @perfil, the happy
@@ -19,11 +20,7 @@ interface Ctx { testUser: TestUser | null }
 const ctx: Ctx = { testUser: null };
 
 async function loginAndGoToProfile(page: Page, testUser: TestUser): Promise<void> {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
   await page.goto('/profile');
 }
 

@@ -1,11 +1,9 @@
-import type { Page } from '@playwright/test';
 import type { TestUser, TestUserFactory } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { PRO_TRIAL_DAYS, PRO_TRIAL_SUBSCRIPTION_DATA } from '../../lib/legal/pro-terms';
 import { test } from '../fixtures';
-import { sessionLoginEnabled, signInBrowserViaSession } from '../session-login';
-import { postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { loginToApp, postSignedStripeEvent, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — `@suscripcion`
@@ -228,11 +226,7 @@ When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/,
 });
 
 Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page, suscripcionCtx: ctx }) => {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(ctx.testUser.email);
-  await page.getByTestId('password_input').fill(ctx.testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL('**/menu');
+  await loginToApp(page, ctx.testUser);
   await page.goto('/profile');
   await expect(page.getByTestId('payment_failed_notice')).toBeVisible();
 });
@@ -272,11 +266,7 @@ Then(/^su cuenta sigue en plan Pro sin interrupción visible$/, async ({ request
 });
 
 Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page, suscripcionCtx: ctx }) => {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(ctx.testUser.email);
-  await page.getByTestId('password_input').fill(ctx.testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL('**/menu');
+  await loginToApp(page, ctx.testUser);
   await page.goto('/profile');
   await expect(page.getByTestId('payment_failed_notice')).toHaveCount(0);
 });
@@ -310,21 +300,6 @@ When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con s
 // --- Grupo B (FRESCO-277) ---
 // --- STORY-FRESCO-228: "Iniciar checkout desde el perfil" ---
 
-async function loginAsTestUser(page: Page, testUser: TestUser): Promise<void> {
-  // FRESCO-799: see tests/session-login.ts — no password sign-in against a
-  // hosted backend that has the captcha on.
-  if (sessionLoginEnabled()) {
-    await signInBrowserViaSession(page, testUser.email);
-    await page.goto('/menu');
-    return;
-  }
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL('**/menu');
-}
-
 Given(/^que Laura está en su perfil con plan Free$/, async ({ request, page, testUserFactory, suscripcionCtx: ctx }) => {
   const testUser = await createLaura(testUserFactory);
   ctx.testUser = testUser;
@@ -338,7 +313,7 @@ Given(/^que Laura está en su perfil con plan Free$/, async ({ request, page, te
   });
   if (!resetRes.ok()) { throw new Error(`Failed to reset to Free: ${resetRes.status()} ${await resetRes.text()}`); }
 
-  await loginAsTestUser(page, testUser);
+  await loginToApp(page, testUser);
   await page.goto('/profile');
 });
 
@@ -393,7 +368,7 @@ Given(/^que Laura ya usó su prueba gratuita de Pro y está en su perfil con pla
   });
   if (!res.ok()) { throw new Error(`Failed to mark the trial as used: ${res.status()} ${await res.text()}`); }
 
-  await loginAsTestUser(page, testUser);
+  await loginToApp(page, testUser);
   await page.goto('/profile');
 });
 
@@ -430,7 +405,7 @@ Given(/^su cliente de Stripe existe realmente$/, async ({ request, suscripcionCt
 });
 
 When(/^entra a su perfil y pulsa "Gestionar suscripción"$/, async ({ page, suscripcionCtx: ctx }) => {
-  await loginAsTestUser(page, ctx.testUser);
+  await loginToApp(page, ctx.testUser);
   await page.goto('/profile');
   await page.getByTestId('manage_subscription_button').click();
 });
@@ -448,7 +423,7 @@ Then(/^puede abrir la gestión de su suscripción en el Billing Portal real de S
 Given(/^que Laura empieza el proceso de actualizar a Pro$/, async ({ page, testUserFactory, suscripcionCtx: ctx }) => {
   const testUser = await createLaura(testUserFactory);
   ctx.testUser = testUser;
-  await loginAsTestUser(page, testUser);
+  await loginToApp(page, testUser);
 });
 
 When(/^llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripcionCtx: ctx }) => {
@@ -526,7 +501,7 @@ Given(/^que Laura ya usó su prueba gratuita de Pro$/, async ({ page, request, t
   });
   if (!res.ok()) { throw new Error(`Failed to seed a used-trial profile: ${res.status()} ${await res.text()}`); }
 
-  await loginAsTestUser(page, testUser);
+  await loginToApp(page, testUser);
 });
 
 Then(/^Stripe le pide la tarjeta desde el primer día y reutiliza su cliente$/, async ({ suscripcionCtx: ctx }) => {

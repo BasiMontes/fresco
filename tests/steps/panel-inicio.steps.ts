@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { recordHealthDataConsent, restHeaders } from '../test-helpers';
+import { loginToApp, recordHealthDataConsent, restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -24,11 +24,7 @@ const ctx: Ctx = { testUser: null };
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 async function loginAndGoToInicio(page: Page, testUser: TestUser): Promise<void> {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
   await page.goto('/menu');
 }
 

@@ -2,6 +2,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
+import { loginToApp } from '../test-helpers';
 import { generateCurrentWeekPlan, seedLastWeekCookedHistory, seedPlanWarning } from '../test-user-factory';
 
 /**
@@ -52,11 +53,7 @@ Given(/^que un usuario Pro tiene explicacion_aprendizaje no nula en su menú$/, 
 
 When(/^visita \/menu$/, async ({ page }) => {
   if (!currentTestUser) { throw new Error('No hay un testUser sembrado para esta escena — el Given debió ejecutarse antes.'); }
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(currentTestUser.email);
-  await page.getByTestId('password_input').fill(currentTestUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL('**/menu');
+  await loginToApp(page, currentTestUser);
 });
 
 Then(/^ve una tarjeta "card-insight" con esa explicación$/, async ({ page }) => {
@@ -75,11 +72,7 @@ When(/^genera el menú de la semana actual$/, async ({ page, request }) => {
   if (!currentTestUser) { throw new Error('No hay un testUser para esta escena — el Given debió ejecutarse antes.'); }
   await generateCurrentWeekPlan(request, currentTestUser);
   await seedPlanWarning(request, currentTestUser, AVISO_DE_PRUEBA);
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(currentTestUser.email);
-  await page.getByTestId('password_input').fill(currentTestUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL('**/menu');
+  await loginToApp(page, currentTestUser);
 });
 
 Then(/^ve la tarjeta de aprendizaje con el mensaje de variedad y equilibrio nutricional, sin referencias a un historial inexistente$/, async ({ page }) => {

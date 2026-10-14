@@ -1,6 +1,7 @@
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { clearSlowAttempt, previousSlowAttempt, recordSlowAttempt } from '../latency-guard';
+import { loginToApp } from '../test-helpers';
 import { seedLastWeekCookedHistory } from '../test-user-factory';
 
 /**
@@ -43,11 +44,7 @@ Given(/^que un usuario Pro con historial real completa el onboarding$/, async ({
   const testUser = await testUserFactory({ plan: 'pro' });
   await seedLastWeekCookedHistory(request, testUser);
 
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
 
   await page.goto('/onboarding');
   // FRESCO-371: 3-step wizard — 2 clicks reaches the final step.

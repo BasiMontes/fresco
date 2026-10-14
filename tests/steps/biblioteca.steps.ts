@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, restHeaders } from '../test-helpers';
+import { currentWeekMonday, loginToApp, restHeaders } from '../test-helpers';
 import { generateCurrentWeekPlan } from '../test-user-factory';
 
 /**
@@ -48,12 +48,8 @@ async function describeLibraryState(page: Page): Promise<string> {
 }
 
 async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void> {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
   try {
-    await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+    await loginToApp(page, testUser);
   }
   catch (error) {
     throw new Error(`Biblioteca: el login no llegó a /menu ni /onboarding. Estado: ${await describeLibraryState(page)}`, { cause: error });

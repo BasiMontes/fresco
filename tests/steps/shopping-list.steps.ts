@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { normalizeNombre } from '../../lib/text/normalize-nombre';
 import { test } from '../fixtures';
-import { restHeaders } from '../test-helpers';
+import { loginToApp, restHeaders } from '../test-helpers';
 import { generateCurrentWeekPlan, seedShoppingListForCurrentPlan } from '../test-user-factory';
 
 /**
@@ -43,11 +43,7 @@ async function seedMenuAndLoginToShoppingList(
     await seedShoppingListForCurrentPlan(request, testUser);
   }
 
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL('**/menu');
+  await loginToApp(page, testUser);
   // FRESCO-852: a scenario whose own `When` opens the list stays on `/menu`.
   // Navigating here too mounted the auto-generating list twice (two overlapping
   // generation calls for one plan), the race that made the first-visit scenario
