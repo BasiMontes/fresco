@@ -35,5 +35,14 @@ updates:
         update-types: [minor, patch]
       major:
         update-types: [major]
+    # FRESCO-924: TypeScript 7 is the native compiler and has no JavaScript API.
+    # PR #495 (typescript 6.0.3 to 7.0.2) failed on exactly that: typescript-eslint
+    # refuses TS 7 ("does not support TS 7.0") and scripts/check-import-cycles.ts
+    # calls ts.readConfigFile, which no longer exists. Skip the major until
+    # typescript-eslint supports it and the cycles script no longer needs the
+    # compiler API; minor and patch releases still come through.
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: chore
