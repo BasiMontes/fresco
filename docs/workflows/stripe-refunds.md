@@ -24,13 +24,21 @@ A cancellation made this way carries `cancellation_details.comment = "refund:<ch
 - `resolveRefundCancellation` (`lib/billing/refund.ts`) decides. It cancels only if the refund is total, the subscription has not ended, and the charge is from the current period (`charge.created >= current_period_start`; `Charge` no longer carries `invoice`). If the period start cannot be read it does nothing: no proof, no cancellation.
 - The handler never writes the profile itself. `plan` has one writer, the `customer.subscription.deleted` path (ADR-0007).
 
-## Owner step: subscribe the webhook to `charge.refunded`
+## Owner step: the webhook must listen to `charge.refunded`
 
-Without this the event never arrives and refunding behaves as before, however correct the code is.
+Without it the event never arrives and refunding behaves as before, however correct the code is.
 
-1. In the Stripe Dashboard open **Developers > Webhooks** and select the endpoint of each environment (the URLs are in `docs/workflows/environments.md`).
-2. Add `charge.refunded` to the events it listens to, next to the four it already has (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`).
-3. Do it in **test mode and in live mode**: they are separate endpoints.
+**State on 2026-10-14:** done for the three endpoints that exist, `fresco-dev`, `fresco-pre` and `fresco-pro`. All three are in Stripe **test mode**; there is no live-mode endpoint yet. When the live endpoint is created, give it `charge.refunded` along with the four events the route handles (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`). Today none of the three listens to `checkout.session.async_payment_succeeded`, which the route does handle; it only matters with delayed payment methods.
+
+To see what each endpoint listens to (read-only; uses the test key already in `.env`):
+
+```bash
+set -a; source .env; set +a
+curl -sS -u "$STRIPE_SECRET_KEY:" "https://api.stripe.com/v1/webhook_endpoints?limit=30" \
+  | jq -r '.data[] | "\(.url)  livemode=\(.livemode)  \(.enabled_events|join(", "))"'
+```
+
+To add the event to an endpoint, send the **whole** list, because the update replaces it: fetch the current `enabled_events`, append `charge.refunded` and `POST /v1/webhook_endpoints/<id>` with every `enabled_events[]`. Or do it in the dashboard: **Developers > Webhooks**, select the endpoint, add the event.
 
 ## How to check it, in test mode
 
