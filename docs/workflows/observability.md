@@ -6,7 +6,7 @@ FRESCO-803 (audit-6 A6-D7). Before this, a partial outage (an Edge Function answ
 
 | Piece | Where | What it does |
 |---|---|---|
-| Health endpoint | `GET /api/health` (`app/api/health/route.ts`, `lib/health/check-health.ts`) | public, unauthenticated, never cached. `200` when the app answers and Supabase answers a one-row read of the public `recipes` catalog with the anon key; `503` otherwise. Body: `{ status, commit, environment, checks: { app, supabase } }`. It never contains a URL, key or error message |
+| Health endpoint | `GET /api/health` (`app/api/health/route.ts`, `lib/health/check-health.ts`) | public, unauthenticated, never cached. `200` when the app answers and Supabase answers a one-row read of the public `recipes` catalog with the anon key; `503` otherwise. Body: `{ status, checks: { app, supabase } }`. It never contains a URL, key, error message, the deployed commit or the Vercel environment (FRESCO-922) |
 | Sentry release | `lib/observability/release.ts`, the three SDK inits, `next.config.mjs` | `release` = the first 40 characters of `VERCEL_GIT_COMMIT_SHA`, inlined as `NEXT_PUBLIC_RELEASE` at build so the browser bundle has it too. No release outside Vercel |
 
 The health check is deliberately shallow. It does not call Stripe or the Edge Functions: a monitor hitting them every few minutes would cost real requests. Those failures are covered by the Sentry alerts below.
@@ -58,11 +58,11 @@ The Edge Functions report to the same Sentry project from Deno (`SENTRY_DSN`, `S
 
 ## When an alert fires
 
-1. `curl -i https://fresco-pro.vercel.app/api/health`: the body says whether it is the app or Supabase, and which commit is live.
+1. `curl -i https://fresco-pro.vercel.app/api/health`: the body says whether it is the app or Supabase. It does not say which commit is live (FRESCO-922); for that use `vercel ls` / `vercel inspect` or the Release of a Sentry event (step 2).
 2. In Sentry, the event's **Release** is the commit that produced it. If the errors start at the release of the latest deploy, roll back (`vercel rollback`, see the `vercel-cli` skill) and investigate afterwards.
 3. Supabase down: check status.supabase.com and the project's dashboard before touching the app.
 4. Stripe webhook failing: Stripe dashboard > Developers > Webhooks > recent deliveries shows the response our route gave.
 
 ## Checking the release (after the first deploy with this change)
 
-Any error from production in Sentry shows `Release: <40-character commit>`, and the same commit starts with the 7 characters `/api/health` reports as `commit`. If an event shows no release, the build did not receive `VERCEL_GIT_COMMIT_SHA`: check Project Settings > Environment Variables > "Automatically expose System Environment Variables".
+Any error from production in Sentry shows `Release: <40-character commit>`; compare it with the commit of the latest production deployment in `vercel ls`. `/api/health` no longer reports the commit (FRESCO-922). If an event shows no release, the build did not receive `VERCEL_GIT_COMMIT_SHA`: check Project Settings > Environment Variables > "Automatically expose System Environment Variables".

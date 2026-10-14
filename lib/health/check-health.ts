@@ -7,26 +7,22 @@
  * Postgres the same way a visitor's request does, without any secret beyond
  * the public anon key the browser already holds.
  *
- * The report never carries an error message or a URL: a monitor needs
- * "ok / down" and the commit, and a public endpoint must not explain what is
- * broken. The detail goes to the platform logs.
+ * The report never carries an error message, a URL, the deployed commit or the
+ * Vercel environment: a monitor needs "ok / down" (it reads the status code),
+ * and a public endpoint must not explain what is broken or which build is live
+ * (FRESCO-922). The detail goes to the platform logs.
  */
 
 export type HealthStatus = 'ok' | 'down';
 
 export interface HealthReport {
   status: HealthStatus
-  /** First 7 characters of the deployed commit, or `null` outside Vercel. */
-  commit: string | null
-  environment: string | null
   checks: { app: 'ok', supabase: HealthStatus }
 }
 
 export interface CheckHealthInput {
   supabaseUrl: string
   anonKey: string
-  commitSha?: string | undefined
-  environment?: string | undefined
   /** Injected in tests. */
   fetchImpl?: typeof fetch
   timeoutMs?: number
@@ -60,8 +56,6 @@ export async function checkHealth(input: CheckHealthInput): Promise<HealthReport
 
   return {
     status: supabase === 'ok' ? 'ok' : 'down',
-    commit: input.commitSha ? input.commitSha.slice(0, 7) : null,
-    environment: input.environment ?? null,
     checks: { app: 'ok', supabase },
   };
 }
