@@ -68,12 +68,39 @@ export function sessionLoginConfigFromEnv(): SessionLoginConfig {
 }
 
 /**
+ * FRESCO-843: one session per account per process. A test user's API token
+ * (`testUserFactory`) and its browser login (`loginToApp`) used to mint two
+ * sessions, and the hosted `token_verifications` limit (30 per 5 minutes per IP)
+ * counts every redeem. Only the default config is cached, so the unit tests that
+ * pass their own config are unaffected.
+ */
+const mintedSessions = new Map<string, Promise<MintedSession>>();
+
+/**
  * Mints a session for `email` through the admin API. Error messages carry the
  * status or the Auth error code only: a response body here can hold a token.
  */
 export async function mintSession(
   email: string,
-  config: SessionLoginConfig = sessionLoginConfigFromEnv(),
+  config?: SessionLoginConfig,
+): Promise<MintedSession> {
+  if (config) {
+    return mintSessionUncached(email, config);
+  }
+  const cached = mintedSessions.get(email);
+  if (cached) {
+    return cached;
+  }
+  const minted = mintSessionUncached(email, sessionLoginConfigFromEnv());
+  mintedSessions.set(email, minted);
+  // A failed mint must not poison the next attempt.
+  minted.catch(() => mintedSessions.delete(email));
+  return minted;
+}
+
+async function mintSessionUncached(
+  email: string,
+  config: SessionLoginConfig,
 ): Promise<MintedSession> {
   const doFetch = config.fetch ?? fetch;
 

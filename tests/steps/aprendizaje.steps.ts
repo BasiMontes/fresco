@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { restHeaders } from '../test-helpers';
+import { loginToApp, restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -27,11 +27,7 @@ const { Given, When, Then } = createBdd(test);
 const MARK_RESULT_TIMEOUT_MS = 20_000;
 
 async function loginAndGoToCalendar(page: Page, email: string, password: string): Promise<void> {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(email);
-  await page.getByTestId('password_input').fill(password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, { email, password });
   await page.goto('/calendar');
 }
 

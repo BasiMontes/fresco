@@ -2,7 +2,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, isoWeekOf, mondayOfWeekContaining, restHeaders } from '../test-helpers';
+import { currentWeekMonday, isoWeekOf, loginToApp, mondayOfWeekContaining, restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -33,11 +33,7 @@ function adjacentWeekIso(delta: number): string {
 }
 
 async function loginAndGoToCalendar(page: import('@playwright/test').Page, testUser: TestUser): Promise<void> {
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
   await page.goto('/calendar');
 }
 
@@ -165,11 +161,7 @@ Then(/^no puede generar uno nuevo directamente — primero tiene que eliminar el
 Given(/^que el usuario visita \/calendar con un valor de semana mal formado en la URL$/, async ({ page, testUserFactory }) => {
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
   await page.goto('/calendar?semana=no-es-una-semana-valida');
 });
 

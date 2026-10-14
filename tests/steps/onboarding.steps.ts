@@ -2,7 +2,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, recordHealthDataConsent, restHeaders } from '../test-helpers';
+import { currentWeekMonday, loginToApp, recordHealthDataConsent, restHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @onboarding
@@ -27,14 +27,10 @@ const ctx: Ctx = { testUser: null };
 Given(/^que el usuario tiene sesión iniciada$/, async ({ page, testUserFactory }) => {
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
   // A fresh user with no onboarding data lands on /onboarding; one that
   // somehow already has a plan lands on /menu. Either is a valid signed-in
   // state — the next step navigates to /onboarding explicitly.
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
 });
 
 Given(/^no tiene todavía un menú generado para la semana actual$/, async ({ request }) => {
@@ -117,11 +113,7 @@ async function loginAsFreshUser(
 ): Promise<void> {
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
 }
 
 // "Recargar a mitad del onboarding no borra el progreso" — FRESCO-94:

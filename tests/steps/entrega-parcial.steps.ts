@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { currentWeekMonday, loginToApp, restHeaders, serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @generacion-menu,
@@ -63,11 +63,7 @@ Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ 
 
 When(/^el usuario visita \/menu o \/calendar$/, async ({ page }) => {
   const testUser = ctx.testUser!;
-  await page.goto('/login');
-  await page.getByTestId('email_input').fill(testUser.email);
-  await page.getByTestId('password_input').fill(testUser.password);
-  await page.getByTestId('login_submit_button').click();
-  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await loginToApp(page, testUser);
   await page.goto('/menu');
 });
 

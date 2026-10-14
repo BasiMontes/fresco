@@ -1,6 +1,6 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import Stripe from 'stripe';
-import { mintSession, sessionLoginEnabled } from './session-login';
+import { mintSession, sessionLoginEnabled, signInBrowserViaSession } from './session-login';
 
 /**
  * Shared REST/date helpers for `tests/steps/*.steps.ts` — extracted after
@@ -31,6 +31,28 @@ export async function getAccessToken(request: APIRequestContext, email: string, 
   );
   const body = await response.json() as { access_token: string };
   return body.access_token;
+}
+
+/**
+ * FRESCO-843: the one way a step signs a test account in. Opt-in session login
+ * (`E2E_SESSION_LOGIN=1`, FRESCO-799) mints the session from the admin API so a
+ * hosted backend with the captcha on never sees a password grant; otherwise the
+ * real `/login` form is driven, which is what the local-stack e2e job wants.
+ * Both paths end signed in, on `/menu` or `/onboarding`. The caller navigates
+ * on from there. Only the `@login` scenarios drive the form themselves.
+ */
+export async function loginToApp(page: Page, credentials: { email: string, password: string }): Promise<void> {
+  if (sessionLoginEnabled()) {
+    await signInBrowserViaSession(page, credentials.email);
+    await page.goto('/menu');
+    await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+    return;
+  }
+  await page.goto('/login');
+  await page.getByTestId('email_input').fill(credentials.email);
+  await page.getByTestId('password_input').fill(credentials.password);
+  await page.getByTestId('login_submit_button').click();
+  await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
 }
 
 export function restHeaders(accessToken: string): Record<string, string> {
