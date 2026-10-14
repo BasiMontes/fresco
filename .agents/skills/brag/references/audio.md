@@ -199,7 +199,7 @@ These rules apply when Hyperframes is implementing the composition and the motio
 - Align SFX to the **start** of the animation, not the end
 - Entry pop: 0.0–0.1s before the element's first visible frame
 - Transition: at the transition start time
-- Success ding: at the moment the metric/stat is fully visible
+- Success ding: when the metric/stat is fully visible
 - For staggered elements: usually accent the first, final, or strongest beat; only score every item when that rhythm is intentional and still feels clean
 
 Composition notation:

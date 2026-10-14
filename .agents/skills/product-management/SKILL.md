@@ -6,7 +6,6 @@ compatibility: [claude-code, copilot, cursor, codex, opencode]
 phase: management
 complementary_categories:
   - issue-tracker
-  - creativity
 # compact_rules is consumed VERBATIM by scripts/build-skill-registry.ts (frontmatter-first,
 # no truncation). Keep in sync with the "Anti-patterns" section in the body below.
 compact_rules: |
@@ -31,6 +30,8 @@ compact_rules: |
   - **I19.** NEVER use generic actors ("the user", "the customer", "the system") in the `As a` line of a user story. The persona MUST resolve to a named entity in `.context/PRD/user-personas.md`. If the matching persona is absent → surface as `gap`, ask the user, never invent.
   - **I20.** NEVER write the `As a … I want to … so that …` sentence as the story summary. The summary MUST be `{Feature} | {Action}` (see §Story title format); the full sentence lives ONLY in the description `## User story` section. Persona and benefit NEVER appear in the title. Domain-entity feature prefixes that collide with agile/QA vocabulary carry the `TMS-` (project-domain) tag; cross-cutting features stay plain. Epics keep noun-phrase titles (no pipe, no verb).
   - **I21.** NEVER publish Jira content whose domain entity/process/state names diverge from `.context/business/domain-glossary.md`, and NEVER use a term its anti-glossary bans — use the prescribed replacement. A needed term missing from the glossary → surface as `gap` for the PM to add per the glossary's change protocol; never invent terminology mid-story.
+metadata:
+  kind: workflow
 ---
 
 <!-- Model preferences (advisory; dispatchers may use to route) -->
@@ -64,7 +65,7 @@ Use this skill whenever you are doing backlog or refinement work after the found
 The skill is reference-driven: each workflow points to a specific reference file with the exact protocol.
 
 **This skill does NOT own design, and must not wait for one.** A story is written, refined and made
-ready without any mockup existing. Screens are produced later, per story, at the moment development
+ready without any mockup existing. Screens are produced later, per story, when development
 picks the story up — `/sprint-development`'s design gate routes to `/design-system`'s screen phase
 then. Do not defer, block or downgrade a story because its screen has not been drawn.
 

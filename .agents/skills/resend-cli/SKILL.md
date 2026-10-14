@@ -11,6 +11,7 @@ description: >
 license: MIT
 metadata:
   author: resend
+  kind: utility
   # Skill version is independent from the CLI/package.json version —
   # bump it on skill content changes, not CLI releases.
   version: "2.6.0"

@@ -1,0 +1,55 @@
+# launch.txt — one self-contained line per worker
+#
+# Copy to the workflow skill's own session scope (e.g. .session/sprint-development/sprint-<N>/launch.txt
+# or .session/orchestration/<slug>/launch.txt). Owner: the conductor.
+#
+# RULES (see references/launch-seam.md):
+#   1. Written ALWAYS, with or without a runtime. These lines are for a HUMAN to paste, and for a
+#      terminal the conductor deliberately wants UNSUPERVISED. A supervised worker is launched
+#      natively (agent + model + effort, no command line) and gets its prompt sent right after
+#      readiness: a custom-argv terminal can never be adopted.
+#   2. The PROMPT is the payload both paths share, BYTE FOR BYTE. Never paraphrased.
+#   3. Regenerated WHOLE on each planning pass. Finished items drop out; nothing is edited in place.
+#   4. Self-contained: it exports what the worker needs and starts the agent with the full prompt.
+#   5. The whole prompt is single-quoted and holds no `'` and no unescaped `"`: either breaks the
+#      shell parse, the terminal still reports success, and nothing runs. `<` and `>` inside the
+#      quoted prompt are literal text, not redirection (references/launch-seam.md §2.2).
+#   6. Validate before launching:  sh -n <this file>        (or the equivalent for the user's shell)
+#   7. Comment lines (starting with #) are documentation; strip them before a syntax check if the
+#      checker objects, and never hand one to the launcher.
+#   8. Every prompt OPENS with `/<workflow-skill> <KEY> fleet worker`, where <KEY> is the worker's
+#      roster name: one token (a ticket key, <KEY>-<slug>, or a kebab slug). The identity hook names
+#      a Claude Code session <KEY> from it, and the workflow skill detects fleet mode from it. It
+#      CARRIES the
+#      continuation sentence: run every stage without returning to the prompt until worker_done is
+#      sent. Both paths, every harness.
+#   9. An environment prefix is at most a redundant signal on THIS path and reaches a native worker
+#      never. Do not make fleet detection depend on it.
+#
+# Claude Code — full model id (never an alias: an alias moves on its own), effort, auto permission
+# mode, session name. The line runs the bare `claude` binary in the worktree: no wrapper, and the
+# harness process holds no env-file value (its MCP servers read it through the loader, ADR-0016).
+claude --model <full-model-id> --effort high --permission-mode auto -n "<KEY>" '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+
+# Per-story brief, the sprint shape (one line, still self-contained). Fleet mode is detected from the
+# prompt token and the brief, never from an environment prefix: a prefix reaches a native supervised
+# worker never and was measured EMPTY on a real fleet even on this path.
+claude --model <full-model-id> --effort high --permission-mode auto -n "<KEY>" '/sprint-development <KEY> fleet worker env: staging. Brief: <ABS>/.session/sprint-development/sprint-<N>/<KEY>/brief.md. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+
+# The SAME prompt, delivered on the supervised path (no argv, so no name flag and no prefix):
+#   1. launch natively:  [ORCHESTRATION_TOOL] worker-start: task + worktree + agent + model + effort
+#   2. read the screen:  status footer present AND credentials loaded (MCP servers connected; CLIs logged in), or fix the machine
+#   3. send the prompt:  [ORCHESTRATION_TOOL] terminal send, the text between the quotes above
+#   4. name it:          [ORCHESTRATION_TOOL] terminal rename, tab title "<KEY> · task_<first 4 of
+#                        the task id>"; on OpenCode and Codex also terminal send '/rename <KEY>'
+
+# OpenCode — flags per `opencode --help` on the machine (confirm before pasting): -m/--model, --agent,
+# --prompt, --auto (auto-approve permissions not explicitly denied), -s/--session, -c/--continue,
+# --fork. There is NO name flag and NO effort flag: once the session is up, type `/rename <KEY>`
+# into it (a model cannot rename its own session).
+opencode --model <provider/model> --auto --prompt '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
+
+# Codex — the bare `codex` binary, like the others. Its name / permission /
+# effort flags were NOT verified here: read `codex --help` on the machine, use only flags it lists,
+# and if no name flag exists, type `/rename <KEY>` into the session once it is up.
+codex <verified flags only> '/<workflow-skill> <KEY> fleet worker. Read <ABS>/.session/orchestration/<slug>/COMMON.md then <ABS>/.session/orchestration/<slug>/W-<label>.md and execute your brief. Run every stage without returning to the prompt until worker_done is sent; stage boundaries are not checkpoints. Channel: orca orchestration. No heartbeats.'
