@@ -35,7 +35,7 @@ export function RoutesNotice() {
       <CardHeader className="mb-0 flex-row items-start justify-between">
         <div className="flex items-center gap-2">
           <BookOpen className="size-5 text-primary" aria-hidden="true" />
-          <CardTitle>Explora Fresco</CardTitle>
+          <CardTitle as="h2">Explora Fresco</CardTitle>
         </div>
         <button
           type="button"
@@ -45,7 +45,7 @@ export function RoutesNotice() {
               console.error('[RoutesNotice] markRoutesNoticeDismissed failed', error);
             });
           }}
-          className="text-tertiary hover:text-text"
+          className="-m-2 p-2 text-tertiary hover:text-text"
           aria-label="Descartar aviso"
           data-testid="notifications_routes_notice_dismiss"
         >

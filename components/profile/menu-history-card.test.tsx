@@ -25,6 +25,14 @@ describe('MenuHistoryCard', () => {
     expect(screen.getByTestId('menu_history_card_link')).toHaveAttribute('href', '/historial');
   });
 
+  test('the history link has a padded hit area of at least 24px (FRESCO-968)', () => {
+    renderWithProviders(<MenuHistoryCard weeks={WEEKS} plan="pro" />);
+
+    const link = screen.getByTestId('menu_history_card_link');
+    expect(link).toHaveClass('py-1.5');
+    expect(link).toHaveClass('-my-1.5');
+  });
+
   test('shows the empty state and no link when there are no weeks', () => {
     renderWithProviders(<MenuHistoryCard weeks={[]} plan="free" />);
 

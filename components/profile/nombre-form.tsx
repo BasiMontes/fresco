@@ -3,7 +3,7 @@
 import type { FormEvent } from 'react';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,7 @@ export interface NombreFormProps {
  */
 export function NombreForm({ nombreInicial }: NombreFormProps) {
   const router = useRouter();
+  const titleId = useId();
   const [nombre, setNombre] = useState(nombreInicial ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -156,7 +157,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
   return (
     <Card className="mt-4" data-testid="nombreForm">
       <CardHeader>
-        <CardTitle>Tu nombre</CardTitle>
+        <CardTitle id={titleId}>Tu nombre</CardTitle>
       </CardHeader>
       <CardContent>
         <form
@@ -167,6 +168,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
         >
           <Input
             data-testid="nombre_input"
+            aria-labelledby={titleId}
             type="text"
             maxLength={NOMBRE_MAX_LENGTH}
             placeholder="¿Cómo te llamamos?"

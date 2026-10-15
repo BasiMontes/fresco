@@ -64,7 +64,7 @@ export function LearningBridgeCard({ plan, hasMarks }: LearningBridgeCardProps) 
               writeLearningBridgeDismissed(true);
               router.refresh();
             }}
-            className="shrink-0 text-tertiary hover:text-text"
+            className="-m-2 shrink-0 p-2 text-tertiary hover:text-text"
             aria-label="Cerrar"
             data-testid="learning_bridge_dismiss"
           >

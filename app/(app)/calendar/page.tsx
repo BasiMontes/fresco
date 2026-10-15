@@ -108,7 +108,7 @@ export default async function CalendarPage({
           <Link
             href="/historial"
             data-testid="calendar_historial_link"
-            className="mt-1 inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+            className="-my-1.5 mt-1 inline-flex items-center gap-1 py-1.5 text-body-sm text-primary hover:underline"
           >
             <History className="size-4" aria-hidden="true" />
             Ver semanas anteriores
@@ -150,7 +150,7 @@ export default async function CalendarPage({
         <Link
           href="/historial"
           data-testid="calendar_historial_link"
-          className="mt-1 inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+          className="-my-1.5 mt-1 inline-flex items-center gap-1 py-1.5 text-body-sm text-primary hover:underline"
         >
           <History className="size-4" aria-hidden="true" />
           Ver semanas anteriores

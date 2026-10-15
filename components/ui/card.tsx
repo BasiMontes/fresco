@@ -53,8 +53,9 @@ export function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDiv
   return <div className={cn('mb-2 flex flex-col gap-1', className)} {...props} />;
 }
 
-export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('text-h5', className)} {...props} />;
+/** `as` keeps the visual style while a page picks the right heading level (FRESCO-968). */
+export function CardTitle({ as: Tag = 'h3', className, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { as?: 'h2' | 'h3' }) {
+  return <Tag className={cn('text-h5', className)} {...props} />;
 }
 
 export function CardDescription({
