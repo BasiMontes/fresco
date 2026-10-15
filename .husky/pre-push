@@ -14,14 +14,6 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 GATES="$(dirname -- "$0")/framework-gates.sh"
 if [ -f "$GATES" ]; then
   . "$GATES"
-  # Project override: `docs:check` is advisory here until its backlog is cleared
-  # (INSTALLER.md, community skills committed here but untracked upstream, and the
-  # generated REGISTRY.md). It still runs and prints; it just does not block the
-  # push. Remove this redefinition once `bun run docs:check` is green.
-  framework_gate_docs_check() {
-    bun run docs:check || echo "⚠️  docs:check has findings (advisory in this project, see .husky/pre-push)."
-    return 0
-  }
   framework_gates_pre_push || exit 1
 else
   echo "⚠️  .husky/framework-gates.sh missing: framework pre-push gates SKIPPED."

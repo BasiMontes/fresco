@@ -168,6 +168,13 @@ cookies.txt
 .template/last-apply.json
 /.agents/prompts/
 .agents/skills/*-workspace/
+# FRESCO-956: third-party community skills are restored by `bun setup` from skills-lock.json, not committed
+/.agents/skills/accessibility/
+/.agents/skills/impeccable/
+/.agents/skills/react-hook-form/
+/.agents/skills/resend-cli/
+/.agents/skills/seo/
+/.agents/skills/zod/
 .context/PBI/*
 !.context/PBI/README.md
 !.context/PBI/templates/
