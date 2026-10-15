@@ -151,3 +151,12 @@ describe('PlanningSelectionGrid', () => {
     expect(screen.getByLabelText('Almuerzo martes')).not.toBeChecked();
   });
 });
+
+describe('PlanningSelectionGrid — readable text (FRESCO-967)', () => {
+  test('no element uses the 11px caption size', () => {
+    const { container } = render();
+
+    expect(container.querySelector('.text-caption')).toBeNull();
+    expect(container.querySelector('.text-body-sm')).not.toBeNull();
+  });
+});

@@ -34,7 +34,7 @@ export function ShoppingListSuggestions({ suggestions, onAdd, added, hasAdded = 
 
   return (
     <div className="mt-6" data-testid="shopping_list_suggestions_section">
-      <h3 className="flex items-center gap-2 text-caption uppercase tracking-wide text-tertiary">
+      <h3 className="flex items-center gap-2 text-body-sm uppercase tracking-wide text-tertiary">
         <Lightbulb className="size-3.5" aria-hidden="true" />
         Sugerencias para ti
       </h3>
@@ -51,7 +51,7 @@ export function ShoppingListSuggestions({ suggestions, onAdd, added, hasAdded = 
                   <p className="mt-2 line-clamp-2 text-body-sm font-medium text-text">
                     {capitalize(suggestion.nombre)}
                   </p>
-                  <p className="mt-1 text-caption text-tertiary">{formatPrecio(suggestion.precio_estimado)}</p>
+                  <p className="mt-1 text-body-sm text-tertiary">{formatPrecio(suggestion.precio_estimado)}</p>
                 </div>
                 <Button
                   type="button"
