@@ -83,13 +83,13 @@ describe('CookieConsentBanner', () => {
   });
 
   // FRESCO-969: compact mobile layout (one row of equal-width buttons, tight
-  // padding, fixed ~132px height) without weakening consent: same classes on
-  // all three, analytics copy and the link still on screen.
+  // padding, fixed 126px height = 14.8% of 852px, AC <= 15%) without weakening
+  // consent: same classes on all three, analytics copy and the link still on screen.
   test('mobile layout is compact, buttons share equal width, and the legal copy stays visible', () => {
     renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
     const banner = screen.getByTestId('cookie_consent_banner');
-    expect(banner.className).toContain('h-[132px]');
-    expect(banner.className).toContain('py-2');
+    expect(banner.className).toContain('h-[126px]');
+    expect(banner.className).toContain('py-1');
     ['reject', 'configure', 'accept'].forEach((action) => {
       const { className } = screen.getByTestId(`cookie_consent_${action}_button`);
       expect(className).toContain('flex-1');
