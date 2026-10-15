@@ -122,7 +122,7 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
           {!item.comprado && nuevosNombres.has(normalizeNombre(item.nombre)) && (
             <span
               data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_nuevo`}
-              className="shrink-0 rounded-full border border-border px-2 py-0.5 text-caption uppercase tracking-wide text-tertiary"
+              className="shrink-0 rounded-full border border-border px-2 py-0.5 text-body-sm uppercase tracking-wide text-tertiary"
             >
               Nuevo
             </span>
@@ -151,7 +151,7 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
             items (no meal-plan provenance). */}
         {usosLabel && (
           <span
-            className="truncate text-caption text-tertiary"
+            className="line-clamp-2 text-body-sm text-tertiary"
             title={usosLabel}
           >
             {usosLabel}

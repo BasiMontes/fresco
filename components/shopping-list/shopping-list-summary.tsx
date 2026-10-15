@@ -20,7 +20,7 @@ export function ShoppingListSummary({ pendientes, resumen, costeMenu, fuentesPre
             should drop as items get checked off. It's a fixed snapshot of
             the whole week's menu (computed once in `generate-shopping-list`),
             so the wording says "del menú" to set that expectation. */}
-        <p className="text-right text-caption uppercase tracking-wide text-tertiary">Total estimado del menú de esta semana</p>
+        <p className="text-right text-body-sm uppercase tracking-wide text-tertiary">Total estimado del menú de esta semana</p>
         <p className="flex items-center gap-1.5 text-body-sm text-tertiary">
           <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
           {pendientes}
@@ -36,7 +36,7 @@ export function ShoppingListSummary({ pendientes, resumen, costeMenu, fuentesPre
       {/* FRESCO-790 (A6-P2): every price here is an indication, not an offer.
           The chains are read from the data, so a chain switched off in the
           registry (ADR-0037) disappears from this line too. */}
-      <p data-testid="shopping_list_price_disclaimer" className="mt-3 text-caption text-tertiary">
+      <p data-testid="shopping_list_price_disclaimer" className="mt-3 text-body-sm text-tertiary">
         {fuentesPrecios
           ? `Precios orientativos de ${fuentesPrecios}, con la fecha en que se observaron junto a cada artículo. Pueden variar en tienda.`
           : 'Precios orientativos. Pueden variar en tienda.'}
