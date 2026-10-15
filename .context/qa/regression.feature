@@ -61,7 +61,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema le redirige a /menu
     Y la sesión queda activa
 
-  @login @edge-case @verificado-manual-2026-07-31 @automatizado
+  @login @edge-case @verificado-manual-2026-07-31 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Inicio de sesión falla con credenciales incorrectas
     Dado que un usuario introduce un email o contraseña incorrectos
@@ -77,7 +77,7 @@ Característica: Flujo completo de usuario en Fresco
     # Re-verificado en vivo tras el fix: mensaje "Email o contraseña
     # incorrectos." en español.
 
-  @login @edge-case @verificado-manual-2026-08-07 @automatizado
+  @login @edge-case @verificado-manual-2026-08-07 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Doble-click rápido en "Iniciar sesión" no dispara dos intentos de autenticación
     Dado que un usuario completa email y contraseña válidos en /login
@@ -131,7 +131,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces ve el enlace "Ir a mi menú" sin saludo y sin salto de layout
     Y un visitante sin sesión sigue viendo la landing exactamente igual que antes
 
-  @registro @verificado-manual-2026-07-29 @automatizado
+  @registro @verificado-manual-2026-07-29 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/signup.steps.ts (playwright-bdd, mock de red — ver comentario en el step file)
   Escenario: Alta de nuevo usuario desde /signup
     Dado que un visitante sin cuenta rellena email y contraseña en /signup
@@ -139,7 +139,7 @@ Característica: Flujo completo de usuario en Fresco
     Entonces se crea la cuenta en Supabase Auth
     Y el sistema le redirige a /onboarding
 
-  @registro @edge-case @automatizado
+  @registro @edge-case @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/signup.steps.ts (route-mock de api.pwnedpasswords.com
   # + guard que falla si se llega a signUp). FRESCO-32.
   Escenario: El alta rechaza una contraseña que aparece en filtraciones conocidas
@@ -151,7 +151,7 @@ Característica: Flujo completo de usuario en Fresco
     # solo salen 5 chars del hash SHA-1). Fail-open: si HIBP no responde, no
     # bloquea el alta.
 
-  @registro @edge-case @verificado-manual-2026-07-31 @automatizado
+  @registro @edge-case @verificado-manual-2026-07-31 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/signup.steps.ts (FRESCO-463, route-mock: 200 + identities:[])
   Escenario: Alta falla porque el email ya está registrado
     Dado que un visitante intenta darse de alta con un email ya existente
@@ -165,14 +165,14 @@ Característica: Flujo completo de usuario en Fresco
     # Fix: app/signup/page.tsx ahora detecta `identities.length === 0` y
     # muestra el error real.
 
-  @login @recuperar-password @verificado-manual-2026-08-19 @automatizado
+  @login @recuperar-password @verificado-manual-2026-08-19 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-352)
   Escenario: Solicitar el enlace de recuperación de contraseña
     Dado que un usuario visita /forgot-password
     Cuando introduce su email registrado y confirma el formulario
     Entonces ve un mensaje genérico confirmando que si la cuenta existe, recibirá un enlace
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-463)
   Escenario: El mensaje de recuperación de contraseña no revela si el email existe (anti-enumeración)
     Dado que un visitante introduce un email que no está registrado en /forgot-password
@@ -183,7 +183,7 @@ Característica: Flujo completo de usuario en Fresco
     # de Supabase Auth. Verificado en vivo comparando ambos mensajes carácter
     # a carácter.
 
-  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado
+  @login @recuperar-password @edge-case @verificado-manual-2026-08-19 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/recuperar-password.steps.ts (FRESCO-463)
   Escenario: El campo de email en /forgot-password exige un formato válido antes de enviar
     Dado que un usuario deja vacío el campo de email en /forgot-password
@@ -484,7 +484,7 @@ Característica: Flujo completo de usuario en Fresco
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
   # ==========================================================================
 
-  @invitado @verificado-manual-2026-07-31 @automatizado
+  @invitado @verificado-manual-2026-07-31 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/invitado.steps.ts (FRESCO-353)
   Escenario: Una visitante nueva genera un menú sin crear cuenta
     Dado que una visitante sin cuenta ni sesión visita la landing
@@ -493,7 +493,7 @@ Característica: Flujo completo de usuario en Fresco
     Y ve su menú completo de 21 comidas en /menu, sin ningún prompt de registro
     # Confirmado en vivo: JWT decodificado con is_anonymous: true.
 
-  @invitado @seguridad @automatizado
+  @invitado @seguridad @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/invitado.steps.ts (FRESCO-794). Los textos de las
   # casillas son PROVISIONALES (borrador FRESCO-365, sin validar por el abogado).
   Escenario: Una visitante no puede empezar sin confirmar su edad ni aceptar los términos
@@ -517,7 +517,7 @@ Característica: Flujo completo de usuario en Fresco
     # con playwright-cli headed: aparece tras la 1ª generación, "Ahora no" lo
     # cierra, un reload no lo resucita (señal sessionStorage one-shot).
 
-  @registro-progresivo @verificado-manual-2026-07-31 @automatizado
+  @registro-progresivo @verificado-manual-2026-07-31 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/registro-progresivo-edge.steps.ts
   Escenario: La invitada ve una invitación a guardar su menú
     Dado que una invitada con sesión anónima tiene un menú ya generado
@@ -562,7 +562,7 @@ Característica: Flujo completo de usuario en Fresco
     # ambos. Ver el escenario de arriba para el detalle de lo verificado en
     # vivo y lo pendiente de QA manual.
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (FRESCO-463)
   Escenario: Una password débil se rechaza antes de gastar el roundtrip de OTP
     Dado que una invitada rellena /signup con un email nuevo y una password demasiado corta
@@ -576,7 +576,7 @@ Característica: Flujo completo de usuario en Fresco
     # Verificado en vivo: password "123" nunca llega a "Revisa tu correo";
     # password válida sigue llegando normalmente (sin regresión).
 
-  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado
+  @registro-progresivo @edge-case @verificado-manual-2026-08-08 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/registro-progresivo-edge.steps.ts (FRESCO-463,
   # route-mock del PATCH /auth/v1/user para llegar a la pantalla OTP sin email real)
   Escenario: El botón de confirmar código OTP solo se habilita con los 6 dígitos completos
@@ -1562,7 +1562,7 @@ Característica: Flujo completo de usuario en Fresco
     Dado que Laura está en /profile con sesión activa
     Entonces /profile no muestra su propio botón "Salir" y el menú de cuenta del sidebar sí
 
-  @perfil @edge-case @verificado-manual-2026-08-04 @automatizado
+  @perfil @edge-case @verificado-manual-2026-08-04 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-463, nunca confirma el borrado)
   Escenario: Borrar cuenta exige escribir el email exacto y la contraseña para habilitarse
     Dado que Laura abre el diálogo "Borrar cuenta definitivamente"
@@ -1573,7 +1573,7 @@ Característica: Flujo completo de usuario en Fresco
     Cuando escribe también su contraseña
     Entonces el botón de confirmación se habilita
 
-  @perfil @automatizado
+  @perfil @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355 mini-batch, FRESCO-397)
   Escenario: Borrar cuenta definitivamente elimina la cuenta y todos sus datos
     Dado que Laura confirma el borrado con su email exacto y su contraseña
