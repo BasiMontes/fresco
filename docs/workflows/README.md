@@ -9,6 +9,7 @@
 
 | Documento                                        | Descripción                                                   |
 | ------------------------------------------------ | ------------------------------------------------------------- |
+| [boilerplate-sync.md](./boilerplate-sync.md)     | `bun sync` y el `adr:reconcile` que debe seguirle             |
 | [environments.md](./environments.md)             | Ambientes de desarrollo (local, staging, producción)          |
 | [git-flow.md](./git-flow.md)                     | Flujo de trabajo Git para desarrollo AI-driven                |
 | [sync-openapi-guide.md](./sync-openapi-guide.md) | `bun run api:sync`: sincronizar el spec OpenAPI y sus tipos   |

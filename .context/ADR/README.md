@@ -124,6 +124,34 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 
+### Upstream numbers
+
+Files synced from the boilerplate cite its ADR numbers, and this project renumbered those ADRs on import. Read an upstream citation through this table. `bun run adr:reconcile` keeps it: run it right after `bun sync` (dry run by default, `--yes` writes), then `bun run adr:check`.
+
+<!-- upstream-adr-map:start -->
+
+| Upstream | Ours |
+| --- | --- |
+| ADR-0002 | [ADR-0038](./ADR-0038-multi-harness-single-source.md) |
+| ADR-0003 | [ADR-0045](./ADR-0045-forensic-measurements-ledger.md) |
+| ADR-0004 | [ADR-0046](./ADR-0046-harness-agnostic-commit-trailers.md) |
+| ADR-0005 | [ADR-0047](./ADR-0047-harness-level-mcps-and-capabilities.md) |
+| ADR-0006 | [ADR-0048](./ADR-0048-skill-plus-mode-invocation.md) |
+| ADR-0007 | [ADR-0049](./ADR-0049-discovery-runs-without-approval-gate.md) |
+| ADR-0008 | [ADR-0050](./ADR-0050-adoption-contract.md) |
+| ADR-0009 | [ADR-0051](./ADR-0051-progressive-disclosure-of-instructions.md) |
+| ADR-0010 | [ADR-0052](./ADR-0052-varlock-env-schema-and-launch.md) |
+| ADR-0011 | [ADR-0053](./ADR-0053-secret-manager-advanced-option.md) |
+| ADR-0012 | [ADR-0054](./ADR-0054-mcp-env-loader.md) |
+| ADR-0013 | [ADR-0055](./ADR-0055-declared-harnesses.md) |
+| ADR-0014 | [ADR-0056](./ADR-0056-instructions-maintenance-locks.md) |
+| ADR-0015 | [ADR-0057](./ADR-0057-no-shell-autoloader.md) |
+| ADR-0016 | [ADR-0058](./ADR-0058-retire-harness-launchers.md) |
+| ADR-0017 | [ADR-0059](./ADR-0059-documentation-contracts.md) |
+| ADR-0018 | [ADR-0060](./ADR-0060-route-adherence.md) |
+
+<!-- upstream-adr-map:end -->
+
 ---
 
 ## References
