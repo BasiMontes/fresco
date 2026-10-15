@@ -44,5 +44,11 @@ updates:
     ignore:
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+      # FRESCO-964: varlock's version is pinned in the MCP env loaders (.mcp.json,
+      # cli/lib/agent-compatibility-contracts.ts, docs/mcp/*) and a test requires
+      # it to equal the package.json version. PR #680 bumped only package.json and
+      # failed that test. Those files are synced from upstream, so the bump arrives
+      # with `bun sync` together with its pin, not from Dependabot.
+      - dependency-name: varlock
     commit-message:
       prefix: chore
