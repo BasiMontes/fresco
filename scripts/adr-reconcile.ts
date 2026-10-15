@@ -21,13 +21,19 @@
  * The README keeps a table upstream number -> ours between two markers, which is
  * how a synced file that cites an upstream number is resolved.
  *
+ * FRESCO-962: the documents `docs:check` resolves links on (`docs/`, `CONTEXT.md`,
+ * the READMEs) also come back from a sync pointing at upstream's ADR file names,
+ * which no longer exist here. Those references are rewritten to ours too, a
+ * markdown link with its `[ADR-NNNN]` label and a bare path alike; a URL to
+ * upstream's repo is left alone.
+ *
  * Default is a dry run; `--yes` writes. Usage:
  *   bun scripts/adr-reconcile.ts [--yes]
  * Then run `bun run adr:check`.
  */
 
 import type { AdrFile } from './check-adrs';
-import { readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { statusWord } from './check-adrs';
 
@@ -61,6 +67,10 @@ export interface Plan {
   adds: AddAction[]
   warnings: string[]
   readme: string
+  /** Upstream number -> our number, persisted rows plus this batch. */
+  map: Map<string, string>
+  /** Every ADR file name once the plan is applied. */
+  adrNames: string[]
 }
 
 const pad = (n: number): string => String(n).padStart(4, '0');
@@ -222,7 +232,50 @@ export function planReconcile(files: AdrFile[], readme: string): Plan {
   }
   else { next = mapped; }
 
-  return { drops, adds, warnings, readme: next };
+  return { drops, adds, warnings, readme: next, map, adrNames: [...indexed.map(f => f.name), ...adds.map(a => a.to)] };
+}
+
+/** Upstream file name -> ours, for every renumbered ADR whose file exists here. */
+export function upstreamFileNames(map: Map<string, string>, adrNames: string[]): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const [upstream, ours] of map) {
+    if (upstream === ours) { continue; }
+    const ourName = adrNames.find(name => numberOf(name) === ours);
+    if (ourName) { names.set(`ADR-${upstream}-${slugOf(ourName)}.md`, ourName); }
+  }
+  return names;
+}
+
+const LINKED_REF_RE = /\[ADR-(\d{4})\]\(([^)\s#]*?)(ADR-\d{4}-[a-z0-9-]+\.md)/g;
+const FILE_REF_RE = /ADR-\d{4}-[a-z0-9-]+\.md/g;
+
+/** True when the path token that ends at `before` is a URL, which points at upstream's own repo. */
+function endsInsideUrl(before: string): boolean {
+  const start = Math.max(...[' ', '\t', '(', '"', '\'', '`'].map(c => before.lastIndexOf(c)));
+  return before.slice(start + 1).includes('://');
+}
+
+/**
+ * Point a reference to an ADR by upstream's file name at ours: a markdown link
+ * (with its `[ADR-NNNN]` label) and a bare path such as an inline-code one. A URL is
+ * left alone, because it names a file in upstream's repo.
+ */
+export function rewriteAdrLinks(content: string, names: Map<string, string>): string {
+  const linked = content.replace(LINKED_REF_RE, (whole, _label: string, prefix: string, file: string) => {
+    const to = names.get(file);
+    return to === undefined || prefix.includes('://') ? whole : `[ADR-${numberOf(to)}](${prefix}${to}`;
+  });
+  return linked.replace(FILE_REF_RE, (file: string, offset: number, text: string) => {
+    const to = names.get(file);
+    return to === undefined || endsInsideUrl(text.slice(0, offset)) ? file : to;
+  });
+}
+
+/** The documents whose ADR references change. */
+export function planLinks(docs: AdrFile[], names: Map<string, string>): AdrFile[] {
+  return docs
+    .map(doc => ({ name: doc.name, content: rewriteAdrLinks(doc.content, names) }))
+    .filter((doc, i) => doc.content !== docs[i].content);
 }
 
 function readAdrDir(dir: string): { files: AdrFile[], readme: string } {
@@ -241,20 +294,38 @@ export function applyPlan(dir: string, plan: Plan): void {
   writeFileSync(join(dir, 'README.md'), plan.readme);
 }
 
+/**
+ * The human documentation surface `docs:check` resolves links on. A synced agent
+ * file (`.agents/**`) cites upstream ADR numbers in prose and is read through the
+ * README table; history (`.context/audits/**`, the bitacora) is never rewritten.
+ */
+const HUMAN_DOCS_RE = /^(?:docs\/|CONTEXT\.md$|README\.md$|INSTALLER\.md$|\.context\/README\.md$)/;
+
+function listDocs(root: string): AdrFile[] {
+  const listed = Bun.spawnSync(['git', 'ls-files', '-co', '--exclude-standard'], { cwd: root, stdout: 'pipe' }).stdout.toString();
+  return listed
+    .split('\n')
+    .filter(path => /\.(?:md|html)$/.test(path) && HUMAN_DOCS_RE.test(path) && existsSync(join(root, path)))
+    .map(name => ({ name, content: readFileSync(join(root, name), 'utf8') }));
+}
+
 function main(): void {
-  const dir = join(import.meta.dir, '..', '.context', 'ADR');
+  const root = join(import.meta.dir, '..');
+  const dir = join(root, '.context', 'ADR');
   const write = process.argv.includes('--yes');
   const { files, readme } = readAdrDir(dir);
   const plan = planReconcile(files, readme);
+  const links = planLinks(listDocs(root), upstreamFileNames(plan.map, plan.adrNames));
 
   const mapRefreshed = plan.readme !== readme;
-  if (plan.drops.length === 0 && plan.adds.length === 0 && !mapRefreshed) {
-    console.log('adr-reconcile: nothing to do, every ADR file is in the README index.');
+  if (plan.drops.length === 0 && plan.adds.length === 0 && !mapRefreshed && links.length === 0) {
+    console.log('adr-reconcile: nothing to do, every ADR file is in the README index and no document cites an upstream ADR file name.');
     return;
   }
   if (mapRefreshed && plan.drops.length === 0 && plan.adds.length === 0) {
     console.log('map   the upstream number table in README.md is out of date');
   }
+  for (const doc of links) { console.log(`link  ${doc.name}  (cites an ADR by upstream file name)`); }
   for (const drop of plan.drops) {
     const note = drop.differs ? 'the imported text differs from ours, compare it with upstream' : 'same text';
     console.log(`drop  ${drop.name}  (already ours as ${drop.keptAs}; ${note})`);
@@ -270,6 +341,7 @@ function main(): void {
     return;
   }
   applyPlan(dir, plan);
+  for (const doc of links) { writeFileSync(join(root, doc.name), doc.content); }
   console.log('adr-reconcile: applied. Next: bun run adr:check');
 }
 

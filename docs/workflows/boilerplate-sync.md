@@ -28,9 +28,15 @@ An incoming ADR is a file in `.context/ADR/` that the README index does not list
 
 Citations between imported ADRs are rewritten through one map, so a batch stays consistent. A citation the map does not know is reported, because it would resolve to one of our own ADRs.
 
+## Documents that link to an ADR
+
+A sync also brings back documents that link to an ADR by upstream's file name, and that file no longer exists here. The reconcile rewrites those references in the human documentation surface that `bun run docs:check` resolves: `docs/`, `CONTEXT.md`, `README.md`, `INSTALLER.md` and `.context/README.md`. It rewrites a markdown link target together with its `[ADR-NNNN]` label and a bare path such as an inline-code one, and it leaves a URL alone because that names a file in upstream's repo. A second run changes nothing.
+
+Agent files synced from upstream (`.agents/**`) and history (`.context/audits/**`, the session log) are not rewritten.
+
 ## Reading an upstream citation
 
-Synced files, such as the instruction sections and the skills, keep citing upstream numbers. The `Upstream numbers` table in `.context/ADR/README.md` maps each one to ours. The script maintains it between the `upstream-adr-map` markers, from the `Upstream number` lines and from the rows already there. A decision merged by hand into an existing ADR has no such line, so its row is written once in the table.
+Synced agent files, such as the instruction sections and the skills, keep citing upstream numbers. The `Upstream numbers` table in `.context/ADR/README.md` maps each one to ours. The script maintains it between the `upstream-adr-map` markers, from the `Upstream number` lines and from the rows already there. A decision merged by hand into an existing ADR has no such line, so its row is written once in the table.
 
 ## Limits
 

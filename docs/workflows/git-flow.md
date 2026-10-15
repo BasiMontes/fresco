@@ -245,7 +245,7 @@ Sin key de Jira, el formato es `<tipo>: <descripción breve>`.
 
 Todo commit que escribe una sesión de AI termina con dos líneas: `Worktree:` y `Session:`. Dicen qué carpeta de trabajo y qué sesión produjeron el commit, para encontrar la conversación correcta en un bisect o un post-mortem. La AI las copia de la línea `AGENT IDENTITY:` que el hook inyecta en cada turno (`unknown` cuando no se pudo resolver).
 
-No son atribución: no nombran ninguna herramienta. Siguen prohibidas las líneas tipo "Generated with…", un `Co-Authored-By:` de una AI y cualquier trailer con marca de harness (`Claude-Session:`). `.husky/commit-msg` avisa, sin bloquear, si faltan o si aparece uno prohibido. Decisión en `.context/ADR/ADR-0004-harness-agnostic-commit-trailers.md`.
+No son atribución: no nombran ninguna herramienta. Siguen prohibidas las líneas tipo "Generated with…", un `Co-Authored-By:` de una AI y cualquier trailer con marca de harness (`Claude-Session:`). `.husky/commit-msg` avisa, sin bloquear, si faltan o si aparece uno prohibido. Decisión en `.context/ADR/ADR-0046-harness-agnostic-commit-trailers.md`.
 
 ### Tipos de Commits
 

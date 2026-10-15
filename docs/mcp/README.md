@@ -36,7 +36,7 @@ Skills never name a server. They declare a CAPABILITY in `metadata.requires_capa
 - **Browser automation** is not an MCP: it is `playwright-cli` named sessions (`.agents/instructions/agent-tool-resolution.md` §6, `[AUTOMATION_TOOL]`).
 - **Jira / Confluence** go through `acli` by default; the Atlassian MCP is opt-in ([below](#atlassian-mcp-opt-in)).
 
-Vocabulary, suffixes and the stop procedure: `.agents/skills/agentic-dev-core/references/mcp-capabilities.md`. Why web search stays out of the project files: `.context/ADR/ADR-0005-harness-level-mcps-and-capabilities.md`.
+Vocabulary, suffixes and the stop procedure: `.agents/skills/agentic-dev-core/references/mcp-capabilities.md`. Why web search stays out of the project files: `.context/ADR/ADR-0047-harness-level-mcps-and-capabilities.md`.
 
 ## Files in this directory
 
