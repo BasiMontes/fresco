@@ -1,4 +1,5 @@
 import type { RecipeDieta } from '@schemas';
+import type { Metadata } from 'next';
 import type { RecipeFilterState } from '@/lib/recipes/recipe-filters';
 import { RecipeLibrary } from '@/components/recipes/recipe-library';
 import { RecipeLibraryLoadError } from '@/components/recipes/recipe-library-load-error';
@@ -7,6 +8,9 @@ import { getCatalog, getRecetasPropias } from '@/lib/api/recipes';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { RECIPE_PAGE_SIZE } from '@/lib/recipes/recipe-filters';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Recetas · Fresco' };
 
 /**
  * `/recipes` — nav item 3, "Biblioteca" (EPIC-FRESCO-64, FRESCO-65). The full

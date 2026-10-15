@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { ArrowLeft, History } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -13,6 +14,9 @@ import { getAuthUser } from '@/lib/auth/current-user';
 import { formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from '@/lib/date/iso-week';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Historial de menús · Fresco' };
 
 const ISO_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
 

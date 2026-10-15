@@ -1,9 +1,13 @@
+import type { Metadata } from 'next';
 import { RecipeDetailView, RecipeNotFoundState } from '@/components/recipes/recipe-detail';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getRecipeDetail } from '@/lib/api/recipes';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getSlotSubstitutionContext } from '@/lib/ingredients/get-slot-substitution-context';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Receta · Fresco' };
 
 /**
  * `/recipes/[id]` — recipe detail (FRESCO-69). Handles both catalog recipes

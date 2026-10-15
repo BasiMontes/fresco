@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 
 import { History } from 'lucide-react';
@@ -17,6 +18,9 @@ import { LEARNING_BRIDGE_DISMISSED_COOKIE, parseLearningBridgeDismissed } from '
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Calendario · Fresco' };
 
 const ISO_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
 

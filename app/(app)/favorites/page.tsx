@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { FavoritesGrid } from '@/components/recipe/favorites-grid';
@@ -6,6 +7,9 @@ import { getFavoriteRecipes } from '@/lib/api/favorites';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Favoritos · Fresco' };
 
 /**
  * FRESCO-71 — mockup nav showed Despensa/Lista Compra, which don't exist
