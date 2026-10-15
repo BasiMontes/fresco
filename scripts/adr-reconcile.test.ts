@@ -2,7 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
-import { applyPlan, MAP_END, MAP_START, planReconcile } from './adr-reconcile';
+import { applyPlan, MAP_END, MAP_START, planLinks, planReconcile, rewriteAdrLinks, upstreamFileNames } from './adr-reconcile';
 
 const adr = (number: string, title: string, extra = '', body = 'Body.'): string => [
   `# ADR-${number} — ${title}`,
@@ -156,6 +156,57 @@ describe('planReconcile', () => {
     expect(second.drops).toEqual([]);
     expect(second.adds).toEqual([]);
     expect(second.readme).toBe(first.readme);
+  });
+});
+
+describe('upstreamFileNames and rewriteAdrLinks', () => {
+  const names = upstreamFileNames(
+    new Map([['0004', '0046'], ['0002', '0002'], ['0009', '0051'], ['0030', '0077']]),
+    ['ADR-0046-commit-trailers.md', 'ADR-0002-second.md', 'ADR-0051-disclosure.md'],
+  );
+
+  test('maps the upstream file name to ours, skipping identity and numbers with no file', () => {
+    expect([...names.entries()]).toEqual([
+      ['ADR-0004-commit-trailers.md', 'ADR-0046-commit-trailers.md'],
+      ['ADR-0009-disclosure.md', 'ADR-0051-disclosure.md'],
+    ]);
+  });
+
+  test('rewrites a markdown link target and its [ADR-NNNN] label together', () => {
+    const out = rewriteAdrLinks('See [ADR-0004](../.context/ADR/ADR-0004-commit-trailers.md) for why.', names);
+    expect(out).toBe('See [ADR-0046](../.context/ADR/ADR-0046-commit-trailers.md) for why.');
+  });
+
+  test('keeps a label that is not the ADR number and rewrites only the target', () => {
+    const out = rewriteAdrLinks('The [trailer rule](./ADR-0004-commit-trailers.md#why) applies.', names);
+    expect(out).toBe('The [trailer rule](./ADR-0046-commit-trailers.md#why) applies.');
+  });
+
+  test('rewrites an inline-code path outside a link', () => {
+    const out = rewriteAdrLinks('Decision in `.context/ADR/ADR-0009-disclosure.md`.', names);
+    expect(out).toBe('Decision in `.context/ADR/ADR-0051-disclosure.md`.');
+  });
+
+  test('leaves an external URL to the upstream repo alone, in markdown and in an html attribute', () => {
+    const md = 'Read [it](https://github.com/o/r/blob/main/.context/ADR/ADR-0004-commit-trailers.md).';
+    const html = '<a href="https://github.com/o/r/blob/main/.context/ADR/ADR-0009-disclosure.md">x</a>';
+    expect(rewriteAdrLinks(md, names)).toBe(md);
+    expect(rewriteAdrLinks(html, names)).toBe(html);
+  });
+
+  test('leaves our own file names and unmapped upstream ones alone, and is idempotent', () => {
+    const text = '[ADR-0046](./ADR-0046-commit-trailers.md) and `ADR-0030-unknown.md`.';
+    expect(rewriteAdrLinks(text, names)).toBe(text);
+    const once = rewriteAdrLinks('[ADR-0004](./ADR-0004-commit-trailers.md)', names);
+    expect(rewriteAdrLinks(once, names)).toBe(once);
+  });
+
+  test('planLinks returns only the documents that change', () => {
+    const changed = planLinks([
+      { name: 'a.md', content: '[ADR-0009](./ADR-0009-disclosure.md)' },
+      { name: 'b.md', content: 'nothing to do' },
+    ], names);
+    expect(changed).toEqual([{ name: 'a.md', content: '[ADR-0051](./ADR-0051-disclosure.md)' }]);
   });
 });
 
