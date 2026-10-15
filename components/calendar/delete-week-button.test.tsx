@@ -20,6 +20,14 @@ describe('DeleteWeekButton', () => {
     routerMock.refresh.mockClear();
   });
 
+  test('FRESCO-971: the trash button shows its label and keeps the full scope as its accessible name', () => {
+    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);
+
+    const button = screen.getByTestId('delete_week_button');
+    expect(button).toHaveTextContent('Eliminar menú');
+    expect(screen.getByRole('button', { name: 'Eliminar menú de esta semana' })).toBe(button);
+  });
+
   test('opens the confirmation dialog from the trash button', async () => {
     const user = setupUser();
     renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);

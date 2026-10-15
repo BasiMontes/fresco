@@ -50,14 +50,19 @@ export function DeleteWeekButton({ mealPlanId }: { mealPlanId: string }) {
     <div className="relative">
       <Button
         type="button"
-        variant="icon"
+        variant="ghost"
         size="sm"
-        aria-label="Eliminar el menú de esta semana"
+        className="text-error hover:bg-surface"
         data-testid="delete_week_button"
         disabled={pending}
         onClick={() => setConfirmOpen(true)}
       >
-        <Trash2 className="size-6 text-error" />
+        {/* FRESCO-971 (UX-23): a destructive action must say what it is. The
+            visible text starts the accessible name (WCAG label-in-name); the
+            sr-only tail keeps the scope ("de esta semana") for screen readers. */}
+        <Trash2 className="size-5" aria-hidden="true" />
+        <span>Eliminar menú</span>
+        <span className="sr-only"> de esta semana</span>
       </Button>
       {error && (
         <p
