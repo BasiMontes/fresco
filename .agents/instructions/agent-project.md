@@ -30,7 +30,7 @@ A story with UI whose screen has no row in `.context/design/master-design-plan.m
 
 ### Promotion to `main` (narrows Rule 4)
 
-Whatever `git_strategy.policy.direct_push_to_protected` resolves to, a promotion to `main` runs through `bun run git:promote`: dry run first, `--yes` only after the user confirms. Never promote a SHA without a finished green staging PR Check, never with a placeholder identity, never a code commit without its `(#PR)`. The script and `docs/workflows/promotion.md` own the mechanics; the accepted host divergence and its compensating control live in `git_strategy.accepted_divergences` of `.agents/project.yaml`.
+Whatever `git_strategy.policy.direct_push_to_protected` resolves to, a promotion to `main` runs through `bun run git:promote`: dry run first, `--yes` only after the user confirms. Never promote a SHA without a finished green staging PR Check, never with a placeholder identity, never a code commit without its `(#PR)`. The script and `docs/workflows/promotion.md` own the mechanics; the accepted host divergence and its compensating control live in `git_strategy.policy.accepted_divergences` of `.agents/project.yaml`.
 
 ## Session log: `bitacora.md`
 
