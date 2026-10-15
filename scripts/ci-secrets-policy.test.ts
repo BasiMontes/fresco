@@ -45,11 +45,12 @@ describe('CI secrets policy (FRESCO-802)', () => {
     expect(prCheck!.code).not.toContain('ENV_FILE');
   });
 
-  test('the live-backend workflows prefer the reduced secret and keep a fallback', () => {
+  test('the live-backend workflows read only the reduced secret, never the full env file', () => {
     for (const name of ['post-deploy-smoke.yml', 'stripe-e2e.yml']) {
       const w = workflows().find(x => x.name === name);
       expect(w, name).toBeDefined();
-      expect(w!.code, name).toContain('secrets.LIVE_E2E_ENV_FILE || secrets.ENV_FILE');
+      expect(w!.code, name).toContain('secrets.LIVE_E2E_ENV_FILE');
+      expect(w!.code, name).not.toContain('secrets.ENV_FILE');
     }
   });
 

@@ -11,8 +11,8 @@ A workflow triggered by `pull_request` references **no secret**. `scripts/ci-sec
 | Workflow | Trigger | Secrets | Notes |
 |---|---|---|---|
 | `pr-check.yml` | `pull_request`, `push` | none | `e2e` builds `.env` from the committed `.env.ci` plus dummy values; the job summary lists the variable **names** it can read |
-| `post-deploy-smoke.yml` | `deployment_status` (Production only) | `LIVE_E2E_ENV_FILE`, else `ENV_FILE` | drives a browser against the real production deployment, so it needs real test-user and Supabase credentials |
-| `stripe-e2e.yml` | `schedule`, `workflow_dispatch` | `LIVE_E2E_ENV_FILE`, else `ENV_FILE` | real Stripe test-mode account |
+| `post-deploy-smoke.yml` | `deployment_status` (Production only) | `LIVE_E2E_ENV_FILE` | drives a browser against the real production deployment, so it needs real test-user and Supabase credentials |
+| `stripe-e2e.yml` | `schedule`, `workflow_dispatch` | `LIVE_E2E_ENV_FILE` | real Stripe test-mode account |
 | `edge-functions-drift.yml` | `schedule`, `workflow_dispatch`, `push` | `SUPABASE_ACCESS_TOKEN` | deploys edge functions |
 | `migration-drift-check.yml` | `schedule`, `workflow_dispatch`, `push` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` | |
 | `db-backup.yml` | `schedule`, `workflow_dispatch` | R2 keys, `SUPABASE_DB_PASSWORD`, `BACKUP_PASSPHRASE` | |
@@ -24,13 +24,13 @@ Only `.env.ci` (Supabase's public local-dev demo constants and dummy third-party
 
 ## Owner actions (need repository admin)
 
-1. **Create `LIVE_E2E_ENV_FILE`** with only the names the suite reads (checked with `rg 'process\.env\.'` over `tests/` on 2026-10-06), then delete `ENV_FILE`:
+1. **Create `LIVE_E2E_ENV_FILE`** with only the names the suite reads (checked with `rg 'process\.env\.'` over `tests/` on 2026-10-06). The full `ENV_FILE` secret no longer exists and the workflows have no fallback to it (FRESCO-853). Done; the command is kept to rebuild the secret:
 
    ```sh
    grep -E '^(DEV_USER_EMAIL|DEV_USER_PASSWORD|PRO_USER_PASSWORD|NEXT_PUBLIC_SUPABASE_URL|NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|STRIPE_PRICE_ID_PRO_MONTH|STRIPE_PRICE_ID_PRO_ANUAL|STRIPE_WEBHOOK_SECRET|STRIPE_WEBHOOK_SECRET_DEV|STRIPE_WEBHOOK_SECRET_PRE)=' .env \
      | gh secret set LIVE_E2E_ENV_FILE
    ```
 
-   Verify with a manual run of `stripe-e2e.yml` (`workflow_dispatch`) before deleting `ENV_FILE`; the smoke run only happens on a production deploy.
+   Verify a change to it with a manual run of `stripe-e2e.yml` (`workflow_dispatch`); the smoke run only happens on a production deploy.
 2. **Replace `SUPABASE_ACCESS_TOKEN`** (an account-wide personal access token) with the narrowest token Supabase offers for deploying functions and reading migrations. Whether Supabase offers project-scoped tokens was not verified here; check the dashboard before choosing.
 3. **`sha_pinning_required`**: with every action pinned, enable it in Settings > Actions > General ("Require actions to be pinned to a full-length commit SHA"), or `gh api -X PUT repos/<owner>/<repo>/actions/permissions -F enabled=true -f allowed_actions=all -F sha_pinning_required=true`.

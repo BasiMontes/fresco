@@ -59,7 +59,7 @@ jobs:
       cancel-in-progress: false
     steps:
       # FRESCO-399 (A4-L16): this workflow runs on the privileged
-      # `deployment_status` trigger with `secrets.ENV_FILE` in reach, so its
+      # `deployment_status` trigger with `secrets.LIVE_E2E_ENV_FILE` in reach, so its
       # third-party actions are pinned by commit SHA, not a mutable major
       # tag. Bump the SHA + trailing version comment together when upgrading.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,8 +80,8 @@ jobs:
       - name: Restore .env from secret
         # The @smoke scenarios log in as the DEV/PRO test users and create
         # throwaway factory users — all of which need the Supabase + Stripe
-        # creds that live in secrets.ENV_FILE (same secret pr-check.yml's
-        # e2e job uses).
+        # creds that live in secrets.LIVE_E2E_ENV_FILE (pr-check.yml's e2e job
+        # reads no secret at all, see docs/workflows/ci-secrets.md).
         #
         # FRESCO-376: no `.env.ci` third-party overlay here, and none is
         # possible. This job drives a browser against the REAL production
@@ -95,10 +95,10 @@ jobs:
         # `suscripcionCtx` fixture (tests/fixtures.ts), so it never lingers.
         run: printf '%s' "$ENV_FILE" > .env
         env:
-          # FRESCO-802: prefer the reduced secret (only the names the suite reads,
-          # see docs/workflows/ci-secrets.md); fall back to the full one until the
-          # owner has created it, then delete `ENV_FILE`.
-          ENV_FILE: ${{ secrets.LIVE_E2E_ENV_FILE || secrets.ENV_FILE }}
+          # FRESCO-802: the reduced secret (only the names the suite reads, see
+          # docs/workflows/ci-secrets.md). FRESCO-853: the full `ENV_FILE` secret
+          # was deleted, so there is no fallback to it any more.
+          ENV_FILE: ${{ secrets.LIVE_E2E_ENV_FILE }}
 
       - name: Report target
         run: |
