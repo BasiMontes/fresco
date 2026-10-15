@@ -1,8 +1,8 @@
 {
   // OpenCode shared team config — committed to git.
   // Secrets are NEVER stored here: every {env:VAR} placeholder is resolved
-  // from the developer's local environment (loaded from .env via `bun run opencode`,
-  // direnv, or a manually-sourced shell). See .env.example for required vars.
+  // by the .env loader each MCP server starts through (see ADR-0054), never from
+  // a launcher script or a shell autoloader. See .env.example for required vars.
   //
   // Syntax notes (OpenCode-specific, different from Claude Code's .mcp.json):
   //   - Env var expansion uses {env:VAR_NAME}  (NOT ${VAR})

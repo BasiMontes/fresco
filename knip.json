@@ -21,13 +21,14 @@
     "@inquirer/prompts",
     "boxen",
     "cli-table3",
+    "dotenv-cli",
     "figures",
     "picocolors",
     "postcss-load-config",
     "web-push",
     "yaml"
   ],
-  "ignoreBinaries": ["vercel", "codex", "supabase", "psql", "playwright-cli"],
+  "ignoreBinaries": ["vercel", "supabase", "psql", "playwright-cli"],
   "ignoreUnresolved": ["bun-types", "cli/doctor.ts", "cli/install.ts"],
   "rules": {
     "types": "off",
