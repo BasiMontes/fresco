@@ -155,7 +155,7 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
   }
 
   return (
-    <Card className="mt-4" data-testid="nombreForm">
+    <Card id="nombre" className="mt-4 scroll-mt-16" data-testid="nombreForm">
       <CardHeader>
         <CardTitle id={titleId}>Tu nombre</CardTitle>
       </CardHeader>

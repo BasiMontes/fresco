@@ -13,7 +13,18 @@ export function MenuHeader({ nombre, hasUnseenNotifications }: MenuHeaderProps) 
     <div className="flex items-start justify-between">
       <div>
         <h1 className="text-h2">{nombre ? `¡Hola, ${nombre}!` : '¡Hola!'}</h1>
-        <p className="mt-1 text-body-md text-tertiary">Tu menú de hoy, listo.</p>
+        <p className="mt-1 text-body-md text-tertiary">
+          Tu menú de hoy, listo.
+          {/* FRESCO-972 (UX-26): without a name the greeting is a bare "¡Hola!", so invite her to set it. */}
+          {!nombre && (
+            <>
+              {' '}
+              <Link href="/profile#nombre" data-testid="menu_add_name_link" className="text-primary underline underline-offset-2">
+                Dinos cómo te llamas
+              </Link>
+            </>
+          )}
+        </p>
       </div>
       <div className="flex gap-2">
         <Link href="/favorites" className={cn(buttonVariants({ variant: 'icon', size: 'sm' }))} aria-label="Favoritos" data-testid="favoritos_button">

@@ -36,6 +36,19 @@ Given(/^que Laura está en \/profile con sesión activa$/, async ({ page, testUs
   await loginAndGoToProfile(page, testUser);
 });
 
+// FRESCO-972 (UX-18): at 360 px the row printed "Cerrar sesión" as a label and as the button.
+Given(/^\/profile muestra un único "Cerrar sesión"$/, async ({ page }) => {
+  await expect(page.getByTestId('logout_button')).toBeVisible();
+  await expect(page.locator('main').getByText('Cerrar sesión', { exact: true })).toHaveCount(1);
+});
+
+// FRESCO-972 (UX-19): the in-page nav jumps to the section.
+Given(/^la navegación del perfil lleva a la sección Cuenta$/, async ({ page }) => {
+  await page.getByTestId('profile_section_link_cuenta').click();
+  await expect(page).toHaveURL(/#cuenta$/);
+  await expect(page.getByTestId('logout_button')).toBeInViewport();
+});
+
 // ── When ─────────────────────────────────────────────────────────────────
 
 When(/^activa un chip de dieta y confirma "Actualizar Preferencias"$/, async ({ page }) => {

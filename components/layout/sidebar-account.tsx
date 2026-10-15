@@ -78,7 +78,8 @@ function IdentityLines({ nombre, email, plan, tone, testIds = {} }: IdentityLine
   return (
     <span className="min-w-0 flex-1">
       <p data-testid={testIds.name} className={classes.name}>
-        {nombre || 'Sin nombre'}
+        {/* FRESCO-972 (UX-26): no name yet reads as an invitation, not as a hole. */}
+        {nombre || 'Añade tu nombre'}
       </p>
       {email && (
         <p data-testid={testIds.email} className={classes.email}>
