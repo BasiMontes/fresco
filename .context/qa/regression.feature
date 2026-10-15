@@ -1551,8 +1551,12 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
   # FRESCO-862: a 360 px no hay sidebar, así que /profile es la única salida y el
   # escenario corre en el proyecto móvil.
+  # FRESCO-972: a 360 px /profile muestra un único "Cerrar sesión" (antes etiqueta + botón)
+  # y la navegación por secciones lleva a Cuenta.
   Escenario: Cerrar sesión desde el perfil
     Dado que Laura está en /profile con sesión activa
+    Y /profile muestra un único "Cerrar sesión"
+    Y la navegación del perfil lleva a la sección Cuenta
     Cuando pulsa "Salir"
     Entonces la cookie de sesión se elimina y vuelve a /login
 

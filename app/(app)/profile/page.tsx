@@ -6,6 +6,7 @@ import { ProfileAccountCards } from '@/components/profile/profile-account-cards'
 import { ProfileIdentityCard } from '@/components/profile/profile-identity-card';
 import { ProfilePlanCards } from '@/components/profile/profile-plan-cards';
 import { ProfilePreferencesAndHelp } from '@/components/profile/profile-preferences-and-help';
+import { ProfileSection, ProfileSectionNav } from '@/components/profile/profile-sections';
 import { PushNotificationsToggle } from '@/components/profile/push-notifications-toggle';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getProPrices } from '@/lib/billing/pro-prices';
@@ -66,29 +67,38 @@ export default async function ProfilePage() {
 
       <ProfileIdentityCard nombre={nombre} email={user?.email} isAnonymous={isAnonymous} plan={plan} />
 
-      <NombreForm nombreInicial={nombre} />
+      {/* FRESCO-972 (UX-19): three anchored sections instead of one flat stack. */}
+      <ProfileSectionNav />
 
-      {/* FRESCO-241 PR2: browser-only state (Notification.permission,
-          PushSubscription), so this stays client-rendered rather than
-          server-read like the cards around it — same reasoning as why
-          NombreForm/PreferencesForm are themselves 'use client'. */}
-      <PushNotificationsToggle isGuest={isAnonymous} />
+      <ProfileSection id="preferencias">
+        <NombreForm nombreInicial={nombre} />
 
-      <AppearanceCard />
+        {/* FRESCO-241 PR2: browser-only state (Notification.permission,
+            PushSubscription), so this stays client-rendered rather than
+            server-read like the cards around it — same reasoning as why
+            NombreForm/PreferencesForm are themselves 'use client'. */}
+        <PushNotificationsToggle isGuest={isAnonymous} />
 
-      <ProfilePreferencesAndHelp
-        dietaryPreferences={dietaryPreferences}
-        hasHealthDataConsent={hasHealthDataConsent}
-        email={user?.email ?? 'Invitada'}
-        planLabel={PLAN_LABELS[plan]}
-        memberSince={memberSince}
-      />
+        <AppearanceCard />
 
-      <MenuHistoryCard weeks={pastWeeks} plan={plan} />
+        <ProfilePreferencesAndHelp
+          dietaryPreferences={dietaryPreferences}
+          hasHealthDataConsent={hasHealthDataConsent}
+          email={user?.email ?? 'Invitada'}
+          planLabel={PLAN_LABELS[plan]}
+          memberSince={memberSince}
+        />
+      </ProfileSection>
 
-      <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} prices={prices} />
+      <ProfileSection id="suscripcion">
+        <MenuHistoryCard weeks={pastWeeks} plan={plan} />
 
-      <ProfileAccountCards email={user?.email ?? ''} isAnonymous={isAnonymous} />
+        <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} prices={prices} />
+      </ProfileSection>
+
+      <ProfileSection id="cuenta">
+        <ProfileAccountCards email={user?.email ?? ''} isAnonymous={isAnonymous} />
+      </ProfileSection>
     </div>
   );
 }

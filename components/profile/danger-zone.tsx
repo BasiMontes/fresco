@@ -51,19 +51,19 @@ export function AccountActions({ isAnonymous }: AccountActionsProps) {
         {/* FRESCO-862: from `md` up the sidebar account menu already offers logout, so a second one
           on the same screen is a duplicate. Below `md` there is no sidebar (the bottom tab bar has
           no logout), so this row stays the only way out on mobile. */}
-        <div className="flex items-center justify-between gap-3 py-3 first:pt-0 md:hidden">
-          <div className="flex items-center gap-2 text-body-md text-text">
-            <LogOut className="size-4 text-tertiary" aria-hidden="true" />
-            Cerrar sesión
-          </div>
+        {/* FRESCO-972 (UX-18): ONE control. The row used to print "Cerrar sesión" as a label
+          AND as the button text, so a phone showed it twice. */}
+        <div className="flex py-3 first:pt-0 md:hidden">
           <Button
             type="button"
             variant="secondary"
             size="sm"
             data-testid="logout_button"
             disabled={isLoggingOut}
+            className="w-full justify-center gap-2"
             onClick={() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout())}
           >
+            <LogOut className="size-4" aria-hidden="true" />
             {isLoggingOut ? 'Saliendo…' : 'Cerrar sesión'}
           </Button>
         </div>

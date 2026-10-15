@@ -165,6 +165,14 @@ describe('SidebarAccount', () => {
       expect(screen.getByTestId('plan_label')).toBeInTheDocument();
     });
 
+    // FRESCO-972 (UX-26)
+    test('without a name the trigger invites her to add one instead of saying "Sin nombre"', () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} nombre={null} />);
+
+      expect(screen.getByTestId('user_name')).toHaveTextContent('Añade tu nombre');
+      expect(screen.queryByText('Sin nombre')).toBeNull();
+    });
+
     test('collapsed rail renders only the avatar, with no text lines', () => {
       renderWithProviders(<SidebarAccount {...BASE_PROPS} collapsed />);
 

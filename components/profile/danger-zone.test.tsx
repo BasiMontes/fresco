@@ -38,6 +38,14 @@ describe('AccountActions logout row layout', () => {
     expect(row?.className).not.toMatch(/(^|\s)hidden(\s|$)/);
   });
 
+  // FRESCO-972 (UX-18): the row used to print "Cerrar sesión" as a label and as the button text.
+  test('prints "Cerrar sesión" exactly once, as the button itself', () => {
+    renderWithProviders(<AccountActions isAnonymous={false} />);
+
+    expect(screen.getAllByText('Cerrar sesión')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBe(screen.getByTestId('logout_button'));
+  });
+
   test('keeps the CSV backup visible at every width', () => {
     renderWithProviders(<AccountActions isAnonymous={false} />);
 
