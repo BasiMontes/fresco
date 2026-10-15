@@ -3,6 +3,7 @@
 > **Audience**: developers cloning `agentic-dev-boilerplate` for the first time, anyone deciding whether to opt into the gentle-ai ecosystem, or anyone trying to understand which CLI / skill / MCP layer does what.
 > **Read time**: 10 minutes.
 > **Status**: stable as of 2026-05-11.
+<!-- volatile-ok-file: upstream-owned installer guide delivered by bun sync; its dated and file:line facts are upstream's and the file is protected in .agents/project.yaml -->
 
 This doc is the **contract that `cli/install.ts` implements**. It covers the four installer layers — gentle-ai (~30%), community skills via `bunx skills add` (~25%), locally committed workflow skills (~20%), the canonical MCPs (~15%) — plus the external CLI verification step and the opt-out path.
 

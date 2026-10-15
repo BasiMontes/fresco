@@ -171,6 +171,7 @@ autonomous_delivery:
 updater:
   # FRESCO-830 / ADR-0039: skill files that carry Fresco-owned doctrine (reproduction-or-rejection FRESCO-313, Definition of Done FRESCO-404, AC testability I22 FRESCO-320). scripts/skill-gates.test.ts fails if a gate or an entry here disappears.
   protected_paths:
+    - INSTALLER.md # FRESCO-956: carries our volatile-ok-file marker so docs:check stays green; a sync would drop it
     - .agents/skills/sprint-development/SKILL.md
     - .agents/skills/sprint-development/references/bug-fix-workflow.md
     - .agents/skills/sprint-development/references/story-plan.md
