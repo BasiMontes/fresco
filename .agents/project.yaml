@@ -230,3 +230,60 @@ environments:
     web_url: 'https://fresco-pro.vercel.app' # Auto-following Vercel Production domain — always tracks the latest Production deploy of `main` (confirmed via `vercel alias ls` 2026-08-08; re-verified 2026-09-02, FRESCO-393). Same Git Branch binding family as `fresco-dev` / `fresco-pre`, but this one resolves to the `target: production` deployment. Same Supabase project as staging (user decision: shared DB, no isolation split — see master-implementation-plan.md §3 "Production environment provisioning").
     api_url: 'https://fresco-pro.vercel.app/api'
     db_project_ref: jdqemhewjrjuopssdurn # SAME Supabase project as staging/local — deliberate, not an oversight
+
+stack:
+  app_root: . # directory holding the app's package.json, relative to the repo root (monorepo: e.g. apps/web)
+  framework: nextjs-app-router # nextjs-app-router | nextjs-pages | other
+  package_manager: bun # bun | pnpm | npm | yarn
+  scripts: # script NAMES in the app's package.json; null = the app has no such script
+    dev: dev
+    build: build
+    lint: lint:check
+    types: types:check
+    test: test
+    db_types: db:types
+  database:
+    engine: postgres # postgres | other | none
+    provider: supabase # supabase | other | none
+    schema_source: migrations # live | migrations. Which one project-context trusts: the database itself (through the db MCP) or the migration files in migrations_dir
+    migrations_dir: supabase/migrations # directory of migration files, relative to app_root; null = none in the repo (the db MCP's migration list is the ledger)
+    migrations_tool: supabase-cli # supabase-mcp | supabase-cli | prisma | drizzle | none. How a schema change is applied
+    types_path: lib/supabase/types.ts # generated database types, relative to app_root; null = none
+  ui:
+    css: tailwind-v4 # tailwind-v3 | tailwind-v4 | css-modules | other
+    kit: none # shadcn | other | none
+    icons: lucide # lucide | other | none
+  hosting: vercel # vercel | netlify | other | none
+  ci: github-actions # github-actions | gitlab | other | none
+  test_runner: bun # vitest | jest | bun | playwright | other | none; null = not chosen yet (/unit-testing picks one)
+  conventions:
+    import_alias: '@/' # path alias the app's tsconfig declares for its source root; null = none
+    testid_style: data-testid snake_case # the app's existing test-id attribute and case (e.g. data-testid kebab-case); null = not established. Skills never rename an existing test id
+
+orchestration:
+  max_workers: 3 # concurrent workers per round (merge + staging deploy stay serialized through the conductor)
+  default_agent: claude # claude | codex | opencode
+  default_model: '' # full provider model id; empty = the harness default. Never an alias (it moves on its own).
+  default_effort: high # harness effort level when supported
+  # WHICH orchestrator, named here instead of hardcoded in a skill. Empty
+  # `orchestrator_cli` = no orchestrator on this machine: every workflow skill
+  # falls back to the pasted-launch-line path and says NOTHING about it.
+  orchestrator_name: Orca # the application the operator sees
+  orchestrator_cli: '' # no orchestrator installed on this machine (`orca` is not on PATH): workflow skills use the pasted-launch-line fallback
+  # THE TWO VERBS ARE NOT INTERCHANGEABLE. `message_verb` carries every message
+  # BETWEEN sessions and is byte-intact. `terminal_verb` DRIVES a terminal
+  # (commands, CLI calls, harness slash-commands, keystrokes): it truncates a
+  # long payload silently, keeps only the TAIL, and still reports success.
+  # One structural exception: a supervised worker's first prompt goes through
+  # `terminal_verb`, because the native launch has no argv. Keep it short and
+  # pointing at a file. Canon: orca-orchestration/references/channel-discipline.md.
+  message_verb: orca orchestration # session-to-session messages ONLY
+  terminal_verb: orca terminal # commands and keystrokes ONLY
+  # Vendor skills the orchestrator installs at USER level, loaded ALONGSIDE the
+  # repo's own `orca-orchestration` skill, never instead of it: the repo skill
+  # owns WHEN and WHAT, these own the command grammar. Empty list = none
+  # installed; the repo skill then asks the binary for its grammar.
+  orchestrator_skills: [orca-cli, orchestration]
+
+# Harnesses this project actually uses; the compat checks stop asking for the others' files (FRESCO-857).
+harnesses: [claude]

@@ -6,21 +6,39 @@
     },
     "tavily": {
       "command": "bunx",
-      "args": ["-y", "mcp-remote", "https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}"]
+      "args": [
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "TAVILY_API_KEY",
+        "--",
+        "sh",
+        "-c",
+        "exec bunx -y mcp-remote \"https://mcp.tavily.com/mcp/?tavilyApiKey=$TAVILY_API_KEY\""
+      ]
     },
     "supabase": {
       "command": "bunx",
       "args": [
+        "-p",
+        "varlock@1.20.0",
+        "varlock",
+        "run",
+        "--no-redact-stdout",
+        "--inject",
+        "vars",
+        "--filter",
+        "SUPABASE_ACCESS_TOKEN",
+        "--",
+        "bunx",
         "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--access-token",
-        "${SUPABASE_ACCESS_TOKEN}"
-      ],
-      "env": {
-        "SUPABASE_URL": "${NEXT_PUBLIC_SUPABASE_URL}",
-        "SUPABASE_ANON_KEY": "${SUPABASE_PUBLISHABLE_KEY}",
-        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SECRET_KEY}"
-      }
+        "@supabase/mcp-server-supabase@latest"
+      ]
     },
     "21st": {
       "type": "http",

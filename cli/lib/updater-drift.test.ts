@@ -5,8 +5,6 @@ import { dirname, join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { gitEnvWithoutRepoOverrides } from './test-git-env.ts';
-
 import {
   detectProtectedDrift,
   mergeProtectedWatchlist,
@@ -33,7 +31,7 @@ function write(root: string, relativePath: string, contents: string): void {
 }
 
 function git(root: string, args: string[]): string {
-  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: gitEnvWithoutRepoOverrides() });
+  const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
   if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
   return res.stdout;
 }

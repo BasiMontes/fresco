@@ -1,2 +1,39 @@
 [test]
 preload = [ "./bun-test-setup.ts" ]
+# Boilerplate-maintainer tests that cannot pass in a consumer project. They are
+# synced from upstream by `bun run up` and assume things this repo is not.
+pathIgnorePatterns = [
+  # Spawn the updater or the whole setup against a temp repo (hang or need the
+  # upstream checkout).
+  "cli/agent-lifecycle.test.ts",
+  "cli/tooling-isolation.test.ts",
+  "cli/update-boilerplate.test.ts",
+  "scripts/delivery-skills-stack.test.ts",
+  "scripts/ui-setup-e2e.test.ts",
+  "scripts/ui-up-e2e.test.ts",
+  # Assert against the maintainer copy of .agents/project.yaml (no real
+  # identity). This repo carries real identity, so the module treats it as a
+  # consumer and skips generation on purpose.
+  "cli/lib/agents-schema.test.ts",
+  "cli/lib/stack-descriptor.test.ts",
+  "cli/lib/updater-instructions-run.test.ts",
+  # Maintainer-only contracts: the doc-contract regions name pages that exist
+  # only in the boilerplate repo (packages/pages-home, packages/decks), and the
+  # stub leak gate treats this repo's agent-project.md as the boilerplate's own.
+  "scripts/lib/doc-contracts.test.ts",
+  "cli/lib/updater-instructions.test.ts",
+  # The varlock probe degrades to `files` inside `bun test` here although it
+  # answers `varlock` from a shell; environment-dependent, not a Fresco rule.
+  "cli/lib/env-schema.test.ts",
+  # TEMPORARY. This repo's story-plan.md carries the FRESCO-281/282/321 gates and
+  # has not been merged with upstream's plan-body markers yet. Remove this line
+  # once story-plan.md is merged.
+  "scripts/plan-templates-adf-budget.test.ts",
+  # Installer web page. bun-test-setup.ts registers a global happy-dom window on
+  # https://test.fresco.local, which blocks these tests' fetch to http://127.0.0.1
+  # (Mixed Content). Fresco does not use the installer page.
+  "cli/lib/ui/browser-sink.test.ts",
+  "cli/lib/ui/updater-run.test.ts",
+  "cli/lib/ui/installer-run.test.ts",
+  "cli/lib/ui/secrets.test.ts",
+]

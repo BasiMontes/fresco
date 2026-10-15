@@ -125,16 +125,16 @@ Each `chain_strategy` value maps to a concrete PR layout. Full patterns live in 
 ### `stacked-to-main`
 
 - 2 to 4 PRs, each `< 400` lines.
-- Each PR is branched off `main` (or `staging`, per project Git Flow).
+- Each PR is branched off the strategy's base: `git_strategy.branches.integration`, or `git_strategy.branches.production` when integration is null.
 - PRs depend on previous PRs being merged before opening the next.
 - Best for: linear feature work with clear sub-deliverables (foundation → feature slice → docs/tests).
 
 ### `feature-branch-chain`
 
-- One long-lived integration branch (`feat/<key>-<slug>`) cut from `main`/`staging`.
-- N child PRs each merge INTO the integration branch (not into `main`).
-- Final merge to `main` is the integration branch as a single squash or merge commit.
-- Best for: big architectural changes with shared scaffolding, where partial merges to `main` would leave it in a broken state.
+- One long-lived chain branch (`feat/<key>-<slug>`) cut from that same base.
+- N child PRs each merge INTO the chain branch (not into the base).
+- Final merge to the base is the chain branch as a single squash or merge commit.
+- Best for: big architectural changes with shared scaffolding, where partial merges to the base would leave it in a broken state.
 
 ### `size-exception`
 

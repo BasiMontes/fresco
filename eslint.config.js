@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config';
+import { CLI_IMPORT_CLOSURE } from './eslint.config.base.js';
 
 const REACT_HOOK_NAMES = [
   'use',
@@ -102,6 +103,10 @@ export default antfu({
     // .prettierignore) doesn't fall back to .gitignore, so without this it
     // lints a local tool cache no one else's checkout even has.
     '.impeccable/**',
+    // Boilerplate-internal e2e of the `ui` installer (FRESCO-857): excluded from tsconfig.json, so the
+    // typed-lint project service cannot parse them. They still run under `bun test`.
+    'scripts/ui-setup-e2e.test.ts',
+    'scripts/ui-up-e2e.test.ts',
   ],
 
   // Custom rules
@@ -148,72 +153,17 @@ export default antfu({
       },
     ],
   },
-}, {
-  // --- cli/ IMPORT CLOSURE (updater self-update invariant) ---
-  //
-  // `cli/` is the updater's self-update component: `runUpdate` refreshes those
-  // files in place and re-execs the process BEFORE any other component is
-  // synced (cli/lib/updater-core.ts, "SELF-UPDATE (before Phase 2)"). A repo
-  // several releases behind therefore runs the NEW `cli/` against its OWN, old
-  // copy of every sibling directory.
-  //
-  // So an import that escapes `cli/` is not a style question: it bricks the
-  // update path for anyone jumping more than one release. It happened in the
-  // QA boilerplate: `cli/` imported `../scripts/agent-compatibility.ts`, the
-  // re-exec died on `Cannot find module`, and `bun run up`, `up --rollback`,
-  // `setup` and `setup:doctor` all went down together, since the failure is at
-  // module load and the rollback path shares the same entrypoint.
-  //
-  // Shared code goes in `cli/lib/`. A `scripts/` file that needs it imports
-  // FROM `cli/` (that direction is safe: `scripts/` is synced later, never
-  // re-exec'd mid-run). `api/`, `src/`, `config/` and `tests/` are listed for
-  // the scaffolded project this config travels into; they are equally absent
-  // at re-exec time.
+}, CLI_IMPORT_CLOSURE, {
+  // cli/ is synced wholesale into downstream projects and must type-check under
+  // THEIR tsconfig and @types/node (see cli/updater-host-types.test.ts). Both
+  // autofixes are valid here but not there: a cast that is redundant under this
+  // repo's @types/node (`execSync(...) as unknown as Buffer`) can be required
+  // under another version, and `Object.hasOwn` needs a host with `lib` ES2022.
+  // Keep the portable form in cli/. Project-owned: the base block does not carry it.
   files: ['cli/**/*.ts'],
   rules: {
-    // cli/ is synced wholesale into downstream projects and must type-check
-    // under THEIR tsconfig and @types/node (see cli/updater-host-types.test.ts).
-    // Both autofixes are valid here but not there: a cast that is redundant
-    // under this repo's @types/node (`execSync(...) as unknown as Buffer`) can
-    // be required under another version, and `Object.hasOwn` needs a host with
-    // `lib` ES2022. Keep the portable form in cli/.
     'ts/no-unnecessary-type-assertion': 'off',
     'e18e/prefer-object-has-own': 'off',
-    'no-restricted-imports': ['error', {
-      patterns: [{
-        group: [
-          '../scripts/**',
-          '../../scripts/**',
-          '../../../scripts/**',
-          '../../../../scripts/**',
-          '../packages/**',
-          '../../packages/**',
-          '../../../packages/**',
-          '../../../../packages/**',
-          '../api/**',
-          '../../api/**',
-          '../../../api/**',
-          '../../../../api/**',
-          '../src/**',
-          '../../src/**',
-          '../../../src/**',
-          '../../../../src/**',
-          '../config/**',
-          '../../config/**',
-          '../../../config/**',
-          '../../../../config/**',
-          '../tests/**',
-          '../../tests/**',
-          '../../../tests/**',
-          '../../../../tests/**',
-          '@/*',
-          '@api/*',
-          '@schemas/*',
-          '@utils/*',
-        ],
-        message: 'cli/ must be import-closed: the updater re-execs the new cli/ before other components are synced, so an import that escapes cli/ breaks `bun run up` for repos more than one release behind. Move the shared module into cli/lib/ instead.',
-      }],
-    }],
   },
 }, {
   // --- AGENTS.md section 10, enforced for product code (FRESCO-788, audit-6 A6-A1) ---

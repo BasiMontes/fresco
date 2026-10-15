@@ -28,7 +28,7 @@ A cancellation made this way carries `cancellation_details.comment = "refund:<ch
 
 Without it the event never arrives and refunding behaves as before, however correct the code is.
 
-**State on 2026-10-14:** done for the three endpoints that exist, `fresco-dev`, `fresco-pre` and `fresco-pro`. All three are in Stripe **test mode**; there is no live-mode endpoint yet. When the live endpoint is created, give it `charge.refunded` along with the four events the route handles (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`). Today none of the three listens to `checkout.session.async_payment_succeeded`, which the route does handle; it only matters with delayed payment methods.
+**State on 2026-10-14:** done for the three endpoints that exist, `fresco-dev`, `fresco-pre` and `fresco-pro`. All three are in Stripe **test mode**; there is no live-mode endpoint yet. When the live endpoint is created, give it `charge.refunded` along with the four events the route handles (`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`). Today none of the three listens to `checkout.session.async_payment_succeeded`, which the route does handle; it only matters with delayed payment methods. <!-- volatile-ok: dated state of the Stripe dashboard setup, stamped on purpose -->
 
 To see what each endpoint listens to (read-only; uses the test key already in `.env`):
 

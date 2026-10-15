@@ -1,6 +1,6 @@
 # qa/ — Cross-Story Test Scenario Log
 
-Single living document holding every test scenario for the app — manual today, automation candidates tomorrow. Complements, does not replace, the per-story acceptance criteria that already live in Jira (synced to `.context/PBI/epics/EPIC-<KEY>-*/stories/STORY-<KEY>-*/comments.md`, one story at a time). This folder is the one place a full user journey — spanning several stories/epics — lives together.
+Single living document holding every test scenario for the app — manual first, automation candidates later. Complements, does not replace, the per-story acceptance criteria that already live in Jira (synced to `.context/PBI/epics/EPIC-<KEY>-*/stories/STORY-<KEY>-*/comments.md`, one story at a time). This folder is the one place a full user journey — spanning several stories/epics — lives together.
 
 ## Naming convention
 

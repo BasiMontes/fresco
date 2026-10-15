@@ -83,7 +83,6 @@
  * ============================================================================
  */
 
-import type { CreatemetaOption } from './jira-createmeta-options';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
@@ -91,7 +90,6 @@ import {
   instanceSourceLabel,
   resolveAtlassianInstance,
 } from '../cli/lib/atlassian-instance';
-import { fetchCreatemetaOptions, readProjectKey } from './jira-createmeta-options';
 
 // ============================================================================
 // CONSTANTS
@@ -100,7 +98,6 @@ import { fetchCreatemetaOptions, readProjectKey } from './jira-createmeta-option
 const REPO_ROOT = join(import.meta.dir, '..');
 const OUTPUT_PATH = join(REPO_ROOT, '.agents', 'jira-fields.json');
 const MANIFEST_PATH = join(REPO_ROOT, '.agents', 'jira-required.yaml');
-const PROJECT_YAML_PATH = join(REPO_ROOT, '.agents', 'project.yaml');
 
 /**
  * Raw URL of the upstream UPEX-standard `.agents/jira-fields.json` file.
@@ -781,43 +778,6 @@ function detectFieldType(field: JiraField): { type: string, hasOptions: boolean 
 // CORE PIPELINE
 // ============================================================================
 
-/**
- * Slug → option id map for a flat select field. Repeated slugs get `_2`, `_3`,
- * and keys come out sorted so the file is deterministic.
- */
-function toOptionMap(options: { id: string, value: string }[]): Record<string, string> {
-  const optionMap: Record<string, string> = {};
-  const seen = new Map<string, number>();
-  for (const opt of options) {
-    const baseKey = slugify(opt.value);
-    if (!baseKey) { continue; }
-    const seenCount = (seen.get(baseKey) ?? 0) + 1;
-    seen.set(baseKey, seenCount);
-    const key = seenCount === 1 ? baseKey : `${baseKey}_${seenCount}`;
-    optionMap[key] = opt.id;
-  }
-  const sortedOptions: Record<string, string> = {};
-  for (const k of Object.keys(optionMap).sort()) {
-    sortedOptions[k] = optionMap[k]!;
-  }
-  return sortedOptions;
-}
-
-/**
- * FRESCO-928: the field-context API answers 404 for the fields of a team-managed
- * project, so the options are read from `createmeta` instead (see
- * `jira-createmeta-options.ts`). Loaded once, only when a field needs it.
- */
-async function loadCreatemetaOptions(config: Config): Promise<Map<string, CreatemetaOption[]>> {
-  const projectKey = existsSync(PROJECT_YAML_PATH) ? readProjectKey(readFileSync(PROJECT_YAML_PATH, 'utf8')) : null;
-  if (!projectKey) {
-    log.warn('No project.project_key in .agents/project.yaml: cannot read options from createmeta.');
-    return new Map();
-  }
-  const authorization = `Basic ${Buffer.from(`${config.email}:${config.apiToken}`).toString('base64')}`;
-  return fetchCreatemetaOptions({ baseUrl: config.baseUrl, authorization, projectKey });
-}
-
 async function buildFieldsOutput(
   config: Config,
   flags: CliFlags,
@@ -940,11 +900,6 @@ async function buildFieldsOutput(
   const output: JiraFieldsOutput = {};
   const stats: Record<string, number> = {};
   let totalOptions = 0;
-  let createmeta: Map<string, CreatemetaOption[]> | undefined;
-  const createmetaOptionsFor = async (fieldId: string): Promise<CreatemetaOption[]> => {
-    createmeta ??= await loadCreatemetaOptions(config);
-    return createmeta.get(fieldId) ?? [];
-  };
 
   for (const { field, slug, type, hasOptions, userManaged, provider } of slugged) {
     stats[type] = (stats[type] ?? 0) + 1;
@@ -959,27 +914,18 @@ async function buildFieldsOutput(
       try {
         const contexts = await fetchFieldContexts(config, field.id);
         if (contexts.length === 0) {
-          // No contexts → try createmeta before giving up (FRESCO-928).
-          const fromCreatemeta = type === 'option-with-child' ? [] : await createmetaOptionsFor(field.id);
-          if (fromCreatemeta.length > 0) {
-            entry.options = toOptionMap(fromCreatemeta);
-            totalOptions += fromCreatemeta.length;
-            log.dim(`  ${slug}: ${fromCreatemeta.length} option(s) read from createmeta (Jira returned no field contexts)`);
+          // No contexts → the field has no resolvable options. Stay silent for
+          // undeclared slugs (most plugin-managed fields land here), but
+          // promote to a real warning when the slug appears in
+          // `jira-required.yaml` — that's a configuration drift the user
+          // needs to see.
+          if (declaredSlugs.has(slug)) {
+            log.warn(`${slug} (${field.id}): declared in jira-required.yaml but Jira returned no contexts — options map will be empty. Check field-context permissions or remove the slug from the manifest.`);
           }
-          else {
-            // Still nothing → the field has no resolvable options. Stay silent for
-            // undeclared slugs (most plugin-managed fields land here), but
-            // promote to a real warning when the slug appears in
-            // `jira-required.yaml` — that's a configuration drift the user
-            // needs to see.
-            if (declaredSlugs.has(slug)) {
-              log.warn(`${slug} (${field.id}): declared in jira-required.yaml but Jira returned no contexts — options map will be empty. Check field-context permissions or remove the slug from the manifest.`);
-            }
-            else if (flags.verbose) {
-              log.dim(`  ${slug}: no contexts, options={}`);
-            }
-            entry.options = {};
+          else if (flags.verbose) {
+            log.dim(`  ${slug}: no contexts, options={}`);
           }
+          entry.options = {};
         }
         else {
           // Prefer a globally-scoped context; fall back to the first.
@@ -1034,7 +980,22 @@ async function buildFieldsOutput(
           }
           else {
             const options = await fetchFieldOptions(config, field.id, ctx.id);
-            entry.options = toOptionMap(options);
+            const optionMap: Record<string, string> = {};
+            const seen = new Map<string, number>();
+            for (const opt of options) {
+              const baseKey = slugify(opt.value);
+              if (!baseKey) { continue; }
+              const seenCount = (seen.get(baseKey) ?? 0) + 1;
+              seen.set(baseKey, seenCount);
+              const key = seenCount === 1 ? baseKey : `${baseKey}_${seenCount}`;
+              optionMap[key] = opt.id;
+            }
+            // Sort option keys alphabetically for deterministic output.
+            const sortedOptions: Record<string, string> = {};
+            for (const k of Object.keys(optionMap).sort()) {
+              sortedOptions[k] = optionMap[k]!;
+            }
+            entry.options = sortedOptions;
             totalOptions += options.length;
             if (flags.verbose) { log.dim(`  ${slug}: ${options.length} option(s)`); }
             if (options.length === 0 && declaredSlugs.has(slug)) {
@@ -1046,21 +1007,11 @@ async function buildFieldsOutput(
       catch (e) {
         const status = (e as { status?: number }).status;
         if (status === 404 || status === 400) {
-          // The field-context API 404s for the fields of a team-managed project:
-          // read the options from createmeta instead (FRESCO-928).
-          const fromCreatemeta = type === 'option-with-child' ? [] : await createmetaOptionsFor(field.id);
-          if (fromCreatemeta.length > 0) {
-            entry.options = toOptionMap(fromCreatemeta);
-            totalOptions += fromCreatemeta.length;
-            log.dim(`  ${slug}: ${fromCreatemeta.length} option(s) read from createmeta (field-context API answered ${status})`);
+          log.warn(`Could not fetch options for "${field.name}" (${field.id}): ${(e as Error).message.split('—')[0]?.trim() ?? 'unknown'}. Continuing.`);
+          if (declaredSlugs.has(slug)) {
+            log.warn(`${slug} (${field.id}): declared in jira-required.yaml but options fetch failed — options map will be empty.`);
           }
-          else {
-            log.warn(`Could not fetch options for "${field.name}" (${field.id}): ${(e as Error).message.split('—')[0]?.trim() ?? 'unknown'}. Continuing.`);
-            if (declaredSlugs.has(slug)) {
-              log.warn(`${slug} (${field.id}): declared in jira-required.yaml but options fetch failed — options map will be empty.`);
-            }
-            entry.options = {};
-          }
+          entry.options = {};
         }
         else {
           // Any other error is fatal — the workspace is in a state we don't

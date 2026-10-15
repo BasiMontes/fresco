@@ -7,8 +7,6 @@ import { dirname, join } from 'node:path';
 
 import { describe, expect, test } from 'bun:test';
 
-import { gitEnvWithoutRepoOverrides } from './test-git-env.ts';
-
 import {
   buildPbiMigrationPrompt,
   buildPbiPromptFileContent,
@@ -104,10 +102,10 @@ describe('buildPbiMigrationPrompt', () => {
     expect(prompt).toContain('git rm -r --cached -- ".context/PBI/epic-tree.md" ".context/PBI/epics/EPIC-UPEX-1-auth/epic.md"');
   });
 
-  test('names the exact allowlist and the CLAUDE.md §9 rationale', () => {
+  test('names the exact allowlist and the `.agents/instructions/agent-local-context-pbi.md` §9 rationale', () => {
     expect(prompt).toContain('.context/PBI/README.md');
     expect(prompt).toContain('.context/PBI/templates/**');
-    expect(prompt).toContain('CLAUDE.md §9');
+    expect(prompt).toContain('`.agents/instructions/agent-local-context-pbi.md` §9');
     // This repo's allowlist has NO test-specs rung — the prompt must not
     // resurrect the QA boilerplate's tier.
     expect(prompt).not.toContain('test-specs');
@@ -133,7 +131,7 @@ describe('the afterApply hook', () => {
   // the eight parity rows. The hook now writes the recipe and reports one
   // fact; the terminal gets nothing from it.
   function git(root: string, args: string[]): void {
-    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: gitEnvWithoutRepoOverrides() });
+    const res = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8' });
     if (res.status !== 0) { throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`); }
   }
   function write(root: string, rel: string, body: string): void {

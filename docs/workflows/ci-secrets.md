@@ -32,5 +32,5 @@ Only `.env.ci` (Supabase's public local-dev demo constants and dummy third-party
    ```
 
    Verify with a manual run of `stripe-e2e.yml` (`workflow_dispatch`) before deleting `ENV_FILE`; the smoke run only happens on a production deploy.
-2. **Replace `SUPABASE_ACCESS_TOKEN`** (an account-wide personal access token) with the narrowest token Supabase offers for deploying functions and reading migrations. Whether Supabase currently offers project-scoped tokens was not verified here; check the dashboard before choosing.
+2. **Replace `SUPABASE_ACCESS_TOKEN`** (an account-wide personal access token) with the narrowest token Supabase offers for deploying functions and reading migrations. Whether Supabase offers project-scoped tokens was not verified here; check the dashboard before choosing.
 3. **`sha_pinning_required`**: with every action pinned, enable it in Settings > Actions > General ("Require actions to be pinned to a full-length commit SHA"), or `gh api -X PUT repos/<owner>/<repo>/actions/permissions -F enabled=true -f allowed_actions=all -F sha_pinning_required=true`.

@@ -42,7 +42,7 @@ Never promote on a `queued` or `in_progress` run, and never reason from tree equ
 
 **Why.** Every push to `main` is a production deployment, and the Vercel Hobby plan caps deployments per day (100) and function storage (the 10 GB cap was hit on 2026-10-12, FRESCO-903 and FRESCO-906). The audit of 2026-10-12 counted 18 deployments one day and 30 the day before, 4 and 7 of them to production. Previews count too: every push to a PR branch makes one.
 
-**What a batch is.** Everything that is ready and green on `staging` at the moment you decide to promote. There is no fixed number per day, because a cap would also block an urgent fix. The exception is the hotfix path (`docs/workflows/hotfix.md`), which is its own promotion on purpose. When in doubt, wait for the next ticket to be ready before spending a production deployment.
+**What a batch is.** Everything that is ready and green on `staging` when you decide to promote. There is no fixed number per day, because a cap would also block an urgent fix. The exception is the hotfix path (`docs/workflows/hotfix.md`), which is its own promotion on purpose. When in doubt, wait for the next ticket to be ready before spending a production deployment.
 
 **What enforces it, and what does not.**
 

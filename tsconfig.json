@@ -43,6 +43,11 @@
     "packages/*/node_modules",
     "packages/*/dist",
     ".next",
+    // Boilerplate-internal e2e of the `ui` installer (synced by `bun run up`, FRESCO-857).
+    // They spawn child processes with an env that lacks Next's required NODE_ENV, so they
+    // do not type-check under this project's ProcessEnv. They still run under `bun test`.
+    "scripts/ui-setup-e2e.test.ts",
+    "scripts/ui-up-e2e.test.ts",
     // Supabase Edge Functions run on Deno, not this project's Bun/Node TS
     // program. Type-checked + linted separately by `bun run deno:check`
     // (config: supabase/functions/deno.json), enforced as the mandatory

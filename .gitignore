@@ -180,3 +180,11 @@ brag-output*/
 # `.impeccable/config.json` stays tracked on purpose: it holds the team's
 # confirmed design-lint exemptions, each with its reason and file scope.
 .impeccable/hook.cache.json
+
+# ----- 2026-10-14 (sync) -----
+.playwright/output
+.playwright-cli/
+storage-state-*.json
+.playwright/profiles/
+.envrc
+.template/doctrine-ledger.json
