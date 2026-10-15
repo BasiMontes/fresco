@@ -450,6 +450,13 @@ function extractInstallTsSkills(): { t2: Set<string>, t3: Set<string>, t4: Set<s
   const projMatch = src.match(/const PROJECT_LEVEL_SKILLS[^=]*=\s*\[([\s\S]*?)\];/);
   if (projMatch) {
     for (const m of projMatch[1].matchAll(/skill:\s*['"]([a-z][a-z0-9-]+)['"]/g)) { t3.add(m[1]); }
+    // FRESCO-960: also catch entries with only `package` (a whole-repo install such as
+    // `resend/resend-cli`), as the user-level list does below. Without it such a skill,
+    // committed in the store, is read as T1 and fails KIND-MISSING.
+    for (const m of projMatch[1].matchAll(/package:\s*['"]([^'"]*)['"]\s*\}/g)) {
+      const last = m[1].split('/').pop()?.replace(/\.git$/, '');
+      if (last) { t3.add(last); }
+    }
   }
   const userMatch = src.match(/const USER_LEVEL_SKILLS[^=]*=\s*\[([\s\S]*?)\];/);
   if (userMatch) {

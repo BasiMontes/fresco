@@ -165,6 +165,24 @@ describe('lint-skills purpose axis (checks 18-20)', () => {
     expect(exitCode).toBe(1);
   });
 
+  test('a package-only PROJECT_LEVEL_SKILLS entry names a community skill too: committed without `metadata.kind`, it is not KIND-MISSING (FRESCO-960)', () => {
+    const root = fixture('(T3)');
+    write(root, 'cli/install.ts', [
+      'const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [',
+      '  { package: \'https://github.com/shadcn/ui\', skill: \'shadcn\' },',
+      '  { package: \'resend/resend-cli\' },',
+      '];',
+      'const USER_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [];',
+      '',
+    ].join('\n'));
+    write(root, '.agents/skills/resend-cli/SKILL.md', '---\nname: resend-cli\ndescription: Community CLI skill.\n---\n\n# resend-cli\n');
+    const { exitCode, stdout } = runLint(root);
+
+    expect(stdout).not.toContain('KIND-MISSING');
+    expect(stdout).toContain('2 T1 skills (+ 2 community skills committed in the store, tiers from cli/install.ts)');
+    expect(exitCode).toBe(0);
+  });
+
   test('a kind outside the vocabulary is KIND-VOCAB', () => {
     const root = fixture('(T3)');
     skill(root, 'git-flow-master', ['kind: procedure']);
