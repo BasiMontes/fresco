@@ -91,14 +91,6 @@ These are **not optional** for the workflow — each one is required by a specif
 | `resend`         | `/resend-cli` (transactional email development + sending)                                                            | [resend.com/docs/cli](https://resend.com/docs/cli)                                                                                       |
 | `jq`             | `/acli` JSON pipelines (`acli ... --json \| jq ...`)                                                                 | [jqlang.org](https://jqlang.org/)                                                                                                        |
 
-### Convenience opt-ins (pure UX, never required)
-
-| Tool     | What it buys you                                                                                                                                                                                                                                                              | Install                                                                                       |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `direnv` | Loads `.env` automatically when you `cd` into the repo, so the bare `claude` / `opencode` binaries see MCP credentials. Without it the project ships `bun claude` / `bun opencode` wrappers (via `dotenv-cli`) that do the same thing — direnv just removes the `bun` prefix. | macOS/Linux: `brew install direnv` / `apt install direnv` · [direnv.net](https://direnv.net/) |
-
-> **Windows users**: skip direnv. The `bun claude` / `bun opencode` wrappers already load `.env` cross-platform with zero setup. direnv on PowerShell needs version 2.37+ and is officially experimental; Git Bash works but at that point the wrapper is simpler. The installer will offer the direnv hook; just decline it.
-
 ### MCP credentials (`.env` keys)
 
 `.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders that read from `.env`. Eight keys back the 4 canonical MCPs (context7 needs none):
@@ -119,8 +111,7 @@ SUPABASE_ACCESS_TOKEN · SUPABASE_URL · SUPABASE_ANON_KEY · SUPABASE_SERVICE_R
 | Step 2 — gentle-ai       | Version compare — runs `gentle-ai version`, parses semver, requires `>= 1.26.5`.                                                  | Missing: prints brew + go install commands + docs URL, asks exit-or-continue. Too old: warns and continues with `gentle-ai update` hint.                                                          |
 | Step 4 — agents          | Path probe — checks if `~/.claude/` or `~/.config/opencode/` directory exists.                                                    | Neither found: prints both docs URLs, hard exit 1.                                                                                                                                                |
 | Step 11 — per-skill CLIs | PATH probe — runs `which <name>` on POSIX, `where <name>` on Windows. Presence only, no version check.                            | Prints `found` / `missing` table; for missing entries adds `quick:` install command (when cross-platform — e.g. `bun add -g vercel`) + `docs:` URL. Non-blocking.                                 |
-| direnv (optional)        | Presence + `.envrc` allow status + shell-rc hook line.                                                                            | Pure convenience nudge — `bun claude` / `bun opencode` wrappers already work without it. If absent, lists `system_install` action with install command; safe to decline (recommended on Windows). |
-| `bun run setup:doctor`   | Re-runs everything above + 10 MCP `.env` vars + direnv state.                                                                     | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                    |
+| `bun run setup:doctor`   | Re-runs everything above + 10 MCP `.env` vars.                                                                     | Human-readable or `--json` report. Every `pending_action` carries a `where` hint or URL — re-run any time after partial setup.                                                                    |
 
 > **TL;DR**: install **Bun** + **Claude Code (or OpenCode)** before you run setup. Everything else, the installer points you at when you hit it.
 
@@ -166,7 +157,7 @@ What it does:
 2. Rewrites `package.json` name + `.agents/project.yaml` `project.name`.
 3. Initializes a fresh `git init -b main` with an initial commit.
 4. Runs `bun install`.
-5. Hands off to `bun run setup` — gentle-ai (Engram only), community skills, `.env` wiring for the 4 MCPs (context7, tavily, atlassian, supabase), direnv autoload, optional `gh repo create`.
+5. Hands off to `bun run setup` — gentle-ai (Engram only), community skills, `.env` wiring for the 4 MCPs (context7, tavily, atlassian, supabase), optional `gh repo create`.
 
 Useful flags (full list in [`packages/create-agentic-dev/README.md`](../packages/create-agentic-dev/README.md)):
 
@@ -211,25 +202,15 @@ bunx -y ccstatusline@latest
 
 ## Launching the agent
 
-`.mcp.json` (Claude Code) and `opencode.jsonc` ship with `${VAR}` / `{env:VAR}` placeholders — real values live in `.env`. Launch the agent via one of these so env vars actually load:
+Open the agent as its bare binary in the project folder (`claude`, `opencode`, `codex`) or its desktop app. No script wraps it and nothing loads `.env` into its process, so no secret value reaches the agent's shell ([ADR-0058](../.context/ADR/ADR-0058-retire-harness-launchers.md)).
 
 ```bash
-# Cross-platform default (uses dotenv-cli, no extra tooling required):
-bun claude            # Claude Code
-bun opencode          # OpenCode
-
-# Optional: direnv autoload (any OS with direnv installed)
-direnv allow          # one-time per repo (the installer offers to run this)
-claude                # direct binary picks up .env from your shell
-
-# Or load .env into your CURRENT shell once, then run any binary directly:
-set -a; source .env; set +a   # exports every .env key into this terminal session
-claude                        # now claude / opencode / acli all see the vars
+claude                # Claude Code
+opencode              # OpenCode
+codex                 # Codex
 ```
 
-> The `set -a; source .env; set +a` snippet is saved as the `env` script for reference. Run it **inline** (or `source` it) — `bun run env` executes in a child subshell, so the exports would not survive back to your terminal. Run it directly and every agent/CLI launched in that same shell inherits `.env` with no wrapper.
-
-direnv works on macOS / Linux / Windows. On Windows install via `winget install direnv` — Git Bash is recommended; PowerShell support is experimental and requires direnv 2.37+. See [INSTALLER.md § Launching the agent](../INSTALLER.md#launching-the-agent-after-setup) for the per-shell hook lines.
+Every MCP server that needs a `.env` value starts through one filtered `varlock` loader that reads the checkout's `.env` itself, so the credentials arrive however the agent was opened ([ADR-0054](../.context/ADR/ADR-0054-mcp-env-loader.md)). After changing `.env`, restart the agent session. A command the agent runs that needs a `.env` value goes through the loader in a subprocess: `bunx varlock run -- sh -c '<command using "$VAR">'`. No shell autoloader is shipped or recommended ([ADR-0057](../.context/ADR/ADR-0057-no-shell-autoloader.md)).
 
 <br />
 
