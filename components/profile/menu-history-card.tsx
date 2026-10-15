@@ -42,7 +42,7 @@ export function MenuHistoryCard({ weeks, plan }: {
                         {' '}
                         {formatWeekRangeLabel(week.mondayIso)}
                       </span>
-                      <span className="shrink-0 text-caption text-tertiary">
+                      <span className="shrink-0 text-body-sm text-tertiary">
                         {week.cocinadas}
                         {' cocinadas · '}
                         {week.descartadas}
@@ -52,7 +52,7 @@ export function MenuHistoryCard({ weeks, plan }: {
                   ))}
                 </ul>
                 {plan === 'free' && (
-                  <p className="text-caption text-tertiary" data-testid="menu_history_card_pro_hint">
+                  <p className="text-body-sm text-tertiary" data-testid="menu_history_card_pro_hint">
                     Con Fresco Pro, cada menú aprende de lo que cocinaste la semana anterior.
                   </p>
                 )}

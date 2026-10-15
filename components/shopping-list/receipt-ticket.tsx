@@ -123,7 +123,7 @@ export function ReceiptTicket({ open, items, onClose }: ReceiptTicketProps) {
             style={{ clipPath: RECEIPT_CLIP_PATH }}
           >
             <p className="text-center font-semibold tracking-widest">FRESCO</p>
-            <p className="mt-1 text-center text-caption text-tertiary">{formatFecha(fechaRef.current)}</p>
+            <p className="mt-1 text-center text-body-sm text-tertiary">{formatFecha(fechaRef.current)}</p>
             <div className="my-3 border-t border-dashed" />
             <p className="font-semibold">
               {items.length}

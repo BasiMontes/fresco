@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AppearanceCard } from '@/components/profile/appearance-card';
 import { MenuHistoryCard } from '@/components/profile/menu-history-card';
 import { NombreForm } from '@/components/profile/nombre-form';
@@ -11,6 +12,9 @@ import { getProPrices } from '@/lib/billing/pro-prices';
 import { PLAN_LABELS } from '@/lib/plan-labels';
 import { loadProfilePageData } from '@/lib/profile/load-profile-page-data';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Perfil · Fresco' };
 
 /**
  * `/profile` — nav item 4. Real session (email) + real tier (`getUserPlan()`,

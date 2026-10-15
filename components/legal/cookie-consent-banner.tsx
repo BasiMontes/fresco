@@ -14,7 +14,13 @@ import { Button } from '@/components/ui/button';
  * on top of it) and above the app's `dropdown: 100` tier, reusing that same
  * z-index rather than reserving a new one for a single call site.
  *
- * FRESCO-536: `h-[190px] sm:h-auto` — the Figtree body-copy font swap (kept
+ * FRESCO-969: the fixed mobile height went from 190px to 132px (about 15% of
+ * an 852px screen): `py-2`, a `gap-2` row of three `flex-1` buttons, and the
+ * "Más información" link keeps its 44px tap area through `-my-3` so it no
+ * longer inflates its text line. Settled content is ~129px; copy and the
+ * three actions are unchanged.
+ *
+ * FRESCO-536: `h-[132px] sm:h-auto` (was 190px) — the Figtree body-copy font swap (kept
  * at `display: swap` per FRESCO-496, unlike the `optional` hero face)
  * reflows this paragraph's line wrap on mobile, and since this box is
  * `fixed bottom-0` with auto height, that reflow moves its own `top` and
@@ -36,7 +42,7 @@ import { Button } from '@/components/ui/button';
 // the 44px tap height, or the equal weight of the three actions: the SAME
 // class goes on all of them. `justify-between` on the row (below 360px only)
 // spreads them across the full width so left and right margins match.
-const NARROW_SCREEN_BUTTON_CLASS = 'max-[360px]:px-2';
+const NARROW_SCREEN_BUTTON_CLASS = 'flex-1 max-[360px]:px-2 sm:flex-none';
 
 export function CookieConsentBanner() {
   const { bannerVisible, accept, reject, openSettings } = useCookieConsent();
@@ -78,9 +84,9 @@ export function CookieConsentBanner() {
         aria-label="Consentimiento de cookies"
         data-testid="cookie_consent_banner"
         data-cookie-banner=""
-        className="fixed inset-x-0 bottom-0 z-100 h-[190px] border-t border-border bg-surface-raised p-4 shadow-lg sm:h-auto"
+        className="fixed inset-x-0 bottom-0 z-100 h-[132px] border-t border-border bg-surface-raised px-4 py-2 shadow-lg sm:h-auto sm:p-4"
       >
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-body-sm text-text">
             Usamos cookies técnicas necesarias para el funcionamiento de Fresco y, solo si lo aceptas, cookies de analítica.
             {' '}
@@ -89,7 +95,7 @@ export function CookieConsentBanner() {
               onClick={openSettings}
               data-testid="cookie_consent_banner_policy_link"
               // FRESCO-478: 44px tap target (WCAG 2.5.5).
-              className="inline-flex min-h-[44px] items-center align-middle underline"
+              className="-my-3 inline-flex min-h-[44px] items-center align-middle underline sm:my-0"
             >
               Más información
             </button>

@@ -231,7 +231,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
                   </>
                 )}
           </div>
-          <p className="text-caption text-tertiary">
+          <p className="text-body-sm text-tertiary">
             ¿Quieres cambiar tu dieta o alérgenos? Edítalos en la tarjeta "Preferencias" de arriba.
           </p>
         </div>

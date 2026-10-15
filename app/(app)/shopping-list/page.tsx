@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
@@ -11,6 +12,9 @@ import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
 import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Lista de la compra · Fresco' };
 
 /**
  * `/shopping-list` — EPIC-FRESCO-12 (STORY-FRESCO-13). Reads the current

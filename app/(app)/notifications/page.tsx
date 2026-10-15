@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { ArrowLeft, Bell, PartyPopper } from 'lucide-react';
 import Link from 'next/link';
 import { PaymentFailedNotice } from '@/components/notifications/payment-failed-notice';
@@ -12,6 +13,9 @@ import { getPaymentFailedAt, getShouldShowRoutesNotice, getShouldShowWelcomeNoti
 import { getAuthUser } from '@/lib/auth/current-user';
 import { createClient } from '@/lib/supabase/server';
 import { cn } from '@/lib/utils';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Notificaciones · Fresco' };
 
 /** FRESCO-226 AC's "número acotado" (Scope: "ej. 3"). */
 const RECOMMENDED_RECIPES_LIMIT = 3;

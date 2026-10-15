@@ -73,7 +73,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
           >
             <div className="flex flex-wrap items-center justify-between gap-x-3">
               <span id={headingId} className="text-body-sm font-sans text-text">{meal.label}</span>
-              <span className="flex items-center gap-1 text-caption font-sans text-tertiary">
+              <span className="flex items-center gap-1 text-body-sm font-sans text-tertiary">
                 <button
                   type="button"
                   data-testid="planning_meal_select_all"
@@ -100,7 +100,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                   key={day.value}
                   className="flex min-h-11 min-w-11 cursor-pointer flex-col items-center justify-center gap-0.5"
                 >
-                  <span className="text-caption font-sans uppercase text-tertiary">{day.label}</span>
+                  <span className="text-body-sm font-sans uppercase text-tertiary">{day.label}</span>
                   <Checkbox
                     data-testid="planning_selection_cell"
                     checked={(value[day.value] ?? []).includes(meal.value)}

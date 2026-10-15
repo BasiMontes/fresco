@@ -61,7 +61,7 @@ describe('RecipeCard', () => {
     renderWithProviders(<RecipeCard recipe={RECIPE} />);
     const title = screen.getByRole('heading', { name: 'Paella de marisco' });
     expect(title.className).toContain('text-h5');
-    expect(title.className).toContain('line-clamp-2');
+    expect(title.className).toContain('line-clamp-3');
   });
 
   test('fires onToggleFavorite from the overlay favourite button', async () => {

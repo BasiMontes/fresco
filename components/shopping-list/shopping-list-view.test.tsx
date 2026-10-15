@@ -443,3 +443,35 @@ describe('ShoppingListView — items added from "Sugerencias para ti" (FRESCO-94
     expect(screen.queryByRole('button', { name: /^Quitar/ })).toBeNull();
   });
 });
+
+describe('ShoppingListView — readable text (FRESCO-967)', () => {
+  const LIST_USOS: ShoppingListPersistido = {
+    id: 'list-usos',
+    pasillos: [
+      {
+        nombre: 'Frutas y verduras',
+        orden: 1,
+        items: [
+          {
+            nombre: 'Tomate',
+            cantidad: 2,
+            unidad: 'unidades',
+            comprado: false,
+            usos: [{ receta: 'Calabacín salteado con albahaca y piñones', dia: 'lunes' }],
+          },
+        ],
+      },
+    ],
+    resumen: { total_items: 1, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
+  };
+
+  test('the recipes line wraps to two lines instead of truncating, at 13px', () => {
+    renderWithProviders(<ShoppingListView list={LIST_USOS} />);
+
+    const line = screen.getByTitle(/Calabacín salteado/);
+    expect(line.className).toContain('line-clamp-2');
+    expect(line.className).not.toContain('truncate');
+    expect(line.className).not.toContain('text-caption');
+    expect(line.className).toContain('text-body-sm');
+  });
+});

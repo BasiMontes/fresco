@@ -82,6 +82,23 @@ describe('CookieConsentBanner', () => {
     expect(accept.className).toBe(configure.className);
   });
 
+  // FRESCO-969: compact mobile layout (one row of equal-width buttons, tight
+  // padding, fixed ~132px height) without weakening consent: same classes on
+  // all three, analytics copy and the link still on screen.
+  test('mobile layout is compact, buttons share equal width, and the legal copy stays visible', () => {
+    renderWithProviders(<Wrapper><CookieConsentBanner /></Wrapper>);
+    const banner = screen.getByTestId('cookie_consent_banner');
+    expect(banner.className).toContain('h-[132px]');
+    expect(banner.className).toContain('py-2');
+    ['reject', 'configure', 'accept'].forEach((action) => {
+      const { className } = screen.getByTestId(`cookie_consent_${action}_button`);
+      expect(className).toContain('flex-1');
+      expect(className).toContain('min-h-[44px]');
+    });
+    expect(banner).toHaveTextContent('cookies de analítica');
+    expect(screen.getByTestId('cookie_consent_banner_policy_link')).toHaveTextContent('Más información');
+  });
+
   test('accepting writes the cookie and hides the banner, without re-showing it', async () => {
     clearAllCookies();
     const user = setupUser();
