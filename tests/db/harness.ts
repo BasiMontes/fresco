@@ -210,8 +210,54 @@ export async function resolveStackReachable(opts: ResolveStackOptions): Promise<
 let cachedReachability: Promise<boolean> | undefined;
 
 export async function stackReachable(): Promise<boolean> {
-  cachedReachability ??= resolveStackReachable({ required: process.env.RUN_DB_INTEGRATION === '1' });
+  cachedReachability ??= resolveStackReachable({ required: process.env.RUN_DB_INTEGRATION === '1' }).then(async (up) => {
+    if (up) {
+      await warmEdgeFunctions();
+    }
+    return up;
+  });
   return cachedReachability;
+}
+
+/**
+ * FRESCO-975: the local functions runtime boots a function's worker on its
+ * first request, and on a loaded CI runner that boot outlasts bun's 5 s test
+ * timeout. The first test of `delete-catalog-recipe` ("401 when called with no
+ * token") hit 5001 ms while the next call to the same function took 5 ms.
+ * Warming here, at import time, keeps the boot out of any test's clock.
+ *
+ * Only the functions with a tokenless 401 contract in tests/db/edge-functions
+ * are listed, so the warm-up request is one those tests already send. Best
+ * effort: a failure is ignored and the tests assert as before.
+ */
+const WARM_FUNCTIONS = [
+  'delete-account',
+  'delete-catalog-recipe',
+  'generate-meal-plan',
+  'generate-shopping-list',
+  'get-shopping-list-suggestions',
+  'reassign-guest-data',
+  'send-weekly-reengagement-push',
+  'update-recipe-status',
+] as const;
+
+const WARM_TIMEOUT_MS = 30_000;
+
+async function warmEdgeFunctions(): Promise<void> {
+  const apikey = await anonKey();
+  await Promise.all(WARM_FUNCTIONS.map(async (name) => {
+    try {
+      await nativeFetch(`${resolveUrl()}/functions/v1/${name}`, {
+        method: 'POST',
+        headers: { 'apikey': apikey, 'Content-Type': 'application/json' },
+        body: '{}',
+        signal: AbortSignal.timeout(WARM_TIMEOUT_MS),
+      });
+    }
+    catch {
+      // Best effort: the tests that follow assert the real contract.
+    }
+  }));
 }
 
 async function request(path: string, opts: RequestOptions = {}): Promise<RpcResult> {
