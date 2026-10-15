@@ -304,6 +304,16 @@ describe('ShoppingListView — price disclaimer (FRESCO-790)', () => {
     expect(texto).not.toContain('Consum');
   });
 
+  test('FRESCO-971: explains the cart icon only when some row has a link, and names the chain beside it', () => {
+    const compra: CompraPorItem = { 'Despensa::arroz': { precio: 0.5, enlaces: [enlace('Mercadona')] } };
+    const { unmount } = renderWithProviders(<ShoppingListView list={LIST_ARROZ} compra={compra} />);
+    expect(screen.getByTestId('shopping_list_cart_hint')).toHaveTextContent('carrito');
+    expect(screen.getByTestId('shopping_list_item_0_0_mercadona_link')).toHaveTextContent('Mercadona');
+    unmount();
+    renderWithProviders(<ShoppingListView list={LIST_ARROZ} compra={{ 'Despensa::arroz': { precio: 0.5, enlaces: [] } }} />);
+    expect(screen.queryByTestId('shopping_list_cart_hint')).toBeNull();
+  });
+
   test('without any linked chain it still says the prices are indicative', () => {
     renderWithProviders(<ShoppingListView list={LIST_ARROZ} compra={{ 'Despensa::arroz': { precio: 0.5, enlaces: [] } }} />);
     expect(screen.getByTestId('shopping_list_price_disclaimer')).toHaveTextContent('Precios orientativos. Pueden variar en tienda.');

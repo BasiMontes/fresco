@@ -165,12 +165,18 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Abrir ${capitalize(item.nombre)} en ${enlace.nombreCadena}`}
+          title={`Abrir ${capitalize(item.nombre)} en ${enlace.nombreCadena}`}
           data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_${enlace.cadena}_link`}
-          className="inline-flex size-11 shrink-0 items-center justify-center text-tertiary transition-colors hover:text-text"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 text-tertiary transition-colors hover:text-text"
         >
           {/* FRESCO-819 (A6-L10): the link is the 44px+ tap target; the bordered chip stays the same size inside it. */}
           <span className="rounded-lg border border-border p-1.5">
             <ShoppingCart className="size-4" aria-hidden="true" />
+          </span>
+          {/* FRESCO-971 (UX-20): the cart opens this row's product at the chain. Named from sm up;
+              below that the row has no room, so title/aria-label carry it and the summary explains it. */}
+          <span className="hidden text-body-sm sm:inline" aria-hidden="true">
+            {enlace.nombreCadena}
           </span>
         </a>
       ))}

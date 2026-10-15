@@ -41,6 +41,12 @@ export function ShoppingListSummary({ pendientes, resumen, costeMenu, fuentesPre
           ? `Precios orientativos de ${fuentesPrecios}, con la fecha en que se observaron junto a cada artículo. Pueden variar en tienda.`
           : 'Precios orientativos. Pueden variar en tienda.'}
       </p>
+      {/* FRESCO-971 (UX-20): why only some rows carry the cart icon. */}
+      {fuentesPrecios && (
+        <p data-testid="shopping_list_cart_hint" className="mt-1 text-body-sm text-tertiary">
+          El icono del carrito abre el artículo en la web del súper. Solo aparece en los artículos que hemos encontrado allí.
+        </p>
+      )}
     </Card>
   );
 }
