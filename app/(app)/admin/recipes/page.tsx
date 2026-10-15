@@ -1,7 +1,11 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { AdminRecipeSearch } from '@/components/admin/admin-recipe-search';
 import { isAdminUser } from '@/lib/auth/is-admin';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Administrar recetas · Fresco' };
 
 /**
  * `/admin/recipes` — FRESCO-237. Search the catalog by name or slug, delete

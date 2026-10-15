@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { CalendarSuggestionBanner } from '@/components/menu/calendar-suggestion-banner';
 import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
@@ -16,6 +17,9 @@ import { loadMenuPageData } from '@/lib/menu/load-menu-page-data';
 import { snapshotWeeklyCost } from '@/lib/menu/snapshot-weekly-cost';
 import { formatSpendVsAverage } from '@/lib/menu/spend-vs-average';
 import { createClient } from '@/lib/supabase/server';
+
+// FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
+export const metadata: Metadata = { title: 'Tu menú · Fresco' };
 
 /**
  * `/menu` (Home) — nav item 1. Today's meals at a glance + the
