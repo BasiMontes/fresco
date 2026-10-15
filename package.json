@@ -50,6 +50,7 @@
     "vars:check": "bun scripts/lint-vars.ts",
     "vars:env:check": "bun scripts/check-vars.ts",
     "adr:check": "bun scripts/check-adrs.ts",
+    "adr:reconcile": "bun scripts/adr-reconcile.ts",
     "agents:compat": "bun scripts/agent-compatibility.ts",
     "agents:compat:check": "bun scripts/agent-compatibility.ts --check",
     "//codex": "RETIRED launcher (ADR-0058), kept for reference: dotenv -o -e .env -- codex",
