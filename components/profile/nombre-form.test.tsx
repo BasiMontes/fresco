@@ -10,6 +10,12 @@ import '@/tests/mocks/next-navigation';
  */
 
 describe('NombreForm', () => {
+  test('the name input has an accessible name from the "Tu nombre" heading (FRESCO-968)', () => {
+    renderWithProviders(<NombreForm nombreInicial={null} />);
+
+    expect(screen.getByRole('textbox', { name: 'Tu nombre' })).toBe(screen.getByTestId('nombre_input'));
+  });
+
   test('shows no validation error before the field is touched', () => {
     renderWithProviders(<NombreForm nombreInicial={null} />);
 

@@ -22,7 +22,7 @@ export function PaymentFailedNotice({ paymentFailedAt }: { paymentFailedAt: stri
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlertTriangle className="size-5 text-error" aria-hidden="true" />
-          <CardTitle>Tu último pago falló</CardTitle>
+          <CardTitle as="h2">Tu último pago falló</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="text-body-sm text-tertiary">

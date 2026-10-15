@@ -59,7 +59,7 @@ export function MenuHistoryCard({ weeks, plan }: {
                 <Link
                   href="/historial"
                   data-testid="menu_history_card_link"
-                  className="inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+                  className="-my-1.5 inline-flex items-center gap-1 py-1.5 text-body-sm text-primary hover:underline"
                 >
                   Ver histórico completo
                   <ChevronRight className="size-4" aria-hidden="true" />

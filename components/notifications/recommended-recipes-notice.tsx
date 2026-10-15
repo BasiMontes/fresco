@@ -31,7 +31,7 @@ export function RecommendedRecipesNotice({ recipes, favoriteRecipeIds }: { recip
       <CardHeader>
         <div className="flex items-center gap-2">
           <UtensilsCrossed className="size-5 text-primary" aria-hidden="true" />
-          <CardTitle>Recetas que te pueden gustar</CardTitle>
+          <CardTitle as="h2">Recetas que te pueden gustar</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
