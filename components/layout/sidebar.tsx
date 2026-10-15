@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { SidebarAccount } from '@/components/layout/sidebar-account';
 import { writeSidebarCollapsed } from '@/lib/layout/sidebar-preference';
 import { cn } from '@/lib/utils';
@@ -53,9 +53,27 @@ export interface SidebarProps {
   initialCollapsed?: boolean
 }
 
+/**
+ * FRESCO-970 (UX-28): below `lg` (1024px) the sidebar is always the icon
+ * rail, whatever the saved preference, so a 768px tablet keeps ~640px for
+ * content instead of ~512px. The `md:max-lg:w-16` class on the `<aside>`
+ * sets the rail width from the first byte; this query then flips the
+ * contents (labels, logo, toggle) once the client knows the viewport.
+ */
+const NARROW_QUERY = '(max-width: 1023.98px)';
+function subscribeNarrow(onChange: () => void) {
+  const mql = window.matchMedia(NARROW_QUERY);
+  mql.addEventListener('change', onChange);
+  return () => mql.removeEventListener('change', onChange);
+}
+const getNarrow = () => window.matchMedia(NARROW_QUERY).matches;
+const getNarrowServer = () => false;
+
 export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [userCollapsed, setCollapsed] = useState(initialCollapsed);
+  const isNarrow = useSyncExternalStore(subscribeNarrow, getNarrow, getNarrowServer);
+  const collapsed = userCollapsed || isNarrow;
 
   function toggle() {
     setCollapsed((current) => {
@@ -70,7 +88,7 @@ export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
       data-brand-ground
       className={cn(
         'sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-primary py-6 text-background transition-[width] duration-200 ease-out motion-reduce:transition-none md:flex',
-        collapsed ? 'w-16 px-2' : 'w-64 px-4',
+        collapsed ? 'w-16 px-2' : 'w-64 px-4 md:max-lg:w-16 md:max-lg:px-2',
       )}
     >
       <div className={cn('mb-8 flex items-center', collapsed ? 'flex-col gap-2' : 'justify-between gap-2')}>
@@ -85,7 +103,7 @@ export function Sidebar({ user, initialCollapsed = false }: SidebarProps) {
           aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}
           aria-expanded={!collapsed}
           data-testid="sidebar_collapse_toggle"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+          className="flex size-11 shrink-0 items-center max-lg:hidden justify-center rounded-full transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-background focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
         >
           {collapsed
             ? <PanelLeftOpen className="size-5" strokeWidth={2} aria-hidden="true" />

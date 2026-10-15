@@ -1,17 +1,17 @@
 import type { DiaSemana } from '@/lib/api/types';
 import * as React from 'react';
 
-/** Day columns are fixed at 15rem in `calendar-grid.tsx`, with a 0.75rem (`gap-3`) gap. */
-const DAY_COLUMN_PX = 240;
+/** Day columns are at least 11rem (176px) wide and stretch to fill the row (`calendar-grid.tsx`), with a 0.75rem (`gap-3`) gap. */
+const DAY_COLUMN_PX = 176;
 const GRID_GAP_PX = 12;
 /** Widest meal-type label ("DESAYUNO", measured ~77px) plus headroom. */
 const LABEL_COLUMN_PX = 88;
-const MAX_VISIBLE_DAYS = 3;
+const MAX_VISIBLE_DAYS = 7;
 
 /**
  * How many whole day columns fit next to the meal-type label column in a
  * container `containerWidth` px wide. Always at least 1 (a single column is
- * the floor, even if it has to be tight), never more than 3.
+ * the floor, even if it has to be tight), never more than a full week (7).
  */
 export function visibleDayCountFor(containerWidth: number): number {
   const fitting = Math.floor((containerWidth - LABEL_COLUMN_PX) / (DAY_COLUMN_PX + GRID_GAP_PX));
@@ -58,9 +58,15 @@ export function useVisibleDayWindow(
     return () => observer.disconnect();
   }, [containerRef]);
 
-  const visibleDays = planningDays.slice(startIndex, startIndex + visibleDayCount);
-  const canGoPrevDay = startIndex > 0;
-  const canGoNextDay = startIndex < planningDays.length - 1;
+  // FRESCO-970: the window is always full (clamped), so day columns, which
+  // stretch to fill the row, keep one width while paging; and when the whole
+  // week fits there is nothing to page (`hasDayOverflow` false).
+  const maxStart = Math.max(0, planningDays.length - visibleDayCount);
+  const clampedStart = Math.min(startIndex, maxStart);
+  const visibleDays = planningDays.slice(clampedStart, clampedStart + visibleDayCount);
+  const canGoPrevDay = clampedStart > 0;
+  const canGoNextDay = clampedStart < maxStart;
+  const hasDayOverflow = maxStart > 0;
 
-  return { visibleDays, startIndex, setStartIndex, canGoPrevDay, canGoNextDay };
+  return { visibleDays, startIndex: clampedStart, setStartIndex, canGoPrevDay, canGoNextDay, hasDayOverflow };
 }

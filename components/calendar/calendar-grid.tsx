@@ -110,7 +110,7 @@ export function CalendarGrid({
   });
 
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const { visibleDays, setStartIndex, canGoPrevDay, canGoNextDay } = useVisibleDayWindow(planningDays, containerRef);
+  const { visibleDays, startIndex, setStartIndex, canGoPrevDay, canGoNextDay, hasDayOverflow } = useVisibleDayWindow(planningDays, containerRef);
 
   return (
     <div ref={containerRef} className="relative">
@@ -122,28 +122,36 @@ export function CalendarGrid({
           lands in the header row; the day-header `<p>` below gets a matching
           `min-h-8` so the grid's row-1 track (sized to the tallest cell in
           it, per the comment below) is never shorter than these buttons. */}
-      <div className="absolute right-0 top-0 z-10 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setStartIndex(i => i - 1)}
-          disabled={!canGoPrevDay}
-          aria-label="Día anterior"
-          data-testid="calendar_day_nav_prev"
-          className="grid size-8 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-surface"
+      {hasDayOverflow && (
+        <div
+          role="group"
+          aria-label="Navegar por días"
+          data-testid="calendar_day_nav"
+          className="absolute right-0 top-0 z-10 flex items-center gap-1 rounded-md border border-border bg-background p-0.5"
         >
-          <ChevronLeft className="size-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setStartIndex(i => i + 1)}
-          disabled={!canGoNextDay}
-          aria-label="Día siguiente"
-          data-testid="calendar_day_nav_next"
-          className="grid size-8 place-items-center rounded-full bg-surface text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-surface"
-        >
-          <ChevronRight className="size-4" />
-        </button>
-      </div>
+          <span className="px-1.5 text-h6 uppercase text-tertiary">Días</span>
+          <button
+            type="button"
+            onClick={() => setStartIndex(startIndex - 1)}
+            disabled={!canGoPrevDay}
+            aria-label="Día anterior"
+            data-testid="calendar_day_nav_prev"
+            className="grid size-7 place-items-center rounded-sm text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setStartIndex(startIndex + 1)}
+            disabled={!canGoNextDay}
+            aria-label="Día siguiente"
+            data-testid="calendar_day_nav_next"
+            className="grid size-7 place-items-center rounded-sm text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
+      )}
 
       <DndContext id="calendar-grid" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         {/*
@@ -173,10 +181,9 @@ export function CalendarGrid({
         <div
           className="grid gap-3"
           style={{
-            gridTemplateColumns: `max-content repeat(${visibleDays.length}, 15rem)`,
+            gridTemplateColumns: `max-content repeat(${visibleDays.length}, minmax(0, 1fr))`,
             gridTemplateRows: `auto repeat(${planningMeals.length}, auto)`,
             gridAutoFlow: 'column',
-            justifyContent: 'start',
           }}
         >
           <div aria-hidden="true" />
@@ -192,7 +199,7 @@ export function CalendarGrid({
               <React.Fragment key={dia}>
                 <p
                   className={cn(
-                    'flex min-h-8 w-fit items-center text-label',
+                    'flex min-h-9 w-fit items-center text-label',
                     isToday && 'rounded-full bg-secondary px-3 py-1 text-on-warning',
                   )}
                 >
