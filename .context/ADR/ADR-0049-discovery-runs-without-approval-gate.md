@@ -1,4 +1,4 @@
-# ADR-0007 — Unattended `discovery` runs create within the per-run cap; no approval gate
+# ADR-0049 — Unattended `discovery` runs create within the per-run cap; no approval gate
 
 - **Status:** Accepted
 - **Date:** 2026-10-03
@@ -6,6 +6,7 @@
 - **Tags:** autonomous-delivery, unattended-runs, cross-cutting-invariant
 - **Supersedes:** —
 - **Superseded by:** —
+- **Upstream number:** ADR-0007 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 

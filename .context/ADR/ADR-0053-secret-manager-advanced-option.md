@@ -1,17 +1,18 @@
-# ADR-0011 — Secret values live in `.env` by default; a secret manager is the advanced, provider-agnostic opt-in
+# ADR-0053 — Secret values live in `.env` by default; a secret manager is the advanced, provider-agnostic opt-in
 
-- **Status:** Accepted (decision item 4's launcher drop superseded by ADR-0016)
+- **Status:** Accepted (decision item 4's launcher drop superseded by ADR-0058)
 - **Date:** 2026-10-05
-- **Deciders:** Boilerplate owner (upex-galaxy): env-secrets spike owner decisions OD1 = b (`.env` stays the default, a secret manager is the ADVANCED option) and OD2 (a personal plan must work too; never 1Password-only, the slot stays generic). Conductor ruling of the implementation fleet on the Critical Rule #1 wording (the readable exception becomes "`.env.example` and the committed `.env*.schema` files"). Ported from agentic-qa-boilerplate ADR-0010 (PR #110) by unit env-d-u4
+- **Deciders:** Boilerplate owner (upex-galaxy): env-secrets spike owner decisions OD1 = b (`.env` stays the default, a secret manager is the ADVANCED option) and OD2 (a personal plan must work too; never 1Password-only, the slot stays generic). Conductor ruling of the implementation fleet on the Critical Rule #1 wording (the readable exception becomes "`.env.example` and the committed `.env*.schema` files"). Ported from agentic-qa-boilerplate ADR-0052 (PR #110) by unit env-d-u4
 - **Tags:** env, secrets, varlock, launch, ci, onboarding
 - **Supersedes:** —
-- **Superseded by:** ADR-0016 (decision item 4, the launcher's drop of empty inherited overlay keys, only)
+- **Superseded by:** ADR-0058 (decision item 4, the launcher's drop of empty inherited overlay keys, only)
+- **Upstream number:** ADR-0011 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 
 ## Context
 
-ADR-0010 gave varlock the env schema (`.env.schema` + the generated `.env.core.schema`) and put it behind every harness launch (`scripts/launch.ts` -> `varlock run`). The values still came from one place: a plaintext `.env` (and `.env.local`) on each laptop, and one secret per variable wherever CI needs them. The env-secrets spike proposed resolving secrets from a manager at launch time through a varlock plugin, so a team shares one vault instead of passing values around, and a laptop on desktop-app auth holds no plaintext secret.
+ADR-0052 gave varlock the env schema (`.env.schema` + the generated `.env.core.schema`) and put it behind every harness launch (`scripts/launch.ts` -> `varlock run`). The values still came from one place: a plaintext `.env` (and `.env.local`) on each laptop, and one secret per variable wherever CI needs them. The env-secrets spike proposed resolving secrets from a manager at launch time through a varlock plugin, so a team shares one vault instead of passing values around, and a laptop on desktop-app auth holds no plaintext secret.
 
 Two owner decisions frame the change:
 
@@ -52,7 +53,7 @@ We will keep `.env` / `.env.local` as the default home of every value and offer 
 
 ## References
 
-- ADR-0010 (varlock owns the env schema and the launch).
-- agentic-qa-boilerplate ADR-0010 and PR #110 (the source of this port).
+- ADR-0052 (varlock owns the env schema and the launch).
+- agentic-qa-boilerplate ADR-0052 and PR #110 (the source of this port).
 - varlock.dev/plugins/1password; the plugin README in `@varlock/1password-plugin@2.0.4`.
 - `cli/lib/secret-providers.ts`, `cli/lib/env-schema.ts`, `scripts/launch.ts`, `cli/install.ts` (Step 7), `INSTALLER.md` ("Secret manager (advanced)").

@@ -1,4 +1,4 @@
-# ADR-0008 — Adopting an existing app: two layers, nine owner decisions, one measured contract
+# ADR-0050 — Adopting an existing app: two layers, nine owner decisions, one measured contract
 
 - **Status:** Accepted
 - **Date:** 2026-10-03
@@ -6,6 +6,7 @@
 - **Tags:** adoption, brownfield, updater, cross-cutting-invariant
 - **Supersedes:** —
 - **Superseded by:** —
+- **Upstream number:** ADR-0008 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 

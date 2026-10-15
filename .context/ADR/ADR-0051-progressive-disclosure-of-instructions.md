@@ -1,4 +1,4 @@
-# ADR-0009 — Progressive disclosure of the project instructions: an always-on L0, routed sections, a hook that names what to read
+# ADR-0051 — Progressive disclosure of the project instructions: an always-on L0, routed sections, a hook that names what to read
 
 - **Status:** Accepted
 - **Date:** 2026-10-04
@@ -6,12 +6,13 @@
 - **Tags:** instructions, multi-harness, hooks, cross-cutting-invariant
 - **Supersedes:** —
 - **Superseded by:** —
+- **Upstream number:** ADR-0009 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 
 ## Context
 
-`AGENTS.md` was the one instruction body every host loaded whole at session start (ADR-0002 item 1). It had grown into a single file holding the critical rules, the behavioural layer, orchestration, the task-to-skill map, the skill registry table, the multi-harness contract, tool resolution, project variables, the PBI cache doctrine, the code quick-reference, git policy and memory triggers. Three facts made that shape untenable:
+`AGENTS.md` was the one instruction body every host loaded whole at session start (ADR-0038 item 1). It had grown into a single file holding the critical rules, the behavioural layer, orchestration, the task-to-skill map, the skill registry table, the multi-harness contract, tool resolution, project variables, the PBI cache doctrine, the code quick-reference, git policy and memory triggers. Three facts made that shape untenable:
 
 1. **Every session paid for all of it.** A chat about a colour loaded the git policy, the PBI tiers and the harness contract. Most sections are needed in a minority of sessions.
 2. **Codex was cutting it.** Codex concatenates project `AGENTS.md` files into ONE budget, `project_doc_max_bytes`, default 32 768 bytes, truncates at the byte that crosses it, and only logs a warning (source: `codex-rs/config/src/config_toml.rs`, `DEFAULT_PROJECT_DOC_MAX_BYTES`; `codex-rs/core/src/agents_md.rs`, `data.truncate`). The old file crossed it inside the context loading map, so on Codex everything after that point never reached the model.
@@ -98,7 +99,7 @@ Not yet measured: model compliance with `ROUTE:` (share of routed sessions that 
 - `cli/lib/updater-instructions.ts` and `.agents/instructions/project.md.template` (delivery downstream)
 - `.agents/hooks/personality-reinject.mjs` (`routeLines`, `IMPORT_ROW_TRIGGERS`), `.claude/settings.json` and `.codex/hooks.json` (`SessionStart` matcher `compact`), `.opencode/plugins/personality-reinject.js`
 - Human explanation: `packages/decks/progressive-disclosure/how-it-works.es.html`
-- ADR-0002 (one instruction source for three harnesses; this ADR keeps its shim contract and changes only how much of the source loads always)
+- ADR-0038 (one instruction source for three harnesses; this ADR keeps its shim contract and changes only how much of the source loads always)
 
 ## Amendments
 

@@ -6,7 +6,7 @@ Bienvenido a la documentación de **agentic-dev-boilerplate**.
 
 Esta documentación está orientada a **humanos** — para aprender conceptos, entender metodologías y seguir guías paso a paso.
 
-> **Nota**: Para el contexto **operativo** que la AI carga cada sesión, consulta `AGENTS.md` y `CONTEXT.md` en la raíz del repo (`CLAUDE.md` es solo un shim de una línea, `@AGENTS.md`, para que Claude Code llegue al mismo archivo). `AGENTS.md` es el núcleo que carga siempre; el detalle vive en una sección por tema bajo `.agents/instructions/`, que la AI lee a pedido cuando el router o una línea `ROUTE:` del hook la nombra. El resto del comportamiento de la AI vive en skills (`.agents/skills/`, leídas por Claude Code, OpenCode y Codex) No hay archivos de comando: una skill se invoca por su nombre más un modo (`/project-context data` en Claude Code; "cargá `project-context`, modo `data`" en OpenCode y Codex). Decisión en [ADR-0006](../.context/ADR/ADR-0006-skill-plus-mode-invocation.md).
+> **Nota**: Para el contexto **operativo** que la AI carga cada sesión, consulta `AGENTS.md` y `CONTEXT.md` en la raíz del repo (`CLAUDE.md` es solo un shim de una línea, `@AGENTS.md`, para que Claude Code llegue al mismo archivo). `AGENTS.md` es el núcleo que carga siempre; el detalle vive en una sección por tema bajo `.agents/instructions/`, que la AI lee a pedido cuando el router o una línea `ROUTE:` del hook la nombra. El resto del comportamiento de la AI vive en skills (`.agents/skills/`, leídas por Claude Code, OpenCode y Codex) No hay archivos de comando: una skill se invoca por su nombre más un modo (`/project-context data` en Claude Code; "cargá `project-context`, modo `data`" en OpenCode y Codex). Decisión en [ADR-0048](../.context/ADR/ADR-0048-skill-plus-mode-invocation.md).
 
 ---
 
@@ -16,7 +16,7 @@ Esta documentación está orientada a **humanos** — para aprender conceptos, e
 | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [Una fuente, tres harnesses](https://upex-galaxy.github.io/agentic-dev-boilerplate/harnesses.es.html) | Cómo el mismo repositorio corre en Claude Code, OpenCode y Codex desde una sola fuente: qué es canónico, qué se genera, y qué pasa al actualizar un proyecto creado antes del cambio. Página publicada, con diagramas. |
 | [Docs hub](https://upex-galaxy.github.io/agentic-dev-boilerplate/)                               | Hub publicado: la página de inicio y un deck por skill de flujo, más la doctrina del núcleo.                                                                                                                             |
-| [ADR-0002](../.context/ADR/ADR-0002-multi-harness-single-source.md)                                   | Registro de la decisión (contexto, alternativas descartadas, consecuencias). En inglés.                                                                                                                                |
+| [ADR-0038](../.context/ADR/ADR-0038-multi-harness-single-source.md)                                   | Registro de la decisión (contexto, alternativas descartadas, consecuencias). En inglés.                                                                                                                                |
 
 ---
 

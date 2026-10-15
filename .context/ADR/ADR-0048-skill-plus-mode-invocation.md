@@ -1,17 +1,18 @@
-# ADR-0006 — A skill is invoked by its name plus a mode; the command-alias layer is retired
+# ADR-0048 — A skill is invoked by its name plus a mode; the command-alias layer is retired
 
 - **Status:** Accepted
 - **Date:** 2026-10-02
 - **Deciders:** Boilerplate maintainer (upex-galaxy), owner decision `OD-aliases` = A in the dev-sync parity decision deck (2026-10-02)
 - **Tags:** harness-compatibility, skills, updater, cross-cutting-invariant
-- **Supersedes:** ADR-0002, decision item 3 (slash commands as generated transport) and the wrapper half of item 6 (the compat gate); the `sync-ai-memory` references in items 1 and 2
+- **Supersedes:** ADR-0038, decision item 3 (slash commands as generated transport) and the wrapper half of item 6 (the compat gate); the `sync-ai-memory` references in items 1 and 2
 - **Superseded by:** —
+- **Upstream number:** ADR-0006 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 
 ## Context
 
-ADR-0002 moved every workflow body out of the slash commands and into skill modes, and kept the command files as generated transport: one manifest (`.agents/compatibility/command-aliases.json`), an optional project overlay, a wrapper per alias per host under `.claude/commands/` and `.opencode/commands/`, a `commands` updater component, a `Commands` parity surface and a wrapper group in `agents:compat:check`.
+ADR-0038 moved every workflow body out of the slash commands and into skill modes, and kept the command files as generated transport: one manifest (`.agents/compatibility/command-aliases.json`), an optional project overlay, a wrapper per alias per host under `.claude/commands/` and `.opencode/commands/`, a `commands` updater component, a `Commands` parity surface and a wrapper group in `agents:compat:check`.
 
 Once the bodies lived in skills, the transport bought very little. Claude Code merged custom commands into skills, so `/project-context data` already reaches the skill with `$ARGUMENTS = data`, and a wrapper with a skill's name registers the same slash twice. Codex never had a wrapper layer. Only OpenCode lost a shortcut, and its native `skill` tool loads the same skill from prose. Meanwhile the layer cost a generator, a merge engine, an overlay contract, a parity surface, its own tests, and a class of drift (stale or hand-edited wrappers) that existed only because the files were generated.
 
@@ -44,7 +45,7 @@ We will invoke a skill by its own name plus a mode, on every harness, and ship n
 
 ## References
 
-- ADR-0002 (items 1-3, 6), ADR-0005 (capability resolution, same skill-first direction)
+- ADR-0038 (items 1-3, 6), ADR-0047 (capability resolution, same skill-first direction)
 - `AGENTS.md` §1 Critical Rule #15, §4 and §5.5
 - Engine: `cli/lib/agent-compatibility.ts` (`commandsShadowingSkills`, `removeShadowingCommands`); updater: `cli/update-boilerplate.ts` (`RETIRED_COMMAND_WRAPPERS`, `RETIRED_SKILL_FILES`), `cli/lib/updater-core.ts` (`cleanupDeprecated`, `dropDeprecatedDeletes`), `cli/lib/updater-parity.ts`
 - `.agents/skills/agentic-dev-core/references/docs-follow-through.md`; `scripts/lint-docs.ts` (`docs:check`)

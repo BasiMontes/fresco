@@ -1,4 +1,4 @@
-# ADR-0005 — Remote API-key MCPs run at harness level; skills resolve tools by capability
+# ADR-0047 — Remote API-key MCPs run at harness level; skills resolve tools by capability
 
 - **Status:** Accepted (by the owner, 2026-10-02)
 - **Date:** 2026-10-02
@@ -6,6 +6,7 @@
 - **Tags:** mcp, harness, install, doctor, updater, skills
 - **Supersedes:** —
 - **Superseded by:** —
+- **Upstream number:** ADR-0005 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 
@@ -15,7 +16,7 @@ The boilerplate committed a web-search server (`tavily`) in all three project MC
 
 First, the server's only project-side content was a key. The endpoint is remote, the same for every project, and most developers already have a search provider connected at harness level (a claude.ai connector, a user-scope server). Committing it made every clone ask for a key the developer may not want to put in a project `.env`, and a second copy of the same search tools showed up under a different prefix.
 
-Second, the doctrine named servers instead of capabilities. `AGENTS.md` §6 resolved `[WEB_SEARCH_TOOL]` to `mcp__tavily__*` and `[DOCS_TOOL]` to `mcp__context7__*`, with built-in `WebSearch` / `WebFetch` as a "last resort". An agent that saw the tool under another prefix concluded the server was absent, and the fallback let it silently swap in a shallower tool without the user ever learning a capability was missing. The agentic-qa boilerplate hit both failures first and fixed them by resolving tools by suffix (its ADR-0005).
+Second, the doctrine named servers instead of capabilities. `AGENTS.md` §6 resolved `[WEB_SEARCH_TOOL]` to `mcp__tavily__*` and `[DOCS_TOOL]` to `mcp__context7__*`, with built-in `WebSearch` / `WebFetch` as a "last resort". An agent that saw the tool under another prefix concluded the server was absent, and the fallback let it silently swap in a shallower tool without the user ever learning a capability was missing. The agentic-qa boilerplate hit both failures first and fixed them by resolving tools by suffix (its ADR-0047).
 
 ## Decision
 
@@ -43,4 +44,4 @@ We will commit only LOCAL (stdio) MCP servers in `.mcp.json`, `opencode.jsonc` a
 - `.agents/skills/agentic-dev-core/references/mcp-capabilities.md` (vocabulary, point-of-use STOP, enabling per host).
 - `cli/lib/harness-level-mcps.ts` (recommended harness-level servers, per-host how-to, user-level detection).
 - `cli/lib/updater-parity.ts` (`harnessLevelMcpNote`, `RETIRED_MCPS`, `retiredMcpNote`).
-- agentic-qa boilerplate ADR-0005 (the same decision for the QA side).
+- agentic-qa boilerplate ADR-0047 (the same decision for the QA side).

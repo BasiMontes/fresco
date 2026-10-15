@@ -1,11 +1,12 @@
-# ADR-0010 — varlock owns the env schema and launches the agent harnesses
+# ADR-0052 — varlock owns the env schema and launches the agent harnesses
 
-- **Status:** Accepted (the harness launch item superseded by ADR-0016)
+- **Status:** Accepted (the harness launch item superseded by ADR-0058)
 - **Date:** 2026-10-05
-- **Deciders:** Boilerplate owner (upex-galaxy): env-secrets spike owner decisions OD1 = b (`.env` stays the default path, a secret manager is the advanced option), OD3 = b (the dev boilerplate adopts varlock in the same wave as the QA one), OD6 = a with an exception (the AI never writes a secret value into `.env`, it may write a non-sensitive one). Conductor ruling of the parity fleet on the shared launch contract (a precedence preflight before `varlock run`, one launcher script for the three harnesses). Ported from agentic-qa-boilerplate ADR-0003 and ADR-0005 by unit D-U2
+- **Deciders:** Boilerplate owner (upex-galaxy): env-secrets spike owner decisions OD1 = b (`.env` stays the default path, a secret manager is the advanced option), OD3 = b (the dev boilerplate adopts varlock in the same wave as the QA one), OD6 = a with an exception (the AI never writes a secret value into `.env`, it may write a non-sensitive one). Conductor ruling of the parity fleet on the shared launch contract (a precedence preflight before `varlock run`, one launcher script for the three harnesses). Ported from agentic-qa-boilerplate ADR-0045 and ADR-0047 by unit D-U2
 - **Tags:** env, secrets, validation, launch, ci, updater, cross-cutting-invariant
 - **Supersedes:** —
-- **Superseded by:** ADR-0016 ("Launch through varlock, behind a precedence preflight" only; the preflight's check lives on in `vars:env:check`)
+- **Superseded by:** ADR-0058 ("Launch through varlock, behind a precedence preflight" only; the preflight's check lives on in `vars:env:check`)
+- **Upstream number:** ADR-0010 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 
@@ -15,7 +16,7 @@ Every environment variable this repo knows is routed by `cli/lib/variables-manif
 
 The three agent harnesses launched through `dotenv -o -e .env -- <bin>`, and Codex stdio servers through `bunx -p dotenv-cli@8.0.0 dotenv -o -e .env --`. `-o` made `.env` win over a variable inherited from the parent shell.
 
-The sibling QA boilerplate adopted varlock as its schema owner (its ADR-0003, ADR-0005) and is moving its launch onto it. Measured here on the pinned 1.20.0:
+The sibling QA boilerplate adopted varlock as its schema owner (its ADR-0045, ADR-0047) and is moving its launch onto it. Measured here on the pinned 1.20.0:
 
 1. `varlock run` lets a variable already in the process environment WIN over `.env` / `.env.local`; no flag inverts it. `varlock load --format json-full --agent` returns `overrideKeys`, every key present in the process, equal or not.
 2. `varlock load --agent` prints a `@sensitive` item as a two-character prefix plus mask and every other item in full.
@@ -52,5 +53,5 @@ We will make varlock the owner of env schema, validation and redaction, and the 
 
 - `cli/lib/env-schema.ts` (layout rule, pair-load gate, `schemaClassification`, `inheritedOverrides`), `scripts/env-schema.ts`, `scripts/launch.ts`, `scripts/check-vars.ts` (rule 5), `scripts/env-set.ts`.
 - `.agents/skills/agentic-dev-core/references/secret-hygiene.md`, `.agents/instructions/agent-critical-rules.md` §1, `.agents/instructions/agent-harnesses.md` §5.5.
-- agentic-qa-boilerplate `.context/ADR/ADR-0003-env-schema-owner-varlock.md` and `ADR-0005-validation-scope.md` (the decisions this ports).
+- agentic-qa-boilerplate `.context/ADR/ADR-0045-env-schema-owner-varlock.md` and `ADR-0047-validation-scope.md` (the decisions this ports).
 - varlock docs: https://varlock.dev/reference/item-decorators, https://varlock.dev/reference/cli/load-and-run, https://varlock.dev/guides/ai-tools.

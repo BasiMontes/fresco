@@ -1,11 +1,12 @@
-# ADR-0017 — Documentation contracts: region markers, a push and CI gate with a `Docs-Checked:` escape, an edit-time reminder
+# ADR-0059 — Documentation contracts: region markers, a push and CI gate with a `Docs-Checked:` escape, an edit-time reminder
 
 - **Status:** Accepted
 - **Date:** 2026-10-05
-- **Deciders:** Boilerplate owner (upex-galaxy): decision B15 of handoff 07 (2026-10-05), "approved with conductor recommendations: v1 in the two boilerplates only (no downstream distribution yet); push + CI BLOCK with an explicit `Docs-Checked: <label> <reason>` trailer escape, commit only warns; drift-sweep subagent runs only when a PR touches `cli/`, `scripts/`, `.husky/` or instruction files; option B of the doc-contracts spike, QA first then DEV port". Twin decision in agentic-qa-boilerplate: its ADR-0016. Ported here by unit b15-d
+- **Deciders:** Boilerplate owner (upex-galaxy): decision B15 of handoff 07 (2026-10-05), "approved with conductor recommendations: v1 in the two boilerplates only (no downstream distribution yet); push + CI BLOCK with an explicit `Docs-Checked: <label> <reason>` trailer escape, commit only warns; drift-sweep subagent runs only when a PR touches `cli/`, `scripts/`, `.husky/` or instruction files; option B of the doc-contracts spike, QA first then DEV port". Twin decision in agentic-qa-boilerplate: its ADR-0058. Ported here by unit b15-d
 - **Tags:** docs, gates, husky, ci, hooks, harness-compatibility
 - **Supersedes:** —
 - **Superseded by:** —
+- **Upstream number:** ADR-0017 (renumbered on import because this project already used that number; synced files cite the upstream number)
 
 ---
 
@@ -26,7 +27,7 @@ Option B of the spike, sized small, with the same script, hook and wording as th
 5. **Gaps closed alongside.** `docs:check` runs on every push (where the script exists); the docs follow-through triggers on behaviour changes and lists `packages/decks/**` and `packages/pages-home/**`.
 6. **Scope: maintainers only (v1).** The gate, the structural lint and the hook bind only where `package.json` names the boilerplate (`isSchemaOwner`) AND `.agents/project.yaml` carries the maintainer sentinel (`isMaintainerCopy`). Downstream every mode prints one line and exits 0, and the hook stays silent: the markers ship in synced `cli/` and `scripts/` files but point at pages a project owns or does not have.
 
-Seeded on the regions the spike measured as drift sources here: `harness-selection` (`declaredHarnesses` in `cli/lib/harness-selection.ts`), `mcp-parity` (`validateMcpParityFindings`) and `mcp-env-loader` (the loader head) in `cli/lib/agent-compatibility-contracts.ts`, `instruction-locks` (the lock, eval and complete-section findings of ADR-0014 in `scripts/lint-instructions.ts`). Every drift found later becomes a new marker.
+Seeded on the regions the spike measured as drift sources here: `harness-selection` (`declaredHarnesses` in `cli/lib/harness-selection.ts`), `mcp-parity` (`validateMcpParityFindings`) and `mcp-env-loader` (the loader head) in `cli/lib/agent-compatibility-contracts.ts`, `instruction-locks` (the lock, eval and complete-section findings of ADR-0056 in `scripts/lint-instructions.ts`). Every drift found later becomes a new marker.
 
 ## Consequences
 
@@ -46,6 +47,6 @@ Seeded on the regions the spike measured as drift sources here: `harness-selecti
 ## References
 
 - Spike: the doc-contracts plan in the QA boilerplate's local session tree (gitignored), option B and unit 3.
-- Twin: agentic-qa-boilerplate ADR-0016 (same script, hook, trailer and messages).
+- Twin: agentic-qa-boilerplate ADR-0058 (same script, hook, trailer and messages).
 - Prior art: Chromium "keep files in sync" (`LINT.IfChange` / `LINT.ThenChange`, `NO_IFTTT=` bypass); Fuchsia presubmit checks.
 - Code: `scripts/lib/doc-contracts.ts`, `scripts/lint-doc-contracts.ts`, `.agents/hooks/doc-contracts.mjs`, `.husky/framework-gates.sh`, `.github/workflows/ci.yml`, `validateDocContractHooks` in `cli/lib/agent-compatibility-contracts.ts`.
