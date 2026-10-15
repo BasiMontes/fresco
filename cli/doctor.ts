@@ -118,8 +118,9 @@ const DAY_ZERO_VARS = [
 // RESEND_API_KEY) also live in the manifest now but are day-zero
 // (prompted at install), so they are excluded here to avoid double-listing with
 // DAY_ZERO_VARS. SUPABASE_ACCESS_TOKEN stays day-zero (not in the manifest).
+// A var the manifest marks `required: false` (n8n, QA_E2E_*) is never pending.
 const PROJECT_BOUND_VARS: readonly string[] = varsFor('local')
-  .filter(spec => !spec.critical)
+  .filter(spec => !spec.critical && spec.required)
   .map(spec => spec.name);
 
 const REQUIRED_VARS: readonly string[] = [...DAY_ZERO_VARS, ...PROJECT_BOUND_VARS];
