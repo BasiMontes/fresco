@@ -1,6 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["tests/steps/**/*.ts", "tests/*.ts"],
+  "entry": [
+    "tests/steps/**/*.ts",
+    "tests/*.ts",
+    "cli/**/*.ts",
+    "scripts/**/*.ts",
+    "eslint.config.tooling.mjs",
+    ".opencode/plugins/personality-reinject.js"
+  ],
   "ignore": [".agents/**", "api/config/env.ts", "lib/supabase/types.ts"],
   "ignoreIssues": {
     "cli/**": ["files", "exports", "types"],
@@ -9,8 +16,22 @@
     "supabase/**": ["files", "exports", "types"],
     "public/**": ["files"]
   },
-  "ignoreDependencies": ["postcss-load-config", "web-push"],
-  "ignoreBinaries": ["resend", "acli", "vercel", "codex", "supabase", "psql"],
+  "ignoreDependencies": [
+    "@clack/prompts",
+    "@inquirer/prompts",
+    "boxen",
+    "cli-table3",
+    "figures",
+    "picocolors",
+    "postcss-load-config",
+    "web-push",
+    "yaml"
+  ],
+  "ignoreBinaries": ["vercel", "codex", "supabase", "psql", "playwright-cli"],
   "ignoreUnresolved": ["bun-types", "cli/doctor.ts", "cli/install.ts"],
-  "rules": { "types": "off", "enumMembers": "off", "duplicates": "off" }
+  "rules": {
+    "types": "off",
+    "enumMembers": "off",
+    "duplicates": "off"
+  }
 }
