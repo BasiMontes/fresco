@@ -103,7 +103,7 @@ export default async function CalendarPage({
 
   if (!plan) {
     return (
-      <div className="mx-auto max-w-5xl space-y-12">
+      <div className="mx-auto max-w-7xl space-y-12">
         <div>
           <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-h2">Calendario semanal</h1>
@@ -133,7 +133,7 @@ export default async function CalendarPage({
   const learningBridgeEligible = userPlan === 'free' || !hasMarks;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-12">
+    <div className="mx-auto max-w-7xl space-y-12">
       <div>
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-h2">Calendario semanal</h1>

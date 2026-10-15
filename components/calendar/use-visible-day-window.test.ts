@@ -7,27 +7,25 @@ import { visibleDayCountFor } from '@/components/calendar/use-visible-day-window
  * container and the page scrolled horizontally. It now follows the container.
  */
 describe('visibleDayCountFor', () => {
-  it('shows one day in the 442px content area left at a 768px viewport', () => {
-    expect(visibleDayCountFor(442)).toBe(1);
-  });
-
   it('never returns less than one day, however narrow the container', () => {
     expect(visibleDayCountFor(0)).toBe(1);
     expect(visibleDayCountFor(120)).toBe(1);
   });
 
-  it('shows two days once label + 2 columns + gaps fit (88 + 2 x 252 = 592)', () => {
-    expect(visibleDayCountFor(591)).toBe(1);
-    expect(visibleDayCountFor(592)).toBe(2);
-    expect(visibleDayCountFor(704)).toBe(2);
+  it('shows two days once label + 2 columns + gaps fit (88 + 2 x 188 = 464)', () => {
+    expect(visibleDayCountFor(463)).toBe(1);
+    expect(visibleDayCountFor(464)).toBe(2);
   });
 
-  it('shows three days once label + 3 columns + gaps fit (88 + 3 x 252 = 844)', () => {
-    expect(visibleDayCountFor(843)).toBe(2);
-    expect(visibleDayCountFor(844)).toBe(3);
+  it('FRESCO-970: shows at least five days in the 1120px content area at a 1440px viewport', () => {
+    expect(visibleDayCountFor(1120)).toBeGreaterThanOrEqual(5);
   });
 
-  it('caps at three days on very wide containers', () => {
-    expect(visibleDayCountFor(2000)).toBe(3);
+  it('FRESCO-970: shows two days in the ~640px left beside the icon rail at 768px', () => {
+    expect(visibleDayCountFor(640)).toBe(2);
+  });
+
+  it('caps at the full week on very wide containers', () => {
+    expect(visibleDayCountFor(3000)).toBe(7);
   });
 });
