@@ -19,6 +19,10 @@ import { Button } from '@/components/ui/button';
  * "Más información" link keeps its 44px tap area through `-my-3` so it no
  * longer inflates its text line. Settled content is ~129px; copy and the
  * three actions are unchanged.
+ * FRESCO-969 (second pass): 132px was 15.5% of an 852px screen and the AC asks
+ * for at most 15%. `py-2` became `py-1` and the fixed height 126px (14.8%).
+ * Measured at 393x852: copy 60px + gap 8 + buttons 44 + padding 8 = ~121px
+ * settled, so the one-line-wrap buffer is kept; the 44px tap areas are intact.
  *
  * FRESCO-536: `h-[132px] sm:h-auto` (was 190px) — the Figtree body-copy font swap (kept
  * at `display: swap` per FRESCO-496, unlike the `optional` hero face)
@@ -84,7 +88,7 @@ export function CookieConsentBanner() {
         aria-label="Consentimiento de cookies"
         data-testid="cookie_consent_banner"
         data-cookie-banner=""
-        className="fixed inset-x-0 bottom-0 z-100 h-[132px] border-t border-border bg-surface-raised px-4 py-2 shadow-lg sm:h-auto sm:p-4"
+        className="fixed inset-x-0 bottom-0 z-100 h-[126px] border-t border-border bg-surface-raised px-4 py-1 shadow-lg sm:h-auto sm:p-4"
       >
         <div className="mx-auto flex max-w-5xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-body-sm text-text">

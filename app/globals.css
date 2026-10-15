@@ -144,14 +144,14 @@
   /*
     FRESCO-756: height of the fixed cookie banner per breakpoint — FALLBACK
     values used until the banner mounts and publishes its measured height
-    (FRESCO-757; 132px under `sm` is its own fixed height, FRESCO-536/969, the rest
+    (FRESCO-757; 126px under `sm` is its own fixed height, FRESCO-536/969, the rest
     is content-driven: ~100-120px). One source for the spacer the banner
     renders (`cookie-consent-banner.tsx`), for `scroll-padding-bottom` below
     (a focused or scrolled-to control lands ABOVE the banner, WCAG 2.2 SC
     2.4.11), and for `--cookie-banner-inset`.
   */
   :root {
-    --cookie-banner-h: 132px;
+    --cookie-banner-h: 126px;
     /* FRESCO-757: room fixed bottom chrome must leave free. 0 unless the banner is showing. */
     --cookie-banner-inset: 0px;
   }
