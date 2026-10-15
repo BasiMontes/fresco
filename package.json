@@ -98,7 +98,7 @@
     "next": "^16.4.0",
     "picocolors": "^1.1.1",
     "posthog-js": "^1.438.7",
-    "posthog-node": "^5.55.1",
+    "posthog-node": "^5.55.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "resend": "^6.32.1",
@@ -107,7 +107,7 @@
     "stripe": "^23.0.0",
     "tailwind-merge": "^3.7.0",
     "yaml": "^2.8.2",
-    "zod": "^4.6.5",
+    "zod": "^4.6.6",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -121,7 +121,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@types/bun": "^1.4.2",
+    "@types/bun": "^1.4.3",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -141,7 +141,7 @@
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "varlock": "1.20.0",
+    "varlock": "1.22.0",
     "yaml": "^2.9.1"
   },
   "overrides": {
