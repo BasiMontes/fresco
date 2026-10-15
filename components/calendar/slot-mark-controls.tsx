@@ -14,10 +14,13 @@ interface SlotMarkControlsProps {
  * FRESCO-373 (A4-M27): was a pair of ~24px icon-only buttons pinned
  * bottom-right — the single interaction the paid tier depends on.
  * Now two full-width labelled buttons, ≥44px tall (WCAG 2.5.5).
+ * FRESCO-974: `flex-auto` + `flex-wrap` — in a narrow day column (~190px at
+ * 1440px) the two labels do not fit side by side, so they stack instead of
+ * overflowing the card; wide columns still show one row.
  */
 export function SlotMarkControls({ dia, tipo, pending, onMark }: SlotMarkControlsProps) {
   return (
-    <div className="mt-auto flex gap-2 pt-3">
+    <div className="mt-auto flex flex-wrap gap-2 pt-3">
       <button
         type="button"
         data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
@@ -27,7 +30,7 @@ export function SlotMarkControls({ dia, tipo, pending, onMark }: SlotMarkControl
           event.stopPropagation();
           onMark('cocinada');
         }}
-        className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-65"
+        className="flex min-h-11 flex-auto items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-65"
       >
         <Check className="size-4 shrink-0" />
         Cocinado
@@ -41,7 +44,7 @@ export function SlotMarkControls({ dia, tipo, pending, onMark }: SlotMarkControl
           event.stopPropagation();
           onMark('descartada');
         }}
-        className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-error hover:text-error disabled:pointer-events-none disabled:opacity-65"
+        className="flex min-h-11 flex-auto items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-error hover:text-error disabled:pointer-events-none disabled:opacity-65"
       >
         <X className="size-4 shrink-0" />
         Descartar
