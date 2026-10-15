@@ -6,7 +6,7 @@
 
 ## Problem
 
-Clicking "Compra realizada" on `/shopping-list` today has no feedback of its own — it silently un-checks every checked item (`handleClearComprados`, a repurposed placeholder from FRESCO-191; no dedicated "purchase complete" backend action exists or is being added here). The click needs a moment of delight: a printed receipt-style ticket listing what was bought, echoing a real till printer.
+Clicking "Compra realizada" on `/shopping-list` has no feedback of its own — it silently un-checks every checked item (`handleClearComprados`, a repurposed placeholder from FRESCO-191; no dedicated "purchase complete" backend action exists or is being added here). The click needs a moment of delight: a printed receipt-style ticket listing what was bought, echoing a real till printer.
 
 ## Scope
 

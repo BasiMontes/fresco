@@ -18,7 +18,7 @@ This is the part that is easy to get wrong. There are two layers, and they do no
 
 | Switch | Where | Controls | Needs a deploy |
 |---|---|---|---|
-| **Code**: the chain's connector in `registroSupermercados` | `lib/grocery/supermarket/registry.ts` (or `permiso: 'rechazado'` in `catalog-connectors.ts`) | **What shoppers see today**: prices and links on the shopping list, the weekly cost estimate and the savings cards. They all read through `preciosNormalizados`, from the committed generated catalogs (`lib/grocery/<chain>-catalog.generated.ts`). | Yes |
+| **Code**: the chain's connector in `registroSupermercados` | `lib/grocery/supermarket/registry.ts` (or `permiso: 'rechazado'` in `catalog-connectors.ts`) | **What shoppers see**: prices and links on the shopping list, the weekly cost estimate and the savings cards. They all read through `preciosNormalizados`, from the committed generated catalogs (`lib/grocery/<chain>-catalog.generated.ts`). | Yes |
 | **Database**: `supermarket_chain.habilitada` | the shared Supabase project | The database price layer (ADR-0036): the `refresh-supermarket-prices` runner skips a chain that is not enabled, and the row-level policies and `get_supermarket_prices` hide that chain's rows, even though they stay stored. | No, takes effect at once |
 
 **Checked on 2026-10-14:** nothing in the shopper path reads the database prices yet. The only code that touches the supermarket tables is `lib/grocery/supermarket/price-store.ts`, which the refresh runner uses with the service role. So **setting `habilitada = false` alone retires nothing a shopper sees.** Withdrawal needs the code switch; the database switch stops the pipeline and closes the data layer so it cannot start showing the chain later by accident.
@@ -65,7 +65,7 @@ Do 1 and 2 together. Everything under "Immediate" is reversible.
 
 ## How long it takes
 
-Measured on 2026-10-14, not estimated:
+Measured on 2026-10-14, not estimated: <!-- volatile-ok: dated measurement, stamped on purpose -->
 
 | Step | Time |
 |---|---|

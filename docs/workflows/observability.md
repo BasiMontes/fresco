@@ -23,7 +23,7 @@ The health check is deliberately shallow. It does not call Stripe or the Edge Fu
 Any free HTTP monitor works; UptimeRobot's free plan (5 minute interval) is enough.
 
 1. New monitor, type HTTP(s), URL `https://fresco-pro.vercel.app/api/health` (production `web_url` in `.agents/project.yaml`), interval 5 minutes, alert when the status is not `200`.
-2. Alert contact: the owner's email (the only person on call today).
+2. Alert contact: the owner's email (the owner is the single on-call contact).
 3. **Drill, to prove it alerts**: create a second monitor on `https://fresco-pro.vercel.app/api/health-drill` (a path that does not exist, so it answers `404`), wait for the "down" email, then delete it. Attach the email or the monitor's event log to the ticket.
 
 ## Cron heartbeat
