@@ -1,4 +1,5 @@
 import type { RecetaPropia, Recipe, RecipeDieta } from '@schemas';
+import type { RecipeInfoTag } from '@/components/recipes/recipe-info-tags';
 import type { RecipeDetail } from '@/lib/api/recipes';
 import type { Sustitucion } from '@/lib/ingredients/get-slot-substitution-context';
 import { ArrowLeft } from 'lucide-react';
@@ -8,10 +9,11 @@ import { FavoriteToggleButton } from '@/components/recipe/favorite-toggle-button
 import { RecipePlaceholder } from '@/components/recipe/recipe-placeholder';
 import { IngredientList } from '@/components/recipes/ingredient-list';
 import { PersonalRecipeActions } from '@/components/recipes/personal-recipe-actions';
+import { RecipeInfoTags } from '@/components/recipes/recipe-info-tags';
 import { buttonVariants } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
-import { COSTE_ESTIMADO_LABELS, DIETA_LABELS, DIFICULTAD_LABELS } from '@/lib/recipes/labels';
+import { cocinaLabel, COSTE_ESTIMADO_LABELS, DIETA_LABELS, DIFICULTAD_LABELS } from '@/lib/recipes/labels';
 
 /** Every active diet flag as a display label — unlike `RecipeCard`'s single "first match" pick (space-constrained), the detail view has room to show all of them. */
 function activeDietaLabels(dieta: RecipeDieta | null): string[] {
@@ -58,12 +60,10 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from, slotId, sustituc
   sustitucionIngrediente?: Sustitucion | null
 }) {
   const dietaLabels = activeDietaLabels(receta.dieta);
-  const infoTags = [
-    ...(receta.clasificacion?.cocina ? [receta.clasificacion.cocina] : []),
-    ...dietaLabels,
+  const infoTags: RecipeInfoTag[] = [
+    ...(receta.clasificacion?.cocina ? [{ label: cocinaLabel(receta.clasificacion.cocina), variant: 'neutral' as const }] : []),
+    ...dietaLabels.map(label => ({ label, variant: 'accent' as const })),
   ];
-  const visibleInfoTags = infoTags.slice(0, MAX_VISIBLE_INFO_TAGS);
-  const hiddenInfoCount = infoTags.length - visibleInfoTags.length;
   const ingredientes = receta.ingredientes_principales ?? [];
   const pasos = receta.pasos_resumen ?? [];
 
@@ -99,12 +99,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from, slotId, sustituc
       <h1 className="text-h2">{receta.nombre}</h1>
 
       <div className="mt-2 flex flex-wrap gap-2" data-testid="recipe_detail_tags">
-        {visibleInfoTags.map(label => (
-          <Tag key={label} variant={label === receta.clasificacion?.cocina ? 'neutral' : 'accent'}>
-            {label}
-          </Tag>
-        ))}
-        {hiddenInfoCount > 0 && <Tag variant="neutral">{`+${hiddenInfoCount}`}</Tag>}
+        <RecipeInfoTags tags={infoTags} maxVisible={MAX_VISIBLE_INFO_TAGS} />
         {(receta.alergenos ?? []).map(alergeno => (
           <Tag key={alergeno} variant="allergen">
             {alergenoLabel(alergeno)}

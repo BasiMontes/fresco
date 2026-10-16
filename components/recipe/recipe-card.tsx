@@ -8,7 +8,7 @@ import { LIKE_PARTICLE_COUNT, triggerLikeBurst } from '@/components/recipe/like-
 import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
-import { COSTE_ESTIMADO_LABELS, firstActiveDietaLabel } from '@/lib/recipes/labels';
+import { cocinaLabel, COSTE_ESTIMADO_LABELS, firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { cn } from '@/lib/utils';
 
 /**
@@ -139,7 +139,7 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, onAddToMenu, 
         <h3 className="line-clamp-3 text-h5">{recipe.nombre}</h3>
         <div className="mt-1">
           <Tag variant={dietaLabel ? 'accent' : 'neutral'}>
-            {dietaLabel ?? recipe.clasificacion?.cocina ?? '—'}
+            {dietaLabel ?? (recipe.clasificacion?.cocina ? cocinaLabel(recipe.clasificacion.cocina) : '—')}
           </Tag>
         </div>
         <p className="mt-2 text-body-sm text-tertiary">
