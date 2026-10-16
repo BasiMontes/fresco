@@ -203,6 +203,17 @@ describe('SidebarAccount', () => {
       }
     });
 
+    // FRESCO-849: the menu entries are text only (founder's call); the red colour
+    // and the last position already say it is the way out.
+    test('no menu entry carries an icon, "Cerrar sesión" included', async () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+      await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
+
+      for (const id of ['upgrade_to_pro_button', 'popover_item_perfil', 'popover_item_configuracion', 'popover_item_ayuda', 'sidebar_logout_button']) {
+        expect(screen.getByTestId(id).querySelector('svg')).toBeNull();
+      }
+    });
+
     test('the open menu repeats the email in its header', async () => {
       renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
       await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
