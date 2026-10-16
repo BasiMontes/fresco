@@ -1,7 +1,7 @@
 'use client';
 
 import type { UserProfile } from '@schemas';
-import { ChevronsUpDown, LogOut, User as UserIcon } from 'lucide-react';
+import { ChevronsUpDown, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
@@ -311,9 +311,9 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
             disabled={isLoggingOut}
             aria-busy={isLoggingOut}
             onClick={() => closeMenuThen(() => (isAnonymous ? setShowGuestConfirm(true) : void handleLogout()))}
-            className="w-full justify-start gap-2 px-3 text-error hover:bg-neutral-100"
+            className="w-full justify-start px-3 text-error hover:bg-neutral-100"
           >
-            <LogOut className="size-4" aria-hidden="true" />
+            {/* FRESCO-849: text only like the other entries; red and last say it is the way out. */}
             Cerrar sesión
           </Button>
         </Popover>
