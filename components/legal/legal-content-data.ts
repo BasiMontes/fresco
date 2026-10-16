@@ -45,6 +45,15 @@ export const COOKIE_TABLE: CookieTableRow[] = [
     duration: 'Hasta que cambies tu decisión',
     type: 'Técnica',
   },
+  {
+    // FRESCO-979: `public/sw.js` and its `fresco-offline-v1` cache. Only the offline
+    // screen is stored, never a page of the app or any account data.
+    name: 'sw.js (service worker) y caché fresco-offline-v1',
+    provider: 'Fresco',
+    purpose: 'Mostrar una pantalla de aviso cuando no hay conexión. Solo guarda esa pantalla, nunca tus datos ni páginas de la app',
+    duration: 'Hasta que borres los datos del sitio',
+    type: 'Técnica',
+  },
 ];
 
 // Re-exported: the values live in `lib/legal/entity.ts` (FRESCO-810: `lib/` must not import from `components/`).
