@@ -50,7 +50,12 @@ export default async function ShoppingListPage() {
   if (!plan) {
     return (
       <div className="mx-auto max-w-2xl">
-        <NoMenuEmptyState data-testid="shopping_list_no_menu_empty_state" titleAs="h1" />
+        <NoMenuEmptyState
+          data-testid="shopping_list_no_menu_empty_state"
+          titleAs="h1"
+          title="Todavía no hay lista de la compra"
+          description="Tu lista se genera a partir del menú de la semana: crea el menú y verás los ingredientes agrupados por sección, con su precio orientativo."
+        />
       </div>
     );
   }
