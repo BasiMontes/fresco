@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
+import { ServiceWorkerRegistrar } from '@/components/layout/service-worker-registrar';
 import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/layout/sidebar-preference';
@@ -68,11 +69,15 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   const sidebarCollapsed = parseSidebarCollapsed(cookieStore.get(SIDEBAR_COLLAPSED_COOKIE)?.value);
 
   return (
-    <AppShell
-      user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}
-      sidebarCollapsed={sidebarCollapsed}
-    >
-      {children}
-    </AppShell>
+    <>
+      {/* FRESCO-979: offline screen for every signed-in user. */}
+      <ServiceWorkerRegistrar />
+      <AppShell
+        user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}
+        sidebarCollapsed={sidebarCollapsed}
+      >
+        {children}
+      </AppShell>
+    </>
   );
 }

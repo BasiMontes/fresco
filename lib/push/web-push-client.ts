@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { deletePushSubscription, savePushSubscription } from '@/lib/api/push-subscriptions';
+import { SERVICE_WORKER_URL } from '@/lib/pwa/service-worker';
 
 export class WebPushError extends Error {
   constructor(message: string) {
@@ -43,7 +44,7 @@ export function urlBase64ToUint8Array(base64String: string): Uint8Array {
  */
 async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
   try {
-    return await navigator.serviceWorker.register('/sw.js');
+    return await navigator.serviceWorker.register(SERVICE_WORKER_URL);
   }
   catch (error) {
     throw new WebPushError(`No se pudo registrar el service worker: ${error instanceof Error ? error.message : String(error)}`);
