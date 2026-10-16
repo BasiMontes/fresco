@@ -14,6 +14,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
 import { toOrigin } from '@/lib/security/csp';
 import { canonicalUrl, getMetadataBase } from '@/lib/seo/canonical';
+import { getSiteVerification } from '@/lib/seo/site-verification';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/structured-data';
 import { isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 
@@ -105,6 +106,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: canonicalUrl('/'),
   },
+  // FRESCO-887: Search Console / Bing ownership tags; codes come from env.
+  verification: getSiteVerification(),
 };
 
 // FRESCO-476 (SEO): `<meta name="theme-color">` for the mobile browser UI,
