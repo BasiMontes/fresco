@@ -3,17 +3,18 @@ name: Cron heartbeat monitor (production /api/health/jobs)
 # FRESCO-915 (definitive audit C-11): the Stripe reconciliation cron is the only safety net for
 # lost payments, and `cron.job_run_details` reports `succeeded` even when the route answers 401
 # (a rotated CRON_SECRET) or 500, because `net.http_get` only enqueues. The route now writes its
-# own heartbeat; this workflow asks production, every hour, whether each scheduled job reported
-# recently. It opens ONE issue (later failures comment on it) when `/api/health/jobs` does not
+# own heartbeat; this workflow is scheduled to ask production, hourly, whether each scheduled job
+# reported recently. It opens ONE issue (later failures comment on it) when `/api/health/jobs` does not
 # answer 200, and closes it when it recovers.
 #
 # `/api/health/jobs` answers 503 when a job has not reported for more than 25 hours (a daily cron
 # plus an hour of slack) or when the heartbeats cannot be read, and 200 when every job is `ok` or
-# still `pending` (it has not run since the heartbeat was deployed). With an hourly probe a
-# stopped job raises an alert within roughly 26 hours of its last success.
+# still `pending` (it has not run since the heartbeat was deployed). With a probe that really ran
+# hourly, a stopped job would raise an alert within roughly 26 hours of its last success.
 #
-# Limits, stated plainly: GitHub schedules are best-effort and can start late or be skipped, so
-# this is a floor, not a guarantee. A job that has NEVER reported stays `pending` and does not
+# Limits, stated plainly: GitHub schedules are best-effort and can start late or be skipped, and
+# in practice the hourly cadence is nominal (FRESCO-951), so the 26 hours is a best case. This is
+# a backup; the external monitor of the same URL (docs/workflows/observability.md) is the primary. A job that has NEVER reported stays `pending` and does not
 # alert; that is deliberate, or this would fire before the first scheduled run after a deploy.
 #
 # Drill: run it by hand with a path that does not exist (e.g. `/api/health/jobs-drill`) to prove

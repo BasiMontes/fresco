@@ -2,12 +2,14 @@ name: Uptime monitor (production /api/health)
 
 # FRESCO-803 (A6-D7): nothing watched production, so an outage was only noticed
 # when a user or a test hit it. This is the free, account-less monitor: GitHub
-# calls `/api/health` every 5 minutes and opens ONE issue (later failures comment
-# on it) when production does not answer 200; the issue is closed when it recovers.
+# is asked to call `/api/health` every 5 minutes and opens ONE issue (later failures
+# comment on it) when production does not answer 200; the issue is closed when it
+# recovers.
 #
 # Limits, stated plainly: GitHub schedules are best-effort. A run can start late
-# or be skipped under load, so this is a floor, not a guarantee. An external
-# monitor (UptimeRobot free plan) can be added later without changing this one.
+# or be skipped under load, and in practice the 5 minutes is nominal (FRESCO-951:
+# gaps of hours). This is a backup, not the primary alert; the external monitor
+# in docs/workflows/observability.md is.
 #
 # Drill: run it by hand with a path that does not exist (e.g. `/api/health-drill`)
 # to prove the alert works. A drill uses its own label so it never touches the
