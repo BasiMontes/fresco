@@ -92,12 +92,12 @@ describe('PlanningSelectionGrid', () => {
     }
   });
 
-  test('lays the days out 4 per row on mobile and 7 from sm up', () => {
+  test('lays the days out 4 per row and 7 once the card is wide enough (FRESCO-985)', () => {
     render();
 
     const grid = screen.getByLabelText('Cena domingo').closest('label')?.parentElement;
     expect(grid?.className).toContain('grid-cols-4');
-    expect(grid?.className).toContain('sm:grid-cols-7');
+    expect(grid?.className).toContain('@min-[336px]:grid-cols-7');
   });
 
   test('"Todos" on a meal row selects that meal for all seven days', async () => {
@@ -158,5 +158,24 @@ describe('PlanningSelectionGrid — readable text (FRESCO-967)', () => {
 
     expect(container.querySelector('.text-caption')).toBeNull();
     expect(container.querySelector('.text-body-sm')).not.toBeNull();
+  });
+});
+
+describe('PlanningSelectionGrid — column count follows the card, not the window (FRESCO-985)', () => {
+  // At 768px /profile is two columns wide and the card is ~248px: seven 44px targets do not
+  // fit, so a viewport breakpoint (`sm:`) made neighbouring touch targets overlap. The seven
+  // columns now depend on the width of the card the grid sits in, through a container query.
+  test('switches to seven columns by container width, never by viewport width', () => {
+    const { container } = render();
+    const row = container.querySelector('.grid');
+
+    expect(row?.className).toContain('@min-[336px]:grid-cols-7');
+    expect(row?.className).toContain('grid-cols-4');
+    expect(row?.className).not.toMatch(/(^|\s)(sm|md|lg|xl):grid-cols-7/);
+    expect(row?.parentElement?.className).toContain('@container');
+  });
+
+  test('336px is what seven 44px targets and six 4px gaps need', () => {
+    expect(7 * 44 + 6 * 4).toBeLessThanOrEqual(336);
   });
 });

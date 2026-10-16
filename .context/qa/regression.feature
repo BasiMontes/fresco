@@ -2175,6 +2175,14 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la pantalla no tiene violaciones de accesibilidad serias
     Y todos los elementos interactivos miden al menos 44 px
 
+  @mobile @tablet @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-985)
+  # A 768 px /profile va a dos columnas y la tarjeta mide unos 248 px: siete casillas de
+  # 44 px a pasos de 36 px se solapaban. La rejilla sigue ahora el ancho de su tarjeta.
+  Escenario: La rejilla de comidas de /profile no solapa sus zonas táctiles en móvil ni en tableta
+    Dado que Laura está en /profile
+    Entonces las zonas táctiles de la rejilla de comidas no se solapan
+
   # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
