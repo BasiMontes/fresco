@@ -135,3 +135,36 @@ export async function expectTouchTargetsAtLeast(
     throw new Error(`[a11y] ${offenders.length} elemento(s) interactivo(s) < ${minPx}px en ${page.url()}:\n${offenders.map(line => `- ${line}`).join('\n')}`);
   }
 }
+
+/**
+ * FRESCO-985: fails when two touch targets of the same kind overlap. The 44 px floor
+ * above passes when a target is wide enough but neighbours share its area (the planning
+ * grid at 768 px had 44 px targets on a 36 px pitch). Targets are measured through their
+ * `<label>` when they have one, like `expectTouchTargetsAtLeast`; a 1 px tolerance covers
+ * sub-pixel rounding.
+ */
+export async function expectNoOverlappingTargets(page: Page, testId: string): Promise<void> {
+  const overlaps = await page.evaluate((id) => {
+    const boxes = [...document.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`)].map((element) => {
+      const rect = (element.closest('label') ?? element).getBoundingClientRect();
+      return { name: element.getAttribute('aria-label') ?? '', x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+    });
+    const found: string[] = [];
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        if (overlapX > 1 && overlapY > 1) {
+          found.push(`"${a.name}" y "${b.name}" se solapan ${Math.round(overlapX)}x${Math.round(overlapY)} px`);
+        }
+      }
+    }
+    return found;
+  }, testId);
+
+  if (overlaps.length > 0) {
+    throw new Error(`[a11y] ${overlaps.length} par(es) de [${testId}] se solapan en ${page.url()}:\n${overlaps.slice(0, 10).map(line => `- ${line}`).join('\n')}`);
+  }
+}

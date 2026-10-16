@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
-import { expectNoA11yViolations, expectTouchTargetsAtLeast } from './support/a11y';
+import { expectNoA11yViolations, expectNoOverlappingTargets, expectTouchTargetsAtLeast } from './support/a11y';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @a11y.
@@ -53,4 +53,10 @@ Then(/^la pantalla no tiene violaciones de accesibilidad serias$/, async ({ page
 // the 360 px viewport by the `mobile` project.
 Then(/^todos los elementos interactivos miden al menos 44 px$/, async ({ page }) => {
   await expectTouchTargetsAtLeast(page);
+});
+
+// FRESCO-985: at 768 px /profile is two columns wide and the planning grid sits in a ~248 px
+// card; seven 44 px targets on a 36 px pitch overlapped. The grid now follows its card width.
+Then(/^las zonas táctiles de la rejilla de comidas no se solapan$/, async ({ page }) => {
+  await expectNoOverlappingTargets(page, 'planning_selection_cell');
 });

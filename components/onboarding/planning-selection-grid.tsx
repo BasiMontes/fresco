@@ -94,22 +94,28 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                 </button>
               </span>
             </div>
-            <div className="mt-1 grid grid-cols-4 gap-1 sm:grid-cols-7">
-              {DAY_OPTIONS.map(day => (
-                <label
-                  key={day.value}
-                  className="flex min-h-11 min-w-11 cursor-pointer flex-col items-center justify-center gap-0.5"
-                >
-                  <span className="text-body-sm font-sans uppercase text-tertiary">{day.label}</span>
-                  <Checkbox
-                    data-testid="planning_selection_cell"
-                    checked={(value[day.value] ?? []).includes(meal.value)}
-                    onChange={() => toggleCell(day.value, meal.value)}
-                    aria-label={`${meal.label} ${day.name}`}
-                    className="rounded"
-                  />
-                </label>
-              ))}
+            {/* FRESCO-985: the seven columns depend on the width of the card, not of the
+                window. Seven 44px targets and six 4px gaps need 332px; at 768px /profile is
+                two columns wide and the card is ~248px, so a viewport breakpoint made the
+                neighbouring targets overlap. */}
+            <div className="@container mt-1">
+              <div className="grid grid-cols-4 gap-1 @min-[336px]:grid-cols-7">
+                {DAY_OPTIONS.map(day => (
+                  <label
+                    key={day.value}
+                    className="flex min-h-11 min-w-11 cursor-pointer flex-col items-center justify-center gap-0.5"
+                  >
+                    <span className="text-body-sm font-sans uppercase text-tertiary">{day.label}</span>
+                    <Checkbox
+                      data-testid="planning_selection_cell"
+                      checked={(value[day.value] ?? []).includes(meal.value)}
+                      onChange={() => toggleCell(day.value, meal.value)}
+                      aria-label={`${meal.label} ${day.name}`}
+                      className="rounded"
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
         );
