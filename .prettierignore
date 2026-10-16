@@ -102,6 +102,9 @@ supabase/.temp/
 # Same issue, different tool: playwright-cli (the CLI-driven skill) writes its
 # own transient snapshots/screenshots/logs here instead of .playwright-mcp/.
 .playwright-cli/
+# Newer playwright-cli versions write them to .playwright/output/ instead
+# (gitignored; FRESCO-979 e2e probe left page-*.yml that broke the pre-push).
+.playwright/output/
 
 # ===========================================
 # Impeccable design-hook cache - generated, local-only
