@@ -1,6 +1,32 @@
 import type { ClassValue } from 'clsx';
 import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+/**
+ * The font sizes the theme declares as `--text-<name>` in `app/globals.css`
+ * (each with its own line height). `lib/utils.test.ts` fails when the two
+ * drift apart.
+ */
+export const THEME_FONT_SIZES = [
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'display-light',
+  'body-md',
+  'body-sm',
+  'label',
+  'caption',
+];
+
+// tailwind-merge only knows Tailwind's own sizes, so it read `text-caption` as
+// a text colour and dropped one of the two when a real colour sat next to it
+// (FRESCO-982). Listing the theme sizes puts them in the `font-size` group.
+const twMerge = extendTailwindMerge({
+  extend: { classGroups: { 'font-size': [{ text: THEME_FONT_SIZES }] } },
+});
 
 /**
  * Merge Tailwind class names, resolving conflicting utility classes
