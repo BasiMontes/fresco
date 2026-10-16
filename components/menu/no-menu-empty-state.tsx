@@ -14,15 +14,26 @@ import { EmptyState } from '@/components/ui/empty-state';
  * since it can generate directly for whichever week is being viewed without
  * a full onboarding round-trip. Optional so `/menu`'s existing call site is
  * unaffected.
+ *
+ * `title` and `description` (FRESCO-980, UX-26) let a caller say what the empty
+ * screen is FOR: the shopping list and the calendar showed the dashboard's
+ * words verbatim, so an empty list never said that it is built from the menu.
+ * The defaults keep the original copy, so `/menu` is unchanged.
  */
-export function NoMenuEmptyState({ 'data-testid': dataTestId, action, titleAs }: { 'data-testid': string, 'action'?: ReactNode, 'titleAs'?: 'h1' | 'h2' }) {
+export function NoMenuEmptyState({ 'data-testid': dataTestId, action, titleAs, title, description }: {
+  'data-testid': string
+  'action'?: ReactNode
+  'titleAs'?: 'h1' | 'h2'
+  'title'?: string
+  'description'?: string
+}) {
   return (
     <EmptyState
       data-testid={dataTestId}
       titleAs={titleAs}
       icon={<UtensilsCrossed className="size-8 text-tertiary" aria-hidden="true" />}
-      title="Todavía no tienes un menú para esta semana"
-      description="Completa tu perfil y genera tu primer menú semanal en unos segundos."
+      title={title ?? 'Todavía no tienes un menú para esta semana'}
+      description={description ?? 'Completa tu perfil y genera tu primer menú semanal en unos segundos.'}
       action={action ?? (
         <Link href="/onboarding" className={buttonVariants({ variant: 'action', size: 'lg' })}>
           <Zap className="size-[18px]" strokeWidth={2} />

@@ -120,6 +120,7 @@ export default async function CalendarPage({
         </div>
         <NoMenuEmptyState
           data-testid="calendar_empty_state"
+          description="Genera el menú en unos segundos y reorganiza los platos arrastrándolos por el calendario."
           action={<GenerateWeekButton semanaIso={semanaIso} fechaInicio={mondayIso} />}
         />
       </div>
