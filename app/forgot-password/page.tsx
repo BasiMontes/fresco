@@ -94,16 +94,21 @@ function ForgotPasswordPageInner() {
             )
           : (
               <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
-                <Input
-                  data-testid="forgot_password_email_input"
-                  type="email"
-                  placeholder="Correo electrónico"
-                  aria-label="Correo electrónico"
-                  required
-                  autoComplete="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
+                {/* FRESCO-984: visible label, as on /login (FRESCO-936): the
+                    placeholder alone vanished on the first key. */}
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="forgot-password-email" className="text-label text-text">Correo electrónico</label>
+                  <Input
+                    id="forgot-password-email"
+                    data-testid="forgot_password_email_input"
+                    type="email"
+                    placeholder="nombre@correo.com"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
                 <CaptchaField captcha={captcha} />
                 <Button data-testid="forgot_password_submit_button" type="submit" className="mt-2" disabled={isSubmitting || !captcha.ready}>
                   {isSubmitting ? 'Enviando…' : 'Enviar enlace'}
