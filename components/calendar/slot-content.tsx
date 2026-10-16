@@ -19,7 +19,8 @@ function SlotRecipeText({ recipe, estado }: { recipe: Recipe, estado: EstadoRece
   return (
     <>
       <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-      <h2 className={cn('line-clamp-3 text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h2>
+      {/* FRESCO-981: `line-clamp-6`, same reasoning as `RecipeCard` (a title is never cut on a phone). */}
+      <h2 className={cn('line-clamp-6 text-h5', estado === 'descartada' && 'line-through')}>{recipe.nombre}</h2>
       {dietaLabel && (
         <div className="mt-1">
           <Tag variant="accent">{dietaLabel}</Tag>

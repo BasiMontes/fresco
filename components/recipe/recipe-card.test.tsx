@@ -61,7 +61,9 @@ describe('RecipeCard', () => {
     renderWithProviders(<RecipeCard recipe={RECIPE} />);
     const title = screen.getByRole('heading', { name: 'Paella de marisco' });
     expect(title.className).toContain('text-h5');
-    expect(title.className).toContain('line-clamp-3');
+    // FRESCO-981: six lines, enough for the longest catalog title on a 320px phone.
+    expect(title.className).toContain('line-clamp-6');
+    expect(title.className).not.toContain('line-clamp-3');
   });
 
   test('fires onToggleFavorite from the overlay favourite button', async () => {

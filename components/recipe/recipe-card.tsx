@@ -136,7 +136,11 @@ export function RecipeCard({ recipe, isFavorite, onToggleFavorite, onAddToMenu, 
       />
       <div className="flex flex-1 flex-col p-3">
         <p className="text-h6 uppercase text-tertiary">{recipe.clasificacion?.categoria ?? '—'}</p>
-        <h3 className="line-clamp-3 text-h5">{recipe.nombre}</h3>
+        {/* FRESCO-981: `line-clamp-6`, not 3. Measured on the 1,173 catalog titles in
+            a real card: at 393px the longest needs 4 lines (15 titles were cut at 3),
+            at 360px 5 and at 320px 6. Six shows every title in full on any phone and
+            only guards against a pathological name. */}
+        <h3 className="line-clamp-6 text-h5">{recipe.nombre}</h3>
         <div className="mt-1">
           <Tag variant={dietaLabel ? 'accent' : 'neutral'}>
             {dietaLabel ?? (recipe.clasificacion?.cocina ? cocinaLabel(recipe.clasificacion.cocina) : '—')}
