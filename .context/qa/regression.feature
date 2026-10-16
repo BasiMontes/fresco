@@ -2009,7 +2009,7 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/landing.steps.ts (FRESCO-355)
   Escenario: La landing pública muestra el value proposition, precios y FAQ sin necesidad de sesión
     Dado que un visitante sin cuenta ni sesión visita /
-    Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Gratis y Pro) y FAQ
+    Entonces ve la propuesta de valor, cómo funciona en 3 pasos, precios (Free y Pro) y FAQ
     Y ambos CTA principales ("Generar mi primer menú", "Empezar gratis") llevan a /onboarding
 
   @landing @verificado-manual-2026-08-19 @automatizado

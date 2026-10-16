@@ -59,7 +59,7 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
         <h2 className="mb-8 text-h2 text-background">Sin letra pequeña. Sin trampa.</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col rounded-card border border-border bg-surface p-7">
-            <p className="text-h6 uppercase text-tertiary">Gratis</p>
+            <p className="text-h6 uppercase text-tertiary">Free</p>
             <p className="mb-1 text-h1 text-text">
               0€
               <span className="text-body-md font-normal text-tertiary">/mes</span>

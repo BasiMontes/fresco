@@ -27,9 +27,9 @@ When(/^toca una pregunta$/, async ({ page }) => {
   await page.locator('#faq button[aria-expanded]').first().click();
 });
 
-Then(/^ve la propuesta de valor, cómo funciona en 3 pasos, precios \(Gratis y Pro\) y FAQ$/, async ({ page }) => {
+Then(/^ve la propuesta de valor, cómo funciona en 3 pasos, precios \(Free y Pro\) y FAQ$/, async ({ page }) => {
   await expect(page.locator('#como-funciona')).toBeVisible();
-  await expect(page.locator('#pricing')).toContainText('Gratis');
+  await expect(page.locator('#pricing')).toContainText('Free');
   await expect(page.locator('#pricing')).toContainText('Pro');
   await expect(page.locator('#faq')).toBeVisible();
 });

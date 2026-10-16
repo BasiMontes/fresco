@@ -9,13 +9,14 @@ import { Pricing } from './pricing';
  */
 
 describe('Pricing — plan labels', () => {
-  // FRESCO-938 (UX-05): the Spanish product showed FREE and POPULAR in English.
-  test('names the free plan and the highlighted tag in Spanish', () => {
+  // FRESCO-938 (UX-05) put the highlighted tag in Spanish. FRESCO-983: the plan itself is
+  // called Free everywhere (profile badge, FAQ, help), like Pro, so the card says Free too.
+  test('names the free plan Free and keeps the highlighted tag in Spanish', () => {
     renderWithProviders(<Pricing prices={{ month: 4.99, year: null }} />);
 
-    expect(screen.getByText('Gratis')).toBeTruthy();
+    expect(screen.getByText('Free')).toBeTruthy();
+    expect(screen.queryByText('Gratis')).toBeNull();
     expect(screen.getByText('Más elegido')).toBeTruthy();
-    expect(screen.queryByText('Free')).toBeNull();
     expect(screen.queryByText('Popular')).toBeNull();
   });
 });
