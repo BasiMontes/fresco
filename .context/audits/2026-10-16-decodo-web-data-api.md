@@ -15,7 +15,7 @@ Este informe se escribió sin leer las decisiones ya tomadas sobre precios de su
 | ADR-0036 | Capa de datos de supermercados: contrato único de conector, modelo de precios en Postgres y **puerta legal en código**: solo se ejecuta un conector con `permiso` `concedido` o `riesgo-aceptado` y con un documento que lo respalde |
 | ADR-0037 | Consum: conector bajo `riesgo-aceptado` mientras la petición de consentimiento no tiene respuesta |
 
-Estado de lo pendiente: Día (FRESCO-765) y Alcampo (FRESCO-766) esperan consentimiento por escrito y están bloqueadas; Carrefour tiene la solicitud de afiliación en Awin lista para hacerse (FRESCO-753, con posible feed de producto y precio); el comparador (FRESCO-346) y la investigación de 19 cadenas (FRESCO-747) están bloqueados.
+Estado de lo pendiente: Día (FRESCO-765) y Alcampo (FRESCO-766) esperan consentimiento por escrito y están bloqueadas; Carrefour: la solicitud de afiliación en Awin (FRESCO-753) se **rechazó el 2026-10-16** porque Awin exige un depósito reembolsable y no se gasta nada; el comparador (FRESCO-346) y la investigación de 19 cadenas (FRESCO-747) están bloqueados.
 
 Qué corrige esto en este informe:
 
@@ -92,7 +92,7 @@ El `robots.txt` se descargó una vez por sitio con un agente identificado. No se
 |---|---|---|---|---|
 | Mercadona (`www`) | Catálogo y precios | `User-agent: *` con `Disallow:` vacío | Aviso legal: 403 a mi cliente automatizado, no leído aquí | **Ya decidido: `riesgo-aceptado`, ADR-0028** (sus condiciones se revisaron en esa decisión) |
 | Mercadona (`tienda`) | Catálogo y precios | `Disallow: /` salvo `/product` y `/sitemap.xml`; bloquea `/api` y `/legal` | Ver ADR-0028 | **Ya decidido** (ADR-0028); hoy se lee el dataset comunitario, sin peticiones propias |
-| Carrefour | Catálogo y precios | Sin bloque para `*`; 83 reglas `Disallow` para agentes con nombre | Aviso legal: 403 a mi cliente automatizado, no leído aquí | Sin conector; solicitud de afiliación en Awin lista (FRESCO-753) |
+| Carrefour | Catálogo y precios | Sin bloque para `*`; 83 reglas `Disallow` para agentes con nombre | Aviso legal: 403 a mi cliente automatizado, no leído aquí | Sin conector; afiliación en Awin rechazada por el depósito (FRESCO-753, Rechazos) |
 | Día | Catálogo y precios | `robots.txt` responde 403 a un cliente automatizado | No leídas | **Descartada** |
 | Cookpad | Recetas | `*` permite casi todo; bloquea con `Disallow: /` a GPTBot, CCBot y ClaudeBot | URL no localizada | **Descartada** |
 | Directo al Paladar | Recetas y fotos | `*` permite casi todo; bloquea MJ12bot, AI2Bot y Diffbot | No localizadas | **Descartada**: contenido editorial |
@@ -129,7 +129,7 @@ Alternativas que no se probaron, y por qué: Firecrawl (1.000 créditos gratuito
 
 **Aplazar.** Motivos:
 
-1. **El caso de uso (precios de supermercados) ya está cubierto donde hay permiso y bloqueado donde no.** Mercadona y Consum funcionan por la capa de FRESCO-770 con su puerta legal; Día y Alcampo esperan consentimiento y Carrefour, la afiliación de Awin (FRESCO-753, sin coste y con posible feed de precios). Las fotos y recetas del catálogo se cubren con APIs oficiales y licencias.
+1. **El caso de uso (precios de supermercados) ya está cubierto donde hay permiso y bloqueado donde no.** Mercadona y Consum funcionan por la capa de FRESCO-770 con su puerta legal; Día y Alcampo esperan consentimiento, y Carrefour no tiene vía hoy: la afiliación de Awin (FRESCO-753) se rechazó porque exige un depósito reembolsable. Las fotos y recetas del catálogo se cubren con APIs oficiales y licencias.
 2. **El valor diferencial no es probable de verificar sin infringir.** Saltarse protecciones de webs ajenas es justo lo que el proveedor anuncia y lo que su propio contrato deja a cargo del cliente.
 3. **La alternativa ya instalada es mejor para lo comprobable.** Más rápida con JavaScript y con salida más limpia, sin cuenta nueva.
 4. **El coste no es el problema, y por eso no compensa el riesgo.** Mil páginas al mes cuestan 0,50 $; el obstáculo es legal.
@@ -146,7 +146,7 @@ Si se adopta algún día: ADR en `.context/ADR/` (dependencia de un tercero y tr
 
 - El gasto real no se ha confirmado en la pestaña «Usage statistics» del panel de Decodo; la cifra de 0,013 $ es una estimación con su tabla de precios.
 - La cuenta de Decodo y su clave existen fuera del repositorio. Si no se va a retomar, conviene borrar la cuenta y la variable `DECODO_API_TOKEN` de `.env`. Es decisión del fundador.
-- Condiciones de Carrefour y Recetasgratis: sin leer. Para Carrefour manda la solicitud de Awin (FRESCO-753); Mercadona y Consum ya tienen decisión (ADR-0028 y ADR-0037); Día y Alcampo esperan consentimiento (FRESCO-765 y FRESCO-766).
+- Condiciones de Carrefour y Recetasgratis: sin leer. Carrefour no tiene vía hoy (FRESCO-753 rechazada por el depósito de Awin); Mercadona y Consum ya tienen decisión (ADR-0028 y ADR-0037); Día y Alcampo esperan consentimiento (FRESCO-765 y FRESCO-766).
 - `/crawl` y `/map` de Tavily no se midieron.
 
 ## Referencias
