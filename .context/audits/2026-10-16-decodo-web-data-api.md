@@ -56,7 +56,7 @@ Fuente: https://help.decodo.com/docs/web-data-api-billing. Precio por 1.000 peti
 - Solo se cobran las peticiones correctas. Los fallos del lado del proveedor (500, 524 y 613) no se cobran.
 - Por tanto, «sin multiplicadores ocultos por JavaScript o sitios protegidos» (página comercial) es falso: JavaScript suma un 50 % y el valor por defecto duplica el precio.
 - Con 5 $: 10.000 páginas estándar, 6.667 con JavaScript, 5.000 por defecto o por `/crawl`.
-- Sin método de pago asociado no puede haber un cargo al agotarse: según su tabla de códigos, la petición siguiente devuelve `429`.
+- Si no hay método de pago asociado (el alta no lo pidió, no confirmado), no puede haber un cargo al agotarse el crédito; su tabla de códigos devuelve `429` cuando no queda saldo. No se agotó para comprobarlo.
 
 ## Lo que publica el proveedor sobre uso legal
 
@@ -78,7 +78,7 @@ El `robots.txt` se descargó una vez por sitio con un agente identificado. No se
 | Cookpad | Recetas | `*` permite casi todo; bloquea con `Disallow: /` a GPTBot, CCBot y ClaudeBot | URL no localizada | **Descartada** |
 | Directo al Paladar | Recetas y fotos | `*` permite casi todo; bloquea MJ12bot, AI2Bot y Diffbot | No localizadas | **Descartada**: contenido editorial |
 | Recetasgratis | Recetas | `*` veta búsqueda, administración y `ajax` | URL no localizada | Pendiente; contenido editorial |
-| Wikimedia Commons | Imágenes con licencia | `*` veta `/w/` y `/api/` a rastreadores genéricos | Los Términos de Uso exigen User-Agent identificado, cumplir la Robot Policy y API:Etiquette | **No por un servicio de scraping**: usaría un agente aleatorio, contrario a su política. Sí por su API oficial |
+| Wikimedia Commons | Imágenes con licencia | `*` veta `/w/` y `/api/` a rastreadores genéricos | Los Términos de Uso exigen User-Agent identificado, cumplir la Robot Policy y API:Etiquette | **No por un servicio de scraping**: no garantiza el User-Agent identificado que su política exige. Sí por su API oficial |
 
 Los dos supermercados que se consultaron responden 403 a un cliente automatizado incluso en su aviso legal, y Día lo hace en su `robots.txt`. Esa respuesta es una señal de que no quieren automatización y se respeta, sin usar un servicio de desbloqueo para esquivarla.
 
@@ -100,7 +100,7 @@ Alternativas que no se probaron, y por qué: Firecrawl (1.000 créditos gratuito
 | # | Pregunta | Respuesta |
 |---|---|---|
 | 1 | ¿Gratuito recurrente o crédito único? ¿Pide tarjeta? | Crédito único de 5 $ (`0 / 5 $` en el panel). El alta se hizo sin cobro (saldo 0,00 $). Que el crédito se renueve cada mes no consta en ningún sitio; el post y su página de `/crawl` dicen «recurrente» sin respaldo en el panel ni en la tabla de precios |
-| 2 | ¿Qué pasa al agotarlo? | Sin método de pago, la petición siguiente devuelve `429`; no puede haber cargo. No se ha agotado para comprobarlo |
+| 2 | ¿Qué pasa al agotarlo? | Si no hay método de pago asociado (no confirmado), no puede haber cargo; su tabla de códigos devuelve `429`. No se ha agotado para comprobarlo |
 | 3 | ¿Qué funciona en las fuentes que nos interesan? | En sitios de práctica, todo (estático, JavaScript, `/map`, `/crawl`). En las fuentes reales no se probó: están descartadas o sin condiciones leídas |
 | 4 | ¿Calidad del dato frente a Unsplash, Pexels y Pixabay? | No comparable: esas APIs devuelven una foto con licencia y atribución; Decodo devuelve el HTML o el Markdown de una página, sin estructura y sin licencia |
 | 5 | ¿Qué parte ya tenemos? | Tavily cubre extracción, rastreo y mapa, y en la prueba renderiza JavaScript 6 veces más rápido |
