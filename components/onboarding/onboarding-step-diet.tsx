@@ -89,6 +89,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
             <span key={option.value} className="inline-flex items-center gap-1">
               <button
                 type="button"
+                className="inline-flex min-h-11 items-center"
                 data-testid="dieta_option"
                 disabled={isLocked}
                 aria-pressed={dietaState[option.value]}
@@ -129,6 +130,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
             <span key={option.value} className="inline-flex items-center gap-1">
               <button
                 type="button"
+                className="inline-flex min-h-11 items-center"
                 data-testid="alergeno_option"
                 disabled={isLocked}
                 aria-pressed={alergenos.includes(option.value)}
@@ -159,6 +161,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
           <button
             key={option.value}
             type="button"
+            className="inline-flex min-h-11 items-center"
             data-testid="ingrediente_odiado_option"
             aria-pressed={ingredientesOdiados.includes(option.value)}
             onClick={() => toggleIngredienteOdiado(option.value)}
@@ -188,6 +191,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
           <button
             key={option.value}
             type="button"
+            className="inline-flex min-h-11 items-center"
             data-testid="cocina_option"
             aria-pressed={cocinasFavoritas.includes(option.value)}
             onClick={() => toggleCocina(option.value)}
