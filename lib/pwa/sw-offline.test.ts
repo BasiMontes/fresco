@@ -7,8 +7,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
  *
  * What they pin down is what keeps the worker safe for every signed-in user:
  * it precaches ONLY static files, it never stores a navigation, it ignores
- * everything that is not a page navigation, and the push handlers (FRESCO-241)
- * are still there.
+ * everything that is not a page navigation, and the push handlers (FRESCO-241,
+ * FRESCO-372) still do what they did before the offline screen was added.
  */
 
 type Handler = (event: Record<string, unknown>) => void;
@@ -45,9 +45,18 @@ class FakeCacheStorage {
   }
 }
 
+interface FakeClient {
+  url: string
+  focus: () => Promise<unknown>
+  navigate?: (url: string) => Promise<FakeClient | null>
+}
+
 let caches: FakeCacheStorage;
 let calls: { skipWaiting: number, claim: number };
 let networkResponse: () => Promise<Response>;
+let shown: Array<{ title: string, options: Record<string, unknown> }>;
+let clientList: FakeClient[];
+let opened: string[];
 
 const original: Record<string, unknown> = {};
 const GLOBALS = ['addEventListener', 'caches', 'skipWaiting', 'clients', 'registration', 'fetch'] as const;
@@ -57,8 +66,12 @@ beforeAll(async () => {
   scope.addEventListener = (type: string, handler: Handler) => { handlers[type] = handler; };
   scope.caches = new Proxy({}, { get: (_t, prop) => (caches as unknown as Record<string, (...args: unknown[]) => unknown>)[prop as string].bind(caches) });
   scope.skipWaiting = async () => { calls.skipWaiting++; };
-  scope.clients = { claim: async () => { calls.claim++; }, matchAll: async () => [], openWindow: async () => undefined };
-  scope.registration = { showNotification: async () => undefined };
+  scope.clients = {
+    claim: async () => { calls.claim++; },
+    matchAll: async () => clientList,
+    openWindow: async (url: string) => { opened.push(url); },
+  };
+  scope.registration = { showNotification: async (title: string, options: Record<string, unknown>) => { shown.push({ title, options }); } };
   scope.fetch = async (..._args: unknown[]) => networkResponse();
   await import(new URL('../../public/sw.js', import.meta.url).href);
 });
@@ -71,6 +84,9 @@ beforeEach(() => {
   caches = new FakeCacheStorage();
   calls = { skipWaiting: 0, claim: 0 };
   networkResponse = async () => new Response('network page');
+  shown = [];
+  clientList = [];
+  opened = [];
 });
 
 /** Runs a handler and awaits whatever it passes to `waitUntil` / `respondWith`. */
@@ -175,5 +191,83 @@ describe('sw.js offline fallback (FRESCO-979)', () => {
     const { responded } = await dispatch('fetch', navigation());
 
     expect(responded!.type).toBe('error');
+  });
+});
+
+describe('sw.js push handlers (FRESCO-241, FRESCO-372) are unchanged', () => {
+  const pushEvent = (data: unknown) => ({ data });
+
+  test('push shows the notification from the payload, with the brand icon and the target url', async () => {
+    await dispatch('push', pushEvent({ json: () => ({ title: 'Tu menú', body: 'Ya está listo', url: '/calendar' }) }));
+
+    expect(shown).toHaveLength(1);
+    expect(shown[0].title).toBe('Tu menú');
+    expect(shown[0].options).toMatchObject({ body: 'Ya está listo', icon: '/brand/logo-base.svg', badge: '/brand/logo-base.svg', data: { url: '/calendar' } });
+  });
+
+  test('push with no body still shows the generic re-engagement notification', async () => {
+    await dispatch('push', pushEvent(null));
+
+    expect(shown[0].title).toBe('Fresco');
+    expect(shown[0].options.body).toBe('Tu menú de la semana te está esperando. Vuelve a planificar en un momento.');
+    expect(shown[0].options.data).toEqual({ url: '/menu' });
+  });
+
+  test('push with a malformed body falls back to the same generic notification', async () => {
+    await dispatch('push', pushEvent({ json: () => { throw new SyntaxError('not json'); } }));
+
+    expect(shown).toHaveLength(1);
+    expect(shown[0].title).toBe('Fresco');
+    expect(shown[0].options.data).toEqual({ url: '/menu' });
+  });
+
+  const click = (data?: { url?: string }) => {
+    let closed = 0;
+    const notification = { close: () => { closed++; }, data };
+    return { notification, closedCount: () => closed };
+  };
+  const client = (url: string, withNavigate: boolean) => {
+    const navigated: string[] = [];
+    let focused = 0;
+    const fake: FakeClient = { url, focus: async () => { focused++; return fake; } };
+    if (withNavigate) { fake.navigate = async (target: string) => { navigated.push(target); return fake; }; }
+    return { fake, navigated, focusedCount: () => focused };
+  };
+
+  test('a click opens a new window on the target url tagged push_opened, and closes the notification', async () => {
+    const { notification, closedCount } = click({ url: '/calendar' });
+
+    await dispatch('notificationclick', { notification });
+
+    expect(closedCount()).toBe(1);
+    expect(opened).toEqual(['/calendar?push_opened=1']);
+  });
+
+  test('a click with no url goes to /menu, and an url that already has a query gets &push_opened', async () => {
+    await dispatch('notificationclick', { notification: click().notification });
+    await dispatch('notificationclick', { notification: click({ url: '/menu?x=1' }).notification });
+
+    expect(opened).toEqual(['/menu?push_opened=1', '/menu?x=1&push_opened=1']);
+  });
+
+  test('a click reuses an already-open tab on that route: navigates it to the tagged url and focuses it', async () => {
+    const tab = client('https://fresco.test/menu', true);
+    clientList = [client('https://fresco.test/profile', true).fake, tab.fake];
+
+    await dispatch('notificationclick', { notification: click({ url: '/menu' }).notification });
+
+    expect(tab.navigated).toEqual(['/menu?push_opened=1']);
+    expect(tab.focusedCount()).toBe(1);
+    expect(opened).toEqual([]);
+  });
+
+  test('a click falls back to a plain focus when the open tab cannot navigate', async () => {
+    const tab = client('https://fresco.test/menu', false);
+    clientList = [tab.fake];
+
+    await dispatch('notificationclick', { notification: click({ url: '/menu' }).notification });
+
+    expect(tab.focusedCount()).toBe(1);
+    expect(opened).toEqual([]);
   });
 });
