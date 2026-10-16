@@ -22,8 +22,10 @@ const STEPS = [
   },
   {
     number: '+',
-    title: 'Cada semana mejora solo',
-    description: 'Fresco aprende de lo que cocinas y lo que rechazas. Sin que tengas que decir nada.',
+    // FRESCO-934: the learning loop reads the dishes the person marks as cooked or
+    // discarded (ADR-0006) and only applies in Pro, so it does not learn "on its own".
+    title: 'Cada semana mejora contigo',
+    description: 'Marca lo que cocinas y lo que descartas, con un toque. En Pro, Fresco lo usa para afinar tus menús cada semana.',
     highlighted: true,
   },
 ] as const;
