@@ -45,6 +45,17 @@ export const DIFICULTAD_LABELS: Record<DificultadReceta, string> = {
 };
 
 /**
+ * FRESCO-973 (UX-25): `clasificacion.cocina` is stored lowercase
+ * (`mediterránea`, `asiática`) while every other tag label is Title Case, so a
+ * recipe showed "mediterránea" next to "Vegetariano". Capitalise at display
+ * time instead of rewriting the catalog: the lowercase value is also the
+ * filter key (`?cocina=`), so the data stays as it is.
+ */
+export function cocinaLabel(cocina: string): string {
+  return cocina.charAt(0).toLocaleUpperCase('es') + cocina.slice(1);
+}
+
+/**
  * First active diet flag on `dieta`, as a display label, or `null` if
  * none/unknown.
  */
