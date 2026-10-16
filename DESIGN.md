@@ -103,7 +103,7 @@ typography:
     lineHeight: 1.2
   caption:
     fontFamily: Figtree
-    fontSize: 11px
+    fontSize: 12px # FRESCO-978: was 11px; FRESCO-967 sets 12px as the minimum text size
     fontWeight: 400
     lineHeight: 1.3
 rounded:
@@ -194,7 +194,7 @@ components:
   tag:
     # v2 (FRESCO-437): default tag is hairline, no colour fill. Colour returns only for the
     # allergen-safety flag (tag-allergen) — see §Components + §Do's and Don'ts.
-    typography: '{typography.caption}'
+    typography: '{typography.body-sm}' # FRESCO-978: tags are 13px (the useful-content size of FRESCO-967), no longer caption
     textColor: '{colors.tertiary}'
     borderColor: '{colors.border}'
     rounded: '{rounded.full}'

@@ -21,7 +21,16 @@ const tagVariants = cva(
   // individual call sites — a pill's text wrapping inside its own rounded
   // border (found live on /profile's plan Tag at 320px) is a defect for
   // every caller, not a per-instance choice.
-  'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-1 text-caption font-sans',
+  //
+  // FRESCO-978: the size is the `body-sm` token (13px, DESIGN.md `tag`), written
+  // as arbitrary `font-size` and `line-height` values on purpose. `cn()` is a
+  // plain `twMerge` that does not know the custom `text-*` size tokens, so a
+  // `text-body-sm` / `text-caption` class is dropped as soon as a colour class
+  // such as `text-tertiary` follows it: the tags used to render at 16px, not the
+  // 11px the token said. An arbitrary value is a different class group and
+  // survives the merge. (Follow-up for the other `cn()` calls that lose a size:
+  // see the FRESCO-978 comments.)
+  'inline-flex items-center whitespace-nowrap rounded-full border px-2 py-1 text-[length:var(--text-body-sm)] leading-[var(--text-body-sm--line-height)] font-sans',
   {
     variants: {
       variant: {

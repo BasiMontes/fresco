@@ -103,3 +103,23 @@ describe('OnboardingStepDiet — health data consent', () => {
     expect(consentCalls).toHaveLength(0);
   });
 });
+
+/**
+ * FRESCO-978 — the selectable chips are a `Tag` inside a bare `button`, so the
+ * button was only as tall as the chip. Tags went from 16px to 13px text; the
+ * button keeps a 44px tap area (WCAG 2.5.5, same as `preferences-form`).
+ */
+describe('OnboardingStepDiet — chip tap area', () => {
+  test('every selectable chip button keeps a 44px minimum height', () => {
+    render();
+
+    for (const id of ['dieta_option', 'alergeno_option', 'ingrediente_odiado_option', 'cocina_option']) {
+      const buttons = screen.getAllByTestId(id);
+
+      expect(buttons.length).toBeGreaterThan(0);
+      for (const button of buttons) {
+        expect(button).toHaveClass('min-h-11');
+      }
+    }
+  });
+});
