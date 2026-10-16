@@ -4,6 +4,25 @@
 
 Origen: post patrocinado de @midudev (15 oct 2026, https://x.com/midudev/status/2110793074356195622), marcado «Paid partnership», con enlace de afiliado `midu.link/decodo`. No es un repositorio: es un servicio de pago con crédito gratuito, la **Web Data API de Decodo** (antes Smartproxy). Todas las consultas se hicieron contra `decodo.com` y `help.decodo.com`, nunca contra el enlace de afiliado. Fecha de consulta de todas las fuentes: 2026-10-16.
 
+## Corrección: contexto previo que esta evaluación no leyó
+
+Este informe se escribió sin leer las decisiones ya tomadas sobre precios de supermercados, y varias de sus conclusiones dependían de ese contexto. Lo que ya existe:
+
+| Documento | Qué decide |
+|---|---|
+| ADR-0027 | Integración con supermercados y comparador de precios fuera de la lista de exclusiones. Restricción permanente: **sin gasto extra** |
+| ADR-0028 | Mercadona: lectura de su API pública de catálogo y precios bajo `riesgo-aceptado`, tras revisar sus condiciones. Hoy se alimenta de un dataset comunitario (`datania/mercadona-catalog`), sin añadir peticiones a Mercadona (FRESCO-762, refresco semanal) |
+| ADR-0036 | Capa de datos de supermercados: contrato único de conector, modelo de precios en Postgres y **puerta legal en código**: solo se ejecuta un conector con `permiso` `concedido` o `riesgo-aceptado` y con un documento que lo respalde |
+| ADR-0037 | Consum: conector bajo `riesgo-aceptado` mientras la petición de consentimiento no tiene respuesta |
+
+Estado de lo pendiente: Día (FRESCO-765) y Alcampo (FRESCO-766) esperan consentimiento por escrito y están bloqueadas; Carrefour tiene la solicitud de afiliación en Awin lista para hacerse (FRESCO-753, con posible feed de producto y precio); el comparador (FRESCO-346) y la investigación de 19 cadenas (FRESCO-747) están bloqueados.
+
+Qué corrige esto en este informe:
+
+- **El caso de uso sí existe y ya está en marcha** para Mercadona y Consum. La fila «¿Hay un caso de uso?» y el primer motivo de la recomendación eran incorrectos.
+- **Mercadona no está «pendiente de lectura»:** ya se leyeron sus condiciones y hay decisión (ADR-0028). El 403 que recibí en su aviso legal solo describe a mi cliente automatizado.
+- **El obstáculo de Día, Alcampo y Carrefour no es técnico.** La puerta legal que decide si una cadena puede ejecutarse es una decisión del fundador por escrito; un servicio de desbloqueo no la sustituye y, además, subiría el riesgo de «leer una API pública» a «evadir las defensas antibot», que es otra decisión, no cubierta por ninguno de los ADR.
+
 ## Resumen
 
 | Pregunta | Respuesta |
@@ -11,7 +30,7 @@ Origen: post patrocinado de @midudev (15 oct 2026, https://x.com/midudev/status/
 | ¿Funciona? | Sí. 11 `/scrape`, 1 `/map` y 1 `/crawl` de 5 páginas, todos correctos sobre sitios de práctica |
 | ¿Es gratis? | Es un **crédito único de 5 $** (el panel marca `0 / 5 $`), no «10K peticiones al mes». 5 $ son 10K páginas solo con proxy estándar y sin JavaScript; con la configuración por defecto, 5K |
 | ¿Aporta algo que no tengamos? | Lo que anuncia como diferencial (saltarse CAPTCHAs y bloqueos antibot) no se puede probar contra webs ajenas sin incumplir sus protecciones, así que no está verificado. Lo demás, con Tavily instalado ya se obtiene, más rápido |
-| ¿Hay un caso de uso de Fresco que lo necesite? | Hoy no: lo que sí podemos usar legalmente (imágenes con licencia, APIs oficiales) no requiere un servicio de scraping, y las fuentes que sí lo requerirían (supermercados, recetas editoriales) están descartadas o sin condiciones leídas |
+| ¿Hay un caso de uso de Fresco que lo necesite? | **Sí: precios de supermercados** (corregido: ya existe la capa de datos y funciona para Mercadona y Consum). Lo que Decodo añadiría sería llegar a cadenas que bloquean bots (Día, Alcampo, Carrefour), y ahí el límite es el permiso, no la técnica (ver la corrección de arriba). Para imágenes con licencia y recetas, no |
 | Recomendación | **Aplazar.** Retomar solo si aparece una fuente legalmente clara que exija renderizado de JavaScript a volumen |
 
 ## Qué se probó y cómo
@@ -71,9 +90,9 @@ El `robots.txt` se descargó una vez por sitio con un agente identificado. No se
 
 | Fuente | Uso previsto | `robots.txt` | Condiciones de uso | Veredicto |
 |---|---|---|---|---|
-| Mercadona (`www`) | Catálogo y precios | `User-agent: *` con `Disallow:` vacío | Aviso legal: 403 a un cliente automatizado, no leído | Pendiente de lectura por una persona |
-| Mercadona (`tienda`) | Catálogo y precios | `Disallow: /` salvo `/product` y `/sitemap.xml`; bloquea `/api` y `/legal` | No leídas | Pendiente; solo `/product` sería rastreable |
-| Carrefour | Catálogo y precios | Sin bloque para `*`; 83 reglas `Disallow` para agentes con nombre | Aviso legal: 403 a un cliente automatizado, no leído | Pendiente de lectura por una persona |
+| Mercadona (`www`) | Catálogo y precios | `User-agent: *` con `Disallow:` vacío | Aviso legal: 403 a mi cliente automatizado, no leído aquí | **Ya decidido: `riesgo-aceptado`, ADR-0028** (sus condiciones se revisaron en esa decisión) |
+| Mercadona (`tienda`) | Catálogo y precios | `Disallow: /` salvo `/product` y `/sitemap.xml`; bloquea `/api` y `/legal` | Ver ADR-0028 | **Ya decidido** (ADR-0028); hoy se lee el dataset comunitario, sin peticiones propias |
+| Carrefour | Catálogo y precios | Sin bloque para `*`; 83 reglas `Disallow` para agentes con nombre | Aviso legal: 403 a mi cliente automatizado, no leído aquí | Sin conector; solicitud de afiliación en Awin lista (FRESCO-753) |
 | Día | Catálogo y precios | `robots.txt` responde 403 a un cliente automatizado | No leídas | **Descartada** |
 | Cookpad | Recetas | `*` permite casi todo; bloquea con `Disallow: /` a GPTBot, CCBot y ClaudeBot | URL no localizada | **Descartada** |
 | Directo al Paladar | Recetas y fotos | `*` permite casi todo; bloquea MJ12bot, AI2Bot y Diffbot | No localizadas | **Descartada**: contenido editorial |
@@ -110,7 +129,7 @@ Alternativas que no se probaron, y por qué: Firecrawl (1.000 créditos gratuito
 
 **Aplazar.** Motivos:
 
-1. **El caso de uso no existe todavía.** Las fotos y recetas del catálogo (FRESCO-192, FRESCO-435) se cubren con APIs oficiales y licencias; lo que exigiría scraping serio son los supermercados, y ahí las condiciones no se han podido leer y los sitios bloquean la automatización.
+1. **El caso de uso (precios de supermercados) ya está cubierto donde hay permiso y bloqueado donde no.** Mercadona y Consum funcionan por la capa de FRESCO-770 con su puerta legal; Día y Alcampo esperan consentimiento y Carrefour, la afiliación de Awin (FRESCO-753, sin coste y con posible feed de precios). Las fotos y recetas del catálogo se cubren con APIs oficiales y licencias.
 2. **El valor diferencial no es probable de verificar sin infringir.** Saltarse protecciones de webs ajenas es justo lo que el proveedor anuncia y lo que su propio contrato deja a cargo del cliente.
 3. **La alternativa ya instalada es mejor para lo comprobable.** Más rápida con JavaScript y con salida más limpia, sin cuenta nueva.
 4. **El coste no es el problema, y por eso no compensa el riesgo.** Mil páginas al mes cuestan 0,50 $; el obstáculo es legal.
@@ -127,7 +146,7 @@ Si se adopta algún día: ADR en `.context/ADR/` (dependencia de un tercero y tr
 
 - El gasto real no se ha confirmado en la pestaña «Usage statistics» del panel de Decodo; la cifra de 0,013 $ es una estimación con su tabla de precios.
 - La cuenta de Decodo y su clave existen fuera del repositorio. Si no se va a retomar, conviene borrar la cuenta y la variable `DECODO_API_TOKEN` de `.env`. Es decisión del fundador.
-- Condiciones de uso de Mercadona, Carrefour y Recetasgratis: solo se leerán si se retoma la evaluación.
+- Condiciones de Carrefour y Recetasgratis: sin leer. Para Carrefour manda la solicitud de Awin (FRESCO-753); Mercadona y Consum ya tienen decisión (ADR-0028 y ADR-0037); Día y Alcampo esperan consentimiento (FRESCO-765 y FRESCO-766).
 - `/crawl` y `/map` de Tavily no se midieron.
 
 ## Referencias
