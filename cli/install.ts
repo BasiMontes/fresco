@@ -283,6 +283,9 @@ const PROJECT_LEVEL_SKILLS: ReadonlyArray<CommunitySkill> = [
   { package: 'supabase/agent-skills', skill: 'supabase' },
   { package: 'supabase/agent-skills', skill: 'supabase-postgres-best-practices' },
   { package: 'https://github.com/vercel-labs/agent-skills', skill: 'deploy-to-vercel' },
+  // FRESCO-965: reviews UI code against Vercel's Web Interface Guidelines (file:line
+  // findings). The skill fetches its rules from that repo's main branch before each review.
+  { package: 'https://github.com/vercel-labs/agent-skills', skill: 'web-design-guidelines' },
   { package: 'resend/resend-cli' },
   // Builder skills — project-level because a T1 workflow depends on them and
   // must not hinge on a user's global plugin list (a user-level install still
