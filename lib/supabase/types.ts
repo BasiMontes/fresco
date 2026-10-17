@@ -39,6 +39,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_mode: {
+        Row: {
+          singleton: boolean
+          stripe_livemode: boolean
+        }
+        Insert: {
+          singleton?: boolean
+          stripe_livemode: boolean
+        }
+        Update: {
+          singleton?: boolean
+          stripe_livemode?: boolean
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string
@@ -795,6 +810,7 @@ export type Database = {
           presupuesto_semana_euros: number | null
           sexo: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id: string | null
+          stripe_livemode: boolean | null
           stripe_subscription_id: string | null
           tiempo_max_finde_min: number
           tiempo_max_semana_min: number
@@ -838,6 +854,7 @@ export type Database = {
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id?: string | null
+          stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
           tiempo_max_finde_min?: number
           tiempo_max_semana_min?: number
@@ -881,6 +898,7 @@ export type Database = {
           presupuesto_semana_euros?: number | null
           sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id?: string | null
+          stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
           tiempo_max_finde_min?: number
           tiempo_max_semana_min?: number
