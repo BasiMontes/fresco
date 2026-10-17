@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
 import { getBillingState } from '@/lib/billing/billing-state';
+import { checkoutSessionWindow, ensureCheckoutCustomer, expireOtherOpenCheckoutSessions, hasLiveSubscription } from '@/lib/billing/checkout-guard';
 import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
 import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
 import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
@@ -47,6 +48,13 @@ const RATE_LIMIT_WINDOW_SECONDS = 3600;
  * and creates nothing once the database is live, instead of taking a test card for a
  * production account. A stored Stripe customer of the OTHER mode is not reused: it does not
  * exist in this mode, and passing it made the session fail (audit C-04).
+ *
+ * FRESCO-1002 (audit 7b: A7-PAY-02): two checkouts could end in two subscriptions, because the
+ * profile says `free` until the webhook lands. Every session now has a Stripe customer
+ * (created up front, keyed on the user, profile untouched: `checkout-guard.ts`), a live
+ * subscription of that customer is a 409, concurrent POSTs of the same minute share one
+ * idempotency key and so one session, the session expires in about 30 minutes, and creating
+ * a session expires the customer's other open ones.
  *
  * `client_reference_id` is the authenticated Supabase user id, so the
  * webhook (`app/api/stripe/webhook/route.ts`) can map the eventual
@@ -125,25 +133,37 @@ export async function POST(request: NextRequest) {
   const origin = request.nextUrl.origin;
 
   try {
+    // FRESCO-1002: ask Stripe, not the profile, whether a subscription is already live: the
+    // profile stays `free` until the webhook lands. Failing to ask is a 500, never a pass.
+    const customerId = await ensureCheckoutCustomer(stripe, { userId: user.id, email: user.email, storedCustomerId: stripeCustomerId });
+    if (await hasLiveSubscription(stripe, customerId)) {
+      return NextResponse.json({ error: 'Ya tienes Fresco Pro.' }, { status: 409 });
+    }
+
+    const { idempotencyKey, expiresAt } = checkoutSessionWindow({ userId: user.id, interval });
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       ...(trialAlreadyUsed
         ? { payment_method_collection: 'always' as const }
         : { subscription_data: PRO_TRIAL_SUBSCRIPTION_DATA, payment_method_collection: 'if_required' as const }),
-      ...(stripeCustomerId ? { customer: stripeCustomerId } : {}),
+      customer: customerId,
       client_reference_id: user.id,
+      expires_at: expiresAt,
       locale: 'es',
       custom_text: { submit: { message: CHECKOUT_SUBMIT_MESSAGE } },
       branding_settings: CHECKOUT_BRANDING,
       success_url: `${origin}/profile?checkout=success`,
       cancel_url: `${origin}/profile?checkout=cancelled`,
-    });
+    }, { idempotencyKey });
 
     if (!session.url) {
       console.error('[/api/stripe/checkout] Stripe session created without a url', session.id);
       return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
     }
+
+    // One payable session at a time: a second tab cannot also end in a paid subscription.
+    await expireOtherOpenCheckoutSessions(stripe, { customerId, keepSessionId: session.id });
 
     return NextResponse.json({ url: session.url });
   }

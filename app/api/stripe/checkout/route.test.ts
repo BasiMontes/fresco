@@ -10,7 +10,13 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
  * the happy path.
  */
 
-const sessionsCreate = mock(async (_p: unknown): Promise<{ id: string, url: string | null }> => ({ id: 'cs_1', url: 'https://checkout.stripe/x' }));
+const sessionsCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: string, url: string | null }> => ({ id: 'cs_1', url: 'https://checkout.stripe/x' }));
+/** FRESCO-1002: the Stripe lookups that run before a session is created, and the cleanup after. */
+const customersSearch = mock(async (_p: unknown): Promise<{ data: { id: string }[] }> => ({ data: [] }));
+const customersCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: string }> => ({ id: 'cus_new' }));
+const subscriptionsList = mock(async (_p: unknown): Promise<{ data: { id: string, status: string }[] }> => ({ data: [] }));
+const sessionsList = mock(async (_p: unknown): Promise<{ data: { id: string }[] }> => ({ data: [] }));
+const sessionsExpire = mock(async (_id: string): Promise<{ id: string }> => ({ id: 'expired' }));
 let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
 /** FRESCO-1001: the Stripe mode the fake `billing_mode` row says the shared database serves, or an error to read it. */
 let databaseLivemode: boolean | Error = false;
@@ -27,7 +33,11 @@ void mock.module('@/lib/supabase/service', () => ({
     }),
   }),
 }));
-void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: { checkout: { sessions: { create: sessionsCreate } } } }));
+void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: {
+  customers: { search: customersSearch, create: customersCreate },
+  subscriptions: { list: subscriptionsList },
+  checkout: { sessions: { create: sessionsCreate, list: sessionsList, expire: sessionsExpire } },
+} }));
 
 const { POST } = await import('./route');
 
@@ -40,8 +50,14 @@ beforeEach(() => {
   databaseLivemode = false;
   process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
   process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
-  sessionsCreate.mockClear();
+  for (const m of [sessionsCreate, customersSearch, customersCreate, subscriptionsList, sessionsList, sessionsExpire]) {
+    m.mockClear();
+  }
   sessionsCreate.mockResolvedValue({ id: 'cs_1', url: 'https://checkout.stripe/x' });
+  customersSearch.mockResolvedValue({ data: [] });
+  customersCreate.mockResolvedValue({ id: 'cus_new' });
+  subscriptionsList.mockResolvedValue({ data: [] });
+  sessionsList.mockResolvedValue({ data: [] });
   supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
 });
 
@@ -122,7 +138,7 @@ describe('POST /api/stripe/checkout', () => {
       fakeSupabase({ user_profiles: { rows: profile } }, authAs(user));
     const lastSessionParams = () => sessionsCreate.mock.calls.at(-1)![0] as Record<string, unknown>;
 
-    test('a first-time user gets the 7-day card-less trial and no customer is pinned', async () => {
+    test('a first-time user gets the 7-day card-less trial on a freshly created customer', async () => {
       supa = withProfile({ plan: 'free', stripe_customer_id: null, stripe_subscription_id: null });
 
       expect((await POST(req())).status).toBe(200);
@@ -132,7 +148,7 @@ describe('POST /api/stripe/checkout', () => {
         trial_settings: { end_behavior: { missing_payment_method: 'cancel' } },
       });
       expect(params.payment_method_collection).toBe('if_required');
-      expect(params).not.toHaveProperty('customer');
+      expect(params.customer).toBe('cus_new');
     });
 
     test('an anonymous guest cannot start a checkout', async () => {
@@ -246,7 +262,7 @@ describe('POST /api/stripe/checkout', () => {
 
       expect((await POST(req())).status).toBe(200);
       const params = lastSessionParams();
-      expect(params).not.toHaveProperty('customer');
+      expect(params.customer).toBe('cus_new');
       expect(params).not.toHaveProperty('subscription_data');
       expect(params.payment_method_collection).toBe('always');
     });
@@ -258,6 +274,107 @@ describe('POST /api/stripe/checkout', () => {
 
       await POST(req());
       expect(lastSessionParams().customer).toBe('cus_live_1');
+    });
+  });
+
+  describe('FRESCO-1002 — no second subscription from a second checkout (audit 7b: A7-PAY-02)', () => {
+    const signedIn = { id: 'user_1', is_anonymous: false, email: 'a@b.test' };
+    const withProfile = (profile: Record<string, unknown>) =>
+      fakeSupabase({ user_profiles: { rows: profile } }, { getUser: async () => ({ data: { user: signedIn } }) });
+    const free = { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, stripe_livemode: null };
+    const sessionOptions = () => sessionsCreate.mock.calls.at(-1)![1] as { idempotencyKey: string };
+
+    test('409 and no session when the customer already has a live subscription, even though the profile still says free', async () => {
+      supa = withProfile({ ...free, stripe_customer_id: 'cus_1', stripe_livemode: false });
+      subscriptionsList.mockResolvedValue({ data: [{ id: 'sub_1', status: 'trialing' }] });
+
+      expect((await POST(req())).status).toBe(409);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('an ended subscription does not block a new checkout', async () => {
+      supa = withProfile({ ...free, stripe_customer_id: 'cus_1', stripe_livemode: false });
+      subscriptionsList.mockResolvedValue({ data: [{ id: 'sub_1', status: 'canceled' }, { id: 'sub_2', status: 'incomplete_expired' }] });
+
+      expect((await POST(req())).status).toBe(200);
+    });
+
+    test('a user with no customer gets one, found by metadata first and created keyed on the user otherwise', async () => {
+      supa = withProfile(free);
+
+      await POST(req());
+
+      expect(customersSearch).toHaveBeenCalledTimes(1);
+      expect(JSON.stringify(customersSearch.mock.calls[0][0])).toContain('user_1');
+      expect(customersCreate.mock.calls[0][0]).toEqual({ metadata: { supabase_user_id: 'user_1' }, email: 'a@b.test' });
+      expect(customersCreate.mock.calls[0][1]).toEqual({ idempotencyKey: 'fresco-customer:user_1' });
+    });
+
+    test('an existing customer found by metadata is reused, none is created', async () => {
+      supa = withProfile(free);
+      customersSearch.mockResolvedValue({ data: [{ id: 'cus_found' }] });
+
+      await POST(req());
+
+      expect(customersCreate).not.toHaveBeenCalled();
+      expect((sessionsCreate.mock.calls[0][0] as { customer: string }).customer).toBe('cus_found');
+    });
+
+    test('a stored customer needs no lookup at all', async () => {
+      supa = withProfile({ ...free, stripe_customer_id: 'cus_1', stripe_livemode: false });
+
+      await POST(req());
+
+      expect(customersSearch).not.toHaveBeenCalled();
+      expect(customersCreate).not.toHaveBeenCalled();
+    });
+
+    test('two POSTs of the same minute send the same idempotency key and the same parameters, so Stripe returns one session', async () => {
+      supa = withProfile(free);
+
+      await Promise.all([POST(req()), POST(req())]);
+
+      const [[firstParams, firstOptions], [secondParams, secondOptions]] = sessionsCreate.mock.calls as [[unknown, { idempotencyKey: string }], [unknown, { idempotencyKey: string }]];
+      expect(firstOptions.idempotencyKey).toBe(secondOptions.idempotencyKey);
+      expect(firstParams).toEqual(secondParams);
+    });
+
+    test('the key differs per plan, so the monthly and the annual checkout are not the same session', async () => {
+      supa = withProfile(free);
+
+      await POST(req());
+      const monthly = sessionOptions().idempotencyKey;
+      await POST(req({ interval: 'year' }));
+
+      expect(sessionOptions().idempotencyKey).not.toBe(monthly);
+    });
+
+    test('the session expires within the window Stripe accepts (30 minutes to 24 hours)', async () => {
+      supa = withProfile(free);
+      const before = Math.floor(Date.now() / 1000);
+
+      await POST(req());
+
+      const { expires_at: expiresAt } = sessionsCreate.mock.calls[0][0] as { expires_at: number };
+      expect(expiresAt - before).toBeGreaterThanOrEqual(30 * 60);
+      expect(expiresAt - before).toBeLessThanOrEqual(35 * 60);
+    });
+
+    test('creating a session expires the customer\'s OTHER open sessions and keeps the new one', async () => {
+      supa = withProfile(free);
+      sessionsList.mockResolvedValue({ data: [{ id: 'cs_old' }, { id: 'cs_1' }] });
+
+      await POST(req());
+
+      expect(sessionsExpire.mock.calls).toEqual([['cs_old']]);
+    });
+
+    test('500 and no session when Stripe cannot say whether a subscription is live (fail closed)', async () => {
+      supa = withProfile({ ...free, stripe_customer_id: 'cus_1', stripe_livemode: false });
+      subscriptionsList.mockRejectedValue(new Error('stripe 503'));
+
+      expect((await POST(req())).status).toBe(500);
+      expect(sessionsCreate).not.toHaveBeenCalled();
     });
   });
 });
