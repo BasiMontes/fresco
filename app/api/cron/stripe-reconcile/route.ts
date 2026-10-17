@@ -1,10 +1,12 @@
 import type { CheckoutSweepResult } from '@/lib/billing/checkout-sweep';
+import type { ConfirmationRetryResult } from '@/lib/billing/confirmation-email';
 import type { ReconcilableProfile } from '@/lib/billing/reconcile';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { timingSafeEqual } from '@/lib/auth/timing-safe-equal';
 import { sweepPaidCheckoutsWithoutPro } from '@/lib/billing/checkout-sweep';
+import { retryPendingConfirmations } from '@/lib/billing/confirmation-email';
 import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
 import { recordJobHeartbeat, STRIPE_RECONCILE_JOB } from '@/lib/jobs/heartbeat';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
@@ -40,6 +42,9 @@ import { createServiceClient } from '@/lib/supabase/service';
  * Sessions of the last 48 h whose user has not got that subscription on file. It grants
  * through the webhook's own `grantProFromCheckoutSession`, so every guard travels with it.
  *
+ * FRESCO-1005 (audit 7b): after the sweep, the subscription confirmation emails that Resend rejected
+ * (`pending_confirmation_emails`) are retried, up to a cap. Fail-soft like the sweep.
+ *
  * FRESCO-915 (audit C-11): `cron.job_run_details` says `succeeded` even when this route answers
  * 401 or 500 (`net.http_get` only enqueues), and this is the only safety net for lost payments. So
  * a pass that gets to the end writes its own heartbeat (`job_heartbeat`), which a monitor reads,
@@ -68,6 +73,17 @@ const SENTRY_TAGS = { cron_job: STRIPE_RECONCILE_JOB };
 function reportFailure(message: string, error: unknown): void {
   console.error(`[/api/cron/stripe-reconcile] ${message}`, error);
   Sentry.captureException(error instanceof Error ? error : new Error(message), { tags: SENTRY_TAGS, extra: { message } });
+}
+
+/** FRESCO-1005: fail-soft, a retry error must not turn the reconcile pass into a 500. */
+async function retryConfirmationEmails(supabase: ReturnType<typeof createServiceClient>): Promise<ConfirmationRetryResult | null> {
+  try {
+    return await retryPendingConfirmations(supabase, stripe);
+  }
+  catch (retryError) {
+    reportFailure('confirmation email retry pass failed', retryError);
+    return null;
+  }
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -192,6 +208,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     reportFailure('paid-checkout sweep failed', sweepError);
   }
 
+  const confirmationRetries = await retryConfirmationEmails(supabase);
+
   // FRESCO-915: the heartbeat means "this pass ran", so it is not written when Stripe answered for
   // none of the profiles checked (an outage looks like a clean pass otherwise). One row that keeps
   // failing does not stop it; that would raise a false alarm forever.
@@ -205,5 +223,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans, checkoutSweep, failures });
+  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans, checkoutSweep, confirmationRetries, failures });
 }

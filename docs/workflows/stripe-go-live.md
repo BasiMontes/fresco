@@ -26,6 +26,14 @@ A deploy or database whose mode cannot be read makes the webhook answer 500 (Str
 
   It exits 1 when an enabled endpoint points at a frozen deploy (`vercel.json` -> `git.deploymentEnabled.<branch>` is `false`) or at a host this repo does not serve. Fix it in the Stripe dashboard (Developers -> Webhooks): disable or delete the endpoint, or point it at a live deploy. That step is the owner's; the script only reads.
 
+- [ ] **The sender domain is verified before Stripe goes live** (FRESCO-1005, A7-LAUNCH-01). The subscription confirmation email is a legal obligation (TRLGDCU art. 98.7), and while `SEND_FROM` in `lib/email/resend.ts` is `onboarding@resend.dev` Resend delivers only to the account owner, so a real customer would be charged and never receive it. Before the flip: the domain is verified in Resend (FRESCO-886), `SEND_FROM` uses it, and one real delivery has been confirmed to an address that is not the owner's (a checkout in test mode with a second mailbox is enough). A rejected send is not silent any more: it goes to Sentry with the tag `email: subscription-confirmation` and leaves a row in `pending_confirmation_emails`, which `stripe-reconcile` retries for five days. After the domain works, the backlog clears on the next cron pass; check it is empty:
+
+  ```bash
+  supabase db query --linked "select subscription_id, attempts, last_error from public.pending_confirmation_emails order by created_at"
+  ```
+
+  Rows at five attempts were given up on and need a manual send or a decision.
+
 ## The flip
 
 Order matters. Production must have the live keys and the database must say live in the same window; between the two steps the checkout answers 503 and the webhook refuses events, which is safe and recoverable (Stripe retries a refused event).

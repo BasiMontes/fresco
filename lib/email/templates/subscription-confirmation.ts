@@ -9,10 +9,14 @@ import { CONTACT_EMAIL, LEGAL_ENTITY } from '@/lib/legal/entity';
 */
 
 export interface SubscriptionConfirmationEmailParams {
-  /** Total amount actually charged, already formatted (e.g. "4,99 €"). No separate VAT line is computed — Stripe doesn't break one out here (no `automatic_tax`), so this is the real total, presented as such. */
+  /** Price of one billing period, already formatted (e.g. "4,99 €"). No separate VAT line is computed — Stripe doesn't break one out here (no `automatic_tax`), so this is the real total, presented as such. */
   priceFormatted: string
-  /** Next renewal date, already formatted in Spanish (e.g. "7 de octubre de 2026"). */
+  /** Billing period of the plan (FRESCO-1005): the email says "mensual" or "anual" instead of always "mensual". */
+  interval: 'month' | 'year'
+  /** Next charge date, already formatted in Spanish (e.g. "7 de octubre de 2026"). On a trial it is the first charge. */
   nextRenewalDateFormatted: string
+  /** Set while the subscription is in its free trial: nothing is charged today (FRESCO-1005). */
+  trialDays?: number
   /** Absolute URL to `/profile`, where the user manages/cancels the subscription. */
   manageSubscriptionUrl: string
 }
@@ -45,7 +49,11 @@ function escapeHtml(value: string): string {
  * scope for this ticket (tracked separately).
  */
 export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConfirmationEmailParams): string {
-  const { priceFormatted, nextRenewalDateFormatted, manageSubscriptionUrl } = params;
+  const { priceFormatted, interval, nextRenewalDateFormatted, trialDays, manageSubscriptionUrl } = params;
+  const intervalLabel = interval === 'year' ? 'anual' : 'mensual';
+  const priceLine = trialDays
+    ? `Importe cobrado hoy: <strong>0 €</strong> (prueba gratuita de ${trialDays} días). Primer cobro de <strong>${escapeHtml(priceFormatted)}</strong> el <strong>${escapeHtml(nextRenewalDateFormatted)}</strong> (impuestos incluidos donde apliquen).`
+    : `Importe total cobrado: <strong>${escapeHtml(priceFormatted)}</strong> (impuestos incluidos donde apliquen).`;
 
   return `<!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -150,14 +158,14 @@ export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConf
                 <tr>
                   <td class="body-text" style="font-size:14px; line-height:1.7; color:#201E1D; padding-bottom:8px; padding-top:16px;">
                     <strong>Objeto y precio</strong><br>
-                    Suscripción al Plan Fresco Pro. Importe total cobrado: <strong>${escapeHtml(priceFormatted)}</strong> (impuestos incluidos donde apliquen).
+                    Suscripción al Plan Fresco Pro. ${priceLine}
                   </td>
                 </tr>
 
                 <tr>
                   <td class="body-text" style="font-size:14px; line-height:1.7; color:#201E1D; padding-bottom:8px; padding-top:16px;">
                     <strong>Duración y renovación</strong><br>
-                    Suscripción mensual con <strong>renovación automática</strong>. Próximo cobro previsto: <strong>${escapeHtml(nextRenewalDateFormatted)}</strong>.
+                    Suscripción ${intervalLabel} con <strong>renovación automática</strong>. Próximo cobro previsto: <strong>${escapeHtml(nextRenewalDateFormatted)}</strong>.
                   </td>
                 </tr>
 

@@ -1,37 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database } from '@/lib/supabase/types';
+import { deliverSubscriptionConfirmation, lookupUserEmail } from '@/lib/billing/confirmation-email';
 import { describeModeVerdict, judgeStripeEventMode } from '@/lib/billing/stripe-mode';
 import { activateProPlan, getStoredSubscriptionId } from '@/lib/billing/subscription';
 import { trialEmailSignals } from '@/lib/billing/trial-email-signals';
-import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
 import { captureServerEvent } from '@/lib/posthog/server';
 import { resolveCheckoutFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
-import { getProPriceIds, resolveAppUrl, resolveProUpdateFromSession, stripe } from '@/lib/stripe';
+import { getProPriceIds, resolveProUpdateFromSession, stripe } from '@/lib/stripe';
 
 type Client = SupabaseClient<Database>;
-
-// FRESCO-429 (TRLGDCU art. 98.7): formats the actual amount Stripe charged —
-// no separate VAT line is invented, since this checkout has no
-// `automatic_tax` configured to compute one.
-function formatChargedAmount(unitAmount: number | null | undefined, currency: string | undefined): string {
-  const amount = (unitAmount ?? 0) / 100;
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: (currency ?? 'eur').toUpperCase() }).format(amount);
-}
-
-function formatRenewalDate(isoTimestamp: string): string {
-  return new Date(isoTimestamp).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-async function lookupUserEmail(client: Client, userId: string): Promise<{ email: string | undefined, error: unknown }> {
-  try {
-    const { data, error } = await client.auth.admin.getUserById(userId);
-    return { email: error ? undefined : data?.user?.email, error };
-  }
-  catch (error) {
-    return { email: undefined, error };
-  }
-}
 
 /**
  * Grants Pro to the user a paid Checkout Session belongs to: the ONE place that
@@ -108,27 +86,10 @@ export async function grantProFromCheckoutSession(client: Client, session: Strip
       },
     });
 
-    // FRESCO-429 (TRLGDCU art. 98.7): the durable-support subscription
-    // confirmation email. The subscription is already active at this point
-    // (write above already succeeded) — a send failure is logged for
-    // retry/review and never re-thrown, per AC3.
-    try {
-      if (!recipientEmail) {
-        throw userError ?? new Error('no email on file for this user');
-      }
-
-      const price = subscription.items.data[0]?.price;
-      await sendSubscriptionConfirmationEmail({
-        to: recipientEmail,
-        priceFormatted: formatChargedAmount(price?.unit_amount, price?.currency),
-        // `update.planExpiresAt` is the same trial_end-derived timestamp the
-        // `user_profiles` write above just used — the next real charge date.
-        nextRenewalDateFormatted: formatRenewalDate(update.planExpiresAt),
-        manageSubscriptionUrl: `${resolveAppUrl()}/profile`,
-      });
-    }
-    catch (error) {
-      console.error(`[grantProFromCheckoutSession] subscription confirmation email failed for user ${update.userId} (subscription ${update.stripeSubscriptionId})`, error);
-    }
+    // FRESCO-429 (TRLGDCU art. 98.7): the durable-support subscription confirmation email. The
+    // subscription is already active at this point (the write above succeeded), so a send
+    // failure never undoes it. FRESCO-1005: it is reported to Sentry and left pending for the
+    // reconcile cron to retry instead of only being logged.
+    await deliverSubscriptionConfirmation(client, { userId: update.userId, subscription, email: recipientEmail, emailLookupError: userError });
   }
 }

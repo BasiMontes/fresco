@@ -10,6 +10,7 @@ import { renderSubscriptionConfirmationEmailHtml } from './subscription-confirma
 describe('renderSubscriptionConfirmationEmailHtml', () => {
   const html = renderSubscriptionConfirmationEmailHtml({
     priceFormatted: '4,99 €',
+    interval: 'month',
     nextRenewalDateFormatted: '7 de octubre de 2026',
     manageSubscriptionUrl: 'https://fresco-pro.vercel.app/profile',
   });
@@ -42,9 +43,51 @@ describe('renderSubscriptionConfirmationEmailHtml', () => {
   test('escapes untrusted interpolated values', () => {
     const unsafe = renderSubscriptionConfirmationEmailHtml({
       priceFormatted: '<script>alert(1)</script>',
+      interval: 'month',
       nextRenewalDateFormatted: '7 de octubre de 2026',
       manageSubscriptionUrl: 'https://fresco-pro.vercel.app/profile',
     });
     expect(unsafe).not.toContain('<script>alert(1)</script>');
+  });
+});
+
+/**
+ * FRESCO-1005 — the plan's period and the free trial have to be stated, not implied. Snapshots of
+ * the VISIBLE text (head, styles, markup and the embedded logo stripped) so a wording change shows
+ * in a diff without a base64 image in it.
+ */
+function visibleText(html: string): string {
+  return html
+    .replace(/<head>[\s\S]*?<\/head>/, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[^>]+>/g, '\n')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+describe('renderSubscriptionConfirmationEmailHtml — plan and trial (FRESCO-1005)', () => {
+  const base = { priceFormatted: '4,99 €', nextRenewalDateFormatted: '24 de octubre de 2026', manageSubscriptionUrl: 'https://fresco-pro.vercel.app/profile' };
+
+  test('monthly plan', () => {
+    expect(visibleText(renderSubscriptionConfirmationEmailHtml({ ...base, interval: 'month' }))).toMatchSnapshot();
+  });
+
+  test('annual plan says anual, never mensual', () => {
+    const html = renderSubscriptionConfirmationEmailHtml({ ...base, priceFormatted: '49,99 €', interval: 'year' });
+
+    expect(html).toContain('Suscripción anual');
+    expect(html).not.toContain('Suscripción mensual');
+    expect(visibleText(html)).toMatchSnapshot();
+  });
+
+  test('trial without card says nothing is charged today and when the first charge is', () => {
+    const html = renderSubscriptionConfirmationEmailHtml({ ...base, interval: 'month', trialDays: 7 });
+
+    expect(html).toContain('Importe cobrado hoy: <strong>0 €</strong>');
+    expect(html).toContain('Primer cobro de <strong>4,99 €</strong> el <strong>24 de octubre de 2026</strong>');
+    expect(html).not.toContain('Importe total cobrado');
+    expect(visibleText(html)).toMatchSnapshot();
   });
 });

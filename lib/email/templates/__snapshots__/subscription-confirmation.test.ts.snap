@@ -1,0 +1,89 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`renderSubscriptionConfirmationEmailHtml — plan and trial (FRESCO-1005) monthly plan 1`] = `
+"Confirmación de tu suscripción a Fresco Pro — precio, renovación y cómo cancelar.
+Tu Fresco Pro ya está activo
+Este correo confirma tu contratación de
+Fresco Pro
+, en cumplimiento del artículo 98.7 del Texto Refundido de la Ley General para la Defensa de los Consumidores y Usuarios (TRLGDCU) y la Directiva (UE) 2019/770.
+Identidad del prestador
+Basilio Montes Castaño, autónomo, NIF 47427105R, con domicilio en Utrera (Sevilla), España, a efectos de notificaciones. Contacto: hola.frescoapp@gmail.com.
+Objeto y precio
+Suscripción al Plan Fresco Pro. Importe total cobrado:
+4,99 €
+(impuestos incluidos donde apliquen).
+Duración y renovación
+Suscripción mensual con
+renovación automática
+. Próximo cobro previsto:
+24 de octubre de 2026
+.
+Cómo cancelar
+Puedes cancelar en cualquier momento desde tu perfil, sin coste adicional ni permanencia.
+Gestionar mi suscripción
+Ejecución inmediata y derecho de desistimiento
+Al contratar un servicio digital de ejecución inmediata, según los Términos de Servicio que aceptaste, solicitaste expresamente que la prestación comenzara antes de que finalizara el plazo legal de desistimiento de 14 días, y reconociste que perderás tu derecho de desistimiento en el momento en que el servicio haya sido completamente ejecutado (art. 103, letra m, TRLGDCU).
+🍃
+Fresco — menús semanales pensados para ti
+Recibiste este correo porque contrataste Fresco Pro con esta dirección de cuenta."
+`;
+
+exports[`renderSubscriptionConfirmationEmailHtml — plan and trial (FRESCO-1005) annual plan says anual, never mensual 1`] = `
+"Confirmación de tu suscripción a Fresco Pro — precio, renovación y cómo cancelar.
+Tu Fresco Pro ya está activo
+Este correo confirma tu contratación de
+Fresco Pro
+, en cumplimiento del artículo 98.7 del Texto Refundido de la Ley General para la Defensa de los Consumidores y Usuarios (TRLGDCU) y la Directiva (UE) 2019/770.
+Identidad del prestador
+Basilio Montes Castaño, autónomo, NIF 47427105R, con domicilio en Utrera (Sevilla), España, a efectos de notificaciones. Contacto: hola.frescoapp@gmail.com.
+Objeto y precio
+Suscripción al Plan Fresco Pro. Importe total cobrado:
+49,99 €
+(impuestos incluidos donde apliquen).
+Duración y renovación
+Suscripción anual con
+renovación automática
+. Próximo cobro previsto:
+24 de octubre de 2026
+.
+Cómo cancelar
+Puedes cancelar en cualquier momento desde tu perfil, sin coste adicional ni permanencia.
+Gestionar mi suscripción
+Ejecución inmediata y derecho de desistimiento
+Al contratar un servicio digital de ejecución inmediata, según los Términos de Servicio que aceptaste, solicitaste expresamente que la prestación comenzara antes de que finalizara el plazo legal de desistimiento de 14 días, y reconociste que perderás tu derecho de desistimiento en el momento en que el servicio haya sido completamente ejecutado (art. 103, letra m, TRLGDCU).
+🍃
+Fresco — menús semanales pensados para ti
+Recibiste este correo porque contrataste Fresco Pro con esta dirección de cuenta."
+`;
+
+exports[`renderSubscriptionConfirmationEmailHtml — plan and trial (FRESCO-1005) trial without card says nothing is charged today and when the first charge is 1`] = `
+"Confirmación de tu suscripción a Fresco Pro — precio, renovación y cómo cancelar.
+Tu Fresco Pro ya está activo
+Este correo confirma tu contratación de
+Fresco Pro
+, en cumplimiento del artículo 98.7 del Texto Refundido de la Ley General para la Defensa de los Consumidores y Usuarios (TRLGDCU) y la Directiva (UE) 2019/770.
+Identidad del prestador
+Basilio Montes Castaño, autónomo, NIF 47427105R, con domicilio en Utrera (Sevilla), España, a efectos de notificaciones. Contacto: hola.frescoapp@gmail.com.
+Objeto y precio
+Suscripción al Plan Fresco Pro. Importe cobrado hoy:
+0 €
+(prueba gratuita de 7 días). Primer cobro de
+4,99 €
+el
+24 de octubre de 2026
+(impuestos incluidos donde apliquen).
+Duración y renovación
+Suscripción mensual con
+renovación automática
+. Próximo cobro previsto:
+24 de octubre de 2026
+.
+Cómo cancelar
+Puedes cancelar en cualquier momento desde tu perfil, sin coste adicional ni permanencia.
+Gestionar mi suscripción
+Ejecución inmediata y derecho de desistimiento
+Al contratar un servicio digital de ejecución inmediata, según los Términos de Servicio que aceptaste, solicitaste expresamente que la prestación comenzara antes de que finalizara el plazo legal de desistimiento de 14 días, y reconociste que perderás tu derecho de desistimiento en el momento en que el servicio haya sido completamente ejecutado (art. 103, letra m, TRLGDCU).
+🍃
+Fresco — menús semanales pensados para ti
+Recibiste este correo porque contrataste Fresco Pro con esta dirección de cuenta."
+`;
