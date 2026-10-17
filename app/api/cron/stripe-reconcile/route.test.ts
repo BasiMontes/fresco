@@ -2,6 +2,7 @@ import type { createServiceClient } from '@/lib/supabase/service';
 import * as realSentry from '@sentry/nextjs';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import Stripe from 'stripe';
+import * as realConfirmationEmail from '@/lib/billing/confirmation-email';
 import * as realStripe from '@/lib/stripe';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
@@ -32,6 +33,10 @@ void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException }));
 
 let supa = fakeSupabase();
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
+// FRESCO-1005: the confirmation-email retry pass has its own tests (lib/billing/confirmation-email.test.ts);
+// here it must not add Sentry events or table reads to the reconcile assertions.
+const retryPendingConfirmations = mock(async (_client: unknown, _stripe: unknown) => ({ tried: 0, sent: 0, failed: 0, gaveUp: 0, dropped: 0, skipped: 0 }));
+void mock.module('@/lib/billing/confirmation-email', () => ({ ...realConfirmationEmail, retryPendingConfirmations }));
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
   stripe: { subscriptions: { retrieve: retrieveMock }, checkout: { sessions: { list: listSessionsMock } } },
@@ -178,6 +183,27 @@ describe('GET /api/cron/stripe-reconcile — auth + config gate', () => {
     const res = await GET(req({ authorization: 'Bearer cron_test' }));
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ checked: 0, reconciled: 0, sweptOrphans: 0, checkoutSweep: { scanned: 0, granted: 0, failed: 0 } });
+  });
+
+  test('FRESCO-1005: the summary carries the confirmation-email retry pass, which runs with the service client and the Stripe client', async () => {
+    retryPendingConfirmations.mockClear();
+    retryPendingConfirmations.mockResolvedValueOnce({ tried: 2, sent: 1, failed: 1, gaveUp: 0, dropped: 0, skipped: 0 });
+
+    const res = await GET(req({ authorization: 'Bearer cron_test' }));
+
+    expect((await res.json() as { confirmationRetries: unknown }).confirmationRetries).toEqual({ tried: 2, sent: 1, failed: 1, gaveUp: 0, dropped: 0, skipped: 0 });
+    expect(retryPendingConfirmations.mock.calls[0][0]).toBe(supa.client);
+  });
+
+  test('FRESCO-1005: a retry pass that throws is reported to Sentry and does not turn the reconcile pass into a 500', async () => {
+    captureException.mockClear();
+    retryPendingConfirmations.mockRejectedValueOnce(new Error('pending table unreadable'));
+
+    const res = await GET(req({ authorization: 'Bearer cron_test' }));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ confirmationRetries: null });
+    expect(captureException).toHaveBeenCalledTimes(1);
   });
 
   test('FRESCO-909: still answers 200 with the reconcile result when the paid-checkout sweep cannot list sessions', async () => {

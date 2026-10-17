@@ -650,7 +650,12 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
     expect(sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
   });
 
-  test('logs and still 200s when the send throws — the subscription write already succeeded', async () => {
+  /** FRESCO-1005: a rejected send is no longer only a console line. */
+  const emailFailureTags = () => captureException.mock.calls
+    .map(call => (call[1] as { tags?: Record<string, string> } | undefined)?.tags)
+    .filter(tags => tags?.email === 'subscription-confirmation');
+
+  test('still 200s when the send throws — the subscription write already succeeded — and reports it to Sentry and leaves a pending row (FRESCO-1005)', async () => {
     constructEvent.mockReturnValue({
       id: 'evt_8',
       type: 'checkout.session.completed',
@@ -664,6 +669,48 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
 
     expect(res.status).toBe(200);
     expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'pro' });
+    expect(emailFailureTags()).toHaveLength(1);
+    expect(supa.upserts).toEqual([{
+      table: 'pending_confirmation_emails',
+      payload: { subscription_id: 'sub_1', user_id: 'user_1', last_error: 'resend down' },
+      options: { onConflict: 'subscription_id', ignoreDuplicates: true },
+    }]);
+  });
+
+  test('a pending row that cannot be written is reported too, and the webhook still answers 200 (FRESCO-1005)', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_8b',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } }, pending_confirmation_emails: { upsertError: new Error('db down') } }, authWithEmail('pro@example.com'));
+    sendSubscriptionConfirmationEmail.mockImplementation(async () => { throw new Error('resend down'); });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(emailFailureTags()).toHaveLength(2);
+  });
+
+  test('the email says the plan period and, in the trial, that nothing is charged today (FRESCO-1005)', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_8c',
+      type: 'checkout.session.completed',
+      data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
+    });
+    subscriptionsRetrieve.mockResolvedValue(subscription({
+      status: 'trialing',
+      items: { data: [{ price: { id: PRICE, unit_amount: 499, currency: 'eur', recurring: { interval: 'year' } }, current_period_end: NOW_S + 30 * 86_400 }] },
+    }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('pro@example.com'));
+
+    await POST(req({}));
+
+    const sent = sendSubscriptionConfirmationEmail.mock.calls[0][0] as { interval: string, trialDays?: number, priceFormatted: string };
+    expect(sent.interval).toBe('year');
+    expect(sent.trialDays).toBe(7);
+    expect(sent.priceFormatted).toContain('4,99');
   });
 
   test('logs and still 200s when the account has no email on file', async () => {
@@ -679,6 +726,8 @@ describe('POST /api/stripe/webhook — FRESCO-429 subscription confirmation emai
 
     expect(res.status).toBe(200);
     expect(sendSubscriptionConfirmationEmail).not.toHaveBeenCalled();
+    expect(emailFailureTags()).toHaveLength(1);
+    expect(supa.upserts.map(u => u.table)).toEqual(['pending_confirmation_emails']);
   });
 });
 
@@ -795,7 +844,7 @@ describe('POST /api/stripe/webhook — expirable claim and completed state (FRES
   function arrange(id: string) {
     constructEvent.mockReturnValue(checkoutEvent(id));
     subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'active' }));
-    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } });
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('pro@example.com'));
   }
 
   test('a claim left by a crashed run, past the TTL, is retaken: Pro is granted and the event is completed', async () => {
