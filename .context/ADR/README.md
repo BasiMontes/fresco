@@ -122,6 +122,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0059](./ADR-0059-documentation-contracts.md) | Documentation contracts: region markers, a push and CI gate with a `Docs-Checked:` escape, an edit-time reminder | Accepted | — | — |
 | [ADR-0060](./ADR-0060-route-adherence.md) | Routes the agent actually reads: a scoped, ranked and capped `ROUTE:` cue, re-surfaced once on Claude Code, and hook groups that reach every project | Accepted | — | — |
 | [ADR-0061](./ADR-0061-stripe-mode-guard.md) | Stripe mode guard: the Stripe mode is a fact of the shared database (deploy key, `billing_mode`, profile), not of the deploy that receives the event | Proposed | — | — |
+| [ADR-0062](./ADR-0062-stripe-webhook-transient-failures-retry.md) | Stripe webhook: a transient Stripe failure answers 500 so Stripe retries; subscription state is decided from the live subscription | Proposed | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 

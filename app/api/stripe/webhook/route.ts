@@ -2,7 +2,8 @@ import type Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
-import { resolveChargeCustomerId, resolveRefundCancellation } from '@/lib/billing/refund';
+import { handleChargeRefunded } from '@/lib/billing/refund-handler';
+import { isEndedSubscription, isTransientStripeError, retrieveLiveSubscription } from '@/lib/billing/stripe-errors';
 import { describeModeVerdict, judgeStripeEventMode } from '@/lib/billing/stripe-mode';
 import { applyRenewal, downgradeToFree, findProfileByStripeCustomer, markPaymentFailed, profileHoldsOtherMode } from '@/lib/billing/subscription';
 import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
@@ -72,11 +73,18 @@ import { createServiceClient } from '@/lib/supabase/service';
  * is retried by Stripe and a real payment is not lost. Subscription, cancellation and refund
  * events also have to match the mode stored on the profile they resolve to.
  *
+ * FRESCO-1002 (audit 7b: A7-PAY-02/05/09, ADR-0062): `customer.subscription.updated` and `deleted`
+ * decide from the subscription as Stripe has it NOW (`subscriptions.retrieve`), not from the event
+ * payload, so a late `active` that arrives after `deleted` writes nothing. A refund cancels only
+ * the subscription its charge paid for.
+ *
  * Once the signature verifies, a downstream failure (e.g. the Supabase
  * write) is logged with the Stripe event id and this still returns 200 —
  * deliberate, not an oversight: a non-2xx response makes Stripe retry
  * delivery, and retrying a bug just repeats the same failure. Manual replay
  * from the Stripe Dashboard is the recovery path for a logged failure.
+ * The exception (ADR-0062) is a TRANSIENT Stripe failure (5xx, 429, a failed connection): it
+ * gives the claim back and answers 500, because Stripe's outage passes and the retry succeeds.
  */
 /** Event types this route acts on; only these are claimed in `stripe_webhook_events`. */
 const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
@@ -226,6 +234,10 @@ export async function POST(request: Request) {
         Sentry.captureException(releaseError, { tags: eventTags });
       }
     }
+    if (isTransientStripeError(error)) {
+      // ADR-0062: not 2xx, so Stripe retries once its side recovers.
+      return NextResponse.json({ error: 'Stripe no está disponible, se reintentará.' }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ received: true });
@@ -236,8 +248,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 }
 
 async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId, livemode }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string, livemode: boolean }): Promise<void> {
-  const paymentStatus = resolvePaymentStatusUpdate(subscription);
-  if (!paymentStatus) {
+  const eventStatus = resolvePaymentStatusUpdate(subscription);
+  if (!eventStatus) {
     // Status outside {past_due, unpaid, active} (e.g. `canceled`,
     // `incomplete`) — out of scope for both the renewal and the
     // payment-failed signal.
@@ -245,7 +257,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   }
 
   const supabase = createServiceClient();
-  const profile = await findProfileByStripeCustomer(supabase, paymentStatus.stripeCustomerId);
+  const profile = await findProfileByStripeCustomer(supabase, eventStatus.stripeCustomerId);
 
   // Code review on PR #101: Stripe doesn't guarantee webhook delivery order,
   // and a customer can have more than one subscription over time (cancel,
@@ -255,12 +267,22 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   // plan_expires_at -- cross-check the event's subscription id against the
   // one already on file, not just the customer id.
   if (!profile || profile.stripe_subscription_id !== subscription.id) {
-    console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${paymentStatus.stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely an out-of-order webhook delivery; self-heals on the next matching event`);
+    console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${eventStatus.stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely an out-of-order webhook delivery; self-heals on the next matching event`);
     return;
   }
 
   if (profileHoldsOtherMode(profile, livemode)) {
-    console.error(`[/api/stripe/webhook] event ${eventId}: the profile for Stripe customer ${paymentStatus.stripeCustomerId} holds ids of the other Stripe mode; ignoring`);
+    console.error(`[/api/stripe/webhook] event ${eventId}: the profile for Stripe customer ${eventStatus.stripeCustomerId} holds ids of the other Stripe mode; ignoring`);
+    return;
+  }
+
+  // FRESCO-1002: the event is a snapshot and may be late. What the account should be is decided
+  // from the subscription as it is now: a late `active` after `deleted` finds it `canceled`
+  // here and writes nothing. A subscription Stripe no longer has is over too.
+  const live = await retrieveLiveSubscription(stripe, subscription.id);
+  const paymentStatus = live ? resolvePaymentStatusUpdate(live) : null;
+  if (!live || !paymentStatus) {
+    console.info(`[/api/stripe/webhook] event ${eventId}: subscription ${subscription.id} is ${live?.status ?? 'gone'} at Stripe now; ignoring the ${subscription.status} update`);
     return;
   }
 
@@ -313,7 +335,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   if (priceIds.length === 0) {
     throw new Error('No Pro price id is configured (STRIPE_PRICE_ID_PRO_MONTH).');
   }
-  const update = resolveRenewalUpdate(subscription, priceIds);
+  const update = resolveRenewalUpdate(live, priceIds);
 
   // FRESCO-232: a renewal-shaped `active` update also means any prior
   // failed-payment aviso just resolved (retry succeeded) -- `applyRenewal`
@@ -357,6 +379,14 @@ async function handleSubscriptionDeleted({ subscription, eventId, livemode }: { 
     return;
   }
 
+  // FRESCO-1002: decide from the subscription now. A `deleted` for one Stripe still holds live
+  // is the stale half of an out-of-order pair and must not downgrade. Gone or ended: proceed.
+  const live = await retrieveLiveSubscription(stripe, subscription.id);
+  if (live && !isEndedSubscription(live)) {
+    console.error(`[/api/stripe/webhook] event ${eventId}: subscription ${subscription.id} is ${live.status} at Stripe now; ignoring the stale delete`);
+    return;
+  }
+
   // FRESCO-232: also clears a stale payment-failed aviso -- the account is
   // Free now, the aviso no longer applies.
   await downgradeToFree(supabase, profile.id);
@@ -385,47 +415,4 @@ async function handleSubscriptionDeleted({ subscription, eventId, livemode }: { 
       properties: { reason: subscription.cancellation_details?.reason ?? 'unknown', $set: { plan: 'free' } },
     });
   }
-}
-
-/**
- * FRESCO-900: a full refund of this period's charge cancels the subscription (see the
- * route doc). Ignored cases are logged, never thrown: they are not failures.
- */
-async function handleChargeRefunded({ charge, eventId, livemode }: { charge: Stripe.Charge, eventId: string, livemode: boolean }): Promise<void> {
-  // A partial refund is a goodwill gesture; skip before any lookup.
-  if (!charge.refunded) {
-    return;
-  }
-
-  const stripeCustomerId = resolveChargeCustomerId(charge);
-  if (!stripeCustomerId) {
-    console.warn(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}) has no customer; nothing to cancel`);
-    return;
-  }
-
-  const profile = await findProfileByStripeCustomer(createServiceClient(), stripeCustomerId);
-  if (!profile?.stripe_subscription_id) {
-    console.info(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}): no subscription on file for customer ${stripeCustomerId}; nothing to cancel`);
-    return;
-  }
-
-  if (profileHoldsOtherMode(profile, livemode)) {
-    console.error(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}): the profile for customer ${stripeCustomerId} holds ids of the other Stripe mode; nothing to cancel`);
-    return;
-  }
-
-  const subscription = await stripe.subscriptions.retrieve(profile.stripe_subscription_id);
-  const decision = resolveRefundCancellation({ charge, subscription });
-  if (decision.action === 'ignore') {
-    console.info(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}) left the subscription alone: ${decision.reason}`);
-    return;
-  }
-
-  // No proration and no final invoice: this cancellation must not create a second refund
-  // or a new charge. The comment makes it traceable in the Stripe dashboard.
-  await stripe.subscriptions.cancel(decision.subscriptionId, {
-    cancellation_details: { comment: `refund:${charge.id}` },
-    prorate: false,
-    invoice_now: false,
-  });
 }
