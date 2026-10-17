@@ -123,3 +123,21 @@ describe('OnboardingStepDiet — chip tap area', () => {
     }
   });
 });
+
+describe('OnboardingStepDiet — free-text boxes (FRESCO-1000, audit 7b A7-LOGIC-08)', () => {
+  test.each([
+    ['dieta_texto_libre_input', 'dieta_texto_libre_aviso'],
+    ['ingredientes_odiados_texto_libre_input', 'ingredientes_odiados_texto_libre_aviso'],
+  ])('the box %s says next to it that it does not filter, and is described by that note', (input, note) => {
+    render();
+
+    expect(screen.getByTestId(note)).toHaveTextContent('no se usa para filtrar');
+    expect(screen.getByTestId(input)).toHaveAttribute('aria-describedby', note);
+  });
+
+  test('the allergen notice stays next to the allergen chips', () => {
+    render();
+
+    expect(screen.getByTestId('alergenos_aviso')).toHaveTextContent('revisa siempre las etiquetas');
+  });
+});

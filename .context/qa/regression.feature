@@ -480,6 +480,29 @@ Característica: Flujo completo de usuario en Fresco
     Cuando se reasignan los datos de la invitada a la cuenta destino
     Entonces el plato con "gluten" queda excluido y el plato sin alérgeno se conserva
 
+  @seguridad @seguridad-alimentaria @onboarding @automatizado
+  # Automatizado: tests/steps/aviso-alergenos.steps.ts (FRESCO-1000)
+  Escenario: El onboarding avisa de que las cajas de texto libre no filtran recetas
+    Dado que el usuario tiene sesión iniciada
+    Cuando llega al paso de dieta y alérgenos del onboarding
+    Entonces ve el aviso de alérgenos junto a las opciones y la nota de que las cajas de texto libre no filtran
+    # A7-LOGIC-08: "celiaca" o "sin cerdo" escritos en esas cajas se guardan pero no filtran; el filtro
+    # lo hacen las opciones de arriba. La nota lo dice junto al campo.
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/aviso-alergenos.steps.ts (FRESCO-1000)
+  Escenario: Inicio recuerda revisar ingredientes y etiquetas si hay una alergia
+    Dado que Laura abre Inicio
+    Entonces ve el recordatorio de alérgenos en Inicio
+    # A7-LAUNCH-03: la promesa es "excluimos lo que cada receta declara", nunca "esto es seguro".
+
+  @seguridad @seguridad-alimentaria @automatizado
+  # Automatizado: tests/steps/aviso-alergenos.steps.ts (FRESCO-1000)
+  Escenario: La ficha de cada receta recuerda revisar ingredientes y etiquetas
+    Dado que Laura está en la Biblioteca de recetas
+    Cuando abre una receta del catálogo
+    Entonces ve el recordatorio de alérgenos en la ficha de la receta
+
   # ==========================================================================
   # Modo Invitado y Registro Progresivo (EPIC-FRESCO-16 / EPIC-FRESCO-18)
   # ==========================================================================

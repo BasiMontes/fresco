@@ -9,6 +9,7 @@ import { MenuTodaysMeals } from '@/components/menu/menu-todays-meals';
 import { PushOpenedTracker } from '@/components/menu/push-opened-tracker';
 import { PushPromptBanner } from '@/components/menu/push-prompt-banner';
 import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
+import { AllergenReminder } from '@/components/ui/allergen-reminder';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
 import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
@@ -107,6 +108,9 @@ export default async function MenuPage() {
       </div>
 
       <MenuNotices plan={plan} isAnonymous={isAnonymous} />
+
+      {/* FRESCO-1000: the promise is "we filter by what each recipe declares", never "this is safe". */}
+      <AllergenReminder />
 
       <MenuTodaysMeals plan={plan} dietaryPreferences={dietaryPreferences} favoriteIds={favoriteIds} />
 

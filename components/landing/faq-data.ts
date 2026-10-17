@@ -16,7 +16,7 @@ export const FAQS = [
   },
   {
     question: '¿Qué pasa con mis alergias?',
-    answer: 'Los filtros de alergias son absolutos. El sistema nunca incluye un alérgeno declarado, bajo ninguna circunstancia.',
+    answer: 'Excluimos de tus menús las recetas que contienen los alérgenos que declares, entre los 14 de declaración obligatoria de la UE. Aun así, lee siempre la etiqueta de los productos que compres: la información de las recetas puede tener errores.',
   },
   {
     question: '¿Puedo cambiar recetas del menú?',
