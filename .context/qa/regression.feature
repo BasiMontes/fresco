@@ -1772,12 +1772,15 @@ Característica: Flujo completo de usuario en Fresco
     # de FRESCO-231 y al recuperar la suscripción tras el pago fallido
     # de FRESCO-232. Cubierto también por tests unitarios del webhook.
 
-  @suscripcion @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @verificado-manual-2026-08-19 @automatizado @requiere-stripe-real
   Escenario: Cancelación revierte a Free al fin del periodo pagado
     Dado que Laura canceló su suscripción Pro
     Cuando termina el periodo que ya pagó (customer.subscription.deleted)
     Entonces su cuenta pasa a plan Free
     # FRESCO-230. Verificado con evento real de Stripe en producción.
+    # FRESCO-1002: el webhook relee la suscripción en Stripe antes de actuar,
+    # así que el Given crea y cancela una suscripción REAL en modo test
+    # (@requiere-stripe-real: corre en stripe-e2e.yml, no en la puerta de PR).
 
   # --- STORY-FRESCO-231: gestionar o cancelar la suscripción ---
 
@@ -1823,7 +1826,13 @@ Característica: Flujo completo de usuario en Fresco
 
   # --- STORY-FRESCO-232: saber si mi pago falló ---
 
-  @suscripcion @edge-case @verificado-manual-2026-08-19 @automatizado
+  @suscripcion @edge-case @verificado-manual-2026-08-19 @solo-manual
+  # @solo-manual (FRESCO-1002): el webhook relee la suscripción en Stripe y solo
+  # escribe si está de verdad en past_due. Stripe en modo test no permite forzar
+  # ese estado sin una tarjeta que falle y un test clock, así que ya no se puede
+  # automatizar con un evento firmado. La rama past_due la cubren los tests de
+  # ruta del webhook (app/api/stripe/webhook/route.test.ts). Reabrir si se monta
+  # la infraestructura de test clocks.
   Escenario: Pago fallido me avisa
     Dado que la suscripción Pro de Laura intenta renovarse
     Cuando el cobro falla (customer.subscription.updated con status past_due)
@@ -1847,7 +1856,10 @@ Característica: Flujo completo de usuario en Fresco
     # la transición real a active y disparó la rama "recuperado" del
     # webhook.
 
-  @suscripcion @edge-case @automatizado
+  @suscripcion @edge-case @solo-manual
+  # @solo-manual (FRESCO-1002): mismo motivo que "Pago fallido me avisa". Además
+  # `unpaid` depende de cómo esté configurado el dunning de la cuenta de Stripe.
+  # La rama unpaid la cubren los tests de ruta del webhook.
   Escenario: Pago sigue fallando revierte a Free
     Dado que el pago de Laura falló y no se resolvió
     Cuando Stripe agota los reintentos y emite customer.subscription.updated con status unpaid
@@ -1857,9 +1869,10 @@ Característica: Flujo completo de usuario en Fresco
     # puede no llegar a disparar nunca en ese caso). La sesión de QA del
     # 2026-08-19 solo llegó hasta past_due y su recuperación (los dos
     # escenarios anteriores), sin agotar los reintentos hasta unpaid --
-    # cubierto entonces solo por tests unitarios del webhook. Primera
-    # verificación real (evento unpaid firmado y posteado) via
-    # tests/steps/suscripcion.steps.ts (FRESCO-277).
+    # cubierto entonces solo por tests unitarios del webhook. Entre
+    # FRESCO-277 y FRESCO-1002 lo ejercitó un evento unpaid firmado; desde
+    # que el webhook relee la suscripción en Stripe vuelve a estar cubierto
+    # solo por los tests de ruta.
 
   # ==========================================================================
   # Favoritos (/favorites)

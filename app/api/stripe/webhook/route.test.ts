@@ -17,6 +17,8 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const subscriptionsCancel = mock(async (_id: string, _params?: unknown): Promise<unknown> => ({}));
+const invoicePaymentsList = mock(async (_p: unknown): Promise<unknown> => ({ data: [] }));
+const invoicesRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
 const sendSubscriptionConfirmationEmail = mock(async (_p: unknown) => {});
 const CLAIMED_AT = '2026-10-12T10:00:00.123456+00:00';
@@ -45,7 +47,7 @@ function withLivemode(event: unknown): unknown {
 
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
-  stripe: { webhooks: { constructEvent: (...a: unknown[]) => withLivemode(constructEvent(...a)) }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel } },
+  stripe: { webhooks: { constructEvent: (...a: unknown[]) => withLivemode(constructEvent(...a)) }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel }, invoicePayments: { list: invoicePaymentsList }, invoices: { retrieve: invoicesRetrieve } },
   resolveWebhookSecret: () => 'whsec_test',
 }));
 void mock.module('@/lib/supabase/service', () => ({
@@ -106,6 +108,10 @@ beforeEach(() => {
   databaseLivemode = false;
   constructEvent.mockReset();
   subscriptionsRetrieve.mockReset();
+  // FRESCO-1002: updated/deleted re-read the subscription from Stripe; by default Stripe agrees with the event.
+  subscriptionsRetrieve.mockImplementation(async () => (constructEvent.mock.results.at(-1)?.value as { data?: { object?: unknown } } | undefined)?.data?.object);
+  invoicePaymentsList.mockReset();
+  invoicesRetrieve.mockReset();
   subscriptionsCancel.mockReset();
   subscriptionsCancel.mockResolvedValue({});
   captureServerEvent.mockClear();
@@ -284,7 +290,7 @@ describe('POST /api/stripe/webhook — customer.subscription.deleted', () => {
     constructEvent.mockReturnValue({
       id: 'evt_3',
       type: 'customer.subscription.deleted',
-      data: { object: subscription({ cancellation_details: { reason: 'payment_failed' } }) },
+      data: { object: subscription({ status: 'canceled', cancellation_details: { reason: 'payment_failed' } }) },
     });
     supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', stripe_subscription_id: 'sub_1' } } });
 
@@ -301,7 +307,7 @@ describe('POST /api/stripe/webhook — customer.subscription.deleted', () => {
     constructEvent.mockReturnValue({
       id: 'evt_3b',
       type: 'customer.subscription.deleted',
-      data: { object: subscription({ cancellation_details: { reason: 'payment_failed' } }) },
+      data: { object: subscription({ status: 'canceled', cancellation_details: { reason: 'payment_failed' } }) },
     });
     supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'free', stripe_subscription_id: 'sub_1' } } });
 
@@ -319,7 +325,7 @@ describe('POST /api/stripe/webhook — charge.refunded (FRESCO-900)', () => {
     return {
       id: 'evt_r1',
       type: 'charge.refunded',
-      data: { object: { id: 'ch_1', customer: 'cus_1', refunded: true, amount: 499, amount_refunded: 499, created: NOW_S - 60, ...charge } },
+      data: { object: { id: 'ch_1', customer: 'cus_1', payment_intent: 'pi_1', refunded: true, amount: 499, amount_refunded: 499, created: NOW_S - 60, ...charge } },
     };
   }
 
@@ -334,7 +340,14 @@ describe('POST /api/stripe/webhook — charge.refunded (FRESCO-900)', () => {
   beforeEach(() => {
     supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
     subscriptionsRetrieve.mockResolvedValue(activeSubscription());
+    chargePaidForSubscription('sub_1');
   });
+
+  /** FRESCO-1002: charge -> payment intent -> invoice -> subscription, as Stripe reports it. */
+  function chargePaidForSubscription(subscriptionId: string | null) {
+    invoicePaymentsList.mockResolvedValue({ data: [{ invoice: 'in_1' }] });
+    invoicesRetrieve.mockResolvedValue({ parent: subscriptionId ? { subscription_details: { subscription: subscriptionId } } : null });
+  }
 
   test('a full refund of this period\'s charge cancels the subscription without prorating or invoicing', async () => {
     constructEvent.mockReturnValue(refundEvent());
@@ -435,6 +448,145 @@ describe('POST /api/stripe/webhook — charge.refunded (FRESCO-900)', () => {
     expect(captureException).toHaveBeenCalledTimes(1);
     expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
     expect(completeWebhookEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/stripe/webhook — FRESCO-1002 refund of another subscription (audit 7b: A7-PAY-05)', () => {
+  const PERIOD_START = NOW_S - 10 * 86_400;
+  const refund = { id: 'evt_r2', type: 'charge.refunded', data: { object: { id: 'ch_old', customer: 'cus_1', payment_intent: 'pi_old', refunded: true, created: NOW_S - 60 } } };
+
+  beforeEach(() => {
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_current' } } });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ id: 'sub_current', status: 'active', items: { data: [{ price: { id: PRICE }, current_period_start: PERIOD_START, current_period_end: PERIOD_START + 30 * 86_400 }] } }));
+    constructEvent.mockReturnValue(refund);
+  });
+
+  test('refunding the OLD subscription\'s charge leaves the current subscription alone', async () => {
+    invoicePaymentsList.mockResolvedValue({ data: [{ invoice: 'in_old' }] });
+    invoicesRetrieve.mockResolvedValue({ parent: { subscription_details: { subscription: 'sub_old' } } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+    expect(completeWebhookEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test('a charge whose subscription cannot be told cancels nothing', async () => {
+    invoicePaymentsList.mockResolvedValue({ data: [] });
+
+    await POST(req({}));
+
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('a Stripe outage while looking the charge up answers 500 and gives the claim back, so Stripe retries', async () => {
+    invoicePaymentsList.mockRejectedValue(Object.assign(new Error('stripe 503'), { type: 'StripeAPIError', statusCode: 503 }));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(500);
+    expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/stripe/webhook — FRESCO-1002 decide from the live subscription (audit 7b: A7-PAY-09)', () => {
+  const updated = (sub: unknown) => ({ id: 'evt_u', type: 'customer.subscription.updated', data: { object: sub, previous_attributes: {} } });
+  const deleted = (sub: unknown) => ({ id: 'evt_d', type: 'customer.subscription.deleted', data: { object: sub } });
+  const proProfile = () => fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
+  const stripeSays = (overrides: Record<string, unknown>) => subscriptionsRetrieve.mockResolvedValue(subscription({ ...overrides }));
+
+  test('a late `active` update after the subscription was deleted writes nothing', async () => {
+    constructEvent.mockReturnValue(updated(subscription({ status: 'active' })));
+    supa = proProfile();
+    stripeSays({ status: 'canceled' });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(supa.updates).toHaveLength(0);
+    expect(captureServerEvent).not.toHaveBeenCalled();
+    expect(completeWebhookEvent).toHaveBeenCalledTimes(1);
+  });
+
+  test('an update for a subscription Stripe no longer has writes nothing', async () => {
+    constructEvent.mockReturnValue(updated(subscription({ status: 'active' })));
+    supa = proProfile();
+    subscriptionsRetrieve.mockRejectedValue(Object.assign(new Error('No such subscription'), { type: 'StripeInvalidRequestError', code: 'resource_missing', statusCode: 404 }));
+
+    expect((await POST(req({}))).status).toBe(200);
+    expect(supa.updates).toHaveLength(0);
+  });
+
+  test('what Stripe says now wins over the event: an `active` event for a subscription that is `unpaid` now downgrades', async () => {
+    constructEvent.mockReturnValue(updated(subscription({ status: 'active' })));
+    supa = proProfile();
+    stripeSays({ status: 'unpaid' });
+
+    await POST(req({}));
+
+    expect(supa.updates.find(u => u.table === 'user_profiles')?.payload).toMatchObject({ plan: 'free' });
+  });
+
+  test('the renewal date comes from the live subscription, not from the event', async () => {
+    constructEvent.mockReturnValue(updated(subscription({ status: 'active', items: { data: [{ price: { id: PRICE }, current_period_end: NOW_S + 1_000 }] } })));
+    supa = proProfile();
+    stripeSays({ status: 'active', items: { data: [{ price: { id: PRICE }, current_period_end: NOW_S + 30 * 86_400 }] } });
+
+    await POST(req({}));
+
+    const expires = supa.updates.find(u => u.table === 'user_profiles')?.payload.plan_expires_at as string;
+    expect(new Date(expires).getTime() / 1000).toBeCloseTo(NOW_S + 30 * 86_400, -1);
+  });
+
+  test('a `deleted` for a subscription Stripe still holds live is the stale half of an out-of-order pair: no downgrade', async () => {
+    constructEvent.mockReturnValue(deleted(subscription({ status: 'canceled' })));
+    supa = proProfile();
+    stripeSays({ status: 'active' });
+
+    await POST(req({}));
+
+    expect(supa.updates).toHaveLength(0);
+    expect(captureServerEvent).not.toHaveBeenCalled();
+  });
+
+  test('a `deleted` for a subscription Stripe no longer has still downgrades', async () => {
+    constructEvent.mockReturnValue(deleted(subscription({ status: 'canceled' })));
+    supa = proProfile();
+    subscriptionsRetrieve.mockRejectedValue(Object.assign(new Error('No such subscription'), { code: 'resource_missing', statusCode: 404 }));
+
+    await POST(req({}));
+
+    expect(supa.updates.find(u => u.table === 'user_profiles')?.payload).toMatchObject({ plan: 'free' });
+  });
+
+  test.each([
+    ['a Stripe 5xx', { type: 'StripeAPIError', statusCode: 503 }],
+    ['a dropped connection', { type: 'StripeConnectionError' }],
+    ['a rate limit', { type: 'StripeRateLimitError', statusCode: 429 }],
+  ])('%s while reading the subscription answers 500 and gives the claim back', async (_name, stripeError) => {
+    constructEvent.mockReturnValue(updated(subscription({ status: 'active' })));
+    supa = proProfile();
+    subscriptionsRetrieve.mockRejectedValue(Object.assign(new Error('stripe'), stripeError));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(500);
+    expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
+    expect(supa.updates).toHaveLength(0);
+  });
+
+  test('a non-transient failure (a bug, a bad request) stays a logged 200: retrying would repeat it', async () => {
+    constructEvent.mockReturnValue(updated(subscription({ status: 'active' })));
+    supa = proProfile();
+    subscriptionsRetrieve.mockRejectedValue(Object.assign(new Error('bad request'), { type: 'StripeInvalidRequestError', statusCode: 400 }));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -23,9 +23,12 @@ import { loginToApp, postSignedStripeEvent, restHeaders, serviceRoleHeaders } fr
  * the subscription from Stripe's real API (`lib/stripe.ts`
  * `resolveProUpdateFromSession`), so that scenario creates a REAL Stripe
  * test-mode Customer + Subscription first. `customer.subscription.updated`/
- * `.deleted` read `event.data.object` directly with no extra Stripe API
- * call, so those use a synthetic-but-consistent object referencing whatever
- * ids are already on the account's `user_profiles` row.
+ * `.deleted` also re-read the subscription from Stripe now (FRESCO-1002,
+ * ADR-0062), so a scenario that posts one needs a real subscription in the
+ * state the event claims: the cancellation scenario creates and cancels one
+ * (`@requiere-stripe-real`). The `past_due` / `unpaid` scenarios are
+ * `@solo-manual`: test-mode Stripe cannot put a subscription in those states
+ * without a failing card and a test clock.
  *
  * FRESCO-308: used to run every scenario against the single shared
  * `PRO_USER_EMAIL` account — a real risk given how many of these scenarios
@@ -81,8 +84,8 @@ function fakeStripeIds(userId: string): { stripeCustomerId: string, stripeSubscr
 async function seedProBaseline(
   request: Parameters<typeof postSignedStripeEvent>[0],
   userId: string,
+  ids: { stripeCustomerId: string, stripeSubscriptionId: string } = fakeStripeIds(userId),
 ): Promise<{ stripeCustomerId: string, stripeSubscriptionId: string }> {
-  const ids = fakeStripeIds(userId);
   const res = await request.patch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
     headers: serviceRoleHeaders(),
     data: {
@@ -94,6 +97,16 @@ async function seedProBaseline(
   });
   if (!res.ok()) { throw new Error(`Failed to seed Pro baseline: ${res.status()} ${await res.text()}`); }
   return ids;
+}
+
+/** The Stripe ids on the profile (service role: the client role cannot read them back). */
+async function readStripeIds(request: Parameters<typeof postSignedStripeEvent>[0], userId: string): Promise<{ stripeCustomerId: string, stripeSubscriptionId: string }> {
+  const res = await request.get(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}&select=stripe_customer_id,stripe_subscription_id`,
+    { headers: serviceRoleHeaders() },
+  );
+  const [row] = await res.json() as { stripe_customer_id: string, stripe_subscription_id: string }[];
+  return { stripeCustomerId: row.stripe_customer_id, stripeSubscriptionId: row.stripe_subscription_id };
 }
 
 async function readProfile(request: Parameters<typeof postSignedStripeEvent>[0], headers: Record<string, string>, userId: string) {
@@ -187,15 +200,29 @@ Then(/^sigue teniendo plan Pro sin interrupción$/, async ({ request, suscripcio
 Given(/^que Laura canceló su suscripción Pro$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
   const testUser = await createLaura(testUserFactory);
   ctx.testUser = testUser;
-  await seedProBaseline(request, testUser.id);
+
+  // FRESCO-1002: the webhook reads the subscription from Stripe before it acts, so this is a REAL
+  // test-mode subscription, ended in Stripe the way a cancellation that reached its term ends it.
+  const StripeModule = (await import('stripe')).default;
+  const stripe = new StripeModule(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-09-30.endive' });
+  const customer = await stripe.customers.create({ metadata: { test_user_id: testUser.id } });
+  ctx.stripeCustomerIds.push(customer.id); // fixture teardown deletes it
+  const subscription = await stripe.subscriptions.create({
+    customer: customer.id,
+    items: [{ price: process.env.STRIPE_PRICE_ID_PRO_MONTH! }],
+    trial_period_days: 7,
+  });
+  await seedProBaseline(request, testUser.id, { stripeCustomerId: customer.id, stripeSubscriptionId: subscription.id });
+  await stripe.subscriptions.cancel(subscription.id);
 });
 
 When(/^termina el periodo que ya pagó \(customer\.subscription\.deleted\)$/, async ({ request, suscripcionCtx: ctx }) => {
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
+  const { stripeCustomerId, stripeSubscriptionId } = await readStripeIds(request, ctx.testUser.id);
 
   const res = await postSignedStripeEvent(request, 'customer.subscription.deleted', {
     id: stripeSubscriptionId,
     customer: stripeCustomerId,
+    status: 'canceled',
   });
   if (!res.ok()) { throw new Error(`Webhook rejected deleted event: ${res.status()} ${await res.text()}`); }
 });
@@ -204,31 +231,6 @@ Then(/^su cuenta pasa a plan Free$/, async ({ request, suscripcionCtx: ctx }) =>
   const headers = restHeaders(ctx.testUser.accessToken);
   const profile = await readProfile(request, headers, ctx.testUser.id);
   expect(profile.plan).toBe('free');
-});
-
-// --- STORY-FRESCO-232: "Pago fallido me avisa" ---
-
-Given(/^que la suscripción Pro de Laura intenta renovarse$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
-  const testUser = await createLaura(testUserFactory);
-  ctx.testUser = testUser;
-  await seedProBaseline(request, testUser.id);
-});
-
-When(/^el cobro falla \(customer\.subscription\.updated con status past_due\)$/, async ({ request, suscripcionCtx: ctx }) => {
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
-
-  const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
-    id: stripeSubscriptionId,
-    customer: stripeCustomerId,
-    status: 'past_due',
-  });
-  if (!res.ok()) { throw new Error(`Webhook rejected past_due event: ${res.status()} ${await res.text()}`); }
-});
-
-Then(/^ve un aviso en su perfil explicando que el pago falló$/, async ({ page, suscripcionCtx: ctx }) => {
-  await loginToApp(page, ctx.testUser);
-  await page.goto('/profile');
-  await expect(page.getByTestId('payment_failed_notice')).toBeVisible();
 });
 
 // --- STORY-FRESCO-232: "Reintento exitoso restaura Pro sin fricción" ---
@@ -269,32 +271,6 @@ Then(/^el aviso de pago fallido desaparece de su perfil$/, async ({ page, suscri
   await loginToApp(page, ctx.testUser);
   await page.goto('/profile');
   await expect(page.getByTestId('payment_failed_notice')).toHaveCount(0);
-});
-
-// --- STORY-FRESCO-232: "Pago sigue fallando revierte a Free" (@pendiente — never verified before this) ---
-
-Given(/^que el pago de Laura falló y no se resolvió$/, async ({ request, testUserFactory, suscripcionCtx: ctx }) => {
-  const testUser = await createLaura(testUserFactory);
-  ctx.testUser = testUser;
-  const { stripeCustomerId, stripeSubscriptionId } = await seedProBaseline(request, testUser.id);
-
-  const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
-    id: stripeSubscriptionId,
-    customer: stripeCustomerId,
-    status: 'past_due',
-  });
-  if (!res.ok()) { throw new Error(`Failed to seed payment-failed baseline: ${res.status()} ${await res.text()}`); }
-});
-
-When(/^Stripe agota los reintentos y emite customer\.subscription\.updated con status unpaid$/, async ({ request, suscripcionCtx: ctx }) => {
-  const { stripeCustomerId, stripeSubscriptionId } = fakeStripeIds(ctx.testUser.id);
-
-  const res = await postSignedStripeEvent(request, 'customer.subscription.updated', {
-    id: stripeSubscriptionId,
-    customer: stripeCustomerId,
-    status: 'unpaid',
-  });
-  if (!res.ok()) { throw new Error(`Webhook rejected unpaid event: ${res.status()} ${await res.text()}`); }
 });
 
 // --- Grupo B (FRESCO-277) ---
