@@ -42,6 +42,15 @@ export const ALERGENO_OPTIONS: TagOption[] = [
 // covers and what it cannot promise, so a declared allergy is never read as a guarantee.
 export const ALERGENOS_AVISO = 'Puedes indicar cualquiera de los 14 alérgenos de declaración obligatoria en la UE. Filtramos las recetas según los alérgenos que declara cada una; no podemos garantizar trazas ni ingredientes ocultos en productos elaborados, así que revisa siempre las etiquetas.';
 
+/**
+ * FRESCO-1000 (audit 7b A7-LAUNCH-03): the reminder shown wherever a recipe or a menu is, so the promise stays
+ * "we filter by what each recipe declares", never "this is safe". Same wording on every screen.
+ */
+export const ALERGENOS_RECORDATORIO = 'Si tienes una alergia, revisa siempre los ingredientes y las etiquetas de los productos que compres.';
+
+/** FRESCO-1000 (A7-LOGIC-08): the free-text boxes of the onboarding are saved but never filter a recipe; the chips above them do. */
+export const TEXTO_LIBRE_SIN_FILTRO = 'Esto no se usa para filtrar recetas. Para evitar alérgenos o ingredientes, usa las opciones de arriba.';
+
 // Curated subset of the seeded `recipes.ingredientes_que_puede_desagradar`
 // vocabulary — same rationale as allergens above.
 export const INGREDIENTE_ODIADO_OPTIONS: TagOption[] = [

@@ -6,7 +6,7 @@ import { HealthConsentBlock } from '@/components/onboarding/health-consent-block
 import { LockInfoTooltip } from '@/components/onboarding/lock-info-tooltip';
 import { Input } from '@/components/ui/input';
 import { Tag } from '@/components/ui/tag';
-import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS, TEXTO_LIBRE_SIN_FILTRO } from '@/lib/constants/dietary-options';
 import { TEXTO_LIBRE_MAX_LENGTH } from '@/lib/constants/profile-limits';
 import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
 import { alergenoLockMessage, COCINA_OPTIONS, DIETA_OPTIONS, UNSELECTED_CHIP_CLASS } from '@/lib/onboarding/wizard-options';
@@ -117,8 +117,10 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
         onChange={e => setDietaTextoLibre(e.target.value)}
         placeholder="¿Algo más que debamos saber?"
         aria-label="Dieta y restricciones — texto libre"
+        aria-describedby="dieta_texto_libre_aviso"
         className="mt-2"
       />
+      <p id="dieta_texto_libre_aviso" data-testid="dieta_texto_libre_aviso" className="mt-1 text-body-sm text-tertiary">{TEXTO_LIBRE_SIN_FILTRO}</p>
 
       <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
       <p data-testid="alergenos_aviso" className="mt-1 text-body-sm text-tertiary">{ALERGENOS_AVISO}</p>
@@ -179,8 +181,10 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
         onChange={e => setIngredientesOdiadosTextoLibre(e.target.value)}
         placeholder="¿Algún otro ingrediente que no te guste?"
         aria-label="Ingredientes que no gustan — texto libre"
+        aria-describedby="ingredientes_odiados_texto_libre_aviso"
         className="mt-2"
       />
+      <p id="ingredientes_odiados_texto_libre_aviso" data-testid="ingredientes_odiados_texto_libre_aviso" className="mt-1 text-body-sm text-tertiary">{TEXTO_LIBRE_SIN_FILTRO}</p>
 
       {/* FRESCO-371: cuisines folded in from the old standalone step 3
           so the wizard fits the PRD's 3-step limit — it's the same

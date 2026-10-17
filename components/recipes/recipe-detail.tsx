@@ -10,6 +10,7 @@ import { RecipePlaceholder } from '@/components/recipe/recipe-placeholder';
 import { IngredientList } from '@/components/recipes/ingredient-list';
 import { PersonalRecipeActions } from '@/components/recipes/personal-recipe-actions';
 import { RecipeInfoTags } from '@/components/recipes/recipe-info-tags';
+import { AllergenReminder } from '@/components/ui/allergen-reminder';
 import { buttonVariants } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS } from '@/lib/constants/dietary-options';
@@ -106,6 +107,7 @@ function CatalogRecipeDetail({ receta, initialIsFavorite, from, slotId, sustituc
           </Tag>
         ))}
       </div>
+      <AllergenReminder className="mt-2" />
 
       <p className="mt-3 text-body-md text-tertiary">
         {receta.meta?.tiempo_total_min ?? '—'}
@@ -151,6 +153,7 @@ function PersonalRecipeDetail({ receta, from }: { receta: RecetaPropia, from?: s
       <div className="mt-2">
         <Tag variant="outline">Tu receta</Tag>
       </div>
+      <AllergenReminder className="mt-2" />
 
       <h2 className="mt-6 text-h4">Ingredientes</h2>
       {receta.ingredientes.length > 0

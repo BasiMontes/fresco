@@ -4,6 +4,7 @@ import { AvailableRecipesCard } from '@/components/menu/available-recipes-card';
 import { LatestRecipesSection } from '@/components/menu/latest-recipes-section';
 import { NoMenuEmptyState } from '@/components/menu/no-menu-empty-state';
 import { PushOpenedTracker } from '@/components/menu/push-opened-tracker';
+import { AllergenReminder } from '@/components/ui/allergen-reminder';
 
 interface MenuNoPlanViewProps {
   semanaIso: string
@@ -43,6 +44,8 @@ export function MenuNoPlanView({ semanaIso, mondayIso, recetasDisponibles, ultim
           <AvailableRecipesCard count={recetasDisponibles} />
         )}
       </div>
+      {/* FRESCO-1000: the library below shows recipes even without a plan. */}
+      <AllergenReminder />
       <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
     </div>
   );

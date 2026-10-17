@@ -44,7 +44,7 @@ describe('Faq', () => {
     await user.click(screen.getByRole('button', { name: /Qué pasa con mis alergias/ }));
 
     expect(screen.queryByText(/El plan Free es gratis para siempre/)).toBeNull();
-    expect(screen.getByText(/Los filtros de alergias son absolutos/)).toBeInTheDocument();
+    expect(screen.getByText(/Excluimos de tus menús las recetas que contienen los alérgenos que declares/)).toBeInTheDocument();
   });
 
   test('clicking an open question closes it', async () => {
