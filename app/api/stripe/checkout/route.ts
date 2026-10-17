@@ -2,10 +2,12 @@ import type { NextRequest } from 'next/server';
 import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
 import { getBillingState } from '@/lib/billing/billing-state';
+import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
 import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
 import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { CHECKOUT_BRANDING } from '@/lib/stripe-checkout-branding';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 const RATE_LIMIT_ENDPOINT = 'stripe-checkout';
 
@@ -40,6 +42,12 @@ const RATE_LIMIT_WINDOW_SECONDS = 3600;
  * marker) re-subscribes through the same Checkout WITHOUT a trial and with a
  * card, reusing their Stripe customer instead of creating another.
  *
+ * FRESCO-1001 (audit 7b: A7-PAY-01, ADR-0061): this deploy and the shared database must serve
+ * the same Stripe mode (`stripe-mode.ts`). A test-mode deploy such as `fresco-pre` answers 503
+ * and creates nothing once the database is live, instead of taking a test card for a
+ * production account. A stored Stripe customer of the OTHER mode is not reused: it does not
+ * exist in this mode, and passing it made the session fail (audit C-04).
+ *
  * `client_reference_id` is the authenticated Supabase user id, so the
  * webhook (`app/api/stripe/webhook/route.ts`) can map the eventual
  * `checkout.session.completed` event back to a `user_profiles` row without
@@ -65,6 +73,21 @@ export async function POST(request: NextRequest) {
   if (!priceId) {
     console.error(`[/api/stripe/checkout] no Stripe price configured for interval ${interval}`);
     return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: interval === 'year' ? 400 : 500 });
+  }
+
+  let checkoutLivemode: boolean;
+  try {
+    const environment = environmentLivemode();
+    const database = await readDatabaseLivemode(createServiceClient());
+    if (environment !== database) {
+      console.error(`[/api/stripe/checkout] refusing: this deploy uses Stripe ${environment ? 'live' : 'test'} mode but the database serves ${database ? 'live' : 'test'} mode`);
+      return NextResponse.json({ error: 'Los pagos no están disponibles en este entorno.' }, { status: 503 });
+    }
+    checkoutLivemode = environment;
+  }
+  catch (modeError) {
+    console.error('[/api/stripe/checkout] could not check the Stripe mode', modeError);
+    return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
   }
 
   // ADR-0010: atomic check-and-increment, fail closed — only an explicit `true` passes.
@@ -94,7 +117,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ya tienes Fresco Pro.' }, { status: 409 });
   }
 
-  const stripeCustomerId = profile?.stripe_customer_id ?? null;
+  const stripeCustomerId = profile?.stripe_customer_id && (profile.stripe_livemode ?? false) === checkoutLivemode
+    ? profile.stripe_customer_id
+    : null;
   const trialAlreadyUsed = !isTrialAvailable(profile);
 
   const origin = request.nextUrl.origin;

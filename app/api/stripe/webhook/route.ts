@@ -3,7 +3,8 @@ import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
 import { resolveChargeCustomerId, resolveRefundCancellation } from '@/lib/billing/refund';
-import { applyRenewal, downgradeToFree, findProfileByStripeCustomer, markPaymentFailed } from '@/lib/billing/subscription';
+import { describeModeVerdict, judgeStripeEventMode } from '@/lib/billing/stripe-mode';
+import { applyRenewal, downgradeToFree, findProfileByStripeCustomer, markPaymentFailed, profileHoldsOtherMode } from '@/lib/billing/subscription';
 import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/lib/billing/webhook-events';
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
@@ -63,6 +64,14 @@ import { createServiceClient } from '@/lib/supabase/service';
  * downgrades the account through the path above, so this handler never writes the
  * profile itself. Partial refunds and refunds of earlier periods change nothing.
  *
+ * FRESCO-1001 (audit 7b: A7-PAY-01, ADR-0061): every handled event is checked against the Stripe
+ * MODE before it is claimed (`stripe-mode.ts`): its `livemode` must equal the mode of this
+ * deploy's `STRIPE_SECRET_KEY` and the mode the shared database serves (`billing_mode`). A
+ * mismatch answers 400 and writes nothing, so a test-mode event from `fresco-pre` or the frozen
+ * `fresco-dev` cannot touch a live database; 400 and not 200 so that a deploy with the wrong key
+ * is retried by Stripe and a real payment is not lost. Subscription, cancellation and refund
+ * events also have to match the mode stored on the profile they resolve to.
+ *
  * Once the signature verifies, a downstream failure (e.g. the Supabase
  * write) is logged with the Stripe event id and this still returns 200 —
  * deliberate, not an oversight: a non-2xx response makes Stripe retry
@@ -109,6 +118,30 @@ export async function POST(request: Request) {
   const claims = createServiceClient();
   let held: { eventId: string, claimedAt: string } | null = null;
   const eventTags = { stripe_event_id: event.id, stripe_event_type: event.type };
+
+  if (handled) {
+    // FRESCO-1001: before the claim, so a refused event leaves no row behind.
+    let verdict: Awaited<ReturnType<typeof judgeStripeEventMode>>;
+    try {
+      verdict = await judgeStripeEventMode(claims, event.livemode);
+    }
+    catch (error) {
+      // The mode of this deploy or of the database is unknown: fail closed, and non-2xx so Stripe retries.
+      console.error(`[/api/stripe/webhook] could not check the Stripe mode of event ${event.id}`, error);
+      Sentry.captureException(error, { tags: eventTags });
+      return NextResponse.json({ error: 'No se pudo comprobar el modo de Stripe.' }, { status: 500 });
+    }
+    if (!verdict.ok) {
+      console.error(`[/api/stripe/webhook] refusing event ${event.id} (${event.type}): ${describeModeVerdict(verdict)}`);
+      Sentry.captureMessage('Stripe webhook refused an event of the wrong mode', {
+        level: 'error',
+        tags: { ...eventTags, stripe_mode_layer: verdict.layer },
+        extra: { event_livemode: verdict.eventLivemode, expected_livemode: verdict.expectedLivemode },
+      });
+      return NextResponse.json({ error: 'El modo del evento no coincide con el de este entorno.' }, { status: 400 });
+    }
+  }
+
   if (handled) {
     let claim: Awaited<ReturnType<typeof claimWebhookEvent>>;
     try {
@@ -155,13 +188,13 @@ export async function POST(request: Request) {
         await handleCheckoutSessionCompleted(event.data.object);
         break;
       case 'customer.subscription.updated':
-        await handleSubscriptionUpdated({ subscription: event.data.object, previousAttributes: event.data.previous_attributes, eventId: event.id });
+        await handleSubscriptionUpdated({ subscription: event.data.object, previousAttributes: event.data.previous_attributes, eventId: event.id, livemode: event.livemode });
         break;
       case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object, event.id);
+        await handleSubscriptionDeleted({ subscription: event.data.object, eventId: event.id, livemode: event.livemode });
         break;
       case 'charge.refunded':
-        await handleChargeRefunded(event.data.object, event.id);
+        await handleChargeRefunded({ charge: event.data.object, eventId: event.id, livemode: event.livemode });
         break;
       default:
         // No-op — every event type this handler doesn't react to yet.
@@ -202,7 +235,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   await grantProFromCheckoutSession(createServiceClient(), session);
 }
 
-async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string }): Promise<void> {
+async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId, livemode }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string, livemode: boolean }): Promise<void> {
   const paymentStatus = resolvePaymentStatusUpdate(subscription);
   if (!paymentStatus) {
     // Status outside {past_due, unpaid, active} (e.g. `canceled`,
@@ -223,6 +256,11 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   // one already on file, not just the customer id.
   if (!profile || profile.stripe_subscription_id !== subscription.id) {
     console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${paymentStatus.stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely an out-of-order webhook delivery; self-heals on the next matching event`);
+    return;
+  }
+
+  if (profileHoldsOtherMode(profile, livemode)) {
+    console.error(`[/api/stripe/webhook] event ${eventId}: the profile for Stripe customer ${paymentStatus.stripeCustomerId} holds ids of the other Stripe mode; ignoring`);
     return;
   }
 
@@ -300,7 +338,7 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription, eventId: string): Promise<void> {
+async function handleSubscriptionDeleted({ subscription, eventId, livemode }: { subscription: Stripe.Subscription, eventId: string, livemode: boolean }): Promise<void> {
   const stripeCustomerId = resolveCancellationCustomerId(subscription);
   const supabase = createServiceClient();
   const profile = await findProfileByStripeCustomer(supabase, stripeCustomerId);
@@ -311,6 +349,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
   // now-legitimately-active Pro customer.
   if (!profile || profile.stripe_subscription_id !== subscription.id) {
     console.error(`[/api/stripe/webhook] no matching user_profiles row for Stripe customer ${stripeCustomerId} + subscription ${subscription.id} (event ${eventId}) -- likely a stale/out-of-order delete for a superseded subscription`);
+    return;
+  }
+
+  if (profileHoldsOtherMode(profile, livemode)) {
+    console.error(`[/api/stripe/webhook] event ${eventId}: the profile for Stripe customer ${stripeCustomerId} holds ids of the other Stripe mode; ignoring`);
     return;
   }
 
@@ -348,7 +391,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, even
  * FRESCO-900: a full refund of this period's charge cancels the subscription (see the
  * route doc). Ignored cases are logged, never thrown: they are not failures.
  */
-async function handleChargeRefunded(charge: Stripe.Charge, eventId: string): Promise<void> {
+async function handleChargeRefunded({ charge, eventId, livemode }: { charge: Stripe.Charge, eventId: string, livemode: boolean }): Promise<void> {
   // A partial refund is a goodwill gesture; skip before any lookup.
   if (!charge.refunded) {
     return;
@@ -363,6 +406,11 @@ async function handleChargeRefunded(charge: Stripe.Charge, eventId: string): Pro
   const profile = await findProfileByStripeCustomer(createServiceClient(), stripeCustomerId);
   if (!profile?.stripe_subscription_id) {
     console.info(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}): no subscription on file for customer ${stripeCustomerId}; nothing to cancel`);
+    return;
+  }
+
+  if (profileHoldsOtherMode(profile, livemode)) {
+    console.error(`[/api/stripe/webhook] refunded charge ${charge.id} (event ${eventId}): the profile for customer ${stripeCustomerId} holds ids of the other Stripe mode; nothing to cancel`);
     return;
   }
 

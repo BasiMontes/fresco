@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { activateProPlan, applyRenewal, downgradeToFree, findProfileByStripeCustomer, getStoredSubscriptionId, markPaymentFailed } from '@/lib/billing/subscription';
+import { activateProPlan, applyRenewal, downgradeToFree, findProfileByStripeCustomer, getStoredSubscriptionId, markPaymentFailed, profileHoldsOtherMode } from '@/lib/billing/subscription';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
 
 /**
@@ -42,16 +42,17 @@ describe('getStoredSubscriptionId', () => {
 });
 
 describe('activateProPlan', () => {
-  test('writes the Pro plan, the Stripe ids and clears the failed-payment aviso, for that user only', async () => {
+  test('writes the Pro plan, the Stripe ids with their mode and clears the failed-payment aviso, for that user only', async () => {
     const { client, callsOf } = createMockClient();
 
-    await activateProPlan(client, { userId: 'user-1', stripeCustomerId: 'cus_1', stripeSubscriptionId: 'sub_1', planExpiresAt: '2026-11-01T00:00:00.000Z' });
+    await activateProPlan(client, { userId: 'user-1', stripeCustomerId: 'cus_1', stripeSubscriptionId: 'sub_1', planExpiresAt: '2026-11-01T00:00:00.000Z', stripeLivemode: false });
 
     expect(callsOf('from')).toEqual([['user_profiles']]);
     expect(callsOf('update')).toEqual([[{
       plan: 'pro',
       stripe_customer_id: 'cus_1',
       stripe_subscription_id: 'sub_1',
+      stripe_livemode: false,
       plan_expires_at: '2026-11-01T00:00:00.000Z',
       payment_failed_at: null,
     }]]);
@@ -59,7 +60,7 @@ describe('activateProPlan', () => {
   });
 
   test('throws on a write failure', async () => {
-    const error = await thrown(activateProPlan(createMockClient({ errorMessage: 'denied' }).client, { userId: 'u', stripeCustomerId: 'c', stripeSubscriptionId: 's', planExpiresAt: 't' }));
+    const error = await thrown(activateProPlan(createMockClient({ errorMessage: 'denied' }).client, { userId: 'u', stripeCustomerId: 'c', stripeSubscriptionId: 's', planExpiresAt: 't', stripeLivemode: true }));
 
     expect(error).toBeDefined();
   });
@@ -67,11 +68,11 @@ describe('activateProPlan', () => {
 
 describe('findProfileByStripeCustomer', () => {
   test('looks the profile up by stripe_customer_id with the columns the webhook decides on', async () => {
-    const row = { id: 'user-1', plan: 'pro', payment_failed_at: null, stripe_subscription_id: 'sub_1' };
+    const row = { id: 'user-1', plan: 'pro', payment_failed_at: null, stripe_subscription_id: 'sub_1', stripe_livemode: false };
     const { client, callsOf } = createMockClient({ data: row });
 
     expect(await findProfileByStripeCustomer(client, 'cus_1')).toEqual(row);
-    expect(callsOf('select')).toEqual([['id, plan, payment_failed_at, stripe_subscription_id']]);
+    expect(callsOf('select')).toEqual([['id, plan, payment_failed_at, stripe_subscription_id, stripe_livemode']]);
     expect(callsOf('eq')).toEqual([['stripe_customer_id', 'cus_1']]);
   });
 
@@ -118,5 +119,22 @@ describe('applyRenewal', () => {
 
     expect(callsOf('update')).toEqual([[{ plan: 'pro', plan_expires_at: '2026-12-01T00:00:00.000Z', payment_failed_at: null }]]);
     expect(callsOf('eq')).toEqual([['id', 'user-1']]);
+  });
+});
+
+describe('profileHoldsOtherMode (FRESCO-1001)', () => {
+  test('a profile with ids of the other Stripe mode is flagged, in both directions', () => {
+    expect(profileHoldsOtherMode({ stripe_livemode: true }, false)).toBe(true);
+    expect(profileHoldsOtherMode({ stripe_livemode: false }, true)).toBe(true);
+  });
+
+  test('a profile of the same mode is not', () => {
+    expect(profileHoldsOtherMode({ stripe_livemode: true }, true)).toBe(false);
+    expect(profileHoldsOtherMode({ stripe_livemode: false }, false)).toBe(false);
+  });
+
+  test('a legacy row with no recorded mode counts as test, since every Stripe object before the column was test mode', () => {
+    expect(profileHoldsOtherMode({ stripe_livemode: null }, false)).toBe(false);
+    expect(profileHoldsOtherMode({ stripe_livemode: null }, true)).toBe(true);
   });
 });

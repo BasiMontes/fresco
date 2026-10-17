@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
 import type { Database } from '@/lib/supabase/types';
+import { describeModeVerdict, judgeStripeEventMode } from '@/lib/billing/stripe-mode';
 import { activateProPlan, getStoredSubscriptionId } from '@/lib/billing/subscription';
 import { trialEmailSignals } from '@/lib/billing/trial-email-signals';
 import { sendSubscriptionConfirmationEmail } from '@/lib/email/resend';
@@ -41,11 +42,22 @@ async function lookupUserEmail(client: Client, userId: string): Promise<{ email:
  * the same values and skips the funnel event and the confirmation email, which
  * only fire for a genuinely new subscription (FRESCO-240).
  *
- * Throws when the session has no subscription, no Pro price is configured, or
- * the session is not a grantable one (`resolveProUpdateFromSession`). The caller
- * decides what a failure means; the webhook logs it and releases its claim.
+ * FRESCO-1001 (ADR-0061): the session's Stripe mode must belong to this deploy AND to
+ * the shared database (`stripe-mode.ts`) before anything is read or written, so a
+ * test-mode session never reaches a live database even through a recovery path (the
+ * checkout sweep) that does not go through the webhook's own early check. The mode is
+ * stored next to the Stripe ids.
+ *
+ * Throws when the session has no subscription, no Pro price is configured, the mode
+ * does not match, or the session is not a grantable one (`resolveProUpdateFromSession`).
+ * The caller decides what a failure means; the webhook logs it and releases its claim.
  */
 export async function grantProFromCheckoutSession(client: Client, session: Stripe.Checkout.Session): Promise<void> {
+  const verdict = await judgeStripeEventMode(client, session.livemode);
+  if (!verdict.ok) {
+    throw new Error(`Checkout session ${session.id}: ${describeModeVerdict(verdict)} — refusing to grant Pro.`);
+  }
+
   if (!session.subscription) {
     throw new Error('checkout.session.completed without a subscription id.');
   }
@@ -73,6 +85,7 @@ export async function grantProFromCheckoutSession(client: Client, session: Strip
     stripeCustomerId: update.stripeCustomerId,
     stripeSubscriptionId: update.stripeSubscriptionId,
     planExpiresAt: update.planExpiresAt,
+    stripeLivemode: session.livemode,
   });
 
   if (isNewSubscription) {

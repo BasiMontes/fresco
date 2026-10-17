@@ -177,11 +177,15 @@ export async function postSignedStripeEvent(
   type: string,
   dataObject: Record<string, unknown>,
 ): Promise<import('@playwright/test').APIResponse> {
+  // FRESCO-1001: real events and the objects inside them say which Stripe mode they come from, and
+  // the webhook refuses one that does not match the deploy and the database (ADR-0061). Everything
+  // this suite runs against is test mode.
   const payload = JSON.stringify({
     id: `evt_test_${crypto.randomUUID()}`,
     object: 'event',
     type,
-    data: { object: dataObject },
+    livemode: false,
+    data: { object: { livemode: false, ...dataObject } },
   });
   const signature = testStripe().webhooks.generateTestHeaderString({
     payload,

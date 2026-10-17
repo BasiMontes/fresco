@@ -4,7 +4,7 @@ import type { Database } from '@/lib/supabase/types';
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
 
 /** What the signed-in user's profile says about their Stripe subscription. */
-export type BillingState = Pick<UserProfileRow, 'plan' | 'stripe_customer_id' | 'stripe_subscription_id'>;
+export type BillingState = Pick<UserProfileRow, 'plan' | 'stripe_customer_id' | 'stripe_subscription_id' | 'stripe_livemode'>;
 
 /**
  * The CURRENTLY signed-in user's billing columns, or `null` when no profile
@@ -16,7 +16,7 @@ export type BillingState = Pick<UserProfileRow, 'plan' | 'stripe_customer_id' | 
 export async function getBillingState(client: SupabaseClient<Database>, userId: string): Promise<BillingState | null> {
   const { data, error } = await client
     .from('user_profiles')
-    .select('plan, stripe_customer_id, stripe_subscription_id')
+    .select('plan, stripe_customer_id, stripe_subscription_id, stripe_livemode')
     .eq('id', userId)
     .maybeSingle();
 
