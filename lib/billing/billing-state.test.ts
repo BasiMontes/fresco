@@ -9,7 +9,7 @@ describe('getBillingState', () => {
 
     expect(await getBillingState(client, 'user-1')).toEqual(row);
     expect(callsOf('from')).toEqual([['user_profiles']]);
-    expect(callsOf('select')).toEqual([['plan, stripe_customer_id, stripe_subscription_id']]);
+    expect(callsOf('select')).toEqual([['plan, stripe_customer_id, stripe_subscription_id, stripe_livemode']]);
     expect(callsOf('eq')).toEqual([['id', 'user-1']]);
   });
 

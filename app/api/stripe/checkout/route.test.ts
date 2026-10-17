@@ -12,8 +12,21 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 const sessionsCreate = mock(async (_p: unknown): Promise<{ id: string, url: string | null }> => ({ id: 'cs_1', url: 'https://checkout.stripe/x' }));
 let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
+/** FRESCO-1001: the Stripe mode the fake `billing_mode` row says the shared database serves, or an error to read it. */
+let databaseLivemode: boolean | Error = false;
 
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
+void mock.module('@/lib/supabase/service', () => ({
+  createServiceClient: () => ({
+    from: () => ({
+      select: () => ({
+        maybeSingle: async () => (databaseLivemode instanceof Error
+          ? { data: null, error: databaseLivemode }
+          : { data: { stripe_livemode: databaseLivemode }, error: null }),
+      }),
+    }),
+  }),
+}));
 void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: { checkout: { sessions: { create: sessionsCreate } } } }));
 
 const { POST } = await import('./route');
@@ -23,6 +36,8 @@ function req(body?: unknown) {
 }
 
 beforeEach(() => {
+  process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+  databaseLivemode = false;
   process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
   process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
   sessionsCreate.mockClear();
@@ -179,6 +194,70 @@ describe('POST /api/stripe/checkout', () => {
 
       expect((await POST(req())).status).toBe(500);
       expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+  });
+  describe('FRESCO-1001 — Stripe mode guard (audit 7b: A7-PAY-01, ADR-0061)', () => {
+    const signedIn = { id: 'user_1', is_anonymous: false };
+    const withProfile = (profile: Record<string, unknown>) =>
+      fakeSupabase({ user_profiles: { rows: profile } }, { getUser: async () => ({ data: { user: signedIn } }) });
+    const lastSessionParams = () => sessionsCreate.mock.calls.at(-1)![0] as Record<string, unknown>;
+
+    test('fresco-pre: a test-mode deploy refuses to open a checkout once the DATABASE is live (503, nothing created)', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+      databaseLivemode = true;
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(503);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+      expect(supa.rpcCalls).toEqual([]);
+    });
+
+    test('the inverse: a live-mode deploy refuses while the database still serves test mode', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+      databaseLivemode = false;
+
+      expect((await POST(req())).status).toBe(503);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('a live deploy on a live database opens the checkout', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+      databaseLivemode = true;
+      supa = withProfile({ plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, stripe_livemode: null });
+
+      expect((await POST(req())).status).toBe(200);
+    });
+
+    test('fails closed: an unreadable billing_mode, or a key with no known mode, is a 500 and creates nothing', async () => {
+      databaseLivemode = new Error('permission denied');
+      expect((await POST(req())).status).toBe(500);
+
+      databaseLivemode = false;
+      process.env.STRIPE_SECRET_KEY = 'not_a_key';
+      expect((await POST(req())).status).toBe(500);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('a stored Stripe customer of the OTHER mode is not reused (it does not exist in this mode), and no trial is given', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+      databaseLivemode = true;
+      supa = withProfile({ plan: 'free', stripe_customer_id: 'cus_test_1', stripe_subscription_id: 'sub_test_1', stripe_livemode: false });
+
+      expect((await POST(req())).status).toBe(200);
+      const params = lastSessionParams();
+      expect(params).not.toHaveProperty('customer');
+      expect(params).not.toHaveProperty('subscription_data');
+      expect(params.payment_method_collection).toBe('always');
+    });
+
+    test('a stored customer of the same mode is still reused', async () => {
+      process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+      databaseLivemode = true;
+      supa = withProfile({ plan: 'free', stripe_customer_id: 'cus_live_1', stripe_subscription_id: 'sub_live_1', stripe_livemode: true });
+
+      await POST(req());
+      expect(lastSessionParams().customer).toBe('cus_live_1');
     });
   });
 });

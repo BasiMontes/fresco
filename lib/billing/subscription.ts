@@ -5,7 +5,7 @@ type Client = SupabaseClient<Database>;
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
 
 /** The columns the Stripe webhook needs to decide what a subscription event means for a profile. */
-export type BillingProfile = Pick<UserProfileRow, 'id' | 'plan' | 'payment_failed_at' | 'stripe_subscription_id'>;
+export type BillingProfile = Pick<UserProfileRow, 'id' | 'plan' | 'payment_failed_at' | 'stripe_subscription_id' | 'stripe_livemode'>;
 
 /**
  * `user_profiles` reads and writes of the Stripe webhook (ADR-0007: the only
@@ -43,6 +43,8 @@ interface ActivateProPlanArgs {
   stripeCustomerId: string
   stripeSubscriptionId: string
   planExpiresAt: string
+  /** FRESCO-1001: the Stripe mode of the two ids above, stored next to them. */
+  stripeLivemode: boolean
 }
 
 /**
@@ -50,13 +52,14 @@ interface ActivateProPlanArgs {
  * so any failed-payment aviso left over from a prior one (out-of-order webhook
  * delivery, or a resubscribe after a lapsed Pro period) is cleared.
  */
-export async function activateProPlan(client: Client, { userId, stripeCustomerId, stripeSubscriptionId, planExpiresAt }: ActivateProPlanArgs): Promise<void> {
+export async function activateProPlan(client: Client, { userId, stripeCustomerId, stripeSubscriptionId, planExpiresAt, stripeLivemode }: ActivateProPlanArgs): Promise<void> {
   const { error } = await client
     .from('user_profiles')
     .update({
       plan: 'pro',
       stripe_customer_id: stripeCustomerId,
       stripe_subscription_id: stripeSubscriptionId,
+      stripe_livemode: stripeLivemode,
       plan_expires_at: planExpiresAt,
       payment_failed_at: null,
     })
@@ -67,11 +70,22 @@ export async function activateProPlan(client: Client, { userId, stripeCustomerId
   }
 }
 
+/**
+ * FRESCO-1001: does this profile hold Stripe ids of the OTHER mode than the event being handled?
+ * A profile is looked up by customer id, which already differs between modes, so this is a second
+ * lock on the same door: a test event can never act on a profile whose ids are live, or the reverse.
+ * `null` means "no mode recorded", which only a legacy row that predates the column can have, and
+ * every Stripe object created before the column was test mode.
+ */
+export function profileHoldsOtherMode(profile: Pick<BillingProfile, 'stripe_livemode'>, eventLivemode: boolean): boolean {
+  return (profile.stripe_livemode ?? false) !== eventLivemode;
+}
+
 /** The profile that owns a Stripe customer, or `null` when none matches. */
 export async function findProfileByStripeCustomer(client: Client, stripeCustomerId: string): Promise<BillingProfile | null> {
   const { data, error } = await client
     .from('user_profiles')
-    .select('id, plan, payment_failed_at, stripe_subscription_id')
+    .select('id, plan, payment_failed_at, stripe_subscription_id, stripe_livemode')
     .eq('stripe_customer_id', stripeCustomerId)
     .maybeSingle();
 

@@ -296,8 +296,12 @@ jobs:
 
           # FRESCO-802: dummies, not credentials. The Stripe, Resend and cron
           # calls in this job never leave the runner or hit a real account.
+          # FRESCO-1001: the Stripe mode guard reads the mode of this deploy from the
+          # PREFIX of STRIPE_SECRET_KEY, so the dummy says `sk_test_` (the stack's
+          # billing_mode row is test too); without a key the webhook answers 500.
           STRIPE_PRICE_ID_PRO_MONTH=price_ci_dummy_month
           STRIPE_WEBHOOK_SECRET_PRE=whsec_ci_dummy_pre
+          STRIPE_SECRET_KEY=sk_test_ci_dummy
           RESEND_API_KEY=re_ci_dummy_not_a_real_key
           CRON_SECRET=ci-dummy-cron-secret
           DUMMIES

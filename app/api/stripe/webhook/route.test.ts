@@ -27,13 +27,35 @@ const captureException = mock((_error: unknown, _hint?: unknown) => 'id');
 const captureMessage = mock((_message: string, _hint?: unknown) => 'id');
 
 let supa = fakeSupabase();
+/** FRESCO-1001: the Stripe mode the fake `billing_mode` row says the shared database serves. */
+let databaseLivemode = false;
+
+/**
+ * FRESCO-1001: real Stripe events and the objects inside them carry `livemode`. The fixtures of
+ * this file predate the guard and leave it out, so a fixture that does not say gets the mode the
+ * test deploy runs in (test), and the nested object inherits the event's own mode.
+ */
+function withLivemode(event: unknown): unknown {
+  const e = event as { livemode?: boolean, data?: { object?: { livemode?: boolean } } } | null;
+  if (!e || typeof e !== 'object' || !('type' in e)) { return event; }
+  const livemode = e.livemode ?? false;
+  const object = e.data?.object;
+  return { ...e, livemode, ...(object ? { data: { ...e.data, object: { ...object, livemode: object.livemode ?? livemode } } } : {}) };
+}
 
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
-  stripe: { webhooks: { constructEvent }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel } },
+  stripe: { webhooks: { constructEvent: (...a: unknown[]) => withLivemode(constructEvent(...a)) }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel } },
   resolveWebhookSecret: () => 'whsec_test',
 }));
-void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
+void mock.module('@/lib/supabase/service', () => ({
+  createServiceClient: () => ({
+    ...supa.client,
+    from: (table: string) => (table === 'billing_mode'
+      ? { select: () => ({ maybeSingle: async () => ({ data: { stripe_livemode: databaseLivemode }, error: null }) }) }
+      : supa.client.from(table)),
+  }),
+}));
 void mock.module('@/lib/posthog/server', () => ({ ...realPosthog, captureServerEvent }));
 void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail }));
 void mock.module('@/lib/billing/webhook-events', () => ({ claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent }));
@@ -80,6 +102,8 @@ function authWithEmail(email: string | null) {
 
 beforeEach(() => {
   process.env.STRIPE_PRICE_ID_PRO_MONTH = PRICE;
+  process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+  databaseLivemode = false;
   constructEvent.mockReset();
   subscriptionsRetrieve.mockReset();
   subscriptionsCancel.mockReset();
@@ -727,5 +751,127 @@ describe('POST /api/stripe/webhook — expirable claim and completed state (FRES
 
     expect(res.status).toBe(200);
     expect(captureException).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * FRESCO-1001 (audit 7b: A7-PAY-01, ADR-0061): the Stripe mode guard. Every environment shares
+ * one database, so an event is accepted only when its `livemode` equals the mode of this deploy's
+ * `STRIPE_SECRET_KEY` AND the mode the shared database serves (`billing_mode`).
+ */
+describe('POST /api/stripe/webhook — Stripe mode guard (FRESCO-1001)', () => {
+  const checkoutCompleted = (livemode: boolean) => ({
+    id: 'evt_mode',
+    type: 'checkout.session.completed',
+    livemode,
+    data: { object: { subscription: 'sub_1', client_reference_id: 'user_1', customer: 'cus_1', payment_status: 'no_payment_required' } },
+  });
+
+  function expectNothingWritten() {
+    expect(supa.updates).toEqual([]);
+    expect(claimWebhookEvent).not.toHaveBeenCalled();
+    expect(subscriptionsRetrieve).not.toHaveBeenCalled();
+    expect(captureServerEvent).not.toHaveBeenCalled();
+  }
+
+  test('a test-mode checkout.session.completed on a LIVE deploy writes nothing and is refused', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    databaseLivemode = true;
+    constructEvent.mockReturnValue(checkoutCompleted(false));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(400);
+    expectNothingWritten();
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect((captureMessage.mock.calls[0][1] as { tags: Record<string, string> }).tags.stripe_mode_layer).toBe('environment');
+  });
+
+  test('the inverse: a live-mode checkout.session.completed on a TEST deploy writes nothing and is refused', async () => {
+    constructEvent.mockReturnValue(checkoutCompleted(true));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(400);
+    expectNothingWritten();
+  });
+
+  test('fresco-pre (A7-PAY-01): a test deploy receiving a test event is refused once the DATABASE is live', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+    databaseLivemode = true;
+    constructEvent.mockReturnValue(checkoutCompleted(false));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(400);
+    expectNothingWritten();
+    expect((captureMessage.mock.calls[0][1] as { tags: Record<string, string> }).tags.stripe_mode_layer).toBe('database');
+  });
+
+  test('a live event on a live deploy with a live database is granted, and the mode is stored next to the ids', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    databaseLivemode = true;
+    constructEvent.mockReturnValue(checkoutCompleted(true));
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('ana@gmail.com'));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(updateFor('user_profiles')?.payload).toMatchObject({ plan: 'pro', stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1', stripe_livemode: true });
+  });
+
+  test('a test event on a test deploy with a test database stores stripe_livemode false', async () => {
+    constructEvent.mockReturnValue(checkoutCompleted(false));
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'trialing' }));
+    supa = fakeSupabase({ user_profiles: { rows: { stripe_subscription_id: null } } }, authWithEmail('ana@gmail.com'));
+
+    expect((await POST(req({}))).status).toBe(200);
+    expect(updateFor('user_profiles')?.payload).toMatchObject({ stripe_livemode: false });
+  });
+
+  test('fails closed: a deploy whose key has no known mode answers 500 (Stripe retries) and writes nothing', async () => {
+    process.env.STRIPE_SECRET_KEY = 'whsec_not_a_key';
+    constructEvent.mockReturnValue(checkoutCompleted(false));
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(500);
+    expectNothingWritten();
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  test('an event type this route does not handle is not checked: 200, nothing written', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    databaseLivemode = true;
+    constructEvent.mockReturnValue({ id: 'evt_other', type: 'customer.created', livemode: false, data: { object: {} } });
+
+    expect((await POST(req({}))).status).toBe(200);
+    expect(supa.updates).toEqual([]);
+  });
+
+  test('a subscription update whose profile holds ids of the OTHER mode is ignored', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    databaseLivemode = true;
+    constructEvent.mockReturnValue({
+      id: 'evt_sub',
+      type: 'customer.subscription.updated',
+      livemode: true,
+      data: { object: subscription({ status: 'active' }), previous_attributes: {} },
+    });
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', payment_failed_at: null, stripe_subscription_id: 'sub_1', stripe_livemode: false } } });
+
+    expect((await POST(req({}))).status).toBe(200);
+    expect(supa.updates).toEqual([]);
+  });
+
+  test('a cancellation whose profile holds ids of the OTHER mode does not downgrade it', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    databaseLivemode = true;
+    constructEvent.mockReturnValue({ id: 'evt_del', type: 'customer.subscription.deleted', livemode: true, data: { object: subscription({ status: 'canceled' }) } });
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', payment_failed_at: null, stripe_subscription_id: 'sub_1', stripe_livemode: false } } });
+
+    expect((await POST(req({}))).status).toBe(200);
+    expect(supa.updates).toEqual([]);
   });
 });
