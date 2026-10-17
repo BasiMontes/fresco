@@ -20,6 +20,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      f_unaccent: {
+        Args: { p_text: string }
+        Returns: string
+      }
       graphql: {
         Args: {
           extensions?: Json
