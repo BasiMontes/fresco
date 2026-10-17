@@ -1,17 +1,24 @@
 import type { RecipeTags } from './recipe-allergen-diet-rules';
 import { describe, expect, test } from 'bun:test';
-import { auditRecipe, ingredientHasAllergen } from './recipe-allergen-diet-rules';
+import { auditRecipe, auditRecipeFindings, textHasAllergen } from './recipe-allergen-diet-rules';
 
 /**
  * FRESCO-943 — the exceptions list of the allergen/diet audit must not mask the real cases
- * (jamón, queso, trigo), and the word boundaries must not invent false ones. No stack needed.
+ * (jamón, queso, trigo), and the word boundaries must not invent false ones.
+ * FRESCO-999 (audit 7b, A7-TEST-01) — one row per gap the oracle used to be blind to: steps,
+ * the full EU vocabulary, compound products and the reverse diet check. No stack needed.
  */
 
 const DIET = { halal: true, kosher: true, sin_gluten: true, sin_lactosa: true, sin_huevo: true };
+/** The default recipe claims only halal and kosher, so a test about a missing tag is not also a test about a free-of flag. */
+const RELIGIOUS = { halal: true, kosher: true };
 
 function recipe(ingredients: string[], overrides: Partial<RecipeTags> = {}): RecipeTags {
-  return { nombre: 'Receta', alergenos: [], dieta: { ...DIET }, ingredientes_principales: ingredients, ...overrides };
+  return { nombre: 'Receta', alergenos: [], dieta: { ...RELIGIOUS }, ingredientes_principales: ingredients, ...overrides };
 }
+
+/** True when some finding message contains `text`. */
+const reports = (r: RecipeTags, text: string) => auditRecipe(r).some(message => message.includes(text));
 
 describe('allergen keywords catch the audit cases', () => {
   test('queso, yogur and leche require lactosa, even next to an exception-looking word', () => {
@@ -47,7 +54,7 @@ describe('allergen keywords catch the audit cases', () => {
   });
 
   test('a tag that says the allergen is present contradicts the diet flag', () => {
-    const problems = auditRecipe(recipe([], { alergenos: ['gluten', 'lactosa', 'huevo'] }));
+    const problems = auditRecipe(recipe([], { alergenos: ['gluten', 'lactosa', 'huevo'], dieta: { ...DIET } }));
     expect(problems).toHaveLength(3);
   });
 });
@@ -68,7 +75,7 @@ describe('exceptions and word boundaries do not invent allergens', () => {
     ['frutos_de_cascara', 'champiñones'],
     ['soja', 'brotes de soja'],
   ])('%s is not required by "%s"', (allergen, ingredient) => {
-    expect(ingredientHasAllergen(ingredient, allergen)).toBe(false);
+    expect(textHasAllergen(ingredient, allergen)).toBe(false);
   });
 
   test.each([
@@ -82,11 +89,109 @@ describe('exceptions and word boundaries do not invent allergens', () => {
     ['soja', 'tofu'],
     ['sulfitos', 'vino tinto'],
   ])('%s is still required by "%s"', (allergen, ingredient) => {
-    expect(ingredientHasAllergen(ingredient, allergen)).toBe(true);
+    expect(textHasAllergen(ingredient, allergen)).toBe(true);
   });
 
   test('a coherent recipe has no findings', () => {
     const dieta = { ...DIET, halal: false, kosher: false };
     expect(auditRecipe(recipe(['leche de coco', 'champiñones', 'panceta'], { dieta }))).toEqual([]);
+  });
+});
+
+describe('the oracle reads the steps together with the ingredients (A7-TEST-01)', () => {
+  test('an ingredient that only a step names is still an allergen: pad thai with "salsa de soja"', () => {
+    const padThai = recipe(['fideos de arroz', 'gambas', 'huevo', 'cacahuetes'], {
+      alergenos: ['crustaceos', 'huevo', 'cacahuetes'],
+      dieta: { sin_gluten: true },
+      pasos_resumen: ['Saltear las gambas', 'Mezclar todo con salsa de soja y cacahuetes'],
+    });
+    expect(reports(padThai, 'falta soja (paso: "Mezclar todo con salsa de soja y cacahuetes")')).toBe(true);
+    expect(reports(padThai, 'falta gluten (paso:')).toBe(true);
+    expect(reports(padThai, 'sin_gluten es true con gluten en el texto')).toBe(true);
+  });
+
+  test('a sub-recipe named only in a step is found: "crema de limón" needs huevo, "bechamel" needs gluten', () => {
+    expect(reports(recipe(['limón', 'harina', 'mantequilla'], { alergenos: ['gluten', 'lactosa'], pasos_resumen: ['Añadir la crema de limón y hornear'] }), 'falta huevo (paso:')).toBe(true);
+    expect(reports(recipe(['berenjena', 'ternera'], { alergenos: ['lactosa'], pasos_resumen: ['Montar capas con bechamel y hornear'] }), 'falta gluten (paso:')).toBe(true);
+  });
+
+  test('a step is not evidence when the ingredient list already clears the same word', () => {
+    const riceNoodles = recipe(['fideos de arroz', 'gambas'], { alergenos: ['crustaceos'], pasos_resumen: ['Añadir los fideos y la salsa'] });
+    expect(reports(riceNoodles, 'falta gluten')).toBe(false);
+    const coconut = recipe(['leche de coco', 'pollo'], { pasos_resumen: ['Añadir la leche y cocer'] });
+    expect(reports(coconut, 'falta lactosa')).toBe(false);
+  });
+
+  test('a step adjective or a generic dough is not a fish or a flour: "dorada", "masa"', () => {
+    const browned = recipe(['coliflor'], { pasos_resumen: ['Hornear hasta que esté dorada'] });
+    expect(reports(browned, 'falta pescado')).toBe(false);
+    const arepa = recipe(['harina de maíz', 'queso'], { alergenos: ['lactosa'], pasos_resumen: ['Preparar la masa y formar la arepa'] });
+    expect(reports(arepa, 'falta gluten')).toBe(false);
+  });
+});
+
+describe('vocabulary the oracle used to miss (A7-TEST-01)', () => {
+  test.each([
+    ['sesamo', 'hummus'],
+    ['sesamo', 'humus casero'],
+    ['soja', 'salsa de soja'],
+    ['gluten', 'salsa de soja'],
+    ['apio', 'caldo de verduras'],
+    ['sulfitos', 'vinagre de manzana'],
+    ['sulfitos', 'pasas'],
+    ['mostaza', 'curry en polvo'],
+    ['soja', 'miso blanco'],
+    ['soja', 'tamari'],
+    ['pescado', 'lubina'],
+    ['pescado', 'pez espada'],
+    ['moluscos', 'chipirones'],
+    ['moluscos', 'vieiras'],
+    ['crustaceos', 'cigalas'],
+    ['crustaceos', 'centollo'],
+    ['gluten', 'bulgur'],
+    ['gluten', 'espelta'],
+    ['gluten', 'gnocchi'],
+    ['huevo', 'crepes'],
+    ['huevo', 'crema de limón'],
+  ])('%s is required by "%s"', (allergen, text) => {
+    expect(textHasAllergen(text, allergen)).toBe(true);
+  });
+
+  test.each([
+    ['sulfitos', 'vinagre de arroz'],
+    ['gluten', 'pasta de curry'],
+    ['gluten', 'salsa de soja sin gluten'],
+  ])('%s is not required by "%s"', (allergen, text) => {
+    expect(textHasAllergen(text, allergen)).toBe(false);
+  });
+});
+
+describe('the reverse check: a diet flag that the text breaks (A7-TEST-01)', () => {
+  test('sin_gluten true with tamari or miso is flagged, unless the text says "sin gluten"', () => {
+    expect(reports(recipe(['tofu', 'tamari'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto que suele llevar trigo o cebada (ingrediente: tamari)')).toBe(true);
+    expect(reports(recipe(['tofu', 'miso'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(true);
+    expect(reports(recipe(['tofu', 'tamari sin gluten'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(false);
+  });
+
+  test('sin_huevo true with a dish that implies egg is flagged even though no ingredient says huevo', () => {
+    expect(reports(recipe(['espinacas', 'harina'], { alergenos: ['gluten'], dieta: { sin_huevo: true }, pasos_resumen: ['Preparar la masa de crepes'] }), 'sin_huevo es true con huevo en el texto')).toBe(true);
+  });
+
+  test('vegano or vegetariano true with meat, fish or a step that adds them is flagged; "sin carne" is not meat', () => {
+    expect(reports(recipe(['arroz'], { dieta: { vegetariano: true }, pasos_resumen: ['Añadir jamón picado'] }), 'vegetariano es true con carne o pescado (paso:')).toBe(true);
+    expect(reports(recipe(['arroz', 'lubina'], { alergenos: ['pescado'], dieta: { vegano: true } }), 'vegano es true con carne o pescado')).toBe(true);
+    expect(reports(recipe(['arroz', 'queso'], { alergenos: ['lactosa'], dieta: { vegano: true } }), 'vegano es true con lácteo, huevo o miel')).toBe(true);
+    expect(reports(recipe(['arroz'], { dieta: { vegetariano: true }, pasos_resumen: ['Servir sin carne'] }), 'vegetariano')).toBe(false);
+  });
+
+  test('halal and kosher also read the steps: wine in a step breaks halal', () => {
+    expect(reports(recipe(['arroz'], { dieta: { halal: true }, pasos_resumen: ['Añadir un chorro de vino blanco'] }), 'halal es true con cerdo o alcohol')).toBe(true);
+  });
+});
+
+describe('findings carry a stable key for the ratchet', () => {
+  test('the key is the slug (two rows can share a nombre) plus the rule, not the wording', () => {
+    const keys = auditRecipeFindings(recipe(['hummus'], { slug: 'tostada-hummus-pepino' })).map(finding => finding.key);
+    expect(keys).toContain('tostada-hummus-pepino|falta:sesamo');
   });
 });

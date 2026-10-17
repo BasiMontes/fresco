@@ -1,0 +1,110 @@
+name: Hosted catalogue allergen audit
+
+# FRESCO-999 (audit 7b, A7-TEST-01). The allergen filter is a plain tag comparison, so a recipe
+# whose text names an allergen its tags omit reaches the person who declared it. The coherence
+# test in `tests/db/` only sees the local `seed.sql` snapshot and tolerates the findings its
+# ratchet list holds while the data cards land (FRESCO-995..998). This job runs the same oracle
+# (`tests/db/recipe-allergen-diet-rules.ts`) over the catalogue real users receive, reading the
+# ingredient list AND the steps, and fails on ANY finding, with no tolerance list.
+#
+# It is RED on purpose until the open findings are fixed in the hosted data: that is the signal,
+# not a flake. It is not in pr-check.yml because it needs a token for the production project
+# (ADR-0017); it only runs a read-only SELECT.
+#
+# Required repo secrets:
+#   SUPABASE_ACCESS_TOKEN   personal access token (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD    database password for project jdqemhewjrjuopssdurn (needed by `supabase link`)
+
+on:
+  schedule:
+    - cron: '41 4 * * *' # every night 04:41 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: oracle over the hosted catalogue
+    runs-on: ubuntu-latest
+    steps:
+      # Third-party actions pinned by commit SHA, not a mutable tag (FRESCO-417 / A4-L16).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Read-only job: no push, no authenticated git op after checkout.
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: '1.3.14'
+
+      - run: bun install --frozen-lockfile
+
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.109.1
+
+      - name: Guard — secrets present
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          missing=0
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::secret SUPABASE_ACCESS_TOKEN is not set"; missing=1; }
+          [ -n "$SUPABASE_DB_PASSWORD" ] || { echo "::error::secret SUPABASE_DB_PASSWORD is not set"; missing=1; }
+          [ "$missing" = 0 ] || exit 1
+
+      - name: Link to the production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref jdqemhewjrjuopssdurn
+
+      - name: Dump the active recipes (read-only SELECT)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -o pipefail
+          supabase db query --linked -o json \
+            "select slug, nombre, alergenos, dieta, ingredientes_principales, pasos_resumen from public.recipes where activo order by id" \
+            > catalogue.json
+
+      - name: Run the oracle
+        id: oracle
+        # `set -o pipefail` so the step fails on the script's exit, not `tee`'s. The script exits 2
+        # on an empty or truncated dump, so a failed dump can never read as a clean catalogue.
+        run: |
+          set -o pipefail
+          bun scripts/check-hosted-recipe-tags.ts catalogue.json 2>&1 | tee audit-report.txt
+
+      - name: Open or update the findings issue
+        # One issue at a time: every red night comments on it instead of stacking new ones.
+        if: failure() && steps.oracle.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create catalog-allergen-gap --color b60205 --description "Hosted recipe catalogue has allergen or diet tags the text contradicts" 2>/dev/null || true
+          number=$(gh issue list --label catalog-allergen-gap --state open --json number --jq '.[0].number // empty')
+          summary=$(head -1 audit-report.txt)
+          if [ -z "$number" ]; then
+            body=$(printf '`scripts/check-hosted-recipe-tags.ts` found recipes whose allergen or diet tags the text contradicts, on [run %s](%s).\n\n%s\n\nThe findings are fixed card by card (FRESCO-995 to FRESCO-998); the full list is in the run log. This issue stays open until a night comes back clean.' \
+              "${{ github.run_id }}" "$RUN_URL" "$summary")
+            gh issue create \
+              --title "Hosted recipe catalogue has allergen or diet tags the text contradicts" \
+              --label catalog-allergen-gap \
+              --body "$body"
+            exit 0
+          fi
+          gh issue comment "$number" --body "Still red on [run ${{ github.run_id }}]($RUN_URL): $summary"
+
+      - name: Close the findings issue once the catalogue is clean
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for number in $(gh issue list --label catalog-allergen-gap --state open --json number --jq '.[].number'); do
+            gh issue close "$number" --comment "Clean on [run ${{ github.run_id }}]($RUN_URL): the hosted catalogue has no findings."
+          done
