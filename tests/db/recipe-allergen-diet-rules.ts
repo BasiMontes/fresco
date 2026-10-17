@@ -40,7 +40,7 @@ export const ALLERGEN_KEYWORDS: Record<string, RegExp> = {
   lactosa: words('leche|queso|yogur|nata|mantequilla|requeson|skyr|bechamel|mozzarella|parmesano|feta|burrata|mascarpone|ricotta|kefir|crema pastelera'),
   gluten: words(
     'trigo|pan|harina|pasta|espaguetis|macarrones|fideos|cuscus|seitan|avena|cebada|centeno|galleta|croissant|bagel|granola|lasana|tortellini|picatostes|masa|cerveza|ramen|empanadas?'
-    + '|espelta|kamut|escanda|bulgur|semola|farro|gnocchi|noquis|pizza|rebozad[oa]s?|panko|salsa de soja|shoyu|bechamel',
+    + '|espelta|kamut|escanda|bulgur|semola|farro|gnocchi|noquis|pizza|rebozad[oa]s?|panko|salsa de soja|shoyu|bechamel|miso',
   ),
   huevo: words('huevos?|mayonesa|crema pastelera|crema de limon|crepes?|croissant|bizcocho|merengue|brioche|magdalenas?|natillas|flan'),
   pescado: words(
@@ -80,6 +80,8 @@ export const ALLERGEN_EXCEPTIONS: { allergen: string, pattern: RegExp, why: stri
   { allergen: 'gluten', pattern: /\bpasta sin gluten\b/, why: 'gluten-free pasta' },
   { allergen: 'gluten', pattern: /\bpasta de (?:curry|tomate|miso|sesamo|guindilla|ajo|anchoas?|dientes|pimiento|pimenton)\b/, why: 'a paste (condiment), not pasta' },
   { allergen: 'gluten', pattern: /\bsalsa de soja sin gluten\b/, why: 'gluten-free soy sauce' },
+  { allergen: 'gluten', pattern: /\bmiso sin gluten\b/, why: 'gluten-free miso' },
+  { allergen: 'apio', pattern: /\bsu caldo\b/, why: 'the beans\' own cooking liquid, not a stock' },
   { allergen: 'soja', pattern: /\bbrotes de soja\b/, why: 'bean sprouts are the vegetable, not a soy product' },
   { allergen: 'sulfitos', pattern: /\bvinagre de arroz\b/, why: 'rice vinegar is made without grape must' },
 ];
@@ -106,8 +108,14 @@ const NOT_VEGETARIAN = words(
 /** Text that negates a meat word ("sin carne", "carne vegetal"): removed before the vegetarian match. */
 const NOT_MEAT_PHRASES = /\b(?:sin carne|carne vegetal|carne de soja|vegetal de carne)\b/g;
 /** Not gluten-free unless the text says so: soy sauce is wheat-based, tamari and miso often are. */
-const GLUTEN_SUSPECT = words('tamari|miso|teriyaki|salsa de soja|shoyu|cerveza');
-const GLUTEN_FREE_PHRASES = /\b(?:tamari|miso|teriyaki|salsa de soja|shoyu|cerveza) sin gluten\b/g;
+const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza');
+const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza) sin gluten\b/g;
+
+/** A stock that names itself as vegetable. A bare "caldo" can be chicken or beef, so a vegetarian flag cannot rest on it. */
+const VEGETABLE_STOCK = /\bcaldo de (?:verduras?|vegetal(?:es)?|hortalizas)\b/g;
+const STOCK = /\bcaldo\b/;
+/** "su caldo" is the cooking liquid of a legume, not a stock. */
+const OWN_BROTH = /\bsu caldo\b/g;
 
 /** The flags a text can contradict: flag -> allergen tags whose presence in the text breaks it. */
 const FLAG_ALLERGENS: Record<string, string[]> = {
@@ -214,6 +222,14 @@ export function auditRecipeFindings(recipe: RecipeTags): Finding[] {
   const meatAndDairy = names.some(name => MEAT.test(name)) && sources.some(source => sourceHasAllergen(source, 'lactosa'));
   if (dieta.kosher === true && (kosherBreaker || meatAndDairy)) {
     fail('dieta:kosher', `kosher es true con ${kosherBreaker ? `conejo, marisco o cerdo (texto: ${kosherBreaker})` : 'carne y lácteo'}`);
+  }
+
+  if (dieta.vegetariano === true || dieta.vegano === true) {
+    const listsVegetableStock = (recipe.ingredientes_principales ?? []).some(text => new RegExp(VEGETABLE_STOCK.source).test(normalize(text)));
+    const bareStock = sources.find(source => STOCK.test(normalize(source.text).replace(OWN_BROTH, ' ').replace(VEGETABLE_STOCK, ' ')));
+    if (bareStock && !listsVegetableStock) {
+      fail('dieta:caldo', `${dieta.vegano === true ? 'vegano' : 'vegetariano'} es true con un caldo sin especificar; hay que escribir "caldo de verduras" (${describe(bareStock)})`);
+    }
   }
 
   const animal = sources.find(source =>

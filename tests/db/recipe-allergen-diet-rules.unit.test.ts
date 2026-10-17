@@ -167,9 +167,9 @@ describe('vocabulary the oracle used to miss (A7-TEST-01)', () => {
 });
 
 describe('the reverse check: a diet flag that the text breaks (A7-TEST-01)', () => {
-  test('sin_gluten true with tamari or miso is flagged, unless the text says "sin gluten"', () => {
+  test('sin_gluten true with tamari or miso is flagged (miso is gluten by rule), unless the text says "sin gluten"', () => {
     expect(reports(recipe(['tofu', 'tamari'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto que suele llevar trigo o cebada (ingrediente: tamari)')).toBe(true);
-    expect(reports(recipe(['tofu', 'miso'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(true);
+    expect(reports(recipe(['tofu', 'miso'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con gluten en el texto (ingrediente: miso)')).toBe(true);
     expect(reports(recipe(['tofu', 'tamari sin gluten'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(false);
   });
 
@@ -193,5 +193,46 @@ describe('findings carry a stable key for the ratchet', () => {
   test('the key is the slug (two rows can share a nombre) plus the rule, not the wording', () => {
     const keys = auditRecipeFindings(recipe(['hummus'], { slug: 'tostada-hummus-pepino' })).map(finding => finding.key);
     expect(keys).toContain('tostada-hummus-pepino|falta:sesamo');
+  });
+});
+
+describe('stock and miso (FRESCO-996)', () => {
+  test('every caldo requires apio, except the beans\' own cooking liquid ("su caldo")', () => {
+    expect(textHasAllergen('caldo de pollo', 'apio')).toBe(true);
+    expect(textHasAllergen('Añadir el caldo y cocer', 'apio')).toBe(true);
+    expect(textHasAllergen('Añadir las alubias con parte de su caldo', 'apio')).toBe(false);
+  });
+
+  test('miso requires gluten and soja, unless the text says "miso sin gluten"', () => {
+    expect(textHasAllergen('miso (30 g)', 'gluten')).toBe(true);
+    expect(textHasAllergen('miso', 'soja')).toBe(true);
+    expect(textHasAllergen('miso sin gluten', 'gluten')).toBe(false);
+    expect(reports(recipe(['miso', 'edamame'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'falta gluten (ingrediente: miso)')).toBe(true);
+  });
+
+  test('two miso recipes with the same ingredient give the same gluten result', () => {
+    const tagged = recipe(['miso', 'tofu'], { alergenos: ['soja', 'gluten'], dieta: { sin_gluten: false } });
+    const untagged = recipe(['miso', 'tofu'], { alergenos: ['soja'], dieta: { sin_gluten: true } });
+    expect(auditRecipe(tagged)).toEqual([]);
+    expect(auditRecipe(untagged).length).toBeGreaterThan(0);
+  });
+
+  test('a vegetarian or vegan recipe with an unspecified stock is flagged, with the text that proves it', () => {
+    const risotto = recipe(['arroz', 'champiñones'], { dieta: { vegetariano: true }, pasos_resumen: ['Añadir el arroz y el caldo poco a poco'] });
+    expect(reports(risotto, 'vegetariano es true con un caldo sin especificar')).toBe(true);
+    const miso = recipe(['miso', 'tofu'], { alergenos: ['soja', 'gluten'], dieta: { vegano: true }, pasos_resumen: ['Disolver el miso en caldo caliente'] });
+    expect(reports(miso, 'vegano es true con un caldo sin especificar')).toBe(true);
+  });
+
+  test('naming the vegetable stock in the ingredients clears the vegetarian check, and a non-vegetarian recipe is not asked', () => {
+    const named = recipe(['arroz', 'champiñones', 'caldo de verduras'], { alergenos: ['apio'], dieta: { vegetariano: true }, pasos_resumen: ['Añadir el arroz y el caldo poco a poco'] });
+    expect(reports(named, 'caldo sin especificar')).toBe(false);
+    const stew = recipe(['pollo', 'arroz'], { alergenos: ['apio'], pasos_resumen: ['Añadir el caldo'] });
+    expect(reports(stew, 'caldo sin especificar')).toBe(false);
+  });
+
+  test('a legume\'s own broth is not an unspecified stock', () => {
+    const beans = recipe(['alubias', 'zanahoria'], { dieta: { vegano: true }, pasos_resumen: ['Añadir las alubias con parte de su caldo'] });
+    expect(reports(beans, 'caldo sin especificar')).toBe(false);
   });
 });
