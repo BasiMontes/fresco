@@ -265,6 +265,33 @@ export type Database = {
           },
         ]
       }
+      pending_confirmation_emails: {
+        Row: {
+          attempts: number
+          created_at: string
+          last_attempt_at: string
+          last_error: string | null
+          subscription_id: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          last_attempt_at?: string
+          last_error?: string | null
+          subscription_id: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          last_attempt_at?: string
+          last_error?: string | null
+          subscription_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
