@@ -14,21 +14,6 @@
  * (`scripts/check-hosted-recipe-tags.ts`) ignores this list on purpose and fails on any finding.
  */
 export const KNOWN_GAPS: Record<string, string[]> = {
-  /** FRESCO-995 */
-  'FRESCO-995': [
-    'crepes-de-espinacas-y-queso-b124|dieta:sin_huevo',
-    'crepes-de-espinacas-y-queso-b124|falta:huevo',
-    'croissant-jamon-queso|dieta:sin_huevo',
-    'croissant-jamon-queso|falta:huevo',
-    'moussaka-de-berenjena|dieta:sin_gluten',
-    'moussaka-de-berenjena|falta:gluten',
-    'pad-thai-de-gambas|dieta:sin_gluten',
-    'pad-thai-de-gambas|falta:gluten',
-    'pad-thai-de-gambas|falta:soja',
-    'tarta-de-limon-b145|dieta:sin_huevo',
-    'tarta-de-limon-b145|falta:huevo',
-    'tostada-hummus-pepino|falta:sesamo',
-  ],
   /** FRESCO-996 */
   'FRESCO-996': [
     'albondigas-salsa-espanola|falta:apio',
