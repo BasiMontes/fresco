@@ -166,11 +166,10 @@ function resolveWebhookSecret(): string {
  * (`stripe listen`) process required in CI.
  *
  * `data.object`'s ids should be REAL Stripe test-mode ids for
- * `checkout.session.completed` (the handler re-fetches the subscription from
- * Stripe's API) — `customer.subscription.updated`/`.deleted` handlers read
- * `event.data.object` directly with no extra Stripe API call, so a
- * synthetic-but-consistent object (matching ids already on the account's
- * `user_profiles` row) is enough for those.
+ * `checkout.session.completed` and, since FRESCO-1002 (ADR-0062), for
+ * `customer.subscription.updated`/`.deleted` too: the handlers re-read the
+ * subscription from Stripe's API and act on what it says, not on the event.
+ * An id Stripe does not have is ignored (or, for `deleted`, treated as ended).
  */
 export async function postSignedStripeEvent(
   request: APIRequestContext,
