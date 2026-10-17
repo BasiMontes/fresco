@@ -14,9 +14,12 @@ import { test } from '../fixtures';
 
 const { When, Then } = createBdd(test);
 
-When(/^llega al primer paso del onboarding \(dieta y alérgenos\)$/, async ({ page }) => {
+When(/^llega al paso de dieta y alérgenos del onboarding$/, async ({ page }) => {
   await page.goto('/onboarding');
   await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  // Step 1 is the name, step 2 the diet; the store's defaults make step 1 valid (see onboarding.steps.ts).
+  await page.getByTestId('next_button').click();
+  await expect(page.getByRole('heading', { name: '¿Qué dieta y restricciones sigue tu hogar?' })).toBeVisible();
 });
 
 Then(/^ve el aviso de alérgenos junto a las opciones y la nota de que las cajas de texto libre no filtran$/, async ({ page }) => {

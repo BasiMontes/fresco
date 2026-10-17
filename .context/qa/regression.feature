@@ -484,7 +484,7 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/aviso-alergenos.steps.ts (FRESCO-1000)
   Escenario: El onboarding avisa de que las cajas de texto libre no filtran recetas
     Dado que el usuario tiene sesión iniciada
-    Cuando llega al primer paso del onboarding (dieta y alérgenos)
+    Cuando llega al paso de dieta y alérgenos del onboarding
     Entonces ve el aviso de alérgenos junto a las opciones y la nota de que las cajas de texto libre no filtran
     # A7-LOGIC-08: "celiaca" o "sin cerdo" escritos en esas cajas se guardan pero no filtran; el filtro
     # lo hacen las opciones de arriba. La nota lo dice junto al campo.
