@@ -18,11 +18,15 @@ interface Config {
   slots?: unknown
   saveError?: { code?: string } | null
   savedList?: unknown
+  /** What `check_and_increment_rate_limit` resolves: `true` (default) allows, anything else blocks. */
+  rateLimit?: boolean | null
+  rateLimitError?: unknown
 }
 
 let config: Config
 let inserted: Array<Record<string, unknown>>
 let planUserFilters: unknown[]
+let rpcCalls: Array<[string, unknown]>
 
 function client() {
   const reads: Record<string, () => { data: unknown, error: unknown }> = {
@@ -33,6 +37,10 @@ function client() {
   }
   return {
     auth: { getUser: async () => ({ data: { user: config.user === undefined ? { id: 'user_1' } : config.user }, error: null }) },
+    rpc: async (name: string, args: unknown) => {
+      rpcCalls.push([name, args])
+      return { data: config.rateLimit === undefined ? true : config.rateLimit, error: config.rateLimitError ?? null }
+    },
     from: (table: string) => ({
       select: () => {
         const result = reads[table]()
@@ -93,6 +101,7 @@ function namesOf(items: unknown): string[] {
 beforeEach(() => {
   inserted = []
   planUserFilters = []
+  rpcCalls = []
   config = { plan: PLAN, profile: { num_personas: 2 }, slots: [slot('lunes', 'tortilla', ['huevo', 'patata'])] }
 })
 
@@ -100,6 +109,30 @@ describe('generate-shopping-list/index.ts', () => {
   test('401 without a user', async () => {
     config.user = null
     expect((await call()).status).toBe(401)
+  })
+
+  test('asks the rate limiter for generate-shopping-list, 60 an hour, for the verified user (A7-ABUSE-05)', async () => {
+    await call()
+    expect(rpcCalls[0]).toEqual(['check_and_increment_rate_limit', { p_user_id: 'user_1', p_endpoint: 'generate-shopping-list', p_limit: 60, p_window_seconds: 3600 }])
+  })
+
+  test('429 past the limit, before the plan is read or anything is written', async () => {
+    config.rateLimit = false
+    expect((await call()).status).toBe(429)
+    expect(planUserFilters).toEqual([])
+    expect(inserted).toEqual([])
+  })
+
+  test('fails closed: a limiter that errors is a 500, not a pass', async () => {
+    config.rateLimit = null
+    config.rateLimitError = { message: 'rpc down' }
+    expect((await call()).status).toBe(500)
+    expect(inserted).toEqual([])
+  })
+
+  test('a malformed request still counts against the limit, so a loop of them is capped too', async () => {
+    expect((await handler(edgeRequest(undefined, { body: '{not json' }))).status).toBe(400)
+    expect(rpcCalls).toHaveLength(1)
   })
 
   test('400 without meal_plan_id', async () => {

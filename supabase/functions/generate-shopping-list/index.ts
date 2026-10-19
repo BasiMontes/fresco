@@ -13,6 +13,7 @@ import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
+import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { consolidateIngredientes } from './consolidator.ts'
 import { classifyShoppingList } from './aisle-pricing.ts'
 import { costeDeLista, mergeRefreshedList } from './merge-refresh.ts'
@@ -26,6 +27,9 @@ import type {
 } from './types.ts'
 
 const FN_NAME = 'generate-shopping-list'
+// FRESCO-1017 (A7-ABUSE-05): a list is built once per plan and rebuilt in place when the plan
+// changes; 60 an hour never touches a person and caps a loop. Registered in rate_limit_endpoints.
+const RATE_LIMIT_PER_HOUR = 60
 
 Deno.serve(async (req: Request) => {
   const preflight = handleCorsPreflight(req)
@@ -36,6 +40,10 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')!
     const supabase = createRequestClient(authHeader)
     const user = await requireAuthenticatedUser(req, supabase)
+
+    // 1.5. Rate limit (ADR-0010, A7-ABUSE-05): before any body or DB work, malformed requests
+    // included, since a loop of those burns invocations too. Atomic check-and-increment, fail closed.
+    await enforceRateLimit(supabase, { userId: user.id, endpoint: FN_NAME, limit: RATE_LIMIT_PER_HOUR })
 
     // 2. Parse body
     const body = await readJsonBody<GenerateShoppingListRequest>(req, { meal_plan_id: 'string', refresh: 'boolean' })

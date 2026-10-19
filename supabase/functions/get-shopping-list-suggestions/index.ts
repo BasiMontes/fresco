@@ -16,6 +16,7 @@ import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
+import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { normalizeNombre } from '../_shared/normalize.ts'
 import { pasilloFor, precioUnitario } from '../generate-shopping-list/aisle-pricing.ts'
 import { savedItemNames } from './saved-items.ts'
@@ -28,6 +29,9 @@ import type {
 
 const FN_NAME = 'get-shopping-list-suggestions'
 const MAX_SUGGESTIONS = 3
+// FRESCO-1017 (A7-ABUSE-05): read each time the list screen opens; 120 an hour never touches a
+// person and caps a loop. Registered in rate_limit_endpoints.
+const RATE_LIMIT_PER_HOUR = 120
 
 interface ShoppingListRow {
   // jsonb: anything can be stored, `savedItemNames` reads it defensively.
@@ -46,6 +50,9 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')!
     const supabase = createRequestClient(authHeader)
     const user = await requireAuthenticatedUser(req, supabase)
+
+    // Rate limit (ADR-0010, A7-ABUSE-05): before any body or DB work. Atomic, fail closed.
+    await enforceRateLimit(supabase, { userId: user.id, endpoint: FN_NAME, limit: RATE_LIMIT_PER_HOUR })
 
     const body = await readJsonBody<GetShoppingListSuggestionsRequest>(req, { shopping_list_id: 'string' })
     if (!body.shopping_list_id) throw new HttpError('Falta shopping_list_id', 400)

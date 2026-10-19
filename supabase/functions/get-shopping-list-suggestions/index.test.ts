@@ -24,19 +24,37 @@ function listWith(...nombres: string[]) {
   return { items: [{ pasillo: 'Verdura', items: nombres.map(nombre => ({ nombre })) }] }
 }
 
+const ALLOW = { check_and_increment_rate_limit: { data: true } }
+
 function call(rows: Record<string, unknown>, selectError: Record<string, unknown> = {}) {
-  supa = fakeEdgeClient({ user: USER, rows, selectError })
+  supa = fakeEdgeClient({ user: USER, rows, selectError, rpc: ALLOW })
   return handler(edgeRequest({ shopping_list_id: 'sl_1' }))
 }
 
 beforeEach(() => {
-  supa = fakeEdgeClient({ user: USER })
+  supa = fakeEdgeClient({ user: USER, rpc: ALLOW })
 })
 
 describe('get-shopping-list-suggestions/index.ts', () => {
   test('401 without a user', async () => {
     supa = fakeEdgeClient({ user: null })
     expect((await handler(edgeRequest({ shopping_list_id: 'sl_1' }))).status).toBe(401)
+  })
+
+  test('asks the rate limiter for get-shopping-list-suggestions, 120 an hour, for the verified user (A7-ABUSE-05)', async () => {
+    await call({ shopping_lists: listWith(), favorites: [] })
+    expect(supa.rpcCalls[0]).toEqual(['check_and_increment_rate_limit', { p_user_id: 'user_1', p_endpoint: 'get-shopping-list-suggestions', p_limit: 120, p_window_seconds: 3600 }])
+  })
+
+  test('429 past the limit, before the list is read', async () => {
+    supa = fakeEdgeClient({ user: USER, rows: { shopping_lists: listWith() }, rpc: { check_and_increment_rate_limit: { data: false } } })
+    expect((await handler(edgeRequest({ shopping_list_id: 'sl_1' }))).status).toBe(429)
+    expect(supa.rpcCalls.map(([name]) => name)).toEqual(['check_and_increment_rate_limit'])
+  })
+
+  test('fails closed: a limiter that errors is a 500, not a pass', async () => {
+    supa = fakeEdgeClient({ user: USER, rpc: { check_and_increment_rate_limit: { error: { message: 'down' } } } })
+    expect((await handler(edgeRequest({ shopping_list_id: 'sl_1' }))).status).toBe(500)
   })
 
   test('400 without shopping_list_id', async () => {

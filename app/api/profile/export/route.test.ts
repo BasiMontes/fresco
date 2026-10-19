@@ -80,3 +80,32 @@ describe('GET /api/profile/export', () => {
     expect(await (await GET()).text()).not.toContain('# account');
   });
 });
+
+describe('GET /api/profile/export: a limit per user (FRESCO-1017, A7-ABUSE-04)', () => {
+  const signedIn = { getUser: async () => ({ data: { user: { id: 'user_1' } } }) };
+
+  test('asks the rate-limit RPC for profile-export, 10 an hour, for the caller', async () => {
+    await GET();
+
+    expect(supa.rpcCalls[0]).toEqual(['check_and_increment_rate_limit', { p_user_id: 'user_1', p_endpoint: 'profile-export', p_limit: 10, p_window_seconds: 3600 }]);
+  });
+
+  test('429 past the limit, and nothing is read', async () => {
+    supa = fakeSupabase({ user_profiles: { selectError: new Error('must not be read') } }, signedIn, async () => ({ data: false, error: null }));
+
+    expect((await GET()).status).toBe(429);
+  });
+
+  test('fails closed: a limiter that errors is a 500, not a pass', async () => {
+    supa = fakeSupabase({}, signedIn, async () => ({ data: null, error: new Error('rpc down') }));
+
+    expect((await GET()).status).toBe(500);
+  });
+
+  test('an unauthenticated request does not touch the limiter', async () => {
+    supa = withUser(null);
+
+    expect((await GET()).status).toBe(401);
+    expect(supa.rpcCalls).toEqual([]);
+  });
+});

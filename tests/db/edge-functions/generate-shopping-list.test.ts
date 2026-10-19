@@ -2,8 +2,8 @@
  * FRESCO-464 PR2 — HTTP negative-contract tests for generate-shopping-list.
  *
  * Real HTTP against the local Supabase Edge Functions runtime (`supabase
- * start`), not mocked, not e2e. This function has no rate limit of its own,
- * so only the auth gate and body validation apply.
+ * start`), not mocked, not e2e. Covers the auth gate, body validation and, since
+ * FRESCO-1017 (A7-ABUSE-05), the 60/h rate limit.
  *
  * Runs only when `RUN_DB_INTEGRATION=1` AND the local stack answers —
  * `bun run test:db`. See tests/db/README.md.
@@ -54,6 +54,27 @@ describe.skipIf(!(RUN && reachable))('generate-shopping-list — HTTP negative c
   test('401 when called with a garbage token', async () => {
     const res = await callFunction(ENDPOINT, { token: 'not-a-real-jwt' });
     expect(res.status).toBe(401);
+  });
+
+  test('429 once the 60/h rate limit is pre-saturated (endpoint registered in rate_limit_endpoints)', async () => {
+    const user = await ctx.createUser();
+    await Promise.all(
+      Array.from({ length: 60 }, async () => rpc('check_and_increment_rate_limit', {
+        p_user_id: user.id,
+        p_endpoint: ENDPOINT,
+        p_limit: 60,
+        p_window_seconds: 3600,
+      }, { token: user.token })),
+    );
+
+    const res = await callFunction(ENDPOINT, { token: user.token, body: {} });
+    expect(res.status).toBe(429);
+  });
+
+  test('400, not 500, when a field has the wrong type (A7-API-05)', async () => {
+    const user = await ctx.createUser();
+    const wrongType = await callFunction(ENDPOINT, { token: user.token, body: { meal_plan_id: { not: 'a string' } } });
+    expect(wrongType.status).toBe(400);
   });
 
   test('400 when the body is missing meal_plan_id', async () => {
