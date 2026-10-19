@@ -78,9 +78,23 @@ export async function verifyEmailChangeOtp({ email, token }: { email: string, to
   return createClient().auth.verifyOtp({ email, token, type: 'email_change' });
 }
 
-/** FRESCO-89, step 3: sets the password, only allowed once the email is verified. */
-export async function updatePassword(password: string) {
-  return createClient().auth.updateUser({ password });
+/**
+ * FRESCO-89, step 3: sets the password, only allowed once the email is verified.
+ * FRESCO-1015: `currentPassword` goes along when the session came from a password sign-in.
+ */
+export async function updatePassword(password: string, currentPassword?: string) {
+  return createClient().auth.updateUser({ password, ...(currentPassword ? { current_password: currentPassword } : {}) });
+}
+
+/**
+ * FRESCO-1015: the sign-in methods (`amr` claim) the current session was built from, or `null`
+ * when the token cannot be read. Decides whether the password change asks for the current one.
+ */
+export async function getSessionAuthMethods(): Promise<string[] | null> {
+  const { data } = await createClient().auth.getClaims();
+  const amr = data?.claims.amr;
+  if (!amr) { return null; }
+  return amr.map(entry => (typeof entry === 'string' ? entry : entry.method));
 }
 
 /**

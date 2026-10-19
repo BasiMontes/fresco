@@ -9,7 +9,8 @@ import { LegalLinks } from '@/components/legal/legal-links';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PasswordInput } from '@/components/ui/password-input';
-import { getSession, signOut, updatePassword } from '@/lib/client-api/auth';
+import { CURRENT_PASSWORD_REQUIRED_MESSAGE, needsCurrentPassword, passwordChangeErrorMessage } from '@/lib/auth/password-change';
+import { getSession, getSessionAuthMethods, signOut, updatePassword } from '@/lib/client-api/auth';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { cn } from '@/lib/utils';
 import { isPasswordTooShort, PASSWORD_TOO_SHORT_MESSAGE } from '@/lib/validation/password-policy';
@@ -30,6 +31,9 @@ import { isPasswordPwned, PWNED_PASSWORD_MESSAGE } from '@/lib/validation/pwned-
 export default function UpdatePasswordPage() {
   const router = useRouter();
   const [hasSession, setHasSession] = React.useState<boolean | null>(null);
+  // FRESCO-1015: only a session built from a password sign-in is asked for the current password.
+  const [requiresCurrentPassword, setRequiresCurrentPassword] = React.useState(false);
+  const [currentPassword, setCurrentPassword] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -39,7 +43,10 @@ export default function UpdatePasswordPage() {
   const isSubmittingRef = React.useRef(false);
 
   React.useEffect(() => {
-    void getSession().then((session) => {
+    void getSession().then(async (session) => {
+      if (session !== null) {
+        setRequiresCurrentPassword(needsCurrentPassword(await getSessionAuthMethods()));
+      }
       setHasSession(session !== null);
     });
   }, []);
@@ -47,6 +54,11 @@ export default function UpdatePasswordPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (requiresCurrentPassword && currentPassword === '') {
+      setError(CURRENT_PASSWORD_REQUIRED_MESSAGE);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
@@ -71,9 +83,9 @@ export default function UpdatePasswordPage() {
         setError(PWNED_PASSWORD_MESSAGE);
         return;
       }
-      const { error: updateError } = await updatePassword(password);
+      const { error: updateError } = await updatePassword(password, requiresCurrentPassword ? currentPassword : undefined);
       if (updateError) {
-        setError(updateError.message);
+        setError(passwordChangeErrorMessage(updateError) ?? updateError.message);
         return;
       }
       await signOut();
@@ -121,6 +133,19 @@ export default function UpdatePasswordPage() {
 
         {hasSession === true && (
           <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
+            {requiresCurrentPassword && (
+              <PasswordInput
+                data-testid="update_password_current_input"
+                placeholder="Contraseña actual"
+                autoComplete="current-password"
+                showStrength={false}
+                value={currentPassword}
+                onChange={(v) => {
+                  setCurrentPassword(v);
+                  setError(null);
+                }}
+              />
+            )}
             {/* FRESCO-448 (S9): match the signup / onboarding password field —
                 show/hide + strength + static policy hint, no native minLength
                 bubble. */}
