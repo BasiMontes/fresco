@@ -839,7 +839,6 @@ export type Database = {
           plan_expires_at: string | null
           planning_selection: Json
           presupuesto_semana_euros: number | null
-          sexo: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id: string | null
           stripe_livemode: boolean | null
           stripe_subscription_id: string | null
@@ -883,7 +882,6 @@ export type Database = {
           plan_expires_at?: string | null
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
-          sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id?: string | null
           stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
@@ -927,7 +925,6 @@ export type Database = {
           plan_expires_at?: string | null
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
-          sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id?: string | null
           stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
@@ -1144,7 +1141,6 @@ export type Database = {
         | "comer_variado"
         | "reducir_desperdicio"
       plan_usuario: "free" | "pro" | "family"
-      sexo_usuario: "mujer" | "hombre" | "otro" | "prefiero_no_decir"
       tipo_cocina:
         | "española"
         | "italiana"
@@ -1318,7 +1314,6 @@ export const Constants = {
         "reducir_desperdicio",
       ],
       plan_usuario: ["free", "pro", "family"],
-      sexo_usuario: ["mujer", "hombre", "otro", "prefiero_no_decir"],
       tipo_cocina: [
         "española",
         "italiana",

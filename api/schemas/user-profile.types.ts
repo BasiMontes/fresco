@@ -8,7 +8,6 @@ import type { TipoCocina } from './recipe.types.ts';
 export type PlanUsuario = 'free' | 'pro' | 'family';
 export type NivelPicante = 'ninguno' | 'suave' | 'medio' | 'fuerte';
 export type NivelContundencia = 'ligero' | 'media' | 'contundente';
-export type SexoUsuario = 'mujer' | 'hombre' | 'otro' | 'prefiero_no_decir';
 export type ObjetivoUsuario
   = | 'perder_peso'
     | 'comer_sano'
@@ -25,7 +24,6 @@ export interface UserProfile {
   /** Display name for the `/menu` greeting (FRESCO-55). Nullable — falls back to a generic greeting when unset. */
   nombre: string | null
   /** Onboarding step 1 (FRESCO-132). Nullable — optional signal for recipe recommendations. */
-  sexo: SexoUsuario | null
   /** Onboarding step 1 (FRESCO-132). Nullable — used to focus recipe recommendations. */
   objetivo: ObjetivoUsuario | null
   plan: PlanUsuario
