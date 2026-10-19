@@ -20,7 +20,7 @@
 
 import type { DbTestUser } from './harness';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { createDbTestContext, rest, rpc, seedMealPlan, seedSlots, stackReachable } from './harness';
+import { createDbTestContext, plannedWeek, rest, rpc, seedMealPlan, seedSlots, stackReachable } from './harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -100,7 +100,8 @@ describe.skipIf(!(RUN && reachable))('copy_meal_plan_to_week applies the food-sa
       { recipeId: inactiveId, tipoPlato: 'desayuno' },
     ]);
 
-    const res = await copy(user, source.id, '2099-W02', '2099-01-12');
+    const target = plannedWeek(1);
+    const res = await copy(user, source.id, target.semanaIso, target.fechaInicio);
     expect(res.status).toBe(200);
     const newPlanId = res.body as string;
 
@@ -125,7 +126,8 @@ describe.skipIf(!(RUN && reachable))('copy_meal_plan_to_week applies the food-sa
     const source = await seedMealPlan(user, { semanaIso: '2099-W03', fechaInicio: '2099-01-19' });
     await seedSlots(user, source.id, [{ recipeId: safeId, tipoPlato: 'comida' }]);
 
-    const res = await copy(user, source.id, '2099-W04', '2099-01-26');
+    const target = plannedWeek(0);
+    const res = await copy(user, source.id, target.semanaIso, target.fechaInicio);
     expect(res.status).toBe(200);
     const newPlanId = res.body as string;
 
@@ -143,11 +145,12 @@ describe.skipIf(!(RUN && reachable))('copy_meal_plan_to_week applies the food-sa
     const source = await seedMealPlan(limited, { semanaIso: '2099-W05', fechaInicio: '2099-02-02' });
     await seedSlots(limited, source.id, [{ recipeId: safeId, tipoPlato: 'comida' }]);
 
+    const target = plannedWeek(1);
     for (let i = 0; i < ceiling; i++) {
-      const ok = await copy(limited, source.id, '2099-W06', '2099-02-09');
+      const ok = await copy(limited, source.id, target.semanaIso, target.fechaInicio);
       expect(ok.status).toBe(200);
     }
-    const over = await copy(limited, source.id, '2099-W06', '2099-02-09');
+    const over = await copy(limited, source.id, target.semanaIso, target.fechaInicio);
     expect(over.status).toBe(400);
     expect((over.body as { message?: string }).message ?? '').toContain('rate limit exceeded');
   });

@@ -42,6 +42,8 @@ export interface SlotWithRecipeRow {
   dia: DiaSemana
   /** FRESCO-534/ADR-0033 — `{ original, sustituto }` when this slot has a confirmed per-slot ingredient substitution, else `null`. Never affects `recipes` — read-only here. */
   sustitucion_ingrediente: { original: string; sustituto: string } | null
+  /** FRESCO-1010 — `descartada` and `excluida` slots add nothing to the list. Absent in old fixtures. */
+  estado?: string
   recipes: {
     id: string
     nombre: string

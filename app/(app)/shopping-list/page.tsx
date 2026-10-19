@@ -86,7 +86,8 @@ export default async function ShoppingListPage() {
     // FRESCO-808: prices and supermarket links resolved here, so the catalogs stay out of the client bundle.
     const compra = resolverCompra({ pasillos: list.pasillos, perfil });
 
-    return <ShoppingListView list={list} nuevosNombres={nuevosNombres} costeMenu={costeMenu} compra={compra} />;
+    // FRESCO-1010: keyed by the stale state so a refreshed list replaces the one held in client state.
+    return <ShoppingListView key={`${list.id}:${list.desactualizada ? 'stale' : 'fresh'}`} list={list} nuevosNombres={nuevosNombres} costeMenu={costeMenu} compra={compra} />;
   }
   catch (error) {
     console.error('[/shopping-list] getShoppingListForPlan failed, falling back to generator', error);

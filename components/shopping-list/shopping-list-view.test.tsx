@@ -7,6 +7,7 @@ import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
 import { formatPrecio } from '@/lib/utils';
 import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { ShoppingListView } from './shopping-list-view';
+import '@/tests/mocks/next-navigation';
 
 /**
  * FRESCO-426-ish (receipt ticket) — "Compra realizada" opens the receipt
@@ -28,6 +29,8 @@ function compraDe(list: ShoppingListPersistido, perfil?: PerfilCompra): CompraPo
 
 const LIST: ShoppingListPersistido = {
   id: 'list1',
+  mealPlanId: 'plan-list1',
+  desactualizada: false,
   pasillos: [
     {
       nombre: 'Frutas y verduras',
@@ -59,6 +62,8 @@ describe('ShoppingListView — item checkbox accessible name (FRESCO-498)', () =
 describe('ShoppingListView — supermarket links per item (FRESCO-521)', () => {
   const LIST_WITH_LINKS: ShoppingListPersistido = {
     id: 'list2',
+    mealPlanId: 'plan-list2',
+    desactualizada: false,
     pasillos: [
       {
         nombre: 'Frutas y verduras',
@@ -161,6 +166,8 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
   ];
   const LIST_PRICES: ShoppingListPersistido = {
     id: 'list3',
+    mealPlanId: 'plan-list3',
+    desactualizada: false,
     pasillos: [{ nombre: 'Lácteos y huevos', orden: 1, items: ITEMS }],
     // Stale Edge Function snapshot, deliberately different from the lines.
     resumen: { total_items: 2, coste_estimado_min: 99, coste_estimado_max: 99, moneda: 'EUR' },
@@ -193,6 +200,8 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
 describe('ShoppingListView — diet-compatible supermarket links (FRESCO-826)', () => {
   const LIST_CALDO: ShoppingListPersistido = {
     id: 'list4',
+    mealPlanId: 'plan-list4',
+    desactualizada: false,
     pasillos: [{
       nombre: 'Conservas y salsas',
       orden: 1,
@@ -222,6 +231,8 @@ describe('ShoppingListView — diet-compatible supermarket links (FRESCO-826)', 
 describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', () => {
   const LIST_FALSA: ShoppingListPersistido = {
     id: 'list5',
+    mealPlanId: 'plan-list5',
+    desactualizada: false,
     pasillos: [{
       nombre: 'Pasta, arroz y legumbres',
       orden: 1,
@@ -323,6 +334,8 @@ describe('ShoppingListView — price disclaimer (FRESCO-790)', () => {
 describe('ShoppingListView — es-ES quantity and price lines (FRESCO-819)', () => {
   const LIST_LECHE: ShoppingListPersistido = {
     id: 'list-es',
+    mealPlanId: 'plan-list-es',
+    desactualizada: false,
     pasillos: [
       {
         nombre: 'Lácteos',
@@ -357,6 +370,8 @@ describe('ShoppingListView — es-ES quantity and price lines (FRESCO-819)', () 
 describe('ShoppingListView — all-bought state (FRESCO-842)', () => {
   const EMPTY_LIST: ShoppingListPersistido = {
     id: 'list-empty',
+    mealPlanId: 'plan-list-empty',
+    desactualizada: false,
     pasillos: [],
     resumen: { total_items: 0, coste_estimado_min: 0, coste_estimado_max: 0, moneda: 'EUR' },
   };
@@ -386,6 +401,8 @@ describe('ShoppingListView — all-bought state (FRESCO-842)', () => {
 describe('ShoppingListView — items added from "Sugerencias para ti" (FRESCO-948)', () => {
   const WITH_ADDED: ShoppingListPersistido = {
     id: 'list-added',
+    mealPlanId: 'plan-list-added',
+    desactualizada: false,
     pasillos: [
       {
         nombre: 'Frutas y verduras',
@@ -457,6 +474,8 @@ describe('ShoppingListView — items added from "Sugerencias para ti" (FRESCO-94
 describe('ShoppingListView — readable text (FRESCO-967)', () => {
   const LIST_USOS: ShoppingListPersistido = {
     id: 'list-usos',
+    mealPlanId: 'plan-list-usos',
+    desactualizada: false,
     pasillos: [
       {
         nombre: 'Frutas y verduras',
@@ -483,5 +502,20 @@ describe('ShoppingListView — readable text (FRESCO-967)', () => {
     expect(line.className).not.toContain('truncate');
     expect(line.className).not.toContain('text-caption');
     expect(line.className).toContain('text-body-sm');
+  });
+});
+
+describe('ShoppingListView — stale list (FRESCO-1010)', () => {
+  test('a list that matches its plan shows no banner', () => {
+    renderWithProviders(<ShoppingListView list={LIST} />);
+
+    expect(screen.queryByTestId('shopping_list_stale_banner')).toBeNull();
+  });
+
+  test('a list the plan changed after it was built shows the banner with "Actualizar lista"', () => {
+    renderWithProviders(<ShoppingListView list={{ ...LIST, desactualizada: true }} />);
+
+    expect(screen.getByTestId('shopping_list_stale_banner')).toBeInTheDocument();
+    expect(screen.getByTestId('shopping_list_refresh_button')).toHaveTextContent('Actualizar lista');
   });
 });

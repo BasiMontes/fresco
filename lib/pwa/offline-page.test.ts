@@ -22,10 +22,13 @@ describe('public/offline.html', () => {
     expect(html).toMatch(/<a class="retry" href="">Reintentar<\/a>/);
   });
 
-  test('retries on its own with a meta refresh and tells search engines to ignore it', () => {
+  test('lets the person decide when to retry: no meta refresh (FRESCO-1013, A7-UI-04), and tells search engines to ignore it', () => {
+    // A refresh every 20 s returned a screen-reader user to the top mid-sentence (WCAG 2.2.1).
+    expect(html).not.toMatch(/http-equiv="refresh"/i);
     // Prettier writes void tags as `<meta ... />`; accept both spellings.
-    expect(html).toMatch(/<meta http-equiv="refresh" content="20"\s*\/?>/);
     expect(html).toMatch(/<meta name="robots" content="noindex"\s*\/?>/);
+    expect(html).toContain('pulsa «Reintentar»');
+    expect(html).not.toContain('solos en unos segundos');
   });
 
   test('has no JavaScript at all: no script tag, no inline handler, no javascript: URL', () => {

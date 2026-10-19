@@ -109,7 +109,9 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
               // that does not exist — the list's primary
               // content line had no design-token size.
               'truncate text-body-md font-semibold',
-              item.comprado ? 'text-tertiary line-through opacity-70' : 'text-text',
+              // FRESCO-1013 (A7-UI-11): the strike-through already says "bought"; `opacity-70` took the
+              // tertiary colour to 3.06:1 (light) / 3.55:1 (dark). Without it the text keeps its token contrast.
+              item.comprado ? 'text-tertiary line-through' : 'text-text',
             )}
           >
             {capitalize(item.nombre)}

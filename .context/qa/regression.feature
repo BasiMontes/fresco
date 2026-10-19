@@ -2152,6 +2152,44 @@ Característica: Flujo completo de usuario en Fresco
     Dado que Laura está en /profile
     Entonces la pantalla no tiene violaciones de accesibilidad serias
 
+  # FRESCO-1013 (auditoría 7b, A7-UI-01..05 y A7-UI-08). Reglas de axe que el filtro por
+  # impacto no bloquea (o que axe deja apagadas) y que aquí no deben informar nada.
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1013)
+  Escenario: /calendar nombra cada control con su texto visible
+    Dado que el usuario tiene un menú semanal generado con los 21 huecos llenos
+    Entonces ningún control tiene un nombre accesible que no incluya su texto visible
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1013)
+  Escenario: /profile nombra cada control con su texto visible
+    Dado que Laura está en /profile
+    Entonces ningún control tiene un nombre accesible que no incluya su texto visible
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1013)
+  Escenario: La Biblioteca de recetas nombra cada control con su texto visible
+    Dado que Laura está en la Biblioteca de recetas
+    Entonces ningún control tiene un nombre accesible que no incluya su texto visible
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1013)
+  Escenario: Una página que no existe tiene landmark principal y un salto al contenido válido
+    Dado que un visitante sin cuenta ni sesión abre una página que no existe
+    Entonces la página tiene un salto al contenido válido, un landmark principal, regiones desplazables enfocables y encabezados en orden
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1013)
+  Escenario: La política de cookies a 360 px es navegable con teclado y tiene los encabezados en orden
+    Dado que un visitante sin cuenta ni sesión lee /legal/cookies en un móvil de 360 px
+    Entonces la página tiene un salto al contenido válido, un landmark principal, regiones desplazables enfocables y encabezados en orden
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1013)
+  Escenario: La política de privacidad tiene los encabezados en orden
+    Dado que un visitante sin cuenta ni sesión lee /legal/privacidad
+    Entonces la página tiene un salto al contenido válido, un landmark principal, regiones desplazables enfocables y encabezados en orden
+
   # --------------------------------------------------------------------------
   # Viewport móvil (360x740) y tableta (768x1024) — FRESCO-787 (A6-T6).
   # Playwright corre estos escenarios SOLO en los proyectos `mobile` y

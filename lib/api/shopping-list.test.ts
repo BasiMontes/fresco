@@ -3,7 +3,7 @@ import type { GenerateShoppingListResponse } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
 import { describe, expect, test } from 'bun:test';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
-import { diffNombresNuevos, getShoppingListForPlan, normalizeNombre, removeShoppingListItem, ShoppingListError, toggleShoppingListItem } from './shopping-list';
+import { diffNombresNuevos, getShoppingListForPlan, listaDesactualizadaDeSlot, normalizeNombre, removeShoppingListItem, ShoppingListError, toggleShoppingListItem } from './shopping-list';
 
 const MEAL_PLAN_ID = 'plan-1';
 
@@ -27,6 +27,8 @@ const SAMPLE_PASILLOS: GenerateShoppingListResponse['pasillos'] = [
 
 const SAMPLE_LIST_ROW = {
   id: 'list-1',
+  meal_plan_id: MEAL_PLAN_ID,
+  desactualizada_desde: null as string | null,
   items: SAMPLE_PASILLOS,
   coste_estimado_min: 12.5,
   coste_estimado_max: 18.9,
@@ -79,6 +81,22 @@ describe('getShoppingListForPlan', () => {
     expect(result?.resumen.coste_estimado_min).toBe(12.5);
     expect(result?.resumen.coste_estimado_max).toBe(18.9);
     expect(result?.resumen.moneda).toBe('EUR');
+  });
+
+  // FRESCO-1010 — the list says whether the plan changed after it was built, and which plan it belongs to.
+  test('exposes the plan id and a fresh list as not stale', async () => {
+    const { client } = createMockClient({ data: SAMPLE_LIST_ROW });
+
+    const result = await getShoppingListForPlan(client, MEAL_PLAN_ID);
+
+    expect(result?.mealPlanId).toBe(MEAL_PLAN_ID);
+    expect(result?.desactualizada).toBe(false);
+  });
+
+  test('a list flagged by the database is stale', async () => {
+    const { client } = createMockClient({ data: { ...SAMPLE_LIST_ROW, desactualizada_desde: '2026-10-19T10:00:00Z' } });
+
+    expect((await getShoppingListForPlan(client, MEAL_PLAN_ID))?.desactualizada).toBe(true);
   });
 
   test('returns null when no list has been generated yet for that plan', async () => {
@@ -219,5 +237,37 @@ describe('removeShoppingListItem', () => {
     const { client } = createRpcMockClient({ errorMessage: 'list not found or not owned by caller' });
 
     await expectRejection(removeShoppingListItem(client, { listId: 'list-1', pasilloNombre: 'Especias', itemNombre: 'Jengibre' }));
+  });
+});
+
+describe('listaDesactualizadaDeSlot (FRESCO-1010)', () => {
+  test('true when the slot\'s plan has a list the database flagged as stale', async () => {
+    const { client } = createMockClient({ data: { meal_plan_id: MEAL_PLAN_ID, desactualizada_desde: '2026-10-19T10:00:00Z' } });
+
+    expect(await listaDesactualizadaDeSlot(client, 'slot-1')).toBe(true);
+  });
+
+  test('false for a list that matches its plan', async () => {
+    const { client } = createMockClient({ data: { meal_plan_id: MEAL_PLAN_ID, desactualizada_desde: null } });
+
+    expect(await listaDesactualizadaDeSlot(client, 'slot-1')).toBe(false);
+  });
+
+  test('false when the slot or the list is not there', async () => {
+    const { client } = createMockClient({ data: null });
+
+    expect(await listaDesactualizadaDeSlot(client, 'slot-1')).toBe(false);
+  });
+
+  test('false on a database error: the notice is a courtesy and never breaks the flow that asked', async () => {
+    const { client } = createMockClient({ errorMessage: 'connection reset' });
+
+    expect(await listaDesactualizadaDeSlot(client, 'slot-1')).toBe(false);
+  });
+
+  test('false when the client itself throws', async () => {
+    const client = { from: () => { throw new Error('boom'); } } as unknown as SupabaseClient<Database>;
+
+    expect(await listaDesactualizadaDeSlot(client, 'slot-1')).toBe(false);
   });
 });

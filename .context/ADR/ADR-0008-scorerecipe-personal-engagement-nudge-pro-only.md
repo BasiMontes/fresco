@@ -58,3 +58,7 @@ Concretely:
 - `supabase/functions/generate-meal-plan/index.ts` — the `isPro` gate this ADR reuses for the new engagement call.
 - `.context/PBI/tech-debts/TECHDEBT-FRESCO-239-personalizar-scorerecipe-por-usuario-no-solo-agreg/tech-debt.md` — FRESCO-239.
 - `.context/master-implementation-plan.md` §3/§9 — origin of the tech-debt entry.
+
+## 2026-10-19 — Note (FRESCO-1012, ADR-0063)
+
+The global counters this record describes now move once per (user, recipe) through `recipe_user_feedback`, and the rating term of the score is retired. Read ADR-0063 for the current rule; the text above is kept as written.

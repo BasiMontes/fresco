@@ -98,6 +98,8 @@ export function makeFixtureWeekGrid(): {
 export function makeFixtureShoppingList(): ShoppingListPersistido {
   return {
     id: 'fixture-shopping-list',
+    mealPlanId: 'plan-fixture-shopping-list',
+    desactualizada: false,
     pasillos: [
       {
         nombre: 'Frutas y verduras',

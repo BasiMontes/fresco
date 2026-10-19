@@ -50,6 +50,7 @@ jobs:
   drift-check:
     name: check ledger vs local migrations
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Third-party actions pinned by commit SHA, not a mutable tag (FRESCO-417 /
       # A4-L16). Bump the SHA + trailing version comment together when upgrading
@@ -122,6 +123,7 @@ jobs:
   seed-drift:
     name: check seed.sql vs prod recipe catalog
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # Weekly-only: `seed.sql` seeds the ephemeral local e2e stack, never prod,
     # so a stale fixture is a CI-freshness concern, not a promotion risk
     # (FRESCO-413). The staging-push gate is `drift-check` alone.

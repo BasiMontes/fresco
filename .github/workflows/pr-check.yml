@@ -28,6 +28,7 @@ jobs:
   repo-check:
     name: repo:check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -61,6 +62,7 @@ jobs:
   unit:
     name: test:unit
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -87,6 +89,7 @@ jobs:
   deno:
     name: deno:check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # FRESCO-375 (A4-H4): supabase/functions/ is excluded from the app's tsc
     # and ESLint, so `repo:check` green never meant the Edge Functions
     # compile. This job type-checks (`deno check`) and lints (`deno lint`)
@@ -118,6 +121,7 @@ jobs:
   db-integration:
     name: test:db-integration
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     # FRESCO-464 — the DB-integration test layer: `bun test` (tests/db/) against
     # a REAL Postgres (the Supabase CLI local stack), not e2e. It runs the
     # cross-user RLS denial + `SECURITY DEFINER` spoof tests that the mocked
@@ -187,6 +191,7 @@ jobs:
   e2e:
     name: test:e2e
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: repo-check
     # Runs on every PR, AND on push to `staging` (FRESCO-377 / A4-M12): the
     # squash SHA that lands on `dev` and mirrors to `staging`/`main` is a

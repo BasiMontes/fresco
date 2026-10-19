@@ -165,7 +165,7 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — happy path actual
 
   afterAll(async () => ctx.cleanupAll());
 
-  test('200 and the row is really updated: estado, rating', async () => {
+  test('200 and the row is really updated: estado; a rating in the body is ignored (FRESCO-1012, ADR-0063)', async () => {
     const user = await ctx.createUser();
     const [recipeId] = await catalogRecipeIds(user, 1);
     const plan = await seedMealPlan(user, { semanaIso: '2099-W10', fechaInicio: '2099-03-09' });
@@ -179,7 +179,7 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — happy path actual
     expect(res.body).toEqual({ ok: true, estado: 'cocinada' });
 
     const after = await rest('meal_plan_recipes', { token: user.token, query: `id=eq.${slotId}&select=estado,rating` });
-    expect((after.body as { estado: string, rating: number }[])[0]).toEqual({ estado: 'cocinada', rating: 4 });
+    expect((after.body as { estado: string, rating: number | null }[])[0]).toEqual({ estado: 'cocinada', rating: null });
   });
 
   test('200 substitution actually persists recipe_id, not just rating/estado', async () => {
