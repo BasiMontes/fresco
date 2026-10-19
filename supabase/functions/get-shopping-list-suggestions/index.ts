@@ -13,7 +13,7 @@
 // generate-shopping-list uses per consolidated item, not a re-derived copy.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
-import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { normalizeNombre } from '../_shared/normalize.ts'
@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createRequestClient(authHeader)
     const user = await requireAuthenticatedUser(req, supabase)
 
-    const body: GetShoppingListSuggestionsRequest = await req.json()
+    const body = await readJsonBody<GetShoppingListSuggestionsRequest>(req, { shopping_list_id: 'string' })
     if (!body.shopping_list_id) throw new HttpError('Falta shopping_list_id', 400)
 
     const { data: list, error: listError } = await supabase

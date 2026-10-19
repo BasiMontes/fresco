@@ -11,7 +11,7 @@
 // limit.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
-import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
@@ -53,7 +53,7 @@ Deno.serve(async (req: Request) => {
       limit: RATE_LIMIT_PER_HOUR,
     })
 
-    const body: ReassignGuestDataRequest = await req.json()
+    const body = await readJsonBody<ReassignGuestDataRequest>(req, { targetAccessToken: 'string' })
     const { targetAccessToken } = body
     if (!targetAccessToken) {
       throw new HttpError('Falta campo: targetAccessToken', 400)

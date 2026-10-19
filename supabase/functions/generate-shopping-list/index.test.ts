@@ -106,6 +106,12 @@ describe('generate-shopping-list/index.ts', () => {
     expect((await call({})).status).toBe(400)
   })
 
+  test('400, not 500, for a malformed body or a field of the wrong type (A7-API-05)', async () => {
+    for (const body of ['{not json', 'null', '[]', '{"meal_plan_id":{}}', '{"meal_plan_id":"p1","refresh":"yes"}']) {
+      expect((await handler(edgeRequest(undefined, { body }))).status).toBe(400)
+    }
+  })
+
   test('404 when the plan is not found for the caller, and the read is scoped to the caller id', async () => {
     config.plan = null
     expect((await call()).status).toBe(404)

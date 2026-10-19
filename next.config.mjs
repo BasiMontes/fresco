@@ -69,12 +69,27 @@ const nextConfig = {
     '/*': ['node_modules/sharp/**/*', 'node_modules/@img/**/*'],
   },
   images: {
+    // FRESCO-1017 (A7-ABUSE-01): every pattern names a `pathname`, so `/_next/image` is
+    // not an open optimizer for the whole of either library. `search` stays unset on
+    // purpose: every stored photo URL carries Unsplash/Pexels query parameters, and a
+    // `search: ''` would reject them all. `unsplash.com/flagged/` is one catalogue photo.
     remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/photo-*' },
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/flagged/photo-*' },
       // FRESCO-462: 20 active recipes source their photo from Pexels; next/image
       // 400s on any hostname not listed here.
-      { protocol: 'https', hostname: 'images.pexels.com' },
+      { protocol: 'https', hostname: 'images.pexels.com', pathname: '/photos/**' },
     ],
+    // FRESCO-1017: each distinct width x quality is a billable transformation. Short
+    // lists keep that product small; photos here are `fill` with a `sizes` prop, so they
+    // draw from both lists (48px thumbnails to a 1920px hero). 75 is already Next 16's
+    // default, written down so a test can hold it.
+    deviceSizes: [640, 828, 1080, 1920],
+    imageSizes: [48, 96, 256, 384],
+    qualities: [75],
+    // Photo URLs are immutable (a new photo is a new id), so 31 days costs nothing and
+    // saves revalidations.
+    minimumCacheTTL: 2678400,
     // FRESCO-719: Next only emits WebP by default. AVIF is the next real
     // byte-size step over WebP at equivalent visual quality (PageSpeed's
     // "improve image delivery" audit, ~32 KiB estimated saving across the

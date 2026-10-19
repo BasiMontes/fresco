@@ -87,9 +87,18 @@ describe('generate-meal-plan/index.ts — guards', () => {
     expect((await handler(edgeRequest(BODY))).status).toBe(500)
   })
 
-  test('400 when semana_iso or fecha_inicio is missing', async () => {
+  test('400 when semana_iso or fecha_inicio is missing, without spending a generation', async () => {
     expect((await handler(edgeRequest({ semana_iso: '2026-W43' }))).status).toBe(400)
     expect((await handler(edgeRequest({ fecha_inicio: '2026-10-19' }))).status).toBe(400)
+    expect(supa.rpcCalls).toEqual([])
+  })
+
+  test('400, not 500, for a malformed body, and the hourly generation is not spent (A7-API-05)', async () => {
+    for (const body of ['{not json', 'null', '[]', '{"semana_iso":{},"fecha_inicio":"2026-10-19"}']) {
+      const res = await handler(edgeRequest(undefined, { body }))
+      expect(res.status).toBe(400)
+    }
+    expect(supa.rpcCalls).toEqual([])
   })
 
   test('404 when the profile does not exist', async () => {
