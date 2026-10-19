@@ -92,7 +92,7 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 |---|---|---|---|
 | 1 | 54.5 % | 2026-10-14 | **Done** (FRESCO-916): measured 55.26 %, the ticket's "55 % in a month" was already met |
 | 2 | 60 % | 2026-12-14 | **Done early** (FRESCO-991): measured 63.35 %, floored at 63.0 |
-| 3 | 70 % | Owner's call | Open. About 1,600 more covered lines at the 2026-10-19 count (6,782 of the unloaded lines are UI pages and components) |
+| 3 | 70 % | Set by the owner 2026-10-19 | Open. About 1,600 more covered lines at the 2026-10-19 count (6,782 of the unloaded lines are UI pages and components) |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,
