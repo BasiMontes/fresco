@@ -1,6 +1,8 @@
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
-import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { renderWithProviders, screen, within } from '@/tests/component-render';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, jest, mock, test } from 'bun:test';
+import { makeFixtureRecipe } from '@/lib/fixtures/recipe';
+import { act, renderWithProviders, screen, setupUser, waitFor, within } from '@/tests/component-render';
 import '@/tests/mocks/next-navigation';
 
 /**
@@ -8,7 +10,7 @@ import '@/tests/mocks/next-navigation';
  * opens on today on a phone, and its day arrows are 44 px.
  */
 
-void mock.module('@/lib/supabase/client', () => ({ createClient: () => ({}) }));
+void mock.module('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { getSession: async () => ({ data: { session: { access_token: 't' } } }) } }) }));
 
 const { CalendarGrid } = await import('./calendar-grid');
 
@@ -95,6 +97,72 @@ describe('CalendarGrid — mobile (A7-UI-13)', () => {
     const nav = screen.getByTestId('calendar_day_nav');
     for (const testid of ['calendar_day_nav_prev', 'calendar_day_nav_next']) {
       expect(within(nav).getByTestId(testid).className).toContain('size-11');
+    }
+  });
+});
+
+describe('CalendarGrid — changing a mark (FRESCO-1014, A7-UI-15)', () => {
+  const recipe = makeFixtureRecipe();
+  const markedMenu = { ...menu, viernes: { ...menu.viernes, comida: recipe } } as MenuGrid;
+  const markedEstados = { ...(estados as Record<string, Record<string, string>>), viernes: { desayuno: 'pendiente', comida: 'cocinada', cena: 'pendiente' } } as never;
+
+  function renderMarked(props: { mondayIso: string, hoyIso: string }) {
+    return renderWithProviders(<CalendarGrid initialMenu={markedMenu} slotIds={slotIds} initialEstados={markedEstados} {...props} />);
+  }
+
+  test('inside the current week a marked dish offers "Quitar marca" and the switch to the other mark', () => {
+    containerOf(3000);
+    renderMarked({ mondayIso: '2026-10-12', hoyIso: '2026-10-16' });
+
+    expect(screen.getByTestId('calendar_slot_viernes_comida_unmark')).toHaveTextContent('Quitar marca');
+    expect(screen.getByTestId('calendar_slot_viernes_comida_switch')).toHaveTextContent('Cambiar a descartado');
+  });
+
+  test('in any other week the mark stays closed: a badge and no controls', () => {
+    containerOf(3000);
+    renderMarked({ mondayIso: '2026-10-05', hoyIso: '2026-10-16' });
+
+    expect(screen.getByTestId('calendar_slot_viernes_comida_estado_badge')).toBeInTheDocument();
+    expect(screen.queryByTestId('calendar_slot_viernes_comida_unmark')).toBeNull();
+    expect(screen.queryByTestId('calendar_slot_viernes_comida_switch')).toBeNull();
+  });
+
+  test('"Quitar marca" shows the snackbar with "Deshacer" and the slot goes back to open', async () => {
+    containerOf(3000);
+    const user = setupUser();
+    renderMarked({ mondayIso: '2026-10-12', hoyIso: '2026-10-16' });
+
+    await user.click(screen.getByTestId('calendar_slot_viernes_comida_unmark'));
+
+    expect(screen.getByTestId('mark_undo_snackbar')).toHaveTextContent('Marca quitada');
+    expect(screen.getByTestId('mark_undo_button')).toBeInTheDocument();
+    expect(screen.getByTestId('calendar_slot_viernes_comida_mark_cocinada')).toBeInTheDocument();
+  });
+
+  test('the "Deshacer" window lasts at least ten seconds before the change is sent', async () => {
+    containerOf(3000);
+    const calls: string[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      calls.push(String(url));
+      return new Response(JSON.stringify({ ok: true, estado: 'pendiente' }), { status: 200 });
+    }) as unknown as typeof fetch;
+    jest.useFakeTimers();
+    try {
+      const user = userEvent.setup({ advanceTimers: ms => jest.advanceTimersByTime(ms) });
+      renderMarked({ mondayIso: '2026-10-12', hoyIso: '2026-10-16' });
+
+      await user.click(screen.getByTestId('calendar_slot_viernes_comida_unmark'));
+      act(() => { jest.advanceTimersByTime(9_900); });
+      expect(calls.filter(url => url.includes('update-recipe-status'))).toHaveLength(0);
+      expect(screen.getByTestId('mark_undo_snackbar')).toBeInTheDocument();
+
+      act(() => { jest.advanceTimersByTime(200); });
+      await waitFor(() => expect(calls.filter(url => url.includes('update-recipe-status'))).toHaveLength(1));
+    }
+    finally {
+      jest.useRealTimers();
+      globalThis.fetch = original;
     }
   });
 });

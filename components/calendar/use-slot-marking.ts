@@ -5,8 +5,12 @@ import { slotId } from '@/lib/calendar/apply-slot-swap';
 import { getAccessToken } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 
-/** FRESCO-373 (A4-M27): how long the "Deshacer" snackbar stays before the mark commits. */
-const UNDO_WINDOW_MS = 5000;
+/**
+ * FRESCO-373 (A4-M27): how long the "Deshacer" snackbar stays before the mark commits. FRESCO-1014 (A7-UI-15,
+ * WCAG 2.2.1): ten seconds, not five, so a screen-reader or motor-impaired user can reach it; and a committed
+ * mark can still be changed inside the current week (`SlotChangeMarkControls`).
+ */
+const UNDO_WINDOW_MS = 10_000;
 
 type EstadosGrid = Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
 
@@ -22,7 +26,8 @@ export interface UseSlotMarkingArgs {
 export interface PendingMark {
   dia: DiaSemana
   tipo: TipoPlato
-  estado: 'cocinada' | 'descartada'
+  /** `pendiente` takes a committed mark back (FRESCO-1014). */
+  estado: 'cocinada' | 'descartada' | 'pendiente'
   prevEstado: EstadoRecetaSlot
 }
 
@@ -55,13 +60,19 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
         { meal_plan_recipe_id: slotIds[mark.dia][mark.tipo], estado: mark.estado },
         accessToken,
       );
-      captureEvent(
-        mark.estado === 'cocinada'
-          // "usados" half of the North-star KPI (ADR-0013).
-          ? POSTHOG_EVENTS.RECIPE_MARKED_COOKED
-          // FRESCO-366: discard rate per menu is a product-quality metric.
-          : POSTHOG_EVENTS.RECIPE_MARKED_DISCARDED,
-      );
+      if (mark.estado === 'pendiente') {
+        // FRESCO-1014: a committed mark taken back (not the in-window "Deshacer", which never reaches the server).
+        captureEvent(POSTHOG_EVENTS.RECIPE_MARK_UNDONE, { estado: mark.prevEstado, committed: true });
+      }
+      else {
+        captureEvent(
+          mark.estado === 'cocinada'
+            // "usados" half of the North-star KPI (ADR-0013).
+            ? POSTHOG_EVENTS.RECIPE_MARKED_COOKED
+            // FRESCO-366: discard rate per menu is a product-quality metric.
+            : POSTHOG_EVENTS.RECIPE_MARKED_DISCARDED,
+        );
+      }
     }
     catch (error) {
       console.error('[CalendarGrid] updateRecipeStatus failed', error);
@@ -114,7 +125,7 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
    * The UI updates optimistically; the backend write is deferred by a 5s
    * undo window (snackbar). Marking a second slot flushes the first.
    */
-  const handleMarkEstado = React.useCallback(({ dia, tipo, estado }: { dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada' }) => {
+  const handleMarkEstado = React.useCallback(({ dia, tipo, estado }: { dia: DiaSemana, tipo: TipoPlato, estado: 'cocinada' | 'descartada' | 'pendiente' }) => {
     const id = slotId({ dia, tipo });
     if (pendingSlots.has(id)) {
       return;

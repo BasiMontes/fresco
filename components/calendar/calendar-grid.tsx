@@ -228,6 +228,8 @@ export function CalendarGrid({
                     dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
                     pending={pendingSlots.has(slotId({ dia, tipo }))}
                     onMark={estado => void handleMarkEstado({ dia, tipo, estado })}
+                    // FRESCO-1014: marks can be switched or taken back in the current week only (Madrid frame).
+                    canChangeMark={diaHoy !== undefined}
                     // FRESCO-183/FRESCO-271: only the visible day window is
                     // ever rendered now (see `useVisibleDayWindow`), so
                     // every currently-rendered slot is by definition in the
@@ -270,7 +272,7 @@ export function CalendarGrid({
           className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-lg bg-primary px-4 py-2.5 text-body-sm text-on-brand shadow-lg"
         >
           <span>
-            {pendingMark.estado === 'cocinada' ? 'Marcado como cocinado' : 'Marcado como descartado'}
+            {pendingMark.estado === 'cocinada' ? 'Marcado como cocinado' : pendingMark.estado === 'descartada' ? 'Marcado como descartado' : 'Marca quitada'}
           </span>
           <button
             type="button"

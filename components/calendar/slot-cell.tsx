@@ -7,7 +7,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useRouter } from 'next/navigation';
 import { SlotContent } from '@/components/calendar/slot-content';
 import { SlotDragHandle } from '@/components/calendar/slot-drag-handle';
-import { SlotEstadoBadge, SlotMarkControls } from '@/components/calendar/slot-mark-controls';
+import { SlotChangeMarkControls, SlotEstadoBadge, SlotMarkControls } from '@/components/calendar/slot-mark-controls';
 import { useSlotDnd } from '@/components/calendar/use-slot-dnd';
 import { RecipeCardMedia } from '@/components/recipe/recipe-card-media';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,9 @@ export interface SlotCellProps {
   /** True while a slot of a DIFFERENT `tipo` is being dragged — this cell can never be a valid drop target for it. */
   dropDisabled: boolean
   /** STORY-FRESCO-15 — marks this slot cocinada/descartada; no-ops if not pendiente. */
-  onMark: (estado: 'cocinada' | 'descartada') => void
+  onMark: (estado: 'cocinada' | 'descartada' | 'pendiente') => void
+  /** FRESCO-1014 (A7-UI-15): true in the CURRENT week — a mark can be switched or taken back there. */
+  canChangeMark?: boolean
   /** FRESCO-183 — true for slots in the grid's visible (unscrolled) day range; loads the image eagerly instead of lazily. */
   priority: boolean
 }
@@ -57,7 +59,7 @@ export interface SlotCellProps {
  * `SlotContent`, mark controls in `slot-mark-controls.tsx`. This file only
  * composes them and owns the navigation + root styling.
  */
-export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDisabled, onMark, priority }: SlotCellProps) {
+export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDisabled, onMark, canChangeMark = false, priority }: SlotCellProps) {
   const router = useRouter();
   const slotKey: SlotKey = { dia, tipo };
 
@@ -143,6 +145,10 @@ export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDis
 
         {recipe && estado !== 'pendiente' && (
           <SlotEstadoBadge dia={dia} tipo={tipo} estado={estado} />
+        )}
+
+        {recipe && canChangeMark && (estado === 'cocinada' || estado === 'descartada') && (
+          <SlotChangeMarkControls dia={dia} tipo={tipo} estado={estado} pending={pending} onMark={onMark} />
         )}
       </div>
     </div>
