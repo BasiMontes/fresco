@@ -364,6 +364,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_rate_limits: {
+        Row: {
+          count: number
+          endpoint: string
+          key_hash: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          endpoint: string
+          key_hash: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          endpoint?: string
+          key_hash?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           count: number
@@ -783,18 +804,27 @@ export type Database = {
       }
       waitlist_signups: {
         Row: {
+          confirm_token_hash: string | null
+          confirmation_sent_at: string | null
+          confirmed_at: string | null
           consent_version: string
           created_at: string
           email: string
           id: string
         }
         Insert: {
+          confirm_token_hash?: string | null
+          confirmation_sent_at?: string | null
+          confirmed_at?: string | null
           consent_version: string
           created_at?: string
           email: string
           id?: string
         }
         Update: {
+          confirm_token_hash?: string | null
+          confirmation_sent_at?: string | null
+          confirmed_at?: string | null
           consent_version?: string
           created_at?: string
           email?: string
@@ -951,6 +981,26 @@ export type Database = {
           p_window_seconds: number
         }
         Returns: boolean
+      }
+      check_ip_rate_limit: {
+        Args: { p_endpoint: string, p_key_hash: string, p_limit: number }
+        Returns: boolean
+      }
+      cleanup_abandoned_guests: {
+        Args: { p_max_age?: string }
+        Returns: number
+      }
+      confirm_waitlist_signup: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
+      remove_waitlist_signup: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
+      request_waitlist_signup: {
+        Args: { p_email: string, p_token_hash: string, p_version: string }
+        Returns: string
       }
       confirm_ingredient_substitution: {
         Args: {
