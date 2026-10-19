@@ -73,6 +73,23 @@ export async function expectNoA11yViolations(
   }
 }
 
+/**
+ * FRESCO-1013 — runs ONLY the named axe rules and fails on any violation of them, whatever its impact. The
+ * default gate above blocks serious/critical and only warns on moderate ones; the rules the 7b audit found
+ * (`skip-link`, `heading-order`, `scrollable-region-focusable`...) must not report at all, and
+ * `label-content-name-mismatch` is an experimental rule that axe leaves off unless it is asked for by name.
+ */
+export async function expectNoRuleViolations(page: Page, rules: string[]): Promise<void> {
+  await page.waitForFunction(() => document.title.length > 0, undefined, { timeout: 5000 }).catch(() => {});
+  const results = await new AxeBuilder({ page }).withRules(rules).analyze();
+  if (results.violations.length > 0) {
+    throw new Error(
+      `[a11y] ${results.violations.length} violación(es) de ${rules.join(', ')} en ${page.url()}:\n${
+        results.violations.map(describeViolation).join('\n')}`,
+    );
+  }
+}
+
 /** FRESCO-819 (A6-L10): WCAG 2.5.5 / Apple HIG touch target, the audit's 44 px floor. */
 export const MIN_TOUCH_TARGET_PX = 44;
 

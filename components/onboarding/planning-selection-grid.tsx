@@ -77,7 +77,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                 <button
                   type="button"
                   data-testid="planning_meal_select_all"
-                  aria-label={`Marcar ${meal.label.toLowerCase()} todos los días`}
+                  aria-label={`Todos: marcar ${meal.label.toLowerCase()} todos los días`}
                   className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-2 hover:text-primary hover:underline"
                   onClick={() => setMeal(meal.value, true)}
                 >
@@ -86,7 +86,7 @@ export function PlanningSelectionGrid({ value, onChange, 'data-testid': dataTest
                 <button
                   type="button"
                   data-testid="planning_meal_select_none"
-                  aria-label={`Desmarcar ${meal.label.toLowerCase()} todos los días`}
+                  aria-label={`Ninguno: desmarcar ${meal.label.toLowerCase()} todos los días`}
                   className="inline-flex min-h-11 min-w-11 items-center justify-center underline-offset-2 hover:text-primary hover:underline"
                   onClick={() => setMeal(meal.value, false)}
                 >

@@ -105,7 +105,7 @@ describe('PlanningSelectionGrid', () => {
     const onChange = mock(() => {});
     render({ onChange });
 
-    await user.click(screen.getByRole('button', { name: 'Marcar almuerzo todos los días' }));
+    await user.click(screen.getByRole('button', { name: 'Todos: marcar almuerzo todos los días' }));
 
     expect(onChange).toHaveBeenCalledWith({
       lunes: ['comida'],
@@ -128,7 +128,7 @@ describe('PlanningSelectionGrid', () => {
     };
     render({ value, onChange });
 
-    await user.click(screen.getByRole('button', { name: 'Desmarcar almuerzo todos los días' }));
+    await user.click(screen.getByRole('button', { name: 'Ninguno: desmarcar almuerzo todos los días' }));
 
     expect(onChange).toHaveBeenCalledWith({
       ...value,

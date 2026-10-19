@@ -2,9 +2,22 @@ import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
 import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/** Spoken forms of the day, with their accent, for the accessible names below. */
+const DIA_HABLADO: Record<DiaSemana, string> = {
+  lunes: 'lunes',
+  martes: 'martes',
+  miercoles: 'miércoles',
+  jueves: 'jueves',
+  viernes: 'viernes',
+  sabado: 'sábado',
+  domingo: 'domingo',
+};
+
 interface SlotMarkControlsProps {
   dia: DiaSemana
   tipo: TipoPlato
+  /** The dish in this slot: the accessible name says which one is being marked (FRESCO-1013, A7-UI-05). */
+  nombre?: string | null
   pending: boolean
   /** STORY-FRESCO-15 — marks this slot cocinada/descartada; no-ops if not pendiente. */
   onMark: (estado: 'cocinada' | 'descartada') => void
@@ -18,13 +31,16 @@ interface SlotMarkControlsProps {
  * 1440px) the two labels do not fit side by side, so they stack instead of
  * overflowing the card; wide columns still show one row.
  */
-export function SlotMarkControls({ dia, tipo, pending, onMark }: SlotMarkControlsProps) {
+export function SlotMarkControls({ dia, tipo, nombre, pending, onMark }: SlotMarkControlsProps) {
+  // FRESCO-1013 (A7-UI-05, WCAG 2.5.3 Label in Name): the name STARTS with the visible word, so "pulsa Descartar"
+  // matches, and it carries the dish and the slot, so twenty-one identical buttons are told apart.
+  const donde = `${nombre ? `${nombre}, ` : ''}${DIA_HABLADO[dia]}, ${tipo}`;
   return (
     <div className="mt-auto flex flex-wrap gap-2 pt-3">
       <button
         type="button"
         data-testid={`calendar_slot_${dia}_${tipo}_mark_cocinada`}
-        aria-label="Marcar como cocinado"
+        aria-label={`Cocinado: ${donde}`}
         disabled={pending}
         onClick={(event) => {
           event.stopPropagation();
@@ -38,7 +54,7 @@ export function SlotMarkControls({ dia, tipo, pending, onMark }: SlotMarkControl
       <button
         type="button"
         data-testid={`calendar_slot_${dia}_${tipo}_mark_descartada`}
-        aria-label="Marcar como descartado"
+        aria-label={`Descartar: ${donde}`}
         disabled={pending}
         onClick={(event) => {
           event.stopPropagation();

@@ -20,3 +20,14 @@ describe('not-found page', () => {
     expect(screen.getByTestId('not_found_home_link')).toHaveAttribute('href', '/');
   });
 });
+
+/** FRESCO-1013 (A7-UI-01): the root layout's skip link targets #main; a 404 without it had no landmark. */
+describe('not-found landmark', () => {
+  test('the content sits in <main id="main">, the target of the skip link', () => {
+    const { container } = renderWithProviders(<NotFound />);
+
+    const main = container.querySelector('main#main');
+    expect(main).not.toBeNull();
+    expect(main?.querySelector('h1')).not.toBeNull();
+  });
+});

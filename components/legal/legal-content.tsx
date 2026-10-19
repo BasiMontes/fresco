@@ -6,12 +6,19 @@ import {
 } from '@/components/legal/legal-content-data';
 
 /** Shared prose block for Términos/Privacidad — same JSX the modal used inline, extracted so `LegalModal` and the real `/legal/*` routes render identical content instead of two copies that can drift. */
-function SectionList({ sections }: { sections: { title: string, body: string }[] }) {
+/**
+ * FRESCO-1013 (A7-UI-03): `headingLevel` follows the page. On `/legal/*` the page title is the `h1`, so the
+ * sections are `h2`; inside `LegalModal` the dialog title is an `h2`, so they stay `h3`. Same visual class.
+ */
+export type SectionHeadingLevel = 'h2' | 'h3';
+
+function SectionList({ sections, headingLevel }: { sections: { title: string, body: string }[], headingLevel: SectionHeadingLevel }) {
+  const Heading = headingLevel;
   return (
     <div className="flex flex-col gap-4">
       {sections.map(({ title, body }) => (
         <div key={title}>
-          <h3 className="text-label mb-1">{title}</h3>
+          <Heading className="text-label mb-1">{title}</Heading>
           <p>{body}</p>
         </div>
       ))}
@@ -19,18 +26,18 @@ function SectionList({ sections }: { sections: { title: string, body: string }[]
   );
 }
 
-export function TermsContent() {
+export function TermsContent({ headingLevel = 'h3' }: { headingLevel?: SectionHeadingLevel }) {
   return (
     <div data-testid="legal_content_terminos">
-      <SectionList sections={TERMS_SECTIONS} />
+      <SectionList sections={TERMS_SECTIONS} headingLevel={headingLevel} />
     </div>
   );
 }
 
-export function PrivacyContent() {
+export function PrivacyContent({ headingLevel = 'h3' }: { headingLevel?: SectionHeadingLevel }) {
   return (
     <div data-testid="legal_content_privacidad">
-      <SectionList sections={PRIVACY_SECTIONS} />
+      <SectionList sections={PRIVACY_SECTIONS} headingLevel={headingLevel} />
     </div>
   );
 }
@@ -55,7 +62,14 @@ export function CookiesContent() {
   return (
     <div data-testid="legal_content_cookies">
       <p>Estas son las cookies que usa Fresco:</p>
-      <div className="mt-4 overflow-x-auto">
+      {/* FRESCO-1013 (A7-UI-02): at 360 px the table is wider than its box and scrolls inside it. A scroll
+          region must take focus, or a keyboard user cannot reach the columns that are off-screen (WCAG 2.1.1). */}
+      <div
+        className="mt-4 overflow-x-auto"
+        role="region"
+        aria-label="Tabla de cookies"
+        tabIndex={0}
+      >
         <table data-testid="cookie_policy_table" className="w-full text-left text-body-sm">
           <thead>
             <tr className="border-b border-border text-label">
