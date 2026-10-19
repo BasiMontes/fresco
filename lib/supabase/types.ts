@@ -527,6 +527,7 @@ export type Database = {
           coste_estimado_max: number
           coste_estimado_min: number
           created_at: string
+          desactualizada_desde: string | null
           id: string
           items: Json
           meal_plan_id: string
@@ -537,6 +538,7 @@ export type Database = {
           coste_estimado_max?: number
           coste_estimado_min?: number
           created_at?: string
+          desactualizada_desde?: string | null
           id?: string
           items?: Json
           meal_plan_id: string
@@ -547,6 +549,7 @@ export type Database = {
           coste_estimado_max?: number
           coste_estimado_min?: number
           created_at?: string
+          desactualizada_desde?: string | null
           id?: string
           items?: Json
           meal_plan_id?: string
