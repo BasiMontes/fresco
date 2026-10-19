@@ -1,6 +1,6 @@
 # Stripe go-live: the mode guard and the webhook endpoints
 
-What must be true, and in what order, when production starts charging with live Stripe keys (FRESCO-1001, ADR-0061). FRESCO-1004 owns the full go-live list; the lines below are the ones this guard adds to it.
+What must be true, and in what order, when production starts charging with live Stripe keys (FRESCO-1001, ADR-0061; the checklist is FRESCO-1004). Start with the checklist below: one command reads every item it can and exits 1 while anything is missing.
 
 ## Why there is a guard
 
@@ -14,8 +14,32 @@ Every environment shares one Supabase project and one Stripe account. `fresco-pr
 
 A deploy or database whose mode cannot be read makes the webhook answer 500 (Stripe retries) and the checkout answer 500. A deploy and a database of different modes make the checkout answer 503.
 
+## The go-live checklist
+
+```bash
+bunx varlock run -- bun scripts/check-stripe-go-live.ts              # with the key of the mode you are checking
+bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning # once the dunning line below is confirmed
+```
+
+Read-only: it prints names, ids and booleans, never a value. Run it once with the **test** key now and once with the **live** key before the flip. Stripe keeps the two modes apart, so a line that passes in test mode proves nothing about live: the live account has its own portal configuration, webhook endpoint and prices. The Vercel and Supabase lines do not depend on the mode. The command exits 0 only when every line is `PASS` (a `WARN` does not block).
+
+| Line | What must be true | Where you set it | Checked by the script |
+|---|---|---|---|
+| `portal-default` and its features | The **default** Billing Portal configuration is active, lets a customer **cancel the subscription** and **update the payment method**. Without it nobody can cancel on the first day. Invoice history is recommended (`WARN` when off) | Stripe dashboard -> Settings -> Billing -> Customer portal. Do it in **live mode**: the test configuration does not exist there | Yes |
+| `webhook-endpoint` | An enabled endpoint points at the production host (`.agents/project.yaml` -> `environments.production.web_url`) and is subscribed to every event in `lib/billing/handled-events.ts`: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `charge.dispute.created`. A dispute not subscribed is a chargeback that keeps the account Pro | Developers -> Webhooks, in live mode. Copy the signing secret into the Vercel production scope as `STRIPE_WEBHOOK_SECRET_PROD` | Yes |
+| `price-month`, `price-year` | A fixed recurring **euro** price, active, billed every month (year), with **`tax_behavior` set to `inclusive` or `exclusive`**. Stripe lets an unspecified price be set once, so decide before the live prices are used. The app prints "IVA incluido" next to the price only when it is `inclusive` (checkout summary, landing and confirmation email). The annual id is optional: without it the annual plan stays hidden (`WARN`) | Create the live prices with `tax_behavior` in the dashboard (Product catalog). The decision depends on the owner's tax status (FRESCO-911, FRESCO-883) and on clause 6.2 of the lawyer draft | Yes |
+| `vercel-production-names` | The production scope holds `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO_MONTH`, `CRON_SECRET`, one of `STRIPE_WEBHOOK_SECRET_PROD` / `STRIPE_WEBHOOK_SECRET`, and one of `RESEND_API_KEY` / `GMAIL_SMTP_APP_PASSWORD` (the sender line below). `STRIPE_PRICE_ID_PRO_ANUAL` is needed for the annual plan | Vercel -> the project -> Settings -> Environment Variables, **Production** scope only. Preview keeps the test values | Names only |
+| `supabase-secrets-names` | The Edge Functions hold `STRIPE_SECRET_KEY`. It must be the **live** key at the same moment as the Vercel one, or the functions talk to the other mode's customers | `supabase secrets set STRIPE_SECRET_KEY=<key>` typed in your own terminal at the flip; never through a chat | Name only: a secret's value cannot be read back |
+| `dunning` | Failed payments: Smart Retries on, and when retries run out the action is **cancel the subscription**. The webhook downgrades on `unpaid` and on `deleted`; a setting that only marks the invoice uncollectible leaves the subscription alive. The grace is capped at 30 days in code (`isProEntitlementActive`) | Stripe dashboard -> Settings -> Billing -> Subscriptions and emails -> Manage failed payments | **No**: Stripe has no API for it. It stays `MANUAL` and blocks until you run with `--ack dunning` |
+
+The withdrawal text and the "IVA incluido" rendering are code, not settings:
+
+- The 14-day withdrawal is explained in the Terms (`/legal/terminos`, section 7) and in the checkout summary, next to the waiver checkbox: how to withdraw, until when, and a model text. The wording is the lawyer draft's, **provisional** until the lawyer validates it (FRESCO-365, FRESCO-434).
+- "IVA incluido" is printed in the landing, the summary and the subscription confirmation email exactly when the Price is `inclusive`, and never otherwise.
+
 ## Before the flip
 
+- [ ] `bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning` exits 0 with the **live** key (the checklist above).
 - [ ] The migration that creates `billing_mode` is on the hosted database: `supabase migration list --linked` shows it applied. Without it the webhook answers 500.
 - [ ] Every Stripe endpoint points at a deploy of the **current SHA**. For each environment that has an enabled endpoint, `vercel inspect https://<host>` and compare its creation time with the commit being released. A stale deploy is a second writer of subscription state (A7-PAY-03).
 - [ ] The endpoints match the deploys this repo serves. Run it once per mode, with the test key and with the live key:
@@ -44,7 +68,7 @@ A deploy or database whose mode cannot be read makes the webhook answer 500 (Str
 Order matters. Production must have the live keys and the database must say live in the same window; between the two steps the checkout answers 503 and the webhook refuses events, which is safe and recoverable (Stripe retries a refused event).
 
 1. In the Stripe dashboard, in **live mode**, register the production endpoint and copy its signing secret.
-2. In Vercel, set the production scope's live `STRIPE_SECRET_KEY`, live webhook secret and live price ids. Do not touch the Preview scope: `fresco-pre` and `fresco-dev` keep test keys.
+2. In Vercel, set the production scope's live `STRIPE_SECRET_KEY`, live webhook secret and live price ids. Do not touch the Preview scope: `fresco-pre` and `fresco-dev` keep test keys. In the same window set the Supabase Edge secret `STRIPE_SECRET_KEY` to the live key (`supabase secrets set`, typed in your terminal): the Edge Functions read it, and a test key there against live customers fails quietly.
 3. Flip the database (the Management API runs it as `postgres`; no client role and not even the service role can write this table):
 
    ```bash

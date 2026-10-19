@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { handleDisputeCreated } from '@/lib/billing/dispute-handler';
 import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
+import { HANDLED_EVENT_TYPES } from '@/lib/billing/handled-events';
 import { handleChargeRefunded } from '@/lib/billing/refund-handler';
 import { isEndedSubscription, isTransientStripeError, retrieveLiveSubscription } from '@/lib/billing/stripe-errors';
 import { describeModeVerdict, judgeStripeEventMode } from '@/lib/billing/stripe-mode';
@@ -13,6 +14,13 @@ import { captureServerEvent } from '@/lib/posthog/server';
 import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
 import { getProPriceIds, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
+
+/**
+ * Explicit on purpose: without Fluid compute the Hobby default is 10 s, and a handler
+ * (Stripe lookup, writes, email) can take longer. 60 s is the limit the claim TTL
+ * (webhook-events.ts) is sized against; Fluid compute's higher limits are not relied upon.
+ */
+export const maxDuration = 60;
 
 /**
  * POST /api/stripe/webhook — the ONLY writer of `user_profiles.plan` /
@@ -91,23 +99,6 @@ import { createServiceClient } from '@/lib/supabase/service';
  * The exception (ADR-0062) is a TRANSIENT Stripe failure (5xx, 429, a failed connection): it
  * gives the claim back and answers 500, because Stripe's outage passes and the retry succeeds.
  */
-/** Event types this route acts on; only these are claimed in `stripe_webhook_events`. */
-const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
-  'checkout.session.completed',
-  'checkout.session.async_payment_succeeded',
-  'customer.subscription.updated',
-  'customer.subscription.deleted',
-  'charge.refunded',
-  'charge.dispute.created',
-]);
-
-/**
- * Explicit on purpose: without Fluid compute the Hobby default is 10 s, and a handler
- * (Stripe lookup, writes, email) can take longer. 60 s is the limit the claim TTL
- * (webhook-events.ts) is sized against; Fluid compute's higher limits are not relied upon.
- */
-export const maxDuration = 60;
-
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = resolveWebhookSecret();
