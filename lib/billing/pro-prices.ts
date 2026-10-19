@@ -7,6 +7,12 @@ export interface ProPrices {
   month: number
   /** Annual price in euros, or `null` when this environment has no annual price configured. */
   year: number | null
+  /**
+   * FRESCO-1004 (audit 7b A7-LAUNCH-05): true only when EVERY price shown is declared tax-inclusive by
+   * Stripe (`tax_behavior: 'inclusive'`). "IVA incluido" is printed exactly when this is true: an
+   * `unspecified` or `exclusive` price must never be shown as VAT included.
+   */
+  taxIncluded: boolean
 }
 
 /** The Pro prices are public marketing copy: an hour of staleness is fine, and it spares Stripe a read per visit. */
@@ -17,7 +23,7 @@ const PRICES_REVALIDATE_SECONDS = 3600;
  * a plain "X €/period" figure (not configured, not euros, or a period that does
  * not match the one we asked for, which is a misconfigured price id).
  */
-async function readPrice(interval: 'month' | 'year'): Promise<number | null> {
+async function readPrice(interval: 'month' | 'year'): Promise<{ amount: number, taxIncluded: boolean } | null> {
   const priceId = getProPriceId(interval);
   if (!priceId) {
     return null;
@@ -27,7 +33,7 @@ async function readPrice(interval: 'month' | 'year'): Promise<number | null> {
     console.error(`[pro-prices] ${priceId} is not a plain ${interval}ly euro price`);
     return null;
   }
-  return price.unit_amount / 100;
+  return { amount: price.unit_amount / 100, taxIncluded: price.tax_behavior === 'inclusive' };
 }
 
 /**
@@ -41,7 +47,7 @@ export async function readProPrices(): Promise<ProPrices> {
   if (month === null) {
     throw new Error('The monthly Pro price is not available.');
   }
-  return { month, year };
+  return { month: month.amount, year: year?.amount ?? null, taxIncluded: month.taxIncluded && (year === null || year.taxIncluded) };
 }
 
 // Cached only on success: `unstable_cache` does not store a thrown error, so a

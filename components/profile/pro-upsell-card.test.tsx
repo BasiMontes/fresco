@@ -47,14 +47,14 @@ describe('ProUpsellCard — trial already used', () => {
  */
 describe('ProUpsellCard — prices from Stripe', () => {
   test('offers the annual plan, with what it saves, next to the monthly one', () => {
-    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 4.99, year: 44.99 }} />);
+    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 4.99, year: 44.99, taxIncluded: false }} />);
 
     expect(card().textContent).toContain('Después, 4,99€/mes.');
     expect(card().textContent).toContain('O 44,99€/año (ahorras 14,89€).');
   });
 
   test('shows the annual price to someone who already used the trial, still charged from day one', () => {
-    renderWithProviders(<ProUpsellCard trialAvailable={false} prices={{ month: 4.99, year: 44.99 }} />);
+    renderWithProviders(<ProUpsellCard trialAvailable={false} prices={{ month: 4.99, year: 44.99, taxIncluded: false }} />);
 
     expect(card().textContent).toContain('4,99€/mes o 44,99€/año');
     expect(card().textContent).toContain('se cobra desde el primer día');
@@ -62,16 +62,35 @@ describe('ProUpsellCard — prices from Stripe', () => {
   });
 
   test('stays monthly-only when Stripe has no annual price', () => {
-    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 4.99, year: null }} />);
+    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 4.99, year: null, taxIncluded: false }} />);
 
     expect(card().textContent).toContain('Después, 4,99€/mes.');
     expect(card().textContent).not.toContain('/año');
   });
 
   test('uses the amount Stripe returns, not a typed one', () => {
-    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 5.99, year: null }} />);
+    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 5.99, year: null, taxIncluded: false }} />);
 
     expect(card().textContent).toContain('5,99€/mes');
     expect(card().textContent).not.toContain('4,99€');
+  });
+});
+
+// FRESCO-1004 (A7-LAUNCH-05): "IVA incluido" exactly when Stripe declares the prices tax-inclusive.
+describe('ProUpsellCard — IVA incluido', () => {
+  test.each([true, false])('trial available %p: says it only when the prices are tax-inclusive', (trialAvailable) => {
+    renderWithProviders(<ProUpsellCard trialAvailable={trialAvailable} prices={{ month: 4.99, year: 44.99, taxIncluded: true }} />);
+
+    expect(card().textContent).toContain('IVA incluido');
+  });
+
+  test('does not claim it when the prices are not tax-inclusive or could not be read', () => {
+    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 4.99, year: 44.99, taxIncluded: false }} />);
+    expect(card().textContent).not.toContain('IVA');
+  });
+
+  test('does not claim it when there are no prices at all', () => {
+    renderWithProviders(<ProUpsellCard trialAvailable prices={null} />);
+    expect(card().textContent).not.toContain('IVA');
   });
 });

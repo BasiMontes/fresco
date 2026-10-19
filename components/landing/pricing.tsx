@@ -46,10 +46,10 @@ function PlanFeature({ label, highlighted }: { label: string, highlighted?: bool
 
 // FRESCO-871: the amounts come from Stripe (`getProPrices`); this is what the
 // section says when they cannot be read, i.e. the page as it was before the annual plan.
-const FALLBACK_PRICES: ProPrices = { month: 4.99, year: null };
+const FALLBACK_PRICES: ProPrices = { month: 4.99, year: null, taxIncluded: false };
 
 export function Pricing({ prices }: { prices: ProPrices | null }) {
-  const { month, year } = prices ?? FALLBACK_PRICES;
+  const { month, year, taxIncluded } = prices ?? FALLBACK_PRICES;
   const savings = prices ? yearlySavingsEuros(prices) : null;
 
   return (
@@ -87,6 +87,10 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
               {formatEuros(month)}
               <span className="text-body-md font-normal text-tertiary">/mes</span>
             </p>
+            {/* FRESCO-1004: only when Stripe declares the prices tax-inclusive; the fallback copy never claims it. */}
+            {taxIncluded && (
+              <p className="mb-1 text-body-sm text-tertiary" data-testid="landing_pro_tax_included">IVA incluido</p>
+            )}
             {year !== null && (
               <p className="mb-1 text-body-sm text-text" data-testid="landing_pro_annual_price">
                 {`o ${formatEuros(year)}/año`}

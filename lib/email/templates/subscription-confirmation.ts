@@ -17,6 +17,8 @@ export interface SubscriptionConfirmationEmailParams {
   nextRenewalDateFormatted: string
   /** Set while the subscription is in its free trial: nothing is charged today (FRESCO-1005). */
   trialDays?: number
+  /** FRESCO-1004: true only when Stripe declares the Price tax-inclusive, and then the email says "IVA incluido". It never claims it otherwise. */
+  taxIncluded?: boolean
   /** Absolute URL to `/profile`, where the user manages/cancels the subscription. */
   manageSubscriptionUrl: string
 }
@@ -49,11 +51,12 @@ function escapeHtml(value: string): string {
  * scope for this ticket (tracked separately).
  */
 export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConfirmationEmailParams): string {
-  const { priceFormatted, interval, nextRenewalDateFormatted, trialDays, manageSubscriptionUrl } = params;
+  const { priceFormatted, interval, nextRenewalDateFormatted, trialDays, taxIncluded, manageSubscriptionUrl } = params;
+  const taxNote = taxIncluded ? ' (IVA incluido)' : '';
   const intervalLabel = interval === 'year' ? 'anual' : 'mensual';
   const priceLine = trialDays
-    ? `Importe cobrado hoy: <strong>0 €</strong> (prueba gratuita de ${trialDays} días). Primer cobro de <strong>${escapeHtml(priceFormatted)}</strong> el <strong>${escapeHtml(nextRenewalDateFormatted)}</strong> (impuestos incluidos donde apliquen).`
-    : `Importe total cobrado: <strong>${escapeHtml(priceFormatted)}</strong> (impuestos incluidos donde apliquen).`;
+    ? `Importe cobrado hoy: <strong>0 €</strong> (prueba gratuita de ${trialDays} días). Primer cobro de <strong>${escapeHtml(priceFormatted)}</strong> el <strong>${escapeHtml(nextRenewalDateFormatted)}</strong>${taxNote}.`
+    : `Importe total cobrado: <strong>${escapeHtml(priceFormatted)}</strong>${taxNote}.`;
 
   return `<!DOCTYPE html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
