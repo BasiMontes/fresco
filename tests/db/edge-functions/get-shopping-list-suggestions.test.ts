@@ -55,4 +55,19 @@ describe.skipIf(!(RUN && reachable))('get-shopping-list-suggestions — HTTP neg
 
     expect(res.status).toBe(404);
   });
+
+  test('a malformed saved item is skipped instead of failing the request (FRESCO-1015)', async () => {
+    const user = await ctx.createUser();
+    const plan = await seedMealPlan(user);
+    // Lists written before jsonb_add_item rejected non-objects can hold items like these.
+    const listId = await seedShoppingList(user, plan.id, [
+      { nombre: 'Verduras', orden: 1, items: ['Tomate', null, { comprado: true }, { nombre: 'Pimiento', comprado: false }] },
+      'Roto',
+      { nombre: 'Sin items', orden: 3 },
+    ]);
+
+    const res = await callFunction(ENDPOINT, { token: user.token, body: { shopping_list_id: listId } });
+
+    expect(res.status).toBe(200);
+  });
 });

@@ -14,6 +14,7 @@ const resetMock = mock(async (_email: string, _options: unknown) => ({ error: nu
 
 const getUserMock = mock(async (): Promise<{ data: { user: { id: string, is_anonymous: boolean } | null } }> => ({ data: { user: { id: 'user-1', is_anonymous: true } } }));
 const updateUserMock = mock(async (_attributes: unknown) => ({ data: { user: null }, error: null }));
+const getClaimsMock = mock(async (): Promise<{ data: { claims: { amr?: ({ method: string } | string)[] } } | null }> => ({ data: { claims: { amr: [{ method: 'password' }] } } }));
 const verifyOtpMock = mock(async (_params: unknown) => ({ data: { session: null }, error: null }));
 const setSessionMock = mock(async (_tokens: unknown) => ({ data: { user: null }, error: null }));
 const anonymousMock = mock(async (_options: unknown) => ({ data: { session: null }, error: null }));
@@ -31,6 +32,7 @@ void mock.module('@/lib/supabase/client', () => ({
       getUser: getUserMock,
       updateUser: updateUserMock,
       verifyOtp: verifyOtpMock,
+      getClaims: getClaimsMock,
       setSession: setSessionMock,
       signUp: signUpMock,
       resend: resendMock,
@@ -38,7 +40,7 @@ void mock.module('@/lib/supabase/client', () => ({
   }),
 }));
 
-const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, resendSignupConfirmation, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
+const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, resendSignupConfirmation, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, getSessionAuthMethods, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
 
 beforeEach(() => {
   signOutMock.mockClear();
@@ -49,6 +51,7 @@ beforeEach(() => {
   anonymousMock.mockClear();
   getUserMock.mockClear();
   updateUserMock.mockClear();
+  getClaimsMock.mockClear();
   verifyOtpMock.mockClear();
   setSessionMock.mockClear();
   signUpMock.mockClear();
@@ -165,6 +168,26 @@ describe('guest-to-account conversion (FRESCO-89)', () => {
     await updatePassword('secret-pass');
 
     expect(updateUserMock).toHaveBeenCalledWith({ password: 'secret-pass' });
+  });
+
+  test('updatePassword sends the current password when there is one (FRESCO-1015)', async () => {
+    await updatePassword('secret-pass', 'old-pass');
+
+    expect(updateUserMock).toHaveBeenCalledWith({ password: 'secret-pass', current_password: 'old-pass' });
+  });
+
+  test('getSessionAuthMethods reads the amr claim, objects and plain strings alike (FRESCO-1015)', async () => {
+    getClaimsMock.mockResolvedValueOnce({ data: { claims: { amr: [{ method: 'recovery' }, 'token_refresh'] } } });
+
+    expect(await getSessionAuthMethods()).toEqual(['recovery', 'token_refresh']);
+  });
+
+  test('getSessionAuthMethods is null when the token carries no readable amr (FRESCO-1015)', async () => {
+    getClaimsMock.mockResolvedValueOnce({ data: null });
+    expect(await getSessionAuthMethods()).toBeNull();
+
+    getClaimsMock.mockResolvedValueOnce({ data: { claims: {} } });
+    expect(await getSessionAuthMethods()).toBeNull();
   });
 });
 
