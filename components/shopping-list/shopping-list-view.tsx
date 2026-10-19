@@ -118,10 +118,16 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
         fuentesPrecios={fuentesPrecios}
       />
 
+      {/* FRESCO-1014 (A7-UI-10): a toast pinned above the tab bar, not a paragraph under the summary that a
+          shopper scrolled past cannot see; `role="alert"` announces it to a screen reader. */}
       {errorMessage && (
-        <p data-testid="shopping_list_toggle_error_message" className="mt-2 text-body-sm text-error">
+        <div
+          data-testid="shopping_list_toggle_error_message"
+          role="alert"
+          className="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-md rounded-md border-l-4 border-error bg-surface p-3 text-body-sm text-error shadow-lg"
+        >
           {errorMessage}
-        </p>
+        </div>
       )}
 
       <ShoppingListSuggestions

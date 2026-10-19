@@ -6,6 +6,9 @@ import { getShoppingListSuggestions } from '@/lib/api/edge-functions';
 import { getAccessToken } from '@/lib/client-api/auth';
 import { addShoppingListItem, clearComprados, removeShoppingListItem, toggleShoppingListItem } from '@/lib/client-api/shopping-list';
 
+/** FRESCO-1014: shown while ticks are waiting for the connection. */
+const OFFLINE_MESSAGE = 'Sin conexión. Hemos dejado marcado el producto y lo guardaremos cuando vuelva la señal. Mantén esta pantalla abierta.';
+
 interface UseShoppingListArgs {
   list: ShoppingListPersistido
   /** Called after a failed toggle has been reverted, so the view can shake that row. */
@@ -29,6 +32,14 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
   const [pasillos, setPasillos] = React.useState(list.pasillos);
   const [suggestions, setSuggestions] = React.useState<ShoppingListSuggestion[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  // FRESCO-1014 (A7-UI-10): ticks that could not reach the server for lack of signal, kept here (name-keyed, so
+  // they survive the list changing under them) and sent when the connection returns. In memory only: they
+  // live as long as this screen does, which the notice says.
+  const pendingToggles = React.useRef(new Map<string, { pasilloNombre: string, itemNombre: string, comprado: boolean }>());
+  const pasillosRef = React.useRef(pasillos);
+  React.useEffect(() => {
+    pasillosRef.current = pasillos;
+  }, [pasillos]);
   const pasillosOriginales = React.useMemo(() => new Set(list.pasillos.map(p => p.nombre)), [list.pasillos]);
 
   React.useEffect(() => {
@@ -76,14 +87,59 @@ export function useShoppingList({ list, onToggleFailure }: UseShoppingListArgs) 
     );
   }
 
+  /** Sends every tick that was waiting for the connection; whatever still fails stays queued. */
+  const flushPendingToggles = React.useCallback(async () => {
+    for (const [key, pending] of [...pendingToggles.current]) {
+      const pasilloIdx = pasillosRef.current.findIndex(p => p.nombre === pending.pasilloNombre);
+      const itemIdx = pasilloIdx < 0 ? -1 : pasillosRef.current[pasilloIdx].items.findIndex(i => i.nombre === pending.itemNombre);
+      if (itemIdx < 0) {
+        // The item is gone from the list (bought and cleared, removed): nothing left to tick.
+        pendingToggles.current.delete(key);
+        continue;
+      }
+      try {
+        await toggleShoppingListItem({ listId: list.id, pasilloIdx, itemIdx, comprado: pending.comprado });
+        pendingToggles.current.delete(key);
+      }
+      catch (error) {
+        console.error('[ShoppingListView] queued toggle still failing, kept for later', error);
+        return;
+      }
+    }
+    if (pendingToggles.current.size === 0) {
+      setErrorMessage(current => (current === OFFLINE_MESSAGE ? null : current));
+    }
+  }, [list.id]);
+
+  React.useEffect(() => {
+    const onOnline = () => void flushPendingToggles();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [flushPendingToggles]);
+
   async function handleToggle({ pasilloIdx, itemIdx, nextComprado }: { pasilloIdx: number, itemIdx: number, nextComprado: boolean }) {
     setErrorMessage(null);
     setComprado({ pasilloIdx, itemIdx, comprado: nextComprado });
 
     try {
       await toggleShoppingListItem({ listId: list.id, pasilloIdx, itemIdx, comprado: nextComprado });
+      // The connection is back: send what was waiting.
+      if (pendingToggles.current.size > 0) { void flushPendingToggles(); }
     }
     catch (error) {
+      // FRESCO-1014 (A7-UI-10): in a shop with no signal the tick must not silently undo itself. Offline, keep it
+      // ticked, queue it for when the connection returns and say so in an alert the person can see; any other
+      // failure (the server refused it) reverts the tick, with the same visible alert.
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.error('[ShoppingListView] toggleShoppingListItem failed offline, queued', error);
+        const pasillo = pasillosRef.current[pasilloIdx];
+        const item = pasillo?.items[itemIdx];
+        if (pasillo && item) {
+          pendingToggles.current.set(`${pasillo.nombre}::${item.nombre}`, { pasilloNombre: pasillo.nombre, itemNombre: item.nombre, comprado: nextComprado });
+        }
+        setErrorMessage(OFFLINE_MESSAGE);
+        return;
+      }
       console.error('[ShoppingListView] toggleShoppingListItem failed, reverting', error);
       setComprado({ pasilloIdx, itemIdx, comprado: !nextComprado });
       setErrorMessage('No se pudo guardar el cambio. Vuelve a intentarlo.');
