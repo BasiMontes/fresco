@@ -13,15 +13,15 @@ import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
-import { normalizeNombre } from '../_shared/normalize.ts'
 import { consolidateIngredientes } from './consolidator.ts'
 import { classifyShoppingList } from './aisle-pricing.ts'
-import { indexCantidades } from './recipe-quantities.ts'
-import { filtrarDiasVigentes, hoyEnMadrid } from './remaining-days.ts'
+import { costeDeLista, mergeRefreshedList } from './merge-refresh.ts'
+import { buildRawIngredientes } from './raw-ingredientes.ts'
+import { hoyEnMadrid } from './remaining-days.ts'
 import type {
   GenerateShoppingListRequest,
   GenerateShoppingListResponse,
-  RawIngrediente,
+  ShoppingListPasillo,
   SlotWithRecipeRow,
 } from './types.ts'
 
@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
     // 2. Parse body
     const body: GenerateShoppingListRequest = await req.json()
     if (!body.meal_plan_id) throw new HttpError('Falta meal_plan_id', 400)
-    const { meal_plan_id } = body
+    const { meal_plan_id, refresh = false } = body
 
     // 3. Plan must exist and belong to the caller
     const { data: plan, error: planError } = await supabase
@@ -52,14 +52,16 @@ Deno.serve(async (req: Request) => {
 
     if (planError || !plan) throw new HttpError('Plan no encontrado', 404)
 
-    // 4. No list may already exist for this plan (unique_plan_lista constraint backs this too)
+    // 4. Without `refresh`, no list may already exist for this plan (unique_plan_lista backs this too).
+    // With `refresh` (FRESCO-1010), the list MUST exist: it is rebuilt in place below.
     const { data: existingList } = await supabase
       .from('shopping_lists')
-      .select('id')
+      .select('id, items')
       .eq('meal_plan_id', meal_plan_id)
       .maybeSingle()
 
-    if (existingList) throw new HttpError('Ya existe una lista para este plan', 409)
+    if (existingList && !refresh) throw new HttpError('Ya existe una lista para este plan', 409)
+    if (!existingList && refresh) throw new HttpError('No hay lista que actualizar para este plan', 404)
 
     // 5. Household size (defaults to 2 if the profile lookup comes back empty —
     // not itself a documented error case for this endpoint, matches the founder draft)
@@ -81,7 +83,7 @@ Deno.serve(async (req: Request) => {
     // query, which assumed a typed `raciones` column that doesn't exist here).
     const { data: slots, error: slotsError } = await supabase
       .from('meal_plan_recipes')
-      .select('recipe_id, dia, sustitucion_ingrediente, recipes ( id, nombre, meta, ingredientes_principales, ingredientes_cantidades )')
+      .select('recipe_id, dia, estado, sustitucion_ingrediente, recipes ( id, nombre, meta, ingredientes_principales, ingredientes_cantidades )')
       .eq('meal_plan_id', meal_plan_id)
       .returns<SlotWithRecipeRow[]>()
 
@@ -89,46 +91,14 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('No se encontraron recetas para este plan', 404)
     }
 
-    // 7. Flatten into raw (pre-consolidation) ingredients
-    // FRESCO-807: the plan holds the whole week, but days already behind us
-    // must not inflate the total nor suggest purchases. The menu keeps them.
-    const slotsVigentes = filtrarDiasVigentes({ slots, fechaInicio: plan.fecha_inicio, hoy: hoyEnMadrid() })
-    const rawIngredientes: RawIngrediente[] = []
-    for (const slot of slotsVigentes) {
-      const recipe = slot.recipes
-      if (!recipe) continue
-
-      const racionesReceta = recipe.meta?.raciones ?? 4
-      const ingredientes = recipe.ingredientes_principales ?? []
-      const cantidades = indexCantidades(recipe.ingredientes_cantidades)
-      const sustitucion = slot.sustitucion_ingrediente
-
-      for (const ingrediente of ingredientes) {
-        // FRESCO-716/ADR-0033: a confirmed per-slot substitution swaps the
-        // ingredient NAME here, before consolidation groups by normalized
-        // name — this is the only change needed for the substitute to land
-        // in its own line item, separate from any other slot that still
-        // uses the original. Never mutates `recipes` or the recipe object.
-        const nombre = sustitucion && sustitucion.original.toLowerCase() === ingrediente.toLowerCase()
-          ? sustitucion.sustituto
-          : ingrediente
-
-        // FRESCO-875/ADR-0042: looked up by the ORIGINAL name, so a substitute
-        // inherits the quantity of the ingredient it replaces.
-        const cantidadReceta = cantidades.get(normalizeNombre(ingrediente))
-
-        rawIngredientes.push({
-          nombre,
-          receta_id: recipe.id,
-          raciones_receta: racionesReceta,
-          raciones_usuario: numPersonas,
-          cantidad: cantidadReceta?.cantidad,
-          unidad: cantidadReceta?.unidad,
-          receta_nombre: recipe.nombre,
-          dia: slot.dia,
-        })
-      }
-    }
+    // 7. Flatten into raw (pre-consolidation) ingredients: discarded/excluded slots and days already
+    // behind us add nothing, and a confirmed substitution swaps the ingredient name (see raw-ingredientes.ts).
+    const rawIngredientes = buildRawIngredientes({
+      slots,
+      fechaInicio: plan.fecha_inicio,
+      hoy: hoyEnMadrid(),
+      numPersonas,
+    })
 
     // 8. Consolidate (FR-4.1, deterministic — no LLM involved)
     const ingredientesConsolidados = consolidateIngredientes(rawIngredientes)
@@ -140,7 +110,35 @@ Deno.serve(async (req: Request) => {
     // Gemini call could, so no retry loop needed.
     const listaData = classifyShoppingList(ingredientesConsolidados)
 
-    // 10. Persist
+    // 10. Refresh: keep what the person did on the old list and clear the stale flag (FRESCO-1010)
+    if (refresh && existingList) {
+      const pasillos = mergeRefreshedList((existingList.items ?? []) as ShoppingListPasillo[], listaData.pasillos)
+      const coste = costeDeLista(pasillos)
+      const { error: refreshError } = await supabase
+        .from('shopping_lists')
+        .update({
+          items: pasillos,
+          coste_estimado_min: coste.min,
+          coste_estimado_max: coste.max,
+          desactualizada_desde: null,
+        })
+        .eq('id', existingList.id)
+      if (refreshError) throw new HttpError('Error actualizando la lista de compra', 500)
+
+      const refreshed: GenerateShoppingListResponse = {
+        shopping_list_id: existingList.id,
+        pasillos,
+        resumen: {
+          total_items: pasillos.reduce((suma, p) => suma + p.items.length, 0),
+          coste_estimado_min: coste.min,
+          coste_estimado_max: coste.max,
+          moneda: 'EUR',
+        },
+      }
+      return jsonResponse(refreshed, { req })
+    }
+
+    // 11. Persist
     const { data: savedList, error: saveError } = await supabase
       .from('shopping_lists')
       .insert({
