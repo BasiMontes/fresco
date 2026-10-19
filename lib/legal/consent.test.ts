@@ -42,6 +42,7 @@ describe('texts and version', () => {
   test('the checkbox texts come from the lawyer draft and are not empty', () => {
     expect(CONSENT_TEXTS.age_14).toContain('14 años');
     expect(CONSENT_TEXTS.health_data).toContain('alergias');
+    expect(CONSENT_TEXTS.health_data).toContain('creencia religiosa');
     expect(CONSENT_TEXTS.withdrawal_waiver).toContain('desistimiento');
   });
 });
