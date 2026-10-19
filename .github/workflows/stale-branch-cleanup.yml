@@ -24,6 +24,7 @@ jobs:
   cleanup:
     name: delete branches from closed, unmerged PRs
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Sweep stale branches
         env:
