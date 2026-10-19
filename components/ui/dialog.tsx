@@ -21,11 +21,17 @@ export interface DialogProps {
   'aria-label': string
   'className'?: string
   'data-testid'?: string
+  /**
+   * FRESCO-1007: `false` makes the dialog blocking: no close button, and neither Escape nor a click
+   * on the scrim closes it. Only for a decision the person has to take to continue (the re-consent
+   * dialog); the caller must offer another way out. Defaults to `true`.
+   */
+  'dismissible'?: boolean
 }
 
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
-export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId }: DialogProps) {
+export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId, dismissible = true }: DialogProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocused = React.useRef<HTMLElement | null>(null);
 
@@ -114,7 +120,7 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
     (focusable?.[0] ?? content)?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && dismissible) {
         onOpenChange(false);
         return;
       }
@@ -148,7 +154,7 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
   return createPortal(
     <div
       className="fixed inset-0 z-1000 flex items-center justify-center bg-scrim p-4"
-      onClick={() => onOpenChange(false)}
+      onClick={() => { if (dismissible) { onOpenChange(false); } }}
     >
       <div
         ref={contentRef}
@@ -165,15 +171,17 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
           className,
         )}
       >
-        <button
-          type="button"
-          onClick={() => onOpenChange(false)}
-          aria-label="Cerrar"
-          data-testid={dataTestId ? `${dataTestId}_close_button` : undefined}
-          className="float-right rounded-full p-1 text-tertiary hover:bg-neutral-200"
-        >
-          <X className="size-5" aria-hidden="true" />
-        </button>
+        {dismissible && (
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            aria-label="Cerrar"
+            data-testid={dataTestId ? `${dataTestId}_close_button` : undefined}
+            className="float-right rounded-full p-1 text-tertiary hover:bg-neutral-200"
+          >
+            <X className="size-5" aria-hidden="true" />
+          </button>
+        )}
         {children}
       </div>
     </div>,

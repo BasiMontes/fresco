@@ -23,7 +23,6 @@ describe('OnboardingSummary', () => {
   test('shows the answers of each block', () => {
     useOnboardingStore.setState({
       nombre: 'Laura',
-      sexo: 'mujer',
       objetivo: 'comer_sano',
       dietaVegetariano: true,
       dietaTextoLibre: 'sin picante',
@@ -35,7 +34,7 @@ describe('OnboardingSummary', () => {
     render();
 
     expect(screen.getByText('Laura')).toBeInTheDocument();
-    expect(screen.getByText('Mujer')).toBeInTheDocument();
+    expect(screen.queryByText('Sexo')).toBeNull();
     expect(screen.getByText('Comer sano')).toBeInTheDocument();
     expect(screen.getByText('Vegetariano')).toBeInTheDocument();
     expect(screen.getByText('sin picante')).toBeInTheDocument();

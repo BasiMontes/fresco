@@ -441,6 +441,16 @@ async function seedProfileRow(
   }
 }
 
+/**
+ * Records consent rows for `userId` the way the server does: through `record_consents` with the
+ * service role. The registry has no INSERT grant for a client role (FRESCO-1007), so a test that
+ * needs "this user already consented" cannot write the table with the user's own token any more.
+ * The version is the test's to choose, because the route's constant is not the point of the fixture.
+ */
+export async function recordConsentRows(userId: string, kinds: string[], version = 'db-test'): Promise<RpcResult> {
+  return rpc('record_consents', { p_user_id: userId, p_kinds: kinds, p_version: version }, { serviceRole: true });
+}
+
 export interface DbTestContext {
   /** Create + track an isolated auth user with a seeded `user_profiles` row. */
   createUser: (options?: CreateDbTestUserOptions) => Promise<DbTestUser>
@@ -464,12 +474,7 @@ export function createDbTestContext(): DbTestContext {
     const token = await passwordGrant(email, password);
     await seedProfileRow(id, token, options.plan ?? 'free');
     if (options.healthDataConsent) {
-      const consent = await rest('user_consents', {
-        method: 'POST',
-        token,
-        prefer: 'return=minimal',
-        body: { kind: 'health_data', version: 'db-test' },
-      });
+      const consent = await recordConsentRows(id, ['health_data']);
       if (consent.status >= 300) {
         throw new Error(`[db-harness] health_data consent for ${id} failed: ${consent.status} ${JSON.stringify(consent.body)}`);
       }

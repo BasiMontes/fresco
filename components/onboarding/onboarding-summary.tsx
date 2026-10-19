@@ -5,7 +5,7 @@ import { Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS, INGREDIENTE_ODIADO_OPTIONS } from '@/lib/constants/dietary-options';
-import { COCINA_OPTIONS, describePlanning, DIETA_OPTIONS, NIVEL_EXPERIENCIA_OPTIONS, OBJETIVO_OPTIONS, SEXO_OPTIONS } from '@/lib/onboarding/wizard-options';
+import { COCINA_OPTIONS, describePlanning, DIETA_OPTIONS, NIVEL_EXPERIENCIA_OPTIONS, OBJETIVO_OPTIONS } from '@/lib/onboarding/wizard-options';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 export interface OnboardingSummaryProps {
@@ -106,7 +106,6 @@ function ChipList({ labels, emptyLabel, variant = 'neutral' }: ChipListProps) {
 export function OnboardingSummary({ headingRef }: OnboardingSummaryProps) {
   const {
     nombre,
-    sexo,
     objetivo,
     nivelExperiencia,
     dietaVegetariano,
@@ -143,7 +142,6 @@ export function OnboardingSummary({ headingRef }: OnboardingSummaryProps) {
 
       <SummarySection id="profile" title="Sobre ti" onEdit={() => editFromSummary(1)}>
         <SummaryRow label="Nombre">{nombre.trim() || <Empty />}</SummaryRow>
-        <SummaryRow label="Sexo">{labelOf(SEXO_OPTIONS, sexo) ?? <Empty />}</SummaryRow>
         <SummaryRow label="Objetivo">{labelOf(OBJETIVO_OPTIONS, objetivo) ?? <Empty />}</SummaryRow>
         <SummaryRow label="Nivel de experiencia culinaria">{labelOf(NIVEL_EXPERIENCIA_OPTIONS, nivelExperiencia) ?? <Empty />}</SummaryRow>
       </SummarySection>
