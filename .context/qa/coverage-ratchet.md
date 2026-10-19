@@ -78,6 +78,10 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   "consider raising" nudge fires at 1.5 pp of headroom; it had been showing since the
   first week and nobody acted on it, which is why the tranches below have an owner
   and a date.
+- 2026-10-19 (FRESCO-991): all three **raised**: functions 89.0, lines 89.7, honest
+  lines 63.0 (measured 89.60 / 90.10 / 63.35, from 61.47 honest). New handler tests for
+  `generate-meal-plan`, `generate-shopping-list`, `get-shopping-list-suggestions`,
+  `delete-catalog-recipe` and `_shared/posthog.ts`. `--unloaded` added (see below).
 
 ## Tranches (honest lines)
 
@@ -87,7 +91,8 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 | Tranche | Honest floor | Target date | State |
 |---|---|---|---|
 | 1 | 54.5 % | 2026-10-14 | **Done** (FRESCO-916): measured 55.26 %, the ticket's "55 % in a month" was already met |
-| 2 | 60 % | 2026-12-14 | Open. About 1,090 more covered lines (counted: 9,737 lines uncovered of about 21,800) |
+| 2 | 60 % | 2026-12-14 | **Done early** (FRESCO-991): measured 63.35 %, floored at 63.0 |
+| 3 | 70 % | Set by the owner 2026-10-19 | Open. About 1,600 more covered lines at the 2026-10-19 count (6,782 of the unloaded lines are UI pages and components) |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,
@@ -105,6 +110,20 @@ four of those would clear most of tranche 2.
 severity, or a defect with `severity` critica or mayor) carries a regression test that
 fails without the fix, or a stated reason in the closing comment. The rule and what
 counts as a reason live in `.context/backlog/definition-of-done.md`.
+
+**Which files first.** The files no test imports, ranked by what a bug would cost
+(money, then allergens and consent, then Edge handlers, then user-data routes and loaders,
+then the rest), regenerated whenever you need it:
+
+```sh
+bun scripts/check-coverage.ts --print --unloaded
+```
+
+On 2026-10-19 the first four classes are clear of runtime code no test reaches: what is
+left there is type-only files, the legal pages (21 lines each, static text), the Supabase
+client factories (mocked by every handler test) and `manage-subscription-button.tsx`.
+`lib/profile/load-profile-page-data.ts`, `lib/menu/load-menu-page-data.ts` and the pages
+under `app/(app)` are the next real candidates; the rest is UI, covered by e2e.
 
 ## Raising the floor
 

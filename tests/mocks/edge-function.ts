@@ -105,6 +105,7 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
       eq: () => chain,
       neq: () => chain,
       limit: () => chain,
+      returns: () => chain,
       single: resolve,
       maybeSingle: resolve,
       then: async (f: (v: unknown) => unknown) => resolve().then(f),
