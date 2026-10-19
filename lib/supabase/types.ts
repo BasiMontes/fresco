@@ -447,6 +447,27 @@ export type Database = {
           },
         ]
       }
+      recipe_user_feedback: {
+        Row: {
+          cocinada_at: string | null
+          descartada_at: string | null
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          cocinada_at?: string | null
+          descartada_at?: string | null
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          cocinada_at?: string | null
+          descartada_at?: string | null
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           activo: boolean
@@ -527,6 +548,7 @@ export type Database = {
           coste_estimado_max: number
           coste_estimado_min: number
           created_at: string
+          desactualizada_desde: string | null
           id: string
           items: Json
           meal_plan_id: string
@@ -537,6 +559,7 @@ export type Database = {
           coste_estimado_max?: number
           coste_estimado_min?: number
           created_at?: string
+          desactualizada_desde?: string | null
           id?: string
           items?: Json
           meal_plan_id: string
@@ -547,6 +570,7 @@ export type Database = {
           coste_estimado_max?: number
           coste_estimado_min?: number
           created_at?: string
+          desactualizada_desde?: string | null
           id?: string
           items?: Json
           meal_plan_id?: string

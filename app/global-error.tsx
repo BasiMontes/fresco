@@ -25,7 +25,7 @@ export default function GlobalError({
   return (
     <html lang="es">
       <body>
-        <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12 text-center">
+        <main id="main" className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12 text-center">
           <h1 className="text-h3">Algo salió mal</h1>
           <p role="alert" aria-live="assertive" className="mt-2 text-body-sm text-tertiary">
             Fresco tuvo un problema inesperado. Intenta de nuevo.
@@ -38,7 +38,7 @@ export default function GlobalError({
           >
             Intentar de nuevo
           </button>
-        </div>
+        </main>
       </body>
     </html>
   );

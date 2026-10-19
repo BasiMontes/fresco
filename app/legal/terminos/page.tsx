@@ -16,7 +16,7 @@ export default function TerminosPage() {
       {/* FRESCO-495: skip-link target — this page predates that ticket's convention. */}
       <main id="main" className="mx-auto max-w-3xl px-4 py-16 text-body-md text-text">
         <h1 className="text-h3 mb-6">Términos de Servicio</h1>
-        <TermsContent />
+        <TermsContent headingLevel="h2" />
       </main>
       <SiteFooter />
     </div>

@@ -140,7 +140,7 @@ export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDis
         <SlotContent dia={dia} tipo={tipo} recipe={recipe} estado={estado} />
 
         {recipe && estado === 'pendiente' && (
-          <SlotMarkControls dia={dia} tipo={tipo} pending={pending} onMark={onMark} />
+          <SlotMarkControls dia={dia} tipo={tipo} nombre={recipe.nombre} pending={pending} onMark={onMark} />
         )}
 
         {recipe && estado !== 'pendiente' && (

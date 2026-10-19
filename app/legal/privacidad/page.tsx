@@ -16,7 +16,7 @@ export default function PrivacidadPage() {
       {/* FRESCO-495: skip-link target — this page predates that ticket's convention. */}
       <main id="main" className="mx-auto max-w-3xl px-4 py-16 text-body-md text-text">
         <h1 className="text-h3 mb-6">Política de Privacidad</h1>
-        <PrivacyContent />
+        <PrivacyContent headingLevel="h2" />
       </main>
       <SiteFooter />
     </div>

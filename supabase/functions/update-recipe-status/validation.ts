@@ -4,8 +4,11 @@
 // generate-meal-plan/menu-selector.ts.
 //
 // A4-H1 / A4-L7 (audit-4): the raw enum column was the only thing rejecting a
-// bad `estado`, producing an ugly 500, and `rating` was compared with `<`/`>`
-// so `"3"`, `3.7` and `null` all slipped through.
+// bad `estado`, producing an ugly 500.
+//
+// FRESCO-1012 (A7-LOGIC-10): the rating path is retired. No screen ever sent a rating and a `cocinada`
+// slot cannot be patched again, so it never fed anything; the menu selector no longer weighs it either.
+// A `rating` in the body is ignored. Decision recorded in ADR-0063.
 
 import { HttpError } from '../_shared/http.ts'
 
@@ -26,13 +29,6 @@ export function assertEstadoValido(estado: unknown): asserts estado is ClientSet
   }
 }
 
-export function assertRatingValido(rating: unknown): void {
-  if (rating === undefined) return
-  if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new HttpError('El rating debe ser un entero entre 1 y 5', 400)
-  }
-}
-
 /**
  * A4-L7 (audit-4): the update payload for meal_plan_recipes, holding only the
  * fields the target `estado` actually permits.
@@ -40,16 +36,12 @@ export function assertRatingValido(rating: unknown): void {
  * - `recipe_id` moves ONLY on `sustituida` — the one path that runs the
  *   allergen/diet re-filter + duplicate check in index.ts step 6. Letting it
  *   through on `cocinada`/`descartada` would persist an unvetted recipe.
- * - `rating` is a signal about a dish the user cooked, so it is dropped for
- *   `sustituida` (nothing was cooked).
  */
 export function buildUpdatePayload(
   estado: ClientSettableEstado,
-  rating: number | undefined,
   nuevaRecipeId: string | undefined,
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { estado }
-  if (rating !== undefined && estado !== 'sustituida') payload.rating = rating
   if (nuevaRecipeId !== undefined && estado === 'sustituida') payload.recipe_id = nuevaRecipeId
   return payload
 }

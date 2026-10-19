@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
-import { expectNoA11yViolations, expectNoOverlappingTargets, expectTouchTargetsAtLeast } from './support/a11y';
+import { expectNoA11yViolations, expectNoOverlappingTargets, expectNoRuleViolations, expectTouchTargetsAtLeast } from './support/a11y';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @a11y.
@@ -59,4 +59,30 @@ Then(/^todos los elementos interactivos miden al menos 44 px$/, async ({ page })
 // card; seven 44 px targets on a 36 px pitch overlapped. The grid now follows its card width.
 Then(/^las zonas táctiles de la rejilla de comidas no se solapan$/, async ({ page }) => {
   await expectNoOverlappingTargets(page, 'planning_selection_cell');
+});
+
+// ── FRESCO-1013 (audit 7b A7-UI-01..05, A7-UI-08): names, landmarks, headings, scroll regions ──
+
+// WCAG 2.5.3: the accessible name starts with the visible text. Axe keeps this rule off by default.
+Then(/^ningún control tiene un nombre accesible que no incluya su texto visible$/, async ({ page }) => {
+  await expectNoRuleViolations(page, ['label-content-name-mismatch']);
+});
+
+Given(/^que un visitante sin cuenta ni sesión abre una página que no existe$/, async ({ page }) => {
+  await page.goto('/no-existe-xyz');
+});
+
+Given(/^que un visitante sin cuenta ni sesión lee \/legal\/cookies en un móvil de 360 px$/, async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto('/legal/cookies');
+});
+
+Given(/^que un visitante sin cuenta ni sesión lee \/legal\/privacidad$/, async ({ page }) => {
+  await page.goto('/legal/privacidad');
+});
+
+// The skip link has a target, the page has one main landmark, nothing sits outside a landmark, the table
+// that scrolls inside its box can take focus, and the headings never skip a level.
+Then(/^la página tiene un salto al contenido válido, un landmark principal, regiones desplazables enfocables y encabezados en orden$/, async ({ page }) => {
+  await expectNoRuleViolations(page, ['skip-link', 'landmark-one-main', 'region', 'scrollable-region-focusable', 'heading-order']);
 });

@@ -121,6 +121,9 @@ describe('AddToMenuDialog', () => {
     await user.click(screen.getByTestId('add_to_menu_confirm_button'));
 
     expect(await screen.findByTestId('add_to_menu_stale_list_notice')).toBeInTheDocument();
+    // FRESCO-1010: it also says how to bring the list up to date.
+    expect(screen.getByTestId('stale_list_notice')).toHaveTextContent('Actualizar lista');
+    expect(screen.getByTestId('stale_list_notice_link')).toHaveAttribute('href', '/shopping-list');
   });
 
   test('a server refusal is shown in plain words, never as the raw message, and the dialog stays open to pick another slot', async () => {

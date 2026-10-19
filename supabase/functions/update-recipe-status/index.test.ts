@@ -64,11 +64,6 @@ describe('update-recipe-status/index.ts', () => {
     expect(res.status).toBe(400)
   })
 
-  test('400 when rating is not an integer 1-5', async () => {
-    const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating: 3.7 })
-    expect(res.status).toBe(400)
-  })
-
   test('404 when the slot does not exist', async () => {
     supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: null } })
     const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_x', estado: 'cocinada' }))
@@ -134,14 +129,23 @@ describe('update-recipe-status/index.ts', () => {
   })
 
   test('200 and { ok: true, estado } on the happy path', async () => {
-    const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating: 4 })
+    const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada' })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true, estado: 'cocinada' })
-    expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'cocinada', rating: 4 }]])
+    expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'cocinada' }]])
+  })
+
+  test('a rating in the body is ignored, not rejected and not written (FRESCO-1012, ADR-0063)', async () => {
+    for (const rating of [4, 3.7, '3', null]) {
+      svc = fakeEdgeClient({ updateRows: { meal_plan_recipes: [{ id: 'mpr_1' }] } })
+      const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating })
+      expect(res.status).toBe(200)
+      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'cocinada' }]])
+    }
   })
 
   test('the protected write never goes through the caller client or a client-callable RPC (audit-6 A6-S1)', async () => {
-    await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada', rating: 4 })
+    await call({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada' })
     expect(supa.updates).toEqual([])
     expect(supa.rpcCalls.map(([name]) => name)).not.toContain('apply_recipe_status_update')
   })

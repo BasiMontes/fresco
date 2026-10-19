@@ -44,6 +44,8 @@ export type { Recipe } from '@schemas';
 
 export interface GenerateShoppingListRequest {
   meal_plan_id: string // uuid — must already exist and belong to the caller
+  /** FRESCO-1010 — rebuild the plan's existing list from the plan as it is now ("Actualizar lista"). */
+  refresh?: boolean
 }
 
 /**
@@ -94,7 +96,6 @@ export type { GetShoppingListSuggestionsRequest, GetShoppingListSuggestionsRespo
 export interface UpdateRecipeStatusRequest {
   meal_plan_recipe_id: string // uuid, required
   estado: EstadoRecetaSlot // required
-  rating?: number // 1-5, only meaningful when estado = 'cocinada'
   nueva_recipe_id?: string // uuid, required when estado = 'sustituida'
 }
 

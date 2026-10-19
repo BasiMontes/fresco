@@ -28,6 +28,8 @@ const { ShoppingListView } = await import('./shopping-list-view');
 
 const LIST: ShoppingListPersistido = {
   id: 'list1',
+  mealPlanId: 'plan-list1',
+  desactualizada: false,
   pasillos: [
     {
       nombre: 'Frutas y verduras',

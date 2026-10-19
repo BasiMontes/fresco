@@ -57,3 +57,7 @@ Concretely:
 - `.context/ADR/ADR-0005-deterministic-menu-slot-selection.md` — already flagged this exact gap as an accepted trade-off to revisit (Consequences, "Negative" section, last bullet).
 - `supabase/migrations/20260801010000_harden_security_definer_functions.sql` — the `auth.uid()` ownership check both new functions preserve.
 - `.context/business/business-feature-map.md` (2026-08-08 regeneration) + the 3-agent QA sweep that found this — FRESCO-120.
+
+## 2026-10-19 — Note (FRESCO-1012, ADR-0063)
+
+The global counters this record describes now move once per (user, recipe) through `recipe_user_feedback`, and the rating term of the score is retired. Read ADR-0063 for the current rule; the text above is kept as written.

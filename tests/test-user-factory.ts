@@ -124,6 +124,24 @@ async function createUserProfileRow(request: APIRequestContext, userId: string, 
 }
 
 /**
+ * Deletes every id, all of them even if some fail, and returns the ids that could not be deleted. Each failure
+ * is logged with a GitHub `::error::` annotation so it shows on the run page, not only in the log.
+ */
+export async function deleteTrackedUsers(ids: string[], deleteOne: (id: string) => Promise<void>): Promise<string[]> {
+  const failed: string[] = [];
+  await Promise.all(ids.map(async (id) => {
+    try {
+      await deleteOne(id);
+    }
+    catch (error) {
+      failed.push(id);
+      console.error(`::error::[test-user-factory] cleanup failed for ${id}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }));
+  return failed;
+}
+
+/**
  * Builds a fresh `{ factory, cleanupAll }` pair, one per test — `factory()`
  * creates and tracks a new isolated test user, `cleanupAll()` deletes every
  * user that scenario created. Wired into `tests/fixtures.ts`'s `testUserFactory`
@@ -149,16 +167,13 @@ export function createTestUserFactory(request: APIRequestContext): { factory: Te
   };
 
   const cleanupAll = async (): Promise<void> => {
-    await Promise.all(createdIds.map(async (id) => {
-      try {
-        await deleteAuthUser(request, id);
-      }
-      catch (error) {
-        // Best-effort: a failed cleanup must never fail the test it's
-        // tearing down after — surfaced to the CI log for manual follow-up.
-        console.error(`[test-user-factory] cleanup failed for ${id}:`, error);
-      }
-    }));
+    const failed = await deleteTrackedUsers(createdIds, async id => deleteAuthUser(request, id));
+    // FRESCO-1016 (A7-TEST-09): on the post-deploy smoke the users live in the REAL shared Supabase, so a user
+    // left behind is data in production that nobody is told about. `E2E_STRICT_CLEANUP=1` (set by that workflow)
+    // makes a failed delete fail the run; everywhere else it stays best-effort, as it always was.
+    if (failed.length > 0 && process.env.E2E_STRICT_CLEANUP === '1') {
+      throw new Error(`[test-user-factory] ${failed.length} test user(s) could NOT be deleted and are still in the database: ${failed.join(', ')}`);
+    }
   };
 
   return { factory, cleanupAll };

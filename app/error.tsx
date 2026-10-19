@@ -26,7 +26,7 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
+    <main id="main" className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
       <Card className="text-center">
         <h1 className="text-h3">Algo salió mal</h1>
         <p role="alert" aria-live="assertive" className="mt-2 text-body-sm text-tertiary">
@@ -41,6 +41,6 @@ export default function ErrorPage({
           </Link>
         </div>
       </Card>
-    </div>
+    </main>
   );
 }

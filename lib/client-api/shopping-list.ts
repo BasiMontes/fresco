@@ -1,4 +1,4 @@
-import { addShoppingListItem as addShoppingListItemFor, clearComprados as clearCompradosFor, removeShoppingListItem as removeShoppingListItemFor, toggleShoppingListItem as toggleShoppingListItemFor } from '@/lib/api/shopping-list';
+import { addShoppingListItem as addShoppingListItemFor, clearComprados as clearCompradosFor, listaDesactualizadaDeSlot as listaDesactualizadaDeSlotFor, removeShoppingListItem as removeShoppingListItemFor, toggleShoppingListItem as toggleShoppingListItemFor } from '@/lib/api/shopping-list';
 import { createClient } from '@/lib/supabase/client';
 
 /** ADR-0041: the shopping-list writes of `lib/api/shopping-list`, bound to the signed-in browser session. */
@@ -17,4 +17,8 @@ export async function removeShoppingListItem(args: Parameters<typeof removeShopp
 
 export async function toggleShoppingListItem(args: Parameters<typeof toggleShoppingListItemFor>[1]) {
   return toggleShoppingListItemFor(createClient(), args);
+}
+
+export async function listaDesactualizadaDeSlot(slotId: Parameters<typeof listaDesactualizadaDeSlotFor>[1]) {
+  return listaDesactualizadaDeSlotFor(createClient(), slotId);
 }

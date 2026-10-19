@@ -48,6 +48,11 @@ export interface ReassignGuestDataResponse {
 // POST /generate-shopping-list — api-contracts.md §2
 export interface GenerateShoppingListRequest {
   meal_plan_id: string
+  /**
+   * FRESCO-1010 — rebuild the plan's EXISTING list from the plan as it is now ("Actualizar lista"), keeping
+   * what the person marked as bought and the items they added. Without it, an existing list answers 409.
+   */
+  refresh?: boolean
 }
 
 export interface GenerateShoppingListResponse {
@@ -84,8 +89,6 @@ export interface GetShoppingListSuggestionsResponse {
 export interface UpdateRecipeStatusRequest {
   meal_plan_recipe_id: string
   estado: EstadoRecetaMenu
-  /** 1-5, only meaningful when estado = 'cocinada'. */
-  rating?: number
   /** required when estado = 'sustituida'. */
   nueva_recipe_id?: string
 }

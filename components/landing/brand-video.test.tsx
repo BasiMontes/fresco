@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
 import { renderWithProviders, screen } from '@/tests/component-render';
 import { BrandVideo } from './brand-video';
@@ -28,5 +29,32 @@ describe('BrandVideo', () => {
     const { container } = renderWithProviders(<BrandVideo />);
 
     expect(container.querySelector('source')).toHaveAttribute('src', '/video/fresco-brand.mp4');
+  });
+});
+
+/** FRESCO-1013 (A7-UI-17): the landing video shows where keyboard focus is and carries a Spanish captions track. */
+describe('BrandVideo — keyboard focus and captions (FRESCO-1013)', () => {
+  test('has a visible focus ring for keyboard users (WCAG 2.4.7)', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    expect(container.querySelector('video')?.className).toContain('focus-visible:ring-2');
+  });
+
+  test('carries a Spanish captions track, on by default (WCAG 1.2.2)', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const track = container.querySelector('video track[kind="captions"]');
+    expect(track).not.toBeNull();
+    expect(track?.getAttribute('srclang')).toBe('es');
+    expect(track?.getAttribute('src')).toBe('/video/fresco-brand.es.vtt');
+    expect(track?.hasAttribute('default')).toBe(true);
+  });
+
+  test('the captions file is valid WebVTT and says the video has no voice', () => {
+    const vtt = readFileSync(new URL('../../public/video/fresco-brand.es.vtt', import.meta.url), 'utf8');
+
+    expect(vtt.startsWith('WEBVTT')).toBe(true);
+    expect(vtt).toMatch(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/);
+    expect(vtt).toContain('Música instrumental');
   });
 });

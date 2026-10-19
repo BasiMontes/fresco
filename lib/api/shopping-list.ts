@@ -26,6 +26,10 @@ export class ShoppingListError extends Error {
 
 export interface ShoppingListPersistido {
   id: string
+  /** FRESCO-1010 — the plan this list belongs to; "Actualizar lista" addresses the rebuild by it. */
+  mealPlanId: string
+  /** FRESCO-1010 — the plan changed after the list was built (a substitution, a replaced or discarded recipe...). */
+  desactualizada: boolean
   pasillos: GenerateShoppingListResponse['pasillos']
   resumen: GenerateShoppingListResponse['resumen']
 }
@@ -50,7 +54,7 @@ export async function getShoppingListForPlan(
 ): Promise<ShoppingListPersistido | null> {
   const { data, error } = await client
     .from('shopping_lists')
-    .select('id, items, coste_estimado_min, coste_estimado_max')
+    .select('id, meal_plan_id, items, coste_estimado_min, coste_estimado_max, desactualizada_desde')
     .eq('meal_plan_id', mealPlanId)
     .maybeSingle();
 
@@ -73,6 +77,8 @@ export async function getShoppingListForPlan(
 
   return {
     id: data.id,
+    mealPlanId: data.meal_plan_id,
+    desactualizada: data.desactualizada_desde !== null,
     pasillos,
     resumen: {
       total_items: totalItems,
@@ -244,5 +250,36 @@ export async function getNombresNuevos(
   catch (error) {
     console.error('[getNombresNuevos] failed — no "Nuevo" badges this render', error);
     return new Set();
+  }
+}
+
+/**
+ * FRESCO-1010 — does the slot's plan have a shopping list that no longer matches it? The flows that change
+ * a slot (an ingredient substitution, a discard) call this right after the write, to tell the person what
+ * happened to the list: the database trigger has already flagged it by then. `false` when the plan has no
+ * list yet (nothing to update). Never throws: the notice is a courtesy, not part of the change.
+ */
+export async function listaDesactualizadaDeSlot(client: SupabaseClient<Database>, slotId: string): Promise<boolean> {
+  try {
+    const { data: slot, error: slotError } = await client
+      .from('meal_plan_recipes')
+      .select('meal_plan_id')
+      .eq('id', slotId)
+      .maybeSingle();
+
+    if (slotError || !slot) {
+      return false;
+    }
+
+    const { data: lista, error: listaError } = await client
+      .from('shopping_lists')
+      .select('desactualizada_desde')
+      .eq('meal_plan_id', slot.meal_plan_id)
+      .maybeSingle();
+
+    return !listaError && lista !== null && lista.desactualizada_desde !== null;
+  }
+  catch {
+    return false;
   }
 }

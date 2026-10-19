@@ -3,6 +3,7 @@ import * as React from 'react';
 import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
 import { getAccessToken } from '@/lib/client-api/auth';
+import { listaDesactualizadaDeSlot } from '@/lib/client-api/shopping-list';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 
 /**
@@ -21,6 +22,8 @@ export interface UseSlotMarkingArgs {
   setErrorMessage: (message: string | null) => void
   pendingSlots: ReadonlySet<string>
   setPendingSlots: React.Dispatch<React.SetStateAction<ReadonlySet<string>>>
+  /** FRESCO-1010: called when a discard left the shopping list stale (it was generated before this change). */
+  onListaDesactualizada?: () => void
 }
 
 export interface PendingMark {
@@ -38,7 +41,7 @@ export interface PendingMark {
  * Extracted from `CalendarGrid` (A5-M1, god-component split) — no behavior
  * change from the original inline implementation.
  */
-export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, pendingSlots, setPendingSlots }: UseSlotMarkingArgs) {
+export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, pendingSlots, setPendingSlots, onListaDesactualizada }: UseSlotMarkingArgs) {
   // FRESCO-373: a mark still in its undo window when the user leaves the
   // page must not be lost — commit it. `pagehide` covers a real navigation /
   // reload (React's unmount cleanup does not run reliably then); the return
@@ -73,6 +76,11 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
             : POSTHOG_EVENTS.RECIPE_MARKED_DISCARDED,
         );
       }
+      // FRESCO-1010: discarding a dish takes its ingredients off the list, but only once the list is
+      // updated. The database has flagged it by now; say so (cooking a dish does not change the list).
+      if (mark.estado === 'descartada' && onListaDesactualizada && await listaDesactualizadaDeSlot(slotIds[mark.dia][mark.tipo])) {
+        onListaDesactualizada();
+      }
     }
     catch (error) {
       console.error('[CalendarGrid] updateRecipeStatus failed', error);
@@ -96,7 +104,7 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
         return next;
       });
     }
-  }, [slotIds, setEstados, setErrorMessage, setPendingSlots]);
+  }, [slotIds, setEstados, setErrorMessage, setPendingSlots, onListaDesactualizada]);
 
   const flushPendingMark = React.useCallback(() => {
     if (commitTimerRef.current) {
