@@ -1,7 +1,7 @@
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, test, setSystemTime } from 'bun:test'
 import fc from 'fast-check'
-import { selectMenu } from './menu-selector.ts'
+import { selectMenu, seasonOf } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
@@ -9,6 +9,8 @@ const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 
 /** A fixed tie-break seed for the assertions that don't care which specific menu comes out. */
 const SEED = 'user-1:2026-W01'
+/** Monday of the planned week the tests build menus for (winter), whatever day the suite runs. */
+const FECHA_INICIO = '2026-01-05';
 
 const ALL_DAYS_ALL_MEALS: Record<DiaSemana, TipoPlatoSlot[]> = Object.fromEntries(
   DIAS.map(dia => [dia, TIPOS]),
@@ -82,7 +84,7 @@ function buildAmpleCatalog(): Recipe[] {
 
 describe('selectMenu — structural guarantees (ADR-0005)', () => {
   test('fills all 21 slots from an ample catalog, none as the sentinel', () => {
-    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
@@ -92,7 +94,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
   })
 
   test('never repeats a comida or cena recipe within the same week', () => {
-    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     const comidaIds = DIAS.map(dia => menu[dia].comida)
     const cenaIds = DIAS.map(dia => menu[dia].cena)
@@ -109,7 +111,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
       makeRecipe('desayuno-b', 'desayuno'),
       ...buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'desayuno'),
     ]
-    const { menu } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     const counts = new Map<string, number>()
     for (const dia of DIAS) {
@@ -125,7 +127,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     const catalog = buildAmpleCatalog()
     const recentRecipeIds = catalog.filter(r => r.clasificacion?.tipo_plato === 'cena').slice(0, 25).map(r => r.id)
 
-    const { menu } = selectMenu({ candidates: catalog, recentRecipeIds, seed: SEED, profile: makeProfile({ plan: 'pro' }) })
+    const { menu } = selectMenu({ candidates: catalog, recentRecipeIds, seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile({ plan: 'pro' }) })
 
     const chosenCenaIds = DIAS.map(dia => menu[dia].cena)
     for (const id of chosenCenaIds) {
@@ -135,7 +137,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
 
   test('a tipo_plato with zero compatible recipes gets the sentinel and one food-safety-framed advertencia (A4-M3)', () => {
     const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'cena')
-    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     for (const dia of DIAS) {
       expect(menu[dia].cena).toBe(NO_SAFE_RECIPE_SENTINEL)
@@ -153,7 +155,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     const threeCenas = ample.filter(r => r.clasificacion?.tipo_plato === 'cena').slice(0, 3)
     const candidates = [...ample.filter(r => r.clasificacion?.tipo_plato !== 'cena'), ...threeCenas]
 
-    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     const cenaWarnings = advertencias.filter(a => a.includes('cena'))
     expect(cenaWarnings).toHaveLength(1)
@@ -169,7 +171,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     )
     const { menu, advertencias } = selectMenu({
       candidates,
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ tiempo_max_semana_min: 15, tiempo_max_finde_min: 15 }),
     })
 
@@ -189,7 +191,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     }))
     const { advertencias } = selectMenu({
       candidates,
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ presupuesto_semana_euros: 10 }),
     })
 
@@ -203,7 +205,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     }))
     const run = (num_personas: number) => selectMenu({
       candidates,
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ num_personas, presupuesto_semana_euros: 150 }),
     }).advertencias
 
@@ -221,7 +223,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     }))
     const { advertencias } = selectMenu({
       candidates,
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ presupuesto_semana_euros: null }),
     })
 
@@ -238,7 +240,7 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     }))
     const { advertencias } = selectMenu({
       candidates,
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ presupuesto_semana_euros: 1 }),
     })
 
@@ -250,8 +252,8 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
 describe('selectMenu — seeded determinism (FRESCO-380 / A4-M1)', () => {
   test('same seed + same inputs yields a byte-identical menu', () => {
     const catalog = buildAmpleCatalog()
-    const a = selectMenu({ candidates: catalog, recentRecipeIds: [], seed: 'u:2026-W10', profile: makeProfile() })
-    const b = selectMenu({ candidates: catalog, recentRecipeIds: [], seed: 'u:2026-W10', profile: makeProfile() })
+    const a = selectMenu({ candidates: catalog, recentRecipeIds: [], seed: 'u:2026-W10', fechaInicio: FECHA_INICIO, profile: makeProfile() })
+    const b = selectMenu({ candidates: catalog, recentRecipeIds: [], seed: 'u:2026-W10', fechaInicio: FECHA_INICIO, profile: makeProfile() })
     expect(a.menu).toEqual(b.menu)
   })
 
@@ -259,19 +261,19 @@ describe('selectMenu — seeded determinism (FRESCO-380 / A4-M1)', () => {
     const catalog = buildAmpleCatalog()
     const menus = new Set(
       ['u:w1', 'u:w2', 'u:w3', 'u:w4', 'u:w5'].map(
-        seed => JSON.stringify(selectMenu({ candidates: catalog, recentRecipeIds: [], seed, profile: makeProfile() }).menu),
+        seed => JSON.stringify(selectMenu({ candidates: catalog, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile() }).menu),
       ),
     )
     expect(menus.size).toBeGreaterThan(1)
   })
 
-  test('the jitter (max 0.5) never overturns a full rating-point gap', () => {
-    // 5-star vs 1-star = an 8-point score gap; jitter tops out at 0.5, so the
-    // higher-rated recipe wins for every seed.
-    const higher = makeRecipe('desayuno-higher', 'desayuno', { rating_promedio: 5 })
-    const lower = makeRecipe('desayuno-lower', 'desayuno', { rating_promedio: 1 })
+  test('the jitter (max 0.5) never overturns a real score gap', () => {
+    // A recipe discarded 3+ times carries a -4 penalty; jitter tops out at 0.5, so the other one wins
+    // for every seed.
+    const higher = makeRecipe('desayuno-higher', 'desayuno', { veces_descartada: 0 })
+    const lower = makeRecipe('desayuno-lower', 'desayuno', { veces_descartada: 3 })
     for (const seed of ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8']) {
-      const { menu } = selectMenu({ candidates: [higher, lower], recentRecipeIds: [], seed, profile: makeProfile() })
+      const { menu } = selectMenu({ candidates: [higher, lower], recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile() })
       expect(menu.lunes.desayuno).toBe(higher.id)
     }
   })
@@ -282,7 +284,7 @@ describe('selectMenu — planning_selection exclusions (FRESCO-199)', () => {
     const profile = makeProfile({
       planning_selection: { ...ALL_DAYS_ALL_MEALS, martes: ['desayuno', 'cena'] },
     })
-    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, profile })
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
 
     expect(menu.martes.comida).toBe(SLOT_EXCLUDED_SENTINEL)
     expect(menu.martes.desayuno).not.toBe(SLOT_EXCLUDED_SENTINEL)
@@ -293,7 +295,7 @@ describe('selectMenu — planning_selection exclusions (FRESCO-199)', () => {
     const profile = makeProfile({
       planning_selection: { ...ALL_DAYS_ALL_MEALS, martes: ['desayuno', 'cena'] },
     })
-    const { advertencias } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, profile })
+    const { advertencias } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
 
     expect(advertencias).toEqual([])
   })
@@ -307,7 +309,7 @@ describe('selectMenu — planning_selection exclusions (FRESCO-199)', () => {
       planning_selection: Object.fromEntries(DIAS.map(dia => [dia, [] as TipoPlatoSlot[]])) as Record<DiaSemana, TipoPlatoSlot[]>,
       presupuesto_semana_euros: 1,
     })
-    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: allExcludedProfile })
+    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: allExcludedProfile })
 
     expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(false)
   })
@@ -333,7 +335,7 @@ describe('selectMenu — personal engagement nudge (ADR-0008)', () => {
 
     const { menu } = selectMenu({
       candidates: [favored, plain],
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ plan: 'pro' }),
       userEngagement,
     })
@@ -348,7 +350,7 @@ describe('selectMenu — personal engagement nudge (ADR-0008)', () => {
 
     const { menu } = selectMenu({
       candidates: [discarded, plain],
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ plan: 'pro' }),
       userEngagement,
     })
@@ -356,13 +358,13 @@ describe('selectMenu — personal engagement nudge (ADR-0008)', () => {
     expect(menu.lunes.desayuno).toBe(plain.id)
   })
 
-  test('Free tier (no userEngagement) scores unaffected — global rating alone decides', () => {
-    const higherRated = makeRecipe('desayuno-higher', 'desayuno', { rating_promedio: 5 })
-    const lowerRated = makeRecipe('desayuno-lower', 'desayuno', { rating_promedio: 1 })
+  test('Free tier (no userEngagement) scores unaffected — the global cook/discard counts decide', () => {
+    const higherRated = makeRecipe('desayuno-higher', 'desayuno', { veces_cocinada: 10 })
+    const lowerRated = makeRecipe('desayuno-lower', 'desayuno', { veces_descartada: 3 })
 
     const { menu } = selectMenu({
       candidates: [higherRated, lowerRated],
-      recentRecipeIds: [], seed: SEED,
+      recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ plan: 'free' }),
     })
 
@@ -477,7 +479,7 @@ describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', ()
         catalogArb({ minLength: 0, maxLength: 14 }),
         fc.string({ minLength: 1 }),
         (profile, candidates, seed) => {
-          const { menu } = selectMenu({ candidates, recentRecipeIds: [], profile, seed })
+          const { menu } = selectMenu({ candidates, recentRecipeIds: [], profile, seed, fechaInicio: FECHA_INICIO })
 
           expect(Object.keys(menu).sort()).toEqual([...DIAS].sort())
           let slots = 0
@@ -517,7 +519,7 @@ describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', ()
           )
           const byId = new Map(candidates.map(r => [r.id, r]))
 
-          const { menu } = selectMenu({ candidates, recentRecipeIds: [], profile, seed })
+          const { menu } = selectMenu({ candidates, recentRecipeIds: [], profile, seed, fechaInicio: FECHA_INICIO })
 
           for (const dia of DIAS) {
             for (const tipo of TIPOS) {
@@ -545,7 +547,7 @@ describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', ()
         catalogArb({ minLength: 0, maxLength: 16 }),
         fc.string({ minLength: 1 }),
         (profile, candidates, seed) => {
-          const runs = [0, 1, 2].map(() => selectMenu({ candidates, recentRecipeIds: [], profile, seed }))
+          const runs = [0, 1, 2].map(() => selectMenu({ candidates, recentRecipeIds: [], profile, seed, fechaInicio: FECHA_INICIO }))
           expect(runs[1]).toEqual(runs[0])
           expect(runs[2]).toEqual(runs[0])
         },
@@ -568,7 +570,7 @@ describe('selectMenu — property-based invariants (FRESCO-465, fast-check)', ()
         catalogArb({ minLength: 0, maxLength: 6 }),
         fc.string({ minLength: 1 }),
         (profile, candidates, seed) => {
-          const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile, seed })
+          const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], profile, seed, fechaInicio: FECHA_INICIO })
 
           const gapTipos = new Set<TipoPlatoSlot>()
           for (const dia of DIAS) {
@@ -611,7 +613,7 @@ describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
       ...Array.from({ length: 6 }, (_, i) => makeRecipe(`d-${i}`, 'desayuno')),
       ...Array.from({ length: 3 }, (_, i) => makeRecipe(`c-${i}`, 'comida')),
     ]
-    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     for (const dia of DIAS) {
       expect(menu[dia].cena).toBe(NO_SAFE_RECIPE_SENTINEL)
@@ -628,7 +630,7 @@ describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
   // Row 2 — zero safe recipes for one concrete slot.
   test('zero safe recipes for a whole tipo -> that slot is the sentinel everywhere + ONE advertencia naming the franja', () => {
     const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'desayuno')
-    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     for (const dia of DIAS) {
       expect(menu[dia].desayuno).toBe(NO_SAFE_RECIPE_SENTINEL)
@@ -649,7 +651,7 @@ describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
   // contract as row 2: a clear per-franja error, never a degraded plan.
   test('a dietary combo that empties the catalog for two tipos -> named sentinels, not a degraded plan', () => {
     const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato === 'desayuno')
-    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, profile: makeProfile() })
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile() })
 
     for (const dia of DIAS) {
       expect(menu[dia].comida).toBe(NO_SAFE_RECIPE_SENTINEL)
@@ -668,7 +670,7 @@ describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
     const { menu, advertencias } = selectMenu({
       candidates: buildAmpleCatalog(),
       recentRecipeIds: [],
-      seed: SEED,
+      seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile({ planning_selection: emptySelection }),
     })
 
@@ -693,10 +695,88 @@ describe('selectMenu — negative / failure-side examples (FRESCO-465)', () => {
     const { menu, advertencias } = selectMenu({
       candidates: buildAmpleCatalog(),
       recentRecipeIds: [],
-      seed: SEED,
+      seed: SEED, fechaInicio: FECHA_INICIO,
       profile: makeProfile(),
     })
     expect(Object.keys(menu)).toHaveLength(7)
     expect(Array.isArray(advertencias)).toBe(true)
+  })
+})
+
+describe('selectMenu — FRESCO-1012 (A7-LOGIC-05, A7-LOGIC-09, A7-LOGIC-10)', () => {
+  test('the season comes from the planned week: the same user, seed and week give the same menu whatever "now" is', () => {
+    const catalog = buildAmpleCatalog().map((r, i) => ({ ...r, temporada: i % 2 === 0 ? (['invierno'] as const) : (['verano'] as const) })) as Recipe[]
+    const run = () => selectMenu({ candidates: catalog, recentRecipeIds: [], seed: 'u:2026-W49', fechaInicio: '2026-11-30', profile: makeProfile() }).menu
+
+    setSystemTime(new Date('2026-11-29T22:00:00Z'))
+    const beforeBoundary = run()
+    setSystemTime(new Date('2026-12-01T09:00:00Z'))
+    const afterBoundary = run()
+    setSystemTime()
+
+    expect(afterBoundary).toEqual(beforeBoundary)
+  })
+
+  test('seasonOf reads the Monday of the week', () => {
+    expect(seasonOf('2026-12-07')).toBe('invierno')
+    expect(seasonOf('2026-03-02')).toBe('primavera')
+    expect(seasonOf('2026-06-01')).toBe('verano')
+    expect(seasonOf('2026-09-07')).toBe('otono')
+  })
+
+  test('a week planned for summer prefers summer recipes even when generated in winter', () => {
+    const summer = makeRecipe('desayuno-summer', 'desayuno', { temporada: ['verano'] })
+    const winter = makeRecipe('desayuno-winter', 'desayuno', { temporada: ['invierno'] })
+
+    setSystemTime(new Date('2026-01-10T10:00:00Z'))
+    const { menu } = selectMenu({ candidates: [winter, summer], recentRecipeIds: [], seed: SEED, fechaInicio: '2026-07-06', profile: makeProfile() })
+    setSystemTime()
+
+    expect(menu.lunes.desayuno).toBe(summer.id)
+  })
+
+  test('when the Pro history empties a tipo, that tipo falls back to the unfiltered candidates and prints no allergy warning', () => {
+    const breakfasts = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato === 'desayuno').slice(0, 3)
+    const others = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'desayuno')
+    const recentRecipeIds = breakfasts.map(r => r.id)
+
+    const { menu, advertencias } = selectMenu({ candidates: [...breakfasts, ...others], recentRecipeIds, seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile({ plan: 'pro' }) })
+
+    for (const dia of DIAS) {
+      expect(recentRecipeIds).toContain(menu[dia].desayuno)
+    }
+    expect(advertencias.some(a => a.includes('compatible con tus alergias'))).toBe(false)
+  })
+
+  test('the history exclusion stays hard while it leaves something to choose from (ADR-0001)', () => {
+    const breakfasts = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato === 'desayuno')
+    const recentRecipeIds = breakfasts.slice(0, breakfasts.length - 1).map(r => r.id)
+
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds, seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile({ plan: 'pro' }) })
+
+    for (const dia of DIAS) {
+      if (menu[dia].desayuno !== NO_SAFE_RECIPE_SENTINEL) expect(recentRecipeIds).not.toContain(menu[dia].desayuno)
+    }
+  })
+
+  test('a tipo with no safe candidate at all still prints the allergy warning', () => {
+    const candidates = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'desayuno')
+
+    const { advertencias } = selectMenu({ candidates, recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile: makeProfile({ plan: 'pro' }) })
+
+    expect(advertencias.some(a => a.includes('desayuno') && a.includes('compatible con tus alergias'))).toBe(true)
+  })
+
+  test('the rating has no weight: swapping 5 stars and 1 star between two recipes changes nothing (ADR-0063)', () => {
+    const a = makeRecipe('desayuno-a', 'desayuno')
+    const b = makeRecipe('desayuno-b', 'desayuno')
+    const run = (ratingA: number, ratingB: number) => ['s1', 's2', 's3', 's4', 's5'].map(seed =>
+      selectMenu({
+        candidates: [{ ...a, rating_promedio: ratingA }, { ...b, rating_promedio: ratingB }],
+        recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile(),
+      }).menu.lunes.desayuno,
+    )
+
+    expect(run(5, 1)).toEqual(run(1, 5))
   })
 })

@@ -94,7 +94,6 @@ export type { GetShoppingListSuggestionsRequest, GetShoppingListSuggestionsRespo
 export interface UpdateRecipeStatusRequest {
   meal_plan_recipe_id: string // uuid, required
   estado: EstadoRecetaSlot // required
-  rating?: number // 1-5, only meaningful when estado = 'cocinada'
   nueva_recipe_id?: string // uuid, required when estado = 'sustituida'
 }
 
