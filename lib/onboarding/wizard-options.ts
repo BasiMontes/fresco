@@ -1,7 +1,8 @@
-import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, TipoCocina } from '@schemas';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { DIETA_IMPLIED_ALERGENOS } from '@/lib/constants/dietary-options';
+import { MEAL_LABELS } from '@/lib/meal-labels';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 
 /**
@@ -83,13 +84,6 @@ const DIA_SHORT_LABELS: Record<DiaSemana, string> = {
   viernes: 'Vie',
   sabado: 'Sáb',
   domingo: 'Dom',
-};
-
-// Same wording as `PlanningSelectionGrid`'s rows ("comida" renders as "Almuerzo").
-const MEAL_LABELS: Record<TipoPlatoSlot, string> = {
-  desayuno: 'Desayuno',
-  comida: 'Almuerzo',
-  cena: 'Cena',
 };
 
 /**

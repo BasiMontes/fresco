@@ -17,7 +17,7 @@ describe('describePlanning', () => {
       domingo: [...all],
     };
 
-    expect(describePlanning(selection)).toEqual({ days: 'Toda la semana', meals: 'Desayuno, Almuerzo, Cena' });
+    expect(describePlanning(selection)).toEqual({ days: 'Toda la semana', meals: 'Desayuno, Comida, Cena' });
   });
 
   test('lists the selected days and only the selected meals', () => {
@@ -31,7 +31,7 @@ describe('describePlanning', () => {
       domingo: [],
     };
 
-    expect(describePlanning(selection)).toEqual({ days: 'Lun, Mié', meals: 'Almuerzo' });
+    expect(describePlanning(selection)).toEqual({ days: 'Lun, Mié', meals: 'Comida' });
   });
 
   test('returns empty strings when nothing is selected', () => {

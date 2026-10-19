@@ -61,6 +61,13 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema le redirige a /menu
     Y la sesión queda activa
 
+  @login @edge-case @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-1014, A7-UI-16)
+  # No toca ninguna cuenta ni escribe nada: solo abre una ruta protegida sin sesión.
+  Escenario: Un enlace a una página protegida sin sesión recuerda el destino
+    Dado que un visitante sin sesión abre /shopping-list
+    Entonces es redirigido a /login conservando /shopping-list como destino
+
   @login @edge-case @verificado-manual-2026-07-31 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Inicio de sesión falla con credenciales incorrectas

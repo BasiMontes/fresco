@@ -60,7 +60,7 @@ describe('OnboardingSummary', () => {
     render();
 
     expect(screen.getByText('Toda la semana')).toBeInTheDocument();
-    expect(screen.getByText('Desayuno, Almuerzo, Cena')).toBeInTheDocument();
+    expect(screen.getByText('Desayuno, Comida, Cena')).toBeInTheDocument();
   });
 
   test.each([

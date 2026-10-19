@@ -1,5 +1,6 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
 import type { DiaSemana, TipoPlato } from '@/lib/api/types';
+import { MEAL_LABELS } from '@/lib/meal-labels';
 import { firstActiveDietaLabel } from '@/lib/recipes/labels';
 import { cn } from '@/lib/utils';
 
@@ -14,11 +15,7 @@ const DIA_LABELS: Record<DiaSemana, string> = {
 };
 const DIAS = Object.keys(DIA_LABELS) as DiaSemana[];
 
-const TIPO_LABELS: Record<TipoPlato, string> = {
-  desayuno: 'Desayuno',
-  comida: 'Almuerzo',
-  cena: 'Cena',
-};
+const TIPO_LABELS: Record<TipoPlato, string> = MEAL_LABELS;
 const TIPOS = Object.keys(TIPO_LABELS) as TipoPlato[];
 
 /**
