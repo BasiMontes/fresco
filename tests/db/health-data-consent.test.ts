@@ -19,7 +19,7 @@
 
 import type { DbTestUser } from './harness';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { anonKey, createDbTestContext, nativeFetch, resolveUrl, rest, serviceRoleKey, stackReachable } from './harness';
+import { anonKey, createDbTestContext, nativeFetch, recordConsentRows, resolveUrl, rest, serviceRoleKey, stackReachable } from './harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -70,8 +70,8 @@ describe.skipIf(!(RUN && reachable))('health data needs consent (real DB)', () =
   const profileOf = async (user: DbTestUser) =>
     ((await rest('user_profiles', { token: user.token, query: `id=eq.${user.id}&select=*` })).body as Array<Record<string, unknown>>)[0];
 
-  const consent = async (user: DbTestUser, kind: string, version = 'v-test') =>
-    rest('user_consents', { method: 'POST', token: user.token, prefer: 'return=minimal', body: { kind, version } });
+  const consent = async (user: { id: string }, kind: string, version = 'v-test') =>
+    recordConsentRows(user.id, [kind], version);
 
   function expectRefused(result: { status: number, body: unknown }): void {
     expect(result.status).toBe(400);
@@ -110,7 +110,7 @@ describe.skipIf(!(RUN && reachable))('health data needs consent (real DB)', () =
       expect((await rest('user_profiles', { token: guest.token, query: `id=eq.${guest.id}&select=id` })).body).toEqual([]);
 
       // With the consent recorded, the same INSERT goes through.
-      expect((await rest('user_consents', { method: 'POST', token: guest.token, prefer: 'return=minimal', body: { kind: 'health_data', version: 'v-test' } })).status).toBeLessThan(300);
+      expect((await consent(guest, 'health_data')).status).toBeLessThan(300);
       expect((await rest('user_profiles', {
         method: 'POST',
         token: guest.token,
