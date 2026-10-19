@@ -173,10 +173,14 @@ export function ProCheckoutSummary({ open, onOpenChange, onConfirm, isSubmitting
           {' '}
           hasta que la canceles. Puedes cancelarla cuando quieras desde tu perfil, en «Gestionar mi suscripción».
         </li>
-        <li>
+        <li data-testid="pro_checkout_withdrawal">
           <strong className="text-text">Desistimiento.</strong>
           {' '}
-          Tienes derecho a desistir del contrato en 14 días naturales, sin dar explicaciones. Detalles en los
+          Tienes 14 días naturales desde que se activa tu suscripción para desistir sin dar explicaciones: escribe a
+          {' '}
+          {CONTACT_EMAIL}
+          {' '}
+          diciendo que desistes. Cancelar desde tu perfil detiene las renovaciones, pero no cuenta como desistimiento. Plazo, reembolso y un modelo de texto en los
           {' '}
           <Link href="/legal/terminos" target="_blank" className="text-primary underline" data-testid="pro_checkout_terms_link">Términos de Servicio</Link>
           .
