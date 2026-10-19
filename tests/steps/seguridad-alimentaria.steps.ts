@@ -38,8 +38,8 @@ const DECLARABLE_ALLERGENS = [
 
 async function setProfileAllergens(request: APIRequestContext, userId: string, allergens: string[]): Promise<void> {
   // Service-role PATCH: `user_profiles.alergenos` has no column-write trigger,
-  // and this bypasses the client-side ALERGENO_VALUES validation so the
-  // uppercase case-insensitivity scenario can seed 'GLUTEN'.
+  // and this bypasses the client-side ALERGENO_VALUES validation. The database still enforces
+  // the vocabulary (`user_profiles_alergenos_vocab`, FRESCO-1015).
   const res = await request.patch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
     headers: { ...serviceRoleHeaders(), Prefer: 'return=minimal' },
     data: { alergenos: allergens },
@@ -105,27 +105,27 @@ Then(/^ninguna de las 21 recetas del menú contiene "gluten" ni "lactosa"$/, () 
   expect(genCtx.menuAllergens).not.toContain('lactosa');
 });
 
-// ── Scenario 2: case-insensitive ──────────────────────────────────────────
+// ── Scenario 2: the profile only takes the lowercase vocabulary ───────────
+// FRESCO-1015: `user_profiles_alergenos_vocab` refuses anything outside the 14 slugs, so an
+// uppercase "GLUTEN" can no longer reach the filter; the guard is now the constraint itself.
 
 interface CaseCtx {
-  user: TestUser | null
-  catalog: { id: string, alergenos: string[] | null }[]
+  rejection: { status: number, body: string } | null
 }
-const caseCtx: CaseCtx = { user: null, catalog: [] };
+const caseCtx: CaseCtx = { rejection: null };
 
-Given(/^que un perfil declara su alergia como "GLUTEN" en mayúsculas$/, async ({ testUserFactory, request }) => {
-  caseCtx.user = await testUserFactory();
-  await setProfileAllergens(request, caseCtx.user.id, ['GLUTEN']);
+Given(/^que un perfil intenta declarar su alergia como "GLUTEN" en mayúsculas$/, async ({ testUserFactory, request }) => {
+  const user = await testUserFactory();
+  const res = await request.patch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${user.id}`, {
+    headers: { ...serviceRoleHeaders(), Prefer: 'return=minimal' },
+    data: { alergenos: ['GLUTEN'] },
+  });
+  caseCtx.rejection = { status: res.status(), body: await res.text() };
 });
 
-When(/^se pide su catálogo filtrado de recetas$/, async ({ request }) => {
-  caseCtx.catalog = await filteredCatalog(request, caseCtx.user!);
-});
-
-Then(/^ninguna receta del catálogo filtrado contiene el alérgeno "gluten"$/, () => {
-  expect(caseCtx.catalog.length).toBeGreaterThan(0);
-  const leaked = caseCtx.catalog.filter(r => lowerAll(r.alergenos).includes('gluten'));
-  expect(leaked).toEqual([]);
+Then(/^la base de datos lo rechaza porque solo admite el vocabulario en minúsculas$/, () => {
+  expect(caseCtx.rejection?.status).toBe(400);
+  expect(caseCtx.rejection?.body).toContain('user_profiles_alergenos_vocab');
 });
 
 // ── Scenario 3: every declarable allergen actually filters ─────────────────

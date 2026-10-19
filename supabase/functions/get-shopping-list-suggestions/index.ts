@@ -18,6 +18,7 @@ import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { normalizeNombre } from '../_shared/normalize.ts'
 import { pasilloFor, precioUnitario } from '../generate-shopping-list/aisle-pricing.ts'
+import { savedItemNames } from './saved-items.ts'
 import { BASE_QUANTITIES } from '../generate-shopping-list/consolidator.ts'
 import type {
   GetShoppingListSuggestionsRequest,
@@ -29,7 +30,8 @@ const FN_NAME = 'get-shopping-list-suggestions'
 const MAX_SUGGESTIONS = 3
 
 interface ShoppingListRow {
-  items: { items: { nombre: string }[] }[]
+  // jsonb: anything can be stored, `savedItemNames` reads it defensively.
+  items: unknown
 }
 
 interface FavoriteRecipeRow {
@@ -57,9 +59,7 @@ Deno.serve(async (req: Request) => {
 
     if (listError || !list) throw new HttpError('Lista no encontrada', 404)
 
-    const enLista = new Set(
-      list.items.flatMap(pasillo => pasillo.items.map(item => normalizeNombre(item.nombre))),
-    )
+    const enLista = new Set(savedItemNames(list.items).map(normalizeNombre))
 
     const { data: favoritos, error: favoritosError } = await supabase
       .from('favorites')
