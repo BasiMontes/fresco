@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { isAuthError } from '@supabase/supabase-js';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 
 /**
  * FRESCO-810 (ADR-0041): `lib/client-api/auth` is the only place a browser
@@ -14,6 +15,7 @@ const resetMock = mock(async (_email: string, _options: unknown) => ({ error: nu
 
 const getUserMock = mock(async (): Promise<{ data: { user: { id: string, is_anonymous: boolean } | null } }> => ({ data: { user: { id: 'user-1', is_anonymous: true } } }));
 const updateUserMock = mock(async (_attributes: unknown) => ({ data: { user: null }, error: null }));
+const getClaimsMock = mock(async (): Promise<{ data: { claims: { amr?: ({ method: string } | string)[] } } | null }> => ({ data: { claims: { amr: [{ method: 'password' }] } } }));
 const verifyOtpMock = mock(async (_params: unknown) => ({ data: { session: null }, error: null }));
 const setSessionMock = mock(async (_tokens: unknown) => ({ data: { user: null }, error: null }));
 const anonymousMock = mock(async (_options: unknown) => ({ data: { session: null }, error: null }));
@@ -31,6 +33,7 @@ void mock.module('@/lib/supabase/client', () => ({
       getUser: getUserMock,
       updateUser: updateUserMock,
       verifyOtp: verifyOtpMock,
+      getClaims: getClaimsMock,
       setSession: setSessionMock,
       signUp: signUpMock,
       resend: resendMock,
@@ -38,7 +41,7 @@ void mock.module('@/lib/supabase/client', () => ({
   }),
 }));
 
-const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, resendSignupConfirmation, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
+const { adoptSession, getAccessToken, getCurrentUser, getSession, requestEmailChange, resendSignupConfirmation, sendPasswordReset, signInAnonymously, signInWithPassword, signOut, signUp, updatePassword, getSessionAuthMethods, verifyEmailChangeOtp } = await import('@/lib/client-api/auth');
 
 beforeEach(() => {
   signOutMock.mockClear();
@@ -49,6 +52,7 @@ beforeEach(() => {
   anonymousMock.mockClear();
   getUserMock.mockClear();
   updateUserMock.mockClear();
+  getClaimsMock.mockClear();
   verifyOtpMock.mockClear();
   setSessionMock.mockClear();
   signUpMock.mockClear();
@@ -149,10 +153,72 @@ describe('guest-to-account conversion (FRESCO-89)', () => {
     expect(await getCurrentUser()).toBeNull();
   });
 
-  test('requestEmailChange links only the email (the password waits for the verified code)', async () => {
-    await requestEmailChange('a@b.es');
+  describe('requestEmailChange (FRESCO-1006: through the server route, not Supabase)', () => {
+    const realFetch = globalThis.fetch;
+    let sent: { url: string, init?: RequestInit } | null = null;
 
-    expect(updateUserMock).toHaveBeenCalledWith({ email: 'a@b.es' });
+    function answer(status: number, body: unknown) {
+      globalThis.fetch = (async (url: string, init?: RequestInit) => {
+        sent = { url, init };
+        return new Response(JSON.stringify(body), { status });
+      }) as unknown as typeof fetch;
+    }
+
+    afterEach(() => {
+      globalThis.fetch = realFetch;
+      sent = null;
+    });
+
+    test('posts the email and the captcha token to /api/auth/guest-email, and never calls updateUser itself', async () => {
+      answer(200, { ok: true });
+
+      const { error } = await requestEmailChange({ email: 'a@b.es', captchaToken: 'cap-1' });
+
+      expect(error).toBeNull();
+      expect(sent!.url).toBe('/api/auth/guest-email');
+      expect(sent!.init?.method).toBe('POST');
+      expect(JSON.parse(sent!.init?.body as string)).toEqual({ email: 'a@b.es', captchaToken: 'cap-1' });
+      expect(updateUserMock).not.toHaveBeenCalled();
+    });
+
+    test('sends a null token as null (a build with no captcha)', async () => {
+      answer(200, { ok: true });
+
+      await requestEmailChange({ email: 'a@b.es', captchaToken: null });
+
+      expect(JSON.parse(sent!.init?.body as string)).toEqual({ email: 'a@b.es', captchaToken: null });
+    });
+
+    test.each([
+      [429, 'over_email_send_rate_limit'],
+      [422, 'email_exists'],
+      [400, 'captcha_failed'],
+    ])('a %s answer comes back as an AuthError with code %s, so translateAuthError and email_exists keep working', async (status, code) => {
+      answer(status, { error: { code, message: 'x' } });
+
+      const { error } = await requestEmailChange({ email: 'a@b.es', captchaToken: 'cap-1' });
+
+      expect(isAuthError(error)).toBe(true);
+      expect(error?.code).toBe(code);
+      expect(error?.status).toBe(status);
+    });
+
+    test('a body that is not JSON is still an AuthError with the status', async () => {
+      globalThis.fetch = (async () => new Response('<html>', { status: 502 })) as unknown as typeof fetch;
+
+      const { error } = await requestEmailChange({ email: 'a@b.es', captchaToken: null });
+
+      expect(isAuthError(error)).toBe(true);
+      expect(error?.status).toBe(502);
+    });
+
+    test('a network failure is an AuthError too, never a throw', async () => {
+      globalThis.fetch = (async () => { throw new Error('offline'); }) as unknown as typeof fetch;
+
+      const { error } = await requestEmailChange({ email: 'a@b.es', captchaToken: null });
+
+      expect(isAuthError(error)).toBe(true);
+    });
   });
 
   test('verifyEmailChangeOtp verifies the code as an email_change', async () => {
@@ -165,6 +231,26 @@ describe('guest-to-account conversion (FRESCO-89)', () => {
     await updatePassword('secret-pass');
 
     expect(updateUserMock).toHaveBeenCalledWith({ password: 'secret-pass' });
+  });
+
+  test('updatePassword sends the current password when there is one (FRESCO-1015)', async () => {
+    await updatePassword('secret-pass', 'old-pass');
+
+    expect(updateUserMock).toHaveBeenCalledWith({ password: 'secret-pass', current_password: 'old-pass' });
+  });
+
+  test('getSessionAuthMethods reads the amr claim, objects and plain strings alike (FRESCO-1015)', async () => {
+    getClaimsMock.mockResolvedValueOnce({ data: { claims: { amr: [{ method: 'recovery' }, 'token_refresh'] } } });
+
+    expect(await getSessionAuthMethods()).toEqual(['recovery', 'token_refresh']);
+  });
+
+  test('getSessionAuthMethods is null when the token carries no readable amr (FRESCO-1015)', async () => {
+    getClaimsMock.mockResolvedValueOnce({ data: null });
+    expect(await getSessionAuthMethods()).toBeNull();
+
+    getClaimsMock.mockResolvedValueOnce({ data: { claims: {} } });
+    expect(await getSessionAuthMethods()).toBeNull();
   });
 });
 

@@ -1,5 +1,6 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 import Stripe from 'stripe';
+import { LEGAL_TEXTS_VERSION } from '../lib/legal/consent';
 import { mintSession, sessionLoginEnabled, signInBrowserViaSession } from './session-login';
 
 /**
@@ -34,6 +35,20 @@ export async function getAccessToken(request: APIRequestContext, email: string, 
 }
 
 /**
+ * FRESCO-1007: a pre-seeded account (the hosted `{DEV,PRE,PRO}_USER_*` rows) can predate the
+ * consent registry, and the app then blocks on the re-consent dialog. Accept it when it shows up,
+ * the same way a person would; a no-op for an account that already accepted the current texts.
+ */
+async function acceptReconsentIfAsked(page: Page): Promise<void> {
+  const dialog = page.getByTestId('reconsent_dialog');
+  if (!(await dialog.isVisible({ timeout: 1500 }).catch(() => false))) { return; }
+  await page.getByTestId('confirm_age_checkbox').click();
+  await page.getByTestId('accept_terms_checkbox').click();
+  await page.getByTestId('reconsent_accept_button').click();
+  await dialog.waitFor({ state: 'hidden' });
+}
+
+/**
  * FRESCO-843: the one way a step signs a test account in. Opt-in session login
  * (`E2E_SESSION_LOGIN=1`, FRESCO-799) mints the session from the admin API so a
  * hosted backend with the captcha on never sees a password grant; otherwise the
@@ -46,6 +61,7 @@ export async function loginToApp(page: Page, credentials: { email: string, passw
     await signInBrowserViaSession(page, credentials.email);
     await page.goto('/menu');
     await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+    await acceptReconsentIfAsked(page);
     return;
   }
   await page.goto('/login');
@@ -53,6 +69,7 @@ export async function loginToApp(page: Page, credentials: { email: string, passw
   await page.getByTestId('password_input').fill(credentials.password);
   await page.getByTestId('login_submit_button').click();
   await page.waitForURL(url => /\/(?:menu|onboarding)/.test(url.pathname));
+  await acceptReconsentIfAsked(page);
 }
 
 export function restHeaders(accessToken: string): Record<string, string> {
@@ -198,18 +215,28 @@ export async function postSignedStripeEvent(
 }
 
 /**
- * Records a `health_data` consent for the signed-in user (FRESCO-917). The database refuses a
- * client write of allergies or diet without one (`require_health_data_consent`), so a step that
- * seeds `alergenos` / `dieta_*` with the user's own token calls this first. Written under the
- * user's own session, exactly as the API route does (ADR-0040).
+ * Records a `health_data` consent for `userId` (FRESCO-917). The database refuses a client write of
+ * allergies or diet without one (`require_health_data_consent`), so a step that seeds `alergenos` /
+ * `dieta_*` with the user's own token calls this first. FRESCO-1007: the registry has no INSERT grant
+ * for a client role, so the row is written the way the server writes it, through `record_consents`
+ * with the service role.
  */
-export async function recordHealthDataConsent(accessToken: string): Promise<void> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_consents?on_conflict=user_id,kind,version`, {
+export async function recordHealthDataConsent(userId: string): Promise<void> {
+  await recordConsents(userId, ['health_data'], 'e2e-seed');
+}
+
+/**
+ * Records consent rows for `userId` through `record_consents` with the service role (FRESCO-1007).
+ * `version` defaults to the CURRENT texts, so a seeded user is already up to date and the blocking
+ * re-consent dialog does not cover the screen under test.
+ */
+export async function recordConsents(userId: string, kinds: string[], version: string = LEGAL_TEXTS_VERSION): Promise<void> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_consents`, {
     method: 'POST',
-    headers: { ...restHeaders(accessToken), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    body: JSON.stringify({ kind: 'health_data', version: 'e2e-seed' }),
+    headers: serviceRoleHeaders(),
+    body: JSON.stringify({ p_user_id: userId, p_kinds: kinds, p_version: version }),
   });
   if (!res.ok) {
-    throw new Error(`[test-helpers] health_data consent failed: ${res.status} ${await res.text()}`);
+    throw new Error(`[test-helpers] record_consents(${kinds.join(',')}) failed: ${res.status} ${await res.text()}`);
   }
 }

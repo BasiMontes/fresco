@@ -442,10 +442,9 @@ Característica: Flujo completo de usuario en Fresco
 
   @seguridad @seguridad-alimentaria @automatizado
   # Automatizado: tests/steps/seguridad-alimentaria.steps.ts
-  Escenario: El filtro de alérgenos no depende de mayúsculas o minúsculas
-    Dado que un perfil declara su alergia como "GLUTEN" en mayúsculas
-    Cuando se pide su catálogo filtrado de recetas
-    Entonces ninguna receta del catálogo filtrado contiene el alérgeno "gluten"
+  Escenario: Un alérgeno en mayúsculas no puede entrar en el perfil
+    Dado que un perfil intenta declarar su alergia como "GLUTEN" en mayúsculas
+    Entonces la base de datos lo rechaza porque solo admite el vocabulario en minúsculas
 
   @seguridad @seguridad-alimentaria @automatizado
   # Automatizado: tests/steps/seguridad-alimentaria.steps.ts

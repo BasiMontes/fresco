@@ -17,6 +17,7 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 const constructEvent = mock((..._a: unknown[]): unknown => ({}));
 const subscriptionsRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const subscriptionsCancel = mock(async (_id: string, _params?: unknown): Promise<unknown> => ({}));
+const chargesRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const invoicePaymentsList = mock(async (_p: unknown): Promise<unknown> => ({ data: [] }));
 const invoicesRetrieve = mock(async (_id: string): Promise<unknown> => ({}));
 const captureServerEvent = mock(async (_e: unknown) => {});
@@ -47,7 +48,7 @@ function withLivemode(event: unknown): unknown {
 
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
-  stripe: { webhooks: { constructEvent: (...a: unknown[]) => withLivemode(constructEvent(...a)) }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel }, invoicePayments: { list: invoicePaymentsList }, invoices: { retrieve: invoicesRetrieve } },
+  stripe: { webhooks: { constructEvent: (...a: unknown[]) => withLivemode(constructEvent(...a)) }, subscriptions: { retrieve: subscriptionsRetrieve, cancel: subscriptionsCancel }, charges: { retrieve: chargesRetrieve }, invoicePayments: { list: invoicePaymentsList }, invoices: { retrieve: invoicesRetrieve } },
   resolveWebhookSecret: () => 'whsec_test',
 }));
 void mock.module('@/lib/supabase/service', () => ({
@@ -112,6 +113,7 @@ beforeEach(() => {
   subscriptionsRetrieve.mockImplementation(async () => (constructEvent.mock.results.at(-1)?.value as { data?: { object?: unknown } } | undefined)?.data?.object);
   invoicePaymentsList.mockReset();
   invoicesRetrieve.mockReset();
+  chargesRetrieve.mockReset();
   subscriptionsCancel.mockReset();
   subscriptionsCancel.mockResolvedValue({});
   captureServerEvent.mockClear();
@@ -223,6 +225,15 @@ describe('POST /api/stripe/webhook — customer.subscription.updated', () => {
     const write = updateFor('user_profiles');
     expect(Object.keys(write!.payload)).toEqual(['payment_failed_at']);
     expect(write!.payload.payment_failed_at).toBeString();
+  });
+
+  test('past_due does not renew payment_failed_at while the aviso is already set: the 30-day grace counts from the first failure (FRESCO-1003)', async () => {
+    constructEvent.mockReturnValue(updatedEvent(subscription({ status: 'past_due' })));
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', payment_failed_at: '2026-10-01T00:00:00Z', stripe_subscription_id: 'sub_1' } } });
+
+    await POST(req({}));
+
+    expect(supa.updates).toHaveLength(0);
   });
 
   test('past_due fires payment_failed once per retry cycle (FRESCO-793)', async () => {
@@ -448,6 +459,89 @@ describe('POST /api/stripe/webhook — charge.refunded (FRESCO-900)', () => {
     expect(captureException).toHaveBeenCalledTimes(1);
     expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
     expect(completeWebhookEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/stripe/webhook — charge.dispute.created (FRESCO-1003, audit 7b A7-PAY-04)', () => {
+  const PERIOD_START = NOW_S - 10 * 86_400;
+
+  function disputeEvent(dispute: Record<string, unknown> = {}) {
+    return {
+      id: 'evt_d1',
+      type: 'charge.dispute.created',
+      data: { object: { id: 'dp_1', charge: 'ch_1', amount: 499, currency: 'eur', reason: 'fraudulent', status: 'needs_response', ...dispute } },
+    };
+  }
+
+  beforeEach(() => {
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
+    chargesRetrieve.mockResolvedValue({ id: 'ch_1', customer: 'cus_1', payment_intent: 'pi_1' });
+    subscriptionsRetrieve.mockResolvedValue(subscription({ status: 'active', items: { data: [{ price: { id: PRICE }, current_period_start: PERIOD_START, current_period_end: PERIOD_START + 30 * 86_400 }] } }));
+    invoicePaymentsList.mockResolvedValue({ data: [{ invoice: 'in_1' }] });
+    invoicesRetrieve.mockResolvedValue({ parent: { subscription_details: { subscription: 'sub_1' } } });
+  });
+
+  test('cancels the subscription of the disputed charge, without prorating or invoicing', async () => {
+    constructEvent.mockReturnValue(disputeEvent());
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    expect(chargesRetrieve).toHaveBeenCalledWith('ch_1');
+    expect(subscriptionsCancel).toHaveBeenCalledTimes(1);
+    expect(subscriptionsCancel).toHaveBeenCalledWith('sub_1', {
+      cancellation_details: { comment: 'dispute:dp_1' },
+      prorate: false,
+      invoice_now: false,
+    });
+  });
+
+  test('reports the dispute to Sentry with the ids to look it up', async () => {
+    constructEvent.mockReturnValue(disputeEvent());
+
+    await POST(req({}));
+
+    const first = captureMessage.mock.calls[0] as [string, { level: string, tags: Record<string, string>, extra: Record<string, unknown> }];
+    expect(first[0]).toBe('Stripe dispute opened');
+    expect(first[1].level).toBe('error');
+    expect(first[1].tags).toMatchObject({ stripe_event_id: 'evt_d1', stripe_dispute_id: 'dp_1', stripe_charge_id: 'ch_1' });
+    expect(first[1].extra).toMatchObject({ amount: 499, currency: 'eur', reason: 'fraudulent' });
+  });
+
+  test('it does not touch the profile: the downgrade comes from customer.subscription.deleted', async () => {
+    constructEvent.mockReturnValue(disputeEvent());
+
+    await POST(req({}));
+
+    expect(supa.updates).toHaveLength(0);
+  });
+
+  test('a charge that paid for another subscription cancels nothing, but is still reported', async () => {
+    invoicesRetrieve.mockResolvedValue({ parent: { subscription_details: { subscription: 'sub_old' } } });
+    constructEvent.mockReturnValue(disputeEvent());
+
+    await POST(req({}));
+
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+    expect(captureMessage.mock.calls[0][0]).toBe('Stripe dispute opened');
+  });
+
+  test('a customer with no subscription on file cancels nothing', async () => {
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'free', stripe_subscription_id: null } } });
+    constructEvent.mockReturnValue(disputeEvent());
+
+    await POST(req({}));
+
+    expect(subscriptionsCancel).not.toHaveBeenCalled();
+  });
+
+  test('the event is claimed by its id and completed, like every other handled event', async () => {
+    constructEvent.mockReturnValue(disputeEvent());
+
+    await POST(req({}));
+
+    expect((claimWebhookEvent.mock.calls[0][1] as { eventId: string, eventType: string })).toEqual({ eventId: 'evt_d1', eventType: 'charge.dispute.created' });
+    expect(completeWebhookEvent).toHaveBeenCalledTimes(1);
   });
 });
 

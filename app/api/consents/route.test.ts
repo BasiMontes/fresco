@@ -5,28 +5,29 @@ import { LEGAL_TEXTS_VERSION } from '@/lib/legal/consent';
 /**
  * FRESCO-794 — `POST /api/consents` records the caller's consents. Tests: the
  * auth gate, body validation, that the VERSION comes from the server and never
- * from the body, that the owner is never sent (the session owns the row), and a
- * database error surfacing as a 500. The RLS and column-grant side is proven
+ * from the body, that the owner is the verified session's and never the body's,
+ * and a database error surfacing as a 500. FRESCO-1007: the write is the
+ * `record_consents` function called with the service role, since the table has no
+ * INSERT grant for a client role; the grants and the function itself are proven
  * against a real database in `tests/db/user-consents.test.ts`.
  */
 
-interface Upsert { table: string, rows: unknown, options: unknown }
+interface RpcCall { name: string, args: unknown }
 
 let user: { id: string } | null = { id: 'user_1' };
-let upsertError: unknown = null;
-let upserts: Upsert[] = [];
+let rpcError: unknown = null;
+let rpcCalls: RpcCall[] = [];
 
-const client = {
-  auth: { getUser: async () => ({ data: { user } }) },
-  from: (table: string) => ({
-    upsert: async (rows: unknown, options: unknown) => {
-      upserts.push({ table, rows, options });
-      return { error: upsertError };
-    },
-  }),
+const sessionClient = { auth: { getUser: async () => ({ data: { user } }) } };
+const serviceClient = {
+  rpc: async (name: string, args: unknown) => {
+    rpcCalls.push({ name, args });
+    return { error: rpcError };
+  },
 };
 
-void mock.module('@/lib/supabase/server', () => ({ createClient: async () => client }));
+void mock.module('@/lib/supabase/server', () => ({ createClient: async () => sessionClient }));
+void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => serviceClient }));
 
 const { POST } = await import('./route');
 
@@ -39,8 +40,8 @@ function req(body: unknown) {
 
 beforeEach(() => {
   user = { id: 'user_1' };
-  upsertError = null;
-  upserts = [];
+  rpcError = null;
+  rpcCalls = [];
 });
 
 describe('POST /api/consents', () => {
@@ -49,12 +50,12 @@ describe('POST /api/consents', () => {
     const res = await POST(req({ kinds: ['terms'] }));
 
     expect(res.status).toBe(401);
-    expect(upserts).toHaveLength(0);
+    expect(rpcCalls).toHaveLength(0);
   });
 
   test('400 when the body is not JSON', async () => {
     expect((await POST(req('{not json'))).status).toBe(400);
-    expect(upserts).toHaveLength(0);
+    expect(rpcCalls).toHaveLength(0);
   });
 
   test.each([
@@ -63,32 +64,25 @@ describe('POST /api/consents', () => {
     ['empty kinds', { kinds: [] }],
   ])('400 for %s', async (_label, body) => {
     expect((await POST(req(body))).status).toBe(400);
-    expect(upserts).toHaveLength(0);
+    expect(rpcCalls).toHaveLength(0);
   });
 
-  test('records each kind with the server version, ignoring duplicates', async () => {
+  test('records the kinds through record_consents for the session user, with the server version', async () => {
     const res = await POST(req({ kinds: ['terms', 'privacy', 'age_14'] }));
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ recorded: ['terms', 'privacy', 'age_14'], version: LEGAL_TEXTS_VERSION });
-    expect(upserts).toHaveLength(1);
-    expect(upserts[0].table).toBe('user_consents');
-    expect(upserts[0].rows).toEqual([
-      { kind: 'terms', version: LEGAL_TEXTS_VERSION },
-      { kind: 'privacy', version: LEGAL_TEXTS_VERSION },
-      { kind: 'age_14', version: LEGAL_TEXTS_VERSION },
-    ]);
-    expect(upserts[0].options).toEqual({ onConflict: 'user_id,kind,version', ignoreDuplicates: true });
+    expect(rpcCalls).toEqual([{ name: 'record_consents', args: { p_user_id: 'user_1', p_kinds: ['terms', 'privacy', 'age_14'], p_version: LEGAL_TEXTS_VERSION } }]);
   });
 
   test('ignores a version or user_id sent in the body: the server owns both', async () => {
     await POST(req({ kinds: ['terms'], version: 'forged', user_id: 'someone_else' }));
 
-    expect(upserts[0].rows).toEqual([{ kind: 'terms', version: LEGAL_TEXTS_VERSION }]);
+    expect(rpcCalls[0].args).toEqual({ p_user_id: 'user_1', p_kinds: ['terms'], p_version: LEGAL_TEXTS_VERSION });
   });
 
   test('500 when the database rejects the write', async () => {
-    upsertError = { code: '42501', message: 'permission denied' };
+    rpcError = { code: 'P0001', message: 'record_consents: user reached the limit of 100 consent rows' };
     const spy = mock(() => {});
     const original = console.error;
     console.error = spy;

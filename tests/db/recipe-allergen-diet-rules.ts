@@ -54,9 +54,10 @@ export const ALLERGEN_KEYWORDS: Record<string, RegExp> = {
   cacahuetes: words('cacahuetes?'),
   frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos'),
   apio: words('apio|caldo'),
-  sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra'),
+  // FRESCO-997: mayonesa and barbecue sauce carry vinegar, beer carries sulfites, sushi rice is seasoned with it.
+  sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra|mayonesa|barbacoa|cerveza|arroz de sushi'),
   // Curry powder blends carry mustard seed (A7-SAFEA-07, A7-SAFEB-09).
-  mostaza: words('mostaza|curry'),
+  mostaza: words('mostaza|curry|mayonesa|barbacoa'),
   // FRESCO-912: the last two of the EU-14. No active recipe mentions either today, so
   // these entries are the net that catches the first one that does.
   altramuces: words('altramuz|altramuces|lupino|lupinos'),
@@ -108,8 +109,8 @@ const NOT_VEGETARIAN = words(
 /** Text that negates a meat word ("sin carne", "carne vegetal"): removed before the vegetarian match. */
 const NOT_MEAT_PHRASES = /\b(?:sin carne|carne vegetal|carne de soja|vegetal de carne)\b/g;
 /** Not gluten-free unless the text says so: soy sauce is wheat-based, tamari and miso often are. */
-const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza');
-const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza) sin gluten\b/g;
+const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos');
+const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos) sin gluten\b/g;
 
 /** A stock that names itself as vegetable. A bare "caldo" can be chicken or beef, so a vegetarian flag cannot rest on it. */
 const VEGETABLE_STOCK = /\bcaldo de (?:verduras?|vegetal(?:es)?|hortalizas)\b/g;

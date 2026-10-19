@@ -140,6 +140,12 @@ describe('vocabulary the oracle used to miss (A7-TEST-01)', () => {
     ['sulfitos', 'vinagre de manzana'],
     ['sulfitos', 'pasas'],
     ['mostaza', 'curry en polvo'],
+    ['mostaza', 'mayonesa'],
+    ['mostaza', 'salsa barbacoa'],
+    ['sulfitos', 'mayonesa'],
+    ['sulfitos', 'salsa barbacoa'],
+    ['sulfitos', 'cerveza'],
+    ['sulfitos', 'arroz de sushi'],
     ['soja', 'miso blanco'],
     ['soja', 'tamari'],
     ['pescado', 'lubina'],
@@ -171,6 +177,11 @@ describe('the reverse check: a diet flag that the text breaks (A7-TEST-01)', () 
     expect(reports(recipe(['tofu', 'tamari'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto que suele llevar trigo o cebada (ingrediente: tamari)')).toBe(true);
     expect(reports(recipe(['tofu', 'miso'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con gluten en el texto (ingrediente: miso)')).toBe(true);
     expect(reports(recipe(['tofu', 'tamari sin gluten'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(false);
+  });
+
+  test('sin_gluten true with nachos is flagged unless the text says "nachos sin gluten" (FRESCO-997)', () => {
+    expect(reports(recipe(['aguacate', 'nachos'], { dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto que suele llevar trigo o cebada (ingrediente: nachos)')).toBe(true);
+    expect(reports(recipe(['aguacate', 'nachos sin gluten'], { pasos_resumen: ['Servir con nachos sin gluten'], dieta: { sin_gluten: true } }), 'sin_gluten es true')).toBe(false);
   });
 
   test('sin_huevo true with a dish that implies egg is flagged even though no ingredient says huevo', () => {

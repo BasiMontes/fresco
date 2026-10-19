@@ -53,7 +53,7 @@ export function useSignupSubmit({ email, password, captcha, setEmailConflict, se
     // FRESCO-89: only link the email here — the password is set after
     // she verifies it (see `useSignupOtp`). Sending both together
     // used to return a false 200 (change queued, never applied).
-    const { error } = await requestEmailChange(email);
+    const { error } = await requestEmailChange({ email, captchaToken: captcha.token });
     if (error) {
       if (error.code === 'email_exists') {
         // AC (edge case): the email belongs to a different, existing
@@ -65,6 +65,8 @@ export function useSignupSubmit({ email, password, captcha, setEmailConflict, se
         setEmailConflict(true);
       }
       else {
+        // FRESCO-1006: a send refused by the rate limit is what the OTP alert watches for.
+        if (error.code === 'over_email_send_rate_limit') { captureEvent(POSTHOG_EVENTS.OTP_FAILED, { reason: error.code, stage: 'send' }); }
         setSignupError(translateAuthError(error));
       }
       return;
