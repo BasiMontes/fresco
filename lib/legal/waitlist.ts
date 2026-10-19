@@ -16,7 +16,6 @@ import { LEGAL_TEXTS_VERSION } from './consent';
  */
 
 // The checkbox copy lives in `waitlist-text.ts` (no imports): this file uses `node:crypto` and is server-only.
-export { WAITLIST_CONSENT_TEXT } from './waitlist-text';
 
 // Same shape as `EmailInput`'s check: no dot-only domain labels, so it cannot backtrack badly.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s.@]+(?:\.[^\s.@]+)+$/;
