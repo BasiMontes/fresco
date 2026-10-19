@@ -12,7 +12,9 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
+    // FRESCO-1013 (A7-UI-01): the root layout's skip link targets #main; without it a broken link had no
+    // landmark and the skip link went nowhere (WCAG 2.4.1 / 1.3.1).
+    <main id="main" className="mx-auto flex min-h-screen max-w-md flex-col justify-start px-4 pb-12 pt-16 md:pt-24">
       <Image src="/brand/logo-base.svg" alt="Fresco" width={112} height={34} className="mx-auto mb-8" priority />
       <Card className="text-center">
         <h1 className="text-h3">Página no encontrada</h1>
@@ -25,6 +27,6 @@ export default function NotFound() {
           </Link>
         </div>
       </Card>
-    </div>
+    </main>
   );
 }

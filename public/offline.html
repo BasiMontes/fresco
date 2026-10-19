@@ -10,7 +10,9 @@
     fails for lack of connection. It is STATIC on purpose:
     - No JavaScript. The CSP (proxy.ts) is `nonce` + `strict-dynamic`, so a
       script here, inline or external, would be blocked. "Reintentar" is a link
-      to the current URL (`href=""`) and the retry is a `meta refresh`.
+      to the current URL (`href=""`): the person decides when to retry.
+      FRESCO-1013 (A7-UI-04): there is NO `meta refresh`. It reloaded the page every 20 s, which
+      returned a screen-reader user to the top mid-sentence (WCAG 2.2.1).
     - No account data. It is precached at install time and the same bytes go to
       every user; it must never be built from a session.
     - Self-contained: ONE file. The logo is inline SVG (the worker only answers
@@ -19,7 +21,6 @@
     - Colours are the DESIGN.md tokens (light and dark) written as literals,
       because this file does not go through the Tailwind build.
   -->
-    <meta http-equiv="refresh" content="20" />
     <title>Sin conexión · Fresco</title>
     <style>
       :root {
@@ -196,7 +197,7 @@
       <h1>Sin conexión</h1>
       <p>No hemos podido cargar Fresco. Comprueba tu conexión y vuelve a intentarlo.</p>
       <a class="retry" href="">Reintentar</a>
-      <p class="hint">Lo intentaremos de nuevo solos en unos segundos.</p>
+      <p class="hint">Cuando recuperes la señal, pulsa «Reintentar».</p>
     </main>
   </body>
 </html>

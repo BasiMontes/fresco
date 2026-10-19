@@ -211,7 +211,8 @@ export function RecipeLibrary({
             variant="secondary"
             onClick={() => setCreateOpen(true)}
             data-testid="crear_propia_button"
-            aria-label="Crear receta propia"
+            // FRESCO-1013 (A7-UI-08): the name starts with the visible text ("Crear propia"), WCAG 2.5.3.
+            aria-label="Crear propia receta"
           >
             <Plus className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">Crear propia</span>
