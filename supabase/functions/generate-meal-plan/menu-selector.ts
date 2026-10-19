@@ -63,10 +63,14 @@ function makeSeededRng(seed: string): () => number {
   }
 }
 
-/** Current season as a `Temporada` — the union is ASCII (FRESCO-401), matching
- * the seeded `recipes.temporada` values, so this returns the typed value directly. */
-function getCurrentSeason(): Temporada {
-  const month = new Date().getMonth() // 0-11
+/**
+ * Season of the PLANNED week as a `Temporada` — the union is ASCII (FRESCO-401), matching the seeded
+ * `recipes.temporada` values. FRESCO-1012 (A7-LOGIC-05): it comes from the week's Monday (`fecha_inicio`),
+ * not from the server clock, so a week generated ahead across a season boundary is scored with its own
+ * season and the same user + seed + week gives the same menu whatever "now" is (FRESCO-380).
+ */
+export function seasonOf(fechaInicio: string): Temporada {
+  const month = new Date(`${fechaInicio}T00:00:00Z`).getUTCMonth() // 0-11
   if (month === 11 || month === 0 || month === 1) return 'invierno'
   if (month >= 2 && month <= 4) return 'primavera'
   if (month >= 5 && month <= 7) return 'verano'
@@ -84,6 +88,8 @@ export interface SelectMenuParams {
    * user regenerating the same week gets the same menu (FRESCO-380 / A4-M1).
    */
   seed: string
+  /** Monday of the planned week, `YYYY-MM-DD` (`meal_plans.fecha_inicio`): the season is read from it. */
+  fechaInicio: string
   /** Pro/Family personal cocinada/descartada counts per recipe, all-time (ADR-0008) — `undefined` for Free. */
   userEngagement?: Map<string, { cocinada: number; descartada: number }>
 }
@@ -123,7 +129,8 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
   if (temporada.includes(season)) score += 3
   else if (temporada.includes('todo_el_ano')) score += 1
 
-  score += (recipe.rating_promedio ?? 0) * 2
+  // FRESCO-1012 (A7-LOGIC-10, ADR-0063): no rating term. Nothing ever sent a rating, so it was 0 for every
+  // recipe; the personal signal below and the global cook/discard counts are what the score learns from.
   score += Math.min(recipe.veces_cocinada, 10) * 0.3
   if (recipe.veces_descartada > 2) score -= 4
 
@@ -137,9 +144,8 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
 
   // Tie-break jitter (FRESCO-380 / A4-M1): seeded so the same (user, week)
   // is reproducible, and small enough (< 0.25 effective) that it can only
-  // reorder candidates already within a rating-point of each other — never
-  // overturn a genuine rating gap (`rating_promedio * 2` = 2.0 per star) or
-  // the ADR-0008 personal nudge (+1.0). Was `Math.random() * 2`, which could
+  // reorder candidates already within a point of each other — never
+  // overturn the ADR-0008 personal nudge (+1.0). Was `Math.random() * 2`, which could
   // do exactly that.
   score += rng() * 0.5
 
@@ -147,7 +153,7 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, profile, seed, fechaInicio, userEngagement }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -156,8 +162,14 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
   const byTipo = new Map<TipoPlatoSlot, Recipe[]>(
     TIPOS.map(tipo => [tipo, pool.filter(r => r.clasificacion?.tipo_plato === tipo)]),
   )
+  // FRESCO-1012 (A7-LOGIC-09): the same candidates before the Pro history exclusion. A narrow profile that
+  // marks its meals diligently can empty a tipo once the last two weeks are excluded; the exclusion is a
+  // preference for variety, never a reason to leave a slot empty, so those slots fall back to this list.
+  const allByTipo = new Map<TipoPlatoSlot, Recipe[]>(
+    TIPOS.map(tipo => [tipo, candidates.filter(r => r.clasificacion?.tipo_plato === tipo)]),
+  )
 
-  const season = getCurrentSeason()
+  const season = seasonOf(fechaInicio)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)
@@ -180,12 +192,17 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
         continue
       }
 
-      const basePool = byTipo.get(tipo) ?? []
+      const notRepeated = (r: Recipe) => tipo === 'desayuno'
+        ? (breakfastCount.get(r.id) ?? 0) < MAX_BREAKFAST_REPEATS
+        : !usedLunchDinner.has(r.id)
 
-      const available = basePool.filter((r) => {
-        if (tipo === 'desayuno') return (breakfastCount.get(r.id) ?? 0) < MAX_BREAKFAST_REPEATS
-        return !usedLunchDinner.has(r.id)
-      })
+      // The history exclusion is hard while it leaves something to choose from (ADR-0001). When it leaves
+      // NOTHING for this tipo, the tipo falls back to every safe candidate. The allergy / diet dead end is
+      // judged on those too: a variety preference must never be reported as "your allergies leave nothing".
+      const historyPool = byTipo.get(tipo) ?? []
+      const allPool = allByTipo.get(tipo) ?? []
+      const basePool = historyPool.length > 0 ? historyPool : allPool
+      const available = basePool.filter(notRepeated)
 
       if (available.length === 0) {
         menu[dia][tipo] = NO_SAFE_RECIPE_SENTINEL
@@ -198,7 +215,7 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
         if (!warnedNoCandidates.has(tipo)) {
           warnedNoCandidates.add(tipo)
           advertencias.push(
-            basePool.length === 0
+            allPool.length === 0
               ? `No hay ninguna receta de ${tipo} compatible con tus alergias y tu dieta. Revisa tus restricciones o añade recetas propias.`
               : `Se agotaron las recetas de ${tipo} distintas para llenar la semana sin repetir plato; algún día se ha quedado sin ${tipo} asignado.`,
           )

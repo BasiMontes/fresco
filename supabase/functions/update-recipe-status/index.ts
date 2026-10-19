@@ -6,7 +6,7 @@
 // complete implementation.
 //
 // The recipe's aggregate learning fields (veces_cocinada/veces_descartada/
-// rating_promedio) are updated by the DB trigger recipe_learning_trigger
+// rating_promedio, no longer fed: FRESCO-1012) are updated by the DB trigger recipe_learning_trigger
 // (supabase/migrations/20260725120200_create_recipe_learning_trigger.sql),
 // not by this function directly — this function's only job is the
 // authorized, validated write to meal_plan_recipes.
@@ -22,7 +22,7 @@ import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { logger } from '../_shared/logger.ts'
-import { assertEstadoValido, assertRatingValido, buildUpdatePayload } from './validation.ts'
+import { assertEstadoValido, buildUpdatePayload } from './validation.ts'
 import type { SlotOwnershipRow, UpdateRecipeStatusRequest, UpdateRecipeStatusResponse } from './types.ts'
 
 const FN_NAME = 'update-recipe-status'
@@ -49,13 +49,12 @@ Deno.serve(async (req: Request) => {
 
     // 2. Parse + validate body (api-contracts.md §4 error table)
     const body: UpdateRecipeStatusRequest = await req.json()
-    const { meal_plan_recipe_id, estado, rating, nueva_recipe_id } = body
+    const { meal_plan_recipe_id, estado, nueva_recipe_id } = body
 
     if (!meal_plan_recipe_id || !estado) {
       throw new HttpError('Faltan campos obligatorios: meal_plan_recipe_id, estado', 400)
     }
     assertEstadoValido(estado) // A4-L7: whitelist, not the raw enum error
-    assertRatingValido(rating) // A4-L7: integer 1-5, rejects "3" / 3.7 / null
     if (estado === 'sustituida' && !nueva_recipe_id) {
       throw new HttpError('Se requiere nueva_recipe_id para estado "sustituida"', 400)
     }
@@ -128,7 +127,7 @@ Deno.serve(async (req: Request) => {
 
     // 7. Apply the update — recipe_learning_trigger reacts to this in the DB.
     // A4-L7: buildUpdatePayload decides which fields the target estado
-    // permits (recipe_id on `sustituida` only, rating off `sustituida`).
+    // permits (recipe_id on `sustituida` only; a `rating` in the body is ignored, FRESCO-1012).
     // meal_plan_recipes rejects a client `.update()` on estado / rating /
     // recipe_id (protect_meal_plan_recipes_integrity), so the write goes
     // through the service-role client — the one caller the trigger trusts that
@@ -138,7 +137,7 @@ Deno.serve(async (req: Request) => {
     // duplicate re-filter) and is scoped to the one slot we just verified. The
     // `estado not in (terminal)` filter closes the window between the guard in
     // step 5 and this write: zero rows back means the slot changed meanwhile.
-    const updatePayload = buildUpdatePayload(estado, rating, nueva_recipe_id)
+    const updatePayload = buildUpdatePayload(estado, nueva_recipe_id)
 
     const { data: updatedRows, error: updateError } = await createServiceRoleClient()
       .from('meal_plan_recipes')

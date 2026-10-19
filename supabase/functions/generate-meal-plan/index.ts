@@ -166,6 +166,8 @@ Deno.serve(async (req: Request) => {
       profile,
       // FRESCO-380 (A4-M1): same user + same week => same menu.
       seed: `${user.id}:${semana_iso}`,
+      // FRESCO-1012 (A7-LOGIC-05): the season of the planned week, not of the day it is generated.
+      fechaInicio: fecha_inicio,
       userEngagement,
     })
 

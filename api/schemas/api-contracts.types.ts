@@ -89,8 +89,6 @@ export interface GetShoppingListSuggestionsResponse {
 export interface UpdateRecipeStatusRequest {
   meal_plan_recipe_id: string
   estado: EstadoRecetaMenu
-  /** 1-5, only meaningful when estado = 'cocinada'. */
-  rating?: number
   /** required when estado = 'sustituida'. */
   nueva_recipe_id?: string
 }

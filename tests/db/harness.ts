@@ -32,6 +32,8 @@
  */
 
 import { join } from 'node:path';
+import { getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from '../../lib/date/iso-week';
+import { hoyEnMadrid, sumarDias } from '../../lib/date/madrid-date';
 
 export interface DbTestUser {
   id: string
@@ -587,4 +589,19 @@ export async function seedShoppingList(
     throw new Error(`[db-harness] seedShoppingList failed: ${res.status} ${JSON.stringify(res.body)}`);
   }
   return (res.body[0] as { id: string }).id;
+}
+
+/**
+ * The ISO week `offset` weeks from today in Madrid, as `copy_meal_plan_to_week` expects it (FRESCO-1012: that
+ * function only targets the current week, `0`, or the next one, `1`).
+ */
+export function plannedWeek(offset: number): { semanaIso: string, fechaInicio: string } {
+  const day = new Date(`${sumarDias(hoyEnMadrid(), offset * 7)}T12:00:00Z`);
+  return { semanaIso: getIsoWeek(day), fechaInicio: getIsoWeekMonday(day) };
+}
+
+/** Week `n` (1-52) of 2099 with its real Monday: a plan the CHECK on `meal_plans` accepts and no real plan collides with. */
+export function farWeek(n: number): { semanaIso: string, fechaInicio: string } {
+  const semanaIso = `2099-W${String(n).padStart(2, '0')}`;
+  return { semanaIso, fechaInicio: getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10) };
 }

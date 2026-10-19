@@ -20,6 +20,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import {
   catalogRecipeIds,
   createDbTestContext,
+  plannedWeek,
 
   rest,
   rpc,
@@ -83,8 +84,8 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
 
     const spoof = await rpc('copy_meal_plan_to_week', {
       p_source_meal_plan_id: plan.id,
-      p_semana_iso: '2099-W02',
-      p_fecha_inicio: '2099-01-12',
+      p_semana_iso: plannedWeek(1).semanaIso,
+      p_fecha_inicio: plannedWeek(1).fechaInicio,
     }, { token: B.token });
     // FRESCO-736: not-found and not-owned raise the SAME message now (non-disclosure).
     expectRaise(spoof, 'not found');
@@ -95,8 +96,8 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
 
     const legit = await rpc('copy_meal_plan_to_week', {
       p_source_meal_plan_id: plan.id,
-      p_semana_iso: '2099-W03',
-      p_fecha_inicio: '2099-01-19',
+      p_semana_iso: plannedWeek(0).semanaIso,
+      p_fecha_inicio: plannedWeek(0).fechaInicio,
     }, { token: A.token });
     expect(legit.status).toBe(200);
     expect(typeof legit.body).toBe('string');
@@ -107,7 +108,7 @@ describe.skipIf(!(RUN && reachable))('SECURITY DEFINER spoof tests (real DB)', (
       token: A.token,
       query: `id=eq.${legit.body as string}&select=semana_iso`,
     });
-    expect((created.body as { semana_iso: string }[])[0]?.semana_iso).toBe('2099-W03');
+    expect((created.body as { semana_iso: string }[])[0]?.semana_iso).toBe(plannedWeek(0).semanaIso);
   });
 
   test('get_catalog — B cannot read A\'s personalised catalog', async () => {
