@@ -240,9 +240,10 @@ Given(/^que un usuario autenticado sin menú$/, async ({ testUserFactory }) => {
 When(/^envía un estado que no es "cocinada", "descartada" ni "sustituida"$/, async ({ request }) => {
   whitelistCtx.response = await request.post(`${FUNCTIONS_URL}/update-recipe-status`, {
     headers: restHeaders(whitelistCtx.user!.accessToken),
-    // `pendiente` is a real enum value but system-assigned only — the
-    // whitelist must reject it, not defer to the DB enum.
-    data: { meal_plan_recipe_id: crypto.randomUUID(), estado: 'pendiente' },
+    // `excluida` is a real enum value but system-assigned only — the
+    // whitelist must reject it, not defer to the DB enum. (`pendiente` is
+    // client-settable since FRESCO-1014: it is how a mark is taken back.)
+    data: { meal_plan_recipe_id: crypto.randomUUID(), estado: 'excluida' },
   });
 });
 
