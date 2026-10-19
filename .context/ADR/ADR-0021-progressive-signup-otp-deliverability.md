@@ -85,7 +85,7 @@ that one means "a real account exists", these are the granular step.
 
 | Setting | Value | Scope |
 |---|---|---|
-| Rate limit for sending emails | **20 emails/h** | the whole project: the conversion code, password resets and every other Auth email share it |
+| Rate limit for sending emails | **20 emails/h when read; the owner raised it to 50 emails/h the same day** (see the decision below) | the whole project: the conversion code, password resets and every other Auth email share it |
 | Minimum interval per user | **60 s** | emails to the same user (applies because custom SMTP is configured) |
 | Anonymous sign-ins | 30 requests/h | per IP |
 | Sign-ups and sign-ins | 30 requests/5 min | per IP, anonymous excluded |
@@ -102,7 +102,7 @@ The email quota is editable because custom SMTP is on. Its real ceiling is Gmail
 - What stops one person from holding seven guest sessions is the cost of getting them: a Turnstile solve per guest, and 30 anonymous sign-ins an hour per IP. These are the layers that carry the weight; a flood from many IPs gets through both and the quota is then the cap.
 - The 60 s minimum interval means a resend inside a minute is refused by Auth with the same code. The UI shows the generic "too many attempts" copy for it; a visible cooldown would be a UX follow-up, not a quota change.
 
-**Decision on the values: none changed.** 20 emails/h is enough for the current volume (the reopen trigger below is about 100 signups a week, roughly one an hour on average). Raising it widens what a distributed flood can send through the Gmail account and puts the Gmail daily cap at risk, so it moves together with the sender: when the owned domain and an authenticated provider arrive (FRESCO-886) or when a launch spike is planned. Revisit the quota when any of these happens: a real `over_email_send_rate_limit` shows up in PostHog, the cohort crosses the signup trigger below, or the sender changes.
+**Decision on the values: the email quota goes from 20 to 50 emails/h (owner, 2026-10-19); nothing else changes.** The recommendation was to leave 20 (enough for the current volume, which is about one signup an hour on average), and the owner chose 50 to leave room for a burst. The trade-off, accepted: a distributed flood can now push 50 mails an hour through the Gmail account instead of 20, which also moves the Gmail daily cap closer (a personal account sends a few hundred a day), and the number of guest sessions needed to exhaust the quota goes from 7 to 17 (3 an hour each). The captcha and the anonymous sign-in limit are what make 17 sessions expensive, and the PostHog alert below is what tells us when it happens. 50 is still bounded by the sender: when the owned domain and an authenticated provider arrive (FRESCO-886) the quota should be revisited together with it. Revisit sooner when any of these happens: a real `over_email_send_rate_limit` shows up in PostHog, the cohort crosses the signup trigger below, or the Gmail account reports a sending block.
 
 **Watching it.** `otp_failed` now also fires when a send is refused by a rate limit, with `reason: over_email_send_rate_limit` and `stage: send | resend`. A PostHog alert on that count (hourly, any value above 0) emails the owner. Before this change only a failed verification fired `otp_failed`, so the alert could not have triggered.
 
