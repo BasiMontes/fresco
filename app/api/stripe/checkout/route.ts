@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getBillingState } from '@/lib/billing/billing-state';
 import { checkoutSessionWindow, ensureCheckoutCustomer, expireOtherOpenCheckoutSessions, hasLiveSubscription } from '@/lib/billing/checkout-guard';
 import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
+import { hasRecordedConsent } from '@/lib/legal/consent-store';
 import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
 import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
 import { CHECKOUT_BRANDING } from '@/lib/stripe-checkout-branding';
@@ -55,6 +56,12 @@ const RATE_LIMIT_WINDOW_SECONDS = 3600;
  * subscription of that customer is a 409, concurrent POSTs of the same minute share one
  * idempotency key and so one session, the session expires in about 30 minutes, and creating
  * a session expires the customer's other open ones.
+ *
+ * FRESCO-1003 (audit 7b: A7-PAY-07, A7-PAY-10): the route refuses what the UI used to guarantee
+ * alone. No profile row is a 409, and no recorded `withdrawal_waiver` for the current text
+ * version is a 400 (`consent-store.ts#hasRecordedConsent`). The registry keeps one row per
+ * (user, kind, version) and ignores repeats, so "recorded" means "for these texts", not "in the
+ * last minutes"; per-purchase evidence would need a registry change (ADR-0040).
  *
  * `client_reference_id` is the authenticated Supabase user id, so the
  * webhook (`app/api/stripe/webhook/route.ts`) can map the eventual
@@ -121,11 +128,29 @@ export async function POST(request: NextRequest) {
     console.error('[/api/stripe/checkout] failed to read profile', profileError);
     return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
   }
-  if (profile?.plan === 'pro') {
+  // FRESCO-1003 (audit 7b A7-PAY-10): no profile row means onboarding never finished; there is no
+  // account to attach a subscription to, and the trial rules below read the profile.
+  if (!profile) {
+    return NextResponse.json({ error: 'Termina de configurar tu perfil antes de pasarte a Fresco Pro.' }, { status: 409 });
+  }
+  if (profile.plan === 'pro') {
     return NextResponse.json({ error: 'Ya tienes Fresco Pro.' }, { status: 409 });
   }
 
-  const stripeCustomerId = profile?.stripe_customer_id && (profile.stripe_livemode ?? false) === checkoutLivemode
+  // FRESCO-1003 (audit 7b A7-PAY-07): the summary records the withdrawal waiver before it calls
+  // this route, but a request that skips the summary used to reach Stripe without it. The server
+  // asks the registry (ADR-0040), and an unreadable registry is a refusal, not a pass.
+  try {
+    if (!(await hasRecordedConsent(supabase, 'withdrawal_waiver'))) {
+      return NextResponse.json({ error: 'Para empezar el servicio de inmediato tienes que aceptar el desistimiento antes de pagar.' }, { status: 400 });
+    }
+  }
+  catch (consentError) {
+    console.error('[/api/stripe/checkout] failed to read the withdrawal waiver', consentError);
+    return NextResponse.json({ error: 'No se pudo iniciar el pago.' }, { status: 500 });
+  }
+
+  const stripeCustomerId = profile.stripe_customer_id && (profile.stripe_livemode ?? false) === checkoutLivemode
     ? profile.stripe_customer_id
     : null;
   const trialAlreadyUsed = !isTrialAvailable(profile);

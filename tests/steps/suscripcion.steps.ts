@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import type { TestUser, TestUserFactory } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
@@ -402,7 +403,18 @@ Given(/^que Laura empieza el proceso de actualizar a Pro$/, async ({ page, testU
   await loginToApp(page, testUser);
 });
 
+/**
+ * FRESCO-1003 (audit 7b A7-PAY-07): the checkout route refuses a request without a recorded
+ * withdrawal waiver. These steps call it directly, so they record the waiver first, exactly as
+ * the summary dialog does before it redirects (`useProCheckout`).
+ */
+async function recordWithdrawalWaiver(page: Page): Promise<void> {
+  const response = await page.request.post('/api/consents', { data: { kinds: ['withdrawal_waiver'] } });
+  if (!response.ok()) { throw new Error(`Could not record the withdrawal waiver: ${response.status()} ${await response.text()}`); }
+}
+
 When(/^llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripcionCtx: ctx }) => {
+  await recordWithdrawalWaiver(page);
   const response = await page.request.post('/api/stripe/checkout');
   const body = await response.json() as { url?: string, error?: string };
   if (!response.ok() || !body.url) { throw new Error(`Checkout session creation failed: ${response.status()} ${JSON.stringify(body)}`); }
@@ -422,6 +434,7 @@ Then(/^se le ofrece un periodo de prueba de 7 días sin necesidad de tarjeta$/, 
 // --- FRESCO-844: annual Pro plan ---
 
 When(/^elige el plan anual y llega a la pantalla de pago de Stripe Checkout$/, async ({ page, suscripcionCtx: ctx }) => {
+  await recordWithdrawalWaiver(page);
   const response = await page.request.post('/api/stripe/checkout', { data: { interval: 'year' } });
   const body = await response.json() as { url?: string, error?: string };
   if (!response.ok() || !body.url) { throw new Error(`Annual checkout session creation failed: ${response.status()} ${JSON.stringify(body)}`); }
