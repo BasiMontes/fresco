@@ -15,8 +15,8 @@ import { LEGAL_TEXTS_VERSION } from './consent';
  * (`20261019180000_waitlist_double_opt_in.sql`); the browser roles cannot insert.
  */
 
-/** Checkbox copy next to the email field. PROVISIONAL, like every text in `consent.ts`. */
-export const WAITLIST_CONSENT_TEXT = 'Acepto que Fresco use mi correo solo para avisarme del lanzamiento. Te pediremos que lo confirmes desde tu correo.';
+// The checkbox copy lives in `waitlist-text.ts` (no imports): this file uses `node:crypto` and is server-only.
+export { WAITLIST_CONSENT_TEXT } from './waitlist-text';
 
 // Same shape as `EmailInput`'s check: no dot-only domain labels, so it cannot backtrack badly.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s.@]+(?:\.[^\s.@]+)+$/;
