@@ -12,7 +12,6 @@ function clientReturning(result: { data: unknown, error: { message: string } | n
 
 const SAVED = {
   nombre: 'Marta',
-  sexo: null,
   objetivo: null,
   adultos: 2,
   ninos: 0,

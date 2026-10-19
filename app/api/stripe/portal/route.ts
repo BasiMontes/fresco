@@ -6,6 +6,15 @@ import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
 /**
+ * FRESCO-1003 (audit 7b A7-API-04): each call opens a Stripe Billing Portal session, so a user
+ * (or a script holding one session) could create them without limit. The portal is something a
+ * person opens a few times a month; 20 an hour per user is far above any real use.
+ */
+const RATE_LIMIT_ENDPOINT = 'stripe-portal';
+const RATE_LIMIT_PER_HOUR = 20;
+const RATE_LIMIT_WINDOW_SECONDS = 3600;
+
+/**
  * POST /api/stripe/portal — `/profile`'s "Gestionar mi suscripción" CTA
  * (STORY-FRESCO-231). Creates a Stripe Billing Portal Session for the
  * authenticated user's existing customer and returns its hosted-page url for
@@ -26,6 +35,22 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: 'No hay una sesión autenticada.' }, { status: 401 });
+  }
+
+  // ADR-0010: atomic check-and-increment, fail closed — only an explicit `true` passes. Before the
+  // profile read and the Stripe call, so a refused request costs the database one write and no more.
+  const { data: allowed, error: rateLimitError } = await supabase.rpc('check_and_increment_rate_limit', {
+    p_user_id: user.id,
+    p_endpoint: RATE_LIMIT_ENDPOINT,
+    p_limit: RATE_LIMIT_PER_HOUR,
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+  });
+  if (rateLimitError) {
+    console.error('[/api/stripe/portal] rate-limit check failed', rateLimitError);
+    return NextResponse.json({ error: 'No se pudo abrir la gestión de tu suscripción.' }, { status: 500 });
+  }
+  if (allowed !== true) {
+    return NextResponse.json({ error: 'Has alcanzado el límite de intentos, inténtalo de nuevo en unos minutos.' }, { status: 429 });
   }
 
   let profile: BillingState | null;

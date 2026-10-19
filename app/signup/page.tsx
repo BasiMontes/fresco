@@ -41,7 +41,7 @@ export default function SignupPage() {
   const captcha = useCaptcha();
 
   const reassign = useSignupReassign({ email, captcha, setNavigating });
-  const otp = useSignupOtp({ email, password, setEmailConflict, setNavigating });
+  const otp = useSignupOtp({ email, password, captcha, setEmailConflict, setNavigating });
   const submit = useSignupSubmit({ email, password, captcha, setEmailConflict, setStep, setSignupPendingConfirmation, setNavigating });
 
   let content;
@@ -55,7 +55,7 @@ export default function SignupPage() {
     content = <SignupFormStep email={email} password={password} onEmailChange={setEmail} onPasswordChange={setPassword} submit={submit} captcha={captcha} />;
   }
   else {
-    content = <SignupOtpStep email={email} otp={otp} />;
+    content = <SignupOtpStep email={email} otp={otp} captcha={captcha} />;
   }
 
   return (

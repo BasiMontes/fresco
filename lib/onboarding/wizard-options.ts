@@ -1,4 +1,4 @@
-import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
 import { DIETA_IMPLIED_ALERGENOS } from '@/lib/constants/dietary-options';
@@ -9,13 +9,6 @@ import { fromPlanningSelection } from '@/lib/planning-selection';
  * Extracted from `app/onboarding/page.tsx` (A5-M1, god-component split) —
  * pure data/functions, no behavior change from the original inline values.
  */
-
-export const SEXO_OPTIONS: { value: SexoUsuario, label: string }[] = [
-  { value: 'mujer', label: 'Mujer' },
-  { value: 'hombre', label: 'Hombre' },
-  { value: 'otro', label: 'Otro' },
-  { value: 'prefiero_no_decir', label: 'Prefiero no decirlo' },
-];
 
 export const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
   { value: 'perder_peso', label: 'Perder peso' },

@@ -364,6 +364,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_rate_limits: {
+        Row: {
+          count: number
+          endpoint: string
+          key_hash: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          endpoint: string
+          key_hash: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          endpoint?: string
+          key_hash?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           count: number
@@ -783,18 +804,27 @@ export type Database = {
       }
       waitlist_signups: {
         Row: {
+          confirm_token_hash: string | null
+          confirmation_sent_at: string | null
+          confirmed_at: string | null
           consent_version: string
           created_at: string
           email: string
           id: string
         }
         Insert: {
+          confirm_token_hash?: string | null
+          confirmation_sent_at?: string | null
+          confirmed_at?: string | null
           consent_version: string
           created_at?: string
           email: string
           id?: string
         }
         Update: {
+          confirm_token_hash?: string | null
+          confirmation_sent_at?: string | null
+          confirmed_at?: string | null
           consent_version?: string
           created_at?: string
           email?: string
@@ -839,7 +869,6 @@ export type Database = {
           plan_expires_at: string | null
           planning_selection: Json
           presupuesto_semana_euros: number | null
-          sexo: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id: string | null
           stripe_livemode: boolean | null
           stripe_subscription_id: string | null
@@ -883,7 +912,6 @@ export type Database = {
           plan_expires_at?: string | null
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
-          sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id?: string | null
           stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
@@ -927,7 +955,6 @@ export type Database = {
           plan_expires_at?: string | null
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
-          sexo?: Database["public"]["Enums"]["sexo_usuario"] | null
           stripe_customer_id?: string | null
           stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
@@ -954,6 +981,26 @@ export type Database = {
           p_window_seconds: number
         }
         Returns: boolean
+      }
+      check_ip_rate_limit: {
+        Args: { p_endpoint: string, p_key_hash: string, p_limit: number }
+        Returns: boolean
+      }
+      cleanup_abandoned_guests: {
+        Args: { p_max_age?: string }
+        Returns: number
+      }
+      confirm_waitlist_signup: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
+      remove_waitlist_signup: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
+      request_waitlist_signup: {
+        Args: { p_email: string, p_token_hash: string, p_version: string }
+        Returns: string
       }
       confirm_ingredient_substitution: {
         Args: {
@@ -1108,6 +1155,10 @@ export type Database = {
         Args: { p_from_user_id: string; p_to_user_id: string }
         Returns: number
       }
+      record_consents: {
+        Args: { p_kinds: string[]; p_user_id: string; p_version: string }
+        Returns: undefined
+      }
       swap_meal_plan_slots: {
         Args: { p_slot_a_id: string; p_slot_b_id: string }
         Returns: undefined
@@ -1144,7 +1195,6 @@ export type Database = {
         | "comer_variado"
         | "reducir_desperdicio"
       plan_usuario: "free" | "pro" | "family"
-      sexo_usuario: "mujer" | "hombre" | "otro" | "prefiero_no_decir"
       tipo_cocina:
         | "española"
         | "italiana"
@@ -1318,7 +1368,6 @@ export const Constants = {
         "reducir_desperdicio",
       ],
       plan_usuario: ["free", "pro", "family"],
-      sexo_usuario: ["mujer", "hombre", "otro", "prefiero_no_decir"],
       tipo_cocina: [
         "española",
         "italiana",

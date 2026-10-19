@@ -46,6 +46,15 @@ export const COOKIE_TABLE: CookieTableRow[] = [
     type: 'Técnica',
   },
   {
+    // FRESCO-1008: the Sentry browser SDK keeps the id of the previous trace in sessionStorage
+    // (`sentry_previous_trace`, linked traces). Verified in `@sentry/browser`; it holds no personal data.
+    name: 'sentry_previous_trace (sessionStorage)',
+    provider: 'Sentry',
+    purpose: 'Enlazar los registros de un error técnico con la visita anterior para poder corregirlo. No contiene datos personales',
+    duration: 'Hasta que cierres la pestaña',
+    type: 'Técnica',
+  },
+  {
     // FRESCO-979: `public/sw.js` and its `fresco-offline-v1` cache. Only the offline
     // screen is stored, never a page of the app or any account data.
     name: 'sw.js (service worker) y caché fresco-offline-v1',
@@ -158,11 +167,11 @@ export const TERMS_SECTIONS: LegalSubsection[] = [
 export const PRIVACY_SECTIONS: LegalSubsection[] = [
   {
     title: 'Información que Recopilamos',
-    body: 'Correo electrónico; tu dieta y restricciones (alergias, ingredientes que no te gustan — datos de categoría especial bajo el RGPD por su relación con la salud); cocinas favoritas; tamaño de tu hogar; presupuesto semanal; límites de tiempo de cocina; tu experiencia de cocina y objetivo; qué comidas del día quieres planificar; los menús y listas de la compra que generas; tus recetas propias y tus favoritos. Si marcas una receta como cocinada o descartada, registramos esa señal en todos los planes (más abajo, en "Cómo Usamos tu Información"). Si contratas el Plan Pro, también tratamos tus identificadores de cliente y de suscripción de Stripe. Con tu consentimiento, recogemos eventos de uso con fines de analítica y, si activas las notificaciones, tu suscripción push del navegador. Si ocurre un error técnico, registramos su traza para poder solucionarlo.',
+    body: 'Correo electrónico; tu dieta y restricciones (alergias, ingredientes que no te gustan — datos de categoría especial bajo el RGPD por su relación con la salud — y, si eliges una dieta halal, un dato que puede revelar tu creencia religiosa, también de categoría especial); cocinas favoritas; tamaño de tu hogar; presupuesto semanal; límites de tiempo de cocina; tu experiencia de cocina y objetivo; qué comidas del día quieres planificar; los menús y listas de la compra que generas; tus recetas propias y tus favoritos. Si marcas una receta como cocinada o descartada, registramos esa señal en todos los planes (más abajo, en "Cómo Usamos tu Información"). Si contratas el Plan Pro, también tratamos tus identificadores de cliente y de suscripción de Stripe. Con tu consentimiento, recogemos eventos de uso con fines de analítica y, si activas las notificaciones, tu suscripción push del navegador. Si ocurre un error técnico, registramos su traza para poder solucionarlo.',
   },
   {
     title: 'Base Legal para Datos de Alergias',
-    body: 'Tratamos tu información de alergias e ingredientes a evitar únicamente con tu consentimiento explícito, otorgado al introducirlos en tu perfil — es un dato de categoría especial (Art. 9 RGPD) que usamos exclusivamente para excluir estructuralmente esas recetas de tus menús. Puedes retirar tu consentimiento borrando esos datos desde tu perfil en cualquier momento.',
+    body: 'Tratamos tu información de alergias, ingredientes a evitar y dietas únicamente con tu consentimiento explícito, otorgado al introducirlos en tu perfil — es un dato de categoría especial (Art. 9 RGPD) que usamos exclusivamente para excluir estructuralmente las recetas no seguras o no adecuadas de tus menús. Esto incluye la dieta halal: elegirla puede revelar tu creencia religiosa, y solo la usamos con ese fin. Puedes retirar tu consentimiento borrando esos datos desde tu perfil en cualquier momento.',
   },
   {
     title: 'Cómo Usamos tu Información',
@@ -174,7 +183,11 @@ export const PRIVACY_SECTIONS: LegalSubsection[] = [
   },
   {
     title: 'Plazo de Conservación',
-    body: 'Conservamos tus datos mientras tu cuenta esté activa. Si eres invitada (sesión anónima) y no conviertes tu sesión en una cuenta real, tus datos se eliminan automáticamente pasado un período de inactividad. Cuando borras tu cuenta, eliminamos tus datos personales de nuestros sistemas en un plazo máximo de 30 días, salvo la información de facturación que debamos conservar por obligación legal (normativa fiscal y contable española).',
+    body: 'Conservamos tus datos mientras tu cuenta esté activa. Si eres invitada (sesión anónima) y no conviertes tu sesión en una cuenta real, tus datos se eliminan automáticamente a los 3 días de haberse creado la sesión, y pedimos también el borrado de la analítica asociada que tengamos en PostHog (en un plazo de unos días). Cuando borras tu cuenta, eliminamos tus datos personales de nuestros sistemas en un plazo máximo de 30 días, salvo la información de facturación que debamos conservar por obligación legal (normativa fiscal y contable española).',
+  },
+  {
+    title: 'Lista de Espera',
+    body: 'Si nos dejas tu correo en la lista de espera, lo usamos solo para avisarte del lanzamiento de Fresco, con tu consentimiento (Art. 6.1.a RGPD). Para asegurarnos de que el correo es tuyo, te enviamos un mensaje con un enlace de confirmación: hasta que lo confirmes no te escribimos nada, y si no lo confirmas lo borramos a los 7 días. Una vez confirmado, lo conservamos hasta el lanzamiento y como máximo 12 meses. Puedes darte de baja en cualquier momento con el enlace que lleva ese mismo mensaje, o escribiéndonos, y retirar tu consentimiento no afecta a lo ya hecho. Guardamos junto al correo la fecha y la versión del texto que aceptaste.',
   },
   {
     title: 'Tus Derechos',

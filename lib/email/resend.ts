@@ -1,7 +1,9 @@
 import type { SubscriptionConfirmationEmailParams } from '@/lib/email/templates/subscription-confirmation';
+import type { WaitlistConfirmationEmailParams } from '@/lib/email/templates/waitlist-confirmation';
 import { Resend } from 'resend';
 import { isGmailSmtpConfigured, sendViaGmailSmtp } from '@/lib/email/gmail-smtp';
 import { renderSubscriptionConfirmationEmailHtml } from '@/lib/email/templates/subscription-confirmation';
+import { renderWaitlistConfirmationEmailHtml } from '@/lib/email/templates/waitlist-confirmation';
 
 // FRESCO-429: no owned/verified domain yet — same constraint ADR-0021 already
 // accepted for the signup OTP email (project_resend_smtp_blocked). Resend
@@ -58,5 +60,25 @@ export async function sendSubscriptionConfirmationEmail(params: SendSubscription
 
   if (error) {
     throw new Error(`Resend rejected the subscription confirmation email: ${error.message}`);
+  }
+}
+
+const WAITLIST_SUBJECT = 'Confirma tu correo para el lanzamiento de Fresco';
+
+/**
+ * FRESCO-1008: the double opt-in email of the waitlist. Same transport choice as the subscription
+ * confirmation (Gmail SMTP when configured, Resend otherwise). Throws when the provider rejects it.
+ */
+export async function sendWaitlistConfirmationEmail({ to, ...content }: WaitlistConfirmationEmailParams & { to: string }): Promise<void> {
+  const html = renderWaitlistConfirmationEmailHtml(content);
+
+  if (isGmailSmtpConfigured()) {
+    await sendViaGmailSmtp({ to, subject: WAITLIST_SUBJECT, html });
+    return;
+  }
+
+  const { error } = await getResend().emails.send({ from: SEND_FROM, to, subject: WAITLIST_SUBJECT, html });
+  if (error) {
+    throw new Error(`Resend rejected the waitlist confirmation email: ${error.message}`);
   }
 }

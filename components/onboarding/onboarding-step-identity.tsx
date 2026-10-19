@@ -1,10 +1,10 @@
 'use client';
 
-import type { NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario } from '@schemas';
+import type { NivelExperienciaCulinaria, ObjetivoUsuario } from '@schemas';
 import type * as React from 'react';
 import { Dropdown } from '@/components/ui/dropdown';
 import { Input } from '@/components/ui/input';
-import { NIVEL_EXPERIENCIA_OPTIONS, OBJETIVO_OPTIONS, SEXO_OPTIONS } from '@/lib/onboarding/wizard-options';
+import { NIVEL_EXPERIENCIA_OPTIONS, OBJETIVO_OPTIONS } from '@/lib/onboarding/wizard-options';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 export interface OnboardingStepIdentityProps {
@@ -19,7 +19,7 @@ export interface OnboardingStepIdentityProps {
  * original inline JSX.
  */
 export function OnboardingStepIdentity({ headingRef }: OnboardingStepIdentityProps) {
-  const { nombre, sexo, objetivo, nivelExperiencia, setNombre, setSexo, setObjetivo, setNivelExperiencia } = useOnboardingStore();
+  const { nombre, objetivo, nivelExperiencia, setNombre, setObjetivo, setNivelExperiencia } = useOnboardingStore();
 
   return (
     <>
@@ -34,18 +34,6 @@ export function OnboardingStepIdentity({ headingRef }: OnboardingStepIdentityPro
           value={nombre}
           onChange={e => setNombre(e.target.value)}
           placeholder="¿Cómo te llamas?"
-        />
-      </label>
-
-      <label className="mt-4 flex flex-col gap-1">
-        <span className="text-body-sm text-tertiary">Sexo</span>
-        <Dropdown
-          data-testid="sexo_dropdown"
-          aria-label="Sexo"
-          options={SEXO_OPTIONS}
-          value={sexo}
-          onChange={value => setSexo(value as SexoUsuario)}
-          placeholder="Selecciona una opción"
         />
       </label>
 

@@ -1,4 +1,4 @@
-import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, SexoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
+import type { DiaSemana, NivelExperienciaCulinaria, ObjetivoUsuario, TipoCocina, TipoPlatoSlot } from '@schemas';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -39,7 +39,6 @@ export interface OnboardingState {
   /** FRESCO-755: true while a step was opened from the summary's edit icon, so it returns to the summary. */
   returnToSummary: boolean
   nombre: string
-  sexo: SexoUsuario | null
   objetivo: ObjetivoUsuario | null
   dietaVegetariano: boolean
   dietaVegano: boolean
@@ -65,7 +64,6 @@ export interface OnboardingState {
   editFromSummary: (step: 1 | 2 | 3) => void
   goToSummary: () => void
   setNombre: (value: string) => void
-  setSexo: (value: SexoUsuario) => void
   setObjetivo: (value: ObjetivoUsuario) => void
   toggleDieta: (field: DietaFlag) => void
   toggleAlergeno: (value: string) => void
@@ -87,7 +85,6 @@ const initialState = {
   step: 1 as OnboardingStep,
   returnToSummary: false,
   nombre: '',
-  sexo: null as SexoUsuario | null,
   objetivo: null as ObjetivoUsuario | null,
   dietaVegetariano: false,
   dietaVegano: false,
@@ -151,7 +148,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
   editFromSummary: step => set({ step, returnToSummary: true }),
   goToSummary: () => set({ step: 4, returnToSummary: false }),
   setNombre: nombre => set({ nombre }),
-  setSexo: sexo => set({ sexo }),
   setObjetivo: objetivo => set({ objetivo }),
   toggleDieta: field =>
     set((state) => {
@@ -236,7 +232,6 @@ export const useOnboardingStore = create<OnboardingState>()(persist(set => ({
     step: state.step,
     returnToSummary: state.returnToSummary,
     nombre: state.nombre,
-    sexo: state.sexo,
     objetivo: state.objetivo,
     dietaVegetariano: state.dietaVegetariano,
     dietaVegano: state.dietaVegano,

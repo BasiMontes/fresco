@@ -67,4 +67,35 @@ describe('POST /api/stripe/portal', () => {
     );
     expect((await POST(req())).status).toBe(500);
   });
+
+  describe('FRESCO-1003 — a limit per user (audit 7b A7-API-04)', () => {
+    const signedIn = { getUser: async () => ({ data: { user: { id: 'user_1' } } }) };
+    const proProfile = { user_profiles: { rows: { plan: 'pro', stripe_customer_id: 'cus_1' } } };
+
+    test('asks the rate-limit RPC for the stripe-portal endpoint, 20 an hour, for the caller', async () => {
+      await POST(req());
+
+      expect(supa.rpcCalls[0]).toEqual(['check_and_increment_rate_limit', { p_user_id: 'user_1', p_endpoint: 'stripe-portal', p_limit: 20, p_window_seconds: 3600 }]);
+    });
+
+    test('429 past the limit, and no portal session is created', async () => {
+      supa = fakeSupabase(proProfile, signedIn, async () => ({ data: false, error: null }));
+
+      expect((await POST(req())).status).toBe(429);
+      expect(portalCreate).not.toHaveBeenCalled();
+    });
+
+    test('fails closed: a limiter that errors is a 500, not a pass', async () => {
+      supa = fakeSupabase(proProfile, signedIn, async () => ({ data: null, error: new Error('rpc down') }));
+
+      expect((await POST(req())).status).toBe(500);
+      expect(portalCreate).not.toHaveBeenCalled();
+    });
+
+    test('the limit is checked after the session and before the profile read', async () => {
+      supa = fakeSupabase({ user_profiles: { selectError: new Error('rls') } }, signedIn, async () => ({ data: false, error: null }));
+
+      expect((await POST(req())).status).toBe(429);
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { handleDisputeCreated } from '@/lib/billing/dispute-handler';
 import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
 import { handleChargeRefunded } from '@/lib/billing/refund-handler';
 import { isEndedSubscription, isTransientStripeError, retrieveLiveSubscription } from '@/lib/billing/stripe-errors';
@@ -65,6 +66,10 @@ import { createServiceClient } from '@/lib/supabase/service';
  * downgrades the account through the path above, so this handler never writes the
  * profile itself. Partial refunds and refunds of earlier periods change nothing.
  *
+ * FRESCO-1003 (audit 7b: A7-PAY-04): `charge.dispute.created` — a chargeback — cancels the
+ * subscription the disputed charge paid for (`dispute-handler.ts`) and is always reported to
+ * Sentry. The event has to be subscribed in each Stripe webhook endpoint (an owner action).
+ *
  * FRESCO-1001 (audit 7b: A7-PAY-01, ADR-0061): every handled event is checked against the Stripe
  * MODE before it is claimed (`stripe-mode.ts`): its `livemode` must equal the mode of this
  * deploy's `STRIPE_SECRET_KEY` and the mode the shared database serves (`billing_mode`). A
@@ -93,6 +98,7 @@ const HANDLED_EVENT_TYPES: ReadonlySet<string> = new Set([
   'customer.subscription.updated',
   'customer.subscription.deleted',
   'charge.refunded',
+  'charge.dispute.created',
 ]);
 
 /**
@@ -204,6 +210,9 @@ export async function POST(request: Request) {
       case 'charge.refunded':
         await handleChargeRefunded({ charge: event.data.object, eventId: event.id, livemode: event.livemode });
         break;
+      case 'charge.dispute.created':
+        await handleDisputeCreated({ dispute: event.data.object, eventId: event.id, livemode: event.livemode });
+        break;
       default:
         // No-op — every event type this handler doesn't react to yet.
         break;
@@ -290,7 +299,12 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
     // FRESCO-232: charge failed, still within Stripe's own retry window —
     // `plan` is deliberately untouched (stays `'pro'`), only the aviso flag
     // is set.
-    await markPaymentFailed(supabase, profile.id);
+    // FRESCO-1003 (audit 7b A7-PAY-06): only the FIRST failure of a cycle stamps it. The Pro
+    // grace is counted from this instant (`isProEntitlementActive`), so renewing it on every
+    // `past_due` update would slide the 30 days forward for as long as Stripe keeps sending them.
+    if (!profile.payment_failed_at) {
+      await markPaymentFailed(supabase, profile.id);
+    }
     // FRESCO-793 (A6-P7): churn-loop signal. Stripe can re-send a `past_due`
     // update while the aviso is already set (any other field change), so only
     // the first failure of a retry cycle counts.
