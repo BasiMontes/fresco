@@ -447,6 +447,27 @@ export type Database = {
           },
         ]
       }
+      recipe_user_feedback: {
+        Row: {
+          cocinada_at: string | null
+          descartada_at: string | null
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          cocinada_at?: string | null
+          descartada_at?: string | null
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          cocinada_at?: string | null
+          descartada_at?: string | null
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           activo: boolean
