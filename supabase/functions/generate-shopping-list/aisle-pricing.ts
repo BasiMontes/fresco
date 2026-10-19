@@ -12,6 +12,7 @@
 import type { IngredienteConsolidado } from './types.ts'
 import type { ShoppingListItem, ShoppingListPasillo } from '../../../api/schemas/shopping-list.types.ts'
 import { normalizeNombre } from '../_shared/normalize.ts'
+import { aGramos, PIEZAS } from './unit-conversions.ts'
 
 export const PASILLOS = [
   'Frutas y verduras',
@@ -243,7 +244,7 @@ const INGREDIENT_AISLE: Record<string, (typeof PASILLOS)[number]> = {
 }
 
 /** Price per single unit of the ingredient's own unidad (not a generic per-unidad-type default) — used before the generic fallback. */
-const PRICE_OVERRIDE: Record<string, number> = {
+export const PRICE_OVERRIDE: Record<string, number> = {
   cebolla: 0.3,
   ajo: 0.03,
   tomate: 0.003,
@@ -343,21 +344,64 @@ export function pasilloFor(nombreNormalizado: string): (typeof PASILLOS)[number]
   return INGREDIENT_AISLE[nombreNormalizado] ?? 'Otros'
 }
 
-/** Exported for `get-shopping-list-suggestions` — same pricing a consolidated item gets, for a single not-yet-consolidated ingredient. */
-export function precioUnitario(nombreNormalizado: string, unidad: string): number {
-  return PRICE_OVERRIDE[nombreNormalizado] ?? PRICE_PER_UNIT_TYPE[unidad] ?? PRICE_PER_UNIT_TYPE.unidades
+/**
+ * The unit each `PRICE_OVERRIDE` entry is written in (FRESCO-1009, A7-LOGIC-01). The table used to
+ * assume one unit per ingredient and apply it whatever unit the line carried, so a 500 g yogur line
+ * cost 500 x the price of ONE yogur (175 EUR). Everything not listed here is priced per gram.
+ */
+const PRICED_PER: Record<string, string> = {
+  cebolla: 'unidades',
+  ajo: 'dientes',
+  'pimiento rojo': 'unidades',
+  'pimiento verde': 'unidades',
+  zanahoria: 'unidades',
+  berenjena: 'unidades',
+  lechuga: 'unidades',
+  huevo: 'unidades',
+  yogur: 'unidades',
+  pan: 'rebanadas',
+  leche: 'ml',
+  'caldo de pollo': 'ml',
+  'caldo de verduras': 'ml',
+  'aceite de oliva': 'ml',
+  'vino blanco': 'ml',
+  'vino tinto': 'ml',
+}
+
+/** The line as an amount of `pricedIn`, or `null` when no honest conversion exists. */
+function cantidadEn(nombre: string, pricedIn: string, unidad: string, cantidad: number): number | null {
+  if (unidad === pricedIn) return cantidad
+  if ((pricedIn === 'g' && unidad === 'kg') || (pricedIn === 'ml' && unidad === 'l')) return cantidad * 1000
+  // Liquids are priced per ml and a few are recorded in g (and the other way round): ~1 g per ml.
+  if ((pricedIn === 'ml' && unidad === 'g') || (pricedIn === 'g' && unidad === 'ml')) return cantidad
+  if (pricedIn === 'ml' && unidad === 'kg') return cantidad * 1000
+
+  const gramos = aGramos(nombre, cantidad, unidad)
+  if (gramos === null) return null
+  if (pricedIn === 'g') return gramos
+  const pieza = PIEZAS[nombre]
+  return pieza ? gramos / pieza.gramosPorPieza : null
 }
 
 /**
- * Price of a consolidated line. `PRICE_OVERRIDE` is per g/ml, but the
- * consolidator upscales to kg/l from 1000, so a kg/l quantity must go back to
- * g/ml first (FRESCO-824). The `kg`/`l` fallback entries are already per
- * kg/l, so only overrides need the conversion.
+ * Price of a consolidated line. An ingredient with a `PRICE_OVERRIDE` is priced in the unit that
+ * entry is written in, converting the line into it (kg/l to g/ml, grams to pieces and back through
+ * the weight of one piece). When the line cannot be converted, or the ingredient has no override,
+ * the generic per-unit fallback applies: it is keyed by the line's own unit, so it is never off by
+ * a factor of the unit.
  */
 export function precioItem(nombreNormalizado: string, unidad: string, cantidad: number): number {
   const override = PRICE_OVERRIDE[nombreNormalizado]
-  const factor = override !== undefined && (unidad === 'kg' || unidad === 'l') ? 1000 : 1
-  return precioUnitario(nombreNormalizado, unidad) * cantidad * factor
+  if (override !== undefined) {
+    const enSuUnidad = cantidadEn(nombreNormalizado, PRICED_PER[nombreNormalizado] ?? 'g', unidad, cantidad)
+    if (enSuUnidad !== null) return override * enSuUnidad
+  }
+  return (PRICE_PER_UNIT_TYPE[unidad] ?? PRICE_PER_UNIT_TYPE.unidades) * cantidad
+}
+
+/** Exported for `get-shopping-list-suggestions` — same pricing a consolidated item gets, for a single not-yet-consolidated ingredient. Price of ONE `unidad`. */
+export function precioUnitario(nombreNormalizado: string, unidad: string): number {
+  return precioItem(nombreNormalizado, unidad, 1)
 }
 
 export interface ClassifiedShoppingList {
