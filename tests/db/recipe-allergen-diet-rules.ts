@@ -118,6 +118,48 @@ const STOCK = /\bcaldo\b/;
 /** "su caldo" is the cooking liquid of a legume, not a stock. */
 const OWN_BROTH = /\bsu caldo\b/g;
 
+/**
+ * FRESCO-998 (audit 7b: A7-SAFEA-01 to -45, A7-SAFEB-14 to -17): the diet flags a definition can
+ * break. Each rule is a keyword list over the normalized ingredients and steps, with the phrases
+ * that look like the keyword and are not. The migration `20261019110000_*` mirrors every list in
+ * SQL, so the database and this oracle cannot disagree (the coherence test proves it).
+ */
+const PASTE_NOT_PASTA = '|pasta de (?:curry|tomate|miso|sesamo|guindilla|ajo|anchoas?|dientes|pimiento|pimenton)';
+const NUT_FLOURS = '|harina de (?:almendras?|coco|tapioca|castanas?)';
+const PLANT_DRINKS = '|(?:leche|bebida) de (?:coco|almendras?)|nata de coco';
+
+/** keto: starch, sugar, legumes, fruit and milk or yogurt. Cream, cheese and butter are fine. */
+const KETO_BREAKERS = words(
+  'patatas?|platanos?|bananas?|quinoa|tortillas? de trigo|seitan|arroz|pasta|pan|harina|miel|azucar|avena|cuscus|boniato'
+  + '|garbanzos?|lentejas?|alubias?|maiz|leche|yogur|manzanas?|peras?|uvas|mango|naranjas?|pina|sandia|melon|kiwi|cerezas?|higos?|datiles|mandarinas?',
+);
+const KETO_NOT_BREAKER = new RegExp(`\\b(?:${PLANT_DRINKS.slice(1)}${NUT_FLOURS}${PASTE_NOT_PASTA})\\b`, 'g');
+
+/** paleo: cereal, dairy and legume (peanut and soy included). Green beans are a vegetable. */
+const PALEO_BREAKERS = words(
+  'trigo|pan|harina|pasta|espaguetis|macarrones|fideos|cuscus|seitan|avena|cebada|centeno|arroz|maiz|quinoa|bulgur|semola|galleta'
+  + '|leche|queso|yogur|nata|mantequilla|requeson|kefir|mozzarella|parmesano|feta|burrata|mascarpone|ricotta'
+  + '|garbanzos?|lentejas?|alubias?|judias|guisantes|habas|soja|tofu|tempeh|edamame|hummus|humus|cacahuetes?|azucar',
+);
+const PALEO_NOT_BREAKER = new RegExp(`\\b(?:judias verdes${PLANT_DRINKS}${NUT_FLOURS}${PASTE_NOT_PASTA}|queso (?:vegano|de anacardos))\\b`, 'g');
+const PALEO_ALLERGENS = ['gluten', 'lactosa', 'soja', 'cacahuetes'];
+
+/** bajo_fodmap: the triggers the card names (cereal, dairy, garlic, asparagus, cauliflower, mushrooms, leek) and the obvious ones. */
+const FODMAP_BREAKERS = words(
+  'ajo|cebolla|cebolletas?|puerros?|esparragos?|coliflor|setas?|champinones|garbanzos?|lentejas?|alubias?|judias blancas|guisantes|habas'
+  + '|manzanas?|peras?|mango|sandia|miel',
+);
+const FODMAP_ALLERGENS = ['gluten', 'lactosa'];
+
+/** halal: minced meat nobody names (or two meats mixed) cannot be traced to a halal source. */
+const UNNAMED_MINCE = /\bcarne picada\b(?! de (?:ternera|pollo|pavo|cordero|vacuno))|\bcarne mixta\b|\bmezcla de carnes?\b/;
+/** kosher: wine, and what is made from it, unless the text says the wine is certified. */
+const WINE = words('vino|vermut|cava|brandy');
+const CERTIFIED_WINE = /\bvino (?:kosher|certificado)\b/g;
+/** vegetarian: cheeses made with animal rennet unless the text names the vegetarian version. */
+const RENNET_CHEESE = /\b(?:parmesano|gruyere)\b/;
+const VEGETARIAN_CHEESE = /\b(?:parmesano|gruyere)(?: dop)? vegetariano\b|\bqueso vegetariano\b/g;
+
 /** The flags a text can contradict: flag -> allergen tags whose presence in the text breaks it. */
 const FLAG_ALLERGENS: Record<string, string[]> = {
   sin_gluten: ['gluten'],
@@ -214,9 +256,37 @@ export function auditRecipeFindings(recipe: RecipeTags): Finding[] {
     }
   }
 
+  const breaks = (matches: (name: string) => boolean, ...notBreakers: RegExp[]) =>
+    sources.find(source => matches(notBreakers.reduce((name, notBreaker) => name.replace(notBreaker, ' '), normalize(source.text))));
+
   const names = sources.map(source => normalize(source.text));
   const halalBreaker = names.find(name => NOT_HALAL.test(name));
   if (halalBreaker && dieta.halal === true) { fail('dieta:halal', `halal es true con cerdo o alcohol (texto: ${halalBreaker})`); }
+  const unnamedMince = breaks(name => UNNAMED_MINCE.test(name));
+  if (unnamedMince && dieta.halal === true) { fail('dieta:halal', `halal es true con carne picada sin especificar o mezclada (${describe(unnamedMince)})`); }
+
+  const wine = breaks(name => WINE.test(name), CERTIFIED_WINE);
+  if (wine && dieta.kosher === true) { fail('dieta:kosher', `kosher es true con vino sin certificar (${describe(wine)})`); }
+
+  const rennetCheese = breaks(name => RENNET_CHEESE.test(name), VEGETARIAN_CHEESE);
+  if (rennetCheese && dieta.vegetariano === true) {
+    fail('dieta:vegetariano', `vegetariano es true con un queso de cuajo animal; hay que nombrar el queso vegetariano (${describe(rennetCheese)})`);
+  }
+
+  if (dieta.keto === true) {
+    const carb = breaks(name => KETO_BREAKERS.test(name), KETO_NOT_BREAKER);
+    if (carb) { fail('dieta:keto', `keto es true con almidón, azúcar, legumbre, fruta o leche (${describe(carb)})`); }
+  }
+  if (dieta.paleo === true) {
+    const tag = PALEO_ALLERGENS.find(tagged);
+    const food = breaks(name => PALEO_BREAKERS.test(name), PALEO_NOT_BREAKER);
+    if (tag || food) { fail('dieta:paleo', `paleo es true con cereal, lácteo o legumbre (${tag ? `alérgeno ${tag}` : describe(food!)})`); }
+  }
+  if (dieta.bajo_fodmap === true) {
+    const tag = FODMAP_ALLERGENS.find(tagged);
+    const food = breaks(name => FODMAP_BREAKERS.test(name));
+    if (tag || food) { fail('dieta:bajo_fodmap', `bajo_fodmap es true con un desencadenante (${tag ? `alérgeno ${tag}` : describe(food!)})`); }
+  }
 
   const kosherBreaker = names.find(name => NOT_KOSHER.test(name))
     ?? sources.find(source => sourceHasAllergen(source, 'crustaceos') || sourceHasAllergen(source, 'moluscos'))?.text;
