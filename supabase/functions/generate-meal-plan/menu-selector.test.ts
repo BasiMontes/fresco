@@ -196,6 +196,24 @@ describe('selectMenu — structural guarantees (ADR-0005)', () => {
     expect(advertencias.some(a => a.includes('supera tu presupuesto'))).toBe(true)
   })
 
+  test('FRESCO-1009: the budget is compared per household, so 4 people on 21 medio slots exceed 150 EUR (A7-LOGIC-03)', () => {
+    const candidates = buildAmpleCatalog().map(r => ({
+      ...r,
+      meta: { ...r.meta!, coste_estimado: 'medio' as const },
+    }))
+    const run = (num_personas: number) => selectMenu({
+      candidates,
+      recentRecipeIds: [], seed: SEED,
+      profile: makeProfile({ num_personas, presupuesto_semana_euros: 150 }),
+    }).advertencias
+
+    // 21 slots x 5 EUR = 105 EUR for one person: under 150. For four people it is 420 EUR.
+    expect(run(1).some(a => a.includes('supera tu presupuesto'))).toBe(false)
+    const four = run(4).find(a => a.includes('supera tu presupuesto'))
+    expect(four).toBeDefined()
+    expect(four).toContain('270.00')
+  })
+
   test('presupuesto_semana_euros: null never triggers the budget check', () => {
     const candidates = buildAmpleCatalog().map(r => ({
       ...r,
