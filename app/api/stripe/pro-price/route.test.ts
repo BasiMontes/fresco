@@ -17,6 +17,18 @@ const MONTHLY: FakePrice = { unit_amount: 499, currency: 'eur', recurring: { int
 const pricesRetrieve = mock(async (_id: string): Promise<FakePrice> => MONTHLY);
 let supa = fakeSupabase();
 
+// `unstable_cache` needs Next's runtime. This stand-in keeps what the route relies on: the first call per
+// key runs the function, later calls get the stored value, and a thrown error is not stored.
+const priceCache = new Map<string, unknown>();
+const realNextCache = await import('next/cache');
+void mock.module('next/cache', () => ({
+  ...realNextCache,
+  unstable_cache: (fn: (...args: never[]) => Promise<unknown>, keyParts: string[] = []) => async (...args: never[]) => {
+    const key = JSON.stringify([keyParts, args]);
+    if (!priceCache.has(key)) { priceCache.set(key, await fn(...args)); }
+    return priceCache.get(key);
+  },
+}));
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
 void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: { prices: { retrieve: pricesRetrieve } } }));
 
@@ -40,7 +52,8 @@ async function body() {
 beforeEach(() => {
   process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
   process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
-  pricesRetrieve.mockClear();
+  priceCache.clear();
+  pricesRetrieve.mockReset();
   pricesRetrieve.mockResolvedValue(MONTHLY);
   supa = ctx({ id: 'user_1' });
 });
@@ -88,11 +101,14 @@ describe('GET /api/stripe/pro-price', () => {
   });
 
   test('does not claim the tax is included unless Stripe says inclusive', async () => {
+    // The Price is cached now (FRESCO-1003), so each behavior starts from an empty cache.
     for (const behavior of ['unspecified', 'exclusive']) {
+      priceCache.clear();
       pricesRetrieve.mockResolvedValueOnce({ ...MONTHLY, tax_behavior: behavior });
       expect((await body()).taxIncluded).toBe(false);
     }
 
+    priceCache.clear();
     pricesRetrieve.mockResolvedValueOnce({ ...MONTHLY, tax_behavior: 'inclusive' });
     expect((await body()).taxIncluded).toBe(true);
   });
@@ -121,5 +137,43 @@ describe('GET /api/stripe/pro-price', () => {
     finally {
       console.error = original;
     }
+  });
+
+  describe('FRESCO-1003 — one Stripe read per cache window (audit 7b A7-API-04)', () => {
+    test('repeated requests, from any user, read the Price from Stripe once', async () => {
+      await GET(req());
+      await GET(req());
+      supa = ctx({ id: 'user_2' });
+      await GET(req());
+
+      expect(pricesRetrieve).toHaveBeenCalledTimes(1);
+    });
+
+    test('the monthly and the annual Price are cached separately', async () => {
+      await GET(req());
+      await GET(req('?interval=year'));
+      await GET(req('?interval=year'));
+
+      expect(pricesRetrieve.mock.calls.map(c => c[0])).toEqual(['price_pro_month', 'price_pro_year']);
+    });
+
+    test('the trial is still decided per user, not cached with the price', async () => {
+      supa = ctx({ id: 'user_1' }, { stripe_customer_id: null, stripe_subscription_id: null });
+      const first = await body();
+      supa = ctx({ id: 'user_2' }, { stripe_customer_id: 'cus_used', stripe_subscription_id: 'sub_old' });
+      const second = await body();
+
+      expect(first.trialDays).not.toBeNull();
+      expect(second.trialDays).toBeNull();
+      expect(pricesRetrieve).toHaveBeenCalledTimes(1);
+    });
+
+    test('a failed Stripe read is not stored: the next request tries again', async () => {
+      pricesRetrieve.mockRejectedValueOnce(new Error('stripe down'));
+
+      expect((await GET(req())).status).toBe(500);
+      expect((await GET(req())).status).toBe(200);
+      expect(pricesRetrieve).toHaveBeenCalledTimes(2);
+    });
   });
 });

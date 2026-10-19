@@ -10,6 +10,10 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
  * the happy path.
  */
 
+/** FRESCO-1003: a signed-in user with a finished profile and a recorded withdrawal waiver, the starting point of every case. */
+const GIVEN_WAIVER = { user_consents: { rows: { id: 'consent_1' } } };
+const FREE_PROFILE = { user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } } };
+
 const sessionsCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: string, url: string | null }> => ({ id: 'cs_1', url: 'https://checkout.stripe/x' }));
 /** FRESCO-1002: the Stripe lookups that run before a session is created, and the cleanup after. */
 const customersSearch = mock(async (_p: unknown): Promise<{ data: { id: string }[] }> => ({ data: [] }));
@@ -17,7 +21,7 @@ const customersCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: st
 const subscriptionsList = mock(async (_p: unknown): Promise<{ data: { id: string, status: string }[] }> => ({ data: [] }));
 const sessionsList = mock(async (_p: unknown): Promise<{ data: { id: string }[] }> => ({ data: [] }));
 const sessionsExpire = mock(async (_id: string): Promise<{ id: string }> => ({ id: 'expired' }));
-let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
+let supa = fakeSupabase({ ...FREE_PROFILE, ...GIVEN_WAIVER }, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
 /** FRESCO-1001: the Stripe mode the fake `billing_mode` row says the shared database serves, or an error to read it. */
 let databaseLivemode: boolean | Error = false;
 
@@ -58,7 +62,7 @@ beforeEach(() => {
   customersCreate.mockResolvedValue({ id: 'cus_new' });
   subscriptionsList.mockResolvedValue({ data: [] });
   sessionsList.mockResolvedValue({ data: [] });
-  supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
+  supa = fakeSupabase({ ...FREE_PROFILE, ...GIVEN_WAIVER }, { getUser: async () => ({ data: { user: { id: 'user_1' } } }) });
 });
 
 describe('POST /api/stripe/checkout', () => {
@@ -135,7 +139,7 @@ describe('POST /api/stripe/checkout', () => {
     const signedIn = { id: 'user_1', is_anonymous: false };
     const authAs = (user: Record<string, unknown>) => ({ getUser: async () => ({ data: { user } }) });
     const withProfile = (profile: Record<string, unknown>, user: Record<string, unknown> = signedIn) =>
-      fakeSupabase({ user_profiles: { rows: profile } }, authAs(user));
+      fakeSupabase({ user_profiles: { rows: profile }, ...GIVEN_WAIVER }, authAs(user));
     const lastSessionParams = () => sessionsCreate.mock.calls.at(-1)![0] as Record<string, unknown>;
 
     test('a first-time user gets the 7-day card-less trial on a freshly created customer', async () => {
@@ -191,7 +195,7 @@ describe('POST /api/stripe/checkout', () => {
     });
 
     test('429 when the per-user rate limit is exhausted, before any Stripe call', async () => {
-      supa = fakeSupabase({ user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } } }, authAs(signedIn), async () => ({ data: false, error: null }));
+      supa = fakeSupabase({ user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } }, ...GIVEN_WAIVER }, authAs(signedIn), async () => ({ data: false, error: null }));
 
       expect((await POST(req())).status).toBe(429);
       expect(sessionsCreate).not.toHaveBeenCalled();
@@ -199,7 +203,7 @@ describe('POST /api/stripe/checkout', () => {
     });
 
     test('500 (fail closed) when the rate-limit check itself errors', async () => {
-      supa = fakeSupabase({ user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } } }, authAs(signedIn), async () => ({ data: null, error: new Error('rpc down') }));
+      supa = fakeSupabase({ user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } }, ...GIVEN_WAIVER }, authAs(signedIn), async () => ({ data: null, error: new Error('rpc down') }));
 
       expect((await POST(req())).status).toBe(500);
       expect(sessionsCreate).not.toHaveBeenCalled();
@@ -215,7 +219,7 @@ describe('POST /api/stripe/checkout', () => {
   describe('FRESCO-1001 — Stripe mode guard (audit 7b: A7-PAY-01, ADR-0061)', () => {
     const signedIn = { id: 'user_1', is_anonymous: false };
     const withProfile = (profile: Record<string, unknown>) =>
-      fakeSupabase({ user_profiles: { rows: profile } }, { getUser: async () => ({ data: { user: signedIn } }) });
+      fakeSupabase({ user_profiles: { rows: profile }, ...GIVEN_WAIVER }, { getUser: async () => ({ data: { user: signedIn } }) });
     const lastSessionParams = () => sessionsCreate.mock.calls.at(-1)![0] as Record<string, unknown>;
 
     test('fresco-pre: a test-mode deploy refuses to open a checkout once the DATABASE is live (503, nothing created)', async () => {
@@ -280,7 +284,7 @@ describe('POST /api/stripe/checkout', () => {
   describe('FRESCO-1002 — no second subscription from a second checkout (audit 7b: A7-PAY-02)', () => {
     const signedIn = { id: 'user_1', is_anonymous: false, email: 'a@b.test' };
     const withProfile = (profile: Record<string, unknown>) =>
-      fakeSupabase({ user_profiles: { rows: profile } }, { getUser: async () => ({ data: { user: signedIn } }) });
+      fakeSupabase({ user_profiles: { rows: profile }, ...GIVEN_WAIVER }, { getUser: async () => ({ data: { user: signedIn } }) });
     const free = { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null, stripe_livemode: null };
     const sessionOptions = () => sessionsCreate.mock.calls.at(-1)![1] as { idempotencyKey: string };
 
@@ -375,6 +379,48 @@ describe('POST /api/stripe/checkout', () => {
 
       expect((await POST(req())).status).toBe(500);
       expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('FRESCO-1003 — the server asks for what the UI used to guarantee (audit 7b A7-PAY-07, A7-PAY-10)', () => {
+    const signedIn = { id: 'user_1', is_anonymous: false };
+    const authAs = { getUser: async () => ({ data: { user: signedIn } }) };
+
+    test('409 without a profile row, and Stripe is not touched', async () => {
+      supa = fakeSupabase({ user_profiles: { rows: null }, ...GIVEN_WAIVER }, authAs);
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(409);
+      expect(customersSearch).not.toHaveBeenCalled();
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('400 without a recorded withdrawal waiver, and Stripe is not touched', async () => {
+      supa = fakeSupabase({ ...FREE_PROFILE, user_consents: { rows: null } }, authAs);
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(400);
+      expect((await res.json() as { error: string }).error).toContain('desistimiento');
+      expect(customersSearch).not.toHaveBeenCalled();
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('500, not a pass, when the consent registry cannot be read', async () => {
+      supa = fakeSupabase({ ...FREE_PROFILE, user_consents: { selectError: new Error('db down') } }, authAs);
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(500);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test('a profile and a recorded waiver reach Stripe', async () => {
+      supa = fakeSupabase({ ...FREE_PROFILE, ...GIVEN_WAIVER }, authAs);
+
+      expect((await POST(req())).status).toBe(200);
+      expect(sessionsCreate).toHaveBeenCalledTimes(1);
     });
   });
 });

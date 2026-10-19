@@ -18,3 +18,25 @@ export async function recordConsents(client: SupabaseClient<Database>, kinds: Co
       { onConflict: 'user_id,kind,version', ignoreDuplicates: true },
     );
 }
+
+/**
+ * FRESCO-1003 (audit 7b A7-PAY-07): whether the session behind `client` has recorded `kind`
+ * for the CURRENT text version. RLS scopes the read to the caller's own rows, so no user id is
+ * passed. A new `LEGAL_TEXTS_VERSION` makes this false for everyone until they accept again.
+ * Throws on a read error: the caller decides what an unreadable registry means (the checkout
+ * refuses, it never lets the payment through unproven).
+ */
+export async function hasRecordedConsent(client: SupabaseClient<Database>, kind: ConsentKind): Promise<boolean> {
+  const { data, error } = await client
+    .from('user_consents')
+    .select('id')
+    .eq('kind', kind)
+    .eq('version', LEGAL_TEXTS_VERSION)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data !== null;
+}

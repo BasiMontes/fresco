@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { isProEntitlementActive } from './entitlement.ts'
+import { isProEntitlementActive, PAYMENT_GRACE_DAYS } from './entitlement.ts'
 import type { UserProfile } from './types.ts'
 
 const NOW = Date.parse('2026-09-02T12:00:00Z')
@@ -33,5 +33,25 @@ describe('isProEntitlementActive (A4-L8)', () => {
 
   test('pro with a past expiry but active payment-failed grace stays Pro', () => {
     expect(isProEntitlementActive(profile({ plan_expires_at: PAST, payment_failed_at: PAST }), NOW)).toBe(true)
+  })
+
+  test('past_due for 30 days still keeps Pro, the day it runs out is the last one (FRESCO-1003)', () => {
+    const failed = new Date(NOW - PAYMENT_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+    expect(isProEntitlementActive(profile({ plan_expires_at: PAST, payment_failed_at: failed }), NOW)).toBe(true)
+  })
+
+  test('past_due for more than 30 days does not give the entitlement (FRESCO-1003)', () => {
+    const failed = new Date(NOW - (PAYMENT_GRACE_DAYS * 24 * 60 * 60 * 1000 + 1)).toISOString()
+
+    expect(isProEntitlementActive(profile({ plan_expires_at: PAST, payment_failed_at: failed }), NOW)).toBe(false)
+  })
+
+  test('an old payment_failed_at does not matter while the paid period has not ended (FRESCO-1003)', () => {
+    expect(isProEntitlementActive(profile({ plan_expires_at: FUTURE, payment_failed_at: '2026-01-01T00:00:00Z' }), NOW)).toBe(true)
+  })
+
+  test('a payment_failed_at that cannot be read gives no grace (FRESCO-1003)', () => {
+    expect(isProEntitlementActive(profile({ plan_expires_at: PAST, payment_failed_at: 'not-a-date' }), NOW)).toBe(false)
   })
 })
