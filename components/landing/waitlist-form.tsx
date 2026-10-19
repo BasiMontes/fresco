@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmailInput } from '@/components/ui/email-input';
 import { joinWaitlist } from '@/lib/client-api/waitlist';
-import { WAITLIST_CONSENT_TEXT } from '@/lib/legal/waitlist';
+import { WAITLIST_CONSENT_TEXT } from '@/lib/legal/waitlist-text';
 
 type Status = 'idle' | 'sending' | 'joined' | 'error';
 
