@@ -14,4 +14,12 @@ describe('COOKIE_TABLE', () => {
     expect(row?.purpose).toContain('no hay conexión');
     expect(row?.purpose).toContain('nunca tus datos');
   });
+
+  test('FRESCO-1008: declares the Sentry trace id kept in sessionStorage as a technical item', () => {
+    const row = COOKIE_TABLE.find(item => item.provider === 'Sentry');
+
+    expect(row?.name).toContain('sentry_previous_trace');
+    expect(row?.type).toBe('Técnica');
+    expect(row?.purpose).toContain('No contiene datos personales');
+  });
 });

@@ -6,7 +6,6 @@ import { ONBOARDING_INITIAL_STATE } from '@/lib/store/onboarding-store';
 // The account the audit found: Halal, egg allergy, breakfasts only on 6 days.
 const SAVED: SavedOnboardingProfile = {
   nombre: 'Marta',
-  sexo: 'mujer',
   objetivo: 'comer_sano',
   adultos: 3,
   ninos: 1,
@@ -53,7 +52,6 @@ describe('profileToWizardData (FRESCO-806)', () => {
   test('a profile row holding only database defaults looks like a fresh wizard', () => {
     const defaultsRow = {
       nombre: null,
-      sexo: null,
       objetivo: null,
       adultos: 2,
       ninos: 0,

@@ -33,7 +33,6 @@ export function profileToWizardData(
   const hasPlanning = Object.values(saved.planning_selection ?? {}).some(meals => (meals ?? []).length > 0);
   return {
     nombre: saved.nombre ?? defaults.nombre,
-    sexo: saved.sexo ?? defaults.sexo,
     objetivo: saved.objetivo ?? defaults.objetivo,
     dietaVegetariano: saved.dieta_vegetariano,
     dietaVegano: saved.dieta_vegano,
@@ -77,7 +76,6 @@ export function isWizardUntouched(current: WizardSnapshot, defaults: WizardSnaps
 export function wizardToProfilePayload(state: OnboardingData): OnboardingProfilePayload {
   return {
     nombre: state.nombre,
-    sexo: state.sexo,
     objetivo: state.objetivo,
     num_personas: state.adultos + state.ninos,
     adultos: state.adultos,

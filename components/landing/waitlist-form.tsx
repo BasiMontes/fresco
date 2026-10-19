@@ -13,7 +13,7 @@ type Status = 'idle' | 'sending' | 'joined' | 'error';
 /**
  * FRESCO-888 — early-interest form under the final CTA: one email and one
  * explicit, unticked consent. The consent is recorded server-side with the
- * version of the text (`POST /api/waitlist`). The submit stays disabled until the
+ * version of the text (`POST /api/waitlist`). FRESCO-1008: that only registers a PENDING signup; the address is added once its owner confirms from the email we send. The submit stays disabled until the
  * box is ticked, so a visitor cannot join without having consented.
  */
 export function WaitlistForm() {
@@ -30,7 +30,7 @@ export function WaitlistForm() {
   if (status === 'joined') {
     return (
       <p data-testid="waitlist_joined" role="status" className="mt-4 text-body-md text-text">
-        Hecho. Te avisaremos del lanzamiento.
+        Casi está. Te hemos enviado un correo: confirma desde ahí tu dirección y te avisaremos del lanzamiento.
       </p>
     );
   }

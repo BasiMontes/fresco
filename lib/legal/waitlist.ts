@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import { createHash, randomBytes } from 'node:crypto';
 import { LEGAL_TEXTS_VERSION } from './consent';
 
 /**
@@ -7,10 +8,15 @@ import { LEGAL_TEXTS_VERSION } from './consent';
  * (`supabase/migrations/20261011140000_waitlist_signups.sql`): an email plus the
  * version of the consent text accepted. Same provisional-copy rule as
  * `lib/legal/consent.ts`; the version stamped here is that file's.
+ *
+ * FRESCO-1008: double opt-in. A signup is created unconfirmed and a random token goes to the
+ * address; the database keeps only the token's SHA-256. The same token confirms the address and
+ * removes it, so every email carries its own way out. Writes go through service-role functions
+ * (`20261019180000_waitlist_double_opt_in.sql`); the browser roles cannot insert.
  */
 
 /** Checkbox copy next to the email field. PROVISIONAL, like every text in `consent.ts`. */
-export const WAITLIST_CONSENT_TEXT = 'Acepto que Fresco use mi correo solo para avisarme del lanzamiento.';
+export const WAITLIST_CONSENT_TEXT = 'Acepto que Fresco use mi correo solo para avisarme del lanzamiento. Te pediremos que lo confirmes desde tu correo.';
 
 // Same shape as `EmailInput`'s check: no dot-only domain labels, so it cannot backtrack badly.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s.@]+(?:\.[^\s.@]+)+$/;
@@ -44,21 +50,62 @@ export function parseWaitlistBody(body: unknown): WaitlistBody | null {
   return { email: trimmed };
 }
 
-const UNIQUE_VIOLATION = '23505';
+const TOKEN_PATTERN = /^[\w-]{43}$/;
+
+/** A fresh secret for one confirmation email: 256 bits, URL-safe. */
+export function newWaitlistToken(): string {
+  return randomBytes(32).toString('base64url');
+}
+
+export function hashWaitlistToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+/** `true` for the shape `newWaitlistToken` produces; anything else is not worth a database call. */
+export function isWaitlistToken(value: unknown): value is string {
+  return typeof value === 'string' && TOKEN_PATTERN.test(value);
+}
+
+/** What the route has to do after `request_waitlist_signup`. */
+export type WaitlistRequestOutcome = 'send' | 'throttled' | 'confirmed';
 
 /**
- * Adds `email` to the waitlist under the visitor's own (anonymous) session. The
- * version is the server's, never the caller's. An address already on the list is
- * reported as success so the form cannot be used to find out who signed up.
+ * Registers `email` as an unconfirmed signup with a fresh token, under the server's consent
+ * version. Needs the service-role client. `token` is set only when a confirmation email has to go
+ * out; the caller sends it and never stores it.
  */
-export async function addToWaitlist(client: SupabaseClient<Database>, email: string) {
-  const { error } = await client
-    .from('waitlist_signups')
-    .insert({ email, consent_version: LEGAL_TEXTS_VERSION });
+export async function requestWaitlistSignup(client: SupabaseClient<Database>, email: string) {
+  const token = newWaitlistToken();
+  const { data, error } = await client.rpc('request_waitlist_signup', {
+    p_email: email,
+    p_version: LEGAL_TEXTS_VERSION,
+    p_token_hash: hashWaitlistToken(token),
+  });
 
-  if (error && error.code !== UNIQUE_VIOLATION) {
-    return { error };
+  if (error) {
+    return { error, outcome: null, token: null };
   }
 
-  return { error: null };
+  const outcome = data as WaitlistRequestOutcome;
+  return { error: null, outcome, token: outcome === 'send' ? token : null };
+}
+
+/** Confirms the signup the token belongs to. `false` when no signup has that token. */
+export async function confirmWaitlistSignup(client: SupabaseClient<Database>, token: string) {
+  const { data, error } = await client.rpc('confirm_waitlist_signup', { p_token_hash: hashWaitlistToken(token) });
+  return { error, found: data === true };
+}
+
+/** Deletes the signup the token belongs to. `false` when no signup has that token. */
+export async function removeWaitlistSignup(client: SupabaseClient<Database>, token: string) {
+  const { data, error } = await client.rpc('remove_waitlist_signup', { p_token_hash: hashWaitlistToken(token) });
+  return { error, found: data === true };
+}
+
+/** Per-address limit for the public waitlist routes. Needs the service-role client. `true` while under `limit` this hour. */
+export async function withinIpLimit(client: SupabaseClient<Database>, { headers, endpoint, limit }: { headers: Headers, endpoint: string, limit: number }) {
+  const forwarded = headers.get('x-forwarded-for')?.split(',')[0]?.trim() || headers.get('x-real-ip') || 'unknown';
+  const keyHash = createHash('sha256').update(`${endpoint}:${forwarded}`).digest('hex');
+  const { data, error } = await client.rpc('check_ip_rate_limit', { p_key_hash: keyHash, p_endpoint: endpoint, p_limit: limit });
+  return { error, allowed: data === true };
 }

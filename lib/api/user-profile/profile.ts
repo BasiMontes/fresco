@@ -27,7 +27,7 @@ export type OnboardingProfilePayload = Pick<
   | 'alergenos'
   | 'ingredientes_odiados'
   | 'cocinas_favoritas'
-// `nombre`/`sexo`/`objetivo` (FRESCO-132), the 3 remaining `*_texto_libre`
+// `nombre`/`objetivo` (FRESCO-132; `sexo` was dropped in FRESCO-1008), the 3 remaining `*_texto_libre`
 // fields (FRESCO-133; `alergenos_texto_libre` was dropped from the flow in
 // FRESCO-361 — it invited allergens nothing read; the column is kept but
 // unused), `presupuesto_semana_euros` (FRESCO-134),
@@ -41,7 +41,6 @@ export type OnboardingProfilePayload = Pick<
 > & Partial<Pick<
   UserProfile,
   | 'nombre'
-  | 'sexo'
   | 'objetivo'
   | 'dieta_texto_libre'
   | 'ingredientes_odiados_texto_libre'
@@ -135,7 +134,6 @@ export async function hasUserProfile(
 export type SavedOnboardingProfile = Pick<
   UserProfile,
   | 'nombre'
-  | 'sexo'
   | 'objetivo'
   | 'adultos'
   | 'ninos'
@@ -169,7 +167,7 @@ export async function getUserOnboardingProfile(
 ): Promise<SavedOnboardingProfile | null> {
   const { data, error } = await client
     .from('user_profiles')
-    .select('nombre, sexo, objetivo, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, dieta_texto_libre, ingredientes_odiados_texto_libre, cocinas_texto_libre, presupuesto_semana_euros, planning_selection, nivel_experiencia')
+    .select('nombre, objetivo, adultos, ninos, dieta_vegetariano, dieta_vegano, dieta_sin_gluten, dieta_sin_lactosa, dieta_sin_huevo, dieta_keto, dieta_halal, alergenos, ingredientes_odiados, cocinas_favoritas, dieta_texto_libre, ingredientes_odiados_texto_libre, cocinas_texto_libre, presupuesto_semana_euros, planning_selection, nivel_experiencia')
     .eq('id', userId)
     .maybeSingle();
 
