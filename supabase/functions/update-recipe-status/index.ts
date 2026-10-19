@@ -16,7 +16,7 @@
 // re-filter, no duplicate check, no rate limit. All four are enforced below.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
-import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     await enforceRateLimit(supabase, { userId: user.id, endpoint: FN_NAME, limit: RATE_LIMIT_PER_HOUR })
 
     // 2. Parse + validate body (api-contracts.md §4 error table)
-    const body: UpdateRecipeStatusRequest = await req.json()
+    const body = await readJsonBody<UpdateRecipeStatusRequest>(req, { meal_plan_recipe_id: 'string', estado: 'string', nueva_recipe_id: 'string' })
     const { meal_plan_recipe_id, estado, nueva_recipe_id } = body
 
     if (!meal_plan_recipe_id || !estado) {

@@ -10,7 +10,7 @@
 // zero-cost substitute.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
-import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { consolidateIngredientes } from './consolidator.ts'
@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
     const user = await requireAuthenticatedUser(req, supabase)
 
     // 2. Parse body
-    const body: GenerateShoppingListRequest = await req.json()
+    const body = await readJsonBody<GenerateShoppingListRequest>(req, { meal_plan_id: 'string', refresh: 'boolean' })
     if (!body.meal_plan_id) throw new HttpError('Falta meal_plan_id', 400)
     const { meal_plan_id, refresh = false } = body
 

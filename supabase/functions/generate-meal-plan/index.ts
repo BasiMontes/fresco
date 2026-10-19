@@ -9,7 +9,7 @@
 // call, so there is no more Gemini spend anywhere in this function.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
-import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
@@ -46,9 +46,18 @@ Deno.serve(async (req: Request) => {
     const supabase = createRequestClient(authHeader)
     const user = await requireAuthenticatedUser(req, supabase)
 
+    // 1.2. Parse + validate body (A7-API-05, FRESCO-1017). Before the rate limit
+    // on purpose: a malformed request is a 400 and must not burn one of the
+    // user's 5 hourly generations. Cheap (no DB), so a 429 stays fast.
+    const body = await readJsonBody<GenerateMealPlanRequest>(req, { semana_iso: 'string', fecha_inicio: 'string' })
+    const { semana_iso, fecha_inicio } = body
+    if (!semana_iso || !fecha_inicio) {
+      throw new HttpError('Faltan campos: semana_iso, fecha_inicio', 400)
+    }
+
     // 1.5. Rate limit (ADR-0010, FRESCO-243): 5 generations/hour per user via
-    // a single atomic Postgres RPC, checked before any body parsing or DB
-    // work so a rate-limited caller gets a fast 429. Never a read-then-write
+    // a single atomic Postgres RPC, checked before any DB work so a
+    // rate-limited caller gets a fast 429. Never a read-then-write
     // check from here — that would race under concurrent requests from the
     // same user, which the RPC itself is designed to close.
     const { data: allowed, error: rateLimitError } = await supabase.rpc('check_and_increment_rate_limit', {
@@ -59,13 +68,6 @@ Deno.serve(async (req: Request) => {
     })
     if (rateLimitError) throw new HttpError('Error verificando el límite de generación', 500)
     assertRateLimitAllowed(allowed)
-
-    // 2. Parse + validate body
-    const body: GenerateMealPlanRequest = await req.json()
-    const { semana_iso, fecha_inicio } = body
-    if (!semana_iso || !fecha_inicio) {
-      throw new HttpError('Faltan campos: semana_iso, fecha_inicio', 400)
-    }
 
     // 3. Load profile (FR-1.1 must already have run)
     const { data: profile, error: profileError } = await supabase

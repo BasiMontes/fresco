@@ -36,6 +36,46 @@ export function jsonResponse<T>(data: T, options: { req: Request, status?: numbe
   })
 }
 
+type BodyFieldKind = 'string' | 'boolean' | 'number'
+
+// A lookup, not `typeof value !== kind`: deno lint (valid-typeof) only accepts a literal there.
+const BODY_FIELD_CHECKS: Record<BodyFieldKind, (value: unknown) => boolean> = {
+  string: value => typeof value === 'string',
+  boolean: value => typeof value === 'boolean',
+  number: value => typeof value === 'number',
+}
+
+/**
+ * Parses the request body as a JSON object and fails with a 400, never a 500
+ * (A7-API-05, FRESCO-1017). A bare `req.json()` throws a `SyntaxError` on `{not json`,
+ * which `toErrorResponse` would report as a server failure and page Sentry.
+ *
+ * Rejects a body that is not valid JSON or is not a plain object (`null`, `[]`, `"x"`).
+ * `fields` names the keys whose TYPE is checked when present: `null`/absent is left to the
+ * caller's own "missing field" check, a value of the wrong type (for example
+ * `{"meal_plan_id":{}}`) is a 400 here instead of reaching a query.
+ */
+export async function readJsonBody<T>(req: Request, fields: Record<string, BodyFieldKind> = {}): Promise<T> {
+  let parsed: unknown
+  try {
+    parsed = await req.json()
+  } catch {
+    throw new HttpError('El cuerpo de la petición no es JSON válido', 400)
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new HttpError('El cuerpo de la petición debe ser un objeto JSON', 400)
+  }
+  const body = parsed as Record<string, unknown>
+  for (const [key, kind] of Object.entries(fields)) {
+    const value = body[key]
+    if (value === undefined || value === null) continue
+    if (!BODY_FIELD_CHECKS[kind](value)) {
+      throw new HttpError(`El campo ${key} debe ser de tipo ${kind}`, 400)
+    }
+  }
+  return parsed as T
+}
+
 /**
  * Best-effort `auth.uid()` for error tagging: the `sub` claim of the bearer
  * JWT, decoded WITHOUT verification (the value is only ever used as a Sentry

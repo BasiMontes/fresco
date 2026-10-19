@@ -8,7 +8,7 @@
 // through createServiceRoleClient() to bypass RLS by design, not oversight.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
-import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
 import { createRequestClient } from '../_shared/supabase-client.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
     requireAdminUser(user)
 
     // 3. Parse + validate body
-    const body: DeleteCatalogRecipeRequest = await req.json()
+    const body = await readJsonBody<DeleteCatalogRecipeRequest>(req, { recipe_id: 'string' })
     const { recipe_id } = body
     if (!recipe_id) {
       throw new HttpError('Falta el campo obligatorio: recipe_id', 400)

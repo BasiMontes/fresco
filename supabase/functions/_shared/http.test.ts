@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { HttpError, toErrorResponse, userIdFromAuthHeader } from './http.ts'
+import { HttpError, readJsonBody, toErrorResponse, userIdFromAuthHeader } from './http.ts'
 
 /** Minimal unsigned JWT with the given payload — only the `sub` claim is ever read. */
 function jwt(payload: Record<string, unknown>): string {
@@ -42,5 +42,59 @@ describe('toErrorResponse', () => {
     await expect(
       toErrorResponse('plain string failure', { req: reqWith({}), fnName: 'f' }),
     ).resolves.toBeInstanceOf(Response)
+  })
+})
+
+function bodyReq(body: string): Request {
+  return new Request('https://x.supabase.co/functions/v1/f', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  })
+}
+
+async function statusOf(promise: Promise<unknown>): Promise<number | undefined> {
+  try {
+    await promise
+    return undefined
+  } catch (err) {
+    return err instanceof HttpError ? err.status : -1
+  }
+}
+
+describe('readJsonBody (A7-API-05, FRESCO-1017)', () => {
+  it('returns the parsed object', async () => {
+    expect(await readJsonBody(bodyReq('{"meal_plan_id":"abc","refresh":true}'))).toEqual({ meal_plan_id: 'abc', refresh: true })
+  })
+
+  it('answers 400, not a 500, to a body that is not JSON', async () => {
+    expect(await statusOf(readJsonBody(bodyReq('{not json')))).toBe(400)
+    expect(await statusOf(readJsonBody(bodyReq('')))).toBe(400)
+  })
+
+  it('answers 400 to JSON that is not an object', async () => {
+    for (const body of ['null', '[]', '"text"', '42', 'true']) {
+      expect(await statusOf(readJsonBody(bodyReq(body)))).toBe(400)
+    }
+  })
+
+  it('answers 400 to a named field of the wrong type', async () => {
+    const fields = { meal_plan_id: 'string', refresh: 'boolean' } as const
+    expect(await statusOf(readJsonBody(bodyReq('{"meal_plan_id":{}}'), fields))).toBe(400)
+    expect(await statusOf(readJsonBody(bodyReq('{"meal_plan_id":5}'), fields))).toBe(400)
+    expect(await statusOf(readJsonBody(bodyReq('{"meal_plan_id":"a","refresh":"yes"}'), fields))).toBe(400)
+  })
+
+  it('leaves absent and null fields to the caller, and ignores unnamed fields', async () => {
+    const fields = { meal_plan_id: 'string', refresh: 'boolean' } as const
+    expect(await readJsonBody(bodyReq('{}'), fields)).toEqual({})
+    expect(await readJsonBody(bodyReq('{"meal_plan_id":null,"extra":[1]}'), fields)).toEqual({ meal_plan_id: null, extra: [1] })
+  })
+
+  it('does not pass through toErrorResponse as a 500: the error is an HttpError', async () => {
+    const err = await readJsonBody(bodyReq('{not json')).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(HttpError)
+    const res = await toErrorResponse(err, { req: reqWith({}), fnName: 'f' })
+    expect(res.status).toBe(400)
   })
 })
