@@ -118,3 +118,47 @@ where not activo
           ~ '\m(?:leche|queso|yogur|nata|mantequilla|requeson|skyr|bechamel|mozzarella|parmesano|feta|burrata|mascarpone|ricotta|kefir|crema pastelera)\M'
     )
   );
+
+-- Inactive recipes that say "free of" something their own tag or text contains (FRESCO-995 and
+-- FRESCO-997 did the active ones). The keyword lists are the SQL twin of ALLERGEN_KEYWORDS and
+-- ALLERGEN_EXCEPTIONS in tests/db/recipe-allergen-diet-rules.ts. A free-of flag only ever goes
+-- from true to false, and only on inactive rows, for the same reason as above.
+
+-- sin_lactosa
+update public.recipes
+set dieta = jsonb_set(dieta, '{sin_lactosa}', 'false')
+where not activo
+  and dieta->>'sin_lactosa' = 'true'
+  and (
+    alergenos ? 'lactosa'
+    or regexp_replace(
+         pg_temp.recipe_text(ingredientes_principales, pasos_resumen),
+         '\m(?:leche de coco|(?:bebida|leche) de (?:almendras?|avena|soja|arroz)|nata de coco|queso (?:vegano|de anacardos|de tofu))\M',
+         ' ', 'g')
+       ~ '\m(?:leche|queso|yogur|nata|mantequilla|requeson|skyr|bechamel|mozzarella|parmesano|feta|burrata|mascarpone|ricotta|kefir|crema pastelera)\M'
+  );
+
+-- sin_huevo
+update public.recipes
+set dieta = jsonb_set(dieta, '{sin_huevo}', 'false')
+where not activo
+  and dieta->>'sin_huevo' = 'true'
+  and (
+    alergenos ? 'huevo'
+    or pg_temp.recipe_text(ingredientes_principales, pasos_resumen)
+       ~ '\m(?:huevos?|mayonesa|crema pastelera|crema de limon|crepes?|croissant|bizcocho|merengue|brioche|magdalenas?|natillas|flan)\M'
+  );
+
+-- sin_gluten
+update public.recipes
+set dieta = jsonb_set(dieta, '{sin_gluten}', 'false')
+where not activo
+  and dieta->>'sin_gluten' = 'true'
+  and (
+    alergenos ? 'gluten'
+    or regexp_replace(
+         pg_temp.recipe_text(ingredientes_principales, pasos_resumen),
+         '\m(?:harina de (?:maiz|arroz|garbanzos?)|fideos de arroz|papel de arroz|pan sin gluten|pasta sin gluten|pasta de (?:curry|tomate|miso|sesamo|guindilla|ajo|anchoas?|dientes|pimiento|pimenton)|salsa de soja sin gluten|miso sin gluten)\M',
+         ' ', 'g')
+       ~ '\m(?:trigo|pan|harina|pasta|espaguetis|macarrones|fideos|cuscus|seitan|avena|cebada|centeno|galleta|croissant|bagel|granola|lasana|tortellini|picatostes|masa|cerveza|ramen|empanadas?|espelta|kamut|escanda|bulgur|semola|farro|gnocchi|noquis|pizza|rebozad[oa]s?|panko|salsa de soja|shoyu|bechamel|miso)\M'
+  );

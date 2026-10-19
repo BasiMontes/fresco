@@ -33,8 +33,8 @@ interface RecipeRow extends RecipeTags {
 }
 
 const isMissingTag = (finding: Finding) => finding.key.includes('|falta:');
-/** The six diet flags FRESCO-998 holds to their definition. */
-const isDietDefinition = (finding: Finding) => /\|dieta:(?:keto|halal|kosher|vegetariano|paleo|bajo_fodmap)$/.test(finding.key);
+/** The nine diet flags FRESCO-998 holds to their definition: six diets and the three free-of flags. */
+const isDietDefinition = (finding: Finding) => /\|dieta:(?:keto|halal|kosher|vegetariano|paleo|bajo_fodmap|sin_lactosa|sin_huevo|sin_gluten)$/.test(finding.key);
 
 describe.skipIf(!(RUN && reachable))('recipe allergen and diet tags vs ingredients and steps (real DB)', () => {
   async function catalogue() {
@@ -75,7 +75,7 @@ describe.skipIf(!(RUN && reachable))('recipe allergen and diet tags vs ingredien
     expect(fixed).toEqual([]);
   });
 
-  test('inactive recipes carry no keto, halal, kosher, vegetariano, paleo or bajo_fodmap flag their text breaks (FRESCO-998)', async () => {
+  test('inactive recipes carry no diet or free-of flag their text breaks (FRESCO-998)', async () => {
     const stale = (await catalogue())
       .filter(row => !row.activo)
       .flatMap(auditRecipeFindings)
