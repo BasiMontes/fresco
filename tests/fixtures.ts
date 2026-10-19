@@ -1,7 +1,7 @@
 import type { Request as PlaywrightRequest } from '@playwright/test';
 import type { TestUser, TestUserFactory } from './test-user-factory';
 import { test as base } from 'playwright-bdd';
-import { COOKIE_CONSENT_COOKIE } from '../lib/consent/cookie-consent';
+import { COOKIE_CONSENT_COOKIE, serializeCookieConsent } from '../lib/consent/cookie-consent';
 import { createTestUserFactory } from './test-user-factory';
 
 /**
@@ -88,7 +88,7 @@ export const test = base.extend<{ signupCtx: SignupCtx, aprendizajeCtx: Aprendiz
     await context.addCookies([
       {
         name: COOKIE_CONSENT_COOKIE,
-        value: 'accepted',
+        value: serializeCookieConsent('accepted'),
         url: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
       },
     ]);

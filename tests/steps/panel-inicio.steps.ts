@@ -62,7 +62,7 @@ Given(/^que el usuario tiene alérgenos e ingredientes marcados en su perfil$/, 
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
   await seedFullWeekMenu(request, testUser);
-  await recordHealthDataConsent(testUser.accessToken);
+  await recordHealthDataConsent(testUser.id);
   await setProfile(testUser, { alergenos: ['gluten', 'pescado'] });
 });
 

@@ -1,5 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
-import { currentWeekMonday, getAccessToken, isoWeekOf, mondayOfWeekContaining, restHeaders, serviceRoleHeaders } from './test-helpers';
+import { currentWeekMonday, getAccessToken, isoWeekOf, mondayOfWeekContaining, recordConsents, restHeaders, serviceRoleHeaders } from './test-helpers';
 
 /**
  * Per-test data factory (FRESCO-308) — replaces reuse of the shared, fixed
@@ -52,6 +52,13 @@ export interface TestUser {
 export interface CreateTestUserOptions {
   /** @default 'free' */
   plan?: 'free' | 'pro' | 'family'
+  /**
+   * FRESCO-1007: by default the user has already accepted the CURRENT Terms, Privacy Policy and age
+   * confirmation, so the blocking re-consent dialog does not cover the screen under test. `true`
+   * leaves the registry empty, which is what a pre-registry account looks like.
+   * @default false
+   */
+  withoutConsents?: boolean
 }
 
 export type TestUserFactory = (options?: CreateTestUserOptions) => Promise<TestUser>;
@@ -137,6 +144,7 @@ export function createTestUserFactory(request: APIRequestContext): { factory: Te
     createdIds.push(id);
     const accessToken = await getAccessToken(request, email, password);
     await createUserProfileRow(request, id, accessToken, options.plan ?? 'free');
+    if (!options.withoutConsents) { await recordConsents(id, ['age_14', 'terms', 'privacy']); }
     return { id, email, password, accessToken };
   };
 
