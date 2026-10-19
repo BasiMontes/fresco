@@ -86,3 +86,35 @@ where dieta->>'bajo_fodmap' = 'true'
     or pg_temp.recipe_text(ingredientes_principales, pasos_resumen)
        ~ '\m(?:ajo|cebolla|cebolletas?|puerros?|esparragos?|coliflor|setas?|champinones|garbanzos?|lentejas?|alubias?|judias blancas|guisantes|habas|manzanas?|peras?|mango|sandia|miel)\M'
   );
+
+-- Inactive recipes break the older halal and kosher rules too (pork, alcohol, shellfish, meat with
+-- dairy). The test and the nightly audit only look at ACTIVE rows, so nobody would notice until a
+-- recipe is switched back on. Only inactive rows are touched: a finding on an active recipe
+-- belongs to a person, not to a bulk rule.
+
+-- halal: pork and alcohol
+update public.recipes
+set dieta = jsonb_set(dieta, '{halal}', 'false')
+where not activo
+  and dieta->>'halal' = 'true'
+  and pg_temp.recipe_text(ingredientes_principales, pasos_resumen)
+      ~ '\m(?:cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|vino|cerveza|ron|brandy|licor|cava|bacon|beicon)\M';
+
+-- kosher: rabbit, pork, shellfish, and meat with dairy
+update public.recipes
+set dieta = jsonb_set(dieta, '{kosher}', 'false')
+where not activo
+  and dieta->>'kosher' = 'true'
+  and (
+    pg_temp.recipe_text(ingredientes_principales, pasos_resumen)
+      ~ '\m(?:conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon|gambas?|langostinos?|cangrejo|langosta|cigalas?|camarones?|centollo|bogavante|carabineros?|necoras?|percebes?|buey de mar|krill|calamares|calamar|mejillones|almejas|pulpo|sepia|ostras?|chipirones?|vieiras?|berberechos?|navajas?|zamburinas?|coquinas?|caracoles)\M'
+    or (
+      pg_temp.recipe_text(ingredientes_principales, pasos_resumen)
+        ~ '\m(?:ternera|pollo|pavo|cordero|carne|pato|codornices|higado|rabo de toro|morcillo|solomillo)\M'
+      and regexp_replace(
+            pg_temp.recipe_text(ingredientes_principales, pasos_resumen),
+            '\m(?:leche de coco|(?:bebida|leche) de (?:almendras?|avena|soja|arroz)|nata de coco|queso (?:vegano|de anacardos|de tofu))\M',
+            ' ', 'g')
+          ~ '\m(?:leche|queso|yogur|nata|mantequilla|requeson|skyr|bechamel|mozzarella|parmesano|feta|burrata|mascarpone|ricotta|kefir|crema pastelera)\M'
+    )
+  );
