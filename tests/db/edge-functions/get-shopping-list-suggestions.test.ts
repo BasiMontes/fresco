@@ -11,7 +11,7 @@
  */
 
 import { afterAll, describe, expect, test } from 'bun:test';
-import { callFunction, createDbTestContext, seedMealPlan, seedShoppingList, stackReachable } from '../harness';
+import { callFunction, createDbTestContext, rpc, seedMealPlan, seedShoppingList, stackReachable } from '../harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -31,6 +31,21 @@ describe.skipIf(!(RUN && reachable))('get-shopping-list-suggestions — HTTP neg
   test('401 when called with a garbage token', async () => {
     const res = await callFunction(ENDPOINT, { token: 'not-a-real-jwt', body: { shopping_list_id: crypto.randomUUID() } });
     expect(res.status).toBe(401);
+  });
+
+  test('429 once the 120/h rate limit is pre-saturated (endpoint registered in rate_limit_endpoints)', async () => {
+    const user = await ctx.createUser();
+    await Promise.all(
+      Array.from({ length: 120 }, async () => rpc('check_and_increment_rate_limit', {
+        p_user_id: user.id,
+        p_endpoint: ENDPOINT,
+        p_limit: 120,
+        p_window_seconds: 3600,
+      }, { token: user.token })),
+    );
+
+    const res = await callFunction(ENDPOINT, { token: user.token, body: { shopping_list_id: crypto.randomUUID() } });
+    expect(res.status).toBe(429);
   });
 
   test('400 when shopping_list_id is missing', async () => {
