@@ -45,6 +45,7 @@ jobs:
       github.event.deployment_status.state == 'success'
       && startsWith(github.event.deployment_status.environment, 'Production')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       issues: write
@@ -143,6 +144,8 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url || github.event.deployment_status.environment_url }}
           E2E_SESSION_LOGIN: '1'
+          # FRESCO-1016: these users are created in the REAL shared Supabase; a failed cleanup must fail the run.
+          E2E_STRICT_CLEANUP: '1'
 
       - name: Upload Playwright report
         if: always()

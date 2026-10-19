@@ -4,6 +4,7 @@ import type { OpenSlot } from '@/lib/api/open-slots';
 import type { TipoPlato } from '@/lib/api/types';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { StaleListNotice } from '@/components/shopping-list/stale-list-notice';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { assignRecipeToSlot, listOpenSlots } from '@/lib/client-api/meal-plan';
@@ -200,9 +201,9 @@ export function AddToMenuDialog({ recipe, onClose }: AddToMenuDialogProps) {
             .
           </p>
           {phase.tieneListaCompra && (
-            <p className="mt-2 text-body-sm text-tertiary" data-testid="add_to_menu_stale_list_notice">
-              Tu lista de la compra ya estaba generada y no incluye este cambio.
-            </p>
+            <div className="mt-2 text-body-sm text-tertiary" data-testid="add_to_menu_stale_list_notice">
+              <StaleListNotice />
+            </div>
           )}
         </div>
       )}

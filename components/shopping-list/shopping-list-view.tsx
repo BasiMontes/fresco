@@ -11,6 +11,7 @@ import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisle';
 import { ShoppingListAllBought } from '@/components/shopping-list/shopping-list-all-bought';
 import { ShoppingListItemRow } from '@/components/shopping-list/shopping-list-item-row';
+import { ShoppingListStaleBanner } from '@/components/shopping-list/shopping-list-stale-banner';
 import { ShoppingListSuggestions } from '@/components/shopping-list/shopping-list-suggestions';
 import { ShoppingListSummary } from '@/components/shopping-list/shopping-list-summary';
 import { useShakeItem } from '@/components/shopping-list/use-shake-item';
@@ -108,6 +109,8 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-h2">Lista de la compra</h1>
+
+      {list.desactualizada && <ShoppingListStaleBanner mealPlanId={list.mealPlanId} />}
 
       <ExportActions pasillos={pasillos} />
 

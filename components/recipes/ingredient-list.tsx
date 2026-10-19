@@ -4,8 +4,10 @@ import type { IngredienteCantidad } from '@schemas';
 import type { SafeIngredientSubstitute } from '@/lib/ingredients/get-safe-substitutes';
 import type { Sustitucion } from '@/lib/ingredients/get-slot-substitution-context';
 import * as React from 'react';
+import { StaleListNotice } from '@/components/shopping-list/stale-list-notice';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { listaDesactualizadaDeSlot } from '@/lib/client-api/shopping-list';
 import { confirmSubstitution, getSafeSubstitutes } from '@/lib/client-api/substitutions';
 import { IngredientSubstitutionError } from '@/lib/ingredients/get-safe-substitutes';
 import { formatCantidad } from '@/lib/recipes/format-quantity';
@@ -34,6 +36,8 @@ export function IngredientList({ ingredientes, cantidades, slotId, initialSustit
   const [loadingCandidates, setLoadingCandidates] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // FRESCO-1010: the list was built before this substitution and does not have it yet.
+  const [listaDesactualizada, setListaDesactualizada] = React.useState(false);
 
   async function openDialog(ingrediente: string): Promise<void> {
     setOpenFor(ingrediente);
@@ -62,6 +66,7 @@ export function IngredientList({ ingredientes, cantidades, slotId, initialSustit
     try {
       await confirmSubstitution({ slotId, ingredienteOriginal: ingrediente, ingredienteSustituto: sustituto });
       setOpenFor(null);
+      setListaDesactualizada(await listaDesactualizadaDeSlot(slotId));
     }
     catch (caught) {
       console.error('[IngredientList] confirmSubstitution failed', caught);
@@ -114,6 +119,8 @@ export function IngredientList({ ingredientes, cantidades, slotId, initialSustit
           );
         })}
       </ul>
+
+      {listaDesactualizada && <StaleListNotice className="mt-3 text-body-sm text-tertiary" />}
 
       <Dialog
         open={openFor !== null}

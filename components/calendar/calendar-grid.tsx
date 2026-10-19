@@ -9,6 +9,7 @@ import { SlotCell } from '@/components/calendar/slot-cell';
 import { useCalendarDragDrop } from '@/components/calendar/use-calendar-drag-drop';
 import { useSlotMarking } from '@/components/calendar/use-slot-marking';
 import { useVisibleDayWindow } from '@/components/calendar/use-visible-day-window';
+import { StaleListNotice } from '@/components/shopping-list/stale-list-notice';
 import { Button } from '@/components/ui/button';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
 import { cn } from '@/lib/utils';
@@ -100,6 +101,10 @@ export function CalendarGrid({
     setPendingSlots,
   });
 
+  // FRESCO-1010: a discard after the shopping list was generated leaves the list stale; say so.
+  const [listaDesactualizada, setListaDesactualizada] = React.useState(false);
+  const handleListaDesactualizada = React.useCallback(() => setListaDesactualizada(true), []);
+
   const { pendingMark, handleMarkEstado, handleUndoMark } = useSlotMarking({
     slotIds,
     estados,
@@ -107,6 +112,7 @@ export function CalendarGrid({
     setErrorMessage,
     pendingSlots,
     setPendingSlots,
+    onListaDesactualizada: handleListaDesactualizada,
   });
 
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -247,6 +253,12 @@ export function CalendarGrid({
           >
             Cerrar
           </Button>
+        </div>
+      )}
+
+      {listaDesactualizada && (
+        <div className="mt-4 rounded-md border-l-4 border-primary bg-surface p-3 shadow-sm" data-testid="calendar_stale_list_notice">
+          <StaleListNotice className="text-body-sm" />
         </div>
       )}
 

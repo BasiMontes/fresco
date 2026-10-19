@@ -1,7 +1,19 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
 
-void mock.module('@/lib/supabase/client', () => ({ createClient: () => ({}) }));
+/** FRESCO-1010: swapped by the tests that need `shopping_lists` to answer; `{}` makes the stale-list lookup fail soft. */
+let supabaseClient: unknown = {};
+void mock.module('@/lib/supabase/client', () => ({ createClient: () => supabaseClient }));
+
+/** A query builder that answers every table with the same row. */
+function clientAnswering(rows: Record<string, unknown>) {
+  return {
+    from: (table: string) => {
+      const builder = { select: () => builder, eq: () => builder, maybeSingle: async () => ({ data: rows[table] ?? null, error: null }) };
+      return builder;
+    },
+  };
+}
 
 const getSafeSubstitutesMock = mock(async () => [{ ingredienteSustituto: 'leche de avena', alergenos: [] }]);
 const confirmSubstitutionMock = mock(async () => {});
@@ -118,5 +130,41 @@ describe('IngredientList', () => {
     await user.click(screen.getByTestId('ingredient_substitute_trigger_quinoa'));
 
     expect(await screen.findByTestId('ingredient_substitute_none')).toBeInTheDocument();
+  });
+
+  describe('the shopping list after a substitution (FRESCO-1010)', () => {
+    afterEach(() => {
+      supabaseClient = {};
+    });
+
+    async function substituteLeche() {
+      const user = setupUser();
+      renderWithProviders(<IngredientList ingredientes={['leche', 'tomate']} slotId="slot-1" />);
+      await user.click(screen.getByTestId('ingredient_substitute_trigger_leche'));
+      await user.click(await screen.findByTestId('ingredient_substitute_option_leche de avena'));
+      await screen.findByText('leche de avena');
+    }
+
+    test('tells the person the list was generated before this change, with a way to update it', async () => {
+      supabaseClient = clientAnswering({ meal_plan_recipes: { meal_plan_id: 'plan-1' }, shopping_lists: { desactualizada_desde: '2026-10-19T10:00:00Z' } });
+      await substituteLeche();
+
+      expect(await screen.findByTestId('stale_list_notice')).toHaveTextContent('Actualizar lista');
+      expect(screen.getByTestId('stale_list_notice_link')).toHaveAttribute('href', '/shopping-list');
+    });
+
+    test('says nothing when the plan has no list yet', async () => {
+      supabaseClient = clientAnswering({ meal_plan_recipes: { meal_plan_id: 'plan-1' }, shopping_lists: null });
+      await substituteLeche();
+
+      expect(screen.queryByTestId('stale_list_notice')).toBeNull();
+    });
+
+    test('says nothing when the lookup fails: the substitution itself still stands', async () => {
+      await substituteLeche();
+
+      expect(screen.queryByTestId('stale_list_notice')).toBeNull();
+      expect(screen.getByText('leche de avena')).toBeInTheDocument();
+    });
   });
 });
