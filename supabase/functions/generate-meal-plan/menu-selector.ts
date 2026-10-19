@@ -30,9 +30,12 @@ const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
 const WEEKEND_DIAS = new Set<DiaSemana>(['sabado', 'domingo'])
 const MAX_BREAKFAST_REPEATS = 3
 
-// Same approximate per-recipe euro midpoints `validator.ts` used before this
-// ADR — no numeric per-recipe price exists in the schema
-// (`recipe.meta.coste_estimado` is a 4-value categorical enum).
+// Same approximate euro midpoints `validator.ts` used before this ADR — no
+// numeric per-recipe price exists in the schema (`recipe.meta.coste_estimado`
+// is a 4-value categorical enum). FRESCO-1009 (A7-LOGIC-03): the buckets are
+// PER PERSON (`.context/SRS/functional-requirements.md`: "< 2 EUR/person" ...
+// "implicitly scaled by household size"), so each slot's midpoint is
+// multiplied by `profile.num_personas` before it is compared with the budget.
 const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
   muy_bajo: 1.5,
   bajo: 3,
@@ -246,6 +249,8 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
   if (profile.presupuesto_semana_euros != null) {
     let totalEuros = 0
     let costeDesconocido = 0
+    // The DB CHECK keeps it 1..10; a missing or odd value counts as one person, never zero.
+    const personas = Number.isFinite(profile.num_personas) && profile.num_personas >= 1 ? profile.num_personas : 1
     for (const dia of DIAS) {
       for (const tipo of TIPOS) {
         const recipeId = menu[dia][tipo]
@@ -259,9 +264,9 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, userEng
         // total a lower bound) and surface the imprecision.
         const midpoint = coste ? BUCKET_MIDPOINT_EUROS[coste] : undefined
         if (midpoint != null) {
-          totalEuros += midpoint
+          totalEuros += midpoint * personas
         } else {
-          totalEuros += BUCKET_MIDPOINT_EUROS.muy_bajo
+          totalEuros += BUCKET_MIDPOINT_EUROS.muy_bajo * personas
           costeDesconocido++
         }
       }

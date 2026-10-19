@@ -9,6 +9,7 @@
 import type { DiaSemana, IngredienteConsolidado, RawIngrediente } from './types.ts'
 import { logger } from '../_shared/logger.ts'
 import { normalizeNombre } from '../_shared/normalize.ts'
+import { aGramos, desdeGramos, GRAMOS_POR_CUCHARADA, PIEZAS } from './unit-conversions.ts'
 
 // Base quantity/unit per normalized ingredient name, scaled by
 // (raciones_usuario / raciones_receta). Realistic estimates for Spanish home
@@ -272,7 +273,8 @@ const UNIDADES_SIN_CANTIDAD = new Set(['pizca', 'al gusto'])
  */
 function cantidadDeReceta(
   raw: RawIngrediente,
-  base: { cantidad: number; unidad: string } | undefined
+  base: { cantidad: number; unidad: string } | undefined,
+  key: string
 ): { cantidad: number; unidad: string } {
   const { cantidad, unidad } = raw
   const tieneCantidad = cantidad !== undefined && unidad !== undefined
@@ -282,10 +284,18 @@ function cantidadDeReceta(
     return { cantidad: base?.cantidad ?? 1, unidad: base?.unidad ?? 'unidades' }
   }
 
-  const mlOGramos = unidad === 'cucharadas' ? ML_PER_CUCHARADA : unidad === 'cucharaditas' ? ML_PER_CUCHARADITA : 0
+  // FRESCO-1009 (A7-LOGIC-02): a spoon of fresh herb or seeds is not 15 g; the per-ingredient table wins.
+  const gramosCucharada = GRAMOS_POR_CUCHARADA[key]
+  // An ingredient with its own spoon weight is a mass even when BASE_QUANTITIES has no entry for it.
+  const unidadMedida = base?.unidad ?? (gramosCucharada ? 'g' : undefined)
+  const mlOGramos = unidad === 'cucharadas'
+    ? (unidadMedida === 'g' && gramosCucharada ? gramosCucharada : ML_PER_CUCHARADA)
+    : unidad === 'cucharaditas'
+      ? (unidadMedida === 'g' && gramosCucharada ? gramosCucharada / 3 : ML_PER_CUCHARADITA)
+      : 0
   if (mlOGramos > 0) {
-    if (base?.unidad === 'g' || base?.unidad === 'ml') {
-      return { cantidad: cantidad * mlOGramos, unidad: base.unidad }
+    if (unidadMedida === 'g' || unidadMedida === 'ml') {
+      return { cantidad: cantidad * mlOGramos, unidad: unidadMedida }
     }
     // No mass/volume base to convert into: keep the spoon, as one sumable unit.
     return unidad === 'cucharaditas'
@@ -348,11 +358,13 @@ export function consolidateIngredientes(
     const base = BASE_QUANTITIES[key]
     const factor = raw.raciones_usuario / raw.raciones_receta
 
-    const { cantidad: cantidadBase, unidad: unidadBase } = cantidadDeReceta(raw, base)
-    const { cantidad: cantBase, unidad: unitBase } = toBaseUnit(
-      Math.ceil(cantidadBase * factor),
-      unidadBase
-    )
+    const { cantidad: cantidadBase, unidad: unidadBase } = cantidadDeReceta(raw, base, key)
+    // FRESCO-1009 (A7-LOGIC-02): an ingredient counted in pieces AND weighed ("Tomate 400 g" in one
+    // recipe, "Tomate 2 unidades" in another) is summed in grams and shown in ONE unit at the end.
+    const enGramos = aGramos(key, cantidadBase * factor, unidadBase)
+    const { cantidad: cantBase, unidad: unitBase } = enGramos !== null
+      ? { cantidad: Math.ceil(enGramos), unidad: 'g' }
+      : toBaseUnit(Math.ceil(cantidadBase * factor), unidadBase)
 
     const usos = usosMap.get(key) ?? []
     if (!usos.some(u => u.receta === raw.receta_nombre && u.dia === raw.dia)) {
@@ -386,11 +398,18 @@ export function consolidateIngredientes(
   }
 
   return Array.from(map.entries()).flatMap(([key, groups]) =>
-    groups.map(({ cantidad, unidad }) => ({
-      nombre: displayNombreMap.get(key) ?? key,
-      cantidad,
-      unidad,
-      usos: usosMap.get(key) ?? [],
-    }))
+    groups.map((group) => {
+      // The group of a piece-counted ingredient was summed in grams: show it in its own unit.
+      const pieza = PIEZAS[key] && toBaseUnit(group.cantidad, group.unidad).unidad === 'g'
+        ? desdeGramos(key, toBaseUnit(group.cantidad, group.unidad).cantidad)
+        : null
+      const { cantidad, unidad } = pieza && pieza.unidad !== 'g' ? pieza : group
+      return {
+        nombre: displayNombreMap.get(key) ?? key,
+        cantidad,
+        unidad,
+        usos: usosMap.get(key) ?? [],
+      }
+    })
   )
 }
