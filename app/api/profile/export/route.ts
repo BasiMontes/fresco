@@ -4,6 +4,10 @@ import { readUserDataForExport } from '@/lib/api/profile-export';
 import { rowsToCsv } from '@/lib/csv/export-csv';
 import { createClient } from '@/lib/supabase/server';
 
+const RATE_LIMIT_ENDPOINT = 'profile-export';
+const RATE_LIMIT_PER_HOUR = 10;
+const RATE_LIMIT_WINDOW_SECONDS = 3600;
+
 interface MealPlanRow extends Record<string, unknown> {
   id: string
   meal_plan_recipes?: Record<string, unknown>[]
@@ -37,6 +41,23 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.json({ error: 'No hay una sesión autenticada.' }, { status: 401 });
+  }
+
+  // FRESCO-1017 (A7-ABUSE-04): the export reads every table the user owns, so it is the costly
+  // read of the app. ADR-0010: atomic check-and-increment, fail closed (only an explicit `true`
+  // passes), before the reads. Registered in rate_limit_endpoints at the same ceiling.
+  const { data: allowed, error: rateLimitError } = await supabase.rpc('check_and_increment_rate_limit', {
+    p_user_id: user.id,
+    p_endpoint: RATE_LIMIT_ENDPOINT,
+    p_limit: RATE_LIMIT_PER_HOUR,
+    p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+  });
+  if (rateLimitError) {
+    console.error('[/api/profile/export] rate-limit check failed', rateLimitError);
+    return NextResponse.json({ error: 'No se pudieron leer tus datos.' }, { status: 500 });
+  }
+  if (allowed !== true) {
+    return NextResponse.json({ error: 'Has descargado tus datos varias veces seguidas, inténtalo de nuevo en un rato.' }, { status: 429 });
   }
 
   let exported: UserDataExport;
