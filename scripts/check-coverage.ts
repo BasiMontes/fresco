@@ -74,6 +74,7 @@
  *
  *   bun scripts/check-coverage.ts           # run tests + enforce; exit 1 on drop
  *   bun scripts/check-coverage.ts --print   # measure + print only, always exit 0
+ *   bun scripts/check-coverage.ts --print --unloaded   # + the unloaded files, by risk class
  */
 
 import { rm } from 'node:fs/promises';
@@ -100,8 +101,10 @@ import { join } from 'node:path';
  * 2026-10-14 (FRESCO-916): raised to functions 87.5 / lines 88.7 (measured
  *   88.12 / 89.30). The floor had sat 2.6 pp under the real number: a drop of
  *   that size would have passed CI without a word.
+ * 2026-10-19 (FRESCO-991): raised to functions 89.0 / lines 89.7 (measured
+ *   89.60 / 90.10) after the Edge handler tests landed.
  */
-const FLOOR = { functions: 87.5, lines: 88.7 } as const;
+const FLOOR = { functions: 89.0, lines: 89.7 } as const;
 
 /**
  * Floor for the HONEST line coverage (unloaded files counted as zero). Only
@@ -111,8 +114,12 @@ const FLOOR = { functions: 87.5, lines: 88.7 } as const;
  * tranche of the plan in `.context/qa/coverage-ratchet.md` ("Tranches"): the 49.0
  * floor sat 6.3 pp under the real number, so a 6-point regression would not have
  * failed. The next tranche is 60 %.
+ * 2026-10-19 (FRESCO-991): measured 63.35 %, floored at 63.0. The Edge handlers
+ * that move money and write plans/lists (generate-meal-plan, generate-shopping-list,
+ * get-shopping-list-suggestions, delete-catalog-recipe) and the consent-gated
+ * PostHog capture were the highest-risk files no test imported.
  */
-const HONEST_FLOOR_LINES = 54.5;
+const HONEST_FLOOR_LINES = 63.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
@@ -165,28 +172,66 @@ function isSourceFile(path: string): boolean {
     && !GENERATED_FILES.has(path);
 }
 
+interface UnloadedFile { path: string, lines: number }
+
 /** Non-empty, non-comment lines of every tracked source file lcov never listed. */
-async function countUnloadedLines(loaded: Set<string>): Promise<{ files: number, lines: number }> {
+async function listUnloadedFiles(loaded: Set<string>): Promise<UnloadedFile[]> {
   const ls = Bun.spawn(['git', 'ls-files', ...SOURCE_DIRS], { stdout: 'pipe', stderr: 'inherit' });
   const listing = await new Response(ls.stdout).text();
   await ls.exited;
 
-  let files = 0;
-  let lines = 0;
+  const files: UnloadedFile[] = [];
   for (const path of listing.split('\n').filter(isSourceFile)) {
     if (loaded.has(path)) { continue; }
     const source = await Bun.file(path).text();
-    files += 1;
-    lines += source.split('\n').filter((raw) => {
+    const lines = source.split('\n').filter((raw) => {
       const l = raw.trim();
       return l !== '' && !l.startsWith('//') && !l.startsWith('/*') && !l.startsWith('*');
     }).length;
+    files.push({ path, lines });
   }
-  return { files, lines };
+  return files;
+}
+
+/**
+ * FRESCO-991: what a bug in the file would cost, most expensive first. Order of the
+ * rules is the priority: the first match wins. Type-only files (`types.ts`) have no
+ * runtime lines to cover, so they are matched first and sort last.
+ */
+const RISK_CLASSES: Array<{ name: string, test: RegExp }> = [
+  { name: '6 type-only', test: /(^|\/)types\.ts$/ },
+  { name: '1 money', test: /billing|stripe|checkout|subscription|pricing|price|entitlement/i },
+  { name: '2 allergens and consent', test: /allerg|alergen|diet|substitut|consent|legal|ingredient/i },
+  { name: '3 edge handlers', test: /^supabase\/functions\// },
+  { name: '4 user-data routes and loaders', test: /^app\/api\/|route\.ts$|load-.*-data|\/server\.ts$|\/service\.ts$/ },
+  { name: '5 everything else', test: /./ },
+];
+
+function riskClassOf(path: string): string {
+  return RISK_CLASSES.find(c => c.test.test(path))!.name;
+}
+
+/** `--unloaded`: the files no test imports, by risk class then size, so the next tranche starts at the top. */
+function printUnloaded(files: UnloadedFile[]): void {
+  const ranked = files
+    .map(f => ({ ...f, risk: riskClassOf(f.path) }))
+    .sort((a, b) => a.risk.localeCompare(b.risk) || b.lines - a.lines);
+  console.log('');
+  console.log('  Files no test imports (counted as 0 hit), by risk class then size:');
+  let current = '';
+  for (const f of ranked) {
+    if (f.risk !== current) {
+      current = f.risk;
+      const total = ranked.filter(r => r.risk === current).reduce((n, r) => n + r.lines, 0);
+      console.log(`\n  ${current}  (${total} lines)`);
+    }
+    console.log(`    ${String(f.lines).padStart(4)}  ${f.path}`);
+  }
 }
 
 async function main(): Promise<void> {
   const printOnly = process.argv.includes('--print');
+  const listUnloaded = process.argv.includes('--unloaded');
   const coverageDir = join(tmpdir(), `fresco-coverage-${process.pid}`);
 
   const proc = Bun.spawn(
@@ -212,7 +257,8 @@ async function main(): Promise<void> {
   const functions = pct(totals.fnHit, totals.fnFound);
   const lines = pct(totals.lineHit, totals.lineFound);
 
-  const unloaded = await countUnloadedLines(totals.loaded);
+  const unloadedFiles = await listUnloadedFiles(totals.loaded);
+  const unloaded = { files: unloadedFiles.length, lines: unloadedFiles.reduce((n, f) => n + f.lines, 0) };
   const honestLines = pct(totals.lineHit, totals.lineFound + unloaded.lines);
 
   console.log('');
@@ -224,6 +270,8 @@ async function main(): Promise<void> {
   console.log(`  HONEST  loaded + ${unloaded.files} files no test imports, counted as 0 hit`);
   console.log(`    lines      ${honestLines.toFixed(2)} %   (floor ${HONEST_FLOOR_LINES.toFixed(2)} %)`);
   console.log('─'.repeat(64));
+
+  if (listUnloaded) { printUnloaded(unloadedFiles); }
 
   if (printOnly) {
     process.exit(0);
