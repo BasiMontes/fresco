@@ -18,6 +18,11 @@
 --   D. sulfitos: vinegar, raisins, mayonnaise, barbecue sauce, beer and sushi rice. Rice vinegar
 --      is made without grape must, so "vinagre de arroz" does not count (same exception as the oracle).
 --
+-- ingredientes_cantidades (FRESCO-863/ADR-0042) repeats the names of ingredientes_principales verbatim and
+-- recipes_ingredientes_cantidades_valid enforces it, so a rename in B must reach both columns in the same
+-- UPDATE. The first version of this migration renamed only ingredientes_principales and the check refused
+-- it on the hosted catalogue, which carries quantities (the local seed does not). Nothing had been applied.
+--
 -- Every UPDATE carries a guard on the old value, so a rerun updates 0 rows. Allergens are appended.
 -- Slots already generated (meal_plan_recipes) are not touched. supabase/seed.sql carries the same
 -- changes on the same rows.
@@ -39,6 +44,31 @@ as $$
     '[]'::jsonb
   )
   from jsonb_array_elements_text(items) with ordinality as element(item, position)
+$$;
+
+-- The same rewrite for ingredientes_cantidades: renames `nombre` with the same pattern, so the quantity
+-- row keeps matching the renamed entry of ingredientes_principales. Null stays null.
+create or replace function pg_temp.name_gluten_free_quantities(items jsonb, pattern text, replacement text)
+returns jsonb
+language sql
+as $$
+  select case
+    when items is null or jsonb_typeof(items) <> 'array' then items
+    else (
+      select coalesce(
+        jsonb_agg(
+          case
+            when jsonb_typeof(item -> 'nombre') = 'string' and (item ->> 'nombre') ~* pattern
+              then jsonb_set(item, '{nombre}', to_jsonb(regexp_replace(item ->> 'nombre', pattern, replacement, 'gi')))
+            else item
+          end
+          order by position
+        ),
+        '[]'::jsonb
+      )
+      from jsonb_array_elements(items) with ordinality as element(item, position)
+    )
+  end
 $$;
 
 -- A. products named only in the steps join the ingredient list
@@ -67,13 +97,15 @@ $$;
 -- B. tamari and nachos in a sin_gluten recipe say which product to buy
 update public.recipes
 set ingredientes_principales = pg_temp.name_gluten_free(ingredientes_principales, '\mtamari\M(?! sin gluten)', 'tamari sin gluten'),
-    pasos_resumen = pg_temp.name_gluten_free(pasos_resumen, '\mtamari\M(?! sin gluten)', 'tamari sin gluten')
+    pasos_resumen = pg_temp.name_gluten_free(pasos_resumen, '\mtamari\M(?! sin gluten)', 'tamari sin gluten'),
+    ingredientes_cantidades = pg_temp.name_gluten_free_quantities(ingredientes_cantidades, '\mtamari\M(?! sin gluten)', 'tamari sin gluten')
 where dieta->>'sin_gluten' = 'true'
   and (coalesce(ingredientes_principales::text, '') || ' ' || coalesce(pasos_resumen::text, '')) ~* '\mtamari\M(?! sin gluten)';
 
 update public.recipes
 set ingredientes_principales = pg_temp.name_gluten_free(ingredientes_principales, '\mnachos( de ma[ií]z)?\M(?! sin gluten)', 'nachos sin gluten'),
-    pasos_resumen = pg_temp.name_gluten_free(pasos_resumen, '\mnachos( de ma[ií]z)?\M(?! sin gluten)', 'nachos sin gluten')
+    pasos_resumen = pg_temp.name_gluten_free(pasos_resumen, '\mnachos( de ma[ií]z)?\M(?! sin gluten)', 'nachos sin gluten'),
+    ingredientes_cantidades = pg_temp.name_gluten_free_quantities(ingredientes_cantidades, '\mnachos( de ma[ií]z)?\M(?! sin gluten)', 'nachos sin gluten')
 where dieta->>'sin_gluten' = 'true'
   and (coalesce(ingredientes_principales::text, '') || ' ' || coalesce(pasos_resumen::text, '')) ~* '\mnachos( de ma[ií]z)?\M(?! sin gluten)';
 
