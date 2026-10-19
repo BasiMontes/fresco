@@ -242,8 +242,12 @@ Deno.serve(async (req: Request) => {
 
     if (planError || !mealPlanId) {
       // 22023: the week or its start date is not valid. 23505: a concurrent request created the same
-      // week first (`unique_user_semana`).
+      // week first (`unique_user_semana`). 23514: the per-user cap of 104 plans (FRESCO-1017); a
+      // 403 and not a 409/422, which the week button reads as "that week exists" / "no valid menu".
       if (planError?.code === '22023') throw new HttpError('semana_iso o fecha_inicio no son válidos', 400)
+      if (planError?.code === '23514') {
+        throw new HttpError('Has llegado al límite de 104 planes guardados. Elimina semanas antiguas para generar otro.', 403)
+      }
       if (planError?.code === '23505') {
         throw new HttpError(`Ya existe un plan para la semana ${semana_iso}. Elimínalo antes de regenerar.`, 409)
       }

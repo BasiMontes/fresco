@@ -223,6 +223,13 @@ describe('generate-meal-plan/index.ts — create_meal_plan error map', () => {
     expect((await handler(edgeRequest(BODY))).status).toBe(409)
   })
 
+  test('403 with a readable message on 23514 (the per-user cap of 104 plans, FRESCO-1017)', async () => {
+    setup({ svcRpc: { create_meal_plan: { data: null, error: { code: '23514', message: 'meal_plans: limit of 104 plans per user reached' } } } })
+    const res = await handler(edgeRequest(BODY))
+    expect(res.status).toBe(403)
+    expect(((await res.json()) as { error: string }).error).toContain('104')
+  })
+
   test('500 on any other failure', async () => {
     setup({ svcRpc: { create_meal_plan: { data: null, error: { code: 'XX000', message: 'boom' } } } })
     expect((await handler(edgeRequest(BODY))).status).toBe(500)
