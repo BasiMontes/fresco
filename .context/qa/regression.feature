@@ -61,6 +61,13 @@ Característica: Flujo completo de usuario en Fresco
     Entonces el sistema le redirige a /menu
     Y la sesión queda activa
 
+  @login @edge-case @automatizado
+  # Automatizado: tests/steps/login.steps.ts (FRESCO-1014, A7-UI-16)
+  # No toca ninguna cuenta ni escribe nada: solo abre una ruta protegida sin sesión.
+  Escenario: Un enlace a una página protegida sin sesión recuerda el destino
+    Dado que un visitante sin sesión abre /shopping-list
+    Entonces es redirigido a /login conservando /shopping-list como destino
+
   @login @edge-case @verificado-manual-2026-07-31 @automatizado @requiere-captcha-off
   # Automatizado: tests/steps/login.steps.ts (FRESCO-463)
   Escenario: Inicio de sesión falla con credenciales incorrectas
@@ -1091,6 +1098,15 @@ Característica: Flujo completo de usuario en Fresco
     Cuando marca un producto como comprado
     Entonces el producto se muestra visualmente como comprado
     Y el estado se conserva la próxima vez que abre la lista
+
+  @lista-compra @automatizado
+  # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)
+  # FRESCO-1014 (A7-UI-10): en un súper sin cobertura la marca no se deshace sola.
+  Escenario: Marcar un producto sin conexión lo mantiene marcado y se guarda al volver la señal
+    Dado que el usuario tiene una lista de la compra generada
+    Cuando se queda sin conexión y marca un producto como comprado
+    Entonces el producto sigue marcado y ve un aviso visible de que se guardará al volver la señal
+    Y al recuperar la conexión el aviso desaparece
 
   @lista-compra @verificado-manual-2026-08-14 @automatizado
   # Automatizado: tests/steps/shopping-list.steps.ts (playwright-bdd, backend real, sin mock)

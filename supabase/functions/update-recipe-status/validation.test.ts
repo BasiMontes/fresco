@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { HttpError } from '../_shared/http.ts'
-import { assertEstadoValido, buildUpdatePayload, CLIENT_SETTABLE_ESTADOS } from './validation.ts'
+import { assertEstadoValido, assertTransicionPermitida, buildUpdatePayload, CLIENT_SETTABLE_ESTADOS } from './validation.ts'
 
 function statusOf(fn: () => void): number | undefined {
   try {
@@ -18,8 +18,8 @@ describe('assertEstadoValido (A4-L7)', () => {
     })
   }
 
-  test('rejects a valid enum value that is not client-settable ("pendiente")', () => {
-    expect(statusOf(() => assertEstadoValido('pendiente'))).toBe(400)
+  test('rejects a valid enum value that is not client-settable ("excluida")', () => {
+    expect(statusOf(() => assertEstadoValido('excluida'))).toBe(400)
   })
 
   test('rejects "excluida" (system-assigned only)', () => {
@@ -57,5 +57,53 @@ describe('buildUpdatePayload (A4-L7 — fields gated by estado)', () => {
 
   test('omits the optional field when it is not supplied', () => {
     expect(buildUpdatePayload('cocinada', undefined)).toEqual({ estado: 'cocinada' })
+  })
+})
+
+describe('"pendiente" is how a mark is taken back (FRESCO-1014)', () => {
+  test('is client-settable, and the payload carries only the estado', () => {
+    expect(CLIENT_SETTABLE_ESTADOS).toContain('pendiente')
+    expect(statusOf(() => assertEstadoValido('pendiente'))).toBeUndefined()
+    expect(buildUpdatePayload('pendiente', 'recipe-x')).toEqual({ estado: 'pendiente' })
+  })
+})
+
+describe('assertTransicionPermitida (FRESCO-1014, A7-UI-15)', () => {
+  const run = (actual: string, nuevo: Parameters<typeof assertTransicionPermitida>[0]['nuevo'], esSemanaActual: boolean) =>
+    statusOf(() => assertTransicionPermitida({ actual, nuevo, esSemanaActual }))
+
+  test('an open slot takes the marks it always took, in any week', () => {
+    for (const actual of ['pendiente', 'sustituida']) {
+      for (const nuevo of ['cocinada', 'descartada', 'sustituida'] as const) {
+        expect(run(actual, nuevo, true)).toBeUndefined()
+        expect(run(actual, nuevo, false)).toBeUndefined()
+      }
+    }
+  })
+
+  test('an open slot has no mark to take back', () => {
+    expect(run('pendiente', 'pendiente', true)).toBe(409)
+    expect(run('sustituida', 'pendiente', true)).toBe(409)
+  })
+
+  test('a marked slot can be taken back or switched inside the current week', () => {
+    expect(run('cocinada', 'pendiente', true)).toBeUndefined()
+    expect(run('descartada', 'pendiente', true)).toBeUndefined()
+    expect(run('cocinada', 'descartada', true)).toBeUndefined()
+    expect(run('descartada', 'cocinada', true)).toBeUndefined()
+  })
+
+  test('a marked slot stays closed in any other week', () => {
+    for (const nuevo of ['pendiente', 'cocinada', 'descartada', 'sustituida'] as const) {
+      expect(run('cocinada', nuevo, false)).toBe(409)
+      expect(run('descartada', nuevo, false)).toBe(409)
+    }
+  })
+
+  test('a marked slot is never replaced, and marking it again with the same mark is refused', () => {
+    expect(run('cocinada', 'sustituida', true)).toBe(409)
+    expect(run('descartada', 'sustituida', true)).toBe(409)
+    expect(run('cocinada', 'cocinada', true)).toBe(409)
+    expect(run('descartada', 'descartada', true)).toBe(409)
   })
 })

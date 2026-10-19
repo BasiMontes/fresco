@@ -10,5 +10,5 @@ export interface SlotOwnershipRow {
   id: string
   estado: string
   meal_plan_id: string
-  meal_plans: { user_id: string } | null
+  meal_plans: { user_id: string, semana_iso: string } | null
 }

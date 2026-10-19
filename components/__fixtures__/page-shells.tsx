@@ -131,7 +131,7 @@ export function CalendarPageFixture() {
         <h1 className="text-h2">Calendario semanal</h1>
         <div className="flex items-center gap-2">
           <WeekNavigation semanaIso={FIXTURE_SEMANA_ISO} mondayIso={FIXTURE_MONDAY_ISO} />
-          <DeleteWeekButton mealPlanId="fixture-meal-plan" />
+          <DeleteWeekButton mealPlanId="fixture-meal-plan" platos={21} />
         </div>
       </div>
       <p className="mt-1 text-body-md text-tertiary">Arrastra cualquier plato para reorganizar tu semana.</p>

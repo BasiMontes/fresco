@@ -31,7 +31,8 @@ const MAX_WEEK_OFFSET = 2;
  * tightened.
  */
 export function WeekNavigation({ semanaIso, mondayIso }: { semanaIso: string, mondayIso: string }) {
-  const label = formatWeekRangeLabel(mondayIso);
+  // FRESCO-1014: the year shows when the viewed week is not in the current year.
+  const label = formatWeekRangeLabel(mondayIso, Number(getIsoWeekMonday().slice(0, 4)));
 
   const semanaAnterior = addIsoWeeks(semanaIso, -1);
   const semanaSiguiente = addIsoWeeks(semanaIso, 1);

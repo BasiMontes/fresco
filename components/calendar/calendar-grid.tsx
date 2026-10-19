@@ -12,6 +12,7 @@ import { useVisibleDayWindow } from '@/components/calendar/use-visible-day-windo
 import { StaleListNotice } from '@/components/shopping-list/stale-list-notice';
 import { Button } from '@/components/ui/button';
 import { slotId } from '@/lib/calendar/apply-slot-swap';
+import { sumarDias } from '@/lib/date/madrid-date';
 import { cn } from '@/lib/utils';
 
 const DIA_LABELS: Record<DiaSemana, string> = {
@@ -26,9 +27,6 @@ const DIA_LABELS: Record<DiaSemana, string> = {
 
 const DIAS = Object.keys(DIA_LABELS) as DiaSemana[];
 const SLOTS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
-/** `Date.prototype.getDay()` order (Sunday = 0) -> this grid's `DiaSemana` keys, for the "today" mark below. */
-const JS_WEEKDAY_TO_DIA: DiaSemana[] = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-
 type EstadosGrid = Record<DiaSemana, Record<TipoPlato, EstadoRecetaSlot>>;
 
 export interface CalendarGridProps {
@@ -46,6 +44,13 @@ export interface CalendarGridProps {
    */
   planningDays?: DiaSemana[]
   planningMeals?: TipoPlato[]
+  /**
+   * FRESCO-1014 (A7-UI-12): Monday of the viewed week and today in Madrid, both `YYYY-MM-DD` and resolved on
+   * the server. "Hoy" is marked only when today falls inside the viewed week, in the Madrid frame, so a past or
+   * future week has no false marker and the server and the browser agree. Absent: nothing is marked.
+   */
+  mondayIso?: string
+  hoyIso?: string
 }
 
 /**
@@ -79,6 +84,8 @@ export function CalendarGrid({
   initialEstados,
   planningDays = DIAS,
   planningMeals = SLOTS,
+  mondayIso,
+  hoyIso,
 }: CalendarGridProps) {
   const [menu, setMenu] = React.useState<MenuGrid>(initialMenu);
   const [estados, setEstados] = React.useState<EstadosGrid>(initialEstados);
@@ -116,7 +123,10 @@ export function CalendarGrid({
   });
 
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const { visibleDays, startIndex, setStartIndex, canGoPrevDay, canGoNextDay, hasDayOverflow } = useVisibleDayWindow(planningDays, containerRef);
+  // FRESCO-1014: today's weekday, only when today falls inside the viewed week (Madrid frame, from the server).
+  const diaHoy = mondayIso && hoyIso ? DIAS.find((_, index) => sumarDias(mondayIso, index) === hoyIso) : undefined;
+
+  const { visibleDays, startIndex, setStartIndex, canGoPrevDay, canGoNextDay, hasDayOverflow } = useVisibleDayWindow(planningDays, { containerRef, focusDia: diaHoy });
 
   return (
     <div ref={containerRef} className="relative">
@@ -142,9 +152,9 @@ export function CalendarGrid({
             disabled={!canGoPrevDay}
             aria-label="Día anterior"
             data-testid="calendar_day_nav_prev"
-            className="grid size-7 place-items-center rounded-sm text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent"
+            className="grid size-11 place-items-center rounded-sm text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent"
           >
-            <ChevronLeft className="size-4" />
+            <ChevronLeft className="size-5" />
           </button>
           <button
             type="button"
@@ -152,9 +162,9 @@ export function CalendarGrid({
             disabled={!canGoNextDay}
             aria-label="Día siguiente"
             data-testid="calendar_day_nav_next"
-            className="grid size-7 place-items-center rounded-sm text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent"
+            className="grid size-11 place-items-center rounded-sm text-primary hover:bg-neutral-200 disabled:opacity-40 disabled:hover:bg-transparent"
           >
-            <ChevronRight className="size-4" />
+            <ChevronRight className="size-5" />
           </button>
         </div>
       )}
@@ -200,12 +210,14 @@ export function CalendarGrid({
           ))}
 
           {visibleDays.map((dia) => {
-            const isToday = dia === JS_WEEKDAY_TO_DIA[new Date().getDay()];
+            const isToday = dia === diaHoy;
             return (
               <React.Fragment key={dia}>
                 <p
                   className={cn(
-                    'flex min-h-9 w-fit items-center text-label',
+                    // FRESCO-1014: 3rem when the day arrows are shown, so the header row is never shorter than their 44 px.
+                    'flex w-fit items-center text-label',
+                    hasDayOverflow ? 'min-h-12' : 'min-h-9',
                     isToday && 'rounded-full bg-secondary px-3 py-1 text-on-warning',
                   )}
                 >
@@ -222,6 +234,8 @@ export function CalendarGrid({
                     dropDisabled={draggingTipo !== null && draggingTipo !== tipo}
                     pending={pendingSlots.has(slotId({ dia, tipo }))}
                     onMark={estado => void handleMarkEstado({ dia, tipo, estado })}
+                    // FRESCO-1014: marks can be switched or taken back in the current week only (Madrid frame).
+                    canChangeMark={diaHoy !== undefined}
                     // FRESCO-183/FRESCO-271: only the visible day window is
                     // ever rendered now (see `useVisibleDayWindow`), so
                     // every currently-rendered slot is by definition in the
@@ -270,7 +284,7 @@ export function CalendarGrid({
           className="fixed inset-x-4 bottom-4 z-30 mx-auto flex max-w-sm items-center justify-between gap-3 rounded-lg bg-primary px-4 py-2.5 text-body-sm text-on-brand shadow-lg"
         >
           <span>
-            {pendingMark.estado === 'cocinada' ? 'Marcado como cocinado' : 'Marcado como descartado'}
+            {pendingMark.estado === 'cocinada' ? 'Marcado como cocinado' : pendingMark.estado === 'descartada' ? 'Marcado como descartado' : 'Marca quitada'}
           </span>
           <button
             type="button"

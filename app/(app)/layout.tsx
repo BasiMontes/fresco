@@ -1,10 +1,11 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { ServiceWorkerRegistrar } from '@/components/layout/service-worker-registrar';
 import { ReconsentDialog } from '@/components/legal/reconsent-dialog';
 import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
+import { loginUrlFor } from '@/lib/auth/login-redirect';
 import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/layout/sidebar-preference';
 import { getMissingConsents } from '@/lib/legal/consent-status';
 import { createClient } from '@/lib/supabase/server';
@@ -35,7 +36,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   // and any `lib/api/*` helper called without an explicit `userId`.
   const { data: { user } } = await getAuthUser();
 
-  if (!user) { redirect('/login'); }
+  if (!user) { redirect(loginUrlFor((await headers()).get('x-pathname'))); }
 
   const [nombre, plan, profileExists, missingConsents] = await Promise.all([
     getUserNombre(supabase, user.id).catch((error) => {

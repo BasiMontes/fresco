@@ -3,6 +3,7 @@
 import type { DiaSemana, TipoPlatoSlot } from '@schemas';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MEAL_LABELS, MEAL_SLOTS } from '@/lib/meal-labels';
 
 export interface PlanningSelectionGridProps {
   'value': PlanningSelection
@@ -20,11 +21,7 @@ const DAY_OPTIONS: { value: DiaSemana, label: string, name: string }[] = [
   { value: 'domingo', label: 'Dom', name: 'domingo' },
 ];
 
-const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = [
-  { value: 'desayuno', label: 'Desayuno' },
-  { value: 'comida', label: 'Almuerzo' },
-  { value: 'cena', label: 'Cena' },
-];
+const MEAL_OPTIONS: { value: TipoPlatoSlot, label: string }[] = MEAL_SLOTS.map(value => ({ value, label: MEAL_LABELS[value] }));
 
 /**
  * FRESCO-259 — edits `planning_selection` (the DB's native day->meals matrix,

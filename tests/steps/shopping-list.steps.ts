@@ -100,6 +100,27 @@ Then(/^el producto se muestra visualmente como comprado$/, async ({ page }) => {
   await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
 });
 
+// ── Sin conexión (FRESCO-1014, A7-UI-10) ────────────────────────────────────
+
+When(/^se queda sin conexión y marca un producto como comprado$/, async ({ page }) => {
+  await page.context().setOffline(true);
+  await page.getByTestId('shopping_list_item_0_0').check();
+});
+
+Then(/^el producto sigue marcado y ve un aviso visible de que se guardará al volver la señal$/, async ({ page }) => {
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
+  const alert = page.getByRole('alert').filter({ hasText: 'Sin conexión' });
+  await expect(alert).toBeVisible();
+  await expect(alert).toBeInViewport();
+});
+
+Then(/^al recuperar la conexión el aviso desaparece$/, async ({ page }) => {
+  await page.context().setOffline(false);
+  // The browser fires `online`; the queued tick is sent and the notice goes.
+  await expect(page.getByRole('alert').filter({ hasText: 'Sin conexión' })).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.getByTestId('shopping_list_item_0_0')).toBeChecked();
+});
+
 // ── Precio por producto (FRESCO-191, segunda vuelta) ────────────────────────
 
 Then(/^cada producto muestra su cantidad, unidad y precio estimado$/, async ({ page }) => {

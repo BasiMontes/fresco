@@ -21,11 +21,14 @@ import { deleteMealPlan } from '@/lib/client-api/meal-plan';
  * (no typed-confirmation gate — that's reserved for the account-deletion
  * flow, a materially higher-stakes action).
  *
+ * FRESCO-1014 (A7-UI-14): the confirmation names the dishes the person actually sees (`platos`), not a fixed
+ * 21 slots that a household planning two meals a day never had.
+ *
  * Error surface follows `app/onboarding/page.tsx`'s inline
  * `role="alert"` convention (already reused by `CalendarGrid`) rather than
  * a blocking native `alert()`.
  */
-export function DeleteWeekButton({ mealPlanId }: { mealPlanId: string }) {
+export function DeleteWeekButton({ mealPlanId, platos }: { mealPlanId: string, platos: number }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const [pending, setPending] = React.useState(false);
@@ -83,7 +86,7 @@ export function DeleteWeekButton({ mealPlanId }: { mealPlanId: string }) {
       >
         <h2 className="text-h4 text-error">¿Eliminar el menú de esta semana?</h2>
         <p className="mt-2 text-body-sm text-tertiary">
-          Se borrarán las 21 franjas de esta semana. Esta acción no se puede deshacer.
+          {`Se borrará el menú completo de esta semana (${platos} ${platos === 1 ? 'plato' : 'platos'}). Esta acción no se puede deshacer.`}
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button type="button" variant="secondary" disabled={pending} onClick={() => setConfirmOpen(false)}>

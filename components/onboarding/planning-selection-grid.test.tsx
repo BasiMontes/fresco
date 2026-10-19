@@ -35,7 +35,7 @@ describe('PlanningSelectionGrid', () => {
   test('one group per meal type, each with its seven day labels', () => {
     render();
 
-    for (const meal of ['Desayuno', 'Almuerzo', 'Cena']) {
+    for (const meal of ['Desayuno', 'Comida', 'Cena']) {
       const group = screen.getByRole('group', { name: meal });
       for (const day of ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']) {
         expect(within(group).getByText(day)).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('PlanningSelectionGrid', () => {
     const onChange = mock(() => {});
     render({ onChange });
 
-    await user.click(screen.getByLabelText('Almuerzo martes'));
+    await user.click(screen.getByLabelText('Comida martes'));
 
     expect(onChange).toHaveBeenCalledWith({ ...EMPTY, martes: ['comida'] });
   });
@@ -105,7 +105,7 @@ describe('PlanningSelectionGrid', () => {
     const onChange = mock(() => {});
     render({ onChange });
 
-    await user.click(screen.getByRole('button', { name: 'Todos: marcar almuerzo todos los días' }));
+    await user.click(screen.getByRole('button', { name: 'Todos: marcar comida todos los días' }));
 
     expect(onChange).toHaveBeenCalledWith({
       lunes: ['comida'],
@@ -128,7 +128,7 @@ describe('PlanningSelectionGrid', () => {
     };
     render({ value, onChange });
 
-    await user.click(screen.getByRole('button', { name: 'Ninguno: desmarcar almuerzo todos los días' }));
+    await user.click(screen.getByRole('button', { name: 'Ninguno: desmarcar comida todos los días' }));
 
     expect(onChange).toHaveBeenCalledWith({
       ...value,
@@ -145,10 +145,10 @@ describe('PlanningSelectionGrid', () => {
     };
     render({ value });
 
-    expect(screen.getByLabelText('Almuerzo lunes')).toBeChecked();
+    expect(screen.getByLabelText('Comida lunes')).toBeChecked();
     expect(screen.getByLabelText('Cena viernes')).toBeChecked();
     expect(screen.getByLabelText('Desayuno lunes')).not.toBeChecked();
-    expect(screen.getByLabelText('Almuerzo martes')).not.toBeChecked();
+    expect(screen.getByLabelText('Comida martes')).not.toBeChecked();
   });
 });
 

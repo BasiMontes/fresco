@@ -21,6 +21,7 @@
 
 import type { DbTestUser } from '../harness';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { getIsoWeek, getIsoWeekMonday } from '../../../lib/date/iso-week';
 import { callFunction, catalogRecipeIds, createDbTestContext, rest, rpc, seedMealPlan, seedSlots, stackReachable } from '../harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
@@ -85,10 +86,10 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — HTTP negative con
     const plan = await seedMealPlan(A, { semanaIso: '2099-W50', fechaInicio: '2099-12-14' });
     const [slotId] = await seedSlots(A, plan.id, [{ recipeId, tipoPlato: 'desayuno' }]);
 
-    // 'pendiente' is a real estado_receta_menu value, but system-assigned —
-    // not one this endpoint accepts from a client. Real behavior is 400, not
-    // the 422 an earlier ticket draft assumed.
-    const res = await callFunction(ENDPOINT, { token: A.token, body: { meal_plan_recipe_id: slotId, estado: 'pendiente' } });
+    // 'excluida' is a real estado_receta_menu value, but system-assigned (menu generation) — not one
+    // this endpoint accepts from a client. Real behavior is 400, not the 422 an earlier ticket draft
+    // assumed. ('pendiente' became client-settable in FRESCO-1014: it takes a mark back.)
+    const res = await callFunction(ENDPOINT, { token: A.token, body: { meal_plan_recipe_id: slotId, estado: 'excluida' } });
     expect(res.status).toBe(400);
   });
 
@@ -111,6 +112,36 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — HTTP negative con
     const [slotId] = await seedSlots(A, plan.id, [{ recipeId, tipoPlato: 'comida', estado: 'cocinada' }]);
 
     const res = await callFunction(ENDPOINT, { token: A.token, body: { meal_plan_recipe_id: slotId, estado: 'descartada' } });
+    expect(res.status).toBe(409);
+  });
+
+  test('FRESCO-1014: a mark inside the CURRENT week can be switched and taken back; the row really changes', async () => {
+    const [recipeId] = await catalogRecipeIds(A, 1);
+    // The week the function itself calls current (Madrid); the helper reads "today" in the same frame.
+    const plan = await seedMealPlan(A, { semanaIso: getIsoWeek(), fechaInicio: getIsoWeekMonday() });
+    const [slotId] = await seedSlots(A, plan.id, [{ recipeId, tipoPlato: 'comida' }]);
+    const estadoOf = async () => ((await rest('meal_plan_recipes', { token: A.token, query: `id=eq.${slotId}&select=estado` })).body as { estado: string }[])[0]?.estado;
+    const mark = async (estado: string) => callFunction(ENDPOINT, { token: A.token, body: { meal_plan_recipe_id: slotId, estado } });
+
+    expect((await mark('cocinada')).status).toBe(200);
+    expect(await estadoOf()).toBe('cocinada');
+
+    expect((await mark('descartada')).status).toBe(200);
+    expect(await estadoOf()).toBe('descartada');
+
+    expect((await mark('pendiente')).status).toBe(200);
+    expect(await estadoOf()).toBe('pendiente');
+
+    expect((await mark('pendiente')).status).toBe(409);
+  });
+
+  test('FRESCO-1014: a marked dish is never replaced, even in the current week', async () => {
+    const [recipeId, otherRecipeId] = await catalogRecipeIds(A, 2);
+    await rest('meal_plans', { method: 'DELETE', serviceRole: true, query: `user_id=eq.${A.id}&semana_iso=eq.${getIsoWeek()}` });
+    const plan = await seedMealPlan(A, { semanaIso: getIsoWeek(), fechaInicio: getIsoWeekMonday() });
+    const [slotId] = await seedSlots(A, plan.id, [{ recipeId, tipoPlato: 'comida', estado: 'cocinada' }]);
+
+    const res = await callFunction(ENDPOINT, { token: A.token, body: { meal_plan_recipe_id: slotId, estado: 'sustituida', nueva_recipe_id: otherRecipeId } });
     expect(res.status).toBe(409);
   });
 

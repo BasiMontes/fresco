@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { isEmailNotConfirmed, translateAuthError } from '@/lib/auth-errors';
+import { postLoginPath } from '@/lib/auth/login-redirect';
 import { hasLoginFieldErrors, NO_LOGIN_FIELD_ERRORS, validateLoginFields } from '@/lib/auth/login-validation';
 import { resendSignupConfirmation, signInWithPassword } from '@/lib/client-api/auth';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
@@ -40,6 +41,8 @@ function LoginPageInner() {
   // (expired/invalid JWT) — without it, a session-expiry redirect looks
   // identical to a visitor who just chose to log in, with no explanation
   // for why they were bounced.
+  // FRESCO-1014: where a protected page sent her from (`/login?next=<path>`); `postLoginPath` sanitizes it.
+  const nextParam = useSearchParams().get('next');
   const sessionExpired = useSearchParams().get('session_expired') === '1';
   // FRESCO-52: `/update-password` redirects here (after signing the user out)
   // once her new password is saved, so she lands with a real login step and
@@ -131,7 +134,7 @@ function LoginPageInner() {
       // left by the previous one (logout, expired session, deleted account),
       // or `/menu` would reuse its shared (app) layout.
       router.refresh();
-      router.push('/menu');
+      router.push(postLoginPath(nextParam));
     }
     catch {
       // A thrown (vs. returned) error — network failure reaching Supabase.

@@ -22,11 +22,11 @@ import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { logger } from '../_shared/logger.ts'
-import { assertEstadoValido, buildUpdatePayload } from './validation.ts'
+import { assertEstadoValido, assertTransicionPermitida, buildUpdatePayload } from './validation.ts'
+import { semanaActualMadrid } from './week.ts'
 import type { SlotOwnershipRow, UpdateRecipeStatusRequest, UpdateRecipeStatusResponse } from './types.ts'
 
 const FN_NAME = 'update-recipe-status'
-const TERMINAL_STATES = new Set(['cocinada', 'descartada'])
 // Legit use is ~21 slot marks + ratings + the odd substitution per week; a
 // real session closes a week in minutes. 60/hour never touches a human and
 // caps abuse of the global learning aggregates the DB trigger maintains.
@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
     // 3. Load the slot + its parent plan's id + owner, in one query
     const { data: slot, error: slotError } = await supabase
       .from('meal_plan_recipes')
-      .select('id, estado, meal_plan_id, meal_plans ( user_id )')
+      .select('id, estado, meal_plan_id, meal_plans ( user_id, semana_iso )')
       .eq('id', meal_plan_recipe_id)
       .single<SlotOwnershipRow>()
 
@@ -74,13 +74,13 @@ Deno.serve(async (req: Request) => {
       throw new HttpError('No autorizado', 403)
     }
 
-    // 5. Terminal-state guard (FR-5.1: cocinada/descartada cannot be re-patched)
-    if (TERMINAL_STATES.has(slot.estado)) {
-      throw new HttpError(
-        `No se puede cambiar el estado de una receta ya marcada como "${slot.estado}"`,
-        409
-      )
-    }
+    // 5. Transition guard (FR-5.1, relaxed by FRESCO-1014): a mark is final except inside the current
+    // week, where it can be taken back or switched. Never a replacement of a marked dish.
+    assertTransicionPermitida({
+      actual: slot.estado,
+      nuevo: estado,
+      esSemanaActual: slot.meal_plans?.semana_iso === semanaActualMadrid(),
+    })
 
     // 6. Substitution safety (A4-H1). get_filtered_recipes is the single
     // structural food-safety enforcement point (ADR-0001, NFR-SEC-3); pass
@@ -135,7 +135,7 @@ Deno.serve(async (req: Request) => {
     // let any signed-in user lift the protection). It only runs AFTER the
     // checks above (JWT, rate limit, ownership, terminal state, allergen and
     // duplicate re-filter) and is scoped to the one slot we just verified. The
-    // `estado not in (terminal)` filter closes the window between the guard in
+    // `estado = <the state we read>` filter closes the window between the guard in
     // step 5 and this write: zero rows back means the slot changed meanwhile.
     const updatePayload = buildUpdatePayload(estado, nueva_recipe_id)
 
@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
       .from('meal_plan_recipes')
       .update(updatePayload)
       .eq('id', meal_plan_recipe_id)
-      .not('estado', 'in', `(${[...TERMINAL_STATES].join(',')})`)
+      .eq('estado', slot.estado)
       .select('id')
 
     if (updateError) {

@@ -84,6 +84,20 @@ Then(/^permanece en \/login sin sesión activa$/, async ({ page }) => {
   expect(hasSupabaseAuthCookie).toBe(false);
 });
 
+// ── FRESCO-1014 (A7-UI-16): an expired or missing session keeps the destination ──
+//
+// Opens a protected route with no cookies at all: nothing is written and no account is touched, so it
+// runs against the shared project on every CI pass.
+
+Given(/^que un visitante sin sesión abre \/shopping-list$/, async ({ page }) => {
+  await page.context().clearCookies();
+  await page.goto('/shopping-list');
+});
+
+Then(/^es redirigido a \/login conservando \/shopping-list como destino$/, async ({ page }) => {
+  await expect(page).toHaveURL(/\/login\?next=%2Fshopping-list$/);
+});
+
 // ── @edge-case "Doble-click rápido en Iniciar sesión..." (FRESCO-463) ──
 //
 // FRESCO-114: `handleSubmit` sets a synchronous `isSubmittingRef` guard

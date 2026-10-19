@@ -37,9 +37,22 @@ export function visibleDayCountFor(containerWidth: number): number {
  */
 export function useVisibleDayWindow(
   planningDays: DiaSemana[],
-  containerRef: React.RefObject<HTMLElement | null>,
+  {
+    containerRef,
+    focusDia,
+  }: {
+    containerRef: React.RefObject<HTMLElement | null>
+    /**
+     * FRESCO-1014 (A7-UI-13): the day to open on when the viewed week is the current one (`undefined` for
+     * any other week). On a phone, where one column fits, the window starts there instead of on Monday.
+     * Applied once, after the first real measurement of the container.
+     */
+    focusDia?: DiaSemana
+  },
 ) {
   const [startIndex, setStartIndex] = React.useState(0);
+  const [measured, setMeasured] = React.useState(false);
+  const [focused, setFocused] = React.useState(false);
   // How many day columns fit in the grid's OWN container — not the window.
   // FRESCO-786: sizing off the viewport ignored the app sidebar (256px from
   // 768px up), so at 768px two 15rem columns were asked to fit in 442px and
@@ -51,12 +64,22 @@ export function useVisibleDayWindow(
   React.useEffect(() => {
     const container = containerRef.current;
     if (!container || typeof ResizeObserver === 'undefined') { return; }
-    const update = () => setVisibleDayCount(visibleDayCountFor(container.clientWidth));
+    const update = () => {
+      setVisibleDayCount(visibleDayCountFor(container.clientWidth));
+      setMeasured(true);
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(container);
     return () => observer.disconnect();
   }, [containerRef]);
+
+  React.useEffect(() => {
+    if (!measured || focused) { return; }
+    setFocused(true);
+    const index = focusDia ? planningDays.indexOf(focusDia) : -1;
+    if (index > 0) { setStartIndex(index); }
+  }, [measured, focused, focusDia, planningDays]);
 
   // FRESCO-970: the window is always full (clamped), so day columns, which
   // stretch to fill the row, keep one width while paging; and when the whole

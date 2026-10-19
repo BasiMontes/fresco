@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { semanaActualMadrid } from './week.ts'
 import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, type FakeEdgeClient, getEdgeHandler } from '@/tests/mocks/edge-function'
 
 /**
@@ -22,7 +23,7 @@ const USER = { id: 'user_1' }
 const OK_RATE = { check_and_increment_rate_limit: { data: true } }
 
 function slotRow(over: Record<string, unknown> = {}) {
-  return { id: 'mpr_1', estado: 'pendiente', meal_plan_id: 'mp_1', meal_plans: { user_id: 'user_1' }, ...over }
+  return { id: 'mpr_1', estado: 'pendiente', meal_plan_id: 'mp_1', meal_plans: { user_id: 'user_1', semana_iso: '2020-W01' }, ...over }
 }
 
 beforeEach(() => {
@@ -75,10 +76,34 @@ describe('update-recipe-status/index.ts', () => {
     expect(res.status).toBe(403)
   })
 
-  test('409 when the slot is already in a terminal state', async () => {
+  test('409 when the slot is already marked and its week is not the current one', async () => {
     supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: slotRow({ estado: 'cocinada' }) } })
     const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'descartada' }))
     expect(res.status).toBe(409)
+  })
+
+  describe('a mark inside the current week can be changed (FRESCO-1014, A7-UI-15)', () => {
+    const current = () => slotRow({ estado: 'cocinada', meal_plans: { user_id: 'user_1', semana_iso: semanaActualMadrid() } })
+
+    test.each(['pendiente', 'descartada'])('cocinada -> %s is allowed and written', async (nuevo) => {
+      supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: current() } })
+      svc = fakeEdgeClient()
+      const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: nuevo }))
+      expect(res.status).toBe(200)
+      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: nuevo }]])
+    })
+
+    test('a marked dish is never replaced, even in the current week', async () => {
+      supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: current() } })
+      const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: 'r2' }))
+      expect(res.status).toBe(409)
+    })
+
+    test('an open slot cannot be "un-marked"', async () => {
+      supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: slotRow({ meal_plans: { user_id: 'user_1', semana_iso: semanaActualMadrid() } }) } })
+      const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'pendiente' }))
+      expect(res.status).toBe(409)
+    })
   })
 
   test('422 when a substitution recipe is unsafe for the profile', async () => {

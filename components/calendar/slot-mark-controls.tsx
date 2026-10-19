@@ -1,5 +1,5 @@
 import type { DiaSemana, EstadoRecetaSlot, TipoPlato } from '@/lib/api/types';
-import { Check, X } from 'lucide-react';
+import { Check, Undo2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /** Spoken forms of the day, with their accent, for the accessible names below. */
@@ -87,5 +87,53 @@ export function SlotEstadoBadge({ dia, tipo, estado }: SlotEstadoBadgeProps) {
     >
       {estado === 'cocinada' ? 'Cocinado' : 'Descartado'}
     </p>
+  );
+}
+
+interface SlotChangeMarkControlsProps {
+  dia: DiaSemana
+  tipo: TipoPlato
+  /** The slot's current mark. */
+  estado: 'cocinada' | 'descartada'
+  pending: boolean
+  onMark: (estado: 'cocinada' | 'descartada' | 'pendiente') => void
+}
+
+/**
+ * FRESCO-1014 (A7-UI-15): a mark used to be permanent after a five-second snackbar, so one mis-tap on
+ * "Descartar" banned a dish for two weeks with no way back. Inside the current week the mark can be taken
+ * back or switched to the other one. Same 44 px labelled buttons as `SlotMarkControls`.
+ */
+export function SlotChangeMarkControls({ dia, tipo, estado, pending, onMark }: SlotChangeMarkControlsProps) {
+  const other = estado === 'cocinada' ? 'descartada' : 'cocinada';
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      <button
+        type="button"
+        data-testid={`calendar_slot_${dia}_${tipo}_unmark`}
+        disabled={pending}
+        onClick={(event) => {
+          event.stopPropagation();
+          onMark('pendiente');
+        }}
+        className="flex min-h-11 flex-auto items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-65"
+      >
+        <Undo2 className="size-4 shrink-0" />
+        Quitar marca
+      </button>
+      <button
+        type="button"
+        data-testid={`calendar_slot_${dia}_${tipo}_switch`}
+        disabled={pending}
+        onClick={(event) => {
+          event.stopPropagation();
+          onMark(other);
+        }}
+        className="flex min-h-11 flex-auto items-center justify-center gap-2 rounded-full border border-neutral-600 text-body-sm font-semibold text-tertiary transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-65"
+      >
+        {other === 'cocinada' ? <Check className="size-4 shrink-0" /> : <X className="size-4 shrink-0" />}
+        {other === 'cocinada' ? 'Cambiar a cocinado' : 'Cambiar a descartado'}
+      </button>
+    </div>
   );
 }
