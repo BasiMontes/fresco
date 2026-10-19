@@ -282,7 +282,7 @@ const SAVED_NOMBRE = 'Perfil Guardado';
 
 Given(/^tiene un perfil guardado con dieta halal, alérgeno huevo y un nombre$/, async ({ request }) => {
   const testUser = ctx.testUser!;
-  await recordHealthDataConsent(testUser.accessToken);
+  await recordHealthDataConsent(testUser.id);
   const res = await request.patch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_profiles?id=eq.${testUser.id}`,
     {

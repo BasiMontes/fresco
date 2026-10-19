@@ -2,9 +2,11 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { ServiceWorkerRegistrar } from '@/components/layout/service-worker-registrar';
+import { ReconsentDialog } from '@/components/legal/reconsent-dialog';
 import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/layout/sidebar-preference';
+import { getMissingConsents } from '@/lib/legal/consent-status';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -35,7 +37,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
 
   if (!user) { redirect('/login'); }
 
-  const [nombre, plan, profileExists] = await Promise.all([
+  const [nombre, plan, profileExists, missingConsents] = await Promise.all([
     getUserNombre(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] getUserNombre failed, defaulting to null', error);
       return null;
@@ -56,6 +58,16 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
       console.error('[AppGroupLayout] hasUserProfile failed, defaulting to true', error);
       return true;
     }),
+    // FRESCO-1007: a registered user who has not accepted the CURRENT Terms, Privacy Policy and age
+    // confirmation is asked again, in a dialog that blocks the screen. A guest never accepted them
+    // (they are given when an account is created), so the question is only for a registered user.
+    // Fails open: a database blip must not lock every user out of the app.
+    user.is_anonymous
+      ? Promise.resolve([])
+      : getMissingConsents(supabase).catch((error) => {
+          console.error('[AppGroupLayout] getMissingConsents failed, not asking', error);
+          return [];
+        }),
   ]);
 
   // FRESCO-250: an authenticated user with no `user_profiles` row never
@@ -72,6 +84,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     <>
       {/* FRESCO-979: offline screen for every signed-in user. */}
       <ServiceWorkerRegistrar />
+      {missingConsents.length > 0 && <ReconsentDialog />}
       <AppShell
         user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}
         sidebarCollapsed={sidebarCollapsed}

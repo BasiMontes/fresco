@@ -42,6 +42,7 @@ describe('loginToApp', () => {
       getByTestId: (id: string) => ({
         fill: async (value: string) => { calls.push(`fill ${id}=${value}`); },
         click: async () => { calls.push(`click ${id}`); },
+        isVisible: async () => false,
       }),
       waitForURL: async (predicate: (url: URL) => boolean) => {
         expect(predicate(new URL('http://app.test/menu'))).toBe(true);
@@ -59,6 +60,30 @@ describe('loginToApp', () => {
       'fill password_input=secret-pass',
       'click login_submit_button',
       'waitForURL',
+    ]);
+  });
+
+  it('FRESCO-1007: accepts the re-consent dialog when an old account hits it', async () => {
+    const calls: string[] = [];
+    const page = {
+      goto: async () => {},
+      getByTestId: (id: string) => ({
+        fill: async () => {},
+        click: async () => { calls.push(`click ${id}`); },
+        isVisible: async () => id === 'reconsent_dialog',
+        waitFor: async () => { calls.push(`waitFor ${id}`); },
+      }),
+      waitForURL: async () => {},
+    } as unknown as Page;
+
+    await loginToApp(page, { email: 'qa@example.com', password: 'secret-pass' });
+
+    expect(calls).toEqual([
+      'click login_submit_button',
+      'click confirm_age_checkbox',
+      'click accept_terms_checkbox',
+      'click reconsent_accept_button',
+      'waitFor reconsent_dialog',
     ]);
   });
 });

@@ -1108,6 +1108,10 @@ export type Database = {
         Args: { p_from_user_id: string; p_to_user_id: string }
         Returns: number
       }
+      record_consents: {
+        Args: { p_kinds: string[]; p_user_id: string; p_version: string }
+        Returns: undefined
+      }
       swap_meal_plan_slots: {
         Args: { p_slot_a_id: string; p_slot_b_id: string }
         Returns: undefined
