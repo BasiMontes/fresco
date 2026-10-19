@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import type { useCaptcha } from '@/components/auth/use-captcha';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { translateAuthError } from '@/lib/auth-errors';
@@ -8,6 +9,8 @@ import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 interface UseSignupOtpArgs {
   email: string
   password: string
+  /** FRESCO-1006: a resend is a new send, so it carries a fresh Turnstile token and resets the widget after. */
+  captcha: ReturnType<typeof useCaptcha>
   setEmailConflict: (value: boolean) => void
   setNavigating: (value: boolean) => void
 }
@@ -22,7 +25,7 @@ interface UseSignupOtpArgs {
  * change instead of applying it — login with the "created" account failed
  * forever if the guest session was ever lost.
  */
-export function useSignupOtp({ email, password, setEmailConflict, setNavigating }: UseSignupOtpArgs) {
+export function useSignupOtp({ email, password, captcha, setEmailConflict, setNavigating }: UseSignupOtpArgs) {
   const router = useRouter();
   const [otpCode, setOtpCode] = useState('');
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -99,8 +102,10 @@ export function useSignupOtp({ email, password, setEmailConflict, setNavigating 
     setOtpError(null);
     setResendMessage(null);
     try {
-      const { error } = await requestEmailChange(email);
+      const { error } = await requestEmailChange({ email, captchaToken: captcha.token });
       if (error) {
+        // FRESCO-1006: a send refused by the rate limit is what the OTP alert watches for.
+        if (error.code === 'over_email_send_rate_limit') { captureEvent(POSTHOG_EVENTS.OTP_FAILED, { reason: error.code, stage: 'resend' }); }
         setOtpError(translateAuthError(error));
         return;
       }
@@ -110,6 +115,7 @@ export function useSignupOtp({ email, password, setEmailConflict, setNavigating 
       setResendMessage('Te enviamos un nuevo código.');
     }
     finally {
+      captcha.reset();
       setIsResendingOtp(false);
     }
   }

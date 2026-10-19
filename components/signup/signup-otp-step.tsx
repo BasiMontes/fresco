@@ -1,13 +1,17 @@
+import type { useCaptcha } from '@/components/auth/use-captcha';
 import type { useSignupOtp } from '@/components/signup/use-signup-otp';
+import { CaptchaField } from '@/components/auth/captcha-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 interface SignupOtpStepProps {
   email: string
   otp: ReturnType<typeof useSignupOtp>
+  /** FRESCO-1006: the same hook instance as the form step; a resend needs a fresh token. */
+  captcha: ReturnType<typeof useCaptcha>
 }
 
-export function SignupOtpStep({ email, otp }: SignupOtpStepProps) {
+export function SignupOtpStep({ email, otp, captcha }: SignupOtpStepProps) {
   const { otpCode, setOtpCode, otpError, isVerifyingOtp, isResendingOtp, resendMessage, handleVerifyOtp, handleResendOtp } = otp;
 
   return (
@@ -51,11 +55,12 @@ export function SignupOtpStep({ email, otp }: SignupOtpStepProps) {
           {isVerifyingOtp ? 'Verificando…' : 'Confirmar código'}
         </Button>
 
+        <CaptchaField captcha={captcha} />
         <button
           type="button"
           data-testid="signup_resend_otp_button"
           onClick={() => void handleResendOtp()}
-          disabled={isResendingOtp}
+          disabled={isResendingOtp || !captcha.ready}
           className="text-center text-body-sm text-primary underline"
         >
           {isResendingOtp ? 'Reenviando…' : '¿No te llegó? Reenviar código'}

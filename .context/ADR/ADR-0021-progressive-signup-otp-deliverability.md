@@ -76,6 +76,36 @@ that one means "a real account exists", these are the granular step.
   provider) so email is not the single point of failure. That is a new ADR,
   not an amendment to this one.
 
+## Update 2026-10-19 (FRESCO-1006): the quotas behind the conversion email, and who protects them
+
+> Added, not an amendment: the decision above stands. This records what the hosted
+> project actually enforces and the layers that now sit in front of it.
+
+**Hosted Auth quotas**, read from the dashboard on 2026-10-19 (Authentication -> Rate Limits, project `main` / production, custom SMTP on, sender `hola.frescoapp@gmail.com` through `smtp.gmail.com`):
+
+| Setting | Value | Scope |
+|---|---|---|
+| Rate limit for sending emails | **20 emails/h when read; the owner raised it to 50 emails/h the same day** (see the decision below) | the whole project: the conversion code, password resets and every other Auth email share it |
+| Minimum interval per user | **60 s** | emails to the same user (applies because custom SMTP is configured) |
+| Anonymous sign-ins | 30 requests/h | per IP |
+| Sign-ups and sign-ins | 30 requests/5 min | per IP, anonymous excluded |
+| Token verifications (OTP and magic link) | 75 requests/5 min | per IP |
+| Token refreshes | 150 requests/5 min | per IP |
+
+The email quota is editable because custom SMTP is on. Its real ceiling is Gmail's own daily sending cap, which is not shown anywhere in the panel.
+
+**What changed.** Step 1 of the conversion, `updateUser({ email })`, used to run in the browser: Supabase's captcha does not cover that call, and nothing of ours limited it. It now goes through `POST /api/auth/guest-email`, which requires a guest session, a valid Turnstile token (a missing or rejected token is a 400; a missing secret or an unreachable Cloudflare is a 503, never a pass) and 3 requests an hour per guest (the fourth is a 429), fail closed (`rate_limit_endpoints`, endpoint `guest-email-change`). The resend takes the same path with a fresh token.
+
+**Who protects what.**
+
+- The **per-guest limit of 3 an hour** protects one guest from itself and a guest session from being used as an unlimited mail cannon. It does **not** protect the project quota: seven guests spend all of the 20 emails/h, and the real conversions of that hour fail with `over_email_send_rate_limit`.
+- What stops one person from holding seven guest sessions is the cost of getting them: a Turnstile solve per guest, and 30 anonymous sign-ins an hour per IP. These are the layers that carry the weight; a flood from many IPs gets through both and the quota is then the cap.
+- The 60 s minimum interval means a resend inside a minute is refused by Auth with the same code. The UI shows the generic "too many attempts" copy for it; a visible cooldown would be a UX follow-up, not a quota change.
+
+**Decision on the values: the email quota goes from 20 to 50 emails/h (owner, 2026-10-19); nothing else changes.** The recommendation was to leave 20 (enough for the current volume, which is about one signup an hour on average), and the owner chose 50 to leave room for a burst. The trade-off, accepted: a distributed flood can now push 50 mails an hour through the Gmail account instead of 20, which also moves the Gmail daily cap closer (a personal account sends a few hundred a day), and the number of guest sessions needed to exhaust the quota goes from 7 to 17 (3 an hour each). The captcha and the anonymous sign-in limit are what make 17 sessions expensive, and the PostHog alert below is what tells us when it happens. 50 is still bounded by the sender: when the owned domain and an authenticated provider arrive (FRESCO-886) the quota should be revisited together with it. Revisit sooner when any of these happens: a real `over_email_send_rate_limit` shows up in PostHog, the cohort crosses the signup trigger below, or the Gmail account reports a sending block.
+
+**Watching it.** `otp_failed` now also fires when a send is refused by a rate limit, with `reason: over_email_send_rate_limit` and `stage: send | resend`. A PostHog alert on that count (hourly, any value above 0) emails the owner. Before this change only a failed verification fired `otp_failed`, so the alert could not have triggered.
+
 ## Reopen triggers
 
 Revisit this decision — write the follow-up ADR — when **any** of:
@@ -119,3 +149,5 @@ Revisit this decision — write the follow-up ADR — when **any** of:
 - ADR-0004 — guest-data reassignment on email conflict (the sibling
   `email_exists` branch).
 - ADR-0013 — PostHog as the analytics vendor (where these events land).
+- FRESCO-1006 (A7-ABUSE-02, A7-OPS-04) — the update above: the guest email-change route, the
+  captcha, the per-guest limit, the hosted quotas and the PostHog alert.
