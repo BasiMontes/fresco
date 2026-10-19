@@ -1,4 +1,5 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import type { AuthError } from '@supabase/supabase-js';
+import { AuthApiError, AuthUnknownError, createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { captchaOptions } from '@/lib/auth/captcha';
 import { clientEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/client';
@@ -68,9 +69,29 @@ export async function getCurrentUser() {
 /**
  * FRESCO-89, step 1 of the guest-to-account conversion (also the "resend"):
  * links `email` to the current anonymous user; Supabase mails a code to it.
+ *
+ * FRESCO-1006 (audit 7b A7-ABUSE-02): the call goes through `POST /api/auth/guest-email`, which
+ * checks the Turnstile token and a per-guest limit before it asks Auth to send anything. A Turnstile
+ * token is single-use, so the caller resets its captcha after every call. The error comes back as
+ * an `AuthError` with the status and code of the route's answer, so `translateAuthError` and the
+ * `email_exists` check keep working exactly as they did against Supabase.
  */
-export async function requestEmailChange(email: string) {
-  return createClient().auth.updateUser({ email });
+export async function requestEmailChange({ email, captchaToken }: { email: string, captchaToken: string | null }): Promise<{ error: AuthError | null }> {
+  try {
+    const response = await fetch('/api/auth/guest-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, captchaToken }),
+    });
+    if (response.ok) {
+      return { error: null };
+    }
+    const body = await response.json().catch(() => null) as { error?: { code?: string, message?: string } } | null;
+    return { error: new AuthApiError(body?.error?.message ?? 'The email change could not be requested.', response.status, body?.error?.code) };
+  }
+  catch (error) {
+    return { error: new AuthUnknownError('The email change request did not reach the server.', error) };
+  }
 }
 
 /** FRESCO-89, step 2: verifies the code mailed to the new address. */
