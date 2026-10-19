@@ -134,6 +134,24 @@ describe('POST /api/auth/guest-email — the captcha (FRESCO-1006)', () => {
     expect(updateUser).not.toHaveBeenCalled();
   });
 
+  test('503, not a pass, when the secret is only whitespace (a clipboard paste gone wrong)', async () => {
+    process.env.TURNSTILE_SECRET_KEY = ' \n ';
+
+    const res = await POST(req(valid));
+
+    expect(res.status).toBe(503);
+    expect(cloudflareCalls).toHaveLength(0);
+  });
+
+  test('503 when Cloudflare rejects the SECRET: our configuration is not the visitor\'s fault', async () => {
+    cloudflare = () => new Response(JSON.stringify({ 'success': false, 'error-codes': ['invalid-input-secret'] }));
+
+    const res = await POST(req(valid));
+
+    expect(res.status).toBe(503);
+    expect(await code(res)).toBe('captcha_unavailable');
+  });
+
   test('sends the token, the secret and the caller\'s IP to Cloudflare', async () => {
     await POST(req(valid));
 

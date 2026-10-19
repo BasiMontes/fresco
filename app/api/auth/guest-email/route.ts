@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (isCaptchaConfigured(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '')) {
-    const secret = process.env.TURNSTILE_SECRET_KEY;
+    const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
     if (!secret) {
       console.error('[/api/auth/guest-email] the build shows the captcha but TURNSTILE_SECRET_KEY is not set; refusing');
       Sentry.captureMessage('guest-email: TURNSTILE_SECRET_KEY is not set', { level: 'error' });

@@ -41,6 +41,23 @@ describe('verifyTurnstileToken', () => {
     expect(await verifyTurnstileToken({ token: 't', secret: 's', fetchImpl: answer({ 'success': false, 'error-codes': [code] }) })).toBe('invalid');
   });
 
+  test.each(['invalid-input-secret', 'missing-input-secret', 'bad-request'])('unavailable, not invalid, when Cloudflare rejects OUR side (%s): a bad secret must not blame every visitor', async (code) => {
+    expect(await verifyTurnstileToken({ token: 't', secret: 's', fetchImpl: answer({ 'success': false, 'error-codes': [code] }) })).toBe('unavailable');
+  });
+
+  test('trims whitespace and newlines around the secret and the token before sending them', async () => {
+    let form: URLSearchParams | null = null;
+    const fetchImpl = (async (_url: string, init?: RequestInit) => {
+      form = init?.body as URLSearchParams;
+      return new Response(JSON.stringify({ success: true }));
+    }) as unknown as typeof fetch;
+
+    await verifyTurnstileToken({ token: ' tok\n', secret: '\n  sec \n', fetchImpl });
+
+    expect(form!.get('secret')).toBe('sec');
+    expect(form!.get('response')).toBe('tok');
+  });
+
   test('unavailable on Cloudflare\'s own internal error, a non-200, a network failure or a timeout', async () => {
     expect(await verifyTurnstileToken({ token: 't', secret: 's', fetchImpl: answer({ 'success': false, 'error-codes': ['internal-error'] }) })).toBe('unavailable');
     expect(await verifyTurnstileToken({ token: 't', secret: 's', fetchImpl: answer({}, { status: 503 }) })).toBe('unavailable');

@@ -16,6 +16,8 @@ export type TurnstileVerdict = 'ok' | 'invalid' | 'unavailable';
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const DEFAULT_TIMEOUT_MS = 5000;
 
+const OUR_SIDE_ERRORS: ReadonlySet<string> = new Set(['missing-input-secret', 'invalid-input-secret', 'bad-request', 'internal-error']);
+
 interface SiteverifyResponse {
   'success'?: boolean
   'error-codes'?: string[]
@@ -28,7 +30,9 @@ export async function verifyTurnstileToken({ token, secret, remoteIp, fetchImpl 
   fetchImpl?: typeof fetch
   timeoutMs?: number
 }): Promise<TurnstileVerdict> {
-  const form = new URLSearchParams({ secret, response: token });
+  // A secret pasted from a clipboard often carries a leading or trailing newline or space (FRESCO-1006:
+  // Vercel even warns about it); Cloudflare would reject it as a different secret.
+  const form = new URLSearchParams({ secret: secret.trim(), response: token.trim() });
   if (remoteIp) { form.set('remoteip', remoteIp); }
 
   try {
@@ -37,7 +41,9 @@ export async function verifyTurnstileToken({ token, secret, remoteIp, fetchImpl 
 
     const result = await response.json() as SiteverifyResponse;
     if (result.success === true) { return 'ok'; }
-    return result['error-codes']?.includes('internal-error') ? 'unavailable' : 'invalid';
+    // A rejected SECRET (or a malformed request, or Cloudflare's own failure) is our configuration, not
+    // the person's token: blaming them would turn one bad variable into a 400 for every visitor.
+    return result['error-codes']?.some(code => OUR_SIDE_ERRORS.has(code)) ? 'unavailable' : 'invalid';
   }
   catch {
     return 'unavailable';
