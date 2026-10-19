@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
+import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 
 import { History } from 'lucide-react';
 import { cookies } from 'next/headers';
@@ -15,14 +16,13 @@ import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getUserDietaryPreferences, getUserPlan } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { LEARNING_BRIDGE_DISMISSED_COOKIE, parseLearningBridgeDismissed } from '@/lib/calendar/learning-bridge-preference';
-import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
+import { getDateFromIsoWeek, getIsoWeek, isValidIsoWeek } from '@/lib/date/iso-week';
+import { hoyEnMadrid } from '@/lib/date/madrid-date';
 import { fromPlanningSelection } from '@/lib/planning-selection';
 import { createClient } from '@/lib/supabase/server';
 
 // FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
 export const metadata: Metadata = { title: 'Calendario · Fresco' };
-
-const ISO_WEEK_PATTERN = /^\d{4}-W\d{2}$/;
 
 /**
  * `/calendar` — EPIC-FRESCO-3 (Editable Calendar, US 3.1/3.2). Full 7x3
@@ -51,11 +51,11 @@ export default async function CalendarPage({
   const { data: { user } } = await getAuthUser();
 
   // FRESCO-61: `?semana=YYYY-Www` picks which week to view (prev/next
-  // controls below). A malformed or absent value falls back to the current
-  // week rather than crashing the page — the same page a user reaches by
-  // just clicking the nav link in the sidebar has no query param at all.
+  // controls below). A malformed, absent or non-existent value (`2026-W99`, FRESCO-1014) falls back to
+  // the current week rather than crashing the page or rolling into another year — the same page a user
+  // reaches by just clicking the nav link in the sidebar has no query param at all.
   const requestedSemana = (await searchParams).semana;
-  const semanaIso = requestedSemana && ISO_WEEK_PATTERN.test(requestedSemana)
+  const semanaIso = requestedSemana && isValidIsoWeek(requestedSemana)
     ? requestedSemana
     : getIsoWeek();
   const mondayIso = getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10);
@@ -127,6 +127,15 @@ export default async function CalendarPage({
     );
   }
 
+  // FRESCO-1014 (A7-UI-14): what the person sees and would lose — the dishes of the days and meals she plans.
+  const planning = dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection) : undefined;
+  const planningDias = planning?.days ?? (Object.keys(plan.menu) as DiaSemana[]);
+  const planningComidas = planning?.meals ?? (['desayuno', 'comida', 'cena'] as TipoPlato[]);
+  const platosPlanificados = planningDias.reduce(
+    (total, dia) => total + planningComidas.filter(tipo => plan.menu[dia]?.[tipo] != null).length,
+    0,
+  );
+
   const hasMarks = Object.values(plan.estados).some(dia => Object.values(dia).some(estado => estado === 'cocinada' || estado === 'descartada'));
   // FRESCO-512: mirrors `LearningBridgeCard`'s own internal visibility gate —
   // needed here too, to know whether the reopen link (once dismissed) should
@@ -140,7 +149,7 @@ export default async function CalendarPage({
           <h1 className="text-h2">Calendario semanal</h1>
           <div className="flex items-center gap-2">
             <WeekNavigation semanaIso={semanaIso} mondayIso={mondayIso} />
-            <DeleteWeekButton mealPlanId={plan.mealPlanId} />
+            <DeleteWeekButton mealPlanId={plan.mealPlanId} platos={platosPlanificados} />
           </div>
         </div>
         <p className="mt-1 text-body-md text-tertiary">
@@ -185,6 +194,8 @@ export default async function CalendarPage({
         initialEstados={plan.estados}
         planningDays={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).days : undefined}
         planningMeals={dietaryPreferences?.planning_selection ? fromPlanningSelection(dietaryPreferences.planning_selection).meals : undefined}
+        mondayIso={mondayIso}
+        hoyIso={hoyEnMadrid()}
       />
     </div>
   );

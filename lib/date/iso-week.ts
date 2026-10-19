@@ -129,16 +129,45 @@ const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'o
  * reading as if the 27th were in August — now shown as "27 jul – 2 ago"
  * whenever the two ends fall in different months.
  */
-export function formatWeekRangeLabel(mondayIso: string): string {
+export function formatWeekRangeLabel(mondayIso: string, currentYear?: number): string {
   const monday = new Date(`${mondayIso}T00:00:00.000Z`);
   const sunday = new Date(monday);
   sunday.setUTCDate(monday.getUTCDate() + 6);
 
   const mondayMonth = MESES[monday.getUTCMonth()];
   const sundayMonth = MESES[sunday.getUTCMonth()];
+  const mondayYear = monday.getUTCFullYear();
+  const sundayYear = sunday.getUTCFullYear();
 
-  if (mondayMonth === sundayMonth) {
-    return `${monday.getUTCDate()}–${sunday.getUTCDate()} ${sundayMonth}`;
+  // FRESCO-1014 (A7-UI-06): a week outside `currentYear` carries its year, so a stale or hand-edited link
+  // never shows a week in another year that looks like this one. Omitted when `currentYear` is not given.
+  const outsideYear = currentYear !== undefined && (mondayYear !== currentYear || sundayYear !== currentYear);
+
+  if (mondayYear !== sundayYear && outsideYear) {
+    return `${monday.getUTCDate()} ${mondayMonth} ${mondayYear} – ${sunday.getUTCDate()} ${sundayMonth} ${sundayYear}`;
   }
-  return `${monday.getUTCDate()} ${mondayMonth} – ${sunday.getUTCDate()} ${sundayMonth}`;
+  const year = outsideYear ? ` ${sundayYear}` : '';
+  if (mondayMonth === sundayMonth) {
+    return `${monday.getUTCDate()}–${sunday.getUTCDate()} ${sundayMonth}${year}`;
+  }
+  return `${monday.getUTCDate()} ${mondayMonth} – ${sunday.getUTCDate()} ${sundayMonth}${year}`;
+}
+
+/** Number of ISO weeks (52 or 53) in the ISO week-year `year`: the year of 28 December is always in its last week. */
+export function isoWeeksInYear(year: number): number {
+  return Number(getIsoWeek(new Date(Date.UTC(year, 11, 28))).slice(-2));
+}
+
+/**
+ * FRESCO-1014 (A7-UI-06) — `true` only for a week that exists: `YYYY-Www` with `ww` between 1 and the
+ * number of weeks of that ISO year. `2026-W99`, `2026-W00` and `2026-W54` are well-formed and not weeks;
+ * `getDateFromIsoWeek` would roll them over into another year.
+ */
+export function isValidIsoWeek(value: string): boolean {
+  const match = /^(\d{4})-W(\d{2})$/.exec(value);
+  if (!match) {
+    return false;
+  }
+  const week = Number(match[2]);
+  return week >= 1 && week <= isoWeeksInYear(Number(match[1]));
 }

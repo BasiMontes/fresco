@@ -21,7 +21,7 @@ describe('DeleteWeekButton', () => {
   });
 
   test('FRESCO-971: the trash button shows its label and keeps the full scope as its accessible name', () => {
-    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);
+    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" platos={14} />);
 
     const button = screen.getByTestId('delete_week_button');
     expect(button).toHaveTextContent('Eliminar menú');
@@ -30,7 +30,7 @@ describe('DeleteWeekButton', () => {
 
   test('opens the confirmation dialog from the trash button', async () => {
     const user = setupUser();
-    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);
+    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" platos={14} />);
 
     expect(screen.queryByTestId('delete_week_confirm_button')).toBeNull();
     await user.click(screen.getByTestId('delete_week_button'));
@@ -39,18 +39,18 @@ describe('DeleteWeekButton', () => {
 
   test('the confirmation dialog spells out the irreversible consequence', async () => {
     const user = setupUser();
-    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);
+    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" platos={14} />);
 
     await user.click(screen.getByTestId('delete_week_button'));
 
     const dialog = screen.getByTestId('delete_week_confirm_dialog');
-    expect(dialog).toHaveTextContent('Se borrarán las 21 franjas');
+    expect(dialog).toHaveTextContent('Se borrará el menú completo de esta semana (14 platos)');
     expect(dialog).toHaveTextContent('no se puede deshacer');
   });
 
   test('Cancel starts the dialog closing without deleting', async () => {
     const user = setupUser();
-    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);
+    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" platos={14} />);
 
     await user.click(screen.getByTestId('delete_week_button'));
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
@@ -62,7 +62,7 @@ describe('DeleteWeekButton', () => {
 
   test('Confirm closes the dialog', async () => {
     const user = setupUser();
-    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" />);
+    renderWithProviders(<DeleteWeekButton mealPlanId="mp1" platos={14} />);
 
     await user.click(screen.getByTestId('delete_week_button'));
     await user.click(screen.getByTestId('delete_week_confirm_button'));

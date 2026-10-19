@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, setSystemTime, test } from 'bun:test';
-import { addIsoWeeks, formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday } from './iso-week';
+import { addIsoWeeks, formatWeekRangeLabel, getDateFromIsoWeek, getIsoWeek, getIsoWeekMonday, isoWeeksInYear, isValidIsoWeek } from './iso-week';
 
 function utc(year: number, month: number, day: number): Date {
   return new Date(Date.UTC(year, month, day));
@@ -138,6 +138,54 @@ describe('formatWeekRangeLabel', () => {
   test('a week crossing a year boundary shows both months', () => {
     // Monday 2026-12-28 -> Sunday 2027-01-03.
     expect(formatWeekRangeLabel('2026-12-28')).toBe('28 dic – 3 ene');
+  });
+});
+
+describe('formatWeekRangeLabel with the current year (FRESCO-1014, A7-UI-06)', () => {
+  test('a week inside the current year carries no year', () => {
+    expect(formatWeekRangeLabel('2026-02-02', 2026)).toBe('2–8 feb');
+    expect(formatWeekRangeLabel('2026-07-27', 2026)).toBe('27 jul – 2 ago');
+  });
+
+  test('a week in another year carries it, so a hand-edited link never looks like this year', () => {
+    expect(formatWeekRangeLabel('2027-11-15', 2026)).toBe('15–21 nov 2027');
+    expect(formatWeekRangeLabel('2027-07-26', 2026)).toBe('26 jul – 1 ago 2027');
+  });
+
+  test('a week that crosses into another year shows both years', () => {
+    expect(formatWeekRangeLabel('2026-12-28', 2026)).toBe('28 dic 2026 – 3 ene 2027');
+    expect(formatWeekRangeLabel('2026-12-28', 2025)).toBe('28 dic 2026 – 3 ene 2027');
+  });
+
+  test('without a current year the label is the old one', () => {
+    expect(formatWeekRangeLabel('2027-11-15')).toBe('15–21 nov');
+  });
+});
+
+describe('isoWeeksInYear / isValidIsoWeek (FRESCO-1014, A7-UI-06)', () => {
+  test('knows which years have 53 weeks', () => {
+    expect(isoWeeksInYear(2026)).toBe(53);
+    expect(isoWeeksInYear(2025)).toBe(52);
+    expect(isoWeeksInYear(2020)).toBe(53);
+    expect(isoWeeksInYear(2027)).toBe(52);
+  });
+
+  test('accepts real weeks, including week 53 of a 53-week year', () => {
+    for (const week of ['2026-W01', '2026-W43', '2026-W52', '2026-W53', '2025-W52']) {
+      expect(isValidIsoWeek(week)).toBe(true);
+    }
+  });
+
+  test('refuses W00, W54, W99 and a W53 that the year does not have', () => {
+    for (const week of ['2026-W00', '2026-W54', '2026-W99', '2025-W53', '2027-W53']) {
+      expect(isValidIsoWeek(week)).toBe(false);
+    }
+  });
+
+  test('refuses anything that is not YYYY-Www', () => {
+    for (const week of ['', 'abc', '2026-43', '2026-W4', '26-W43', '2026-w43', ' 2026-W43', '2026-W43 ']) {
+      expect(isValidIsoWeek(week)).toBe(false);
+    }
   });
 });
 
