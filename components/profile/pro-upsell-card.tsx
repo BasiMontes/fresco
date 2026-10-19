@@ -27,6 +27,8 @@ export function ProUpsellCard({ trialAvailable, prices }: ProUpsellCardProps) {
   const month = formatEuros(prices?.month ?? FALLBACK_MONTHLY_EUROS);
   const year = prices?.year != null ? formatEuros(prices.year) : null;
   const savings = prices ? yearlySavingsEuros(prices) : null;
+  // FRESCO-1004: said once, and only when Stripe declares the prices tax-inclusive.
+  const taxNote = prices?.taxIncluded ? ' Precios con IVA incluido.' : '';
   const yearlyOption = year ? ` O ${year}/año${savings !== null ? ` (ahorras ${formatEuros(savings)})` : ''}.` : '';
 
   return (
@@ -39,8 +41,8 @@ export function ProUpsellCard({ trialAvailable, prices }: ProUpsellCardProps) {
         más lo uses, menos tienes que pensar.
         {' '}
         {trialAvailable
-          ? `${PRO_TRIAL_DAYS} días de prueba gratis, sin tarjeta. Después, ${month}/mes.${yearlyOption}`
-          : `Ya usaste tu prueba gratuita: el plan cuesta ${month}/mes${year ? ` o ${year}/año` : ''} y se cobra desde el primer día. Puedes cancelarlo cuando quieras.`}
+          ? `${PRO_TRIAL_DAYS} días de prueba gratis, sin tarjeta. Después, ${month}/mes.${yearlyOption}${taxNote}`
+          : `Ya usaste tu prueba gratuita: el plan cuesta ${month}/mes${year ? ` o ${year}/año` : ''} y se cobra desde el primer día.${taxNote} Puedes cancelarlo cuando quieras.`}
       </CardContent>
       <div className="mt-3">
         <UpgradeToProButton trialAvailable={trialAvailable} />

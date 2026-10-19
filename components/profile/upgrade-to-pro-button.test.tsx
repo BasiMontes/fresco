@@ -127,6 +127,16 @@ describe('UpgradeToProButton + pre-contract summary', () => {
     expect(provider).toContain('notificaciones. Contacto: hola.frescoapp@gmail.com.');
   });
 
+  test('says how to withdraw: the 14 days, where to write, that cancelling is not withdrawing, and where the model text is (FRESCO-1004)', async () => {
+    await openSummary();
+    const text = (screen.getByTestId('pro_checkout_withdrawal').textContent ?? '').replaceAll(/\s+/g, ' ');
+
+    expect(text).toContain('14 días naturales desde que se activa tu suscripción');
+    expect(text).toContain('hola.frescoapp@gmail.com');
+    expect(text).toContain('no cuenta como desistimiento');
+    expect(screen.getByTestId('pro_checkout_terms_link').getAttribute('href')).toBe('/legal/terminos');
+  });
+
   test('"Continuar al pago" stays disabled until the withdrawal waiver is ticked', async () => {
     const user = await openSummary();
     const confirm = screen.getByTestId<HTMLButtonElement>('pro_checkout_confirm_button');

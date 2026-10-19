@@ -39,6 +39,7 @@ const MAX_ERROR_LENGTH = 500;
 
 // FRESCO-429 (TRLGDCU art. 98.7): formats the actual amount Stripe charges — no separate VAT
 // line is invented, since this checkout has no `automatic_tax` configured to compute one.
+// FRESCO-1004: "IVA incluido" is added next to it only when the Price is tax-inclusive.
 function formatChargedAmount(unitAmount: number | null | undefined, currency: string | undefined): string {
   const amount = (unitAmount ?? 0) / 100;
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency: (currency ?? 'eur').toUpperCase() }).format(amount);
@@ -64,6 +65,7 @@ export function confirmationEmailContent(subscription: Stripe.Subscription): Omi
   return {
     priceFormatted: formatChargedAmount(item?.price.unit_amount, item?.price.currency),
     interval: item?.price.recurring?.interval === 'year' ? 'year' : 'month',
+    taxIncluded: item?.price.tax_behavior === 'inclusive',
     nextRenewalDateFormatted: formatChargeDate(nextChargeSeconds),
     ...(trialing ? { trialDays: PRO_TRIAL_DAYS } : {}),
   };

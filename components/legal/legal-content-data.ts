@@ -146,6 +146,12 @@ export const TERMS_SECTIONS: LegalSubsection[] = [
     title: 'Suscripción, Renovación y Derecho de Desistimiento',
     body: 'El Plan Pro es una suscripción de pago recurrente gestionada por Stripe que se renueva automáticamente al final de cada periodo salvo que la canceles antes desde tu perfil; al cancelar, mantienes el acceso hasta el final del periodo ya pagado y no se te cobrará de nuevo. Si contratas el Plan Pro como consumidor en España o la UE, dispones de 14 días naturales desde la contratación para desistir sin justificar el motivo y con devolución íntegra del importe. Si nos pides expresamente empezar a prestarte el servicio antes de que termine ese plazo, entiendes que pierdes el derecho de desistimiento en el momento en que el servicio se haya ejecutado por completo; si se cancela antes de la ejecución completa, te devolvemos la parte proporcional no disfrutada.',
   },
+  // FRESCO-1004: how to exercise the right the section above grants (draft FRESCO-365, clauses 7.2 and 7.3).
+  // PROVISIONAL like every legal text here: the lawyer has not validated it (FRESCO-434).
+  {
+    title: 'Cómo ejercer el derecho de desistimiento',
+    body: `Para desistir, díselo a Fresco antes de que pasen 14 días naturales desde que se activó tu suscripción de pago: basta una declaración clara de que quieres desistir, enviada a ${CONTACT_EMAIL}. Puedes usar este modelo, aunque no es obligatorio: «A la atención de Fresco: te comunico que desisto de mi contrato de suscripción al Plan Pro. Contratado el [fecha]. Nombre: [tu nombre]. Correo de tu cuenta de Fresco: [tu correo]. Fecha: [fecha].» Cancelar desde tu perfil, en «Gestionar mi suscripción», detiene las renovaciones, pero no sustituye este aviso: si quieres que conste como desistimiento, escríbenos también. Si desistes en plazo, te devolvemos todo lo que pagaste por esa suscripción, sin demora indebida y como máximo en 14 días naturales desde que conozcamos tu decisión, con el mismo medio de pago que usaste.`,
+  },
   {
     title: 'Terminación',
     body: 'Puedes dejar de usar Fresco en cualquier momento y borrar tu cuenta desde tu perfil, lo que elimina tus datos según se describe en la Política de Privacidad. Nos reservamos el derecho de suspender cuentas que violen estos Términos.',
