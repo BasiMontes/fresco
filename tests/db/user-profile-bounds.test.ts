@@ -56,10 +56,10 @@ describe.skipIf(!(RUN && reachable))('user_profiles size bounds (real DB)', () =
   const sample = (column: string, n: number) => (column === 'alergenos' ? Array.from({ length: n }).fill('soja') : items(n));
 
   describe.each([
-    ['alergenos', false],
-    ['ingredientes_odiados', true],
-    ['ingredientes_favoritos', true],
-  ])('%s', (column, takesFreeText) => {
+    ['alergenos'],
+    ['ingredientes_odiados'],
+    ['ingredientes_favoritos'],
+  ])('%s', (column) => {
     test('30 short elements are accepted', async () => {
       expect((await update({ [column]: sample(column, 30) })).status).toBeLessThan(300);
       expect(await read(column)).toHaveLength(30);
@@ -71,14 +71,20 @@ describe.skipIf(!(RUN && reachable))('user_profiles size bounds (real DB)', () =
       expectRefused(result, 'user_profiles_lists_bounds');
       expect(await read(column)).toHaveLength(30);
     });
+  });
 
-    test.skipIf(!takesFreeText)('a list whose joined text passes 2400 bytes is refused even with few elements', async () => {
+  // The byte cap needs free text, which `alergenos` no longer takes (see `sample`).
+  describe.each([
+    ['ingredientes_odiados'],
+    ['ingredientes_favoritos'],
+  ])('%s byte cap', (column) => {
+    test('a list whose joined text passes 2400 bytes is refused even with few elements', async () => {
       const result = await update({ [column]: ['x'.repeat(2401)] });
 
       expectRefused(result, 'user_profiles_lists_bounds');
     });
 
-    test.skipIf(!takesFreeText)('30 elements of 60 characters, some of them two-byte, still fit under the byte cap', async () => {
+    test('30 elements of 60 characters, some of them two-byte, still fit under the byte cap', async () => {
       // The audit asked for "30 elements of 60 characters". Ten `ñ` (2 bytes) plus fifty ASCII is 70 bytes;
       // 30 of them joined by spaces is 2129 bytes, under the 2400 cap.
       const sixty = 'ñ'.repeat(10) + 'a'.repeat(50);

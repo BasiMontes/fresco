@@ -17,8 +17,8 @@ export function needsCurrentPassword(methods: readonly string[] | null): boolean
 }
 
 export const CURRENT_PASSWORD_REQUIRED_MESSAGE = 'Escribe tu contraseña actual.';
-export const CURRENT_PASSWORD_WRONG_MESSAGE = 'La contraseña actual no es correcta.';
-export const REAUTHENTICATION_NEEDED_MESSAGE = 'Por seguridad, vuelve a iniciar sesión antes de cambiar la contraseña.';
+const CURRENT_PASSWORD_WRONG_MESSAGE = 'La contraseña actual no es correcta.';
+const REAUTHENTICATION_NEEDED_MESSAGE = 'Por seguridad, vuelve a iniciar sesión antes de cambiar la contraseña.';
 
 /** Spanish copy for the errors Auth returns on a password change; `null` for any other error. */
 export function passwordChangeErrorMessage(error: { code?: string, message?: string }): string | null {
