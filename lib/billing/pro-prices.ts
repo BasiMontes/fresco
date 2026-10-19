@@ -48,6 +48,45 @@ export async function readProPrices(): Promise<ProPrices> {
 // Stripe outage is retried on the next request instead of pinning a fallback for an hour.
 const readCachedProPrices = unstable_cache(readProPrices, ['pro-prices'], { revalidate: PRICES_REVALIDATE_SECONDS });
 
+/** What `GET /api/stripe/pro-price` shows before the redirect to Checkout: the Price as Stripe holds it. */
+export interface ProPriceDetail {
+  amount: number
+  currency: string
+  interval: string
+  intervalCount: number
+  /** True only when Stripe says `tax_behavior: 'inclusive'`; `unspecified` must not be shown as "IVA incluido". */
+  taxIncluded: boolean
+}
+
+/** Throws when Stripe cannot be read or the Price is not a fixed recurring amount, so a bad answer is never cached. */
+async function readPriceDetail(priceId: string): Promise<ProPriceDetail> {
+  const price = await stripe.prices.retrieve(priceId);
+  if (price.unit_amount === null || !price.recurring) {
+    throw new Error(`${priceId} is not a fixed recurring amount`);
+  }
+  return {
+    amount: price.unit_amount / 100,
+    currency: price.currency,
+    interval: price.recurring.interval,
+    intervalCount: price.recurring.interval_count,
+    taxIncluded: price.tax_behavior === 'inclusive',
+  };
+}
+
+/**
+ * FRESCO-1003 (audit 7b A7-API-04): the cached detail of one Pro Price. Throws on a Stripe failure
+ * or an unusable Price; the caller answers 500.
+ *
+ * The Price id is an argument, so it is part of the cache key: the endpoint costs Stripe at most
+ * one read per Price per window, whoever asks and however often. Only a success is stored; a
+ * thrown error is retried on the next request. The wrapper is built per call, not at import,
+ * because the cache is identified by its key parts, not by the wrapper, and a wrapper fixed at
+ * import time cannot be replaced by the unit tests that have no Next runtime.
+ */
+export async function getProPriceDetail(priceId: string): Promise<ProPriceDetail> {
+  return unstable_cache(readPriceDetail, ['pro-price-detail'], { revalidate: PRICES_REVALIDATE_SECONDS })(priceId);
+}
+
 /**
  * The cached Pro prices, or `null` when they cannot be read. Callers fall back to
  * the monthly-only copy they had before the annual plan, so a Stripe hiccup never

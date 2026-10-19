@@ -2,8 +2,9 @@ import type { NextRequest } from 'next/server';
 import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
 import { getBillingState } from '@/lib/billing/billing-state';
+import { getProPriceDetail } from '@/lib/billing/pro-prices';
 import { isTrialAvailable, PRO_TRIAL_DAYS } from '@/lib/legal/pro-terms';
-import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
+import { getProPriceId, parseProInterval } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 
 /**
@@ -18,6 +19,10 @@ import { createClient } from '@/lib/supabase/server';
  * "IVA incluido" (the lawyer draft leaves the VAT treatment open, clause 6.2).
  *
  * Same gate as `checkout/route.ts`: a signed-in, non-guest user. Read-only.
+ *
+ * FRESCO-1003 (audit 7b A7-API-04): the Price comes from `getProPriceDetail`, cached for an hour
+ * per Price id (`pro-prices.ts`), so a signed-in user reloading the page cannot turn this endpoint
+ * into a stream of Stripe reads. The per-user figures (the trial) are still computed per request.
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -49,18 +54,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const price = await stripe.prices.retrieve(priceId);
-    if (price.unit_amount === null || !price.recurring) {
-      console.error('[/api/stripe/pro-price] price is not a fixed recurring amount', priceId);
-      return NextResponse.json({ error: 'No se pudo cargar el precio.' }, { status: 500 });
-    }
+    const price = await getProPriceDetail(priceId);
 
     return NextResponse.json({
-      amount: price.unit_amount / 100,
+      amount: price.amount,
       currency: price.currency,
-      interval: price.recurring.interval,
-      intervalCount: price.recurring.interval_count,
-      taxIncluded: price.tax_behavior === 'inclusive',
+      interval: price.interval,
+      intervalCount: price.intervalCount,
+      taxIncluded: price.taxIncluded,
       trialDays: isTrialAvailable(profile) ? PRO_TRIAL_DAYS : null,
     });
   }
