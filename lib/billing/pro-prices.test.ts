@@ -22,21 +22,42 @@ describe('readProPrices', () => {
       ? stripePrice({ unit_amount: 4499, recurring: { interval: 'year', interval_count: 1 } })
       : stripePrice());
 
-    expect(await readProPrices()).toEqual({ month: 4.99, year: 44.99 });
+    expect(await readProPrices()).toEqual({ month: 4.99, year: 44.99, taxIncluded: false });
+  });
+
+  test('taxIncluded is true only when every price shown is tax-inclusive (FRESCO-1004)', async () => {
+    const inclusive = (over: Record<string, unknown> = {}) => stripePrice({ tax_behavior: 'inclusive', ...over });
+    const year = { unit_amount: 4499, recurring: { interval: 'year', interval_count: 1 } };
+
+    pricesRetrieve.mockImplementation(async (id: string) => id === 'price_year' ? inclusive(year) : inclusive());
+    expect((await readProPrices()).taxIncluded).toBe(true);
+
+    pricesRetrieve.mockImplementation(async (id: string) => id === 'price_year' ? inclusive({ ...year, tax_behavior: 'exclusive' }) : inclusive());
+    expect((await readProPrices()).taxIncluded).toBe(false);
+
+    pricesRetrieve.mockImplementation(async (id: string) => id === 'price_year' ? inclusive(year) : stripePrice({ tax_behavior: 'unspecified' }));
+    expect((await readProPrices()).taxIncluded).toBe(false);
+  });
+
+  test('taxIncluded follows the monthly price alone when there is no annual one (FRESCO-1004)', async () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
+    pricesRetrieve.mockResolvedValue(stripePrice({ tax_behavior: 'inclusive' }));
+
+    expect((await readProPrices()).taxIncluded).toBe(true);
   });
 
   test('has no annual price when the environment does not configure one', async () => {
     delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
     pricesRetrieve.mockResolvedValue(stripePrice());
 
-    expect(await readProPrices()).toEqual({ month: 4.99, year: null });
+    expect(await readProPrices()).toEqual({ month: 4.99, year: null, taxIncluded: false });
     expect(pricesRetrieve).toHaveBeenCalledTimes(1);
   });
 
   test('ignores an annual price id that is really a monthly price (the original FRESCO-844 misconfiguration)', async () => {
     pricesRetrieve.mockImplementation(async (id: string) => id === 'price_year' ? stripePrice({ unit_amount: 4499 }) : stripePrice());
 
-    expect(await readProPrices()).toEqual({ month: 4.99, year: null });
+    expect(await readProPrices()).toEqual({ month: 4.99, year: null, taxIncluded: false });
   });
 
   test('ignores a price that is not in euros', async () => {
@@ -71,11 +92,11 @@ describe('formatEuros', () => {
 
 describe('yearlySavingsEuros', () => {
   test('is what twelve monthly payments cost over the annual price', () => {
-    expect(yearlySavingsEuros({ month: 4.99, year: 44.99 })).toBe(14.89);
+    expect(yearlySavingsEuros({ month: 4.99, year: 44.99, taxIncluded: false })).toBe(14.89);
   });
 
   test('is null with no annual price, or when yearly is not cheaper', () => {
-    expect(yearlySavingsEuros({ month: 4.99, year: null })).toBeNull();
-    expect(yearlySavingsEuros({ month: 4.99, year: 59.88 })).toBeNull();
+    expect(yearlySavingsEuros({ month: 4.99, year: null, taxIncluded: false })).toBeNull();
+    expect(yearlySavingsEuros({ month: 4.99, year: 59.88, taxIncluded: false })).toBeNull();
   });
 });

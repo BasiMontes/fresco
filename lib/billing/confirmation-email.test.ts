@@ -173,6 +173,17 @@ describe('confirmationEmailContent', () => {
     expect(content).not.toHaveProperty('trialDays');
   });
 
+  test('taxIncluded follows the Price tax_behavior: only inclusive says so (FRESCO-1004)', () => {
+    const withTax = (taxBehavior: string | null) => confirmationEmailContent(subscription({
+      items: { data: [{ price: { unit_amount: 499, currency: 'eur', recurring: { interval: 'month' }, tax_behavior: taxBehavior }, current_period_end: NOW_S + 30 * 86_400 }] },
+    }) as never);
+
+    expect(withTax('inclusive').taxIncluded).toBe(true);
+    expect(withTax('exclusive').taxIncluded).toBe(false);
+    expect(withTax('unspecified').taxIncluded).toBe(false);
+    expect(withTax(null).taxIncluded).toBe(false);
+  });
+
   test('an annual subscription says year', () => {
     const content = confirmationEmailContent(subscription({
       items: { data: [{ price: { unit_amount: 4999, currency: 'eur', recurring: { interval: 'year' } }, current_period_end: NOW_S + 365 * 86_400 }] },

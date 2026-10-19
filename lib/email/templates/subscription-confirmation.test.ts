@@ -91,3 +91,20 @@ describe('renderSubscriptionConfirmationEmailHtml — plan and trial (FRESCO-100
     expect(visibleText(html)).toMatchSnapshot();
   });
 });
+
+// FRESCO-1004 (A7-LAUNCH-05): the email says "IVA incluido" only when Stripe declares the Price tax-inclusive.
+describe('renderSubscriptionConfirmationEmailHtml — IVA incluido', () => {
+  const base = { priceFormatted: '4,99 €', interval: 'month' as const, nextRenewalDateFormatted: '7 de octubre de 2026', manageSubscriptionUrl: 'https://fresco-pro.vercel.app/profile' };
+
+  test('says it after the total when the Price is tax-inclusive, with and without a trial', () => {
+    expect(renderSubscriptionConfirmationEmailHtml({ ...base, taxIncluded: true })).toContain('<strong>4,99 €</strong> (IVA incluido).');
+    expect(renderSubscriptionConfirmationEmailHtml({ ...base, taxIncluded: true, trialDays: 7 })).toContain('(IVA incluido).');
+  });
+
+  test('claims nothing about tax otherwise, and the old hedge is gone', () => {
+    for (const html of [renderSubscriptionConfirmationEmailHtml(base), renderSubscriptionConfirmationEmailHtml({ ...base, taxIncluded: false, trialDays: 7 })]) {
+      expect(html).not.toContain('IVA incluido');
+      expect(html).not.toContain('impuestos incluidos');
+    }
+  });
+});
