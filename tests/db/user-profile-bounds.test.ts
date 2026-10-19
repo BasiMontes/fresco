@@ -50,30 +50,35 @@ describe.skipIf(!(RUN && reachable))('user_profiles size bounds (real DB)', () =
 
   const items = (n: number, size = 8) => Array.from({ length: n }, (_, i) => `i${String(i).padStart(size - 1, '0')}`.slice(0, size));
 
+  // FRESCO-1015: `alergenos` only takes the 14 vocabulary slugs now (user_profiles_alergenos_vocab), so its
+  // elements are a valid slug repeated; the byte-cap cases below need free text and do not apply to it
+  // (30 slugs of at most 17 characters can never reach 2400 bytes).
+  const sample = (column: string, n: number) => (column === 'alergenos' ? Array.from({ length: n }).fill('soja') : items(n));
+
   describe.each([
-    ['alergenos'],
-    ['ingredientes_odiados'],
-    ['ingredientes_favoritos'],
-  ])('%s', (column) => {
+    ['alergenos', false],
+    ['ingredientes_odiados', true],
+    ['ingredientes_favoritos', true],
+  ])('%s', (column, takesFreeText) => {
     test('30 short elements are accepted', async () => {
-      expect((await update({ [column]: items(30) })).status).toBeLessThan(300);
+      expect((await update({ [column]: sample(column, 30) })).status).toBeLessThan(300);
       expect(await read(column)).toHaveLength(30);
     });
 
     test('31 elements are refused and the stored list is untouched', async () => {
-      const result = await update({ [column]: items(31) });
+      const result = await update({ [column]: sample(column, 31) });
 
       expectRefused(result, 'user_profiles_lists_bounds');
       expect(await read(column)).toHaveLength(30);
     });
 
-    test('a list whose joined text passes 2400 bytes is refused even with few elements', async () => {
+    test.skipIf(!takesFreeText)('a list whose joined text passes 2400 bytes is refused even with few elements', async () => {
       const result = await update({ [column]: ['x'.repeat(2401)] });
 
       expectRefused(result, 'user_profiles_lists_bounds');
     });
 
-    test('30 elements of 60 characters, some of them two-byte, still fit under the byte cap', async () => {
+    test.skipIf(!takesFreeText)('30 elements of 60 characters, some of them two-byte, still fit under the byte cap', async () => {
       // The audit asked for "30 elements of 60 characters". Ten `ñ` (2 bytes) plus fifty ASCII is 70 bytes;
       // 30 of them joined by spaces is 2129 bytes, under the 2400 cap.
       const sixty = 'ñ'.repeat(10) + 'a'.repeat(50);
