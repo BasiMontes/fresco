@@ -102,6 +102,9 @@ export async function GET() {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
+      // FRESCO-1036: personal data of one account. Without this the platform default is
+      // `public, max-age=0, must-revalidate`, which lets a shared cache hold the file.
+      'Cache-Control': 'private, no-store',
     },
   });
 }

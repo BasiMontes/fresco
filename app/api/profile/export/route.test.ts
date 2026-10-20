@@ -48,6 +48,8 @@ describe('GET /api/profile/export', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/csv; charset=utf-8');
     expect(res.headers.get('content-disposition')).toMatch(/attachment; filename="fresco-datos-\d{4}-\d{2}-\d{2}\.csv"/);
+    // FRESCO-1036: personal data, never storable by a shared cache.
+    expect(res.headers.get('cache-control')).toBe('private, no-store');
     expect(body).toContain('# exported_at:');
     expect(body).toContain('# user_profile\n');
     expect(body).toContain('# meal_plans\n');
