@@ -11,7 +11,8 @@ import * as realStripe from '@/lib/stripe';
 
 const send = mock(async (_p: unknown): Promise<void> => {});
 const captureException = mock((_error: unknown, _hint?: unknown) => 'id');
-void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail: send }));
+// `mock.module` leaks into the files that run after this one: keep every export of the module (FRESCO-1024).
+void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail: send, sendWaitlistConfirmationEmail: async () => {} }));
 void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException }));
 void mock.module('@/lib/stripe', () => ({ ...realStripe, resolveAppUrl: () => 'https://fresco-pro.vercel.app' }));
 

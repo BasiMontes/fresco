@@ -4,6 +4,7 @@ import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { loginToApp, restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
+import { revealCalendarDay } from './support/calendar-day';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @aprendizaje,
@@ -29,6 +30,7 @@ const MARK_RESULT_TIMEOUT_MS = 20_000;
 async function loginAndGoToCalendar(page: Page, email: string, password: string): Promise<void> {
   await loginToApp(page, { email, password });
   await page.goto('/calendar');
+  await revealCalendarDay(page, 'lunes');
 }
 
 Given(/^que el usuario tiene un menú semanal generado con un plato en estado pendiente$/, async ({ page, request, testUserFactory, aprendizajeCtx: ctx }) => {
@@ -84,6 +86,7 @@ Given(/^que el usuario ya marcó un plato como cocinado o descartado$/, async ({
 
 When(/^recarga la página y observa ese mismo plato$/, async ({ page }) => {
   await page.reload();
+  await revealCalendarDay(page, 'lunes');
 });
 
 Then(/^no ve ningún control para volver a marcarlo$/, async ({ page, aprendizajeCtx: ctx }) => {
@@ -143,6 +146,7 @@ Then(/^al recargar la página el plato sigue pendiente$/, async ({ page, aprendi
   await page.clock.fastForward(5_500);
   await page.waitForLoadState('networkidle');
   await page.reload();
+  await revealCalendarDay(page, 'lunes');
   await expect(page.getByTestId(`${ctx.slotPrefix}_mark_cocinada`)).toBeVisible({ timeout: MARK_RESULT_TIMEOUT_MS });
   await expect(page.getByTestId(`${ctx.slotPrefix}_estado_badge`)).toHaveCount(0);
 });
