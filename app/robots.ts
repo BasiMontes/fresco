@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { isIndexable } from '@/lib/seo/indexing';
 import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
 
 /**
@@ -29,9 +30,17 @@ import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
  * covers `/admin/recipes` too, and `/recipes` covers `/recipes/[id]` — a
  * `Disallow` value is a path-prefix match, so no per-subroute entries are
  * needed. `/qa` and `/auth/confirm` are unchanged from FRESCO-395/473.
+ *
+ * FRESCO-1018 (A7-LAUNCH-07): outside production nothing is crawlable. `fresco-pre` and `fresco-dev`
+ * served the same `Allow: /` as `fresco-pro`, so they competed with it for the same queries. There
+ * is no `Sitemap:` line either: a sitemap on a closed site would point crawlers at it.
  */
 
 export default function robots(): MetadataRoute.Robots {
+  if (!isIndexable()) {
+    return { rules: { userAgent: '*', disallow: '/' } };
+  }
+
   return {
     rules: {
       userAgent: '*',

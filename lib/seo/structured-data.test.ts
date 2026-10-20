@@ -49,8 +49,10 @@ describe('websiteJsonLd', () => {
 });
 
 describe('softwareApplicationJsonLd', () => {
+  const stripe = { month: 4.99, year: 49.9, taxIncluded: true };
+
   test('is a valid SoftwareApplication block with Free + Pro offers', () => {
-    const data = softwareApplicationJsonLd();
+    const data = softwareApplicationJsonLd(stripe);
 
     expect(data['@context']).toBe('https://schema.org');
     expect(data['@type']).toBe('SoftwareApplication');
@@ -58,7 +60,6 @@ describe('softwareApplicationJsonLd', () => {
     expect(typeof data.description).toBe('string');
     expect(typeof data.applicationCategory).toBe('string');
     expect(typeof data.operatingSystem).toBe('string');
-    expect(data.offers).toHaveLength(2);
     data.offers.forEach((offer) => {
       expect(offer['@type']).toBe('Offer');
       expect(typeof offer.price).toBe('string');
@@ -66,8 +67,32 @@ describe('softwareApplicationJsonLd', () => {
     });
   });
 
+  test('the Pro offers carry exactly the prices Stripe reports (FRESCO-1018)', () => {
+    const offers = softwareApplicationJsonLd(stripe).offers;
+
+    expect(offers.map(offer => [offer.name, offer.price])).toEqual([['Free', '0'], ['Pro', '4.99'], ['Pro anual', '49.90']]);
+  });
+
+  test('a changed Stripe price changes the structured data, with two decimals', () => {
+    const offers = softwareApplicationJsonLd({ month: 6, year: null, taxIncluded: false }).offers;
+
+    expect(offers.map(offer => offer.price)).toEqual(['0', '6.00']);
+  });
+
+  test('without an annual price there is no annual offer', () => {
+    expect(softwareApplicationJsonLd({ month: 4.99, year: null, taxIncluded: false }).offers.map(offer => offer.name)).toEqual(['Free', 'Pro']);
+  });
+
+  test('when Stripe cannot be read the Pro offer carries no price, never a stale one', () => {
+    const offers = softwareApplicationJsonLd(null).offers;
+
+    expect(offers[0]).toMatchObject({ name: 'Free', price: '0' });
+    expect(offers[1]).toEqual({ '@type': 'Offer', 'name': 'Pro' });
+    expect(offers).toHaveLength(2);
+  });
+
   test('has no aggregateRating — no real review data exists', () => {
-    const data = softwareApplicationJsonLd();
+    const data = softwareApplicationJsonLd(stripe);
 
     expect(data).not.toHaveProperty('aggregateRating');
   });

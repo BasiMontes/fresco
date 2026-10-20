@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { isIndexable } from '@/lib/seo/indexing';
 import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
 
 /**
@@ -29,7 +30,19 @@ import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
  */
 const LANDING_LAST_MODIFIED = '2026-09-12';
 
+/**
+ * FRESCO-1018 (A7-LAUNCH-08): the four legal pages are public, indexable and linked from the sign-up
+ * and checkout flows, but the sitemap listed only the landing. Same convention as the landing date:
+ * the last git-tracked change of `app/legal` and `lib/legal`, bumped by hand when they change.
+ */
+const LEGAL_LAST_MODIFIED = '2026-10-19';
+const LEGAL_PATHS = ['/legal/privacidad', '/legal/terminos', '/legal/cookies', '/legal/contacto'] as const;
+
 export default function sitemap(): MetadataRoute.Sitemap {
+  // A closed site (pre, dev, local) lists nothing: `robots.txt` disallows all of it.
+  if (!isIndexable()) {
+    return [];
+  }
   const baseUrl = resolveBaseUrl();
 
   return [
@@ -39,5 +52,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    ...LEGAL_PATHS.map(path => ({
+      url: `${baseUrl}${path}`,
+      lastModified: LEGAL_LAST_MODIFIED,
+      changeFrequency: 'yearly' as const,
+      priority: 0.3,
+    })),
   ];
 }

@@ -1,3 +1,4 @@
+import type { ProPrices } from '@/lib/billing/pro-prices';
 import { resolveBaseUrl } from './resolve-base-url';
 
 /**
@@ -42,11 +43,13 @@ export function websiteJsonLd() {
 }
 
 /**
- * schema.org SoftwareApplication. Pricing mirrors `components/landing/pricing.tsx`
- * (Free 0€/mes, Pro 4,99€/mes) — the only prices that exist in the codebase.
+ * schema.org SoftwareApplication. FRESCO-1018 (A7-LAUNCH-08): the Pro offers take their price from
+ * the same Stripe read the landing's pricing section shows (`getProPrices`), so structured data
+ * cannot drift from what the checkout charges. When Stripe cannot be read (`prices` is `null`) the
+ * Pro offer carries NO price rather than a stale one. Free is `0` by definition.
  * `aggregateRating` is deliberately omitted: no real rating data exists yet.
  */
-export function softwareApplicationJsonLd() {
+export function softwareApplicationJsonLd(prices: ProPrices | null = null) {
   const baseUrl = resolveBaseUrl();
   return {
     '@context': 'https://schema.org',
@@ -59,7 +62,10 @@ export function softwareApplicationJsonLd() {
     'operatingSystem': 'Web',
     'offers': [
       { '@type': 'Offer', 'name': 'Free', 'price': '0', 'priceCurrency': 'EUR' },
-      { '@type': 'Offer', 'name': 'Pro', 'price': '4.99', 'priceCurrency': 'EUR' },
+      prices === null
+        ? { '@type': 'Offer', 'name': 'Pro' }
+        : { '@type': 'Offer', 'name': 'Pro', 'price': prices.month.toFixed(2), 'priceCurrency': 'EUR' },
+      ...(prices?.year == null ? [] : [{ '@type': 'Offer', 'name': 'Pro anual', 'price': prices.year.toFixed(2), 'priceCurrency': 'EUR' }]),
     ],
   };
 }
