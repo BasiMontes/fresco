@@ -29,7 +29,7 @@ Impact: a dependency or dataset compromise could use the PAT (scope not visible 
 Fix: `persist-credentials: false` and pass the token only to the final `git push`/`gh pr create` step; pin the dataset revision (commit hash in URL) and bump it deliberately; use a fine-grained PAT limited to contents+PR on this repo. Test: workflow lint for `persist-credentials` where a PAT is used.
 
 ### A7-SUPPLY-05 | LOW | CONFIRMED | Owner and admin account identities published in a public repo
-Evidence: `git grep`: `hola.frescoapp@gmail.com` x14, `hola.frescoapp+admin@gmail.com` (`.context/business/business-api-map.md:501`, labelled as the `ADMIN_USER_ID` allowlist account), the admin auth UID in `.context/bitacora-2026-08-to-09.md:34`, personal `basilio.montescastano@gmail.com` and `basi_montes@hotmail.com`. No third-party user PII found (other addresses are example/test domains).
+Evidence: `git grep`: `hola.frescoapp@gmail.com` x14, `<admin account>` (`.context/business/business-api-map.md:501`, labelled as the `ADMIN_USER_ID` allowlist account), the admin auth UID in `.context/bitacora-2026-08-to-09.md:34`, personal `basilio.montescastano@gmail.com` and `basi_montes@hotmail.com`. No third-party user PII found (other addresses are example/test domains).
 Impact: the single account that can call `delete-catalog-recipe` is publicly identifiable: targeted credential stuffing / phishing / password-reset spam against the one admin.
 Fix: replace with placeholders in docs; enforce a 2nd factor (TOTP) on the admin account; consider moving the admin allowlist off a single identity. Test: docs lint rejecting `@gmail.com` outside an allowlist.
 
