@@ -33,16 +33,22 @@ interface RecipeRow extends RecipeTags {
 }
 
 const isMissingTag = (finding: Finding) => finding.key.includes('|falta:');
+/** The nine diet flags FRESCO-998 holds to their definition: six diets and the three free-of flags. */
+const isDietDefinition = (finding: Finding) => /\|dieta:(?:keto|halal|kosher|vegetariano|paleo|bajo_fodmap|sin_lactosa|sin_huevo|sin_gluten)$/.test(finding.key);
 
 describe.skipIf(!(RUN && reachable))('recipe allergen and diet tags vs ingredients and steps (real DB)', () => {
-  async function findings() {
+  async function catalogue() {
     const rows = await restAll<RecipeRow>('recipes', {
       serviceRole: true,
       select: 'slug,nombre,activo,alergenos,dieta,ingredientes_principales,pasos_resumen',
       order: 'id',
     });
     expect(rows.length).toBeGreaterThan(1000);
-    return rows.filter(row => row.activo).flatMap(auditRecipeFindings);
+    return rows;
+  }
+
+  async function findings() {
+    return (await catalogue()).filter(row => row.activo).flatMap(auditRecipeFindings);
   }
 
   /** Splits `found` against the ratchet list: what is new, and what the list still holds but no longer reproduces. */
@@ -67,5 +73,15 @@ describe.skipIf(!(RUN && reachable))('recipe allergen and diet tags vs ingredien
 
     expect(unexpected).toEqual([]);
     expect(fixed).toEqual([]);
+  });
+
+  test('inactive recipes carry no diet or free-of flag their text breaks (FRESCO-998)', async () => {
+    const stale = (await catalogue())
+      .filter(row => !row.activo)
+      .flatMap(auditRecipeFindings)
+      .filter(isDietDefinition)
+      .map(finding => finding.message);
+
+    expect(stale).toEqual([]);
   });
 });

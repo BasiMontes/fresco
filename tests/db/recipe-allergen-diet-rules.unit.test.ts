@@ -247,3 +247,58 @@ describe('stock and miso (FRESCO-996)', () => {
     expect(reports(beans, 'caldo sin especificar')).toBe(false);
   });
 });
+
+describe('diet flags that must meet their definition (FRESCO-998)', () => {
+  const flagged = (ingredients: string[], dieta: Record<string, boolean>, extra: Partial<RecipeTags> = {}) =>
+    auditRecipeFindings(recipe(ingredients, { dieta, ...extra })).map(finding => finding.key.split('|')[1]);
+
+  test.each([
+    ['patatas'],
+    ['plátano'],
+    ['quinoa'],
+    ['tortilla de trigo'],
+    ['seitán'],
+    ['yogur'],
+    ['leche'],
+    ['manzana'],
+  ])('keto true with "%s" is flagged', (ingredient) => {
+    expect(flagged([ingredient], { keto: true }, { alergenos: ['lactosa', 'gluten'] })).toContain('dieta:keto');
+  });
+  test('keto keeps cream, cheese, butter, coconut milk and almond flour', () => {
+    const keto = flagged(['nata', 'queso', 'mantequilla', 'leche de coco', 'harina de almendras'], { keto: true }, { alergenos: ['lactosa'] });
+    expect(keto).not.toContain('dieta:keto');
+  });
+
+  test('halal true with unnamed or mixed minced meat is flagged, but a named one is not', () => {
+    expect(flagged(['carne picada'], { halal: true })).toContain('dieta:halal');
+    expect(flagged(['carne picada mixta'], { halal: true })).toContain('dieta:halal');
+    expect(flagged(['carne picada de ternera'], { halal: true })).not.toContain('dieta:halal');
+  });
+
+  test('kosher true with wine is flagged unless the text says it is certified', () => {
+    expect(flagged(['vino tinto'], { kosher: true }, { alergenos: ['sulfitos'] })).toContain('dieta:kosher');
+    expect(flagged(['vino kosher'], { kosher: true }, { alergenos: ['sulfitos'] })).not.toContain('dieta:kosher');
+    expect(flagged(['vinagre'], { kosher: true }, { alergenos: ['sulfitos'] })).not.toContain('dieta:kosher');
+  });
+
+  test('vegetariano true with Parmesano or Gruyère is flagged unless the vegetarian version is named', () => {
+    expect(flagged(['parmesano'], { vegetariano: true }, { alergenos: ['lactosa'] })).toContain('dieta:vegetariano');
+    expect(flagged(['queso gruyère'], { vegetariano: true }, { alergenos: ['lactosa'] })).toContain('dieta:vegetariano');
+    expect(flagged(['parmesano vegetariano'], { vegetariano: true }, { alergenos: ['lactosa'] })).not.toContain('dieta:vegetariano');
+  });
+
+  test('paleo true with cereal, dairy or legume is flagged, by text or by tag; green beans and coconut milk are not', () => {
+    expect(flagged(['garbanzos'], { paleo: true })).toContain('dieta:paleo');
+    expect(flagged(['arroz'], { paleo: true })).toContain('dieta:paleo');
+    expect(flagged(['calabaza'], { paleo: true }, { alergenos: ['gluten'] })).toContain('dieta:paleo');
+    expect(flagged(['judías verdes', 'leche de coco'], { paleo: true })).not.toContain('dieta:paleo');
+  });
+
+  test('bajo_fodmap true with a trigger is flagged, by text or by tag', () => {
+    for (const trigger of ['ajo', 'cebolla', 'puerro', 'espárragos', 'coliflor', 'champiñones', 'setas', 'lentejas']) {
+      expect(flagged([trigger], { bajo_fodmap: true })).toContain('dieta:bajo_fodmap');
+    }
+    expect(flagged(['calabaza'], { bajo_fodmap: true }, { alergenos: ['lactosa'] })).toContain('dieta:bajo_fodmap');
+    expect(flagged(['calabaza', 'zanahoria'], { bajo_fodmap: true })).not.toContain('dieta:bajo_fodmap');
+  });
+});
