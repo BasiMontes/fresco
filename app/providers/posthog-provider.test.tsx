@@ -1,5 +1,5 @@
 import type { PostHogProvider as PostHogProviderType } from './posthog-provider';
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import posthog from 'posthog-js';
 import { CookieConsentProvider, useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { clearAllCookies, renderWithProviders, screen, setupUser } from '@/tests/component-render';
@@ -37,6 +37,17 @@ describe('PostHogProvider — consent gate', () => {
   let PostHogProvider: typeof PostHogProviderType;
   beforeEach(async () => {
     process.env.NEXT_PUBLIC_POSTHOG_KEY = 'phc_test_key';
+    // FRESCO-1024: the provider calls `watchAuthState`, which reaches the Supabase client. A file that
+    // ran earlier and mocked `@/lib/supabase/client` without `onAuthStateChange` made that call reject
+    // after the test, and Bun charged the unhandled error to these tests. Own a complete client here.
+    void mock.module('@/lib/supabase/client', () => ({
+      createClient: () => ({
+        auth: {
+          getSession: async () => ({ data: { session: null } }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+      }),
+    }));
     freshCount += 1;
     ({ PostHogProvider } = await import(`./posthog-provider?fresh=${freshCount}`) as typeof import('./posthog-provider'));
   });

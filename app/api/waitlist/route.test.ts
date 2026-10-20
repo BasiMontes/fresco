@@ -20,7 +20,9 @@ const serviceClient = {
 };
 
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => serviceClient }));
+// `mock.module` leaks into the files that run after this one: keep every export of the module (FRESCO-1024).
 void mock.module('@/lib/email/resend', () => ({
+  sendSubscriptionConfirmationEmail: async () => {},
   sendWaitlistConfirmationEmail: async (params: { to: string, confirmUrl: string, removeUrl: string }) => {
     if (sendError) { throw sendError; }
     sent.push(params);
