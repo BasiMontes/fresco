@@ -78,6 +78,22 @@ describe('send-weekly-reengagement-push/index.ts', () => {
     expect(sends).toEqual([])
   })
 
+  test('a finished pass records its heartbeat, also in a week with no targets (FRESCO-1017)', async () => {
+    withTargets([])
+
+    expect((await call()).status).toBe(200)
+
+    expect(svc.upserts).toHaveLength(1)
+    expect(svc.upserts[0]?.[0]).toBe('job_heartbeat')
+    expect(svc.upserts[0]?.[1]).toMatchObject({ job: 'send-weekly-reengagement-push' })
+  })
+
+  test('a rejected caller records no heartbeat (FRESCO-1017)', async () => {
+    await handler(edgeRequest(undefined, { headers: { apikey: 'wrong' }, auth: null }))
+
+    expect(svc.upserts).toEqual([])
+  })
+
   test('sends to a real push endpoint with a request timeout', async () => {
     withTargets([row(1)])
     const res = await call()

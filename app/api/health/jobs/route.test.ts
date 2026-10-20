@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import { JOB_STALE_AFTER_HOURS } from '@/lib/jobs/heartbeat';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 /**
@@ -12,9 +13,11 @@ void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => s
 
 const { GET } = await import('./route');
 
+const ALL_JOBS = Object.keys(JOB_STALE_AFTER_HOURS);
+const allJobs = (status: string) => Object.fromEntries(ALL_JOBS.map(job => [job, status]));
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 const withHeartbeat = (lastSuccessAt: string | null) => fakeSupabase({
-  job_heartbeat: { rows: lastSuccessAt ? [{ job: 'stripe-reconcile', last_success_at: lastSuccessAt }] : [] },
+  job_heartbeat: { rows: lastSuccessAt ? ALL_JOBS.map(job => ({ job, last_success_at: lastSuccessAt })) : [] },
 });
 
 beforeEach(() => {
@@ -26,7 +29,7 @@ describe('GET /api/health/jobs', () => {
     const res = await GET();
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: 'ok', jobs: { 'stripe-reconcile': 'ok' } });
+    expect(await res.json()).toEqual({ status: 'ok', jobs: allJobs('ok') });
   });
 
   test('200 and pending when a job has not reported yet: not an alert before its first run', async () => {
@@ -35,7 +38,7 @@ describe('GET /api/health/jobs', () => {
     const res = await GET();
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: 'ok', jobs: { 'stripe-reconcile': 'pending' } });
+    expect(await res.json()).toEqual({ status: 'ok', jobs: allJobs('pending') });
   });
 
   test('503 and stale when a job stopped reporting', async () => {
@@ -44,7 +47,7 @@ describe('GET /api/health/jobs', () => {
     const res = await GET();
 
     expect(res.status).toBe(503);
-    expect(await res.json()).toEqual({ status: 'stale', jobs: { 'stripe-reconcile': 'stale' } });
+    expect(await res.json()).toEqual({ status: 'stale', jobs: { ...allJobs('stale'), 'send-weekly-reengagement-push': 'ok' } });
   });
 
   test('503 and unknown when the heartbeats cannot be read, with no error text in the body', async () => {
@@ -62,7 +65,7 @@ describe('GET /api/health/jobs', () => {
     const body = await (await GET()).text();
 
     expect(body).not.toMatch(/\d{4}-\d{2}-\d{2}/);
-    expect(body).not.toMatch(/hours|age/i);
+    expect(body).not.toMatch(/\bhours?\b|\bage\b/i);
   });
 
   test('is never cached', async () => {

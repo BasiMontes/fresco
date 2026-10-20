@@ -111,6 +111,31 @@ describe('retry-posthog-erasures/index.ts', () => {
     expect(await res.json() as Summary).toEqual({ attempted: 1, deleted: 1, still_failing: 0, gave_up: 0 })
   })
 
+  test('a finished pass records its heartbeat, even with nothing to retry (FRESCO-1017)', async () => {
+    withFailedRows([])
+
+    expect((await call()).status).toBe(200)
+
+    expect(svc.upserts).toHaveLength(1)
+    expect(svc.upserts[0]?.[0]).toBe('job_heartbeat')
+    expect(svc.upserts[0]?.[1]).toMatchObject({ job: 'retry-posthog-erasures', last_success_at: NOW.toISOString() })
+  })
+
+  test('a rejected caller records no heartbeat (FRESCO-1017)', async () => {
+    await handler(edgeRequest(undefined, { headers: { apikey: 'wrong' }, auth: null }))
+
+    expect(svc.upserts).toEqual([])
+  })
+
+  test('a failed heartbeat write is logged and does not fail the run (FRESCO-1017)', async () => {
+    svc = fakeEdgeClient({ upsertError: { job_heartbeat: new Error('write denied') } })
+
+    const res = await call()
+
+    expect(res.status).toBe(200)
+    expect(messages()).toContain('Could not record the job heartbeat')
+  })
+
   test('a person PostHog no longer has is recorded as not_found and the id is dropped', async () => {
     withFailedRows([failed('1')])
     behaviour = { user_1: 'not_found' }
@@ -162,6 +187,7 @@ describe('retry-posthog-erasures/index.ts', () => {
     expect(lookedUp).toEqual([])
     expect(svc.updates).toEqual([])
     expect(messages()).toContain('PostHog credentials are not configured, nothing was retried')
+    expect(svc.upserts).toEqual([])
     expect(await res.json() as Summary).toEqual({ attempted: 1, deleted: 0, still_failing: 1, gave_up: 0 })
   })
 

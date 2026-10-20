@@ -43,7 +43,22 @@ FRESCO-915 (definitive audit C-11). The Stripe reconciliation cron (ADR-0015) is
 - **Limit**: GitHub schedules are best-effort, like the uptime monitor above, and the hourly probe runs less often than nominal (FRESCO-951). Treat the 26 h figure as a best case and rely on the external monitor of this URL.
 - **Drill**: Actions > Cron heartbeat monitor > Run workflow, with `path` set to `/api/health/jobs-drill` (does not exist, answers `404`). It opens an issue labelled `cron-heartbeat-drill`, separate from the real one. Close it by hand afterwards.
 - **If it fires**: open `https://fresco-pro.vercel.app/api/health/jobs`. `stale` means the cron stopped or never gets past authentication: check `CRON_SECRET` in the Vercel Production scope against the Supabase Vault secret the `pg_cron` job sends, and Sentry for events tagged `cron_job: stripe-reconcile`. `unknown` means the heartbeats could not be read: check Supabase.
-- **Adding a job**: write its heartbeat with `recordJobHeartbeat(client, 'job-name')` and add the name to `MONITORED_JOBS` in `lib/jobs/heartbeat.ts`.
+- **Adding a job**: write its heartbeat and add the name, with its staleness window, to `JOB_STALE_AFTER_HOURS` in `lib/jobs/heartbeat.ts`. The writer depends on where the job runs, see the table below.
+
+FRESCO-1017 (A7-OPS-02) extended the heartbeat to the other `pg_cron` jobs. Each job has its own window because the weekly push cannot report every 25 h:
+
+| Job | Runs | Writer | Stale after |
+|---|---|---|---|
+| `stripe-reconcile` | daily 04:17 UTC | the Next.js route (`recordJobHeartbeat`) | 25 h |
+| `cleanup-abandoned-guest-users` | daily 03:00 UTC | the last statement of its cron command (migration `20261020100000_cron_job_heartbeats.sql`) | 25 h |
+| `purge-waitlist-signups` | daily 03:30 UTC | the last statement of its cron command (same migration) | 25 h |
+| `retry-posthog-erasures` | daily 04:30 UTC | its Edge Function, via `supabase/functions/_shared/job-heartbeat.ts`; not written when the PostHog credentials are missing | 25 h |
+| `send-weekly-reengagement-push` | Sundays 18:00 UTC | its Edge Function, via `_shared/job-heartbeat.ts` | 169 h |
+
+- **SQL jobs**: a multi-statement `pg_cron` command is one transaction, so the heartbeat row exists only when the whole pass completed.
+- **Edge jobs**: a failed heartbeat write is logged and never fails the run, so the worst case is a false `stale`, the safe direction.
+- **Not monitored on purpose**: `cleanup-expired-rate-limits`. If it stops, only `rate_limits` grows.
+- **First deploy**: every new job is `pending` until its first run after the deploy, so no alert fires before then.
 
 ## Sentry: minimum alerts (owner action)
 

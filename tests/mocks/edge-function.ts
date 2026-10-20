@@ -67,6 +67,8 @@ export interface FakeEdgeClientConfig {
   updateRows?: Record<string, unknown[]>
   /** Keyed by table → the error a `.from(t).insert(p)` resolves with. */
   insertError?: Record<string, unknown>
+  /** Keyed by table → the error a `.from(t).upsert(p, opts)` resolves with. */
+  upsertError?: Record<string, unknown>
   /** `auth.admin.deleteUser()` result. */
   adminDeleteError?: unknown
 }
@@ -81,6 +83,8 @@ export interface FakeEdgeClient {
   deletes: Array<[string, unknown]>
   /** `[table, payload]` for every `.from(t).insert(p)` that ran. */
   inserts: Array<[string, Record<string, unknown>]>
+  /** `[table, payload]` for every `.from(t).upsert(p, opts)` that ran. */
+  upserts: Array<[string, Record<string, unknown>]>
   deletedUserIds: string[]
 }
 
@@ -94,6 +98,7 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
   const rpcCalls: FakeEdgeClient['rpcCalls'] = [];
   const deletes: FakeEdgeClient['deletes'] = [];
   const inserts: FakeEdgeClient['inserts'] = [];
+  const upserts: FakeEdgeClient['upserts'] = [];
   const deletedUserIds: string[] = [];
 
   function selectChain(table: string): Record<string, unknown> {
@@ -165,10 +170,14 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
         inserts.push([table, payload]);
         return { error: config.insertError?.[table] ?? null };
       },
+      upsert: async (payload: Record<string, unknown>) => {
+        upserts.push([table, payload]);
+        return { error: config.upsertError?.[table] ?? null };
+      },
     }),
   };
 
-  return { client, updates, rpcCalls, deletes, inserts, deletedUserIds };
+  return { client, updates, rpcCalls, deletes, inserts, upserts, deletedUserIds };
 }
 
 /** A `Request` shaped like what the Supabase Edge Runtime hands the handler. */

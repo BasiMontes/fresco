@@ -17,6 +17,7 @@
 
 import { requireServiceRoleCaller } from '../_shared/auth.ts'
 import { jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { recordJobHeartbeat } from '../_shared/job-heartbeat.ts'
 import { logger } from '../_shared/logger.ts'
 import { deletePostHogPerson } from '../_shared/posthog-erasure.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
@@ -71,6 +72,7 @@ Deno.serve(async (req: Request) => {
 
     const summary: RetryPosthogErasuresResponse = { attempted: 0, deleted: 0, still_failing: 0, gave_up: exhausted }
     const startedAt = Date.now()
+    let credentialsMissing = false
 
     for (const row of retryable) {
       if (Date.now() - startedAt > BATCH_BUDGET_MS) {
@@ -103,6 +105,7 @@ Deno.serve(async (req: Request) => {
         // would hit the same wall, hence the early stop.
         summary.still_failing++
         logger.error('PostHog credentials are not configured, nothing was retried', { fn: FN_NAME })
+        credentialsMissing = true
         break
       }
 
@@ -113,6 +116,9 @@ Deno.serve(async (req: Request) => {
         posthog_last_attempt_at: new Date().toISOString(),
       })
     }
+
+    // FRESCO-1017: no heartbeat when the credentials are missing, that run did nothing useful.
+    if (!credentialsMissing) await recordJobHeartbeat(serviceClient, FN_NAME, FN_NAME)
 
     return jsonResponse(summary, { req })
   }
