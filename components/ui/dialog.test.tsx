@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
+import { renderToString } from 'react-dom/server';
 import { Dialog } from '@/components/ui/dialog';
-import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
+import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
 
 /** FRESCO-1007 — `dismissible={false}` makes the dialog blocking; the default keeps closing on all three paths. */
 
@@ -34,5 +35,38 @@ describe('Dialog dismissible', () => {
     await user.click(screen.getByTestId('probe').parentElement as HTMLElement);
 
     expect(onOpenChange).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * FRESCO-1035: a Dialog that is open from the first render is rendered on the server by the app layout
+ * (the re-consent dialog), where `document` does not exist. It used to throw `ReferenceError: document is
+ * not defined` and every route of that account answered 500.
+ */
+describe('Dialog open from the first render', () => {
+  test('renders nothing on the server instead of throwing', () => {
+    const realDocument = globalThis.document;
+    // @ts-expect-error simulate the server: the test setup registers a DOM, a real server has none
+    delete globalThis.document;
+    try {
+      const html = renderToString(
+        <Dialog open onOpenChange={() => {}} aria-label="Prueba" dismissible={false}>
+          <button type="button">dentro</button>
+        </Dialog>,
+      );
+
+      expect(html).toBe('');
+    }
+    finally {
+      globalThis.document = realDocument;
+    }
+  });
+
+  test('on the client it appears and takes the focus', async () => {
+    setup(false);
+
+    expect(await screen.findByTestId('probe')).toBeInTheDocument();
+    // The first focusable element inside takes the focus, as before: `mounted` must not leave it behind.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'dentro' })).toHaveFocus());
   });
 });
