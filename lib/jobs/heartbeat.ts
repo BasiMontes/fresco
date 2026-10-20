@@ -24,15 +24,31 @@ export async function recordJobHeartbeat(client: Client, job: string): Promise<v
   }
 }
 
-/** The jobs the health monitor watches. Add a job here when it starts writing a heartbeat. */
-export const MONITORED_JOBS: readonly string[] = [STRIPE_RECONCILE_JOB];
-
 /**
- * How old a heartbeat may be before the job counts as stopped. The reconcile cron fires once a
- * day, so a healthy job is at most about 24 h old; the extra hour absorbs a late enqueue. With the
- * monitor probing hourly, a stopped job raises an alert within roughly 26 h of its last success.
+ * How old a daily heartbeat may be before the job counts as stopped. A healthy daily job is at
+ * most about 24 h old; the extra hour absorbs a late enqueue. With the monitor probing hourly, a
+ * stopped job raises an alert within roughly 26 h of its last success.
  */
 export const STALE_AFTER_HOURS = 25;
+
+/** A weekly job (Sunday 18:00 UTC) is at most 168 h old when healthy, plus the same hour of slack. */
+const WEEKLY_STALE_AFTER_HOURS = 169;
+
+/**
+ * The jobs the health monitor watches, each with how old its heartbeat may get. Add a job here when
+ * it starts writing a heartbeat (FRESCO-1017: the other pg_cron jobs). The writers are the cron
+ * route (`recordJobHeartbeat` below), the Edge Functions (`_shared/job-heartbeat.ts`) and the SQL
+ * of the two jobs that run inside the database (migration `cron_job_heartbeats`).
+ */
+export const JOB_STALE_AFTER_HOURS: Readonly<Record<string, number>> = {
+  [STRIPE_RECONCILE_JOB]: STALE_AFTER_HOURS,
+  'cleanup-abandoned-guest-users': STALE_AFTER_HOURS,
+  'purge-waitlist-signups': STALE_AFTER_HOURS,
+  'retry-posthog-erasures': STALE_AFTER_HOURS,
+  'send-weekly-reengagement-push': WEEKLY_STALE_AFTER_HOURS,
+};
+
+export const MONITORED_JOBS: readonly string[] = Object.keys(JOB_STALE_AFTER_HOURS);
 
 /**
  * `pending`: the job has never reported (the table is new, or the job has not run since this was
@@ -40,12 +56,12 @@ export const STALE_AFTER_HOURS = 25;
  */
 export type JobStatus = 'ok' | 'stale' | 'pending';
 
-export function jobStatus({ lastSuccessAt, now = new Date() }: { lastSuccessAt: string | null, now?: Date }): JobStatus {
+export function jobStatus({ lastSuccessAt, now = new Date(), staleAfterHours = STALE_AFTER_HOURS }: { lastSuccessAt: string | null, now?: Date, staleAfterHours?: number }): JobStatus {
   if (lastSuccessAt === null) {
     return 'pending';
   }
   const ageHours = (now.getTime() - Date.parse(lastSuccessAt)) / 3_600_000;
-  return ageHours > STALE_AFTER_HOURS ? 'stale' : 'ok';
+  return ageHours > staleAfterHours ? 'stale' : 'ok';
 }
 
 /**
@@ -64,5 +80,5 @@ export async function readJobStatuses(client: Client, now: Date = new Date()): P
   }
 
   const lastByJob = new Map((data ?? []).map(row => [row.job, row.last_success_at]));
-  return Object.fromEntries(MONITORED_JOBS.map(job => [job, jobStatus({ lastSuccessAt: lastByJob.get(job) ?? null, now })]));
+  return Object.fromEntries(MONITORED_JOBS.map(job => [job, jobStatus({ lastSuccessAt: lastByJob.get(job) ?? null, now, staleAfterHours: JOB_STALE_AFTER_HOURS[job] })]));
 }

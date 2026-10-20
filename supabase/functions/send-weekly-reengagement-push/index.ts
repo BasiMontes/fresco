@@ -21,6 +21,7 @@ import webpush from 'web-push'
 import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { requireServiceRoleCaller } from '../_shared/auth.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
+import { recordJobHeartbeat } from '../_shared/job-heartbeat.ts'
 import { logger } from '../_shared/logger.ts'
 import { isAllowedPushEndpoint } from '../_shared/push-endpoint.ts'
 import { captureServerEvent } from '../_shared/posthog.ts'
@@ -205,6 +206,9 @@ Deno.serve(async (req: Request) => {
       notifications_sent: notificationsSent,
       stale_subscriptions_removed: staleSubscriptionsRemoved,
     }
+    // FRESCO-1017: a pass that reached the end counts, even with zero targets that week.
+    await recordJobHeartbeat(serviceClient, FN_NAME, FN_NAME)
+
     return jsonResponse(response, { req })
   }
   catch (err) {
