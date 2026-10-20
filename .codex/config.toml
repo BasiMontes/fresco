@@ -18,7 +18,7 @@ command = "bunx"
 enabled = true
 args = [
   "-y",
-  "@upstash/context7-mcp",
+  "@upstash/context7-mcp@4.1.1",
 ]
 
 # Streamable HTTP with the key as a bearer token: the mcp-remote tunnel that
@@ -38,7 +38,9 @@ command = "bunx"
 enabled = true
 args = [
   "-y",
-  "@supabase/mcp-server-supabase@latest",
+  "@supabase/mcp-server-supabase@0.13.0",
+  "--read-only",
+  "--project-ref=jdqemhewjrjuopssdurn",
 ]
 env_vars = [
   "SUPABASE_ACCESS_TOKEN",

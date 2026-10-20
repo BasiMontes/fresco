@@ -24,7 +24,7 @@
   "mcp": {
     "context7": {
       "type": "local",
-      "command": ["bunx", "-y", "@upstash/context7-mcp"],
+      "command": ["bunx", "-y", "@upstash/context7-mcp@4.1.1"],
       "enabled": true,
     },
     "tavily": {
@@ -32,7 +32,7 @@
       "command": [
         "bunx",
         "-y",
-        "mcp-remote",
+        "mcp-remote@0.14.3",
         "https://mcp.tavily.com/mcp/?tavilyApiKey={env:TAVILY_API_KEY}",
       ],
       "enabled": true,
@@ -42,7 +42,9 @@
       "command": [
         "bunx",
         "-y",
-        "@supabase/mcp-server-supabase@latest",
+        "@supabase/mcp-server-supabase@0.13.0",
+        "--read-only",
+        "--project-ref=jdqemhewjrjuopssdurn",
         "--access-token",
         "{env:SUPABASE_ACCESS_TOKEN}",
       ],

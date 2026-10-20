@@ -264,6 +264,20 @@ const N8N_LITERAL_ENV = {
  */
 const SUPABASE_DEPENDS_ON = ['SUPABASE_ACCESS_TOKEN'];
 
+/**
+ * FRESCO-1017 (audit 7b, A7-SUPPLY-01/02). Exact package versions, never `@latest`: a registry release
+ * must not reach an agent session unreviewed. Both are at least two weeks old when pinned, and the
+ * Supabase one is the release the env-read measurement above was made on. The Supabase MCP also runs
+ * read-only and scoped to the one project, so a prompt-injected tool call can neither write nor reach
+ * another project; schema changes go through the Supabase CLI (`stack.database.migrations_tool`).
+ *
+ * FRESCO-ONLY: upstream pins `@latest` here. This file and its test are on `updater.protected_paths`
+ * in `.agents/project.yaml`, so a sync does not put `@latest` back. `scripts/mcp-pinned-versions.test.ts`
+ * guards the three MCP configs against an unpinned package.
+ */
+export const CONTEXT7_MCP_PACKAGE = '@upstash/context7-mcp@4.1.1';
+export const SUPABASE_MCP_ARGS = ['@supabase/mcp-server-supabase@0.13.0', '--read-only', '--project-ref=jdqemhewjrjuopssdurn'] as const;
+
 /** `${NAME}`: the canonical spelling every host's placeholder is normalized to. */
 function ref(name: string): string {
   return `\${${name}}`;
@@ -296,11 +310,11 @@ const server = canonical;
 
 const EVERY_HOST: Record<KnownMcpId, NormalizedMcpServer> = {
   // No `.env` dependency, so no loader: wrapping it would only add a hop.
-  context7: server({ transport: 'stdio', command: 'bunx', args: ['-y', '@upstash/context7-mcp'] }),
+  context7: server({ transport: 'stdio', command: 'bunx', args: ['-y', CONTEXT7_MCP_PACKAGE] }),
   supabase: server({
     transport: 'stdio',
     command: 'bunx',
-    args: ['-y', '@supabase/mcp-server-supabase@latest'],
+    args: ['-y', ...SUPABASE_MCP_ARGS],
     envLoader: true,
     dependsOn: SUPABASE_DEPENDS_ON,
   }),

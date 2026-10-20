@@ -32,6 +32,10 @@ A story with UI whose screen has no row in `.context/design/master-design-plan.m
 
 Whatever `git_strategy.policy.direct_push_to_protected` resolves to, a promotion to `main` runs through `bun run git:promote`: dry run first, `--yes` only after the user confirms. Never promote a SHA without a finished green staging PR Check, never with a placeholder identity, never a code commit without its `(#PR)`. The script and `docs/workflows/promotion.md` own the mechanics; the accepted host divergence and its compensating control live in `git_strategy.policy.accepted_divergences` of `.agents/project.yaml`.
 
+### Supabase MCP is read-only and scoped to one project (narrows `[DB_TOOL]`, Rule 9)
+
+`.mcp.json` launches the Supabase MCP with `--read-only --project-ref=<db_project_ref of .agents/project.yaml>` and an exact package version (FRESCO-1017). Reads (`execute_sql` with a `SELECT`, `list_tables`, `get_advisors`, `query_logs`, `list_migrations`) work; `apply_migration`, `deploy_edge_function` and any write do not. A schema change goes through the Supabase CLI (`stack.database.migrations_tool: supabase-cli`: `supabase db push --linked`, dry run first), and an Edge Function deploys from CI. Account tools (`list_projects`) are off because the server is project-scoped. The pins live in `cli/lib/agent-compatibility-contracts.ts` (on `updater.protected_paths`) and `scripts/mcp-pinned-versions.test.ts` fails on an unpinned package, so a bump is a reviewed diff there plus the three MCP configs.
+
 ## Session log: `bitacora.md`
 
 Append one entry to `.context/bitacora.md` ONLY when a session completes a Jira story, resolves a critical bug or ships a deploy. Never for trivial work, text edits or exploratory sessions.

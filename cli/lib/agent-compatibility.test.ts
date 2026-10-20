@@ -12,6 +12,7 @@ import {
   CODEX_HOOK_COMMAND_WINDOWS,
   CODEX_PROJECT_DOC_MAX_BYTES,
   CODEX_STARTUP_TIMEOUT_SEC,
+  CONTEXT7_MCP_PACKAGE,
   declaredMcpIds,
   DOC_CONTRACTS_HOOK,
   EXPECTED_MCP,
@@ -23,6 +24,7 @@ import {
   mcpEnvLoaderArgs,
   REARM_SESSION_START_SOURCES,
   stripJsonComments,
+  SUPABASE_MCP_ARGS,
   unwrapEnvLoader,
   validateDocContractHooks,
   validateEslintBlockWiring,
@@ -118,15 +120,23 @@ function loaderLiteral(names: string[]): string {
   return loader(names).map(arg => JSON.stringify(arg)).join(', ');
 }
 
+/** The pinned Supabase args as the host files spell them (JSONC one per line, TOML on one line). */
+function jsoncArgs(args: readonly string[]): string {
+  return args.map(arg => JSON.stringify(arg)).join(',\n        ');
+}
+function tomlArgs(args: readonly string[]): string {
+  return args.map(arg => JSON.stringify(arg)).join(', ');
+}
+
 const MCP_SERVERS: Record<string, unknown> = {
-  context7: { command: 'bunx', args: ['-y', '@upstash/context7-mcp'] },
+  context7: { command: 'bunx', args: ['-y', CONTEXT7_MCP_PACKAGE] },
   tavily: {
     command: 'bunx',
     args: ['-y', 'mcp-remote', 'https://mcp.tavily.com/mcp/?tavilyApiKey=${TAVILY_API_KEY}'],
   },
   supabase: {
     command: 'bunx',
-    args: [...loader(SUPABASE_VARS), 'bunx', '-y', '@supabase/mcp-server-supabase@latest'],
+    args: [...loader(SUPABASE_VARS), 'bunx', '-y', ...SUPABASE_MCP_ARGS],
   },
   n8n: {
     command: 'bunx',
@@ -144,7 +154,7 @@ const MCP_SERVERS: Record<string, unknown> = {
 const OPENCODE_SERVERS: Record<string, string> = {
   context7: `    "context7": {
       "type": "local",
-      "command": ["bunx", "-y", "@upstash/context7-mcp"],
+      "command": ["bunx", "-y", "${CONTEXT7_MCP_PACKAGE}"],
       "enabled": true,
     },`,
   tavily: `    "tavily": {
@@ -164,7 +174,7 @@ const OPENCODE_SERVERS: Record<string, string> = {
         ${loaderLiteral(SUPABASE_VARS)},
         "bunx",
         "-y",
-        "@supabase/mcp-server-supabase@latest",
+        ${jsoncArgs(SUPABASE_MCP_ARGS)},
       ],
       "enabled": true,
     },`,
@@ -203,7 +213,7 @@ function codexLaunch(command: string, args: string, names: string[], useLoader: 
 function codexServers(useLoader: boolean): Record<string, string> {
   return {
     context7: `[mcp_servers.context7]
-${codexLaunch('bunx', '"-y", "@upstash/context7-mcp"', [], useLoader)}
+${codexLaunch('bunx', `"-y", "${CONTEXT7_MCP_PACKAGE}"`, [], useLoader)}
 `,
     tavily: `[mcp_servers.tavily]
 url = "https://mcp.tavily.com/mcp/"
@@ -211,7 +221,7 @@ bearer_token_env_var = "TAVILY_API_KEY"
 enabled = true
 `,
     supabase: `[mcp_servers.supabase]
-${codexLaunch('bunx', '"-y", "@supabase/mcp-server-supabase@latest"', SUPABASE_VARS, useLoader)}
+${codexLaunch('bunx', `"-y", ${tomlArgs(SUPABASE_MCP_ARGS)}`, SUPABASE_VARS, useLoader)}
 `,
     n8n: `[mcp_servers.n8n]
 ${codexLaunch('npx', '"-y", "n8n-mcp"', N8N_VARS, useLoader)}
@@ -786,12 +796,12 @@ describe('project-declared MCP set', () => {
     const configPath = join(root, '.codex/config.toml');
     // Same .env dependencies, different command shape: only the strict check sees it.
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
-      .replace('"@supabase/mcp-server-supabase@latest"]', '"@supabase/mcp-server-supabase@latest", "--read-only"]'));
+      .replace('"--project-ref=jdqemhewjrjuopssdurn"]', '"--project-ref=jdqemhewjrjuopssdurn", "--features=docs"]'));
 
     const errors = validateMcpParity(root);
     expect(errors).toHaveLength(1);
     expect(errors[0]).toStartWith('codex MCP supabase mismatch: expected ');
-    expect(errors[0]).toContain('--read-only');
+    expect(errors[0]).toContain('--features=docs');
   });
 
   test('compares the .env contract of an unknown server across hosts', () => {
@@ -873,7 +883,7 @@ describe('MCP .env loader', () => {
     const root = contractFixture();
     const configPath = join(root, '.codex/config.toml');
     writeFileSync(configPath, readFileSync(configPath, 'utf8')
-      .replace('args = ["-y", "@upstash/context7-mcp"]', `args = [${LEGACY_CODEX_ENV_LOADER_ARGS.map(a => JSON.stringify(a)).join(', ')}, "bunx", "-y", "@upstash/context7-mcp"]`));
+      .replace(`args = ["-y", "${CONTEXT7_MCP_PACKAGE}"]`, `args = [${LEGACY_CODEX_ENV_LOADER_ARGS.map(a => JSON.stringify(a)).join(', ')}, "bunx", "-y", "${CONTEXT7_MCP_PACKAGE}"]`));
 
     const { errors, warnings } = validateMcpParityFindings(root, { schemaOwner: false });
     expect(errors).toEqual([]);
