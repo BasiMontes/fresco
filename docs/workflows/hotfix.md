@@ -31,6 +31,37 @@ vercel inspect fresco-pro.vercel.app --wait --timeout=2m
 `vercel rollback` re-aliases the production domain within seconds. It does not
 delete the broken deploy. Then go to §2 for the real fix.
 
+### 1b. Rollback of Edge Functions
+
+`vercel rollback` does not touch Supabase: the Edge Functions are deployed to the
+shared project by `edge-functions-drift.yml` (on a `staging` push, once PR Check is
+green) and stay at the last deployed version. Supabase keeps no "previous version"
+to flip back to, so a rollback is a redeploy of the code from the last good commit.
+`scripts/deploy-changed-functions.ts` deploys from the checkout it runs in, so run it
+from a worktree on the good SHA:
+
+```bash
+good=<last good sha>   # commit whose functions worked
+bad=<sha now deployed>
+git worktree add ../fresco-rollback "$good"
+cd ../fresco-rollback
+SUPABASE_ACCESS_TOKEN=... bun scripts/deploy-changed-functions.ts "$bad" "$good" --dry-run  # which slugs
+SUPABASE_ACCESS_TOKEN=... bun scripts/deploy-changed-functions.ts "$bad" "$good"
+cd - && git worktree remove ../fresco-rollback
+```
+
+- It redeploys every function whose files differ between `$bad` and `$good`, or all of
+  them when `_shared/**` or `deno.json` differ. It keeps `--no-verify-jwt` on the two
+  cron-called functions.
+- The repo now disagrees with what is deployed. Land a revert of the bad change on
+  `staging` right after, or the next `staging` push redeploys the bad code. Until then
+  `check-functions-drift.ts` may report drift on the rolled-back functions; that is
+  expected.
+- Database changes are not part of this (see §5). A function that needs a column the
+  rollback removed from the code path still finds it in the database.
+- The automatic deploy waits for PR Check (up to 30 minutes), so it is the slow path
+  during an incident. The manual redeploy above is the fast one.
+
 ## 2. Forward-fix
 
 ```bash
