@@ -60,7 +60,8 @@ void mock.module('@/lib/supabase/service', () => ({
   }),
 }));
 void mock.module('@/lib/posthog/server', () => ({ ...realPosthog, captureServerEvent }));
-void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail }));
+// `mock.module` leaks into the files that run after this one: keep every export of the module (FRESCO-1024).
+void mock.module('@/lib/email/resend', () => ({ sendSubscriptionConfirmationEmail, sendWaitlistConfirmationEmail: async () => {} }));
 void mock.module('@/lib/billing/webhook-events', () => ({ claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent }));
 void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException, captureMessage }));
 
