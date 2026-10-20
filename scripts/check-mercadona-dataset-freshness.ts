@@ -10,6 +10,9 @@
 // Usage:
 //   bun scripts/check-mercadona-dataset-freshness.ts
 
+import { appendFileSync } from 'node:fs';
+import { isCommitSha, REVISION_ENV } from './lib/mercadona-dataset-revision.ts';
+
 export const DATASET_API = 'https://huggingface.co/api/datasets/datania/mercadona-catalog';
 const MS_PER_DAY = 86_400_000;
 
@@ -31,8 +34,14 @@ if (import.meta.main) {
     console.error(`::error::Could not read the dataset metadata (${res.status}).`);
     process.exit(1);
   }
-  const { lastModified } = await res.json() as { lastModified: string };
+  const { lastModified, sha } = await res.json() as { lastModified: string, sha: unknown };
   const age = datasetAgeDays(lastModified, new Date());
+
+  // FRESCO-1017: the commit the generator must read, so check and download see the same revision.
+  if (typeof sha !== 'string' || !isCommitSha(sha)) {
+    console.error(`::error::The dataset metadata carries no commit SHA (${REVISION_ENV} cannot be pinned). Refresh skipped.`);
+    process.exit(1);
+  }
 
   if (isStale(age)) {
     console.error(
@@ -40,5 +49,6 @@ if (import.meta.main) {
     );
     process.exit(1);
   }
-  console.log(`Dataset last updated ${lastModified} (${age} days ago). OK.`);
+  console.log(`Dataset last updated ${lastModified} (${age} days ago), revision ${sha}. OK.`);
+  if (process.env.GITHUB_OUTPUT) { appendFileSync(process.env.GITHUB_OUTPUT, `revision=${sha}\n`); }
 }

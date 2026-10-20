@@ -35,9 +35,9 @@ import { emparejarIngrediente } from '../lib/grocery/supermarket/matcher.ts';
 import { productoDeDataset } from '../lib/grocery/supermarket/mercadona-dataset.ts';
 import { normalizeNombre } from '../lib/text/normalize-nombre.ts';
 import { BASE_QUANTITIES } from '../supabase/functions/generate-shopping-list/consolidator.ts';
+import { datasetBase, datasetRevision } from './lib/mercadona-dataset-revision.ts';
 
 export const CACHE_DIR = new URL('.cache/mercadona-catalog/', import.meta.url);
-const HF_BASE = 'https://huggingface.co/datasets/datania/mercadona-catalog/resolve/main';
 
 /**
  * The subset of Mercadona's real product shape this script reads. Field
@@ -77,13 +77,15 @@ const NOT_FOUND_MARKER = '__NOT_FOUND__';
 
 async function cachedFetch(path: string): Promise<string> {
   await mkdir(CACHE_DIR, { recursive: true });
-  const cachePath = new URL(path.replaceAll('/', '_'), CACHE_DIR);
+  // The cache is keyed by revision, so a run pinned to a SHA never reads files a `main` run downloaded.
+  const revision = datasetRevision();
+  const cachePath = new URL(`${revision}__${path.replaceAll('/', '_')}`, CACHE_DIR);
   if (existsSync(cachePath)) {
     const cached = await readFile(cachePath, 'utf8');
     if (cached === NOT_FOUND_MARKER) { throw new Error(`fetch ${path} failed: 404 (cached)`); }
     return cached;
   }
-  const res = await fetch(`${HF_BASE}/${path}`);
+  const res = await fetch(`${datasetBase(revision)}/${path}`);
   if (!res.ok) {
     // Cache 404s too (e.g. layout-only category ids with no detail file) so
     // a re-run doesn't re-hit the network for the same permanent miss.
