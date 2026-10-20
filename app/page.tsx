@@ -34,7 +34,7 @@ export default async function GuestLandingPage() {
       {/* FRESCO-472: SoftwareApplication + FAQPage JSON-LD. The FAQPage block
           is derived from the same `FAQS` array the visible accordion below
           maps over, so it can never drift from the rendered content. */}
-      <JsonLd data={softwareApplicationJsonLd()} />
+      <JsonLd data={softwareApplicationJsonLd(prices)} />
       <JsonLd data={faqJsonLd(FAQS)} />
       <SiteNav />
       {/* FRESCO-315: `<main>` wraps only the content sections — SiteNav
