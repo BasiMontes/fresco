@@ -20,7 +20,12 @@ export async function revealCalendarDay(page: Page, dia: string): Promise<void> 
   const slots = page.locator(`[data-testid^="calendar_slot_${dia}_"]`);
   const previousDay = page.getByTestId('calendar_day_nav_prev');
 
-  await expect(page.locator('[data-testid^="calendar_slot_"]').first()).toBeVisible({ timeout: 30_000 });
+  const firstSlot = page.locator('[data-testid^="calendar_slot_"]').first();
+  const emptyState = page.getByTestId('calendar_empty_state');
+  // A week with no menu shows the empty state and no slots: there is no day to reveal (scenarios that
+  // start from an empty calendar share the login helper with the ones that seed a full week).
+  await expect(firstSlot.or(emptyState)).toBeVisible({ timeout: 30_000 });
+  if (await emptyState.isVisible()) { return; }
   await page.waitForFunction(() => {
     const slot = document.querySelector('[data-testid^="calendar_slot_"]');
     return slot !== null && Object.keys(slot).some(key => key.startsWith('__reactFiber$'));
