@@ -5,6 +5,7 @@ import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { loginToApp } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
+import { revealCalendarDay } from './support/calendar-day';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @calendario,
@@ -26,6 +27,7 @@ const ctx: Ctx = { comidaNombre: '', cenaNombre: '', testUser: null };
 async function loginAndGoToCalendar(page: Page, testUser: TestUser): Promise<void> {
   await loginToApp(page, testUser);
   await page.goto('/calendar');
+  await revealCalendarDay(page, 'lunes');
 }
 
 Given(/^que el usuario tiene un menú semanal generado con los 21 huecos llenos$/, async ({ page, request, testUserFactory }) => {

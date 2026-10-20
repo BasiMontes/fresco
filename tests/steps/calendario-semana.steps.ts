@@ -4,6 +4,7 @@ import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { currentWeekMonday, isoWeekOf, loginToApp, mondayOfWeekContaining, restHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
+import { revealCalendarDay } from './support/calendar-day';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @calendario,
@@ -35,6 +36,7 @@ function adjacentWeekIso(delta: number): string {
 async function loginAndGoToCalendar(page: import('@playwright/test').Page, testUser: TestUser): Promise<void> {
   await loginToApp(page, testUser);
   await page.goto('/calendar');
+  await revealCalendarDay(page, 'lunes');
 }
 
 // ── Navegación de semana ──────────────────────────────────────────────────
@@ -113,6 +115,7 @@ Then(/^recibe un menú semanal completo para esa semana sin salir de \/calendar$
   // (shopping-list.steps.ts). Bounded by playwright.config.ts's 90s
   // per-test timeout.
   await expect(page.getByTestId('calendar_empty_state')).toHaveCount(0, { timeout: 90_000 });
+  await revealCalendarDay(page, 'lunes');
   await expect(page.getByTestId('calendar_slot_lunes_comida')).toBeVisible();
   await expect(page).toHaveURL(/\/calendar/);
 

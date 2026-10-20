@@ -5,6 +5,7 @@ import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { currentWeekMonday, loginToApp, restHeaders, serviceRoleHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
+import { revealCalendarDay } from './support/calendar-day';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @calendario,
@@ -67,6 +68,7 @@ async function seedTwoDistinctLunches(request: import('@playwright/test').APIReq
 async function loginAndGoToCalendar(page: Page, testUser: TestUser): Promise<void> {
   await loginToApp(page, testUser);
   await page.goto('/calendar');
+  await revealCalendarDay(page, 'lunes');
 }
 
 async function dragLunesOntoMartes(page: Page): Promise<void> {
@@ -141,6 +143,7 @@ Given(/^que el usuario reordenó su menú previamente$/, async ({ page, request,
 
 When(/^recarga \/calendar$/, async ({ page }) => {
   await page.reload();
+  await revealCalendarDay(page, 'lunes');
 });
 
 Then(/^ve el menú en el orden que dejó, no el orden original generado$/, async ({ page }) => {

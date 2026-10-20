@@ -8,7 +8,7 @@ import { CONTACT_EMAIL } from '@/lib/legal/entity';
  * account owner until a domain is verified.
  *
  * One file for `gmail-smtp.ts` and `resend.ts` on purpose: `mock.module` leaks across test files, and
- * the second one needs the first one real.
+ * the second one needs the first one real. `resend.ts` is loaded as its own instance for the same reason.
  */
 
 const resendSend = mock(async (_message: unknown): Promise<{ error: { message: string } | null }> => ({ error: null }));
@@ -18,7 +18,10 @@ const createTransport = mock((_options: unknown) => ({ sendMail }));
 void mock.module('nodemailer', () => ({ default: { createTransport } }));
 
 const { GMAIL_SMTP_PASSWORD_ENV, isGmailSmtpConfigured, sendViaGmailSmtp } = await import('./gmail-smtp');
-const { sendSubscriptionConfirmationEmail } = await import('./resend');
+// The query string makes Bun load `resend.ts` again. Without it a file that ran earlier and mocked
+// `@/lib/email/resend` hands this one its mock, and every assertion below sees zero calls (FRESCO-1024).
+const realResendSpecifier = './resend.ts?real';
+const { sendSubscriptionConfirmationEmail } = await import(realResendSpecifier) as typeof import('./resend');
 
 const params = { to: 'ana@example.com', priceFormatted: '4,99 €', interval: 'month' as const, nextRenewalDateFormatted: '24 de octubre de 2026', manageSubscriptionUrl: 'https://fresco-pro.vercel.app/profile' };
 

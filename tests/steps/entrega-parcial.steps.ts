@@ -4,6 +4,7 @@ import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
 import { currentWeekMonday, loginToApp, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { revealCalendarDay } from './support/calendar-day';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @generacion-menu,
@@ -74,6 +75,7 @@ Then(/^ve esa franja marcada como "Sin receta", sin crashear$/, async ({ page })
 
 Then(/^no puede arrastrarla ni marcarla como cocinada\/descartada$/, async ({ page }) => {
   await page.goto('/calendar');
+  await revealCalendarDay(page, 'lunes');
   await expect(page.getByTestId('calendar_slot_lunes_desayuno_sin_receta')).toBeVisible();
   await expect(page.getByTestId('calendar_slot_lunes_desayuno_mark_cocinada')).toHaveCount(0);
   await expect(page.getByTestId('calendar_slot_lunes_desayuno_mark_descartada')).toHaveCount(0);
