@@ -5,6 +5,15 @@ name: refresh-mercadona-catalog
 # Tuesday. It opens a PR only when prices actually changed. It uses a personal
 # access token (CATALOG_REFRESH_TOKEN) because a PR opened with the default
 # GITHUB_TOKEN does not trigger the required `pr-check` workflow.
+#
+# FRESCO-1017 (audit 7b, A7-SUPPLY-03/05):
+#   - The token is NOT persisted in .git/config. `bun install` and the generators run third-party
+#     and dataset-derived code, and anything that can read the checkout could read a persisted
+#     token. The checkout uses the default read-only GITHUB_TOKEN with persist-credentials: false,
+#     and the PAT reaches only the last step, as an env var, to push and open the PR.
+#   - The dataset revision is resolved ONCE by the freshness check (the commit SHA of
+#     datania/mercadona-catalog) and passed to the generator, so the check and the download read the
+#     same revision. The PR body names it so the reviewer can open exactly that tree.
 
 on:
   schedule:
@@ -25,14 +34,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: staging
-          token: ${{ secrets.CATALOG_REFRESH_TOKEN }}
+          persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ${{ env.BUN_VERSION }}
       - run: bun install --frozen-lockfile
-      - name: Check the dataset is fresh
+      - name: Check the dataset is fresh and resolve its revision
+        id: freshness
         run: bun scripts/check-mercadona-dataset-freshness.ts
-      - name: Regenerate the catalog
+      - name: Regenerate the catalog from that revision
+        env:
+          MERCADONA_DATASET_REVISION: ${{ steps.freshness.outputs.revision }}
         run: bun scripts/gen-mercadona-catalog.ts
       # The ingredient dictionary is generated from the catalog (pack sizes), so
       # it must be regenerated in the same PR or its drift test fails.
@@ -46,6 +58,7 @@ jobs:
       - name: Open a PR when prices changed
         env:
           GH_TOKEN: ${{ secrets.CATALOG_REFRESH_TOKEN }}
+          DATASET_REVISION: ${{ steps.freshness.outputs.revision }}
         run: |
           files="lib/grocery/mercadona-catalog.generated.ts lib/grocery/ingredient-dictionary.ts"
           if git diff --quiet -- $files; then
@@ -64,7 +77,9 @@ jobs:
           git checkout -b "$branch"
           git add $files
           git commit -m "chore(FRESCO-762): refresh the Mercadona catalog prices"
-          git push origin "$branch"
+          # The checkout kept no credentials, so the push carries the token in the URL. It is not written
+          # to .git/config and the step's env is gone when the job ends.
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
           gh pr create --base staging \
             --title "chore(FRESCO-762): refresh the Mercadona catalog prices" \
-            --body "Weekly regeneration of \`lib/grocery/mercadona-catalog.generated.ts\` and \`lib/grocery/ingredient-dictionary.ts\` from the community dataset. Jira: FRESCO-762"
+            --body "Weekly regeneration of \`lib/grocery/mercadona-catalog.generated.ts\` and \`lib/grocery/ingredient-dictionary.ts\` from the community dataset, read at the pinned revision \`${DATASET_REVISION}\` (https://huggingface.co/datasets/datania/mercadona-catalog/tree/${DATASET_REVISION}). Jira: FRESCO-762"
