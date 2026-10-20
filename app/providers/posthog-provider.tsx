@@ -8,6 +8,7 @@ import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { getPlanTierForAnalyticsLazy, watchAuthState } from '@/lib/client-api/identity';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { loadPosthog } from '@/lib/posthog/load';
+import { setAnalyticsTier } from '@/lib/posthog/mark-events';
 import { derivePersonProperties } from '@/lib/posthog/person-properties';
 
 // Module-level, not component state: React StrictMode double-invokes effects
@@ -123,6 +124,8 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
       }
 
       identifyUser(user.id, derivePersonProperties(user, plan));
+      // FRESCO-1031: the dish-mark events reuse this read instead of making their own.
+      setAnalyticsTier(plan);
     }
 
     const stopWatching = watchAuthState({
@@ -134,6 +137,7 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
         }
         if (event === 'SIGNED_OUT') {
           identifiedKey.current = null;
+          setAnalyticsTier(null);
         }
         // FRESCO-240: `/login`'s own SESSION_STARTED capture only fires on an
         // explicit credential submission, missing a returning user whose

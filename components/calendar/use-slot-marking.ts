@@ -4,7 +4,8 @@ import { EdgeFunctionError, updateRecipeStatus } from '@/lib/api/edge-functions'
 import { slotId } from '@/lib/calendar/apply-slot-swap';
 import { getAccessToken } from '@/lib/client-api/auth';
 import { listaDesactualizadaDeSlot } from '@/lib/client-api/shopping-list';
-import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
+import { captureEvent } from '@/lib/posthog/events';
+import { committedMarkEvent, undoneMarkEvent } from '@/lib/posthog/mark-events';
 
 /**
  * FRESCO-373 (A4-M27): how long the "Deshacer" snackbar stays before the mark commits. FRESCO-1014 (A7-UI-15,
@@ -63,19 +64,10 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
         { meal_plan_recipe_id: slotIds[mark.dia][mark.tipo], estado: mark.estado },
         accessToken,
       );
-      if (mark.estado === 'pendiente') {
-        // FRESCO-1014: a committed mark taken back (not the in-window "Deshacer", which never reaches the server).
-        captureEvent(POSTHOG_EVENTS.RECIPE_MARK_UNDONE, { estado: mark.prevEstado, committed: true });
-      }
-      else {
-        captureEvent(
-          mark.estado === 'cocinada'
-            // "usados" half of the North-star KPI (ADR-0013).
-            ? POSTHOG_EVENTS.RECIPE_MARKED_COOKED
-            // FRESCO-366: discard rate per menu is a product-quality metric.
-            : POSTHOG_EVENTS.RECIPE_MARKED_DISCARDED,
-        );
-      }
+      // FRESCO-1014: `pendiente` is a committed mark taken back (not the in-window "Deshacer", which never reaches
+      // the server). FRESCO-1031: every mark event carries the plan tier.
+      const event = committedMarkEvent(mark.estado, mark.prevEstado);
+      captureEvent(event.name, event.properties);
       // FRESCO-1010: discarding a dish takes its ingredients off the list, but only once the list is
       // updated. The database has flagged it by now; say so (cooking a dish does not change the list).
       if (mark.estado === 'descartada' && onListaDesactualizada && await listaDesactualizadaDeSlot(slotIds[mark.dia][mark.tipo])) {
@@ -168,7 +160,8 @@ export function useSlotMarking({ slotIds, estados, setEstados, setErrorMessage, 
       ...current,
       [mark.dia]: { ...current[mark.dia], [mark.tipo]: mark.prevEstado },
     }));
-    captureEvent(POSTHOG_EVENTS.RECIPE_MARK_UNDONE, { estado: mark.estado });
+    const event = undoneMarkEvent(mark.estado);
+    captureEvent(event.name, event.properties);
     pendingMarkRef.current = null;
     setPendingMark(null);
   }, [setEstados]);
