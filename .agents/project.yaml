@@ -171,6 +171,8 @@ autonomous_delivery:
 updater:
   # FRESCO-830 / ADR-0039: skill files that carry Fresco-owned doctrine (reproduction-or-rejection FRESCO-313, Definition of Done FRESCO-404, AC testability I22 FRESCO-320). scripts/skill-gates.test.ts fails if a gate or an entry here disappears.
   protected_paths:
+    - cli/lib/agent-compatibility-contracts.ts # FRESCO-1017: pins the MCP packages to exact versions and the Supabase MCP to --read-only --project-ref; upstream says @latest, so a sync would revert it
+    - cli/lib/agent-compatibility.test.ts # FRESCO-1017: the test of that contract, built from the same exported constants
     - cli/doctor.ts # setup:doctor honors required:false in the var manifest (n8n and QA_E2E_* are not pending for Fresco); a sync would revert it
     - INSTALLER.md # FRESCO-956: carries our volatile-ok-file marker so docs:check stays green; a sync would drop it
     - scripts/lint-skills.ts # FRESCO-960: also reads package-only PROJECT_LEVEL_SKILLS entries as community skills, so a restored resend-cli is not KIND-MISSING; a sync would revert it
