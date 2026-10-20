@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly } from './git-promote';
+import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationVersion, parseAppliedVersions, pendingMigrations } from './git-promote';
 
 /**
  * FRESCO-829 (external audit 6): the staging -> main promotion is a manual
@@ -92,5 +92,92 @@ describe('helpers', () => {
   test('hasPullRequestRef needs the (#N) suffix of a squash merge', () => {
     expect(hasPullRequestRef('feat(FRESCO-1): x (#472)')).toBe(true);
     expect(hasPullRequestRef('feat: mentions #472 in the middle')).toBe(false);
+  });
+});
+
+/**
+ * FRESCO-1023: a migration is applied by hand (`supabase db push --linked`), not by a merge or a
+ * promotion, so a promotion can ship code that calls a function the hosted project does not have yet.
+ * The script warns; it never refuses.
+ */
+const FILES = [
+  'supabase/migrations/20261019210000_register_shopping_list_and_export_rate_limits.sql',
+  'supabase/migrations/20261020100000_cron_job_heartbeats.sql',
+  'supabase/migrations/20261020110000_diet_labels_follow_their_definition.sql',
+];
+
+describe('migrationVersion', () => {
+  test('is the 14 digits before the first underscore', () => {
+    expect(migrationVersion(FILES[2])).toBe('20261020110000');
+    expect(migrationVersion('20261020110000_x.sql')).toBe('20261020110000');
+  });
+
+  test.each(['supabase/migrations/README.md', 'supabase/migrations/2026_x.sql', 'supabase/migrations/20261020110000.sql', 'supabase/migrations/20261020110000_x.txt'])('is null for %p', (path) => {
+    expect(migrationVersion(path)).toBeNull();
+  });
+});
+
+describe('pendingMigrations', () => {
+  test('lists only the files whose version the hosted project has not applied, by file name', () => {
+    const applied = new Set(['20261019210000', '20261020100000']);
+
+    expect(pendingMigrations(FILES, applied)).toEqual(['20261020110000_diet_labels_follow_their_definition.sql']);
+  });
+
+  test('is empty when everything is applied', () => {
+    expect(pendingMigrations(FILES, new Set(FILES.map(file => migrationVersion(file) as string)))).toEqual([]);
+  });
+
+  test('ignores a file that is not a migration instead of calling it pending', () => {
+    expect(pendingMigrations(['supabase/migrations/README.md'], new Set())).toEqual([]);
+  });
+
+  test('returns them oldest first whatever order git lists them in', () => {
+    expect(pendingMigrations([FILES[2], FILES[0]], new Set())).toEqual([
+      '20261019210000_register_shopping_list_and_export_rate_limits.sql',
+      '20261020110000_diet_labels_follow_their_definition.sql',
+    ]);
+  });
+});
+
+describe('parseAppliedVersions', () => {
+  const json = '{"migrations":[{"local":"20261020100000","remote":"20261020100000"},{"local":"20261020110000","remote":""}],"message":"Migrations listed"}';
+
+  test('keeps the remote versions and drops the empty ones, as a local-only migration reports', () => {
+    expect([...parseAppliedVersions(json) as Set<string>]).toEqual(['20261020100000']);
+  });
+
+  test('finds the JSON when progress text surrounds it', () => {
+    expect(parseAppliedVersions(`Connecting to remote database...\n${json}\nA new version is available`)?.size).toBe(1);
+  });
+
+  test.each(['', 'not json', '{"migrations":', '{"other":1}', '{"migrations":"x"}'])('is null, never an empty set, for %p', (output) => {
+    expect(parseAppliedVersions(output)).toBeNull();
+  });
+});
+
+describe('migrationNotice', () => {
+  test('is ok and counts the files when all are applied', () => {
+    const notice = migrationNotice(FILES, new Set(FILES.map(file => migrationVersion(file) as string)));
+
+    expect(notice.level).toBe('ok');
+    expect(notice.lines[0]).toContain('all 3 migrations');
+  });
+
+  test('warns, names each pending migration and says when to apply it', () => {
+    const notice = migrationNotice(FILES, new Set(['20261019210000']));
+
+    expect(notice.level).toBe('warn');
+    expect(notice.lines[0]).toContain('2 migration(s)');
+    expect(notice.lines.join('\n')).toContain('20261020100000_cron_job_heartbeats.sql');
+    expect(notice.lines.join('\n')).toContain('supabase db push --linked --dry-run');
+    expect(notice.lines.join('\n')).toContain('BEFORE promoting');
+  });
+
+  test('says it did NOT check when the hosted list is unreadable, instead of reporting all applied', () => {
+    const notice = migrationNotice(FILES, null);
+
+    expect(notice.level).toBe('warn');
+    expect(notice.lines[0]).toContain('NOT checked');
   });
 });

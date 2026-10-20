@@ -17,6 +17,16 @@
 
 Only the latest run counts: a green re-run after a red one passes.
 
+It also **warns, and never refuses**, about migrations (FRESCO-1023). A merge or a promotion does not apply a migration: it goes by hand with `supabase db push --linked`, and a deployment that reaches production first breaks whatever calls the function or column it creates (`record_consents` answered 404 after the promotion of 2026-10-19, and the same happened with FRESCO-770). After the gate passes, the script compares the migration files of the SHA with `supabase migration list --linked` and prints one of:
+
+| Line | Meaning |
+|---|---|
+| `✔ migrations: all N migrations in this SHA are applied` | nothing to do |
+| `! migrations: K migration(s) ... are NOT applied` | lists them; apply with `supabase db push --linked --dry-run`, then without `--dry-run`. Apply them **before** promoting when the code calls something they create, after is fine when they only change data |
+| `! migrations: could not read the hosted migration list` | the Supabase CLI is missing, not logged in or the project is not linked, so nothing was checked: run `supabase migration list --linked` by hand |
+
+It is a warning because a pending migration is sometimes intended (a data migration applied right after the promotion). The exit code is not affected.
+
 ## Usage
 
 ```bash
