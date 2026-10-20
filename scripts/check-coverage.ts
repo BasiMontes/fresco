@@ -77,6 +77,7 @@
  *   bun scripts/check-coverage.ts --print --unloaded   # + the unloaded files, by risk class
  */
 
+import { appendFileSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -104,7 +105,7 @@ import { join } from 'node:path';
  * 2026-10-19 (FRESCO-991): raised to functions 89.0 / lines 89.7 (measured
  *   89.60 / 90.10) after the Edge handler tests landed.
  */
-const FLOOR = { functions: 89.0, lines: 89.7 } as const;
+export const FLOOR = { functions: 89.0, lines: 89.7 } as const;
 
 /**
  * Floor for the HONEST line coverage (unloaded files counted as zero). Only
@@ -119,7 +120,7 @@ const FLOOR = { functions: 89.0, lines: 89.7 } as const;
  * get-shopping-list-suggestions, delete-catalog-recipe) and the consent-gated
  * PostHog capture were the highest-risk files no test imported.
  */
-const HONEST_FLOOR_LINES = 63.0;
+export const HONEST_FLOOR_LINES = 63.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
@@ -130,9 +131,9 @@ const GENERATED_FILES = new Set(['lib/supabase/types.ts']);
 /** Path prefixes whose files are not part of the ratchet. */
 const IGNORE_PREFIXES = ['tests/', 'scripts/', 'cli/', 'bun-test-setup.ts'];
 
-interface Totals { fnFound: number, fnHit: number, lineFound: number, lineHit: number, loaded: Set<string> }
+export interface Totals { fnFound: number, fnHit: number, lineFound: number, lineHit: number, loaded: Set<string> }
 
-function parseLcov(lcov: string): Totals {
+export function parseLcov(lcov: string): Totals {
   const t: Totals = { fnFound: 0, fnHit: 0, lineFound: 0, lineHit: 0, loaded: new Set() };
   let currentFileIgnored = false;
 
@@ -162,6 +163,40 @@ function parseLcov(lcov: string): Totals {
 
 function pct(hit: number, found: number): number {
   return found === 0 ? 100 : Math.round((10_000 * hit) / found) / 100;
+}
+
+export interface Figures { functions: number, lines: number, honestLines: number }
+
+/** The three figures. HONEST counts the lines of every file no test imports as found and not hit (FRESCO-795). */
+export function figuresOf(totals: Totals, unloadedLines: number): Figures {
+  return {
+    functions: pct(totals.fnHit, totals.fnFound),
+    lines: pct(totals.lineHit, totals.lineFound),
+    honestLines: pct(totals.lineHit, totals.lineFound + unloadedLines),
+  };
+}
+
+/** Which floors the figures break. Empty means the ratchet holds. */
+export function floorViolations({ functions, lines, honestLines }: Figures): string[] {
+  const below: string[] = [];
+  if (functions < FLOOR.functions) { below.push(`functions ${functions.toFixed(2)} % < floor ${FLOOR.functions.toFixed(2)} %`); }
+  if (lines < FLOOR.lines) { below.push(`lines ${lines.toFixed(2)} % < floor ${FLOOR.lines.toFixed(2)} %`); }
+  if (honestLines < HONEST_FLOOR_LINES) { below.push(`honest lines ${honestLines.toFixed(2)} % < floor ${HONEST_FLOOR_LINES.toFixed(2)} %`); }
+  return below;
+}
+
+/** FRESCO-990: both figures side by side for the job summary of the run, the honest one first. */
+export function summaryMarkdown({ functions, lines, honestLines }: Figures, unloadedFiles: number): string {
+  return [
+    '### Unit-test coverage',
+    '',
+    '| Figure | Value | Floor |',
+    '|---|---|---|',
+    `| Honest lines (cobertura honesta, counts ${unloadedFiles} files no test imports as 0) | ${honestLines.toFixed(2)} % | ${HONEST_FLOOR_LINES.toFixed(2)} % |`,
+    `| Loaded lines (only files some test imports) | ${lines.toFixed(2)} % | ${FLOOR.lines.toFixed(2)} % |`,
+    `| Loaded functions | ${functions.toFixed(2)} % | ${FLOOR.functions.toFixed(2)} % |`,
+    '',
+  ].join('\n');
 }
 
 function isSourceFile(path: string): boolean {
@@ -254,12 +289,10 @@ async function main(): Promise<void> {
   }
 
   const totals = parseLcov(lcov);
-  const functions = pct(totals.fnHit, totals.fnFound);
-  const lines = pct(totals.lineHit, totals.lineFound);
-
   const unloadedFiles = await listUnloadedFiles(totals.loaded);
   const unloaded = { files: unloadedFiles.length, lines: unloadedFiles.reduce((n, f) => n + f.lines, 0) };
-  const honestLines = pct(totals.lineHit, totals.lineFound + unloaded.lines);
+  const figures = figuresOf(totals, unloaded.lines);
+  const { functions, lines, honestLines } = figures;
 
   console.log('');
   console.log('─'.repeat(64));
@@ -273,14 +306,16 @@ async function main(): Promise<void> {
 
   if (listUnloaded) { printUnloaded(unloadedFiles); }
 
+  // FRESCO-990: on a CI run the two figures also go to the job summary, where the PR reviewer reads them.
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, summaryMarkdown(figures, unloaded.files));
+  }
+
   if (printOnly) {
     process.exit(0);
   }
 
-  const below: string[] = [];
-  if (functions < FLOOR.functions) { below.push(`functions ${functions.toFixed(2)} % < floor ${FLOOR.functions.toFixed(2)} %`); }
-  if (lines < FLOOR.lines) { below.push(`lines ${lines.toFixed(2)} % < floor ${FLOOR.lines.toFixed(2)} %`); }
-  if (honestLines < HONEST_FLOOR_LINES) { below.push(`honest lines ${honestLines.toFixed(2)} % < floor ${HONEST_FLOOR_LINES.toFixed(2)} %`); }
+  const below = floorViolations(figures);
 
   if (below.length > 0) {
     console.error('');
@@ -304,4 +339,6 @@ async function main(): Promise<void> {
   process.exit(0);
 }
 
-await main();
+if (import.meta.main) {
+  await main();
+}
