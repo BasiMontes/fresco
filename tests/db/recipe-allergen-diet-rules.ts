@@ -121,7 +121,7 @@ const OWN_BROTH = /\bsu caldo\b/g;
 /**
  * FRESCO-998 (audit 7b: A7-SAFEA-01 to -45, A7-SAFEB-14 to -17): the diet flags a definition can
  * break. Each rule is a keyword list over the normalized ingredients and steps, with the phrases
- * that look like the keyword and are not. The migration `20261019110000_*` mirrors every list in
+ * that look like the keyword and are not. The migration `20261020110000_*` mirrors every list in
  * SQL, so the database and this oracle cannot disagree (the coherence test proves it).
  */
 const PASTE_NOT_PASTA = '|pasta de (?:curry|tomate|miso|sesamo|guindilla|ajo|anchoas?|dientes|pimiento|pimenton)';
