@@ -7,7 +7,10 @@ name: Edge functions (auto-deploy + drift check)
 # weekly-only cadence of the migration check would have let a function drift sit
 # for days.
 #
-#   deploy        on `push: [staging]` only. Redeploys the functions that
+#   deploy        on `push: [staging]` only. First waits for the PR Check run on
+#                 the pushed SHA to finish green (FRESCO-1017: Edge code must not
+#                 reach production Supabase before the gate that vets it), then
+#                 redeploys the functions that
 #                 changed in the pushed range (all of them when
 #                 `_shared/**` / `deno.json` changed). `staging` is the last hop
 #                 before the manual `staging -> main` fast-forward, so after this
@@ -38,6 +41,7 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: read
 
 jobs:
   deploy:
@@ -46,7 +50,7 @@ jobs:
     # schedule, drift-check alone runs and opens an issue.
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     # A redeploy mutates the shared Supabase project (jdqemhewjrjuopssdurn),
     # which the e2e suite runs against. Reuse pr-check.yml's / post-deploy-smoke's
     # concurrency group so a function is never redeployed mid-e2e-run.
@@ -80,6 +84,29 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::secret SUPABASE_ACCESS_TOKEN is not set"; exit 1; }
+
+      - name: Wait for the PR Check on this SHA (FRESCO-1017)
+        # The deploy used to start the moment the push landed, in parallel with
+        # PR Check, so a red SHA still reached the shared Supabase project. Fail
+        # closed: no run found, a timeout or any conclusion but `success` stops
+        # the deploy. `drift-check` then goes red on the promoted commit.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          AFTER: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 60); do
+            read -r status conclusion < <(gh run list --workflow pr-check.yml --branch staging --commit "$AFTER" --event push --limit 1 --json status,conclusion --jq '.[0] | "\(.status // "none") \(.conclusion // "none")"' || echo "none none")
+            echo "attempt $attempt: PR Check status=$status conclusion=$conclusion"
+            if [ "$status" = "completed" ]; then
+              [ "$conclusion" = "success" ] && exit 0
+              echo "::error::PR Check on $AFTER concluded $conclusion; Edge Functions NOT deployed"
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "::error::PR Check on $AFTER did not finish in 30 minutes; Edge Functions NOT deployed"
+          exit 1
 
       - name: Deploy the functions that changed
         env:
