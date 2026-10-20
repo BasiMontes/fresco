@@ -29,11 +29,21 @@ export interface DialogProps {
   'dismissible'?: boolean
 }
 
+/** `useSyncExternalStore` subscription for a value that never changes after mount. */
+function subscribeNever() {
+  return () => {};
+}
+
 const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
 export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, className, 'data-testid': dataTestId, dismissible = true }: DialogProps) {
   const contentRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocused = React.useRef<HTMLElement | null>(null);
+
+  // FRESCO-1035: a dialog rendered open from the first render (the re-consent dialog in the app layout)
+  // reaches the portal while the server renders, where `document` does not exist, and every route of
+  // that account answered 500. False on the server and during hydration, true once mounted on the client.
+  const mounted = React.useSyncExternalStore(subscribeNever, () => true, () => false);
 
   // Closing-state render model (FRESCO-247, transitions-dev 06-modal.md) —
   // stay mounted through the close transition instead of hard-unmounting, so
@@ -109,7 +119,9 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
   // effect would only ever run while `open` was still false and never again.
   // Found live: focus silently never moved into the dialog on open.
   React.useEffect(() => {
-    if (!open) { return; }
+    // `mounted` is a dependency because the node only exists once it is true: without it a dialog that is
+    // open from the first render would run this before `contentRef` is set and focus would never move in.
+    if (!open || !mounted) { return; }
 
     previouslyFocused.current = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
@@ -147,9 +159,9 @@ export function Dialog({ open, onOpenChange, children, 'aria-label': ariaLabel, 
       document.body.style.overflow = previousOverflow;
       previouslyFocused.current?.focus();
     };
-  }, [open]);
+  }, [open, mounted]);
 
-  if (!shouldRender) { return null; }
+  if (!shouldRender || !mounted) { return null; }
 
   return createPortal(
     <div
