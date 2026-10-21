@@ -2,8 +2,8 @@ import type { DiaSemana, ShoppingListItem } from '@/lib/api/types';
 import { capitalize } from '@/lib/utils';
 
 /** FRESCO-1028 — owner-set thresholds (2026-10-21): from 14 days the age is highlighted, past 30 the price is hidden. */
-export const PRECIO_ANTIGUO_DESDE_DIAS = 14;
-export const PRECIO_OCULTO_TRAS_DIAS = 30;
+const PRECIO_ANTIGUO_DESDE_DIAS = 14;
+const PRECIO_OCULTO_TRAS_DIAS = 30;
 
 export type FrescuraPrecio = 'reciente' | 'antiguo' | 'oculto' | 'sin_fecha';
 
