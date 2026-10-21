@@ -23,6 +23,9 @@ import { buildCases, oracleRules } from './recipe-tag-parity-cases';
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
 
+/** A thousand RPC calls take longer than bun's 5 s default per test. */
+const TIMEOUT_MS = 90_000;
+
 interface RecipeRow {
   slug: string
   nombre: string
@@ -64,7 +67,7 @@ describe.skipIf(!(RUN && reachable))('recipe_tag_findings (SQL) equals the TypeS
 
     expect(probes.length).toBeGreaterThan(900);
     expect(different).toEqual([]);
-  });
+  }, TIMEOUT_MS);
 
   test('every recipe of the catalogue gets the same rule keys, active or not', async () => {
     const rows = await restAll<RecipeRow>('recipes', {
@@ -84,7 +87,7 @@ describe.skipIf(!(RUN && reachable))('recipe_tag_findings (SQL) equals the TypeS
 
     expect(rows.length).toBeGreaterThan(1000);
     expect(different).toEqual([]);
-  });
+  }, TIMEOUT_MS);
 
   test('the rule helpers are not an API: anon cannot execute them', async () => {
     const { status } = await rpc('recipe_tag_findings', { p_alergenos: [], p_dieta: {}, p_ingredientes: ['leche'], p_pasos: [] });
