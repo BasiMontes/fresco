@@ -23,7 +23,9 @@ describe.skipIf(!(RUN && reachable))('recipes.ingredientes_principales distinct 
       method: 'POST',
       serviceRole: true,
       prefer: 'return=representation',
-      body: { nombre: slug, slug, ingredientes_principales: ingredientes },
+      // Inactive on purpose (FRESCO-1020): this file tests the distinct check, which does not depend on the
+      // recipe being active, and an ACTIVE recipe with "tempeh" and no `soja` tag is refused by the tag barrier first.
+      body: { nombre: slug, slug, ingredientes_principales: ingredientes, activo: false },
     });
     const id = (res.body as { id?: string }[] | null)?.[0]?.id;
     if (id) {
