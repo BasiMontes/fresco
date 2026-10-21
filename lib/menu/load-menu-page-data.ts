@@ -5,8 +5,9 @@ import type { Database } from '@/lib/supabase/types';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getMealPlanForWeek } from '@/lib/api/meal-plan';
 import { getAvailableRecipesCount, getLatestAvailableRecipes } from '@/lib/api/recipes';
-import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre } from '@/lib/api/user-profile';
+import { getHasUnseenNotifications, getUserDietaryPreferences, getUserNombre, getUserPlan } from '@/lib/api/user-profile';
 import { getSpendTrend } from '@/lib/menu/get-spend-trend';
+import { getPriorMarks, proWouldHaveExcluded } from '@/lib/menu/pro-would-have-excluded';
 
 interface LoadMenuPageDataArgs {
   userId: string | undefined
@@ -21,7 +22,7 @@ interface LoadMenuPageDataArgs {
  * can't take the others down with it.
  */
 export async function loadMenuPageData(supabase: SupabaseClient<Database>, { userId, semanaIso }: LoadMenuPageDataArgs) {
-  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend] = await Promise.all([
+  const [nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend, userPlan, priorMarks] = await Promise.all([
     getUserNombre(supabase, userId).catch((error) => {
       // Same conservative fallback as every other server-side profile read on
       // this page: a real read failure falls back to `null` (generic
@@ -85,7 +86,21 @@ export async function loadMenuPageData(supabase: SupabaseClient<Database>, { use
       console.error('[/menu] getSpendTrend failed, hiding the spend comparison', error);
       return [];
     }),
+    // FRESCO-1027: the two reads behind "what Pro would have changed" — a Free user's own plan tier and the
+    // marks they left in the two weeks before this one. A failed read hides the notice (an unknown tier is
+    // never treated as Free), same fail-soft pattern as the rest of this page.
+    getUserPlan(supabase, userId).catch((error) => {
+      console.error('[/menu] getUserPlan failed, hiding the Pro preview', error);
+      return null;
+    }),
+    (userId ? getPriorMarks(supabase, { semanaIso, userId }) : Promise.resolve([])).catch((error) => {
+      console.error('[/menu] getPriorMarks failed, hiding the Pro preview', error);
+      return [];
+    }),
   ]);
 
-  return { nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend };
+  // Only a Free user sees it: Pro already gets that exclusion applied to the menu itself.
+  const proPreview = userPlan === 'free' && plan ? proWouldHaveExcluded({ menu: plan.menu, priorMarks }) : [];
+
+  return { nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend, proPreview };
 }

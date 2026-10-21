@@ -26,6 +26,12 @@ export const POSTHOG_EVENTS = {
   // FRESCO-1028: the shopper opened a row's product at a supermarket. With `price_state` it says whether the
   // price shown (fresh, old, hidden, undated) influences the click.
   SUPERMARKET_LINK_CLICKED: 'supermarket_link_clicked',
+  // FRESCO-1027: the Free-to-Pro learning preview on /menu ("with Pro you would not have seen these N dishes
+  // again"). `pro_preview_shown` fires when it paints, `pro_preview_clicked` on its link to the plan, and
+  // `learning_explanation_viewed` when a Pro user sees the explanation of what their menu learned.
+  PRO_PREVIEW_SHOWN: 'pro_preview_shown',
+  PRO_PREVIEW_CLICKED: 'pro_preview_clicked',
+  LEARNING_EXPLANATION_VIEWED: 'learning_explanation_viewed',
 
   // Acquisition + activation funnel (landing → signup → onboarding → menu).
   LANDING_CTA_CLICKED: 'landing_cta_clicked',
