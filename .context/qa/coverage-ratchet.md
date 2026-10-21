@@ -82,6 +82,12 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   lines 63.0 (measured 89.60 / 90.10 / 63.35, from 61.47 honest). New handler tests for
   `generate-meal-plan`, `generate-shopping-list`, `get-shopping-list-suggestions`,
   `delete-catalog-recipe` and `_shared/posthog.ts`. `--unloaded` added (see below).
+- 2026-10-21 (FRESCO-991, tranche 3): all three **raised**: functions 89.5, lines 90.7,
+  honest lines 75.0 (measured 90.01 / 91.17 / 75.46, from 66.22 honest). Behaviour tests
+  for the profile and menu data loaders, the slot substitution context, the Billing Portal
+  button, the recipe library, filter drawer and recipe detail, the login page, the help
+  section, the signup submit hook, the landing nav and hero, the admin recipe search and
+  the onboarding footer. 102 files remain that no test imports.
 
 ## Tranches (honest lines)
 
@@ -92,7 +98,7 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 |---|---|---|---|
 | 1 | 54.5 % | 2026-10-14 | **Done** (FRESCO-916): measured 55.26 %, the ticket's "55 % in a month" was already met |
 | 2 | 60 % | 2026-12-14 | **Done early** (FRESCO-991): measured 63.35 %, floored at 63.0 |
-| 3 | 70 % | Set by the owner 2026-10-19 | Open. About 1,600 more covered lines at the 2026-10-19 count (6,782 of the unloaded lines are UI pages and components) |
+| 3 | 70 % | Set by the owner 2026-10-19 | **Done** (FRESCO-991, 2026-10-21): measured 75.46 %, floored at 75.0 |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,
