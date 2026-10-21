@@ -51,8 +51,18 @@ Names seen in a Spanish-language comparison and read in the second pass below: H
 
 ## Still to do after this pass
 
-- Open Halen, Cestio and Tellerino with a test account (free trials only, passwords typed by a person) and check allergen handling, onboarding length, and what happens in weeks 2 and 3.
+- Open Halen and Tellerino in a browser with a test account (free plans only, passwords typed by a person), and Cestio on an iPhone: check allergen handling on at least ten recipes, onboarding length, and what happens in weeks 2 and 3.
 - Tastory: price and market are still `not checked`.
+
+## Third pass (2026-10-21): what can be walked in a browser, and Halen's public pages
+
+**Which products can be used without a phone.** From their own sites: Halen is a web product (`halenapp.com`, sign-up at `app.halenapp.com/auth/signup`), Tellerino says "Or use it in your browser", Cestio is iOS only ("Descárgalo en el App Store", no web). So Halen and Tellerino can be walked in a browser; Cestio needs an iPhone. Creating an account needs a person (a password typed by them and an email confirmation), so no account was created.
+
+**What Halen shows without an account.** Its own site: a free platform with 280 recipes by partner nutritionists, a menu ten days ahead, personalisation by allergies, tastes and number of diners, and a one-click shopping list. The recipe catalogue (`/recetas`) is public, with a search box and no allergen or diet filter visible on the listing page. The menu generator itself sits behind the sign-up.
+
+**One observation on one public recipe page, read 2026-10-21.** "Lasaña boloñesa con pasta fresca integral" (`/recetas/lasana-bolonesa-con-pasta-fresca-integral`) lists its allergens as Lácteos and Huevos. Its ingredient list for 2 people includes harina de trigo integral (120 g) and vino blanco (70 ml). Wheat flour contains gluten and the page does not list gluten as an allergen. This is one recipe on one page: it could be an omission in what is displayed and says nothing about how the menu generator filters. It is worth checking on more recipes during the walkthrough, because enforcing that tags agree with the ingredient text in the database is exactly what Fresco did on 2026-10-21 (FRESCO-1020).
+
+**Provisional reading.** If the omission holds across recipes, "allergen tags that cannot contradict the ingredient list" is a verifiable difference, and it is a safer claim than "we filter allergens", which Halen also says it does.
 
 ## Still to do (needs a person)
 
