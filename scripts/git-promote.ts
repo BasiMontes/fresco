@@ -183,8 +183,8 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-function git(args: string[]): string {
-  const result = Bun.spawnSync(['git', ...args], { stdout: 'pipe', stderr: 'pipe' });
+function git(args: string[], cwd?: string): string {
+  const result = Bun.spawnSync(['git', ...args], { stdout: 'pipe', stderr: 'pipe', cwd });
   if (result.exitCode !== 0) { fail(`git ${args.join(' ')} failed: ${result.stderr.toString().trim()}`); }
   return result.stdout.toString().trim();
 }
@@ -217,8 +217,15 @@ function readRuns(sha: string): RunInfo[] {
   return JSON.parse(result.stdout.toString()) as RunInfo[];
 }
 
-function readCommits(range: string): CommitInfo[] {
-  const log = git(['log', '--name-only', '--format=%x1e%H%x1f%ae%x1f%ce%x1f%s%x1f', range]);
+/**
+ * `--diff-merges=first-parent` makes a merge commit list the files it brought in, diffed against its first
+ * parent. Without it `git log --name-only` prints NO files for a merge, `isDocsOnly([])` is false, and a
+ * merge that only carries a docs commit is refused as "touches more than docs". The commit set is
+ * unchanged (no `--first-parent`: a commit that arrives through a merge is still audited), and a merge that
+ * brings code still shows that code, so it is still refused without a (#PR).
+ */
+export function readCommits(range: string, cwd?: string): CommitInfo[] {
+  const log = git(['log', '--diff-merges=first-parent', '--name-only', '--format=%x1e%H%x1f%ae%x1f%ce%x1f%s%x1f', range], cwd);
   return log.split('\x1E').filter(Boolean).map((record) => {
     const [sha, authorEmail, committerEmail, subject, files] = record.split('\x1F');
     return {

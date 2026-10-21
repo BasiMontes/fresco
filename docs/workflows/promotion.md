@@ -12,7 +12,7 @@
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Staging run  | the SHA has no `pr-check.yml` push run on `staging`, or the latest one is pending or not `success`                                                               |
 | Identity     | any commit in the range has an author or committer `*@example.com`                                                                                               |
-| Pull request | a commit has no `(#PR)` in its subject and touches more than docs (`docs/`, `.context/`, root `*.md`, `.agents/**/*.md`, per `git_strategy.policy.docs_changes`) |
+| Pull request | a commit has no `(#PR)` in its subject and touches more than docs (`docs/`, `.context/`, root `*.md`, `.agents/**/*.md`, per `git_strategy.policy.docs_changes`). A merge commit is judged by the files it brings in against its first parent (FRESCO-1039), so a merge that only carries docs passes and one that carries code still needs a `(#PR)` |
 | Fast-forward | `dev` or `main` is not an ancestor of the staging SHA                                                                                                            |
 
 Only the latest run counts: a green re-run after a red one passes.

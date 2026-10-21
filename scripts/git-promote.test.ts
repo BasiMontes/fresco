@@ -1,5 +1,8 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
-import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationVersion, parseAppliedVersions, pendingMigrations } from './git-promote';
+import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationVersion, parseAppliedVersions, pendingMigrations, readCommits } from './git-promote';
 
 /**
  * FRESCO-829 (external audit 6): the staging -> main promotion is a manual
@@ -179,5 +182,83 @@ describe('migrationNotice', () => {
 
     expect(notice.level).toBe('warn');
     expect(notice.lines[0]).toContain('NOT checked');
+  });
+});
+
+/**
+ * FRESCO-1039: `git log --name-only` prints no files for a merge commit, so `isDocsOnly([])` was false and a
+ * merge that only carried a docs commit was refused as "touches more than docs". These tests run the real
+ * `readCommits` against a throwaway repository with real merges, because the bug lived in what git prints.
+ */
+describe('readCommits, merge commits', () => {
+  const GIT_ENV = { ...process.env, GIT_AUTHOR_NAME: 'Dev', GIT_AUTHOR_EMAIL: 'dev@fresco.test', GIT_COMMITTER_NAME: 'Dev', GIT_COMMITTER_EMAIL: 'dev@fresco.test' };
+
+  function inRepo(run: (repo: string, git: (...args: string[]) => string) => void) {
+    const repo = mkdtempSync(join(tmpdir(), 'git-promote-'));
+    const git = (...args: string[]) => {
+      const result = Bun.spawnSync(['git', ...args], { cwd: repo, env: GIT_ENV, stdout: 'pipe', stderr: 'pipe' });
+      if (result.exitCode !== 0) { throw new Error(`git ${args.join(' ')}: ${result.stderr.toString()}`); }
+      return result.stdout.toString().trim();
+    };
+    try {
+      git('init', '--quiet', '--initial-branch=main');
+      run(repo, git);
+    }
+    finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  }
+
+  /** Commits `file` on the current branch. */
+  function commit(repo: string, git: (...args: string[]) => string, file: string, subject: string) {
+    mkdirSync(dirname(join(repo, file)), { recursive: true });
+    writeFileSync(join(repo, file), `${subject}\n`);
+    git('add', file);
+    git('commit', '--quiet', '-m', subject);
+  }
+
+  /** A base commit, a side branch with one commit, a commit on main, then a real merge of the branch into main. */
+  function mergeOf(file: string, run: (merge: ReturnType<typeof readCommits>[number], all: ReturnType<typeof readCommits>) => void) {
+    inRepo((repo, git) => {
+      commit(repo, git, 'README.md', 'base');
+      const base = git('rev-parse', 'HEAD');
+      git('switch', '--quiet', '-c', 'side');
+      commit(repo, git, file, 'work on the side');
+      git('switch', '--quiet', 'main');
+      commit(repo, git, 'docs/main-only.md', 'work on main');
+      git('merge', '--no-ff', '--quiet', '-m', 'merge side into main', 'side');
+      const commits = readCommits(`${base}..HEAD`, repo);
+      run(commits.find(found => found.subject === 'merge side into main')!, commits);
+    });
+  }
+
+  test('a merge lists the files it brought in, diffed against its first parent', () => {
+    mergeOf('docs/from-side.md', (merge) => {
+      expect(merge.files).toEqual(['docs/from-side.md']);
+    });
+  });
+
+  test('a merge that only carries docs is not refused for lacking a (#PR)', () => {
+    mergeOf('.context/business/from-side.md', (merge, commits) => {
+      const problems = evaluatePromotion({ runs: [green], commits: [merge] });
+
+      expect(problems).toEqual([]);
+      expect(commits).toHaveLength(3);
+    });
+  });
+
+  test('a merge that carries code is still refused without a (#PR)', () => {
+    mergeOf('lib/from-side.ts', (merge) => {
+      const problems = evaluatePromotion({ runs: [green], commits: [merge] });
+
+      expect(problems.map(problem => problem.kind)).toEqual(['pull-request']);
+      expect(problems[0].message).toContain(merge.sha.slice(0, 8));
+    });
+  });
+
+  test('the commit set is unchanged: the commit that came in through the merge is audited too', () => {
+    mergeOf('lib/from-side.ts', (_merge, commits) => {
+      expect(commits.map(found => found.subject).sort()).toEqual(['merge side into main', 'work on main', 'work on the side']);
+    });
   });
 });
