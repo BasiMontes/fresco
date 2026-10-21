@@ -164,6 +164,7 @@ Screenshots: `.context/business/competitor-screens/cestio-2026-10-21/` (nineteen
 
 ## Still to do (needs a person)
 
-- Create accounts with the test alias on Cestio and Tellerino (free trials only; passwords typed by a person, never through chat) and walk them as a new user and in weeks 2 and 3.
-- Screenshots of key steps, stored outside the code.
-- One-page conclusion for the PRD, price and value proposition, after the walkthrough.
+- The owner keeps the Halen and Tellerino test accounts on purpose, to look around later; the Tellerino one uses a personal email. Delete them when the research ends.
+- Cestio's onboarding: screens for steps 10 and 12 were never sent (the owner considers the onboarding covered). They stay marked as not captured.
+- Weeks 2 and 3: Cestio's plan cannot be browsed past Monday 26, the end of the first week, so a second week is not visible without paying. Halen and Tellerino weeks 2 and 3 are not observable in one day.
+- One-page conclusion for the PRD, price and value proposition: provisional, at the top of this file.
