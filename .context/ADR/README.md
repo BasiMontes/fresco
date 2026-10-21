@@ -124,7 +124,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0061](./ADR-0061-stripe-mode-guard.md) | Stripe mode guard: the Stripe mode is a fact of the shared database (deploy key, `billing_mode`, profile), not of the deploy that receives the event | Proposed | — | — |
 | [ADR-0062](./ADR-0062-stripe-webhook-transient-failures-retry.md) | Stripe webhook: a transient Stripe failure answers 500 so Stripe retries; subscription state is decided from the live subscription | Proposed | — | — |
 | [ADR-0063](./ADR-0063-recipe-learning-once-per-user-no-rating.md) | Recipe learning counts once per user and recipe, and the rating signal is retired | Accepted | — | — |
-| [ADR-0064](./ADR-0064-recipe-tag-coherence-barrier-in-the-database.md) | An active recipe cannot be saved with allergen or diet tags that contradict its text | Proposed | — | — |
+| [ADR-0064](./ADR-0064-recipe-tag-coherence-barrier-in-the-database.md) | An active recipe cannot be saved with allergen or diet tags that contradict its text | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 

@@ -1,8 +1,8 @@
 # ADR-0064 — An active recipe cannot be saved with allergen or diet tags that contradict its text
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-21
-- **Deciders:** Basi Montes (mechanism and scope agreed in conversation on 2026-10-21, FRESCO-1020); drafted by an AI session, pending written acceptance
+- **Deciders:** Basi Montes (mechanism and scope agreed in conversation on 2026-10-21, FRESCO-1020; accepted in writing on 2026-10-22 after reading the summary); drafted by an AI session
 - **Tags:** catalogue, food-safety, database, integrity
 - **Supersedes:** —
 - **Superseded by:** —
