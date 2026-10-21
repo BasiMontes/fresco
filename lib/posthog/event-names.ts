@@ -23,6 +23,9 @@ export const POSTHOG_EVENTS = {
   // when the user cancels within it.
   RECIPE_MARK_UNDONE: 'recipe_mark_undone',
   SHOPPING_LIST_GENERATED: 'shopping_list_generated',
+  // FRESCO-1028: the shopper opened a row's product at a supermarket. With `price_state` it says whether the
+  // price shown (fresh, old, hidden, undated) influences the click.
+  SUPERMARKET_LINK_CLICKED: 'supermarket_link_clicked',
 
   // Acquisition + activation funnel (landing → signup → onboarding → menu).
   LANDING_CTA_CLICKED: 'landing_cta_clicked',
