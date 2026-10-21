@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
-import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationVersion, parseAppliedVersions, pendingMigrations, readCommits } from './git-promote';
+import { applyOverride, evaluatePromotion, hasPullRequestRef, isDocsOnly, migrationNotice, migrationProblem, migrationVersion, parseAppliedVersions, pendingMigrations, readCommits } from './git-promote';
 
 /**
  * FRESCO-829 (external audit 6): the staging -> main promotion is a manual
@@ -156,6 +156,37 @@ describe('parseAppliedVersions', () => {
 
   test.each(['', 'not json', '{"migrations":', '{"other":1}', '{"migrations":"x"}'])('is null, never an empty set, for %p', (output) => {
     expect(parseAppliedVersions(output)).toBeNull();
+  });
+});
+
+describe('migrationProblem (FRESCO-1023: the gate refuses)', () => {
+  const all = new Set(FILES.map(file => migrationVersion(file) as string));
+
+  test('is null when every migration of the SHA is applied', () => {
+    expect(migrationProblem(FILES, all)).toBeNull();
+  });
+
+  test('refuses and names each pending migration', () => {
+    const problem = migrationProblem(FILES, new Set(['20261019210000']));
+    expect(problem?.kind).toBe('migration');
+    expect(problem?.message).toContain('2 migration(s)');
+    expect(problem?.message).toContain('20261020100000_cron_job_heartbeats.sql');
+    expect(problem?.message).toContain('20261020110000_diet_labels_follow_their_definition.sql');
+  });
+
+  test('fails closed when the hosted list cannot be read', () => {
+    const problem = migrationProblem(FILES, null);
+    expect(problem?.kind).toBe('migration');
+    expect(problem?.message).toContain('NOT checked');
+  });
+
+  test('an override reason waives it, a missing one does not, and a placeholder identity stays', () => {
+    const problems = [
+      { kind: 'migration' as const, message: 'pending' },
+      { kind: 'identity' as const, message: 'x@example.com' },
+    ];
+    expect(applyOverride(problems, 'data migration applied right after').map(p => p.kind)).toEqual(['identity']);
+    expect(applyOverride(problems, undefined)).toEqual(problems);
   });
 });
 

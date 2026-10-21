@@ -18,14 +18,16 @@
  *     (`git_strategy.policy.docs_changes: direct-to-main-ok`)
  *   - `main` or `dev` would not be a pure fast-forward
  *
- * It also WARNS (never refuses) when the SHA carries a migration the hosted project has not
- * applied (FRESCO-1023): a migration is not applied by a merge or by a promotion, it goes by hand
- * with `supabase db push --linked`, and a deploy that reaches production first breaks whatever
- * calls the function or column it creates (`record_consents` 404 on 2026-10-19, FRESCO-770).
+ *   - the SHA carries a migration the hosted project has not applied, or the hosted list
+ *     cannot be read (FRESCO-1023, fail closed): a migration is not applied by a merge or by a
+ *     promotion, it goes by hand with `supabase db push --linked`, and a deploy that reaches
+ *     production first breaks whatever calls the function or column it creates
+ *     (`record_consents` 404 on 2026-10-19, FRESCO-770). A data-only migration meant to run
+ *     after the promotion needs `--override-reason`.
  *
  * Dry run by default. `--yes` pushes, never with force. `--override-reason`
- * waives the run-status and no-PR problems (a flake confirmed by re-running)
- * and is echoed so it leaves a trail; it NEVER waives a placeholder identity.
+ * waives the run-status, no-PR and pending-migration problems (a flake confirmed by
+ * re-running, a data migration applied right after) and is echoed so it leaves a trail; it NEVER waives a placeholder identity.
  * This script is project-owned, `bun run up` does not overwrite it.
  */
 
@@ -47,7 +49,7 @@ interface CommitInfo {
 }
 
 interface Problem {
-  kind: 'run' | 'identity' | 'pull-request'
+  kind: 'run' | 'identity' | 'pull-request' | 'migration'
   message: string
 }
 
@@ -149,12 +151,25 @@ export function parseAppliedVersions(output: string): Set<string> | null {
   }
 }
 
+/**
+ * The refusal for the migration check. `null` when every migration of the SHA is applied.
+ * An unreadable hosted list is a problem too: "could not check" never counts as "nothing pending".
+ */
+export function migrationProblem(files: string[], applied: ReadonlySet<string> | null): Problem | null {
+  if (applied === null) {
+    return { kind: 'migration', message: 'could not read the hosted migration list (Supabase CLI missing, not logged in, or the project not linked), so pending migrations were NOT checked. Check by hand: supabase migration list --linked' };
+  }
+  const pending = pendingMigrations(files, applied);
+  if (pending.length === 0) { return null; }
+  return { kind: 'migration', message: `${pending.length} migration(s) in this SHA are NOT applied on the hosted project: ${pending.join(', ')}. Apply them first (supabase db push --linked --dry-run, then without --dry-run).` };
+}
+
 interface MigrationNotice {
   level: 'ok' | 'warn'
   lines: string[]
 }
 
-/** What the promotion prints about migrations. A warning never changes the exit code. */
+/** What the promotion prints about migrations once the gate passed (a problem was already raised by `migrationProblem`). */
 export function migrationNotice(files: string[], applied: ReadonlySet<string> | null): MigrationNotice {
   if (applied === null) {
     return { level: 'warn', lines: [
@@ -271,7 +286,10 @@ function main(): number {
 
   const range = `origin/${pending.includes('main') ? 'main' : pending[0]}..${sha}`;
   const commits = readCommits(range);
-  const problems = evaluatePromotion({ runs: readRuns(sha), commits });
+  const migrationFiles = readMigrationFiles(sha);
+  const appliedVersions = readAppliedVersions();
+  const migration = migrationProblem(migrationFiles, appliedVersions);
+  const problems = [...evaluatePromotion({ runs: readRuns(sha), commits }), ...(migration ? [migration] : [])];
   const remaining = applyOverride(problems, overrideReason);
 
   console.log(`commits to promote: ${commits.length} (${range})`);
@@ -279,7 +297,7 @@ function main(): number {
     console.log(`${pc.red('✖')} [${problem.kind}] ${problem.message}`);
   }
   if (remaining.length > 0) {
-    console.log(`\n${pc.red('Promotion refused.')} Fix the above and re-run${problems.some(p => p.kind === 'identity') ? ' (a placeholder identity cannot be overridden)' : ', or pass --override-reason "<why>" for a confirmed flake'}.`);
+    console.log(`\n${pc.red('Promotion refused.')} Fix the above and re-run${problems.some(p => p.kind === 'identity') ? ' (a placeholder identity cannot be overridden)' : ', or pass --override-reason "<why>" for a confirmed flake or a data migration meant to run after the promotion'}.`);
     return 1;
   }
   if (problems.length > 0) {
@@ -287,7 +305,7 @@ function main(): number {
   }
   console.log(`${pc.green('✔')} gate passed for ${pending.join(' + ')}.`);
 
-  const notice = migrationNotice(readMigrationFiles(sha), readAppliedVersions());
+  const notice = migrationNotice(migrationFiles, appliedVersions);
   console.log(`${notice.level === 'ok' ? pc.green('✔') : pc.yellow('!')} migrations: ${notice.lines[0]}`);
   for (const line of notice.lines.slice(1)) {
     console.log(`  ${line}`);
