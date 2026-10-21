@@ -98,18 +98,18 @@ const STEP_NOISE: Record<string, RegExp> = {
 };
 
 /** Pork and alcohol: not halal. */
-const NOT_HALAL = words('cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|vino|cerveza|ron|brandy|licor|cava|bacon|beicon');
+export const NOT_HALAL = words('cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|vino|cerveza|ron|brandy|licor|cava|bacon|beicon');
 /** Never kosher: rabbit, shellfish (also covered by crustaceos/moluscos), pork. */
-const NOT_KOSHER = words('conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon');
-const MEAT = words('ternera|pollo|pavo|cordero|carne|pato|codornices|higado|rabo de toro|morcillo|solomillo');
+export const NOT_KOSHER = words('conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon');
+export const MEAT = words('ternera|pollo|pavo|cordero|carne|pato|codornices|higado|rabo de toro|morcillo|solomillo');
 /** Anything from an animal that makes a recipe not vegetarian: meat, pork, gelatin. Fish and shellfish come from the allergen table. */
-const NOT_VEGETARIAN = words(
+export const NOT_VEGETARIAN = words(
   'ternera|pollo|pavo|cordero|carne|pato|codornices|higado|rabo de toro|morcillo|solomillo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|conejo|bacon|beicon|salchichas?|lomo|pechuga|costillas?|gelatina',
 );
 /** Text that negates a meat word ("sin carne", "carne vegetal"): removed before the vegetarian match. */
 const NOT_MEAT_PHRASES = /\b(?:sin carne|carne vegetal|carne de soja|vegetal de carne)\b/g;
 /** Not gluten-free unless the text says so: soy sauce is wheat-based, tamari and miso often are. */
-const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos');
+export const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos');
 const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos) sin gluten\b/g;
 
 /** A stock that names itself as vegetable. A bare "caldo" can be chicken or beef, so a vegetarian flag cannot rest on it. */
@@ -129,14 +129,14 @@ const NUT_FLOURS = '|harina de (?:almendras?|coco|tapioca|castanas?)';
 const PLANT_DRINKS = '|(?:leche|bebida) de (?:coco|almendras?)|nata de coco';
 
 /** keto: starch, sugar, legumes, fruit and milk or yogurt. Cream, cheese and butter are fine. */
-const KETO_BREAKERS = words(
+export const KETO_BREAKERS = words(
   'patatas?|platanos?|bananas?|quinoa|tortillas? de trigo|seitan|arroz|pasta|pan|harina|miel|azucar|avena|cuscus|boniato'
   + '|garbanzos?|lentejas?|alubias?|maiz|leche|yogur|manzanas?|peras?|uvas|mango|naranjas?|pina|sandia|melon|kiwi|cerezas?|higos?|datiles|mandarinas?',
 );
 const KETO_NOT_BREAKER = new RegExp(`\\b(?:${PLANT_DRINKS.slice(1)}${NUT_FLOURS}${PASTE_NOT_PASTA})\\b`, 'g');
 
 /** paleo: cereal, dairy and legume (peanut and soy included). Green beans are a vegetable. */
-const PALEO_BREAKERS = words(
+export const PALEO_BREAKERS = words(
   'trigo|pan|harina|pasta|espaguetis|macarrones|fideos|cuscus|seitan|avena|cebada|centeno|arroz|maiz|quinoa|bulgur|semola|galleta'
   + '|leche|queso|yogur|nata|mantequilla|requeson|kefir|mozzarella|parmesano|feta|burrata|mascarpone|ricotta'
   + '|garbanzos?|lentejas?|alubias?|judias|guisantes|habas|soja|tofu|tempeh|edamame|hummus|humus|cacahuetes?|azucar',
@@ -145,7 +145,7 @@ const PALEO_NOT_BREAKER = new RegExp(`\\b(?:judias verdes${PLANT_DRINKS}${NUT_FL
 const PALEO_ALLERGENS = ['gluten', 'lactosa', 'soja', 'cacahuetes'];
 
 /** bajo_fodmap: the triggers the card names (cereal, dairy, garlic, asparagus, cauliflower, mushrooms, leek) and the obvious ones. */
-const FODMAP_BREAKERS = words(
+export const FODMAP_BREAKERS = words(
   'ajo|cebolla|cebolletas?|puerros?|esparragos?|coliflor|setas?|champinones|garbanzos?|lentejas?|alubias?|judias blancas|guisantes|habas'
   + '|manzanas?|peras?|mango|sandia|miel',
 );
@@ -154,7 +154,7 @@ const FODMAP_ALLERGENS = ['gluten', 'lactosa'];
 /** halal: minced meat nobody names (or two meats mixed) cannot be traced to a halal source. */
 const UNNAMED_MINCE = /\bcarne picada\b(?! de (?:ternera|pollo|pavo|cordero|vacuno))|\bcarne mixta\b|\bmezcla de carnes?\b/;
 /** kosher: wine, and what is made from it, unless the text says the wine is certified. */
-const WINE = words('vino|vermut|cava|brandy');
+export const WINE = words('vino|vermut|cava|brandy');
 const CERTIFIED_WINE = /\bvino (?:kosher|certificado)\b/g;
 /** vegetarian: cheeses made with animal rennet unless the text names the vegetarian version. */
 const RENNET_CHEESE = /\b(?:parmesano|gruyere)\b/;
