@@ -51,7 +51,7 @@ Names seen in a Spanish-language comparison and read in the second pass below: H
 
 ## Still to do after this pass
 
-- Walk Tellerino in a browser with a test account (free plan only, password typed by a person) and Cestio on an iPhone: allergen handling, onboarding length, and what happens in weeks 2 and 3. Halen is done for what one day allows; ask the owner how many steps its onboarding had.
+- Walk Tellerino in a browser with a test account (free plan only, password typed by a person) and Cestio on an iPhone: allergen handling, onboarding length, and what happens in weeks 2 and 3. Halen is done for what one day allows (onboarding: 4 steps; what each asked is unknown).
 - Tastory: price and market are still `not checked`.
 
 ## Third pass (2026-10-21): what can be walked in a browser, and Halen's public pages
@@ -70,6 +70,7 @@ Screenshots: `.context/business/competitor-screens/halen-2026-10-21/` (menu, set
 
 | Area | What was seen |
 |---|---|
+| Onboarding | 4 steps, reported by the owner who did it (2026-10-21). What each step asked and how long it took were not recorded, so only the step count is a fact here. |
 | Menu | A 10-day menu with lunch and dinner only (no breakfast), generated on arrival, one "Cambiar" button per dish. The day labels do not advance with the dates: Saturday, Sunday and Monday all read 24/10/2026, Tuesday to Thursday read 25/10, Friday and Saturday read 26/10. |
 | Allergies | 14 options: Soja, Crustáceos, Lácteos, Altramuces, Huevos, Frutos de cáscara, Cacahuetes, Mostaza, Moluscos, Sésamo, Granos de sésamo, Nueces, Pescado, Apio. **No Gluten and no Sulfitos**, two of the 14 EU mandatory allergens. Two near-duplicate pairs (Sésamo and Granos de sésamo, Frutos de cáscara and Nueces). |
 | Diet | Vegana, Vegetariana, Pescetariana, Omnívora. No gluten-free, keto, halal or kosher. |
@@ -86,7 +87,7 @@ Screenshots: `.context/business/competitor-screens/halen-2026-10-21/` (menu, set
 
 Two oracle findings are **not** counted against Halen because the oracle is conservative there: "nata vegetal" (flagged as dairy) and "caldo de verduras" (flagged as celery).
 
-**Limits.** One account, one day, 14 recipes of 314. Halen's menu generator was not tested against a gluten allergy because there is no such option. The onboarding (steps, what it asks, how long) was done by the owner before this pass and was not observed. Weeks 2 and 3 and the retention emails are not observable in one day. Cestio and Tellerino are still not walked.
+**Limits.** One account, one day, 14 recipes of 314. Halen's menu generator was not tested against a gluten allergy because there is no such option. The onboarding was done by the owner before this pass and was not observed: only its length (4 steps) is known, not what each step asked or how long it took. Weeks 2 and 3 and the retention emails are not observable in one day. Cestio and Tellerino are still not walked.
 
 ## Reading after Halen (provisional, to be replaced by the one-page conclusion)
 
