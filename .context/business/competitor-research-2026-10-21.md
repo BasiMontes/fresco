@@ -147,7 +147,7 @@ Screenshots: `.context/business/competitor-screens/tellerino-2026-10-21/` (start
 
 ## Sixth pass (2026-10-21): Cestio, used on an iPhone by the owner
 
-Screenshots: `.context/business/competitor-screens/cestio-2026-10-21/` (thirteen, downscaled). An eighth, the account settings, shows the owner's email and was not copied into the repository. Cestio has no web version, so this pass rests on what the owner supplied, not on a walkthrough of mine. Two of twelve onboarding steps were not captured (10 and 12).
+Screenshots: `.context/business/competitor-screens/cestio-2026-10-21/` (fifteen, downscaled). An eighth, the account settings, shows the owner's email and was not copied into the repository. Cestio has no web version, so this pass rests on what the owner supplied, not on a walkthrough of mine. Two of twelve onboarding steps were not captured (10 and 12).
 
 | Area | What the screenshots show |
 |---|---|
@@ -157,6 +157,8 @@ Screenshots: `.context/business/competitor-screens/cestio-2026-10-21/` (thirteen
 | Account | Household size 2, currency EUR, country Spain, push and email notifications both on. These are the retention channels, switched on by default in the screenshot. |
 
 **Allergies (step 4, "¿Alguna alergia?", subtitle "Nunca las incluiremos en tus comidas").** Five options: Gluten, Soja, Pescado, Marisco and Sésamo, plus an "Otra alergia" free-text box ("Escribe una alergia y pulsa +"), and the note that it can be changed later in Ajustes. In the screenshot Marisco is ticked. Step 5 then shows "marisco" among the "no quiero ni ver" chips next to cilantro and tofu; whether it was carried over from the allergy or typed was not seen. Separately, step 3 offers "Sin gluten" and "Sin frutos secos" as diets, so allergy and diet are two separate questions, as in Fresco. Milk, eggs, tree nuts, peanuts, celery, mustard, sulphites and lupin are not options; they could be typed in the free-text box, but how free text is matched against recipe ingredients was not seen. "Marisco" is one option, so crustaceans and molluscs are not separated. The promise is absolute ("never"), which is the claim to test: with a tick on Gluten, what does the plan contain.
+
+**The plan itself (two days seen, Marisco ticked as the only allergy).** Tuesday 20: one dish, a lunch (arroz con garbanzos y espinacas, 30 min, 633 kcal). Wednesday 21: tortilla de calabacín (12 min), pollo con espinacas cremosas (30 min, 835 kcal) and dorada a la plancha con espinacas al ajillo (24 min). Each card shows time, kcal and protein/carbohydrate/fat grams, a swap arrow, "Quitar" and "Buscar plato". No dish contains shellfish, but four dishes say little about a filter that excludes one allergen. Two things to note: three of the four dishes use spinach, and Wednesday has all three meals filled although the step-8 grid ticked only the breakfast that day (Tuesday matched the grid); why was not seen. The sharper test is still a plan with Gluten ticked.
 
 **What it shows about the model.** A long, personalised onboarding (it asks for the supermarket first) that ends in a quantified promise and then a paywall before the plan. Fresco's Free tier gives the menu and the list. In Cestio the list screen carried a banner to unlock "tu plan y tu lista de la compra" and its site gives three free days; what exactly stays usable after that was not seen, and the plan tab was not captured.
 
