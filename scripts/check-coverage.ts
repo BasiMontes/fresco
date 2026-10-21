@@ -104,8 +104,10 @@ import { join } from 'node:path';
  *   that size would have passed CI without a word.
  * 2026-10-19 (FRESCO-991): raised to functions 89.0 / lines 89.7 (measured
  *   89.60 / 90.10) after the Edge handler tests landed.
+ * 2026-10-21 (FRESCO-991, tranche 3): raised to functions 89.5 / lines 90.7 (measured
+ *   90.01 / 91.17) after the data-loader and big-component tests landed.
  */
-export const FLOOR = { functions: 89.0, lines: 89.7 } as const;
+export const FLOOR = { functions: 89.5, lines: 90.7 } as const;
 
 /**
  * Floor for the HONEST line coverage (unloaded files counted as zero). Only
@@ -119,8 +121,10 @@ export const FLOOR = { functions: 89.0, lines: 89.7 } as const;
  * that move money and write plans/lists (generate-meal-plan, generate-shopping-list,
  * get-shopping-list-suggestions, delete-catalog-recipe) and the consent-gated
  * PostHog capture were the highest-risk files no test imported.
+ * 2026-10-21 (FRESCO-991, tranche 3): measured 75.46 %, floored at 75.0. The 70 %
+ * the owner set on 2026-10-19 is met; the floor now sits just under the real number.
  */
-export const HONEST_FLOOR_LINES = 63.0;
+export const HONEST_FLOOR_LINES = 75.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
