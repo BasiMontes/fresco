@@ -6,6 +6,7 @@ import * as mealPlan from '@/lib/api/meal-plan';
 import * as recipes from '@/lib/api/recipes';
 import * as userProfile from '@/lib/api/user-profile';
 import * as spendTrend from '@/lib/menu/get-spend-trend';
+import * as proExcluded from '@/lib/menu/pro-would-have-excluded';
 import { loadMenuPageData } from './load-menu-page-data';
 
 /**
@@ -28,6 +29,8 @@ function spies() {
     preferences: spyOn(userProfile, 'getUserDietaryPreferences'),
     unseen: spyOn(userProfile, 'getHasUnseenNotifications'),
     trend: spyOn(spendTrend, 'getSpendTrend'),
+    userPlan: spyOn(userProfile, 'getUserPlan'),
+    priorMarks: spyOn(proExcluded, 'getPriorMarks'),
   };
 }
 
@@ -41,11 +44,13 @@ describe('loadMenuPageData', () => {
     s.nombre.mockResolvedValue('Ana');
     s.count.mockResolvedValue(540);
     s.latest.mockResolvedValue([{ id: 'r1' }] as never);
-    s.plan.mockResolvedValue({ semana_iso: '2026-W43' } as never);
+    s.plan.mockResolvedValue({ semana_iso: '2026-W43', menu: {} } as never);
     s.favorites.mockResolvedValue(new Set(['r1']));
     s.preferences.mockResolvedValue({ num_personas: 2 } as never);
     s.unseen.mockResolvedValue(true);
     s.trend.mockResolvedValue([{ semana: '2026-W42', coste: 40 }] as never);
+    s.userPlan.mockResolvedValue('free');
+    s.priorMarks.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -59,7 +64,7 @@ describe('loadMenuPageData', () => {
     expect(data.nombre).toBe('Ana');
     expect(data.recetasDisponibles).toBe(540);
     expect(data.ultimasRecetas).toEqual([{ id: 'r1' }]);
-    expect(data.plan).toEqual({ semana_iso: '2026-W43' });
+    expect(data.plan).toEqual({ semana_iso: '2026-W43', menu: {} });
     expect(data.favoriteIds).toEqual(new Set(['r1']));
     expect(data.hasUnseenNotifications).toBe(true);
     expect(s.trend).toHaveBeenCalledWith(supabase, { semanaIso: '2026-W43', userId: 'user-1' });
@@ -79,8 +84,9 @@ describe('loadMenuPageData', () => {
       dietaryPreferences: null,
       hasUnseenNotifications: false,
       spendTrend: [],
+      proPreview: [],
     });
-    expect(consoleError).toHaveBeenCalledTimes(8);
+    expect(consoleError).toHaveBeenCalledTimes(10);
   });
 
   test('a failed meal-plan read shows the empty state and leaves the rest intact', async () => {
@@ -91,5 +97,55 @@ describe('loadMenuPageData', () => {
     expect(data.plan).toBeNull();
     expect(data.recetasDisponibles).toBe(540);
     expect(data.nombre).toBe('Ana');
+  });
+
+  describe('the Free-to-Pro preview (FRESCO-1027)', () => {
+    const LENTEJAS = { id: 'r-lentejas', nombre: 'Lentejas estofadas' };
+    const menu = { lunes: { comida: LENTEJAS, desayuno: null, cena: null } };
+
+    beforeEach(() => {
+      s.plan.mockResolvedValue({ semana_iso: '2026-W43', menu } as never);
+      s.priorMarks.mockResolvedValue([{ recipeId: LENTEJAS.id, estado: 'descartada' }]);
+    });
+
+    test('a Free user gets the dishes Pro would not have served again, and the marks are read for this week and user', async () => {
+      const data = await loadMenuPageData(supabase, ARGS);
+
+      expect(data.proPreview).toEqual([{ id: LENTEJAS.id, nombre: LENTEJAS.nombre, estado: 'descartada' }]);
+      expect(s.priorMarks).toHaveBeenCalledWith(supabase, { semanaIso: '2026-W43', userId: 'user-1' });
+    });
+
+    test('a Pro user gets nothing: Pro already has that exclusion applied to the menu', async () => {
+      s.userPlan.mockResolvedValue('pro');
+
+      expect((await loadMenuPageData(supabase, ARGS)).proPreview).toEqual([]);
+    });
+
+    test('an unreadable plan tier hides the preview instead of treating the user as Free', async () => {
+      s.userPlan.mockRejectedValue(new Error('db down'));
+
+      expect((await loadMenuPageData(supabase, ARGS)).proPreview).toEqual([]);
+    });
+
+    test('unreadable marks hide the preview and leave the rest of the page data intact', async () => {
+      s.priorMarks.mockRejectedValue(new Error('db down'));
+
+      const data = await loadMenuPageData(supabase, ARGS);
+
+      expect(data.proPreview).toEqual([]);
+      expect(data.nombre).toBe('Ana');
+    });
+
+    test('with no menu yet there is nothing to compare', async () => {
+      s.plan.mockResolvedValue(null);
+
+      expect((await loadMenuPageData(supabase, ARGS)).proPreview).toEqual([]);
+    });
+
+    test('without a user id the marks are not read at all', async () => {
+      await loadMenuPageData(supabase, { userId: undefined, semanaIso: '2026-W43' });
+
+      expect(s.priorMarks).not.toHaveBeenCalled();
+    });
   });
 });

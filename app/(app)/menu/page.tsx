@@ -57,7 +57,7 @@ export default async function MenuPage() {
   const semanaIso = getIsoWeek();
   const mondayIso = getDateFromIsoWeek(semanaIso).toISOString().slice(0, 10);
 
-  const { nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend } = await loadMenuPageData(supabase, { userId: user?.id, semanaIso });
+  const { nombre, recetasDisponibles, ultimasRecetas, plan, favoriteIds, dietaryPreferences, hasUnseenNotifications, spendTrend, proPreview } = await loadMenuPageData(supabase, { userId: user?.id, semanaIso });
 
   if (!plan) {
     return (
@@ -107,7 +107,7 @@ export default async function MenuPage() {
         />
       </div>
 
-      <MenuNotices plan={plan} isAnonymous={isAnonymous} />
+      <MenuNotices plan={plan} isAnonymous={isAnonymous} proPreview={proPreview} />
 
       {/* FRESCO-1000: the promise is "we filter by what each recipe declares", never "this is safe". */}
       <AllergenReminder />

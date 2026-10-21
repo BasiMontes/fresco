@@ -1,5 +1,8 @@
 import type { MenuSemanalPersistido } from '@/lib/api/meal-plan';
+import type { MarkedDish } from '@/lib/menu/pro-would-have-excluded';
 import Link from 'next/link';
+import { LearningExplanationViewed } from '@/components/menu/learning-explanation-viewed';
+import { ProWouldHaveExcludedNotice } from '@/components/menu/pro-would-have-excluded-notice';
 import { AlertBanner } from '@/components/ui/alert-banner';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,11 +10,13 @@ import { Card, CardContent } from '@/components/ui/card';
 interface MenuNoticesProps {
   plan: MenuSemanalPersistido
   isAnonymous: boolean
+  /** FRESCO-1027: dishes of this menu that Pro would not have served again (Free only, empty otherwise). */
+  proPreview: readonly MarkedDish[]
 }
 
-/** Guest "save your menu" banner, plan warnings and the learning explanation, in that order. */
-export function MenuNotices({ plan, isAnonymous }: MenuNoticesProps) {
-  if (!(isAnonymous || (plan.advertencias && plan.advertencias.length > 0) || plan.explicacionAprendizaje)) {
+/** Guest "save your menu" banner, plan warnings, the Pro preview for Free and the learning explanation for Pro, in that order. */
+export function MenuNotices({ plan, isAnonymous, proPreview }: MenuNoticesProps) {
+  if (!(isAnonymous || (plan.advertencias && plan.advertencias.length > 0) || plan.explicacionAprendizaje || proPreview.length > 0)) {
     return null;
   }
 
@@ -33,6 +38,8 @@ export function MenuNotices({ plan, isAnonymous }: MenuNoticesProps) {
         data-testid="menu_advertencias_banner"
       />
 
+      <ProWouldHaveExcludedNotice dishes={proPreview} />
+
       {/*
        * STORY-FRESCO-22 (FR-5.5): real data now, not the hardcoded mock
        * FRESCO-21 removed. `explicacionAprendizaje` is populated server-side
@@ -42,6 +49,7 @@ export function MenuNotices({ plan, isAnonymous }: MenuNoticesProps) {
        */}
       {plan.explicacionAprendizaje && (
         <Card variant="insight" data-insight-enter="" data-testid="learning_explanation_card">
+          <LearningExplanationViewed />
           <CardContent className="text-body-sm">
             {plan.explicacionAprendizaje}
           </CardContent>
