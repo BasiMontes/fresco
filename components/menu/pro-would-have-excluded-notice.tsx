@@ -32,7 +32,7 @@ export function ProWouldHaveExcludedNotice({ dishes }: ProWouldHaveExcludedNotic
   }
 
   return (
-    <Card variant="insight" data-testid="pro_preview_notice">
+    <Card variant="pro" data-testid="pro_preview_notice">
       <CardContent className="flex flex-col gap-3 text-body-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p data-testid="pro_preview_notice_text">
