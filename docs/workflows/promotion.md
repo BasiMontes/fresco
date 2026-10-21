@@ -17,15 +17,15 @@
 
 Only the latest run counts: a green re-run after a red one passes.
 
-It also **warns, and never refuses**, about migrations (FRESCO-1023). A merge or a promotion does not apply a migration: it goes by hand with `supabase db push --linked`, and a deployment that reaches production first breaks whatever calls the function or column it creates (`record_consents` answered 404 after the promotion of 2026-10-19, and the same happened with FRESCO-770). After the gate passes, the script compares the migration files of the SHA with `supabase migration list --linked` and prints one of:
+It also **refuses** when a migration of the SHA is not applied on the hosted project, or when the hosted list cannot be read (FRESCO-1023, fail closed). A merge or a promotion does not apply a migration: it goes by hand with `supabase db push --linked`, and a deployment that reaches production first breaks whatever calls the function or column it creates (`record_consents` answered 404 after the promotion of 2026-10-19, and the same happened with FRESCO-770). The script compares the migration files of the SHA with `supabase migration list --linked` and prints one of:
 
-| Line | Meaning |
+| Output | Meaning |
 |---|---|
 | `✔ migrations: all N migrations in this SHA are applied` | nothing to do |
-| `! migrations: K migration(s) ... are NOT applied` | lists them; apply with `supabase db push --linked --dry-run`, then without `--dry-run`. Apply them **before** promoting when the code calls something they create, after is fine when they only change data |
-| `! migrations: could not read the hosted migration list` | the Supabase CLI is missing, not logged in or the project is not linked, so nothing was checked: run `supabase migration list --linked` by hand |
+| `✖ [migration] K migration(s) ... are NOT applied` | the promotion is refused and each pending migration is named; apply them with `supabase db push --linked --dry-run`, then without `--dry-run`, and run the gate again |
+| `✖ [migration] could not read the hosted migration list` | the Supabase CLI is missing, not logged in or the project is not linked, so nothing was checked and the gate does not assume "none pending": run `supabase migration list --linked` by hand, fix access and re-run |
 
-It is a warning because a pending migration is sometimes intended (a data migration applied right after the promotion). The exit code is not affected.
+`--override-reason "<why>"` waives this problem like the run-status one, for the case where a pending migration is intended (a data migration applied right after the promotion). The reason is echoed, so it leaves a trail. The script never applies a migration itself.
 
 ## Usage
 
