@@ -37,6 +37,22 @@ describe('allergen keywords catch the audit cases', () => {
     expect(auditRecipe(recipe(['tortilla de trigo']))).toEqual(['Receta: falta gluten (ingrediente: tortilla de trigo)']);
   });
 
+  test.each([
+    'kritharaki',
+    'orzo',
+    'crumpets',
+    'muffins ingleses',
+    'roscas',
+    'pitas',
+    'naan',
+    'couscous',
+    'cous cous',
+    'bagels',
+  ])('%s requires gluten (FRESCO-1040)', (ingredient) => {
+    expect(auditRecipe(recipe([ingredient]))).toEqual([`Receta: falta gluten (ingrediente: ${ingredient})`]);
+    expect(auditRecipe(recipe([ingredient], { alergenos: ['gluten'] }))).toEqual([]);
+  });
+
   test('jamón breaks halal and kosher; wine breaks halal and needs sulfitos', () => {
     const ham = auditRecipe(recipe(['jamón serrano']));
     expect(ham.some(m => m.includes('halal'))).toBe(true);
