@@ -51,7 +51,8 @@ Names seen in a Spanish-language comparison and read in the second pass below: H
 
 ## Still to do after this pass
 
-- Walk Tellerino in a browser with a test account (free plan only, password typed by a person) and Cestio on an iPhone: allergen handling, onboarding length, and what happens in weeks 2 and 3. Halen is done for what one day allows (onboarding: 4 steps; what each asked is unknown).
+- Walk Cestio on an iPhone (it has no web version): allergen handling, onboarding length, and what happens in weeks 2 and 3. Halen and Tellerino are done for what one day allows (both onboardings: 4 steps; what each asked is unknown).
+- Delete the Tellerino and Halen test accounts when the research ends, and write the one-page conclusion once Cestio is walked.
 - Tastory: price and market are still `not checked`.
 
 ## Third pass (2026-10-21): what can be walked in a browser, and Halen's public pages
@@ -95,6 +96,35 @@ Two oracle findings are **not** counted against Halen because the oracle is cons
 - The allergen gap is structural, not a typo: with no Gluten or Sulfitos option, a coeliac user cannot declare the allergy at all. Fresco declares all 14 and, since FRESCO-1020, cannot save an active recipe whose tags contradict its text.
 - Fresco's differences seen so far: the 14 allergens, enforced tags, supermarket links with observed prices (held back while the Mercadona dataset is stale, FRESCO-1028), learning from marks (Pro).
 - Open risk for Fresco: Halen is free and fast to a first menu. Fresco's Pro has to be sold on safety and learning, not on "we make the menu and the list".
+
+## Fifth pass (2026-10-21): Tellerino walked in a browser, with a test account
+
+Screenshots: `.context/business/competitor-screens/tellerino-2026-10-21/` (start, settings, planning dialog, the paywall screen, the planned week, empty recipes, the idea generator and its result). Captures that showed the account's email or the household invite code were deleted and retaken with those hidden. The account was created by the owner with a personal email, not the test alias the card asks for; it should be deleted from Settings, Cuenta, when the research ends.
+
+| Area | What was seen |
+|---|---|
+| Access | A web app at `app.tellerino.app` (sign in with Google or email). Onboarding: 4 steps, reported by the owner. What each asked and how long it took were not recorded. |
+| Household | A household with a member list, a number of people (here 2), which meals to plan (breakfast, lunch, dinner) and an invite link that shares the list and the plan live. |
+| Allergies | All 14 EU allergens, including **Cereales con gluten** and **Sulfitos**, which Halen lacks. Plus a free-text "No nos gusta" exclusion list. It says: "Tellerino no te propondrá recetas con estos ingredientes. Aun así, revisa los ingredientes por tu cuenta: Tellerino no conoce todos los productos." |
+| Recipes | None at the start ("Mis recetas · 0"). They are generated on demand by an assistant ("Inventar una receta", three ideas, then the full recipe) or imported from links, photos and videos. |
+| Planning | "Planificar la semana" fills the free meals, with a split of meat, fish and vegetarian. With the email still unconfirmed, the planning call answered HTTP 400 three times and no message was visible to me; the recipe-ideas dialog did say "Confirma primero tu dirección de correo". After confirming, it planned 15 meals (breakfast, lunch and dinner, Wednesday to Sunday) and opened a plans screen. |
+| Free and Pro | Always free: shopping list, weekly plan, household, nutrition values. Free quotas are one try of each AI action ("Ideas de recetas a tu gusto 1x", "Llena toda la semana 1x", "De idea a receta completa 1x"), 20 recipes a month from web pages, 5 from social media and photos, 50 saved recipes. Pro raises them to 100, 100 and unlimited saves, 60 idea requests, 60 planned meals and 50 full recipes a month, and adds sharing the list by link, PDF export, video import and cook mode. Pro is bought in the mobile app. Its site gives USD 3.99/month or USD 24.99/year. |
+
+**Does the gluten exclusion hold?** The account had "Cereales con gluten" and "Setas" excluded; the planning dialog repeated it as "Sin: Cereales con gluten, Setas".
+
+- **Idea generator.** Asked for "espaguetis con tomate y pan rallado, con trigo", it returned three ideas that adapted the request: maize spaghetti with polenta crumbs, chicken tacos in maize tortillas, and a fried rice described as "sin gluten". It did not follow the request into wheat.
+- **Planned week.** Of the 15 planned meals, **five were opened and read**, chosen by name because they sounded wheat-based, so this is a biased sample and not a rate. Three list an ingredient that is normally made of wheat and the recipe never says gluten-free: Giouvetsi de pollo con kritharaki (150 g kritharaki, an orzo pasta), Crumpets con mantequilla y mermelada de naranja (crumpets) and Sándwich de desayuno con salchicha y huevo (muffins ingleses). A fourth, Roscas de sésamo con tahini y miel (roscas), probably contains wheat flour but is not certain. The fifth, Bifteki con arroz, lists no wheat ingredient. The other ten meals were not opened.
+- **Reading.** Its own notice says it does not know every product, and that is what was seen: the exclusion is applied to listed words, not to what a product is made of. At least three of 15 planned meals broke an active gluten exclusion.
+
+**A gap in Fresco found by the same comparison.** Fresco's own rule oracle does not flag `kritharaki`, `crumpets`, `muffins ingleses` or `roscas` as gluten either. None of the 538 active recipes contains those words, so nothing is exposed today, but the database barrier of FRESCO-1020 can only reject what the oracle knows. Tracked as FRESCO-1040.
+
+**Limits.** One account, one day, five recipes opened on purpose. The shopping list was not walked. The first planning attempts failed because the email was unconfirmed, so that behaviour is not a verdict on Tellerino. Weeks 2 and 3, the invite flow with a second member and the retention emails cannot be seen in one day. Cestio is still not walked.
+
+## Reading after Halen and Tellerino (provisional)
+
+- Both are free to start and quick to a first plan. Neither shows prices or supermarkets in what was seen. Tellerino is the one that covers all 14 allergens; its model is a quota of AI actions with Pro bought in the mobile app, while Halen is free with a smaller allergen list.
+- On the gluten test the two fail in different ways: Halen has no gluten option at all; Tellerino has the option and then applies it to listed words only.
+- What Fresco can claim and verify, not just say: all 14 allergens declared, tags that cannot contradict the ingredient text since FRESCO-1020, and supermarket links with observed prices when the dataset is fresh. What it cannot claim yet: that its word lists catch every wheat-based product (FRESCO-1040).
 
 ## Still to do (needs a person)
 
