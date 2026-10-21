@@ -1,13 +1,11 @@
-import type { FrescuraPrecio } from '@/components/shopping-list/shopping-list-format';
 import type { ListEnterItemProps } from '@/components/ui/use-list-enter-animation';
 import type { ShoppingListItem } from '@/lib/api/types';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import { ShoppingCart } from 'lucide-react';
-import { formatUsos, frescuraPrecio, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
+import { formatUsos, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { normalizeNombre } from '@/lib/api/shopping-list';
-import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { capitalize, cn, formatCantidad, formatPrecio, formatUnidad } from '@/lib/utils';
 
 interface ShoppingListItemRowProps {
@@ -29,11 +27,10 @@ interface ShoppingListItemRowProps {
 }
 
 /** "2 ud · 3,50 € · precio de hoy": quantity, price (linked or stored estimate) and how old the linked price is. */
-function ItemQuantityLine({ item, precio, antiguedad, frescura, testIdPrefix }: {
+function ItemQuantityLine({ item, precio, antiguedad, testIdPrefix }: {
   item: ShoppingListItem
   precio: number | undefined
   antiguedad: string | null
-  frescura: FrescuraPrecio
   testIdPrefix: string
 }) {
   return (
@@ -49,11 +46,7 @@ function ItemQuantityLine({ item, precio, antiguedad, frescura, testIdPrefix }: 
         </>
       )}
       {antiguedad && (
-        <span
-          data-testid={`${testIdPrefix}_precio_antiguedad`}
-          data-frescura={frescura}
-          className={frescura === 'reciente' ? undefined : 'font-medium text-text'}
-        >
+        <span data-testid={`${testIdPrefix}_precio_antiguedad`}>
           {' · '}
           {antiguedad}
         </span>
@@ -68,12 +61,9 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
   // product page of each chain that priced this row (none: no link, the
   // stored estimate shows). The links come from the server, one per chain;
   // this component names no chain.
+  const precio = linea?.precio ?? item.precio_estimado;
   const enlaces = linea?.enlaces ?? [];
-  // FRESCO-1028 — the age rules apply to a linked price only; a row with no link shows its stored estimate as before.
-  const antiguedadDias = enlaces[0]?.antiguedadDias ?? null;
-  const frescura = enlaces.length > 0 ? frescuraPrecio(antiguedadDias) : 'reciente';
-  const precio = frescura === 'oculto' ? undefined : (linea?.precio ?? item.precio_estimado);
-  const antiguedad = enlaces.length > 0 ? textoAntiguedad(antiguedadDias) : null;
+  const antiguedad = textoAntiguedad(enlaces[0]?.antiguedadDias ?? null);
   const isShaking = shakeNonce !== null;
 
   return (
@@ -155,7 +145,6 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
           item={item}
           precio={precio}
           antiguedad={antiguedad}
-          frescura={frescura}
           testIdPrefix={`shopping_list_item_${pasilloIdx}_${itemIdx}`}
         />
         {/* FRESCO-212: which dish(es) + day(s) need this
@@ -180,11 +169,6 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
           aria-label={`Abrir ${capitalize(item.nombre)} en ${enlace.nombreCadena}`}
           title={`Abrir ${capitalize(item.nombre)} en ${enlace.nombreCadena}`}
           data-testid={`shopping_list_item_${pasilloIdx}_${itemIdx}_${enlace.cadena}_link`}
-          onClick={() => captureEvent(POSTHOG_EVENTS.SUPERMARKET_LINK_CLICKED, {
-            cadena: enlace.cadena,
-            price_age_days: enlace.antiguedadDias,
-            price_state: frescuraPrecio(enlace.antiguedadDias),
-          })}
           className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 text-tertiary transition-colors hover:text-text"
         >
           {/* FRESCO-819 (A6-L10): the link is the 44px+ tap target; the bordered chip stays the same size inside it. */}
