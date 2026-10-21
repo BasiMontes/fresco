@@ -1,6 +1,25 @@
-# Competitor research, first pass (public pages only)
+# Competitor research (public pages and two walkthroughs)
 
-FRESCO-1029. Observations dated 2026-10-21, read from each product's own public page or store listing. Nothing here comes from using the products: no account was created, so onboarding, generation time, week 2 and 3 behaviour and screenshots are NOT covered yet (marked `not checked`). These products change; re-read before quoting.
+FRESCO-1029. Observations dated 2026-10-21. The first three passes read each product's own public page or store listing; the fourth and fifth are walkthroughs of Halen and Tellerino in a browser with test accounts the owner created. Cestio has no web version and is still to be walked. These products change: re-read before quoting. Anything not seen is marked `not checked`.
+
+## Conclusion (provisional: Halen and Tellerino walked, Cestio pending)
+
+**What the others offer.** A first personalised weekly plan in minutes, a shopping list built from it, and a free tier generous enough to use for good (Halen and Cookpad are free; Tellerino keeps the plan and the list free). Tellerino adds a shared household and AI-generated recipes on a quota; Cestio plans against a budget and a named supermarket (iOS only, seen on its site, not yet used). Paid tiers seen: Cestio EUR 19.99 a year, ekilu EUR 49.99 a year, Tellerino USD 24.99 a year. Fresco's Pro is EUR 4.99 a month and EUR 44.99 a year.
+
+**What only Fresco offers, split by how well it is known.**
+- *Verified in use:* all 14 EU allergens declarable (Halen has no Gluten or Sulfitos option; Tellerino has all 14); and since FRESCO-1020 an active recipe cannot be saved with allergen or diet tags that contradict its ingredient text. Nothing seen in the two products enforces that.
+- *Seen on public pages only, not tested:* supermarket links with observed prices (held back in production while the Mercadona dataset is stale, FRESCO-1028). Neither Halen nor Tellerino showed prices or supermarkets.
+- *Not found, not proven absent:* learning from what the user cooked or discarded. Neither product mentioned it in what was read, and a week-2 and week-3 walkthrough is the only way to know.
+- *Not an advantage:* Tellerino's exclusion applied to listed words and let through wheat-based products (kritharaki, crumpets, English muffins) in 3 of 5 opened meals, which Fresco's own word list would also miss (FRESCO-1040). Fresco must close that before it uses safety as a claim.
+
+**What to change.**
+- *PRD and market context.* The competitive set in `.context/business/market-context.md` names no commercial app: only doing nothing, a generic AI chat and notes. It should add the dedicated planners above, and its premise that Fresco wins by "removing the weekly planning decision" no longer separates it: Halen and Tellerino remove it for free. What is left to defend is the learning, and the safety.
+- *Value proposition.* Lead with "a menu that learns from what your household cooks and that cannot contradict its own allergen tags", not "a menu and a shopping list". The Free tier will be compared with free tiers that already give both.
+- *Price.* Do not change it on this evidence. Fresco's annual price is about twice Tellerino's and Cestio's; test it in the pilot (FRESCO-1030) before moving it.
+
+**What not to do yet.** Do not publish any comparison against a named product. It rests on two accounts, one day and a sample of five opened recipes chosen by name, and comparative claims have to be verifiable and not misleading. Keep it internal until it has been repeated on more recipes and re-read.
+
+**What would change this conclusion.** A walkthrough of Cestio; weeks 2 and 3 of any product to see whether learning exists; ten or more recipes sampled at random in Tellerino's planned week; and the pilot's willingness to pay.
 
 ## Confirmed list
 
