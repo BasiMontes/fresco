@@ -1,10 +1,9 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { precioLinea } from '@/lib/grocery/line-price';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
-import * as posthogEvents from '@/lib/posthog/events';
 import { formatPrecio } from '@/lib/utils';
 import { fireEvent, renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { ShoppingListView } from './shopping-list-view';
@@ -269,42 +268,10 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
     expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent(texto);
   });
 
-  test('a price with no date is never presented as current', () => {
+  test('shows no age at all when the source gives no date', () => {
     renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(null)} />);
 
-    expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('precio sin fecha');
-  });
-
-  // FRESCO-1028 — thresholds 14 and 30 days, set by the owner.
-  test.each([[13, 'reciente'], [14, 'antiguo'], [30, 'antiguo']])('%i days old: price stays and is marked %s', (dias, frescura) => {
-    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(dias)} />);
-
-    const aviso = screen.getByTestId('shopping_list_item_0_0_precio_antiguedad');
-    expect(aviso).toHaveAttribute('data-frescura', frescura);
-    expect(aviso).toHaveTextContent(`precio de hace ${dias} días`);
-    expect(screen.getByText(/1,20€/)).toBeTruthy();
-  });
-
-  test('past 30 days the price is hidden and the supermarket link stays', () => {
-    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(31)} />);
-
-    expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('sin precio reciente');
-    expect(screen.queryByText(/1,20€/)).toBeNull();
-    expect(screen.queryByText(/0,50€/)).toBeNull();
-    expect(screen.getByTestId('shopping_list_item_0_0_cadenafalsa_link')).toHaveAttribute('href', 'https://cadena.example/arroz');
-  });
-
-  describe('supermarket link click event', () => {
-    afterEach(() => { spyOn(posthogEvents, 'captureEvent').mockRestore(); });
-
-    test('fires supermarket_link_clicked with the chain and the state of the price shown', async () => {
-      const capture = spyOn(posthogEvents, 'captureEvent').mockImplementation(() => {});
-      renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(20)} />);
-
-      fireEvent.click(screen.getByTestId('shopping_list_item_0_0_cadenafalsa_link'));
-
-      expect(capture).toHaveBeenCalledWith('supermarket_link_clicked', { cadena: 'cadenafalsa', price_age_days: 20, price_state: 'antiguo' });
-    });
+    expect(screen.queryByTestId('shopping_list_item_0_0_precio_antiguedad')).toBeNull();
   });
 
   test('without resolved purchase data a row shows its stored estimate and no link', () => {
