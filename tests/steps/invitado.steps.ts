@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { LEGAL_TEXTS_VERSION } from '../../lib/legal/consent';
 import { test } from '../fixtures';
+import { serviceRoleHeaders } from '../test-helpers';
 
 /**
  * Step definitions for `.context/qa/regression.feature` — @invitado,
@@ -90,4 +92,52 @@ Then(/^al marcar las dos casillas puede continuar como invitada$/, async ({ page
   await page.getByTestId('onboarding_continue_as_guest_button').click();
   await expect(page.getByTestId('step_indicator_label')).toBeVisible();
   expect(await hasAuthCookie(page)).toBe(true);
+});
+
+/**
+ * FRESCO-1007 (audit 7b A7-API-02, ADR-0040): the guest's age, Terms and Privacy consents are written by the
+ * real `POST /api/consents` (`record_consents`, service role only) as soon as the anonymous session exists.
+ * The rows are read back with the service role, the way a database check would, instead of trusting the page.
+ */
+const sessionUserId = async (page: import('@playwright/test').Page): Promise<string> => {
+  const cookies = await page.context().cookies();
+  // `@supabase/ssr` stores the session as `base64-<base64url JSON>`, split into `.0`, `.1`... chunks when it is large.
+  const chunks = cookies
+    .filter(c => /^sb-.*-auth-token(?:\.\d+)?$/.test(c.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  expect(chunks.length).toBeGreaterThan(0);
+  const raw = chunks.map(c => c.value).join('').replace(/^base64-/, '');
+  const session = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8')) as { user: { id: string } };
+  return session.user.id;
+};
+
+When(/^marca que tiene 14 años o más y acepta los términos y la privacidad, y sigue como invitada$/, async ({ page }) => {
+  await page.getByTestId('confirm_age_checkbox').check();
+  await page.getByTestId('accept_terms_checkbox').check();
+  await page.getByTestId('onboarding_continue_as_guest_button').click();
+  await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+});
+
+Then(/^quedan registrados sus consentimientos de edad, términos y privacidad en la versión vigente$/, async ({ page }) => {
+  const userId = await sessionUserId(page);
+  const readRows = async (): Promise<{ kind: string, version: string }[]> => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_consents?user_id=eq.${userId}&select=kind,version`, {
+      headers: serviceRoleHeaders(),
+    });
+    expect(res.ok).toBe(true);
+    return await res.json() as { kind: string, version: string }[];
+  };
+
+  // The write is a fire-and-await call right after the session is created, so give it a moment instead of racing it.
+  await expect.poll(async () => (await readRows()).map(row => row.kind).sort()).toEqual(['age_14', 'privacy', 'terms']);
+  for (const row of await readRows()) {
+    expect(row.version).toBe(LEGAL_TEXTS_VERSION);
+  }
+
+  // The guest is not tracked by the user factory, so remove it here (404 = already gone).
+  const removed = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: serviceRoleHeaders(),
+  });
+  expect(removed.ok || removed.status === 404).toBe(true);
 });

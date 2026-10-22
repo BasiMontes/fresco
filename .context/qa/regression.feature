@@ -532,6 +532,17 @@ Característica: Flujo completo de usuario en Fresco
     Y no se crea ninguna sesión y sigue en la elección de identidad
     Y al marcar las dos casillas puede continuar como invitada
 
+  @invitado @seguridad @automatizado @requiere-captcha-off
+  # Automatizado: tests/steps/invitado.steps.ts (FRESCO-1007, A7-API-02). Las
+  # filas las escribe `POST /api/consents` (`record_consents`, solo service
+  # role, ADR-0040) y el test las lee de la base con el service role. Cubre el
+  # camino de invitada, no el alta con correo: ese necesita un buzón real
+  # (FRESCO-353) y lo que registra al confirmar es la misma `record_consents`.
+  Escenario: Al empezar como invitada quedan registrados su edad, los términos y la privacidad
+    Dado que una visitante sin cuenta ni sesión abre el onboarding
+    Cuando marca que tiene 14 años o más y acepta los términos y la privacidad, y sigue como invitada
+    Entonces quedan registrados sus consentimientos de edad, términos y privacidad en la versión vigente
+
   @invitado @notificaciones @verificado-manual-2026-09-01
   Escenario: Tras generar su primer menú, se le pide permiso de notificaciones push en un momento de valor
     Dado que una visitante sin cuenta ni sesión completa el onboarding y genera su primer menú
