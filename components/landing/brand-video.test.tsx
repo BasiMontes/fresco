@@ -59,3 +59,48 @@ describe('BrandVideo — keyboard focus and captions (FRESCO-1013)', () => {
     expect(vtt).not.toMatch(/voz/i);
   });
 });
+
+/** FRESCO-1044 (WCAG 1.2.3): the video's messages are burned into the picture, so there is a text alternative under it. */
+describe('BrandVideo — transcription (FRESCO-1044)', () => {
+  test('offers a transcription under the video, closed by default', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const details = container.querySelector('details');
+    expect(details).not.toBeNull();
+    expect(details?.hasAttribute('open')).toBe(false);
+    expect(container.querySelector('details > summary')?.textContent).toContain('Transcripción del vídeo');
+  });
+
+  test('says the video has no voice and carries the four headlines exactly as they appear in it', () => {
+    renderWithProviders(<BrandVideo />);
+
+    expect(screen.getByText(/no tiene voz/i)).toBeInTheDocument();
+    for (const headline of [
+      'Deja de improvisar en el súper.',
+      'Tu semana, lista.',
+      'Tu lista, ya hecha.',
+      'Aprende de lo que realmente cocinas.',
+    ]) {
+      expect(screen.getByText(new RegExp(headline.replace(/\./g, '\\.')))).toBeInTheDocument();
+    }
+  });
+
+  test('lists the six scenes in order', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const scenes = container.querySelectorAll('details ol > li');
+    expect(scenes).toHaveLength(6);
+    expect(scenes[0]?.textContent).toContain('Deja de improvisar en el súper.');
+    expect(scenes[5]?.textContent).toContain('Aprende de lo que realmente cocinas.');
+  });
+
+  test('sits after the video inside the same section', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const video = container.querySelector('section > video');
+    const details = container.querySelector('section > details');
+    expect(video).not.toBeNull();
+    expect(details).not.toBeNull();
+    expect((video as Node).compareDocumentPosition(details as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
