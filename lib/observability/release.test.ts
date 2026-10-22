@@ -23,7 +23,7 @@ describe('resolveRelease (FRESCO-803)', () => {
 // is attributed to no deploy. Read as text: importing them would start Sentry.
 describe('Sentry inits carry the release (FRESCO-803)', () => {
   const root = join(import.meta.dir, '..', '..');
-  for (const file of ['sentry.server.config.ts', 'sentry.edge.config.ts', 'instrumentation-client.ts']) {
+  for (const file of ['sentry.server.config.ts', 'sentry.edge.config.ts', 'lib/observability/client-sentry.ts']) {
     test(`${file} passes release: sentryRelease()`, () => {
       expect(readFileSync(join(root, file), 'utf8')).toContain('release: sentryRelease()');
     });

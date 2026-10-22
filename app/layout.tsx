@@ -4,6 +4,7 @@ import { Figtree, Fraunces } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
+import { SentryConsentGate } from '@/app/providers/sentry-consent-gate';
 import { AnalyticsConsentSync } from '@/components/auth/analytics-consent-sync';
 import { IdentityCookieSync } from '@/components/auth/identity-cookie-sync';
 import { TopProgressBar } from '@/components/layout/top-progress-bar';
@@ -12,7 +13,6 @@ import { CookieConsentProvider } from '@/components/legal/cookie-consent-context
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
-import { toOrigin } from '@/lib/security/csp';
 import { canonicalUrl, getMetadataBase } from '@/lib/seo/canonical';
 import { indexingRobots } from '@/lib/seo/indexing';
 import { getSiteVerification } from '@/lib/seo/site-verification';
@@ -152,12 +152,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // consent cookie per request avoids a banner flash on hydration for a
   // returning visitor who already decided.
   const initialConsentDecision = parseCookieConsent(cookieStore.get(COOKIE_CONSENT_COOKIE)?.value);
-  // FRESCO-722: same derivation `lib/security/csp.ts` already uses for the
-  // Sentry CSP report-uri — reused here instead of the CSP's static
-  // `SENTRY_HOSTS` wildcard because this runs server-side per request
-  // (unlike a build-time CSP header), where `NEXT_PUBLIC_SENTRY_DSN` is
-  // guaranteed present.
-  const sentryIngestOrigin = toOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
   return (
     <html
@@ -166,13 +160,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={`${fraunces.variable} ${figtree.variable}`}
     >
       <head>
-        {/* FRESCO-722: preconnect candidates Lighthouse's network-dependency-tree
-            audit flagged (~301ms LCP each). `vercel.live` is Vercel's own
+        {/* FRESCO-722: preconnect candidate Lighthouse's network-dependency-tree
+            audit flagged (~301ms LCP). `vercel.live` is Vercel's own
             preview/dev toolbar widget (static host, not a CORS fetch — no
-            `crossOrigin`). Sentry's ingest beacon IS a cross-origin
-            `fetch`/`sendBeacon` without credentials, hence `crossOrigin`. */}
+            `crossOrigin`). FRESCO-1042: no preconnect to Sentry's ingest host any
+            more, it opened a connection to a third party before the visitor chose. */}
         <link rel="preconnect" href="https://vercel.live" />
-        {sentryIngestOrigin && <link rel="preconnect" href={sentryIngestOrigin} crossOrigin="anonymous" />}
         {/* FRESCO-472: Organization + WebSite JSON-LD, site-wide. */}
         <JsonLd data={organizationJsonLd()} />
         <JsonLd data={websiteJsonLd()} />
@@ -199,6 +192,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CookieConsentProvider initialDecision={initialConsentDecision}>
           {/* FRESCO-919: mirrors the banner decision into the profile for server-side events. */}
           <AnalyticsConsentSync />
+          {/* FRESCO-1042 / ADR-0065: the browser Sentry SDK starts only after "Aceptar". */}
+          <SentryConsentGate />
           <PostHogProvider>{children}</PostHogProvider>
           <CookieConsentBanner />
           <CookieSettingsDialog />
