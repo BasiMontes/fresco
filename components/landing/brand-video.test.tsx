@@ -40,21 +40,22 @@ describe('BrandVideo — keyboard focus and captions (FRESCO-1013)', () => {
     expect(container.querySelector('video')?.className).toContain('focus-visible:ring-2');
   });
 
-  test('carries a Spanish captions track, on by default (WCAG 1.2.2)', () => {
+  test('carries a Spanish captions track that is available but off by default (WCAG 1.2.2, FRESCO-1043)', () => {
     const { container } = renderWithProviders(<BrandVideo />);
 
     const track = container.querySelector('video track[kind="captions"]');
     expect(track).not.toBeNull();
     expect(track?.getAttribute('srclang')).toBe('es');
     expect(track?.getAttribute('src')).toBe('/video/fresco-brand.es.vtt');
-    expect(track?.hasAttribute('default')).toBe(true);
+    expect(track?.hasAttribute('default')).toBe(false);
   });
 
-  test('the captions file is valid WebVTT and says the video has no voice', () => {
+  test('the captions file is valid WebVTT with one short music note and no technical remark (FRESCO-1043)', () => {
     const vtt = readFileSync(new URL('../../public/video/fresco-brand.es.vtt', import.meta.url), 'utf8');
 
     expect(vtt.startsWith('WEBVTT')).toBe(true);
     expect(vtt).toMatch(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/);
-    expect(vtt).toContain('Música instrumental');
+    expect(vtt).toContain('[Música instrumental]');
+    expect(vtt).not.toMatch(/voz/i);
   });
 });
