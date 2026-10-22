@@ -24,6 +24,7 @@ The browser SDK starts only while the cookie decision is `accepted`, the same ga
 - `instrumentation-client.ts` no longer initialises anything. It keeps `onRouterTransitionStart`, which the SDK requires, and forwards to the client only when it is running.
 - The `preconnect` to Sentry's ingest host is removed from `app/layout.tsx`.
 - Server and edge Sentry (ADR-0009) are unchanged and capture as before.
+- A second path to Sentry before consent was found after the first change shipped: the CSP `report-uri`. On pages that validate with Zod (`/login`), Zod probed `Function("")`, the enforced CSP blocked it (Zod swallows that) and the browser still posted a `csp-report` (blocked-uri `eval`, with the visitor's IP) to Sentry. `lib/validation/zod-jitless.ts` sets Zod's `jitless` option from `instrumentation-client.ts`, so the probe never runs. The CSP is not loosened and the `report-uri` stays, so real violations keep being reported.
 
 The legal text now says that in the browser Sentry is active only after accepting cookies, and that on the servers it records service failures. `LEGAL_TEXTS_VERSION` is not bumped: the wording becomes more protective, so no earlier decision is invalidated.
 

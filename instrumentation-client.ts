@@ -5,6 +5,8 @@
 // bundle. Server + edge instrumentation (sentry.server.config.ts, sentry.edge.config.ts) are
 // untouched and still capture everything per ADR-0009.
 import { clientSentry } from '@/lib/observability/client-sentry';
+// FRESCO-1042: so Zod never probes `Function("")` (a CSP report with IP before consent).
+import '@/lib/validation/zod-jitless';
 
 // Required by the SDK to instrument App Router client-side navigations
 // (silences the "ACTION REQUIRED" build warning otherwise emitted). A transition that starts
