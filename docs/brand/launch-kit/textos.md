@@ -32,20 +32,24 @@ Acaba de salir, así que me ayuda mucho que lo probéis y me contéis qué os fa
 
 ## Capturas
 
-Tres capturas de 1184 x 740 px, tomadas de la app real, sin datos personales (sin correo ni nombre de cuenta).
+Cinco capturas de 1184 x 740 px, tomadas de la app real, sin correo. Las dos últimas (22-10-2026) son de una cuenta de pruebas con plan Pro y se ocultó su tarjeta de cuenta; el saludo de `04` dice «Pro Pre», el nombre de esa cuenta de pruebas, no un dato personal.
 
 | Fichero | Pantalla | Qué enseña | Texto alternativo |
 |---|---|---|---|
 | `screenshots/01-menu-semanal.png` | Menú | Desayuno, comida y cena del día, recetas disponibles y gasto semanal estimado | Pantalla de menú de Fresco con las tres comidas del día y el gasto semanal estimado |
 | `screenshots/02-calendario.png` | Calendario | La semana por días y comidas, con "Cocinado" y "Descartar" en cada plato | Calendario semanal de Fresco con los platos de cada día |
 | `screenshots/03-biblioteca.png` | Biblioteca | Catálogo de recetas con buscador, filtros y etiquetas de dieta | Biblioteca de recetas de Fresco con etiquetas de dieta |
+| `screenshots/04-aprendizaje-pro.png` | Menú (Pro) | El aviso de aprendizaje con cifras propias: evita las recetas ya cocinadas y deja fuera las descartadas | Menú de Fresco con el aviso de que evita 12 recetas ya cocinadas y deja fuera 3 descartadas |
+| `screenshots/05-lista-compra.png` | Lista de la compra | 26 artículos pendientes por sección, con cantidad, precio estimado y el plato de origen | Lista de la compra de Fresco con artículos pendientes, cantidades y precios orientativos |
+
+### Cómo se hicieron las dos últimas
+
+La cuenta de pruebas Pro tenía un historial sembrado a mano: la semana `2026-W42` con 12 platos cocinados, 3 descartados y 6 pendientes (FRESCO-897). El aviso de `04` lo calculó la función `generate-meal-plan` sobre ese historial; no está maquetado.
 
 ### Capturas que faltan y por qué
 
-- **Lista de la compra:** la cuenta de pruebas tenía la compra cerrada y la app muestra entonces un estado vacío. Hace falta una lista con artículos pendientes.
-- **Aprendizaje de Pro:** ninguna cuenta de pruebas declarada tiene el plan Pro.
 - **Detalle de receta:** descartada. Los pasos de preparación de las recetas de ejemplo son demasiado pobres para una ficha pública.
 
 ### Limitación conocida
 
-En `01-menu-semanal.png` el desayuno sale con una letra gris en lugar de foto, porque esa receta aún no tiene imagen en el catálogo.
+En `01-menu-semanal.png` y en `04-aprendizaje-pro.png` el desayuno sale con una letra gris en lugar de foto, porque esa receta aún no tiene imagen en el catálogo.
