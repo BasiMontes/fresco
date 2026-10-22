@@ -162,3 +162,8 @@ Historia archivada:
 - Qué: PR #786 (e249f130, en staging): escenario `@invitado @seguridad @automatizado` que arranca una invitada con la edad y los términos marcados y lee `user_consents` con el service role (`age_14`, `privacy` y `terms` en `LEGAL_TEXTS_VERSION`). Verificado contra la pila local y con una mutación que lo pone rojo. FRESCO-1007 pasa a Finalizada con la salvedad escrita: el alta con correo real no tiene e2e (la pila local no puede reproducirla y hace falta un buzón, FRESCO-353) y queda cubierta por `tests/db/user-consents.test.ts`.
 - Por qué: era el único criterio de FRESCO-1007 sin cumplir tras la reconciliación de FRESCO-986.
 - Siguiente: el e2e de staging tardó 12 min 38 s (límite duro del ADR-0018: ~8 min); vigilar la varianza del runner. Si algún día hay buzón local (Inbucket en la pila de CI), añadir el alta con correo.
+
+## 2026-10-22 - Search Console y Bing verificados (FRESCO-887, FRESCO-1018)
+- Qué: fichero HTML de verificación en public/ (PR #787), promoción de staging a main (1556a316), propiedad verificada en Search Console, sitemap enviado y propiedad importada en Bing.
+- Por qué: dar a Fresco presencia medible en buscadores sin dominio propio ni variables extra.
+- Siguiente: el fichero no se borra nunca; revisar indexación del sitemap en unos días.
