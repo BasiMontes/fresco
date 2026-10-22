@@ -137,3 +137,8 @@ Historia archivada:
 - Qué: documento .context/business/competitor-research-2026-10-21.md con Halen, Tellerino y Cestio (recorridos y capturas del propietario), conclusión provisional arriba; tarjeta pasada a Finalizada con comentario de evidencia.
 - Por qué: el propietario considera suficiente lo visto para mejorar Fresco; Cestio, Halen y Tellerino ya ofrecen plan y lista gratis o baratos, y los precios por supermercado no son exclusivos de Fresco.
 - Siguiente: la prueba del «nunca» de alergias de Cestio quedó inconcluyente (pasta con gluten sin ingredientes vistos, cambió sola); semanas 2 y 3 no observables sin pagar; borrar las cuentas de prueba de Halen y Tellerino al terminar; FRESCO-1040 (palabras de gluten) y el piloto FRESCO-1030.
+
+## 2026-10-22 - FRESCO-897 cuentas Pro de prueba y capturas del kit de lanzamiento
+- Qué: tres cuentas Pro sin caducidad (dev, pre y pro-user-premium, variables DEV/PRE/PRO_PRO_PLAN_USER_* en .env) creadas por la API de admin, con onboarding hecho en fresco-pre y plan puesto por service-role. PR #783 (ad97bd23, en staging) añade al kit de lanzamiento las capturas 04 (aviso de aprendizaje de Pro) y 05 (lista de la compra con 26 artículos). El historial de la 04 se sembró a mano en la cuenta pre (semana 2026-W42: 12 cocinados, 3 descartados, 6 pendientes). Tarjeta pasada a Finalizada con comentario de evidencia.
+- Por qué: FRESCO-889 dejó fuera esas dos capturas por no haber ninguna cuenta Pro de pruebas; sin ellas el kit no enseñaba lo que diferencia al plan Pro.
+- Siguiente: documentar las variables *_PRO_PLAN_USER_* en .env.example (los permisos de la sesión impedían leerlo); las capturas llegan a main en el próximo lote de promoción; el desayuno de la 04 sale sin foto hasta que esa receta tenga imagen.
