@@ -1,6 +1,6 @@
 # ADR-0066 — Launch legal texts: AI-assisted review and accepted risk until revenue pays for a lawyer
 
-- **Status:** Proposed (drafted by AI, 2026-10-23; the founder accepts or rejects it)
+- **Status:** Accepted (2026-10-23, founder; drafted by AI)
 - **Date:** 2026-10-23
 - **Deciders:** Founder (Basi Montes)
 - **Tags:** legal-risk, launch-gate, consent, consumer-law
