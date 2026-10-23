@@ -45,6 +45,7 @@ const RULES: Record<string, Attempt> = {
   'falta:mostaza': { ingredientes: ['mostaza'] },
   'falta:altramuces': { ingredientes: ['altramuces'] },
   'dieta:sin_gluten': { ingredientes: ['agua'], alergenos: ['gluten'], dieta: { sin_gluten: true } },
+  'dieta:sin_gluten_marca': { ingredientes: ['morcilla'], dieta: { sin_gluten: true } },
   'dieta:sin_lactosa': { ingredientes: ['agua'], alergenos: ['lactosa'], dieta: { sin_lactosa: true } },
   'dieta:sin_huevo': { ingredientes: ['agua'], alergenos: ['huevo'], dieta: { sin_huevo: true } },
   'dieta:halal': { ingredientes: ['cerdo'], dieta: { halal: true } },
