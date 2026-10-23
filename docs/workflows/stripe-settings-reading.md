@@ -6,7 +6,25 @@
 > ([`stripe-go-live.md`](./stripe-go-live.md) explains each line). Nothing was written to Stripe.
 > Live mode is read only once a live account exists; at the date of the reading below there was none.
 
-## Reading of 2026-10-20, test mode
+## Reading of 2026-10-23, test mode
+
+Same method, plus a direct read of the webhook endpoints and the active prices through the Stripe API. The
+prices the app uses are now `inclusive`, so the 2026-10-20 failure on `A7-LAUNCH-04` is closed.
+
+| Setting | Value read | Environment | Verdict |
+|---|---|---|---|
+| Webhook endpoint `fresco-pro` | enabled, same six events as the handler (`charge.refunded` and the dispute included) | pro | pass |
+| Webhook endpoint `fresco-pre` | enabled, same six events | pre | pass |
+| Webhook endpoint `fresco-dev` | disabled, same six events | dev | expected: `dev` deployments are off (`vercel.json`), the alias is frozen |
+| Price month the app uses: `tax_behavior` | `inclusive` | all three (one shared Stripe test account) | pass |
+| Price year the app uses: `tax_behavior` | `inclusive` | all three | pass, **`A7-LAUNCH-04` discarded** |
+| Portal: `subscription_cancel`, `payment_method_update` | enabled | all three | pass, **`A7-LAUNCH-05` stays discarded** |
+| Failed-payment retries (dunning) | not exposed by the API | all three | manual, owner confirms in the dashboard |
+
+Two older active test Prices still have `tax_behavior` `unspecified`. The go-live check confirms the app does
+not use them; archiving them in the dashboard keeps the list unambiguous.
+
+## Reading of 2026-10-20, test mode (superseded on prices)
 
 The reading uses the test key of the machine that ran it, so it describes the test-mode account, not each
 deployed environment one by one. It was not checked whether `dev`, `pre` and `pro` hold that same key; the
@@ -41,7 +59,6 @@ treatment for the amount. The gap is on the Stripe side, not in the copy.
 
 ## Follow-ups
 
-- A Price with no `tax_behavior` has its own card under FRESCO-884. Stripe lets an `unspecified` price take a
-  `tax_behavior` once, and the value cannot change afterwards, so the owner decides `inclusive` (the copy already
-  assumes it) before any price is used in live mode.
+- Resolved on 2026-10-23: the prices the app uses are `inclusive`. A `tax_behavior` cannot change once set, so
+  the live account needs its prices created `inclusive` from the start.
 - Repeat this reading with the live key when the live account exists, and add a `live` row to each line above.
