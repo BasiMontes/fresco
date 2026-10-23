@@ -253,16 +253,26 @@ jobs:
       # Supabase stack bring-up), a warm `.next/cache` keeps the build fully
       # hidden behind the ~2 min of stack setup - the "Wait for the background
       # build" step then costs ~12 s instead of a ~60-90 s sequential build.
-      # The key is over the lockfile + a hash of every source file, so any
-      # real change busts it; `restore-keys` still gives a partial (per-file
-      # incremental) hit when only some files changed. Manual bust: bump `v1`.
-      - name: Cache Next.js build cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # FRESCO-1048: the key used to hash every source file, so each code
+      # change saved a new ~200 MB entry. 45 of them filled the repo's 10 GB
+      # Actions cache and evicted the Playwright browsers and the bun deps, so
+      # a third of the runs paid 400-885 s to reinstall Chromium. Now the key is
+      # the lockfile + the ISO week (one entry a week per lockfile), PRs only
+      # RESTORE it, and the save runs on push to `staging` (the step after the
+      # build wait). `restore-keys` still gives the newest earlier week.
+      # Manual bust: bump `v2`.
+      - name: Next.js build cache key
+        id: nextcache-week
+        run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Next.js build cache
+        id: nextcache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .next/cache
-          key: nextcache-v1-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx', '!node_modules/**', '!.next/**') }}
+          key: nextcache-v2-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ steps.nextcache-week.outputs.week }}
           restore-keys: |
-            nextcache-v1-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            nextcache-v2-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
 
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
@@ -408,6 +418,18 @@ jobs:
           cat "$RUNNER_TEMP/build.log"
           bun run start &
           npx --yes wait-on http://localhost:3000 --timeout 60000
+
+      # FRESCO-1048: the only place the Next.js build cache is written. Push to
+      # `staging` only (PRs restore, never save) and only when this week's
+      # entry is not there yet, so the repo holds about one entry a week.
+      - name: Save Next.js build cache
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/staging'
+          && steps.nextcache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .next/cache
+          key: nextcache-v2-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ steps.nextcache-week.outputs.week }}
 
       - run: bun run test:e2e
 
