@@ -1,6 +1,6 @@
 # ADR-0066 — Launch legal texts: AI-assisted review and accepted risk until revenue pays for a lawyer
 
-- **Status:** Proposed (drafted by AI, 2026-10-23; the founder accepts or rejects it)
+- **Status:** Accepted (2026-10-23, founder; drafted by AI)
 - **Date:** 2026-10-23
 - **Deciders:** Founder (Basi Montes)
 - **Tags:** legal-risk, launch-gate, consent, consumer-law
@@ -28,10 +28,15 @@ We will treat the AI-assisted analysis as the interim review and record the resi
    - A subscription confirmation that actually reaches the customer (FRESCO-1005, FRESCO-988).
    - Vercel Pro (Hobby forbids commercial use) and Supabase Pro.
 4. **Apply the analysis' low-cost fixes** (liability cap for consumers, withdrawal wording, consent display) in small PRs, each with a version bump of `LEGAL_TEXTS_VERSION`.
-5. **Review trigger.** Commission a targeted paid review, limited to provider identification and withdrawal, when the first of these happens: cumulative revenue covers its cost; a complaint or a contact from the AEPD or a consumer body; or the number of paying users reaches a threshold. The amount and the threshold are the founder's to set when accepting this ADR: `[owner to set]`.
+5. **Review trigger.** Commission a targeted paid review, limited to provider identification and withdrawal, when the first of these happens (values set by the founder on 2026-10-23):
+   - **Money:** cumulative net revenue (after Stripe, Vercel and Supabase costs) covers the cost of the review. The quote is still to be requested; until then the cost is unknown.
+   - **Volume:** 50 paying users.
+   - **Event:** any complaint, or a contact from the AEPD or a consumer association. No threshold: it triggers at once.
+
+   The money trigger alone would leave the risk growing while the cash does not arrive, which is why the volume trigger exists.
 
 ## Consequences
 
 - **Positive:** the launch path no longer waits on money that depends on the launch; the risk is written down with an owner instead of being implicit.
 - **Negative / trade-offs:** if a text is wrong, Fresco has no professional opinion to point to, and a sanction or a nullity falls on the founder. The analysis can be mistaken on article numbers and on current doctrine.
-- **Neutral / follow-ups:** FRESCO-794, FRESCO-856, FRESCO-1021, FRESCO-911 and FRESCO-434 reference this ADR as their deferral decision once it is Accepted. Revoke by superseding this ADR the day a lawyer's report exists.
+- **Neutral / follow-ups:** request a quote for the targeted review so the money trigger has a number. FRESCO-794, FRESCO-856, FRESCO-1021, FRESCO-911 and FRESCO-434 reference this ADR as their deferral decision once it is Accepted. Revoke by superseding this ADR the day a lawyer's report exists.
