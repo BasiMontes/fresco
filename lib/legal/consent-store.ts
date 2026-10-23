@@ -23,18 +23,31 @@ export async function recordConsents(client: SupabaseClient<Database>, { userId,
  * passed. A new `LEGAL_TEXTS_VERSION` makes this false for everyone until they accept again.
  * Throws on a read error: the caller decides what an unreadable registry means (the checkout
  * refuses, it never lets the payment through unproven).
+ *
+ * FRESCO-1021: with `since`, only a row accepted at or after that instant counts. That is how the
+ * checkout asks for a `withdrawal_waiver` of THIS purchase and not one from an earlier
+ * subscription. The registry can now hold several waiver rows for one version, so the read takes
+ * the first row (`limit(1)`) instead of `maybeSingle()`, which fails when more than one matches.
  */
-export async function hasRecordedConsent(client: SupabaseClient<Database>, kind: ConsentKind): Promise<boolean> {
-  const { data, error } = await client
+export async function hasRecordedConsent(
+  client: SupabaseClient<Database>,
+  { kind, since }: { kind: ConsentKind, since?: Date },
+): Promise<boolean> {
+  let query = client
     .from('user_consents')
     .select('id')
     .eq('kind', kind)
-    .eq('version', LEGAL_TEXTS_VERSION)
-    .maybeSingle();
+    .eq('version', LEGAL_TEXTS_VERSION);
+
+  if (since) {
+    query = query.gte('accepted_at', since.toISOString());
+  }
+
+  const { data, error } = await query.limit(1);
 
   if (error) {
     throw error;
   }
 
-  return data !== null;
+  return (data?.length ?? 0) > 0;
 }

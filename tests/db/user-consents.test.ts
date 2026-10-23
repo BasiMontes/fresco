@@ -28,6 +28,7 @@ const reachable = RUN ? await stackReachable() : false;
 
 const PERMISSION_DENIED = '42501';
 const INVALID_PARAMETER = '22023';
+const INVALID_CONFLICT_TARGET = '42P10';
 const RAISED_EXCEPTION = 'P0001';
 
 const code = (res: { body: unknown }) => (res.body as { code?: string }).code;
@@ -100,7 +101,11 @@ describe.skipIf(!(RUN && reachable))('user_consents (real DB)', () => {
         prefer: 'resolution=ignore-duplicates,return=minimal',
         body: { kind: 'terms', version: 'v-old-upsert' },
       });
-      expect(code(upsert)).toBe(PERMISSION_DENIED);
+      // FRESCO-1021: the table-wide unique constraint this upsert named is gone (it is a partial
+      // index now), so Postgres refuses the ON CONFLICT target (42P10) before it looks at grants.
+      // Either way the client writes nothing, and that is what this test is for.
+      expect([PERMISSION_DENIED, INVALID_CONFLICT_TARGET]).toContain(code(upsert));
+      expect((await consentsOf(a)).some(r => r.version === 'v-old-upsert')).toBe(false);
     });
 
     test('the request without a session cannot read or write', async () => {
@@ -153,6 +158,79 @@ describe.skipIf(!(RUN && reachable))('user_consents (real DB)', () => {
       await recordConsentRows(a.id, ['terms'], 'v-new-text');
 
       expect((await consentsOf(a)).filter(r => r.kind === 'terms').map(r => r.version)).toEqual(expect.arrayContaining(['v-server', 'v-many', 'v-new-text']));
+    });
+
+    // FRESCO-1021: the right of withdrawal belongs to each contract, so a withdrawal_waiver is
+    // recorded per purchase. A repeat inside the window is a no-op (a retry or a second click),
+    // a call outside it is a new row. `p_waiver_window` lets the test say "outside" without
+    // rewinding accepted_at, which nobody may write.
+    describe('withdrawal_waiver, one row per purchase (FRESCO-1021)', () => {
+      const zeroWindow = { p_waiver_window: '0 seconds' };
+      const waiverRows = async (user: DbTestUser, version: string) =>
+        (await consentsOf(user)).filter(r => r.kind === 'withdrawal_waiver' && r.version === version);
+
+      test('a repeat inside the window adds no row', async () => {
+        const u = await ctx.createUser();
+
+        await recordConsentRows(u.id, ['withdrawal_waiver'], 'v-waiver');
+        await recordConsentRows(u.id, ['withdrawal_waiver'], 'v-waiver');
+
+        expect(await waiverRows(u, 'v-waiver')).toHaveLength(1);
+      });
+
+      test('a new purchase, outside the window, gets its own row and the old one stays', async () => {
+        const u = await ctx.createUser();
+
+        await recordConsentRows(u.id, ['withdrawal_waiver'], 'v-waiver');
+        const again = await rpc('record_consents', { p_user_id: u.id, p_kinds: ['withdrawal_waiver'], p_version: 'v-waiver', ...zeroWindow }, { serviceRole: true });
+
+        expect(again.status).toBeLessThan(300);
+        const rows = await waiverRows(u, 'v-waiver');
+        expect(rows).toHaveLength(2);
+        expect(new Set(rows.map(r => r.accepted_at)).size).toBe(2);
+      });
+
+      test('the other kinds stay once per text version, whatever the window says', async () => {
+        const u = await ctx.createUser();
+        const args = { p_user_id: u.id, p_kinds: ['terms', 'age_14', 'withdrawal_waiver'], p_version: 'v-mixed', ...zeroWindow };
+
+        await rpc('record_consents', args, { serviceRole: true });
+        await rpc('record_consents', args, { serviceRole: true });
+
+        const rows = (await consentsOf(u)).filter(r => r.version === 'v-mixed');
+        expect(rows.filter(r => r.kind === 'terms')).toHaveLength(1);
+        expect(rows.filter(r => r.kind === 'age_14')).toHaveLength(1);
+        expect(rows.filter(r => r.kind === 'withdrawal_waiver')).toHaveLength(2);
+      });
+
+      test('a waiver for another text version is not "recent" for this one', async () => {
+        const u = await ctx.createUser();
+
+        await recordConsentRows(u.id, ['withdrawal_waiver'], 'v-waiver-1');
+        await recordConsentRows(u.id, ['withdrawal_waiver'], 'v-waiver-2');
+
+        expect(await waiverRows(u, 'v-waiver-1')).toHaveLength(1);
+        expect(await waiverRows(u, 'v-waiver-2')).toHaveLength(1);
+      });
+
+      test.each([
+        ['a window over one day', '2 days'],
+        ['a negative window', '-1 minute'],
+      ])('refuses %s with 22023', async (_label, window) => {
+        const res = await rpc('record_consents', { p_user_id: a.id, p_kinds: ['withdrawal_waiver'], p_version: 'v-bad-window', p_waiver_window: window }, { serviceRole: true });
+
+        expect(res.status).toBe(400);
+        expect(code(res)).toBe(INVALID_PARAMETER);
+        expect((await consentsOf(a)).some(r => r.version === 'v-bad-window')).toBe(false);
+      });
+
+      test('the waiver window is not a way around the actor bind: still service role only', async () => {
+        const res = await rpc('record_consents', { p_user_id: b.id, p_kinds: ['withdrawal_waiver'], p_version: 'v-spoof-window', ...zeroWindow }, { token: a.token });
+
+        expect(res.status).toBe(403);
+        expect(code(res)).toBe(PERMISSION_DENIED);
+        expect((await consentsOf(b)).some(r => r.version === 'v-spoof-window')).toBe(false);
+      });
     });
 
     test.each([
