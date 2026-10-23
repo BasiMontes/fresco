@@ -1,6 +1,8 @@
 # Fresco — Brief para revisión por abogado colegiado (FRESCO-434)
 
 > **Preparado con antelación.** Fresco todavía no cobra a usuarios reales — este brief queda listo para el momento en que se active la revisión letrada, antes de encender Stripe en producción con clientes de verdad.
+>
+> **Actualización 2026-10-23.** Los §4 y §5 de abajo están desfasados: casi todo lo que figura como "sin implementar" ya está hecho con textos provisionales. El estado actual y las preguntas concretas para el abogado están en `FRESCO-794-consulta-al-abogado.md`.
 
 ## 1. Qué se necesita del abogado
 
