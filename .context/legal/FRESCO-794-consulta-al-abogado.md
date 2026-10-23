@@ -11,7 +11,7 @@ Todo con textos **provisionales** (`LEGAL_TEXTS_VERSION = 'provisional-2026-10-1
 | Registro de consentimientos, solo se añade, con versión y fecha (ADR-0040) | tabla `user_consents`, `POST /api/consents` |
 | Casilla de 14 años o más y aceptación de Términos y Privacidad, no premarcadas, en alta y onboarding (invitado y cuenta) | `components/onboarding/`, `app/signup/` |
 | Consentimiento explícito de datos de salud (art. 9.2.a RGPD), que nombra la creencia religiosa si se elige dieta halal | `lib/legal/consent.ts` (`health_data`) |
-| Resumen precontractual y casilla de ejecución inmediata (art. 103.a TRLGDCU; las etiquetas "103.m" del código se corrigen según `FRESCO-794-analisis-asistido-por-ia.md`) antes de Stripe | `components/profile/upgrade-to-pro-button.tsx` (`withdrawal_waiver`) |
+| Resumen precontractual y casilla de ejecución inmediata (el código cita el art. 103.m, que es el que remite el 98.7.b; el texto de la casilla sigue la fórmula del 103.a. Qué letra aplica a Pro, servicio o contenido digital, es una pregunta abierta: ver `FRESCO-794-analisis-asistido-por-ia.md`, respuesta 5) antes de Stripe | `components/profile/upgrade-to-pro-button.tsx` (`withdrawal_waiver`) |
 | Reconsentimiento de las cuentas anteriores al registro, al entrar (FRESCO-1007) y consentimiento de salud exigido al guardar alérgenos en `/profile` (FRESCO-917) | `components/legal/reconsent-dialog.tsx`, `components/profile/preferences-form.tsx` |
 | Lista de espera con aviso en la política, doble confirmación y límite | `app/api/waitlist/` |
 | Limpieza de invitados a los 3 días, con borrado en PostHog encolado y reintentado | migración `20261019170000` |

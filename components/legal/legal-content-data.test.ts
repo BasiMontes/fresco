@@ -72,3 +72,32 @@ describe('PRIVACY_SECTIONS — waitlist, guests and religious belief (FRESCO-100
     expect(section('Base Legal para Datos de Alergias').body).toContain('halal');
   });
 });
+
+// FRESCO-1049 (AI-assisted legal analysis, ADR-0066): a liability cap on what a consumer paid can be an abusive clause,
+// and the refund rule had to say when the money comes back in full and when only the unused part does.
+describe('TERMS_SECTIONS — liability and refund wording (FRESCO-1049)', () => {
+  const body = (title: string) => TERMS_SECTIONS.find(s => s.title === title)!.body;
+
+  test('the liability clause has no cap tied to what the user paid', () => {
+    const liability = body('Limitación de Responsabilidad');
+
+    expect(liability).not.toContain('últimos 12 meses');
+    expect(liability).not.toMatch(/se limita a lo que hayas pagado/);
+  });
+
+  test('the liability clause keeps the consumer-law and wilful-misconduct carve-outs', () => {
+    const liability = body('Limitación de Responsabilidad');
+
+    expect(liability).toContain('normativa de protección de consumidores');
+    expect(liability).toContain('dolo o negligencia grave');
+    expect(liability).toContain('daños personales');
+  });
+
+  test('the withdrawal clause says when the refund is full and when it is proportional', () => {
+    const withdrawal = body('Suscripción, Renovación y Derecho de Desistimiento');
+
+    expect(withdrawal).toContain('te devolvemos el importe íntegro');
+    expect(withdrawal).toContain('abonas la parte del servicio ya prestada');
+    expect(withdrawal).toContain('te devolvemos el resto');
+  });
+});
