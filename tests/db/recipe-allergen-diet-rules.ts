@@ -112,6 +112,14 @@ const NOT_MEAT_PHRASES = /\b(?:sin carne|carne vegetal|carne de soja|vegetal de 
 /** Not gluten-free unless the text says so: soy sauce is wheat-based, tamari and miso often are. */
 export const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos');
 const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos) sin gluten\b/g;
+/**
+ * FRESCO-1051: ingredients that, bought as a product, very often carry wheat (stock cubes, black pudding,
+ * tripe and green sauce bound with flour). FRESCO-1050 withdrew `sin_gluten` from the recipes that listed
+ * one of these exact names; this keeps a new or edited recipe from claiming it again. Whole ingredient
+ * names, not words: "caldo de verduras" and "su caldo" are not on the list. The list is an AI's
+ * judgement accepted by the owner (2026-10-23), not a lab result: review it when real coeliac users exist.
+ */
+export const GLUTEN_BRAND_DEPENDENT = ['caldo', 'caldo de carne', 'caldo de pollo', 'morcilla', 'callos', 'salsa verde'];
 
 /** A stock that names itself as vegetable. A bare "caldo" can be chicken or beef, so a vegetarian flag cannot rest on it. */
 const VEGETABLE_STOCK = /\bcaldo de (?:verduras?|vegetal(?:es)?|hortalizas)\b/g;
@@ -254,6 +262,11 @@ export function auditRecipeFindings(recipe: RecipeTags): Finding[] {
     const suspect = firstWith(sources, text => GLUTEN_SUSPECT.test(normalize(text).replace(GLUTEN_FREE_PHRASES, ' ')));
     if (suspect && !tagged('gluten') && !hit('gluten')) {
       fail('dieta:sin_gluten', `sin_gluten es true con un producto que suele llevar trigo o cebada (${describe(suspect)})`);
+    }
+    // Ingredient list only, as FRESCO-1050: a step that says "el caldo" refers to a listed one.
+    const brandDependent = (recipe.ingredientes_principales ?? []).find(text => GLUTEN_BRAND_DEPENDENT.includes(normalize(text)));
+    if (brandDependent) {
+      fail('dieta:sin_gluten_marca', `sin_gluten es true con un ingrediente que suele llevar trigo según la marca (ingrediente: ${brandDependent})`);
     }
   }
 

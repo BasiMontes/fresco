@@ -195,6 +195,23 @@ describe('the reverse check: a diet flag that the text breaks (A7-TEST-01)', () 
     expect(reports(recipe(['tofu', 'tamari sin gluten'], { alergenos: ['soja'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(false);
   });
 
+  test.each(['caldo', 'Caldo de carne', 'caldo de pollo', 'morcilla', 'callos', 'salsa verde'])(
+    'sin_gluten true with the brand-dependent ingredient %s is flagged (FRESCO-1051)',
+    (ingredient) => {
+      const claimed = recipe(['arroz', ingredient], { alergenos: ['apio'], dieta: { sin_gluten: true } });
+      expect(reports(claimed, 'sin_gluten es true con un ingrediente que suele llevar trigo según la marca')).toBe(true);
+      expect(auditRecipeFindings(claimed).map(finding => finding.key)).toContain('Receta|dieta:sin_gluten_marca');
+    },
+  );
+
+  test('the brand-dependent rule needs the claim, the whole ingredient name and the ingredient list (FRESCO-1051)', () => {
+    const marker = 'según la marca';
+    expect(reports(recipe(['arroz', 'caldo'], { alergenos: ['apio'], dieta: { sin_gluten: false } }), marker)).toBe(false);
+    expect(reports(recipe(['arroz', 'caldo de verduras'], { alergenos: ['apio'], dieta: { sin_gluten: true } }), marker)).toBe(false);
+    expect(reports(recipe(['arroz', 'morcilla de arroz'], { dieta: { sin_gluten: true } }), marker)).toBe(false);
+    expect(reports(recipe(['arroz'], { pasos_resumen: ['Añadir el caldo y la morcilla'], alergenos: ['apio'], dieta: { sin_gluten: true } }), marker)).toBe(false);
+  });
+
   test('sin_gluten true with nachos is flagged unless the text says "nachos sin gluten" (FRESCO-997)', () => {
     expect(reports(recipe(['aguacate', 'nachos'], { dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto que suele llevar trigo o cebada (ingrediente: nachos)')).toBe(true);
     expect(reports(recipe(['aguacate', 'nachos sin gluten'], { pasos_resumen: ['Servir con nachos sin gluten'], dieta: { sin_gluten: true } }), 'sin_gluten es true')).toBe(false);
