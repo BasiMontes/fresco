@@ -47,6 +47,8 @@ export interface FakeSupabase {
   upserts: RecordedUpsert[]
   /** `[name, args]` for every `.rpc(name, args)` that ran. */
   rpcCalls: Array<[string, unknown]>
+  /** Every `.gte(column, value)` a select applied (FRESCO-1021: the waiver recency filter). */
+  gteFilters: Array<{ table: string, column: string, value: unknown }>
 }
 
 /** Default `rpc`: every call resolves `{ data: true }` (e.g. a rate-limit check that allows). */
@@ -56,6 +58,7 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
   const updates: RecordedUpdate[] = [];
   const upserts: RecordedUpsert[] = [];
   const rpcCalls: Array<[string, unknown]> = [];
+  const gteFilters: Array<{ table: string, column: string, value: unknown }> = [];
 
   function selectResult(table: string) {
     const fx = tables[table] ?? {};
@@ -66,6 +69,10 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
     const resolve = async () => selectResult(table);
     const chain: Record<string, unknown> = {
       eq: () => chain,
+      gte: (column: string, value: unknown) => {
+        gteFilters.push({ table, column, value });
+        return chain;
+      },
       not: () => chain,
       in: () => chain,
       is: () => chain,
@@ -112,5 +119,5 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
     ...(auth ? { auth } : {}),
   };
 
-  return { client, updates, upserts, rpcCalls };
+  return { client, updates, upserts, rpcCalls, gteFilters };
 }

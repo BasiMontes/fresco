@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { getBillingState } from '@/lib/billing/billing-state';
 import { checkoutSessionWindow, ensureCheckoutCustomer, expireOtherOpenCheckoutSessions, hasLiveSubscription } from '@/lib/billing/checkout-guard';
 import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
+import { WITHDRAWAL_WAIVER_WINDOW_MS } from '@/lib/legal/consent';
 import { hasRecordedConsent } from '@/lib/legal/consent-store';
 import { isTrialAvailable, PRO_TRIAL_SUBSCRIPTION_DATA } from '@/lib/legal/pro-terms';
 import { getProPriceId, parseProInterval, stripe } from '@/lib/stripe';
@@ -59,9 +60,12 @@ const RATE_LIMIT_WINDOW_SECONDS = 3600;
  *
  * FRESCO-1003 (audit 7b: A7-PAY-07, A7-PAY-10): the route refuses what the UI used to guarantee
  * alone. No profile row is a 409, and no recorded `withdrawal_waiver` for the current text
- * version is a 400 (`consent-store.ts#hasRecordedConsent`). The registry keeps one row per
- * (user, kind, version) and ignores repeats, so "recorded" means "for these texts", not "in the
- * last minutes"; per-purchase evidence would need a registry change (ADR-0040).
+ * version is a 400 (`consent-store.ts#hasRecordedConsent`).
+ *
+ * FRESCO-1021: the waiver must also be RECENT (`WITHDRAWAL_WAIVER_WINDOW_MS`, 30 minutes, the life
+ * of a Checkout session). The registry keeps one row per (user, kind, version) for the other
+ * kinds, but `record_consents` now writes a new `withdrawal_waiver` row per purchase, so the
+ * acceptance of an earlier subscription no longer lets a later one through.
  *
  * `client_reference_id` is the authenticated Supabase user id, so the
  * webhook (`app/api/stripe/webhook/route.ts`) can map the eventual
@@ -141,7 +145,8 @@ export async function POST(request: NextRequest) {
   // this route, but a request that skips the summary used to reach Stripe without it. The server
   // asks the registry (ADR-0040), and an unreadable registry is a refusal, not a pass.
   try {
-    if (!(await hasRecordedConsent(supabase, 'withdrawal_waiver'))) {
+    const since = new Date(Date.now() - WITHDRAWAL_WAIVER_WINDOW_MS);
+    if (!(await hasRecordedConsent(supabase, { kind: 'withdrawal_waiver', since }))) {
       return NextResponse.json({ error: 'Para empezar el servicio de inmediato tienes que aceptar el desistimiento antes de pagar.' }, { status: 400 });
     }
   }

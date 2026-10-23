@@ -18,6 +18,14 @@ export type ConsentKind = (typeof CONSENT_KINDS)[number];
 /** Version stamped on every row the API records. Server-side only: the client never sends it. */
 export const LEGAL_TEXTS_VERSION = 'provisional-2026-10-19';
 
+/**
+ * FRESCO-1021: how recent a `withdrawal_waiver` must be for the checkout to accept it, in ms. The
+ * right of withdrawal belongs to each contract, so an acceptance from an earlier purchase does not
+ * count. 30 minutes is the life of a Stripe Checkout session, and the database default of
+ * `record_consents` uses the same window to avoid stacking a row per click.
+ */
+export const WITHDRAWAL_WAIVER_WINDOW_MS = 30 * 60 * 1000;
+
 /** Checkbox copy for the consents that have their own sentence (Terms and Privacy share one checkbox with links). */
 export const CONSENT_TEXTS = {
   age_14: 'Confirmo que tengo 14 años o más.',

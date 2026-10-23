@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 import { NextRequest } from 'next/server';
+import { WITHDRAWAL_WAIVER_WINDOW_MS } from '@/lib/legal/consent';
 import * as realStripe from '@/lib/stripe';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
@@ -11,7 +12,7 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
  */
 
 /** FRESCO-1003: a signed-in user with a finished profile and a recorded withdrawal waiver, the starting point of every case. */
-const GIVEN_WAIVER = { user_consents: { rows: { id: 'consent_1' } } };
+const GIVEN_WAIVER = { user_consents: { rows: [{ id: 'consent_1' }] } };
 const FREE_PROFILE = { user_profiles: { rows: { plan: 'free', stripe_customer_id: null, stripe_subscription_id: null } } };
 
 const sessionsCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: string, url: string | null }> => ({ id: 'cs_1', url: 'https://checkout.stripe/x' }));
@@ -421,6 +422,35 @@ describe('POST /api/stripe/checkout', () => {
 
       expect((await POST(req())).status).toBe(200);
       expect(sessionsCreate).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // FRESCO-1021: the right of withdrawal belongs to each contract, so the waiver of an earlier
+  // subscription must not let a later one through. The route asks the registry for a row accepted
+  // in the last WITHDRAWAL_WAIVER_WINDOW_MS; the registry (the database) applies the filter.
+  describe('FRESCO-1021 — the withdrawal waiver has to be recent', () => {
+    const authAs = { getUser: async () => ({ data: { user: { id: 'user_1', is_anonymous: false } } }) };
+
+    test('asks the registry for a waiver accepted in the last 30 minutes', async () => {
+      const before = Date.now();
+      supa = fakeSupabase({ ...FREE_PROFILE, ...GIVEN_WAIVER }, authAs);
+
+      await POST(req());
+
+      const filter = supa.gteFilters.find(f => f.table === 'user_consents');
+      expect(filter?.column).toBe('accepted_at');
+      const since = new Date(String(filter?.value)).getTime();
+      expect(since).toBeGreaterThanOrEqual(before - WITHDRAWAL_WAIVER_WINDOW_MS - 1000);
+      expect(since).toBeLessThanOrEqual(Date.now() - WITHDRAWAL_WAIVER_WINDOW_MS + 1000);
+    });
+
+    test('400 when the registry has only an older waiver (it answers with no row inside the window)', async () => {
+      supa = fakeSupabase({ ...FREE_PROFILE, user_consents: { rows: [] } }, authAs);
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(400);
+      expect(sessionsCreate).not.toHaveBeenCalled();
     });
   });
 });

@@ -47,3 +47,14 @@ We will record consents in **one append-only table, `public.user_consents`**: `u
 - `supabase/migrations/20261004120000_user_consents.sql`, `lib/legal/consent.ts`, `app/api/consents/route.ts`, `tests/db/user-consents.test.ts`
 - `.context/legal/FRESCO-434-brief-abogado.md` §5, `.context/legal/FRESCO-365-borrador-textos-legales.md`
 - `.context/audits/2026-10-02-audit-6/product.md` (A6-P1, A6-P6); FRESCO-794; ADR-0032 (no identity parameter), ADR-0025 (cookie consent gate)
+
+## Update 2026-10-23 (FRESCO-1021): one `withdrawal_waiver` row per purchase
+
+The Decision above is unchanged in what matters: the table is still append-only, written only by `record_consents` (service role), with no UPDATE and no DELETE for any client role. What changes is the uniqueness rule.
+
+- **Why.** The right of withdrawal belongs to each contract (TRLGDCU arts. 102 ff.). `unique (user_id, kind, version)` kept ONE `withdrawal_waiver` row per text version, the one of the first payment, so a user who subscribed again months later passed the checkout with an old acceptance. The AI-assisted analysis (answer 5, medium confidence, not a lawyer's opinion) says each new subscription needs its own acceptance, and the founder applied it under ADR-0066.
+- **What.** The table-wide constraint becomes a partial unique index that leaves `withdrawal_waiver` out: `age_14`, `terms`, `privacy` and `health_data` stay once per text version. `record_consents` writes a `withdrawal_waiver` unless the user already has one at this version inside `p_waiver_window` (default 30 minutes, the life of a Checkout session), so a retry or a second click adds no row and a later purchase gets its own. The checkout (`POST /api/stripe/checkout`) asks for a waiver accepted in the last `WITHDRAWAL_WAIVER_WINDOW_MS` (30 minutes).
+- **Not changed.** `LEGAL_TEXTS_VERSION` stays: no consent text changed. The 100-row cap per user still counts every row, waiver rows included.
+- **Accepted trade-off.** Two simultaneous calls can both pass the "no recent waiver" check and leave two rows in one window. That only adds evidence, so it is accepted instead of locking.
+- **Consequence for the old upsert.** A client that still sent `on_conflict=user_id,kind,version` now gets Postgres `42P10` (no matching constraint) instead of `42501`; it still writes nothing, and `tests/db/user-consents.test.ts` accepts either.
+- **Where.** `supabase/migrations/20261023121936_user_consents_waiver_per_purchase.sql`, `lib/legal/consent-store.ts` (`hasRecordedConsent` with `since`, `limit(1)` instead of `maybeSingle()`), `lib/legal/consent.ts` (`WITHDRAWAL_WAIVER_WINDOW_MS`).
