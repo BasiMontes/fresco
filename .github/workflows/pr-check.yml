@@ -153,6 +153,20 @@ jobs:
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
+      # FRESCO-1048: same image cache as the `e2e` job (same key, so one entry
+      # serves both); see the comment there. This job hits the same
+      # `public.ecr.aws` rate limit. It only restores; the `e2e` job saves.
+      - name: Restore Supabase image cache
+        id: supaimg
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/supabase-images.tar
+          key: supabase-images-v1-${{ env.SUPABASE_CLI_VERSION }}-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Load cached Supabase images
+        if: steps.supaimg.outputs.cache-hit == 'true'
+        run: docker load -i "$RUNNER_TEMP/supabase-images.tar"
+
       - name: Start local Supabase
         # Same `-x` exclusions as the `e2e` job — Postgres + Auth (GoTrue) +
         # PostgREST are all these tests touch.
@@ -278,12 +292,27 @@ jobs:
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
-      # FRESCO-357: a `docker save`/`docker load` cache of the Supabase
-      # local-stack images (~1 GB) was tried and removed - measured net zero.
-      # The `docker load` of the tarball (~70 s) plus its cache download
-      # (~17 s) costs as much as the fresh `ghcr.io` pull it replaces (the
-      # GitHub-hosted runners have fast registry egress). `supabase start`
-      # pulls the images itself on every run - left as-is.
+      # FRESCO-357 tried a `docker save`/`docker load` cache of the Supabase
+      # local-stack images (~1 GB) and removed it: net zero while the registry
+      # was fast. FRESCO-1048 brings it back because that no longer holds: the
+      # CLI pulls from `public.ecr.aws` without credentials, and on about half
+      # the runs the registry answers `toomanyrequests: Data limit exceeded`,
+      # so `supabase start` waits ~2 minutes in retries (300-349 s instead of
+      # 96-124 s; 10 jobs inspected, the 7 slow ones all show the error, the 3
+      # fast ones none). With the images loaded locally the CLI skips the pull.
+      # Key = CLI version + config.toml; saved only on push to `staging` (the
+      # step after `supabase start`), PRs only restore it.
+      - name: Restore Supabase image cache
+        id: supaimg
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/supabase-images.tar
+          key: supabase-images-v1-${{ env.SUPABASE_CLI_VERSION }}-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Load cached Supabase images
+        if: steps.supaimg.outputs.cache-hit == 'true'
+        run: docker load -i "$RUNNER_TEMP/supabase-images.tar"
+
       - name: Build .env from the committed CI overlay (no secret)
         # FRESCO-802 (audit-6 A6-D6): this job used to restore the WHOLE
         # production `.env` from `secrets.ENV_FILE`, then let `.env.ci`
@@ -355,6 +384,23 @@ jobs:
         # 6-hour default.
         timeout-minutes: 8
         run: supabase start -x realtime,storage-api,imgproxy,studio,inbucket,logflare,vector
+
+      - name: Save Supabase images
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/staging'
+          && steps.supaimg.outputs.cache-hit != 'true'
+        run: |
+          docker save -o "$RUNNER_TEMP/supabase-images.tar" \
+            $(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^public.ecr.aws/supabase/')
+
+      - name: Save Supabase image cache
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/staging'
+          && steps.supaimg.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/supabase-images.tar
+          key: supabase-images-v1-${{ env.SUPABASE_CLI_VERSION }}-${{ hashFiles('supabase/config.toml') }}
 
       - name: Apply migrations + seed
         # `supabase db reset` drops the database, re-runs every migration from
