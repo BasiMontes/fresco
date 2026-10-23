@@ -245,8 +245,8 @@ jobs:
 
       # FRESCO-357: cache the downloaded Playwright browser binaries
       # (~/.cache/ms-playwright, ~150MB) keyed on the resolved @playwright/test
-      # version. On a hit, `playwright install` only re-checks the apt system
-      # deps (fast); on a miss it downloads chromium as before.
+      # version. On a hit nothing more is needed; on a miss the next step
+      # downloads chromium (see the FRESCO-1048 note there on why no apt deps).
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -254,12 +254,18 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
+      # FRESCO-1048: no `--with-deps` / `install-deps`. Even on a cache hit that
+      # ran apt, and apt is the slow part: in 4 of 5 runs inspected on
+      # 2026-10-23 it took 592-885 s to fetch 25.9 MB from
+      # azure.archive.ubuntu.com at 22-45 kB/s (the fast run: 15.9 MB/s, 23 s).
+      # What it fetched was fonts (CJK, Thai, xfonts) plus upgrades of libs the
+      # runner image already has; no e2e test takes a screenshot, so no font is
+      # used. If a runner image ever drops a library Chromium needs, the run
+      # fails at browser launch, loudly, instead of silently running slower.
       - name: Install Playwright browsers
         run: |
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
-            bunx playwright install-deps chromium
-          else
-            bunx playwright install --with-deps chromium
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            bunx playwright install chromium
           fi
 
       # FRESCO-357: cache the Next.js build compilation cache. Paired with the
