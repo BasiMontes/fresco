@@ -177,3 +177,13 @@ Historia archivada:
 - Qué: último flujo (alta con onboarding completo, correo confirmado por el propietario) probado en `fresco-pre`; cuenta desechable borrada por la app y verificada en BD (0 filas). Con él, los ocho flujos de la tarjeta están probados. En la misma sesión: FRESCO-987 (lectura de Stripe, precios ya `inclusive`, PR #791), FRESCO-1005 y FRESCO-1008 en Blocked con evidencia, FRESCO-1035/1036/1037 y FRESCO-1042 en Finalizada.
 - Por qué: la auditoría 7b no pudo probar flujos con sesión real por el captcha; sin esto no se podía medir la remediación (FRESCO-993).
 - Siguiente: nada en producción todavía (`main` en 1556a316); promocionar #788 a #791 en lote; el propietario cierra a mano dunning/recibos en Stripe y la revisión legal de 1008.
+
+## 2026-10-23 - FRESCO-908 cerrada: revisión de alérgenos del catálogo hecha por IA
+- Qué: 538 recetas activas revisadas ingrediente a ingrediente (267 distintos); 0 alérgenos inherentes sin declarar y 0 recetas corregidas. Revisión de IA aceptada por el propietario como cumplimiento, no es revisión humana. Las dietas que dependen de la marca se resuelven con FRESCO-1050: quitar `sin_gluten` a 13 filas con caldo, morcilla, callos o salsa verde (PR #800, en staging).
+- Por qué: era una puerta de lanzamiento antes de cobrar (hallazgo C-02 de la auditoría). Con FRESCO-1021 (una aceptación del desistimiento por compra, PR #799) hay ya dos migraciones sin aplicar a la base alojada.
+- Siguiente: en el próximo lote, `supabase db push --linked --dry-run` (deben salir dos migraciones), aplicar, verificar y `bun run git:promote`. Barrera para recetas nuevas con `sin_gluten` y caldo: tarjeta aparte, sin crear.
+
+## 2026-10-23 - Lote a producción: desistimiento por compra y sin_gluten
+- Qué: aplicadas en la base compartida 20261023121936 (record_consents con p_waiver_window) y 20261023131403 (sin_gluten 405 a 392 activas); main, dev y staging a cbc8761f con git:promote. Comprobado en producción: un desistimiento de hace 2 h da 400 en /api/stripe/checkout (fila de prueba borrada después; caso positivo sin probar para no crear sesión de Stripe).
+- Por qué: cerrar FRESCO-1021, 1049 y 1050 en producción de una sola vez (cupo de despliegues de Vercel).
+- Siguiente: recuento de despliegues de Vercel desde el 26-10, repetir reembolso en Stripe live (890), Release de Sentry (803), tokens de Supabase (853, 1017).
