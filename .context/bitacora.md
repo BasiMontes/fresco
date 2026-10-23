@@ -167,3 +167,13 @@ Historia archivada:
 - Qué: fichero HTML de verificación en public/ (PR #787), promoción de staging a main (1556a316), propiedad verificada en Search Console, sitemap enviado y propiedad importada en Bing.
 - Por qué: dar a Fresco presencia medible en buscadores sin dominio propio ni variables extra.
 - Siguiente: el fichero no se borra nunca; revisar indexación del sitemap en unos días.
+
+## 2026-10-23 - FRESCO-1042 cerrada: Sentry no envía nada antes del consentimiento
+- Qué: #788 arranca Sentry del navegador solo tras aceptar cookies, #789 quita el envío de la sonda eval de Zod; medido en fresco-pre (`9ec01c18`) con 0 peticiones a Sentry en /login. Tarjeta en Finalizada.
+- Por qué: Sentry enviaba una sesión con IP antes del consentimiento, incluso tras rechazar. El merge de #789 no llegó a desplegarse (GitHub degradado, sin evento push), se relanzó con una PR vacía (#790).
+- Siguiente: nada en producción todavía, `main` sigue en 1556a316; promocionar en lote con `bun run git:promote`.
+
+## 2026-10-23 - FRESCO-989 cerrada: auditoría con sesión real en fresco-pre completa
+- Qué: último flujo (alta con onboarding completo, correo confirmado por el propietario) probado en `fresco-pre`; cuenta desechable borrada por la app y verificada en BD (0 filas). Con él, los ocho flujos de la tarjeta están probados. En la misma sesión: FRESCO-987 (lectura de Stripe, precios ya `inclusive`, PR #791), FRESCO-1005 y FRESCO-1008 en Blocked con evidencia, FRESCO-1035/1036/1037 y FRESCO-1042 en Finalizada.
+- Por qué: la auditoría 7b no pudo probar flujos con sesión real por el captcha; sin esto no se podía medir la remediación (FRESCO-993).
+- Siguiente: nada en producción todavía (`main` en 1556a316); promocionar #788 a #791 en lote; el propietario cierra a mano dunning/recibos en Stripe y la revisión legal de 1008.
