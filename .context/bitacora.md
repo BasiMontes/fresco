@@ -197,3 +197,13 @@ Historia archivada:
 - Qué: el secreto `SUPABASE_ACCESS_TOKEN` del repo es ahora `fresco-ci-drift-v2` (solo lectura + Edge Functions lectura/escritura, solo el proyecto Fresco), caduca el 25-10-2027. Comprobado en el panel: usado hace 12 min por el CI; el token de 7 días ya no aparece. Tarjeta en Finalizada.
 - Por qué: el CI dependía de un token legacy sin alcance. `gh secret set` desde el prompt guarda un secreto vacío sin avisar; hay que usar `pbpaste | gh secret set`.
 - Siguiente: revocar `fresco` (LEGACY, sin uso hace 2 meses); `fresco-v3` es el login local, dejarlo hasta sustituirlo por uno con alcance; el paso de despliegue de funciones del CI sin probar; renovar el token antes del 25-10-2027.
+
+## 2026-10-26 - FRESCO-1052 cerrada: certifi en el lock de la skill brag
+- Qué: `certifi` 2026.5.20 a 2026.10.23 en `.agents/skills/brag/scripts/uv.lock` (PR #805). Dependabot #4 (crítica, GHSA-6q48-6c7w-9gw2) en `fixed`. Sin despliegue de producción: el commit solo tocaba `.agents/` y lo omite `scripts/vercel-ignore-build.sh`.
+- Por qué: raíces emSign con claves de CA intermedias comprometidas; solo afectaba a la herramienta auxiliar, no a la app.
+- Siguiente: nada. La alerta cierra cuando el lock llega a `main`, no en `staging`.
+
+## 2026-10-26 - FRESCO-1053 cerrada: nodemailer 10.1.4 en producción
+- Qué: `nodemailer` 10.1.2 a 10.1.4 en `package.json` y `bun.lock` (PR #806), `main`/`dev`/`staging` a 9e9a3b21 con `git:promote`. Dependabot #5, #6 y #7 (medias, addressparser) cerradas; `fresco-pro` sirve el despliegue nuevo.
+- Por qué: el job de seguridad de Dependabot falla con `misconfigured_tooling` (lo lanza como `npm_and_yarn` y el repo usa `bun.lock`), así que el bump fue manual.
+- Siguiente: probar un envío real de correo (solo hay tests unitarios); el mismo fallo volverá con cualquier alerta de seguridad de npm, el bump seguirá siendo manual.
