@@ -50,5 +50,11 @@ updates:
       # failed that test. Those files are synced from upstream, so the bump arrives
       # with `bun sync` together with its pin, not from Dependabot.
       - dependency-name: varlock
+      # FRESCO-1055: PR #694 (happy-dom 20.14.6 to 21.0.4) was closed by the maintainer
+      # in the 2026-10-26 repo cleanup and Dependabot would reopen it every Monday.
+      # The major is deferred until happy-dom is upgraded on purpose; minor and patch
+      # releases still come through.
+      - dependency-name: '@happy-dom/global-registrator'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: chore
