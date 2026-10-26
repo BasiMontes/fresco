@@ -6,6 +6,9 @@
 // "design a real admin check" to this ticket. requireAdminUser() below is
 // that check and IS the authorization boundary; the actual write then goes
 // through createServiceRoleClient() to bypass RLS by design, not oversight.
+//
+// FRESCO-1054: this header comment was edited only to force a real CI redeploy and
+// prove the scoped fresco-ci-drift-v2 token can write Edge Functions.
 
 import { handleCorsPreflight } from '../_shared/cors.ts'
 import { HttpError, jsonResponse, readJsonBody, toErrorResponse } from '../_shared/http.ts'
