@@ -115,7 +115,7 @@
     "@antfu/eslint-config": "9.5.1",
     "@axe-core/playwright": "^4.13.0",
     "@clack/prompts": "^1.8.1",
-    "@happy-dom/global-registrator": "^20.14.6",
+    "@happy-dom/global-registrator": "^21.0.4",
     "@inquirer/prompts": "^8.7.3",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
