@@ -212,3 +212,8 @@ Historia archivada:
 - Qué: un comentario de cabecera en `supabase/functions/delete-catalog-recipe/index.ts` (PR #807, 3bfa55b2) forzó un redespliegue real. El run de `edge-functions-drift` terminó en verde y `supabase functions list` muestra v27 a v28; las otras 8 funciones sin cambios. Antes solo estaba probada la lectura del token.
 - Por qué: cerrar lo que quedaba sin verificar de FRESCO-853. También se probó un envío real de correo con `nodemailer` 10.1.4 (llegó a `hola.frescoapp@gmail.com`), lo que cubre el "Siguiente" de la entrada de FRESCO-1053.
 - Siguiente: revocar el token legacy `fresco` en Supabase (lo hace Basi); renovar `fresco-ci-drift-v2` antes del 25-10-2027; sin ejercitar la ruta de Resend ni el correo de confirmación de suscripción completo.
+
+## 2026-10-26 - Token legacy de Supabase revocado
+- Qué: Basi borró el token `fresco` (LEGACY, sin uso hace 2 meses, caducaba el 31-08-2027) en Account > Access Tokens. Después, `edge-functions-drift` lanzado a mano en `staging` terminó en verde (`check repo vs deployed: success`) y `supabase functions list` con `fresco-v3` lista las 9 funciones.
+- Por qué: cerrar lo último pendiente de FRESCO-853; el CI ya depende solo de `fresco-ci-drift-v2`.
+- Siguiente: renovar `fresco-ci-drift-v2` antes del 25-10-2027; sustituir `fresco-v3` (login local, sin alcance) por uno con alcance cuando convenga.
