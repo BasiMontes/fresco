@@ -187,3 +187,8 @@ Historia archivada:
 - Qué: aplicadas en la base compartida 20261023121936 (record_consents con p_waiver_window) y 20261023131403 (sin_gluten 405 a 392 activas); main, dev y staging a cbc8761f con git:promote. Comprobado en producción: un desistimiento de hace 2 h da 400 en /api/stripe/checkout (fila de prueba borrada después; caso positivo sin probar para no crear sesión de Stripe).
 - Por qué: cerrar FRESCO-1021, 1049 y 1050 en producción de una sola vez (cupo de despliegues de Vercel).
 - Siguiente: recuento de despliegues de Vercel desde el 26-10, repetir reembolso en Stripe live (890), Release de Sentry (803), tokens de Supabase (853, 1017).
+
+## 2026-10-26 - FRESCO-1051 en producción: barrera sin_gluten por marca
+- Qué: `main`, `dev` y `staging` a e34d5d10 con `git:promote` (gate verde, 149 migraciones aplicadas en la base alojada). La regla `dieta:sin_gluten_marca` de `recipe_tag_findings` está en la base compartida (comprobado con `supabase db query --linked`). Tarjeta en Finalizada.
+- Por qué: cerrar la barrera para recetas nuevas con `sin_gluten` y caldo, morcilla, callos o salsa verde (seguimiento de FRESCO-1050/908).
+- Siguiente: confirmar el despliegue de producción de e34d5d10 en Vercel; recuento de despliegues desde el 26-10 (retención a 1 día); FRESCO-1028 sigue en espera hasta que el dataset de Mercadona tenga menos de 14 días.
