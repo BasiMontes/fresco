@@ -192,3 +192,8 @@ Historia archivada:
 - Qué: `main`, `dev` y `staging` a e34d5d10 con `git:promote` (gate verde, 149 migraciones aplicadas en la base alojada). La regla `dieta:sin_gluten_marca` de `recipe_tag_findings` está en la base compartida (comprobado con `supabase db query --linked`). Tarjeta en Finalizada.
 - Por qué: cerrar la barrera para recetas nuevas con `sin_gluten` y caldo, morcilla, callos o salsa verde (seguimiento de FRESCO-1050/908).
 - Siguiente: confirmar el despliegue de producción de e34d5d10 en Vercel; recuento de despliegues desde el 26-10 (retención a 1 día); FRESCO-1028 sigue en espera hasta que el dataset de Mercadona tenga menos de 14 días.
+
+## 2026-10-26 - FRESCO-853 cerrada: token de Supabase del CI con alcance
+- Qué: el secreto `SUPABASE_ACCESS_TOKEN` del repo es ahora `fresco-ci-drift-v2` (solo lectura + Edge Functions lectura/escritura, solo el proyecto Fresco), caduca el 25-10-2027. Comprobado en el panel: usado hace 12 min por el CI; el token de 7 días ya no aparece. Tarjeta en Finalizada.
+- Por qué: el CI dependía de un token legacy sin alcance. `gh secret set` desde el prompt guarda un secreto vacío sin avisar; hay que usar `pbpaste | gh secret set`.
+- Siguiente: revocar `fresco` (LEGACY, sin uso hace 2 meses); `fresco-v3` es el login local, dejarlo hasta sustituirlo por uno con alcance; el paso de despliegue de funciones del CI sin probar; renovar el token antes del 25-10-2027.
