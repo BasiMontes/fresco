@@ -207,3 +207,8 @@ Historia archivada:
 - Qué: `nodemailer` 10.1.2 a 10.1.4 en `package.json` y `bun.lock` (PR #806), `main`/`dev`/`staging` a 9e9a3b21 con `git:promote`. Dependabot #5, #6 y #7 (medias, addressparser) cerradas; `fresco-pro` sirve el despliegue nuevo.
 - Por qué: el job de seguridad de Dependabot falla con `misconfigured_tooling` (lo lanza como `npm_and_yarn` y el repo usa `bun.lock`), así que el bump fue manual.
 - Siguiente: probar un envío real de correo (solo hay tests unitarios); el mismo fallo volverá con cualquier alerta de seguridad de npm, el bump seguirá siendo manual.
+
+## 2026-10-26 - FRESCO-1054 cerrada: el despliegue de funciones del CI escribe con el token nuevo
+- Qué: un comentario de cabecera en `supabase/functions/delete-catalog-recipe/index.ts` (PR #807, 3bfa55b2) forzó un redespliegue real. El run de `edge-functions-drift` terminó en verde y `supabase functions list` muestra v27 a v28; las otras 8 funciones sin cambios. Antes solo estaba probada la lectura del token.
+- Por qué: cerrar lo que quedaba sin verificar de FRESCO-853. También se probó un envío real de correo con `nodemailer` 10.1.4 (llegó a `hola.frescoapp@gmail.com`), lo que cubre el "Siguiente" de la entrada de FRESCO-1053.
+- Siguiente: revocar el token legacy `fresco` en Supabase (lo hace Basi); renovar `fresco-ci-drift-v2` antes del 25-10-2027; sin ejercitar la ruta de Resend ni el correo de confirmación de suscripción completo.
