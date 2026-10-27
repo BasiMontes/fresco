@@ -86,6 +86,25 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
     expect((await insert('draft', ['calabacín'], ['otono'], false)).res.status).toBe(201);
   });
 
+  test('a draft may have no season, but whatever season it carries is well formed', async () => {
+    expect((await insert('draft-null', ['arroz'], null, false)).res.status).toBe(201);
+
+    for (const temporada of [[], 'verano', ['otoño'], ['verano', 'verano'], ['invierno', 'otono'], ['todo_el_ano', 'verano']]) {
+      const { res } = await insert('draft-shape', ['arroz'], temporada, false);
+      expect(res.status).toBe(400);
+      expect((res.body as { code?: string }).code).toBe(CHECK_VIOLATION);
+    }
+  });
+
+  test('a draft cannot be edited into a malformed season', async () => {
+    const { id } = await insert('draft-edit', ['arroz'], ['todo_el_ano'], false);
+
+    const res = await patch(id as string, { temporada: ['otoño'] });
+
+    expect(res.status).toBe(400);
+    expect((res.body as { code?: string }).code).toBe(CHECK_VIOLATION);
+  });
+
   test('reactivating a draft whose season still does not fit is rejected', async () => {
     const { id } = await insert('reactivate', ['calabacín'], ['otono'], false);
 
