@@ -48,7 +48,7 @@ describe.skipIf(!(RUN && reachable))('profile diet flags vs get_filtered_recipes
         method: 'POST',
         serviceRole: true,
         prefer: 'return=representation',
-        body: { nombre: 'Prueba sin dieta', slug: `prueba-sin-dieta-${crypto.randomUUID()}`, activo: true, dieta: null },
+        body: { nombre: 'Prueba sin dieta', slug: `prueba-sin-dieta-${crypto.randomUUID()}`, activo: true, dieta: null, temporada: ['todo_el_ano'] },
       });
       expect(created.status).toBeLessThan(300);
       probeId = (created.body as { id: string }[])[0].id;

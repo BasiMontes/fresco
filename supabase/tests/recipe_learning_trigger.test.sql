@@ -19,9 +19,9 @@ insert into public.user_profiles (id) values
   ('11111111-1111-1111-1111-111111111111'),
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 
-insert into public.recipes (id, nombre, slug) values
-  ('22222222-2222-2222-2222-222222222222', 'Test recipe 381', 'test-recipe-381'),
-  ('77777777-7777-7777-7777-777777777777', 'Test recipe 1012', 'test-recipe-1012');
+insert into public.recipes (id, nombre, slug, temporada) values
+  ('22222222-2222-2222-2222-222222222222', 'Test recipe 381', 'test-recipe-381', '["todo_el_ano"]'),
+  ('77777777-7777-7777-7777-777777777777', 'Test recipe 1012', 'test-recipe-1012', '["todo_el_ano"]');
 
 insert into public.meal_plans (id, user_id, semana_iso, fecha_inicio) values
   ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', '2026-W01', '2026-01-05'),

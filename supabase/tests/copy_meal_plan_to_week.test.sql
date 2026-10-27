@@ -27,9 +27,9 @@ insert into public.user_profiles (id) values
   ('11111111-1111-1111-1111-111111111111'),
   ('99999999-9999-9999-9999-999999999999');
 
-insert into public.recipes (id, nombre, slug) values
-  ('22222222-2222-2222-2222-222222222222', 'Test recipe 427 A', 'test-recipe-427-a'),
-  ('33333333-3333-3333-3333-333333333333', 'Test recipe 427 B', 'test-recipe-427-b');
+insert into public.recipes (id, nombre, slug, temporada) values
+  ('22222222-2222-2222-2222-222222222222', 'Test recipe 427 A', 'test-recipe-427-a', '["todo_el_ano"]'),
+  ('33333333-3333-3333-3333-333333333333', 'Test recipe 427 B', 'test-recipe-427-b', '["todo_el_ano"]');
 
 -- Source plan: NEXT week, owned by the fixture user (the self-copy case needs it inside the window). Two
 -- real slots + one null-recipe slot; the rest of the 21 are irrelevant to the copy mechanics.
