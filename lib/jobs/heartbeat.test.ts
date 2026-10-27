@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
-import { JOB_STALE_AFTER_HOURS, jobStatus, MONITORED_JOBS, readJobStatuses, recordJobHeartbeat, STALE_AFTER_HOURS, STRIPE_RECONCILE_JOB } from '@/lib/jobs/heartbeat';
+import { JOB_MONITORED_SINCE, JOB_STALE_AFTER_HOURS, jobStatus, MONITORED_JOBS, readJobStatuses, recordJobHeartbeat, STALE_AFTER_HOURS, STRIPE_RECONCILE_JOB } from '@/lib/jobs/heartbeat';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 /** FRESCO-915 — a job writes its own heartbeat; the table is closed to clients, so it takes the service-role client. */
@@ -55,6 +55,47 @@ describe('jobStatus', () => {
   test('the limit leaves room for one daily run plus a late enqueue, and no more', () => {
     expect(STALE_AFTER_HOURS).toBeGreaterThan(24);
     expect(STALE_AFTER_HOURS).toBeLessThanOrEqual(26);
+  });
+});
+
+describe('a job that never reported (FRESCO-1057)', () => {
+  const since = hoursAgo(10);
+
+  test('is pending while its first window has not closed', () => {
+    expect(jobStatus({ lastSuccessAt: null, monitoredSince: since, now: NOW })).toBe('pending');
+    expect(jobStatus({ lastSuccessAt: null, monitoredSince: hoursAgo(STALE_AFTER_HOURS), now: NOW })).toBe('pending');
+  });
+
+  test('is stale once its window has passed with no heartbeat at all', () => {
+    expect(jobStatus({ lastSuccessAt: null, monitoredSince: hoursAgo(STALE_AFTER_HOURS + 1 / 60), now: NOW })).toBe('stale');
+  });
+
+  test('uses the job\'s own window, so a weekly job is still pending after 5 days', () => {
+    const weekly = JOB_STALE_AFTER_HOURS['send-weekly-reengagement-push'];
+
+    expect(jobStatus({ lastSuccessAt: null, monitoredSince: hoursAgo(120), now: NOW, staleAfterHours: weekly })).toBe('pending');
+    expect(jobStatus({ lastSuccessAt: null, monitoredSince: hoursAgo(weekly + 1), now: NOW, staleAfterHours: weekly })).toBe('stale');
+  });
+
+  test('a heartbeat wins over the monitoring date', () => {
+    expect(jobStatus({ lastSuccessAt: hoursAgo(1), monitoredSince: hoursAgo(1000), now: NOW })).toBe('ok');
+  });
+
+  test('every monitored job names the date its writer went live', () => {
+    expect(Object.keys(JOB_MONITORED_SINCE).sort()).toEqual([...MONITORED_JOBS].sort());
+    for (const date of Object.values(JOB_MONITORED_SINCE)) {
+      expect(Number.isNaN(Date.parse(date))).toBe(false);
+    }
+  });
+
+  test('readJobStatuses reports stale for jobs with no row once their window has passed', async () => {
+    const db = fakeSupabase({ job_heartbeat: { rows: [{ job: STRIPE_RECONCILE_JOB, last_success_at: hoursAgo(3) }] } });
+    const later = new Date(Date.parse(JOB_MONITORED_SINCE['retry-posthog-erasures']) + (STALE_AFTER_HOURS + 1) * 3_600_000);
+
+    const statuses = await readJobStatuses(db.client as unknown as Client, later);
+
+    expect(statuses['retry-posthog-erasures']).toBe('stale');
+    expect(statuses['send-weekly-reengagement-push']).toBe('pending');
   });
 });
 

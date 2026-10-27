@@ -51,17 +51,36 @@ export const JOB_STALE_AFTER_HOURS: Readonly<Record<string, number>> = {
 export const MONITORED_JOBS: readonly string[] = Object.keys(JOB_STALE_AFTER_HOURS);
 
 /**
- * `pending`: the job has never reported (the table is new, or the job has not run since this was
- * deployed). It is not an alert, or the monitor would fire before the first scheduled run.
+ * FRESCO-1057: when each job's heartbeat writer went live, the moment from which a missing heartbeat
+ * means "never worked" and not "has not run yet". Without it a job whose cron call is rejected (a
+ * stale Vault key answers 401) stays `pending` for ever and the monitor never fires. Each date is the
+ * migration that added the writer: `job_heartbeat` for the Stripe route, `cron_job_heartbeats` for
+ * the other four. Add the date of its writer when adding a job to `JOB_STALE_AFTER_HOURS`.
+ */
+export const JOB_MONITORED_SINCE: Readonly<Record<string, string>> = {
+  [STRIPE_RECONCILE_JOB]: '2026-10-13T15:00:00Z',
+  'cleanup-abandoned-guest-users': '2026-10-20T10:00:00Z',
+  'purge-waitlist-signups': '2026-10-20T10:00:00Z',
+  'retry-posthog-erasures': '2026-10-20T10:00:00Z',
+  'send-weekly-reengagement-push': '2026-10-20T10:00:00Z',
+};
+
+/**
+ * `pending`: the job has never reported and its first window since `monitoredSince` has not closed
+ * yet (the table is new, or the job has not run since this was deployed). It is not an alert, or the
+ * monitor would fire before the first scheduled run. Past that window with no heartbeat at all it is
+ * `stale`: the job has had its chance and never completed a pass.
  */
 export type JobStatus = 'ok' | 'stale' | 'pending';
 
-export function jobStatus({ lastSuccessAt, now = new Date(), staleAfterHours = STALE_AFTER_HOURS }: { lastSuccessAt: string | null, now?: Date, staleAfterHours?: number }): JobStatus {
+const hoursBetween = (from: number, to: number) => (to - from) / 3_600_000;
+
+export function jobStatus({ lastSuccessAt, monitoredSince, now = new Date(), staleAfterHours = STALE_AFTER_HOURS }: { lastSuccessAt: string | null, monitoredSince?: string, now?: Date, staleAfterHours?: number }): JobStatus {
   if (lastSuccessAt === null) {
-    return 'pending';
+    const unmonitoredFor = monitoredSince === undefined ? 0 : hoursBetween(Date.parse(monitoredSince), now.getTime());
+    return unmonitoredFor > staleAfterHours ? 'stale' : 'pending';
   }
-  const ageHours = (now.getTime() - Date.parse(lastSuccessAt)) / 3_600_000;
-  return ageHours > staleAfterHours ? 'stale' : 'ok';
+  return hoursBetween(Date.parse(lastSuccessAt), now.getTime()) > staleAfterHours ? 'stale' : 'ok';
 }
 
 /**
@@ -80,5 +99,5 @@ export async function readJobStatuses(client: Client, now: Date = new Date()): P
   }
 
   const lastByJob = new Map((data ?? []).map(row => [row.job, row.last_success_at]));
-  return Object.fromEntries(MONITORED_JOBS.map(job => [job, jobStatus({ lastSuccessAt: lastByJob.get(job) ?? null, now, staleAfterHours: JOB_STALE_AFTER_HOURS[job] })]));
+  return Object.fromEntries(MONITORED_JOBS.map(job => [job, jobStatus({ lastSuccessAt: lastByJob.get(job) ?? null, monitoredSince: JOB_MONITORED_SINCE[job], now, staleAfterHours: JOB_STALE_AFTER_HOURS[job] })]));
 }
