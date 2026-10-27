@@ -1,8 +1,8 @@
 # ADR-0043 — Stripe in Edge Functions only for account deletion
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-12
-- **Deciders:** Founder (acceptance pending); drafted by AI workflow (FRESCO-942, audit finding C-01)
+- **Deciders:** Basi Montes (accepted in writing on 2026-10-27 after reading the summary; the 14-day withdrawal refund stays an open legal question, see below); drafted by AI workflow (FRESCO-942, audit finding C-01)
 - **Tags:** stripe, billing, edge-function, account-lifecycle, privacy
 - **Supersedes:** —
 - **Superseded by:** —
