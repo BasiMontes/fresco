@@ -43,6 +43,19 @@ describe('Dropdown', () => {
     expect(trigger).toHaveTextContent('México');
   });
 
+  test('keeps the visible text inside the trigger accessible name', async () => {
+    const user = setupUser();
+    renderWithProviders(<Harness />);
+    const trigger = screen.getByTestId('country_dropdown');
+
+    expect(trigger).toHaveAttribute('aria-label', 'País: Selecciona una opción');
+
+    await user.click(trigger);
+    await user.click(screen.getByRole('option', { name: 'México' }));
+
+    expect(trigger).toHaveAttribute('aria-label', 'País: México');
+  });
+
   test('opens on trigger click and reflects aria-expanded', async () => {
     const user = setupUser();
     renderWithProviders(<Harness />);

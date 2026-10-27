@@ -130,7 +130,9 @@ export function Dropdown({
         ref={triggerRef}
         type="button"
         data-testid={dataTestId}
-        aria-label={ariaLabel}
+        // FRESCO-1056 (axe 4.14 label-content-name-mismatch): the accessible name must contain the text
+        // the button shows, which is the selected label or the placeholder, so it is appended to the label.
+        aria-label={ariaLabel ? `${ariaLabel}: ${selected?.label ?? placeholder}` : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         className="flex h-9 w-full items-center justify-between rounded-full border border-neutral-600 bg-surface px-3 text-body-md text-text focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
