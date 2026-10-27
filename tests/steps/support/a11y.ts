@@ -11,7 +11,7 @@ export const KNOWN_A11Y_ALLOWLIST: string[] = [];
 const BLOCKING_IMPACTS = new Set(['serious', 'critical']);
 
 function describeViolation(violation: AxeViolation): string {
-  return `- ${violation.id} (${violation.impact}): ${violation.help} — ${violation.nodes.length} nodo(s)\n  ${violation.helpUrl}`;
+  return `- ${violation.id} (${violation.impact}): ${violation.help} — ${violation.nodes.length} nodo(s)\n  ${violation.helpUrl}\n${violation.nodes.map(n => `  * ${n.html}`).join('\n')}`;
 }
 
 /**
