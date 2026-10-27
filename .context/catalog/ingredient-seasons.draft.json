@@ -1,0 +1,390 @@
+{
+  "estado": "borrador-1 (pendiente de revisión del dueño, FRESCO-1058)",
+  "fecha": "2026-10-27",
+  "alcance": "Solo fruta, verdura, hortalizas y hierbas frescas con una temporada clara en España. Pescado y carne, productos transformados (triturado, en lata, congelado, seco, semillas, salsas) y despensa quedan como todo el año.",
+  "regla": "La temporada de una receta son las estaciones en las que coinciden todos sus ingredientes estacionales. Sin ingredientes estacionales es todo_el_ano. Si no coinciden en ninguna, se marca para revisión manual.",
+  "ingredientes_estacionales": [
+    {
+      "nombre": "tomate",
+      "temporadas": [
+        "verano"
+      ],
+      "recetas": 85,
+      "nota": "Hay tomate todo el año de invernadero; aquí cuenta el de temporada. Los transformados (tomate triturado, pisto) quedan fuera."
+    },
+    {
+      "nombre": "pimiento",
+      "temporadas": [
+        "verano",
+        "otono"
+      ],
+      "recetas": 43
+    },
+    {
+      "nombre": "espinacas",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 31
+    },
+    {
+      "nombre": "calabacín",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 27
+    },
+    {
+      "nombre": "brócoli",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 23
+    },
+    {
+      "nombre": "berenjena",
+      "temporadas": [
+        "verano",
+        "otono"
+      ],
+      "recetas": 22
+    },
+    {
+      "nombre": "apio",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 18
+    },
+    {
+      "nombre": "coliflor",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 17
+    },
+    {
+      "nombre": "manzana",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 13
+    },
+    {
+      "nombre": "pepino",
+      "temporadas": [
+        "verano"
+      ],
+      "recetas": 12
+    },
+    {
+      "nombre": "lechuga",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 12,
+      "nota": "Hay todo el año; el pico es primavera y verano."
+    },
+    {
+      "nombre": "albahaca",
+      "temporadas": [
+        "verano"
+      ],
+      "recetas": 12
+    },
+    {
+      "nombre": "espárragos",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 10
+    },
+    {
+      "nombre": "kale",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 9
+    },
+    {
+      "nombre": "puerro",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 8
+    },
+    {
+      "nombre": "repollo",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 7
+    },
+    {
+      "nombre": "boniato",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 7
+    },
+    {
+      "nombre": "calabaza",
+      "temporadas": [
+        "otono"
+      ],
+      "recetas": 6,
+      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+    },
+    {
+      "nombre": "pimiento rojo",
+      "temporadas": [
+        "verano",
+        "otono"
+      ],
+      "recetas": 5
+    },
+    {
+      "nombre": "menta",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 5
+    },
+    {
+      "nombre": "guisantes",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 5
+    },
+    {
+      "nombre": "frutos rojos",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 5
+    },
+    {
+      "nombre": "setas",
+      "temporadas": [
+        "otono"
+      ],
+      "recetas": 5,
+      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+    },
+    {
+      "nombre": "coles de Bruselas",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 5
+    },
+    {
+      "nombre": "judías verdes",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 4
+    },
+    {
+      "nombre": "espárragos trigueros",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 4
+    },
+    {
+      "nombre": "pimiento verde",
+      "temporadas": [
+        "verano",
+        "otono"
+      ],
+      "recetas": 3
+    },
+    {
+      "nombre": "alcachofas",
+      "temporadas": [
+        "invierno",
+        "primavera"
+      ],
+      "recetas": 3
+    },
+    {
+      "nombre": "uvas",
+      "temporadas": [
+        "otono"
+      ],
+      "recetas": 3,
+      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+    },
+    {
+      "nombre": "tomate cherry",
+      "temporadas": [
+        "verano"
+      ],
+      "recetas": 2,
+      "nota": "Hay tomate todo el año de invernadero; aquí cuenta el de temporada. Los transformados (tomate triturado, pisto) quedan fuera."
+    },
+    {
+      "nombre": "lechuga romana",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 2,
+      "nota": "Hay todo el año; el pico es primavera y verano."
+    },
+    {
+      "nombre": "eneldo",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 2
+    },
+    {
+      "nombre": "fresas",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 2
+    },
+    {
+      "nombre": "arándanos",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 2
+    },
+    {
+      "nombre": "naranja",
+      "temporadas": [
+        "invierno"
+      ],
+      "recetas": 2
+    },
+    {
+      "nombre": "espinaca",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 2
+    },
+    {
+      "nombre": "tomates cherry",
+      "temporadas": [
+        "verano"
+      ],
+      "recetas": 1,
+      "nota": "Hay tomate todo el año de invernadero; aquí cuenta el de temporada. Los transformados (tomate triturado, pisto) quedan fuera."
+    },
+    {
+      "nombre": "judía verde",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "cebollino",
+      "temporadas": [
+        "primavera",
+        "verano"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "ajetes",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "fresa",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "melón",
+      "temporadas": [
+        "verano"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "pera",
+      "temporadas": [
+        "otono"
+      ],
+      "recetas": 1,
+      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+    },
+    {
+      "nombre": "membrillo",
+      "temporadas": [
+        "otono"
+      ],
+      "recetas": 1,
+      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+    },
+    {
+      "nombre": "berza",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "remolacha",
+      "temporadas": [
+        "otono",
+        "invierno"
+      ],
+      "recetas": 1
+    },
+    {
+      "nombre": "grelos",
+      "temporadas": [
+        "invierno"
+      ],
+      "recetas": 1
+    }
+  ],
+  "dudosos_dejados_como_todo_el_ano": [
+    "limón",
+    "aguacate",
+    "ajo",
+    "cebolla",
+    "zanahoria",
+    "patata",
+    "champiñones",
+    "rúcula",
+    "cilantro",
+    "perejil",
+    "plátano",
+    "piña",
+    "coco"
+  ]
+}
