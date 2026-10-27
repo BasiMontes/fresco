@@ -61,6 +61,25 @@ describe.skipIf(!(RUN && reachable))('computed recipe seasons (real DB)', () => 
     expect([401, 403, 404]).toContain(fn.status);
   });
 
+  test('the five recipes in conflict carry the season the owner chose (hot, hearty dishes)', async () => {
+    const chosen: Record<string, string[]> = {
+      'arroz-caldoso-pollo-verduras': ['otono', 'invierno'],
+      'arroz-meloso-con-setas-y-guisantes-b7': ['otono', 'invierno'],
+      'ternera-salsa-guisantes': ['otono', 'invierno'],
+      'arroz-con-pollo-tradicional': ['otono'],
+      'crema-de-calabacin-con-especias-version-ligera': ['otono', 'invierno'],
+    };
+    const rows = await restAll<{ slug: string, temporada: string[] | null }>('recipes', {
+      serviceRole: true,
+      select: 'slug,temporada',
+      order: 'slug',
+    });
+    const bySlug = new Map(rows.map(r => [r.slug, r.temporada]));
+    for (const [slug, seasons] of Object.entries(chosen)) {
+      expect(bySlug.get(slug)).toEqual(seasons);
+    }
+  });
+
   test('every active recipe carries the computed season, except those in conflict', async () => {
     const rows = await restAll<{ nombre: string, activo: boolean, temporada: string[] | null, ingredientes_principales: string[] }>('recipes', {
       serviceRole: true,
