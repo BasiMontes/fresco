@@ -26,7 +26,7 @@
         "otono",
         "invierno"
       ],
-      "recetas": 31
+      "recetas": 33
     },
     {
       "nombre": "calabacín",
@@ -143,8 +143,7 @@
       "temporadas": [
         "otono"
       ],
-      "recetas": 6,
-      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+      "recetas": 6
     },
     {
       "nombre": "pimiento rojo",
@@ -199,7 +198,7 @@
         "primavera",
         "verano"
       ],
-      "recetas": 4
+      "recetas": 5
     },
     {
       "nombre": "espárragos trigueros",
@@ -229,16 +228,22 @@
       "temporadas": [
         "otono"
       ],
-      "recetas": 3,
-      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+      "recetas": 3
     },
     {
       "nombre": "tomate cherry",
       "temporadas": [
         "verano"
       ],
-      "recetas": 2,
+      "recetas": 3,
       "nota": "Hay tomate todo el año de invernadero; aquí cuenta el de temporada. Los transformados (tomate triturado, pisto) quedan fuera."
+    },
+    {
+      "nombre": "fresas",
+      "temporadas": [
+        "primavera"
+      ],
+      "recetas": 3
     },
     {
       "nombre": "lechuga romana",
@@ -258,13 +263,6 @@
       "recetas": 2
     },
     {
-      "nombre": "fresas",
-      "temporadas": [
-        "primavera"
-      ],
-      "recetas": 2
-    },
-    {
       "nombre": "arándanos",
       "temporadas": [
         "primavera",
@@ -278,30 +276,6 @@
         "invierno"
       ],
       "recetas": 2
-    },
-    {
-      "nombre": "espinaca",
-      "temporadas": [
-        "otono",
-        "invierno"
-      ],
-      "recetas": 2
-    },
-    {
-      "nombre": "tomates cherry",
-      "temporadas": [
-        "verano"
-      ],
-      "recetas": 1,
-      "nota": "Hay tomate todo el año de invernadero; aquí cuenta el de temporada. Los transformados (tomate triturado, pisto) quedan fuera."
-    },
-    {
-      "nombre": "judía verde",
-      "temporadas": [
-        "primavera",
-        "verano"
-      ],
-      "recetas": 1
     },
     {
       "nombre": "cebollino",
@@ -319,13 +293,6 @@
       "recetas": 1
     },
     {
-      "nombre": "fresa",
-      "temporadas": [
-        "primavera"
-      ],
-      "recetas": 1
-    },
-    {
       "nombre": "melón",
       "temporadas": [
         "verano"
@@ -337,16 +304,14 @@
       "temporadas": [
         "otono"
       ],
-      "recetas": 1,
-      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+      "recetas": 1
     },
     {
       "nombre": "membrillo",
       "temporadas": [
         "otono"
       ],
-      "recetas": 1,
-      "nota": "Setas silvestres. Shiitake y portobello son de cultivo y van como todo el año."
+      "recetas": 1
     },
     {
       "nombre": "berza",
