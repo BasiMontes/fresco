@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
-import { JOB_STALE_AFTER_HOURS } from '@/lib/jobs/heartbeat';
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test';
+import { JOB_MONITORED_SINCE, JOB_STALE_AFTER_HOURS } from '@/lib/jobs/heartbeat';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 /**
@@ -20,8 +20,15 @@ const withHeartbeat = (lastSuccessAt: string | null) => fakeSupabase({
   job_heartbeat: { rows: lastSuccessAt ? ALL_JOBS.map(job => ({ job, last_success_at: lastSuccessAt })) : [] },
 });
 
+/** The moment the first job started being monitored: an hour later no job has had its first window yet. */
+const FIRST_WRITER_LIVE = Math.min(...Object.values(JOB_MONITORED_SINCE).map(date => Date.parse(date)));
+
 beforeEach(() => {
   supa = withHeartbeat(hoursAgo(2));
+});
+
+afterEach(() => {
+  setSystemTime();
 });
 
 describe('GET /api/health/jobs', () => {
@@ -34,11 +41,22 @@ describe('GET /api/health/jobs', () => {
 
   test('200 and pending when a job has not reported yet: not an alert before its first run', async () => {
     supa = withHeartbeat(null);
+    setSystemTime(new Date(FIRST_WRITER_LIVE + 3_600_000));
 
     const res = await GET();
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok', jobs: allJobs('pending') });
+  });
+
+  test('503 and stale when a job has never reported and its window has passed (FRESCO-1057)', async () => {
+    supa = withHeartbeat(null);
+    setSystemTime(new Date(Math.max(...Object.values(JOB_MONITORED_SINCE).map(date => Date.parse(date))) + 400 * 3_600_000));
+
+    const res = await GET();
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ status: 'stale', jobs: allJobs('stale') });
   });
 
   test('503 and stale when a job stopped reporting', async () => {
