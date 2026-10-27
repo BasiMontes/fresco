@@ -217,3 +217,8 @@ Historia archivada:
 - Qué: Basi borró el token `fresco` (LEGACY, sin uso hace 2 meses, caducaba el 31-08-2027) en Account > Access Tokens. Después, `edge-functions-drift` lanzado a mano en `staging` terminó en verde (`check repo vs deployed: success`) y `supabase functions list` con `fresco-v3` lista las 9 funciones.
 - Por qué: cerrar lo último pendiente de FRESCO-853; el CI ya depende solo de `fresco-ci-drift-v2`.
 - Siguiente: renovar `fresco-ci-drift-v2` antes del 25-10-2027; sustituir `fresco-v3` (login local, sin alcance) por uno con alcance cuando convenga.
+
+## 2026-10-27 - FRESCO-1028 reaplicado, ADR-0043 aceptado y Dependabot al día (FRESCO-1056), promovido a main
+- Qué: el dataset de Mercadona volvió a actualizarse (David Gasquez arregló la exportación en su repo, datania/mercadona-catalog#3) y se reaplicó el aviso de precio caducado con un revert del #779 (#811). ADR-0043 pasó a Accepted (#812) porque su plazo de 14 días rompía repo:check en todos los PR. FRESCO-1056: #810 (@antfu/eslint-config 10) y #809 (21 actualizaciones menores y de parche, con next 16.4.3, stripe y nodemailer 10.2.1) mergeados; #809 necesitó alinear el override de postcss (EOVERRIDE de npm) y el nombre accesible del Dropdown (axe 4.14 activa label-content-name-mismatch por defecto). Promocionado staging a dev y main en d43d9e38.
+- Por qué: desbloquear FRESCO-1028, dejar el CI de los PR en verde y cerrar el ruido de Dependabot con trazabilidad en Jira (FRESCO-1056 bajo FRESCO-775).
+- Siguiente: vigilar producción tras next/stripe/nodemailer (health 200, jobs ok, dos jobs en pending); abrir la generación de recetas; salida a producción (FRESCO-886 y cadena); confirmar que la exportación semanal de Mercadona aguanta otra ejecución.
