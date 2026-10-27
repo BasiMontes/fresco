@@ -127,6 +127,7 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0064](./ADR-0064-recipe-tag-coherence-barrier-in-the-database.md) | An active recipe cannot be saved with allergen or diet tags that contradict its text | Accepted | — | — |
 | [ADR-0065](./ADR-0065-browser-sentry-starts-after-cookie-consent.md) | The browser Sentry SDK starts only after the visitor accepts cookies | Accepted | — | — |
 | [ADR-0066](./ADR-0066-launch-legal-texts-without-a-lawyer-until-revenue.md) | Launch legal texts: AI-assisted review and accepted risk until revenue pays for a lawyer | Accepted | — | — |
+| [ADR-0067](./ADR-0067-recipe-season-is-computed-from-its-ingredients.md) | A recipe's season is computed from its ingredients and the database refuses one that does not fit | Accepted | — | — |
 
 > Keep this table in sync whenever an ADR is added or its status changes. It is the fast index every session reads first. `bun run adr:check` (part of `repo:check`) fails on a file missing from this table, a duplicate number, a status that disagrees with the file, or an ADR left `Proposed` for more than 14 days.
 
