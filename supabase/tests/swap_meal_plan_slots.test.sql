@@ -19,9 +19,9 @@ values ('11111111-1111-1111-1111-111111111111', 'fresco-396@test.local');
 
 insert into public.user_profiles (id) values ('11111111-1111-1111-1111-111111111111');
 
-insert into public.recipes (id, nombre, slug) values
-  ('22222222-2222-2222-2222-222222222222', 'Test recipe 396 A', 'test-recipe-396-a'),
-  ('33333333-3333-3333-3333-333333333333', 'Test recipe 396 B', 'test-recipe-396-b');
+insert into public.recipes (id, nombre, slug, temporada) values
+  ('22222222-2222-2222-2222-222222222222', 'Test recipe 396 A', 'test-recipe-396-a', '["todo_el_ano"]'),
+  ('33333333-3333-3333-3333-333333333333', 'Test recipe 396 B', 'test-recipe-396-b', '["todo_el_ano"]');
 
 insert into public.meal_plans (id, user_id, semana_iso, fecha_inicio)
 values ('44444444-4444-4444-4444-444444444444',

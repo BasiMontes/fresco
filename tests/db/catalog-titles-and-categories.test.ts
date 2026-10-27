@@ -30,6 +30,7 @@ describe.skipIf(!(RUN && reachable))('recipes title and category checks (real DB
         nombre: nombre ?? slug,
         slug,
         clasificacion: { categoria: categoria ?? 'sopa', tipo_plato: 'comida' },
+        temporada: ['todo_el_ano'],
       },
     });
     const id = (res.body as { id?: string }[] | null)?.[0]?.id;

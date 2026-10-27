@@ -28,7 +28,7 @@ describe.skipIf(!(RUN && reachable))('allergen vocabulary: mostaza and altramuce
       method: 'POST',
       serviceRole: true,
       prefer: 'return=representation',
-      body: { nombre: slug, slug, alergenos },
+      body: { nombre: slug, slug, alergenos, temporada: ['todo_el_ano'] },
     });
     const id = (res.body as { id?: string }[] | null)?.[0]?.id;
     if (id) {

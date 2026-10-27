@@ -65,6 +65,7 @@ const body = (name: string, attempt: Attempt, activo: boolean) => ({
   pasos_resumen: attempt.pasos ?? [],
   alergenos: attempt.alergenos ?? [],
   dieta: attempt.dieta ?? {},
+  temporada: ['todo_el_ano'],
   activo,
 });
 
