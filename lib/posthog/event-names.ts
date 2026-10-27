@@ -23,6 +23,9 @@ export const POSTHOG_EVENTS = {
   // when the user cancels within it.
   RECIPE_MARK_UNDONE: 'recipe_mark_undone',
   SHOPPING_LIST_GENERATED: 'shopping_list_generated',
+  // FRESCO-1028: the shopper opened a row's product at a supermarket. With `price_state` it says whether the
+  // price shown (fresh, old, hidden, undated) influences the click.
+  SUPERMARKET_LINK_CLICKED: 'supermarket_link_clicked',
   // FRESCO-1027: the Free-to-Pro learning preview on /menu ("with Pro you would not have seen these N dishes
   // again"). `pro_preview_shown` fires when it paints, `pro_preview_clicked` on its link to the plan, and
   // `learning_explanation_viewed` when a Pro user sees the explanation of what their menu learned.
