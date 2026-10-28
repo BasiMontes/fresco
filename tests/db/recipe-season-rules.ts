@@ -32,6 +32,40 @@ export function computeRecipeTemporada(ingredientes: unknown, table: SeasonTable
   return common.length > 0 ? common : null;
 }
 
+/** slug -> season, the content of `public.recipe_season_exceptions` (FRESCO-1059). */
+export type SeasonExceptions = ReadonlyMap<string, readonly string[]>;
+
+/** The cold-months season a stew, a soup or a non-light legume dish is wanted in. */
+const COLD_MONTHS = ['otono', 'invierno'] as const;
+
+/**
+ * Twin of the SQL `compute_recipe_season` (FRESCO-1059): the ingredient season first, then the dish. `null` on a
+ * conflict between ingredients passes through (a person decides). For a recipe with no seasonal ingredient the
+ * per-slug exception wins, then `guiso` / `sopa` / non-light `legumbres` go to autumn and winter, then all-year.
+ */
+export function computeRecipeSeason(
+  ingredientes: unknown,
+  slug: unknown,
+  clasificacion: unknown,
+  table: SeasonTable,
+  exceptions: SeasonExceptions,
+): string[] | null {
+  const base = computeRecipeTemporada(ingredientes, table);
+  if (base === null || base[0] !== ALL_YEAR) {
+    return base;
+  }
+
+  const exception = typeof slug === 'string' ? exceptions.get(slug) : undefined;
+  if (exception !== undefined) {
+    return [...exception];
+  }
+
+  const info = (typeof clasificacion === 'object' && clasificacion !== null ? clasificacion : {}) as Record<string, unknown>;
+  const isStew = info.categoria === 'guiso' || info.categoria === 'sopa';
+  const isHeartyLegume = info.categoria === 'legumbres' && info.es_ligero !== true;
+  return isStew || isHeartyLegume ? [...COLD_MONTHS] : [ALL_YEAR];
+}
+
 /**
  * First problem with a stored season, `null` when it is fine. Same checks in the same order as the SQL
  * `recipe_temporada_problem`; the wording is not the SQL's, parity is on null versus non-null.

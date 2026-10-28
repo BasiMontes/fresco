@@ -4,7 +4,12 @@
  */
 
 import { describe, expect, test } from 'bun:test';
-import { computeRecipeTemporada, recipeTemporadaProblem } from './recipe-season-rules';
+import { computeRecipeSeason, computeRecipeTemporada, recipeTemporadaProblem } from './recipe-season-rules';
+
+const EXCEPTIONS = new Map<string, readonly string[]>([
+  ['salmorejo', ['verano']],
+  ['hamburguesa-de-lentejas', ['todo_el_ano']],
+]);
 
 const TABLE = new Map<string, readonly string[]>([
   ['espárragos', ['primavera']],
@@ -55,6 +60,55 @@ describe('computeRecipeTemporada', () => {
 
   test('a conflict gives null', () => {
     expect(computeRecipeTemporada(['guisantes', 'apio'], TABLE)).toBeNull();
+  });
+});
+
+describe('computeRecipeSeason (FRESCO-1059)', () => {
+  const season = (ingredientes: unknown, slug: unknown, clasificacion: unknown) =>
+    computeRecipeSeason(ingredientes, slug, clasificacion, TABLE, EXCEPTIONS);
+
+  test.each(['guiso', 'sopa'])('a %s with no seasonal ingredient is wanted in autumn and winter', (categoria) => {
+    expect(season(['ternera', 'vino tinto'], 'cocido', { categoria })).toEqual(['otono', 'invierno']);
+  });
+
+  test('legumbres follow the cold months unless they are light', () => {
+    expect(season(['lentejas'], 'lentejas', { categoria: 'legumbres', es_ligero: false })).toEqual(['otono', 'invierno']);
+    expect(season(['lentejas'], 'lentejas', { categoria: 'legumbres' })).toEqual(['otono', 'invierno']);
+    expect(season(['tempeh'], 'tempeh', { categoria: 'legumbres', es_ligero: true })).toEqual(['todo_el_ano']);
+  });
+
+  test.each(['arroz', 'pasta', 'carne', 'pescado', 'reposteria', 'tostadas', 'huevos'])('%s is not decided by the dish', (categoria) => {
+    expect(season(['tomate'], 'plato', { categoria, es_comfort_food: true, es_contundente: true })).toEqual(['todo_el_ano']);
+  });
+
+  test('the flags do not move a recipe, only the category does', () => {
+    expect(season([], 'bizcocho', { categoria: 'reposteria', es_comfort_food: true, es_contundente: true, es_ligero: false })).toEqual(['todo_el_ano']);
+  });
+
+  test('a season from the ingredients is never overridden by the dish', () => {
+    expect(season(['calabacín'], 'crema-de-calabacin', { categoria: 'sopa' })).toEqual(['primavera', 'verano']);
+    expect(season(['apio'], 'sopa-de-apio', { categoria: 'sopa' })).toEqual(['otono', 'invierno']);
+  });
+
+  test('a conflict between ingredients stays null, whatever the dish', () => {
+    expect(season(['guisantes', 'apio'], 'guiso', { categoria: 'guiso' })).toBeNull();
+  });
+
+  test('a per-slug exception wins over the category', () => {
+    expect(season(['tomate', 'pan'], 'salmorejo', { categoria: 'sopa', es_ligero: true })).toEqual(['verano']);
+    expect(season(['lentejas'], 'hamburguesa-de-lentejas', { categoria: 'legumbres', es_ligero: false })).toEqual(['todo_el_ano']);
+  });
+
+  test('an exception does not override a season that comes from the ingredients', () => {
+    expect(season(['espárragos'], 'salmorejo', { categoria: 'sopa' })).toEqual(['primavera']);
+  });
+
+  test.each([[null], [undefined], ['guiso'], [[]], [{}]])('a classification that is not usable (%p) leaves the recipe all year', (clasificacion) => {
+    expect(season([], 'plato', clasificacion)).toEqual(['todo_el_ano']);
+  });
+
+  test('a slug that is not text matches no exception', () => {
+    expect(season([], null, { categoria: 'sopa' })).toEqual(['otono', 'invierno']);
   });
 });
 
