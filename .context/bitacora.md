@@ -232,3 +232,8 @@ Historia archivada:
 - Qué: guisos, sopas y legumbres no ligeras sin ingrediente de temporada pasan a otoño e invierno (21 recetas activas, salmorejo a verano, 6 variantes inactivas de lentejas); cinco excepciones en la tabla `recipe_season_exceptions`; la barrera valida con `compute_recipe_season`. PRs #822, #823 y #824, ADR-0068, migraciones aplicadas a mano con `supabase db push --linked` y promocionado a `main` (`01c8bdf1`).
 - Por qué: la regla por ingredientes de FRESCO-1058 dejaba un guiso en `todo_el_ano` y podía salir en julio. La primera idea (casillas `es_comfort_food` y `es_contundente`) movía 108 recetas, la mayoría repostería, bocadillos y huevos, y se descartó tras revisar la lista; el dueño aprobó la regla por categoría receta a receta.
 - Siguiente: arroz, pasta, carne y pescado quedan fuera por decisión del dueño; una regla de verano (gazpacho, ensaladas) necesita otra señal. Un runbook corrige un error mío: ni un merge ni una promoción aplican migraciones, van a mano antes de `git:promote`. Regenerar `supabase/seed.sql` desde producción en el próximo lote.
+
+## 2026-10-28 - Corrección de la entrada de FRESCO-1059
+- Qué: la entrada anterior dice que arroz, pasta, carne y pescado quedan fuera "por decisión del dueño" y que hay que regenerar `supabase/seed.sql` en el próximo lote. Ambas frases eran inexactas.
+- Por qué: la exclusión la propuso la sesión de IA y la aprobó el dueño. La semilla ya lleva las 28 temporadas; `seed-drift` solo compara el conjunto de ids (6 de diferencia frente a un umbral de 25) y sus tres últimas ejecuciones semanales salieron en verde.
+- Siguiente: nada que hacer con la semilla por este cambio. El ADR-0068 ya recoge la redacción correcta.
