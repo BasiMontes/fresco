@@ -13,10 +13,10 @@
  * `bun run test:db`. A bare `bun test` skips the whole file (see `tests/db/README.md`).
  */
 
-import type { SeasonTable } from './recipe-season-rules';
+import type { SeasonExceptions, SeasonTable } from './recipe-season-rules';
 import { describe, expect, test } from 'bun:test';
 import { rest, restAll, rpc, stackReachable } from './harness';
-import { computeRecipeTemporada, recipeTemporadaProblem } from './recipe-season-rules';
+import { computeRecipeSeason, computeRecipeTemporada, recipeTemporadaProblem } from './recipe-season-rules';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -140,5 +140,95 @@ describe.skipIf(!(RUN && reachable))('compute_recipe_temporada / recipe_temporad
     const { status } = await rpc('compute_recipe_temporada', { p_ingredientes: ['espárragos'] });
 
     expect(status).toBeGreaterThanOrEqual(400);
+  });
+});
+
+async function loadExceptions(): Promise<SeasonExceptions> {
+  const { status, body } = await rest('recipe_season_exceptions', { serviceRole: true, query: 'select=slug,temporadas' });
+  expect(status).toBe(200);
+  return new Map((body as { slug: string, temporadas: string[] }[]).map(row => [row.slug, row.temporadas]));
+}
+
+async function sqlSeason(ingredientes: unknown, slug: unknown, clasificacion: unknown): Promise<string[] | null> {
+  const { status, body } = await rpc(
+    'compute_recipe_season',
+    { p_ingredientes: ingredientes, p_slug: slug, p_clasificacion: clasificacion },
+    { serviceRole: true },
+  );
+  expect(status).toBe(200);
+  return body as string[] | null;
+}
+
+interface DishProbe {
+  name: string
+  ingredientes: unknown
+  slug: unknown
+  clasificacion: unknown
+}
+
+const DISH_PROBES: DishProbe[] = [
+  { name: 'stew with no seasonal ingredient', ingredientes: ['ternera', 'vino tinto'], slug: 'guiso-x', clasificacion: { categoria: 'guiso' } },
+  { name: 'soup with no seasonal ingredient', ingredientes: ['pollo', 'fideos'], slug: 'sopa-x', clasificacion: { categoria: 'sopa', es_ligero: true } },
+  { name: 'hearty legumes', ingredientes: ['lentejas'], slug: 'lentejas-x', clasificacion: { categoria: 'legumbres', es_ligero: false } },
+  { name: 'legumes with no light flag', ingredientes: ['lentejas'], slug: 'lentejas-y', clasificacion: { categoria: 'legumbres' } },
+  { name: 'light legumes', ingredientes: ['tempeh'], slug: 'tempeh-x', clasificacion: { categoria: 'legumbres', es_ligero: true } },
+  { name: 'comfort flags do not decide', ingredientes: [], slug: 'bizcocho-x', clasificacion: { categoria: 'reposteria', es_comfort_food: true, es_contundente: true } },
+  { name: 'ingredient season beats the dish', ingredientes: ['calabacín'], slug: 'crema-x', clasificacion: { categoria: 'sopa' } },
+  { name: 'conflict stays null', ingredientes: ['guisantes', 'apio'], slug: 'guiso-y', clasificacion: { categoria: 'guiso' } },
+  { name: 'exception to summer', ingredientes: ['tomate', 'pan'], slug: 'salmorejo-cordobes-b115', clasificacion: { categoria: 'sopa', es_ligero: true } },
+  { name: 'exception to all year', ingredientes: ['lentejas'], slug: 'hamburguesa-de-lentejas-y-zanahoria-b48', clasificacion: { categoria: 'legumbres', es_ligero: false } },
+  { name: 'exception ignored when ingredients decide', ingredientes: ['espárragos'], slug: 'salmorejo-cordobes-b115', clasificacion: { categoria: 'sopa' } },
+  { name: 'classification null', ingredientes: [], slug: 'x', clasificacion: null },
+  { name: 'classification not an object', ingredientes: [], slug: 'x', clasificacion: 'guiso' },
+  { name: 'slug null', ingredientes: [], slug: null, clasificacion: { categoria: 'sopa' } },
+  { name: 'ingredients null', ingredientes: null, slug: 'x', clasificacion: { categoria: 'guiso' } },
+];
+
+describe.skipIf(!(RUN && reachable))('compute_recipe_season (SQL) equals the TypeScript twin (real DB, FRESCO-1059)', () => {
+  test('every recipe of the catalogue gets the same season', async () => {
+    const table = await loadTable();
+    const exceptions = await loadExceptions();
+    const rows = await restAll<{ slug: string, ingredientes_principales: unknown, clasificacion: unknown }>('recipes', {
+      serviceRole: true,
+      select: 'slug,ingredientes_principales,clasificacion',
+      order: 'id',
+    });
+
+    const sql = await inChunks(rows, async row => sqlSeason(row.ingredientes_principales, row.slug, row.clasificacion));
+    const different = rows
+      .map((row, index) => ({
+        slug: row.slug,
+        ts: computeRecipeSeason(row.ingredientes_principales, row.slug, row.clasificacion, table, exceptions),
+        sql: sql[index],
+      }))
+      .filter(row => JSON.stringify(row.ts) !== JSON.stringify(row.sql));
+
+    expect(exceptions.size).toBeGreaterThan(0);
+    expect(rows.length).toBeGreaterThan(1000);
+    expect(different).toEqual([]);
+  }, TIMEOUT_MS);
+
+  test('every hand-written probe gets the same season', async () => {
+    const table = await loadTable();
+    const exceptions = await loadExceptions();
+    const sql = await inChunks(DISH_PROBES, async probe => sqlSeason(probe.ingredientes, probe.slug, probe.clasificacion));
+
+    const different = DISH_PROBES
+      .map((probe, index) => ({
+        name: probe.name,
+        ts: computeRecipeSeason(probe.ingredientes, probe.slug, probe.clasificacion, table, exceptions),
+        sql: sql[index],
+      }))
+      .filter(row => JSON.stringify(row.ts) !== JSON.stringify(row.sql));
+
+    expect(different).toEqual([]);
+  }, TIMEOUT_MS);
+
+  test('the function and the exceptions table are not an API: anon cannot reach them', async () => {
+    const fn = await rpc('compute_recipe_season', { p_ingredientes: [], p_slug: 'x', p_clasificacion: {} });
+    const table = await rest('recipe_season_exceptions', { query: 'select=slug' });
+
+    expect(fn.status).toBeGreaterThanOrEqual(400);
+    expect(table.status).toBeGreaterThanOrEqual(400);
   });
 });
