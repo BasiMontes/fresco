@@ -81,9 +81,9 @@ describe.skipIf(!(RUN && reachable))('computed recipe seasons (real DB)', () => 
   });
 
   test('every active recipe carries the computed season, except those in conflict', async () => {
-    const rows = await restAll<{ nombre: string, activo: boolean, temporada: string[] | null, ingredientes_principales: string[] }>('recipes', {
+    const rows = await restAll<{ nombre: string, slug: string, activo: boolean, temporada: string[] | null, ingredientes_principales: string[], clasificacion: unknown }>('recipes', {
       serviceRole: true,
-      select: 'nombre,activo,temporada,ingredientes_principales',
+      select: 'nombre,slug,activo,temporada,ingredientes_principales,clasificacion',
       order: 'id',
     });
     const recipes = rows.filter(r => r.activo);
@@ -92,7 +92,10 @@ describe.skipIf(!(RUN && reachable))('computed recipe seasons (real DB)', () => 
     const wrong: string[] = [];
     const conflicts: string[] = [];
     for (const r of recipes) {
-      const expected = await compute(r.ingredientes_principales);
+      // FRESCO-1059: the ingredients first, then the dish type (see recipe-dish-season.test.ts).
+      const res = await rpc('compute_recipe_season', { p_ingredientes: r.ingredientes_principales, p_slug: r.slug, p_clasificacion: r.clasificacion }, { serviceRole: true });
+      expect(res.status).toBe(200);
+      const expected = res.body as string[] | null;
       if (expected === null) { conflicts.push(r.nombre); continue; }
       if (JSON.stringify(r.temporada) !== JSON.stringify(expected)) { wrong.push(`${r.nombre}: ${JSON.stringify(r.temporada)} != ${JSON.stringify(expected)}`); }
     }

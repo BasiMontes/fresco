@@ -30,7 +30,8 @@ describe.skipIf(!(RUN && reachable))('recipes title and category checks (real DB
         nombre: nombre ?? slug,
         slug,
         clasificacion: { categoria: categoria ?? 'sopa', tipo_plato: 'comida' },
-        temporada: ['todo_el_ano'],
+        // FRESCO-1059 (ADR-0068): with no seasonal ingredient, a stew, a soup or a legume dish is autumn and winter.
+        temporada: ['guiso', 'sopa', 'legumbres'].includes(categoria ?? 'sopa') ? ['otono', 'invierno'] : ['todo_el_ano'],
       },
     });
     const id = (res.body as { id?: string }[] | null)?.[0]?.id;
