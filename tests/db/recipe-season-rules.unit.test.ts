@@ -163,4 +163,24 @@ describe('recipeTemporadaProblem', () => {
     expect(recipeTemporadaProblem(['todo_el_ano'], null, TABLE)).toBeNull();
     expect(recipeTemporadaProblem(['verano'], null, TABLE)).not.toBeNull();
   });
+
+  describe('with the dish context (FRESCO-1059)', () => {
+    const dish = (slug: string, clasificacion: unknown) => ({ slug, clasificacion, exceptions: EXCEPTIONS });
+
+    test('a stew with no seasonal ingredient must be autumn and winter, not all year', () => {
+      expect(recipeTemporadaProblem(['todo_el_ano'], ['ternera'], TABLE, dish('cocido', { categoria: 'guiso' }))).not.toBeNull();
+      expect(recipeTemporadaProblem(['otono', 'invierno'], ['ternera'], TABLE, dish('cocido', { categoria: 'guiso' }))).toBeNull();
+    });
+
+    test('without the dish context only the ingredients decide, as before', () => {
+      expect(recipeTemporadaProblem(['todo_el_ano'], ['ternera'], TABLE)).toBeNull();
+      expect(recipeTemporadaProblem(['otono', 'invierno'], ['ternera'], TABLE)).not.toBeNull();
+    });
+
+    test('an exception keeps its season, and a conflict still accepts any valid value', () => {
+      expect(recipeTemporadaProblem(['verano'], ['tomate'], TABLE, dish('salmorejo', { categoria: 'sopa' }))).toBeNull();
+      expect(recipeTemporadaProblem(['otono', 'invierno'], ['tomate'], TABLE, dish('salmorejo', { categoria: 'sopa' }))).not.toBeNull();
+      expect(recipeTemporadaProblem(['verano'], ['guisantes', 'apio'], TABLE, dish('guiso', { categoria: 'guiso' }))).toBeNull();
+    });
+  });
 });

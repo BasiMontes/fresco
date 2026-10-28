@@ -4,6 +4,10 @@
  *
  * Test-only oracle, like `recipe-allergen-diet-rules.ts`: `recipe-season-parity.test.ts` compares it with the
  * SQL on every recipe of the catalogue, so a change to one copy that misses the other fails there.
+ *
+ * FRESCO-1059 adds the dish rule on top: `computeRecipeSeason` mirrors `compute_recipe_season` (migration
+ * 20261028082818) and `recipeTemporadaProblem` takes an optional dish context mirroring the four-argument
+ * `recipe_temporada_problem` (migration 20261028090603).
  */
 
 /** Calendar order, as the SQL array. `otono` has no ñ on purpose: the stored value is ASCII. */
@@ -70,7 +74,12 @@ export function computeRecipeSeason(
  * First problem with a stored season, `null` when it is fine. Same checks in the same order as the SQL
  * `recipe_temporada_problem`; the wording is not the SQL's, parity is on null versus non-null.
  */
-export function recipeTemporadaProblem(temporada: unknown, ingredientes: unknown, table: SeasonTable): string | null {
+export function recipeTemporadaProblem(
+  temporada: unknown,
+  ingredientes: unknown,
+  table: SeasonTable,
+  dish?: { slug: unknown, clasificacion: unknown, exceptions: SeasonExceptions },
+): string | null {
   if (!Array.isArray(temporada) || temporada.length === 0) {
     return 'empty season: must be a list of primavera, verano, otono, invierno or todo_el_ano';
   }
@@ -94,7 +103,10 @@ export function recipeTemporadaProblem(temporada: unknown, ingredientes: unknown
     }
   }
 
-  const expected = computeRecipeTemporada(ingredientes, table);
+  // FRESCO-1059: with the dish context the expected season is `compute_recipe_season`; without it, ingredients only.
+  const expected = dish === undefined
+    ? computeRecipeTemporada(ingredientes, table)
+    : computeRecipeSeason(ingredientes, dish.slug, dish.clasificacion, table, dish.exceptions);
   if (expected !== null && (expected.length !== got.length || expected.some((season, index) => season !== got[index]))) {
     return `season ${JSON.stringify(got)} does not fit its ingredients, which give ${JSON.stringify(expected)} (expected vs stored)`;
   }

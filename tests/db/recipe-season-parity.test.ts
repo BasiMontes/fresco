@@ -224,6 +224,62 @@ describe.skipIf(!(RUN && reachable))('compute_recipe_season (SQL) equals the Typ
     expect(different).toEqual([]);
   }, TIMEOUT_MS);
 
+  test('every recipe gets the same verdict from recipe_temporada_problem with the dish context', async () => {
+    const table = await loadTable();
+    const exceptions = await loadExceptions();
+    const rows = await restAll<{ slug: string, ingredientes_principales: unknown, clasificacion: unknown, temporada: unknown }>('recipes', {
+      serviceRole: true,
+      select: 'slug,ingredientes_principales,clasificacion,temporada',
+      order: 'id',
+    });
+
+    const sql = await inChunks(rows, async (row) => {
+      const { status, body } = await rpc(
+        'recipe_temporada_problem',
+        { p_temporada: row.temporada, p_ingredientes: row.ingredientes_principales, p_slug: row.slug, p_clasificacion: row.clasificacion },
+        { serviceRole: true },
+      );
+      expect(status).toBe(200);
+      return body === null;
+    });
+    const different = rows
+      .map((row, index) => ({
+        slug: row.slug,
+        temporada: row.temporada,
+        ts: recipeTemporadaProblem(row.temporada, row.ingredientes_principales, table, { slug: row.slug, clasificacion: row.clasificacion, exceptions }) === null,
+        sql: sql[index],
+      }))
+      .filter(row => row.ts !== row.sql);
+
+    expect(different).toEqual([]);
+  }, TIMEOUT_MS);
+
+  test('every probe gets the same verdict for each candidate season', async () => {
+    const table = await loadTable();
+    const exceptions = await loadExceptions();
+    const cases = DISH_PROBES.flatMap(probe => [['todo_el_ano'], ['otono', 'invierno'], ['verano']].map(temporada => ({ probe, temporada })));
+
+    const sql = await inChunks(cases, async ({ probe, temporada }) => {
+      const { status, body } = await rpc(
+        'recipe_temporada_problem',
+        { p_temporada: temporada, p_ingredientes: probe.ingredientes, p_slug: probe.slug, p_clasificacion: probe.clasificacion },
+        { serviceRole: true },
+      );
+      expect(status).toBe(200);
+      return body === null;
+    });
+    const different = cases
+      .map(({ probe, temporada }, index) => ({
+        name: probe.name,
+        temporada,
+        ts: recipeTemporadaProblem(temporada, probe.ingredientes, table, { slug: probe.slug, clasificacion: probe.clasificacion, exceptions }) === null,
+        sql: sql[index],
+      }))
+      .filter(row => row.ts !== row.sql);
+
+    expect(different).toEqual([]);
+  }, TIMEOUT_MS);
+
   test('the function and the exceptions table are not an API: anon cannot reach them', async () => {
     const fn = await rpc('compute_recipe_season', { p_ingredientes: [], p_slug: 'x', p_clasificacion: {} });
     const table = await rest('recipe_season_exceptions', { query: 'select=slug' });
