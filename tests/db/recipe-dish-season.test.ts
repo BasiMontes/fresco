@@ -168,12 +168,12 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence with the dish 
   });
 
   test('a season that comes from the ingredients beats the category', async () => {
-    expect((await insert('stew-summer-ok', ['calabacín'], { categoria: 'guiso' }, ['primavera', 'verano'])).res.status).toBe(201);
-    expect((await insert('stew-summer-wrong', ['calabacín'], { categoria: 'guiso' }, COLD)).res.status).toBe(400);
+    expect((await insert('stew-summer-ok', ['frutos rojos'], { categoria: 'guiso' }, ['primavera', 'verano'])).res.status).toBe(201);
+    expect((await insert('stew-summer-wrong', ['frutos rojos'], { categoria: 'guiso' }, COLD)).res.status).toBe(400);
   });
 
   test('ingredients in conflict stay a person decision, whatever the category', async () => {
-    expect((await insert('stew-conflict', ['apio', 'calabacín'], { categoria: 'guiso' }, ['verano'])).res.status).toBe(201);
+    expect((await insert('stew-conflict', ['kale', 'frutos rojos'], { categoria: 'guiso' }, ['verano'])).res.status).toBe(201);
   });
 
   test('changing the category of an active recipe re-checks its season', async () => {

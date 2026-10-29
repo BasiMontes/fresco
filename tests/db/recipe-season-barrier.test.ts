@@ -20,8 +20,8 @@ const reachable = RUN ? await stackReachable() : false;
 
 const CHECK_VIOLATION = '23514';
 
-/** `apio` is autumn and winter, `calabacín` spring and summer: no season in common. */
-const CONFLICT = ['apio', 'calabacín'];
+/** `kale` is autumn and winter, `frutos rojos` spring and summer: no season in common. */
+const CONFLICT = ['kale', 'frutos rojos'];
 
 describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real DB)', () => {
   const created: string[] = [];
@@ -47,7 +47,7 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
   });
 
   test('an active recipe whose season does not match its ingredients is rejected, naming both', async () => {
-    const { res, name } = await insert('mismatch', ['calabacín'], ['otono'], true);
+    const { res, name } = await insert('mismatch', ['frutos rojos'], ['otono'], true);
 
     const error = res.body as { code?: string, message?: string };
     expect(res.status).toBe(400);
@@ -58,7 +58,7 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
   });
 
   test('the season the function computes is accepted', async () => {
-    expect((await insert('match', ['calabacín'], ['primavera', 'verano'], true)).res.status).toBe(201);
+    expect((await insert('match', ['frutos rojos'], ['primavera', 'verano'], true)).res.status).toBe(201);
     expect((await insert('all-year', ['arroz', 'pollo'], ['todo_el_ano'], true)).res.status).toBe(201);
   });
 
@@ -83,7 +83,7 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
   });
 
   test('an inactive recipe is a draft: it saves with a season that does not fit', async () => {
-    expect((await insert('draft', ['calabacín'], ['otono'], false)).res.status).toBe(201);
+    expect((await insert('draft', ['frutos rojos'], ['otono'], false)).res.status).toBe(201);
   });
 
   test('a draft may have no season, but whatever season it carries is well formed', async () => {
@@ -106,7 +106,7 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
   });
 
   test('reactivating a draft whose season still does not fit is rejected', async () => {
-    const { id } = await insert('reactivate', ['calabacín'], ['otono'], false);
+    const { id } = await insert('reactivate', ['frutos rojos'], ['otono'], false);
 
     const res = await patch(id as string, { activo: true });
 
@@ -117,7 +117,7 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
   test('editing the ingredients of an active recipe so its season no longer fits is rejected', async () => {
     const { id } = await insert('edit-ingredients', ['arroz'], ['todo_el_ano'], true);
 
-    const res = await patch(id as string, { ingredientes_principales: ['calabacín'] });
+    const res = await patch(id as string, { ingredientes_principales: ['frutos rojos'] });
 
     expect(res.status).toBe(400);
     expect((res.body as { code?: string }).code).toBe(CHECK_VIOLATION);
@@ -126,7 +126,7 @@ describe.skipIf(!(RUN && reachable))('recipes_temporada_coherence trigger (real 
   test('fixing the season and the ingredients in the same statement is accepted', async () => {
     const { id } = await insert('fix-both', ['arroz'], ['todo_el_ano'], true);
 
-    const res = await patch(id as string, { ingredientes_principales: ['calabacín'], temporada: ['primavera', 'verano'] });
+    const res = await patch(id as string, { ingredientes_principales: ['frutos rojos'], temporada: ['primavera', 'verano'] });
 
     expect(res.status).toBe(204);
   });

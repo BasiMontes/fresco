@@ -75,12 +75,12 @@ const PROBES: Probe[] = [
   { name: 'ingredients not an array', temporada: ['todo_el_ano'], ingredientes: { a: 'espárragos' } },
   { name: 'ingredients null', temporada: ['todo_el_ano'], ingredientes: null },
   { name: 'ingredients with non-text elements', temporada: ['primavera'], ingredientes: [null, 5, 'guisantes'] },
-  { name: 'conflict with a valid value', temporada: ['primavera'], ingredientes: ['guisantes', 'apio'] },
-  { name: 'conflict with all year', temporada: ['todo_el_ano'], ingredientes: ['guisantes', 'apio'] },
-  { name: 'conflict with an invalid value', temporada: ['invierno', 'otono'], ingredientes: ['guisantes', 'apio'] },
+  { name: 'conflict with a valid value', temporada: ['primavera'], ingredientes: ['guisantes', 'kale'] },
+  { name: 'conflict with all year', temporada: ['todo_el_ano'], ingredientes: ['guisantes', 'kale'] },
+  { name: 'conflict with an invalid value', temporada: ['invierno', 'otono'], ingredientes: ['guisantes', 'kale'] },
   { name: 'all year mixed with a season', temporada: ['todo_el_ano', 'verano'], ingredientes: ['tomate'] },
-  { name: 'wrong order', temporada: ['invierno', 'otono'], ingredientes: ['apio'] },
-  { name: 'repeats', temporada: ['verano', 'verano'], ingredientes: ['pimiento', 'calabacín'] },
+  { name: 'wrong order', temporada: ['invierno', 'otono'], ingredientes: ['kale'] },
+  { name: 'repeats', temporada: ['verano', 'verano'], ingredientes: ['frutos rojos', 'melón'] },
   { name: 'otoño with ñ', temporada: ['otoño'], ingredientes: ['tomate'] },
   { name: 'upper case season', temporada: ['Primavera'], ingredientes: ['espárragos'] },
   { name: 'empty season', temporada: [], ingredientes: ['tomate'] },
@@ -113,7 +113,7 @@ describe.skipIf(!(RUN && reachable))('compute_recipe_temporada / recipe_temporad
       }))
       .filter(row => JSON.stringify(row.ts) !== JSON.stringify(row.sql));
 
-    expect(table.size).toBeGreaterThan(30);
+    expect(table.size).toBeGreaterThan(10);
     expect(rows.length).toBeGreaterThan(1000);
     expect(different).toEqual([]);
   }, TIMEOUT_MS);
@@ -173,8 +173,8 @@ const DISH_PROBES: DishProbe[] = [
   { name: 'legumes with no light flag', ingredientes: ['lentejas'], slug: 'lentejas-y', clasificacion: { categoria: 'legumbres' } },
   { name: 'light legumes', ingredientes: ['tempeh'], slug: 'tempeh-x', clasificacion: { categoria: 'legumbres', es_ligero: true } },
   { name: 'comfort flags do not decide', ingredientes: [], slug: 'bizcocho-x', clasificacion: { categoria: 'reposteria', es_comfort_food: true, es_contundente: true } },
-  { name: 'ingredient season beats the dish', ingredientes: ['calabacín'], slug: 'crema-x', clasificacion: { categoria: 'sopa' } },
-  { name: 'conflict stays null', ingredientes: ['guisantes', 'apio'], slug: 'guiso-y', clasificacion: { categoria: 'guiso' } },
+  { name: 'ingredient season beats the dish', ingredientes: ['frutos rojos'], slug: 'crema-x', clasificacion: { categoria: 'sopa' } },
+  { name: 'conflict stays null', ingredientes: ['guisantes', 'kale'], slug: 'guiso-y', clasificacion: { categoria: 'guiso' } },
   { name: 'exception to summer', ingredientes: ['tomate', 'pan'], slug: 'salmorejo-cordobes-b115', clasificacion: { categoria: 'sopa', es_ligero: true } },
   { name: 'exception to all year', ingredientes: ['lentejas'], slug: 'hamburguesa-de-lentejas-y-zanahoria-b48', clasificacion: { categoria: 'legumbres', es_ligero: false } },
   { name: 'exception ignored when ingredients decide', ingredientes: ['espárragos'], slug: 'salmorejo-cordobes-b115', clasificacion: { categoria: 'sopa' } },

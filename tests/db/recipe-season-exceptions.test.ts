@@ -19,10 +19,19 @@ const APPROVED: Record<string, string[]> = {
   'sopa-miso-con-edamame': ['todo_el_ano'],
   'sopa-miso-con-tofu-b47': ['todo_el_ano'],
   'sopa-miso-tofu-algas': ['todo_el_ano'],
+  // FRESCO-1063: the cold soups and the falafel that lost their seasonal ingredient when the table was pruned.
+  'gazpacho-andaluz': ['verano'],
+  'gazpacho-andaluz-con-pepino-b49': ['verano'],
+  'crema-fria-aguacate-pepino': ['verano'],
+  'crema-fria-de-con-lima-con-ajo-asado-24': ['verano'],
+  'crema-fria-de-con-lima-con-cilantro-22': ['verano'],
+  'crema-fria-de-con-lima-con-limon-21': ['verano'],
+  'crema-fria-de-con-lima-con-semillas-de-lino-23': ['verano'],
+  'falafel-con-salsa-de-yogur-b34': ['todo_el_ano'],
 };
 
 describe.skipIf(!(RUN && reachable))('recipe_season_exceptions (real DB)', () => {
-  test('holds exactly the five exceptions the owner approved, each with a reason', async () => {
+  test('holds exactly the exceptions the owner approved, each with a reason', async () => {
     const { status, body } = await rest('recipe_season_exceptions', { serviceRole: true, query: 'select=slug,temporadas,motivo&order=slug' });
     const rows = body as { slug: string, temporadas: string[], motivo: string }[];
 

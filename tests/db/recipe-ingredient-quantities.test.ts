@@ -27,7 +27,7 @@ describe.skipIf(!(RUN && reachable))('recipes.ingredientes_cantidades check (rea
         nombre: slug,
         slug,
         ingredientes_principales: ['arroz', 'setas'],
-        temporada: ['otono'],
+        temporada: ['todo_el_ano'],
         ingredientes_cantidades: cantidades,
       },
     });

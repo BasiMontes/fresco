@@ -27,16 +27,21 @@ describe.skipIf(!(RUN && reachable))('computed recipe seasons (real DB)', () => 
 
   test('tomate is sold all year, so it never constrains a recipe', async () => {
     expect(await compute(['tomate', 'arroz'])).toEqual(['todo_el_ano']);
-    expect(await compute(['tomate', 'apio'])).toEqual(['otono', 'invierno']);
+    expect(await compute(['tomate', 'kale'])).toEqual(['otono', 'invierno']);
   });
 
   test('one seasonal ingredient gives its own seasons, in calendar order', async () => {
-    expect(await compute(['pollo', 'calabacín'])).toEqual(['primavera', 'verano']);
+    expect(await compute(['pollo', 'frutos rojos'])).toEqual(['primavera', 'verano']);
   });
 
   test('several seasonal ingredients give the seasons they share', async () => {
-    expect(await compute(['pimiento', 'berenjena'])).toEqual(['verano', 'otono']);
-    expect(await compute(['espinacas', 'apio', 'brócoli'])).toEqual(['otono', 'invierno']);
+    expect(await compute(['alcachofas', 'espárragos'])).toEqual(['primavera']);
+    expect(await compute(['kale', 'berza', 'coles de bruselas'])).toEqual(['otono', 'invierno']);
+  });
+
+  test('a vegetable found all year in a supermarket is not seasonal (FRESCO-1063)', async () => {
+    expect(await compute(['manzana', 'lechuga', 'pimiento', 'calabacín', 'espinacas'])).toEqual(['todo_el_ano']);
+    expect(await compute(['manzana', 'espárragos'])).toEqual(['primavera']);
   });
 
   test('the match ignores case', async () => {
@@ -45,8 +50,8 @@ describe.skipIf(!(RUN && reachable))('computed recipe seasons (real DB)', () => 
   });
 
   test('ingredients with no common season give NULL, to be reviewed by hand', async () => {
-    expect(await compute(['guisantes', 'apio'])).toBeNull();
-    expect(await compute(['calabacín', 'puerro'])).toBeNull();
+    expect(await compute(['guisantes', 'kale'])).toBeNull();
+    expect(await compute(['frutos rojos', 'kale'])).toBeNull();
   });
 
   test('an empty list is all year', async () => {
@@ -57,27 +62,8 @@ describe.skipIf(!(RUN && reachable))('computed recipe seasons (real DB)', () => 
     const table = await rest('ingredient_seasons', { query: 'select=nombre&limit=1' });
     expect([401, 403]).toContain(table.status);
 
-    const fn = await rpc('compute_recipe_temporada', { p_ingredientes: ['apio'] });
+    const fn = await rpc('compute_recipe_temporada', { p_ingredientes: ['kale'] });
     expect([401, 403, 404]).toContain(fn.status);
-  });
-
-  test('the five recipes in conflict carry the season the owner chose (hot, hearty dishes)', async () => {
-    const chosen: Record<string, string[]> = {
-      'arroz-caldoso-pollo-verduras': ['otono', 'invierno'],
-      'arroz-meloso-con-setas-y-guisantes-b7': ['otono', 'invierno'],
-      'ternera-salsa-guisantes': ['otono', 'invierno'],
-      'arroz-con-pollo-tradicional': ['otono'],
-      'crema-de-calabacin-con-especias-version-ligera': ['otono', 'invierno'],
-    };
-    const rows = await restAll<{ slug: string, temporada: string[] | null }>('recipes', {
-      serviceRole: true,
-      select: 'slug,temporada',
-      order: 'slug',
-    });
-    const bySlug = new Map(rows.map(r => [r.slug, r.temporada]));
-    for (const [slug, seasons] of Object.entries(chosen)) {
-      expect(bySlug.get(slug)).toEqual(seasons);
-    }
   });
 
   test('every active recipe carries the computed season, except those in conflict', async () => {
