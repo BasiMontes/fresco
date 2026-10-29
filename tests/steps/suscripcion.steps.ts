@@ -314,7 +314,7 @@ Then(/^ve el resumen con el precio, la prueba, la renovación mensual y el desis
   await expect(page.getByTestId('pro_checkout_price')).toContainText('€');
   await expect(page.getByTestId('pro_checkout_trial')).toContainText('días de prueba gratis');
   await expect(dialog).toContainText('Se renueva automáticamente cada mes');
-  await expect(dialog).toContainText('derecho a desistir del contrato en 14 días');
+  await expect(page.getByTestId('pro_checkout_withdrawal')).toContainText('Tienes 14 días naturales desde que se activa tu suscripción para desistir');
 });
 
 Then(/^no puede continuar al pago hasta marcar la solicitud de ejecución inmediata$/, async ({ page }) => {
