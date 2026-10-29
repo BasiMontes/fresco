@@ -41,9 +41,15 @@ The invariant: **an active recipe's `temporada` always agrees with its ingredien
 - **Decide the season by when the dish is wanted from the start (`es_comfort_food`, `es_contundente`).** Deferred, not rejected: it needs its own rule and impact report. Tracked as FRESCO-1059.
 - **Store nothing for an all-year recipe.** Deferred: it changes the selector, the Zod schema, the seed and the tests.
 
+## Update 2026-10-29 (FRESCO-1063): the table was pruned
+
+The owner reviewed `ingredient_seasons` row by row with the criterion this ADR already used for `tomate`: an ingredient found all year in a Spanish supermarket is not seasonal, whatever its field season. Most of the original rows failed that test and were removed by migration `20261029160000_prune_ingredient_seasons.sql`, which recomputes the recipes it moves in the same change (the barrier trigger refuses an active recipe whose stored season differs from the computed one). The decision above is unchanged; only the content of the table moved. The rows that remain are the ones in that migration's header and in the live table, which is the source of truth.
+
+The cost was measured before applying it and accepted by the owner: far fewer recipes carry a season of their own (summer most of all), and the recipes that lost it now score as `todo_el_ano` in the menu selector. The dish rule of ADR-0068 keeps stews, soups and hearty legume dishes in autumn and winter independently of this table. Recipes written before the change carry a season computed from the old table and must be recomputed with `compute_recipe_season` before they are inserted.
+
 ## References
 
-- FRESCO-1058 (this decision); FRESCO-1059 (when the dish is wanted, not only its ingredients).
+- FRESCO-1058 (this decision); FRESCO-1059 (when the dish is wanted, not only its ingredients); FRESCO-1063 (the table pruned).
 - ADR-0064 (the same trigger-not-CHECK reasoning, for allergen and diet tags).
 - Migrations `20261027170000_computed_recipe_seasons.sql`, `20261027180000_recipe_season_conflict_overrides.sql`, `20261027190000_recipe_season_barrier_trigger.sql`, `20261027200000_recipe_season_shape_all_rows.sql`.
 - `tests/db/computed-recipe-seasons.test.ts`, `tests/db/recipe-season-barrier.test.ts`, `tests/db/recipe-season-parity.test.ts`, `tests/db/recipe-season-rules.ts`.
