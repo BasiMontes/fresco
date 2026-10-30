@@ -1573,7 +1573,7 @@ Característica: Flujo completo de usuario en Fresco
 
   @perfil @edge-case @verificado-manual-2026-08-08
   Escenario: El FAQ de Ayuda describe correctamente cómo se genera el menú, sin mencionar Gemini
-    Dado que Laura abre /profile → Ayuda → FAQ
+    Dado que Laura abre /profile → Preferencias y ayuda → FAQ
     Cuando lee "¿Cómo genera Fresco mi menú semanal?"
     Entonces el texto describe un proceso 100% determinista, sin ninguna mención a Gemini ni IA
     # FRESCO-121 (arreglado 2026-08-08): el FAQ decía "Gemini solo entra en
@@ -1586,7 +1586,8 @@ Característica: Flujo completo de usuario en Fresco
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
   Escenario: Editar preferencias de dieta y alérgenos desde el perfil
     Dado que Laura está en /profile
-    Cuando activa un chip de dieta y confirma "Actualizar Preferencias"
+    Cuando abre "Preferencias" desde su perfil
+    Y activa un chip de dieta y confirma "Actualizar Preferencias"
     Entonces la preferencia queda guardada y sigue activa tras recargar la página
 
   @perfil @verificado-manual-2026-08-04 @automatizado

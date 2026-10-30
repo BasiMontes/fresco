@@ -365,10 +365,10 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Layout.** Identity header (avatar/initial + name + email + real plan `Tag`; no invented "savings €"
   counter — §5-G; email never blank, incl. invited accounts — DEFECT-FRESCO-111/178; name reflects
   live edits — DEFECT-FRESCO-179) → `nombre-form` (touched-gated, save disabled when unchanged/empty —
-  DEFECT-FRESCO-113/217) → `preferences-form` (same diet chips as onboarding, update button disabled
-  until dirty — DEFECT-FRESCO-216) → Ayuda section (Configuración / FAQ / Privacidad; FAQ copy must
-  not claim "Gemini redacta" — DEFECT-FRESCO-121, feature-map gap 1; privacy text legible —
-  DEFECT-FRESCO-162) → subscription block (`upgrade-to-pro-button`, `manage-subscription-button`,
+  DEFECT-FRESCO-113/217) → "Preferencias y ayuda" card (a `Preferencias` row with a one-line summary that opens
+  `/profile/preferences`, then Configuración / FAQ — FRESCO-1070, §5-AA; FAQ copy must not claim
+  "Gemini redacta" — DEFECT-FRESCO-121, feature-map gap 1) → "Legal" card (Privacidad / Términos /
+  Cookies; privacy text legible — DEFECT-FRESCO-162) → subscription block (`upgrade-to-pro-button`, `manage-subscription-button`,
   `push-notifications-toggle`) → danger zone: exactly three stacked actions (DEFECT-FRESCO-220) —
   Salir (only below `md`; from `md` up the sidebar account menu has it — §5-Y), Descargar copia (CSV, not JSON — DEFECT-FRESCO-163), Borrar cuenta (`delete-account-dialog`,
   type-your-own-email gate; works for invited accounts — DEFECT-FRESCO-168/177; change-password moved
@@ -376,7 +376,9 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Tokens.** `card` per section; `tag` for plan; `card-pro` (2px `primary` border) for the Pro
   block; `input` (pill); `dialog` for delete + change-password; `button` primary / `button-secondary`
   / destructive uses `error` clay-red.
-- **Components.** `components/profile/*` (11 files), `components/layout/sidebar-account.tsx`.
+  The form itself, `preferences-form` (same diet chips as onboarding, update button disabled until
+  dirty — DEFECT-FRESCO-216), lives on `/profile/preferences`: back button + title + one card.
+- **Components.** `components/profile/*` (14 files), `app/(app)/profile/preferences/`, `components/layout/sidebar-account.tsx`.
 - **Checklist.** [ ] three danger-zone items, stacked · [ ] backup is CSV · [ ] delete works for
   invited/anon accounts · [ ] no false-success on change-password · [ ] plan tag matches real
   subscription state (shared `lib/plan-labels.ts`) · [ ] FAQ copy matches the deterministic engine.
@@ -549,6 +551,7 @@ compliance notes.
 | §5-X | Shopping list (`/shopping-list`) — "todo comprado" state | New state with no mockup: when no items are left (after "Compra realizada" closes the ticket), `components/shopping-list/shopping-list-all-bought.tsx` shows `EmptyState` with a check icon, "Has comprado todo lo de esta semana." and three pill links (Ver mi menú primary, Ver las recetas / Ver el calendario secondary) to `/menu`, `/recipes`, `/calendar`. No suggested content. Export buttons stay as-is (disabled while the list is empty). | No mockup: Claude Design batch `spend-trend-and-shopping-done` was never returned; route (b) spec-only chosen by the founder 2026-10-08 | Closes the dead-end screen reported 2026-10-04; reuses live `EmptyState` + `buttonVariants` and frozen tokens only; navigation targets already exist; the §5-E ruling against a recommendations carousel stands. | FRESCO-842 |
 | §5-Y | Profile (`/profile`) — "Cuenta" card, logout row (FRESCO-862) | From `md` up the logout row (`logout_button`) is hidden (`md:hidden`): the sidebar account menu already offers "Cerrar sesión" on desktop, so the card shows only "Backup CSV" there. Below `md` the row stays: there is no sidebar on mobile and the bottom tab bar has no logout, so `/profile` is the only way out. §4.13's "exactly three stacked actions" is therefore three on mobile (Salir, Backup CSV, Borrar cuenta) and two on desktop (Backup CSV, Borrar cuenta; Salir lives in the sidebar). | §4.13 / DEFECT-FRESCO-220: Salir + Descargar copia + Borrar cuenta always stacked in `/profile` | Audit-6 A6-L9: two identical "Cerrar sesión" on one desktop screen. Founder chose option A (hide on desktop, keep on mobile) 2026-10-09; removing it everywhere would have left mobile users with no logout. The guest data-loss warning (`guest-logout-dialog`) is a separate gap: the profile row calls `signOut()` directly. | FRESCO-862 |
 | §5-Z | Home (`/menu`) — Free "what Pro would have changed" notice (FRESCO-1027) | New surface with no §8 row and no mockup: `components/menu/pro-would-have-excluded-notice.tsx`, a `Card variant="pro"` above the day's meals with the owner-approved text ("Con Pro, esta semana no habrías vuelto a ver N platos que marcaste en las últimas dos semanas"), the dish names and a "Ver Pro" link to `/profile`. Painted only for a Free user with at least one matching dish. | Reusing `card-insight` for the teaser | `card-insight` is reserved for real Pro learning data (§5-D); this is a Free-tier teaser built from the user's own marks, so it takes the `pro` variant the upsell card already uses. No new tokens. Built LIVE-UI-FIRST, no mockup (project override of Rule 14). | FRESCO-1027 story plan (2026-10-21) |
+| §5-AA | Profile (`/profile`) — Preferencias moved to a subpage, help and legal rows in two cards (FRESCO-1070) | `/profile` no longer embeds the diet and allergen form. A "Preferencias y ayuda" card (a `Preferencias` row with a one-line summary that links to `/profile/preferences`, then Configuración and FAQ) and a "Legal" card (Privacidad, Términos de Servicio, Cookies) sit side by side from `md`. The form `preferences-form` lives on the new `/profile/preferences` page: icon-only back button, title and one card. | §4.13 layout: `preferences-form` inline, followed by one Ayuda section | The two-column grid left the right column almost empty next to a very tall form and squeezed the form to about 430 px. Owner decision 2026-10-30: a subpage rather than a modal, because the form is long and saves only on an explicit button (a modal loses unsaved changes on Escape or an outside click). Built LIVE-UI-FIRST, no mockup (project override of Rule 14); reuses `Card`, the FRESCO-451 back button and frozen tokens. | FRESCO-1070 |
 
 > **Not divergences (reconciled into `DESIGN.md`):** FRESCO-283 amber-CTA contrast, FRESCO-285/299
 > `text-tertiary` darkening, FRESCO-303 pricing check colour, FRESCO-70 sidebar-on-green, FRESCO-298
@@ -634,6 +637,7 @@ stories) are listed at the end.
 | FRESCO-854 | Histórico de menús: poder volver a /calendar desde la lista de semanas | EPIC-FRESCO-484 Platform polish | `/historial` (lista) has no §4 spec yet · built LIVE-UI-FIRST on the FRESCO-451 icon-only circular back button already used by favorites, notifications and the `/historial?semana=` detail | 4.8 Calendar (destino del botón) |
 | FRESCO-871 | Producto: mostrar el plan anual de Pro en la landing y en la tarjeta de /profile | EPIC-FRESCO-865 Pagos y suscripción Pro | 4.1 Landing (`pricing`, columna Pro: línea "o X€/año · ahorras Y€") y 4.13 Profile (`pro-upsell-card`) · built LIVE-UI-FIRST, sin mockup, tokens existentes | — |
 | FRESCO-878 | Biblioteca: añadir una receta al menú semanal desde su tarjeta (icono de calendario y modal de día y comida) | EPIC-FRESCO-484 Platform polish | 4.10 Recipe library (`recipe-card` con icono de calendario + `add-to-menu-dialog`) · built LIVE-UI-FIRST, sin mockup, `dialog` y tokens existentes | 4.8 Calendar (destino del botón "Ver calendario") |
+| FRESCO-1070 | UX: sacar Preferencias de /profile a una subpágina y repartir las filas en dos tarjetas (Preferencias y ayuda / Legal) | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.13 Profile (`/profile`, tarjetas "Preferencias y ayuda" y "Legal") y `/profile/preferences` (no §4 spec of its own; §5-AA) · built LIVE-UI-FIRST, sin mockup, `Card`, botón de volver de FRESCO-451 y tokens existentes | 4.17 App shell (enlaces `/profile#ayuda` del sidebar) |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 

@@ -2,6 +2,7 @@
 
 import type { FormEvent } from 'react';
 import type { OnboardingProfilePayload } from '@/lib/api/user-profile';
+import type { DietaKey } from '@/lib/constants/dietary-options';
 import type { PlanningSelection } from '@/lib/planning-selection';
 import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -10,7 +11,7 @@ import { PlanningSelectionGrid } from '@/components/onboarding/planning-selectio
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/tag';
 import { upsertUserProfile } from '@/lib/client-api/user-profile';
-import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos } from '@/lib/constants/dietary-options';
+import { ALERGENO_OPTIONS, ALERGENOS_AVISO, DIETA_FIELDS, impliedAlergenos } from '@/lib/constants/dietary-options';
 import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
 import { toPlanningSelection } from '@/lib/planning-selection';
 import { ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT } from '@/lib/store/onboarding-store';
@@ -49,18 +50,6 @@ export interface PreferencesFormProps {
    */
   hasHealthDataConsent: boolean
 }
-
-type DietaKey = 'dieta_vegetariano' | 'dieta_vegano' | 'dieta_sin_gluten' | 'dieta_sin_lactosa' | 'dieta_sin_huevo' | 'dieta_keto' | 'dieta_halal';
-
-const DIETA_FIELDS: { key: DietaKey, label: string }[] = [
-  { key: 'dieta_vegetariano', label: 'Vegetariano' },
-  { key: 'dieta_vegano', label: 'Vegano' },
-  { key: 'dieta_sin_gluten', label: 'Sin gluten' },
-  { key: 'dieta_sin_lactosa', label: 'Sin lactosa' },
-  { key: 'dieta_sin_huevo', label: 'Sin huevo' },
-  { key: 'dieta_keto', label: 'Keto' },
-  { key: 'dieta_halal', label: 'Halal' },
-];
 
 // FRESCO-199: fallback for a profile read before `planning_selection` existed.
 const DEFAULT_PLANNING_SELECTION = toPlanningSelection(ALL_DIAS_SEMANA, ALL_TIPO_PLATO_SLOT);

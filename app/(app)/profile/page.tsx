@@ -21,7 +21,8 @@ export const metadata: Metadata = { title: 'Perfil · Fresco' };
  * `/profile` — nav item 4. Real session (email) + real tier (`getUserPlan()`,
  * STORY-FRESCO-15) + real dietary preferences (`getUserDietaryPreferences()`,
  * FRESCO-70), replacing the original name-tag-only page with a real profile:
- * greeting header, editable preferences, an Ayuda section (see below), a
+ * greeting header, a "Preferencias y ayuda" card whose Preferencias row opens
+ * `/profile/preferences` (FRESCO-1070), a "Legal" card, an Ayuda section (see below), a
  * "Cuenta" card (`AccountActions`: logout, CSV export), and a footer "zona
  * de peligro" (`DangerZone`, FRESCO-220) scoped to permanent deletion only —
  * the one genuinely destructive action.
@@ -47,7 +48,7 @@ export default async function ProfilePage() {
   // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
   const { data: { user } } = await getAuthUser();
 
-  const { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable, hasHealthDataConsent } = await loadProfilePageData(supabase, user?.id);
+  const { plan, paymentFailedAt, nombre, dietaryPreferences, pastWeeks, trialAvailable } = await loadProfilePageData(supabase, user?.id);
   // FRESCO-871: only the Free upsell shows prices, so Pro users never pay for the Stripe read.
   const prices = plan === 'free' ? await getProPrices() : null;
 
@@ -76,14 +77,13 @@ export default async function ProfilePage() {
         {/* FRESCO-241 PR2: browser-only state (Notification.permission,
             PushSubscription), so this stays client-rendered rather than
             server-read like the cards around it — same reasoning as why
-            NombreForm/PreferencesForm are themselves 'use client'. */}
+            NombreForm is itself 'use client'. */}
         <PushNotificationsToggle isGuest={isAnonymous} />
 
         <AppearanceCard />
 
         <ProfilePreferencesAndHelp
           dietaryPreferences={dietaryPreferences}
-          hasHealthDataConsent={hasHealthDataConsent}
           email={user?.email ?? 'Invitada'}
           planLabel={PLAN_LABELS[plan]}
           memberSince={memberSince}

@@ -51,6 +51,12 @@ Given(/^la navegación del perfil lleva a la sección Cuenta$/, async ({ page })
 
 // ── When ─────────────────────────────────────────────────────────────────
 
+// FRESCO-1070: the diet and allergen form lives on /profile/preferences, reached from a row of /profile.
+When(/^abre "Preferencias" desde su perfil$/, async ({ page }) => {
+  await page.getByTestId('profile_row_preferencias').click();
+  await expect(page).toHaveURL(/\/profile\/preferences$/);
+});
+
 When(/^activa un chip de dieta y confirma "Actualizar Preferencias"$/, async ({ page }) => {
   await page.getByTestId('preferencia_dieta_option').first().click();
   // FRESCO-917: a diet chip is health data; the form asks for the consent first.
