@@ -1,6 +1,6 @@
 # Skill Registry (auto-generated)
 
-> Generated: `2026-10-15T08:05:17.311Z`
+> Generated: `2026-10-30T07:21:44.213Z`
 > Generator: `bun scripts/build-skill-registry.ts`
 > Protocol: `.agents/skills/agentic-dev-core/references/skill-resolver.md`
 
@@ -8,7 +8,7 @@ This file is the per-session compact-rules cache for the Skill Resolver protocol
 The orchestrator copies one or more `## Skill: <slug>` blocks below into every subagent briefing under `## Project Standards (auto-resolved)`.
 Subagents trust those compact rules and only read the full SKILL.md when explicitly instructed.
 
-Skills indexed: 34
+Skills indexed: 35
 
 ---
 ## Skill: acli
@@ -262,6 +262,34 @@ Skills indexed: 34
 **Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
 
 > Source: `.agents/skills/design-taste-frontend/SKILL.md` · phase: `unknown` · kind: `unknown` · extraction strategy: B
+
+---
+
+## Skill: diagram-design
+
+**Purpose**: Create branded architecture, architecture delta, IT current-state, flowchart, sequence, state machine, ER/data model, timeline, swimlane,...
+
+**Compact Rules**:
+- Every node represents a distinct idea. Two nodes that always travel together are one node.
+- Every connection carries information. If the relationship is obvious from layout, remove the line.
+- Coral is **editorial, not a flag.** 1–2 focal nodes per diagram. Using it on 5 nodes erases the signal.
+- The schematic isn't done when everything is added. It's done when nothing can be removed.
+- Quick unicode diagrams → a separate plain-text tool such as wiretext. This skill doesn't ship one.
+- Lists of things → table or bullets.
+- Attribute-only before/after → table; topology changes → Architecture delta.
+- One-shape "diagrams" → just write the sentence.
+- If a 3-column table communicates the same thing, pick the table.
+- If two types seem useful, pick the dominant axis; a semantic pattern may add behavior-specific primitives, not a second layout grammar.
+- If you're past the complexity budget (§7), split into an overview + detail.
+- Editorial callouts → `references/primitive-annotation.md`
+- Hand-drawn variant → `references/primitive-sketchy.md`
+- Icon set (laptop, server, DB, K8s, Docker, AWS, …) → `references/primitive-icons.md`. Browse the gallery at `assets/icons.html`.
+- Terminal / CLI-window variant → `references/primitive-terminal.md`
+- (truncated — read full SKILL.md for the rest)
+
+**Read full SKILL.md when**: the compact rules above are insufficient (e.g. novel scenario, debugging, or the briefing tells you to load the full skill).
+
+> Source: `.agents/skills/diagram-design/SKILL.md` · phase: `unknown` · kind: `unknown` · extraction strategy: B
 
 ---
 
