@@ -19,7 +19,9 @@ const ANNUAL: ProPriceInfo = { amount: 44.99, currency: 'eur', interval: 'year',
 let price: ProPriceInfo = PRICE;
 let annualPrice: ProPriceInfo | null = null;
 let annualDelayMs = 0;
-let monthlyDelayMs = 0;
+// A held monthly price is released by the test, never by a timer: a timer races the assertions on a loaded CI runner.
+let monthlyGate: Promise<void> | null = null;
+let releaseMonthlyPrice = () => {};
 let priceStatus = 200;
 let consentStatus = 200;
 let calls: Array<{ url: string, body: unknown }> = [];
@@ -28,7 +30,8 @@ beforeEach(() => {
   price = PRICE;
   annualPrice = null;
   annualDelayMs = 0;
-  monthlyDelayMs = 0;
+  monthlyGate = null;
+  releaseMonthlyPrice = () => {};
   priceStatus = 200;
   consentStatus = 200;
   calls = [];
@@ -36,7 +39,7 @@ beforeEach(() => {
   globalThis.fetch = (async (url: string, init?: RequestInit) => {
     calls.push({ url, body: init?.body ? JSON.parse(init.body as string) : null });
     if (url === '/api/stripe/pro-price') {
-      await new Promise(resolve => setTimeout(resolve, monthlyDelayMs));
+      await monthlyGate;
       return new Response(JSON.stringify(price), { status: priceStatus });
     }
     if (url === '/api/stripe/pro-price?interval=year') {
@@ -54,6 +57,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  releaseMonthlyPrice();
   globalThis.fetch = realFetch;
 });
 
@@ -228,7 +232,9 @@ describe('UpgradeToProButton + annual plan (FRESCO-844)', () => {
   describe('while the price is still loading (FRESCO-904)', () => {
     async function openWhileLoading() {
       annualPrice = ANNUAL;
-      monthlyDelayMs = 150;
+      monthlyGate = new Promise<void>((resolve) => {
+        releaseMonthlyPrice = resolve;
+      });
       const user = setupUser();
       renderWithProviders(<UpgradeToProButton />);
       await user.click(screen.getByTestId('upgrade_to_pro_button'));
@@ -254,6 +260,7 @@ describe('UpgradeToProButton + annual plan (FRESCO-844)', () => {
 
     test('once the price arrives the selector is enabled and the placeholder gives way to the real line', async () => {
       await openWhileLoading();
+      releaseMonthlyPrice();
 
       await waitFor(() => expect(screen.getByTestId('pro_checkout_trial')).toBeTruthy());
       expect(screen.getByRole('radiogroup', { name: 'Plan de facturación' }).closest('fieldset')?.disabled).toBe(false);
@@ -263,6 +270,7 @@ describe('UpgradeToProButton + annual plan (FRESCO-844)', () => {
     test('if the price cannot be loaded there is no leftover selector or placeholder', async () => {
       priceStatus = 500;
       await openWhileLoading();
+      releaseMonthlyPrice();
 
       await waitFor(() => expect(screen.getByTestId('pro_checkout_price').textContent).toContain('No se pudo cargar el precio'));
       expect(screen.queryByRole('radiogroup', { name: 'Plan de facturación' })).toBeNull();
