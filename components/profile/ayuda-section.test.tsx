@@ -1,6 +1,6 @@
 import { AuthApiError } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
-import { CookieConsentProvider, useCookieConsent } from '@/components/legal/cookie-consent-context';
+import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import * as authApi from '@/lib/client-api/auth';
 import { fireEvent, renderWithProviders, screen, waitFor } from '@/tests/component-render';
 import { AyudaSection } from './ayuda-section';
@@ -18,30 +18,32 @@ afterEach(() => {
   window.location.hash = '';
 });
 
-function SettingsProbe() {
-  const { settingsOpen } = useCookieConsent();
-  return <span data-testid="cookie_settings_probe">{settingsOpen ? 'open' : 'closed'}</span>;
-}
-
 function renderSection(props: Partial<React.ComponentProps<typeof AyudaSection>> = {}) {
   return renderWithProviders(
     <CookieConsentProvider initialDecision="rejected">
       <AyudaSection email={FAKE_EMAIL} planLabel="Plan Free" memberSince="3 de marzo de 2026" {...props} />
-      <SettingsProbe />
     </CookieConsentProvider>,
   );
 }
 
 describe('AyudaSection rows', () => {
-  test('lists the five help entries and opens no modal by default', () => {
+  test('lists the two help entries and opens no modal by default', () => {
     renderSection();
 
-    for (const key of ['configuracion', 'faq', 'privacidad', 'terminos', 'cookies']) {
+    for (const key of ['configuracion', 'faq']) {
       expect(screen.getByTestId(`ayuda_row_${key}`)).toBeInTheDocument();
     }
     expect(screen.queryByTestId('settings_modal')).toBeNull();
     expect(screen.queryByTestId('faq_modal')).toBeNull();
-    expect(screen.queryByTestId('legal_modal')).toBeNull();
+  });
+
+  // FRESCO-1070: the legal rows live in the "Legal" card now, not in this list.
+  test('does not list the legal rows any more', () => {
+    renderSection();
+
+    for (const key of ['privacidad', 'terminos', 'cookies']) {
+      expect(screen.queryByTestId(`ayuda_row_${key}`)).toBeNull();
+    }
   });
 
   test('FAQ opens the frequently asked questions', () => {
@@ -51,30 +53,6 @@ describe('AyudaSection rows', () => {
 
     expect(screen.getByTestId('faq_modal')).toBeInTheDocument();
     expect(screen.getByText('¿Puedo borrar mis datos?')).toBeInTheDocument();
-  });
-
-  test('Privacidad opens the legal modal', () => {
-    renderSection();
-
-    fireEvent.click(screen.getByTestId('ayuda_row_privacidad'));
-    expect(screen.getByTestId('legal_modal')).toBeInTheDocument();
-  });
-
-  test('Términos de Servicio opens the legal modal too', () => {
-    renderSection();
-
-    fireEvent.click(screen.getByTestId('ayuda_row_terminos'));
-
-    expect(screen.getByTestId('legal_modal')).toBeInTheDocument();
-  });
-
-  test('Cookies opens the cookie settings through the consent context', () => {
-    renderSection();
-    expect(screen.getByTestId('cookie_settings_probe')).toHaveTextContent('closed');
-
-    fireEvent.click(screen.getByTestId('ayuda_row_cookies'));
-
-    expect(screen.getByTestId('cookie_settings_probe')).toHaveTextContent('open');
   });
 });
 

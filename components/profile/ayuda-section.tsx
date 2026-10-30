@@ -1,11 +1,10 @@
 'use client';
 
-import { ChevronRight, Cookie, FileText, HelpCircle, Settings, Shield } from 'lucide-react';
+import { HelpCircle, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
 import { useCaptcha } from '@/components/auth/use-captcha';
-import { useCookieConsent } from '@/components/legal/cookie-consent-context';
-import { LegalModal } from '@/components/legal/legal-modal';
+import { HelpRow } from '@/components/profile/help-row';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { sendPasswordReset } from '@/lib/client-api/auth';
@@ -68,30 +67,22 @@ export interface AyudaSectionProps {
   memberSince: string | null
 }
 
-type AyudaModal = 'configuracion' | 'faq' | 'privacidad' | 'terminos' | null;
+type AyudaModal = 'configuracion' | 'faq' | null;
 
 const ROWS = [
   { key: 'configuracion' as const, icon: Settings, label: 'Configuración' },
   { key: 'faq' as const, icon: HelpCircle, label: 'FAQ' },
-  { key: 'privacidad' as const, icon: Shield, label: 'Privacidad' },
-  // FRESCO-162 — the content already existed in LegalModal (TERMS_SECTIONS),
-  // just had no entry point from `/profile`.
-  { key: 'terminos' as const, icon: FileText, label: 'Términos de Servicio' },
 ];
 
 /**
  * `/profile` Ayuda section — replaces the previous inert "Próximamente" rows
- * with 3 real modals. `Configuración` and `FAQ` follow `LegalModal`'s exact
- * pattern (same `Dialog` primitive, same title + sectioned-body structure)
- * for consistency with how `Privacidad` already opens elsewhere in this app;
- * `Privacidad` itself reuses `LegalModal` unmodified rather than duplicating
- * its already-real privacy copy.
+ * with real modals. `Configuración` and `FAQ` follow `LegalModal`'s exact
+ * pattern (same `Dialog` primitive, same title + sectioned-body structure).
+ * FRESCO-1070: `Privacidad`, `Términos de Servicio` and `Cookies` moved to
+ * `LegalSection`, so this card keeps only the two account-help rows.
  */
 export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProps) {
   const [openModal, setOpenModal] = useState<AyudaModal>(null);
-  // FRESCO-428 — "Cookies" opens the single, context-driven `CookieSettingsDialog`
-  // (mounted once in `app/layout.tsx`), not a locally-tracked `AyudaModal` state.
-  const { openSettings: openCookieSettings } = useCookieConsent();
   // FRESCO-161 — reuses the same `resetPasswordForEmail` call and
   // anti-enumeration posture (no error branching — Supabase's own API never
   // reveals whether the address has an account either) as
@@ -141,36 +132,18 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
   return (
     <>
       <div className="flex flex-col divide-y divide-border">
-        {ROWS.map(({ key, icon: Icon, label }) => (
-          <button
+        {ROWS.map(({ key, icon, label }) => (
+          <HelpRow
             key={key}
-            type="button"
+            icon={icon}
+            label={label}
             // FRESCO-514 — row-level anchor target for the sidebar popover's
             // "Configuración" item (`/profile#ayuda-configuracion`).
             id={key === 'configuracion' ? 'ayuda-configuracion' : undefined}
-            data-testid={`ayuda_row_${key}`}
+            testId={`ayuda_row_${key}`}
             onClick={() => setOpenModal(key)}
-            className="flex min-h-11 items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
-          >
-            <div className="flex items-center gap-2 text-body-md">
-              <Icon className="size-4" aria-hidden="true" />
-              {label}
-            </div>
-            <ChevronRight className="size-4 text-tertiary" aria-hidden="true" />
-          </button>
+          />
         ))}
-        <button
-          type="button"
-          data-testid="ayuda_row_cookies"
-          onClick={openCookieSettings}
-          className="flex min-h-11 items-center justify-between gap-2 py-3 text-left text-text first:pt-0 last:pb-0 hover:text-primary"
-        >
-          <div className="flex items-center gap-2 text-body-md">
-            <Cookie className="size-4" aria-hidden="true" />
-            Cookies
-          </div>
-          <ChevronRight className="size-4 text-tertiary" aria-hidden="true" />
-        </button>
       </div>
 
       <Dialog
@@ -257,18 +230,6 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
           ))}
         </div>
       </Dialog>
-
-      <LegalModal
-        open={openModal === 'terminos'}
-        onOpenChange={open => setOpenModal(open ? 'terminos' : null)}
-        section="terminos"
-      />
-
-      <LegalModal
-        open={openModal === 'privacidad'}
-        onOpenChange={open => setOpenModal(open ? 'privacidad' : null)}
-        section="privacidad"
-      />
     </>
   );
 }
