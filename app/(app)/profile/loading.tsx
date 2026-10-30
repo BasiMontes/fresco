@@ -1,8 +1,8 @@
 /**
  * FRESCO-490 — loading UI for `/profile`. Mirrors `page.tsx`'s structure
- * (title, account card, three stacked single-column cards, a full-width
- * Preferencias card, a two-column Ayuda/Legal row, then two footer cards) so
- * the real content swaps in without a layout shift.
+ * (title, account card, three stacked single-column cards, a two-column
+ * Preferencias y ayuda / Legal row, then two footer cards) so the real
+ * content swaps in without a layout shift.
  *
  * Content-only, like `app/(app)/loading.tsx`: it renders inside the already-
  * painted `<AppShell>`, so no sidebar / bottom bar here. Plain markup, no
@@ -40,11 +40,6 @@ export default function ProfileLoading() {
           </SkeletonCard>
         ))}
       </div>
-
-      <SkeletonCard className="mt-4 h-96">
-        <div className="h-4 w-28 rounded bg-border motion-safe:animate-pulse" />
-        <div className="mt-3 h-72 rounded bg-border motion-safe:animate-pulse" />
-      </SkeletonCard>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (

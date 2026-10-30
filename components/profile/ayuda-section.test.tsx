@@ -21,7 +21,7 @@ afterEach(() => {
 function renderSection(props: Partial<React.ComponentProps<typeof AyudaSection>> = {}) {
   return renderWithProviders(
     <CookieConsentProvider initialDecision="rejected">
-      <AyudaSection email={FAKE_EMAIL} planLabel="Plan Free" memberSince="3 de marzo de 2026" {...props} />
+      <AyudaSection email={FAKE_EMAIL} planLabel="Plan Free" memberSince="3 de marzo de 2026" preferencesSummary="Vegano · 2 alérgenos" {...props} />
     </CookieConsentProvider>,
   );
 }
@@ -35,6 +35,27 @@ describe('AyudaSection rows', () => {
     }
     expect(screen.queryByTestId('settings_modal')).toBeNull();
     expect(screen.queryByTestId('faq_modal')).toBeNull();
+  });
+
+  // FRESCO-1070: the diet and allergen form moved to its own page; this row is the way in.
+  test('the Preferencias row links to the preferences page and shows what is saved', () => {
+    renderSection({ preferencesSummary: 'Vegetariano · 3 alérgenos' });
+
+    const row = screen.getByTestId('profile_row_preferencias');
+
+    expect(row.tagName).toBe('A');
+    expect(row).toHaveAttribute('href', '/profile/preferences');
+    expect(row).toHaveTextContent('Preferencias');
+    expect(row).toHaveTextContent('Vegetariano · 3 alérgenos');
+  });
+
+  test('the Preferencias row comes first, above Configuración and FAQ', () => {
+    renderSection();
+
+    const rows = ['profile_row_preferencias', 'ayuda_row_configuracion', 'ayuda_row_faq'].map(id => screen.getByTestId(id));
+
+    expect(rows[0].compareDocumentPosition(rows[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(rows[1].compareDocumentPosition(rows[2]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   // FRESCO-1070: the legal rows live in the "Legal" card now, not in this list.

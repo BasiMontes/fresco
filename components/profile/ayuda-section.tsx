@@ -1,6 +1,6 @@
 'use client';
 
-import { HelpCircle, Settings } from 'lucide-react';
+import { HelpCircle, Settings, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
 import { useCaptcha } from '@/components/auth/use-captcha';
@@ -42,7 +42,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     question: '¿Cómo cambio mis preferencias de dieta o alérgenos?',
-    answer: 'Edítalas cuando quieras en la tarjeta "Preferencias", justo arriba en esta misma página.',
+    answer: 'Edítalas cuando quieras en "Preferencias", dentro de la tarjeta "Preferencias y ayuda" de tu perfil.',
   },
   {
     question: '¿Qué diferencia hay entre Plan Free y Plan Pro?',
@@ -65,6 +65,8 @@ export interface AyudaSectionProps {
   planLabel: string
   /** `user.created_at`, pre-formatted as a readable Spanish date, or `null` if unavailable. */
   memberSince: string | null
+  /** FRESCO-1070: one line naming the saved diet and allergens, shown under the "Preferencias" row. */
+  preferencesSummary: string
 }
 
 type AyudaModal = 'configuracion' | 'faq' | null;
@@ -79,9 +81,10 @@ const ROWS = [
  * with real modals. `Configuración` and `FAQ` follow `LegalModal`'s exact
  * pattern (same `Dialog` primitive, same title + sectioned-body structure).
  * FRESCO-1070: `Privacidad`, `Términos de Servicio` and `Cookies` moved to
- * `LegalSection`, so this card keeps only the two account-help rows.
+ * `LegalSection`, and the first row, "Preferencias", is a link to the
+ * `/profile/preferences` page (the diet and allergen form no longer sits inline).
  */
-export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProps) {
+export function AyudaSection({ email, planLabel, memberSince, preferencesSummary }: AyudaSectionProps) {
   const [openModal, setOpenModal] = useState<AyudaModal>(null);
   // FRESCO-161 — reuses the same `resetPasswordForEmail` call and
   // anti-enumeration posture (no error branching — Supabase's own API never
@@ -132,6 +135,13 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
   return (
     <>
       <div className="flex flex-col divide-y divide-border">
+        <HelpRow
+          icon={SlidersHorizontal}
+          label="Preferencias"
+          description={preferencesSummary}
+          href="/profile/preferences"
+          testId="profile_row_preferencias"
+        />
         {ROWS.map(({ key, icon, label }) => (
           <HelpRow
             key={key}
@@ -205,7 +215,7 @@ export function AyudaSection({ email, planLabel, memberSince }: AyudaSectionProp
                 )}
           </div>
           <p className="text-body-sm text-tertiary">
-            ¿Quieres cambiar tu dieta o alérgenos? Edítalos en la tarjeta "Preferencias" de arriba.
+            ¿Quieres cambiar tu dieta o alérgenos? Edítalos en "Preferencias", en esta misma tarjeta.
           </p>
         </div>
       </Dialog>

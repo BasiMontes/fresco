@@ -73,6 +73,22 @@ export const INGREDIENTE_ODIADO_OPTIONS: TagOption[] = [
 export const ALERGENO_VALUES = new Set(ALERGENO_OPTIONS.map(option => option.value));
 export const INGREDIENTE_ODIADO_VALUES = new Set(INGREDIENTE_ODIADO_OPTIONS.map(option => option.value));
 
+export type DietaKey = 'dieta_vegetariano' | 'dieta_vegano' | 'dieta_sin_gluten' | 'dieta_sin_lactosa' | 'dieta_sin_huevo' | 'dieta_keto' | 'dieta_halal';
+
+/**
+ * The diet chips of the profile form, with their stored column. Shared (FRESCO-1070) so the
+ * summary row on `/profile` names the diets with the exact labels the form shows.
+ */
+export const DIETA_FIELDS: { key: DietaKey, label: string }[] = [
+  { key: 'dieta_vegetariano', label: 'Vegetariano' },
+  { key: 'dieta_vegano', label: 'Vegano' },
+  { key: 'dieta_sin_gluten', label: 'Sin gluten' },
+  { key: 'dieta_sin_lactosa', label: 'Sin lactosa' },
+  { key: 'dieta_sin_huevo', label: 'Sin huevo' },
+  { key: 'dieta_keto', label: 'Keto' },
+  { key: 'dieta_halal', label: 'Halal' },
+];
+
 export interface DietaFlagsForLocks {
   vegano: boolean
   vegetariano: boolean
