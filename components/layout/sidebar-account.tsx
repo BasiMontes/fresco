@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Popover } from '@/components/ui/popover';
 import { signOut } from '@/lib/client-api/auth';
 import { PLAN_LABELS } from '@/lib/plan-labels';
+import { useAccountModalStore } from '@/lib/store/account-modal-store';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 import { cn } from '@/lib/utils';
 
@@ -108,9 +109,9 @@ export interface SidebarAccountProps extends AccountUser {
  * row (avatar/initial + name + plan) is the trigger, and clicking it opens
  * a `Popover` panel — repeating the identity row for context (the trigger
  * itself only shows the avatar in `collapsed` mode), then "Mejorar plan"
- * (FRESCO-513, `plan === 'free'` only), "Perfil", "Configuración" (scrolls
- * `/profile` to `AyudaSection`'s Configuración row), "Ayuda" (scrolls
- * `/profile` to the Ayuda card), and "Cerrar sesión" last. `Perfil` no
+ * (FRESCO-513, `plan === 'free'` only), "Perfil", "Configuración" (opens
+ * `/profile`'s Configuración modal, FRESCO-1074), "FAQ" (opens its FAQ
+ * modal), and "Cerrar sesión" last. `Perfil` no
  * longer lives as its own top-nav item (`sidebar.tsx`) — this popover is
  * now its only entry point from the sidebar. Sits at the bottom of the
  * desktop sidebar inside the `mt-auto` footer group (`sidebar.tsx`) — the
@@ -284,9 +285,9 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
           </Link>
 
           <Link
-            href="/profile#ayuda-configuracion"
+            href="/profile"
             data-testid="popover_item_configuracion"
-            onClick={() => setIsMenuOpen(false)}
+            onClick={() => closeMenuThen(() => useAccountModalStore.getState().request('configuracion'))}
             className="flex items-center rounded-card px-3 py-2 text-label text-text hover:bg-neutral-100"
           >
             Configuración
@@ -295,12 +296,12 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
           <div role="separator" className="my-1 border-t border-border" />
 
           <Link
-            href="/profile#ayuda"
-            data-testid="popover_item_ayuda"
-            onClick={() => setIsMenuOpen(false)}
+            href="/profile"
+            data-testid="popover_item_faq"
+            onClick={() => closeMenuThen(() => useAccountModalStore.getState().request('faq'))}
             className="flex items-center rounded-card px-3 py-2 text-label text-text hover:bg-neutral-100"
           >
-            Ayuda
+            FAQ
           </Link>
 
           <Button

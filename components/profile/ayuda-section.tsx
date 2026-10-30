@@ -8,6 +8,7 @@ import { HelpRow } from '@/components/profile/help-row';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { sendPasswordReset } from '@/lib/client-api/auth';
+import { useAccountModalStore } from '@/lib/store/account-modal-store';
 
 interface FaqItem {
   question: string
@@ -97,17 +98,15 @@ export function AyudaSection({ email, planLabel, memberSince, preferencesSummary
   // FRESCO-799: one Turnstile token per auth request; reset after each.
   const captcha = useCaptcha();
 
-  // FRESCO-514 — the sidebar account popover's "Configuración" / "Ayuda"
-  // items link here as `/profile#ayuda-configuracion` / `/profile#ayuda`
-  // instead of auto-opening the Configuración dialog. An explicit
-  // `scrollIntoView` on mount rather than relying on the browser's native
-  // hash-scroll: this is a client component mounting post-hydration inside
-  // a `'use client'` subtree, and native hash handling can race that.
+  // FRESCO-1074 — the sidebar account popover's "Configuración" / "FAQ" items ask for their
+  // modal through the store: it opens straight away, whether this page was already open or is
+  // only mounting after the navigation. The request is consumed so it never reopens.
+  const requestedModal = useAccountModalStore(state => state.requested);
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash !== '#ayuda' && hash !== '#ayuda-configuracion') { return; }
-    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+    if (!requestedModal) { return; }
+    setOpenModal(requestedModal);
+    useAccountModalStore.getState().clear();
+  }, [requestedModal]);
 
   async function handleSendPasswordReset() {
     setIsSendingReset(true);
@@ -147,9 +146,6 @@ export function AyudaSection({ email, planLabel, memberSince, preferencesSummary
             key={key}
             icon={icon}
             label={label}
-            // FRESCO-514 — row-level anchor target for the sidebar popover's
-            // "Configuración" item (`/profile#ayuda-configuracion`).
-            id={key === 'configuracion' ? 'ayuda-configuracion' : undefined}
             testId={`ayuda_row_${key}`}
             onClick={() => setOpenModal(key)}
           />

@@ -6,7 +6,7 @@ interface HelpRowProps {
   icon: LucideIcon
   label: string
   testId: string
-  /** Optional anchor target, e.g. the sidebar's `/profile#ayuda-configuracion`. */
+  /** Optional anchor target for the row. */
   id?: string
   /** One line under the label, e.g. what is currently saved. */
   description?: string

@@ -2,7 +2,8 @@ import { AuthApiError } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import * as authApi from '@/lib/client-api/auth';
-import { fireEvent, renderWithProviders, screen, waitFor } from '@/tests/component-render';
+import { useAccountModalStore } from '@/lib/store/account-modal-store';
+import { act, fireEvent, renderWithProviders, screen, waitFor } from '@/tests/component-render';
 import { AyudaSection } from './ayuda-section';
 
 const FAKE_EMAIL = 'test-user@example.com';
@@ -15,7 +16,7 @@ beforeEach(() => {
 
 afterEach(() => {
   resetSpy.mockRestore();
-  window.location.hash = '';
+  useAccountModalStore.getState().clear();
 });
 
 function renderSection(props: Partial<React.ComponentProps<typeof AyudaSection>> = {}) {
@@ -124,24 +125,54 @@ describe('AyudaSection settings modal', () => {
   });
 });
 
-describe('AyudaSection deep links', () => {
-  test('scrolls to the anchor named in the URL hash on mount', () => {
-    const scrollSpy = spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
-    window.location.hash = '#ayuda-configuracion';
+// FRESCO-1074: the account menu's "Configuración" and "FAQ" open their modal straight away.
+describe('AyudaSection account menu requests', () => {
+  test('opens the settings modal when it was requested before the page mounted', () => {
+    useAccountModalStore.getState().request('configuracion');
 
     renderSection();
 
-    expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
-    scrollSpy.mockRestore();
+    expect(screen.getByTestId('settings_modal')).toBeInTheDocument();
+    expect(screen.queryByTestId('faq_modal')).toBeNull();
   });
 
-  test('does not scroll for an unrelated hash', () => {
-    const scrollSpy = spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
-    window.location.hash = '#other';
+  test('opens the FAQ modal when it was requested before the page mounted', () => {
+    useAccountModalStore.getState().request('faq');
 
     renderSection();
 
-    expect(scrollSpy).not.toHaveBeenCalled();
-    scrollSpy.mockRestore();
+    expect(screen.getByTestId('faq_modal')).toBeInTheDocument();
+    expect(screen.queryByTestId('settings_modal')).toBeNull();
+  });
+
+  // Already on /profile nothing remounts: the request arrives while the section is on screen.
+  test('opens the modal when it is requested while the page is already open', () => {
+    renderSection();
+    expect(screen.queryByTestId('faq_modal')).toBeNull();
+
+    act(() => useAccountModalStore.getState().request('faq'));
+
+    expect(screen.getByTestId('faq_modal')).toBeInTheDocument();
+  });
+
+  test('opens nothing when nothing was requested', () => {
+    renderSection();
+
+    expect(screen.queryByTestId('settings_modal')).toBeNull();
+    expect(screen.queryByTestId('faq_modal')).toBeNull();
+  });
+
+  // A request is used up: closing the modal must not bring it back, and asking again must work.
+  test('consumes the request, so the same entry works again after the modal is closed', () => {
+    useAccountModalStore.getState().request('configuracion');
+    renderSection();
+    expect(useAccountModalStore.getState().requested).toBeNull();
+
+    fireEvent.click(screen.getByTestId('settings_modal_close_button'));
+    expect(screen.getByTestId('settings_modal')).toHaveClass('is-closing');
+
+    act(() => useAccountModalStore.getState().request('configuracion'));
+
+    expect(screen.getByTestId('settings_modal')).not.toHaveClass('is-closing');
   });
 });

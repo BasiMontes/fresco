@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { useAccountModalStore } from '@/lib/store/account-modal-store';
 import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
 import { routerMock } from '@/tests/mocks/next-navigation';
 
@@ -37,6 +38,7 @@ describe('SidebarAccount', () => {
 
   afterEach(() => {
     signOutMock.mockImplementation(async () => ({ error: null }));
+    useAccountModalStore.getState().clear();
   });
 
   async function openMenu() {
@@ -198,9 +200,29 @@ describe('SidebarAccount', () => {
       renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
       await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
 
-      for (const id of ['popover_item_perfil', 'popover_item_configuracion', 'popover_item_ayuda']) {
+      for (const id of ['popover_item_perfil', 'popover_item_configuracion', 'popover_item_faq']) {
         expect(screen.getByTestId(id)).toHaveClass('text-label');
       }
+    });
+
+    // FRESCO-1074: both entries open their modal on /profile instead of scrolling to a row.
+    test('"Configuración" and "FAQ" ask the profile for their modal, and "Ayuda" is gone', async () => {
+      renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
+      const user = setupUser();
+      await user.click(screen.getByTestId('sidebar_account_trigger'));
+
+      expect(screen.getByTestId('popover_item_configuracion')).toHaveAttribute('href', '/profile');
+      expect(screen.getByTestId('popover_item_faq')).toHaveAttribute('href', '/profile');
+      expect(screen.getByTestId('popover_item_faq')).toHaveTextContent('FAQ');
+      expect(screen.queryByText('Ayuda')).toBeNull();
+      expect(screen.queryByTestId('popover_item_ayuda')).toBeNull();
+
+      await user.click(screen.getByTestId('popover_item_faq'));
+      expect(useAccountModalStore.getState().requested).toBe('faq');
+
+      await user.click(screen.getByTestId('sidebar_account_trigger'));
+      await user.click(screen.getByTestId('popover_item_configuracion'));
+      expect(useAccountModalStore.getState().requested).toBe('configuracion');
     });
 
     // FRESCO-849: the menu entries are text only (founder's call); the red colour
@@ -209,7 +231,7 @@ describe('SidebarAccount', () => {
       renderWithProviders(<SidebarAccount {...BASE_PROPS} />);
       await setupUser().click(screen.getByTestId('sidebar_account_trigger'));
 
-      for (const id of ['upgrade_to_pro_button', 'popover_item_perfil', 'popover_item_configuracion', 'popover_item_ayuda', 'sidebar_logout_button']) {
+      for (const id of ['upgrade_to_pro_button', 'popover_item_perfil', 'popover_item_configuracion', 'popover_item_faq', 'sidebar_logout_button']) {
         expect(screen.getByTestId(id).querySelector('svg')).toBeNull();
       }
     });
