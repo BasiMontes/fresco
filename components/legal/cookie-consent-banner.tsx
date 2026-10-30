@@ -38,15 +38,24 @@ import { Button } from '@/components/ui/button';
  * when the swap lands. A fixed `height` with a one-line buffer over the
  * settled 158px covers that shrink regardless of which face renders first.
  * Reset above `sm:` where the row layout is shorter and stable.
+ *
+ * FRESCO-1073: from `sm` up the full-width bar became a compact floating card at the
+ * bottom RIGHT (the bottom left is the sidebar's account menu, which a card there would
+ * cover): 24rem wide, text above, two equal buttons below. Rechazar and Aceptar are the
+ * only buttons and keep the same variant, size and classes (equal weight, FRESCO-428).
+ * "Configurar" used to be a third button next to a "Más información" link that did the
+ * same thing (both call `openSettings`); it is now one inline link. Below `sm` it stays a
+ * full-width bar on purpose: the 15 % height cap (FRESCO-969), the fixed height that fixed
+ * the CLS (FRESCO-536) and the tab bar lift (FRESCO-757) all depend on it.
  */
 // FRESCO-758: at 320px the three buttons (285px + gaps) outgrew the 288px the
 // banner leaves them and "Aceptar" ended flush against the screen edge with
 // its border clipped. Tightening the horizontal padding below 360px makes the
-// row fit (~277px) without touching the height (fixed under `sm`, FRESCO-536),
-// the 44px tap height, or the equal weight of the three actions: the SAME
-// class goes on all of them. `justify-between` on the row (below 360px only)
-// spreads them across the full width so left and right margins match.
-const NARROW_SCREEN_BUTTON_CLASS = 'flex-1 max-[360px]:px-2 sm:flex-none';
+// row fit without touching the height (fixed under `sm`, FRESCO-536), the 44px
+// tap height, or the equal weight of the actions: the SAME class goes on each
+// of them. FRESCO-1073: two buttons now, each `flex-1`, so they split the row
+// equally on every width, in the bar and in the card.
+const NARROW_SCREEN_BUTTON_CLASS = 'flex-1 max-[360px]:px-2';
 
 export function CookieConsentBanner() {
   const { bannerVisible, accept, reject, openSettings } = useCookieConsent();
@@ -62,7 +71,12 @@ export function CookieConsentBanner() {
     const banner = bannerRef.current;
     if (!banner) { return; }
     const root = document.documentElement;
-    const publishHeight = () => root.style.setProperty('--cookie-banner-h', `${Math.ceil(banner.getBoundingClientRect().height)}px`);
+    // FRESCO-1073: the floating card sits `bottom` px above the viewport edge, and that gap is room the
+    // spacer and the tab bar lift must keep too; the full-width bar below `sm` has no gap (0).
+    const publishHeight = () => {
+      const gap = Number.parseFloat(getComputedStyle(banner).bottom) || 0;
+      root.style.setProperty('--cookie-banner-h', `${Math.ceil(banner.getBoundingClientRect().height + gap)}px`);
+    };
     publishHeight();
     if (typeof ResizeObserver === 'undefined') { return () => root.style.removeProperty('--cookie-banner-h'); }
     const observer = new ResizeObserver(publishHeight);
@@ -88,23 +102,24 @@ export function CookieConsentBanner() {
         aria-label="Consentimiento de cookies"
         data-testid="cookie_consent_banner"
         data-cookie-banner=""
-        className="fixed inset-x-0 bottom-0 z-100 h-[126px] border-t border-border bg-surface-raised px-4 py-1 shadow-lg sm:h-auto sm:p-4"
+        className="fixed inset-x-0 bottom-0 z-100 h-[126px] border-t border-border bg-surface-raised px-4 py-1 shadow-lg sm:inset-x-auto sm:bottom-4 sm:right-4 sm:h-auto sm:w-96 sm:rounded-card sm:border sm:p-4"
       >
-        <div className="mx-auto flex max-w-5xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:gap-3">
           <p className="text-body-sm text-text">
             Usamos cookies técnicas necesarias para el funcionamiento de Fresco y, solo si lo aceptas, cookies de analítica.
             {' '}
             <button
               type="button"
               onClick={openSettings}
-              data-testid="cookie_consent_banner_policy_link"
-              // FRESCO-478: 44px tap target (WCAG 2.5.5).
-              className="-my-3 inline-flex min-h-[44px] items-center align-middle underline sm:my-0"
+              data-testid="cookie_consent_configure_link"
+              // FRESCO-478: 44px tap target (WCAG 2.5.5). The negative margin keeps the 44px box from
+              // inflating its text line at every width (FRESCO-1073: in the card it showed as a loose last line).
+              className="-my-3 inline-flex min-h-[44px] items-center align-middle underline"
             >
-              Más información
+              Configurar
             </button>
           </p>
-          <div className="flex shrink-0 gap-2 max-[360px]:justify-between">
+          <div className="flex shrink-0 gap-2">
             <Button
               type="button"
               variant="secondary"
@@ -114,16 +129,6 @@ export function CookieConsentBanner() {
               onClick={reject}
             >
               Rechazar
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className={NARROW_SCREEN_BUTTON_CLASS}
-              data-testid="cookie_consent_configure_button"
-              onClick={openSettings}
-            >
-              Configurar
             </Button>
             <Button
               type="button"
