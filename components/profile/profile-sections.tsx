@@ -3,8 +3,7 @@ import type { ReactNode } from 'react';
 /**
  * FRESCO-972 (UX-19): `/profile` is one long stack, so it is grouped into three
  * sections reachable from an in-page anchor nav. Plain `#id` links: no client
- * state, they work without JS and the sidebar's `/profile#ayuda` deep links keep
- * working because the card ids inside the sections are untouched.
+ * state, they work without JS.
  */
 export const PROFILE_SECTIONS = [
   { id: 'preferencias', label: 'Preferencias' },
