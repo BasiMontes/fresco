@@ -99,6 +99,19 @@ describe('CalendarGrid — mobile (A7-UI-13)', () => {
       expect(within(nav).getByTestId(testid).className).toContain('size-11');
     }
   });
+
+  // FRESCO-1071: the "Días" text made this group ~146 px wide, enough to cover the last visible day's header.
+  test('the day arrows carry no text label that could cover a day name', () => {
+    containerOf(360);
+    renderGrid({ mondayIso: '2026-10-12', hoyIso: '2026-10-16' });
+
+    const nav = screen.getByTestId('calendar_day_nav');
+
+    expect(nav.textContent).toBe('');
+    expect(nav).toHaveAttribute('aria-label', 'Navegar por días');
+    expect(nav).toHaveAttribute('title', 'Navegar por días');
+    expect(within(nav).getAllByRole('button')).toHaveLength(2);
+  });
 });
 
 describe('CalendarGrid — changing a mark (FRESCO-1014, A7-UI-15)', () => {
