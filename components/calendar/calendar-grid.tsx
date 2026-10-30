@@ -137,15 +137,21 @@ export function CalendarGrid({
           wrapper, which starts exactly at the grid's top edge, so `top-0`
           lands in the header row; the day-header `<p>` below gets a matching
           `min-h-8` so the grid's row-1 track (sized to the tallest cell in
-          it, per the comment below) is never shorter than these buttons. */}
+          it, per the comment below) is never shorter than these buttons.
+
+          FRESCO-1071: arrows only, no "Días" text. With the label this group was
+          ~146 px wide and sat on top of the LAST visible day's header (left-aligned
+          in a column that is 176-360 px wide), hiding its name whenever the column
+          was under ~230 px. Two 44 px arrows are ~96 px, so a day name fits beside
+          them; the name for assistive technology and the hover text stay. */}
       {hasDayOverflow && (
         <div
           role="group"
           aria-label="Navegar por días"
+          title="Navegar por días"
           data-testid="calendar_day_nav"
           className="absolute right-0 top-0 z-10 flex items-center gap-1 rounded-md border border-border bg-background p-0.5"
         >
-          <span className="px-1.5 text-h6 uppercase text-tertiary">Días</span>
           <button
             type="button"
             onClick={() => setStartIndex(startIndex - 1)}
