@@ -57,6 +57,12 @@ describe('refresh-mercadona-catalog.yml', () => {
     expect(prStep.run).not.toMatch(/git push origin\b/);
   });
 
+  test('the PR names its head branch, because a push by URL leaves no upstream for gh to infer it from', () => {
+    const [prStep] = steps.filter(usesToken);
+
+    expect(prStep.run).toMatch(/gh pr create[^\n]*--head "\$branch"/);
+  });
+
   test('the freshness check resolves the revision and the generator reads exactly that one', () => {
     const freshness = steps.find(step => step.run?.includes('check-mercadona-dataset-freshness'));
     const generator = steps.find(step => step.run?.includes('gen-mercadona-catalog'));
