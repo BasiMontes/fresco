@@ -80,6 +80,7 @@ jobs:
           # The checkout kept no credentials, so the push carries the token in the URL. It is not written
           # to .git/config and the step's env is gone when the job ends.
           git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
-          gh pr create --base staging \
+          # The push above carries no upstream, so gh cannot infer the head branch: name it (FRESCO-1067).
+          gh pr create --base staging --head "$branch" \
             --title "chore(FRESCO-762): refresh the Mercadona catalog prices" \
             --body "Weekly regeneration of \`lib/grocery/mercadona-catalog.generated.ts\` and \`lib/grocery/ingredient-dictionary.ts\` from the community dataset, read at the pinned revision \`${DATASET_REVISION}\` (https://huggingface.co/datasets/datania/mercadona-catalog/tree/${DATASET_REVISION}). Jira: FRESCO-762"
