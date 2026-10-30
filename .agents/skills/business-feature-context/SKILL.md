@@ -50,7 +50,7 @@ One aspect of the product: **its features as a user meets them**. Which features
 
 ## Rules (judgment, dated)
 
-_(none yet: each rule carries `YYYY-MM-DD · rule · measured: how`)_
+- 2026-10-30 · The old markdown feature map's behavioural claims are not trusted: code wins · measured: the 2026-10-14 file said CSP Report-Only, accent-sensitive search and one monitored job; the code showed an enforcing nonce CSP (`proxy.ts`), `unaccent` search (`20261017220000`) and five monitored jobs (`lib/jobs/heartbeat.ts`).
 
 ## Not here
 
