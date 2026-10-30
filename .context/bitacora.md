@@ -247,3 +247,8 @@ Historia archivada:
 - Qué: se aprobaron 120 recetas nuevas (piloto de 40 y lotes 1 a 7) y se insertaron en producción tras podar `ingredient_seasons` de 41 a 14 filas (migración `20261029160000`, PR #826, 8 excepciones por receta para gazpachos, cremas frías y falafel). El catálogo pasa de 538 a 658 activas, leídas de vuelta en producción. Promovido a `main` (922bcf79).
 - Por qué: la poda aplica el criterio de ADR-0067 (lo que se vende todo el año en el súper no es de temporada) a petición del dueño; el coste es que el verano pasa de 126 a 14 recetas con temporada propia. Las 120 se recalcularon con la tabla podada antes de insertarse.
 - Siguiente: FRESCO-1064 (regenerar `supabase/seed.sql`), FRESCO-1065 (mapas de negocio) y las fotos de las 120 (flujo FRESCO-435).
+
+## 2026-10-30 - FRESCO-1065 cerrado (mapas de datos y funcionalidades) y FRESCO-903 cerrado
+- Qué: los mapas de negocio de datos (PR #828) y de funcionalidades (PR #829, 139 funcionalidades en 30 secciones, antes placeholder) se regeneraron con `diagram-design` en el estilo de Fresco y están en `staging`; FRESCO-1065 pasa a Finalizada. FRESCO-903 (retención de despliegues en Vercel) también pasa a Finalizada: Functions Storage no pasó del 53 % del 23 al 30 de octubre.
+- Por qué: los recuentos del catálogo (658 recetas activas, 14 temporadas, 13 excepciones, 156 migraciones) se contrastaron con producción en solo lectura el 2026-10-30. El mapa de funcionalidades cita el recuento de recetas con fecha y remite al de datos para el resto.
+- Siguiente: promocionar `staging` a `main` en el próximo lote; comprobar que no llega un aviso nuevo de uso de Vercel (el buzón no se miró); la tabla de flags del mapa sale del código porque `.env.example` no se pudo leer.
