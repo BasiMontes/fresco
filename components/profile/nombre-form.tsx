@@ -166,24 +166,34 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
           }}
           className="flex flex-col gap-2"
         >
-          <Input
-            data-testid="nombre_input"
-            aria-labelledby={titleId}
-            type="text"
-            maxLength={NOMBRE_MAX_LENGTH}
-            placeholder="¿Cómo te llamamos?"
-            value={nombre}
-            onChange={(event) => {
-              setNombre(event.target.value);
-              setSaved(false);
-              setTouched(true);
-              // FRESCO-248: typing after a shown error cancels the
-              // auto-revert and clears it immediately, mirroring the
-              // snippet's own "typing cancels the auto-revert" note.
-              clearError();
-            }}
-            className={touched && !isValid ? 'border-error' : ''}
-          />
+          <div className="t-input-wrap" ref={wrapRef} data-testid="nombre_save_wrap">
+            <div className="flex items-center gap-2">
+              <Input
+                data-testid="nombre_input"
+                aria-labelledby={titleId}
+                type="text"
+                maxLength={NOMBRE_MAX_LENGTH}
+                placeholder="¿Cómo te llamamos?"
+                value={nombre}
+                onChange={(event) => {
+                  setNombre(event.target.value);
+                  setSaved(false);
+                  setTouched(true);
+                  // FRESCO-248: typing after a shown error cancels the
+                  // auto-revert and clears it immediately, mirroring the
+                  // snippet's own "typing cancels the auto-revert" note.
+                  clearError();
+                }}
+                className={`min-w-0 flex-1 ${touched && !isValid ? 'border-error' : ''}`}
+              />
+              <Button type="submit" variant="default" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button" className="t-input shrink-0" ref={inputRef}>
+                Guardar
+              </Button>
+            </div>
+            <p data-testid="nombre_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">
+              {saveError}
+            </p>
+          </div>
           {touched && !isValid && (
             <p data-testid="nombre_validation_message" role="alert" aria-live="polite" className="text-body-sm text-error">
               Indica un nombre para guardar.
@@ -199,14 +209,6 @@ export function NombreForm({ nombreInicial }: NombreFormProps) {
               </p>
             </div>
           )}
-          <div className="t-input-wrap" ref={wrapRef} data-testid="nombre_save_wrap">
-            <Button type="submit" variant="default" disabled={!isValid || isSaving || !isDirty} data-testid="guardar_nombre_button" className="t-input" ref={inputRef}>
-              Guardar
-            </Button>
-            <p data-testid="nombre_save_error_message" role="alert" aria-live="assertive" className="t-error-msg mt-1 text-body-sm text-error">
-              {saveError}
-            </p>
-          </div>
         </form>
       </CardContent>
     </Card>

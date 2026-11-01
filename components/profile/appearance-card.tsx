@@ -20,10 +20,10 @@ export function AppearanceCard() {
           <div>
             <p className="text-label text-text">Tema</p>
             <p className="mt-0.5 text-body-sm text-tertiary">
-              Claro, oscuro, o según tu sistema.
+              Claro u oscuro.
             </p>
           </div>
-          <ThemeToggle />
+          <ThemeToggle variant="binary" />
         </div>
       </CardContent>
     </Card>
