@@ -1,6 +1,6 @@
 # ADR-0062 — Stripe webhook: a transient Stripe failure answers 500 so Stripe retries; state is decided from the live subscription
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-17
 - **Deciders:** Basi Montes (plan approved in conversation on 2026-10-17; acceptance of this record pending)
 - **Tags:** payments, stripe, reliability, webhook

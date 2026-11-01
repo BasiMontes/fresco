@@ -1,6 +1,6 @@
 # ADR-0061 — Stripe mode guard: the Stripe mode is a fact of the shared database, not of the deploy that receives the event
 
-- **Status:** Proposed <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-10-17
 - **Deciders:** Basi Montes (design approved in conversation on 2026-10-17; acceptance of this record pending)
 - **Tags:** payments, stripe, security, cross-cutting-invariant

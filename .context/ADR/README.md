@@ -121,8 +121,8 @@ Who authors: a human architect directly, **or** an AI workflow that detected an 
 | [ADR-0058](./ADR-0058-retire-harness-launchers.md) | Retire the harness launch scripts: a harness opens as its bare binary, no secret enters its process | Accepted | ADR-0052, ADR-0053, ADR-0057 | — |
 | [ADR-0059](./ADR-0059-documentation-contracts.md) | Documentation contracts: region markers, a push and CI gate with a `Docs-Checked:` escape, an edit-time reminder | Accepted | — | — |
 | [ADR-0060](./ADR-0060-route-adherence.md) | Routes the agent actually reads: a scoped, ranked and capped `ROUTE:` cue, re-surfaced once on Claude Code, and hook groups that reach every project | Accepted | — | — |
-| [ADR-0061](./ADR-0061-stripe-mode-guard.md) | Stripe mode guard: the Stripe mode is a fact of the shared database (deploy key, `billing_mode`, profile), not of the deploy that receives the event | Proposed | — | — |
-| [ADR-0062](./ADR-0062-stripe-webhook-transient-failures-retry.md) | Stripe webhook: a transient Stripe failure answers 500 so Stripe retries; subscription state is decided from the live subscription | Proposed | — | — |
+| [ADR-0061](./ADR-0061-stripe-mode-guard.md) | Stripe mode guard: the Stripe mode is a fact of the shared database (deploy key, `billing_mode`, profile), not of the deploy that receives the event | Accepted | — | — |
+| [ADR-0062](./ADR-0062-stripe-webhook-transient-failures-retry.md) | Stripe webhook: a transient Stripe failure answers 500 so Stripe retries; subscription state is decided from the live subscription | Accepted | — | — |
 | [ADR-0063](./ADR-0063-recipe-learning-once-per-user-no-rating.md) | Recipe learning counts once per user and recipe, and the rating signal is retired | Accepted | — | — |
 | [ADR-0064](./ADR-0064-recipe-tag-coherence-barrier-in-the-database.md) | An active recipe cannot be saved with allergen or diet tags that contradict its text | Accepted | — | — |
 | [ADR-0065](./ADR-0065-browser-sentry-starts-after-cookie-consent.md) | The browser Sentry SDK starts only after the visitor accepts cookies | Accepted | — | — |
