@@ -31,7 +31,13 @@ class FakeEdgeFunctionError extends Error {
   }
 }
 
+// `mock.module` is global to the process: replacing the whole module with two exports broke every
+// later test file that needs another one (`generateMealPlan`, `updateRecipeStatus`...). Keep the real
+// exports and override only what this file controls.
+const realEdgeFunctions = await import('@/lib/api/edge-functions');
+
 void mock.module('@/lib/api/edge-functions', () => ({
+  ...realEdgeFunctions,
   deleteAccount: deleteAccountMock,
   EdgeFunctionError: FakeEdgeFunctionError,
 }));
