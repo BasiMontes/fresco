@@ -381,6 +381,31 @@ describe('resolveAppUrl', () => {
   });
 });
 
+describe('stripe client (lazy, fail-fast)', () => {
+  const savedKey = process.env.STRIPE_SECRET_KEY;
+
+  afterEach(() => {
+    if (savedKey === undefined) { delete process.env.STRIPE_SECRET_KEY; }
+    else { process.env.STRIPE_SECRET_KEY = savedKey; }
+  });
+
+  test('importing the module never needs the secret key, only the first property read does', async () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    const { stripe } = await import('./stripe');
+
+    expect(() => stripe.customers).toThrow('STRIPE_SECRET_KEY is required');
+  });
+
+  test('with a key it builds one real client, pinned to the API version, and reuses it', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit_only';
+    const { stripe } = await import('./stripe');
+
+    expect(typeof stripe.customers.create).toBe('function');
+    expect(stripe.checkout.sessions).toBe(stripe.checkout.sessions);
+    expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe('2026-09-30.endive');
+  });
+});
+
 describe('FRESCO-844 — monthly and annual Pro prices', () => {
   const ANNUAL = 'price_pro_annual';
   const annualSubscription = () => fakeSubscription({ items: { data: [{ price: { id: ANNUAL }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'] });
