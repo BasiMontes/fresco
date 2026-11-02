@@ -105,6 +105,11 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   from 85.50). Behaviour tests for the favorites, shopping-list, menu, recipes and profile pages and the
   (app) layout, the root layout, the error pages, the manifest, the landing, the signup and onboarding
   pages, the preferences page and the waitlist page (PRs #855, #856). 44 files remain that no test imports.
+- 2026-11-02 (FRESCO-1080, tranche 7): honest lines **raised** 90.0 to 91.0 (measured 91.69 locally, from
+  90.77), loaded floor 89.5 / 90.7 to 93.0 / 96.0 (measured 93.84 / 96.82). The Stripe client, the
+  onboarding consent gate, four Edge handlers, the shopping-list API, identity helpers, forgot-password,
+  analytics identity linkage, the push prompt and the dropdown (PRs #858 to #864). Still 44 files that no
+  test imports.
 
 ## Tranches (honest lines)
 
@@ -119,7 +124,7 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 | 4 | 80 % | FRESCO-1072 | **Done** (2026-11-02): measured 80.14 %, floored at 79.5 |
 | 5 | 85 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1078, 2026-11-02): measured 85.50 %, floored at 85.0 |
 | 6 | 90 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1079, 2026-11-02): measured 90.77 %, floored at 90.0 |
-| 7 | 93 % | Proposed, not yet set by the owner | **Not started**: about 2 points left. What is left unloaded is mostly the internal `app/qa` page and its components (about 430 lines) and `components/__fixtures__/page-shells.tsx`, a test fixture that probably should not count in the denominator at all (a change to the metric, to be decided by the owner); `bun scripts/check-coverage.ts --print --unloaded` lists the rest |
+| 7 | 93 % | Proposed, not yet set by the owner | **Partly done** (FRESCO-1080, 2026-11-02): measured 91.69 %, floored at 91.0. What is left unloaded is internal pages (`app/qa` and its components, about 430 lines), loading skeletons and layouts, and about 320 lines that no test can ever hit: 200 of type-only files and the `components/__fixtures__/page-shells.tsx` fixture. Taking those out of the denominator is a change to the metric, to be decided by the owner; without it 93 % needs tests for internal pages that move no risk. `bun scripts/check-coverage.ts --print --unloaded` lists the rest |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,

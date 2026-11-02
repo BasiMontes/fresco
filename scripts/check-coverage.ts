@@ -106,8 +106,10 @@ import { join } from 'node:path';
  *   89.60 / 90.10) after the Edge handler tests landed.
  * 2026-10-21 (FRESCO-991, tranche 3): raised to functions 89.5 / lines 90.7 (measured
  *   90.01 / 91.17) after the data-loader and big-component tests landed.
+ * 2026-11-02 (FRESCO-1080, tranche 7): raised to functions 93.0 / lines 96.0 (measured
+ *   93.84 / 96.82). Tranches 4 to 7 loaded 100+ files, so the loaded number moved with the honest one.
  */
-export const FLOOR = { functions: 89.5, lines: 90.7 } as const;
+export const FLOOR = { functions: 93.0, lines: 96.0 } as const;
 
 /**
  * Floor for the HONEST line coverage (unloaded files counted as zero). Only
@@ -136,8 +138,13 @@ export const FLOOR = { functions: 89.5, lines: 90.7 } as const;
  * 2026-11-02 (FRESCO-1079, tranche 6 closed): measured 90.77 % (CI, after PRs 855 and 856),
  * floored at 90.0. The remaining (app) pages and layout, the root layout, the error pages, the
  * manifest, the landing and the signup and onboarding pages. 44 files remain that no test imports.
+ * 2026-11-02 (FRESCO-1080, tranche 7): measured 91.69 % (local, after PRs 858 to 864), floored at 91.0.
+ * Money (the Stripe client), the health-data consent gate, the four Edge handlers still under 90 %, the
+ * shopping-list API, the lazy identity helpers, the forgot-password page, analytics identity linkage, the
+ * push prompt and the dropdown. 44 files remain that no test imports: internal pages, skeletons, type-only
+ * files and one test fixture.
  */
-export const HONEST_FLOOR_LINES = 90.0;
+export const HONEST_FLOOR_LINES = 91.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
