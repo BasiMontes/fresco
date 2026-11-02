@@ -29,7 +29,7 @@
     "yaml"
   ],
   "ignoreBinaries": ["vercel", "supabase", "psql", "playwright-cli"],
-  "ignoreUnresolved": ["bun-types", "cli/doctor.ts", "cli/install.ts"],
+  "ignoreUnresolved": ["bun-types"],
   "rules": {
     "types": "off",
     "enumMembers": "off",
