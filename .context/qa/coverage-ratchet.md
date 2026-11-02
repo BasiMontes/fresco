@@ -110,6 +110,12 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   onboarding consent gate, four Edge handlers, the shopping-list API, identity helpers, forgot-password,
   analytics identity linkage, the push prompt and the dropdown (PRs #858 to #864). Still 44 files that no
   test imports.
+- 2026-11-02 (FRESCO-1080, **metric change**, decided by the owner): type-only files and test support
+  (`fixtures/` and `__fixtures__/` folders, `*.fixture.ts` files) leave the honest denominator and the
+  loaded figures. A type-only file is decided by its content (no `const`, `function`, `class`, `enum`,
+  default export or re-export), not by its name. 10 files and one fixture, 322 lines, that no test could
+  hit. The same tests measure 92.80 % instead of 91.69 %; floor raised 91.0 to 92.0. 33 files remain that
+  no test imports. Numbers before this entry are not comparable with the ones after it.
 
 ## Tranches (honest lines)
 
@@ -124,7 +130,7 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 | 4 | 80 % | FRESCO-1072 | **Done** (2026-11-02): measured 80.14 %, floored at 79.5 |
 | 5 | 85 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1078, 2026-11-02): measured 85.50 %, floored at 85.0 |
 | 6 | 90 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1079, 2026-11-02): measured 90.77 %, floored at 90.0 |
-| 7 | 93 % | Proposed, not yet set by the owner | **Partly done** (FRESCO-1080, 2026-11-02): measured 91.69 %, floored at 91.0. What is left unloaded is internal pages (`app/qa` and its components, about 430 lines), loading skeletons and layouts, and about 320 lines that no test can ever hit: 200 of type-only files and the `components/__fixtures__/page-shells.tsx` fixture. Taking those out of the denominator is a change to the metric, to be decided by the owner; without it 93 % needs tests for internal pages that move no risk. `bun scripts/check-coverage.ts --print --unloaded` lists the rest |
+| 7 | 93 % | Proposed, not yet set by the owner | **Partly done** (FRESCO-1080, 2026-11-02): measured 92.80 %, floored at 92.0, after the owner took type-only files and test support out of the denominator (322 lines). What is left unloaded is internal pages (`app/qa` and its components, about 430 lines), loading skeletons, layouts and the legal pages (static text): about 800 lines that move no risk. `bun scripts/check-coverage.ts --print --unloaded` lists the rest |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,
