@@ -116,6 +116,59 @@ describe('update-recipe-status/index.ts', () => {
     expect(res.status).toBe(422)
   })
 
+  describe('substitution safety (A4-H1)', () => {
+    const SAFE = { ...OK_RATE, get_filtered_recipes: { data: [{ id: 'r2' }] } }
+    const substitute = () => handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: 'r2' }))
+
+    test('400 when "sustituida" arrives without nueva_recipe_id', async () => {
+      const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida' })
+      expect(res.status).toBe(400)
+    })
+
+    test('500 when the allergen/diet filter RPC fails, and nothing is written', async () => {
+      svc = fakeEdgeClient()
+      supa = fakeEdgeClient({ user: USER, rpc: { ...OK_RATE, get_filtered_recipes: { error: { message: 'rpc down' } } }, rows: { meal_plan_recipes: slotRow() } })
+      expect((await substitute()).status).toBe(500)
+      expect(svc.updates).toEqual([])
+    })
+
+    test('409 when the recipe is already placed elsewhere in the same week', async () => {
+      svc = fakeEdgeClient()
+      supa = fakeEdgeClient({
+        user: USER,
+        rpc: SAFE,
+        selectResults: { meal_plan_recipes: [{ data: slotRow() }, { data: { id: 'mpr_other' } }] },
+      })
+      expect((await substitute()).status).toBe(409)
+      expect(svc.updates).toEqual([])
+    })
+
+    test('500 when the duplicate check itself errors', async () => {
+      svc = fakeEdgeClient()
+      supa = fakeEdgeClient({
+        user: USER,
+        rpc: SAFE,
+        selectResults: { meal_plan_recipes: [{ data: slotRow() }, { error: { message: 'db down' } }] },
+      })
+      expect((await substitute()).status).toBe(500)
+      expect(svc.updates).toEqual([])
+    })
+
+    test('a safe, new recipe is written as the slot recipe, through the service-role client only', async () => {
+      svc = fakeEdgeClient()
+      supa = fakeEdgeClient({
+        user: USER,
+        rpc: SAFE,
+        selectResults: { meal_plan_recipes: [{ data: slotRow() }, { data: null }] },
+      })
+      const res = await substitute()
+      expect(res.status).toBe(200)
+      expect(await res.json()).toEqual({ ok: true, estado: 'sustituida' })
+      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'sustituida', recipe_id: 'r2' }]])
+      expect(supa.rpcCalls.find(([name]) => name === 'get_filtered_recipes')?.[1]).toEqual({ p_user_id: 'user_1', p_recipe_id: 'r2' })
+    })
+  })
+
   test('500 when the meal_plan_recipes update errors', async () => {
     svc = fakeEdgeClient({ updateError: { meal_plan_recipes: new Error('db down') } })
     const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'cocinada' }))
