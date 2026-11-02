@@ -389,17 +389,15 @@ describe('stripe client (lazy, fail-fast)', () => {
     else { process.env.STRIPE_SECRET_KEY = savedKey; }
   });
 
-  test('importing the module never needs the secret key, only the first property read does', async () => {
+  // One test, in this order, on purpose: the client is cached after the first successful read, so a
+  // "no key" test running after a "with key" one (the randomized CI job shuffles tests) would not throw.
+  test('needs no key to import and throws on the first read without one; then builds one pinned client and reuses it', async () => {
     delete process.env.STRIPE_SECRET_KEY;
     const { stripe } = await import('./stripe');
 
     expect(() => stripe.customers).toThrow('STRIPE_SECRET_KEY is required');
-  });
 
-  test('with a key it builds one real client, pinned to the API version, and reuses it', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_unit_only';
-    const { stripe } = await import('./stripe');
-
     expect(typeof stripe.customers.create).toBe('function');
     expect(stripe.checkout.sessions).toBe(stripe.checkout.sessions);
     expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe('2026-09-30.endive');
