@@ -97,6 +97,10 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   hooks, web push (FRESCO-1076, PR #848) and the week generator, push toggle, scroll row, list generator
   and sidebar (FRESCO-1077, PR #849). 96 files remain that no test imports. The floor is meant to keep
   rising: it sat 3.1 points under the real number before this change.
+- 2026-11-02 (FRESCO-1078, tranche 5 closed): honest lines **raised** 79.5 to 85.0 (measured 85.50 in CI,
+  from 80.14). Behaviour tests for the consent read, week navigation, the household, identity and
+  signup steps, the notifications, calendar and historial pages, the onboarding hooks, the profile
+  cards and the favorites grid (PRs #851, #852, #853). 73 files remain that no test imports.
 
 ## Tranches (honest lines)
 
@@ -109,7 +113,8 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 | 2 | 60 % | 2026-12-14 | **Done early** (FRESCO-991): measured 63.35 %, floored at 63.0 |
 | 3 | 70 % | Set by the owner 2026-10-19 | **Done** (FRESCO-991, 2026-10-21): measured 75.46 %, floored at 75.0 |
 | 4 | 80 % | FRESCO-1072 | **Done** (2026-11-02): measured 80.14 %, floored at 79.5 |
-| 5 | 85 % | Proposed, not yet set by the owner | **Not started**: about 5 points (roughly 1,000 lines) left; start from `bun scripts/check-coverage.ts --print --unloaded` and the loaded files with most uncovered lines |
+| 5 | 85 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1078, 2026-11-02): measured 85.50 %, floored at 85.0 |
+| 6 | 90 % | Proposed, not yet set by the owner | **Not started**: about 4.5 points left; start from `bun scripts/check-coverage.ts --print --unloaded` and the loaded files with most uncovered lines |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,

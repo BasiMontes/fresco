@@ -130,8 +130,11 @@ export const FLOOR = { functions: 89.5, lines: 90.7 } as const;
  * floored at 79.5. The price store, the calendar drag-drop and shopping-list hooks, web push
  * and five stateful components. The 80 % of the ticket is met. 96 files remain that no test
  * imports. The floor keeps rising: raise it again once the next tranche holds a few runs.
+ * 2026-11-02 (FRESCO-1078, tranche 5 closed): measured 85.50 % (CI, after PRs 851, 852 and 853),
+ * floored at 85.0. The consent read, week navigation, the (app) pages, the onboarding and signup
+ * steps and hooks, and the profile cards. 73 files remain that no test imports.
  */
-export const HONEST_FLOOR_LINES = 79.5;
+export const HONEST_FLOOR_LINES = 85.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
