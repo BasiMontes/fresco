@@ -88,6 +88,10 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   button, the recipe library, filter drawer and recipe detail, the login page, the help
   section, the signup submit hook, the landing nav and hero, the admin recipe search and
   the onboarding footer. 102 files remain that no test imports.
+- 2026-11-01 (FRESCO-1072, tranche 4): honest lines **raised** 75.0 to 77.0 (measured 77.67 in CI,
+  from 75.76 at the start of the tranche). Behaviour tests for the profile reads, the favorites
+  API, the preferences and name forms, and the signup OTP, signup reassign and meal-plan generation
+  hooks (PRs #840, #841, #845). 99 files remain that no test imports.
 
 ## Tranches (honest lines)
 
@@ -99,6 +103,7 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 | 1 | 54.5 % | 2026-10-14 | **Done** (FRESCO-916): measured 55.26 %, the ticket's "55 % in a month" was already met |
 | 2 | 60 % | 2026-12-14 | **Done early** (FRESCO-991): measured 63.35 %, floored at 63.0 |
 | 3 | 70 % | Set by the owner 2026-10-19 | **Done** (FRESCO-991, 2026-10-21): measured 75.46 %, floored at 75.0 |
+| 4 | 80 % | FRESCO-1072 | **In progress** (2026-11-01): measured 77.67 %, floored at 77.0; about 2.3 points (550 lines) left |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,

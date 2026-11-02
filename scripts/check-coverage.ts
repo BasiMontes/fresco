@@ -123,8 +123,11 @@ export const FLOOR = { functions: 89.5, lines: 90.7 } as const;
  * PostHog capture were the highest-risk files no test imported.
  * 2026-10-21 (FRESCO-991, tranche 3): measured 75.46 %, floored at 75.0. The 70 %
  * the owner set on 2026-10-19 is met; the floor now sits just under the real number.
+ * 2026-11-01 (FRESCO-1072, tranche 4): measured 77.67 % (CI, after PR 3), floored at
+ * 77.0. Behaviour tests for the profile data layer and forms and the signup and
+ * meal-plan generation hooks. The 80 % of the ticket is not reached yet.
  */
-export const HONEST_FLOOR_LINES = 75.0;
+export const HONEST_FLOOR_LINES = 77.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
