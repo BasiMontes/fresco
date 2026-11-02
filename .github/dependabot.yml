@@ -56,12 +56,5 @@ updates:
       # releases still come through.
       - dependency-name: '@happy-dom/global-registrator'
         update-types: ['version-update:semver-major']
-      # FRESCO-1082: stripe 23.1.0 moves the SDK's pinned API version from 2026-09-30.endive to
-      # 2026-10-28.endive, which is written by hand in about 17 places and changes how Stripe shapes
-      # every billing object. PR #847 failed types:check on exactly that. The jump gets its own
-      # ticket, a read of the API changelog and a run of the Stripe e2e suite; patch releases of
-      # 23.0.x still come through. Remove this entry when FRESCO-1082 lands.
-      - dependency-name: stripe
-        update-types: ['version-update:semver-minor']
     commit-message:
       prefix: chore
