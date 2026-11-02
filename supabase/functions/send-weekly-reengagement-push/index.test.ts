@@ -162,4 +162,46 @@ describe('send-weekly-reengagement-push/index.ts', () => {
     expect(res.status).toBe(200)
     expect(sends).toHaveLength(10)
   })
+
+  describe('failure paths', () => {
+    test('500 and nothing is sent when a VAPID secret is missing', async () => {
+      const saved = process.env.VAPID_PRIVATE_KEY
+      delete process.env.VAPID_PRIVATE_KEY
+      try {
+        withTargets([row(1)])
+        expect((await call()).status).toBe(500)
+        expect(sends).toEqual([])
+      }
+      finally {
+        process.env.VAPID_PRIVATE_KEY = saved
+      }
+    })
+
+    test('500 when the recipients query fails, and nothing is sent', async () => {
+      svc = fakeEdgeClient({ rpc: { get_push_subscriptions_without_current_plan: { error: { message: 'rpc down' } } } })
+      expect((await call()).status).toBe(500)
+      expect(sends).toEqual([])
+    })
+
+    test('a sent notification still counts when bumping last_used_at fails', async () => {
+      svc = fakeEdgeClient({
+        rpc: { get_push_subscriptions_without_current_plan: { data: [row(1)] } },
+        updateError: { push_subscriptions: { message: 'db down' } },
+      })
+      const res = await call()
+      expect(res.status).toBe(200)
+      expect(await res.json()).toMatchObject({ notifications_sent: 1 })
+    })
+
+    test('a dead subscription whose delete fails is not counted as removed', async () => {
+      svc = fakeEdgeClient({
+        rpc: { get_push_subscriptions_without_current_plan: { data: [row(1)] } },
+        deleteError: { push_subscriptions: { message: 'db down' } },
+      })
+      sendImpl = async () => { throw Object.assign(new Error('gone'), { statusCode: 404 }) }
+      const res = await call()
+      expect(res.status).toBe(200)
+      expect(await res.json()).toMatchObject({ notifications_sent: 0, stale_subscriptions_removed: 0 })
+    })
+  })
 })
