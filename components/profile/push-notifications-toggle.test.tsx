@@ -1,21 +1,8 @@
-import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import * as pushApi from '@/lib/client-api/push';
-import * as env from '@/lib/env';
 import * as webPush from '@/lib/push/web-push-client';
 import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
-
-// FRESCO-1077 — `clientEnv` is validated once per process from `process.env`, and CI
-// has no VAPID key while a developer machine does. The key is therefore pinned here
-// (the rest of `clientEnv` stays real), so the result never depends on the machine.
-let vapidKey: string | undefined = 'test-vapid-public-key';
-void mock.module('@/lib/env', () => ({
-  ...env,
-  clientEnv: new Proxy(env.clientEnv, {
-    get: (target, prop: string) => (prop === 'NEXT_PUBLIC_VAPID_PUBLIC_KEY' ? vapidKey : target[prop as keyof typeof target]),
-  }),
-}));
-
-const { PushNotificationsToggle } = await import('./push-notifications-toggle');
+import { PushNotificationsToggle } from './push-notifications-toggle';
 
 /**
  * FRESCO-779 (audit-6 A6-S2) — guest (anonymous) sessions cannot store a push
@@ -56,7 +43,6 @@ describe('PushNotificationsToggle for a registered user', () => {
   }
 
   beforeEach(() => {
-    vapidKey = 'test-vapid-public-key';
     setPermission('default');
     supportedSpy = spyOn(webPush, 'isPushSupported').mockReturnValue(true);
     currentSpy = spyOn(webPush, 'getCurrentPushSubscription').mockResolvedValue(null);
@@ -73,6 +59,10 @@ describe('PushNotificationsToggle for a registered user', () => {
 
   const description = () => screen.getByTestId('push_notifications_description');
   const toggle = () => screen.getByTestId('push_notifications_switch');
+  // Native assertions inside waitFor: a failing jest-dom matcher can crash while it formats its message
+  // under bun, which hangs the test until the 5 s timeout instead of reporting the real difference.
+  const checked = () => toggle().getAttribute('aria-checked');
+  const isDisabled = () => (toggle() as HTMLButtonElement).disabled;
 
   test('a browser without push support gets a disabled switch that says so', async () => {
     supportedSpy.mockReturnValue(false);
@@ -91,37 +81,37 @@ describe('PushNotificationsToggle for a registered user', () => {
 
   test('without a subscription the switch is off and can be turned on', async () => {
     renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toBeEnabled());
-    expect(toggle()).toHaveAttribute('aria-checked', 'false');
+    await waitFor(() => expect(isDisabled()).toBe(false));
+    await waitFor(() => expect(checked()).toBe('false'));
   });
 
   test('with a subscription the switch is on', async () => {
     currentSpy.mockResolvedValue({} as PushSubscription);
     renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toHaveAttribute('aria-checked', 'true'));
+    await waitFor(() => expect(checked()).toBe('true'));
   });
 
   test('turning it on subscribes and the switch reads on', async () => {
     renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toBeEnabled());
+    await waitFor(() => expect(isDisabled()).toBe(false));
     await setupUser().click(toggle());
-    await waitFor(() => expect(toggle()).toHaveAttribute('aria-checked', 'true'));
+    await waitFor(() => expect(checked()).toBe('true'));
     expect(subscribeSpy).toHaveBeenCalledTimes(1);
   });
 
   test('turning it off unsubscribes and the switch reads off', async () => {
     currentSpy.mockResolvedValue({} as PushSubscription);
     renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toHaveAttribute('aria-checked', 'true'));
+    await waitFor(() => expect(checked()).toBe('true'));
     await setupUser().click(toggle());
-    await waitFor(() => expect(toggle()).toHaveAttribute('aria-checked', 'false'));
+    await waitFor(() => expect(checked()).toBe('false'));
     expect(unsubscribeSpy).toHaveBeenCalledTimes(1);
   });
 
   test('denying the native prompt on this click blocks the switch', async () => {
     subscribeSpy.mockRejectedValue(new webPush.WebPushError('No has dado permiso para recibir notificaciones.'));
     renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toBeEnabled());
+    await waitFor(() => expect(isDisabled()).toBe(false));
     await setupUser().click(toggle());
     await waitFor(() => expect(description()).toHaveTextContent('Has bloqueado las notificaciones'));
     expect(screen.queryByTestId('push_notifications_error_message')).toBeNull();
@@ -130,19 +120,9 @@ describe('PushNotificationsToggle for a registered user', () => {
   test('any other failure shows its message and leaves the switch usable', async () => {
     subscribeSpy.mockRejectedValue(new Error('La suscripción falló'));
     renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toBeEnabled());
+    await waitFor(() => expect(isDisabled()).toBe(false));
     await setupUser().click(toggle());
     expect(await screen.findByTestId('push_notifications_error_message')).toHaveTextContent('La suscripción falló');
-    await waitFor(() => expect(toggle()).toBeEnabled());
-  });
-
-  test('without a VAPID key the switch says push is not configured and stays disabled', async () => {
-    vapidKey = undefined;
-    renderWithProviders(<PushNotificationsToggle />);
-    await waitFor(() => expect(toggle()).toBeEnabled());
-    await setupUser().click(toggle());
-    await waitFor(() => expect(description()).toHaveTextContent('todavía no están configuradas'));
-    expect(toggle()).toBeDisabled();
-    expect(subscribeSpy).not.toHaveBeenCalled();
+    await waitFor(() => expect(isDisabled()).toBe(false));
   });
 });

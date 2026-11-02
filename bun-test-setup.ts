@@ -67,6 +67,10 @@ beforeEach(async () => {
 process.env.NEXT_PUBLIC_SUPABASE_URL ||= 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||= 'test-anon-key';
 process.env.NEXT_PUBLIC_SUPABASE_FUNCTIONS_URL ||= 'https://test.functions.supabase.co';
+// FRESCO-1078: the push opt-in switch only subscribes when a VAPID key is configured, and CI has none while a
+// developer's `.env` does. Set here (before `clientEnv` caches its first read) instead of replacing `@/lib/env`
+// from a test, which is global to the process and made the toggle tests flap with the file order.
+process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||= 'test-vapid-public-key';
 
 /**
  * FRESCO-799: a developer's `.env` carries the real Turnstile site key, and
