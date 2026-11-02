@@ -125,4 +125,26 @@ describe('reassign-guest-data/index.ts', () => {
     expect(serviceClient.rpcCalls[0]).toEqual(['reassign_guest_data', { p_from_user_id: 'guest_1', p_to_user_id: 'real_user' }])
     expect(serviceClient.deletedUserIds).toEqual(['guest_1'])
   })
+
+  test('200 and the guest is still cleaned up when the move had to neutralize slots (A4-H2)', async () => {
+    wireGuest()
+    wireTarget({ id: 'real_user' })
+    serviceClient = fakeEdgeClient({ rpc: { reassign_guest_data: { data: 3 } } })
+    const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ reassigned: true })
+    expect(serviceClient.deletedUserIds).toEqual(['guest_1'])
+  })
+
+  test('200 even when deleting the orphaned guest fails: the data already moved', async () => {
+    wireGuest()
+    wireTarget({ id: 'real_user' })
+    serviceClient = fakeEdgeClient({ rpc: { reassign_guest_data: { data: 0 } }, adminDeleteError: new Error('auth down') })
+    const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ reassigned: true })
+    expect(serviceClient.rpcCalls).toHaveLength(1)
+  })
 })

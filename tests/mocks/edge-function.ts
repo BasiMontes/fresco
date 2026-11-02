@@ -70,6 +70,8 @@ export interface FakeEdgeClientConfig {
   updateError?: Record<string, unknown>
   /** Keyed by table → the rows an `update(...).select()` chain resolves to (default: one row). */
   updateRows?: Record<string, unknown[]>
+  /** Keyed by table → the error a `.from(t).delete().eq(...)` resolves with. */
+  deleteError?: Record<string, unknown>
   /** Keyed by table → the error a `.from(t).insert(p)` resolves with. */
   insertError?: Record<string, unknown>
   /** Keyed by table → the error a `.from(t).upsert(p, opts)` resolves with. */
@@ -147,7 +149,7 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
     let id: unknown;
     const terminate = async () => {
       deletes.push([table, id]);
-      return { error: null };
+      return { error: config.deleteError?.[table] ?? null };
     };
     const chain: Record<string, unknown> = {
       eq: (_column: string, value: unknown) => {
