@@ -148,8 +148,11 @@ export const FLOOR = { functions: 93.0, lines: 96.0 } as const;
  * (fixture folders and `*.fixture.ts`) leave the denominator, because no test could ever hit them. That is
  * 10 type-only files and one fixture, 322 lines: measured 91.69 % before and 92.80 % after, on the same tests.
  * Floored at 92.0. 33 files remain that no test imports.
+ * 2026-11-02 (FRESCO-1080, tranche 7 closed): measured 93.19 %, floored at 92.5. The recipe detail page
+ * (its fallbacks), the server-side Supabase client (cookie handling) and the service-role client (missing
+ * key fails loudly). The 93 % of the tranche is met. 30 files remain that no test imports.
  */
-export const HONEST_FLOOR_LINES = 92.0;
+export const HONEST_FLOOR_LINES = 92.5;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
