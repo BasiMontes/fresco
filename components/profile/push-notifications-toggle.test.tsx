@@ -1,8 +1,21 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import * as pushApi from '@/lib/client-api/push';
+import * as env from '@/lib/env';
 import * as webPush from '@/lib/push/web-push-client';
 import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
-import { PushNotificationsToggle } from './push-notifications-toggle';
+
+// FRESCO-1077 — `clientEnv` is validated once per process from `process.env`, and CI
+// has no VAPID key while a developer machine does. The key is therefore pinned here
+// (the rest of `clientEnv` stays real), so the result never depends on the machine.
+let vapidKey: string | undefined = 'test-vapid-public-key';
+void mock.module('@/lib/env', () => ({
+  ...env,
+  clientEnv: new Proxy(env.clientEnv, {
+    get: (target, prop: string) => (prop === 'NEXT_PUBLIC_VAPID_PUBLIC_KEY' ? vapidKey : target[prop as keyof typeof target]),
+  }),
+}));
+
+const { PushNotificationsToggle } = await import('./push-notifications-toggle');
 
 /**
  * FRESCO-779 (audit-6 A6-S2) — guest (anonymous) sessions cannot store a push
@@ -43,6 +56,7 @@ describe('PushNotificationsToggle for a registered user', () => {
   }
 
   beforeEach(() => {
+    vapidKey = 'test-vapid-public-key';
     setPermission('default');
     supportedSpy = spyOn(webPush, 'isPushSupported').mockReturnValue(true);
     currentSpy = spyOn(webPush, 'getCurrentPushSubscription').mockResolvedValue(null);
@@ -120,5 +134,15 @@ describe('PushNotificationsToggle for a registered user', () => {
     await setupUser().click(toggle());
     expect(await screen.findByTestId('push_notifications_error_message')).toHaveTextContent('La suscripción falló');
     await waitFor(() => expect(toggle()).toBeEnabled());
+  });
+
+  test('without a VAPID key the switch says push is not configured and stays disabled', async () => {
+    vapidKey = undefined;
+    renderWithProviders(<PushNotificationsToggle />);
+    await waitFor(() => expect(toggle()).toBeEnabled());
+    await setupUser().click(toggle());
+    await waitFor(() => expect(description()).toHaveTextContent('todavía no están configuradas'));
+    expect(toggle()).toBeDisabled();
+    expect(subscribeSpy).not.toHaveBeenCalled();
   });
 });
