@@ -21,10 +21,12 @@ interface Config {
   /** What `check_and_increment_rate_limit` resolves: `true` (default) allows, anything else blocks. */
   rateLimit?: boolean | null
   rateLimitError?: unknown
+  refreshError?: unknown
 }
 
 let config: Config
 let inserted: Array<Record<string, unknown>>
+let updated: Array<{ payload: Record<string, unknown>, id: unknown }>
 let planUserFilters: unknown[]
 let rpcCalls: Array<[string, unknown]>
 
@@ -56,6 +58,12 @@ function client() {
         }
         return chain
       },
+      update: (payload: Record<string, unknown>) => ({
+        eq: async (_column: string, id: unknown) => {
+          updated.push({ payload, id })
+          return { error: config.refreshError ?? null }
+        },
+      }),
       insert: (payload: Record<string, unknown>) => {
         inserted.push(payload)
         return {
@@ -100,6 +108,7 @@ function namesOf(items: unknown): string[] {
 
 beforeEach(() => {
   inserted = []
+  updated = []
   planUserFilters = []
   rpcCalls = []
   config = { plan: PLAN, profile: { num_personas: 2 }, slots: [slot('lunes', 'tortilla', ['huevo', 'patata'])] }
@@ -251,5 +260,47 @@ describe('generate-shopping-list/index.ts', () => {
   test('500 on any other save failure', async () => {
     config.saveError = { code: 'XX000' }
     expect((await call()).status).toBe(500)
+  })
+
+  describe('refresh: rebuild the list in place (FRESCO-1010)', () => {
+    const refresh = () => call({ meal_plan_id: 'mp_1', refresh: true })
+    const OLD = { id: 'sl_old', items: [{ nombre: 'Verduras', orden: 1, items: [{ nombre: 'Patata', cantidad: 1, unidad: 'kg', comprado: true }] }] }
+
+    test('404 when there is no list to refresh, and nothing is written', async () => {
+      expect((await refresh()).status).toBe(404)
+      expect(inserted).toEqual([])
+      expect(updated).toEqual([])
+    })
+
+    test('updates the existing list in place: same id, no insert, stale flag cleared, cost refreshed', async () => {
+      config.existingList = OLD
+      const res = await refresh()
+      expect(res.status).toBe(200)
+      const body = await res.json() as { shopping_list_id: string, resumen: { total_items: number, coste_estimado_min: number, coste_estimado_max: number, moneda: string } }
+      expect(body.shopping_list_id).toBe('sl_old')
+      expect(body.resumen.moneda).toBe('EUR')
+      expect(body.resumen.total_items).toBeGreaterThan(0)
+      expect(inserted).toEqual([])
+      expect(updated).toHaveLength(1)
+      expect(updated[0].id).toBe('sl_old')
+      expect(updated[0].payload).toMatchObject({
+        desactualizada_desde: null,
+        coste_estimado_min: body.resumen.coste_estimado_min,
+        coste_estimado_max: body.resumen.coste_estimado_max,
+      })
+    })
+
+    test('an old list with no items is rebuilt from the plan alone', async () => {
+      config.existingList = { id: 'sl_old', items: null }
+      const res = await refresh()
+      expect(res.status).toBe(200)
+      expect(namesOf(updated[0].payload.items)).toContain('huevo')
+    })
+
+    test('500 when the in-place update fails', async () => {
+      config.existingList = OLD
+      config.refreshError = { message: 'db down' }
+      expect((await refresh()).status).toBe(500)
+    })
   })
 })

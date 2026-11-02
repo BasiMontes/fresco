@@ -59,6 +59,11 @@ export interface FakeEdgeClientConfig {
   rpc?: Record<string, { data?: unknown, error?: unknown }>
   /** Keyed by table → the row(s) a `select` chain resolves to. */
   rows?: Record<string, unknown>
+  /**
+   * Keyed by table → the `{ data, error }` each successive `select` on that table resolves to,
+   * for handlers that read one table twice. Once the list runs out, `rows` / `selectError` apply.
+   */
+  selectResults?: Record<string, Array<{ data?: unknown, error?: unknown }>>
   /** Keyed by table → a `select` error. */
   selectError?: Record<string, unknown>
   /** Keyed by table → the error the terminal `.eq()` of an `update` resolves with. */
@@ -101,11 +106,17 @@ export function fakeEdgeClient(config: FakeEdgeClientConfig = {}): FakeEdgeClien
   const upserts: FakeEdgeClient['upserts'] = [];
   const deletedUserIds: string[] = [];
 
+  const selectCalls: Record<string, number> = {};
+
   function selectChain(table: string): Record<string, unknown> {
-    const resolve = async () => ({
-      data: config.rows?.[table] ?? null,
-      error: config.selectError?.[table] ?? null,
-    });
+    const queued = config.selectResults?.[table]?.[selectCalls[table] ??= 0];
+    selectCalls[table] += 1;
+    const resolve = async () => queued
+      ? { data: queued.data ?? null, error: queued.error ?? null }
+      : {
+          data: config.rows?.[table] ?? null,
+          error: config.selectError?.[table] ?? null,
+        };
     const chain: Record<string, unknown> = {
       eq: () => chain,
       neq: () => chain,
