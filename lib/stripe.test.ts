@@ -400,7 +400,7 @@ describe('stripe client (lazy, fail-fast)', () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_unit_only';
     expect(typeof stripe.customers.create).toBe('function');
     expect(stripe.checkout.sessions).toBe(stripe.checkout.sessions);
-    expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe('2026-09-30.endive');
+    expect((stripe as unknown as { getApiField: (k: string) => string }).getApiField('version')).toBe('2026-10-28.endive');
   });
 });
 

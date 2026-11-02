@@ -88,7 +88,7 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  const stripe = new Stripe(key, { apiVersion: '2026-09-30.endive' });
+  const stripe = new Stripe(key, { apiVersion: '2026-10-28.endive' });
   const endpoints: WebhookEndpoint[] = [];
   for await (const endpoint of stripe.webhookEndpoints.list({ limit: 100 })) {
     endpoints.push({ id: endpoint.id, url: endpoint.url, status: endpoint.status });
