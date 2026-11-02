@@ -41,7 +41,8 @@
  * number sits a few points higher. A ratchet needs a stable, conservative
  * number, not a precise one. Functions have no honest figure: counting them
  * in unloaded files needs an AST parse, not worth it for a floor.
- * Generated files (`GENERATED_FILES`) never enter the denominator.
+ * Generated files (`GENERATED_FILES`), test support (`isTestSupport`) and files that only declare
+ * types (`isTypeOnly`) never enter the denominator: no test could hit them.
  *
  * ## The floor
  *
@@ -143,8 +144,12 @@ export const FLOOR = { functions: 93.0, lines: 96.0 } as const;
  * shopping-list API, the lazy identity helpers, the forgot-password page, analytics identity linkage, the
  * push prompt and the dropdown. 44 files remain that no test imports: internal pages, skeletons, type-only
  * files and one test fixture.
+ * 2026-11-02 (FRESCO-1080, metric change, owner decision): files that only declare types and test support
+ * (fixture folders and `*.fixture.ts`) leave the denominator, because no test could ever hit them. That is
+ * 10 type-only files and one fixture, 322 lines: measured 91.69 % before and 92.80 % after, on the same tests.
+ * Floored at 92.0. 33 files remain that no test imports.
  */
-export const HONEST_FLOOR_LINES = 91.0;
+export const HONEST_FLOOR_LINES = 92.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
@@ -154,6 +159,29 @@ const GENERATED_FILES = new Set(['lib/supabase/types.ts']);
 
 /** Path prefixes whose files are not part of the ratchet. */
 const IGNORE_PREFIXES = ['tests/', 'scripts/', 'cli/', 'bun-test-setup.ts'];
+
+/**
+ * FRESCO-1080: test support that lives next to the code (a `fixtures/` or `__fixtures__/` folder, a
+ * `*.fixture.ts` file). Like `tests/`, its coverage says nothing about the product, so it enters neither
+ * the loaded figures nor the honest denominator.
+ */
+export function isTestSupport(path: string): boolean {
+  return /(?:^|\/)(?:__fixtures__|fixtures)\//.test(path) || /\.fixtures?\.tsx?$/.test(path);
+}
+
+/**
+ * FRESCO-1080: a file that declares only types and interfaces has no executable line, so no test could
+ * ever hit it and counting it as unloaded would only drag the honest figure down. Decided by content, not
+ * by name: a `types.ts` that also exports a constant or a function is NOT type-only and still counts.
+ */
+export function isTypeOnly(source: string): boolean {
+  const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const runtime = /^\s*export\s+default\b/m.test(code)
+    || /^\s*export\s+(?:async\s+)?(?:const|let|var|function|class|enum)\b/m.test(code)
+    || /^\s*(?:async\s+)?(?:const|let|var|function|class|enum)\b/m.test(code)
+    || /^\s*export\s*(?:\*|\{)/m.test(code);
+  return !runtime;
+}
 
 export interface Totals { fnFound: number, fnHit: number, lineFound: number, lineHit: number, loaded: Set<string> }
 
@@ -165,7 +193,7 @@ export function parseLcov(lcov: string): Totals {
     const line = raw.trim();
     if (line.startsWith('SF:')) {
       const path = line.slice(3);
-      currentFileIgnored = IGNORE_PREFIXES.some(p => path.startsWith(p));
+      currentFileIgnored = IGNORE_PREFIXES.some(p => path.startsWith(p)) || isTestSupport(path);
       if (!currentFileIgnored) { t.loaded.add(path); }
       continue;
     }
@@ -228,6 +256,7 @@ function isSourceFile(path: string): boolean {
     && !/\.(?:test|spec)\.tsx?$/.test(path)
     && !path.endsWith('.d.ts')
     && !path.includes('__tests__/')
+    && !isTestSupport(path)
     && !GENERATED_FILES.has(path);
 }
 
@@ -243,6 +272,7 @@ async function listUnloadedFiles(loaded: Set<string>): Promise<UnloadedFile[]> {
   for (const path of listing.split('\n').filter(isSourceFile)) {
     if (loaded.has(path)) { continue; }
     const source = await Bun.file(path).text();
+    if (isTypeOnly(source)) { continue; }
     const lines = source.split('\n').filter((raw) => {
       const l = raw.trim();
       return l !== '' && !l.startsWith('//') && !l.startsWith('/*') && !l.startsWith('*');

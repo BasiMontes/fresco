@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { figuresOf, FLOOR, floorViolations, HONEST_FLOOR_LINES, parseLcov, summaryMarkdown } from './check-coverage';
+import { figuresOf, FLOOR, floorViolations, HONEST_FLOOR_LINES, isTestSupport, isTypeOnly, parseLcov, summaryMarkdown } from './check-coverage';
 
 /**
  * FRESCO-990 (audit 7b A7-TEST-07): the CI gate fails on the HONEST figure, the one that counts files no test
@@ -51,6 +51,45 @@ describe('floorViolations', () => {
 describe('parseLcov', () => {
   test('ignores tests/, scripts/ and cli/ files', () => {
     const totals = parseLcov(record('tests/x.ts', 50, 50) + record('scripts/y.ts', 50, 50) + record('cli/z.ts', 50, 50) + record('lib/a.ts', 10, 5));
+
+    expect(totals.lineFound).toBe(10);
+    expect([...totals.loaded]).toEqual(['lib/a.ts']);
+  });
+});
+
+describe('lines no test could ever hit stay out of the denominator (FRESCO-1080)', () => {
+  test('isTypeOnly: interfaces, type aliases and type imports only', () => {
+    expect(isTypeOnly('import type { A } from \'./a\';\n\n/** Doc. */\nexport interface B { a: A }\nexport type C = B | null;\n// note\n')).toBe(true);
+    expect(isTypeOnly('')).toBe(true);
+  });
+
+  test('isTypeOnly: any runtime declaration makes the file count, whatever its name', () => {
+    expect(isTypeOnly('export interface A { a: 1 }\nexport const LIMIT = 10;\n')).toBe(false);
+    expect(isTypeOnly('export function f(): void {}\n')).toBe(false);
+    expect(isTypeOnly('export async function f(): Promise<void> {}\n')).toBe(false);
+    expect(isTypeOnly('export class A {}\n')).toBe(false);
+    expect(isTypeOnly('export enum E { A }\n')).toBe(false);
+    expect(isTypeOnly('const x = 1;\nexport type X = typeof x;\n')).toBe(false);
+    expect(isTypeOnly('export default 1;\n')).toBe(false);
+    expect(isTypeOnly('export { a } from \'./a\';\n')).toBe(false);
+    expect(isTypeOnly('export * from \'./a\';\n')).toBe(false);
+  });
+
+  test('isTypeOnly: code that only appears in a comment does not count', () => {
+    expect(isTypeOnly('/* export const A = 1; */\n// export function f() {}\nexport type T = string;\n')).toBe(true);
+  });
+
+  test('isTestSupport: fixture folders and fixture files, nothing else', () => {
+    for (const path of ['components/__fixtures__/page-shells.tsx', 'lib/fixtures/mock-supabase-client.ts', 'supabase/functions/_shared/push-endpoint.fixtures.ts', 'supabase/functions/generate-shopping-list/catalog-units.fixture.ts']) {
+      expect(isTestSupport(path)).toBe(true);
+    }
+    for (const path of ['lib/fixtures-loader.ts', 'components/menu/menu-view.tsx', 'lib/api/fixture.ts.bak']) {
+      expect(isTestSupport(path)).toBe(false);
+    }
+  });
+
+  test('parseLcov leaves test support out of the loaded figures too', () => {
+    const totals = parseLcov(record('lib/fixtures/mock.ts', 50, 50) + record('components/__fixtures__/x.tsx', 50, 50) + record('lib/a.ts', 10, 5));
 
     expect(totals.lineFound).toBe(10);
     expect([...totals.loaded]).toEqual(['lib/a.ts']);
