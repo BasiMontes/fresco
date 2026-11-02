@@ -101,6 +101,10 @@ measurement is deterministic run-to-run, but the CI runner can differ slightly).
   from 80.14). Behaviour tests for the consent read, week navigation, the household, identity and
   signup steps, the notifications, calendar and historial pages, the onboarding hooks, the profile
   cards and the favorites grid (PRs #851, #852, #853). 73 files remain that no test imports.
+- 2026-11-02 (FRESCO-1079, tranche 6 closed): honest lines **raised** 85.0 to 90.0 (measured 90.77 in CI,
+  from 85.50). Behaviour tests for the favorites, shopping-list, menu, recipes and profile pages and the
+  (app) layout, the root layout, the error pages, the manifest, the landing, the signup and onboarding
+  pages, the preferences page and the waitlist page (PRs #855, #856). 44 files remain that no test imports.
 
 ## Tranches (honest lines)
 
@@ -114,7 +118,8 @@ tranche is a floor, raised in a PR of its own once the number has held for a few
 | 3 | 70 % | Set by the owner 2026-10-19 | **Done** (FRESCO-991, 2026-10-21): measured 75.46 %, floored at 75.0 |
 | 4 | 80 % | FRESCO-1072 | **Done** (2026-11-02): measured 80.14 %, floored at 79.5 |
 | 5 | 85 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1078, 2026-11-02): measured 85.50 %, floored at 85.0 |
-| 6 | 90 % | Proposed, not yet set by the owner | **Not started**: about 4.5 points left; start from `bun scripts/check-coverage.ts --print --unloaded` and the loaded files with most uncovered lines |
+| 6 | 90 % | Proposed in the doc, taken on by the owner 2026-11-02 | **Done** (FRESCO-1079, 2026-11-02): measured 90.77 %, floored at 90.0 |
+| 7 | 93 % | Proposed, not yet set by the owner | **Not started**: about 2 points left. What is left unloaded is mostly the internal `app/qa` page and its components (about 430 lines) and `components/__fixtures__/page-shells.tsx`, a test fixture that probably should not count in the denominator at all (a change to the metric, to be decided by the owner); `bun scripts/check-coverage.ts --print --unloaded` lists the rest |
 
 **Where the gap is** (uncovered lines counted on 2026-10-14, by area): `components/calendar`
 847, `app/(app)` 804, `components/recipes` 705, `components/profile` 675,

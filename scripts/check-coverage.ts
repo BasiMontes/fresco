@@ -133,8 +133,11 @@ export const FLOOR = { functions: 89.5, lines: 90.7 } as const;
  * 2026-11-02 (FRESCO-1078, tranche 5 closed): measured 85.50 % (CI, after PRs 851, 852 and 853),
  * floored at 85.0. The consent read, week navigation, the (app) pages, the onboarding and signup
  * steps and hooks, and the profile cards. 73 files remain that no test imports.
+ * 2026-11-02 (FRESCO-1079, tranche 6 closed): measured 90.77 % (CI, after PRs 855 and 856),
+ * floored at 90.0. The remaining (app) pages and layout, the root layout, the error pages, the
+ * manifest, the landing and the signup and onboarding pages. 44 files remain that no test imports.
  */
-export const HONEST_FLOOR_LINES = 85.0;
+export const HONEST_FLOOR_LINES = 90.0;
 
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
