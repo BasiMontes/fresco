@@ -4,16 +4,13 @@ import * as userProfileApi from '@/lib/api/user-profile';
 import { getIsoWeek } from '@/lib/date/iso-week';
 import { makeFixtureWeekGrid } from '@/lib/fixtures/recipe';
 import { renderWithProviders, screen } from '@/tests/component-render';
+import { headersState } from '@/tests/mocks/next-headers';
 import '@/tests/mocks/next-navigation';
 
 // FRESCO-1078 — /calendar: the week it reads, the empty state when there is no plan,
 // and the week-1 learning card that a free user always sees until they dismiss it.
 // Only the Supabase client, the cookie jar and the data reads are replaced.
 
-let cookieValue: string | undefined;
-void mock.module('next/headers', () => ({
-  cookies: async () => ({ get: (_name: string) => (cookieValue === undefined ? undefined : { value: cookieValue }) }),
-}));
 void mock.module('@/lib/supabase/server', () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: 'user-1' } }, error: null }) } }),
 }));
@@ -32,7 +29,7 @@ let prefsSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getUserDietaryPref
 let errorSpy: ReturnType<typeof spyOn<typeof console, 'error'>>;
 
 beforeEach(() => {
-  cookieValue = undefined;
+  headersState.cookies = {};
   planSpy = spyOn(mealPlanApi, 'getMealPlanForWeek').mockResolvedValue(makePlan());
   userPlanSpy = spyOn(userProfileApi, 'getUserPlan').mockResolvedValue('free');
   prefsSpy = spyOn(userProfileApi, 'getUserDietaryPreferences').mockResolvedValue(null as never);
@@ -102,7 +99,7 @@ describe('CalendarPage with a plan', () => {
   });
 
   test('once the notice is dismissed (cookie) it gives way to the reopen link', async () => {
-    cookieValue = '1';
+    headersState.cookies = { learning_bridge_dismissed: '1' };
     await renderPage();
     expect(screen.queryByTestId('learning_free_tier_notice')).toBeNull();
     expect(screen.getByTestId('learning_bridge_reopen')).toBeInTheDocument();
@@ -111,7 +108,7 @@ describe('CalendarPage with a plan', () => {
   test('a Pro user who has already marked dishes gets neither the card nor the reopen link', async () => {
     userPlanSpy.mockResolvedValue('pro');
     planSpy.mockResolvedValue(makePlan((plan) => { plan.estados.lunes.comida = 'cocinada'; }));
-    cookieValue = '1';
+    headersState.cookies = { learning_bridge_dismissed: '1' };
     await renderPage();
     expect(screen.queryByTestId('learning_bridge_card')).toBeNull();
     expect(screen.queryByTestId('learning_bridge_reopen')).toBeNull();
