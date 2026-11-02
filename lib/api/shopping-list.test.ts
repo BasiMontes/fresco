@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerateShoppingListResponse } from '@/lib/api/types';
 import type { Database } from '@/lib/supabase/types';
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, spyOn, test } from 'bun:test';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
-import { diffNombresNuevos, getShoppingListForPlan, listaDesactualizadaDeSlot, normalizeNombre, removeShoppingListItem, ShoppingListError, toggleShoppingListItem } from './shopping-list';
+import { addShoppingListItem, clearComprados, diffNombresNuevos, getNombresNuevos, getShoppingListForPlan, listaDesactualizadaDeSlot, normalizeNombre, removeShoppingListItem, ShoppingListError, toggleShoppingListItem } from './shopping-list';
 
 const MEAL_PLAN_ID = 'plan-1';
 
@@ -269,5 +269,104 @@ describe('listaDesactualizadaDeSlot (FRESCO-1010)', () => {
     const client = { from: () => { throw new Error('boom'); } } as unknown as SupabaseClient<Database>;
 
     expect(await listaDesactualizadaDeSlot(client, 'slot-1')).toBe(false);
+  });
+});
+
+describe('clearComprados', () => {
+  test('forwards the list id to the RPC and resolves', async () => {
+    const { client, rpcCalls } = createRpcMockClient();
+
+    expect(await clearComprados(client, 'list-1')).toBeUndefined();
+    expect(rpcCalls).toEqual([{ p_list_id: 'list-1' }]);
+  });
+
+  test('throws ShoppingListError when the RPC fails', async () => {
+    const { client } = createRpcMockClient({ errorMessage: 'list not found' });
+
+    await expectRejection(clearComprados(client, 'list-1'));
+  });
+});
+
+describe('addShoppingListItem', () => {
+  test('sends the item as plain JSON, dropping undefined optionals the jsonb column cannot hold', async () => {
+    const { client, rpcCalls } = createRpcMockClient();
+
+    await addShoppingListItem(client, {
+      listId: 'list-1',
+      pasilloNombre: 'Especias',
+      item: { nombre: 'Jengibre', cantidad: 1, unidad: 'ud', comprado: false, origen: undefined },
+    });
+
+    expect(rpcCalls).toEqual([{
+      p_list_id: 'list-1',
+      p_pasillo_nombre: 'Especias',
+      p_item: { nombre: 'Jengibre', cantidad: 1, unidad: 'ud', comprado: false },
+    }]);
+    expect('origen' in (rpcCalls[0] as { p_item: object }).p_item).toBe(false);
+  });
+
+  test('throws ShoppingListError when the RPC fails', async () => {
+    const { client } = createRpcMockClient({ errorMessage: 'not owned by caller' });
+
+    await expectRejection(addShoppingListItem(client, {
+      listId: 'list-1',
+      pasilloNombre: 'Especias',
+      item: { nombre: 'Jengibre', cantidad: 1, unidad: 'ud', comprado: false },
+    }));
+  });
+});
+
+describe('getNombresNuevos (FRESCO-194 "Nuevo" badge, fail-soft)', () => {
+  // A persisted plan always carries its 21 slots; a slot with no recipe is a valid row.
+  const SLOTS_VACIOS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].flatMap(dia =>
+    ['desayuno', 'comida', 'cena'].map(tipo => ({ id: `${dia}-${tipo}`, dia, tipo_plato: tipo, estado: 'pendiente', recipes: null })),
+  );
+  const PLAN_PREVIO = { id: 'plan-0', semana_iso: '2026-W41', advertencias: [], explicacion_aprendizaje: null, meal_plan_recipes: SLOTS_VACIOS };
+  const LISTA_PREVIA = { ...SAMPLE_LIST_ROW, id: 'list-0', meal_plan_id: 'plan-0' };
+  const ACTUALES: GenerateShoppingListResponse['pasillos'] = [
+    { nombre: 'Varios', orden: 1, items: [{ nombre: 'Tomate', cantidad: 1, unidad: 'ud', comprado: false }, { nombre: 'Pan', cantidad: 1, unidad: 'ud', comprado: false }] },
+  ];
+
+  /** A client that answers per table, as the real one does: the prior plan, then the prior list. */
+  function clientPorTabla(data: Record<string, unknown>, failing?: string) {
+    const from = (table: string) => {
+      const builder: Record<string, unknown> = {};
+      for (const method of ['select', 'eq', 'maybeSingle']) { builder[method] = () => builder; }
+      builder.then = async (resolve: (value: unknown) => unknown) => Promise.resolve(
+        failing === table
+          ? { data: null, error: { message: 'connection reset' } }
+          : { data: data[table] ?? null, error: null },
+      ).then(resolve);
+      return builder;
+    };
+    return { from } as unknown as SupabaseClient<Database>;
+  }
+
+  const ejecutar = async (client: SupabaseClient<Database>) => getNombresNuevos(client, { semanaIsoActual: '2026-W42', pasillosActuales: ACTUALES, userId: 'user-1' });
+
+  test('flags what is on this week\'s list and was not on the prior week\'s', async () => {
+    const nuevos = await ejecutar(clientPorTabla({ meal_plans: PLAN_PREVIO, shopping_lists: LISTA_PREVIA }));
+
+    expect([...nuevos]).toEqual(['pan']);
+  });
+
+  test('no prior week plan means no badges', async () => {
+    expect((await ejecutar(clientPorTabla({}))).size).toBe(0);
+  });
+
+  test('a prior week without a generated list means no badges', async () => {
+    expect((await ejecutar(clientPorTabla({ meal_plans: PLAN_PREVIO }))).size).toBe(0);
+  });
+
+  test('any read error means no badges and never throws', async () => {
+    const consoleError = spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect((await ejecutar(clientPorTabla({ meal_plans: PLAN_PREVIO }, 'meal_plans'))).size).toBe(0);
+      expect((await ejecutar(clientPorTabla({ meal_plans: PLAN_PREVIO, shopping_lists: LISTA_PREVIA }, 'shopping_lists'))).size).toBe(0);
+      expect(consoleError).toHaveBeenCalledTimes(2);
+    }
+    finally {
+      consoleError.mockRestore();
+    }
   });
 });
