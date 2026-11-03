@@ -10,11 +10,19 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 const updateUser = mock(async (_attributes: unknown): Promise<{ error: { code?: string, message: string, status?: number } | null }> => ({ error: null }));
 let supa = fakeSupabase();
+let service = fakeSupabase();
+let serviceThrows = false;
 const realFetch = globalThis.fetch;
 let cloudflare: (() => Response | Promise<Response>) | null = null;
 const cloudflareCalls: URLSearchParams[] = [];
 
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
+void mock.module('@/lib/supabase/service', () => ({
+  createServiceClient: () => {
+    if (serviceThrows) { throw new Error('SUPABASE_SERVICE_ROLE_KEY is required'); }
+    return service.client;
+  },
+}));
 
 const { POST } = await import('./route');
 
@@ -46,6 +54,8 @@ beforeEach(() => {
     return realFetch(url, init);
   }) as unknown as typeof fetch;
   supa = ctx();
+  service = fakeSupabase();
+  serviceThrows = false;
 });
 
 afterEach(() => {
@@ -217,5 +227,70 @@ describe('POST /api/auth/guest-email — the limit and the update (FRESCO-1006)'
 
     expect(res.status).toBe(422);
     expect(await res.json()).toEqual({ error: { code: 'email_exists', message: 'A user with this email address has already been registered' } });
+  });
+});
+
+describe('POST /api/auth/guest-email — the grant the database demands (FRESCO-1085)', () => {
+  test('asks the database for a one-shot grant for the guest BEFORE Auth is asked to write the email', async () => {
+    const order: string[] = [];
+    service = fakeSupabase({}, undefined, async (name) => { order.push(name); return { data: true, error: null }; });
+    updateUser.mockImplementationOnce(async () => { order.push('updateUser'); return { error: null }; });
+
+    expect((await POST(req(valid))).status).toBe(200);
+
+    expect(order).toEqual(['check_ip_rate_limit', 'grant_guest_email_change', 'updateUser']);
+    expect(service.rpcCalls[1]).toEqual(['grant_guest_email_change', { p_user_id: 'guest_1' }]);
+  });
+
+  test('limits per IP, keyed on the first forwarded address, 10 an hour', async () => {
+    await POST(req(valid));
+
+    const [name, args] = service.rpcCalls[0] as [string, { p_endpoint: string, p_limit: number, p_key_hash: string }];
+    expect(name).toBe('check_ip_rate_limit');
+    expect(args.p_endpoint).toBe('guest-email-change');
+    expect(args.p_limit).toBe(10);
+    expect(args.p_key_hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  test('429 when the IP is over its limit: no grant, no Auth call', async () => {
+    service = fakeSupabase({}, undefined, async () => ({ data: false, error: null }));
+
+    const res = await POST(req(valid));
+
+    expect(res.status).toBe(429);
+    expect(await code(res)).toBe('over_email_send_rate_limit');
+    expect(service.rpcCalls.map(([name]) => name)).toEqual(['check_ip_rate_limit']);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  test('fails closed: an IP limiter that errors is a 500', async () => {
+    service = fakeSupabase({}, undefined, async () => ({ data: null, error: new Error('rpc down') }));
+
+    expect((await POST(req(valid))).status).toBe(500);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  test('fails closed: a grant that cannot be written is a 500, Auth is not asked', async () => {
+    service = fakeSupabase({}, undefined, async name => (name === 'grant_guest_email_change' ? { data: null, error: new Error('boom') } : { data: true, error: null }));
+
+    expect((await POST(req(valid))).status).toBe(500);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  test('fails closed: no service-role key means a 500, never an ungranted update', async () => {
+    serviceThrows = true;
+
+    expect((await POST(req(valid))).status).toBe(500);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  test('a request that fails the captcha or the guest limit never reaches the grant', async () => {
+    supa = ctx(GUEST, async () => ({ data: false, error: null }));
+    expect((await POST(req(valid))).status).toBe(429);
+
+    supa = ctx();
+    expect((await POST(req({ email: 'ana@example.com' }))).status).toBe(400);
+
+    expect(service.rpcCalls).toHaveLength(0);
   });
 });
