@@ -35,8 +35,27 @@ remediation epic is genuinely closed: **every child `Finalizada`, the epic
 backlog a single legible queue instead of three interleaved ones, and forces each
 pass's findings to actually land before the next pass piles on.
 
-If a pass must run while an epic is still open (an emergency trigger), its findings
-are **appended to the open epic**, not spun into a parallel one.
+If a pass must run while an epic is still open, its findings are **appended to the
+open epic**, not spun into a parallel one. An off-cycle pass is allowed in two cases:
+
+- **An emergency trigger** (a security disclosure, a failed gate).
+- **An explicit owner decision** to measure progress before the epic closes (for
+  example, to see how far the remediation has moved a score or a finding count).
+
+Conditions for any off-cycle pass:
+
+- The decision is **recorded in the pass's consolidated report**, with the open
+  epic's key and its child status counts at that moment.
+- Children go under the **open epic** with their own label (for example
+  `auditoria-8`), never under a new epic. Low and informative findings are grouped
+  into one hygiene card per axis, as in audit 6 and audit 8.
+- The pass does not reset the clock of §1: the next regular pass is still counted
+  from the last regular one.
+
+Precedent: audit 8 (2026-11-03) ran while FRESCO-986 was open, by owner decision.
+Its cards (FRESCO-1085 to FRESCO-1105 and the hygiene cards FRESCO-1106 to
+FRESCO-1114) sit under FRESCO-986. The child status counts at that moment are in its
+consolidated report, `2026-11-03-audit-8/consolidated.md`.
 
 ## 3. Hard definition of "Finalizada" (DoD)
 
