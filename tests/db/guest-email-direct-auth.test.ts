@@ -8,7 +8,9 @@
  * Real GoTrue and real Postgres: a mocked Auth proves nothing about a trigger. The only successful
  * email change in this file sends one mail to the local inbox, under the local `email_sent` limit.
  *
- * Runs only when `RUN_DB_INTEGRATION=1` AND the local Supabase stack answers — `bun run test:db`.
+ * Manual: runs only when `RUN_DB_INTEGRATION=1`, the local stack answers AND it mails confirmations
+ * (see `registerWhenAuthMails`). CI covers the trigger with the pgTAP twin
+ * `supabase/tests/guest_email_change_grant.test.sql`.
  */
 
 import type { DbTestUser } from './harness';
@@ -34,6 +36,16 @@ async function authMailsConfirmations(): Promise<boolean> {
   }
 }
 const mails = RUN && reachable ? await authMailsConfirmations() : false;
+
+/**
+ * Registers the suite only when the stack mails confirmations. Not `describe.skipIf`: the CI job
+ * refuses any `skip` line (FRESCO-781), and its stack has no inbox (`-x inbucket`), so there Auth
+ * would fail to send. Run it by hand with `[auth.email] enable_confirmations = true` and the
+ * default stack (`RUN_DB_INTEGRATION=1 bun test tests/db/guest-email-direct-auth.test.ts`).
+ */
+function registerWhenAuthMails(name: string, suite: () => void) {
+  if (RUN && reachable && mails) { describe(name, suite); }
+}
 
 interface Guest { id: string, token: string }
 
@@ -74,7 +86,7 @@ async function deleteGuest(id: string) {
   }).catch(() => undefined);
 }
 
-describe.skipIf(!(RUN && reachable && mails))('guest email change needs the grant (real Auth + DB)', () => {
+registerWhenAuthMails('guest email change needs the grant (real Auth + DB)', () => {
   const ctx = createDbTestContext();
   const guests: Guest[] = [];
   let registered: DbTestUser;
