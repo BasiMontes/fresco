@@ -3,13 +3,50 @@ import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
 import { isCaptchaConfigured } from '@/lib/auth/captcha';
 import { verifyTurnstileToken } from '@/lib/auth/turnstile-verify';
+import { withinIpLimit } from '@/lib/legal/waitlist';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 const RATE_LIMIT_ENDPOINT = 'guest-email-change';
 const RATE_LIMIT_PER_HOUR = 3;
+const RATE_LIMIT_PER_IP_PER_HOUR = 10;
 const RATE_LIMIT_WINDOW_SECONDS = 3600;
 const MAX_EMAIL_LENGTH = 254;
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/;
+
+/**
+ * FRESCO-1085: per-IP ceiling (a disposable guest rotates user.id, an IP is harder to rotate), then
+ * the one-shot grant the database trigger on auth.users demands before Auth may write a pending
+ * email. Both need the service-role client; if it is unavailable the route refuses, never passes.
+ * Returns the refusal to send, or `null` when the update may go ahead.
+ */
+async function grantEmailChange(headers: Headers, userId: string): Promise<NextResponse | null> {
+  const failure = () => NextResponse.json({ error: { code: 'unexpected_failure', message: 'No se pudo enviar el código.' } }, { status: 500 });
+  try {
+    const service = createServiceClient();
+
+    const ip = await withinIpLimit(service, { headers, endpoint: RATE_LIMIT_ENDPOINT, limit: RATE_LIMIT_PER_IP_PER_HOUR });
+    if (ip.error) {
+      console.error('[/api/auth/guest-email] IP rate-limit check failed', ip.error);
+      return failure();
+    }
+    if (!ip.allowed) {
+      return NextResponse.json({ error: { code: 'over_email_send_rate_limit', message: 'Demasiados intentos.' } }, { status: 429 });
+    }
+
+    const { error: grantError } = await service.rpc('grant_guest_email_change', { p_user_id: userId });
+    if (grantError) {
+      console.error('[/api/auth/guest-email] could not grant the email change', grantError);
+      return failure();
+    }
+    return null;
+  }
+  catch (caught) {
+    console.error('[/api/auth/guest-email] the service client is unavailable', caught);
+    Sentry.captureException(caught);
+    return failure();
+  }
+}
 
 /**
  * POST /api/auth/guest-email — step 1 of the guest-to-account conversion (FRESCO-19, FRESCO-89):
@@ -83,6 +120,9 @@ export async function POST(request: NextRequest) {
   if (allowed !== true) {
     return NextResponse.json({ error: { code: 'over_email_send_rate_limit', message: 'Demasiados intentos.' } }, { status: 429 });
   }
+
+  const refusal = await grantEmailChange(request.headers, user.id);
+  if (refusal) { return refusal; }
 
   const { error } = await supabase.auth.updateUser({ email: address });
   if (error) {
