@@ -1,8 +1,12 @@
 #!/usr/bin/env bun
 
-// FRESCO-435 — last step of the manual Qwen Studio photo-generation
-// workflow (see scripts/build-photo-prompts.ts header). Takes the prompts
-// JSON that script produced plus a local folder of saved images, uploads
+// FRESCO-435 / FRESCO-1084 — last step of the photo-generation pipeline (see
+// the scripts/build-photo-prompts.ts header). The images come from
+// scripts/generate-photos-cloudflare.ts, or from a manual Qwen Studio session:
+// the only contract is the "<index>-<slug>.<ext>" file name. This script takes
+// the prompts JSON that build-photo-prompts.ts produced (it only reads index,
+// id, slug and nombre, so the prompt language does not matter here) plus a
+// local folder of saved images, uploads
 // each image to the `recipe-photos` Storage bucket (migration
 // 20260926120000), and points the matching recipe's `foto_url` at the
 // resulting public URL.
