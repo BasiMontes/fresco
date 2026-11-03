@@ -8,7 +8,9 @@
  *   3. a `sin_gluten` recipe never names plain tamari or nachos: it says "tamari sin gluten" /
  *      "nachos sin gluten", so the ingredient tells the buyer which product to pick;
  *   4. a product the steps name is also in the ingredient list (bechamel, crema de limón, salsa de
- *      soja, vinagre, curry), so the shopping list buys it.
+ *      soja, vinagre, curry), so the shopping list buys it;
+ *   5. FRESCO-1086 (audit 8 A8-SAFEA-01): a recipe that says César, in its name or its text, carries
+ *      `huevo` and `pescado` (the dressing is egg yolk and anchovy) and never claims `sin_huevo`.
  *
  * Inactive rows too, so a reactivated recipe is already right.
  *
@@ -24,6 +26,7 @@ const reachable = RUN ? await stackReachable() : false;
 
 interface Row {
   slug: string
+  nombre: string
   alergenos: string[]
   dieta: Record<string, boolean> | null
   ingredientes_principales: string[]
@@ -50,7 +53,7 @@ describe.skipIf(!(RUN && reachable))('compound products over the catalogue (real
   async function catalogue() {
     const rows = await restAll<Row>('recipes', {
       serviceRole: true,
-      select: 'slug,alergenos,dieta,ingredientes_principales,pasos_resumen',
+      select: 'slug,nombre,alergenos,dieta,ingredientes_principales,pasos_resumen',
       order: 'id',
     });
     expect(rows.length).toBeGreaterThan(1000);
@@ -88,5 +91,16 @@ describe.skipIf(!(RUN && reachable))('compound products over the catalogue (real
         .map(row => `${row.slug}: ${product}`));
 
     expect(missing).toEqual([]);
+  });
+
+  test('every recipe that says César, in its name or its text, carries huevo and pescado and is not sin_huevo (the query returns 0)', async () => {
+    const caesar = (await catalogue()).filter(row => /c[eé]sar/i.test(`${row.nombre} \n ${text(row)}`));
+    expect(caesar.length).toBeGreaterThanOrEqual(16);
+
+    const wrong = caesar
+      .filter(row => !row.alergenos.includes('huevo') || !row.alergenos.includes('pescado') || row.dieta?.sin_huevo === true)
+      .map(row => row.slug);
+
+    expect(wrong).toEqual([]);
   });
 });
