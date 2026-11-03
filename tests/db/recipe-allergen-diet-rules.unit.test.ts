@@ -126,6 +126,22 @@ describe('the oracle reads the steps together with the ingredients (A7-TEST-01)'
     expect(reports(padThai, 'sin_gluten es true con gluten en el texto')).toBe(true);
   });
 
+  test('a Caesar dressing needs huevo and pescado, accent or not (FRESCO-1086)', () => {
+    for (const dressing of ['aliño césar', 'aliño cesar', 'salsa César']) {
+      const problems = auditRecipe(recipe(['lechuga romana', dressing], { alergenos: ['lactosa'] }));
+
+      expect(problems.some(message => message.includes('falta huevo'))).toBe(true);
+      expect(problems.some(message => message.includes('falta pescado'))).toBe(true);
+    }
+    expect(reports(recipe(['lechuga romana', 'aliño César'], { alergenos: ['huevo', 'pescado'] }), 'falta')).toBe(false);
+  });
+
+  test('a Caesar recipe cannot claim sin_huevo (FRESCO-1086)', () => {
+    const claim = recipe(['lechuga romana', 'aliño césar'], { alergenos: ['pescado'], dieta: { ...RELIGIOUS, sin_huevo: true } });
+
+    expect(reports(claim, 'sin_huevo')).toBe(true);
+  });
+
   test('a sub-recipe named only in a step is found: "crema de limón" needs huevo, "bechamel" needs gluten', () => {
     expect(reports(recipe(['limón', 'harina', 'mantequilla'], { alergenos: ['gluten', 'lactosa'], pasos_resumen: ['Añadir la crema de limón y hornear'] }), 'falta huevo (paso:')).toBe(true);
     expect(reports(recipe(['berenjena', 'ternera'], { alergenos: ['lactosa'], pasos_resumen: ['Montar capas con bechamel y hornear'] }), 'falta gluten (paso:')).toBe(true);
