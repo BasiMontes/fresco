@@ -72,6 +72,10 @@ type FakeSession = { id: string, client_reference_id?: string | null, customer?:
 let sessionPages: FakeSession[][] = []
 let sessionsError: unknown = null
 let sessionListParams: Array<Record<string, unknown>> = []
+// FRESCO-1087: the customers `customers.search` returns, and the queries it was asked.
+let searchResults: Array<{ id: string }> = []
+let searchError: unknown = null
+let searchQueries: Array<{ query: string, limit: number }> = []
 
 const fakeStripe: StripeBillingClient = {
   subscriptions: {
@@ -119,6 +123,12 @@ const fakeStripe: StripeBillingClient = {
       if (delError) throw delError
       return { id, deleted: true }
     },
+    search: async (params) => {
+      calls.push('customers.search')
+      searchQueries.push(params)
+      if (searchError) throw searchError
+      return { data: searchResults }
+    },
   },
   checkout: {
     sessions: {
@@ -150,6 +160,9 @@ beforeEach(() => {
   sessionPages = []
   sessionsError = null
   sessionListParams = []
+  searchResults = []
+  searchError = null
+  searchQueries = []
 })
 
 /** Call log without the read-only refund lookups, for the FRESCO-942 base-flow assertions. */
@@ -553,12 +566,12 @@ describe('cancelStripeBillingForCustomer', () => {
 })
 
 describe('findStripeCustomerForUser (FRESCO-945)', () => {
-  test('asks for completed sessions of the last 72 hours, 100 at a time', async () => {
+  test('asks for the sessions of the last 72 hours of any status, 100 at a time', async () => {
     sessionPages = [[]]
 
     await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })
 
-    expect(sessionListParams).toEqual([{ status: 'complete', created: { gte: NOW - 72 * 3600 }, limit: 100 }])
+    expect(sessionListParams).toEqual([{ created: { gte: NOW - 72 * 3600 }, limit: 100 }])
   })
 
   test('returns the customer of the session that carries this user id', async () => {
@@ -604,12 +617,54 @@ describe('findStripeCustomerForUser (FRESCO-945)', () => {
 
     expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBeNull()
     expect(sessionListParams).toHaveLength(2)
+    expect(searchQueries).toHaveLength(1)
   })
 
   test('ignores a matching session that has no customer', async () => {
     sessionPages = [[{ id: 'cs_1', client_reference_id: 'user_1', customer: null }]]
 
     expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBeNull()
+  })
+
+  describe('a customer with no completed checkout (FRESCO-1087)', () => {
+    test('an abandoned checkout (an open or expired session) is found by the session list, with no search', async () => {
+      sessionPages = [[{ id: 'cs_open', client_reference_id: 'user_1', customer: 'cus_abandoned' }]]
+
+      expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBe('cus_abandoned')
+      expect(searchQueries).toEqual([])
+    })
+
+    test('when no recent session names the user, the customer is found by its supabase_user_id metadata', async () => {
+      sessionPages = [[{ id: 'cs_other', client_reference_id: 'someone_else', customer: 'cus_other' }]]
+      searchResults = [{ id: 'cus_old_abandoned' }]
+
+      expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBe('cus_old_abandoned')
+      expect(searchQueries).toEqual([{ query: "metadata['supabase_user_id']:'user_1'", limit: 1 }])
+    })
+
+    test('the search runs after the session list, never before it', async () => {
+      searchResults = [{ id: 'cus_1' }]
+
+      await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })
+
+      expect(calls).toEqual(['sessions.list', 'customers.search'])
+    })
+
+    test('escapes a quote or a backslash in the id so the query cannot be bent', async () => {
+      await findStripeCustomerForUser({ userId: "a'b\\c", stripe: fakeStripe, nowSeconds: NOW })
+
+      expect(searchQueries[0].query).toBe("metadata['supabase_user_id']:'a\\'b\\\\c'")
+    })
+
+    test('returns null when neither the sessions nor the search know the user', async () => {
+      expect(await findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).toBeNull()
+    })
+
+    test('lets a search error through so the caller refuses to delete the account', async () => {
+      searchError = stripeError('rate_limit')
+
+      await expect(findStripeCustomerForUser({ userId: 'user_1', stripe: fakeStripe, nowSeconds: NOW })).rejects.toThrow('stripe rate_limit')
+    })
   })
 
   test('lets a Stripe error through so the caller can refuse to delete the account', async () => {
