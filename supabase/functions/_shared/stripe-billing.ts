@@ -81,11 +81,12 @@ export interface StripeBillingClient {
   }
   customers: {
     del: (id: string) => Promise<unknown>
+    search: (params: { query: string, limit: number }) => Promise<{ data: Array<{ id: string }> }>
   }
   checkout: {
     sessions: {
       list: (
-        params: { status: 'complete', created: { gte: number }, limit: number, starting_after?: string },
+        params: { created: { gte: number }, limit: number, starting_after?: string },
       ) => Promise<{ data: StripeCheckoutSession[], has_more: boolean }>
     }
   }
@@ -351,13 +352,29 @@ export interface FindStripeCustomerInput {
   nowSeconds?: number
 }
 
+/** A Stripe search value sits inside single quotes: escape the backslash and the quote (as `lib/billing/checkout-guard.ts`). */
+function escapeSearchValue(value: string): string {
+  return value.replaceAll('\\', '\\\\').replaceAll('\'', '\\\'')
+}
+
 /**
- * FRESCO-945 (review of FRESCO-942): the Stripe customer of a user whose profile has no
- * `stripe_customer_id` yet. Only the webhook writes that column, so someone who paid and deletes
- * the account before the webhook lands (or while it fails) would otherwise keep being billed
- * once the cascade erased the only link. Stripe cannot filter Checkout Sessions by
- * `client_reference_id`, so this lists the completed sessions of the last 72 hours and filters
- * here. Returns the customer of the most recent match, or null when there is none.
+ * FRESCO-945 (review of FRESCO-942), widened by FRESCO-1087 (audit 8 A8-PAY-02 + A8-PRIV-01): the
+ * Stripe customer of a user whose profile has no `stripe_customer_id`. Two reasons for one to be
+ * missing, and a customer left behind in either is a risk:
+ *
+ *   - someone paid and deletes the account before the webhook lands (or while it fails), so the
+ *     cascade would erase the only link to a subscription that keeps billing (FRESCO-945);
+ *   - someone started a checkout and never finished it: `ensureCheckoutCustomer` creates the
+ *     customer, with the email and `supabase_user_id`, before the session is paid, and nothing
+ *     would ever erase it (GDPR art. 17, FRESCO-1087).
+ *
+ * Two lookups, in this order. First the Checkout Sessions of the last 72 hours of ANY status
+ * (open, expired or complete: an abandoned checkout is open or expired), filtered here because
+ * Stripe cannot filter them by `client_reference_id`; this is read-your-writes, so it also covers
+ * a customer created seconds ago, which Stripe's search index (up to a minute behind) would miss.
+ * Then, when no session names the user, a search by `metadata['supabase_user_id']`, for the
+ * customers whose sessions are older than that. Returns the customer of the most recent session,
+ * else the first search hit, else null.
  *
  * Throws on any Stripe error (the caller refuses to delete the account, as for a failed
  * cancellation) and throws `StripeNotConfiguredError` when the key is missing. Writes nothing
@@ -371,7 +388,6 @@ export async function findStripeCustomerForUser(input: FindStripeCustomerInput):
   let startingAfter: string | undefined
   for (;;) {
     const page = await stripe.checkout.sessions.list({
-      status: 'complete',
       created: { gte: since },
       limit: 100,
       ...(startingAfter ? { starting_after: startingAfter } : {}),
@@ -379,7 +395,10 @@ export async function findStripeCustomerForUser(input: FindStripeCustomerInput):
     // Newest first, so the first match is the most recent session.
     const match = page.data.find(session => session.client_reference_id === userId && idOf(session.customer ?? undefined) !== null)
     if (match) return idOf(match.customer ?? undefined)
-    if (!page.has_more || page.data.length === 0) return null
+    if (!page.has_more || page.data.length === 0) break
     startingAfter = page.data[page.data.length - 1].id
   }
+
+  const found = await stripe.customers.search({ query: `metadata['supabase_user_id']:'${escapeSearchValue(userId)}'`, limit: 1 })
+  return found.data[0]?.id ?? null
 }

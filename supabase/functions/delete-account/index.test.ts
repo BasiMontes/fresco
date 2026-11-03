@@ -24,9 +24,11 @@ mock.module('../_shared/service-role-client.ts', () => ({ createServiceRoleClien
 // `deletedUsersAtStripeDel` proves `auth.admin.deleteUser` had not run yet.
 let stripeCalls: string[] = []
 let stripeSubs: Array<{ id: string, status: string, ended_at?: number, cancellation_details?: { comment: string } }> = []
-let stripeFailure: { on: 'list' | 'cancel' | 'del' | 'refund' | 'sessions', error: unknown } | null = null
+let stripeFailure: { on: 'list' | 'cancel' | 'del' | 'refund' | 'sessions' | 'search', error: unknown } | null = null
 // FRESCO-945: completed Checkout Sessions the customer lookup can see.
 let stripeSessions: Array<{ id: string, client_reference_id: string | null, customer: string | null }> = []
+// FRESCO-1087: customers `customers.search` returns for the user's `supabase_user_id` metadata.
+let stripeSearch: Array<{ id: string }> = []
 let stripeInvoices: unknown[] = []
 let refundLedger: Array<{ amount: number, status: string }> = []
 let deletedUsersAtStripeDel: number | null = null
@@ -82,6 +84,11 @@ class FakeStripe extends RealStripe {
     },
   }
   fakeCustomers = {
+    search: async () => {
+      stripeCalls.push('customers:search')
+      if (stripeFailure?.on === 'search') throw stripeFailure.error
+      return { data: stripeSearch }
+    },
     del: async (id: string) => {
       stripeCalls.push(`del:${id}`)
       deletedUsersAtStripeDel = serviceClient.deletedUserIds.length
@@ -108,6 +115,7 @@ beforeEach(() => {
   clientsByAuth = {}
   serviceClient = fakeEdgeClient()
   stripeCalls = []
+  stripeSearch = []
   stripeSubs = []
   stripeFailure = null
   stripeSessions = []
@@ -196,8 +204,8 @@ describe('delete-account/index.ts', () => {
       withProfile({ stripe_customer_id: null })
       const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
       expect(res.status).toBe(200)
-      // FRESCO-945: it still looks for a customer by checkout session, but there is nothing to cancel.
-      expect(stripeCalls).toEqual(['sessions:list'])
+      // FRESCO-945 / FRESCO-1087: it still looks for a customer (by checkout session, then by metadata), but there is nothing to cancel.
+      expect(stripeCalls).toEqual(['sessions:list', 'customers:search'])
       expect(serviceClient.deletedUserIds).toEqual(['user_1'])
     })
 
@@ -206,7 +214,7 @@ describe('delete-account/index.ts', () => {
       withProfile(null)
       const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
       expect(res.status).toBe(200)
-      expect(stripeCalls).toEqual(['sessions:list'])
+      expect(stripeCalls).toEqual(['sessions:list', 'customers:search'])
     })
 
     test('cancels the subscription and deletes the customer BEFORE deleting the user', async () => {
@@ -350,9 +358,50 @@ describe('delete-account/index.ts', () => {
         const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
 
         expect(res.status).toBe(200)
-        expect(stripeCalls).toEqual(['sessions:list'])
+        expect(stripeCalls).toEqual(['sessions:list', 'customers:search'])
         expect(serviceClient.deletedUserIds).toEqual(['user_1'])
         expect(serviceClient.inserts[0]?.[1]).toMatchObject({ stripe: 'none' })
+      })
+
+      // FRESCO-1087 (audit 8 A8-PAY-02 + A8-PRIV-01): a customer created at the start of a checkout
+      // that was never paid has no completed session, and must not outlive the account.
+      test('erases the customer of an abandoned checkout found by its metadata, BEFORE deleting the user', async () => {
+        const token = registered('user_1')
+        withProfile({ stripe_customer_id: null })
+        stripeSearch = [{ id: 'cus_abandoned' }]
+
+        const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+        expect(res.status).toBe(200)
+        expect(stripeCalls).toEqual(['sessions:list', 'customers:search', 'list:cus_abandoned', 'del:cus_abandoned'])
+        expect(deletedUsersAtStripeDel).toBe(0)
+        expect(serviceClient.deletedUserIds).toEqual(['user_1'])
+        expect(serviceClient.inserts[0]?.[1]).toMatchObject({ stripe: 'cancelled' })
+      })
+
+      test('erases the customer of an open or expired session (no search needed) when the checkout is recent', async () => {
+        const token = registered('user_1')
+        withProfile({ stripe_customer_id: null })
+        stripeSessions = [{ id: 'cs_expired', client_reference_id: 'user_1', customer: 'cus_recent' }]
+
+        const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+        expect(res.status).toBe(200)
+        expect(stripeCalls).toContain('del:cus_recent')
+        expect(stripeCalls).not.toContain('customers:search')
+        expect(serviceClient.inserts[0]?.[1]).toMatchObject({ stripe: 'cancelled' })
+      })
+
+      test('a Stripe error during the metadata search answers 502 and the account is NOT deleted', async () => {
+        const token = registered('user_1')
+        withProfile({ stripe_customer_id: null })
+        stripeFailure = { on: 'search', error: Object.assign(new Error('stripe unreachable'), { code: 'api_connection_error' }) }
+
+        const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+        expect(res.status).toBe(502)
+        expect(serviceClient.deletedUserIds).toHaveLength(0)
+        expect(serviceClient.inserts).toEqual([])
       })
 
       test('a Stripe error during the lookup answers 502 and the account is NOT deleted', async () => {
