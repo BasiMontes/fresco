@@ -1018,6 +1018,10 @@ export type Database = {
         Args: { p_token_hash: string }
         Returns: boolean
       }
+      grant_guest_email_change: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       remove_waitlist_signup: {
         Args: { p_token_hash: string }
         Returns: boolean
