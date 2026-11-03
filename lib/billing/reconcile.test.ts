@@ -10,7 +10,7 @@ describe('listSubscribedProfiles', () => {
     const { client, callsOf } = createMockClient({ data: rows });
 
     expect(await listSubscribedProfiles(client)).toEqual(rows);
-    expect(callsOf('select')).toEqual([['id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id']]);
+    expect(callsOf('select')).toEqual([['id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id, stripe_customer_id']]);
     expect(callsOf('not')).toEqual([['stripe_subscription_id', 'is', null]]);
   });
 

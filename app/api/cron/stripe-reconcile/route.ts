@@ -8,6 +8,7 @@ import { timingSafeEqual } from '@/lib/auth/timing-safe-equal';
 import { sweepPaidCheckoutsWithoutPro } from '@/lib/billing/checkout-sweep';
 import { retryPendingConfirmations } from '@/lib/billing/confirmation-email';
 import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
+import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
 import { recordJobHeartbeat, STRIPE_RECONCILE_JOB } from '@/lib/jobs/heartbeat';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -50,6 +51,13 @@ import { createServiceClient } from '@/lib/supabase/service';
  * a pass that gets to the end writes its own heartbeat (`job_heartbeat`), which a monitor reads,
  * and the errors that stop or degrade a pass go to Sentry instead of only the console. A pass in
  * which Stripe answered for none of the profiles does not count as a success.
+ *
+ * FRESCO-1088 (audit 8: A8-PAY-03): a key of the other Stripe mode answers `resource_missing` for
+ * every subscription, which the loop below would read as "ended" and downgrade paying customers
+ * (the documented rollback, test keys with `billing_mode` false, does exactly that). So the pass
+ * (1) refuses to act at all unless the mode of `STRIPE_SECRET_KEY` equals `billing_mode`
+ * (ADR-0061), and (2) downgrades on `resource_missing` only after the customer is seen to still
+ * exist in Stripe; otherwise it counts a failure and leaves the plan alone.
  */
 
 export const dynamic = 'force-dynamic';
@@ -86,6 +94,68 @@ async function retryConfirmationEmails(supabase: ReturnType<typeof createService
   }
 }
 
+/**
+ * FRESCO-1088: a 500 response when the key's Stripe mode is not the mode the database serves (or
+ * either cannot be established), null when the pass may go on. Fails closed: an unknown mode is a refusal.
+ */
+async function refuseOnStripeModeMismatch(supabase: ReturnType<typeof createServiceClient>): Promise<NextResponse | null> {
+  const refusal = NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
+  try {
+    const environment = environmentLivemode();
+    const database = await readDatabaseLivemode(supabase);
+    if (environment === database) {
+      return null;
+    }
+    const mode = (livemode: boolean) => (livemode ? 'live' : 'test');
+    reportFailure('Stripe mode mismatch, the pass did nothing', new Error(`STRIPE_SECRET_KEY is a ${mode(environment)}-mode key but billing_mode serves ${mode(database)} mode`));
+  }
+  catch (modeError) {
+    reportFailure('could not establish the Stripe mode, the pass did nothing', modeError);
+  }
+  return refusal;
+}
+
+/** FRESCO-1088: a missing subscription only means "ended" if Stripe still knows the customer. */
+async function customerStillInStripe(customerId: string | null): Promise<boolean> {
+  if (!customerId) {
+    return false;
+  }
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    return !('deleted' in customer && customer.deleted);
+  }
+  catch {
+    return false;
+  }
+}
+
+type Target = ReturnType<typeof resolveReconciledState>;
+
+/**
+ * The state Stripe says a profile should be in, or 'failed' (already reported to Sentry) when it
+ * cannot be told. FRESCO-1088: a missing subscription counts as ended, exactly like a
+ * `customer.subscription.deleted` the webhook never received, only when Stripe still knows the
+ * customer; otherwise the key does not see this data and the profile keeps its plan.
+ */
+async function resolveTarget(profile: ReconcilableProfile, proPriceIds: string[]): Promise<Target | 'failed'> {
+  const subscriptionId = profile.stripe_subscription_id ?? '';
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    return resolveReconciledState(subscription, proPriceIds);
+  }
+  catch (error) {
+    if (!(error instanceof Stripe.errors.StripeError && error.code === 'resource_missing')) {
+      reportFailure(`failed to retrieve subscription ${subscriptionId} for user ${profile.id}`, error);
+      return 'failed';
+    }
+    if (await customerStillInStripe(profile.stripe_customer_id)) {
+      return { action: 'downgrade' };
+    }
+    reportFailure(`subscription ${subscriptionId} is missing and its customer could not be confirmed, user ${profile.id} keeps their plan`, error);
+    return 'failed';
+  }
+}
+
 export async function GET(request: Request): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -105,6 +175,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   const supabase = createServiceClient();
+
+  const modeRefusal = await refuseOnStripeModeMismatch(supabase);
+  if (modeRefusal) {
+    return modeRefusal;
+  }
+
   let profiles: ReconcilableProfile[];
   try {
     profiles = await listSubscribedProfiles(supabase);
@@ -126,22 +202,10 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
     checked++;
 
-    let target: ReturnType<typeof resolveReconciledState>;
-    try {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      target = resolveReconciledState(subscription, proPriceIds);
-    }
-    catch (error) {
-      if (error instanceof Stripe.errors.StripeError && error.code === 'resource_missing') {
-        // The subscription no longer exists in Stripe — treat exactly like a
-        // `customer.subscription.deleted` the webhook never received.
-        target = { action: 'downgrade' };
-      }
-      else {
-        failures++;
-        reportFailure(`failed to retrieve subscription ${subscriptionId} for user ${profile.id}`, error);
-        continue;
-      }
+    const target = await resolveTarget(profile, proPriceIds);
+    if (target === 'failed') {
+      failures++;
+      continue;
     }
 
     if (target.action === 'skip') {

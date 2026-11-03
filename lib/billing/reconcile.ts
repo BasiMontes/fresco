@@ -6,7 +6,7 @@ type Client = SupabaseClient<Database>;
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
 
 /** The columns the reconciliation job compares against Stripe. */
-export type ReconcilableProfile = Pick<UserProfileRow, 'id' | 'plan' | 'plan_expires_at' | 'payment_failed_at' | 'stripe_subscription_id'>;
+export type ReconcilableProfile = Pick<UserProfileRow, 'id' | 'plan' | 'plan_expires_at' | 'payment_failed_at' | 'stripe_subscription_id' | 'stripe_customer_id'>;
 
 /** What the job writes when a row drifted: `plan_expires_at` is only asserted on the Pro path. */
 export interface DesiredBillingState {
@@ -24,7 +24,7 @@ export interface DesiredBillingState {
 export async function listSubscribedProfiles(client: Client): Promise<ReconcilableProfile[]> {
   const { data, error } = await client
     .from('user_profiles')
-    .select('id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id')
+    .select('id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id, stripe_customer_id')
     .not('stripe_subscription_id', 'is', null);
 
   if (error) {

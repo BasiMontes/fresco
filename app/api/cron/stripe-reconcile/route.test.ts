@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import Stripe from 'stripe';
 import * as realConfirmationEmail from '@/lib/billing/confirmation-email';
 import * as realStripe from '@/lib/stripe';
-import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
+import { fakeSupabase as baseFakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 /**
  * FRESCO-360: unit coverage for the orphan-plan sweep — the second safety net
@@ -24,12 +24,20 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 
 const retrieveMock = mock(async (_id: string): Promise<Stripe.Subscription> => ({} as Stripe.Subscription));
 
+// FRESCO-1088: `resource_missing` is only believed when Stripe still knows the customer.
+const customerRetrieveMock = mock(async (_id: string): Promise<unknown> => ({ id: 'cus_1' }));
+
 // FRESCO-909: the paid-checkout sweep runs last; by default Stripe lists no sessions.
 const listSessionsMock = mock((_params: unknown): AsyncIterable<Stripe.Checkout.Session> => (async function* () {})());
 
 // FRESCO-915: what the route reports to Sentry.
 const captureException = mock((_error: unknown, _context?: unknown) => 'event-id');
 void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException }));
+
+// FRESCO-1088: every pass reads `billing_mode` first; unless a test says otherwise the database serves test mode.
+function fakeSupabase(tables: Parameters<typeof baseFakeSupabase>[0] = {}) {
+  return baseFakeSupabase({ billing_mode: { rows: { stripe_livemode: false } }, ...tables });
+}
 
 let supa = fakeSupabase();
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => supa.client }));
@@ -39,7 +47,7 @@ const retryPendingConfirmations = mock(async (_client: unknown, _stripe: unknown
 void mock.module('@/lib/billing/confirmation-email', () => ({ ...realConfirmationEmail, retryPendingConfirmations }));
 void mock.module('@/lib/stripe', () => ({
   ...realStripe,
-  stripe: { subscriptions: { retrieve: retrieveMock }, checkout: { sessions: { list: listSessionsMock } } },
+  stripe: { subscriptions: { retrieve: retrieveMock }, customers: { retrieve: customerRetrieveMock }, checkout: { sessions: { list: listSessionsMock } } },
 }));
 
 const { GET } = await import('./route');
@@ -146,6 +154,7 @@ describe('GET /api/cron/stripe-reconcile — auth + config gate', () => {
 
   beforeEach(() => {
     process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
     process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
     supa = fakeSupabase({ user_profiles: { rows: [] } });
   });
@@ -223,6 +232,7 @@ describe('GET /api/cron/stripe-reconcile — reconcile loop', () => {
 
   beforeEach(() => {
     process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
     process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
     retrieveMock.mockClear();
   });
@@ -276,7 +286,7 @@ describe('GET /api/cron/stripe-reconcile — reconcile loop', () => {
     });
     supa = fakeSupabase({
       user_profiles: {
-        rows: [{ id: 'u1', plan: 'pro', plan_expires_at: '2026-01-01T00:00:00Z', payment_failed_at: null, stripe_subscription_id: 'sub_gone' }],
+        rows: [{ id: 'u1', plan: 'pro', plan_expires_at: '2026-01-01T00:00:00Z', payment_failed_at: null, stripe_subscription_id: 'sub_gone', stripe_customer_id: 'cus_1' }],
       },
     });
 
@@ -285,6 +295,43 @@ describe('GET /api/cron/stripe-reconcile — reconcile loop', () => {
     const body = await res.json() as { reconciled: number, drifted: Array<{ changes: Record<string, unknown> }> };
     expect(body.reconciled).toBe(1);
     expect(body.drifted[0]?.changes.plan).toEqual({ from: 'pro', to: 'free' });
+  });
+
+  test('FRESCO-1088: a missing subscription whose customer Stripe cannot confirm is a failure, not a downgrade', async () => {
+    retrieveMock.mockImplementation(async () => {
+      throw new Stripe.errors.StripeError({ code: 'resource_missing', message: 'No such subscription' });
+    });
+    customerRetrieveMock.mockImplementationOnce(async () => {
+      throw new Stripe.errors.StripeError({ code: 'resource_missing', message: 'No such customer' });
+    });
+    supa = fakeSupabase({
+      user_profiles: {
+        rows: [{ id: 'u1', plan: 'pro', plan_expires_at: '2026-01-01T00:00:00Z', payment_failed_at: null, stripe_subscription_id: 'sub_gone', stripe_customer_id: 'cus_gone' }],
+      },
+    });
+
+    const res = await GET(req());
+
+    const body = await res.json() as { reconciled: number, failures: number, drifted: unknown[] };
+    expect(body.reconciled).toBe(0);
+    expect(body.failures).toBe(1);
+    expect(body.drifted).toEqual([]);
+  });
+
+  test('FRESCO-1088: a missing subscription on a profile with no customer id is not downgraded either', async () => {
+    retrieveMock.mockImplementation(async () => {
+      throw new Stripe.errors.StripeError({ code: 'resource_missing', message: 'No such subscription' });
+    });
+    supa = fakeSupabase({
+      user_profiles: {
+        rows: [{ id: 'u1', plan: 'pro', plan_expires_at: '2026-01-01T00:00:00Z', payment_failed_at: null, stripe_subscription_id: 'sub_gone', stripe_customer_id: null }],
+      },
+    });
+
+    const body = await (await GET(req())).json() as { reconciled: number, failures: number };
+
+    expect(body.reconciled).toBe(0);
+    expect(body.failures).toBe(1);
   });
 
   test('skips the row and does not reconcile when Stripe retrieval fails for an unrelated reason', async () => {
@@ -350,6 +397,7 @@ describe('GET /api/cron/stripe-reconcile — heartbeat and Sentry (FRESCO-915)',
 
   beforeEach(() => {
     process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
     process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
     retrieveMock.mockReset();
     captureException.mockClear();
@@ -480,5 +528,75 @@ describe('GET /api/cron/stripe-reconcile — heartbeat and Sentry (FRESCO-915)',
     expect(res.status).toBe(200);
     expect(captureException).toHaveBeenCalledTimes(1);
     expect(supa.upserts).toHaveLength(1);
+  });
+});
+
+describe('GET /api/cron/stripe-reconcile — Stripe mode guard (FRESCO-1088)', () => {
+  const OLD_ENV = { ...process.env };
+
+  beforeEach(() => {
+    process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
+    retrieveMock.mockReset();
+    customerRetrieveMock.mockClear();
+    captureException.mockClear();
+  });
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  const proRow = { id: 'u1', plan: 'pro', plan_expires_at: '2026-01-01T00:00:00Z', payment_failed_at: null, stripe_subscription_id: 'sub_live', stripe_customer_id: 'cus_live' };
+  const run = async () => GET(new Request('https://test.fresco.local/api/cron/stripe-reconcile', { headers: { authorization: 'Bearer cron_test' } }));
+
+  test.each([
+    { key: 'sk_test_unit', database: true, label: 'test key against a live database' },
+    { key: 'sk_live_unit', database: false, label: 'live key against a test database' },
+  ])('$label: nobody is downgraded, Stripe is not even asked, Sentry hears of it', async ({ key, database }) => {
+    process.env.STRIPE_SECRET_KEY = key;
+    // A crossed key makes Stripe answer resource_missing for every subscription; the pass must not get that far.
+    retrieveMock.mockImplementation(async () => {
+      throw new Stripe.errors.StripeError({ code: 'resource_missing', message: 'No such subscription' });
+    });
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: database } }, user_profiles: { rows: [proRow] } });
+
+    const res = await run();
+
+    expect(res.status).toBe(500);
+    expect(retrieveMock).not.toHaveBeenCalled();
+    expect(supa.updates).toEqual([]);
+    expect(supa.upserts).toEqual([]);
+    expect(captureException).toHaveBeenCalled();
+  });
+
+  test('a matching live key and live database reconciles normally', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    retrieveMock.mockImplementation(async () => activeSubscription());
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [{ ...proRow, plan: 'free', plan_expires_at: null }] } });
+
+    const res = await run();
+
+    expect(res.status).toBe(200);
+    expect(retrieveMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('an unrecognised key fails closed: 500, nothing written', async () => {
+    process.env.STRIPE_SECRET_KEY = 'not-a-stripe-key';
+    supa = fakeSupabase({ user_profiles: { rows: [proRow] } });
+
+    const res = await run();
+
+    expect(res.status).toBe(500);
+    expect(retrieveMock).not.toHaveBeenCalled();
+    expect(supa.updates).toEqual([]);
+  });
+
+  test('a missing billing_mode row fails closed too', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+    supa = fakeSupabase({ billing_mode: { rows: null }, user_profiles: { rows: [proRow] } });
+
+    const res = await run();
+
+    expect(res.status).toBe(500);
+    expect(retrieveMock).not.toHaveBeenCalled();
   });
 });
