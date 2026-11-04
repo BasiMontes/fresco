@@ -7,6 +7,8 @@
  *   2. `anon` cannot EXECUTE `confirm_ingredient_substitution`;
  *   3. `user_profiles.alergenos` rejects a value outside the 14-slug vocabulary (`Soja`);
  *   4. `jsonb_add_item` rejects an item that is not a JSON object (22023);
+ *      FRESCO-1107 (A8-AUTHZ-02, -03) narrows 1 to the columns the app writes and closes `anon` on
+ *      `get_safe_ingredient_substitutes` too.
  *   5. local Auth asks for a recent login or a nonce before a password change.
  *
  * Runs only when `RUN_DB_INTEGRATION=1` AND the local Supabase stack answers —
@@ -61,6 +63,20 @@ describe.skipIf(!(RUN && reachable))('surplus grants and input checks (real DB)'
       expect(code(res.body)).toBe('42501');
     });
 
+    // FRESCO-1107 / A8-AUTHZ-02: the columns FRESCO-1015 granted back although no client writes them.
+    test.each([
+      ['meal_plan_recipes', 'slot', { dia: 'domingo' }],
+      ['meal_plans', 'plan', { semana_iso: '2099-W01' }],
+      ['meal_plans', 'plan', { advertencias: [] }],
+      ['meal_plans', 'plan', { explicacion_aprendizaje: 'x' }],
+    ])('an authenticated user cannot change %s columns the client never writes (%j)', async (table, which, body) => {
+      const id = which === 'slot' ? slotId : planId;
+      const res = await rest(table, { method: 'PATCH', token: user.token, query: `id=eq.${id}`, body });
+
+      expect(res.status).toBe(403);
+      expect(code(res.body)).toBe('42501');
+    });
+
     test('coste_estimado, the one plan column the client writes, still updates', async () => {
       const res = await rest('meal_plans', {
         method: 'PATCH',
@@ -81,6 +97,22 @@ describe.skipIf(!(RUN && reachable))('surplus grants and input checks (real DB)'
 
       expect([401, 403]).toContain(res.status);
       expect(code(res.body)).toBe('42501');
+    });
+  });
+
+  describe('get_safe_ingredient_substitutes', () => {
+    // FRESCO-1107 / A8-AUTHZ-03
+    test('anon has no entry point', async () => {
+      const res = await rpc('get_safe_ingredient_substitutes', { p_ingrediente: 'gambas' });
+
+      expect([401, 403]).toContain(res.status);
+      expect(code(res.body)).toBe('42501');
+    });
+
+    test('a signed-in user still gets an answer', async () => {
+      const res = await rpc('get_safe_ingredient_substitutes', { p_ingrediente: 'gambas' }, { token: user.token });
+
+      expect(res.status).toBe(200);
     });
   });
 
