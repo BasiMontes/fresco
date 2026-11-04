@@ -1,16 +1,25 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test';
+import * as realSentry from '@sentry/nextjs';
+import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { NextRequest } from 'next/server';
 
 /**
  * FRESCO-1008 — `POST /api/waitlist`: validation, the per-address limit, the double opt-in email
  * (sent only for a signup that needs one), the same answer for new / pending / confirmed addresses,
  * and a failed email surfacing as an error instead of a false "check your inbox".
+ *
+ * FRESCO-1103 (audit 8 A8-ABUSE-02/03, A8-OPS-02): the Turnstile gate, the failed email reaching
+ * Sentry, and the signup of a failed email being removed so the retry sends again.
  */
 
 let rpcResults: Record<string, { data: unknown, error: unknown }> = {};
 let rpcCalls: Array<{ name: string, args: Record<string, unknown> }> = [];
 let sendError: Error | null = null;
 const sent: Array<{ to: string, confirmUrl: string, removeUrl: string }> = [];
+const captureException = mock((_error: unknown, _hint?: unknown) => 'id');
+const captureMessage = mock((_message: string, _hint?: unknown) => 'id');
+const realFetch = globalThis.fetch;
+let cloudflare: (() => Response | Promise<Response>) | null = null;
+const cloudflareCalls: URLSearchParams[] = [];
 
 const serviceClient = {
   rpc: async (name: string, args: Record<string, unknown>) => {
@@ -20,6 +29,7 @@ const serviceClient = {
 };
 
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient: () => serviceClient }));
+void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException, captureMessage }));
 // `mock.module` leaks into the files that run after this one: keep every export of the module (FRESCO-1024).
 void mock.module('@/lib/email/resend', () => ({
   sendSubscriptionConfirmationEmail: async () => {},
@@ -34,7 +44,7 @@ const { POST } = await import('./route');
 function req(body: unknown) {
   return new NextRequest('https://test.fresco.local/api/waitlist', {
     method: 'POST',
-    headers: { 'x-forwarded-for': '203.0.113.7' },
+    headers: { 'x-forwarded-for': '203.0.113.7, 10.0.0.1' },
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 }
@@ -46,6 +56,26 @@ beforeEach(() => {
   rpcCalls = [];
   sendError = null;
   sent.length = 0;
+  captureException.mockClear();
+  captureMessage.mockClear();
+  cloudflareCalls.length = 0;
+  cloudflare = () => new Response(JSON.stringify({ success: true }));
+  // The signup tests below run on a build with no captcha; the Turnstile block turns it on.
+  delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  delete process.env.TURNSTILE_SECRET_KEY;
+  globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    if (String(url).includes('challenges.cloudflare.com')) {
+      cloudflareCalls.push(init?.body as URLSearchParams);
+      return cloudflare!();
+    }
+    return realFetch(url, init);
+  }) as unknown as typeof fetch;
+});
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+  delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  delete process.env.TURNSTILE_SECRET_KEY;
 });
 
 describe('POST /api/waitlist', () => {
@@ -119,5 +149,154 @@ describe('POST /api/waitlist', () => {
     finally {
       console.error = original;
     }
+  });
+});
+
+describe('POST /api/waitlist — a mail that fails to send (FRESCO-1103)', () => {
+  const quietly = async <T>(run: () => Promise<T>): Promise<T> => {
+    const original = console.error;
+    console.error = () => {};
+    try { return await run(); }
+    finally { console.error = original; }
+  };
+
+  test('the failure reaches Sentry with the route tag', async () => {
+    sendError = new Error('smtp down');
+
+    await quietly(async () => POST(req(GOOD)));
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(captureException.mock.calls[0][0]).toBe(sendError);
+    expect(captureException.mock.calls[0][1]).toEqual({ tags: { route: 'waitlist' } });
+  });
+
+  test('the signup it registered is removed by the hash of the token that was not delivered', async () => {
+    sendError = new Error('smtp down');
+    rpcResults.remove_waitlist_signup = { data: true, error: null };
+
+    await quietly(async () => POST(req(GOOD)));
+
+    const registered = rpcCalls.find(c => c.name === 'request_waitlist_signup')!;
+    const removed = rpcCalls.filter(c => c.name === 'remove_waitlist_signup');
+    expect(removed).toHaveLength(1);
+    expect(removed[0].args.p_token_hash).toBe(registered.args.p_token_hash);
+  });
+
+  test('so the retry is not throttled: the next request sends again', async () => {
+    sendError = new Error('smtp down');
+    expect((await quietly(async () => POST(req(GOOD)))).status).toBe(502);
+
+    sendError = null;
+    const retry = await POST(req(GOOD));
+
+    expect(retry.status).toBe(200);
+    expect(sent).toHaveLength(1);
+  });
+
+  test('if the removal itself fails the answer is still 502 and that failure is reported too', async () => {
+    sendError = new Error('smtp down');
+    rpcResults.remove_waitlist_signup = { data: null, error: { code: 'x' } };
+
+    const res = await quietly(async () => POST(req(GOOD)));
+
+    expect(res.status).toBe(502);
+    expect(captureException).toHaveBeenCalledTimes(2);
+  });
+
+  test('nothing is removed when the mail went out', async () => {
+    await POST(req(GOOD));
+
+    expect(rpcCalls.map(c => c.name)).not.toContain('remove_waitlist_signup');
+    expect(captureException).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/waitlist — the captcha (FRESCO-1103)', () => {
+  const withCaptcha = { ...GOOD, captchaToken: 'tok' };
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key';
+    process.env.TURNSTILE_SECRET_KEY = 'secret-key';
+  });
+
+  test('400 without a token, and neither the limit nor the registration nor the mail is touched', async () => {
+    const res = await POST(req(GOOD));
+
+    expect(res.status).toBe(400);
+    expect(rpcCalls).toHaveLength(0);
+    expect(sent).toHaveLength(0);
+  });
+
+  test('400 for an empty or non-string token', async () => {
+    expect((await POST(req({ ...GOOD, captchaToken: '' }))).status).toBe(400);
+    expect((await POST(req({ ...GOOD, captchaToken: 7 }))).status).toBe(400);
+    expect(rpcCalls).toHaveLength(0);
+  });
+
+  test('400 when Cloudflare rejects the token', async () => {
+    cloudflare = () => new Response(JSON.stringify({ 'success': false, 'error-codes': ['timeout-or-duplicate'] }));
+
+    const res = await POST(req(withCaptcha));
+
+    expect(res.status).toBe(400);
+    expect(rpcCalls).toHaveLength(0);
+    expect(sent).toHaveLength(0);
+  });
+
+  test('503 when Cloudflare cannot be reached: refuse, never pass unchecked', async () => {
+    cloudflare = () => { throw new Error('offline'); };
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const res = await POST(req(withCaptcha));
+
+      expect(res.status).toBe(503);
+      expect(sent).toHaveLength(0);
+    }
+    finally {
+      console.error = original;
+    }
+  });
+
+  test('503 and a Sentry message when the build shows the captcha but the secret is not configured', async () => {
+    delete process.env.TURNSTILE_SECRET_KEY;
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const res = await POST(req(withCaptcha));
+
+      expect(res.status).toBe(503);
+      expect(cloudflareCalls).toHaveLength(0);
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+      expect(sent).toHaveLength(0);
+    }
+    finally {
+      console.error = original;
+    }
+  });
+
+  test('sends the token, the secret and the caller\'s IP to Cloudflare, then signs up as usual', async () => {
+    const res = await POST(req(withCaptcha));
+
+    expect(cloudflareCalls[0].get('response')).toBe('tok');
+    expect(cloudflareCalls[0].get('secret')).toBe('secret-key');
+    expect(cloudflareCalls[0].get('remoteip')).toBe('203.0.113.7');
+    expect(res.status).toBe(200);
+    expect(sent).toHaveLength(1);
+  });
+
+  test('a request that fails the captcha does not spend the address limit', async () => {
+    await POST(req(GOOD));
+
+    expect(rpcCalls.map(c => c.name)).not.toContain('check_ip_rate_limit');
+  });
+
+  test('a build with no site key needs no token (the captcha is opt-in per build)', async () => {
+    delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+    const res = await POST(req(GOOD));
+
+    expect(res.status).toBe(200);
+    expect(cloudflareCalls).toHaveLength(0);
   });
 });

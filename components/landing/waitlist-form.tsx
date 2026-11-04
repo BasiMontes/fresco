@@ -2,6 +2,8 @@
 
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { CaptchaField } from '@/components/auth/captcha-field';
+import { useCaptcha } from '@/components/auth/use-captcha';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmailInput } from '@/components/ui/email-input';
@@ -15,16 +17,20 @@ type Status = 'idle' | 'sending' | 'joined' | 'error';
  * explicit, unticked consent. The consent is recorded server-side with the
  * version of the text (`POST /api/waitlist`). FRESCO-1008: that only registers a PENDING signup; the address is added once its owner confirms from the email we send. The submit stays disabled until the
  * box is ticked, so a visitor cannot join without having consented.
+ * FRESCO-1103: when the build carries a Turnstile site key the submit also waits for the check, and the token travels with the request.
  */
 export function WaitlistForm() {
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
+  const captcha = useCaptcha();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('sending');
-    setStatus((await joinWaitlist(email.trim())) ? 'joined' : 'error');
+    const joined = await joinWaitlist(email.trim(), captcha.token);
+    captcha.reset();
+    setStatus(joined ? 'joined' : 'error');
   }
 
   if (status === 'joined') {
@@ -54,12 +60,13 @@ export function WaitlistForm() {
           <a href="/legal/privacidad" target="_blank" rel="noreferrer" className="underline">Política de privacidad</a>
         </span>
       </label>
+      <CaptchaField captcha={captcha} />
       {status === 'error' && (
         <p data-testid="waitlist_error" role="alert" className="text-body-sm text-error">
           No hemos podido apuntar tu correo. Inténtalo de nuevo.
         </p>
       )}
-      <Button type="submit" variant="secondary" size="lg" disabled={!consent || email.trim().length === 0 || status === 'sending'} data-testid="waitlist_submit">
+      <Button type="submit" variant="secondary" size="lg" disabled={!consent || email.trim().length === 0 || status === 'sending' || !captcha.ready} data-testid="waitlist_submit">
         Avisadme del lanzamiento
       </Button>
     </form>
