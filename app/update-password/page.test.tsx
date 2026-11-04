@@ -25,6 +25,10 @@ const { default: UpdatePasswordPage } = await import('./page');
 const pushMock = mock((_href: string) => {});
 const router = { bfcacheId: 'test', push: pushMock, replace: pushMock, back: () => {}, forward: () => {}, refresh: () => {}, prefetch: () => {} };
 
+// FRESCO-1101: the default `delay: 0` schedules a setTimeout per keystroke (~60 per test), which
+// happy-dom stretches under CPU load until randomized parallel runs hit the timeout. `null` skips it.
+const setupUser = () => userEvent.setup({ delay: null });
+
 function renderPage() {
   return renderWithProviders(
     <AppRouterContext.Provider value={router}>
@@ -64,7 +68,7 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>, current?:
 describe('/update-password current password (FRESCO-1015)', () => {
   test('a password session sees the field and sends the current password along', async () => {
     getClaimsMock.mockResolvedValueOnce(asMethods('password'));
-    const user = userEvent.setup();
+    const user = setupUser();
     renderPage();
 
     await fillAndSubmit(user, 'la-de-siempre-1');
@@ -74,7 +78,7 @@ describe('/update-password current password (FRESCO-1015)', () => {
 
   test('a password session cannot submit without it: the field is required and nothing is sent', async () => {
     getClaimsMock.mockResolvedValueOnce(asMethods('password'));
-    const user = userEvent.setup();
+    const user = setupUser();
     renderPage();
 
     await fillAndSubmit(user);
@@ -85,7 +89,7 @@ describe('/update-password current password (FRESCO-1015)', () => {
 
   test('a recovery session has no such field and sends only the new password, no current_password key', async () => {
     getClaimsMock.mockResolvedValueOnce(asMethods('recovery'));
-    const user = userEvent.setup();
+    const user = setupUser();
     renderPage();
 
     await user.type(await screen.findByTestId('update_password_new_input'), NEW_PASSWORD);
@@ -99,7 +103,7 @@ describe('/update-password current password (FRESCO-1015)', () => {
   test('a wrong current password shows the Spanish copy, not the raw Auth message', async () => {
     getClaimsMock.mockResolvedValueOnce(asMethods('password'));
     updateUserMock.mockResolvedValueOnce({ error: { code: 'current_password_mismatch', message: 'Incorrect current password' } });
-    const user = userEvent.setup();
+    const user = setupUser();
     renderPage();
 
     await fillAndSubmit(user, 'otra-1234567');
