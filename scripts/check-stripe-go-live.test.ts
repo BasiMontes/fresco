@@ -143,8 +143,22 @@ describe('manualChecks and exitCode', () => {
     expect(manualChecks(new Set(['email-delivery'])).find(c => c.id === 'email-delivery')?.status).toBe('pass');
   });
 
+  test('recovery-emails blocks until the owner acknowledges it (FRESCO-1121)', () => {
+    expect(manualChecks(new Set()).find(c => c.id === 'recovery-emails')?.status).toBe('manual');
+    expect(exitCode(manualChecks(new Set(['dunning', 'email-delivery'])))).toBe(1);
+    expect(manualChecks(new Set(['recovery-emails'])).find(c => c.id === 'recovery-emails')?.status).toBe('pass');
+  });
+
+  test('the recovery-emails line names the three mails and the hosted page, and a near-miss id acknowledges nothing', () => {
+    const line = manualChecks(new Set(['recovery-email'])).find(c => c.id === 'recovery-emails')!;
+    expect(line.status).toBe('manual');
+    expect(line.detail).toContain('hosted page');
+    expect(line.detail).toContain('FRESCO-1062');
+    expect(line.detail).toContain('--ack recovery-emails');
+  });
+
   test('the flip is allowed only with every manual line acknowledged', () => {
-    expect(exitCode(manualChecks(new Set(['dunning', 'email-delivery'])))).toBe(0);
+    expect(exitCode(manualChecks(new Set(['dunning', 'email-delivery', 'recovery-emails'])))).toBe(0);
   });
 
   test('the email-delivery line tells the owner what proof to bring, and an unknown id acknowledges nothing', () => {
