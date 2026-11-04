@@ -1,15 +1,24 @@
 import type { ProductoSupermercado } from './supermarket/types';
 import { describe, expect, test } from 'bun:test';
 import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
+import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 import { esProductoPlausible } from './product-plausibility';
-import { emparejarIngrediente } from './supermarket/matcher';
+import { emparejarIngrediente, RATIO_ENVASE_PESCADO_FRESCO } from './supermarket/matcher';
 
 /**
  * FRESCO-785 — a shopping-list link or price must never point at the wrong
  * product. The cases below are the ones observed in the audit-6 run on staging
  * plus the generated-catalog regression for the most used ingredients.
  */
+
+function nombreDeUrl(url: string): string {
+  return decodeURIComponent(new URL(url).pathname)
+    .replace(/^\/product\/[\d.]+\//, '')
+    .replace(/^\/es\/p\//, '')
+    .replace(/\/\d+$/, '')
+    .replaceAll('-', ' ');
+}
 
 describe('esProductoPlausible — the 6 observed wrong matches are rejected', () => {
   const observados: [string, string, string][] = [
@@ -155,14 +164,6 @@ describe('generated catalogs — no wrong product for the observed or most used 
     'nueces',
   ];
 
-  function nombreDeUrl(url: string): string {
-    return decodeURIComponent(new URL(url).pathname)
-      .replace(/^\/product\/[\d.]+\//, '')
-      .replace(/^\/es\/p\//, '')
-      .replace(/\/\d+$/, '')
-      .replaceAll('-', ' ');
-  }
-
   test.each(MAS_USADOS)('%s links to a plausible product in every chain that has one', (clave) => {
     const mercadona = MERCADONA_CATALOG_MATCH[clave];
     const consum = CONSUM_CATALOG_MATCH[clave];
@@ -229,5 +230,41 @@ describe('FRESCO-825 — ambiguous or variant products by ingredient', () => {
     expect(CONSUM_CATALOG_MATCH.pasta).toBeUndefined();
     expect(CONSUM_CATALOG_MATCH.cacahuetes.url).toContain('cacahuetes-tostados-con-cascara');
     expect(MERCADONA_CATALOG_MATCH.pasta.shareUrl).toContain('fusilli');
+  });
+});
+
+/**
+ * FRESCO-1098 — a fresh fish or shellfish ingredient never links a tin or a
+ * whole cut: the linked pack must be the thing the recipe portion is bought as.
+ */
+describe('FRESCO-1098 — fresh seafood versus tins and whole cuts', () => {
+  const casos: { ingrediente: string, producto: string, plausible: boolean }[] = [
+    { ingrediente: 'mejillones', producto: 'Mejillones natural Hacendado pequeños 15-20 piezas lata', plausible: false },
+    { ingrediente: 'mejillones', producto: 'Mejillones en escabeche 4-6 piezas', plausible: false },
+    { ingrediente: 'mejillones', producto: 'Mejillones cocidos Hacendado bandeja', plausible: true },
+    { ingrediente: 'bacalao', producto: 'Bacalao a la vizcaina lata', plausible: false },
+    { ingrediente: 'bacalao', producto: 'Bacalao desalado lomos bandeja', plausible: true },
+    { ingrediente: 'salmon', producto: 'Salmón al natural pack 3', plausible: false },
+    { ingrediente: 'salmon', producto: 'Salmón lomos Hacendado bandeja', plausible: true },
+    { ingrediente: 'atun', producto: 'Atún claro en aceite de oliva lata', plausible: true },
+  ];
+
+  test.each(casos)('$ingrediente: "$producto" plausible=$plausible', ({ ingrediente, producto, plausible }) => {
+    expect(esProductoPlausible(ingrediente, producto)).toBe(plausible);
+  });
+
+  test('the committed catalogs link no tin or whole cut to a fresh seafood ingredient', () => {
+    const fresco = ['mejillones', 'almejas', 'berberechos', 'bacalao', 'salmon', 'merluza', 'gambas', 'calamares', 'sepia', 'pulpo', 'lubina', 'dorada'];
+    const fueraDeRango: string[] = [];
+    for (const clave of fresco) {
+      const porcion = INGREDIENT_DICTIONARY[clave]?.porcionReceta.cantidad;
+      const envases = [MERCADONA_CATALOG_MATCH[clave]?.envaseVenta, CONSUM_CATALOG_MATCH[clave]?.envaseVenta];
+      for (const envase of envases) {
+        if (porcion && envase && (envase.cantidad < porcion * RATIO_ENVASE_PESCADO_FRESCO.min || envase.cantidad > porcion * RATIO_ENVASE_PESCADO_FRESCO.max)) {
+          fueraDeRango.push(`${clave}: ${envase.cantidad} g for a ${porcion} g portion`);
+        }
+      }
+    }
+    expect(fueraDeRango).toEqual([]);
   });
 });

@@ -42,6 +42,8 @@ const CATEGORY_EXCLUSIONS: readonly CategoryExclusion[] = [
   { tokens: ['miel', 'crunch', 'tijuana', 'frito', 'fritos', 'salado', 'salados', 'sal'], onlyFor: /^cacahuetes\b/ },
   { tokens: ['molinillo', 'negra', 'himalaya'], onlyFor: /^sal$/ },
   { tokens: ['tiburones', 'formas', 'figuras', 'fresca', 'frescas', 'rellena', 'rellenas', 'sarraceno', 'alforfon'], onlyFor: /^pasta$/ },
+  // FRESCO-1098: a fresh fish or shellfish ingredient is not a tin, a jar or a prepared dish (a 111 g tin of mussels priced as 1 kg of fresh ones).
+  { tokens: ['lata', 'latas', 'conserva', 'conservas', 'escabeche', 'vizcaina', 'natural', 'ahogado', 'poke', 'ensalada'], onlyFor: /^(mejillones|almejas|berberechos|bacalao|salmon|merluza|gambas|calamares|sepia|pulpo|lubina|dorada)\b/ },
   { tokens: ['kebab', 'brocheta', 'brochetas', 'rebozada', 'rebozado', 'empanada', 'empanado', 'bolonesa', 'carbonara', 'rosegones', 'jardinera', 'tarrito', 'tarritos', 'yarroz', 'empanadilla', 'empanadillas', 'burger', 'hamburguesa', 'peskitos', 'palitos', 'petalos', 'infantil', 'mickey', 'higaditos', 'sopa', 'deshidratada', 'ramen', 'harina', 'pan', 'hogaza', 'rebanado', 'tostadas'] },
 ];
 

@@ -132,7 +132,7 @@ describe('productosParaCarga', () => {
   test('Mercadona products carry Mercadona\'s own id and keep the ingredient they were found for', () => {
     const carga = productosParaCarga(conectorMercadona);
     const salmon = carga.find(c => c.ingrediente === 'salmon');
-    expect(salmon?.producto.idExterno).toBe('81649.1');
+    expect(salmon?.producto.idExterno).toBe('87205');
     for (const { producto } of carga) {
       expect(producto.idExterno).toMatch(/^\d+(\.\d+)?$/);
     }

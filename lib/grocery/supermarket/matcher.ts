@@ -23,6 +23,15 @@ import { esProductoPlausible } from '../product-plausibility';
 /** Max multiple of the recipe portion a matched pack may hold; rejects bulk SKUs (FRESCO-503 review fix). */
 export const MAX_RATIO_ENVASE_PORCION = 20;
 
+/**
+ * FRESCO-1098: fresh fish and shellfish are bought in packs close to the recipe
+ * portion. A pack far below it is a tin (a 111 g tin of mussels for a 500 g
+ * portion), a pack far above it is a whole cut (a 2,5 kg cod loin for 400 g);
+ * either one prices the line at a figure unrelated to the fresh ingredient.
+ */
+const MARISCO_Y_PESCADO_FRESCO = /^(?:mejillones|almejas|berberechos|bacalao|salmon|merluza|gambas|calamares|sepia|pulpo|lubina|dorada)\b/;
+export const RATIO_ENVASE_PESCADO_FRESCO = { min: 0.5, max: 3 } as const;
+
 export interface IngredienteParaMatching {
   /** Search terms in priority order: the canonical name first, then synonyms. */
   terminos: string[]
@@ -73,12 +82,15 @@ interface EmparejarInput {
 
 export function emparejarIngrediente(input: EmparejarInput): Coincidencia | null {
   const { ingrediente, candidatos, maxRatio = MAX_RATIO_ENVASE_PORCION } = input;
-  const limite = ingrediente.porcion.cantidad * maxRatio;
+  const esPescadoFresco = MARISCO_Y_PESCADO_FRESCO.test(ingrediente.terminos[0] ?? '');
+  const limite = ingrediente.porcion.cantidad * (esPescadoFresco ? Math.min(maxRatio, RATIO_ENVASE_PESCADO_FRESCO.max) : maxRatio);
+  const minimo = esPescadoFresco ? ingrediente.porcion.cantidad * RATIO_ENVASE_PESCADO_FRESCO.min : 0;
 
   const viables = candidatos.filter(p =>
     p.disponible
     && p.envase.unidad === ingrediente.porcion.unidad
     && p.envase.cantidad > 0
+    && p.envase.cantidad >= minimo
     && p.envase.cantidad <= limite
     && p.precioEnvase > 0,
   );
