@@ -14,6 +14,7 @@ A workflow triggered by `pull_request` references **no secret**. `scripts/ci-sec
 | `post-deploy-smoke.yml` | `deployment_status` (Production only) | `LIVE_E2E_ENV_FILE` | drives a browser against the real production deployment, so it needs real test-user and Supabase credentials |
 | `stripe-e2e.yml` | `schedule`, `workflow_dispatch` | `LIVE_E2E_ENV_FILE` | real Stripe test-mode account |
 | `edge-functions-drift.yml` | `schedule`, `workflow_dispatch`, `push` | `SUPABASE_ACCESS_TOKEN` | deploys edge functions |
+| `hosted-auth-settings-check.yml` | `schedule`, `workflow_dispatch` | `SUPABASE_ACCESS_TOKEN` | read-only: reads the hosted Auth settings (FRESCO-1090) |
 | `migration-drift-check.yml` | `schedule`, `workflow_dispatch`, `push` | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` | |
 | `db-backup.yml` | `schedule`, `workflow_dispatch` | R2 keys, `SUPABASE_DB_PASSWORD`, `BACKUP_PASSPHRASE` | |
 | `refresh-mercadona-catalog.yml`, `refresh-supermarket-prices.yml` | `schedule` / `workflow_dispatch` | `CATALOG_REFRESH_TOKEN`; `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` | |

@@ -12,6 +12,7 @@
 | [boilerplate-sync.md](./boilerplate-sync.md)     | `bun sync` y el `adr:reconcile` que debe seguirle           |
 | [environments.md](./environments.md)             | Ambientes de desarrollo (local, staging, producción)        |
 | [git-flow.md](./git-flow.md)                     | Flujo de trabajo Git para desarrollo AI-driven              |
+| [hosted-auth-settings.md](./hosted-auth-settings.md) | El check semanal de los ajustes de Auth del proyecto alojado |
 | [stripe-go-live.md](./stripe-go-live.md)         | El guard del modo de Stripe y el orden del paso a live      |
 | [sync-openapi-guide.md](./sync-openapi-guide.md) | `bun run api:sync`: sincronizar el spec OpenAPI y sus tipos |
 
