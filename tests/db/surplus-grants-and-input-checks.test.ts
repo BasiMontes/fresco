@@ -67,8 +67,8 @@ describe.skipIf(!(RUN && reachable))('surplus grants and input checks (real DB)'
     test.each([
       ['meal_plan_recipes', 'slot', { dia: 'domingo' }],
       ['meal_plans', 'plan', { semana_iso: '2099-W01' }],
-      ['meal_plans', 'plan', { advertencias: [] }],
-      ['meal_plans', 'plan', { explicacion_aprendizaje: 'x' }],
+      ['meal_plan_recipes', 'slot', { meal_plan_id: '00000000-0000-4000-8000-000000000001' }],
+      ['meal_plans', 'plan', { user_id: '00000000-0000-4000-8000-000000000001' }],
     ])('an authenticated user cannot change %s columns the client never writes (%j)', async (table, which, body) => {
       const id = which === 'slot' ? slotId : planId;
       const res = await rest(table, { method: 'PATCH', token: user.token, query: `id=eq.${id}`, body });
