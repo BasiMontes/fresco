@@ -26,7 +26,7 @@ export function renderWithProviders(ui: ReactElement, options?: Omit<RenderOptio
 
 /** Fresh `userEvent` instance — call once per test, before interacting. */
 export function setupUser() {
-  return userEvent.setup();
+  return userEvent.setup({ delay: null });
 }
 
 /**
