@@ -101,3 +101,19 @@ describe('TERMS_SECTIONS — liability and refund wording (FRESCO-1049)', () => 
     expect(withdrawal).toContain('te devolvemos el resto');
   });
 });
+
+// FRESCO-1104 (A8-LAUNCH-01): the processors named must be the ones that really send mail.
+// Every non-Auth confirmation goes through Gmail SMTP while GMAIL_SMTP_APP_PASSWORD is set (lib/email/resend.ts).
+describe('PRIVACY_SECTIONS — mail processor (FRESCO-1104)', () => {
+  const body = PRIVACY_SECTIONS.find(s => s.body.includes('encargados del tratamiento'))!.body;
+
+  test('names Google/Gmail for the subscription and waitlist confirmation emails', () => {
+    expect(body).toContain('Google (servicio de correo SMTP de Gmail');
+    expect(body).toContain('confirmación de tu suscripción');
+    expect(body).toContain('confirmación de la lista de espera');
+  });
+
+  test('does not name Resend, which receives no personal data in production', () => {
+    expect(body).not.toContain('Resend');
+  });
+});
