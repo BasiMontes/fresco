@@ -19,6 +19,7 @@ const sessionsCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: str
 /** FRESCO-1002: the Stripe lookups that run before a session is created, and the cleanup after. */
 const customersSearch = mock(async (_p: unknown): Promise<{ data: { id: string }[] }> => ({ data: [] }));
 const customersCreate = mock(async (_p: unknown, _o?: unknown): Promise<{ id: string }> => ({ id: 'cus_new' }));
+const portalCreate = mock(async (_p: unknown): Promise<{ url: string }> => ({ url: 'https://billing.stripe/portal' }));
 const subscriptionsList = mock(async (_p: unknown): Promise<{ data: { id: string, status: string }[] }> => ({ data: [] }));
 const sessionsList = mock(async (_p: unknown): Promise<{ data: { id: string }[] }> => ({ data: [] }));
 const sessionsExpire = mock(async (_id: string): Promise<{ id: string }> => ({ id: 'expired' }));
@@ -42,6 +43,7 @@ void mock.module('@/lib/stripe', () => ({ ...realStripe, stripe: {
   customers: { search: customersSearch, create: customersCreate },
   subscriptions: { list: subscriptionsList },
   checkout: { sessions: { create: sessionsCreate, list: sessionsList, expire: sessionsExpire } },
+  billingPortal: { sessions: { create: portalCreate } },
 } }));
 
 const { POST } = await import('./route');
@@ -55,7 +57,7 @@ beforeEach(() => {
   databaseLivemode = false;
   process.env.STRIPE_PRICE_ID_PRO_MONTH = 'price_pro_month';
   process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
-  for (const m of [sessionsCreate, customersSearch, customersCreate, subscriptionsList, sessionsList, sessionsExpire]) {
+  for (const m of [portalCreate, sessionsCreate, customersSearch, customersCreate, subscriptionsList, sessionsList, sessionsExpire]) {
     m.mockClear();
   }
   sessionsCreate.mockResolvedValue({ id: 'cs_1', url: 'https://checkout.stripe/x' });
@@ -294,6 +296,18 @@ describe('POST /api/stripe/checkout', () => {
       subscriptionsList.mockResolvedValue({ data: [{ id: 'sub_1', status: 'trialing' }] });
 
       expect((await POST(req())).status).toBe(409);
+      expect(sessionsCreate).not.toHaveBeenCalled();
+    });
+
+    test.each(['unpaid', 'paused', 'incomplete'])('a %s subscription sends the person to the Billing Portal, not "Ya tienes Fresco Pro." and not a second Checkout (A8-PAY-01)', async (status) => {
+      supa = withProfile({ ...free, stripe_customer_id: 'cus_1', stripe_livemode: false });
+      subscriptionsList.mockResolvedValue({ data: [{ id: 'sub_1', status }] });
+
+      const res = await POST(req());
+
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ url: 'https://billing.stripe/portal' });
+      expect(portalCreate.mock.calls[0][0]).toEqual({ customer: 'cus_1', return_url: 'https://test.fresco.local/profile' });
       expect(sessionsCreate).not.toHaveBeenCalled();
     });
 

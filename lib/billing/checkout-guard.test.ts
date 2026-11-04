@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { checkoutSessionWindow, ensureCheckoutCustomer, hasLiveSubscription } from './checkout-guard';
+import { checkoutSessionWindow, ensureCheckoutCustomer, subscriptionStanding } from './checkout-guard';
 
 /** FRESCO-1002 — the pure parts of the double-checkout guard; the route test covers the wiring. */
 
@@ -33,21 +33,29 @@ describe('checkoutSessionWindow', () => {
   });
 });
 
-describe('hasLiveSubscription', () => {
+describe('subscriptionStanding', () => {
   const stripeWith = (statuses: string[]) => ({
     subscriptions: { list: mock(async () => ({ data: statuses.map((status, i) => ({ id: `sub_${i}`, status })) })) },
-  }) as unknown as Parameters<typeof hasLiveSubscription>[0];
+  }) as unknown as Parameters<typeof subscriptionStanding>[0];
 
-  test.each(['active', 'trialing', 'past_due', 'unpaid', 'incomplete', 'paused'])('%s is live', async (status) => {
-    expect(await hasLiveSubscription(stripeWith([status]), 'cus_1')).toBe(true);
+  test.each(['active', 'trialing', 'past_due'])('%s is subscribed', async (status) => {
+    expect(await subscriptionStanding(stripeWith([status]), 'cus_1')).toBe('subscribed');
   });
 
-  test.each(['canceled', 'incomplete_expired'])('%s is not', async (status) => {
-    expect(await hasLiveSubscription(stripeWith([status]), 'cus_1')).toBe(false);
+  test.each(['unpaid', 'incomplete', 'paused'])('%s is a payment problem, not "already Pro" (A8-PAY-01)', async (status) => {
+    expect(await subscriptionStanding(stripeWith([status]), 'cus_1')).toBe('payment-problem');
   });
 
-  test('no subscriptions at all is not live', async () => {
-    expect(await hasLiveSubscription(stripeWith([]), 'cus_1')).toBe(false);
+  test('a paying subscription wins over a stuck one', async () => {
+    expect(await subscriptionStanding(stripeWith(['unpaid', 'active']), 'cus_1')).toBe('subscribed');
+  });
+
+  test.each(['canceled', 'incomplete_expired'])('%s is none', async (status) => {
+    expect(await subscriptionStanding(stripeWith([status]), 'cus_1')).toBe('none');
+  });
+
+  test('no subscriptions at all is none', async () => {
+    expect(await subscriptionStanding(stripeWith([]), 'cus_1')).toBe('none');
   });
 });
 

@@ -43,7 +43,7 @@ describe('getStoredSubscriptionId', () => {
 
 describe('activateProPlan', () => {
   test('writes the Pro plan, the Stripe ids with their mode and clears the failed-payment aviso, for that user only', async () => {
-    const { client, callsOf } = createMockClient();
+    const { client, callsOf } = createMockClient({ data: [{ id: 'user-1' }] });
 
     await activateProPlan(client, { userId: 'user-1', stripeCustomerId: 'cus_1', stripeSubscriptionId: 'sub_1', planExpiresAt: '2026-11-01T00:00:00.000Z', stripeLivemode: false });
 
@@ -57,6 +57,13 @@ describe('activateProPlan', () => {
       payment_failed_at: null,
     }]]);
     expect(callsOf('eq')).toEqual([['id', 'user-1']]);
+  });
+
+  test('throws when no profile row matched, so a paid customer is never acked on Free (A8-PAY-06)', async () => {
+    const args = { userId: 'gone', stripeCustomerId: 'c', stripeSubscriptionId: 's', planExpiresAt: 't', stripeLivemode: false };
+
+    expect(await thrown(activateProPlan(createMockClient({ data: [] }).client, args))).toBeInstanceOf(Error);
+    expect(await thrown(activateProPlan(createMockClient({ data: null }).client, args))).toBeInstanceOf(Error);
   });
 
   test('throws on a write failure', async () => {

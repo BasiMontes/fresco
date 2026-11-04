@@ -78,7 +78,7 @@ Order matters. Production must have the live keys and the database must say live
 
 4. Redeploy production so it picks up the keys, then verify with a real checkout that the profile gets `stripe_livemode = true` next to its Stripe ids.
 
-From this moment the events of `fresco-pre` and `fresco-dev` (test mode) are refused by every deploy, and `fresco-pre` answers 503 on checkout.
+From this moment the test-mode events of `fresco-pre` are refused by the current deploy, and `fresco-pre` answers 503 on checkout. This does NOT hold for the frozen `fresco-dev` deploy (it predates the mode guards; `vercel.json` has `git.deploymentEnabled.dev: false`): it would still write Pro from a test event. Its Stripe endpoint must be disabled or deleted by the owner BEFORE the flip; `check-stripe-endpoints.ts` (Before the flip) is the gate, and a run that still lists an enabled `fresco-dev` endpoint blocks the flip (A8-PAY-04).
 
 ## After the flip
 

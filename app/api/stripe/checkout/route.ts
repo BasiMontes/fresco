@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import type { BillingState } from '@/lib/billing/billing-state';
 import { NextResponse } from 'next/server';
 import { getBillingState } from '@/lib/billing/billing-state';
-import { checkoutSessionWindow, ensureCheckoutCustomer, expireOtherOpenCheckoutSessions, hasLiveSubscription } from '@/lib/billing/checkout-guard';
+import { checkoutSessionWindow, ensureCheckoutCustomer, expireOtherOpenCheckoutSessions, subscriptionStanding } from '@/lib/billing/checkout-guard';
 import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
 import { WITHDRAWAL_WAIVER_WINDOW_MS } from '@/lib/legal/consent';
 import { hasRecordedConsent } from '@/lib/legal/consent-store';
@@ -166,8 +166,16 @@ export async function POST(request: NextRequest) {
     // FRESCO-1002: ask Stripe, not the profile, whether a subscription is already live: the
     // profile stays `free` until the webhook lands. Failing to ask is a 500, never a pass.
     const customerId = await ensureCheckoutCustomer(stripe, { userId: user.id, email: user.email, storedCustomerId: stripeCustomerId });
-    if (await hasLiveSubscription(stripe, customerId)) {
+    const standing = await subscriptionStanding(stripe, customerId);
+    if (standing === 'subscribed') {
       return NextResponse.json({ error: 'Ya tienes Fresco Pro.' }, { status: 409 });
+    }
+    // FRESCO-1106 (A8-PAY-01): an unpaid/paused/incomplete subscription is still open at Stripe,
+    // so a second Checkout would double-bill, yet the profile is Free and the portal CTA is
+    // hidden. The Pro button lands on the Billing Portal, where the card is fixed.
+    if (standing === 'payment-problem') {
+      const portal = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: `${origin}/profile` });
+      return NextResponse.json({ url: portal.url });
     }
 
     const { idempotencyKey, expiresAt } = checkoutSessionWindow({ userId: user.id, interval });
