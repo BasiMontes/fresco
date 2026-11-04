@@ -304,6 +304,26 @@ describe('the reverse check: a diet flag that the text breaks (A7-TEST-01)', () 
   });
 });
 
+describe('audit 8 hygiene card (FRESCO-1108)', () => {
+  test('A8-SAFEB-04: teriyaki, mirin and sake break halal and kosher unless the claims are withdrawn', () => {
+    expect(reports(recipe(['pollo', 'salsa teriyaki', 'arroz'], { alergenos: ['soja', 'gluten'], dieta: { halal: true } }), 'halal es true con cerdo o alcohol')).toBe(true);
+    expect(reports(recipe(['arroz', 'mirin'], { dieta: { halal: true } }), 'halal es true con cerdo o alcohol')).toBe(true);
+    expect(reports(recipe(['pollo', 'salsa teriyaki', 'arroz'], { alergenos: ['soja', 'gluten'], dieta: { kosher: true } }), 'kosher')).toBe(true);
+    expect(reports(recipe(['pollo', 'salsa teriyaki', 'arroz'], { alergenos: ['soja', 'gluten'], dieta: { halal: false, kosher: false } }), 'halal es true')).toBe(false);
+  });
+
+  test('A8-SAFEB-06: aguacate and boniato break bajo_fodmap', () => {
+    expect(reports(recipe(['aguacate', 'lima'], { dieta: { bajo_fodmap: true } }), 'bajo_fodmap es true con un desencadenante')).toBe(true);
+    expect(reports(recipe(['boniato', 'canela'], { dieta: { bajo_fodmap: true } }), 'bajo_fodmap es true con un desencadenante')).toBe(true);
+    expect(reports(recipe(['aguacate', 'lima'], { dieta: { bajo_fodmap: false } }), 'bajo_fodmap es true')).toBe(false);
+  });
+
+  test('A8-SAFEA-07: feta, queso azul and mozzarella stay vegetarian by convention (only parmesano and gruyere are policed)', () => {
+    expect(reports(recipe(['mozzarella', 'tomate'], { alergenos: ['lactosa'], dieta: { vegetariano: true } }), 'vegetariano es true con un queso de cuajo')).toBe(false);
+    expect(reports(recipe(['parmesano', 'pasta'], { alergenos: ['lactosa', 'gluten'], dieta: { vegetariano: true } }), 'vegetariano es true con un queso de cuajo')).toBe(true);
+  });
+});
+
 describe('findings carry a stable key for the ratchet', () => {
   test('the key is the slug (two rows can share a nombre) plus the rule, not the wording', () => {
     const keys = auditRecipeFindings(recipe(['hummus'], { slug: 'tostada-hummus-pepino' })).map(finding => finding.key);

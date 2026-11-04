@@ -100,9 +100,9 @@ const STEP_NOISE: Record<string, RegExp> = {
 };
 
 /** Pork and alcohol: not halal. */
-export const NOT_HALAL = words('cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|vino|cerveza|ron|brandy|licor|cava|bacon|beicon');
+export const NOT_HALAL = words('cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|vino|cerveza|ron|brandy|licor|cava|bacon|beicon|mirin|sake|teriyaki');
 /** Never kosher: rabbit, shellfish (also covered by crustaceos/moluscos), pork, and fish without scales (FRESCO-1096). */
-export const NOT_KOSHER = words('conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon|rape|anguilas?|siluro|tiburon|cazon|pez espada|emperador|marrajo|mielga|lamprea');
+export const NOT_KOSHER = words('conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon|rape|anguilas?|siluro|tiburon|cazon|pez espada|emperador|marrajo|mielga|lamprea|mirin|sake|teriyaki');
 export const MEAT = words('ternera|pollo|pavo|cordero|carne|pato|codornices|higado|rabo de toro|morcillo|solomillo');
 /** Anything from an animal that makes a recipe not vegetarian: meat, pork, gelatin. Fish and shellfish come from the allergen table. */
 export const NOT_VEGETARIAN = words(
@@ -157,7 +157,7 @@ const PALEO_ALLERGENS = ['gluten', 'lactosa', 'soja', 'cacahuetes'];
 /** bajo_fodmap: the triggers the card names (cereal, dairy, garlic, asparagus, cauliflower, mushrooms, leek) and the obvious ones. */
 export const FODMAP_BREAKERS = words(
   'ajo|cebolla|cebolletas?|puerros?|esparragos?|coliflor|setas?|champinones|garbanzos?|lentejas?|alubias?|judias blancas|guisantes|habas'
-  + '|manzanas?|peras?|mango|sandia|miel',
+  + '|manzanas?|peras?|mango|sandia|miel|aguacates?|boniatos?',
 );
 const FODMAP_ALLERGENS = ['gluten', 'lactosa'];
 
@@ -166,7 +166,11 @@ const UNNAMED_MINCE = /\bcarne picada\b(?! de (?:ternera|pollo|pavo|cordero|vacu
 /** kosher: wine, and what is made from it, unless the text says the wine is certified. */
 export const WINE = words('vino|vermut|cava|brandy');
 const CERTIFIED_WINE = /\bvino (?:kosher|certificado)\b/g;
-/** vegetarian: cheeses made with animal rennet unless the text names the vegetarian version. */
+/**
+ * vegetarian: cheeses made with animal rennet unless the text names the vegetarian version. Convention (A8-SAFEA-07):
+ * only parmesano and gruyere are policed; feta, queso azul, mozzarella and an unnamed queso pass, because the recipe
+ * cannot name a rennet. `vegetariano` means lacto-ovo, rennet not considered beyond those two.
+ */
 const RENNET_CHEESE = /\b(?:parmesano|gruyere)\b/;
 const VEGETARIAN_CHEESE = /\b(?:parmesano|gruyere)(?: dop)? vegetariano\b|\bqueso vegetariano\b/g;
 
