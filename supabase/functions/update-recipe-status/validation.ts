@@ -29,6 +29,19 @@ export function assertEstadoValido(estado: unknown): asserts estado is ClientSet
   }
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * A8-API-02 (FRESCO-1107): `nueva_recipe_id` goes to `get_filtered_recipes(p_recipe_id uuid)`; text that
+ * is not a UUID used to come back as Postgres 22P02, a 500 and a Sentry alert. It is the caller's
+ * mistake, so it is a 400.
+ */
+export function assertRecipeIdValido(value: unknown): asserts value is string {
+  if (typeof value !== 'string' || !UUID_PATTERN.test(value)) {
+    throw new HttpError('nueva_recipe_id no es un UUID válido', 400)
+  }
+}
+
 /**
  * A4-L7 (audit-4): the update payload for meal_plan_recipes, holding only the
  * fields the target `estado` actually permits.

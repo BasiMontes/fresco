@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { HttpError } from '../_shared/http.ts'
-import { assertEstadoValido, assertTransicionPermitida, buildUpdatePayload, CLIENT_SETTABLE_ESTADOS } from './validation.ts'
+import { assertEstadoValido, assertRecipeIdValido, assertTransicionPermitida, buildUpdatePayload, CLIENT_SETTABLE_ESTADOS } from './validation.ts'
 
 function statusOf(fn: () => void): number | undefined {
   try {
@@ -34,6 +34,19 @@ describe('assertEstadoValido (A4-L7)', () => {
     expect(statusOf(() => assertEstadoValido(3))).toBe(400)
     expect(statusOf(() => assertEstadoValido(null))).toBe(400)
     expect(statusOf(() => assertEstadoValido(undefined))).toBe(400)
+  })
+})
+
+describe('assertRecipeIdValido (A8-API-02)', () => {
+  test('accepts a UUID', () => {
+    expect(() => assertRecipeIdValido('0aff1ed8-54c1-4def-a56f-c60f84ae5e50')).not.toThrow()
+  })
+
+  test('rejects text that is not a UUID with a 400, not a 22P02 500', () => {
+    expect(statusOf(() => assertRecipeIdValido('not-a-uuid'))).toBe(400)
+    expect(statusOf(() => assertRecipeIdValido("1' or '1'='1"))).toBe(400)
+    expect(statusOf(() => assertRecipeIdValido(''))).toBe(400)
+    expect(statusOf(() => assertRecipeIdValido(undefined))).toBe(400)
   })
 })
 

@@ -22,7 +22,7 @@ import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { enforceRateLimit } from '../_shared/rate-limit.ts'
 import { logger } from '../_shared/logger.ts'
-import { assertEstadoValido, assertTransicionPermitida, buildUpdatePayload } from './validation.ts'
+import { assertEstadoValido, assertRecipeIdValido, assertTransicionPermitida, buildUpdatePayload } from './validation.ts'
 import { semanaActualMadrid } from './week.ts'
 import type { SlotOwnershipRow, UpdateRecipeStatusRequest, UpdateRecipeStatusResponse } from './types.ts'
 
@@ -58,6 +58,7 @@ Deno.serve(async (req: Request) => {
     if (estado === 'sustituida' && !nueva_recipe_id) {
       throw new HttpError('Se requiere nueva_recipe_id para estado "sustituida"', 400)
     }
+    if (estado === 'sustituida') assertRecipeIdValido(nueva_recipe_id) // A8-API-02: 400, not a 22P02 500
 
     // 3. Load the slot + its parent plan's id + owner, in one query
     const { data: slot, error: slotError } = await supabase
