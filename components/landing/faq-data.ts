@@ -24,7 +24,7 @@ export const FAQS = [
   },
   {
     question: '¿Funciona si somos veganos o celíacos?',
-    answer: 'Sí, es uno de los casos más habituales. El sistema filtra por dieta antes de generar cualquier menú.',
+    answer: 'Sí, es uno de los casos más habituales. El sistema filtra por dieta antes de generar cualquier menú. Revisa siempre la etiqueta de los productos que compres.',
   },
   {
     question: '¿Puedo cancelar cuando quiera?',

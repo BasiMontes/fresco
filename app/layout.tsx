@@ -13,7 +13,7 @@ import { CookieConsentProvider } from '@/components/legal/cookie-consent-context
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
-import { getMetadataBase } from '@/lib/seo/canonical';
+import { getMetadataBase, pinSocialImageOrigin } from '@/lib/seo/canonical';
 import { indexingRobots } from '@/lib/seo/indexing';
 import { getSiteVerification } from '@/lib/seo/site-verification';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/structured-data';
@@ -79,6 +79,8 @@ const DESCRIPTION
 // (FRESCO-471, `lib/seo/canonical.ts`) is the single source of truth for
 // this per-environment base — the previous local `resolveBaseUrl()` here
 // duplicated it exactly.
+pinSocialImageOrigin();
+
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: TITLE,
