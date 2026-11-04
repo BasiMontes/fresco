@@ -164,3 +164,50 @@ describe('ingredienteParaMatching (adapter from the FRESCO-488 dictionary)', () 
     expect(ingredienteParaMatching({ ...entrada, porcionReceta: { cantidad: 0, unidad: 'g' } })).toBeNull();
   });
 });
+
+/** FRESCO-1098 (audit 8, A8-LOGIC-01): fresh fish and shellfish never link a tin or a whole cut. */
+describe('emparejarIngrediente — fresh seafood packs', () => {
+  function pack(id: string, nombre: string, gramos: number, precioEnvase: number) {
+    return { ...PRODUCTOS_SINTETICOS[0], idExterno: id, nombre, envase: { cantidad: gramos, unidad: 'g' as const }, precioEnvase, disponible: true };
+  }
+
+  test('mussels do not link a 111 g tin', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['mejillones'], { cantidad: 500, unidad: 'g' }),
+      candidatos: [pack('lata', 'Mejillones al natural Hacendado pequeños', 111, 3.22)],
+    });
+    expect(match).toBeNull();
+  });
+
+  test('mussels link a pack close to the portion', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['mejillones'], { cantidad: 500, unidad: 'g' }),
+      candidatos: [pack('lata', 'Mejillones al natural Hacendado pequeños', 111, 3.22), pack('vivo', 'Mejillones vivos malla', 1000, 4)],
+    });
+    expect(match?.producto.idExterno).toBe('vivo');
+  });
+
+  test('cod does not link a 2,5 kg whole piece for a 400 g portion', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['bacalao'], { cantidad: 400, unidad: 'g' }),
+      candidatos: [pack('pieza', 'Bacalao a rodajas', 2510, 34.51)],
+    });
+    expect(match).toBeNull();
+  });
+
+  test('cod links a loin close to the portion', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['bacalao'], { cantidad: 400, unidad: 'g' }),
+      candidatos: [pack('pieza', 'Bacalao a rodajas', 2510, 34.51), pack('lomo', 'Lomo de bacalao', 400, 9)],
+    });
+    expect(match?.producto.idExterno).toBe('lomo');
+  });
+
+  test('other ingredients keep the wide pack range (a small spice jar)', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['canela'], { cantidad: 100, unidad: 'g' }),
+      candidatos: [pack('bote', 'Canela molida Hacendado bote', 30, 1.5)],
+    });
+    expect(match?.producto.idExterno).toBe('bote');
+  });
+});
