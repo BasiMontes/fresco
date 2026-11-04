@@ -18,7 +18,7 @@ A deploy or database whose mode cannot be read makes the webhook answer 500 (Str
 
 ```bash
 bunx varlock run -- bun scripts/check-stripe-go-live.ts              # with the key of the mode you are checking
-bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning # once the dunning line below is confirmed
+bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning --ack email-delivery # once the two MANUAL lines below are confirmed
 ```
 
 Read-only: it prints names, ids and booleans, never a value. Run it once with the **test** key now and once with the **live** key before the flip. Stripe keeps the two modes apart, so a line that passes in test mode proves nothing about live: the live account has its own portal configuration, webhook endpoint and prices. The Vercel and Supabase lines do not depend on the mode. The command exits 0 only when every line is `PASS` (a `WARN` does not block).
@@ -31,6 +31,7 @@ Read-only: it prints names, ids and booleans, never a value. Run it once with th
 | `vercel-production-names` | The production scope holds `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO_MONTH`, `CRON_SECRET`, one of `STRIPE_WEBHOOK_SECRET_PROD` / `STRIPE_WEBHOOK_SECRET`, and one of `RESEND_API_KEY` / `GMAIL_SMTP_APP_PASSWORD` (the sender line below). `STRIPE_PRICE_ID_PRO_ANUAL` is needed for the annual plan | Vercel -> the project -> Settings -> Environment Variables, **Production** scope only. Preview keeps the test values | Names only |
 | `supabase-secrets-names` | The Edge Functions hold `STRIPE_SECRET_KEY`. It must be the **live** key at the same moment as the Vercel one, or the functions talk to the other mode's customers | `supabase secrets set STRIPE_SECRET_KEY=<key>` typed in your own terminal at the flip; never through a chat | Name only: a secret's value cannot be read back |
 | `dunning` | Failed payments: Smart Retries on, and when retries run out the action is **cancel the subscription**. The webhook downgrades on `unpaid` and on `deleted`; a setting that only marks the invoice uncollectible leaves the subscription alive. The grace is capped at 30 days in code (`isProEntitlementActive`) | Stripe dashboard -> Settings -> Billing -> Subscriptions and emails -> Manage failed payments | **No**: Stripe has no API for it. It stays `MANUAL` and blocks until you run with `--ack dunning` |
+| `email-delivery` | One real delivery of the subscription confirmation email to a mailbox that is **not the owner's** (FRESCO-1105, A8-LAUNCH-02). While the sender is Resend's sandbox it delivers only to the account owner, so a real customer would be charged and never receive the legal confirmation. The proof is a test-mode checkout with a second mailbox (see "The sender domain is verified before Stripe goes live" below) and `pending_confirmation_emails` empty afterwards | The provisional Gmail SMTP sender or the verified Resend domain, below | **No**: no API shows who received a mail. It stays `MANUAL` and blocks until you run with `--ack email-delivery` |
 
 The withdrawal text and the "IVA incluido" rendering are code, not settings:
 
@@ -39,7 +40,7 @@ The withdrawal text and the "IVA incluido" rendering are code, not settings:
 
 ## Before the flip
 
-- [ ] `bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning` exits 0 with the **live** key (the checklist above).
+- [ ] `bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning --ack email-delivery` exits 0 with the **live** key (the checklist above).
 - [ ] The migration that creates `billing_mode` is on the hosted database: `supabase migration list --linked` shows it applied. Without it the webhook answers 500.
 - [ ] Every Stripe endpoint points at a deploy of the **current SHA**. For each environment that has an enabled endpoint, `vercel inspect https://<host>` and compare its creation time with the commit being released. A stale deploy is a second writer of subscription state (A7-PAY-03).
 - [ ] The endpoints match the deploys this repo serves. Run it once per mode, with the test key and with the live key:

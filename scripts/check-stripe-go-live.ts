@@ -19,12 +19,14 @@
  * each key (the key never leaves the process: `bunx varlock run -- ...`). The Vercel and Supabase
  * checks do not depend on the mode.
  *
- * What Stripe does not expose through its API (the dunning rules) cannot be verified: it is listed
- * as MANUAL and blocks until the owner confirms it with `--ack dunning`.
+ * What no API exposes cannot be verified: it is listed as MANUAL and blocks until the owner
+ * confirms it by id. `--ack dunning` is the Stripe dunning rules. `--ack email-delivery` (FRESCO-1105,
+ * audit 8 A8-LAUNCH-02) is one real delivery of the subscription confirmation email to a mailbox
+ * that is not the owner's: the guide demanded it, but nothing stopped the flip without it.
  *
  * Usage:
  *   bunx varlock run -- bun scripts/check-stripe-go-live.ts
- *   bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning
+ *   bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning --ack email-delivery
  *
  * Exit codes: 0 every check passes (warnings allowed), 1 something is missing, 2 unusable setup.
  */
@@ -150,12 +152,18 @@ export function auditNames(scope: string, present: ReadonlySet<string>, { requir
   return checks;
 }
 
-/** The checks Stripe's API cannot answer: blocking until the owner acknowledges each one by id. */
+/** The checks no API can answer: blocking until the owner acknowledges each one by id. */
 export function manualChecks(acknowledged: ReadonlySet<string>): Check[] {
   const dunning = 'Stripe dashboard -> Settings -> Billing -> Subscriptions and emails -> Manage failed payments: Smart Retries on, and the final action is "cancel the subscription" (the webhook downgrades on `unpaid` and on `deleted`)';
-  return [acknowledged.has('dunning')
-    ? { id: 'dunning', status: 'pass', detail: 'acknowledged by the owner (--ack dunning)' }
-    : { id: 'dunning', status: 'manual', detail: `not verifiable through the API. Confirm in the ${dunning}, then rerun with --ack dunning` }];
+  const emailDelivery = 'a checkout in test mode with a second mailbox that is NOT the owner\'s, and the subscription confirmation email arrived there (a sender still on Resend\'s sandbox delivers only to the account owner, so a real customer would be charged and never receive the legal confirmation, TRLGDCU art. 98.7). `select count(*) from public.pending_confirmation_emails` is 0 afterwards';
+  return [
+    acknowledged.has('dunning')
+      ? { id: 'dunning', status: 'pass', detail: 'acknowledged by the owner (--ack dunning)' }
+      : { id: 'dunning', status: 'manual', detail: `not verifiable through the API. Confirm in the ${dunning}, then rerun with --ack dunning` },
+    acknowledged.has('email-delivery')
+      ? { id: 'email-delivery', status: 'pass', detail: 'acknowledged by the owner (--ack email-delivery)' }
+      : { id: 'email-delivery', status: 'manual', detail: `no API shows who received a mail. Confirm one real delivery: ${emailDelivery}. Then rerun with --ack email-delivery` },
+  ];
 }
 
 /** 0 when nothing fails and nothing manual is left unacknowledged, 1 otherwise. */
