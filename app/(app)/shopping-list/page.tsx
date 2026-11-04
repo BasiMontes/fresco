@@ -10,7 +10,6 @@ import { getUserDietaryPreferences } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
-import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { createClient } from '@/lib/supabase/server';
 
 // FRESCO-966: per-route tab title (WCAG 2.4.2); the root layout title is the fallback.
@@ -77,17 +76,15 @@ export default async function ShoppingListPage() {
     // try/catch here.
     const nuevosNombres = await getNombresNuevos(supabase, { semanaIsoActual: plan.semanaIso, pasillosActuales: list.pasillos, userId: user?.id });
 
-    // FRESCO-792: same weekly figure `/menu` shows. A profile read failure
-    // just means the default household size, same as `/menu`.
+    // FRESCO-1099: the summary total is the sum of the rows, computed in the view from `compra`.
     const preferences = await getUserDietaryPreferences(supabase, user?.id).catch(() => null);
     const perfil = perfilCompraDesde(preferences);
-    const costeMenu = costeSemanalEstimado(plan.menu, { numPersonas: preferences?.num_personas, perfil });
 
     // FRESCO-808: prices and supermarket links resolved here, so the catalogs stay out of the client bundle.
     const compra = resolverCompra({ pasillos: list.pasillos, perfil });
 
     // FRESCO-1010: keyed by the stale state so a refreshed list replaces the one held in client state.
-    return <ShoppingListView key={`${list.id}:${list.desactualizada ? 'stale' : 'fresh'}`} list={list} nuevosNombres={nuevosNombres} costeMenu={costeMenu} compra={compra} />;
+    return <ShoppingListView key={`${list.id}:${list.desactualizada ? 'stale' : 'fresh'}`} list={list} nuevosNombres={nuevosNombres} compra={compra} />;
   }
   catch (error) {
     console.error('[/shopping-list] getShoppingListForPlan failed, falling back to generator', error);

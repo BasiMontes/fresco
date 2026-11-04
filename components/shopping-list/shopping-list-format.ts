@@ -1,4 +1,6 @@
-import type { DiaSemana, ShoppingListItem } from '@/lib/api/types';
+import type { DiaSemana, ShoppingListItem, ShoppingListPasillo } from '@/lib/api/types';
+import type { CompraPorItem } from '@/lib/grocery/compra';
+import { claveItemCompra } from '@/lib/grocery/compra';
 import { capitalize } from '@/lib/utils';
 
 /** FRESCO-1028 — owner-set thresholds (2026-10-21): from 14 days the age is highlighted, past 30 the price is hidden. */
@@ -13,6 +15,33 @@ export function frescuraPrecio(dias: number | null): FrescuraPrecio {
   if (dias > PRECIO_OCULTO_TRAS_DIAS) { return 'oculto'; }
   if (dias >= PRECIO_ANTIGUO_DESDE_DIAS) { return 'antiguo'; }
   return 'reciente';
+}
+
+/**
+ * FRESCO-1099 — the price a row prints: the linked product's price, else the stored estimate, and nothing once
+ * the linked price is too old to show. The row and the summary total both read it, so the total is the sum of the rows.
+ */
+export function precioDeFila({ item, linea }: { item: ShoppingListItem, linea: CompraPorItem[string] | undefined }): number | undefined {
+  const enlaces = linea?.enlaces ?? [];
+  // The age rules apply to a linked price only; a row with no link shows its stored estimate as before.
+  const frescura = enlaces.length > 0 ? frescuraPrecio(enlaces[0]?.antiguedadDias ?? null) : 'reciente';
+  return frescura === 'oculto' ? undefined : (linea?.precio ?? item.precio_estimado);
+}
+
+/** FRESCO-1099 — sum of the rows' printed prices, to the cent; `undefined` when no row prints one. */
+export function totalDeLista({ pasillos, compra }: { pasillos: readonly Pick<ShoppingListPasillo, 'nombre' | 'items'>[], compra: CompraPorItem | undefined }): number | undefined {
+  let total = 0;
+  let conPrecio = false;
+  for (const pasillo of pasillos) {
+    for (const item of pasillo.items) {
+      const precio = precioDeFila({ item, linea: compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })] });
+      if (precio !== undefined && Number.isFinite(precio) && precio > 0) {
+        total += precio;
+        conPrecio = true;
+      }
+    }
+  }
+  return conPrecio ? Math.round(total * 100) / 100 : undefined;
 }
 
 /** What the row says about the linked price's age. Past the second threshold it says there is no recent price instead of an age. */

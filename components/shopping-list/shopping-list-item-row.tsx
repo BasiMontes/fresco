@@ -3,7 +3,7 @@ import type { ListEnterItemProps } from '@/components/ui/use-list-enter-animatio
 import type { ShoppingListItem } from '@/lib/api/types';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import { ShoppingCart } from 'lucide-react';
-import { formatUsos, frescuraPrecio, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
+import { formatUsos, frescuraPrecio, precioDeFila, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { normalizeNombre } from '@/lib/api/shopping-list';
@@ -72,7 +72,7 @@ export function ShoppingListItemRow({ item, pasilloNombre, pasilloIdx, itemIdx, 
   // FRESCO-1028 — the age rules apply to a linked price only; a row with no link shows its stored estimate as before.
   const antiguedadDias = enlaces[0]?.antiguedadDias ?? null;
   const frescura = enlaces.length > 0 ? frescuraPrecio(antiguedadDias) : 'reciente';
-  const precio = frescura === 'oculto' ? undefined : (linea?.precio ?? item.precio_estimado);
+  const precio = precioDeFila({ item, linea });
   const antiguedad = enlaces.length > 0 ? textoAntiguedad(antiguedadDias) : null;
   const isShaking = shakeNonce !== null;
 

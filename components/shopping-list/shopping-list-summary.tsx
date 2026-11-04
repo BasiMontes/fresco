@@ -5,13 +5,13 @@ import { formatImporte, formatPrecio } from '@/lib/utils';
 interface ShoppingListSummaryProps {
   pendientes: number
   resumen: ShoppingListPersistido['resumen']
-  /** FRESCO-792 — the weekly cost from `costeSemanalEstimado`; absent falls back to the stored range. */
-  costeMenu: number | undefined
+  /** FRESCO-1099 — the sum of the rows below (`totalDeLista`); absent (no row has a price) falls back to the stored range. */
+  total: number | undefined
   /** FRESCO-790 — the chains that priced a row, as the shopper reads them ("Mercadona y Consum"); empty when none did. */
   fuentesPrecios: string
 }
 
-export function ShoppingListSummary({ pendientes, resumen, costeMenu, fuentesPrecios }: ShoppingListSummaryProps) {
+export function ShoppingListSummary({ pendientes, resumen, total, fuentesPrecios }: ShoppingListSummaryProps) {
   return (
     <Card className="mt-4">
       <div className="grid grid-cols-2 items-start gap-x-4 gap-y-1">
@@ -28,8 +28,8 @@ export function ShoppingListSummary({ pendientes, resumen, costeMenu, fuentesPre
           {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
         </p>
         <p data-testid="shopping_list_summary_total" className="text-right text-h5 font-heading text-primary">
-          {costeMenu !== undefined
-            ? formatPrecio(costeMenu)
+          {total !== undefined
+            ? formatPrecio(total)
             : `${formatImporte(resumen.coste_estimado_min)}–${formatPrecio(resumen.coste_estimado_max)}`}
         </p>
       </div>
