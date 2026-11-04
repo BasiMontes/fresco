@@ -254,6 +254,27 @@ describe('the reverse check: a diet flag that the text breaks (A7-TEST-01)', () 
     },
   );
 
+  test('sin_gluten true with a stock that only a step names is flagged; a listed stock, "su caldo" or a vegetable stock are not (FRESCO-1091)', () => {
+    const marker = 'un caldo que solo aparece en los pasos';
+    const claim = (ingredients: string[], steps: string[]) =>
+      recipe(ingredients, { alergenos: ['apio'], dieta: { sin_gluten: true }, pasos_resumen: steps });
+
+    expect(reports(claim(['arroz', 'bonito'], ['Cubrir con caldo']), marker)).toBe(true);
+    expect(auditRecipeFindings(claim(['arroz'], ['Cubrir con caldo caliente'])).map(finding => finding.key)).toContain('Receta|dieta:sin_gluten_marca');
+    expect(reports(claim(['arroz', 'caldo de verduras'], ['Cubrir con caldo']), marker)).toBe(false);
+    expect(reports(claim(['alubias'], ['Cocer en su caldo']), marker)).toBe(false);
+    expect(reports(claim(['arroz'], ['Cubrir con caldo de verduras']), marker)).toBe(false);
+    expect(reports(recipe(['arroz'], { alergenos: ['apio'], dieta: { sin_gluten: false }, pasos_resumen: ['Cubrir con caldo'] }), marker)).toBe(false);
+  });
+
+  test('sin_gluten true with curry is flagged unless the text says "curry sin gluten" (FRESCO-1092)', () => {
+    const marker = 'sin_gluten es true con un producto que suele llevar trigo o cebada (ingrediente: curry en polvo)';
+
+    expect(reports(recipe(['pollo', 'curry en polvo'], { alergenos: ['mostaza'], dieta: { sin_gluten: true } }), marker)).toBe(true);
+    expect(reports(recipe(['pollo', 'curry sin gluten'], { alergenos: ['mostaza'], dieta: { sin_gluten: true } }), 'sin_gluten es true con un producto')).toBe(false);
+    expect(reports(recipe(['pollo', 'curry en polvo'], { alergenos: ['mostaza'], dieta: { sin_gluten: false } }), marker)).toBe(false);
+  });
+
   test('the brand-dependent rule needs the claim, the whole ingredient name and the ingredient list (FRESCO-1051)', () => {
     const marker = 'según la marca';
     expect(reports(recipe(['arroz', 'caldo'], { alergenos: ['apio'], dieta: { sin_gluten: false } }), marker)).toBe(false);
