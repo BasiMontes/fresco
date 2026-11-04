@@ -20,12 +20,7 @@ const OTHER_SECRET = 'whsec_fresco_1100_other_endpoint';
 /** Past the signature gate the route builds a service client; an unhandled event type never uses it. */
 const createServiceClient = mock((): unknown => ({}));
 
-// A query string makes Bun load a second copy, so this file sees the real modules even when
-// `route.test.ts` ran first and left `@/lib/stripe` and `./route` mocked. The specifiers are
-// variables because TypeScript cannot resolve a path with a query string.
-const REAL_STRIPE_LIB = '@/lib/stripe?fresco-1100-real';
-const FRESH_ROUTE = './route?fresco-1100';
-const realStripeModule = await import(REAL_STRIPE_LIB) as typeof import('@/lib/stripe');
+const realStripeModule = await import('@/lib/stripe');
 // Bun resolves `stripe` to its worker build, whose crypto is async-only; the route calls the
 // synchronous `constructEvent`, which is what Node runs in production (the `default` build). Load
 // that build, or every request would be refused for the wrong reason and these tests would pass blind.
@@ -39,7 +34,7 @@ void mock.module('@/lib/stripe', () => ({
 }));
 void mock.module('@/lib/supabase/service', () => ({ createServiceClient }));
 
-const { POST } = await import(FRESH_ROUTE) as typeof import('./route');
+const { POST } = await import('./route');
 
 const savedSecret = process.env.STRIPE_WEBHOOK_SECRET_DEV;
 afterAll(() => {
