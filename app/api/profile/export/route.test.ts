@@ -11,6 +11,11 @@ import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
 let supa = fakeSupabase({}, { getUser: async () => ({ data: { user: { id: 'user_1', email: 'persona@example.com' } } }) });
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
 
+let feedbackRows: Record<string, unknown>[] = [];
+void mock.module('@/lib/supabase/service', () => ({
+  createServiceClient: () => fakeSupabase({ recipe_user_feedback: { rows: feedbackRows } }).client,
+}));
+
 const { GET } = await import('./route');
 
 function withUser(user: { id: string, email?: string } | null, tables = {}) {
@@ -18,6 +23,7 @@ function withUser(user: { id: string, email?: string } | null, tables = {}) {
 }
 
 beforeEach(() => {
+  feedbackRows = [];
   supa = withUser({ id: 'user_1' });
 });
 
@@ -74,6 +80,15 @@ describe('GET /api/profile/export', () => {
     expect(body).toContain('# user_consents\n');
     expect(body).toContain('# push_subscriptions\n');
     expect(body).toContain('https://push.example/abc');
+  });
+
+  test('FRESCO-1109: includes the cooked / discarded marks (A8-PRIV-02)', async () => {
+    feedbackRows = [{ recipe_id: 'r_7', cocinada_at: '2026-11-01T10:00:00Z', descartada_at: null }];
+
+    const body = await (await GET()).text();
+
+    expect(body).toContain('# recipe_user_feedback\n');
+    expect(body).toContain('r_7');
   });
 
   test('FRESCO-910: a session without an address leaves out the account section', async () => {

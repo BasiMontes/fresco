@@ -65,12 +65,12 @@ describe('AnalyticsConsentSync', () => {
     expect(syncAnalyticsConsent.mock.calls[0][0]).toEqual({ userId: 'user-1', accepted: true });
   });
 
-  test('nothing is written while the banner is undecided', async () => {
+  test('an undecided banner (expired or outdated cookie) overwrites a stale consent with false (FRESCO-1109)', async () => {
     decision = null;
     render();
-    await Promise.resolve();
 
-    expect(syncAnalyticsConsent).not.toHaveBeenCalled();
+    await waitFor(() => expect(syncAnalyticsConsent).toHaveBeenCalledTimes(1));
+    expect(syncAnalyticsConsent.mock.calls[0][0]).toEqual({ userId: 'user-1', accepted: false });
   });
 
   test('nothing is written, and no SDK is loaded, without a session cookie', async () => {

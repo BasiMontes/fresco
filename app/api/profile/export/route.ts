@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { readUserDataForExport } from '@/lib/api/profile-export';
 import { rowsToCsv } from '@/lib/csv/export-csv';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 
 const RATE_LIMIT_ENDPOINT = 'profile-export';
 const RATE_LIMIT_PER_HOUR = 10;
@@ -16,10 +17,11 @@ interface MealPlanRow extends Record<string, unknown> {
 /**
  * GET /api/profile/export — `/profile` danger zone "Backup CSV" (FRESCO-70,
  * format changed to CSV per FRESCO-163 — a spreadsheet a user can actually
- * open beats a JSON blob). Server-side Supabase client only (no service
- * role): every query below is subject to the caller's own RLS policies, so
- * it can only ever read her own rows — same posture as every other
- * server-side read in this app (`lib/api/*`).
+ * open beats a JSON blob). Server-side Supabase client: every query
+ * below is subject to the caller's own RLS policies, so it can only ever read
+ * her own rows. The one exception is `recipe_user_feedback`, closed to every
+ * browser role, read with the service role filtered to the session's user id
+ * (FRESCO-1109, A8-PRIV-02).
  *
  * One `.csv` file, not a ZIP of several — avoids pulling in a zip
  * dependency for what's still a small, single-user export. Multiple
@@ -62,7 +64,7 @@ export async function GET() {
 
   let exported: UserDataExport;
   try {
-    exported = await readUserDataForExport(supabase, user.id);
+    exported = await readUserDataForExport({ client: supabase, feedbackClient: createServiceClient() }, user.id);
   }
   catch (readError) {
     console.error('[/api/profile/export] read failed', readError);
@@ -85,6 +87,8 @@ export async function GET() {
     { name: 'favorites', rows: exported.favorites },
     { name: 'user_consents', rows: exported.consents },
     { name: 'push_subscriptions', rows: exported.pushSubscriptions },
+    // FRESCO-1109 (A8-PRIV-02): the cooked / discarded marks the privacy policy says are recorded.
+    { name: 'recipe_user_feedback', rows: exported.recipeFeedback },
   ];
 
   const csvBlocks = sections
