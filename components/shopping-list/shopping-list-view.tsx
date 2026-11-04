@@ -10,6 +10,7 @@ import { ExportActions } from '@/components/shopping-list/export-actions';
 import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisle';
 import { ShoppingListAllBought } from '@/components/shopping-list/shopping-list-all-bought';
+import { totalDeLista } from '@/components/shopping-list/shopping-list-format';
 import { ShoppingListItemRow } from '@/components/shopping-list/shopping-list-item-row';
 import { ShoppingListStaleBanner } from '@/components/shopping-list/shopping-list-stale-banner';
 import { ShoppingListSuggestions } from '@/components/shopping-list/shopping-list-suggestions';
@@ -26,12 +27,6 @@ export interface ShoppingListViewProps {
    * Optional: absent (or empty) means no "Nuevo" badges this render.
    */
   nuevosNombres?: ReadonlySet<string>
-  /**
-   * FRESCO-792 — the weekly cost from `costeSemanalEstimado`, the same number
-   * `/menu` shows. Absent (calculation failed) falls back to the range the
-   * Edge Function stored with the list.
-   */
-  costeMenu?: number
   /**
    * FRESCO-808 — price and supermarket links per row, resolved on the server
    * (`resolverCompra`, which also applies the shopper's diet and allergens,
@@ -77,7 +72,7 @@ const EMPTY_NOMBRES: ReadonlySet<string> = new Set();
  * server-side in the page by diffing against the previous meal plan's list).
  * No recency column is persisted — the prior list already exists.
  */
-export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMenu, compra }: ShoppingListViewProps) {
+export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, compra }: ShoppingListViewProps) {
   const fuentesPrecios = nombresDeCadenas(compra);
   const { shakingItem, triggerShake } = useShakeItem();
   const { pasillos, suggestions, errorMessage, pendientes, compradosItems, handleToggle, removeComprados, handleAddSuggestion, handleRemoveSuggestion }
@@ -117,7 +112,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, costeMen
       <ShoppingListSummary
         pendientes={pendientes}
         resumen={list.resumen}
-        costeMenu={costeMenu}
+        total={totalDeLista({ pasillos, compra })}
         fuentesPrecios={fuentesPrecios}
       />
 

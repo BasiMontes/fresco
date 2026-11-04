@@ -28,6 +28,11 @@ function compraDe(list: ShoppingListPersistido, perfil?: PerfilCompra): CompraPo
   return resolverCompra({ pasillos: list.pasillos, perfil });
 }
 
+/** A row's text, leaving out the summary total (FRESCO-1099: it equals the row on a one-row list). */
+function textoDeFila(texto: RegExp): HTMLElement | undefined {
+  return screen.queryAllByText(texto).find(el => el.getAttribute('data-testid') !== 'shopping_list_summary_total');
+}
+
 const LIST: ShoppingListPersistido = {
   id: 'list1',
   mealPlanId: 'plan-list1',
@@ -184,15 +189,20 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
     expect(screen.queryByText(/0,00€/)).toBeNull();
   });
 
-  test('the summary shows the weekly cost it is given, not the stored snapshot', () => {
-    renderWithProviders(<ShoppingListView list={LIST_PRICES} compra={compraDe(LIST_PRICES)} costeMenu={42.5} />);
+  test('the summary total is the sum of the row prices it prints (FRESCO-1099)', () => {
+    renderWithProviders(<ShoppingListView list={LIST_PRICES} compra={compraDe(LIST_PRICES)} />);
 
-    expect(screen.getByText('42,50€')).toBeTruthy();
+    const suma = ITEMS.reduce((acc, item) => acc + (precioLinea(item) as number), 0);
+    expect(screen.getByTestId('shopping_list_summary_total').textContent).toBe(formatPrecio(Math.round(suma * 100) / 100));
     expect(screen.queryByText(/99,00€/)).toBeNull();
   });
 
-  test('falls back to the stored range when no weekly cost could be computed', () => {
-    renderWithProviders(<ShoppingListView list={LIST_PRICES} compra={compraDe(LIST_PRICES)} />);
+  test('falls back to the stored range when no row carries a price', () => {
+    const sinPrecios: ShoppingListPersistido = {
+      ...LIST_PRICES,
+      pasillos: [{ nombre: 'Varios', orden: 1, items: [{ nombre: 'producto sin catalogo xyz', cantidad: 1, unidad: 'unidades', comprado: false }] }],
+    };
+    renderWithProviders(<ShoppingListView list={sinPrecios} compra={compraDe(sinPrecios)} />);
 
     expect(screen.getByText(/99,00–99,00€/)).toBeTruthy();
   });
@@ -225,7 +235,7 @@ describe('ShoppingListView — diet-compatible supermarket links (FRESCO-826)', 
 
     expect(screen.queryByTestId('shopping_list_item_0_0_mercadona_link')).toBeNull();
     expect(screen.queryByTestId('shopping_list_item_0_0_consum_link')).toBeNull();
-    expect(screen.getByText(/1,50€/)).toBeTruthy();
+    expect(textoDeFila(/1,50€/)).toBeTruthy();
   });
 });
 
@@ -282,7 +292,7 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
     const aviso = screen.getByTestId('shopping_list_item_0_0_precio_antiguedad');
     expect(aviso).toHaveAttribute('data-frescura', frescura);
     expect(aviso).toHaveTextContent(`precio de hace ${dias} días`);
-    expect(screen.getByText(/1,20€/)).toBeTruthy();
+    expect(textoDeFila(/1,20€/)).toBeTruthy();
   });
 
   test('past 30 days the price is hidden and the supermarket link stays', () => {
@@ -310,7 +320,7 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
   test('without resolved purchase data a row shows its stored estimate and no link', () => {
     renderWithProviders(<ShoppingListView list={LIST_FALSA} />);
 
-    expect(screen.getByText(/0,50€/)).toBeTruthy();
+    expect(textoDeFila(/0,50€/)).toBeTruthy();
     expect(screen.queryByTestId('shopping_list_item_0_0_cadenafalsa_link')).toBeNull();
   });
 
