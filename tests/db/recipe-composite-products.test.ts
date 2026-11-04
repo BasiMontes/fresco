@@ -10,7 +10,10 @@
  *   4. a product the steps name is also in the ingredient list (bechamel, crema de limón, salsa de
  *      soja, vinagre, curry), so the shopping list buys it;
  *   5. FRESCO-1086 (audit 8 A8-SAFEA-01): a recipe that says César, in its name or its text, carries
- *      `huevo` and `pescado` (the dressing is egg yolk and anchovy) and never claims `sin_huevo`.
+ *      `huevo` and `pescado` (the dressing is egg yolk and anchovy) and never claims `sin_huevo`;
+ *   6. FRESCO-1093 to 1096 and 1115 (audit 8 allergen batch): pad thai, falafel, an unspecified
+ *      "bebida vegetal", a fish without scales and a Caesar dressing keep only the claims their text
+ *      can back (the owner's criterion of 2026-11-04: over-label when a product is not specified).
  *
  * Inactive rows too, so a reactivated recipe is already right.
  *
@@ -99,6 +102,51 @@ describe.skipIf(!(RUN && reachable))('compound products over the catalogue (real
 
     const wrong = caesar
       .filter(row => !row.alergenos.includes('huevo') || !row.alergenos.includes('pescado') || row.dieta?.sin_huevo === true)
+      .map(row => row.slug);
+
+    expect(wrong).toEqual([]);
+  });
+
+  test('pad thai tags huevo and pescado and is not sin_huevo; falafel tags gluten, huevo and sesamo and is neither sin_gluten nor sin_huevo (the query returns 0)', async () => {
+    const rows = await catalogue();
+    const padThai = rows.filter(row => /pad thai/i.test(row.nombre));
+    const falafel = rows.filter(row => /falafel/i.test(row.nombre));
+    expect(padThai.length).toBeGreaterThanOrEqual(2);
+    expect(falafel.length).toBeGreaterThanOrEqual(1);
+
+    const wrongPadThai = padThai
+      .filter(row => !row.alergenos.includes('huevo') || !row.alergenos.includes('pescado') || row.dieta?.sin_huevo === true)
+      .map(row => row.slug);
+    const wrongFalafel = falafel
+      .filter(row => !['gluten', 'huevo', 'sesamo'].every(a => row.alergenos.includes(a)) || row.dieta?.sin_gluten === true || row.dieta?.sin_huevo === true)
+      .map(row => row.slug);
+
+    expect(wrongPadThai).toEqual([]);
+    expect(wrongFalafel).toEqual([]);
+  });
+
+  test('a recipe that uses an unspecified "bebida vegetal" tags soja and frutos_de_cascara (the query returns 0)', async () => {
+    const plantDrink = (await catalogue()).filter(row => /bebida vegetal/i.test(text(row)));
+    expect(plantDrink.length).toBeGreaterThanOrEqual(3);
+
+    const wrong = plantDrink
+      .filter(row => !row.alergenos.includes('soja') || !row.alergenos.includes('frutos_de_cascara'))
+      .map(row => row.slug);
+
+    expect(wrong).toEqual([]);
+  });
+
+  test('no kosher recipe names a fish without scales (the query returns 0)', async () => {
+    const wrong = (await catalogue())
+      .filter(row => row.dieta?.kosher === true && /\b(?:rape|anguilas?|siluro|tiburon|tiburón|cazon|cazón|pez espada|emperador|marrajo|mielga|lamprea)\b/i.test(text(row)))
+      .map(row => row.slug);
+
+    expect(wrong).toEqual([]);
+  });
+
+  test('a Caesar recipe claims sin_gluten only when its text says so (the query returns 0)', async () => {
+    const wrong = (await catalogue())
+      .filter(row => /c[eé]sar/i.test(row.nombre) && row.dieta?.sin_gluten === true && !/sin gluten/i.test(row.ingredientes_principales.join(' ')))
       .map(row => row.slug);
 
     expect(wrong).toEqual([]);

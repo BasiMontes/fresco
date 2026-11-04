@@ -28,8 +28,8 @@ interface Row {
 const CONFIRMED: { slug: string, why: string, alergenos: string[], notFree: string[] }[] = [
   { slug: 'tostada-hummus-pepino', why: 'hummus is made with tahini', alergenos: ['gluten', 'sesamo'], notFree: [] },
   { slug: 'moussaka-de-berenjena', why: 'bechamel is thickened with flour', alergenos: ['gluten', 'lactosa'], notFree: ['sin_gluten'] },
-  { slug: 'pad-thai-de-gambas', why: 'soy sauce is soy and wheat', alergenos: ['crustaceos', 'huevo', 'cacahuetes', 'soja', 'gluten'], notFree: ['sin_gluten'] },
-  { slug: 'pad-thai-de-gambas-b41', why: 'the pad thai sauce is soy sauce (its steps say only "la salsa")', alergenos: ['crustaceos', 'cacahuetes', 'soja', 'gluten'], notFree: ['sin_gluten'] },
+  { slug: 'pad-thai-de-gambas', why: 'soy sauce is soy and wheat', alergenos: ['crustaceos', 'huevo', 'pescado', 'cacahuetes', 'soja', 'gluten'], notFree: ['sin_gluten', 'sin_huevo'] },
+  { slug: 'pad-thai-de-gambas-b41', why: 'the pad thai sauce is soy sauce, with fish sauce and egg as usual (its steps say only "la salsa")', alergenos: ['crustaceos', 'huevo', 'pescado', 'cacahuetes', 'soja', 'gluten'], notFree: ['sin_gluten', 'sin_huevo'] },
   { slug: 'crepes-de-espinacas-y-queso-b124', why: 'crepe batter is made with egg', alergenos: ['gluten', 'lactosa', 'huevo'], notFree: ['sin_huevo'] },
   { slug: 'tarta-de-limon-b145', why: 'the lemon cream is set with egg', alergenos: ['gluten', 'lactosa', 'huevo'], notFree: ['sin_huevo'] },
   { slug: 'croissant-jamon-queso', why: 'a croissant is glazed with egg', alergenos: ['gluten', 'lactosa', 'huevo'], notFree: ['sin_huevo'] },
