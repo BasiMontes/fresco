@@ -38,6 +38,14 @@ describe('recordAccountErasure', () => {
     expect(db.inserts[0]?.[1]).toMatchObject({ posthog: 'failed', pending_posthog_distinct_id: 'user_1' })
   })
 
+  test('FRESCO-1109 (A8-PRIV-05): not_configured is queued as failed, with the id, so a later run can retry it', async () => {
+    const db = fakeEdgeClient()
+
+    await recordAccountErasure(db.client as Client, { userId: 'user_1', stripe: 'none', posthog: 'not_configured' })
+
+    expect(db.inserts[0]?.[1]).toMatchObject({ posthog: 'failed', pending_posthog_distinct_id: 'user_1' })
+  })
+
   test('throws on a write error so the caller can log it', async () => {
     const db = fakeEdgeClient({ insertError: { account_erasures: new Error('insert denied') } })
 

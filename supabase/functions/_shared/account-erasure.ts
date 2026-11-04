@@ -21,11 +21,15 @@ export async function sha256Hex(text: string): Promise<string> {
 
 /** Throws on a write error; the caller logs it and still answers the deletion as done. */
 export async function recordAccountErasure(client: SupabaseClient, outcome: AccountErasureOutcome): Promise<void> {
+  // FRESCO-1109 (A8-PRIV-05): `not_configured` (a missing PostHog secret) is not a final outcome: nothing
+  // was erased. It is queued exactly like a failure, so `retry-posthog-erasures` picks the id up once the
+  // secrets exist; that sweep spends no attempt while they are still missing.
+  const posthog = outcome.posthog === 'not_configured' ? 'failed' : outcome.posthog
   const { error } = await client.from('account_erasures').insert({
     user_hash: await sha256Hex(outcome.userId),
     stripe: outcome.stripe,
-    posthog: outcome.posthog,
-    pending_posthog_distinct_id: outcome.posthog === 'failed' ? outcome.userId : null,
+    posthog,
+    pending_posthog_distinct_id: posthog === 'failed' ? outcome.userId : null,
   })
   if (error) throw error
 }

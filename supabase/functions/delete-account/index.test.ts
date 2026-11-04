@@ -520,7 +520,7 @@ describe('delete-account/index.ts', () => {
       expect(serviceClient.inserts[0]?.[1]).toMatchObject({ posthog: 'failed', pending_posthog_distinct_id: 'user_1' })
     })
 
-    test('without PostHog credentials the deletion goes ahead and the record says not_configured', async () => {
+    test('without PostHog credentials the deletion goes ahead and the record queues the id for a retry (FRESCO-1109)', async () => {
       delete process.env.POSTHOG_PERSONAL_API_KEY
       const token = registered('user_1')
       withProfile({ stripe_customer_id: null })
@@ -529,7 +529,7 @@ describe('delete-account/index.ts', () => {
 
       expect(res.status).toBe(200)
       expect(posthogCalls).toEqual([])
-      expect(serviceClient.inserts[0]?.[1]).toMatchObject({ posthog: 'not_configured' })
+      expect(serviceClient.inserts[0]?.[1]).toMatchObject({ posthog: 'failed', pending_posthog_distinct_id: 'user_1' })
     })
 
     test('a failed record write does not undo or fail the deletion', async () => {
