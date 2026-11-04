@@ -97,7 +97,7 @@ describe.skipIf(!(RUN && reachable))('cross-user RLS denial (real DB)', () => {
       token: B.token,
       prefer: 'return=representation',
       query: `id=eq.${planId}`,
-      body: { semana_iso: 'HACKED' },
+      body: { coste_estimado: 999 }, // FRESCO-1107: the one meal_plans column a client still holds UPDATE on
     }));
 
     expectZeroRows(await rest('meal_plans', {
@@ -121,6 +121,8 @@ describe.skipIf(!(RUN && reachable))('cross-user RLS denial (real DB)', () => {
 
     const check = await rest('meal_plans', { token: A.token, query: `id=eq.${planId}&select=semana_iso` });
     expect((check.body as { semana_iso: string }[])[0].semana_iso).toBe('2099-W01');
+    const cost = await rest('meal_plans', { token: A.token, query: `id=eq.${planId}&select=coste_estimado` });
+    expect((cost.body as { coste_estimado: number | null }[])[0].coste_estimado).not.toBe(999);
   });
 
   test('meal_plan_recipes — B cannot see, change, or insert via A\'s meal_plan_id', async () => {

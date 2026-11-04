@@ -6,6 +6,7 @@ import type { AuthUser } from '@/lib/client-api/identity';
 import { useEffect, useRef } from 'react';
 import { useCookieConsent } from '@/components/legal/cookie-consent-context';
 import { getPlanTierForAnalyticsLazy, watchAuthState } from '@/lib/client-api/identity';
+import { scrubUrlTokenInProperties } from '@/lib/observability/scrub-url-token';
 import { captureEvent, identifyUser, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { loadPosthog } from '@/lib/posthog/load';
 import { setAnalyticsTier } from '@/lib/posthog/mark-events';
@@ -82,6 +83,13 @@ export function PostHogProvider({ children }: { children: ReactNode }) {
           // no DOM content) — the landing→signup→onboarding funnel builds on
           // those plus the explicit events.
           autocapture: false,
+          // A8-API-01: the waitlist confirm / remove link carries its token in the URL.
+          before_send: (event) => {
+            if (event?.properties) {
+              event.properties = scrubUrlTokenInProperties(event.properties);
+            }
+            return event;
+          },
         });
         initialized = true;
       }

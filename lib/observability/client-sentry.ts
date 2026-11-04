@@ -1,6 +1,15 @@
 import { sentryRelease } from '@/lib/observability/release';
+import { scrubUrlToken } from '@/lib/observability/scrub-url-token';
 
 type SentrySdk = typeof import('@sentry/nextjs');
+
+/** Blanks the waitlist `token` query value in the request URL of an outgoing event. */
+function scrubSentryEvent<E extends { request?: { url?: string } }>(event: E): E {
+  if (event.request?.url) {
+    event.request.url = scrubUrlToken(event.request.url);
+  }
+  return event;
+}
 
 /**
  * FRESCO-1042 / ADR-0065: the browser SDK starts only after the visitor accepts cookies and is
@@ -27,6 +36,9 @@ export function createClientSentry(loadSdk: () => Promise<SentrySdk>, dsn: strin
           environment: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.NODE_ENV,
           // Low sample rate to stay within the free tier's performance-monitoring quota.
           tracesSampleRate: 0.1,
+          // A8-API-01: the waitlist link's token travels in the page URL; keep it out of Sentry.
+          beforeSend: scrubSentryEvent,
+          beforeSendTransaction: scrubSentryEvent,
         });
         return Sentry;
       });
