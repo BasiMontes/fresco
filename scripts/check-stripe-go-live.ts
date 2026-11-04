@@ -23,10 +23,12 @@
  * confirms it by id. `--ack dunning` is the Stripe dunning rules. `--ack email-delivery` (FRESCO-1105,
  * audit 8 A8-LAUNCH-02) is one real delivery of the subscription confirmation email to a mailbox
  * that is not the owner's: the guide demanded it, but nothing stopped the flip without it.
+ * `--ack recovery-emails` (FRESCO-1121) is the live-mode link of the failed-payment, bank-debit and
+ * expiring-card recovery emails: only FRESCO-1062 remembered it.
  *
  * Usage:
  *   bunx varlock run -- bun scripts/check-stripe-go-live.ts
- *   bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning --ack email-delivery
+ *   bunx varlock run -- bun scripts/check-stripe-go-live.ts --ack dunning --ack email-delivery --ack recovery-emails
  *
  * Exit codes: 0 every check passes (warnings allowed), 1 something is missing, 2 unusable setup.
  */
@@ -156,6 +158,7 @@ export function auditNames(scope: string, present: ReadonlySet<string>, { requir
 export function manualChecks(acknowledged: ReadonlySet<string>): Check[] {
   const dunning = 'Stripe dashboard -> Settings -> Billing -> Subscriptions and emails -> Manage failed payments: Smart Retries on, and the final action is "cancel the subscription" (the webhook downgrades on `unpaid` and on `deleted`)';
   const emailDelivery = 'a checkout in test mode with a second mailbox that is NOT the owner\'s, and the subscription confirmation email arrived there (a sender still on Resend\'s sandbox delivers only to the account owner, so a real customer would be charged and never receive the legal confirmation, TRLGDCU art. 98.7). `select count(*) from public.pending_confirmation_emails` is 0 afterwards';
+  const recoveryEmails = 'Stripe dashboard (live mode) -> Settings -> Billing -> Subscriptions and emails -> Manage failed payments and Customer emails: the failed-payment, bank-debit and expiring-card emails use "Link to a Stripe-hosted page", not a custom link with an empty URL (owner runbook in FRESCO-1062)';
   return [
     acknowledged.has('dunning')
       ? { id: 'dunning', status: 'pass', detail: 'acknowledged by the owner (--ack dunning)' }
@@ -163,6 +166,9 @@ export function manualChecks(acknowledged: ReadonlySet<string>): Check[] {
     acknowledged.has('email-delivery')
       ? { id: 'email-delivery', status: 'pass', detail: 'acknowledged by the owner (--ack email-delivery)' }
       : { id: 'email-delivery', status: 'manual', detail: `no API shows who received a mail. Confirm one real delivery: ${emailDelivery}. Then rerun with --ack email-delivery` },
+    acknowledged.has('recovery-emails')
+      ? { id: 'recovery-emails', status: 'pass', detail: 'acknowledged by the owner (--ack recovery-emails)' }
+      : { id: 'recovery-emails', status: 'manual', detail: `not verifiable through the API. Confirm in the ${recoveryEmails}, then rerun with --ack recovery-emails` },
   ];
 }
 
