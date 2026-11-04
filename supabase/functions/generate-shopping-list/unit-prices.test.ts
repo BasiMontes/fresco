@@ -63,6 +63,26 @@ describe('PRICE_OVERRIDE x unit (A7-LOGIC-01)', () => {
   })
 })
 
+describe('piece-counted items are not priced at the generic 0,80 EUR/unit (A8-LOGIC-02)', () => {
+  test.each([
+    ['tomates cherry', 12, 0.5, 3],
+    ['clara de huevo', 8, 0.5, 2.5],
+    ['papel de arroz', 8, 0.5, 2.5],
+    ['tortilla de maiz', 8, 0.5, 2.5],
+    ['anchoas', 8, 0.5, 3],
+    ['dorada', 2, 5, 10],
+    ['codornices', 2, 2, 5],
+    ['limon', 3, 0.5, 1.5],
+    ['lima', 3, 0.5, 1.5],
+    ['pimiento', 2, 0.5, 2],
+  ])('%s x%d unidades costs between %d and %d EUR', (nombre, cantidad, min, max) => {
+    const precio = precioItem(nombre, 'unidades', cantidad)
+
+    expect(precio).toBeGreaterThanOrEqual(min)
+    expect(precio).toBeLessThanOrEqual(max)
+  })
+})
+
 describe('every (ingredient, unit) pair the catalog uses has a sane priced path (A7-LOGIC-01)', () => {
   // A realistic quantity per unit, scaled by nothing: one recipe row for one household of the recipe's size.
   const CANTIDAD: Record<string, number> = { g: 200, ml: 200, unidades: 2, cucharadas: 2, cucharaditas: 2, dientes: 3, pizca: 1, 'al gusto': 1 }

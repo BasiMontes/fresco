@@ -343,4 +343,17 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       expect(result[0]).toMatchObject({ cantidad: 5, unidad: 'g' })
     })
   })
+
+  test('A8-LOGIC-03: rounds up once per ingredient, so seven recipes with half a lemon each list 2 lemons, not 7', () => {
+    const rows = Array.from({ length: 7 }, (_, i) => makeRaw({
+      nombre: 'limon', cantidad: 0.5, unidad: 'unidades', raciones_receta: 4, raciones_usuario: 2,
+      receta_id: `r${i}`, receta_nombre: `Receta ${i}`,
+    }))
+
+    const result = consolidateIngredientes(rows)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].unidad).toBe('unidades')
+    expect(result[0].cantidad).toBe(2)
+  })
 })

@@ -82,6 +82,16 @@ describe('useGenerateMealPlan success', () => {
     expect(routerMock.push).toHaveBeenCalledWith('/menu');
   });
 
+  test('A8-LOGIC-04: in the first hour of a Madrid Monday it asks for the new week, not the one that just ended', async () => {
+    // Sunday 23:30 UTC is Monday 00:30 in Madrid (winter).
+    setSystemTime(new Date('2026-11-01T23:30:00Z'));
+    const hook = setup();
+
+    await generate(hook);
+
+    expect(generateSpy).toHaveBeenCalledWith({ semana_iso: WEEK, fecha_inicio: WEEK_START }, 'access-token');
+  });
+
   test('saves the profile before it asks for the menu', async () => {
     const order: string[] = [];
     upsertSpy.mockImplementation(async () => {

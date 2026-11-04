@@ -321,6 +321,17 @@ export const PRICE_OVERRIDE: Record<string, number> = {
   seitan: 0.01,
   'vino blanco': 0.007,
   'vino tinto': 0.007,
+  // A8-LOGIC-02: piece-counted items the generic 0,80 EUR/unit fallback mis-priced (priced per piece, see PRICED_PER).
+  'tomates cherry': 0.12,
+  'clara de huevo': 0.15,
+  'papel de arroz': 0.15,
+  'tortilla de maiz': 0.19,
+  anchoas: 0.25,
+  dorada: 3.5,
+  codornices: 1.5,
+  limon: 0.3,
+  lima: 0.35,
+  pimiento: 0.6,
 }
 
 /** Fallback when an ingredient has no PRICE_OVERRIDE entry — keyed by unidad, not by ingredient. */
@@ -366,6 +377,16 @@ const PRICED_PER: Record<string, string> = {
   'aceite de oliva': 'ml',
   'vino blanco': 'ml',
   'vino tinto': 'ml',
+  'tomates cherry': 'unidades',
+  'clara de huevo': 'unidades',
+  'papel de arroz': 'unidades',
+  'tortilla de maiz': 'unidades',
+  anchoas: 'unidades',
+  dorada: 'unidades',
+  codornices: 'unidades',
+  limon: 'unidades',
+  lima: 'unidades',
+  pimiento: 'unidades',
 }
 
 /** The line as an amount of `pricedIn`, or `null` when no honest conversion exists. */

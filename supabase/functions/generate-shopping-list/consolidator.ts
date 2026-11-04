@@ -324,7 +324,7 @@ export function consolidateIngredientes(
   // dropped (A4-L10). In practice units come from the same BASE_QUANTITIES
   // table and never diverge, so this stays single-group — the array only
   // guarantees no quantity is ever silently lost if that assumption breaks.
-  const map = new Map<string, { cantidad: number; unidad: string }[]>()
+  const map = new Map<string, { cantidad: number; unidad: string }[]>() // base units, unrounded
   // FRESCO-212: every distinct (recipe, day) an ingredient was pulled from,
   // tracked independently of quantity summing — a staple is still "used in"
   // a recipe even on the `canSumUnits` else-branch below.
@@ -362,9 +362,11 @@ export function consolidateIngredientes(
     // FRESCO-1009 (A7-LOGIC-02): an ingredient counted in pieces AND weighed ("Tomate 400 g" in one
     // recipe, "Tomate 2 unidades" in another) is summed in grams and shown in ONE unit at the end.
     const enGramos = aGramos(key, cantidadBase * factor, unidadBase)
+    // A8-LOGIC-03: the scaled quantity stays UNROUNDED while groups add up and is rounded up once at
+    // the end, so seven recipes with half a lemon each list 4 lemons, not 7.
     const { cantidad: cantBase, unidad: unitBase } = enGramos !== null
-      ? { cantidad: Math.ceil(enGramos), unidad: 'g' }
-      : toBaseUnit(Math.ceil(cantidadBase * factor), unidadBase)
+      ? { cantidad: enGramos, unidad: 'g' }
+      : toBaseUnit(cantidadBase * factor, unidadBase)
 
     const usos = usosMap.get(key) ?? []
     if (!usos.some(u => u.receta === raw.receta_nombre && u.dia === raw.dia)) {
@@ -374,12 +376,9 @@ export function consolidateIngredientes(
 
     const groups = map.get(key)
     if (groups) {
-      const compatible = groups.find(g => canSumUnits(toBaseUnit(g.cantidad, g.unidad).unidad, unitBase))
+      const compatible = groups.find(g => canSumUnits(g.unidad, unitBase))
       if (compatible) {
-        const { cantidad: existBase, unidad: existUnit } = toBaseUnit(compatible.cantidad, compatible.unidad)
-        const { cantidad: total, unidad: totalUnit } = fromBaseUnit(existBase + cantBase, existUnit)
-        compatible.cantidad = total
-        compatible.unidad = totalUnit
+        compatible.cantidad += cantBase
       } else {
         // A4-L10: no group this quantity can be added to — keep it as its own
         // group instead of discarding it. `canSumUnits` never actually
@@ -388,20 +387,21 @@ export function consolidateIngredientes(
         logger.warn('Unidades incompatibles, cantidad conservada en grupo aparte', {
           fn: 'generate-shopping-list', ingrediente: key, unitBase,
         })
-        const { cantidad, unidad } = fromBaseUnit(cantBase, unitBase)
-        groups.push({ cantidad, unidad })
+        groups.push({ cantidad: cantBase, unidad: unitBase })
       }
     } else {
-      const { cantidad, unidad } = fromBaseUnit(cantBase, unitBase)
-      map.set(key, [{ cantidad, unidad }])
+      map.set(key, [{ cantidad: cantBase, unidad: unitBase }])
     }
   }
 
   return Array.from(map.entries()).flatMap(([key, groups]) =>
-    groups.map((group) => {
+    groups.map((groupSum) => {
+      // Round up once per group; the epsilon absorbs float noise (0,1 x 3 must not become 1).
+      const redondeada = Math.max(0, Math.ceil(groupSum.cantidad - 1e-9))
+      const group = fromBaseUnit(redondeada, groupSum.unidad)
       // The group of a piece-counted ingredient was summed in grams: show it in its own unit.
-      const pieza = PIEZAS[key] && toBaseUnit(group.cantidad, group.unidad).unidad === 'g'
-        ? desdeGramos(key, toBaseUnit(group.cantidad, group.unidad).cantidad)
+      const pieza = PIEZAS[key] && groupSum.unidad === 'g'
+        ? desdeGramos(key, redondeada)
         : null
       const { cantidad, unidad } = pieza && pieza.unidad !== 'g' ? pieza : group
       return {

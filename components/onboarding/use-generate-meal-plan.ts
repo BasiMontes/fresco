@@ -50,9 +50,10 @@ export function useGenerateMealPlan({ markShouldReset }: UseGenerateMealPlanArgs
       // mount effect above before this handler is reachable.
       await upsertUserProfile(wizardToProfilePayload(useOnboardingStore.getState()));
 
-      const now = new Date();
-      const semanaIso = getIsoWeek(now);
-      const fechaInicio = getIsoWeekMonday(now);
+      // A8-LOGIC-04: no argument = "today" in Madrid (FRESCO-899). Passing a
+      // `Date` keeps the UTC frame and picks last week just after Madrid midnight.
+      const semanaIso = getIsoWeek();
+      const fechaInicio = getIsoWeekMonday();
       // Guest or registered, a session now always exists (mount effect
       // above) — this just reads whichever token it is.
       const session = await getSession();
