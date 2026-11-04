@@ -157,6 +157,13 @@ export const HONEST_FLOOR_LINES = 92.5;
 /** Directories whose source files make up the honest denominator. */
 const SOURCE_DIRS = ['app', 'components', 'lib', 'supabase/functions'];
 
+/**
+ * A8-TEST-05 (FRESCO-1112): source files at the repo root, outside SOURCE_DIRS. Listed one by one (not a glob)
+ * so a new root file is a conscious addition. Without them, deleting `proxy.test.ts` (the auth and redirect
+ * gate) would not move the honest figure: the file would just stop appearing in lcov.
+ */
+export const ROOT_SOURCE_FILES = ['proxy.ts', 'instrumentation.ts', 'instrumentation-client.ts', 'sentry.edge.config.ts', 'sentry.server.config.ts'];
+
 /** Generated code: not written by hand, so not a testing signal. */
 const GENERATED_FILES = new Set(['lib/supabase/types.ts']);
 
@@ -267,7 +274,7 @@ interface UnloadedFile { path: string, lines: number }
 
 /** Non-empty, non-comment lines of every tracked source file lcov never listed. */
 async function listUnloadedFiles(loaded: Set<string>): Promise<UnloadedFile[]> {
-  const ls = Bun.spawn(['git', 'ls-files', ...SOURCE_DIRS], { stdout: 'pipe', stderr: 'inherit' });
+  const ls = Bun.spawn(['git', 'ls-files', ...SOURCE_DIRS, ...ROOT_SOURCE_FILES], { stdout: 'pipe', stderr: 'inherit' });
   const listing = await new Response(ls.stdout).text();
   await ls.exited;
 

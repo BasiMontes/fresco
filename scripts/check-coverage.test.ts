@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { figuresOf, FLOOR, floorViolations, HONEST_FLOOR_LINES, isTestSupport, isTypeOnly, parseLcov, summaryMarkdown } from './check-coverage';
+import { figuresOf, FLOOR, floorViolations, HONEST_FLOOR_LINES, isTestSupport, isTypeOnly, parseLcov, ROOT_SOURCE_FILES, summaryMarkdown } from './check-coverage';
 
 /**
  * FRESCO-990 (audit 7b A7-TEST-07): the CI gate fails on the HONEST figure, the one that counts files no test
@@ -103,5 +103,17 @@ describe('summaryMarkdown', () => {
     expect(text.indexOf('cobertura honesta')).toBeLessThan(text.indexOf('Loaded lines'));
     expect(text).toContain(`63.35 % | ${HONEST_FLOOR_LINES.toFixed(2)} %`);
     expect(text).toContain('140 files no test imports');
+  });
+});
+
+describe('root-level source files (A8-TEST-05)', () => {
+  test('proxy.ts and the instrumentation and sentry entry points are in the honest denominator', () => {
+    expect(ROOT_SOURCE_FILES).toEqual(expect.arrayContaining(['proxy.ts', 'instrumentation.ts', 'instrumentation-client.ts']));
+  });
+
+  test('every listed root file exists, so a rename cannot silently shrink the denominator', async () => {
+    for (const file of ROOT_SOURCE_FILES) {
+      expect(await Bun.file(file).exists(), file).toBe(true);
+    }
   });
 });

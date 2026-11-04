@@ -5,21 +5,21 @@ name: Login widget check (Turnstile on /login)
 # site key, a Content-Security-Policy that blocks Cloudflare or a captcha misconfiguration would lock every user
 # out of /login and /signup with every other gate green.
 #
-# Once a day it loads the real /login of staging in Chromium (no credentials, nothing written) and fails unless
+# Once a day it loads the real /login of staging AND production in Chromium (no credentials, nothing written) and fails unless
 # the widget rendered (`scripts/check-login-widget.ts`). One issue is opened (later failures comment on it) and
 # closed when the widget is back. GitHub schedules are best-effort: this is a backup, not a primary alert.
 #
-# Run it by hand with another URL (workflow_dispatch input `url`) to check production before a launch.
+# A8-TEST-03 (FRESCO-1112): production is in the daily matrix because NEXT_PUBLIC_* values live in per-environment
+# Vercel scopes: a missing site key in the Production scope leaves staging green. Each environment has its own
+# issue label, so one red environment never hides the other.
+#
+# Run it by hand (workflow_dispatch) to check both now; for any other deployment run
+# `bun scripts/check-login-widget.ts <url>` locally.
 
 on:
   schedule:
     - cron: '23 6 * * *'
   workflow_dispatch:
-    inputs:
-      url:
-        description: 'Base URL to check. Defaults to staging (`environments.staging.web_url` in .agents/project.yaml).'
-        required: false
-        default: 'https://fresco-pre.vercel.app'
 
 permissions:
   contents: read
@@ -34,13 +34,23 @@ env:
 
 jobs:
   widget:
-    name: Turnstile widget on /login
+    name: Turnstile widget on /login (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: staging
+            url: 'https://fresco-pre.vercel.app'
+            label: login-widget-failure
+          - name: production
+            url: 'https://fresco-pro.vercel.app'
+            label: login-widget-failure-production
     env:
       GH_TOKEN: ${{ github.token }}
-      LOGIN_WIDGET_URL: ${{ inputs.url || 'https://fresco-pre.vercel.app' }}
-      LABEL: login-widget-failure
+      LOGIN_WIDGET_URL: ${{ matrix.url }}
+      LABEL: ${{ matrix.label }}
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
