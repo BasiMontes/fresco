@@ -20,6 +20,8 @@ await import('./index.ts')
 const handler: EdgeHandler = getEdgeHandler()
 
 const USER = { id: 'user_1' }
+const R2 = '00000000-0000-4000-8000-000000000002'
+const R_BAD = '00000000-0000-4000-8000-0000000000bd'
 const OK_RATE = { check_and_increment_rate_limit: { data: true } }
 
 function slotRow(over: Record<string, unknown> = {}) {
@@ -95,7 +97,7 @@ describe('update-recipe-status/index.ts', () => {
 
     test('a marked dish is never replaced, even in the current week', async () => {
       supa = fakeEdgeClient({ user: USER, rpc: OK_RATE, rows: { meal_plan_recipes: current() } })
-      const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: 'r2' }))
+      const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: R2 }))
       expect(res.status).toBe(409)
     })
 
@@ -112,13 +114,18 @@ describe('update-recipe-status/index.ts', () => {
       rpc: { ...OK_RATE, get_filtered_recipes: { data: [] } },
       rows: { meal_plan_recipes: slotRow() },
     })
-    const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: 'r_bad' }))
+    const res = await handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: R_BAD }))
     expect(res.status).toBe(422)
   })
 
   describe('substitution safety (A4-H1)', () => {
-    const SAFE = { ...OK_RATE, get_filtered_recipes: { data: [{ id: 'r2' }] } }
-    const substitute = () => handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: 'r2' }))
+    const SAFE = { ...OK_RATE, get_filtered_recipes: { data: [{ id: R2 }] } }
+    const substitute = () => handler(edgeRequest({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: R2 }))
+
+    test('400 when nueva_recipe_id is not a UUID (A8-API-02), before any slot or filter query', async () => {
+      const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida', nueva_recipe_id: 'not-a-uuid' })
+      expect(res.status).toBe(400)
+    })
 
     test('400 when "sustituida" arrives without nueva_recipe_id', async () => {
       const res = await call({ meal_plan_recipe_id: 'mpr_1', estado: 'sustituida' })
@@ -164,8 +171,8 @@ describe('update-recipe-status/index.ts', () => {
       const res = await substitute()
       expect(res.status).toBe(200)
       expect(await res.json()).toEqual({ ok: true, estado: 'sustituida' })
-      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'sustituida', recipe_id: 'r2' }]])
-      expect(supa.rpcCalls.find(([name]) => name === 'get_filtered_recipes')?.[1]).toEqual({ p_user_id: 'user_1', p_recipe_id: 'r2' })
+      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'sustituida', recipe_id: R2 }]])
+      expect(supa.rpcCalls.find(([name]) => name === 'get_filtered_recipes')?.[1]).toEqual({ p_user_id: 'user_1', p_recipe_id: R2 })
     })
   })
 

@@ -87,13 +87,20 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
 
   function updateChain(table: string, payload: Record<string, unknown>) {
     const filters: Array<{ column: string, value: unknown }> = [];
+    let returning = false;
     const terminate = async () => {
       updates.push({ table, payload, filters: [...filters] });
-      return { error: tables[table]?.updateError ?? null };
+      const error = tables[table]?.updateError ?? null;
+      // `.update().eq().select('id')` (FRESCO-1106): one matched row, unless the update errors.
+      return returning ? { data: error ? null : [{ id: 'row' }], error } : { error };
     };
     const chain: Record<string, unknown> = {
       eq: (column: string, value: unknown) => {
         filters.push({ column, value });
+        return chain;
+      },
+      select: () => {
+        returning = true;
         return chain;
       },
       then: async (onFulfilled: (v: unknown) => unknown) => terminate().then(onFulfilled),

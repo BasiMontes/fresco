@@ -19,12 +19,18 @@ import { hasSupabaseSessionCookie, syncAnalyticsConsent, watchAuthState } from '
  * Re-runs when the decision changes (withdrawal included) and on sign-in. A
  * guest (anonymous) has no profile worth syncing and is skipped. A failed write
  * is retried on the next page load.
+ *
+ * FRESCO-1109 (A8-PRIV-03): no decision (`null`) is written as `false`. The cookie is
+ * versioned and expires, so `null` for a signed-in user means the banner is back (expired
+ * cookie, new legal texts version, another device); the stored `true` is then stale and
+ * would keep server-side events running until the person decides again. `initialDecision`
+ * is read by the server, so `null` is never a pre-hydration placeholder.
  */
 export function AnalyticsConsentSync() {
   const { decision } = useCookieConsent();
 
   useEffect(() => {
-    if (decision === null || !hasSupabaseSessionCookie()) { return; }
+    if (!hasSupabaseSessionCookie()) { return; }
 
     const controller = new AbortController();
     let unsubscribe: (() => void) | undefined;

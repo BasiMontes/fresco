@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { afterEach, describe, expect, test } from 'bun:test';
-import { canonicalUrl, getMetadataBase } from './canonical';
+import { canonicalUrl, getMetadataBase, pinSocialImageOrigin } from './canonical';
 
 const ENV_VARS = ['VERCEL_ENV', 'VERCEL_GIT_COMMIT_REF'] as const;
 const OLD_ENV = { ...process.env };
@@ -93,9 +93,42 @@ describe('Open Graph origin (FRESCO-1018)', () => {
     }
   });
 
+  // `lib/seo/canonical.ts` is the one allowed file: `pinSocialImageOrigin` WRITES VERCEL_BRANCH_URL, never reads it.
   test('no app or lib source reads VERCEL_URL', () => {
-    const found = spawnSync('git', ['grep', '-l', '-E', 'VERCEL_(BRANCH_)?URL', '--', 'app', 'lib', 'next.config.mjs', 'proxy.ts', ':(exclude)*.test.*'], { encoding: 'utf8' }).stdout.trim();
+    const found = spawnSync('git', ['grep', '-l', '-E', 'VERCEL_(BRANCH_)?URL', '--', 'app', 'lib', 'next.config.mjs', 'proxy.ts', ':(exclude)*.test.*', ':(exclude)lib/seo/canonical.ts'], { encoding: 'utf8' }).stdout.trim();
 
     expect(found).toBe('');
+  });
+});
+
+describe('pinSocialImageOrigin (FRESCO-1113, A8-LAUNCH-03)', () => {
+  const saved = { branch: process.env.VERCEL_BRANCH_URL, env: process.env.VERCEL_ENV, ref: process.env.VERCEL_GIT_COMMIT_REF };
+  const restore = (key: string, value: string | undefined) => {
+    if (value === undefined) { delete process.env[key]; }
+    else { process.env[key] = value; }
+  };
+  afterEach(() => {
+    restore('VERCEL_BRANCH_URL', saved.branch);
+    restore('VERCEL_ENV', saved.env);
+    restore('VERCEL_GIT_COMMIT_REF', saved.ref);
+  });
+
+  test('on a staging preview the branch host becomes the stable pre host', () => {
+    process.env.VERCEL_ENV = 'preview';
+    delete process.env.VERCEL_GIT_COMMIT_REF;
+    process.env.VERCEL_BRANCH_URL = 'fresco-git-staging-basi-montes-projects.vercel.app';
+    pinSocialImageOrigin();
+
+    expect(process.env.VERCEL_BRANCH_URL).toBe('fresco-pre.vercel.app');
+  });
+
+  test('on production and locally it leaves the variable alone', () => {
+    process.env.VERCEL_BRANCH_URL = 'untouched.example';
+    process.env.VERCEL_ENV = 'production';
+    pinSocialImageOrigin();
+    delete process.env.VERCEL_ENV;
+    pinSocialImageOrigin();
+
+    expect(process.env.VERCEL_BRANCH_URL).toBe('untouched.example');
   });
 });

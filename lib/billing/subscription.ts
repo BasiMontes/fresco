@@ -53,7 +53,7 @@ interface ActivateProPlanArgs {
  * delivery, or a resubscribe after a lapsed Pro period) is cleared.
  */
 export async function activateProPlan(client: Client, { userId, stripeCustomerId, stripeSubscriptionId, planExpiresAt, stripeLivemode }: ActivateProPlanArgs): Promise<void> {
-  const { error } = await client
+  const { data, error } = await client
     .from('user_profiles')
     .update({
       plan: 'pro',
@@ -63,10 +63,16 @@ export async function activateProPlan(client: Client, { userId, stripeCustomerId
       plan_expires_at: planExpiresAt,
       payment_failed_at: null,
     })
-    .eq('id', userId);
+    .eq('id', userId)
+    .select('id');
 
   if (error) {
     throw error;
+  }
+  // FRESCO-1106 (A8-PAY-06): zero rows means the profile vanished between checkout and the
+  // webhook; a silent success would ack the event and leave a paid customer on Free.
+  if (!data || data.length === 0) {
+    throw new Error(`activateProPlan matched no profile for user ${userId}`);
   }
 }
 

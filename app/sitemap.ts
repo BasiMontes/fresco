@@ -18,17 +18,11 @@ import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
  * just no longer get a sitemap priority hint, which is reserved for pages
  * with real standalone content.
  *
- * FRESCO-474: `lastModified` below is the landing page's actual last
- * git-tracked content change (`git log -1 --format=%ad -- app/page.tsx`),
- * not `new Date()`. This function is statically rendered at build time —
- * a runtime `new Date()` would only ever report "when this build ran",
- * which is not a real modification signal and would make the date churn
- * on every deploy regardless of whether the page changed. Bump the
- * constant by hand when `app/page.tsx` next changes materially; revisit
- * this approach (e.g. a small git-log build step) only if the sitemap
- * grows enough entries that hand-tracking each date stops being cheap.
+ * FRESCO-474 / FRESCO-1113 (A8-LAUNCH-05): the landing entry carries no `lastModified`. A hand-bumped
+ * constant drifted months behind the page (it said 2026-09-12 long after the landing changed), and a
+ * build-time `new Date()` would only report when the build ran, not a real modification. An absent
+ * `<lastmod>` is valid and honest; crawlers fall back to their own change detection.
  */
-const LANDING_LAST_MODIFIED = '2026-09-12';
 
 /**
  * FRESCO-1018 (A7-LAUNCH-08): the four legal pages are public, indexable and linked from the sign-up
@@ -48,7 +42,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: baseUrl,
-      lastModified: LANDING_LAST_MODIFIED,
       changeFrequency: 'weekly',
       priority: 1,
     },

@@ -13,8 +13,15 @@ import type Stripe from 'stripe';
 
 type StripeClient = Pick<Stripe, 'customers' | 'subscriptions' | 'checkout'>;
 
-/** Subscription states that already hold or may still collect the person's money. */
-const ENDED_STATUSES: ReadonlyArray<Stripe.Subscription.Status> = ['canceled', 'incomplete_expired'];
+/** Subscription states that are paying (or about to) and must not get a second Checkout. */
+const SUBSCRIBED_STATUSES: ReadonlyArray<Stripe.Subscription.Status> = ['active', 'trialing', 'past_due'];
+
+/**
+ * Alive at Stripe but not paying and not a reason to block: the profile is Free and only a
+ * new card (Billing Portal) revives them. FRESCO-1106 (audit 8: A8-PAY-01): treating these as
+ * "already Pro" locked the person out of both checkout and the portal.
+ */
+const PAYMENT_PROBLEM_STATUSES: ReadonlyArray<Stripe.Subscription.Status> = ['unpaid', 'paused', 'incomplete'];
 
 /** Concurrent POSTs inside this window share one idempotency key, so Stripe returns one session. */
 const BUCKET_SECONDS = 60;
@@ -62,10 +69,23 @@ export async function ensureCheckoutCustomer(
   return created.id;
 }
 
-/** True when the customer has a subscription that has not ended. Throws on a Stripe error. */
-export async function hasLiveSubscription(stripe: StripeClient, customerId: string): Promise<boolean> {
+export type SubscriptionStanding = 'subscribed' | 'payment-problem' | 'none';
+
+/**
+ * What the customer's subscriptions say about a new Checkout. `subscribed`: one is paying or
+ * will (409). `payment-problem`: none is paying but one is still open at Stripe (unpaid,
+ * paused, incomplete): the route sends the person to the Billing Portal instead of a second
+ * subscription. `none`: free to check out. Throws on a Stripe error.
+ */
+export async function subscriptionStanding(stripe: StripeClient, customerId: string): Promise<SubscriptionStanding> {
   const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
-  return subscriptions.data.some(subscription => !ENDED_STATUSES.includes(subscription.status));
+  if (subscriptions.data.some(subscription => SUBSCRIBED_STATUSES.includes(subscription.status))) {
+    return 'subscribed';
+  }
+  if (subscriptions.data.some(subscription => PAYMENT_PROBLEM_STATUSES.includes(subscription.status))) {
+    return 'payment-problem';
+  }
+  return 'none';
 }
 
 /**

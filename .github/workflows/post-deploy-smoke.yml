@@ -78,6 +78,26 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
+      - name: Resolve and validate the target
+        # FRESCO-1110 (A8-SUPPLY-02): the three deployment_status fields are data from the event
+        # payload, never shell text: they reach the shell only through `env:`. The URL must be a
+        # plain https Vercel host before it is used, because the steps after this one hold the
+        # live env file and log in with minted sessions.
+        env:
+          DEPLOY_ENVIRONMENT: ${{ github.event.deployment_status.environment }}
+          TARGET_URL: ${{ github.event.deployment_status.target_url }}
+          ENVIRONMENT_URL: ${{ github.event.deployment_status.environment_url }}
+        run: |
+          echo "Deployment environment: $DEPLOY_ENVIRONMENT"
+          echo "Target URL: $TARGET_URL"
+          echo "Environment URL: $ENVIRONMENT_URL"
+          app="${TARGET_URL:-$ENVIRONMENT_URL}"
+          if ! printf '%s' "$app" | grep -Eq '^https://[a-z0-9.-]+\.vercel\.app/?$'; then
+            echo "::error::The deployment URL is not an https vercel.app host, refusing to run the suite against it."
+            exit 1
+          fi
+          echo "APP_URL=${app%/}" >> "$GITHUB_ENV"
+
       - name: Restore .env from secret
         # The @smoke scenarios log in as the DEV/PRO test users and create
         # throwaway factory users — all of which need the Supabase + Stripe
@@ -101,12 +121,6 @@ jobs:
           # was deleted, so there is no fallback to it any more.
           ENV_FILE: ${{ secrets.LIVE_E2E_ENV_FILE }}
 
-      - name: Report target
-        run: |
-          echo "Deployment environment: ${{ github.event.deployment_status.environment }}"
-          echo "Target URL: ${{ github.event.deployment_status.target_url }}"
-          echo "Environment URL: ${{ github.event.deployment_status.environment_url }}"
-
       - name: Warm up the deployed app
         # FRESCO-322: the first real run of this workflow went 3/6 red purely
         # on cold-start — Vercel's serverless functions spin up lazily on first
@@ -120,9 +134,8 @@ jobs:
         # the set.
         continue-on-error: true
         run: |
-          APP="${{ github.event.deployment_status.target_url || github.event.deployment_status.environment_url }}"
           for path in / /login /qa /profile; do
-            curl -sS -o /dev/null -w "warm app %{http_code} $path (%{time_total}s)\n" --max-time 30 "$APP$path" || echo "warm app FAILED $path"
+            curl -sS -o /dev/null -w "warm app %{http_code} $path (%{time_total}s)\n" --max-time 30 "$APP_URL$path" || echo "warm app FAILED $path"
           done
 
       - name: Run @smoke suite against the deployed URL
@@ -142,7 +155,7 @@ jobs:
         # the service-role key this job already holds for the test-user factory.
         run: bun run test:e2e:smoke
         env:
-          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.target_url || github.event.deployment_status.environment_url }}
+          PLAYWRIGHT_BASE_URL: ${{ env.APP_URL }}
           E2E_SESSION_LOGIN: '1'
           # FRESCO-1016: these users are created in the REAL shared Supabase; a failed cleanup must fail the run.
           E2E_STRICT_CLEANUP: '1'

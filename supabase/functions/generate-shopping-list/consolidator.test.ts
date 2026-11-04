@@ -346,8 +346,8 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
   })
 
   // A8-TEST-06: a property over quantity scaling, not one example. Whatever the rows, the list never shows
-  // less than the household needs and never a whole piece more per row than that.
-  test('property: unit-counted rows are never summed below what the household needs, nor a piece per row above it', () => {
+  // less than the household needs and never a whole piece more (rounded up once, A8-LOGIC-03).
+  test('property: unit-counted rows are never summed below what the household needs, nor a full piece above it', () => {
     fc.assert(fc.property(
       fc.array(fc.record({ cantidad: fc.integer({ min: 1, max: 40 }).map(n => n / 4), raciones_receta: fc.integer({ min: 1, max: 8 }), raciones_usuario: fc.integer({ min: 1, max: 10 }) }), { minLength: 1, maxLength: 12 }),
       (rows) => {
@@ -355,8 +355,21 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
         const exact = rows.reduce((sum, r) => sum + r.cantidad * r.raciones_usuario / r.raciones_receta, 0)
         expect(result).toHaveLength(1)
         expect(result[0].cantidad).toBeGreaterThanOrEqual(exact - 1e-6)
-        expect(result[0].cantidad).toBeLessThan(exact + rows.length)
+        expect(result[0].cantidad).toBeLessThan(exact + 1)
       },
     ))
+  })
+
+  test('A8-LOGIC-03: rounds up once per ingredient, so seven recipes with half a lemon each list 2 lemons, not 7', () => {
+    const rows = Array.from({ length: 7 }, (_, i) => makeRaw({
+      nombre: 'limon', cantidad: 0.5, unidad: 'unidades', raciones_receta: 4, raciones_usuario: 2,
+      receta_id: `r${i}`, receta_nombre: `Receta ${i}`,
+    }))
+
+    const result = consolidateIngredientes(rows)
+
+    expect(result).toHaveLength(1)
+    expect(result[0].unidad).toBe('unidades')
+    expect(result[0].cantidad).toBe(2)
   })
 })

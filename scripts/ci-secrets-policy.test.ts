@@ -63,4 +63,46 @@ describe('CI secrets policy (FRESCO-802)', () => {
     );
     expect(unpinned).toEqual([]);
   });
+
+  // FRESCO-1110 (audit-8 A8-SUPPLY-02/03/04).
+  test('no workflow declares itself without a top-level permissions block', () => {
+    const offenders = workflows().filter(w => !/^permissions:/m.test(w.code)).map(w => w.name);
+    expect(offenders).toEqual([]);
+  });
+
+  test('no run: script expands event or dispatch-input text inline', () => {
+    const offenders: string[] = [];
+    for (const w of workflows()) {
+      const lines = w.code.split('\n');
+      lines.forEach((line, index) => {
+        const match = /^(\s*)(?:-\s*)?run:(.*)$/.exec(line);
+        if (!match) { return; }
+        const indent = match[1].length;
+        const body = [match[2].trim()];
+        for (let next = index + 1; next < lines.length; next++) {
+          const nextIndent = /^(\s*)/.exec(lines[next])![1].length;
+          if (lines[next].trim() !== '' && nextIndent <= indent) { break; }
+          body.push(lines[next]);
+        }
+        if (/\$\{\{\s*(?:github\.event\.|inputs\.)/.test(body.join('\n'))) {
+          offenders.push(`${w.name}:${index + 1}`);
+        }
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  test('the post-deploy smoke job validates the deployment URL before using it', () => {
+    const smoke = workflows().find(w => w.name === 'post-deploy-smoke.yml')!;
+    expect(smoke.code).toContain('^https://[a-z0-9.-]+\\.vercel\\.app/?$');
+    expect(smoke.code.indexOf('APP_URL=')).toBeLessThan(smoke.code.indexOf('secrets.LIVE_E2E_ENV_FILE'));
+  });
+
+  test('the supermarket workflows holding the service-role key do not persist checkout credentials', () => {
+    for (const name of ['refresh-supermarket-prices.yml', 'spike-supermarket-probe.yml']) {
+      const w = workflows().find(x => x.name === name);
+      expect(w, name).toBeDefined();
+      expect(w!.code, name).toContain('persist-credentials: false');
+    }
+  });
 });

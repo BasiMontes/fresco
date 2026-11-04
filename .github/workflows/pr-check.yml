@@ -19,6 +19,11 @@ on:
   push:
     branches: [staging, main]
 
+# FRESCO-1110 (A8-SUPPLY-03): this workflow runs the code of a pull request. Every job only reads
+# the repo (artifacts and caches need no token scope), so say so instead of relying on the repo default.
+permissions:
+  contents: read
+
 env:
   BUN_VERSION: '1.3.14'
   SUPABASE_CLI_VERSION: '2.109.1'
