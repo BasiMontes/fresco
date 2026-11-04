@@ -13,7 +13,7 @@ import { CookieConsentProvider } from '@/components/legal/cookie-consent-context
 import { CookieSettingsDialog } from '@/components/legal/cookie-settings-dialog';
 import { JsonLd } from '@/components/seo/json-ld';
 import { COOKIE_CONSENT_COOKIE, parseCookieConsent } from '@/lib/consent/cookie-consent';
-import { canonicalUrl, getMetadataBase } from '@/lib/seo/canonical';
+import { getMetadataBase } from '@/lib/seo/canonical';
 import { indexingRobots } from '@/lib/seo/indexing';
 import { getSiteVerification } from '@/lib/seo/site-verification';
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo/structured-data';
@@ -100,13 +100,9 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
   },
-  // FRESCO-471: self-referencing canonical for the landing route ("/").
-  // Every other route overrides this explicitly in its own metadata export
-  // (Next's metadata merge replaces `alternates` wholesale, not per-key —
-  // an uncovered route would otherwise silently inherit this one).
-  alternates: {
-    canonical: canonicalUrl('/'),
-  },
+  // FRESCO-1102: no `alternates.canonical` here. A canonical set on the root layout is inherited by
+  // every page without its own, so the legal pages, /sobre-nosotros and the 404 all declared the
+  // home as their canonical. Each public page now declares its own (`app/page.tsx` for "/").
   // FRESCO-887: Search Console / Bing ownership tags; codes come from env.
   verification: getSiteVerification(),
   // FRESCO-1018: `noindex, nofollow` on every deployment but production, whatever the route. A route

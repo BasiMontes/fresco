@@ -8,6 +8,9 @@ import { Card } from '@/components/ui/card';
 // broken link from the front page. Same "Page · Fresco" shape as the other routes.
 export const metadata: Metadata = {
   title: 'Página no encontrada · Fresco',
+  // FRESCO-1102: a 404 is not a page to index and has no canonical of its own; the root layout no
+  // longer hands it the home's.
+  robots: { index: false, follow: false },
 };
 
 export default function NotFound() {

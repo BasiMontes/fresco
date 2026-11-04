@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
 import { CONTACT_EMAIL } from '@/components/legal/legal-modal';
+import { canonicalUrl } from '@/lib/seo/canonical';
 
 export const metadata: Metadata = {
   title: 'Sobre nosotros — Fresco',
   description: 'Qué es Fresco y por qué existe.',
+  // FRESCO-1102: own canonical, never the home's.
+  alternates: { canonical: canonicalUrl('/sobre-nosotros') },
 };
 
 /**

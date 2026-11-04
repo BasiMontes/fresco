@@ -66,11 +66,12 @@ describe('RootLayout theme', () => {
 });
 
 describe('RootLayout metadata', () => {
-  test('shares a branded card, a canonical URL and the Spanish locale', () => {
+  test('shares a branded card and the Spanish locale, and declares no canonical of its own', () => {
     expect(String(metadata.title)).toContain('Fresco');
     expect(metadata.openGraph).toMatchObject({ locale: 'es_ES', siteName: 'Fresco', type: 'website' });
     expect(metadata.twitter).toMatchObject({ card: 'summary_large_image' });
-    expect(metadata.alternates?.canonical).toBeTruthy();
+    // FRESCO-1102: a canonical here is inherited by every page that sets none.
+    expect(metadata.alternates?.canonical).toBeUndefined();
     expect(metadata.metadataBase).toBeInstanceOf(URL);
   });
 

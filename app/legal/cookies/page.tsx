@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
 import { CookiesContent } from '@/components/legal/legal-content';
+import { canonicalUrl } from '@/lib/seo/canonical';
 
 export const metadata: Metadata = {
   title: 'Política de Cookies — Fresco',
   description: 'Qué cookies usa Fresco, quién las pone y cuánto duran.',
+  // FRESCO-1102: own canonical, never the home's.
+  alternates: { canonical: canonicalUrl('/legal/cookies') },
 };
 
 /** FRESCO-493 — real indexable route, same content component `LegalModal` uses. See `app/legal/terminos/page.tsx` for the pattern this mirrors. */
