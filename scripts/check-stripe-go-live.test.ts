@@ -132,10 +132,27 @@ describe('auditNames', () => {
 
 describe('manualChecks and exitCode', () => {
   test('dunning blocks until the owner acknowledges it', () => {
-    expect(manualChecks(new Set())[0].status).toBe('manual');
-    expect(exitCode(manualChecks(new Set()))).toBe(1);
-    expect(manualChecks(new Set(['dunning']))[0].status).toBe('pass');
-    expect(exitCode(manualChecks(new Set(['dunning'])))).toBe(0);
+    expect(manualChecks(new Set()).find(c => c.id === 'dunning')?.status).toBe('manual');
+    expect(exitCode(manualChecks(new Set(['email-delivery'])))).toBe(1);
+    expect(manualChecks(new Set(['dunning'])).find(c => c.id === 'dunning')?.status).toBe('pass');
+  });
+
+  test('email-delivery blocks until the owner acknowledges it (FRESCO-1105)', () => {
+    expect(manualChecks(new Set()).find(c => c.id === 'email-delivery')?.status).toBe('manual');
+    expect(exitCode(manualChecks(new Set(['dunning'])))).toBe(1);
+    expect(manualChecks(new Set(['email-delivery'])).find(c => c.id === 'email-delivery')?.status).toBe('pass');
+  });
+
+  test('the flip is allowed only with every manual line acknowledged', () => {
+    expect(exitCode(manualChecks(new Set(['dunning', 'email-delivery'])))).toBe(0);
+  });
+
+  test('the email-delivery line tells the owner what proof to bring, and an unknown id acknowledges nothing', () => {
+    const line = manualChecks(new Set(['email-delivry'])).find(c => c.id === 'email-delivery')!;
+    expect(line.status).toBe('manual');
+    expect(line.detail).toContain('NOT the owner');
+    expect(line.detail).toContain('pending_confirmation_emails');
+    expect(line.detail).toContain('--ack email-delivery');
   });
 
   test('any single failure exits non-zero, warnings never do', () => {
