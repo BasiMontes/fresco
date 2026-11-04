@@ -45,7 +45,7 @@ describe('WaitlistForm', () => {
     await user.click(screen.getByTestId('waitlist_submit'));
 
     expect(await screen.findByTestId('waitlist_joined')).toBeInTheDocument();
-    expect(lastBody).toEqual({ email: 'ana@example.com', consent: true });
+    expect(lastBody).toEqual({ email: 'ana@example.com', consent: true, captchaToken: null });
   });
 
   test('shows an error and keeps the form when the request fails', async () => {
