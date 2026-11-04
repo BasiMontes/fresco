@@ -142,6 +142,40 @@ describe('the oracle reads the steps together with the ingredients (A7-TEST-01)'
     expect(reports(claim, 'sin_huevo')).toBe(true);
   });
 
+  test('pad thai needs huevo and pescado, and cannot claim sin_huevo (FRESCO-1095)', () => {
+    const bare = recipe(['fideos de arroz', 'gambas', 'salsa de pad thai'], { alergenos: ['crustaceos', 'gluten', 'soja'] });
+
+    expect(reports(bare, 'falta huevo')).toBe(true);
+    expect(reports(bare, 'falta pescado')).toBe(true);
+    expect(reports({ ...bare, alergenos: [...(bare.alergenos ?? []), 'huevo', 'pescado'], dieta: { ...RELIGIOUS, sin_huevo: true } }, 'sin_huevo')).toBe(true);
+  });
+
+  test('falafel needs gluten, huevo and sesamo (FRESCO-1094)', () => {
+    const bare = recipe(['garbanzos', 'falafel'], { alergenos: [] });
+
+    for (const allergen of ['gluten', 'huevo', 'sesamo']) {
+      expect(reports(bare, `falta ${allergen}`)).toBe(true);
+    }
+    expect(reports(recipe(['garbanzos', 'falafel'], { alergenos: ['gluten', 'huevo', 'sesamo'] }), 'falta')).toBe(false);
+  });
+
+  test('an unspecified plant drink needs soja and frutos_de_cascara; a named one does not (FRESCO-1093)', () => {
+    const unspecified = recipe(['avena', 'bebida vegetal'], { alergenos: ['gluten'] });
+
+    expect(reports(unspecified, 'falta soja')).toBe(true);
+    expect(reports(unspecified, 'falta frutos_de_cascara')).toBe(true);
+    expect(reports(recipe(['avena', 'bebida de avena'], { alergenos: ['gluten'] }), 'falta soja')).toBe(false);
+  });
+
+  test('a fish without scales cannot be kosher, one with scales can (FRESCO-1096)', () => {
+    const monkfish = recipe(['rape', 'calabacín'], { alergenos: ['pescado'] });
+    const salmon = recipe(['salmón', 'limón'], { alergenos: ['pescado'] });
+
+    expect(reports(monkfish, 'pescado sin escamas')).toBe(true);
+    expect(reports(salmon, 'kosher')).toBe(false);
+    expect(reports({ ...monkfish, dieta: { halal: true } }, 'kosher')).toBe(false);
+  });
+
   test('a sub-recipe named only in a step is found: "crema de limón" needs huevo, "bechamel" needs gluten', () => {
     expect(reports(recipe(['limón', 'harina', 'mantequilla'], { alergenos: ['gluten', 'lactosa'], pasos_resumen: ['Añadir la crema de limón y hornear'] }), 'falta huevo (paso:')).toBe(true);
     expect(reports(recipe(['berenjena', 'ternera'], { alergenos: ['lactosa'], pasos_resumen: ['Montar capas con bechamel y hornear'] }), 'falta gluten (paso:')).toBe(true);

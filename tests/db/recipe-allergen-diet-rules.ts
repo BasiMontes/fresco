@@ -41,20 +41,20 @@ export const ALLERGEN_KEYWORDS: Record<string, RegExp> = {
   gluten: words(
     'trigo|pan|harina|pasta|espaguetis|macarrones|fideos|cuscus|seitan|avena|cebada|centeno|galleta|croissant|bagels?|granola|lasana|tortellini|picatostes|masa|cerveza|ramen|empanadas?'
     + '|espelta|kamut|escanda|bulgur|semola|farro|gnocchi|noquis|pizza|rebozad[oa]s?|panko|salsa de soja|shoyu|bechamel|miso'
-    + '|kritharaki|orzo|crumpets?|muffins?|roscas?|pitas?|naan|couscous|cous cous',
+    + '|kritharaki|orzo|crumpets?|muffins?|roscas?|pitas?|naan|couscous|cous cous|falafel',
   ),
   // FRESCO-1086: a Caesar dressing is made with egg yolk and anchovy.
-  huevo: words('huevos?|mayonesa|crema pastelera|crema de limon|crepes?|croissant|bizcocho|merengue|brioche|magdalenas?|natillas|flan|cesar'),
+  huevo: words('huevos?|mayonesa|crema pastelera|crema de limon|crepes?|croissant|bizcocho|merengue|brioche|magdalenas?|natillas|flan|cesar|pad thai|falafel'),
   pescado: words(
     'salmon|bacalao|merluza|atun|bonito|rape|anchoas?|sardinas?|boquerones|dorada|corvina|pescado'
-    + '|lubina|trucha|caballa|rodaballo|pez espada|emperador|lenguado|abadejo|mero|pargo|besugo|bacaladilla|jurel|pescadilla|surimi|fumet|dashi|cesar',
+    + '|lubina|trucha|caballa|rodaballo|pez espada|emperador|lenguado|abadejo|mero|pargo|besugo|bacaladilla|jurel|pescadilla|surimi|fumet|dashi|cesar|pad thai',
   ),
   crustaceos: words('gambas?|langostinos?|cangrejo|langosta|cigalas?|camarones?|centollo|bogavante|carabineros?|necoras?|percebes?|buey de mar|krill'),
   moluscos: words('calamares|calamar|mejillones|almejas|pulpo|sepia|ostras?|chipirones?|vieiras?|berberechos?|navajas?|zamburinas?|coquinas?|caracoles'),
-  soja: words('soja|tofu|tempeh|tamari|miso|edamame|teriyaki|shoyu'),
-  sesamo: words('sesamo|tahini|tahina|hummus|humus'),
+  soja: words('soja|tofu|tempeh|tamari|miso|edamame|teriyaki|shoyu|bebida vegetal'),
+  sesamo: words('sesamo|tahini|tahina|hummus|humus|falafel'),
   cacahuetes: words('cacahuetes?'),
-  frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos'),
+  frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos|bebida vegetal'),
   apio: words('apio|caldo'),
   // FRESCO-997: mayonesa and barbecue sauce carry vinegar, beer carries sulfites, sushi rice is seasoned with it.
   sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra|mayonesa|barbacoa|cerveza|arroz de sushi'),
@@ -101,8 +101,8 @@ const STEP_NOISE: Record<string, RegExp> = {
 
 /** Pork and alcohol: not halal. */
 export const NOT_HALAL = words('cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|vino|cerveza|ron|brandy|licor|cava|bacon|beicon');
-/** Never kosher: rabbit, shellfish (also covered by crustaceos/moluscos), pork. */
-export const NOT_KOSHER = words('conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon');
+/** Never kosher: rabbit, shellfish (also covered by crustaceos/moluscos), pork, and fish without scales (FRESCO-1096). */
+export const NOT_KOSHER = words('conejo|cerdo|jamon|chorizo|panceta|tocino|morcilla|secreto iberico|bacon|beicon|rape|anguilas?|siluro|tiburon|cazon|pez espada|emperador|marrajo|mielga|lamprea');
 export const MEAT = words('ternera|pollo|pavo|cordero|carne|pato|codornices|higado|rabo de toro|morcillo|solomillo');
 /** Anything from an animal that makes a recipe not vegetarian: meat, pork, gelatin. Fish and shellfish come from the allergen table. */
 export const NOT_VEGETARIAN = words(
@@ -307,7 +307,7 @@ export function auditRecipeFindings(recipe: RecipeTags): Finding[] {
     ?? sources.find(source => sourceHasAllergen(source, 'crustaceos') || sourceHasAllergen(source, 'moluscos'))?.text;
   const meatAndDairy = names.some(name => MEAT.test(name)) && sources.some(source => sourceHasAllergen(source, 'lactosa'));
   if (dieta.kosher === true && (kosherBreaker || meatAndDairy)) {
-    fail('dieta:kosher', `kosher es true con ${kosherBreaker ? `conejo, marisco o cerdo (texto: ${kosherBreaker})` : 'carne y lácteo'}`);
+    fail('dieta:kosher', `kosher es true con ${kosherBreaker ? `conejo, marisco, cerdo o pescado sin escamas (texto: ${kosherBreaker})` : 'carne y lácteo'}`);
   }
 
   if (dieta.vegetariano === true || dieta.vegano === true) {
