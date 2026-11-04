@@ -28,6 +28,12 @@ describe('landing FAQ copy', () => {
   });
 });
 
+describe('landing FAQ dietary answers (FRESCO-1113, A8-LAUNCH-04)', () => {
+  test.each(FAQS.filter(item => /celíac|alergi/i.test(item.question)).map(item => [item.question, item]))('"%s" tells the person to read the label', (_question, item) => {
+    expect(item.answer).toMatch(/etiqueta/i);
+  });
+});
+
 describe('allergen texts shown in the app', () => {
   test.each([['ALERGENOS_RECORDATORIO', ALERGENOS_RECORDATORIO], ['TEXTO_LIBRE_SIN_FILTRO', TEXTO_LIBRE_SIN_FILTRO]])('%s does not over-promise', (_name, text) => {
     expect(text).not.toMatch(OVERPROMISE);
