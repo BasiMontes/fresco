@@ -121,9 +121,9 @@ Events from before 2026-10-14 lack both properties. If the threshold is crossed,
 
 ## Login widget check (Turnstile on `/login`)
 
-FRESCO-1016 (A7-TEST-06). Nothing else in CI renders the Turnstile widget: the local stack has no captcha, the e2e job blanks the site key and the post-deploy smoke gets its session from the admin API. `.github/workflows/login-widget-check.yml` loads the real `/login` of staging in Chromium once a day, with no credentials, and fails unless the widget rendered (a `cf-turnstile-response` input in `captcha_widget`, or a Cloudflare iframe). It opens ONE issue labelled `login-widget-failure` (later failures comment on it) and closes it when the widget is back.
+FRESCO-1016 (A7-TEST-06). Nothing else in CI renders the Turnstile widget: the local stack has no captcha, the e2e job blanks the site key and the post-deploy smoke gets its session from the admin API. `.github/workflows/login-widget-check.yml` loads the real `/login` of staging AND production in Chromium once a day (a matrix of two; A8-TEST-03), with no credentials, and fails unless the widget rendered (a `cf-turnstile-response` input in `captcha_widget`, or a Cloudflare iframe). It opens ONE issue per environment, labelled `login-widget-failure` (staging) or `login-widget-failure-production` (later failures comment on it), and closes it when the widget is back.
 
-- **Run it by hand**: Actions > Login widget check > Run workflow, with `url` set to production before a launch; or `bun scripts/check-login-widget.ts https://fresco-pro.vercel.app` locally.
+- **Run it by hand**: Actions > Login widget check > Run workflow (checks both environments); or `bun scripts/check-login-widget.ts <url>` locally for any other deployment.
 - **What to check first when it fails**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` in the Vercel scope of that environment, the Content-Security-Policy in `proxy.ts` (`script-src`, `frame-src`, `connect-src` for `challenges.cloudflare.com`), and the Turnstile site in the Cloudflare dashboard.
 - **Limits**: GitHub schedules are best-effort. A passed check does not prove a person can solve a challenge, only that the widget is there and Cloudflare is not blocked.
 

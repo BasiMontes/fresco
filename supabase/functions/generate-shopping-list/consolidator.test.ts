@@ -1,5 +1,6 @@
 import type { RawIngrediente } from './types.ts'
 import { describe, expect, spyOn, test } from 'bun:test'
+import fc from 'fast-check'
 import { consolidateIngredientes } from './consolidator.ts'
 
 /** Minimal valid RawIngrediente fixture — one entry per ingredient per recipe slot. */
@@ -342,6 +343,21 @@ describe('consolidateIngredientes (FR-4.1 — deterministic, no Gemini call)', (
       // sal base = 5 g
       expect(result[0]).toMatchObject({ cantidad: 5, unidad: 'g' })
     })
+  })
+
+  // A8-TEST-06: a property over quantity scaling, not one example. Whatever the rows, the list never shows
+  // less than the household needs and never a whole piece more (rounded up once, A8-LOGIC-03).
+  test('property: unit-counted rows are never summed below what the household needs, nor a full piece above it', () => {
+    fc.assert(fc.property(
+      fc.array(fc.record({ cantidad: fc.integer({ min: 1, max: 40 }).map(n => n / 4), raciones_receta: fc.integer({ min: 1, max: 8 }), raciones_usuario: fc.integer({ min: 1, max: 10 }) }), { minLength: 1, maxLength: 12 }),
+      (rows) => {
+        const result = consolidateIngredientes(rows.map((r, i) => makeRaw({ nombre: 'ingrediente de prueba', cantidad: r.cantidad, unidad: 'unidades', raciones_receta: r.raciones_receta, raciones_usuario: r.raciones_usuario, receta_id: `r${i}`, receta_nombre: `R${i}` })))
+        const exact = rows.reduce((sum, r) => sum + r.cantidad * r.raciones_usuario / r.raciones_receta, 0)
+        expect(result).toHaveLength(1)
+        expect(result[0].cantidad).toBeGreaterThanOrEqual(exact - 1e-6)
+        expect(result[0].cantidad).toBeLessThan(exact + 1)
+      },
+    ))
   })
 
   test('A8-LOGIC-03: rounds up once per ingredient, so seven recipes with half a lemon each list 2 lemons, not 7', () => {

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
-import { describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { addIsoWeeks, getIsoWeek } from '@/lib/date/iso-week';
 import { mockAuthGetUser } from '@/lib/fixtures/mock-supabase-auth';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
@@ -227,7 +227,11 @@ describe('assignRecipeToSlot', () => {
 });
 
 describe('copyMealPlanToCurrentWeek', () => {
+  afterEach(() => setSystemTime());
+
   test('calls copy_meal_plan_to_week with the source id and the current ISO week, resolving void', async () => {
+    // A8-TEST-06: a fixed clock and literal expectations; comparing against getIsoWeek() would pass for any value it returns.
+    setSystemTime(new Date('2026-11-04T10:00:00Z'));
     let captured: { fn: string, args: Record<string, unknown> } | null = null;
     const client = {
       rpc: async (fn: string, args: Record<string, unknown>) => {
@@ -241,8 +245,8 @@ describe('copyMealPlanToCurrentWeek', () => {
     expect(result).toBeUndefined();
     expect(captured!.fn).toBe('copy_meal_plan_to_week');
     expect(captured!.args.p_source_meal_plan_id).toBe('source-plan-id');
-    expect(captured!.args.p_semana_iso).toEqual(getIsoWeek());
-    expect(captured!.args.p_fecha_inicio).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(captured!.args.p_semana_iso).toBe('2026-W45');
+    expect(captured!.args.p_fecha_inicio).toBe('2026-11-02');
   });
 
   test('throws MealPlanError when the RPC fails (e.g. not the owner)', async () => {
