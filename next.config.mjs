@@ -76,9 +76,23 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/photo-*' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/flagged/photo-*' },
-      // FRESCO-462: 20 active recipes source their photo from Pexels; next/image
-      // 400s on any hostname not listed here.
-      { protocol: 'https', hostname: 'images.pexels.com', pathname: '/photos/**' },
+      // FRESCO-462 / FRESCO-1126 (A8-ABUSE-04): every stored Pexels URL is the API's `large`
+      // size, `/photos/<id>/<file>` with one fixed query string, so both are pinned.
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+        pathname: '/photos/*/*',
+        search: '?auto=compress&cs=tinysrgb&h=650&w=940',
+      },
+      // FRESCO-1126: AI-generated photos live in the public `recipe-photos` bucket of the
+      // one Supabase project (all environments share it). Without this entry next/image
+      // answered 400 for those recipes. Flat bucket, no query string stored.
+      {
+        protocol: 'https',
+        hostname: 'jdqemhewjrjuopssdurn.supabase.co',
+        pathname: '/storage/v1/object/public/recipe-photos/*',
+        search: '',
+      },
     ],
     // FRESCO-1017: each distinct width x quality is a billable transformation. Short
     // lists keep that product small; photos here are `fill` with a `sizes` prop, so they

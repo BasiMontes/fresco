@@ -6,6 +6,8 @@ import nextConfig from '../../next.config.mjs';
 // libraries, so anyone could drive the Vercel Image Optimization quota. These tests hold the
 // allow-list narrow, using Next's own matcher so they prove what `/_next/image` would accept.
 
+const SUPABASE_HOST = 'jdqemhewjrjuopssdurn.supabase.co';
+
 const images = nextConfig.images ?? {};
 const patterns = images.remotePatterns ?? [];
 
@@ -23,15 +25,50 @@ describe('images.remotePatterns (A7-ABUSE-01)', () => {
     }
   });
 
-  test('only the two photo hosts the catalogue uses are listed', () => {
+  test('only the three photo hosts the catalogue uses are listed', () => {
     const hosts = new Set((patterns as { hostname: string }[]).map(pattern => pattern.hostname));
-    expect([...hosts].sort()).toEqual(['images.pexels.com', 'images.unsplash.com']);
+    expect([...hosts].sort()).toEqual(['images.pexels.com', 'images.unsplash.com', SUPABASE_HOST]);
+  });
+
+  // FRESCO-1126 (A8-ABUSE-04): no pattern may end in an open-ended `**`, and every one
+  // names the exact shape the catalogue stores (see the inventory in the FRESCO-1126 PR).
+  test('no pattern ends in a multi-segment wildcard', () => {
+    for (const pattern of patterns as { pathname?: string }[]) {
+      expect(pattern.pathname?.endsWith('**')).toBe(false);
+    }
+  });
+
+  test('the exact pattern list is pinned', () => {
+    const summary = (patterns as { hostname: string, pathname?: string, search?: string }[])
+      .map(p => `${p.hostname}${p.pathname}${p.search ?? ''}`)
+      .sort();
+    expect(summary).toEqual([
+      'images.pexels.com/photos/*/*?auto=compress&cs=tinysrgb&h=650&w=940',
+      'images.unsplash.com/flagged/photo-*',
+      'images.unsplash.com/photo-*',
+      `${SUPABASE_HOST}/storage/v1/object/public/recipe-photos/*`,
+    ]);
+  });
+
+  test('accepts the Supabase Storage recipe-photos bucket, and nothing else on that host', () => {
+    expect(allowed(`https://${SUPABASE_HOST}/storage/v1/object/public/recipe-photos/00486b85-53b1-4d54-8f7e-954885b9b999.png`)).toBe(true);
+    expect(allowed(`https://${SUPABASE_HOST}/storage/v1/object/public/other-bucket/x.png`)).toBe(false);
+    expect(allowed(`https://${SUPABASE_HOST}/storage/v1/object/public/recipe-photos/a/b.png`)).toBe(false);
+    expect(allowed(`https://${SUPABASE_HOST}/rest/v1/recipes`)).toBe(false);
+    expect(allowed('https://other-ref.supabase.co/storage/v1/object/public/recipe-photos/x.png')).toBe(false);
+  });
+
+  test('Pexels only accepts the one query string the API serves for the stored size', () => {
+    expect(allowed('https://images.pexels.com/photos/1346347/pexels-photo-1346347.jpeg?auto=compress&cs=tinysrgb&h=650&w=940')).toBe(true);
+    expect(allowed('https://images.pexels.com/photos/1346347/pexels-photo-1346347.jpeg?auto=compress&cs=tinysrgb&h=650&w=941')).toBe(false);
+    expect(allowed('https://images.pexels.com/photos/1346347/pexels-photo-1346347.jpeg')).toBe(false);
+    expect(allowed('https://images.pexels.com/photos/1346347/extra/pexels-photo-1346347.jpeg?auto=compress&cs=tinysrgb&h=650&w=940')).toBe(false);
   });
 
   test('accepts the shapes real recipe photos have', () => {
     expect(allowed('https://images.unsplash.com/photo-1696950169729-228abf39fbaa?crop=entropy&w=1080')).toBe(true);
     expect(allowed('https://images.unsplash.com/flagged/photo-1577054588868-d5ac2299e402?q=80&w=1080')).toBe(true);
-    expect(allowed('https://images.pexels.com/photos/1346347/pexels-photo-1346347.jpeg?auto=compress')).toBe(true);
+    expect(allowed('https://images.pexels.com/photos/1346347/pexels-photo-1346347.jpeg?auto=compress&cs=tinysrgb&h=650&w=940')).toBe(true);
   });
 
   test('rejects paths outside the photo areas of either library', () => {
