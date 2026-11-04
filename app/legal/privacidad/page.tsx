@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
 import { PrivacyContent } from '@/components/legal/legal-content';
+import { canonicalUrl } from '@/lib/seo/canonical';
 
 export const metadata: Metadata = {
   title: 'Política de Privacidad — Fresco',
   description: 'Cómo Fresco recopila, usa y protege tus datos, incluida la base legal para el tratamiento de alergias.',
+  // FRESCO-1102: own canonical, never the home's.
+  alternates: { canonical: canonicalUrl('/legal/privacidad') },
 };
 
 /** FRESCO-493 — real indexable route, same content component `LegalModal` uses. See `app/legal/terminos/page.tsx` for the pattern this mirrors. */

@@ -2,10 +2,13 @@ import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
 import { ContactContent } from '@/components/legal/legal-content';
+import { canonicalUrl } from '@/lib/seo/canonical';
 
 export const metadata: Metadata = {
   title: 'Contacto — Fresco',
   description: 'Cómo contactar con el equipo de Fresco.',
+  // FRESCO-1102: own canonical, never the home's.
+  alternates: { canonical: canonicalUrl('/legal/contacto') },
 };
 
 /** FRESCO-493 — real indexable route, same content component `LegalModal` uses. See `app/legal/terminos/page.tsx` for the pattern this mirrors. */

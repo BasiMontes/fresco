@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { BrandVideo } from '@/components/landing/brand-video';
 import { Faq } from '@/components/landing/faq';
 import { FAQS } from '@/components/landing/faq-data';
@@ -13,7 +14,14 @@ import { SiteNav } from '@/components/landing/site-nav';
 import { JsonLd } from '@/components/seo/json-ld';
 import { Reveal } from '@/components/ui/reveal';
 import { getProPrices } from '@/lib/billing/pro-prices';
+import { canonicalUrl } from '@/lib/seo/canonical';
 import { faqJsonLd, softwareApplicationJsonLd } from '@/lib/seo/structured-data';
+
+// FRESCO-471 / FRESCO-1102: the landing's own self-referencing canonical ("/"). It used to live in the
+// root layout and leaked to every page without one.
+export const metadata: Metadata = {
+  alternates: { canonical: canonicalUrl('/') },
+};
 
 // FRESCO-871: the landing shows the Pro prices read from Stripe; re-render at most
 // hourly so a price change in Stripe reaches the public page without a deploy.
