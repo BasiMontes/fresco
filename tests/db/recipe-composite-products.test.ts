@@ -13,7 +13,10 @@
  *      `huevo` and `pescado` (the dressing is egg yolk and anchovy) and never claims `sin_huevo`;
  *   6. FRESCO-1093 to 1096 and 1115 (audit 8 allergen batch): pad thai, falafel, an unspecified
  *      "bebida vegetal", a fish without scales and a Caesar dressing keep only the claims their text
- *      can back (the owner's criterion of 2026-11-04: over-label when a product is not specified).
+ *      can back (the owner's criterion of 2026-11-04: over-label when a product is not specified);
+ *   7. FRESCO-1091 and 1092 (audit 8 batch 2): a `sin_gluten` recipe never names a stock only in its
+ *      steps, and a dish whose NAME says curry but whose text names none carries `mostaza` and claims
+ *      neither `vegano` nor `sin_gluten` (the barrier does not read the name, so this test holds it).
  *
  * Inactive rows too, so a reactivated recipe is already right.
  *
@@ -147,6 +150,28 @@ describe.skipIf(!(RUN && reachable))('compound products over the catalogue (real
   test('a Caesar recipe claims sin_gluten only when its text says so (the query returns 0)', async () => {
     const wrong = (await catalogue())
       .filter(row => /c[eé]sar/i.test(row.nombre) && row.dieta?.sin_gluten === true && !/sin gluten/i.test(row.ingredientes_principales.join(' ')))
+      .map(row => row.slug);
+
+    expect(wrong).toEqual([]);
+  });
+
+  test('a sin_gluten recipe never names a stock only in its steps (the query returns 0)', async () => {
+    const stepOnlyStock = (row: Row) => {
+      const listsAStock = row.ingredientes_principales.some(item => /\bcaldo\b/i.test(item));
+      const bareInSteps = row.pasos_resumen.some(step => /\bcaldo\b/i.test(step.replace(/\bsu caldo\b/gi, ' ').replace(/\bcaldo de (?:verduras?|vegetal(?:es)?|hortalizas)\b/gi, ' ')));
+      return !listsAStock && bareInSteps;
+    };
+    const wrong = (await catalogue()).filter(row => row.dieta?.sin_gluten === true && stepOnlyStock(row)).map(row => row.slug);
+
+    expect(wrong).toEqual([]);
+  });
+
+  test('a dish whose name says curry but whose text names none carries mostaza and is neither vegano nor sin_gluten (the query returns 0)', async () => {
+    const nameOnly = (await catalogue()).filter(row => /\bcurr[yi]\b/i.test(row.nombre) && !/\bcurr[yi]\b/i.test(text(row)));
+    expect(nameOnly.length).toBeGreaterThanOrEqual(10);
+
+    const wrong = nameOnly
+      .filter(row => !row.alergenos.includes('mostaza') || row.dieta?.vegano === true || row.dieta?.sin_gluten === true)
       .map(row => row.slug);
 
     expect(wrong).toEqual([]);

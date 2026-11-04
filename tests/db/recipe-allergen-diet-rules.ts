@@ -110,9 +110,9 @@ export const NOT_VEGETARIAN = words(
 );
 /** Text that negates a meat word ("sin carne", "carne vegetal"): removed before the vegetarian match. */
 const NOT_MEAT_PHRASES = /\b(?:sin carne|carne vegetal|carne de soja|vegetal de carne)\b/g;
-/** Not gluten-free unless the text says so: soy sauce is wheat-based, tamari and miso often are. */
-export const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos');
-const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos) sin gluten\b/g;
+/** Not gluten-free unless the text says so: soy sauce is wheat-based, tamari and miso often are, and a curry paste or powder can carry wheat (FRESCO-1092). */
+export const GLUTEN_SUSPECT = words('tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos|curry');
+const GLUTEN_FREE_PHRASES = /\b(?:tamari|teriyaki|salsa de soja|shoyu|cerveza|nachos|curry) sin gluten\b/g;
 /**
  * FRESCO-1051: ingredients that, bought as a product, very often carry wheat (stock cubes, black pudding,
  * tripe and green sauce bound with flour). FRESCO-1050 withdrew `sin_gluten` from the recipes that listed
@@ -268,6 +268,13 @@ export function auditRecipeFindings(recipe: RecipeTags): Finding[] {
     const brandDependent = (recipe.ingredientes_principales ?? []).find(text => GLUTEN_BRAND_DEPENDENT.includes(normalize(text)));
     if (brandDependent) {
       fail('dieta:sin_gluten_marca', `sin_gluten es true con un ingrediente que suele llevar trigo según la marca (ingrediente: ${brandDependent})`);
+    }
+    // FRESCO-1091: a stock that only a step names. No ingredient lists any stock, so a hit is in a step.
+    if (!brandDependent && !(recipe.ingredientes_principales ?? []).some(text => STOCK.test(normalize(text)))) {
+      const stepStock = sources.find(source => STOCK.test(normalize(source.text).replace(OWN_BROTH, ' ').replace(VEGETABLE_STOCK, ' ')));
+      if (stepStock) {
+        fail('dieta:sin_gluten_marca', `sin_gluten es true con un caldo que solo aparece en los pasos (${describe(stepStock)})`);
+      }
     }
   }
 
