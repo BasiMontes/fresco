@@ -67,6 +67,20 @@ describe.skipIf(!(RUN && reachable))('stock and miso rules over the catalogue (r
     expect(inconsistent).toEqual([]);
   });
 
+  test('FRESCO-1123: a recipe that lists a vegetable stock also carries it in the quantities', async () => {
+    const rows = await restAll<Row & { ingredientes_cantidades: { nombre: string }[] | null }>('recipes', {
+      serviceRole: true,
+      select: 'slug,ingredientes_principales,ingredientes_cantidades',
+      order: 'id',
+    });
+    const missing = rows
+      .filter(row => row.ingredientes_cantidades && row.ingredientes_principales.includes('caldo de verduras'))
+      .filter(row => !row.ingredientes_cantidades!.some(q => /\bcaldo\b/.test(q.nombre.toLowerCase())))
+      .map(row => row.slug);
+
+    expect(missing).toEqual([]);
+  });
+
   test('a vegetarian or vegan recipe that uses a stock names the vegetable stock', async () => {
     const unnamed = (await catalogue())
       .filter(row => (row.dieta?.vegetariano === true || row.dieta?.vegano === true) && hasStock(row) && !namesVegetableStock(row))
