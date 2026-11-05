@@ -37,29 +37,37 @@ const words = (list: string) => new RegExp(`\\b(?:${list})\\b`);
 
 /** allergen tag -> words (in an ingredient or a step) that require it. */
 export const ALLERGEN_KEYWORDS: Record<string, RegExp> = {
-  lactosa: words('leche|queso|yogur|nata|mantequilla|requeson|skyr|bechamel|mozzarella|parmesano|feta|burrata|mascarpone|ricotta|kefir|crema pastelera'),
+  lactosa: words('leche|queso|yogur|nata|mantequilla|requeson|skyr|bechamel|mozzarella|parmesano|feta|burrata|mascarpone|ricotta|kefir|crema pastelera'
+    // FRESCO-1130 (A8-TEST-02): cheeses and ice cream named without the word "queso".
+    + '|cheddar|emmental|manchego|gorgonzola|gouda|brie|helados?'),
   gluten: words(
     'trigo|pan|harina|pasta|espaguetis|macarrones|fideos|cuscus|seitan|avena|cebada|centeno|galleta|croissant|bagels?|granola|lasana|tortellini|picatostes|masa|cerveza|ramen|empanadas?'
     + '|espelta|kamut|escanda|bulgur|semola|farro|gnocchi|noquis|pizza|rebozad[oa]s?|panko|salsa de soja|shoyu|bechamel|miso'
-    + '|kritharaki|orzo|crumpets?|muffins?|roscas?|pitas?|naan|couscous|cous cous|falafel',
+    + '|kritharaki|orzo|crumpets?|muffins?|roscas?|pitas?|naan|couscous|cous cous|falafel'
+    // FRESCO-1130 (A8-TEST-02): dishes and pasta shapes whose name carries the wheat.
+    + '|wraps?|penne|gyozas?|bocadillos?|sandwiches|sandwich|empanadillas?|tempura|croquetas?|udon|soba|tagliatelles?',
   ),
   // FRESCO-1086: a Caesar dressing is made with egg yolk and anchovy.
-  huevo: words('huevos?|mayonesa|crema pastelera|crema de limon|crepes?|croissant|bizcocho|merengue|brioche|magdalenas?|natillas|flan|cesar|pad thai|falafel'),
+  huevo: words('huevos?|mayonesa|crema pastelera|crema de limon|crepes?|croissant|bizcocho|merengue|brioche|magdalenas?|natillas|flan|cesar|pad thai|falafel'
+    // FRESCO-1130 (A8-TEST-02): egg dishes and parts that never say "huevo".
+    + '|tortilla de patatas?|tortilla espanola|tortilla francesa|claras?|yemas?|omelettes?|revueltos?'),
   pescado: words(
     'salmon|bacalao|merluza|atun|bonito|rape|anchoas?|sardinas?|boquerones|dorada|corvina|pescado'
-    + '|lubina|trucha|caballa|rodaballo|pez espada|emperador|lenguado|abadejo|mero|pargo|besugo|bacaladilla|jurel|pescadilla|surimi|fumet|dashi|cesar|pad thai',
+    + '|lubina|trucha|caballa|rodaballo|pez espada|emperador|lenguado|abadejo|mero|pargo|besugo|bacaladilla|jurel|pescadilla|surimi|fumet|dashi|cesar|pad thai'
+    // FRESCO-1130 (A8-TEST-02): fish sauces whose base is anchovy or fish ("salsa de pescado" already hits "pescado").
+    + '|worcestershire|nuoc mam',
   ),
   crustaceos: words('gambas?|langostinos?|cangrejo|langosta|cigalas?|camarones?|centollo|bogavante|carabineros?|necoras?|percebes?|buey de mar|krill'),
   moluscos: words('calamares|calamar|mejillones|almejas|pulpo|sepia|ostras?|chipirones?|vieiras?|berberechos?|navajas?|zamburinas?|coquinas?|caracoles'),
   soja: words('soja|tofu|tempeh|tamari|miso|edamame|teriyaki|shoyu|bebida vegetal'),
   sesamo: words('sesamo|tahini|tahina|hummus|humus|falafel'),
   cacahuetes: words('cacahuetes?'),
-  frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos|bebida vegetal'),
-  apio: words('apio|caldo'),
+  frutos_de_cascara: words('nueces|nuez|almendras?|avellanas?|pistachos?|anacardos|pinones?|frutos secos|bebida vegetal|pecanas?|macadamias?'),
+  apio: words('apio|apionabo|caldo'),
   // FRESCO-997: mayonesa and barbecue sauce carry vinegar, beer carries sulfites, sushi rice is seasoned with it.
-  sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra|mayonesa|barbacoa|cerveza|arroz de sushi'),
+  sulfitos: words('vino|vinagre|pasas|orejones|vermut|cava|sidra|mayonesa|barbacoa|cerveza|arroz de sushi|albaricoques? secos?|higos? secos?'),
   // Curry powder blends carry mustard seed (A7-SAFEA-07, A7-SAFEB-09).
-  mostaza: words('mostaza|curry|mayonesa|barbacoa'),
+  mostaza: words('mostaza|dijon|curry|mayonesa|barbacoa'),
   // FRESCO-912: the last two of the EU-14. No active recipe mentions either today, so
   // these entries are the net that catches the first one that does.
   altramuces: words('altramuz|altramuces|lupino|lupinos'),
@@ -87,6 +95,8 @@ export const ALLERGEN_EXCEPTIONS: { allergen: string, pattern: RegExp, why: stri
   { allergen: 'apio', pattern: /\bsu caldo\b/, why: 'the beans\' own cooking liquid, not a stock' },
   { allergen: 'soja', pattern: /\bbrotes de soja\b/, why: 'bean sprouts are the vegetable, not a soy product' },
   { allergen: 'sulfitos', pattern: /\bvinagre de arroz\b/, why: 'rice vinegar is made without grape must' },
+  { allergen: 'gluten', pattern: /\bwraps? de (?:lechuga|col|hojas?)\b/, why: 'a lettuce or cabbage wrap is a leaf, not a tortilla' },
+  { allergen: 'huevo', pattern: /\b(?:tofu revuelto|revuelto de tofu)\b/, why: 'scrambled tofu is the plant-based stand-in for scrambled egg' },
 ];
 
 /**
