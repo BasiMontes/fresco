@@ -4,7 +4,7 @@
 -- Run by `supabase test db` (CI: the e2e job in .github/workflows/pr-check.yml).
 
 begin;
-select plan(8);
+select plan(9);
 
 -- ── Auth context ───────────────────────────────────────────────────────
 -- copy_meal_plan_to_week() calls auth.uid() for its ownership check.
@@ -73,13 +73,23 @@ select is(
   3, 'the 3 source slots landed on the target week'
 );
 
--- ── Case 4: every copied slot's estado is reset to pendiente ──────────
+-- ── Case 4: no copied slot keeps the source week's cocinada/descartada estado ─
+-- FRESCO-1127: only `excluida` survives the copy (see Case 4b); everything else resets to pendiente.
 select is(
   (select count(*)::int from public.meal_plan_recipes mpr
    join public.meal_plans mp on mp.id = mpr.meal_plan_id
    where mp.user_id = '11111111-1111-1111-1111-111111111111'
-     and mp.semana_iso = (select cur from wk) and mpr.estado <> 'pendiente'),
+     and mp.semana_iso = (select cur from wk) and mpr.estado not in ('pendiente', 'excluida')),
   0, 'no copied slot carries the source week''s cocinada/descartada estado'
+);
+
+-- ── Case 4b: an excluida source slot stays excluida (FRESCO-1127) ─────
+select is(
+  (select count(*)::int from public.meal_plan_recipes mpr
+   join public.meal_plans mp on mp.id = mpr.meal_plan_id
+   where mp.user_id = '11111111-1111-1111-1111-111111111111'
+     and mp.semana_iso = (select cur from wk) and mpr.estado = 'excluida'),
+  1, 'the excluida source slot is copied as excluida, not reset to pendiente'
 );
 
 -- ── Case 5: copying a plan onto its own week is rejected ──────────────
