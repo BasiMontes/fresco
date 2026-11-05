@@ -16,10 +16,23 @@ import { LEGAL_TEXTS_VERSION } from './consent';
  */
 export const REQUIRED_CONSENTS: readonly ConsentKind[] = ['age_14', 'terms', 'privacy'];
 
-/** The required kinds with no row at `version`, in the order of `REQUIRED_CONSENTS`. */
-export function missingConsents(rows: readonly { kind: string, version: string }[], version: string = LEGAL_TEXTS_VERSION): ConsentKind[] {
+/**
+ * FRESCO-1125 (audit 8 A8-PRIV-04): `health_data` is not required of everyone, only of a profile that
+ * holds allergens or a halal diet (the latter reveals a religious belief, GDPR art. 9). Such a profile is
+ * asked again when it has no `health_data` row at the current version, so the reworded text reaches the
+ * people who consented under an older one.
+ */
+export interface MissingConsentsOptions {
+  version?: string
+  hasHealthData?: boolean
+}
+
+/** The required kinds with no row at `version` (plus `health_data` when the profile holds health data). */
+export function missingConsents(rows: readonly { kind: string, version: string }[], options: MissingConsentsOptions = {}): ConsentKind[] {
+  const { version = LEGAL_TEXTS_VERSION, hasHealthData = false } = options;
   const given = new Set(rows.filter(row => row.version === version).map(row => row.kind));
-  return REQUIRED_CONSENTS.filter(kind => !given.has(kind));
+  const missing = REQUIRED_CONSENTS.filter(kind => !given.has(kind));
+  return hasHealthData && !given.has('health_data') ? [...missing, 'health_data'] : missing;
 }
 
 /**
@@ -32,11 +45,23 @@ export async function getMissingConsents(client: SupabaseClient<Database>): Prom
     .from('user_consents')
     .select('kind, version')
     .eq('version', LEGAL_TEXTS_VERSION)
-    .in('kind', [...REQUIRED_CONSENTS]);
+    .in('kind', [...REQUIRED_CONSENTS, 'health_data']);
 
   if (error) {
     throw error;
   }
 
-  return missingConsents(data ?? []);
+  // RLS scopes both reads to the caller's own rows.
+  const { data: profile, error: profileError } = await client
+    .from('user_profiles')
+    .select('alergenos, dieta_halal')
+    .maybeSingle();
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  const hasHealthData = (profile?.alergenos?.length ?? 0) > 0 || profile?.dieta_halal === true;
+
+  return missingConsents(data ?? [], { hasHealthData });
 }
