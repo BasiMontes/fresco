@@ -143,3 +143,8 @@ Historia archivada:
 - Qué: FRESCO-1121 (el check de go-live de Stripe exige el acuse de los correos de recuperación, #898) y FRESCO-1126 (`remotePatterns` de `next/image` acotado a las formas de foto guardadas y bucket `recipe-photos` permitido, #899) squash a staging en `a5d456c1`. Sin migraciones ni funciones edge.
 - Por qué: cerrar los hallazgos divididos de la tanda de higiene de la auditoría 8 (A8-ABUSE-04).
 - Siguiente: promover a main en lote con `bun run git:promote` (llevará esta bitácora, #898 y #899); decidir 1128 y 1129.
+
+## 2026-11-05 - Ola 8: 1122, 1123, 1127 y 1130 en staging; 1120 rechazada
+- Qué: FRESCO-1122 (estado "activando tu plan" tras pagar, #900), 1123 (fila `caldo de verduras` al gusto en 20 recetas, no 10, #901), 1127 (`copy_meal_plan_to_week` conserva los huecos `excluida`, #902) y 1130 (vocabulario del oráculo de alérgenos y su espejo SQL, #903) squash a `staging`. Tres migraciones nuevas sin aplicar al proyecto alojado: `20261105100000`, `20261105110000` y `20261105120000`. FRESCO-1120 rechazada con evidencia (5 ejecuciones bajo carga con la semilla 1037768064, 0 fallos).
+- Por qué: seguir vaciando Listo tras la tanda de higiene de la auditoría 8. En 1127 el `CASE` devolvía `text` contra el enum `estado_receta_menu` y rompía toda copia (400), y el test pgTAP del caso 4 fijaba el comportamiento antiguo; ninguno de los dos se veía en local porque Docker estaba apagado.
+- Siguiente: aplicar las tres migraciones con `supabase db push --linked` antes de promover; revisar las recetas vivas contra las palabras nuevas del oráculo (1130 no pudo); decidir el escaneo del `nombre` de receta (A8-TEST-02 punto 6); decidir 1128, 1129 y 1125, y autorizar 1124. Se pide un solo agente por tanda.
