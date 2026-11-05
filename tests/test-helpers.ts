@@ -229,10 +229,11 @@ export async function postSignedStripeEvent(
  * allergies or diet without one (`require_health_data_consent`), so a step that seeds `alergenos` /
  * `dieta_*` with the user's own token calls this first. FRESCO-1007: the registry has no INSERT grant
  * for a client role, so the row is written the way the server writes it, through `record_consents`
- * with the service role.
+ * with the service role. FRESCO-1125: recorded at the CURRENT texts version, because a profile with
+ * allergens and no `health_data` row at that version is asked again by the blocking re-consent dialog.
  */
 export async function recordHealthDataConsent(userId: string): Promise<void> {
-  await recordConsents(userId, ['health_data'], 'e2e-seed');
+  await recordConsents(userId, ['health_data']);
 }
 
 /**
