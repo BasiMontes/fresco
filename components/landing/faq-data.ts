@@ -47,6 +47,10 @@ export const FAQS = [
     answer: 'Un chat de IA te contesta, pero no recuerda tus alergias de forma fiable ni te organiza la compra. En Fresco los filtros de alergias y de dieta se aplican antes de generar nada, y la lista sale ya ordenada por pasillos, con las cantidades escaladas a tu hogar. Cambias una receta sin rehacer toda la semana.',
   },
   {
+    question: '¿Las fotos de las recetas son reales?',
+    answer: 'Algunas de las fotos de las recetas son ilustraciones generadas con inteligencia artificial, no fotografías reales del plato. Sirven para que te hagas una idea de la receta, y el resultado al cocinarla puede variar.',
+  },
+  {
     question: '¿Qué no hace Fresco todavía?',
     answer: 'Fresco no hace el pedido en el supermercado por ti. La lista incluye enlaces y precios orientativos de algunas cadenas, que pueden haber cambiado.',
   },

@@ -34,6 +34,16 @@ describe('landing FAQ dietary answers (FRESCO-1113, A8-LAUNCH-04)', () => {
   });
 });
 
+describe('landing FAQ photo disclosure (FRESCO-1132)', () => {
+  test('says that some recipe photos are AI-generated illustrations, not real photographs', () => {
+    const photos = FAQS.find(item => item.question.includes('fotos de las recetas'));
+
+    expect(photos).toBeDefined();
+    expect(photos!.answer).toMatch(/ilustraciones generadas con inteligencia artificial/i);
+    expect(photos!.answer).toMatch(/no fotograf[ií]as reales/i);
+  });
+});
+
 describe('allergen texts shown in the app', () => {
   test.each([['ALERGENOS_RECORDATORIO', ALERGENOS_RECORDATORIO], ['TEXTO_LIBRE_SIN_FILTRO', TEXTO_LIBRE_SIN_FILTRO]])('%s does not over-promise', (_name, text) => {
     expect(text).not.toMatch(OVERPROMISE);
