@@ -124,6 +124,7 @@ Deno.serve(async (req: Request) => {
     // against a lost subscription-deleted webhook). See entitlement.ts.
     const isPro = isProEntitlementActive(profile)
     const recentRecipeIds: string[] = []
+    const repeatableRecipeIds: string[] = [] // FRESCO-1128: the cooked subset, the only ones a menu may repeat
     let cocinadasEvitadas = 0
     let descartadasEvitadas = 0
     // ADR-0008: personal cocinada/descartada counts feeding scoreRecipe()'s
@@ -144,7 +145,10 @@ Deno.serve(async (req: Request) => {
       for (const mark of marks) {
         if (mark.estado === 'cocinada' || mark.estado === 'descartada') {
           recentRecipeIds.push(mark.recipe_id)
-          if (mark.estado === 'cocinada') cocinadasEvitadas++
+          if (mark.estado === 'cocinada') {
+            cocinadasEvitadas++
+            repeatableRecipeIds.push(mark.recipe_id)
+          }
           else descartadasEvitadas++
         }
       }
@@ -165,6 +169,7 @@ Deno.serve(async (req: Request) => {
     const { menu, advertencias } = selectMenu({
       candidates: recipes,
       recentRecipeIds,
+      repeatableRecipeIds,
       profile,
       // FRESCO-380 (A4-M1): same user + same week => same menu.
       seed: `${user.id}:${semana_iso}`,
