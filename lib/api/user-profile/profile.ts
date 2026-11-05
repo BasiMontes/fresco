@@ -52,6 +52,8 @@ export type OnboardingProfilePayload = Pick<
   // (`lib/client-api/user-profile.ts`) so a profile created at onboarding already
   // carries it. Omitted = left untouched.
   | 'analytics_consent'
+  | 'analytics_consent_at'
+  | 'analytics_consent_version'
 >>;
 
 /**

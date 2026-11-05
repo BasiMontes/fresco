@@ -1,5 +1,5 @@
 import { getPlanTierForAnalytics as getPlanTierForAnalyticsFor, markRoutesNoticeDismissed as markRoutesNoticeDismissedFor, updateNombre as updateNombreFor, upsertUserProfile as upsertUserProfileFor } from '@/lib/api/user-profile';
-import { readCookieConsentClient } from '@/lib/consent/cookie-consent';
+import { readCookieConsentRecordClient } from '@/lib/consent/cookie-consent';
 import { createClient } from '@/lib/supabase/client';
 
 /** ADR-0041: `lib/api/user-profile` bound to the signed-in browser session. */
@@ -24,6 +24,13 @@ export async function updateNombre(nombre: Parameters<typeof updateNombreFor>[1]
  * cookie is the browser's latest word.
  */
 export async function upsertUserProfile(profile: Parameters<typeof upsertUserProfileFor>[1]) {
-  const decision = readCookieConsentClient();
-  return upsertUserProfileFor(createClient(), decision === null ? profile : { ...profile, analytics_consent: decision === 'accepted' });
+  const record = readCookieConsentRecordClient();
+  return upsertUserProfileFor(createClient(), record === null
+    ? profile
+    : {
+        ...profile,
+        analytics_consent: record.decision === 'accepted',
+        analytics_consent_version: record.version,
+        analytics_consent_at: new Date(record.decidedAt * 1000).toISOString(),
+      });
 }

@@ -48,6 +48,10 @@ export interface UserProfile {
   alergenos_texto_libre: string | null
   /** FRESCO-919 (ADR-0044). Cookie-banner analytics decision synced from the browser: true accepted, false rejected, null never synced (treated as no consent by server-side events). */
   analytics_consent: boolean | null
+  /** FRESCO-1124. When the analytics decision was taken (ISO), synced with `analytics_consent`. */
+  analytics_consent_at: string | null
+  /** FRESCO-1124. The legal texts version the analytics decision was taken under; server events need the current one. */
+  analytics_consent_version: string | null
   ingredientes_odiados: string[]
   /** Onboarding step 2 (FRESCO-133). Free-text note for disliked ingredients not covered by the predefined chips. */
   ingredientes_odiados_texto_libre: string | null

@@ -70,22 +70,27 @@ export async function readProfileNombre(userId: string): Promise<string | null> 
  * the decision when it creates the row. Throws only if the request itself
  * rejects; the caller treats a failure as "try again next load".
  */
-export async function syncAnalyticsConsent({ userId, accepted }: { userId: string, accepted: boolean }): Promise<void> {
+export async function syncAnalyticsConsent({ userId, accepted, version = null, decidedAt = null }: { userId: string, accepted: boolean, version?: string | null, decidedAt?: number | null }): Promise<void> {
   const { createClient } = await loadSupabaseClient();
   const client = createClient();
   const { data } = await client
     .from('user_profiles')
-    .select('analytics_consent')
+    .select('analytics_consent, analytics_consent_version')
     .eq('id', userId)
     .maybeSingle();
 
-  if (!data || data.analytics_consent === accepted) {
+  // FRESCO-1124: a stored `true` of another texts version is stale even when the decision matches.
+  if (!data || (data.analytics_consent === accepted && (data.analytics_consent_version ?? null) === version)) {
     return;
   }
 
   await client
     .from('user_profiles')
-    .update({ analytics_consent: accepted })
+    .update({
+      analytics_consent: accepted,
+      analytics_consent_version: version,
+      analytics_consent_at: decidedAt === null ? null : new Date(decidedAt * 1000).toISOString(),
+    })
     .eq('id', userId);
 }
 

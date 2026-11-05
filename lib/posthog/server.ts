@@ -9,6 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { PostHog } from 'posthog-node';
+import { LEGAL_TEXTS_VERSION } from '@/lib/legal/consent';
 
 export interface ServerCaptureParams {
   /** A client that can read `user_profiles.analytics_consent` (the service-role client in every caller). */
@@ -42,7 +43,7 @@ function getServerClient(): PostHog | null {
 async function hasAnalyticsConsent(supabase: SupabaseClient<Database>, userId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('analytics_consent')
+    .select('analytics_consent, analytics_consent_version')
     .eq('id', userId)
     .maybeSingle();
 
@@ -51,7 +52,8 @@ async function hasAnalyticsConsent(supabase: SupabaseClient<Database>, userId: s
     return false;
   }
 
-  return data?.analytics_consent === true;
+  // FRESCO-1124: a stored `true` only counts for the texts version in force; an older one is stale.
+  return data?.analytics_consent === true && data.analytics_consent_version === LEGAL_TEXTS_VERSION;
 }
 
 /**
