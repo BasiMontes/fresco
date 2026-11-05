@@ -55,7 +55,6 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
   return (
     <section id="pricing" className="bg-primary">
       <div className="mx-auto max-w-5xl px-4 py-16 md:px-8">
-        <p className="mb-4 text-h6 uppercase text-accent-200">Precios</p>
         <h2 className="mb-8 text-h2 text-background">Sin letra pequeña. Sin trampa.</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col rounded-card border border-border bg-surface p-7">

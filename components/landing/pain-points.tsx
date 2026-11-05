@@ -17,7 +17,6 @@ export function PainPoints() {
   return (
     <section className="border-y border-border bg-primary">
       <div className="mx-auto max-w-5xl px-4 py-16 md:px-8">
-        <p className="mb-4 text-h6 uppercase text-accent-200">El problema real</p>
         <h2 className="mb-8 text-h2 tracking-tight text-background">
           ¿Cuántas veces has acabado comiendo lo que sea?
         </h2>
