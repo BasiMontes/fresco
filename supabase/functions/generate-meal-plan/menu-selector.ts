@@ -98,6 +98,11 @@ export interface SelectMenuParams {
   seed: string
   /** Monday of the planned week, `YYYY-MM-DD` (`meal_plans.fecha_inicio`): the season is read from it. */
   fechaInicio: string
+  /**
+   * FRESCO-1129: today in Madrid, `YYYY-MM-DD`. The days of the planned week before it are already over, so
+   * they come out as excluded slots and take no pick and no budget. Omitted keeps every day of the week.
+   */
+  hoy?: string
   /** Pro/Family personal cocinada/descartada counts per recipe, all-time (ADR-0008) — `undefined` for Free. */
   userEngagement?: Map<string, { cocinada: number; descartada: number }>
 }
@@ -160,8 +165,28 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
   return score
 }
 
+/** The app is Spain-only: "today" is the date in Madrid, not in the server's UTC. */
+export function hoyEnMadrid(ahora: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(ahora)
+}
+
+/**
+ * FRESCO-1129: the weekdays of the planned week that are strictly before `hoy`. When every day would be past
+ * (a week already over) it returns none: that plan was asked for on purpose and an all-excluded plan helps
+ * nobody, the same rule the shopping list follows (FRESCO-807).
+ */
+function pastDiasOf(fechaInicio: string, hoy: string | undefined): Set<DiaSemana> {
+  if (!hoy) return new Set()
+  const past = DIAS.filter((_, i) => {
+    const d = new Date(`${fechaInicio}T00:00:00Z`)
+    d.setUTCDate(d.getUTCDate() + i)
+    return d.toISOString().slice(0, 10) < hoy
+  })
+  return past.length === DIAS.length ? new Set() : new Set(past)
+}
+
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], profile, seed, fechaInicio, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -183,6 +208,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
     TIPOS.map(tipo => [tipo, candidates.filter(r => repeatable.has(r.id) && r.clasificacion?.tipo_plato === tipo)]),
   )
 
+  const pastDias = pastDiasOf(fechaInicio, hoy)
   const season = seasonOf(fechaInicio)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
@@ -200,6 +226,12 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
     const timeLimit = isWeekend ? profile.tiempo_max_finde_min : profile.tiempo_max_semana_min
 
     for (const tipo of TIPOS) {
+      // FRESCO-1129: a day already over cannot be cooked or reassigned, so it takes no pick and no budget.
+      if (pastDias.has(dia)) {
+        menu[dia][tipo] = SLOT_EXCLUDED_SENTINEL
+        continue
+      }
+
       // FRESCO-199: the user's own choice, not a candidate-pool problem --
       // skip the whole selection/scoring pass, no advertencia.
       if (!profile.planning_selection[dia]?.includes(tipo)) {
