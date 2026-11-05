@@ -93,7 +93,7 @@ begin
     case when mpr.recipe_id = any (v_allowed) then mpr.recipe_id else null end,
     mpr.dia,
     mpr.tipo_plato,
-    case when mpr.estado = 'excluida' then 'excluida' else 'pendiente' end
+    case when mpr.estado = 'excluida' then 'excluida' else 'pendiente' end::public.estado_receta_menu
   from public.meal_plan_recipes mpr
   where mpr.meal_plan_id = p_source_meal_plan_id;
 
