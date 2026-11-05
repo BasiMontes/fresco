@@ -58,8 +58,8 @@ afterEach(() => {
   pricesSpy.mockRestore();
 });
 
-const renderPage = async () => {
-  renderWithProviders(<CookieConsentProvider initialDecision="rejected">{await ProfilePage()}</CookieConsentProvider>);
+const renderPage = async (checkout?: string) => {
+  renderWithProviders(<CookieConsentProvider initialDecision="rejected">{await ProfilePage({ searchParams: Promise.resolve({ checkout }) })}</CookieConsentProvider>);
 };
 
 describe('ProfilePage', () => {
@@ -103,5 +103,22 @@ describe('ProfilePage', () => {
   test('shows the menu history card', async () => {
     await renderPage();
     expect(screen.getByTestId('menu_history_card_empty')).toBeInTheDocument();
+  });
+
+  // FRESCO-1122 (A8-PAY-05)
+  test('?checkout=success on a still-Free plan shows the activating notice', async () => {
+    await renderPage('success');
+    expect(screen.getByTestId('plan_activating_notice')).toBeInTheDocument();
+  });
+
+  test('?checkout=success once the plan is Pro shows no notice', async () => {
+    loaderSpy.mockResolvedValue(makeData({ plan: 'pro' }));
+    await renderPage('success');
+    expect(screen.queryByTestId('plan_activating_notice')).toBeNull();
+  });
+
+  test('?checkout=cancelled shows no notice', async () => {
+    await renderPage('cancelled');
+    expect(screen.queryByTestId('plan_activating_notice')).toBeNull();
   });
 });

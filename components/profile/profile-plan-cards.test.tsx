@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { renderWithProviders, screen } from '@/tests/component-render';
 import { ProfilePlanCards } from './profile-plan-cards';
+import '@/tests/mocks/next-navigation';
 
 // FRESCO-1078 — exactly one of the Free upsell and the Pro subscription card shows, and the
 // payment-failed notice only ever appears next to the Pro card.
@@ -31,5 +32,23 @@ describe('ProfilePlanCards', () => {
   test('a Free user never sees the payment notice, even with a failed date on record', () => {
     renderWithProviders(<ProfilePlanCards {...props} paymentFailedAt="2026-11-01T10:00:00.000Z" />);
     expect(screen.queryByTestId('payment_failed_notice')).toBeNull();
+  });
+
+  // FRESCO-1122 (A8-PAY-05)
+  test('a Free user back from a paid checkout sees the activating notice instead of the upsell', () => {
+    renderWithProviders(<ProfilePlanCards {...props} checkoutSuccess />);
+    expect(screen.getByTestId('plan_activating_notice')).toBeInTheDocument();
+    expect(screen.queryByTestId('pro_upsell_card')).toBeNull();
+  });
+
+  test('once the plan is Pro the activating notice is gone', () => {
+    renderWithProviders(<ProfilePlanCards {...props} plan="pro" checkoutSuccess />);
+    expect(screen.queryByTestId('plan_activating_notice')).toBeNull();
+    expect(screen.getByTestId('manage_subscription_button')).toBeInTheDocument();
+  });
+
+  test('a Free user without the checkout flag sees no activating notice', () => {
+    renderWithProviders(<ProfilePlanCards {...props} />);
+    expect(screen.queryByTestId('plan_activating_notice')).toBeNull();
   });
 });
