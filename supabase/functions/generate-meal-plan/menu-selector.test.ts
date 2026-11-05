@@ -1,7 +1,7 @@
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
 import { describe, expect, test, setSystemTime } from 'bun:test'
 import fc from 'fast-check'
-import { selectMenu, seasonOf } from './menu-selector.ts'
+import { hoyEnMadrid, selectMenu, seasonOf } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
@@ -829,5 +829,54 @@ describe('selectMenu — FRESCO-1128 (A8-LOGIC-07): repeat a recently cooked rec
     const lunches = DIAS.map(dia => menu[dia].comida)
     for (const id of cooked) expect(lunches).not.toContain(id)
     expect(advertencias.some(a => a.includes('repetido'))).toBe(false)
+  })
+})
+
+describe('selectMenu — FRESCO-1129 (A8-LOGIC-08): days already over take no pick and no budget', () => {
+  // FECHA_INICIO is Monday 2026-01-05: Friday is 2026-01-09.
+  const FRIDAY = '2026-01-09'
+
+  test('generated on a Friday, Monday to Thursday come out excluded and Friday to Sunday are filled', () => {
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: FRIDAY, profile: makeProfile() })
+
+    for (const dia of ['lunes', 'martes', 'miercoles', 'jueves'] as DiaSemana[]) {
+      for (const tipo of TIPOS) expect(menu[dia][tipo]).toBe(SLOT_EXCLUDED_SENTINEL)
+    }
+    for (const dia of ['viernes', 'sabado', 'domingo'] as DiaSemana[]) {
+      for (const tipo of TIPOS) expect([SLOT_EXCLUDED_SENTINEL, NO_SAFE_RECIPE_SENTINEL]).not.toContain(menu[dia][tipo])
+    }
+  })
+
+  test('today itself still counts: generated on the Monday nothing is excluded', () => {
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: FECHA_INICIO, profile: makeProfile() })
+
+    for (const dia of DIAS) for (const tipo of TIPOS) expect(menu[dia][tipo]).not.toBe(SLOT_EXCLUDED_SENTINEL)
+  })
+
+  test('a week planned ahead (today before its Monday) keeps every day', () => {
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: '2026-01-01', profile: makeProfile() })
+
+    for (const dia of DIAS) for (const tipo of TIPOS) expect(menu[dia][tipo]).not.toBe(SLOT_EXCLUDED_SENTINEL)
+  })
+
+  test('a week already over keeps every day: an all-excluded plan helps nobody', () => {
+    const { menu } = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: '2026-02-01', profile: makeProfile() })
+
+    for (const dia of DIAS) for (const tipo of TIPOS) expect(menu[dia][tipo]).not.toBe(SLOT_EXCLUDED_SENTINEL)
+  })
+
+  test('the budget warning counts only the days that remain', () => {
+    // 'bajo' costs 3 EUR per person: 6 EUR a slot for 2 people, so 126 EUR for 21 slots and 54 EUR for Friday to Sunday.
+    const profile = makeProfile({ presupuesto_semana_euros: 100 })
+    const full = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
+    const friday = selectMenu({ candidates: buildAmpleCatalog(), recentRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, hoy: FRIDAY, profile })
+
+    expect(full.advertencias.some(a => a.toLowerCase().includes('presupuesto'))).toBe(true)
+    expect(friday.advertencias.some(a => a.toLowerCase().includes('presupuesto'))).toBe(false)
+  })
+
+  test('hoyEnMadrid reads the date in Madrid, not in UTC', () => {
+    expect(hoyEnMadrid(new Date('2026-01-08T23:30:00Z'))).toBe('2026-01-09')
+    expect(hoyEnMadrid(new Date('2026-07-08T21:30:00Z'))).toBe('2026-07-08')
   })
 })

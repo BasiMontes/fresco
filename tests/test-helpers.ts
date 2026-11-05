@@ -131,6 +131,16 @@ export function currentWeekMonday(): { semanaIso: string, fechaInicio: string } 
   return { semanaIso: isoWeekOf(monday), fechaInicio: monday.toISOString().slice(0, 10) };
 }
 
+/**
+ * FRESCO-1129: a menu generated for the current week leaves the days already over (Madrid) as excluded slots,
+ * so only the days from today on carry a recipe. This is how many of the 7 days that is, Monday being 7.
+ */
+export function remainingDaysOfCurrentWeek(): number {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const elapsed = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${currentWeekMonday().fechaInicio}T00:00:00Z`)) / 86_400_000);
+  return 7 - Math.min(Math.max(elapsed, 0), 6);
+}
+
 let cachedTestStripe: Stripe | undefined;
 
 function testStripe(): Stripe {

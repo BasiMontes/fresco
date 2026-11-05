@@ -15,7 +15,7 @@ import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { logger } from '../_shared/logger.ts'
 import { buildLearningExplanation } from './prompt.ts'
-import { selectMenu } from './menu-selector.ts'
+import { hoyEnMadrid, selectMenu } from './menu-selector.ts'
 import { assertRateLimitAllowed } from './rate-limit.ts'
 import { isProEntitlementActive } from './entitlement.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
@@ -175,6 +175,8 @@ Deno.serve(async (req: Request) => {
       seed: `${user.id}:${semana_iso}`,
       // FRESCO-1012 (A7-LOGIC-05): the season of the planned week, not of the day it is generated.
       fechaInicio: fecha_inicio,
+      // FRESCO-1129: days of the current week already over come out excluded, not as unusable recipes.
+      hoy: hoyEnMadrid(),
       userEngagement,
     })
 
