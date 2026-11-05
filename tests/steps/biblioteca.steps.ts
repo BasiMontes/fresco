@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, loginToApp, restHeaders } from '../test-helpers';
+import { currentWeekMonday, loginToApp, remainingDaysOfCurrentWeek, restHeaders } from '../test-helpers';
 import { generateCurrentWeekPlan } from '../test-user-factory';
 
 /**
@@ -378,5 +378,6 @@ Then(/^esa receta propia nunca aparece en el menú generado por la IA$/, async (
     .map(r => r.recipes?.nombre)
     .filter(Boolean);
   expect(names).not.toContain(ctx.createdRecipeName);
-  expect(names.length).toBe(21);
+  // FRESCO-1129: the days already over come out excluded, so only today onward carry a recipe.
+  expect(names.length).toBe(3 * remainingDaysOfCurrentWeek());
 });
