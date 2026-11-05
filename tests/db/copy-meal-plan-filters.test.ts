@@ -11,7 +11,8 @@
  *      `advertencias` entry;
  *   2. an inactive recipe is not copied either;
  *   3. a recipe that passes the filter is copied untouched and writes no warning;
- *   4. the RPC is rate limited and registered in `rate_limit_endpoints`.
+ *   4. (FRESCO-1127) an `excluida` source slot stays `excluida` instead of becoming an empty `pendiente` one;
+ *   5. the RPC is rate limited and registered in `rate_limit_endpoints`.
  *
  * Runs only when `RUN_DB_INTEGRATION=1` AND the local Supabase stack answers —
  * `bun run test:db`. A bare `bun test` skips the whole file (see
@@ -134,6 +135,24 @@ describe.skipIf(!(RUN && reachable))('copy_meal_plan_to_week applies the food-sa
     const slots = await slotsOf(user, newPlanId);
     expect(slots.map(s => s.recipe_id)).toEqual([safeId]);
     expect(await advertenciasOf(user, newPlanId)).toEqual([]);
+  });
+
+  test('FRESCO-1127: an excluida source slot stays excluida, the rest become pendiente', async () => {
+    const source = await seedMealPlan(user, { semanaIso: '2099-W07', fechaInicio: '2099-02-16' });
+    await seedSlots(user, source.id, [
+      { recipeId: safeId, tipoPlato: 'comida', estado: 'cocinada' },
+      { recipeId: null, tipoPlato: 'desayuno', estado: 'excluida' },
+    ]);
+
+    const target = plannedWeek(1);
+    const res = await copy(user, source.id, target.semanaIso, target.fechaInicio);
+    expect(res.status).toBe(200);
+
+    const byTipo = Object.fromEntries((await slotsOf(user, res.body as string)).map(s => [s.tipo_plato, s]));
+    expect(byTipo.desayuno.estado).toBe('excluida');
+    expect(byTipo.desayuno.recipe_id).toBeNull();
+    expect(byTipo.comida.estado).toBe('pendiente');
+    expect(byTipo.comida.recipe_id).toBe(safeId);
   });
 
   test('copy_meal_plan_to_week is registered in rate_limit_endpoints and the call past the limit fails', async () => {

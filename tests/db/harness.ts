@@ -552,7 +552,7 @@ export async function catalogRecipeIds(
 export async function seedSlots(
   user: DbTestUser,
   planId: string,
-  slots: { recipeId: string, tipoPlato: 'desayuno' | 'comida' | 'cena', estado?: string }[],
+  slots: { recipeId: string | null, tipoPlato: 'desayuno' | 'comida' | 'cena', estado?: string }[],
 ): Promise<string[]> {
   const rows = slots.map((s, i) => ({
     meal_plan_id: planId,
