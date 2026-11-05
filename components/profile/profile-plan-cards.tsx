@@ -1,6 +1,7 @@
 import type { UserProfile } from '@schemas';
 import type { ProPrices } from '@/lib/billing/pro-prices';
 import { ManageSubscriptionButton } from '@/components/profile/manage-subscription-button';
+import { PlanActivatingNotice } from '@/components/profile/plan-activating-notice';
 import { ProUpsellCard } from '@/components/profile/pro-upsell-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { isPaymentFailedAlertActive } from '@/lib/api/user-profile';
@@ -11,13 +12,21 @@ interface ProfilePlanCardsProps {
   trialAvailable: boolean
   /** The Pro prices for the upsell (only read for Free users); `null` when Stripe could not be read. */
   prices: ProPrices | null
+  /** FRESCO-1122: the user just came back from a paid Stripe Checkout (`?checkout=success`). */
+  checkoutSuccess?: boolean
 }
 
 /** Free: the upsell. Pro: the payment-failed aviso (when active) and the subscription card. */
-export function ProfilePlanCards({ plan, paymentFailedAt, trialAvailable, prices }: ProfilePlanCardsProps) {
+export function ProfilePlanCards({ plan, paymentFailedAt, trialAvailable, prices, checkoutSuccess = false }: ProfilePlanCardsProps) {
+  // FRESCO-1122: a Free plan right after paying means the webhook has not landed yet; show the
+  // activating state (it polls) instead of an upsell for something already bought.
+  const activating = plan === 'free' && checkoutSuccess;
+
   return (
     <>
-      {plan === 'free' && <ProUpsellCard trialAvailable={trialAvailable} prices={prices} />}
+      {activating && <PlanActivatingNotice />}
+
+      {plan === 'free' && !activating && <ProUpsellCard trialAvailable={trialAvailable} prices={prices} />}
 
       {/* STORY-FRESCO-232: payment-failed aviso — only ever shown alongside
           the Pro card below (plan stays 'pro' during Stripe's own retry

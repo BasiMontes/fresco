@@ -43,7 +43,9 @@ export const metadata: Metadata = { title: 'Perfil · Fresco' };
  * FRESCO-809 — reads live in `loadProfilePageData`, each card group in
  * `components/profile/profile-*`; this page only wires them together.
  */
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams?: Promise<{ checkout?: string }> } = {}) {
+  // FRESCO-1122: Stripe's success_url is `/profile?checkout=success`.
+  const checkoutSuccess = (await searchParams)?.checkout === 'success';
   const supabase = await createClient();
   // FRESCO-483: shared verified session read (React.cache) — no extra GoTrue round trip.
   const { data: { user } } = await getAuthUser();
@@ -93,7 +95,7 @@ export default async function ProfilePage() {
       <ProfileSection id="suscripcion">
         <MenuHistoryCard weeks={pastWeeks} plan={plan} />
 
-        <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} prices={prices} />
+        <ProfilePlanCards plan={plan} paymentFailedAt={paymentFailedAt} trialAvailable={trialAvailable} prices={prices} checkoutSuccess={checkoutSuccess} />
       </ProfileSection>
 
       <ProfileSection id="cuenta">
