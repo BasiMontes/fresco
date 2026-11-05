@@ -426,3 +426,44 @@ describe('diet flags that must meet their definition (FRESCO-998)', () => {
     expect(flagged(['calabaza', 'zanahoria'], { bajo_fodmap: true })).not.toContain('dieta:bajo_fodmap');
   });
 });
+
+/** FRESCO-1130 (A8-TEST-02): words a person writes in an ingredient list without saying the allergen. */
+describe('the vocabulary covers the words the audit 8 probe missed', () => {
+  const flagged = (ingredients: string[], dieta: Record<string, boolean>, extra: Partial<RecipeTags> = {}) =>
+    auditRecipeFindings(recipe(ingredients, { dieta, ...extra })).map(finding => finding.key.split('|')[1]);
+
+  test.each([
+    ['huevo', ['tortilla de patatas', 'revuelto de setas', 'claras', 'yema', 'omelette de espinacas', 'tortilla francesa']],
+    ['gluten', ['wrap de pollo', 'penne', 'gyozas', 'bocadillo', 'sandwich de pavo', 'empanadilla', 'tempura de verduras', 'croquetas', 'udon', 'soba', 'tagliatelle']],
+    ['lactosa', ['cheddar', 'emmental', 'manchego', 'gorgonzola', 'helado de vainilla', 'gouda', 'brie']],
+    ['frutos_de_cascara', ['pecanas', 'macadamia']],
+    ['mostaza', ['dijon']],
+    ['pescado', ['salsa worcestershire', 'nuoc mam', 'salsa de pescado']],
+    ['sulfitos', ['albaricoques secos', 'higos secos']],
+    ['apio', ['apionabo']],
+  ])('%s is required by each of its new words', (allergen, ingredients) => {
+    for (const ingredient of ingredients) {
+      expect(auditRecipe(recipe([ingredient]))).toEqual([`Receta: falta ${allergen} (ingrediente: ${ingredient})`]);
+      expect(auditRecipe(recipe([ingredient], { alergenos: [allergen] }))).toEqual([]);
+    }
+  });
+
+  test('a new word is also read in a step', () => {
+    expect(reports(recipe(['patatas'], { pasos_resumen: ['Prepara la tortilla de patatas.'] }), 'falta huevo')).toBe(true);
+  });
+
+  test('a lettuce wrap and scrambled tofu are not the allergen', () => {
+    expect(auditRecipe(recipe(['wrap de lechuga', 'tofu revuelto'], { alergenos: ['soja'] }))).toEqual([]);
+    expect(auditRecipe(recipe(['wraps de hojas de col']))).toEqual([]);
+  });
+
+  test('a word boundary keeps the near misses out', () => {
+    expect(auditRecipe(recipe(['aclarado', 'sobar', 'penal']))).toEqual([]);
+  });
+
+  test('worcestershire is an animal product for vegetariano, and a helado breaks vegano and sin_lactosa', () => {
+    expect(flagged(['salsa worcestershire'], { vegetariano: true }, { alergenos: ['pescado'] })).toContain('dieta:vegetariano');
+    expect(flagged(['helado'], { sin_lactosa: true }, { alergenos: ['lactosa'] })).toContain('dieta:sin_lactosa');
+    expect(flagged(['helado'], { vegano: true }, { alergenos: ['lactosa'] })).toContain('dieta:vegano');
+  });
+});
