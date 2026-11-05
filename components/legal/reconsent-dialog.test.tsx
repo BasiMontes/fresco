@@ -88,4 +88,39 @@ describe('ReconsentDialog', () => {
     expect(signOutMock).toHaveBeenCalledTimes(1);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  test('FRESCO-1125: a user missing only health_data sees the health consent and not the age and terms boxes', () => {
+    renderWithProviders(<ReconsentDialog missing={['health_data']} />);
+
+    expect(screen.getByTestId('health_consent_checkbox')).toBeDefined();
+    expect(screen.queryByTestId('confirm_age_checkbox')).toBeNull();
+    expect(screen.queryByTestId('accept_terms_checkbox')).toBeNull();
+  });
+
+  test('FRESCO-1125: with only health_data missing, ticking the health consent enables the button and nothing else is posted', async () => {
+    const user = setupUser();
+    renderWithProviders(<ReconsentDialog missing={['health_data']} />);
+    const accept = screen.getByTestId<HTMLButtonElement>('reconsent_accept_button');
+
+    expect(accept.disabled).toBe(true);
+    await user.click(screen.getByTestId('health_consent_checkbox'));
+    await waitFor(() => expect(accept.disabled).toBe(false));
+    // The block recorded its own consent; accepting must not post the registration set again.
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(JSON.parse((fetchSpy.mock.calls[0] as [string, RequestInit])[1].body as string)).toEqual({ kinds: ['health_data'] });
+    await user.click(accept);
+    await waitFor(() => expect(routerMock.refresh).toHaveBeenCalledTimes(1));
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('FRESCO-1125: a user missing the registration set and health_data needs all of it before accepting', async () => {
+    const user = setupUser();
+    renderWithProviders(<ReconsentDialog missing={['age_14', 'terms', 'privacy', 'health_data']} />);
+    const accept = screen.getByTestId<HTMLButtonElement>('reconsent_accept_button');
+
+    await tickBoxes(user);
+    expect(accept.disabled).toBe(true);
+    await user.click(screen.getByTestId('health_consent_checkbox'));
+    await waitFor(() => expect(accept.disabled).toBe(false));
+  });
 });

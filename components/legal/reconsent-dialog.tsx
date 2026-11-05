@@ -1,8 +1,10 @@
 'use client';
 
+import type { ConsentKind } from '@/lib/legal/consent';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ConsentCheckboxes } from '@/components/legal/consent-checkboxes';
+import { HealthConsentBlock } from '@/components/onboarding/health-consent-block';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { signOut } from '@/lib/client-api/auth';
@@ -18,8 +20,18 @@ import { postConsents, REGISTRATION_CONSENTS } from '@/lib/legal/consent-client'
  * It asks for the whole set again, not only the missing kinds: age, Terms and Privacy are given
  * together everywhere else (`ConsentCheckboxes`), and recording a kind that already exists is a
  * no-op. The wording is PROVISIONAL (`lib/legal/consent.ts`).
+ *
+ * FRESCO-1125 (audit 8 A8-PRIV-04): `missing` says what the layout found absent. A profile with
+ * allergens or a halal diet and no `health_data` row at the current version also sees the existing
+ * health consent block (the same one onboarding and `/profile` use), which records its own consent.
+ * A user missing only that does not see the age and Terms checkboxes again.
  */
-export function ReconsentDialog() {
+const REGISTRATION_KINDS = new Set<ConsentKind>(REGISTRATION_CONSENTS);
+
+export function ReconsentDialog({ missing = REGISTRATION_CONSENTS }: { missing?: readonly ConsentKind[] }) {
+  const needsRegistration = missing.some(kind => REGISTRATION_KINDS.has(kind));
+  const needsHealth = missing.includes('health_data');
+  const [healthConsented, setHealthConsented] = useState(false);
   const router = useRouter();
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -30,7 +42,7 @@ export function ReconsentDialog() {
     setIsSubmitting(true);
     setError(null);
     try {
-      if (!(await postConsents(REGISTRATION_CONSENTS))) {
+      if (needsRegistration && !(await postConsents(REGISTRATION_CONSENTS))) {
         setError('No pudimos registrar tu aceptación. Inténtalo de nuevo.');
         return;
       }
@@ -50,18 +62,26 @@ export function ReconsentDialog() {
   return (
     <Dialog open onOpenChange={() => {}} dismissible={false} aria-label="Acepta los términos para continuar" data-testid="reconsent_dialog">
       <h2 className="text-h4">Antes de seguir, confirma esto</h2>
-      <p className="mt-2 text-body-sm text-tertiary">
-        Para seguir usando Fresco necesitamos que confirmes tu edad y aceptes la versión vigente de nuestros Términos de Servicio y de la Política de Privacidad.
-      </p>
+      {needsRegistration && (
+        <>
+          <p className="mt-2 text-body-sm text-tertiary">
+            Para seguir usando Fresco necesitamos que confirmes tu edad y aceptes la versión vigente de nuestros Términos de Servicio y de la Política de Privacidad.
+          </p>
 
-      <div className="mt-4">
-        <ConsentCheckboxes
-          ageConfirmed={ageConfirmed}
-          termsAccepted={termsAccepted}
-          onAgeChange={(checked) => { setAgeConfirmed(checked); setError(null); }}
-          onTermsChange={(checked) => { setTermsAccepted(checked); setError(null); }}
-        />
-      </div>
+          <div className="mt-4">
+            <ConsentCheckboxes
+              ageConfirmed={ageConfirmed}
+              termsAccepted={termsAccepted}
+              onAgeChange={(checked) => { setAgeConfirmed(checked); setError(null); }}
+              onTermsChange={(checked) => { setTermsAccepted(checked); setError(null); }}
+            />
+          </div>
+        </>
+      )}
+
+      {needsHealth && (
+        <HealthConsentBlock consented={healthConsented} onConsentedChange={setHealthConsented} />
+      )}
 
       {error && (
         <p data-testid="reconsent_error_message" role="alert" aria-live="assertive" className="mt-3 text-body-sm text-error">
@@ -73,7 +93,7 @@ export function ReconsentDialog() {
         <Button
           data-testid="reconsent_accept_button"
           onClick={() => void accept()}
-          disabled={!ageConfirmed || !termsAccepted || isSubmitting}
+          disabled={(needsRegistration && (!ageConfirmed || !termsAccepted)) || (needsHealth && !healthConsented) || isSubmitting}
         >
           {isSubmitting ? 'Guardando…' : 'Aceptar y continuar'}
         </Button>

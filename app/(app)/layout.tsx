@@ -85,7 +85,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     <>
       {/* FRESCO-979: offline screen for every signed-in user. */}
       <ServiceWorkerRegistrar />
-      {missingConsents.length > 0 && <ReconsentDialog />}
+      {missingConsents.length > 0 && <ReconsentDialog missing={missingConsents} />}
       <AppShell
         user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}
         sidebarCollapsed={sidebarCollapsed}
