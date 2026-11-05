@@ -8,9 +8,11 @@
 //
 // What this file guarantees BY CONSTRUCTION (never by hoping a model
 // complies): no lunch/dinner repeat within the week, breakfast capped at 3
-// repeats, Pro-tier history (`recentRecipeIds`) hard-excluded from the
+// repeats, Pro-tier history (`recentRecipeIds`) excluded from the
 // candidate pool (ADR-0001's invariant — Free never even reaches this
-// exclusion step, since Free always passes `recentRecipeIds: []`), and a
+// exclusion step, since Free always passes `recentRecipeIds: []`); only when
+// that leaves a slot empty may it repeat a recipe the user cooked
+// (`repeatableRecipeIds`, FRESCO-1128, never a discarded one), and a
 // slot with zero real candidates gets `NO_SAFE_RECIPE_SENTINEL` with a
 // real, specific advertencia — never silent (FR-8.2 / AC Scenario 4).
 //
@@ -82,6 +84,12 @@ export interface SelectMenuParams {
   candidates: Recipe[]
   /** Pro-tier last-2-weeks recipe ids to exclude (ADR-0001) — always `[]` for Free. */
   recentRecipeIds: string[]
+  /**
+   * FRESCO-1128: the subset of `recentRecipeIds` the user COOKED (never the discarded ones). When the history
+   * exclusion leaves a slot with nothing to choose from, the slot may repeat one of these instead of staying
+   * empty. Omitted or `[]` keeps the old behaviour.
+   */
+  repeatableRecipeIds?: string[]
   profile: UserProfile
   /**
    * Tie-break seed — the caller passes `${user.id}:${semana_iso}` so the same
@@ -153,7 +161,7 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, profile, seed, fechaInicio, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], profile, seed, fechaInicio, userEngagement }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -169,10 +177,17 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, fechaIn
     TIPOS.map(tipo => [tipo, candidates.filter(r => r.clasificacion?.tipo_plato === tipo)]),
   )
 
+  // FRESCO-1128: cooked-recently recipes, per tipo, the last resort before a slot stays empty.
+  const repeatable = new Set(repeatableRecipeIds)
+  const repeatByTipo = new Map<TipoPlatoSlot, Recipe[]>(
+    TIPOS.map(tipo => [tipo, candidates.filter(r => repeatable.has(r.id) && r.clasificacion?.tipo_plato === tipo)]),
+  )
+
   const season = seasonOf(fechaInicio)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)
+  const warnedRepeat = new Set<TipoPlatoSlot>() // dedupes the "repeated a recent recipe" advertencia per tipo (FRESCO-1128)
   const warnedNoCandidates = new Set<TipoPlatoSlot>() // dedupes the empty-slot advertencia per tipo (A4-M3)
   const menu = {} as Record<DiaSemana, Record<TipoPlatoSlot, string>>
   const advertencias: string[] = []
@@ -197,12 +212,20 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, fechaIn
         : !usedLunchDinner.has(r.id)
 
       // The history exclusion is hard while it leaves something to choose from (ADR-0001). When it leaves
-      // NOTHING for this tipo, the tipo falls back to every safe candidate. The allergy / diet dead end is
-      // judged on those too: a variety preference must never be reported as "your allergies leave nothing".
+      // NOTHING for this slot, FRESCO-1128 allows repeating a recipe the user cooked in the last two weeks
+      // (never a discarded one) rather than leaving the slot empty. If that is not enough either and the
+      // tipo has no history-free candidate at all, it falls back to every safe candidate. The allergy / diet
+      // dead end is judged on those too: a variety preference must never be reported as "your allergies
+      // leave nothing".
       const historyPool = byTipo.get(tipo) ?? []
       const allPool = allByTipo.get(tipo) ?? []
-      const basePool = historyPool.length > 0 ? historyPool : allPool
-      const available = basePool.filter(notRepeated)
+      let available = historyPool.filter(notRepeated)
+      let repeatedRecent = false
+      if (available.length === 0) {
+        available = (repeatByTipo.get(tipo) ?? []).filter(notRepeated)
+        repeatedRecent = available.length > 0
+      }
+      if (available.length === 0 && historyPool.length === 0) available = allPool.filter(notRepeated)
 
       if (available.length === 0) {
         menu[dia][tipo] = NO_SAFE_RECIPE_SENTINEL
@@ -246,6 +269,13 @@ export function selectMenu({ candidates, recentRecipeIds, profile, seed, fechaIn
       }
       else {
         usedLunchDinner.add(chosen.id)
+      }
+
+      if (repeatedRecent && !warnedRepeat.has(tipo)) {
+        warnedRepeat.add(tipo)
+        advertencias.push(
+          `No quedaban recetas de ${tipo} que no hayas cocinado en las últimas 2 semanas; se ha repetido alguna que ya cocinaste.`,
+        )
       }
 
       if (timeRelaxed) {

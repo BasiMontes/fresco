@@ -780,3 +780,54 @@ describe('selectMenu — FRESCO-1012 (A7-LOGIC-05, A7-LOGIC-09, A7-LOGIC-10)', (
     expect(run(5, 1)).toEqual(run(1, 5))
   })
 })
+
+describe('selectMenu — FRESCO-1128 (A8-LOGIC-07): repeat a recently cooked recipe before leaving a slot empty', () => {
+  const comidas = Array.from({ length: 10 }, (_, i) => makeRecipe(`comida-r${i}`, 'comida'))
+  const others = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'comida')
+  const candidates = [...comidas, ...others]
+  const profile = makeProfile({ plan: 'pro' })
+
+  test('10 safe lunches with 7 cooked in the last 2 weeks: no lunch stays empty, the gap is filled with cooked ones', () => {
+    const cooked = comidas.slice(0, 7).map(r => r.id)
+
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: cooked, repeatableRecipeIds: cooked, seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    const lunches = DIAS.map(dia => menu[dia].comida)
+    expect(lunches).not.toContain(NO_SAFE_RECIPE_SENTINEL)
+    expect(new Set(lunches).size).toBe(7)
+    expect(comidas.slice(7).every(r => lunches.includes(r.id))).toBe(true)
+    expect(advertencias.filter(a => a.includes('comida') && a.includes('repetido'))).toHaveLength(1)
+    expect(advertencias.some(a => a.includes('compatible con tus alergias'))).toBe(false)
+  })
+
+  test('a recipe the user discarded is never the repeat: with 3 free, 4 cooked and 3 discarded, the 7 lunches use the first two groups only', () => {
+    const cooked = comidas.slice(0, 4).map(r => r.id)
+    const discarded = comidas.slice(4, 7).map(r => r.id)
+
+    const { menu } = selectMenu({ candidates, recentRecipeIds: [...cooked, ...discarded], repeatableRecipeIds: cooked, seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    const lunches = DIAS.map(dia => menu[dia].comida)
+    expect(lunches).not.toContain(NO_SAFE_RECIPE_SENTINEL)
+    for (const id of discarded) expect(lunches).not.toContain(id)
+  })
+
+  test('when only discarded recipes remain, the slot stays empty (a repeat never reaches them)', () => {
+    const discarded = comidas.slice(0, 8).map(r => r.id)
+
+    const { menu } = selectMenu({ candidates, recentRecipeIds: discarded, repeatableRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    const lunches = DIAS.map(dia => menu[dia].comida)
+    expect(lunches.filter(id => id === NO_SAFE_RECIPE_SENTINEL)).toHaveLength(5)
+    for (const id of discarded) expect(lunches).not.toContain(id)
+  })
+
+  test('without a repeatable list the exclusion behaves as before (no repeat, no new advertencia)', () => {
+    const cooked = comidas.slice(0, 7).map(r => r.id)
+
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: cooked, seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    const lunches = DIAS.map(dia => menu[dia].comida)
+    for (const id of cooked) expect(lunches).not.toContain(id)
+    expect(advertencias.some(a => a.includes('repetido'))).toBe(false)
+  })
+})
