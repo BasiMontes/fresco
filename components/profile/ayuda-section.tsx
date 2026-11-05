@@ -54,6 +54,10 @@ const FAQ_ITEMS: FaqItem[] = [
     answer: 'Sí. En la tarjeta "Cuenta" puedes descargar un backup en CSV de todos tus datos, y en "Zona de peligro", al final de esta página, borrar tu cuenta de forma definitiva.',
   },
   {
+    question: '¿Las fotos de las recetas son reales?',
+    answer: 'Algunas de las fotos de las recetas son ilustraciones generadas con inteligencia artificial, no fotografías reales del plato. Sirven para que te hagas una idea de la receta, y el resultado al cocinarla puede variar.',
+  },
+  {
     question: '¿Fresco filtra automáticamente mis alergias?',
     answer: 'Sí, de forma estructural: las recetas que contienen alguno de tus alérgenos declarados se excluyen directamente en la base de datos antes de que se genere el menú — no depende de que una IA "recuerde" evitarlas.',
   },
