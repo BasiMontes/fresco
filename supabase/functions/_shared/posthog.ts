@@ -29,10 +29,17 @@ export interface CaptureServerEventArgs {
 // `user_profiles.analytics_consent`. Opt-in and fail closed: only an explicit
 // `true` sends; a rejection, an unsynced profile, a missing row or a read error
 // all suppress the event. Mirrors `lib/posthog/server.ts`.
+/**
+ * FRESCO-1124: the legal texts version the analytics decision must have been taken under. A COPY of
+ * `LEGAL_TEXTS_VERSION` (`lib/legal/consent.ts`): this function deploys on its own and cannot import the app.
+ * `lib/legal/analytics-consent-version.test.ts` fails when the two differ, so a version bump cannot forget this one.
+ */
+export const ANALYTICS_CONSENT_VERSION = 'provisional-2026-10-19'
+
 async function hasAnalyticsConsent(supabase: SupabaseClient, userId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('analytics_consent')
+    .select('analytics_consent, analytics_consent_version')
     .eq('id', userId)
     .maybeSingle()
 
@@ -44,7 +51,8 @@ async function hasAnalyticsConsent(supabase: SupabaseClient, userId: string): Pr
     return false
   }
 
-  return data?.analytics_consent === true
+  // FRESCO-1124: a stored `true` only counts for the texts version in force; an older one is stale.
+  return data?.analytics_consent === true && data.analytics_consent_version === ANALYTICS_CONSENT_VERSION
 }
 
 export async function captureServerEvent({ supabase, distinctId, event, properties }: CaptureServerEventArgs): Promise<void> {

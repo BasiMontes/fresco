@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { PostHog } from 'posthog-node';
+import { LEGAL_TEXTS_VERSION } from '@/lib/legal/consent';
 import { captureServerEvent } from './server';
 
 /**
@@ -9,12 +10,12 @@ import { captureServerEvent } from './server';
  * is read through the same Supabase query chain every caller has; only the final
  * `maybeSingle()` result varies per test.
  */
-function fakeSupabase(result: { data: { analytics_consent: boolean | null } | null, error: { message: string } | null }): SupabaseClient<Database> {
+function fakeSupabase(result: { data: { analytics_consent: boolean | null, analytics_consent_version?: string | null } | null, error: { message: string } | null }): SupabaseClient<Database> {
   const chain = { select: () => chain, eq: () => chain, maybeSingle: async () => result };
   return { from: () => chain } as unknown as SupabaseClient<Database>;
 }
 
-const consented = fakeSupabase({ data: { analytics_consent: true }, error: null });
+const consented = fakeSupabase({ data: { analytics_consent: true, analytics_consent_version: LEGAL_TEXTS_VERSION }, error: null });
 
 /**
  * Guard-logic only — same scope as `events.test.ts`: this ticket (FRESCO-240)
@@ -70,6 +71,8 @@ describe('lib/posthog/server', () => {
   describe('analytics consent (FRESCO-919, ADR-0044)', () => {
     const unconsented = [
       ['the user rejected analytics (false)', fakeSupabase({ data: { analytics_consent: false }, error: null })],
+      ['the accepted decision was taken under an older texts version (FRESCO-1124)', fakeSupabase({ data: { analytics_consent: true, analytics_consent_version: 'old-version' }, error: null })],
+      ['the accepted decision has no version (it predates FRESCO-1124)', fakeSupabase({ data: { analytics_consent: true, analytics_consent_version: null }, error: null })],
       ['the decision was never synced (null)', fakeSupabase({ data: { analytics_consent: null }, error: null })],
       ['the user has no profile row', fakeSupabase({ data: null, error: null })],
       ['the consent read fails', fakeSupabase({ data: null, error: { message: 'boom' } })],

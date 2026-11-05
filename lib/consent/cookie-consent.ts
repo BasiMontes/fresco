@@ -65,6 +65,15 @@ export function serializeCookieConsent(decision: CookieConsentDecision, now: num
   return [decision, LEGAL_TEXTS_VERSION, Math.floor(now / 1000)].join(SEPARATOR);
 }
 
+/** Client-side read of the whole record (decision, version, moment), only when it is of the CURRENT texts. */
+export function readCookieConsentRecordClient(currentVersion: string = LEGAL_TEXTS_VERSION): CookieConsentRecord | null {
+  if (typeof document === 'undefined') { return null; }
+
+  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE_CONSENT_COOKIE}=([^;]*)`));
+  const record = parseCookieConsentRecord(match?.[1]);
+  return record?.version === currentVersion ? record : null;
+}
+
 /** Client-side read — `undefined` on the server (no `document`), matching `theme.ts`'s guard shape. */
 export function readCookieConsentClient(): CookieConsentDecision | null {
   if (typeof document === 'undefined') { return null; }

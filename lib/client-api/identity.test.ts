@@ -60,13 +60,29 @@ describe('syncAnalyticsConsent', () => {
 
     await syncAnalyticsConsent({ userId: 'user-1', accepted: false });
 
-    expect(updates).toEqual([{ analytics_consent: false }]);
+    expect(updates).toEqual([{ analytics_consent: false, analytics_consent_version: null, analytics_consent_at: null }]);
+  });
+
+  test('FRESCO-1124: stores the version and the moment of the decision with it', async () => {
+    stored = { analytics_consent: null, analytics_consent_version: null };
+
+    await syncAnalyticsConsent({ userId: 'user-1', accepted: true, version: 'v1', decidedAt: 1_700_000_000 });
+
+    expect(updates).toEqual([{ analytics_consent: true, analytics_consent_version: 'v1', analytics_consent_at: '2023-11-14T22:13:20.000Z' }]);
+  });
+
+  test('FRESCO-1124: rewrites a stored true of another version even though the decision matches', async () => {
+    stored = { analytics_consent: true, analytics_consent_version: 'old' };
+
+    await syncAnalyticsConsent({ userId: 'user-1', accepted: true, version: 'v1', decidedAt: 1_700_000_000 });
+
+    expect(updates).toHaveLength(1);
   });
 
   test('writes nothing when the stored decision already matches', async () => {
-    stored = { analytics_consent: true };
+    stored = { analytics_consent: true, analytics_consent_version: 'v1' };
 
-    await syncAnalyticsConsent({ userId: 'user-1', accepted: true });
+    await syncAnalyticsConsent({ userId: 'user-1', accepted: true, version: 'v1', decidedAt: 1_700_000_000 });
 
     expect(updates).toEqual([]);
   });

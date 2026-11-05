@@ -8,7 +8,7 @@ import { captureDenoServe } from '@/tests/mocks/edge-function'
  * and no failure ever rejects the caller.
  */
 
-interface ConsentRead { data?: { analytics_consent?: boolean | null } | null, error?: { message: string } | null }
+interface ConsentRead { data?: { analytics_consent?: boolean | null, analytics_consent_version?: string | null } | null, error?: { message: string } | null }
 
 function supabaseWith(read: ConsentRead) {
   return {
@@ -53,13 +53,15 @@ const send = (read: ConsentRead) =>
 
 describe('captureServerEvent', () => {
   test('sends the event with the key, id and properties when consent is explicitly true', async () => {
-    await send({ data: { analytics_consent: true } })
+    await send({ data: { analytics_consent: true, analytics_consent_version: 'provisional-2026-10-19' } })
     expect(calls).toHaveLength(1)
     expect(calls[0].url).toBe('https://eu.posthog.test/capture/')
     expect(JSON.parse(String(calls[0].init.body))).toEqual({ api_key: 'phc_test', event: 'push_sent', distinct_id: 'u1', properties: { kind: 'x' } })
   })
 
   test.each([
+    ['accepted under an older texts version (FRESCO-1124)', { data: { analytics_consent: true, analytics_consent_version: 'old-version' } }],
+    ['accepted with no version (predates FRESCO-1124)', { data: { analytics_consent: true, analytics_consent_version: null } }],
     ['rejected', { data: { analytics_consent: false } }],
     ['not synced yet (null)', { data: { analytics_consent: null } }],
     ['no profile row', { data: null }],
@@ -71,17 +73,17 @@ describe('captureServerEvent', () => {
 
   test('sends nothing when the key or host is not configured', async () => {
     delete env.POSTHOG_HOST
-    await send({ data: { analytics_consent: true } })
+    await send({ data: { analytics_consent: true, analytics_consent_version: 'provisional-2026-10-19' } })
     expect(calls).toEqual([])
   })
 
   test('a non-2xx answer does not reject', async () => {
     fetchResult = async () => new Response('no', { status: 500 })
-    await expect(send({ data: { analytics_consent: true } })).resolves.toBeUndefined()
+    await expect(send({ data: { analytics_consent: true, analytics_consent_version: 'provisional-2026-10-19' } })).resolves.toBeUndefined()
   })
 
   test('a network failure does not reject', async () => {
     fetchResult = async () => { throw new Error('offline') }
-    await expect(send({ data: { analytics_consent: true } })).resolves.toBeUndefined()
+    await expect(send({ data: { analytics_consent: true, analytics_consent_version: 'provisional-2026-10-19' } })).resolves.toBeUndefined()
   })
 })

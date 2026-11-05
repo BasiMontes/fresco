@@ -58,4 +58,38 @@ describe.skipIf(!(RUN && reachable))('user_profiles.analytics_consent (real DB)'
     expect(result.body).toEqual([]);
     expect(await readAsService(owner)).toBe(false);
   });
+
+  // FRESCO-1124: the version and the moment of the decision travel with it.
+  const readVersionAsService = async (user: DbTestUser) =>
+    ((await rest('user_profiles', { serviceRole: true, query: `id=eq.${user.id}&select=analytics_consent_version,analytics_consent_at` })).body as Array<{ analytics_consent_version: string | null, analytics_consent_at: string | null }>)[0];
+
+  test('the version and the moment start as null (a row that predates FRESCO-1124)', async () => {
+    const fresh = await ctx.createUser();
+
+    expect(await readVersionAsService(fresh)).toEqual({ analytics_consent_version: null, analytics_consent_at: null });
+  });
+
+  test('the owner can store the version and the moment with the decision', async () => {
+    const result = await rest('user_profiles', {
+      method: 'PATCH',
+      token: owner.token,
+      prefer: 'return=representation',
+      query: `id=eq.${owner.id}`,
+      body: { analytics_consent: true, analytics_consent_version: 'test-version', analytics_consent_at: '2026-11-05T10:00:00Z' },
+    });
+
+    expect(result.status).toBeLessThan(300);
+    const stored = await readVersionAsService(owner);
+    expect(stored.analytics_consent_version).toBe('test-version');
+    expect(new Date(stored.analytics_consent_at as string).toISOString()).toBe('2026-11-05T10:00:00.000Z');
+  });
+
+  test('another user cannot change someone else\'s version', async () => {
+    await rest('user_profiles', { method: 'PATCH', token: owner.token, query: `id=eq.${owner.id}`, body: { analytics_consent_version: 'owner-version' } });
+
+    const result = await rest('user_profiles', { method: 'PATCH', token: other.token, prefer: 'return=representation', query: `id=eq.${owner.id}`, body: { analytics_consent_version: 'forged' } });
+
+    expect(result.body).toEqual([]);
+    expect((await readVersionAsService(owner)).analytics_consent_version).toBe('owner-version');
+  });
 });
