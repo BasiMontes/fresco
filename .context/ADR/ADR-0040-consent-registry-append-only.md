@@ -58,3 +58,11 @@ The Decision above is unchanged in what matters: the table is still append-only,
 - **Accepted trade-off.** Two simultaneous calls can both pass the "no recent waiver" check and leave two rows in one window. That only adds evidence, so it is accepted instead of locking.
 - **Consequence for the old upsert.** A client that still sent `on_conflict=user_id,kind,version` now gets Postgres `42P10` (no matching constraint) instead of `42501`; it still writes nothing, and `tests/db/user-consents.test.ts` accepts either.
 - **Where.** `supabase/migrations/20261023121936_user_consents_waiver_per_purchase.sql`, `lib/legal/consent-store.ts` (`hasRecordedConsent` with `since`, `limit(1)` instead of `maybeSingle()`), `lib/legal/consent.ts` (`WITHDRAWAL_WAIVER_WINDOW_MS`).
+
+## Update 2026-11-06 (FRESCO-1125): the `health_data` trigger stays version-agnostic
+
+The Decision above is unchanged: the version of the texts lives in code only. The founder decided that `require_health_data_consent` (`supabase/migrations/20261014100000_require_health_data_consent.sql`) keeps checking for ANY `health_data` row of the owner, whatever its version, and does not compare against `LEGAL_TEXTS_VERSION`.
+
+- **Why.** The trigger exists to close one hole: health data saved with no consent at all (FRESCO-917). Freshness of the accepted text is enforced by the app: `getMissingConsents` asks again, through `ReconsentDialog`, a profile that holds allergens or a halal diet without a `health_data` row at the current version (#907). Comparing in the database would need a second source of truth for the version, which this ADR already rejected, and every `LEGAL_TEXTS_VERSION` bump would block the health edits of every user on an older version until they accept again.
+- **Accepted trade-off.** A client that skips the UI can save health data holding a consent of an older version. It only misstates the record of its own consent, the limit already named under Consequences.
+- **Revisit when.** Legal advice requires proof of consent to the current text enforced server-side. Then move the check behind a version held in the database (or a `DEFINER` RPC) and add a migration step to every version bump.
