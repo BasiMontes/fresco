@@ -36,6 +36,39 @@ describe('GuestLandingPage', () => {
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
+  // FRESCO-1134 (Anti Web Slop): the order is see it, how it works, why, what Pro adds, price, questions.
+  // The usual hero, problem, three features, pricing order is one of the template signals it counts.
+  test('follows the FRESCO-1134 section order and no longer has the impact-stats section', async () => {
+    await renderPage();
+
+    const headings = [...document.querySelectorAll('main h2')].map(h => h.textContent);
+    expect(headings).toEqual([
+      'Un domingo sin agobios.',
+      '¿Cuántas veces has acabado comiendo lo que sea?',
+      'Aprende de lo que cocinas.',
+      'Sin letra pequeña. Sin trampa.',
+      'Preguntas frecuentes',
+      'El próximo domingo sin agobios.',
+    ]);
+    expect(document.body.textContent).not.toContain('Lo que Fresco hace por ti');
+  });
+
+  test('puts the brand video right after the hero, before the walkthrough', async () => {
+    await renderPage();
+
+    const video = document.querySelector('video');
+    const walkthrough = document.querySelector('#como-funciona');
+    expect(video).not.toBeNull();
+    expect(walkthrough).not.toBeNull();
+    expect(video!.compareDocumentPosition(walkthrough!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test('has no arrow at the end of the call to action labels', async () => {
+    await renderPage();
+
+    expect(document.querySelector('main')!.textContent).not.toContain('→');
+  });
+
   test('emits the software application and FAQ structured data', async () => {
     const { container } = await renderPage();
     const blocks = [...container.querySelectorAll('script[type="application/ld+json"]')].map(s => JSON.parse(s.textContent ?? '{}')['@type']);

@@ -1,15 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
-import { HIGHLIGHTS } from './impact-stats';
+import { STEPS } from './how-it-works';
 import { TIMELINE } from './learns-pro';
 import { FREE_FEATURES, PRO_FEATURES } from './pricing';
 
 /**
  * FRESCO-791 (A6-P3/P4) — copy-vs-feature contract for the landing.
  *
- * Every behavioural claim the landing makes (Pro learning timeline, the three
- * highlights, both pricing columns) needs a row here naming the code that
- * backs it. A new or reworded claim with no row fails the first test; a row
+ * Every behavioural claim the landing makes (Pro learning timeline, the
+ * menu and shopping-list steps, both pricing columns) needs a row here naming
+ * the code that backs it. A new or reworded claim with no row fails the first test; a row
  * whose source no longer contains its evidence fails the second. Same family
  * as A4-H11 / A5-H7: the landing must not promise what the engine does not do.
  */
@@ -39,14 +39,13 @@ const CLAIMS: Record<string, Source[]> = {
   'Marca lo que cocinas y lo que descartas. La semana siguiente esas recetas no vuelven.': EXCLUDE_MARKED,
   'Las recetas que cocinas con frecuencia ganan peso en tu menú y las que descartas, lo pierden.': ENGAGEMENT,
   'Cada menú trae una nota con lo que Fresco ha tenido en cuenta de lo que cocinas.': [EXPLANATION],
-  // impact-stats.tsx — HIGHLIGHTS
-  'Tu menú completo de lunes a domingo, sin pensar qué cocinar.': [{ file: SELECTOR, pattern: /usedLunchDinner/ }],
-  'Sin comidas ni cenas repetidas dentro de la misma semana. En Pro, además, no vuelven las que ya cocinaste o descartaste.': [
+  // how-it-works.tsx — STEPS (FRESCO-1134: the repeat-free claim of the removed impact-stats section
+  // moved into step 2; the aisle claim was already step 3)
+  '21 platos de lunes a domingo, ajustados a vosotros y sin comidas ni cenas repetidas en la misma semana. Cambia lo que no te convenza con un toque.': [
+    PROFILE_FILTER,
     { file: SELECTOR, pattern: /usedLunchDinner\.has/ },
-    ...EXCLUDE_MARKED,
-    { file: GENERATE, pattern: /if \(isPro\) \{[\s\S]*?get_recent_recipe_marks/ },
   ],
-  'La compra agrupada por pasillos del súper. Marca lo que ya tienes y sal de casa.': [
+  'Ingredientes agrupados por pasillos. Marca lo que ya tienes. Ve al súper con la cabeza despejada.': [
     { file: 'supabase/functions/generate-shopping-list/index.ts', pattern: /pasillo|categoria/i },
   ],
   // pricing.tsx — FREE_FEATURES
@@ -62,7 +61,8 @@ const CLAIMS: Record<string, Source[]> = {
 
 const RENDERED_CLAIMS: string[] = [
   ...TIMELINE.map(item => item.description),
-  ...HIGHLIGHTS.map(item => item.description),
+  STEPS[1].description,
+  STEPS[2].description,
   ...FREE_FEATURES,
   ...PRO_FEATURES,
 ];

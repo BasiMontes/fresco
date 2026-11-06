@@ -13,27 +13,27 @@ const PAIN_POINTS = [
   },
 ] as const;
 
+// FRESCO-1134: three rows of text on the brand band instead of three equal cards with a ✗ square
+// (Anti Web Slop counts equal cards and icon-in-a-square). The hairlines use the accent ramp: on
+// `primary` the `border` token (text at 16 %) would be invisible.
 export function PainPoints() {
   return (
     <section className="border-y border-border bg-primary">
-      <div className="mx-auto max-w-5xl px-4 py-16 md:px-8">
-        <h2 className="mb-8 text-h2 tracking-tight text-background">
+      <div className="mx-auto max-w-5xl px-4 py-16 md:px-8 md:py-24">
+        <h2 className="text-h2 tracking-tight text-background">
           ¿Cuántas veces has acabado comiendo lo que sea?
         </h2>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <ul className="mt-12 border-b border-accent-400">
           {PAIN_POINTS.map(point => (
-            <div key={point.lead} className="flex flex-col gap-3 rounded-md border border-accent-500 bg-accent-600 p-5">
-              <span className="grid size-8 place-items-center rounded-sm bg-error text-body-sm font-bold text-background">
-                ✗
-              </span>
-              <p className="text-body-sm text-accent-100">
-                <strong className="font-bold text-background">{point.lead}</strong>
-                {' '}
-                {point.rest}
-              </p>
-            </div>
+            <li
+              key={point.lead}
+              className="grid gap-2 border-t border-accent-400 py-6 md:grid-cols-[5fr_7fr] md:items-baseline md:gap-8"
+            >
+              <span className="text-h3 text-background">{point.lead}</span>
+              <span className="max-w-md text-body-md text-accent-100">{point.rest}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );

@@ -5,14 +5,12 @@ import { FAQS } from '@/components/landing/faq-data';
 import { FinalCta } from '@/components/landing/final-cta';
 import { Hero } from '@/components/landing/hero';
 import { HowItWorks } from '@/components/landing/how-it-works';
-import { ImpactStats } from '@/components/landing/impact-stats';
 import { LearnsPro } from '@/components/landing/learns-pro';
 import { PainPoints } from '@/components/landing/pain-points';
 import { Pricing } from '@/components/landing/pricing';
 import { SiteFooter } from '@/components/landing/site-footer';
 import { SiteNav } from '@/components/landing/site-nav';
 import { JsonLd } from '@/components/seo/json-ld';
-import { Reveal } from '@/components/ui/reveal';
 import { getProPrices } from '@/lib/billing/pro-prices';
 import { canonicalUrl } from '@/lib/seo/canonical';
 import { faqJsonLd, softwareApplicationJsonLd } from '@/lib/seo/structured-data';
@@ -49,18 +47,20 @@ export default async function GuestLandingPage() {
           (`<header>`) and SiteFooter (`<footer>`) stay siblings so the
           landmark structure is header / main / contentinfo. */}
       <main id="main">
-        {/* Hero is above the fold — no scroll reveal. FRESCO-446: every
-            section below gets a gentle settle as it enters the viewport
-            (disabled under prefers-reduced-motion). */}
+        {/* FRESCO-1134: the order is see it (video), how it works, why it
+            matters (pain), what Pro adds (timeline), price, questions. The
+            usual hero → problem → three features → pricing order is one of
+            the template signals Anti Web Slop counts. The page-wide scroll
+            reveal of FRESCO-446 is gone; only the Pro timeline nodes settle
+            in (`LearnsPro`, disabled under prefers-reduced-motion). */}
         <Hero />
-        <Reveal><PainPoints /></Reveal>
-        <Reveal><BrandVideo /></Reveal>
-        <Reveal><HowItWorks /></Reveal>
-        <Reveal><LearnsPro /></Reveal>
-        <Reveal><ImpactStats /></Reveal>
-        <Reveal><Pricing prices={prices} /></Reveal>
-        <Reveal><Faq /></Reveal>
-        <Reveal><FinalCta /></Reveal>
+        <BrandVideo />
+        <HowItWorks />
+        <PainPoints />
+        <LearnsPro />
+        <Pricing prices={prices} />
+        <Faq />
+        <FinalCta />
       </main>
       <SiteFooter />
     </div>
