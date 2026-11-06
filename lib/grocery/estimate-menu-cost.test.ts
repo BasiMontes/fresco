@@ -148,8 +148,11 @@ describe('packPrice', () => {
     const item = mapShoppingListItem({ nombre: 'lentejas', cantidad: 300, unidad: 'g' });
     expect(item.origenEnvase).toBe('mercadona');
 
-    // precioReferencia 4 €/ud, el envase de 485 g ES esa "ud" -> precio de paquete = 4 €.
-    expect(packPrice(item)).toBeCloseTo(4, 2);
+    // precioReferencia €/ud del catálogo, el envase de 485 g ES esa "ud" -> precio de paquete = ese precio.
+    // FRESCO-1139: se lee del catálogo (se regenera cada semana) en vez de escribir 4 aquí.
+    const lentejas = MERCADONA_CATALOG_MATCH.lentejas.precioMercadona;
+    expect(lentejas.formatoReferencia).toBe('ud');
+    expect(packPrice(item)).toBeCloseTo(lentejas.precioReferencia, 2);
 
     // El fallback genérico (envase 485 g * PRECIO_MEDIO_POR_UNIDAD.g) sería un número muy distinto (2.91 €).
     const fallbackGenerico = PRECIO_MEDIO_POR_UNIDAD.g * 485;
@@ -299,6 +302,20 @@ describe('consolidateRecipeIngredients', () => {
   });
 });
 
+/**
+ * FRESCO-1139: the Mercadona catalog is regenerated every week (FRESCO-762/768), so these tests never write a
+ * real price. The hand-calculated oracle reads `precioReferencia` from the catalog itself and checks the two
+ * facts the arithmetic depends on (the reference format is per litre, the dictionary pack is 1000 ml): a
+ * price change moves nothing, a format change fails with a message that says what changed.
+ * Pinning 3.90 here made the weekly refresh job fail its own pre-push hook on 2026-11-03 (price 3.80).
+ */
+function precioDeUnEnvaseDeAceite(): number {
+  const aceite = MERCADONA_CATALOG_MATCH['aceite de oliva'].precioMercadona;
+  expect(aceite.formatoReferencia).toBe('L');
+  expect(INGREDIENT_DICTIONARY['aceite de oliva'].envaseVenta).toEqual({ cantidad: 1000, unidad: 'ml' });
+  return aceite.precioReferencia;
+}
+
 describe('estimateMenuCost', () => {
   test('menú con los 21 slots vacíos devuelve coste 0', () => {
     expect(estimateMenuCost(emptyMenu(), { numPersonas: 4 })).toBe(0);
@@ -313,8 +330,8 @@ describe('estimateMenuCost', () => {
     });
 
     // porcionReceta 50 ml, factor 4/4 = 1 -> 50 ml; envase 1000 ml -> 1 paquete;
-    // precioReferencia 3.9 €/L -> 3.9 * (1000 ml -> 1 L / 1) = 3.90 €.
-    expect(estimateMenuCost(menu, { numPersonas: 4 })).toBe(3.9);
+    // precioReferencia €/L * (1000 ml -> 1 L / 1) = el precioReferencia del catálogo, un envase.
+    expect(estimateMenuCost(menu, { numPersonas: 4 })).toBeCloseTo(precioDeUnEnvaseDeAceite(), 2);
   });
 
   test('el mismo ingrediente en 2+ recetas no compra 2 paquetes si 1 basta (dedupe real)', () => {
@@ -330,9 +347,12 @@ describe('estimateMenuCost', () => {
       meta: metaConRaciones(4),
     });
 
-    // 50 ml + 50 ml = 100 ml consolidados -> sigue cabiendo en 1 envase de 1000 ml (3.90 €).
-    // Sin consolidar serían 2 envases sueltos: 2 x 3.90 € = 7.80 €.
-    expect(estimateMenuCost(menu, { numPersonas: 4 })).toBe(3.9);
+    // 50 ml + 50 ml = 100 ml consolidados -> sigue cabiendo en 1 envase de 1000 ml.
+    // Sin consolidar serían 2 envases sueltos: el doble del precio de uno.
+    const unEnvase = precioDeUnEnvaseDeAceite();
+    const total = estimateMenuCost(menu, { numPersonas: 4 });
+    expect(total).toBeCloseTo(unEnvase, 2);
+    expect(total).not.toBeCloseTo(2 * unEnvase, 2);
   });
 
   test('recipe.meta.raciones en 0 no revienta con Infinity, cae al fallback de 4', () => {
@@ -345,7 +365,8 @@ describe('estimateMenuCost', () => {
 
     const total = estimateMenuCost(menu, { numPersonas: 4 });
     expect(Number.isFinite(total)).toBe(true);
-    expect(total).toBe(3.9); // raciones 0 -> fallback 4, numPersonas 4 -> factor 1, igual que el caso base
+    // raciones 0 -> fallback 4, numPersonas 4 -> factor 1, igual que el caso base
+    expect(total).toBeCloseTo(precioDeUnEnvaseDeAceite(), 2);
   });
 
   test('ingrediente totalmente ausente del diccionario no lanza y el total no es NaN', () => {
@@ -370,14 +391,22 @@ describe('estimateMenuCost', () => {
       meta: metaConRaciones(4),
     });
 
-    // garbanzos: porcionReceta 400 g, envase 420 g, precioReferencia 3.215 €/kg.
+    // garbanzos: porcionReceta 400 g, envase 420 g, precioReferencia €/kg del catálogo.
+    // FRESCO-1139: el precio se lee del catálogo (se regenera cada semana) en vez de escribir 3.215 aquí;
+    // se comprueban el formato y el envase de los que depende la aritmética.
     // factor 4/4=1 -> 400 g -> 1 paquete. factor 8/4=2 -> 800 g -> 2 paquetes (cruza el límite).
+    const garbanzos = MERCADONA_CATALOG_MATCH.garbanzos.precioMercadona;
+    expect(garbanzos.formatoReferencia).toBe('kg');
+    expect(INGREDIENT_DICTIONARY.garbanzos.envaseVenta).toEqual({ cantidad: 420, unidad: 'g' });
     const total4 = estimateMenuCost(menu, { numPersonas: 4 });
     const total8 = estimateMenuCost(menu, { numPersonas: 8 });
 
-    const precioPorPaquete = 3.215 * (420 / 1000); // 420 g convertidos a kg
-    expect(total4).toBeCloseTo(Math.round(precioPorPaquete * 100) / 100, 2);
-    expect(total8).toBeCloseTo(Math.round(precioPorPaquete * 2 * 100) / 100, 2);
+    // FRESCO-1139: la app redondea el PRECIO DEL PAQUETE a céntimos (como una tienda) y luego multiplica por
+    // paquetes. Redondear aquí el total ya doblado coincidía solo con el precio de ese día (con otro salían
+    // 2,88 y 2,89), así que el oráculo hace lo mismo que la app: redondea el paquete y multiplica.
+    const precioPorPaquete = Math.round(garbanzos.precioReferencia * (420 / 1000) * 100) / 100; // 420 g convertidos a kg
+    expect(total4).toBeCloseTo(precioPorPaquete, 2);
+    expect(total8).toBeCloseTo(precioPorPaquete * 2, 2);
     // El salto de 1 a 2 paquetes es más que el simple doblado de cantidad (400g -> 800g sin cruzar límite escalaría igual).
     expect(total8).toBeCloseTo(total4 * 2, 2);
   });
@@ -404,16 +433,19 @@ describe('estimateMenuCost', () => {
 
     const total = estimateMenuCost(menu, { numPersonas: 4 });
 
-    // Precio por paquete de "salmón ahumado": 37 €/kg * (100 g -> 0.1 kg) = 3.70 €.
-    const precioPorPaqueteAhumado = 37 * (100 / 1000);
+    // Precio por paquete de "salmón ahumado": precioReferencia €/kg del catálogo * (100 g -> 0.1 kg).
+    // FRESCO-1139: leído del catálogo (se regenera cada semana) en vez de escribir 37 €/kg aquí.
+    const ahumado = MERCADONA_CATALOG_MATCH['salmon ahumado'].precioMercadona;
+    expect(ahumado.formatoReferencia).toBe('kg');
+    expect(INGREDIENT_DICTIONARY['salmon ahumado'].envaseVenta).toEqual({ cantidad: 100, unidad: 'g' });
+    // La app redondea el precio del PAQUETE a céntimos y luego multiplica por paquetes: el oráculo hace lo mismo.
+    const precioPorPaqueteAhumado = Math.round(ahumado.precioReferencia * (100 / 1000) * 100) / 100;
     // Cantidad correcta: porcionReceta del RECUPERADO (150 g) * factor 1 -> ceil(150/100) = 2 paquetes.
-    const totalCorrecto = Math.round(precioPorPaqueteAhumado * 2 * 100) / 100;
-    expect(totalCorrecto).toBeCloseTo(7.4, 2);
+    const totalCorrecto = precioPorPaqueteAhumado * 2;
     expect(total).toBeCloseTo(totalCorrecto, 2);
 
-    // El número que producía el bug (cantidad del directo 400g / envase 100g = 4 paquetes * 3.70€) queda descartado.
-    const totalBugueado = Math.round(precioPorPaqueteAhumado * 4 * 100) / 100;
-    expect(totalBugueado).toBeCloseTo(14.8, 2);
+    // El número que producía el bug (cantidad del directo 400g / envase 100g = 4 paquetes) queda descartado.
+    const totalBugueado = precioPorPaqueteAhumado * 4;
     expect(total).not.toBeCloseTo(totalBugueado, 2);
   });
 });
