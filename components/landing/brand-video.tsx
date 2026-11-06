@@ -36,7 +36,7 @@ export function BrandVideo() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-16 md:px-8">
       <video
-        className="aspect-video w-full rounded-md border border-border bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="aspect-video w-full rounded-sm border border-border bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         controls
         playsInline
         preload="none"

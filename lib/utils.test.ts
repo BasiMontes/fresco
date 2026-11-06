@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { cn, formatCantidad, formatImporte, formatPrecio, THEME_FONT_SIZES } from './utils';
+import { cn, formatCantidad, formatImporte, formatPrecio, THEME_FONT_SIZES, THEME_RADII } from './utils';
 
 describe('formatImporte / formatPrecio (FRESCO-819)', () => {
   test('two decimals with a comma, symbol glued after the figure', () => {
@@ -46,5 +46,25 @@ describe('cn keeps the theme font sizes (FRESCO-982)', () => {
     // A font size is a --text-<name> that also declares --text-<name>--line-height.
     const declared = [...new Set([...css.matchAll(/^\s*--text-([a-z0-9-]+)--line-height:/gm)].map(m => m[1]))];
     expect(declared.sort()).toEqual([...sizes].sort());
+  });
+});
+
+describe('cn treats the theme radii as corner radii (FRESCO-1138)', () => {
+  test('a later radius replaces rounded-card or rounded-image, in either order', () => {
+    expect(cn('rounded-card', 'rounded-md')).toBe('rounded-md');
+    expect(cn('rounded-image', 'rounded-sm')).toBe('rounded-sm');
+    expect(cn('rounded-md', 'rounded-card')).toBe('rounded-card');
+  });
+
+  test('it leaves other classes and side-specific radii alone', () => {
+    expect(cn('rounded-card', 'p-3', 'border')).toBe('rounded-card p-3 border');
+    expect(cn('rounded-card', 'rounded-t-none')).toBe('rounded-card rounded-t-none');
+  });
+
+  test('the custom radii in globals.css are all declared here', async () => {
+    const css = await Bun.file(`${import.meta.dir}/../app/globals.css`).text();
+    const tailwindOwn = new Set(['none', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', 'full']);
+    const declared = [...new Set([...css.matchAll(/^\s*--radius-([a-z0-9-]+):/gm)].map(m => m[1]))].filter(name => !tailwindOwn.has(name));
+    expect(declared.sort()).toEqual([...THEME_RADII].sort());
   });
 });

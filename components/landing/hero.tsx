@@ -83,7 +83,9 @@ function HeroPhotoFrame({
   className?: string
 }) {
   return (
-    <div className={`relative overflow-hidden rounded-image shadow-md ${className ?? ''}`}>
+    // FRESCO-1138: media corners are the crisp `sm` (6px); callouts are `md` and the plan cards keep
+    // `card`, so the radius says what a box is instead of rounding every box the same.
+    <div className={`relative overflow-hidden rounded-sm shadow-md ${className ?? ''}`}>
       <Image
         src={photo.src}
         alt={photo.alt}
