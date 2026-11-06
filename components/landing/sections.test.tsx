@@ -22,12 +22,14 @@ describe('HowItWorks — vertical walkthrough', () => {
     expect(screen.getByText('Cada semana usa lo que marcas')).toBeTruthy();
   });
 
-  test('has no numbered circles and one catalogue photo with an alt text', () => {
+  test('has no numbered circles and one real menu capture with an alt text and an honest caption', () => {
     const { container } = renderWithProviders(<HowItWorks />);
 
     expect(container.querySelectorAll('.rounded-full')).toHaveLength(0);
     const photo = container.querySelector('figure img');
-    expect(photo?.getAttribute('alt')).toMatch(/catálogo de Fresco/);
+    expect(photo?.getAttribute('src')).toContain('menu-example');
+    expect(photo?.getAttribute('alt')).toMatch(/Captura de la pantalla de menú de Fresco/);
+    expect(container.querySelector('figure figcaption')?.textContent).toMatch(/Menú de ejemplo/);
   });
 
   test('step 2 carries the no-repeats claim that moved from the removed impact-stats section', () => {
@@ -71,7 +73,7 @@ describe('Corner radius says what a box is (FRESCO-1138)', () => {
   test('the walkthrough photo is crisp (sm) and its callout is md, not the card radius', () => {
     const { container } = renderWithProviders(<HowItWorks />);
 
-    const photoFrame = container.querySelector('figure > div');
+    const photoFrame = container.querySelector('figure img');
     expect(photoFrame?.className).toContain('rounded-sm');
     expect(photoFrame?.className).not.toContain('rounded-image');
     const callout = screen.getByText('Cada semana usa lo que marcas').closest('div');

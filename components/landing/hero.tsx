@@ -26,7 +26,7 @@ interface HeroPhoto {
  * other random rows were rejected as a mismatch, e.g. a chicken-biryani photo
  * on a "Pollo al horno" row).
  */
-export const HERO_PHOTOS: HeroPhoto[] = [
+const HERO_PHOTOS: HeroPhoto[] = [
   {
     src: 'https://images.unsplash.com/photo-1704642153271-5f241866aaaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8aHVldm9zJTIwcmFuY2hlcm9zJTIwbWV4aWNhbiUyMGJyZWFrZmFzdCUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NTY5NzU5M3ww&ixlib=rb-4.1.0&q=80&w=1080',
     alt: 'Huevos rancheros',
