@@ -1,5 +1,69 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { deleteTrackedUsers } from './test-user-factory';
+import { deleteTrackedUsers, sendSeedRequest } from './test-user-factory';
+
+/**
+ * FRESCO-1136: a 502 from the gateway of the local Supabase stack ("An invalid response was received from
+ * the upstream server") used to fail the whole scenario while seeding; it is now retried, but only a 5xx.
+ */
+describe('sendSeedRequest', () => {
+  const answer = (status: number) => ({ ok: () => status >= 200 && status < 300, status: () => status });
+  const noWait = async () => {};
+
+  test('returns the first answer untouched when it is fine, without retrying or waiting', async () => {
+    const waits: number[] = [];
+    let calls = 0;
+
+    const { res, retried } = await sendSeedRequest(async () => { calls++; return answer(201); }, async (ms) => { waits.push(ms); });
+
+    expect(res.status()).toBe(201);
+    expect(retried).toBe(false);
+    expect(calls).toBe(1);
+    expect(waits).toEqual([]);
+  });
+
+  test('retries a 502 with a growing pause and returns the first good answer', async () => {
+    const waits: number[] = [];
+    const statuses = [502, 502, 201];
+    let calls = 0;
+
+    const { res, retried } = await sendSeedRequest(async () => answer(statuses[calls++]), async (ms) => { waits.push(ms); });
+
+    expect(res.ok()).toBe(true);
+    expect(retried).toBe(true);
+    expect(calls).toBe(3);
+    expect(waits).toEqual([400, 800]);
+  });
+
+  test('gives up after three attempts and returns the last 5xx so the caller can report it', async () => {
+    let calls = 0;
+
+    const { res, retried } = await sendSeedRequest(async () => { calls++; return answer(502); }, noWait);
+
+    expect(calls).toBe(3);
+    expect(res.status()).toBe(502);
+    expect(retried).toBe(true);
+  });
+
+  test('a 4xx is a real answer: returned at once, never retried', async () => {
+    for (const status of [400, 403, 409, 422]) {
+      let calls = 0;
+      const { res, retried } = await sendSeedRequest(async () => { calls++; return answer(status); }, noWait);
+      expect(calls).toBe(1);
+      expect(res.status()).toBe(status);
+      expect(retried).toBe(false);
+    }
+  });
+
+  test('a 409 after a retried 5xx is flagged, because the first attempt may have been committed', async () => {
+    const statuses = [502, 409];
+    let calls = 0;
+
+    const { res, retried } = await sendSeedRequest(async () => answer(statuses[calls++]), noWait);
+
+    expect(res.status()).toBe(409);
+    expect(retried).toBe(true);
+  });
+});
 
 /** FRESCO-1016 (A7-TEST-09): a failed cleanup is reported, not swallowed, and never stops the others. */
 describe('deleteTrackedUsers', () => {
