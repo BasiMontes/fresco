@@ -12,7 +12,7 @@ describe('buildEnglishPrompt', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) { return; }
     expect(result.prompt).toContain('creamy white skyr, sliced fresh strawberries and tiny black chia seeds');
-    expect(result.prompt).toStartWith('Professional overhead food photograph of');
+    expect(result.prompt).toStartWith('Natural overhead food photograph of');
     expect(result.prompt).not.toMatch(/\b(no|without|sin)\b/i);
   });
 
@@ -30,8 +30,29 @@ describe('buildEnglishPrompt', () => {
     const batido = buildEnglishPrompt({ nombre: 'Batido de fresas', ingredientes_principales: ['fresas'], pasos_resumen: [] });
     const sopa = buildEnglishPrompt({ nombre: 'Sopa de calabaza', ingredientes_principales: ['calabaza'], pasos_resumen: [] });
 
-    expect(batido.ok && batido.prompt).toContain('Single white glass');
-    expect(sopa.ok && sopa.prompt).toContain('Single white bowl');
+    expect(batido.ok && batido.prompt).toContain('eye-level');
+    expect(batido.ok && batido.prompt).toContain('drinking glass');
+    expect(sopa.ok && sopa.prompt).toContain('overhead');
+    expect(sopa.ok && sopa.prompt).toMatch(/Served in a [^,]*bowl/);
+  });
+
+  test('does not read as a studio shot: no professional or restaurant wording, home-cooked cues instead', () => {
+    const result = buildEnglishPrompt({ nombre: 'Ensalada griega', ingredientes_principales: ['tomate', 'pepino', 'queso feta'], pasos_resumen: [] });
+
+    expect(result.ok && result.prompt).not.toMatch(/professional|restaurant|single white/i);
+    expect(result.ok && result.prompt).toContain('home-cooked plating');
+    expect(result.ok && result.prompt).toContain('off-center');
+  });
+
+  test('varies the tableware and surface across recipes but never for the same recipe', () => {
+    const names = ['Tortilla de patatas', 'Ensalada griega', 'Pasta con tomate', 'Pollo asado', 'Lentejas con arroz', 'Tarta de queso', 'Pisto con huevo', 'Merluza en salsa verde'];
+    const build = (nombre: string) => {
+      const result = buildEnglishPrompt({ nombre, ingredientes_principales: ['tomate'], pasos_resumen: [] });
+      return result.ok ? result.prompt.split('. Served in ')[1] : '';
+    };
+
+    expect(build('Ensalada griega')).toBe(build('Ensalada griega'));
+    expect(new Set(names.map(build)).size).toBeGreaterThan(3);
   });
 
   test('leaves invisible ingredients (salt, stock, oil) out of the prompt', () => {
@@ -137,6 +158,42 @@ describe('buildEnglishPrompt', () => {
 
     expect(result.ok && result.prompt).toContain('sliced carrot');
     expect(result.ok && result.prompt).not.toContain('sweet corn');
+  });
+
+  // FRESCO-1132, 2026-11-06 batch review: each of these came out as the wrong dish or the wrong ingredient
+  // because the ingredient list alone does not say the dish's shape.
+  describe('dishes whose shape the ingredient list does not give', () => {
+    const cases: { nombre: string, ingredientes: string[], expected: string[], forbidden?: string[] }[] = [
+      { nombre: 'Buñuelos de manzana', ingredientes: ['manzana', 'huevo', 'canela'], expected: ['round puffy golden fried fritters', 'filled with diced red apple'], forbidden: ['egg'] },
+      { nombre: 'Galletas de avena y plátano', ingredientes: ['avena', 'plátano', 'canela'], expected: ['baked oat cookies', 'sliced banana rounds'], forbidden: ['rolled oats'] },
+      { nombre: 'Merluza a la romana', ingredientes: ['merluza', 'huevo'], expected: ['battered fried hake pieces'], forbidden: ['egg', 'white hake fillet'] },
+      { nombre: 'Albondigas en salsa', ingredientes: ['ternera picada', 'tomate', 'cebolla'], expected: ['six round browned meatballs', 'sliced onion'], forbidden: ['ground beef', 'sliced ripe tomato'] },
+      { nombre: 'Huevos poché con espárragos', ingredientes: ['huevo', 'espárragos trigueros'], expected: ['poached egg', 'runny yolk', 'wild green asparagus spears'], forbidden: ['sauteed'] },
+      { nombre: 'Bacalao a la vizcaína', ingredientes: ['bacalao', 'pimiento choricero', 'tomate'], expected: ['deep red-orange pepper sauce', 'sliced ripe tomato'], forbidden: ['pulp'] },
+      { nombre: 'Sopa de ajo con huevo', ingredientes: ['pan', 'ajo', 'huevo'], expected: ['clear amber garlic soup', 'poached egg'], forbidden: ['golden garlic slices'] },
+      { nombre: 'Coca de pimiento rojo y anchoas', ingredientes: ['pimiento rojo', 'cebolla', 'anchoas'], expected: ['thin crisp flatbread', 'thin silvery-brown anchovy fillets'] },
+      { nombre: 'Escalivada con anchoas', ingredientes: ['berenjena', 'pimiento', 'anchoas'], expected: ['roasted vegetable strips', 'thin silvery-brown anchovy fillets'] },
+      { nombre: 'Champiñones rellenos de ajo con cilantro', ingredientes: ['champiñones', 'tempeh', 'ajo', 'cilantro'], expected: ['whole mushroom caps stuffed with'], forbidden: ['porous block', 'sliced white button mushrooms'] },
+      { nombre: 'Tofu al curry verde con aceitunas', ingredientes: ['tofu', 'calabacín', 'aceitunas'], expected: ['creamy pale green coconut curry sauce', 'whole green olives'], forbidden: ['smooth surface'] },
+      { nombre: 'Marmitako de bonito', ingredientes: ['bonito', 'patata', 'cebolla'], expected: ['hearty stew', 'chunks of tuna fish with pink-red flesh'], forbidden: ['tuna loin'] },
+      { nombre: 'Fabada asturiana', ingredientes: ['fabes', 'chorizo', 'morcilla'], expected: ['hearty stew', 'white fabes beans'] },
+      { nombre: 'Panzanella de tomate y pepino', ingredientes: ['pan', 'tomate', 'pepino'], expected: ['toasted bread cubes', 'sliced ripe tomato'], forbidden: ['crusty bread'] },
+      { nombre: 'Ensalada de pasta con mozzarella', ingredientes: ['pasta', 'tomate cherry', 'mozzarella'], expected: ['cold pasta salad of fusilli', 'fresh white mozzarella balls'], forbidden: ['melted'] },
+      { nombre: 'Batido de cacao y plátano', ingredientes: ['plátano', 'cacao'], expected: ['dark chocolate-brown smoothie'] },
+    ];
+
+    for (const { nombre, ingredientes, expected, forbidden = [] } of cases) {
+      test(`${nombre}`, () => {
+        const result = buildEnglishPrompt({ nombre, ingredientes_principales: ingredientes, pasos_resumen: ['Hornear y saltear'] });
+
+        expect(result.ok).toBe(true);
+        if (!result.ok) { return; }
+        for (const text of expected) { expect(result.prompt).toContain(text); }
+        for (const text of forbidden) { expect(result.prompt).not.toContain(text); }
+        expect(result.prompt).not.toMatch(/\b(no|without|sin)\b/i);
+        expect(result.prompt.length).toBeLessThan(2048);
+      });
+    }
   });
 
   test('fails closed on an ingredient missing from the glossary', () => {

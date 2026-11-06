@@ -26,6 +26,8 @@ interface DishType {
   plain?: boolean
   /** Whole subject, used when every listed ingredient was omitted (plain sponge cake, salmorejo). */
   alone?: string
+  /** The lead already says how an ingredient looks (tempeh as a stuffing): skip its base-form cue. */
+  skipShape?: boolean
 }
 
 interface Cue {
@@ -62,7 +64,8 @@ export const INGREDIENTS_EN: Record<string, string> = {
   'alubias blancas': 'white beans',
   'alubias negras': 'black beans',
   'alubias rojas': 'red kidney beans',
-  'anchoas': 'anchovy fillets',
+  // 2026-11-06: plain "anchovy fillets" and "roasted eggplant" were both drawn as mussels in their shells.
+  'anchoas': 'thin silvery-brown anchovy fillets laid in neat strips',
   'apio': 'chopped celery',
   'arándanos': 'fresh blueberries',
   'arroz': 'cooked white rice',
@@ -76,10 +79,11 @@ export const INGREDIENTS_EN: Record<string, string> = {
   'bacalao desalado': 'cod fillet',
   'bebida de almendra': '',
   'bechamel': 'creamy bechamel sauce',
-  'berenjena': 'roasted eggplant',
+  'berenjena': 'silky roasted eggplant',
   'berza': 'cooked collard greens',
   'boniato': 'roasted sweet potato cubes',
-  'bonito': 'tuna loin',
+  // 2026-11-06: "tuna loin" in a stew was drawn as pork or chicken.
+  'bonito': 'chunks of tuna fish with pink-red flesh',
   'boquerones': 'fresh anchovies',
   'brócoli': 'broccoli florets',
   'cacahuetes': 'peanuts',
@@ -277,6 +281,23 @@ const BATTER = ['huevo', 'yogur', 'yogur natural', 'yogur griego'];
 // before the general one ("arroz"). A name that matches none falls back to
 // DEFAULT_DISH.
 const DISH_TYPES: DishType[] = [
+  // 2026-11-06 batch review (FRESCO-1132): the entries below were drawn as the wrong dish because an ingredient
+  // list alone does not say the dish's shape (a fritter came out as a fried egg, meatballs as loose mince,
+  // a poached egg as a fried one). They sit first so they win over the general prefixes ("sopa", "ensalada").
+  { prefixes: ['sopa de ajo'], lead: 'a rustic bowl of clear amber garlic soup with', alone: 'a rustic bowl of clear amber garlic soup with toasted bread pieces, a soft poached egg and a sprinkle of red paprika', vessel: 'bowl', plain: true, omit: ['ajo', 'pan', 'huevo', 'pimentón', 'pimentón dulce'] },
+  { prefixes: ['huevos poche', 'huevo poche'], lead: 'a smooth round poached egg with a soft white and a runny yolk, resting on', vessel: 'plate', plain: true, omit: ['huevo'] },
+  { prefixes: ['merluza a la romana'], lead: 'golden crispy battered fried hake pieces served with', alone: 'golden crispy battered fried hake pieces with a lemon wedge', vessel: 'plate', plain: true, omit: ['merluza', 'huevo', 'harina', 'pan rallado', 'limón'] },
+  { prefixes: ['albondigas'], lead: 'a shallow dish of six round browned meatballs in a thick red tomato sauce, with', alone: 'a shallow dish of six round browned meatballs in a thick red tomato sauce', vessel: 'plate', plain: true, omit: ['carne picada', 'carne picada de ternera', 'ternera picada', 'tomate', 'tomate triturado', 'pan rallado', 'huevo'] },
+  { prefixes: ['bunuelos'], lead: 'a plate of three round puffy golden fried fritters dusted with cinnamon sugar and filled with', alone: 'a plate of three round puffy golden fried fritters dusted with cinnamon sugar', vessel: 'plate', plain: true, omit: [...BATTER, 'canela', 'harina'] },
+  { prefixes: ['galletas'], lead: 'a plate of four round golden baked oat cookies with a cracked surface, topped with', alone: 'a plate of four round golden baked oat cookies with a cracked surface', vessel: 'plate', plain: true, omit: [...BATTER, 'avena', 'harina', 'harina integral'] },
+  { prefixes: ['bacalao a la vizcaina'], lead: 'a thick piece of cod fillet in a glossy deep red-orange pepper sauce, with', alone: 'a thick piece of cod fillet in a glossy deep red-orange pepper sauce', vessel: 'plate', plain: true, omit: ['bacalao', 'bacalao desalado', 'pimiento choricero'] },
+  { prefixes: ['escalivada'], lead: 'a plate of tender roasted vegetable strips of eggplant, red pepper and onion, with', alone: 'a plate of tender roasted vegetable strips of eggplant, red pepper and onion', vessel: 'plate', plain: true, omit: ['berenjena', 'pimiento', 'pimiento rojo', 'cebolla'] },
+  { prefixes: ['coca'], lead: 'a rectangular slice of thin crisp flatbread topped with', vessel: 'plate', plain: true },
+  { prefixes: ['panzanella'], lead: 'a rustic salad of toasted bread cubes with', alone: 'a rustic salad of toasted bread cubes and ripe tomato', vessel: 'plate', plain: true, omit: ['pan'] },
+  { prefixes: ['champinones rellenos'], lead: 'a plate of large whole mushroom caps stuffed with a golden crumbly savory filling and topped with', alone: 'a plate of large whole mushroom caps stuffed with a golden crumbly savory filling', vessel: 'plate', plain: true, skipShape: true, omit: ['champiñones', 'tempeh', 'tofu'] },
+  { prefixes: ['tofu al curry verde'], lead: 'a shallow bowl of golden tofu cubes in a creamy pale green coconut curry sauce with', alone: 'a shallow bowl of golden tofu cubes in a creamy pale green coconut curry sauce', vessel: 'bowl', plain: true, skipShape: true, omit: ['tofu', 'curry en polvo', 'leche de coco'] },
+  { prefixes: ['ensalada de pasta con mozzarella'], lead: 'a cold pasta salad of fusilli with fresh white mozzarella balls and', alone: 'a cold pasta salad of fusilli, halved cherry tomatoes and fresh white mozzarella balls', vessel: 'plate', plain: true, omit: ['pasta', 'pasta integral', 'mozzarella', 'tomate cherry', 'tomates cherry'] },
+  { prefixes: ['batido de cacao'], lead: 'a tall glass of thick dark chocolate-brown smoothie made from', vessel: 'glass', plain: true },
   { prefixes: ['tostada', 'tostadas'], lead: 'open-faced toasted bread slices topped with', vessel: 'plate' },
   { prefixes: ['sandwich', 'bocadillo'], lead: 'a sandwich cut in half showing the filling, filled with', vessel: 'plate' },
   { prefixes: ['wrap'], lead: 'a tortilla wrap rolled tightly and cut in half showing the cross section, filled with', vessel: 'plate' },
@@ -322,7 +343,7 @@ const DISH_TYPES: DishType[] = [
   { prefixes: ['gazpacho'], lead: 'a bowl of smooth cold red tomato soup with', alone: 'a bowl of smooth cold red tomato soup with a glossy surface', vessel: 'bowl', plain: true, omit: ['tomate', 'pan', 'pepino', 'pimiento'] },
   { prefixes: ['vichyssoise'], lead: 'a bowl of smooth cold creamy leek and potato soup topped with', alone: 'a bowl of smooth cold creamy leek and potato soup with chives', vessel: 'bowl', plain: true, omit: ['patata', 'puerro'] },
   {
-    prefixes: ['cocido', 'potaje', 'pozole', 'marmitako', 'chili', 'dal', 'seco', 'lentejas', 'alubias', 'judiones', 'pochas', 'fabes'],
+    prefixes: ['cocido', 'potaje', 'pozole', 'marmitako', 'chili', 'dal', 'seco', 'lentejas', 'alubias', 'judiones', 'pochas', 'fabes', 'fabada'],
     lead: 'a bowl of hearty stew with',
     vessel: 'bowl',
   },
@@ -359,7 +380,27 @@ const SHAPE_CUES: Cue[] = [
 // main ingredients first, so the first few carry the dish.
 const MAX_VISIBLE_INGREDIENTS = 5;
 
-const STYLE_SUFFIX = 'soft natural window light, shallow depth of field, sharp realistic texture, restaurant quality.';
+// 2026-11-06 (FRESCO-1132): the first batch read as AI because every image was the same sterile studio shot,
+// a perfect white plate dead centre on plain grey, "professional" and "restaurant quality". The look is now a
+// home-cooked photograph: handmade tableware, a real table, side daylight, plating a little rustic and off
+// centre. The vessel and the surface vary per recipe name (deterministic, so a rerun draws the same set),
+// because identical framing across a whole catalogue is what gives the AI look away.
+const STYLE_SUFFIX = 'soft daylight from a window on one side, gentle natural shadows, shallow depth of field, realistic food texture, home-cooked plating that is a little rustic and slightly imperfect, composition slightly off-center, fine natural grain.';
+
+const VESSELS: Record<DishType['vessel'], string[]> = {
+  plate: ['a handmade off-white stoneware plate', 'a matte speckled ceramic plate', 'a simple white ceramic plate with a slightly irregular rim'],
+  bowl: ['a handmade stoneware bowl', 'a matte ceramic bowl in warm off-white', 'a simple white ceramic bowl'],
+  glass: ['a simple clear drinking glass'],
+};
+
+const SURFACES = ['a warm oak wooden table', 'a pale linen tablecloth', 'a light stone countertop', 'a weathered light wooden board'];
+
+/** Small deterministic string hash (djb2): the same recipe name always picks the same tableware and surface. */
+function hashOf(text: string): number {
+  let hash = 5381;
+  for (const char of text) { hash = ((hash << 5) + hash + char.charCodeAt(0)) >>> 0; }
+  return hash;
+}
 
 function normalize(text: string): string {
   return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim();
@@ -374,8 +415,13 @@ function firstCue(table: Cue[], text: string, steps = ''): string | null {
   return table.find(({ pattern, unlessSteps }) => pattern.test(text) && !unlessSteps?.test(steps))?.cue ?? null;
 }
 
-function frame(subject: string, vessel: DishType['vessel']): string {
-  return `Professional overhead food photograph of ${subject}. Single white ${vessel} on a plain light grey surface, ${STYLE_SUFFIX}`;
+function frame(subject: string, vessel: DishType['vessel'], nombre: string): string {
+  const hash = hashOf(normalize(nombre));
+  const vessels = VESSELS[vessel];
+  const tableware = vessels[hash % vessels.length];
+  const surface = SURFACES[(hash >>> 4) % SURFACES.length];
+  const angle = vessel === 'glass' ? 'eye-level' : 'overhead';
+  return `Natural ${angle} food photograph of ${subject}. Served in ${tableware} on ${surface}, ${STYLE_SUFFIX}`;
 }
 
 function joinList(items: string[]): string {
@@ -396,7 +442,7 @@ export function buildEnglishPrompt(recipe: PhotoRecipe): EnglishPromptResult {
     .slice(0, MAX_VISIBLE_INGREDIENTS);
   if (visible.length === 0) {
     if (!dish.alone) { return { ok: false, missing: ['(no visible ingredient)'] }; }
-    return { ok: true, prompt: frame(dish.alone, dish.vessel) };
+    return { ok: true, prompt: frame(dish.alone, dish.vessel, recipe.nombre) };
   }
 
   const steps = normalize((recipe.pasos_resumen ?? []).join(' '));
@@ -405,11 +451,12 @@ export function buildEnglishPrompt(recipe: PhotoRecipe): EnglishPromptResult {
   const hasEgg = ingredients.some(i => i.toLowerCase().trim() === 'huevo');
   const crumbled = /\bdesmenuza/.test(steps) || (/\brevuelto/.test(normalize(recipe.nombre)) && !hasEgg);
   const technique = dish.plain ? null : crumbled ? CRUMBLE_CUE : firstCue(TECHNIQUE_CUES, steps);
-  const cues = [technique, firstCue(SHAPE_CUES, normalize(ingredients.join(' ')), crumbled ? 'desmenuza' : steps)]
+  const shape = dish.skipShape ? null : firstCue(SHAPE_CUES, normalize(ingredients.join(' ')), crumbled ? 'desmenuza' : steps);
+  const cues = [technique, shape]
     .filter((c): c is string => c !== null);
 
   const hasLeadIngredient = !dish.leadWithout || ingredients.some(i => i.toLowerCase().trim() === dish.leadWithout!.ingredient);
   const lead = hasLeadIngredient ? dish.lead : dish.leadWithout!.lead;
   const subject = `${lead} ${joinList(visible)}${cues.length ? `, ${cues.join(', ')}` : ''}`;
-  return { ok: true, prompt: frame(subject, dish.vessel) };
+  return { ok: true, prompt: frame(subject, dish.vessel, recipe.nombre) };
 }
