@@ -1,12 +1,12 @@
 'use client';
 
-import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { MenuMark } from '@/components/ui/css-glyphs';
 import { IDENTITY_COOKIE_EVENT, readNombreCookie } from '@/lib/auth/identity-cookie';
 import { getSessionLazy, hasSupabaseSessionCookie } from '@/lib/client-api/identity';
 import { cn } from '@/lib/utils';
@@ -174,7 +174,7 @@ export function SiteNav() {
             aria-expanded={isOpen}
             onClick={() => setIsOpen(open => !open)}
           >
-            {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            <MenuMark open={isOpen} />
           </Button>
         </div>
       </div>

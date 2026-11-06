@@ -64,6 +64,36 @@ describe('LearnsPro — timeline', () => {
   });
 });
 
+// FRESCO-1138: Anti Web Slop flags "Las mismas esquinas redondeadas": the same radius on every box flattens
+// the hierarchy. Each role gets its own, only from the existing radius tokens: media `sm`, callouts `md`,
+// plan cards `card`; buttons and tags stay pills.
+describe('Corner radius says what a box is (FRESCO-1138)', () => {
+  test('the walkthrough photo is crisp (sm) and its callout is md, not the card radius', () => {
+    const { container } = renderWithProviders(<HowItWorks />);
+
+    const photoFrame = container.querySelector('figure > div');
+    expect(photoFrame?.className).toContain('rounded-sm');
+    expect(photoFrame?.className).not.toContain('rounded-image');
+    const callout = screen.getByText('Cada semana usa lo que marcas').closest('div');
+    expect(callout?.className).toContain('rounded-md');
+    expect(callout?.className).not.toContain('rounded-card');
+  });
+
+  test('the highlighted Pro timeline node is a md callout', () => {
+    const { container } = renderWithProviders(<LearnsPro />);
+
+    const highlighted = container.querySelector('.bg-accent-100.text-accent-800');
+    expect(highlighted?.className).toContain('rounded-md');
+    expect(highlighted?.className).not.toContain('rounded-card');
+  });
+
+  test('the plan cards keep the card radius', () => {
+    const { container } = renderWithProviders(<Pricing prices={null} />);
+
+    expect(container.querySelectorAll('.rounded-card')).toHaveLength(2);
+  });
+});
+
 describe('Pricing — no tick list, no trailing arrow', () => {
   test('prints the features as rows without ✓ and the CTAs without an arrow', () => {
     const { container } = renderWithProviders(<Pricing prices={null} />);

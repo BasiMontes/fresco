@@ -64,7 +64,7 @@ export function LearnsPro() {
               <Reveal>
                 {item.highlighted
                   ? (
-                      <Card variant="insight" className="p-4">
+                      <Card variant="insight" className="rounded-md p-4">
                         <TimelineEntry item={item} />
                       </Card>
                     )

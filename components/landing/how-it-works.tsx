@@ -53,13 +53,13 @@ export function HowItWorks() {
               </li>
             ))}
           </ol>
-          <Card variant="insight" className="mt-6 p-6">
+          <Card variant="insight" className="mt-6 rounded-md p-6">
             <h3 className="text-h3">{LEARNS.title}</h3>
             <p className="mt-2 max-w-md text-body-md">{LEARNS.description}</p>
           </Card>
         </div>
         <figure className="min-[900px]:sticky min-[900px]:top-24">
-          <div className="relative aspect-4/3 overflow-hidden rounded-image min-[900px]:aspect-4/5">
+          <div className="relative aspect-4/3 overflow-hidden rounded-sm min-[900px]:aspect-4/5">
             <Image
               src={WALKTHROUGH_PHOTO.src}
               alt={`${WALKTHROUGH_PHOTO.alt}, una de las recetas del catálogo de Fresco`}

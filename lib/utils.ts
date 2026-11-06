@@ -21,11 +21,23 @@ export const THEME_FONT_SIZES = [
   'caption',
 ];
 
+/**
+ * The corner radii the theme declares as `--radius-<name>` besides Tailwind's own sizes. Without them
+ * `rounded-card` was not a radius for tailwind-merge, so `<Card className="rounded-md">` kept both
+ * classes and the stylesheet order decided (FRESCO-1138).
+ */
+export const THEME_RADII = ['card', 'image'];
+
 // tailwind-merge only knows Tailwind's own sizes, so it read `text-caption` as
 // a text colour and dropped one of the two when a real colour sat next to it
 // (FRESCO-982). Listing the theme sizes puts them in the `font-size` group.
 const twMerge = extendTailwindMerge({
-  extend: { classGroups: { 'font-size': [{ text: THEME_FONT_SIZES }] } },
+  extend: {
+    classGroups: {
+      'font-size': [{ text: THEME_FONT_SIZES }],
+      'rounded': [{ rounded: THEME_RADII }],
+    },
+  },
 });
 
 /**

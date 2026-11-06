@@ -4,6 +4,7 @@ import type { KeyboardEvent } from 'react';
 import type { ThemePreference } from '@/lib/theme/theme';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ThemeMark } from '@/components/ui/css-glyphs';
 import { applyThemePreference, isThemePreference, THEME_COOKIE } from '@/lib/theme/theme';
 import { cn } from '@/lib/utils';
 
@@ -131,7 +132,11 @@ export function ThemeToggle({ tone = 'default', variant = 'segmented', className
               !isSelected && !isInverse && 'text-tertiary hover:bg-neutral-200',
             )}
           >
-            <Icon className="size-[18px]" strokeWidth={2} aria-hidden="true" />
+            {/* FRESCO-1138: the `binary` variant is the landing nav, which carries no Lucide icon: a ring
+                for light and a filled dot for dark. The in-app `segmented` variant keeps its icons. */}
+            {variant === 'binary'
+              ? <ThemeMark kind={option.value === 'dark' ? 'dark' : 'light'} />
+              : <Icon className="size-[18px]" strokeWidth={2} aria-hidden="true" />}
           </button>
         );
       })}

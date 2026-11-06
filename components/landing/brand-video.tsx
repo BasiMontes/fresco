@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { PlusMark } from '@/components/ui/css-glyphs';
 
 /**
  * FRESCO-1044 (WCAG 1.2.3): the video's messages are burned into the picture and it has no voice, so someone who
@@ -36,7 +36,7 @@ export function BrandVideo() {
   return (
     <section className="mx-auto max-w-5xl px-4 py-16 md:px-8">
       <video
-        className="aspect-video w-full rounded-md border border-border bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="aspect-video w-full rounded-sm border border-border bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         controls
         playsInline
         preload="none"
@@ -49,10 +49,7 @@ export function BrandVideo() {
       <details className="group mt-4 border-b border-border">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-start justify-between gap-4 rounded-sm py-2 text-label text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
           Transcripción del vídeo
-          <Plus
-            className="size-5 shrink-0 text-neutral-500 transition-transform group-open:rotate-45 group-open:text-primary"
-            aria-hidden="true"
-          />
+          <PlusMark className="transition-transform group-open:rotate-45 group-open:text-primary" />
         </summary>
         <div className="pb-4 text-body-sm text-tertiary">
           <p>El vídeo dura 21 segundos, no tiene voz y lleva música instrumental. Esto es lo que muestra, en orden:</p>
