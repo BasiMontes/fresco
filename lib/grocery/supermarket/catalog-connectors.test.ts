@@ -37,15 +37,23 @@ describe('conectorMercadona', () => {
     expect(Math.abs(producto!.precioEnvase - hoy)).toBeLessThan(CENTIMO);
   });
 
+  // FRESCO-1139: the catalog is regenerated every week, so no real price or pack size is written in these
+  // two tests. They read the catalog and the dictionary and check the format the arithmetic depends on:
+  // a price change moves nothing, a format change fails with a message that says what changed.
   test('lentejas: referencia por unidad vale el envase entero, como hoy', async () => {
+    const lentejas = MERCADONA_CATALOG_MATCH.lentejas.precioMercadona;
+    expect(lentejas.formatoReferencia).toBe('ud');
     const producto = await conectorMercadona.obtenerProducto('lentejas', ZONA_CATALOGO);
-    expect(producto?.precioEnvase).toBe(4);
-    expect(producto?.envase).toEqual({ cantidad: 485, unidad: 'g' });
+    expect(producto?.precioEnvase).toBe(lentejas.precioReferencia);
+    expect(producto?.envase).toEqual(INGREDIENT_DICTIONARY.lentejas.envaseVenta);
   });
 
-  test('aceite de oliva: 3,90 EUR/L sobre 1 L son 3,90 EUR', async () => {
+  test('aceite de oliva: el precio por litro sobre 1 L es el precio del envase', async () => {
+    const aceite = MERCADONA_CATALOG_MATCH['aceite de oliva'].precioMercadona;
+    expect(aceite.formatoReferencia).toBe('L');
+    expect(INGREDIENT_DICTIONARY['aceite de oliva'].envaseVenta).toEqual({ cantidad: 1000, unidad: 'ml' });
     const producto = await conectorMercadona.obtenerProducto('aceite de oliva', ZONA_CATALOGO);
-    expect(producto?.precioEnvase).toBe(3.9);
+    expect(producto?.precioEnvase).toBeCloseTo(aceite.precioReferencia, 2);
     expect(producto?.url).toContain('tienda.mercadona.es');
   });
 });
