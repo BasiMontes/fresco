@@ -4,7 +4,7 @@
 -- Run by `supabase test db` (CI: the e2e job in .github/workflows/pr-check.yml).
 
 begin;
-select plan(9);
+select plan(13);
 
 -- ── Auth context ───────────────────────────────────────────────────────
 -- copy_meal_plan_to_week() calls auth.uid() for its ownership check.
@@ -121,6 +121,59 @@ select throws_ok(
          (select cur from wk), (select cur_monday + 1 from wk)),
   '22023', NULL,
   'rejects a fecha_inicio that is not the Monday of the target week'
+);
+
+-- ── FRESCO-1133: past-day exclusions are not carried over ───────────────
+-- A plan generated on a Friday of last week: the generator (FRESCO-1129) marked Monday to Thursday as
+-- `excluida` because those days were already over. Friday and Saturday were excluded by the user.
+-- created_at is the Friday at midday Madrid; fecha_inicio is last week's Monday. Appended after Case 8
+-- because copying onto the next week replaces the plan Cases 5 to 8 use as their source.
+insert into public.meal_plans (id, user_id, semana_iso, fecha_inicio, created_at)
+select '77777777-7777-7777-7777-777777777777', '11111111-1111-1111-1111-111111111111',
+       to_char(cur_monday - 7, 'IYYY-"W"IW'), cur_monday - 7,
+       ((cur_monday - 7 + 4) + time '12:00') at time zone 'Europe/Madrid'
+from wk;
+
+insert into public.meal_plan_recipes (meal_plan_id, recipe_id, dia, tipo_plato, estado) values
+  ('77777777-7777-7777-7777-777777777777', null, 'lunes',     'comida',    'excluida'),
+  ('77777777-7777-7777-7777-777777777777', null, 'martes',    'comida',    'excluida'),
+  ('77777777-7777-7777-7777-777777777777', null, 'miercoles', 'comida',    'excluida'),
+  ('77777777-7777-7777-7777-777777777777', null, 'jueves',    'comida',    'excluida'),
+  ('77777777-7777-7777-7777-777777777777', null, 'viernes',   'cena',      'excluida'),
+  ('77777777-7777-7777-7777-777777777777', null, 'sabado',    'desayuno',  'excluida');
+
+-- ── Case 9: the copy of that plan onto the next week succeeds ──────────
+select lives_ok(
+  format($f$ select public.copy_meal_plan_to_week('77777777-7777-7777-7777-777777777777', %L, %L::date) $f$,
+         (select nxt from wk), (select nxt_monday from wk)),
+  'copying a plan with past-day exclusions onto the next week is allowed'
+);
+
+-- ── Case 10: the days that were already over come back fillable ────────
+select is(
+  (select count(*)::int from public.meal_plan_recipes mpr
+   join public.meal_plans mp on mp.id = mpr.meal_plan_id
+   where mp.user_id = '11111111-1111-1111-1111-111111111111' and mp.semana_iso = (select nxt from wk)
+     and mpr.dia in ('lunes', 'martes', 'miercoles', 'jueves') and mpr.estado = 'pendiente'),
+  4, 'Monday to Thursday, excluded only because they were over, are copied as pendiente'
+);
+
+-- ── Case 11: the exclusions the user chose are kept ────────────────────
+-- Friday is the day the plan was made (today itself still counts), Saturday is after it.
+select is(
+  (select count(*)::int from public.meal_plan_recipes mpr
+   join public.meal_plans mp on mp.id = mpr.meal_plan_id
+   where mp.user_id = '11111111-1111-1111-1111-111111111111' and mp.semana_iso = (select nxt from wk)
+     and mpr.dia in ('viernes', 'sabado') and mpr.estado = 'excluida'),
+  2, 'the Friday and Saturday exclusions stay excluida'
+);
+
+-- ── Case 12: every source slot was copied ──────────────────────────────
+select is(
+  (select count(*)::int from public.meal_plan_recipes mpr
+   join public.meal_plans mp on mp.id = mpr.meal_plan_id
+   where mp.user_id = '11111111-1111-1111-1111-111111111111' and mp.semana_iso = (select nxt from wk)),
+  6, 'the 6 source slots landed on the target week'
 );
 
 select * from finish();
