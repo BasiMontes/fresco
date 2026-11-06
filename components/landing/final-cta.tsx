@@ -25,7 +25,7 @@ export function FinalCta() {
       </p>
       <div className="mx-auto mt-9 flex max-w-sm flex-col gap-3">
         <LandingCtaLink location="final_cta" className={buttonVariants({ size: 'lg' })}>
-          Generar mi primer menú →
+          Generar mi primer menú
         </LandingCtaLink>
         <a href="#como-funciona" className={buttonVariants({ variant: 'ghost', size: 'lg' })}>
           ¿Cómo funciona?

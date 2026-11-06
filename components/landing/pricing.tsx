@@ -28,19 +28,12 @@ export const PRO_FEATURES = [
   'Te explica por qué eligió cada receta',
 ];
 
-function PlanFeature({ label, highlighted }: { label: string, highlighted?: boolean }) {
+// FRESCO-1134: hairline rows instead of a ✓ circle per feature (Anti Web Slop counts tick lists).
+function PlanFeature({ label }: { label: string }) {
   return (
-    <div className="flex items-start gap-2 text-body-sm text-text">
-      <span
-        className={cn(
-          'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full text-caption font-bold',
-          highlighted ? 'bg-accent-100 text-primary' : 'bg-neutral-200 text-tertiary',
-        )}
-      >
-        ✓
-      </span>
+    <li className="border-t border-border py-3 text-body-md text-text last:border-b">
       {label}
-    </div>
+    </li>
   );
 }
 
@@ -54,26 +47,29 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
 
   return (
     <section id="pricing" className="bg-primary">
-      <div className="mx-auto max-w-5xl px-4 py-16 md:px-8">
-        <h2 className="mb-8 text-h2 text-background">Sin letra pequeña. Sin trampa.</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col rounded-card border border-border bg-surface p-7">
-            <p className="text-h6 uppercase text-tertiary">Free</p>
+      <div className="mx-auto max-w-5xl px-4 py-16 md:px-8 md:py-24">
+        <h2 className="mb-12 text-h2 text-background">Sin letra pequeña. Sin trampa.</h2>
+        {/* FRESCO-1134: the Pro plan is the wide column (5fr / 7fr), not a second equal tower. */}
+        <div className="grid gap-4 min-[900px]:grid-cols-[5fr_7fr]">
+          <div className="flex flex-col rounded-card border border-border bg-surface-raised p-7">
+            <div className="mb-1 flex min-h-6 items-center">
+              <p className="text-h6 uppercase text-tertiary">Free</p>
+            </div>
             <p className="mb-1 text-h1 text-text">
               0€
               <span className="text-body-md font-normal text-tertiary">/mes</span>
             </p>
             <p className="mb-5 text-body-sm text-tertiary">Para probar sin compromiso. Sin tarjeta.</p>
-            <div className="flex-1 space-y-2.5">
+            <ul className="flex-1">
               {FREE_FEATURES.map(label => <PlanFeature key={label} label={label} />)}
-            </div>
+            </ul>
             <LandingCtaLink location="pricing_free" className={cn(buttonVariants({ size: 'lg' }), 'mt-6')}>
               Empezar gratis
             </LandingCtaLink>
           </div>
 
           <div className="flex flex-col rounded-card border-2 border-secondary bg-background p-7 shadow-lg">
-            <div className="mb-1 flex items-start justify-between">
+            <div className="mb-1 flex min-h-6 items-center gap-2">
               <p className="text-h6 uppercase text-primary">Pro</p>
               {/* FRESCO-481: near-black on amber (~6,3:1), not `text-text` —
                   cream on amber measured 2,18:1 in dark. Same pairing the
@@ -99,11 +95,11 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
             <p className="mb-5 text-body-sm text-tertiary">
               Fresco aprende de ti. Cada semana mejor que la anterior.
             </p>
-            <div className="flex-1 space-y-2.5">
-              {PRO_FEATURES.map(label => <PlanFeature key={label} label={label} highlighted />)}
-            </div>
+            <ul className="flex-1">
+              {PRO_FEATURES.map(label => <PlanFeature key={label} label={label} />)}
+            </ul>
             <LandingCtaLink location="pricing_pro" className={cn(buttonVariants({ variant: 'action', size: 'lg' }), 'mt-6')}>
-              Empezar 7 días gratis →
+              Empezar 7 días gratis
             </LandingCtaLink>
           </div>
         </div>
