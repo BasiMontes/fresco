@@ -50,7 +50,7 @@ or placeholder remains; `n/a` = not a user-facing fidelity surface.
 
 | Screen | Route | Status | Notes |
 |---|---|---|---|
-| Landing / marketing site | `/` | built | 11 components in `components/landing/`. Rebuilt from an approved-content HTML mock with real tokens, not the mock's CSS (§5-A). **Restructure mockup ratified 2026-11-06 (FRESCO-1134), build pending:** the live page keeps the order below until it ships. |
+| Landing / marketing site | `/` | built | 11 components in `components/landing/`. Rebuilt from an approved-content HTML mock with real tokens, not the mock's CSS (§5-A). **Restructure of FRESCO-1134 built 2026-11-06 (#912, `70399963`, on staging):** the order and sections of §4.1 "Restructure" are the target; `Layout` above is the order before it. |
 | Login | `/login` | built | `app/login/page.tsx` + own `layout.tsx` (auth title). |
 | Signup (email/password → OTP → guest-conflict reassign) | `/signup` | built | Multi-step. `app/signup/page.tsx` + `layout.tsx`. |
 | Forgot password | `/forgot-password` | built | `app/forgot-password/page.tsx` + `layout.tsx`. |
@@ -131,7 +131,7 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Provenance.** Content ratified from a standalone HTML mock (`fresco_landing.html`, 2026-07-26);
   rebuilt as token components, **not** the mock's CSS — see §5-A. No inflated social-proof numbers
   (§5-B).
-- **Restructure (FRESCO-1134, mockup ratified 2026-11-06, build pending).** Goal: fewer template
+- **Restructure (FRESCO-1134, mockup ratified and built 2026-11-06, #912 on staging).** Goal: fewer template
   signals (Anti Web Slop 48 % on `fresco-pre`). Target layout: `site-nav` → `hero` (unchanged) →
   `brand-video` → `how-it-works` → `pain-points` → `learns-pro` → `pricing` → `faq` → `final-cta` →
   `site-footer`. Changes against the layout above:
@@ -661,7 +661,7 @@ stories) are listed at the end.
 | FRESCO-871 | Producto: mostrar el plan anual de Pro en la landing y en la tarjeta de /profile | EPIC-FRESCO-865 Pagos y suscripción Pro | 4.1 Landing (`pricing`, columna Pro: línea "o X€/año · ahorras Y€") y 4.13 Profile (`pro-upsell-card`) · built LIVE-UI-FIRST, sin mockup, tokens existentes | — |
 | FRESCO-878 | Biblioteca: añadir una receta al menú semanal desde su tarjeta (icono de calendario y modal de día y comida) | EPIC-FRESCO-484 Platform polish | 4.10 Recipe library (`recipe-card` con icono de calendario + `add-to-menu-dialog`) · built LIVE-UI-FIRST, sin mockup, `dialog` y tokens existentes | 4.8 Calendar (destino del botón "Ver calendario") |
 | FRESCO-1070 | UX: sacar Preferencias de /profile a una subpágina y repartir las filas en dos tarjetas (Preferencias y ayuda / Legal) | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.13 Profile (`/profile`, tarjetas "Preferencias y ayuda" y "Legal") y `/profile/preferences` (no §4 spec of its own; §5-AA) · built LIVE-UI-FIRST, sin mockup, `Card`, botón de volver de FRESCO-451 y tokens existentes | 4.17 App shell (enlaces `/profile#ayuda` del sidebar) |
-| FRESCO-1134 | Producto: Landing, revisar grillas y orden de secciones para bajar la nota de Anti Web Slop (48 %) | EPIC-FRESCO-884 Preparación del lanzamiento público | 4.1 Landing (reestructura: vídeo tras el hero, pasos verticales con foto, dolor en filas, línea de tiempo Pro, planes asimétricos, sin `impact-stats`) · mockup ratificado 2026-11-06 en `.context/designs/fresco/landing-restructure/`, build pendiente | — |
+| FRESCO-1134 | Producto: Landing, revisar grillas y orden de secciones para bajar la nota de Anti Web Slop (48 %) | EPIC-FRESCO-884 Preparación del lanzamiento público | 4.1 Landing (reestructura: vídeo tras el hero, pasos verticales con foto, dolor en filas, línea de tiempo Pro, planes asimétricos, sin `impact-stats`) · mockup ratificado 2026-11-06 en `.context/designs/fresco/landing-restructure/`, construido en #912 (`70399963`, staging) | — |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
