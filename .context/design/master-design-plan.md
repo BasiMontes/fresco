@@ -50,7 +50,7 @@ or placeholder remains; `n/a` = not a user-facing fidelity surface.
 
 | Screen | Route | Status | Notes |
 |---|---|---|---|
-| Landing / marketing site | `/` | built | 11 components in `components/landing/`. Rebuilt from an approved-content HTML mock with real tokens, not the mock's CSS (§5-A). |
+| Landing / marketing site | `/` | built | 11 components in `components/landing/`. Rebuilt from an approved-content HTML mock with real tokens, not the mock's CSS (§5-A). **Restructure mockup ratified 2026-11-06 (FRESCO-1134), build pending:** the live page keeps the order below until it ships. |
 | Login | `/login` | built | `app/login/page.tsx` + own `layout.tsx` (auth title). |
 | Signup (email/password → OTP → guest-conflict reassign) | `/signup` | built | Multi-step. `app/signup/page.tsx` + `layout.tsx`. |
 | Forgot password | `/forgot-password` | built | `app/forgot-password/page.tsx` + `layout.tsx`. |
@@ -131,6 +131,29 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
 - **Provenance.** Content ratified from a standalone HTML mock (`fresco_landing.html`, 2026-07-26);
   rebuilt as token components, **not** the mock's CSS — see §5-A. No inflated social-proof numbers
   (§5-B).
+- **Restructure (FRESCO-1134, mockup ratified 2026-11-06, build pending).** Goal: fewer template
+  signals (Anti Web Slop 48 % on `fresco-pre`). Target layout: `site-nav` → `hero` (unchanged) →
+  `brand-video` → `how-it-works` → `pain-points` → `learns-pro` → `pricing` → `faq` → `final-cta` →
+  `site-footer`. Changes against the layout above:
+  - `brand-video` moves right after the hero.
+  - `how-it-works` becomes a vertical list of four steps (hairline rows, no cards, no numerals) beside
+    one sticky catalogue photo (`aspect-[4/3]` below 900 px, `aspect-[4/5]` from 900 px); the fourth
+    step keeps the `card-insight` treatment. The "Menú variado" claim of `impact-stats` ("sin comidas
+    ni cenas repetidas en la misma semana") moves into step 2; `landing-claims.test.ts` follows it.
+  - `pain-points` becomes three text rows on the `primary` band (no cards, no ✗ squares), after the
+    steps instead of before them.
+  - `learns-pro` becomes a timeline: four nodes on one line from `md`, vertical below it; the Semana
+    8+ node is the `card-insight` moment. Only these nodes settle in; the page-wide `Reveal` wrapper
+    is dropped.
+  - `impact-stats` is removed.
+  - `pricing`: the Pro plan is the wide column (5fr / 7fr from 900 px), features are hairline rows
+    instead of ✓ circles, CTA labels lose the trailing "→" (hero, pricing, final CTA).
+  - Unchanged: nav, hero copy and photos, pricing content, FAQ copy (11 questions), final CTA with the
+    waitlist form, footer.
+  Mockup: `.context/designs/fresco/landing-restructure/landing-restructure.html` (previews at 1440 and
+  390 px, `BRIEF.md` names the method: Mode C with the design set loaded). It is inspiration, not a
+  CSS source: build with the existing token components (Rule 14). Open at build time: a real `/menu`
+  screenshot in place of the dish photo beside the steps.
 
 ### 4.2 Login — `/login`
 
@@ -638,6 +661,7 @@ stories) are listed at the end.
 | FRESCO-871 | Producto: mostrar el plan anual de Pro en la landing y en la tarjeta de /profile | EPIC-FRESCO-865 Pagos y suscripción Pro | 4.1 Landing (`pricing`, columna Pro: línea "o X€/año · ahorras Y€") y 4.13 Profile (`pro-upsell-card`) · built LIVE-UI-FIRST, sin mockup, tokens existentes | — |
 | FRESCO-878 | Biblioteca: añadir una receta al menú semanal desde su tarjeta (icono de calendario y modal de día y comida) | EPIC-FRESCO-484 Platform polish | 4.10 Recipe library (`recipe-card` con icono de calendario + `add-to-menu-dialog`) · built LIVE-UI-FIRST, sin mockup, `dialog` y tokens existentes | 4.8 Calendar (destino del botón "Ver calendario") |
 | FRESCO-1070 | UX: sacar Preferencias de /profile a una subpágina y repartir las filas en dos tarjetas (Preferencias y ayuda / Legal) | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.13 Profile (`/profile`, tarjetas "Preferencias y ayuda" y "Legal") y `/profile/preferences` (no §4 spec of its own; §5-AA) · built LIVE-UI-FIRST, sin mockup, `Card`, botón de volver de FRESCO-451 y tokens existentes | 4.17 App shell (enlaces `/profile#ayuda` del sidebar) |
+| FRESCO-1134 | Producto: Landing, revisar grillas y orden de secciones para bajar la nota de Anti Web Slop (48 %) | EPIC-FRESCO-884 Preparación del lanzamiento público | 4.1 Landing (reestructura: vídeo tras el hero, pasos verticales con foto, dolor en filas, línea de tiempo Pro, planes asimétricos, sin `impact-stats`) · mockup ratificado 2026-11-06 en `.context/designs/fresco/landing-restructure/`, build pendiente | — |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -647,7 +671,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 46 stories enumerated · **46 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
+**Count:** 47 stories enumerated · **47 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.

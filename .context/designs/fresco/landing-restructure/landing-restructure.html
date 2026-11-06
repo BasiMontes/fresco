@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresco | Landing reestructurada (mockup FRESCO-1134)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400&display=swap" rel="stylesheet">
+<style>
+/* Frozen tokens, copied from DESIGN.md v2. Nothing outside this block defines a colour, font or radius. */
+:root {
+  --primary:#0F4E0E; --primary-hover:#0A3E09; --secondary:#DF8C26;
+  --tertiary:#6F5F43; --background:#FAF3E3; --surface:#F1E3C6; --raised:#FBF6EC;
+  --text:#201E1D; --border:color-mix(in srgb,#201E1D 16%,transparent);
+  --accent-100:#E1E8E0; --accent-200:#BFCFBD; --accent-600:#0A3E09; --accent-800:#031F03;
+  --accent-2-700:#8A5513; --neutral-500:#A39372;
+  --on-dark-border:color-mix(in srgb,#FAF3E3 22%,transparent);
+  --r-sm:6px; --r-md:12px; --r-image:16px; --r-card:20px; --r-full:999px;
+  --s-1:4.4px; --s-2:8.8px; --s-3:13.2px; --s-4:17.6px; --s-6:26.4px; --s-8:35.2px; --s-12:52.8px; --s-16:70.4px; --s-24:105.6px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --quick:150ms; --fast:250ms;
+  --display:'Fraunces',Georgia,serif; --sans:'Figtree',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--background);color:var(--text);font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+img,video{display:block;max-width:100%}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--r-sm)}
+.dark :focus-visible{outline-color:var(--background)}
+.wrap{max-width:1024px;margin:0 auto;padding:0 16px}
+@media(min-width:768px){.wrap{padding:0 32px}}
+h1,h2{font-family:var(--display);font-weight:400;text-wrap:balance}
+h1{font-size:clamp(36px,6vw,44px);line-height:1.04;letter-spacing:-.025em}
+h2{font-size:clamp(28px,4vw,32px);line-height:1.08;letter-spacing:-.02em}
+h3{font:600 18px/1.3 var(--sans);letter-spacing:-.005em}
+.lead{max-width:34rem;color:var(--tertiary)}
+.section{padding-block:var(--s-16)}
+@media(min-width:768px){.section{padding-block:var(--s-24)}}
+
+/* Buttons: pills, 44px target, 150ms press feedback */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 var(--s-6);border-radius:var(--r-full);border:1px solid transparent;font:600 14px/1.2 var(--sans);text-decoration:none;cursor:pointer;transition:background-color var(--quick) var(--ease-out),transform var(--quick) var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--primary);color:var(--background)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-action{background:var(--secondary);color:var(--text)}
+.btn-action:hover{background:#c97c1f}
+.btn-secondary{border-color:var(--border);color:var(--text);background:transparent}
+.btn-ghost{color:var(--primary)}
+.btn-sm{min-height:44px;padding:0 var(--s-4)}
+
+/* Nav */
+header{position:sticky;top:0;z-index:20;background:var(--background);border-bottom:1px solid var(--border)}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);padding:var(--s-3) 0}
+.nav nav{display:none;gap:var(--s-8)}
+.nav nav a{display:inline-flex;min-height:44px;align-items:center;color:var(--tertiary);font:600 14px var(--sans);text-decoration:none}
+.nav nav a:hover{color:var(--text)}
+.nav-actions{display:flex;align-items:center;gap:var(--s-2)}
+.nav-actions .ghost-login{display:none}
+.burger{min-width:44px;min-height:44px;border:1px solid var(--border);border-radius:var(--r-sm);background:transparent;display:grid;place-content:center;gap:5px;cursor:pointer}
+.burger span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px}
+@media(min-width:640px){.nav-actions .ghost-login{display:inline-flex}}
+@media(min-width:1024px){.nav nav{display:flex}.burger{display:none}}
+
+/* Hero (unchanged from the live page, photos static here) */
+.hero{display:grid;gap:var(--s-8);padding-block:var(--s-12) var(--s-16)}
+.eyebrow{display:flex;align-items:center;gap:var(--s-2);margin-bottom:var(--s-6);font:600 12px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2-700)}
+.eyebrow::before{content:"";width:24px;height:2px;border-radius:2px;background:var(--accent-2-700)}
+.hero h1 em{font-style:normal;color:var(--accent-2-700)}
+.hero .what{margin-top:var(--s-3);max-width:28rem;font-weight:600}
+.hero .pain{margin-top:var(--s-4);max-width:28rem;color:var(--tertiary)}
+.hero .pain strong{color:var(--text);font-weight:600}
+.hero-cta{margin-top:var(--s-8);display:flex;flex-direction:column;gap:var(--s-3);max-width:24rem}
+.hero-photos{display:flex;gap:var(--s-3);height:480px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 8%,#000 92%,transparent)}
+.hero-photos div{display:flex;flex-direction:column;gap:var(--s-3)}
+.hero-photos div:first-child{width:54%}.hero-photos div:last-child{width:46%;padding-top:var(--s-12)}
+.hero-photos img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:var(--r-image)}
+@media(min-width:768px){.hero{grid-template-columns:1fr 1fr;align-items:center;gap:var(--s-16);padding-block:var(--s-24)}.hero-photos{height:520px}}
+
+/* Video, right after the hero */
+.video-section{padding-block:0 var(--s-16)}
+.video-section video{width:100%;aspect-ratio:16/9;border:1px solid var(--border);border-radius:var(--r-md);background:var(--raised)}
+.video-section details{margin-top:var(--s-4);border-bottom:1px solid var(--border)}
+.video-section summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font:600 14px var(--sans)}
+
+/* Walkthrough: vertical steps, one sticky photo */
+.walk{display:grid;gap:var(--s-12);margin-top:var(--s-12)}
+.steps{list-style:none;padding:0}
+.steps li{padding:var(--s-6) 0;border-top:1px solid var(--border)}
+.steps li:last-child{border-bottom:1px solid var(--border)}
+.steps p{margin-top:var(--s-2);max-width:30rem;color:var(--tertiary)}
+.steps .learns{margin-top:var(--s-6);padding:var(--s-6);border:0;border-radius:var(--r-card);background:var(--accent-100);color:var(--accent-800)}
+.steps .learns p{color:var(--accent-800)}
+.walk figure img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r-image)}
+.walk figcaption{margin-top:var(--s-2);font-size:13px;color:var(--tertiary)}
+@media(min-width:900px){.walk{grid-template-columns:7fr 5fr;gap:var(--s-16);align-items:start}.walk figure{position:sticky;top:96px}.walk figure img{aspect-ratio:4/5}}
+
+/* Dark bands */
+.dark{background:var(--primary);color:var(--background)}
+.dark .lead{color:var(--accent-200)}
+
+/* Pain: three rows of text, no cards */
+.pain-rows{margin-top:var(--s-12);list-style:none;padding:0}
+.pain-rows li{display:grid;gap:var(--s-2);padding:var(--s-6) 0;border-top:1px solid var(--on-dark-border)}
+.pain-rows li:last-child{border-bottom:1px solid var(--on-dark-border)}
+.pain-rows strong{font:600 22px/1.25 var(--sans);letter-spacing:-.01em}
+.pain-rows span{color:var(--accent-100);max-width:30rem}
+@media(min-width:768px){.pain-rows li{grid-template-columns:5fr 7fr;gap:var(--s-8);align-items:baseline}}
+
+/* Pro: timeline, because the weeks are a real sequence */
+.pro{background:var(--surface);border-block:1px solid var(--border)}
+.pill{display:inline-block;margin-bottom:var(--s-4);padding:var(--s-1) var(--s-3);border-radius:var(--r-full);background:var(--accent-100);color:var(--primary);font:600 12px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase}
+.timeline{list-style:none;padding:0 0 0 var(--s-6);margin-top:var(--s-12);position:relative}
+.timeline::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--neutral-500)}
+.timeline li{position:relative;padding:0 0 var(--s-8)}
+.timeline li:last-child{padding-bottom:0}
+.timeline li::before{content:"";position:absolute;left:calc(-1 * var(--s-6));top:6px;width:11px;height:11px;border-radius:50%;background:var(--surface);border:2px solid var(--primary)}
+.timeline li.now::before{background:var(--primary)}
+.timeline small{display:block;font:600 12px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--tertiary);margin-bottom:var(--s-1)}
+.timeline p{margin-top:var(--s-1);color:var(--tertiary);max-width:20rem}
+.timeline li.now div{padding:var(--s-4);border-radius:var(--r-card);background:var(--accent-100);color:var(--accent-800)}
+.timeline li.now small,.timeline li.now p{color:var(--accent-800)}
+@media(min-width:768px){
+  .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-6);padding:var(--s-8) 0 0}
+  .timeline::before{left:0;right:0;top:calc(var(--s-8) + 5px);bottom:auto;width:auto;height:1px}
+  .timeline li{padding:var(--s-6) 0 0}
+  .timeline li::before{left:0;top:0}
+  .timeline li div{margin-top:var(--s-1)}
+}
+
+/* Pricing: the Pro plan is the wide one */
+.plans{display:grid;gap:var(--s-4);margin-top:var(--s-12)}
+.plan{display:flex;flex-direction:column;padding:var(--s-8);border-radius:var(--r-card);color:var(--text)}
+.plan.free{background:var(--raised);border:1px solid var(--border)}
+.plan.pro{background:var(--background);border:2px solid var(--secondary)}
+.plan h3{display:flex;align-items:center;min-height:24px;font:600 12px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--tertiary)}
+.plan.pro h3{color:var(--primary)}
+.price{margin:var(--s-2) 0 var(--s-1);font:400 44px/1.04 var(--display);letter-spacing:-.025em}
+.price small{font:400 15px var(--sans);color:var(--tertiary);letter-spacing:0}
+.plan .sub{color:var(--tertiary);margin-bottom:var(--s-6)}
+.plan ul{list-style:none;padding:0;flex:1}
+.plan li{padding:var(--s-3) 0;border-top:1px solid var(--border)}
+.plan li:last-child{border-bottom:1px solid var(--border)}
+.plan .btn{margin-top:var(--s-6)}
+.badge{display:inline-block;margin-left:var(--s-2);padding:2px var(--s-3);border-radius:var(--r-full);background:var(--secondary);color:var(--text);font:600 12px/1.4 var(--sans);letter-spacing:.08em;text-transform:uppercase}
+@media(min-width:900px){.plans{grid-template-columns:5fr 7fr;align-items:stretch}}
+
+/* FAQ */
+.faq{display:grid;gap:0 var(--s-12);margin-top:var(--s-8)}
+.faq details{border-bottom:1px solid var(--border)}
+.faq summary{display:flex;min-height:44px;align-items:center;justify-content:space-between;gap:var(--s-4);padding:var(--s-3) 0;cursor:pointer;list-style:none;font:600 14px/1.3 var(--sans)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font:400 22px/1 var(--sans);color:var(--neutral-500);transition:transform var(--quick) var(--ease-out)}
+.faq details[open] summary::after{transform:rotate(45deg);color:var(--primary)}
+.faq p{padding-bottom:var(--s-4);color:var(--tertiary);font-size:13px}
+@media(min-width:768px){.faq{grid-template-columns:1fr 1fr}}
+
+/* Final CTA + footer */
+.final{background:var(--surface);border-top:1px solid var(--border);text-align:center;padding:var(--s-24) 0}
+.final p{margin:var(--s-3) auto 0;max-width:28rem;color:var(--tertiary)}
+.final .hero-cta{margin:var(--s-8) auto 0}
+.final small{display:block;margin-top:var(--s-4);font-size:13px;color:var(--tertiary)}
+footer{padding:var(--s-12) 0}
+.foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s-6)}
+.foot nav{display:flex;flex-wrap:wrap;gap:0 var(--s-6)}
+.foot a{display:inline-flex;min-height:44px;align-items:center;font-size:13px;color:var(--accent-200)}
+footer p{margin-top:var(--s-4);padding-top:var(--s-4);border-top:1px solid var(--on-dark-border);font-size:13px;color:var(--accent-200)}
+
+/* Motion: calm, only the Pro timeline settles in. Everything else is static. */
+@media(prefers-reduced-motion:no-preference){
+  .settle{opacity:0;transform:translateY(8px);transition:opacity var(--fast) var(--ease-out),transform var(--fast) var(--ease-out)}
+  .settle.in{opacity:1;transform:none}
+}
+.note{background:var(--accent-2-700);color:var(--background);text-align:center;font:600 12px/1.4 var(--sans);padding:var(--s-2) var(--s-4)}
+</style>
+</head>
+<body>
+<div class="note">Mockup FRESCO-1134, no es la web real. Cambia: orden, vídeo arriba, pasos verticales, dolor en filas, línea de tiempo Pro, planes asimétricos. Sin cambios: nav, hero, textos de precios y FAQ.</div>
+
+<header>
+  <div class="wrap nav">
+    <a href="#" aria-label="Fresco, inicio" style="display:inline-flex;min-height:44px;align-items:center"><img src="../../../../public/brand/logo-base.svg" alt="Fresco" width="100" height="30"></a>
+    <nav aria-label="Principal"><a href="#como-funciona">¿Cómo funciona?</a><a href="#pricing">Precios</a><a href="#faq">FAQ</a></nav>
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm ghost-login" href="#">Ya tengo cuenta</a>
+      <a class="btn btn-primary btn-sm" href="#">Empezar gratis</a>
+      <button class="burger" aria-label="Abrir menú"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero" aria-labelledby="h1">
+    <div>
+      <div class="eyebrow">Tu menú semanal, listo en 30 segundos</div>
+      <h1 id="h1">Deja de improvisar en el <em>súper.</em></h1>
+      <p class="what">Fresco es el planificador de menús semanales que genera tu menú de lunes a domingo y la lista de la compra en 30 segundos.</p>
+      <p class="pain">Cada semana la misma historia: <strong>no sabes qué cocinar, compras de más y acabas tirando comida.</strong></p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#">Generar mi primer menú</a>
+        <a class="btn btn-secondary" href="#como-funciona">¿Cómo funciona?</a>
+      </div>
+    </div>
+    <div class="hero-photos" aria-hidden="true">
+      <div><img src="https://images.unsplash.com/photo-1704642153271-5f241866aaaa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8aHVldm9zJTIwcmFuY2hlcm9zJTIwbWV4aWNhbiUyMGJyZWFrZmFzdCUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NTY5NzU5M3ww&ixlib=rb-4.1.0&q=80&w=1080" alt=""><img src="https://images.unsplash.com/photo-1604909053796-048c8c9801a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8MXx8RW5zYWxhZGElMjB0ZW1wbGFkYSUyMGRlJTIwY2hhbXBpbm9uZXMlMjB5JTIwamFtb24lMjBjb29rZWQlMjBtZWFsJTIwZm9vZCUyMHBob3RvZ3JhcGh5fGVufDB8Mnx8fDE3ODU2MjI5MTR8MA&ixlib=rb-4.1.0&q=80&w=1080" alt=""><img src="https://images.unsplash.com/photo-1540832804691-58c47b913830?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8Mnx8dG9hc3QlMjBpbnRlZ3JhbCUyMHRvbWF0ZXMlMjBjaGVycnklMjBjaGVlc2UlMjBmZXRhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NzYwNDcxfDA&ixlib=rb-4.1.0&q=80&w=1080" alt=""></div>
+      <div><img src="https://images.unsplash.com/photo-1572448992068-26624d5cf341?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8OHx8YnVyZ2VyJTIwYmVlZiUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NjAyNTI3MXww&ixlib=rb-4.1.0&q=80&w=1080" alt=""><img src="https://images.unsplash.com/photo-1782089543715-13daa38402b7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8M3x8Z2FybGljJTIwc2hyaW1wJTIwZnJlc2glMjBoZXJicyUyMGxpZ2h0JTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NzAxNTc2fDA&ixlib=rb-4.1.0&q=80&w=1080" alt=""><img src="https://images.unsplash.com/photo-1708782342102-ee13e9ac16f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8N3x8YWxib25kaWdhcyUyMGVuJTIwc2Fsc2ElMjBlc3Bhbm9sYSUyMGNvb2tlZCUyMG1lYWwlMjBmb29kJTIwcGhvdG9ncmFwaHl8ZW58MHwyfHx8MTc4NjA4NjI5NHww&ixlib=rb-4.1.0&q=80&w=1080" alt=""></div>
+    </div>
+  </section>
+
+  <section class="wrap video-section" aria-label="Vídeo de presentación">
+    <video controls playsinline preload="none" poster="../../../../public/video/fresco-brand-poster.jpg" aria-label="Vídeo de presentación de Fresco">
+      <source src="../../../../public/video/fresco-brand.mp4" type="video/mp4">
+    </video>
+    <details>
+      <summary>Transcripción del vídeo</summary>
+      <p style="padding-bottom:var(--s-4);color:var(--tertiary);font-size:13px">El vídeo dura 21 segundos, no tiene voz y lleva música instrumental. La transcripción completa se mantiene como hoy.</p>
+    </details>
+  </section>
+
+  <section class="section wrap" id="como-funciona" aria-labelledby="h-how" style="padding-top:var(--s-8)">
+    <h2 id="h-how">Un domingo sin agobios.</h2>
+    <p class="lead" style="margin-top:var(--s-2)">Menos de 2 minutos la primera vez. 30 segundos cada semana siguiente.</p>
+    <div class="walk">
+      <ol class="steps">
+        <li><h3>Cuéntanos cómo coméis</h3><p>Alergias, lo que no os gusta, cuántos sois, cuánto tiempo tenéis. Una sola vez.</p></li>
+        <li><h3>Tu menú listo en 30 segundos</h3><p>21 platos de lunes a domingo, ajustados a vosotros y sin comidas ni cenas repetidas en la misma semana. Cambia lo que no te convenza con un toque.</p></li>
+        <li><h3>Lista de la compra ya hecha</h3><p>Ingredientes agrupados por pasillos. Marca lo que ya tienes. Ve al súper con la cabeza despejada.</p></li>
+        <li class="learns"><h3>Cada semana mejora contigo</h3><p>Marca lo que cocinas y lo que descartas, con un toque. En Pro, Fresco lo usa para afinar tus menús cada semana.</p></li>
+      </ol>
+      <figure>
+        <img src="https://images.unsplash.com/photo-1778104682662-0cc3a777fad3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMDE0MTEyfDB8MXxzZWFyY2h8NHx8U29wYSUyMGRlJTIwdG9tYXRlJTIweSUyMGFsYmFoYWNhJTIwY29va2VkJTIwbWVhbCUyMGZvb2QlMjBwaG90b2dyYXBoeXxlbnwwfDJ8fHwxNzg1NjIyOTE2fDA&ixlib=rb-4.1.0&q=80&w=1080" alt="Sopa de tomate y albahaca, una de las recetas del catálogo de Fresco" loading="lazy">
+        <figcaption>Sopa de tomate y albahaca, del catálogo de Fresco.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="dark section" aria-labelledby="h-pain">
+    <div class="wrap">
+      <h2 id="h-pain">¿Cuántas veces has acabado comiendo lo que sea?</h2>
+      <ul class="pain-rows">
+        <li><strong>El domingo por la tarde.</strong><span>Mirando el techo intentando recordar qué había en la nevera.</span></li>
+        <li><strong>El súper sin lista.</strong><span>Sales con el doble de lo que necesitas y olvidas la mitad de lo que ibas a buscar.</span></li>
+        <li><strong>El miércoles a las 8pm.</strong><span>Nevera medio vacía, cansancio máximo y la pregunta de siempre: ¿qué hacemos de cenar?</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="pro section" aria-labelledby="h-pro">
+    <div class="wrap">
+      <span class="pill">Solo en Pro</span>
+      <h2 id="h-pro">Aprende de lo que cocinas.</h2>
+      <p class="lead" style="margin-top:var(--s-2)">Fresco usa lo que marcas como cocinado o descartado para afinar tus menús.</p>
+      <ol class="timeline">
+        <li class="settle"><div><small>Semana 1</small><h3>Tu primer menú</h3><p>Generado desde tu perfil. Personalizado desde el primer día.</p></div></li>
+        <li class="settle"><div><small>Semana 2</small><h3>Marca lo que cocinas</h3><p>Marca lo que cocinas y lo que descartas. La semana siguiente esas recetas no vuelven.</p></div></li>
+        <li class="settle"><div><small>Semana 4</small><h3>Te acierta más</h3><p>Las recetas que cocinas con frecuencia ganan peso en tu menú y las que descartas, lo pierden.</p></div></li>
+        <li class="settle now"><div><small>Semana 8+</small><h3>Te explica el porqué</h3><p>Cada menú trae una nota con lo que Fresco ha tenido en cuenta de lo que cocinas.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="dark section" id="pricing" aria-labelledby="h-price" style="border-top:1px solid var(--on-dark-border)">
+    <div class="wrap">
+      <h2 id="h-price">Sin letra pequeña. Sin trampa.</h2>
+      <div class="plans">
+        <div class="plan free">
+          <h3>Free</h3>
+          <p class="price">0 €<small> /mes</small></p>
+          <p class="sub">Para probar sin compromiso. Sin tarjeta.</p>
+          <ul><li>Menú semanal completo</li><li>Lista de la compra automática</li><li>Filtros de dieta y alergias</li><li>Cambia cualquier receta y regenera el slot</li></ul>
+          <a class="btn btn-primary" href="#">Empezar gratis</a>
+        </div>
+        <div class="plan pro">
+          <h3>Pro<span class="badge">Más elegido</span></h3>
+          <p class="price">4,99 €<small> /mes</small></p>
+          <p class="sub">Fresco aprende de ti. Cada semana mejor que la anterior.</p>
+          <ul><li>Aprende de lo que cocinas y lo que descartas</li><li>No repite las recetas que cocinaste o descartaste hace poco</li><li>Te explica por qué eligió cada receta</li></ul>
+          <a class="btn btn-action" href="#">Empezar 7 días gratis</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap" id="faq" aria-labelledby="h-faq">
+    <h2 id="h-faq">Preguntas frecuentes</h2>
+    <div class="faq">
+      <details><summary>¿Necesito tarjeta para el plan Free?</summary><p>No. El plan Free es gratis para siempre, sin tarjeta. Solo necesitas un email.</p></details>
+      <details><summary>¿Qué pasa con mis alergias?</summary><p>Excluimos de tus menús las recetas que contienen los alérgenos que declares, entre los 14 de declaración obligatoria de la UE. Aun así, lee siempre la etiqueta de los productos que compres: la información de las recetas puede tener errores.</p></details>
+      <details><summary>¿Puedo cambiar recetas del menú?</summary><p>Sí. Puedes cambiar cualquier receta con un toque y regenerar solo ese slot sin tocar el resto.</p></details>
+      <details><summary>¿Funciona si somos veganos o celíacos?</summary><p>Sí, es uno de los casos más habituales. El sistema filtra por dieta antes de generar cualquier menú. Revisa siempre la etiqueta de los productos que compres.</p></details>
+      <details><summary>¿Puedo cancelar cuando quiera?</summary><p>Sí, en cualquier momento desde tu perfil. Sin llamadas, sin formularios, sin excusas.</p></details>
+      <details><summary>¿Las fotos de las recetas son reales?</summary><p>Algunas de las fotos de las recetas son ilustraciones generadas con inteligencia artificial, no fotografías reales del plato. Sirven para que te hagas una idea de la receta, y el resultado al cocinarla puede variar.</p></details>
+    </div>
+    <p style="margin-top:var(--s-4);font-size:13px;color:var(--tertiary)">En la web real siguen las 11 preguntas actuales, sin cambios.</p>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>El próximo domingo<br>sin agobios.</h2>
+      <p>Empieza gratis ahora mismo. Si te convence, sigue por 4,99 € al mes.</p>
+      <div class="hero-cta"><a class="btn btn-primary" href="#">Generar mi primer menú</a></div>
+      <small>7 días de Pro gratis · Sin tarjeta · Cancela cuando quieras</small>
+    </div>
+  </section>
+</main>
+
+<footer class="dark">
+  <div class="wrap">
+    <div class="foot">
+      <img src="../../../../public/brand/logo-negativo.svg" alt="Fresco" width="100" height="30">
+      <nav aria-label="Legal"><a href="#">Privacidad</a><a href="#">Términos</a><a href="#">Política de Cookies</a><a href="#">Contacto</a><a href="#">Sobre nosotros</a><a href="#">Configurar cookies</a></nav>
+    </div>
+    <p>© 2026 Fresco · Hecho con cariño (y muchas lentejas)</p>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.settle').forEach(function (el, i) {
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { setTimeout(function () { e.target.classList.add('in'); }, i * 50); io.disconnect(); } });
+  }, { threshold: 0.2 });
+  io.observe(el);
+});
+</script>
+</body>
+</html>
