@@ -25,8 +25,10 @@ export const STEPS = [
 
 // FRESCO-934: the learning loop reads the dishes the person marks as cooked or discarded (ADR-0006)
 // and only applies in Pro, so it does not learn "on its own".
+// FRESCO-1135: the title says what the engine does, not how much better it gets. No data shows that
+// learning from marks improves menus yet (`.context/reports/2026-11-06-learning-vs-discards-sample.md`).
 const LEARNS = {
-  title: 'Cada semana mejora contigo',
+  title: 'Cada semana usa lo que marcas',
   description: 'Marca lo que cocinas y lo que descartas, con un toque. En Pro, Fresco lo usa para afinar tus menús cada semana.',
 } as const;
 

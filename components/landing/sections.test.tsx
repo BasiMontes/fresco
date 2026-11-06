@@ -19,7 +19,7 @@ describe('HowItWorks — vertical walkthrough', () => {
     const items = container.querySelectorAll('ol > li');
     expect(items).toHaveLength(STEPS.length);
     expect([...items].map(li => li.querySelector('h3')?.textContent)).toEqual(STEPS.map(s => s.title));
-    expect(screen.getByText('Cada semana mejora contigo')).toBeTruthy();
+    expect(screen.getByText('Cada semana usa lo que marcas')).toBeTruthy();
   });
 
   test('has no numbered circles and one catalogue photo with an alt text', () => {

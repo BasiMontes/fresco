@@ -21,7 +21,8 @@ export const TIMELINE = [
   },
   {
     week: 'Semana 4',
-    title: 'Te acierta más',
+    // FRESCO-1135: describes the weighting, not an outcome nobody has measured yet.
+    title: 'Se ajusta a lo que cocinas',
     description: 'Las recetas que cocinas con frecuencia ganan peso en tu menú y las que descartas, lo pierden.',
     highlighted: false,
   },
