@@ -1,7 +1,6 @@
 import Image from 'next/image';
 
 import { Card } from '@/components/ui/card';
-import { HERO_PHOTOS } from './hero';
 
 // FRESCO-1134: the walkthrough is a vertical list of steps beside one catalogue photo instead of a
 // grid of four equal cards (Anti Web Slop counts equal-card grids and numbered step circles). The
@@ -32,9 +31,15 @@ const LEARNS = {
   description: 'Marca lo que cocinas y lo que descartas, con un toque. En Pro, Fresco lo usa para afinar tus menús cada semana.',
 } as const;
 
-// The "Sopa de tomate y albahaca" photo of the hero set: already live in the catalogue and checked
-// against its dish name (FRESCO-459). A real `/menu` capture could replace it later.
-const WALKTHROUGH_PHOTO = HERO_PHOTOS[3];
+// FRESCO-1140: a real capture of `/menu` (a throwaway test account with a seeded week, no personal
+// data: only the lunch and dinner cards, cropped before the sidebar, the email and the spend figure).
+// It goes stale when the menu cards change; retake it then.
+const MENU_CAPTURE = {
+  src: '/brand/menu-example.webp',
+  width: 1040,
+  height: 780,
+  alt: 'Captura de la pantalla de menú de Fresco con una comida y una cena: frijoles rancheros con carne y rabo de toro estofado, cada una con su tiempo y etiqueta',
+} as const;
 
 export function HowItWorks() {
   return (
@@ -59,18 +64,16 @@ export function HowItWorks() {
           </Card>
         </div>
         <figure className="min-[900px]:sticky min-[900px]:top-24">
-          <div className="relative aspect-4/3 overflow-hidden rounded-sm min-[900px]:aspect-4/5">
-            <Image
-              src={WALKTHROUGH_PHOTO.src}
-              alt={`${WALKTHROUGH_PHOTO.alt}, una de las recetas del catálogo de Fresco`}
-              fill
-              sizes="(max-width: 900px) 100vw, 40vw"
-              className="object-cover"
-            />
-          </div>
+          <Image
+            src={MENU_CAPTURE.src}
+            alt={MENU_CAPTURE.alt}
+            width={MENU_CAPTURE.width}
+            height={MENU_CAPTURE.height}
+            sizes="(max-width: 900px) 100vw, 40vw"
+            className="h-auto w-full rounded-sm border border-border"
+          />
           <figcaption className="mt-2 text-body-sm text-tertiary">
-            {WALKTHROUGH_PHOTO.alt}
-            , del catálogo de Fresco.
+            Menú de ejemplo, tal como lo ves en Fresco.
           </figcaption>
         </figure>
       </div>
