@@ -11,7 +11,7 @@ describe('HowItWorks — the learning card tells the truth (FRESCO-934)', () => 
   test('says the learning comes from what the person marks, and that it is a Pro thing', () => {
     renderWithProviders(<HowItWorks />);
 
-    expect(screen.getByText('Cada semana mejora contigo')).toBeTruthy();
+    expect(screen.getByText('Cada semana usa lo que marcas')).toBeTruthy();
     expect(screen.getByText(/Marca lo que cocinas y lo que descartas/)).toBeTruthy();
     expect(screen.getByText(/En Pro, Fresco lo usa para afinar tus menús/)).toBeTruthy();
   });

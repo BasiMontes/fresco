@@ -63,6 +63,19 @@ describe('GuestLandingPage', () => {
     expect(video!.compareDocumentPosition(walkthrough!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  // FRESCO-1135: no data shows yet that learning from marks improves menus
+  // (`.context/reports/2026-11-06-learning-vs-discards-sample.md`), so the page says what the engine
+  // does and never how much better it gets. Reword with data behind it, not by reverting this.
+  test('does not promise an improvement it cannot show yet', async () => {
+    await renderPage();
+
+    const text = document.body.textContent ?? '';
+    expect(text).not.toContain('mejora contigo');
+    expect(text).not.toContain('Te acierta más');
+    expect(text).not.toContain('mejor que la anterior');
+    expect(text).toContain('Cada semana usa lo que marcas');
+  });
+
   test('has no arrow at the end of the call to action labels', async () => {
     await renderPage();
 

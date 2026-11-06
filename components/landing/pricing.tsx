@@ -93,7 +93,7 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
               </p>
             )}
             <p className="mb-5 text-body-sm text-tertiary">
-              Fresco aprende de ti. Cada semana mejor que la anterior.
+              Fresco usa lo que marcas para ajustar tus menús semana a semana.
             </p>
             <ul className="flex-1">
               {PRO_FEATURES.map(label => <PlanFeature key={label} label={label} />)}
