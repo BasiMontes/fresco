@@ -76,6 +76,14 @@ describe('GuestLandingPage', () => {
     expect(text).toContain('Cada semana usa lo que marcas');
   });
 
+  // FRESCO-1138: Anti Web Slop flags "Íconos de Lucide por defecto". The landing carried 18 Lucide SVGs
+  // (clock, leaf, menu, sun, moon, check, plus). Marks are CSS now; keep the page free of them.
+  test('draws no Lucide icon on the landing', async () => {
+    await renderPage();
+
+    expect(document.querySelectorAll('svg[class*="lucide"]')).toHaveLength(0);
+  });
+
   test('has no arrow at the end of the call to action labels', async () => {
     await renderPage();
 

@@ -1,6 +1,5 @@
 'use client';
 
-import { Check } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -42,10 +41,10 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           className,
         )}
       />
-      <Check
-        className="pointer-events-none absolute size-4 text-on-brand opacity-0 peer-checked:opacity-100"
+      {/* FRESCO-1138: the tick is drawn with two borders of a rotated box, not a Lucide `Check`. */}
+      <span
         aria-hidden="true"
-        strokeWidth={3}
+        className="pointer-events-none absolute h-[9px] w-[5px] -translate-y-[1px] rotate-45 border-b-[2.5px] border-r-[2.5px] border-on-brand opacity-0 peer-checked:opacity-100"
       />
     </span>
   ),

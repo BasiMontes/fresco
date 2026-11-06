@@ -1,9 +1,9 @@
 'use client';
 
-import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import { FAQS } from '@/components/landing/faq-data';
+import { PlusMark } from '@/components/ui/css-glyphs';
 import { cn } from '@/lib/utils';
 
 export function Faq() {
@@ -26,13 +26,7 @@ export function Faq() {
                 className="flex min-h-[44px] w-full items-start justify-between gap-4 py-2 text-left text-label text-text"
               >
                 {faq.question}
-                <Plus
-                  className={cn(
-                    'size-5 shrink-0 text-neutral-500 transition-transform',
-                    isOpen && 'rotate-45 text-primary',
-                  )}
-                  aria-hidden="true"
-                />
+                <PlusMark className={cn('transition-transform', isOpen && 'rotate-45 text-primary')} />
               </button>
               {isOpen && (
                 <p id={`faq-answer-${index}`} className="mt-2 text-body-sm text-tertiary">

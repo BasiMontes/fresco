@@ -1,4 +1,3 @@
-import { Clock, Leaf } from 'lucide-react';
 import Image from 'next/image';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -207,25 +206,17 @@ export function Hero() {
           </a>
         </div>
 
-        <div className="mt-7 flex flex-col gap-3 border-t border-border pt-7 sm:flex-row sm:gap-6">
-          <div className="flex items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
-              <Clock className="size-4" strokeWidth={2} />
-            </span>
-            <p className="text-body-sm text-tertiary">
-              <strong className="block text-body-sm font-bold text-text">Menos tiempo decidiendo</strong>
-              qué cocinar cada semana
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-100 text-primary">
-              <Leaf className="size-4" strokeWidth={2} />
-            </span>
-            <p className="text-body-sm text-tertiary">
-              <strong className="block text-body-sm font-bold text-text">Menos comida tirada</strong>
-              compras justo lo que necesitas
-            </p>
-          </div>
+        {/* FRESCO-1138: the two decorative icons (Lucide clock and leaf in a circle) are gone; the two
+            benefits read as plain text under a hairline. */}
+        <div className="mt-7 flex flex-col gap-3 border-t border-border pt-7 sm:flex-row sm:gap-8">
+          <p className="text-body-sm text-tertiary">
+            <strong className="block text-body-sm font-bold text-text">Menos tiempo decidiendo</strong>
+            qué cocinar cada semana
+          </p>
+          <p className="text-body-sm text-tertiary">
+            <strong className="block text-body-sm font-bold text-text">Menos comida tirada</strong>
+            compras justo lo que necesitas
+          </p>
         </div>
       </div>
 
