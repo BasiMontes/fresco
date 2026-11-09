@@ -27,7 +27,7 @@ export function ShoppingListSummary({ pendientes, resumen, total, fuentesPrecios
           {' '}
           {pendientes === 1 ? 'artículo pendiente' : 'artículos pendientes'}
         </p>
-        <p data-testid="shopping_list_summary_total" className="text-right text-h5 font-heading text-primary">
+        <p data-testid="shopping_list_summary_total" className="text-right text-h5 font-heading font-normal text-primary">
           {total !== undefined
             ? formatPrecio(total)
             : `${formatImporte(resumen.coste_estimado_min)}–${formatPrecio(resumen.coste_estimado_max)}`}
