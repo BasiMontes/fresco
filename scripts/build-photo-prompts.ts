@@ -11,7 +11,7 @@
 // and run again.
 //
 // Pipeline:
-//   1. bun scripts/build-photo-prompts.ts [batchSize=20] > /tmp/prompts.json
+//   1. bun scripts/build-photo-prompts.ts [batchSize=20] [--style=clay] > /tmp/prompts.json
 //   2. bun scripts/generate-photos-cloudflare.ts /tmp/prompts.json ./generated-photos --apply
 //   3. (review the images, vision-verify)
 //   4. bun scripts/apply-photo-generations.ts /tmp/prompts.json ./generated-photos --apply
@@ -19,11 +19,14 @@
 // Same `foto_url is null and activo = true` filter as fetch-recipe-photos.ts,
 // so this never spends generation effort on soft-deleted catalog rows.
 
+import type { PromptStyle } from './photo-prompt-en.ts';
 import { buildEnglishPrompt } from './photo-prompt-en.ts';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const BATCH_SIZE = Number(process.argv[2] ?? 20);
+// --style=clay: matte clay 3D icons instead of photographs (FRESCO-1146). Anything else keeps the photo prompts.
+const STYLE: PromptStyle = process.argv.includes('--style=clay') ? 'clay' : 'photo';
 
 interface RecipeRow {
   id: string
@@ -51,7 +54,7 @@ async function main() {
 
   for (const recipe of recipes) {
     if (output.length >= BATCH_SIZE) { break; }
-    const built = buildEnglishPrompt(recipe);
+    const built = buildEnglishPrompt(recipe, STYLE);
     if (!built.ok) {
       for (const term of built.missing) { unknown.set(term, [...unknown.get(term) ?? [], recipe.nombre]); }
       continue;

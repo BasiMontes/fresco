@@ -213,6 +213,54 @@ describe('buildEnglishPrompt', () => {
   });
 });
 
+describe('buildEnglishPrompt in the clay style', () => {
+  const sopa = { nombre: 'Sopa de calabaza', ingredientes_principales: ['calabaza'], pasos_resumen: [] };
+  const batido = { nombre: 'Batido de fresas', ingredientes_principales: ['fresas'], pasos_resumen: [] };
+  const ensalada = { nombre: 'Ensalada griega', ingredientes_principales: ['tomate', 'pepino', 'queso feta'], pasos_resumen: [] };
+
+  test('frames the dish as a matte clay 3D icon, with no photograph, tableware or table', () => {
+    const result = buildEnglishPrompt(ensalada, 'clay');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) { return; }
+    expect(result.prompt).toStartWith('Soft matte clay 3D icon of');
+    expect(result.prompt).toContain('feta');
+    expect(result.prompt).not.toMatch(/photograph|Served in|tablecloth|window|grain/i);
+    expect(result.prompt).toContain('the object fills most of the frame');
+  });
+
+  test('keeps the palette in the background only, so the food keeps its natural colors', () => {
+    const result = buildEnglishPrompt(sopa, 'clay');
+
+    expect(result.ok && result.prompt).toContain('natural food colors');
+    expect(result.ok && result.prompt).toContain('soft cream background with a faint warm green glow');
+    expect(result.ok && result.prompt).not.toMatch(/\b(orange|green) (soup|dish|food)\b/i);
+  });
+
+  test('avoids the wording of the two style prompts Cloudflare rejected as NSFW, and stays positive-only', () => {
+    for (const recipe of [sopa, batido, ensalada]) {
+      const result = buildEnglishPrompt(recipe, 'clay');
+      expect(result.ok).toBe(true);
+      if (!result.ok) { continue; }
+      expect(result.prompt).not.toMatch(/\b(inflated|plump|jelly|glossy|highlights)\b/i);
+      expect(result.prompt).not.toMatch(/\b(no|without|sin)\b/i);
+      expect(result.prompt.length).toBeLessThanOrEqual(2048);
+    }
+  });
+
+  test('still fails closed on an ingredient missing from the glossary', () => {
+    const result = buildEnglishPrompt({ nombre: 'Sopa rara', ingredientes_principales: ['ingrediente-que-no-existe'], pasos_resumen: [] }, 'clay');
+
+    expect(result.ok).toBe(false);
+  });
+
+  test('leaves the photo prompt untouched when no style is given', () => {
+    expect(buildEnglishPrompt(ensalada)).toEqual(buildEnglishPrompt(ensalada, 'photo'));
+    const photo = buildEnglishPrompt(ensalada);
+    expect(photo.ok && photo.prompt).toStartWith('Natural overhead food photograph of');
+  });
+});
+
 describe('INGREDIENTS_EN', () => {
   test('has lowercase keys only, so lookups by lowercased name work', () => {
     const offenders = Object.keys(INGREDIENTS_EN).filter(k => k !== k.toLowerCase().trim());
