@@ -387,6 +387,16 @@ const MAX_VISIBLE_INGREDIENTS = 5;
 // because identical framing across a whole catalogue is what gives the AI look away.
 const STYLE_SUFFIX = 'soft daylight from a window on one side, gentle natural shadows, shallow depth of field, realistic food texture, home-cooked plating that is a little rustic and slightly imperfect, composition slightly off-center, fine natural grain.';
 
+// 2026-11-09 (FRESCO-1146): the owner chose matte clay 3D icons over generated photographs for recipes without
+// a photo (four styles compared, then four variations of the 3D one). Cloudflare's input filter rejected two
+// style prompts as NSFW, both built around "glossy inflated ... puffy" and "glossy jelly-like ... plump ...
+// highlights" wording. The exact trigger word is NOT known (`puffy` alone passes: the fritters lead uses it), so
+// this wording stays plain and avoids that vocabulary. The palette lives in the background only, because naming
+// green and orange in the dish itself recoloured the food.
+const CLAY_SUFFIX = 'Plasticine-like rounded chunky shapes with smooth satin finish, natural food colors, simplified friendly forms, the object fills most of the frame, centered, soft diffused lighting, gentle shadow underneath, soft cream background with a faint warm green glow, polished 3D render.';
+
+export type PromptStyle = 'photo' | 'clay';
+
 const VESSELS: Record<DishType['vessel'], string[]> = {
   plate: ['a handmade off-white stoneware plate', 'a matte speckled ceramic plate', 'a simple white ceramic plate with a slightly irregular rim'],
   bowl: ['a handmade stoneware bowl', 'a matte ceramic bowl in warm off-white', 'a simple white ceramic bowl'],
@@ -415,7 +425,8 @@ function firstCue(table: Cue[], text: string, steps = ''): string | null {
   return table.find(({ pattern, unlessSteps }) => pattern.test(text) && !unlessSteps?.test(steps))?.cue ?? null;
 }
 
-function frame(subject: string, vessel: DishType['vessel'], nombre: string): string {
+function frame(subject: string, vessel: DishType['vessel'], nombre: string, style: PromptStyle): string {
+  if (style === 'clay') { return `Soft matte clay 3D icon of ${subject}. ${CLAY_SUFFIX}`; }
   const hash = hashOf(normalize(nombre));
   const vessels = VESSELS[vessel];
   const tableware = vessels[hash % vessels.length];
@@ -429,7 +440,7 @@ function joinList(items: string[]): string {
   return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
 }
 
-export function buildEnglishPrompt(recipe: PhotoRecipe): EnglishPromptResult {
+export function buildEnglishPrompt(recipe: PhotoRecipe, style: PromptStyle = 'photo'): EnglishPromptResult {
   const ingredients = recipe.ingredientes_principales ?? [];
   const missing = ingredients.filter(i => !(i.toLowerCase().trim() in INGREDIENTS_EN));
   if (missing.length > 0) { return { ok: false, missing }; }
@@ -442,7 +453,7 @@ export function buildEnglishPrompt(recipe: PhotoRecipe): EnglishPromptResult {
     .slice(0, MAX_VISIBLE_INGREDIENTS);
   if (visible.length === 0) {
     if (!dish.alone) { return { ok: false, missing: ['(no visible ingredient)'] }; }
-    return { ok: true, prompt: frame(dish.alone, dish.vessel, recipe.nombre) };
+    return { ok: true, prompt: frame(dish.alone, dish.vessel, recipe.nombre, style) };
   }
 
   const steps = normalize((recipe.pasos_resumen ?? []).join(' '));
@@ -458,5 +469,5 @@ export function buildEnglishPrompt(recipe: PhotoRecipe): EnglishPromptResult {
   const hasLeadIngredient = !dish.leadWithout || ingredients.some(i => i.toLowerCase().trim() === dish.leadWithout!.ingredient);
   const lead = hasLeadIngredient ? dish.lead : dish.leadWithout!.lead;
   const subject = `${lead} ${joinList(visible)}${cues.length ? `, ${cues.join(', ')}` : ''}`;
-  return { ok: true, prompt: frame(subject, dish.vessel, recipe.nombre) };
+  return { ok: true, prompt: frame(subject, dish.vessel, recipe.nombre, style) };
 }
