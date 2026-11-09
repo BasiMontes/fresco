@@ -34,6 +34,9 @@ const LEARNS = {
 // FRESCO-1140: a real capture of `/menu` (a throwaway test account with a seeded week, no personal
 // data: only the lunch and dinner cards, cropped before the sidebar, the email and the spend figure).
 // It goes stale when the menu cards change; retake it then.
+// FRESCO-1145: `sizes` states the real rendered width (section padding 32px, then 64px from `md`; the
+// column is 5/12 of the 960px content box minus the 64px gap, so at most 373px) so the browser does not
+// ask for a larger candidate than it needs. `40vw` overstated it on wide screens.
 const MENU_CAPTURE = {
   src: '/brand/menu-example.webp',
   width: 1040,
@@ -69,7 +72,7 @@ export function HowItWorks() {
             alt={MENU_CAPTURE.alt}
             width={MENU_CAPTURE.width}
             height={MENU_CAPTURE.height}
-            sizes="(max-width: 900px) 100vw, 40vw"
+            sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 899px) calc(100vw - 64px), 373px"
             className="h-auto w-full rounded-sm border border-border"
           />
           <figcaption className="mt-2 text-body-sm text-tertiary">
