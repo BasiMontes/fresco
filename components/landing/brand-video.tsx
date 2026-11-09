@@ -40,7 +40,7 @@ export function BrandVideo() {
         controls
         playsInline
         preload="none"
-        poster="/video/fresco-brand-poster.jpg"
+        poster="/video/fresco-brand-poster.webp"
         aria-label="Vídeo de presentación de Fresco"
       >
         <source src="/video/fresco-brand.mp4" type="video/mp4" />
