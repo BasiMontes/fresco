@@ -14,7 +14,7 @@ describe('BrandVideo', () => {
 
     const video = screen.getByLabelText('Vídeo de presentación de Fresco');
     expect(video).toHaveAttribute('preload', 'none');
-    expect(video).toHaveAttribute('poster', '/video/fresco-brand-poster.jpg');
+    expect(video).toHaveAttribute('poster', '/video/fresco-brand-poster.webp');
   });
 
   test('exposes controls and never autoplays', () => {
