@@ -1,7 +1,7 @@
 ---
 version: beta
 name: Fresco
-description: Menús semanales que aprenden de lo que realmente cocinas. Warm cream-and-clay editorial system pairing corporate green with corporate orange for Spain's household meal planners. v2 (FRESCO-436) — calm editorial direction, Fraunces display, one-accent discipline, hairline-first surfaces.
+description: Menús semanales que aprenden de lo que realmente cocinas. Warm cream-and-clay editorial system pairing corporate green with corporate orange for Spain's household meal planners. v2 (FRESCO-436) — calm editorial direction, Young Serif display, one-accent discipline, hairline-first surfaces.
 colors:
   primary: '#0F4E0E'
   secondary: '#DF8C26'
@@ -43,24 +43,24 @@ colors:
   neutral-800: '#493F2C'
   neutral-900: '#2F281C'
 typography:
-  # v2 (FRESCO-437): display face is Fraunces (variable), applied to h1/h2 ONLY.
+  # v2 (FRESCO-437): display face is Young Serif (single weight 400), applied to h1/h2 ONLY.
   # h3–h6, card titles, and button labels are Figtree. See §Typography for the role rule.
   h1:
-    fontFamily: Fraunces
+    fontFamily: Young Serif
     fontSize: 44px
     fontWeight: 400
     lineHeight: 1.04
     letterSpacing: -0.025em
   h2:
-    fontFamily: Fraunces
+    fontFamily: Young Serif
     fontSize: 32px
     fontWeight: 400
     lineHeight: 1.08
     letterSpacing: -0.02em
   display-light:
-    fontFamily: Fraunces
+    fontFamily: Young Serif
     fontSize: 28px
-    fontWeight: 300
+    fontWeight: 400
     lineHeight: 1.15
     letterSpacing: -0.015em
   h3:
@@ -235,7 +235,7 @@ This one sentence governs every visual decision in the system (FRESCO-436 redesi
 
 What it means in practice:
 
-- **Calm over busy.** Large but *light* headlines (Fraunces at weight 400, never bold), generous whitespace, few visible controls per screen. The posture of a printed weekly planner, not a dashboard.
+- **Calm over busy.** Large but *light* headlines (Young Serif at weight 400, never bold), generous whitespace, few visible controls per screen. The posture of a printed weekly planner, not a dashboard.
 - **The photo leads.** The interface stays close to monochrome — warm cream, structural green, one accent — so the food supplies the colour. A recipe grid should read as photography with captions, not as chrome with thumbnails.
 - **Restraint is the premium signal.** Authority comes from the calm of a 400-weight headline at 44px and a hairline rule, not from heavier weights, coloured fills, or drop shadows bolted on.
 - **Unhurried motion.** Nothing bounces. Transitions are short, eased, and quiet (see §Motion).
@@ -269,7 +269,7 @@ Fresco is a Spain-focused weekly meal-planning app for **Laura, the exhausted pl
 
 The visual theme, in the founder's own words from the brand canvas, is direct: **"Cálido, redondeado, verde + naranja"** — warm, rounded, green + orange (`design/handoff/fresco/brand-guide.dc.html`). The brand tagline frames the product identity end to end: *"Menús semanales que aprenden de lo que realmente cocinas"* (Weekly menus with AI that learns from what you actually cook). Every token in this system exists to make that tagline felt on first paint, not just claimed in copy.
 
-Concretely: a warm cream background (`#FAF3E3`) instead of clinical white, a hand-picked corporate green (`#0F4E0E`) for trust and primary action, and a corporate orange (`#DF8C26`) reserved for the single highest-intent moment on a screen. Corners are soft but not bouncy — **v2 (FRESCO-436)** dialled the card/panel radii back toward an editorial read while keeping buttons and tags as full pills (the brand-shape signal); see §Shapes. This system was originally authored in Claude Design (`claude.ai/design`) and exported as a brand-guide canvas; **v1** of this file wrapped those tokens verbatim. **v2** is the first deliberate departure — a calm editorial direction (Fraunces display, one-accent discipline, hairline-first surfaces, an unhurried motion intent over the existing transitions-dev tokens) ratified screen-by-screen under epic FRESCO-436. Where a value now differs from the `design/handoff/fresco/brand-guide.dc.html` canvas, the change is annotated inline with its ticket.
+Concretely: a warm cream background (`#FAF3E3`) instead of clinical white, a hand-picked corporate green (`#0F4E0E`) for trust and primary action, and a corporate orange (`#DF8C26`) reserved for the single highest-intent moment on a screen. Corners are soft but not bouncy — **v2 (FRESCO-436)** dialled the card/panel radii back toward an editorial read while keeping buttons and tags as full pills (the brand-shape signal); see §Shapes. This system was originally authored in Claude Design (`claude.ai/design`) and exported as a brand-guide canvas; **v1** of this file wrapped those tokens verbatim. **v2** is the first deliberate departure — a calm editorial direction (Young Serif display, one-accent discipline, hairline-first surfaces, an unhurried motion intent over the existing transitions-dev tokens) ratified screen-by-screen under epic FRESCO-436. Where a value now differs from the `design/handoff/fresco/brand-guide.dc.html` canvas, the change is annotated inline with its ticket.
 
 This system was designed to counter one specific risk named in the Constitution: that Free-tier users won't perceive the Pro-tier learning moat unless it's made *visible* (`.context/business/market-context.md` — Risks). The "insight card" component (§Components) exists directly to solve that — it is the one place in the UI where the system says out loud, in the primary accent color, "I adjusted for you."
 
@@ -310,12 +310,12 @@ The palette does not change. What changes is how tightly it is applied. Per the 
 
 Two families, strictly paired — one display, one body. **v2 (FRESCO-437)** replaced the v1 display face (Caprasimo, a rounded novelty slab that was applied to every heading level, every card title, and every button label — which flattened hierarchy and cheapened the system) with a calm editorial serif used only where it earns its place.
 
-- **Display — Fraunces** (variable; weights 300 and 400 in use): an old-style serif with real optical sizing and a `WONK`/`SOFT` axis, giving it a bespoke character without a licence fee. Used at weight **400** for `h1`/`h2` and at weight **300** (`display-light`) for the occasional editorial subhead. Never bold — per the thesis, authority comes from calm, not weight. Tracking is negative and tightens with size (`-0.025em` at `h1`, `-0.02em` at `h2`). Fallback stack: `Fraunces, Georgia, "Times New Roman", serif`.
+- **Display — Young Serif** (single weight 400; FRESCO-1142 replaced Fraunces): a warm, rounded display serif that keeps the editorial feel without the cream-and-serif default look the Anti Web Slop score flags. Used at weight **400** for `h1`/`h2`; it has no lighter weight, so `display-light` also renders at 400. Never bold — per the thesis, authority comes from calm, not weight. Tracking is negative and tightens with size (`-0.025em` at `h1`, `-0.02em` at `h2`). Fallback stack: `"Young Serif", Georgia, "Times New Roman", serif`.
 - **Body — Figtree** (weights 400/600): the workhorse. Everything that is read quickly and often — recipe steps, shopping-list items, form labels, meta lines — **plus** `h3`–`h6`, card titles, and every button label. Fallback stack: `Figtree, -apple-system, BlinkMacSystemFont, sans-serif`.
 
-**The role rule (v2):** Fraunces appears on `h1` and `h2` ONLY. `h3`–`h6` are Figtree 600. Card titles (including recipe cards) are Figtree, capped at 2 lines (`line-clamp: 2`) so the title never competes with the photo. Button labels are Figtree 600. If a heading is not a page-level or section-level headline, it is Figtree. **One sanctioned exception (FRESCO-445):** the landing footer closes on an oversized Fraunces wordmark ("Fresco", ≥60px, weight 400) used as a *graphic element*, not a heading — the editorial signature. The landing hero uses real recipe photography for its product imagery, never illustrative emoji.
+**The role rule (v2):** Young Serif appears on `h1` and `h2` ONLY. `h3`–`h6` are Figtree 600. Card titles (including recipe cards) are Figtree, capped at 2 lines (`line-clamp: 2`) so the title never competes with the photo. Button labels are Figtree 600. If a heading is not a page-level or section-level headline, it is Figtree. **One sanctioned exception (FRESCO-445):** the landing footer closes on an oversized Young Serif wordmark ("Fresco", ≥60px, weight 400) used as a *graphic element*, not a heading — the editorial signature. The landing hero uses real recipe photography for its product imagery, never illustrative emoji.
 
-- **Scale:** `h1` 44px / `h2` 32px (Fraunces) → `h3` 22px … `h6` 12px (Figtree; `h6` is uppercase, `0.08em` tracking — a kicker/label, e.g. "Fresco aprendió", not a headline).
+- **Scale:** `h1` 44px / `h2` 32px (Young Serif) → `h3` 22px … `h6` 12px (Figtree; `h6` is uppercase, `0.08em` tracking — a kicker/label, e.g. "Fresco aprendió", not a headline).
 - **Body:** 15px base, line-height `1.55` — generous enough for recipe instructions read at arm's length in a kitchen. Never below 15px for anything read while cooking.
 
 ## Layout
@@ -440,9 +440,9 @@ Z-index layer convention (not sourced from the canvas, standard default): base `
 The vibrant `#DF8C26` stays the brand color everywhere it is a surface; it just never carries light text and is never itself small body text on the page canvas.
 
 **Do (v2 — FRESCO-437):**
-- Do use **Fraunces on `h1`/`h2` only.** Every other heading, every card title, every button label is Figtree. A card title in the display face pisa the photo and flattens hierarchy — that was the v1 mistake.
+- Do use **Young Serif on `h1`/`h2` only.** Every other heading, every card title, every button label is Figtree. A card title in the display face pisa the photo and flattens hierarchy — that was the v1 mistake.
 - Do give **every card a hairline border** (`{colors.border}`), unconditionally, on top of `surface-raised`. The hairline is the guarantee a card never disappears into the cream page.
-- Do keep headlines at **weight 400** (or 300 for `display-light`). Never bold a Fraunces headline — authority comes from calm and scale, not weight.
+- Do keep headlines at **weight 400**. Never bold a Young Serif headline — authority comes from calm and scale, not weight.
 - Do pull motion values from the existing `--duration-*` / `--ease-*` tokens in `globals.css` (transitions-dev / FRESCO-247), preferring the calm end. No hardcoded `300ms ease-in-out`; add no new spring/overshoot curve.
 - Do use the page-rhythm steps (`space-12/16/24`) between major blocks — the v1 scale stopped at `space-8` and everything felt packed.
 
