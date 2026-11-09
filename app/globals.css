@@ -689,7 +689,8 @@
   :where(h1, h2).text-h3,
   :where(h1, h2).text-h4,
   :where(h1, h2).text-h5,
-  :where(h1, h2).text-h6 {
+  :where(h1, h2).text-h6,
+  :where(h1, h2).text-label {
     font-family:
       var(--font-body-face),
       Figtree,
