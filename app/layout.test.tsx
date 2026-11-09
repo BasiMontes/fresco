@@ -9,7 +9,7 @@ import '@/tests/mocks/next-navigation';
 // inside Next's compiler, so it is replaced by two plain font objects.
 
 void mock.module('next/font/google', () => ({
-  Fraunces: () => ({ variable: 'font-heading-test' }),
+  Young_Serif: () => ({ variable: 'font-heading-test' }),
   Figtree: () => ({ variable: 'font-body-test' }),
 }));
 

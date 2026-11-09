@@ -8,7 +8,7 @@ import { canonicalUrl } from './canonical';
 
 // `next/font/google` only works inside Next's compiler (same stand-in as app/layout.test.tsx).
 void mock.module('next/font/google', () => ({
-  Fraunces: () => ({ variable: 'font-heading-test' }),
+  Young_Serif: () => ({ variable: 'font-heading-test' }),
   Figtree: () => ({ variable: 'font-body-test' }),
 }));
 

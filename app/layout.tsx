@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ThemePreference } from '@/lib/theme/theme';
-import { Figtree, Fraunces } from 'next/font/google';
+import { Figtree, Young_Serif } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 import { PostHogProvider } from '@/app/providers/posthog-provider';
@@ -32,27 +32,28 @@ import './globals.css';
 // that renders `<Skeleton>` imports the registry itself instead — see
 // `app/(app)/menu/loading.tsx` etc.
 
-// DESIGN.md v2 Typography (FRESCO-438): Fraunces (variable display serif) for
-// h1/h2 only — weight 400, 300 for `display-light`; SOFT/WONK/opsz axes give it
-// bespoke character. Figtree (400/600/700) for body copy AND h3–h6, card titles,
-// button labels. Exposed as CSS variables consumed by the
-// `--font-heading` / `--font-sans` theme tokens and the split `h1,h2` / `h3..h6`
-// rules in globals.css.
+// DESIGN.md v2 Typography (FRESCO-438, display face swapped in FRESCO-1142):
+// Young Serif (single-weight 400 display serif) for h1/h2 only. It replaced
+// Fraunces after the Anti Web Slop score flagged the cream-and-serif default
+// look; Young Serif keeps the warm editorial feel. It ships one weight, so the
+// `display-light` (300) token renders at 400. Figtree (400/600/700) for body
+// copy AND h3–h6, card titles, button labels. Exposed as CSS variables consumed
+// by the `--font-heading` / `--font-sans` theme tokens and the split
+// `h1,h2` / `h3..h6` rules in globals.css.
 // FRESCO-496: `display: 'optional'` (not the default `'swap'`) — this is the
 // large, above-the-fold h1/h2 display face on the guest landing page, and
-// next/font's automatic fallback-metric override (ascent/descent/size-adjust)
-// is computed from the font file's default named instance, not this
-// component's aggressively customized SOFT/WONK/opsz axis values, so a swap
-// at this size can still measurably shift layout on a slow mobile connection
-// (web.dev's own CLS guide recommends `optional` to eliminate font-swap CLS
-// outright). `optional` means the browser keeps the fallback for the rest of
-// the page's lifetime if Fraunces isn't cached/fast enough — an acceptable
-// trade for a decorative headline face, unlike Figtree's body copy below,
-// which keeps the default `swap` (small font size, so a swap there is a
-// far smaller CLS contributor, and swap avoids invisible text on body copy).
-const fraunces = Fraunces({
+// next/font's automatic fallback-metric override only approximates the real
+// glyph widths, so a swap at this size can still measurably shift layout on a
+// slow mobile connection (web.dev's own CLS guide recommends `optional` to
+// eliminate font-swap CLS outright). `optional` means the browser keeps the
+// fallback for the rest of the page's lifetime if the font isn't cached/fast
+// enough, so the FIRST visit paints the fallback — an acceptable trade for a
+// decorative headline face, unlike Figtree's body copy below, which keeps the
+// default `swap` (small font size, so a swap there is a far smaller CLS
+// contributor, and swap avoids invisible text on body copy).
+const headingFont = Young_Serif({
+  weight: '400',
   subsets: ['latin'],
-  axes: ['SOFT', 'WONK', 'opsz'],
   variable: '--font-heading-face',
   display: 'optional',
 });
@@ -155,7 +156,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang="es"
       data-theme={theme === 'system' ? undefined : theme}
-      className={`${fraunces.variable} ${figtree.variable}`}
+      className={`${headingFont.variable} ${figtree.variable}`}
     >
       <head>
         {/* FRESCO-722: preconnect candidate Lighthouse's network-dependency-tree
