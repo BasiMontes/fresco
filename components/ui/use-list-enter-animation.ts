@@ -24,6 +24,12 @@ import { useEffect, useRef } from 'react';
  * server-rendered with their data as props). A list that starts empty and
  * fills in asynchronously would not get the initial stagger — acceptable for
  * the current consumers.
+ *
+ * FRESCO-1147: `getItemProps` is idempotent. Asking twice for the same key in one
+ * render gives the same answer, because React Strict Mode renders a component twice
+ * and a child can call the function it received from its parent. It used to return
+ * `{}` on the second call, so in development the client lost the attributes the
+ * server had rendered and React logged a hydration mismatch.
  */
 
 const STAGGER_CAP = 8;
@@ -38,6 +44,7 @@ export function useListEnterAnimation(): (key: string, index: number) => ListEnt
   const firstRenderRef = useRef(true);
 
   const isFirstRender = firstRenderRef.current;
+  // Keys handed out in this render. Adding to it is idempotent; the effect below commits it.
   const newThisRender = new Set<string>();
 
   useEffect(() => {
@@ -48,7 +55,7 @@ export function useListEnterAnimation(): (key: string, index: number) => ListEnt
   });
 
   return (key, index) => {
-    if (seenRef.current.has(key) || newThisRender.has(key)) {
+    if (seenRef.current.has(key)) {
       return {};
     }
     newThisRender.add(key);
