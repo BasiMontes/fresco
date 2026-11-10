@@ -59,8 +59,11 @@ interface CloudflareResponse {
 const DAILY_QUOTA_CODE = 4006;
 
 class DailyQuotaError extends Error {
-  constructor() {
-    super('Cloudflare daily free allocation (10,000 neurons) is used up; it resets at 00:00 UTC. Rerun then: finished images are skipped.');
+  // `detail` is Cloudflare's own text, so the message says what it answered instead of promising a reset
+  // time. The allocation is documented to reset at 00:00 UTC, but on 2026-11-10 it was still refused at
+  // 10:59 UTC and nothing in this repo had spent it, so that hour is not reliable.
+  constructor(detail: string) {
+    super(`Cloudflare refused the call (429, code ${DAILY_QUOTA_CODE}): ${detail}. Do not count on a reset hour: probe with a single image before a batch. A rerun skips the images that are already finished.`);
   }
 }
 
@@ -85,10 +88,11 @@ async function generate(accountId: string, token: string, prompt: string): Promi
     });
 
     if (res.status === 429 || res.status >= 500) {
-      // 429 with code 4006 is the daily free allocation (10,000 neurons, reset
-      // 00:00 UTC), not a burst limit: retrying only burns time, so stop the run.
+      // 429 with code 4006 is the daily free allocation (10,000 neurons), not a burst limit: retrying
+      // only burns time, so stop the run.
       const body = await res.json().catch(() => null) as CloudflareResponse | null;
-      if (body?.errors?.some(e => e.code === DAILY_QUOTA_CODE)) { throw new DailyQuotaError(); }
+      const quotaError = body?.errors?.find(e => e.code === DAILY_QUOTA_CODE);
+      if (quotaError) { throw new DailyQuotaError(quotaError.message); }
       lastError = `HTTP ${res.status}`;
       await sleep(DELAY_MS * attempt * 2);
       continue;
