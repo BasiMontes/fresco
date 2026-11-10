@@ -1,5 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
-import { deleteTrackedUsers, sendSeedRequest } from './test-user-factory';
+import { recordConsents, sendSeedRequest } from './test-helpers';
+import { deleteTrackedUsers } from './test-user-factory';
 
 /**
  * FRESCO-1136: a 502 from the gateway of the local Supabase stack ("An invalid response was received from
@@ -106,5 +107,80 @@ describe('deleteTrackedUsers', () => {
     finally {
       spy.mockRestore();
     }
+  });
+});
+
+/**
+ * FRESCO-1148: `recordConsents` seeds the consents of every factory user, and a 502 from the gateway on that
+ * one write failed the scenario (the gap #916 left when it retried the other seeding writes).
+ */
+describe('recordConsents', () => {
+  const realFetch = globalThis.fetch;
+  const previousEnv = { url: process.env.NEXT_PUBLIC_SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE_KEY };
+
+  function restoreEnv(name: string, value: string | undefined) {
+    if (value === undefined) {
+      delete process.env[name];
+    }
+    else {
+      process.env[name] = value;
+    }
+  }
+
+  function stubFetch(statuses: number[]) {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      const status = statuses[calls++];
+      return new Response(status === 200 ? 'null' : 'bad gateway', { status });
+    }) as unknown as typeof fetch;
+    return { calls: () => calls };
+  }
+
+  function setup(statuses: number[]) {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://seed.test';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-test';
+    return stubFetch(statuses);
+  }
+
+  function restore() {
+    globalThis.fetch = realFetch;
+    restoreEnv('NEXT_PUBLIC_SUPABASE_URL', previousEnv.url);
+    restoreEnv('SUPABASE_SERVICE_ROLE_KEY', previousEnv.key);
+  }
+
+  test('writes once when the first answer is fine', async () => {
+    const stub = setup([200]);
+    try {
+      await recordConsents('user-1', ['terms']);
+      expect(stub.calls()).toBe(1);
+    }
+    finally { restore(); }
+  });
+
+  test('retries a 502 and succeeds on the next answer', async () => {
+    const stub = setup([502, 200]);
+    try {
+      await recordConsents('user-1', ['terms']);
+      expect(stub.calls()).toBe(2);
+    }
+    finally { restore(); }
+  });
+
+  test('gives up after three attempts and reports the last status and body', async () => {
+    const stub = setup([502, 502, 502]);
+    try {
+      await expect(recordConsents('user-1', ['terms', 'privacy'])).rejects.toThrow('record_consents(terms,privacy) failed: 502 bad gateway');
+      expect(stub.calls()).toBe(3);
+    }
+    finally { restore(); }
+  });
+
+  test('does not retry a 4xx, it is a real answer', async () => {
+    const stub = setup([400]);
+    try {
+      await expect(recordConsents('user-1', ['terms'])).rejects.toThrow('failed: 400');
+      expect(stub.calls()).toBe(1);
+    }
+    finally { restore(); }
   });
 });

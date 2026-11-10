@@ -236,18 +236,60 @@ export async function recordHealthDataConsent(userId: string): Promise<void> {
   await recordConsents(userId, ['health_data']);
 }
 
+const SEED_ATTEMPTS = 3;
+const SEED_BACKOFF_MS = 400;
+
+interface SeedResponse {
+  ok: () => boolean
+  status: () => number
+}
+
+/**
+ * FRESCO-1136: sends a seeding request and retries it when the gateway of the local Supabase stack answers
+ * 5xx ("An invalid response was received from the upstream server", a 502 seen on 2026-11-06 in the e2e run
+ * of #912, twice, and in the rerun of #913, once). Before this, one 502 failed the scenario and only
+ * Playwright's whole-scenario retry hid it, which counted against the flaky budget
+ * (`scripts/e2e-flaky-budget.ts`, fails from 3).
+ *
+ * Only 5xx is retried, with a short growing pause, up to three attempts. A 4xx is a real answer and is
+ * returned at once. `retried` tells the caller that an earlier attempt got a 5xx: that attempt may have
+ * reached the database before the gateway answered, so a 409 (duplicate) on a later attempt means the row
+ * is already there, and the caller decides what that means for its own request.
+ *
+ * FRESCO-1148: lives here, next to `recordConsents`, because the factory imports this module and the
+ * other way round would be an import cycle.
+ */
+export async function sendSeedRequest<T extends SeedResponse>(
+  send: () => Promise<T>,
+  sleep: (ms: number) => Promise<void> = async ms => new Promise((resolve) => { setTimeout(resolve, ms); }),
+): Promise<{ res: T, retried: boolean }> {
+  let res = await send();
+  let retried = false;
+  for (let attempt = 1; attempt < SEED_ATTEMPTS && res.status() >= 500; attempt++) {
+    retried = true;
+    await sleep(SEED_BACKOFF_MS * attempt);
+    res = await send();
+  }
+  return { res, retried };
+}
+
 /**
  * Records consent rows for `userId` through `record_consents` with the service role (FRESCO-1007).
  * `version` defaults to the CURRENT texts, so a seeded user is already up to date and the blocking
  * re-consent dialog does not cover the screen under test.
  */
 export async function recordConsents(userId: string, kinds: string[], version: string = LEGAL_TEXTS_VERSION): Promise<void> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_consents`, {
-    method: 'POST',
-    headers: serviceRoleHeaders(),
-    body: JSON.stringify({ p_user_id: userId, p_kinds: kinds, p_version: version }),
+  // FRESCO-1148: a 5xx from the gateway is retried like the other seeding writes. `record_consents` ignores a
+  // repeated (user, kind, version), so repeating a write that did reach the database is harmless.
+  const { res } = await sendSeedRequest(async () => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_consents`, {
+      method: 'POST',
+      headers: serviceRoleHeaders(),
+      body: JSON.stringify({ p_user_id: userId, p_kinds: kinds, p_version: version }),
+    });
+    return { ok: () => response.ok, status: () => response.status, text: async () => response.text() };
   });
-  if (!res.ok) {
-    throw new Error(`[test-helpers] record_consents(${kinds.join(',')}) failed: ${res.status} ${await res.text()}`);
+  if (!res.ok()) {
+    throw new Error(`[test-helpers] record_consents(${kinds.join(',')}) failed: ${res.status()} ${await res.text()}`);
   }
 }
