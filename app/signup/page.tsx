@@ -9,6 +9,7 @@ import { SignupEmailConflict } from '@/components/signup/signup-email-conflict';
 import { SignupFormStep } from '@/components/signup/signup-form-step';
 import { SignupOtpStep } from '@/components/signup/signup-otp-step';
 import { SignupPendingConfirmation } from '@/components/signup/signup-pending-confirmation';
+import { useGuestMenu } from '@/components/signup/use-guest-menu';
 import { useSignupOtp } from '@/components/signup/use-signup-otp';
 import { useSignupReassign } from '@/components/signup/use-signup-reassign';
 import { useSignupSubmit } from '@/components/signup/use-signup-submit';
@@ -39,6 +40,8 @@ export default function SignupPage() {
   const [step, setStep] = useState<'form' | 'otp'>('form');
   // FRESCO-799: one Turnstile token per auth request; reset after each.
   const captcha = useCaptcha();
+  // FRESCO-1173: the "keep your menu" copy is for a guest that has one.
+  const guestHasMenu = useGuestMenu();
 
   const reassign = useSignupReassign({ email, captcha, setNavigating });
   const otp = useSignupOtp({ email, password, captcha, setEmailConflict, setNavigating });
@@ -52,7 +55,7 @@ export default function SignupPage() {
     content = <SignupPendingConfirmation email={email} />;
   }
   else if (step === 'form') {
-    content = <SignupFormStep email={email} password={password} onEmailChange={setEmail} onPasswordChange={setPassword} submit={submit} captcha={captcha} />;
+    content = <SignupFormStep email={email} password={password} onEmailChange={setEmail} onPasswordChange={setPassword} submit={submit} captcha={captcha} guestHasMenu={guestHasMenu} />;
   }
   else {
     content = <SignupOtpStep email={email} otp={otp} captcha={captcha} />;
