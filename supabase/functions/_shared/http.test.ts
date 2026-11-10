@@ -45,6 +45,54 @@ describe('toErrorResponse', () => {
   })
 })
 
+// FRESCO-1178 — a deliberate 5xx (the menu could not be saved, a secret is missing) reaches Sentry, a 4xx does not.
+describe('toErrorResponse and Sentry (FRESCO-1178)', () => {
+  type Capture = NonNullable<Parameters<typeof toErrorResponse>[1]['capture']>
+  const recorder = () => {
+    const calls: Parameters<Capture>[] = []
+    const capture: Capture = (error, context) => {
+      calls.push([error, context])
+      return Promise.resolve()
+    }
+    return { calls, capture }
+  }
+
+  it('reports an HttpError 500 to Sentry, tagged with the function, and still answers with its status', async () => {
+    const { calls, capture } = recorder()
+    const error = new HttpError('No se pudo guardar el menú', 500)
+    const res = await toErrorResponse(error, {
+      req: reqWith({ Authorization: `Bearer ${jwt({ sub: 'user-1' })}` }),
+      fnName: 'generate-meal-plan',
+      capture,
+    })
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: 'No se pudo guardar el menú' })
+    expect(calls).toHaveLength(1)
+    expect(calls[0][0]).toBe(error)
+    expect(calls[0][1]).toMatchObject({ fn: 'generate-meal-plan', userId: 'user-1', method: 'POST' })
+    expect(calls[0][1].errorId).toBeTruthy()
+  })
+
+  it('reports any status from 500 up (a 503 too)', async () => {
+    const { calls, capture } = recorder()
+    await toErrorResponse(new HttpError('sin servicio', 503), { req: reqWith({}), fnName: 'f', capture })
+    expect(calls).toHaveLength(1)
+  })
+
+  it.each([400, 401, 403, 404, 409, 429])('does not report a %i: it is the caller\'s mistake', async (status) => {
+    const { calls, capture } = recorder()
+    const res = await toErrorResponse(new HttpError('no', status), { req: reqWith({}), fnName: 'f', capture })
+    expect(res.status).toBe(status)
+    expect(calls).toHaveLength(0)
+  })
+
+  it('still reports an unexpected error, once', async () => {
+    const { calls, capture } = recorder()
+    await toErrorResponse(new Error('boom'), { req: reqWith({}), fnName: 'f', capture })
+    expect(calls).toHaveLength(1)
+  })
+})
+
 function bodyReq(body: string): Request {
   return new Request('https://x.supabase.co/functions/v1/f', {
     method: 'POST',
