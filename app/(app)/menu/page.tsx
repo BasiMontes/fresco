@@ -12,6 +12,7 @@ import { SavingsEstimateCards } from '@/components/menu/savings-estimate-cards';
 import { AllergenReminder } from '@/components/ui/allergen-reminder';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { getDateFromIsoWeek, getIsoWeek } from '@/lib/date/iso-week';
+import { hoyEnMadrid } from '@/lib/date/madrid-date';
 import { perfilCompraDesde } from '@/lib/grocery/product-compatibility';
 import { costeSemanalEstimado } from '@/lib/grocery/weekly-cost';
 import { loadMenuPageData } from '@/lib/menu/load-menu-page-data';
@@ -112,7 +113,7 @@ export default async function MenuPage() {
       {/* FRESCO-1000: the promise is "we filter by what each recipe declares", never "this is safe". */}
       <AllergenReminder />
 
-      <MenuTodaysMeals plan={plan} dietaryPreferences={dietaryPreferences} favoriteIds={favoriteIds} />
+      <MenuTodaysMeals plan={plan} dietaryPreferences={dietaryPreferences} favoriteIds={favoriteIds} mondayIso={mondayIso} hoyIso={hoyEnMadrid()} />
 
       <LatestRecipesSection recipes={ultimasRecetas} favoriteRecipeIds={favoriteIds} />
     </div>
