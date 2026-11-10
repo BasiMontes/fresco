@@ -1,8 +1,8 @@
 import type { MercadonaProduct } from '../../scripts/gen-mercadona-catalog';
 import { describe, expect, test } from 'bun:test';
-import { buildMercadonaCatalogMatch } from '../../scripts/gen-mercadona-catalog';
+import { buildMercadonaCatalogMatch, renderFile } from '../../scripts/gen-mercadona-catalog';
 import { BASE_QUANTITIES } from '../../supabase/functions/generate-shopping-list/consolidator';
-import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
+import { MERCADONA_CATALOG_FECHA, MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 
 /**
  * FRESCO-503 — every entry of `mercadona-catalog.generated.ts` must be
@@ -132,5 +132,16 @@ describe('buildMercadonaCatalogMatch — matching heuristic (inline fixture, no 
     // 58 g pack vs. a 2 g recipe portion is a 29x multiple — past the 20x guard.
     const match = buildMercadonaCatalogMatch(catalog, { comino: { cantidad: 2, unidad: 'g' } });
     expect(match.comino).toBeUndefined();
+  });
+});
+
+// FRESCO-1177: the generated file carries the date of the dataset snapshot, so the age rules can apply.
+describe('mercadona-catalog.generated — snapshot date', () => {
+  test('renderFile writes the snapshot date it is given', () => {
+    expect(renderFile({}, '2026-11-09T06:35:46.000Z')).toContain('export const MERCADONA_CATALOG_FECHA = \'2026-11-09T06:35:46.000Z\';');
+  });
+
+  test('the committed file carries a real instant, not the epoch', () => {
+    expect(new Date(MERCADONA_CATALOG_FECHA).getTime()).toBeGreaterThan(Date.UTC(2026, 0, 1));
   });
 });

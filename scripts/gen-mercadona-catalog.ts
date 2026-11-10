@@ -35,6 +35,7 @@ import { emparejarIngrediente } from '../lib/grocery/supermarket/matcher.ts';
 import { productoDeDataset } from '../lib/grocery/supermarket/mercadona-dataset.ts';
 import { normalizeNombre } from '../lib/text/normalize-nombre.ts';
 import { BASE_QUANTITIES } from '../supabase/functions/generate-shopping-list/consolidator.ts';
+import { DATASET_API } from './check-mercadona-dataset-freshness.ts';
 import { datasetBase, datasetRevision } from './lib/mercadona-dataset-revision.ts';
 
 export const CACHE_DIR = new URL('.cache/mercadona-catalog/', import.meta.url);
@@ -95,6 +96,26 @@ async function cachedFetch(path: string): Promise<string> {
   const text = await res.text();
   await writeFile(cachePath, text);
   return text;
+}
+
+/**
+ * FRESCO-1177 — when the dataset snapshot behind the catalog was published (the dataset's own `lastModified`,
+ * the same date `refresh-supermarket-prices.ts` calls the snapshot date). Cached next to the data and keyed by
+ * revision like it, so `--check` stays offline and reads the date of the snapshot it checks.
+ */
+async function loadSnapshotDate(): Promise<string> {
+  await mkdir(CACHE_DIR, { recursive: true });
+  const revision = datasetRevision();
+  const cachePath = new URL(`${revision}__snapshot-date.txt`, CACHE_DIR);
+  if (existsSync(cachePath)) { return (await readFile(cachePath, 'utf8')).trim(); }
+  const res = await fetch(revision === 'main' ? DATASET_API : `${DATASET_API}/revision/${revision}`);
+  if (!res.ok) { throw new Error(`dataset metadata failed: ${res.status}`); }
+  const { lastModified } = await res.json() as { lastModified?: string };
+  if (typeof lastModified !== 'string' || Number.isNaN(new Date(lastModified).getTime())) {
+    throw new TypeError(`the dataset reports no valid lastModified: "${String(lastModified)}"`);
+  }
+  await writeFile(cachePath, lastModified);
+  return lastModified;
 }
 
 /** Downloads (or reads from the local cache) the full flattened product catalog. */
@@ -170,7 +191,7 @@ export function buildMercadonaCatalogMatch(
   return out;
 }
 
-export function renderFile(match: Record<string, MercadonaMatch>): string {
+export function renderFile(match: Record<string, MercadonaMatch>, fecha: string): string {
   const entries = Object.entries(match)
     .map(([clave, m]) => `  ${JSON.stringify(clave)}: ${JSON.stringify(m)},`)
     .join('\n');
@@ -188,6 +209,9 @@ export interface MercadonaMatch {
   shareUrl: string
 }
 
+/** When the dataset snapshot these prices come from was published (FRESCO-1177): the age rules read it. */
+export const MERCADONA_CATALOG_FECHA = '${fecha}';
+
 /** Real Mercadona pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */
 export const MERCADONA_CATALOG_MATCH: Record<string, MercadonaMatch> = {
 ${entries}
@@ -199,7 +223,7 @@ if (import.meta.main) {
   console.log('Loading Mercadona catalog (cached locally on first run)...');
   const catalog = await loadCatalog();
   const match = buildMercadonaCatalogMatch(catalog, BASE_QUANTITIES);
-  const rendered = renderFile(match);
+  const rendered = renderFile(match, await loadSnapshotDate());
   const target = new URL('../lib/grocery/mercadona-catalog.generated.ts', import.meta.url);
   console.log(
     `Matched ${Object.keys(match).length} ingredients against ${catalog.length} Mercadona products.`,

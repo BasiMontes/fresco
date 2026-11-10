@@ -1,8 +1,8 @@
 import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
-import { describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, setSystemTime, test } from 'bun:test';
 import { makeFixtureRecipe } from '@/lib/fixtures/recipe';
-import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
+import { CONSUM_CATALOG_FECHA, CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
 import {
   consolidateRecipeIngredients,
   estimateMenuCost,
@@ -13,6 +13,11 @@ import {
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingListItem } from './map-item';
 import { MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
+
+// FRESCO-1177: a catalog price now has a date and stops counting after 30 days, so the clock is pinned to the
+// day the catalogs were read; without it these tests would start failing a month after each regeneration.
+beforeAll(() => setSystemTime(new Date(CONSUM_CATALOG_FECHA)));
+afterAll(() => setSystemTime());
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 const TIPOS: TipoPlato[] = ['desayuno', 'comida', 'cena'];
@@ -62,6 +67,16 @@ describe('parseFormatoReferencia', () => {
 });
 
 describe('packPrice', () => {
+  // FRESCO-1177: the weekly estimate applies the same 30-day rule as the list rows.
+  test('a catalog price older than 30 days falls back to the average price, one within 30 days is used', () => {
+    const real = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
+    const fecha = new Date(real.precios[0].observadoEn).getTime();
+    const dia = 86_400_000;
+
+    expect(packPrice(real, new Date(fecha + 10 * dia))).toBe(real.precios[0].precioEnvase);
+    expect(packPrice(real, new Date(fecha + 40 * dia))).not.toBe(real.precios[0].precioEnvase);
+  });
+
   test('ingrediente con match real de Mercadona (aceite de oliva) usa el precio de envase de precios', () => {
     const real = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
     expect(real.origenEnvase).toBe('mercadona');

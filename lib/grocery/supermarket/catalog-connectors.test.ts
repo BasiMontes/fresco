@@ -1,9 +1,9 @@
-import { describe, expect, test } from 'bun:test';
-import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
+import { afterAll, beforeAll, describe, expect, setSystemTime, test } from 'bun:test';
+import { CONSUM_CATALOG_FECHA, CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
 import { packPrice } from '../estimate-menu-cost';
 import { INGREDIENT_DICTIONARY } from '../ingredient-dictionary';
 import { mapShoppingListItem, preciosNormalizados } from '../map-item';
-import { MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
+import { MERCADONA_CATALOG_FECHA, MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
 import { conectorConsum, conectorMercadona, crearConectorDeCatalogo, idMercadonaDeUrl, productoDeCatalogo, productosParaCarga, ZONA_CATALOGO } from './catalog-connectors';
 import { crearRegistro, puedeEjecutarse } from './connector';
 import { crearConectorFalso } from './fake-connector';
@@ -16,7 +16,29 @@ import { registroSupermercados } from './registry';
  * that chain, so a drift in either catalog or in the conversion fails here.
  */
 
+// FRESCO-1177: a catalog price now has a date and stops counting after 30 days, so the clock is pinned to the
+// day the catalogs were read; without it these tests would start failing a month after each regeneration.
+beforeAll(() => setSystemTime(new Date(CONSUM_CATALOG_FECHA)));
+afterAll(() => setSystemTime());
+
 const CENTIMO = 0.005;
+
+// FRESCO-1177: every product carries the date of its catalog, never the Unix epoch of "unknown".
+describe('observadoEn of the catalog connectors', () => {
+  test('every Mercadona and Consum product carries its catalog date', () => {
+    for (const [conector, fecha] of [[conectorMercadona, MERCADONA_CATALOG_FECHA], [conectorConsum, CONSUM_CATALOG_FECHA]] as const) {
+      const productos = productosParaCarga(conector);
+      expect(productos.length).toBeGreaterThan(0);
+      for (const { producto } of productos) { expect(producto.observadoEn).toBe(fecha); }
+    }
+  });
+
+  test('the dates are real instants after the epoch', () => {
+    for (const fecha of [MERCADONA_CATALOG_FECHA, CONSUM_CATALOG_FECHA]) {
+      expect(new Date(fecha).getTime()).toBeGreaterThan(Date.UTC(2026, 0, 1));
+    }
+  });
+});
 
 function entradasDe(origen: 'mercadona' | 'consum') {
   return Object.values(INGREDIENT_DICTIONARY).filter(e => e.origenEnvase === origen);
@@ -166,7 +188,7 @@ describe('permission gate on every read path', () => {
   const entradas = [{ clave: 'arroz', envaseVenta: { cantidad: 1000, unidad: 'g' }, precioEnvase: 1.2, url: 'https://tienda.example/arroz' }];
   const base = { cadena: 'cadenafalsa', nombre: 'Cadena falsa' } as const;
   const conectorCon = (permiso: 'concedido' | 'riesgo-aceptado' | 'pendiente' | 'rechazado', permisoRef: string) =>
-    crearConectorDeCatalogo({ ...base, permiso, permisoRef }, entradas);
+    crearConectorDeCatalogo({ ...base, permiso, permisoRef, observadoEn: '2026-11-09T06:35:46.000Z' }, entradas);
 
   test('a runnable connector serves its catalog (control)', async () => {
     const conector = conectorCon('concedido', 'FIXTURE-1');
@@ -197,7 +219,7 @@ describe('permission gate on every read path', () => {
  */
 describe('a chain nobody wrote code for', () => {
   const conector = crearConectorDeCatalogo(
-    { cadena: 'cadenafalsa', nombre: 'Cadena falsa', permiso: 'concedido', permisoRef: 'FIXTURE-1' },
+    { cadena: 'cadenafalsa', nombre: 'Cadena falsa', permiso: 'concedido', permisoRef: 'FIXTURE-1', observadoEn: '2026-11-09T06:35:46.000Z' },
     [{ clave: 'arroz', envaseVenta: { cantidad: 1000, unidad: 'g' }, precioEnvase: 1.2, url: 'https://cadena.example/arroz' }],
   );
   const registro = crearRegistro([conector]);
