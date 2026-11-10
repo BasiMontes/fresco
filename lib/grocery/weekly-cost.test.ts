@@ -13,7 +13,7 @@ function menuWith(ingredientes: string[]): MenuGrid {
   return { ...EMPTY_MENU, lunes: { desayuno: null, comida: recipe, cena: null } } as unknown as MenuGrid;
 }
 
-describe('costeSemanalEstimado (FRESCO-792 — one weekly figure for /menu and the shopping list)', () => {
+describe('costeSemanalEstimado (FRESCO-792 — the whole-menu weekly figure shown on /menu)', () => {
   test('equals estimateMenuCost for the same plan and household size, so both screens agree', () => {
     const menu = menuWith(['leche', 'aceite de oliva', 'avena']);
 
