@@ -47,6 +47,74 @@ async function describeLibraryState(page: Page): Promise<string> {
   });
 }
 
+/**
+ * FRESCO-1148: "Buscar una receta por ingrediente" failed three times in CI with the library at 658 recipes and
+ * the search box focused but EMPTY, after #929 had made the step wait for hydration; a local stack could not
+ * reproduce it (40 of 40 green under CPU load, text kept even with the scripts delayed 8 s). The first attempt
+ * leaves no trace in CI, so this records a timeline of the box inside the page and the navigations seen from
+ * outside, and `withSearchDiagnostics` puts both in the failure message. Test-only, it changes no behaviour.
+ */
+const navigations: string[] = [];
+
+async function startSearchTrace(page: Page): Promise<void> {
+  navigations.length = 0;
+  const startedAt = Date.now();
+  page.on('framenavigated', (frame) => {
+    if (frame === page.mainFrame()) { navigations.push(`${Date.now() - startedAt}ms ${frame.url()}`); }
+  });
+  await page.evaluate(() => {
+    const trace: string[] = [];
+    (window as unknown as { __searchTrace: string[] }).__searchTrace = trace;
+    const startedAt = performance.now();
+    const note = (what: string) => trace.push(`${Math.round(performance.now() - startedAt)}ms ${what}`);
+    const find = () => document.querySelector<HTMLInputElement>('[data-testid="recipe_search_input"]');
+    let node = find();
+    let value = node?.value ?? '';
+    let focused = node !== null && document.activeElement === node;
+    note(`start value="${value}" focused=${focused}`);
+    window.setInterval(() => {
+      const current = find();
+      if (current !== node) {
+        note(current ? 'input node REPLACED' : 'input node REMOVED');
+        node = current;
+        value = current?.value ?? '';
+        focused = current !== null && document.activeElement === current;
+        return;
+      }
+      if (current && current.value !== value) {
+        note(`value "${value}" -> "${current.value}"`);
+        value = current.value;
+      }
+      const isFocused = current !== null && document.activeElement === current;
+      if (isFocused !== focused) {
+        note(`focused=${isFocused}`);
+        focused = isFocused;
+      }
+    }, 25);
+  });
+}
+
+async function describeSearchBox(page: Page): Promise<string> {
+  const trace = await page
+    .evaluate(() => (window as unknown as { __searchTrace?: string[] }).__searchTrace ?? ['trace lost: the document was replaced'])
+    .catch(() => ['page not readable']);
+  const box = await page
+    .getByTestId('recipe_search_input')
+    .evaluate(el => ({ value: (el as HTMLInputElement).value, focused: document.activeElement === el }), undefined, { timeout: 2000 })
+    .catch(() => null);
+  return JSON.stringify({ state: await describeLibraryState(page), box, navigations, trace });
+}
+
+async function withSearchDiagnostics<T>(page: Page, what: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  }
+  catch (error) {
+    const reason = String((error as Error).message).split('\n')[0];
+    throw new Error(`${what} (${reason}). Buscador: ${await describeSearchBox(page)}`, { cause: error });
+  }
+}
+
 async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void> {
   try {
     await loginToApp(page, testUser);
@@ -70,6 +138,7 @@ async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void
     const input = document.querySelector('[data-testid="recipe_search_input"]');
     return input !== null && Object.keys(input).some(key => key.startsWith('__reactFiber$'));
   }, null, { timeout: 30_000 });
+  await startSearchTrace(page);
 }
 
 /** The "N recetas encontradas" figure the library shows under the controls. */
@@ -188,8 +257,10 @@ Then(/^ve solo las recetas del catálogo que coinciden con ese nombre$/, async (
 });
 
 Then(/^ve las recetas del catálogo que contienen ese ingrediente$/, async ({ page }) => {
-  await expect.poll(async () => shownCount(page)).toBeGreaterThan(0);
-  await expect.poll(async () => shownCount(page)).toBeLessThan(ctx.totalCount);
+  await withSearchDiagnostics(page, 'La búsqueda por ingrediente no filtró la Biblioteca', async () => {
+    await expect.poll(async () => shownCount(page)).toBeGreaterThan(0);
+    await expect.poll(async () => shownCount(page)).toBeLessThan(ctx.totalCount);
+  });
 });
 
 Then(/^ve solo recetas de cena del catálogo$/, async ({ page }) => {
@@ -353,7 +424,9 @@ Given(/^que Laura busca y aplica filtros en la Biblioteca$/, async ({ page, test
   // meal-type filter that keeps the result set non-empty (same combo the
   // existing @biblioteca scenarios assert `> 0` on).
   await applyDrawerFilter(page, 'recipe_filter_section_comida', 'Cena');
-  await expect(page.getByTestId('recipe_search_input')).toHaveValue('pollo');
+  await withSearchDiagnostics(page, 'El buscador perdió el texto al aplicar el filtro', async () => {
+    await expect(page.getByTestId('recipe_search_input')).toHaveValue('pollo');
+  });
   await expect.poll(async () => shownCount(page)).toBeGreaterThan(0);
   libraryUrlState.url = page.url();
   libraryUrlState.count = await shownCount(page);
