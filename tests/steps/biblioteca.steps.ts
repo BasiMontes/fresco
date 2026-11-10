@@ -61,6 +61,15 @@ async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void
   catch (error) {
     throw new Error(`Biblioteca: /recipes no mostró el grid. Estado: ${await describeLibraryState(page)}`, { cause: error });
   }
+  // FRESCO-1148: the grid and the search box are in the server HTML, so they are visible before React has
+  // hydrated. The box is controlled (`useState(query)`), and text typed in that window is overwritten with the
+  // server value when React takes over: CI run 42595964093 read "" where the step had typed "pollo", and runs
+  // 42561014118 and 42589621668 never narrowed the 658 recipes. Same wait as `revealCalendarDay`: React puts
+  // its fiber key on a DOM node once it has hydrated it.
+  await page.waitForFunction(() => {
+    const input = document.querySelector('[data-testid="recipe_search_input"]');
+    return input !== null && Object.keys(input).some(key => key.startsWith('__reactFiber$'));
+  }, null, { timeout: 30_000 });
 }
 
 /** The "N recetas encontradas" figure the library shows under the controls. */
