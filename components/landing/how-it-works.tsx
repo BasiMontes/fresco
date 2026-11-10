@@ -34,9 +34,12 @@ const LEARNS = {
 // FRESCO-1140: a real capture of `/menu` (a throwaway test account with a seeded week, no personal
 // data: only the lunch and dinner cards, cropped before the sidebar, the email and the spend figure).
 // It goes stale when the menu cards change; retake it then.
-// FRESCO-1145: `sizes` states the real rendered width (section padding 32px, then 64px from `md`; the
-// column is 5/12 of the 960px content box minus the 64px gap, so at most 373px) so the browser does not
-// ask for a larger candidate than it needs. `40vw` overstated it on wide screens.
+// FRESCO-1145: `sizes` states the real rendered width so the browser does not ask for a larger candidate
+// than it needs. `40vw` overstated it on wide screens. The spacing scale is x1.1 (`app/globals.css`:
+// `--spacing-4` is 17.6px, `--spacing-8` is 35.2px, `--spacing-16` is 70.4px), so the section padding is
+// 35.2px in total, then 70.4px from `md`; the column is 5/12 of the 953.6px content box (64rem minus that
+// padding) minus the 70.4px gap, so at most 368px. This states the layout accurately; it was not measured
+// to save bytes (`next/image` never upscales and the capture is 1040px wide).
 const MENU_CAPTURE = {
   src: '/brand/menu-example.webp',
   width: 1040,
@@ -72,7 +75,7 @@ export function HowItWorks() {
             alt={MENU_CAPTURE.alt}
             width={MENU_CAPTURE.width}
             height={MENU_CAPTURE.height}
-            sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 899px) calc(100vw - 64px), 373px"
+            sizes="(max-width: 767px) calc(100vw - 35.2px), (max-width: 899px) calc(100vw - 70.4px), 368px"
             className="h-auto w-full rounded-sm border border-border"
           />
           <figcaption className="mt-2 text-body-sm text-tertiary">
