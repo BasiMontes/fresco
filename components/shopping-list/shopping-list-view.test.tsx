@@ -197,6 +197,19 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
     expect(screen.queryByText(/99,00€/)).toBeNull();
   });
 
+  // FRESCO-1172 — the list total covers only the rows with a price; it says so instead of posing as the menu's cost.
+  test('the summary names its total as the priced rows and says how many rows it covers', () => {
+    const conFilaSinPrecio: ShoppingListPersistido = {
+      ...LIST_PRICES,
+      pasillos: [{ nombre: 'Lácteos y huevos', orden: 1, items: [...ITEMS, { nombre: 'producto sin catalogo xyz', cantidad: 1, unidad: 'unidades', comprado: false }] }],
+    };
+    renderWithProviders(<ShoppingListView list={conFilaSinPrecio} compra={compraDe(conFilaSinPrecio)} />);
+
+    expect(screen.getByText('Total de los artículos con precio')).toBeTruthy();
+    expect(screen.getByTestId('shopping_list_price_coverage')).toHaveTextContent('2 de 3 artículos con precio');
+    expect(screen.queryByText('Total estimado del menú de esta semana')).toBeNull();
+  });
+
   test('falls back to the stored range when no row carries a price', () => {
     const sinPrecios: ShoppingListPersistido = {
       ...LIST_PRICES,
@@ -205,6 +218,8 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
     renderWithProviders(<ShoppingListView list={sinPrecios} compra={compraDe(sinPrecios)} />);
 
     expect(screen.getByText(/99,00–99,00€/)).toBeTruthy();
+    expect(screen.getByText('Total estimado del menú de esta semana')).toBeTruthy();
+    expect(screen.queryByTestId('shopping_list_price_coverage')).toBeNull();
   });
 });
 

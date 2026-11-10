@@ -73,8 +73,11 @@ export default async function MenuPage() {
   }
 
   // FRESCO-340/792: the weekly cost shown in the "Gasto semanal estimado"
-  // tile. Same helper the shopping list summary uses, so both screens show
-  // one number; `undefined` (calculation failed) hides the tile.
+  // tile: the cost of the WHOLE menu (average prices stand in for ingredients
+  // with no supermarket price). FRESCO-1172: the shopping list no longer shows
+  // this figure — since FRESCO-1099 its total is the sum of the rows that print
+  // a price, and it is labelled as such. `undefined` (calculation failed)
+  // hides the tile.
   const costeEstimado = costeSemanalEstimado(plan.menu, {
     numPersonas: dietaryPreferences?.num_personas,
     perfil: perfilCompraDesde(dietaryPreferences),

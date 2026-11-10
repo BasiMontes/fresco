@@ -81,8 +81,8 @@ Then(/^ve un resumen con el total de productos y el coste estimado$/, async ({ p
   // pendientes count and a "Total estimado" figure in separate DOM nodes
   // (Resumen card), so a single cross-node text match no longer applies.
   await expect(page.getByText(/\d+ artículos? pendientes?/)).toBeVisible();
-  // FRESCO-792: the "Total estimado" is the same single weekly figure `/menu`
-  // shows (`costeSemanalEstimado`), rendered as one `88,36€` with a comma
+  // FRESCO-1172: the total is the sum of the rows that print a price (not the
+  // whole-menu figure `/menu` shows), rendered as one `88,36€` with a comma
   // decimal and a trailing `€` (`formatPrecio`), no longer a `min–max€` range.
   await expect(page.getByTestId('shopping_list_summary_total')).toHaveText(/^\d+(,\d+)?€$/);
 });

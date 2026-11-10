@@ -7,11 +7,13 @@ interface ShoppingListSummaryProps {
   resumen: ShoppingListPersistido['resumen']
   /** FRESCO-1099 — the sum of the rows below (`totalDeLista`); absent (no row has a price) falls back to the stored range. */
   total: number | undefined
+  /** FRESCO-1172 — how many rows the total covers; the rest print no price and are not in it. */
+  cobertura: { conPrecio: number, articulos: number }
   /** FRESCO-790 — the chains that priced a row, as the shopper reads them ("Mercadona y Consum"); empty when none did. */
   fuentesPrecios: string
 }
 
-export function ShoppingListSummary({ pendientes, resumen, total, fuentesPrecios }: ShoppingListSummaryProps) {
+export function ShoppingListSummary({ pendientes, resumen, total, cobertura, fuentesPrecios }: ShoppingListSummaryProps) {
   return (
     <Card className="mt-4">
       <div className="grid grid-cols-2 items-start gap-x-4 gap-y-1">
@@ -19,8 +21,12 @@ export function ShoppingListSummary({ pendientes, resumen, total, fuentesPrecios
         {/* FRESCO-527: was "Total estimado" — read as a running total that
             should drop as items get checked off. It's a fixed snapshot of
             the whole week's menu (computed once in `generate-shopping-list`),
-            so the wording says "del menú" to set that expectation. */}
-        <p className="text-right text-body-sm uppercase tracking-wide text-tertiary">Total estimado del menú de esta semana</p>
+            so the wording says "del menú" to set that expectation.
+            FRESCO-1172: the total is the sum of the rows that print a price, NOT the whole menu's cost
+            (`/menu` shows that, with average prices for the rest), so it says so and names the coverage. */}
+        <p className="text-right text-body-sm uppercase tracking-wide text-tertiary">
+          {total !== undefined ? 'Total de los artículos con precio' : 'Total estimado del menú de esta semana'}
+        </p>
         <p className="flex items-center gap-1.5 text-body-sm text-tertiary">
           <span className="inline-block size-2 rounded-full bg-primary" aria-hidden="true" />
           {pendientes}
@@ -33,6 +39,19 @@ export function ShoppingListSummary({ pendientes, resumen, total, fuentesPrecios
             : `${formatImporte(resumen.coste_estimado_min)}–${formatPrecio(resumen.coste_estimado_max)}`}
         </p>
       </div>
+      {total !== undefined && (
+        <p data-testid="shopping_list_price_coverage" className="mt-1 text-right text-body-sm text-tertiary">
+          {cobertura.conPrecio}
+          {' '}
+          de
+          {' '}
+          {cobertura.articulos}
+          {' '}
+          {cobertura.articulos === 1 ? 'artículo' : 'artículos'}
+          {' '}
+          con precio
+        </p>
+      )}
       {/* FRESCO-790 (A6-P2): every price here is an indication, not an offer.
           The chains are read from the data, so a chain switched off in the
           registry (ADR-0037) disappears from this line too. */}
