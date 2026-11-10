@@ -19,6 +19,10 @@ export interface HealthConsentBlockProps {
  * filled in); this block records the consent through `POST /api/consents` and
  * reports the result. The database refuses to store health data without it.
  *
+ * FRESCO-1174: while the POST is pending the box shows ticked (optimistic, so a
+ * slow network does not look like the click was lost) with a "Guardando…" status
+ * and no "Marca la casilla" hint; on failure it goes back to unticked with the error.
+ *
  * Unticking only flips the local flag: the registry is append-only and a
  * withdrawal is a separate decision (ADR-0040).
  */
@@ -65,7 +69,7 @@ export function HealthConsentBlock({ consented, onConsentedChange }: HealthConse
             {/* FRESCO-451: a single agree toggle, so the square variant. */}
             <Checkbox
               data-testid="health_consent_checkbox"
-              checked={consented}
+              checked={consented || isRecording}
               disabled={isRecording}
               onChange={e => void handleChange(e.target.checked)}
               className="rounded-sm"
@@ -78,7 +82,12 @@ export function HealthConsentBlock({ consented, onConsentedChange }: HealthConse
             {error}
           </p>
         )}
-        {!consented && !error && (
+        {isRecording && (
+          <p data-testid="health_consent_saving" role="status" aria-live="polite" className="mt-2 text-body-sm text-tertiary">
+            Guardando…
+          </p>
+        )}
+        {!consented && !isRecording && !error && (
           <p data-testid="health_consent_required_hint" role="status" aria-live="polite" className="mt-2 text-body-sm text-tertiary">
             Marca la casilla para continuar.
           </p>
