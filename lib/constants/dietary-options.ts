@@ -23,7 +23,7 @@ export interface TagOption {
 // `recipes_alergenos_vocab` and `ingredient_substitutions_alergenos_vocab`.
 export const ALERGENO_OPTIONS: TagOption[] = [
   { value: 'gluten', label: 'Gluten' },
-  { value: 'lactosa', label: 'Lactosa' },
+  { value: 'lactosa', label: 'Leche y lácteos' },
   { value: 'huevo', label: 'Huevo' },
   { value: 'frutos_de_cascara', label: 'Frutos de cáscara' },
   { value: 'cacahuetes', label: 'Cacahuetes' },
