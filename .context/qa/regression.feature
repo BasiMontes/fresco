@@ -2180,6 +2180,22 @@ Característica: Flujo completo de usuario en Fresco
     Dado que Laura está en /profile
     Entonces la pantalla no tiene violaciones de accesibilidad serias
 
+  # FRESCO-1176 (revisión integral, eje 5). /profile/preferences tenía h4 justo bajo el h1 (heading-order,
+  # moderada: el filtro por impacto no la bloquea) y ni esa pantalla ni la portada tenían axe.
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1176)
+  Escenario: /profile/preferences no tiene violaciones serias y sus encabezados no saltan niveles
+    Dado que Laura está en /profile
+    Cuando abre "Preferencias" desde su perfil
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+    Y los encabezados de la página no saltan ningún nivel
+
+  @a11y @automatizado
+  # Automatizado: tests/steps/a11y.steps.ts (FRESCO-1176)
+  Escenario: La portada no tiene violaciones de accesibilidad serias
+    Dado que un visitante sin cuenta ni sesión visita /
+    Entonces la pantalla no tiene violaciones de accesibilidad serias
+
   # FRESCO-1013 (auditoría 7b, A7-UI-01..05 y A7-UI-08). Reglas de axe que el filtro por
   # impacto no bloquea (o que axe deja apagadas) y que aquí no deben informar nada.
   @a11y @automatizado
