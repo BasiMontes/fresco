@@ -277,7 +277,7 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: Pr
         void handleSubmit(event);
       }}
     >
-      <h4 className="text-h6 uppercase text-tertiary">Dieta y restricciones</h4>
+      <h2 className="text-h6 uppercase text-tertiary">Dieta y restricciones</h2>
       <div className="mt-2 flex flex-wrap gap-2">
         {DIETA_FIELDS.map((field) => {
           const isLocked = field.key === 'dieta_vegetariano' && preferences.dieta_vegano;
@@ -299,7 +299,7 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: Pr
         })}
       </div>
 
-      <h4 className="mt-4 text-h6 uppercase text-tertiary">Alérgenos a evitar</h4>
+      <h2 className="mt-4 text-h6 uppercase text-tertiary">Alérgenos a evitar</h2>
       <p data-testid="preferencia_alergenos_aviso" className="mt-1 text-body-sm text-tertiary">{ALERGENOS_AVISO}</p>
       <div className="mt-2 flex flex-wrap gap-2">
         {ALERGENO_OPTIONS.map((option) => {
@@ -330,7 +330,7 @@ export function PreferencesForm({ initialPreferences, hasHealthDataConsent }: Pr
           afterward until FRESCO-153; the grid (FRESCO-259) replaced the
           separate "which meals"/"which days" toggle lists with direct
           day x meal editing. */}
-      <h4 className="mt-4 text-h6 uppercase text-tertiary">Comidas a planificar</h4>
+      <h2 className="mt-4 text-h6 uppercase text-tertiary">Comidas a planificar</h2>
       <div className="mt-2">
         <PlanningSelectionGrid
           data-testid="preferencia_planning_grid"

@@ -48,6 +48,11 @@ Then(/^la pantalla no tiene violaciones de accesibilidad serias$/, async ({ page
   await expectNoA11yViolations(page);
 });
 
+// FRESCO-1176: `heading-order` is a moderate rule, so the serious/critical gate above never blocks it.
+Then(/^los encabezados de la página no saltan ningún nivel$/, async ({ page }) => {
+  await expectNoRuleViolations(page, ['heading-order']);
+});
+
 // FRESCO-819 (A6-L10): axe's `nested-interactive` is already inside the serious
 // check above; this one adds the audit's 44 px touch-target floor, measured at
 // the 360 px viewport by the `mobile` project.
