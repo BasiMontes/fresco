@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { currentWeekMonday, restHeaders, sendSeedRequest, serviceRoleHeaders } from '../test-helpers';
 import { generateCurrentWeekPlan, seedFullWeekMenu } from '../test-user-factory';
 
 /**
@@ -48,10 +48,12 @@ async function setProfileAllergens(request: APIRequestContext, userId: string, a
 }
 
 async function filteredCatalog(request: APIRequestContext, user: TestUser): Promise<{ id: string, alergenos: string[] | null }[]> {
-  const res = await request.post(`${SUPABASE_URL}/rest/v1/rpc/get_filtered_recipes`, {
+  // FRESCO-1148: a read, so repeating it is harmless; a 5xx from the local gateway ("An invalid response was
+  // received from the upstream server") failed the scenario once on its first attempt.
+  const { res } = await sendSeedRequest(async () => request.post(`${SUPABASE_URL}/rest/v1/rpc/get_filtered_recipes`, {
     headers: restHeaders(user.accessToken),
     data: { p_user_id: user.id },
-  });
+  }));
   if (!res.ok()) { throw new Error(`[seguridad-alimentaria] get_filtered_recipes failed: ${res.status()} ${await res.text()}`); }
   return await res.json() as { id: string, alergenos: string[] | null }[];
 }
