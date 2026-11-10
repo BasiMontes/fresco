@@ -81,6 +81,17 @@ async function dragLunesOntoMartes(page: Page): Promise<void> {
   // FRESCO-369: the calendar page now carries a variable-height card above the
   // grid — bring the source into view first so the drag STARTS on-screen (the
   // pointer's anchor); dnd-kit's own autoscroll carries it to the target.
+  //
+  // FRESCO-1149: the window of the calendar can go back to today AFTER `revealCalendarDay` has paged back to
+  // Monday. CI run 42783614782 (a Tuesday) timed out here for 90 s with Martes as the first column and nothing
+  // paging back, so Monday's handle never existed. Page back right before the drag, until it is on screen.
+  // (On a Monday the window already starts on Monday and this returns at once.)
+  const previousDay = page.getByTestId('calendar_day_nav_prev');
+  await expect.poll(async () => {
+    if (await source.isVisible()) { return true; }
+    if (await previousDay.isVisible() && await previousDay.isEnabled()) { await previousDay.click(); }
+    return false;
+  }, { message: 'Monday\'s drag handle never became visible in the calendar window', timeout: 20_000, intervals: [250] }).toBe(true);
   await source.scrollIntoViewIfNeeded();
   const sb = await source.boundingBox();
   const tb = await target.boundingBox();
