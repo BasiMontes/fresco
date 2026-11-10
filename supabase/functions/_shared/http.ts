@@ -106,9 +106,36 @@ export function userIdFromAuthHeader(req: Request): string | undefined {
  * function's top-level catch block. An HttpError maps to its declared
  * status; anything else is an unexpected 500 — logged, reported to Sentry
  * (FRESCO-385), and never leaked verbatim to the caller.
+ *
+ * FRESCO-1178: an HttpError with status >= 500 is a DELIBERATE 500 (the menu
+ * could not be saved, a secret is missing) and the user still got an error, so
+ * it is reported to Sentry too, tagged with the function. A 4xx is the caller's
+ * mistake, not a fault of ours, and is never reported. `capture` is injectable
+ * so the test can see what would be sent.
  */
-export async function toErrorResponse(err: unknown, options: { req: Request, fnName: string }): Promise<Response> {
+export async function toErrorResponse(
+  err: unknown,
+  options: { req: Request, fnName: string, capture?: typeof captureEdgeException },
+): Promise<Response> {
+  const capture = options.capture ?? captureEdgeException
+
   if (err instanceof HttpError) {
+    if (err.status >= 500) {
+      const errorId = crypto.randomUUID()
+      logger.error('Server error returned to the caller', {
+        fn: options.fnName,
+        status: err.status,
+        error: err.message,
+        error_id: errorId,
+      })
+      await capture(err, {
+        fn: options.fnName,
+        errorId,
+        userId: userIdFromAuthHeader(options.req),
+        url: options.req.url,
+        method: options.req.method,
+      })
+    }
     return errorResponse(err.message, { req: options.req, status: err.status })
   }
 
@@ -118,7 +145,7 @@ export async function toErrorResponse(err: unknown, options: { req: Request, fnN
     error: err instanceof Error ? err.message : String(err),
     error_id: errorId,
   })
-  await captureEdgeException(err, {
+  await capture(err, {
     fn: options.fnName,
     errorId,
     userId: userIdFromAuthHeader(options.req),

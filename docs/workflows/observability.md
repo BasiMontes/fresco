@@ -11,6 +11,8 @@ FRESCO-803 (audit-6 A6-D7). Before this, a partial outage (an Edge Function answ
 
 The health check is deliberately shallow. It does not call Stripe or the Edge Functions: a monitor hitting them every few minutes would cost real requests. Those failures are covered by the Sentry alerts below.
 
+Edge Functions report to Sentry from `toErrorResponse` (`supabase/functions/_shared/http.ts`): every unexpected error, and every deliberate `HttpError` with status 500 or above (FRESCO-1178), tagged with the function name. A 4xx is the caller's mistake and is never reported. Only a hosted Supabase project with `SENTRY_DSN` set sends anything.
+
 ## Uptime monitor
 
 **In place: `.github/workflows/uptime-monitor.yml`** (no account needed, the repo is public so the minutes are free). Every 5 minutes it calls `/api/health` on production, retrying 3 times 15 seconds apart. If it still does not answer `200` it opens ONE issue labelled `uptime-failure` (later failures comment on it), and it closes the issue when the probe recovers. GitHub notifies the owner of the new issue.
