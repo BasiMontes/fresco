@@ -10,7 +10,7 @@ import { ExportActions } from '@/components/shopping-list/export-actions';
 import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisle';
 import { ShoppingListAllBought } from '@/components/shopping-list/shopping-list-all-bought';
-import { totalDeLista } from '@/components/shopping-list/shopping-list-format';
+import { cobertura, totalDeLista } from '@/components/shopping-list/shopping-list-format';
 import { ShoppingListItemRow } from '@/components/shopping-list/shopping-list-item-row';
 import { ShoppingListStaleBanner } from '@/components/shopping-list/shopping-list-stale-banner';
 import { ShoppingListSuggestions } from '@/components/shopping-list/shopping-list-suggestions';
@@ -113,6 +113,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, compra }
         pendientes={pendientes}
         resumen={list.resumen}
         total={totalDeLista({ pasillos, compra })}
+        cobertura={cobertura({ pasillos, compra })}
         fuentesPrecios={fuentesPrecios}
       />
 

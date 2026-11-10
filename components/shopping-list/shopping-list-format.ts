@@ -44,6 +44,20 @@ export function totalDeLista({ pasillos, compra }: { pasillos: readonly Pick<Sho
   return conPrecio ? Math.round(total * 100) / 100 : undefined;
 }
 
+/** FRESCO-1172 — how many rows print a price, out of all rows: what the list total actually covers. */
+export function cobertura({ pasillos, compra }: { pasillos: readonly Pick<ShoppingListPasillo, 'nombre' | 'items'>[], compra: CompraPorItem | undefined }): { conPrecio: number, articulos: number } {
+  let conPrecio = 0;
+  let articulos = 0;
+  for (const pasillo of pasillos) {
+    for (const item of pasillo.items) {
+      articulos += 1;
+      const precio = precioDeFila({ item, linea: compra?.[claveItemCompra({ pasillo: pasillo.nombre, item: item.nombre })] });
+      if (precio !== undefined && Number.isFinite(precio) && precio > 0) { conPrecio += 1; }
+    }
+  }
+  return { conPrecio, articulos };
+}
+
 /** What the row says about the linked price's age. Past the second threshold it says there is no recent price instead of an age. */
 export function textoAntiguedad(dias: number | null): string {
   switch (frescuraPrecio(dias)) {
