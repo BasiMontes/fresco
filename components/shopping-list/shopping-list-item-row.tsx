@@ -1,12 +1,12 @@
-import type { FrescuraPrecio } from '@/components/shopping-list/shopping-list-format';
 import type { ListEnterItemProps } from '@/components/ui/use-list-enter-animation';
 import type { ShoppingListItem } from '@/lib/api/types';
-import type { CompraPorItem } from '@/lib/grocery/compra';
+import type { CompraPorItem, FrescuraPrecio } from '@/lib/grocery/compra';
 import { ShoppingCart } from 'lucide-react';
-import { formatUsos, frescuraPrecio, precioDeFila, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
+import { formatUsos, precioDeFila, textoAntiguedad } from '@/components/shopping-list/shopping-list-format';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { normalizeNombre } from '@/lib/api/shopping-list';
+import { frescuraPrecio } from '@/lib/grocery/compra';
 import { captureEvent, POSTHOG_EVENTS } from '@/lib/posthog/events';
 import { capitalize, cn, formatCantidad, formatPrecio, formatUnidad } from '@/lib/utils';
 

@@ -3,6 +3,7 @@ import type { GroceryInput, MappedGroceryItem } from './types';
 import type { DiaSemana, TipoPlato } from '@/lib/api/types';
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
+import { antiguedadEnDias, frescuraPrecio } from './compra';
 import { INGREDIENT_DICTIONARY } from './ingredient-dictionary';
 import { mapShoppingList, recoverFromRecipeContext } from './map-item';
 
@@ -83,12 +84,18 @@ function redondear2(valor: number): number {
  * que solo entendía Mercadona. Sin precio real (envase estimado, ingrediente
  * desconocido, cadena sin conector ejecutable) cae al precio medio genérico.
  * Nunca lanza ni produce `NaN`/`Infinity`.
+ *
+ * FRESCO-1177: el precio real pasa por la MISMA regla de edad que las filas de
+ * la lista (FRESCO-1028): con más de 30 días se descarta y cae al precio medio,
+ * en vez de contarse por viejo que sea.
  */
-export function packPrice(item: MappedGroceryItem): number {
+export function packPrice(item: MappedGroceryItem, ahora: Date = new Date()): number {
   const envaseVenta = resolveEnvaseVenta(item);
 
   const real = item.precios[0];
-  if (real && Number.isFinite(real.precioEnvase) && real.precioEnvase > 0) {
+  const demasiadoViejo = real !== undefined
+    && frescuraPrecio(antiguedadEnDias({ observadoEn: real.observadoEn, ahora })) === 'oculto';
+  if (real && !demasiadoViejo && Number.isFinite(real.precioEnvase) && real.precioEnvase > 0) {
     return real.precioEnvase;
   }
 
@@ -181,9 +188,9 @@ export function consolidateRecipeIngredients(menu: MenuGrid, numPersonas: number
  * diccionario o un menú completamente vacío siguen produciendo un número
  * válido (`0` para un menú vacío), nunca `NaN`/excepción.
  */
-export function estimateMenuCost(menu: MenuGrid, { numPersonas, perfil }: { numPersonas: number, perfil?: PerfilCompra }): number {
+export function estimateMenuCost(menu: MenuGrid, { numPersonas, perfil, ahora }: { numPersonas: number, perfil?: PerfilCompra, ahora?: Date }): number {
   const inputs = consolidateRecipeIngredients(menu, numPersonas);
   const items = mapShoppingList(inputs, perfil);
-  const total = items.reduce((suma, item) => suma + packPrice(item) * item.envasesEstimados, 0);
+  const total = items.reduce((suma, item) => suma + packPrice(item, ahora) * item.envasesEstimados, 0);
   return redondear2(total);
 }

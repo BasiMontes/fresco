@@ -2,8 +2,8 @@ import type { MercadonaMatch } from '../mercadona-catalog.generated';
 import type { SupermarketConnector } from './connector';
 import type { Envase, ProductoSupermercado, UnidadBase, ZonaId } from './types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
-import { CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
-import { MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
+import { CONSUM_CATALOG_FECHA, CONSUM_CATALOG_MATCH } from '../consum-catalog.generated';
+import { MERCADONA_CATALOG_FECHA, MERCADONA_CATALOG_MATCH } from '../mercadona-catalog.generated';
 import { puedeEjecutarse } from './connector';
 import { parseFormatoReferencia, precioEnvaseDesdeReferencia } from './units';
 
@@ -17,12 +17,12 @@ import { parseFormatoReferencia, precioEnvaseDesdeReferencia } from './units';
  * - `idExterno` is the catalog key (the canonical ingredient), because the
  *   generated files carry no product id of their own.
  * - One fixed zone: the catalogs are not priced per store.
- * - The catalogs carry no observation date, so `observadoEn` is the Unix
- *   epoch, which the refresh plan reads as stale. That is the honest value.
+ * - FRESCO-1177: each generated file carries the date of its source (the
+ *   Mercadona dataset snapshot, the moment Consum's prices were read), and
+ *   that is every product's `observadoEn`, so the 14/30-day age rules apply.
  */
 
 export const ZONA_CATALOGO: ZonaId = 'catalogo';
-const OBSERVADO_EN_DESCONOCIDO = '1970-01-01T00:00:00.000Z';
 
 const UNIDADES_BASE: readonly UnidadBase[] = ['g', 'ml', 'unidad'];
 
@@ -38,7 +38,7 @@ function envaseDe(envaseVenta: EntradaCatalogo['envaseVenta']): Envase | null {
   return unidad ? { cantidad: envaseVenta.cantidad, unidad } : null;
 }
 
-function aProducto(cadena: string, entrada: EntradaCatalogo): ProductoSupermercado | null {
+function aProducto({ cadena, entrada, observadoEn }: { cadena: string, entrada: EntradaCatalogo, observadoEn: string }): ProductoSupermercado | null {
   const envase = envaseDe(entrada.envaseVenta);
   if (!envase || !(entrada.precioEnvase > 0)) {
     return null;
@@ -53,7 +53,7 @@ function aProducto(cadena: string, entrada: EntradaCatalogo): ProductoSupermerca
     url: entrada.url,
     disponible: true,
     zona: ZONA_CATALOGO,
-    observadoEn: OBSERVADO_EN_DESCONOCIDO,
+    observadoEn,
   };
 }
 
@@ -118,11 +118,11 @@ export function productosParaCarga(conector: SupermarketConnector): ProductoPara
 }
 
 export function crearConectorDeCatalogo(
-  base: Pick<SupermarketConnector, 'cadena' | 'nombre' | 'permiso' | 'permisoRef' | 'idParaCarga'>,
+  { observadoEn, ...base }: Pick<SupermarketConnector, 'cadena' | 'nombre' | 'permiso' | 'permisoRef' | 'idParaCarga'> & { observadoEn: string },
   entradas: readonly EntradaCatalogo[],
 ): SupermarketConnector {
   const productos = entradas
-    .map(entrada => aProducto(base.cadena, entrada))
+    .map(entrada => aProducto({ cadena: base.cadena, entrada, observadoEn }))
     .filter((p): p is ProductoSupermercado => p !== null)
     .sort((a, b) => a.idExterno.localeCompare(b.idExterno));
   const porId = new Map(productos.map(p => [p.idExterno, p]));
@@ -183,6 +183,7 @@ export const conectorMercadona = crearConectorDeCatalogo(
     cadena: 'mercadona',
     nombre: 'Mercadona',
     ...PERMISOS_CADENA.mercadona,
+    observadoEn: MERCADONA_CATALOG_FECHA,
     // The generated catalog carries no product id; Mercadona's own sits in the product URL.
     idParaCarga: producto => idMercadonaDeUrl(producto.url),
   },
@@ -196,7 +197,7 @@ export const conectorMercadona = crearConectorDeCatalogo(
 
 /** Consum prices the whole pack already, so `precio` passes through. */
 export const conectorConsum = crearConectorDeCatalogo(
-  { cadena: 'consum', nombre: 'Consum', ...PERMISOS_CADENA.consum },
+  { cadena: 'consum', nombre: 'Consum', ...PERMISOS_CADENA.consum, observadoEn: CONSUM_CATALOG_FECHA },
   Object.entries(CONSUM_CATALOG_MATCH).map(([clave, match]) => ({
     clave,
     envaseVenta: match.envaseVenta,

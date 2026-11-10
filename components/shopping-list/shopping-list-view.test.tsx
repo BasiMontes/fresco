@@ -2,6 +2,7 @@ import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
 import type { CompraPorItem } from '@/lib/grocery/compra';
 import type { PerfilCompra } from '@/lib/grocery/product-compatibility';
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { CONSUM_CATALOG_FECHA } from '@/lib/grocery/consum-catalog.generated';
 import { precioLinea } from '@/lib/grocery/line-price';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
 import * as posthogEvents from '@/lib/posthog/events';
@@ -23,9 +24,15 @@ import '@/tests/mocks/next-navigation';
  * left untested here, deferred to e2e.
  */
 
+/**
+ * FRESCO-1177: the catalogs carry the date of their source, so a real catalog price goes stale after 30 days.
+ * The clock is pinned to the day the catalogs were read, or these tests would start failing a month from now.
+ */
+const AHORA_DEL_CATALOGO = new Date(CONSUM_CATALOG_FECHA);
+
 /** What the page does on the server: resolve prices and links, then hand them to the view. */
 function compraDe(list: ShoppingListPersistido, perfil?: PerfilCompra): CompraPorItem {
-  return resolverCompra({ pasillos: list.pasillos, perfil });
+  return resolverCompra({ pasillos: list.pasillos, perfil, ahora: AHORA_DEL_CATALOGO });
 }
 
 /** A row's text, leaving out the summary total (FRESCO-1099: it equals the row on a one-row list). */

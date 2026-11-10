@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { precioDeFila } from '@/components/shopping-list/shopping-list-format';
 import { antiguedadEnDias, claveItemCompra } from './compra';
+import { CONSUM_CATALOG_FECHA } from './consum-catalog.generated';
+import { MERCADONA_CATALOG_FECHA } from './mercadona-catalog.generated';
 import { resolverCompra } from './shopping-list-compra';
 
 const AHORA = new Date('2026-10-05T12:00:00.000Z');
@@ -45,10 +48,27 @@ describe('resolverCompra', () => {
     expect(linea.enlaces[0].url).toStartWith('https://');
   });
 
-  test('the static catalogs carry no date, so the row reports no age', () => {
+  // FRESCO-1177: each generated catalog carries the date of its source, so a catalog price has a known age.
+  test('catalog prices carry the date of their source, so the row reports an age', () => {
     const compra = resolverCompra({ pasillos, ahora: AHORA });
+    const enlace = compra[claveItemCompra({ pasillo: 'Aceites', item: 'aceite de oliva' })].enlaces[0];
+    const fecha = enlace.cadena === 'consum' ? CONSUM_CATALOG_FECHA : MERCADONA_CATALOG_FECHA;
 
-    expect(compra[claveItemCompra({ pasillo: 'Aceites', item: 'aceite de oliva' })].enlaces[0].antiguedadDias).toBeNull();
+    expect(enlace.antiguedadDias).not.toBeNull();
+    expect(enlace.antiguedadDias).toBe(antiguedadEnDias({ observadoEn: fecha, ahora: AHORA }));
+  });
+
+  test('a catalog price older than 30 days is not shown, and one within 30 days is', () => {
+    const clave = claveItemCompra({ pasillo: 'Aceites', item: 'aceite de oliva' });
+    const item = pasillos[0].items.find(i => i.nombre === 'aceite de oliva')!;
+    const dia = 86_400_000;
+    const fecha = Math.max(new Date(CONSUM_CATALOG_FECHA).getTime(), new Date(MERCADONA_CATALOG_FECHA).getTime());
+
+    const reciente = resolverCompra({ pasillos, ahora: new Date(fecha + 10 * dia) })[clave];
+    const viejo = resolverCompra({ pasillos, ahora: new Date(fecha + 40 * dia) })[clave];
+
+    expect(precioDeFila({ item, linea: reciente })).toBeGreaterThan(0);
+    expect(precioDeFila({ item, linea: viejo })).toBeUndefined();
   });
 
   test('a row with no catalog match has no link and keeps its stored estimate', () => {

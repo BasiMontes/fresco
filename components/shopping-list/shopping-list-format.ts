@@ -1,21 +1,7 @@
 import type { DiaSemana, ShoppingListItem, ShoppingListPasillo } from '@/lib/api/types';
 import type { CompraPorItem } from '@/lib/grocery/compra';
-import { claveItemCompra } from '@/lib/grocery/compra';
+import { claveItemCompra, frescuraPrecio } from '@/lib/grocery/compra';
 import { capitalize } from '@/lib/utils';
-
-/** FRESCO-1028 — owner-set thresholds (2026-10-21): from 14 days the age is highlighted, past 30 the price is hidden. */
-const PRECIO_ANTIGUO_DESDE_DIAS = 14;
-const PRECIO_OCULTO_TRAS_DIAS = 30;
-
-export type FrescuraPrecio = 'reciente' | 'antiguo' | 'oculto' | 'sin_fecha';
-
-/** How fresh the linked price is. A price with no date is never `reciente`: nothing says it is current. */
-export function frescuraPrecio(dias: number | null): FrescuraPrecio {
-  if (dias === null) { return 'sin_fecha'; }
-  if (dias > PRECIO_OCULTO_TRAS_DIAS) { return 'oculto'; }
-  if (dias >= PRECIO_ANTIGUO_DESDE_DIAS) { return 'antiguo'; }
-  return 'reciente';
-}
 
 /**
  * FRESCO-1099 — the price a row prints: the linked product's price, else the stored estimate, and nothing once

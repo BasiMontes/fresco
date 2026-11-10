@@ -12,6 +12,9 @@ export interface MercadonaMatch {
   shareUrl: string
 }
 
+/** When the dataset snapshot these prices come from was published (FRESCO-1177): the age rules read it. */
+export const MERCADONA_CATALOG_FECHA = '2026-11-09T06:35:46.000Z';
+
 /** Real Mercadona pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */
 export const MERCADONA_CATALOG_MATCH: Record<string, MercadonaMatch> = {
   "aceite de oliva": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioMercadona":{"precioReferencia":3.8,"formatoReferencia":"L"},"shareUrl":"https://tienda.mercadona.es/product/4640/aceite-oliva-1o-hacendado-botella"},

@@ -1,7 +1,13 @@
 import type { MenuGrid } from '@/lib/calendar/apply-slot-swap';
-import { describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, setSystemTime, test } from 'bun:test';
+import { CONSUM_CATALOG_FECHA } from './consum-catalog.generated';
 import { estimateMenuCost } from './estimate-menu-cost';
 import { costeSemanalEstimado } from './weekly-cost';
+
+// FRESCO-1177: a catalog price now has a date and stops counting after 30 days, so the clock is pinned to the
+// day the catalogs were read; without it these tests would start failing a month after each regeneration.
+beforeAll(() => setSystemTime(new Date(CONSUM_CATALOG_FECHA)));
+afterAll(() => setSystemTime());
 
 const EMPTY_MENU = Object.fromEntries(
   ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']

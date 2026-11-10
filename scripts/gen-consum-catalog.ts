@@ -190,6 +190,19 @@ export function buildConsumCatalogMatch(
   return out;
 }
 
+/**
+ * FRESCO-1177 — when these prices were observed: the moment the cache was first filled, kept next to it so a
+ * later run (and the drift test) reads the same instant instead of "now". A cache with no date file gets one now.
+ */
+export async function fechaDeCache(): Promise<string> {
+  await mkdir(CACHE_DIR, { recursive: true });
+  const cachePath = new URL('generated-at.txt', CACHE_DIR);
+  if (existsSync(cachePath)) { return (await readFile(cachePath, 'utf8')).trim(); }
+  const ahora = new Date().toISOString();
+  await writeFile(cachePath, ahora);
+  return ahora;
+}
+
 async function cachedFetchTerm(term: string): Promise<ConsumProduct[]> {
   await mkdir(CACHE_DIR, { recursive: true });
   const cachePath = new URL(`${encodeURIComponent(term)}.json`, CACHE_DIR);
@@ -235,7 +248,7 @@ async function fetchAllCandidates(
   return result;
 }
 
-export function renderFile(match: Record<string, ConsumMatch>): string {
+export function renderFile(match: Record<string, ConsumMatch>, fecha: string): string {
   const entries = Object.entries(match)
     .map(([clave, m]) => `  ${JSON.stringify(clave)}: ${JSON.stringify(m)},`)
     .join('\n');
@@ -253,6 +266,9 @@ export interface ConsumMatch {
   url: string
 }
 
+/** When these prices were observed (FRESCO-1177): the age rules read it. */
+export const CONSUM_CATALOG_FECHA = '${fecha}';
+
 /** Real Consum pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */
 export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
 ${entries}
@@ -262,10 +278,11 @@ ${entries}
 
 if (import.meta.main) {
   console.log('Searching Consum catalog (cached locally on first run)...');
+  const fecha = await fechaDeCache(); // before the first request: the instant the prices are read
   const candidatesByTerm = await fetchAllCandidates(BASE_QUANTITIES);
   const match = buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES);
   const target = new URL('../lib/grocery/consum-catalog.generated.ts', import.meta.url);
-  await Bun.write(target, renderFile(match));
+  await Bun.write(target, renderFile(match, fecha));
   console.log(
     `Matched ${Object.keys(match).length} ingredients against ${candidatesByTerm.size} search terms.`,
   );

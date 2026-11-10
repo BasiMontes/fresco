@@ -36,6 +36,23 @@ export function nombresDeCadenas(compra: CompraPorItem | undefined): string {
 
 const MS_POR_DIA = 86_400_000;
 
+/** FRESCO-1028 — owner-set thresholds (2026-10-21): from 14 days the age is highlighted, past 30 the price is hidden. */
+const PRECIO_ANTIGUO_DESDE_DIAS = 14;
+const PRECIO_OCULTO_TRAS_DIAS = 30;
+
+export type FrescuraPrecio = 'reciente' | 'antiguo' | 'oculto' | 'sin_fecha';
+
+/**
+ * How fresh the linked price is. A price with no date is never `reciente`: nothing says it is current.
+ * FRESCO-1177: lives here (not in a component) because the list rows AND the weekly cost estimate apply it.
+ */
+export function frescuraPrecio(dias: number | null): FrescuraPrecio {
+  if (dias === null) { return 'sin_fecha'; }
+  if (dias > PRECIO_OCULTO_TRAS_DIAS) { return 'oculto'; }
+  if (dias >= PRECIO_ANTIGUO_DESDE_DIAS) { return 'antiguo'; }
+  return 'reciente';
+}
+
 /** Key of one row: aisle plus name, because the same name can sit in two aisles. */
 export function claveItemCompra({ pasillo, item }: { pasillo: string, item: string }): string {
   return `${pasillo}::${item}`;

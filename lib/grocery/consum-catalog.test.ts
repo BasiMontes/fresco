@@ -4,11 +4,12 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildConsumCatalogMatch,
   CACHE_DIR,
+  fechaDeCache,
   parsePackSize,
   renderFile,
 } from '../../scripts/gen-consum-catalog';
 import { BASE_QUANTITIES } from '../../supabase/functions/generate-shopping-list/consolidator';
-import { CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
+import { CONSUM_CATALOG_FECHA, CONSUM_CATALOG_MATCH } from './consum-catalog.generated';
 
 /**
  * FRESCO-520 — mirrors `mercadona-catalog.test.ts`'s posture (FRESCO-503):
@@ -39,7 +40,7 @@ describe.skipIf(!CACHE_AVAILABLE)('consum-catalog.generated — in sync with the
         candidatesByTerm.set(term, JSON.parse(await Bun.file(cachePath).text()));
       }
     }
-    const fresh = renderFile(buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES));
+    const fresh = renderFile(buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES), await fechaDeCache());
     const committed = await Bun.file(new URL('./consum-catalog.generated.ts', import.meta.url)).text();
     expect(committed).toBe(fresh);
   });
@@ -166,5 +167,16 @@ describe('buildConsumCatalogMatch — matching heuristic (inline fixture, no net
     // 58 g pack vs. a 2 g recipe portion is a 29x multiple — past the 20x guard.
     const match = buildConsumCatalogMatch(candidatesByTerm, { comino: { cantidad: 2, unidad: 'g' } });
     expect(match.comino).toBeUndefined();
+  });
+});
+
+// FRESCO-1177: the generated file carries the moment the prices were read, so the age rules can apply.
+describe('consum-catalog.generated — observation date', () => {
+  test('renderFile writes the date it is given', () => {
+    expect(renderFile({}, '2026-11-10T15:54:06.619Z')).toContain('export const CONSUM_CATALOG_FECHA = \'2026-11-10T15:54:06.619Z\';');
+  });
+
+  test('the committed file carries a real instant, not the epoch', () => {
+    expect(new Date(CONSUM_CATALOG_FECHA).getTime()).toBeGreaterThan(Date.UTC(2026, 0, 1));
   });
 });
