@@ -214,5 +214,5 @@ Then(/^no se crea una cuenta duplicada$/, async ({ page }) => {
   // `sb-…-auth-token-code-verifier` cookie is written on client init and is
   // not a session.)
   await expect(page).toHaveURL(/\/signup(\?|$)/);
-  await expect(page.getByRole('heading', { name: 'Guarda tu menú' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Crea tu cuenta' })).toBeVisible();
 });

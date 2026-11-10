@@ -14,17 +14,22 @@ interface SignupFormStepProps {
   onPasswordChange: (value: string) => void
   submit: ReturnType<typeof useSignupSubmit>
   captcha: ReturnType<typeof useCaptcha>
+  /** FRESCO-1173 — the visitor is a guest with a menu to keep; anyone else gets the generic copy. */
+  guestHasMenu?: boolean
 }
 
-export function SignupFormStep({ email, password, onEmailChange, onPasswordChange, submit, captcha }: SignupFormStepProps) {
+export function SignupFormStep({ email, password, onEmailChange, onPasswordChange, submit, captcha, guestHasMenu = false }: SignupFormStepProps) {
   const { isSubmitting, signupError, ageConfirmed, setAgeConfirmed, ageError, acceptedTerms, setAcceptedTerms, termsError, handleSubmit } = submit;
 
   return (
     <>
-      <h1 className="text-h3">Guarda tu menú</h1>
-      <p className="mt-1 text-body-sm text-tertiary">
-        Crea una cuenta para no perder el menú que acabamos de generar.
-      </p>
+      {/* FRESCO-1173: "keep the menu we just generated" is true only for a guest that has one. */}
+      <h1 className="text-h3">{guestHasMenu ? 'Guarda tu menú' : 'Crea tu cuenta'}</h1>
+      {guestHasMenu && (
+        <p className="mt-1 text-body-sm text-tertiary">
+          Crea una cuenta para no perder el menú que acabamos de generar.
+        </p>
+      )}
 
       <form onSubmit={event => void handleSubmit(event)} className="mt-6 flex flex-col gap-3">
         {/* FRESCO-315: real <label for> (WCAG 3.3.2 / 4.1.2).

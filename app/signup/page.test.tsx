@@ -1,6 +1,7 @@
 import type { Captcha } from '@/components/auth/use-captcha';
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import * as captchaModule from '@/components/auth/use-captcha';
+import * as guestMenuModule from '@/components/signup/use-guest-menu';
 import * as otpModule from '@/components/signup/use-signup-otp';
 import * as reassignModule from '@/components/signup/use-signup-reassign';
 import * as submitModule from '@/components/signup/use-signup-submit';
@@ -26,24 +27,33 @@ let captchaSpy: ReturnType<typeof spyOn<typeof captchaModule, 'useCaptcha'>>;
 let reassignSpy: ReturnType<typeof spyOn<typeof reassignModule, 'useSignupReassign'>>;
 let otpSpy: ReturnType<typeof spyOn<typeof otpModule, 'useSignupOtp'>>;
 let submitSpy: ReturnType<typeof spyOn<typeof submitModule, 'useSignupSubmit'>>;
+let guestMenuSpy: ReturnType<typeof spyOn<typeof guestMenuModule, 'useGuestMenu'>>;
 
 beforeEach(() => {
   captchaSpy = spyOn(captchaModule, 'useCaptcha').mockReturnValue(captcha);
   reassignSpy = spyOn(reassignModule, 'useSignupReassign').mockReturnValue(reassign);
   otpSpy = spyOn(otpModule, 'useSignupOtp').mockReturnValue(otp);
+  guestMenuSpy = spyOn(guestMenuModule, 'useGuestMenu').mockReturnValue(false);
   submitSpy = spyOn(submitModule, 'useSignupSubmit').mockImplementation((args) => { submitArgs = args; return submit; });
 });
 
 afterEach(() => {
-  for (const spy of [captchaSpy, reassignSpy, otpSpy, submitSpy]) { spy.mockRestore(); }
+  for (const spy of [captchaSpy, reassignSpy, otpSpy, submitSpy, guestMenuSpy]) { spy.mockRestore(); }
 });
 
 describe('SignupPage', () => {
   test('starts on the form, with the brand marks and the legal links', () => {
     renderWithProviders(<SignupPage />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Guarda tu menú');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Crea tu cuenta');
     expect(screen.getAllByAltText('Fresco')).toHaveLength(2);
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  // FRESCO-1173: the page passes the guest-with-menu check down to the form.
+  test('a guest with a menu sees the keep-your-menu heading', () => {
+    guestMenuSpy.mockReturnValue(true);
+    renderWithProviders(<SignupPage />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Guarda tu menú');
   });
 
   test('typing into the form keeps the email and the password in the page state', () => {

@@ -24,11 +24,11 @@ function makeSubmit(overrides: Record<string, unknown> = {}) {
   } as unknown as React.ComponentProps<typeof SignupFormStep>['submit'];
 }
 
-function renderForm(submit = makeSubmit(), captchaState: Captcha = captcha, values = { email: '', password: '' }) {
+function renderForm(submit = makeSubmit(), captchaState: Captcha = captcha, values = { email: '', password: '' }, guestHasMenu = false) {
   const onEmailChange = mock((_v: string) => {});
   const onPasswordChange = mock((_v: string) => {});
   renderWithProviders(
-    <SignupFormStep {...values} onEmailChange={onEmailChange} onPasswordChange={onPasswordChange} submit={submit} captcha={captchaState} />,
+    <SignupFormStep {...values} onEmailChange={onEmailChange} onPasswordChange={onPasswordChange} submit={submit} captcha={captchaState} guestHasMenu={guestHasMenu} />,
   );
   return { submit, onEmailChange, onPasswordChange };
 }
@@ -36,8 +36,20 @@ function renderForm(submit = makeSubmit(), captchaState: Captcha = captcha, valu
 describe('SignupFormStep', () => {
   test('shows the heading and the link to log in', () => {
     renderForm();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Guarda tu menú');
     expect(screen.getByRole('link', { name: 'Inicia sesión' })).toHaveAttribute('href', '/login');
+  });
+
+  // FRESCO-1173 — "the menu we just generated" is only true for a guest that has one.
+  test('a guest with a menu is told to keep it', () => {
+    renderForm(makeSubmit(), captcha, { email: '', password: '' }, true);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Guarda tu menú');
+    expect(screen.getByText('Crea una cuenta para no perder el menú que acabamos de generar.')).toBeInTheDocument();
+  });
+
+  test('anyone else gets the generic heading and no claim about a menu', () => {
+    renderForm();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Crea tu cuenta');
+    expect(screen.queryByText(/menú que acabamos de generar/)).toBeNull();
   });
 
   test('shows the values it is given', () => {
