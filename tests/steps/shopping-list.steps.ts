@@ -253,7 +253,13 @@ When(/^pulsa "Añadir" en esa sugerencia$/, async ({ page }) => {
   const button = page.getByTestId('shopping_list_suggestions_section').getByRole('button', { name: 'Añadir' }).first();
   const testId = await button.getAttribute('data-testid');
   addedSuggestionNombre = testId!.replace('shopping_list_add_suggestion_', '');
+  // FRESCO-1148: the row shows up optimistically and `jsonb_add_item` runs in the background. The last Then step
+  // reloads the page, and a reload that lands before the write drops it, so the product was not there afterwards
+  // (CI run 42588605392: "Fresas" not found after the reload). Wait for the real write to answer, like the
+  // favorites step in notificaciones.steps.ts.
+  const saved = page.waitForResponse(res => res.url().includes('/rest/v1/rpc/jsonb_add_item') && res.request().method() === 'POST');
   await button.click();
+  await saved;
 });
 
 Then(/^el producto aparece en la lista, en su pasillo correspondiente$/, async ({ page }) => {
