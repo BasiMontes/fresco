@@ -16,8 +16,10 @@ function makePlan(edit: (plan: MenuSemanalPersistido) => void = () => {}): MenuS
   return plan;
 }
 
-const render = (plan: MenuSemanalPersistido, dietaryPreferences: OnboardingProfilePayload | null = null, favoriteIds = new Set<string>()) =>
-  renderWithProviders(<MenuTodaysMeals plan={plan} dietaryPreferences={dietaryPreferences} favoriteIds={favoriteIds} />);
+// 2026-W45 starts on Monday 2026-11-02; the default "today" is that Monday.
+const MONDAY = '2026-11-02';
+const render = (plan: MenuSemanalPersistido, dietaryPreferences: OnboardingProfilePayload | null = null, favoriteIds = new Set<string>(), hoyIso = MONDAY) =>
+  renderWithProviders(<MenuTodaysMeals plan={plan} dietaryPreferences={dietaryPreferences} favoriteIds={favoriteIds} mondayIso={MONDAY} hoyIso={hoyIso} />);
 
 describe('MenuTodaysMeals', () => {
   test('with no planning selection it shows the three meals in order, each a link to its recipe', () => {
@@ -56,5 +58,36 @@ describe('MenuTodaysMeals', () => {
     render(makePlan(), prefs);
     expect(screen.getAllByText(/^(desayuno|comida|cena)$/).map(n => n.textContent)).toEqual(['comida', 'cena']);
     expect(screen.getAllByRole('link')).toHaveLength(2);
+  });
+
+  // FRESCO-1171 — it used to show Monday's meals every day of the week.
+  test('on a Tuesday it shows Tuesday\'s recipes, not Monday\'s', () => {
+    render(makePlan(), null, new Set(), '2026-11-03');
+    const links = screen.getAllByRole('link').map(l => l.getAttribute('href'));
+    expect(links).toEqual([
+      '/recipes/fixture-martes-desayuno?from=menu',
+      '/recipes/fixture-martes-comida?from=menu',
+      '/recipes/fixture-martes-cena?from=menu',
+    ]);
+    expect(screen.queryByTestId('menu_todays_meals_next_day')).toBeNull();
+  });
+
+  test('a day the user excluded is judged by its own state, not Monday\'s', () => {
+    render(makePlan((plan) => {
+      plan.menu.martes.cena = null;
+      plan.estados.martes.cena = 'excluida';
+    }), null, new Set(), '2026-11-03');
+    expect(screen.getByTestId('menu_slot_cena_excluida')).toBeInTheDocument();
+  });
+
+  test('when today has no recipes it shows the next day with recipes and names it', () => {
+    render(makePlan((plan) => {
+      for (const slot of ['desayuno', 'comida', 'cena'] as const) {
+        plan.menu.martes[slot] = null;
+        plan.estados.martes[slot] = 'excluida';
+      }
+    }), null, new Set(), '2026-11-03');
+    expect(screen.getByTestId('menu_todays_meals_next_day')).toHaveTextContent('miércoles');
+    expect(screen.getAllByRole('link')[0]).toHaveAttribute('href', '/recipes/fixture-miercoles-desayuno?from=menu');
   });
 });
