@@ -2,6 +2,7 @@ import type { APIRequestContext } from '@playwright/test';
 import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
+import { hoyEnMadrid, sumarDias } from '../../lib/date/madrid-date';
 import { test } from '../fixtures';
 import { currentWeekMonday, loginToApp, restHeaders, serviceRoleHeaders } from '../test-helpers';
 import { revealCalendarDay } from './support/calendar-day';
@@ -24,12 +25,18 @@ const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'do
 const TIPOS = ['desayuno', 'comida', 'cena'] as const;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-interface Ctx { testUser: TestUser | null }
-const ctx: Ctx = { testUser: null };
+interface Ctx { testUser: TestUser | null, dia: typeof DIAS[number] }
+const ctx: Ctx = { testUser: null, dia: 'lunes' };
 
-async function seedPlanWithNullSlot(request: APIRequestContext, testUser: TestUser): Promise<void> {
+/** The weekday `/menu` treats as today (Madrid date, same helper as the app). */
+function diaDeHoy(mondayIso: string): typeof DIAS[number] {
+  return DIAS.find((_, index) => sumarDias(mondayIso, index) === hoyEnMadrid()) ?? 'lunes';
+}
+
+async function seedPlanWithNullSlot(request: APIRequestContext, testUser: TestUser): Promise<typeof DIAS[number]> {
   const headers = restHeaders(testUser.accessToken);
   const { semanaIso, fechaInicio } = currentWeekMonday();
+  const diaHoy = diaDeHoy(fechaInicio);
 
   const recipesRes = await request.get(`${SUPABASE_URL}/rest/v1/recipes?select=id&limit=1`, { headers });
   const [recipe] = await recipesRes.json() as { id: string }[];
@@ -49,17 +56,18 @@ async function seedPlanWithNullSlot(request: APIRequestContext, testUser: TestUs
 
   const slots = DIAS.flatMap(dia => TIPOS.map(tipo => ({
     meal_plan_id: plan.id,
-    recipe_id: dia === 'lunes' && tipo === 'desayuno' ? null : recipe.id,
+    recipe_id: dia === diaHoy && tipo === 'desayuno' ? null : recipe.id,
     dia,
     tipo_plato: tipo,
   })));
   const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
   if (!slotsRes.ok()) { throw new Error(`Failed to seed meal_plan_recipes: ${slotsRes.status()} ${await slotsRes.text()}`); }
+  return diaHoy;
 }
 
 Given(/^que un menú persistido tiene una franja con recipe_id null$/, async ({ request, testUserFactory }) => {
   ctx.testUser = await testUserFactory();
-  await seedPlanWithNullSlot(request, ctx.testUser);
+  ctx.dia = await seedPlanWithNullSlot(request, ctx.testUser);
 });
 
 When(/^el usuario visita \/menu o \/calendar$/, async ({ page }) => {
@@ -75,11 +83,11 @@ Then(/^ve esa franja marcada como "Sin receta", sin crashear$/, async ({ page })
 
 Then(/^no puede arrastrarla ni marcarla como cocinada\/descartada$/, async ({ page }) => {
   await page.goto('/calendar');
-  await revealCalendarDay(page, 'lunes');
-  await expect(page.getByTestId('calendar_slot_lunes_desayuno_sin_receta')).toBeVisible();
-  await expect(page.getByTestId('calendar_slot_lunes_desayuno_mark_cocinada')).toHaveCount(0);
-  await expect(page.getByTestId('calendar_slot_lunes_desayuno_mark_descartada')).toHaveCount(0);
+  await revealCalendarDay(page, ctx.dia);
+  await expect(page.getByTestId(`calendar_slot_${ctx.dia}_desayuno_sin_receta`)).toBeVisible();
+  await expect(page.getByTestId(`calendar_slot_${ctx.dia}_desayuno_mark_cocinada`)).toHaveCount(0);
+  await expect(page.getByTestId(`calendar_slot_${ctx.dia}_desayuno_mark_descartada`)).toHaveCount(0);
   await expect(
-    page.getByTestId('calendar_slot_lunes_desayuno').getByRole('button', { name: 'Arrastrar para reordenar' }),
+    page.getByTestId(`calendar_slot_${ctx.dia}_desayuno`).getByRole('button', { name: 'Arrastrar para reordenar' }),
   ).toHaveCount(0);
 });
