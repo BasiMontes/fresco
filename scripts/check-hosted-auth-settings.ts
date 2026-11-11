@@ -23,6 +23,10 @@
  * live email templates must match `supabase/templates/*.html` (they are pushed by hand through the Management
  * API, so the repo copy can silently stop being the live one).
  *
+ * FRESCO-1169 (integral review F2): and whether each Edge Function requires a session (`verify_jwt`) is what
+ * `supabase/config.toml` declares for it (`[functions.<slug>]`). The live value is read from the Management API
+ * functions list and compared one by one, so a manual deploy or a dashboard change that flips it is a finding.
+ *
  * Runs from `.github/workflows/hosted-auth-settings-check.yml` (weekly + on demand), not
  * from the per-PR pipeline: it needs a token for the production project (ADR-0017).
  *
@@ -35,6 +39,7 @@
 
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
+import { evaluateFunctionSettings, readDeclaredVerifyJwt } from './lib/edge-function-config';
 
 interface BooleanExpectation {
   key: string
@@ -280,9 +285,27 @@ async function main(): Promise<number> {
     return 2;
   }
 
-  const findings = evaluateAuthSettings(config, expected);
+  let functionFindings: string[];
+  try {
+    const declared = readDeclaredVerifyJwt(readFileSync('supabase/config.toml', 'utf8'));
+    const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/functions`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) {
+      console.error(`Management API answered HTTP ${res.status} for the functions list: cannot read the hosted Edge Function settings`);
+      return 2;
+    }
+    functionFindings = evaluateFunctionSettings(await res.json(), declared);
+  }
+  catch (error) {
+    console.error(`cannot read the Edge Function settings: ${(error as Error).name}: ${(error as Error).message}`);
+    return 2;
+  }
+
+  const findings = [...evaluateAuthSettings(config, expected), ...functionFindings];
   if (findings.length === 0) {
-    console.log(`hosted Auth settings: clean (${EXPECTED_TRUE.length + EXPECTED_FALSE.length + 6} settings and ${TEMPLATE_TYPES.length} email templates checked on project ${ref})`);
+    console.log(`hosted Auth settings: clean (${EXPECTED_TRUE.length + EXPECTED_FALSE.length + 6} settings, ${TEMPLATE_TYPES.length} email templates and the verify_jwt of every Edge Function checked on project ${ref})`);
     return 0;
   }
   console.log(`hosted Auth settings: ${findings.length} finding(s) on project ${ref}`);

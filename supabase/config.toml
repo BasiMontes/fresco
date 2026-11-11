@@ -397,6 +397,46 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# FRESCO-1169 (integral review F2): which Edge Functions require a session (`verify_jwt`) is declared HERE, one block
+# per function. It used to live only in a flag of scripts/deploy-changed-functions.ts, so a manual deploy or a change in
+# the dashboard could flip it unseen. This file is now the source of truth:
+#   - scripts/deploy-changed-functions.ts reads it (and refuses to deploy a function that has no block);
+#   - the weekly hosted check (scripts/check-hosted-auth-settings.ts) fails when the LIVE value of a function differs;
+#   - scripts/edge-function-config.test.ts fails when a function dir has no block, or when the value contradicts the
+#     auth helper the function's code calls (requireAuthenticatedUser needs true, requireServiceRoleCaller needs false).
+# A new function must add its block, with the reason when it is false.
+
+# User-facing functions: the platform checks the JWT, and each one also calls requireAuthenticatedUser (_shared/auth.ts).
+[functions.delete-account]
+verify_jwt = true
+
+[functions.delete-catalog-recipe]
+verify_jwt = true
+
+[functions.generate-meal-plan]
+verify_jwt = true
+
+[functions.generate-shopping-list]
+verify_jwt = true
+
+[functions.get-shopping-list-suggestions]
+verify_jwt = true
+
+[functions.reassign-guest-data]
+verify_jwt = true
+
+[functions.update-recipe-status]
+verify_jwt = true
+
+# Cron-called functions (pg_cron -> pg_net, never a browser). The caller proves itself with the service key in the
+# `apikey` header, which is not a JWT, so the platform gate would reject it: they must be deployed with verify_jwt
+# false and authenticate inside the function with requireServiceRoleCaller (constant-time, fails closed).
+[functions.retry-posthog-erasures]
+verify_jwt = false
+
+[functions.send-weekly-reengagement-push]
+verify_jwt = false
+
 [analytics]
 enabled = false
 port = 54327
