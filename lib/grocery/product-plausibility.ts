@@ -35,7 +35,7 @@ const CATEGORY_EXCLUSIONS: readonly CategoryExclusion[] = [
   // Not the ingredient: pet food, prepared dairy, infusions, sweets, ready meals and bakery.
   { tokens: ['gato', 'gatos', 'perro', 'perros', 'mascota', 'mascotas', 'conejos', 'enanos'] },
   { tokens: ['bifidus', 'yogur', 'yogurt', 'activia', 'helado', 'batido'] },
-  { tokens: ['infusion', 'caramelo', 'caramelos', 'aros', 'cereales', 'barrita', 'snack', 'chicle', 'chicles', 'gragea', 'grissini', 'mollejas', 'sabor', 'vaso', 'orientales', 'instantaneos', 'turron', 'turrones', 'mazapan', 'polvoron', 'polvorones'] },
+  { tokens: ['infusion', 'caramelo', 'caramelos', 'aros', 'cereales', 'barrita', 'snack', 'chicle', 'chicles', 'gragea', 'grissini', 'mollejas', 'sabor', 'vaso', 'orientales', 'instantaneos', 'cup', 'yatekomo', 'turron', 'turrones', 'mazapan', 'polvoron', 'polvorones'] },
   { tokens: ['nuggets', 'bocaditos', 'bites', 'pizza', 'salteado', 'relleno', 'rellenos', 'arroz', 'pate', 'higado'] },
   // FRESCO-825: variants that are not the plain ingredient. Prepared dish, flavoured nut, spice-rack salt, shaped kids' pasta.
   { tokens: ['tomate'], onlyFor: /^alubias\b/ },
