@@ -75,8 +75,9 @@ function activeSubscription(overrides: Partial<{ status: Stripe.Subscription.Sta
 
 interface OrphanRow { id: string, plan: 'pro' | 'family' }
 
-function fakeClient(opts: { orphans?: OrphanRow[], loadError?: unknown, failIds?: string[] }) {
+function fakeClient(opts: { orphans?: OrphanRow[], loadError?: unknown, failIds?: string[], pageSizeCap?: number }) {
   const updated: string[] = [];
+  const ranges: Array<[number, number]> = [];
   const client = {
     from() {
       return {
@@ -84,7 +85,17 @@ function fakeClient(opts: { orphans?: OrphanRow[], loadError?: unknown, failIds?
           return {
             in() {
               return {
-                is: async () => ({ data: opts.orphans ?? [], error: opts.loadError ?? null }),
+                // FRESCO-1165: the orphans are read a page at a time, ordered by id; `pageSizeCap` is PostgREST's `max_rows`.
+                is: () => ({
+                  order: () => ({
+                    range: async (from: number, to: number) => {
+                      ranges.push([from, to]);
+                      if (opts.loadError) { return { data: null, error: opts.loadError }; }
+                      const end = Math.min(to, from + (opts.pageSizeCap ?? Infinity) - 1);
+                      return { data: (opts.orphans ?? []).slice(from, end + 1), error: null };
+                    },
+                  }),
+                }),
               };
             },
           };
@@ -101,7 +112,7 @@ function fakeClient(opts: { orphans?: OrphanRow[], loadError?: unknown, failIds?
       };
     },
   };
-  return { client: client as unknown as ReturnType<typeof createServiceClient>, updated };
+  return { client: client as unknown as ReturnType<typeof createServiceClient>, updated, ranges };
 }
 
 describe('sweepOrphanPaidPlans', () => {
@@ -124,6 +135,27 @@ describe('sweepOrphanPaidPlans', () => {
 
     expect(await sweepOrphanPaidPlans(client)).toBe(0);
     expect(updated).toEqual([]);
+  });
+
+  // FRESCO-1165: more orphans than one page (PostgREST's `max_rows` is 1000) are all swept, not just the first thousand.
+  test('sweeps every orphan when there are more than one page of them, reading the pages in order', async () => {
+    const orphans: OrphanRow[] = Array.from({ length: 2500 }, (_, i) => ({ id: `u${String(i).padStart(4, '0')}`, plan: 'pro' }));
+    const { client, updated, ranges } = fakeClient({ orphans });
+
+    const swept = await sweepOrphanPaidPlans(client);
+
+    expect(swept).toBe(2500);
+    expect(updated).toHaveLength(2500);
+    expect(new Set(updated).size).toBe(2500);
+    expect(ranges).toEqual([[0, 999], [1000, 1999], [2000, 2999], [2500, 3499]]);
+  });
+
+  test('a server cap lower than the page does not skip rows: the next page starts where the returned rows end', async () => {
+    const orphans: OrphanRow[] = Array.from({ length: 1200 }, (_, i) => ({ id: `u${i}`, plan: 'family' }));
+    const { client, updated } = fakeClient({ orphans, pageSizeCap: 500 });
+
+    expect(await sweepOrphanPaidPlans(client)).toBe(1200);
+    expect(new Set(updated).size).toBe(1200);
   });
 
   test('returns 0 on a load error without attempting any update', async () => {
@@ -296,6 +328,21 @@ describe('GET /api/cron/stripe-reconcile — reconcile loop', () => {
     const body = await res.json() as { reconciled: number, drifted: Array<{ changes: Record<string, unknown> }> };
     expect(body.reconciled).toBe(1);
     expect(body.drifted[0]?.changes.plan).toEqual({ from: 'pro', to: 'free' });
+  });
+
+  // FRESCO-1165 (integral review PAY-N6): the list of profiles had no range, so PostgREST's `max_rows` (1000) cut it.
+  test('reconciles every profile when there are more than one page of them, not just the first thousand', async () => {
+    const expiresAt = new Date(1_700_003_600 * 1000).toISOString();
+    retrieveMock.mockImplementation(async () => activeSubscription());
+    const rows = Array.from({ length: 1200 }, (_, i) => ({ id: `u${i}`, plan: 'pro', plan_expires_at: expiresAt, payment_failed_at: null, stripe_subscription_id: `sub_${i}`, stripe_customer_id: `cus_${i}` }));
+    supa = fakeSupabase({ user_profiles: { rows } });
+
+    const res = await GET(req());
+
+    const body = await res.json() as { checked: number, failures: number };
+    expect(body.checked).toBe(1200);
+    expect(body.failures).toBe(0);
+    expect(retrieveMock).toHaveBeenCalledTimes(1200);
   });
 
   test('FRESCO-1088: a missing subscription whose customer Stripe cannot confirm is a failure, not a downgrade', async () => {
