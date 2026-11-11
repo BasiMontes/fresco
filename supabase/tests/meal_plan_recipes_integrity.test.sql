@@ -16,7 +16,7 @@
 -- Run by `supabase test db` (CI: the e2e job in .github/workflows/pr-check.yml).
 
 begin;
-select plan(9);
+select plan(12);
 
 select hasnt_function(
   'public', 'apply_recipe_status_update',
@@ -79,6 +79,22 @@ select ok(
 select ok(
   not has_function_privilege('service_role', 'public.retire_conflicting_slots(uuid)', 'execute'),
   'FRESCO-1151: service_role cannot execute retire_conflicting_slots'
+);
+
+-- FRESCO-1154: the helper that clears a confirmed substitution also takes a user id and writes slots, and is
+-- internal in the same way. It does not mention the trusted-write setting (its callers already are trusted
+-- writers), so it is not in the allowlist above; this keeps it from ever becoming a client RPC.
+select ok(
+  not has_function_privilege('authenticated', 'public.clear_conflicting_substitutions(uuid, uuid[])', 'execute'),
+  'FRESCO-1154: authenticated cannot execute clear_conflicting_substitutions'
+);
+select ok(
+  not has_function_privilege('anon', 'public.clear_conflicting_substitutions(uuid, uuid[])', 'execute'),
+  'FRESCO-1154: anon cannot execute clear_conflicting_substitutions'
+);
+select ok(
+  not has_function_privilege('service_role', 'public.clear_conflicting_substitutions(uuid, uuid[])', 'execute'),
+  'FRESCO-1154: service_role cannot execute clear_conflicting_substitutions'
 );
 
 select * from finish();
