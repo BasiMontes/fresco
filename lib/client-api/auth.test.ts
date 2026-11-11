@@ -1,5 +1,6 @@
 import { isAuthError } from '@supabase/supabase-js';
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
+import * as pushApi from '@/lib/client-api/push';
 
 /**
  * FRESCO-810 (ADR-0041): `lib/client-api/auth` is the only place a browser
@@ -61,6 +62,38 @@ beforeEach(() => {
 describe('signOut', () => {
   test('ends the browser session', async () => {
     await signOut();
+
+    expect(signOutMock).toHaveBeenCalledTimes(1);
+  });
+
+  // FRESCO-1182: the subscription of this browser goes while the session can still delete the row (RLS), so
+  // on a shared browser the next person is not handed the previous user's reminders.
+  test('drops this browser\'s push subscription BEFORE ending the session', async () => {
+    const order: string[] = [];
+    const unsubscribe = spyOn(pushApi, 'unsubscribeFromPush').mockImplementation(async () => { order.push('unsubscribe'); });
+    signOutMock.mockImplementationOnce(async () => { order.push('signOut'); return { error: null }; });
+
+    try {
+      await signOut();
+    }
+    finally {
+      unsubscribe.mockRestore();
+    }
+
+    expect(order).toEqual(['unsubscribe', 'signOut']);
+  });
+
+  test('a push cleanup that fails never keeps anyone signed in', async () => {
+    const unsubscribe = spyOn(pushApi, 'unsubscribeFromPush').mockRejectedValue(new Error('network'));
+    const errors = spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      await signOut();
+    }
+    finally {
+      unsubscribe.mockRestore();
+      errors.mockRestore();
+    }
 
     expect(signOutMock).toHaveBeenCalledTimes(1);
   });

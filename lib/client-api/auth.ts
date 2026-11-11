@@ -1,6 +1,7 @@
 import type { AuthError } from '@supabase/supabase-js';
 import { AuthApiError, AuthUnknownError, createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { captchaOptions } from '@/lib/auth/captcha';
+import { unsubscribeFromPush } from '@/lib/client-api/push';
 import { clientEnv } from '@/lib/env';
 import { createClient } from '@/lib/supabase/client';
 
@@ -10,8 +11,20 @@ import { createClient } from '@/lib/supabase/client';
  * returned, so callers keep their own error handling and messages.
  */
 
-/** Ends the browser session. The result is ignored on purpose, like every caller did. */
+/**
+ * Ends the browser session. The result is ignored on purpose, like every caller did.
+ *
+ * FRESCO-1182: this browser's push subscription goes first, while the session can still delete the row
+ * (RLS). Signing out did not remove it, so on a shared browser the previous user's reminders kept arriving
+ * at the device the next person was using. Best effort: a failure here never keeps anyone signed in.
+ */
 export async function signOut(): Promise<void> {
+  try {
+    await unsubscribeFromPush();
+  }
+  catch (error) {
+    console.error('[signOut] could not remove this browser\'s push subscription', error);
+  }
   await createClient().auth.signOut();
 }
 

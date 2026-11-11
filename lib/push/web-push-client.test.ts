@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import * as subscriptionsApi from '@/lib/api/push-subscriptions';
 import {
   getCurrentPushSubscription,
+  isCurrentSubscriptionStored,
   isPushSupported,
   subscribeToPush,
   unsubscribeFromPush,
@@ -61,6 +62,7 @@ let register: ReturnType<typeof mock>;
 let getRegistration: ReturnType<typeof mock>;
 let saveSpy: ReturnType<typeof spyOn<typeof subscriptionsApi, 'savePushSubscription'>>;
 let deleteSpy: ReturnType<typeof spyOn<typeof subscriptionsApi, 'deletePushSubscription'>>;
+let hasSpy: ReturnType<typeof spyOn<typeof subscriptionsApi, 'hasPushSubscription'>>;
 
 function installBrowser() {
   const registration = {
@@ -93,13 +95,15 @@ beforeEach(() => {
   created = subscription();
   permission = 'granted';
   installBrowser();
-  saveSpy = spyOn(subscriptionsApi, 'savePushSubscription').mockImplementation(async () => { events.push('save'); });
+  saveSpy = spyOn(subscriptionsApi, 'savePushSubscription').mockImplementation(async () => { events.push('save'); return 'saved'; });
+  hasSpy = spyOn(subscriptionsApi, 'hasPushSubscription').mockResolvedValue(true);
   deleteSpy = spyOn(subscriptionsApi, 'deletePushSubscription').mockImplementation(async () => { events.push('delete'); });
 });
 
 afterEach(() => {
   saveSpy.mockRestore();
   deleteSpy.mockRestore();
+  hasSpy.mockRestore();
   restore(navigator, 'serviceWorker', original.serviceWorker);
   restore(window, 'PushManager', original.pushManager);
   restore(globalThis, 'Notification', original.notification);
@@ -191,6 +195,89 @@ describe('subscribeToPush', () => {
     created = subscription(null);
     await expect(subscribeToPush(args)).rejects.toThrow(WebPushError);
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * FRESCO-1182 — a shared browser. User A subscribed and left; user B opens the same browser and turns the
+ * switch on. The browser still holds A's subscription, whose endpoint is stored for A, so B's insert hits
+ * the unique endpoint. That used to count as success: B was never notified and A's reminders kept arriving.
+ */
+describe('subscribeToPush on a shared browser (FRESCO-1182)', () => {
+  const args = { client, vapidPublicKey: 'aGVsbG8' };
+  const fresh = () => ({ ...subscription(), endpoint: 'https://push.example/for-b' });
+
+  test('an endpoint stored for another user is dropped and a fresh one is saved: the endpoint ends up belonging to the new user', async () => {
+    existing = subscription();
+    created = fresh();
+    saveSpy.mockImplementation(async (_client, { subscription: stored }) => {
+      events.push(`save:${stored.endpoint}`);
+      return stored.endpoint === 'https://push.example/abc' ? 'taken' : 'saved';
+    });
+
+    const result = await subscribeToPush(args);
+
+    expect(result).toBe(created);
+    expect(existing.unsubscribe).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(['save:https://push.example/abc', 'subscribe', 'save:https://push.example/for-b']);
+  });
+
+  test('an endpoint that is already this user\'s is kept: no second subscription, nothing dropped', async () => {
+    existing = subscription();
+    saveSpy.mockImplementation(async () => 'owned');
+
+    const result = await subscribeToPush(args);
+
+    expect(result).toBe(existing);
+    expect(existing.unsubscribe).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
+  });
+
+  test('if even the fresh endpoint is taken it fails loudly instead of showing "on"', async () => {
+    existing = subscription();
+    created = fresh();
+    saveSpy.mockImplementation(async () => 'taken');
+
+    await expect(subscribeToPush(args)).rejects.toThrow('No se pudo asociar este navegador a tu cuenta');
+  });
+});
+
+describe('isCurrentSubscriptionStored (FRESCO-1182)', () => {
+  const withUser = (user: { id: string } | null) => ({ auth: { getUser: async () => ({ data: { user } }) } }) as unknown as SupabaseClient<Database>;
+
+  test('false when the browser holds no subscription, without asking the database', async () => {
+    existing = null;
+
+    expect(await isCurrentSubscriptionStored(withUser({ id: 'user_b' }))).toBe(false);
+    expect(hasSpy).not.toHaveBeenCalled();
+  });
+
+  test('false when the browser holds a subscription that is not stored for the signed-in user', async () => {
+    existing = subscription();
+    hasSpy.mockResolvedValue(false);
+
+    expect(await isCurrentSubscriptionStored(withUser({ id: 'user_b' }))).toBe(false);
+    expect(hasSpy).toHaveBeenCalledWith(expect.anything(), { endpoint: 'https://push.example/abc', userId: 'user_b' });
+  });
+
+  test('true when it is stored for the signed-in user', async () => {
+    existing = subscription();
+    hasSpy.mockResolvedValue(true);
+
+    expect(await isCurrentSubscriptionStored(withUser({ id: 'user_a' }))).toBe(true);
+  });
+
+  test('false without a signed-in user', async () => {
+    existing = subscription();
+
+    expect(await isCurrentSubscriptionStored(withUser(null))).toBe(false);
+  });
+
+  test('a failed read falls back to the browser\'s state instead of flipping the switch off', async () => {
+    existing = subscription();
+    hasSpy.mockRejectedValue(new Error('network'));
+
+    expect(await isCurrentSubscriptionStored(withUser({ id: 'user_a' }))).toBe(true);
   });
 });
 

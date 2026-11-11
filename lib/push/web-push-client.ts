@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
-import { deletePushSubscription, savePushSubscription } from '@/lib/api/push-subscriptions';
+import { deletePushSubscription, hasPushSubscription, savePushSubscription } from '@/lib/api/push-subscriptions';
 import { SERVICE_WORKER_URL } from '@/lib/pwa/service-worker';
 
 export class WebPushError extends Error {
@@ -76,6 +76,28 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
   return registration.pushManager.getSubscription();
 }
 
+/**
+ * Whether this browser's subscription is stored for the signed-in user (FRESCO-1182). The `/profile` switch
+ * used to mirror only the browser, so on a shared browser the second user saw "on" with nothing stored for
+ * them. A read error falls back to the browser's own state: it must not flip the switch off by itself.
+ */
+export async function isCurrentSubscriptionStored(client: SupabaseClient<Database>): Promise<boolean> {
+  const subscription = await getCurrentPushSubscription();
+  if (!subscription) {
+    return false;
+  }
+  try {
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) {
+      return false;
+    }
+    return await hasPushSubscription(client, { endpoint: subscription.endpoint, userId: user.id });
+  }
+  catch {
+    return true;
+  }
+}
+
 export interface SubscribeToPushArgs {
   client: SupabaseClient<Database>
   vapidPublicKey: string
@@ -102,8 +124,7 @@ export async function subscribeToPush({ client, vapidPublicKey }: SubscribeToPus
   const registration = await registerServiceWorker();
   await navigator.serviceWorker.ready;
 
-  const existing = await registration.pushManager.getSubscription();
-  const subscription = existing ?? await registration.pushManager.subscribe({
+  const createSubscription = async () => registration.pushManager.subscribe({
     userVisibleOnly: true,
     // Cast: TS 5.7+'s `lib.dom.d.ts` types `Uint8Array` generically over its
     // backing buffer, while `PushSubscriptionOptionsInit.applicationServerKey`
@@ -112,18 +133,33 @@ export async function subscribeToPush({ client, vapidPublicKey }: SubscribeToPus
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
   });
 
-  const keys = subscription.toJSON().keys;
-  if (!keys?.p256dh || !keys.auth) {
-    throw new WebPushError('La suscripción del navegador no incluyó las claves esperadas.');
-  }
+  const store = async (candidate: PushSubscription) => {
+    const keys = candidate.toJSON().keys;
+    if (!keys?.p256dh || !keys.auth) {
+      throw new WebPushError('La suscripción del navegador no incluyó las claves esperadas.');
+    }
+    return savePushSubscription(client, {
+      subscription: {
+        endpoint: candidate.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      },
+    });
+  };
 
-  await savePushSubscription(client, {
-    subscription: {
-      endpoint: subscription.endpoint,
-      p256dh: keys.p256dh,
-      auth: keys.auth,
-    },
-  });
+  let subscription = (await registration.pushManager.getSubscription()) ?? await createSubscription();
+
+  // FRESCO-1182: on a shared browser the endpoint this browser already holds can still be stored for the
+  // PREVIOUS user. It is not ours to take over (no UPDATE policy, and a client must not be able to claim
+  // another user's row), so drop it and ask the push service for a fresh endpoint that belongs to this user.
+  // The previous user's row now points at a dead endpoint, which the weekly sender removes on its first 410.
+  if (await store(subscription) === 'taken') {
+    await subscription.unsubscribe();
+    subscription = await createSubscription();
+    if (await store(subscription) === 'taken') {
+      throw new WebPushError('No se pudo asociar este navegador a tu cuenta. Inténtalo de nuevo.');
+    }
+  }
 
   return subscription;
 }

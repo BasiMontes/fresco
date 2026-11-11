@@ -16,17 +16,29 @@ export interface PushSubscriptionKeys {
 }
 
 /**
+ * What `savePushSubscription` found: `saved` (a new row), `owned` (this browser's endpoint was already stored
+ * for THIS user) or `taken` (the endpoint belongs to ANOTHER user: a shared browser where the previous person
+ * never removed their subscription). FRESCO-1182.
+ */
+export type SavePushSubscriptionResult = 'saved' | 'owned' | 'taken';
+
+/**
  * Persists a browser push subscription for the CURRENTLY authenticated user
  * (FRESCO-241 PR2). `push_subscriptions` has no UPDATE RLS policy by design
  * (PR1 migration: "a subscription is replaced (delete + insert) rather than
- * edited") — so a plain `insert` is used, and a `23505` unique-violation on
- * `endpoint` (this browser already has a row) is swallowed as a no-op
- * instead of surfacing as an error.
+ * edited") — so a plain `insert` is used.
+ *
+ * A `23505` unique-violation on `endpoint` means the browser already has a row, and whose it is
+ * matters (FRESCO-1182): the same user's own row is a no-op (`owned`), but a row of ANOTHER user
+ * (the previous person on a shared browser) used to be swallowed as a success too, so the switch
+ * said "on", the new user was never notified and the previous user's reminders kept arriving at
+ * that device. RLS lets a user read only their own rows, so asking for this endpoint tells the two
+ * apart; `taken` is for the caller to resolve with a fresh browser subscription.
  */
 export async function savePushSubscription(
   client: SupabaseClient<Database>,
   { subscription, userId }: { subscription: PushSubscriptionKeys, userId?: string },
-): Promise<void> {
+): Promise<SavePushSubscriptionResult> {
   let resolvedUserId = userId;
 
   if (!resolvedUserId) {
@@ -48,12 +60,36 @@ export async function savePushSubscription(
       auth: subscription.auth,
     });
 
-  if (error) {
-    if (error.code === '23505') {
-      return;
-    }
+  if (!error) {
+    return 'saved';
+  }
+  if (error.code !== '23505') {
     throw new PushSubscriptionError(`No se pudo activar los avisos: ${error.message}`);
   }
+
+  const mine = await hasPushSubscription(client, { endpoint: subscription.endpoint, userId: resolvedUserId });
+  return mine ? 'owned' : 'taken';
+}
+
+/**
+ * Whether THIS user has a stored row for `endpoint` (RLS shows a user only their own rows, so the `user_id`
+ * filter is belt and braces). The `/profile` switch reads it so it reflects the database, not just the browser.
+ */
+export async function hasPushSubscription(
+  client: SupabaseClient<Database>,
+  { endpoint, userId }: { endpoint: string, userId: string },
+): Promise<boolean> {
+  const { data, error } = await client
+    .from('push_subscriptions')
+    .select('id')
+    .eq('endpoint', endpoint)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new PushSubscriptionError(`No se pudo comprobar los avisos: ${error.message}`);
+  }
+  return data !== null;
 }
 
 /**

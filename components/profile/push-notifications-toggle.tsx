@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { subscribeToPush, unsubscribeFromPush } from '@/lib/client-api/push';
+import { isCurrentSubscriptionStored, subscribeToPush, unsubscribeFromPush } from '@/lib/client-api/push';
 import { clientEnv } from '@/lib/env';
-import { getCurrentPushSubscription, isPushSupported, WebPushError } from '@/lib/push/web-push-client';
+import { isPushSupported, WebPushError } from '@/lib/push/web-push-client';
 
 type ToggleStatus = 'checking' | 'off' | 'on' | 'unsupported' | 'denied' | 'unconfigured' | 'guest';
 
@@ -49,11 +49,13 @@ export function PushNotificationsToggle({ isGuest = false }: PushNotificationsTo
         return;
       }
 
-      const subscription = await getCurrentPushSubscription();
+      // FRESCO-1182: "on" means THIS user has this browser stored, not only that the browser holds a
+      // subscription: on a shared browser the previous user's subscription would show "on" to the next one.
+      const stored = await isCurrentSubscriptionStored();
       if (cancelled) {
         return;
       }
-      setStatus(subscription ? 'on' : 'off');
+      setStatus(stored ? 'on' : 'off');
     }
 
     void checkInitialState();
