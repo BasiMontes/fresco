@@ -37,12 +37,13 @@ function PlanFeature({ label }: { label: string }) {
   );
 }
 
-// FRESCO-871: the amounts come from Stripe (`getProPrices`); this is what the
-// section says when they cannot be read, i.e. the page as it was before the annual plan.
-const FALLBACK_PRICES: ProPrices = { month: 4.99, year: null, taxIncluded: false };
-
+// FRESCO-871: the amounts come from Stripe (`getProPrices`). FRESCO-1166: when they cannot be read the Pro column
+// states no amount (it used to show a typed 4,99, which drifts with the first price change and says something
+// untrue the day the price is not that): the person sees the price in the checkout, before paying.
 export function Pricing({ prices }: { prices: ProPrices | null }) {
-  const { month, year, taxIncluded } = prices ?? FALLBACK_PRICES;
+  const month = prices?.month ?? null;
+  const year = prices?.year ?? null;
+  const taxIncluded = prices?.taxIncluded ?? false;
   const savings = prices ? yearlySavingsEuros(prices) : null;
 
   return (
@@ -78,10 +79,18 @@ export function Pricing({ prices }: { prices: ProPrices | null }) {
                 Más elegido
               </span>
             </div>
-            <p className="mb-1 text-h1 text-primary">
-              {formatEuros(month)}
-              <span className="text-body-md font-normal text-tertiary">/mes</span>
-            </p>
+            {month !== null
+              ? (
+                  <p className="mb-1 text-h1 text-primary">
+                    {formatEuros(month)}
+                    <span className="text-body-md font-normal text-tertiary">/mes</span>
+                  </p>
+                )
+              : (
+                  <p className="mb-1 text-h3 text-primary" data-testid="landing_pro_price_unavailable">
+                    El precio lo ves antes de pagar
+                  </p>
+                )}
             {/* FRESCO-1004: only when Stripe declares the prices tax-inclusive; the fallback copy never claims it. */}
             {taxIncluded && (
               <p className="mb-1 text-body-sm text-tertiary" data-testid="landing_pro_tax_included">IVA incluido</p>

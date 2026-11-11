@@ -4,9 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatEuros, yearlySavingsEuros } from '@/lib/billing/pro-prices';
 import { PRO_TRIAL_DAYS } from '@/lib/legal/pro-terms';
 
-/** What the card said before the prices came from Stripe: used only when Stripe cannot be read. */
-const FALLBACK_MONTHLY_EUROS = 4.99;
-
 export interface ProUpsellCardProps {
   /** Whether THIS user still has the free trial (`getUserTrialAvailable`). False also covers "could not tell". */
   trialAvailable: boolean
@@ -23,8 +20,9 @@ export interface ProUpsellCardProps {
  * states can be tested.
  */
 export function ProUpsellCard({ trialAvailable, prices }: ProUpsellCardProps) {
-  // FRESCO-871: amounts come from Stripe; without them the card says what it said before the annual plan.
-  const month = formatEuros(prices?.month ?? FALLBACK_MONTHLY_EUROS);
+  // FRESCO-871: amounts come from Stripe. FRESCO-1166: without them the card states no amount (it used to fall
+  // back to a typed 4,99) and says the price is shown before paying.
+  const month = prices ? formatEuros(prices.month) : null;
   const year = prices?.year != null ? formatEuros(prices.year) : null;
   const savings = prices ? yearlySavingsEuros(prices) : null;
   // FRESCO-1004: said once, and only when Stripe declares the prices tax-inclusive.
@@ -41,8 +39,8 @@ export function ProUpsellCard({ trialAvailable, prices }: ProUpsellCardProps) {
         más lo uses, menos tienes que pensar.
         {' '}
         {trialAvailable
-          ? `${PRO_TRIAL_DAYS} días de prueba gratis, sin tarjeta. Después, ${month}/mes.${yearlyOption}${taxNote}`
-          : `Ya usaste tu prueba gratuita: el plan cuesta ${month}/mes${year ? ` o ${year}/año` : ''} y se cobra desde el primer día.${taxNote} Puedes cancelarlo cuando quieras.`}
+          ? `${PRO_TRIAL_DAYS} días de prueba gratis, sin tarjeta. ${month ? `Después, ${month}/mes.` : 'Después, el precio lo ves antes de pagar.'}${yearlyOption}${taxNote}`
+          : `Ya usaste tu prueba gratuita: ${month ? `el plan cuesta ${month}/mes${year ? ` o ${year}/año` : ''} y se cobra` : 'el plan se cobra'} desde el primer día.${month ? '' : ' El precio lo ves antes de pagar.'}${taxNote} Puedes cancelarlo cuando quieras.`}
       </CardContent>
       <div className="mt-3">
         <UpgradeToProButton trialAvailable={trialAvailable} />
