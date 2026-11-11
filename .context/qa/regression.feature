@@ -1592,10 +1592,12 @@ Característica: Flujo completo de usuario en Fresco
 
   @perfil @verificado-manual-2026-08-04 @automatizado
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)
-  Escenario: Descargar un backup de los propios datos en JSON
+  # FRESCO-1189: el fichero es un CSV (FRESCO-163), no un JSON, y el paso final no comprobaba nada del contenido:
+  # ahora lee el fichero descargado (nombre, secciones mínimas, su email) y exige que no lleve ningún token.
+  Escenario: Descargar un backup de los propios datos en CSV
     Dado que Laura está en /profile
-    Cuando pulsa "Descargar" en Backup JSON
-    Entonces recibe un fichero con su perfil, menús, listas de la compra y recetas propias reales
+    Cuando pulsa "Descargar" en Backup CSV
+    Entonces recibe un CSV con su cuenta y su perfil y sin ningún token de sesión
 
   @perfil @mobile @verificado-manual-2026-08-04 @automatizado
   # Automatizado: tests/steps/perfil.steps.ts (FRESCO-355)

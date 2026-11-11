@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { TestUser } from '../test-user-factory';
+import { readFile } from 'node:fs/promises';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
@@ -8,7 +9,7 @@ import { loginToApp } from '../test-helpers';
 /**
  * Step definitions for `.context/qa/regression.feature` — @perfil, the happy
  * paths of `/profile` (EPIC-FRESCO-52): edit diet/allergen preferences,
- * download the JSON data backup, log out.
+ * download the CSV data backup, log out.
  *
  * FRESCO-355 (3rd batch of the FRESCO-321 ratchet). Throwaway free-plan
  * factory user (FRESCO-308).
@@ -16,8 +17,9 @@ import { loginToApp } from '../test-helpers';
 
 const { Given, When, Then } = createBdd(test);
 
-interface Ctx { testUser: TestUser | null }
-const ctx: Ctx = { testUser: null };
+interface ExportFile { filename: string, content: string }
+interface Ctx { testUser: TestUser | null, exportFile: ExportFile | null }
+const ctx: Ctx = { testUser: null, exportFile: null };
 
 async function loginAndGoToProfile(page: Page, testUser: TestUser): Promise<void> {
   await loginToApp(page, testUser);
@@ -65,11 +67,13 @@ When(/^activa un chip de dieta y confirma "Actualizar Preferencias"$/, async ({ 
   await page.getByTestId('actualizar_preferencias_button').click();
 });
 
-When(/^pulsa "Descargar" en Backup JSON$/, async ({ page }) => {
+When(/^pulsa "Descargar" en Backup CSV$/, async ({ page }) => {
   const downloadPromise = page.waitForEvent('download');
   await page.getByTestId('export_data_link').click();
   const download = await downloadPromise;
-  await download.saveAs(`/tmp/${download.suggestedFilename()}`);
+  // FRESCO-1189: keep the file itself so the Then step can read it (it used to be saved to /tmp and never opened).
+  const path = await download.path();
+  ctx.exportFile = { filename: download.suggestedFilename(), content: await readFile(path, 'utf8') };
 });
 
 When(/^pulsa "Salir"$/, async ({ page }) => {
@@ -91,10 +95,21 @@ Then(/^la preferencia queda guardada y sigue activa tras recargar la página$/, 
   await expect(page.locator('[data-testid="preferencia_dieta_option"][aria-pressed="true"]').first()).toBeVisible();
 });
 
-Then(/^recibe un fichero con su perfil, menús, listas de la compra y recetas propias reales$/, async ({ page }) => {
-  // The download itself is captured + saved in the When step; reaching here
-  // means page.waitForEvent('download') resolved.
-  expect(page.url()).toContain('/profile');
+// FRESCO-1189: this step used to check only the URL, so an empty or wrong file would have passed. It reads the
+// downloaded CSV: the file name, the sections every account has (`# account` with ITS email, `# user_profile`),
+// and that no session or service secret leaked into the export of personal data.
+Then(/^recibe un CSV con su cuenta y su perfil y sin ningún token de sesión$/, async () => {
+  const file = ctx.exportFile;
+  expect(file, 'the Backup CSV step did not capture a download').not.toBeNull();
+  const { filename, content } = file as ExportFile;
+
+  expect(filename).toMatch(/^fresco-datos-\d{4}-\d{2}-\d{2}\.csv$/);
+  expect(content.length).toBeGreaterThan(200);
+  expect(content.startsWith('# exported_at: ')).toBe(true);
+  expect(content).toContain('# account\n');
+  expect(content).toContain('# user_profile\n');
+  expect(content).toContain(ctx.testUser?.email ?? 'no-email');
+  expect(content).not.toMatch(/access_token|refresh_token|service_role|Bearer |encrypted_password/i);
 });
 
 Then(/^la cookie de sesión se elimina y vuelve a \/login$/, async ({ page }) => {
