@@ -135,10 +135,19 @@ export function getProPriceId(interval: ProInterval): string | null {
   return process.env[PRO_PRICE_ENV[interval]] || null;
 }
 
+/** Optional, comma-separated: the Pro prices that are no longer sold but still have subscribers (FRESCO-1163). */
+const LEGACY_PRO_PRICES_ENV = 'STRIPE_PRICE_IDS_PRO_LEGACY';
+
 /**
- * Every configured Pro price id. The webhook and the reconcile cron grant Pro
- * for ANY of these. The monthly price is the baseline: without it the
- * environment counts as not configured (empty list), whatever else is set.
+ * Every Pro price id. The webhook and the reconcile cron grant Pro for ANY of these. The monthly
+ * price is the baseline: without it the environment counts as not configured (empty list),
+ * whatever else is set.
+ *
+ * FRESCO-1163: after the current prices come the ones in `STRIPE_PRICE_IDS_PRO_LEGACY`. Changing the
+ * price of Pro in Stripe makes a new Price object and leaves every existing subscriber on the old
+ * one, which keeps renewing; if the old id were not accepted, their renewals would be refused and
+ * Pro would lapse at the end of the period while Stripe kept charging them. Checkout still sells
+ * only the current prices (`getProPriceId`).
  */
 export function getProPriceIds(): string[] {
   const month = getProPriceId('month');
@@ -146,7 +155,8 @@ export function getProPriceIds(): string[] {
     return [];
   }
   const year = getProPriceId('year');
-  return year ? [month, year] : [month];
+  const legacy = (process.env[LEGACY_PRO_PRICES_ENV] ?? '').split(',').map(id => id.trim()).filter(Boolean);
+  return [...new Set([month, ...(year ? [year] : []), ...legacy])];
 }
 
 function isProPrice(actualPriceId: string | undefined, expected: ProPriceIds): boolean {

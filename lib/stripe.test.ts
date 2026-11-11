@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import { afterEach, describe, expect, test } from 'bun:test';
-import { getProPriceIds, parseProInterval, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret } from './stripe';
+import { getProPriceId, getProPriceIds, parseProInterval, resolveAppUrl, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveProUpdateFromSession, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret } from './stripe';
 
 /**
  * `resolveProUpdateFromSession` is a pure function — no network, no Stripe
@@ -442,5 +442,68 @@ describe('FRESCO-844 — monthly and annual Pro prices', () => {
   test('a price outside the set is still refused', () => {
     expect(() => resolveRenewalUpdate(annualSubscription(), [PRO_PRICE_ID])).toThrow('does not match expected Pro price');
     expect(resolveReconciledState(annualSubscription(), [PRO_PRICE_ID]).action).toBe('skip');
+  });
+});
+
+/**
+ * FRESCO-1163: changing the price of Pro makes a new Price object, and every existing subscriber stays
+ * on the old one. Their renewals must keep granting Pro or it lapses while Stripe keeps charging them.
+ */
+describe('FRESCO-1163 — Pro prices that are no longer sold', () => {
+  const OLD_MONTH = 'price_pro_month_2025';
+  const NEW_MONTH = 'price_pro_month_2026';
+  const subscriptionOn = (priceId: string) => fakeSubscription({ items: { data: [{ price: { id: priceId }, current_period_end: 1_700_000_000 }] } as unknown as Stripe.Subscription['items'] });
+
+  const saved = { month: process.env.STRIPE_PRICE_ID_PRO_MONTH, year: process.env.STRIPE_PRICE_ID_PRO_ANUAL, legacy: process.env.STRIPE_PRICE_IDS_PRO_LEGACY };
+  const restore = (key: string, value: string | undefined) => value === undefined ? delete process.env[key] : (process.env[key] = value);
+
+  afterEach(() => {
+    restore('STRIPE_PRICE_ID_PRO_MONTH', saved.month);
+    restore('STRIPE_PRICE_ID_PRO_ANUAL', saved.year);
+    restore('STRIPE_PRICE_IDS_PRO_LEGACY', saved.legacy);
+  });
+
+  test('a subscriber on the previous price renews and keeps Pro once the price is listed as legacy', () => {
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = NEW_MONTH;
+    delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
+    process.env.STRIPE_PRICE_IDS_PRO_LEGACY = OLD_MONTH;
+
+    const ids = getProPriceIds();
+
+    expect(resolveRenewalUpdate(subscriptionOn(OLD_MONTH), ids).planExpiresAt).toBe('2023-11-14T22:13:20.000Z');
+    expect(resolveReconciledState(subscriptionOn(OLD_MONTH), ids).action).toBe('pro');
+    expect(resolveReconciledState(subscriptionOn(NEW_MONTH), ids).action).toBe('pro');
+  });
+
+  test('without the legacy list the same subscriber is refused (what made Pro lapse)', () => {
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = NEW_MONTH;
+    delete process.env.STRIPE_PRICE_ID_PRO_ANUAL;
+    delete process.env.STRIPE_PRICE_IDS_PRO_LEGACY;
+
+    expect(() => resolveRenewalUpdate(subscriptionOn(OLD_MONTH), getProPriceIds())).toThrow('does not match expected Pro price');
+    expect(resolveReconciledState(subscriptionOn(OLD_MONTH), getProPriceIds()).action).toBe('skip');
+  });
+
+  test('the list tolerates spaces, empty items and repeats, and a price outside it is still refused', () => {
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = NEW_MONTH;
+    process.env.STRIPE_PRICE_ID_PRO_ANUAL = 'price_pro_year';
+    process.env.STRIPE_PRICE_IDS_PRO_LEGACY = ` ${OLD_MONTH} ,, price_pro_year_2025,${NEW_MONTH}`;
+
+    expect(getProPriceIds()).toEqual([NEW_MONTH, 'price_pro_year', OLD_MONTH, 'price_pro_year_2025']);
+    expect(resolveReconciledState(subscriptionOn('price_some_other_product'), getProPriceIds()).action).toBe('skip');
+  });
+
+  test('legacy prices alone do not make an environment configured: the monthly baseline is still required', () => {
+    delete process.env.STRIPE_PRICE_ID_PRO_MONTH;
+    process.env.STRIPE_PRICE_IDS_PRO_LEGACY = OLD_MONTH;
+
+    expect(getProPriceIds()).toEqual([]);
+  });
+
+  test('checkout keeps selling only the current price, never a legacy one', () => {
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = NEW_MONTH;
+    process.env.STRIPE_PRICE_IDS_PRO_LEGACY = OLD_MONTH;
+
+    expect(getProPriceId('month')).toBe(NEW_MONTH);
   });
 });
