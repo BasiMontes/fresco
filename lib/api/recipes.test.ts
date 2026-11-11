@@ -599,6 +599,9 @@ function createDetailMockClient(options: {
   propiaErrorMessage?: string
   catalogoRow?: unknown | null
   catalogoErrorMessage?: string
+  /** FRESCO-1158: the plain `recipes` row read to tell "not available for your profile" from "does not exist". */
+  existenteRow?: unknown | null
+  existenteErrorMessage?: string
 } = {}) {
   const getUserCalls: unknown[] = [];
   const propiaEqCalls: unknown[] = [];
@@ -618,6 +621,12 @@ function createDetailMockClient(options: {
         eq: (column: string, value: unknown) => ({
           maybeSingle: async () => {
             propiaEqCalls.push({ table, column, value });
+            if (table === 'recipes') {
+              return {
+                data: options.existenteErrorMessage ? null : (options.existenteRow ?? null),
+                error: options.existenteErrorMessage ? { message: options.existenteErrorMessage } : null,
+              };
+            }
             return {
               data: options.propiaErrorMessage ? null : (options.propiaRow ?? null),
               error: options.propiaErrorMessage ? { message: options.propiaErrorMessage } : null,
@@ -665,6 +674,46 @@ describe('getRecipeDetail', () => {
     const result = await getRecipeDetail(client, { id: 'unknown-id' });
 
     expect(result).toBeNull();
+  });
+
+  // FRESCO-1158: a recipe the profile rules out used to read "no encontrada", as if it did not exist.
+  test('an active catalog recipe the profile rules out is "no_encaja" with its name, not null', async () => {
+    const { client, propiaEqCalls } = createDetailMockClient({
+      userId: 'user-123',
+      propiaRow: null,
+      catalogoRow: null,
+      existenteRow: { id: 'recipe-1', nombre: 'Tortilla de patatas', activo: true },
+    });
+
+    const result = await getRecipeDetail(client, { id: 'recipe-1' });
+
+    expect(result).toEqual({ kind: 'no_encaja', nombre: 'Tortilla de patatas' });
+    expect(propiaEqCalls).toContainEqual({ table: 'recipes', column: 'id', value: 'recipe-1' });
+  });
+
+  test('a retired recipe, and one that does not exist, stay null (not found)', async () => {
+    const retired = createDetailMockClient({
+      userId: 'user-123',
+      existenteRow: { id: 'recipe-1', nombre: 'Tortilla de patatas', activo: false },
+    });
+    expect(await getRecipeDetail(retired.client, { id: 'recipe-1' })).toBeNull();
+
+    const missing = createDetailMockClient({ userId: 'user-123', existenteRow: null });
+    expect(await getRecipeDetail(missing.client, { id: 'nope' })).toBeNull();
+  });
+
+  test('a recipe the profile lets through never asks whether it exists', async () => {
+    const { client, propiaEqCalls } = createDetailMockClient({ userId: 'user-123', propiaRow: null, catalogoRow: SAMPLE_ROW });
+
+    await getRecipeDetail(client, { id: 'recipe-1' });
+
+    expect(propiaEqCalls.some(call => (call as { table: string }).table === 'recipes')).toBe(false);
+  });
+
+  test('throws RecipesError when the existence lookup fails: never a silent "no_encaja" or "not found"', async () => {
+    const { client } = createDetailMockClient({ userId: 'user-123', existenteErrorMessage: 'connection reset' });
+
+    await expectRejection(getRecipeDetail(client, { id: 'recipe-1' }));
   });
 
   test('throws RecipesError on a recetas_propias lookup error', async () => {

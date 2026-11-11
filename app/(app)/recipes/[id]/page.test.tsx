@@ -62,6 +62,16 @@ describe('RecipeDetailPage', () => {
     expect(screen.getByTestId('recipe_detail_not_found')).toBeInTheDocument();
   });
 
+  // FRESCO-1158: the finding. A recipe in the menu that the profile now rules out is not "does not exist".
+  test('a recipe the profile rules out shows the profile warning, not the not-found state', async () => {
+    detailSpy.mockResolvedValue({ kind: 'no_encaja', nombre: 'Tortilla de patatas' });
+    await renderPage();
+
+    expect(screen.getByTestId('recipe_detail_profile_conflict')).toHaveTextContent('no encaja con tu perfil');
+    expect(screen.queryByTestId('recipe_detail_not_found')).toBeNull();
+    expect(screen.queryByTestId('recipe_detail_back_link')).not.toBeNull();
+  });
+
   test('a failing recipe read falls back to not-found and logs it', async () => {
     detailSpy.mockRejectedValue(new Error('db down'));
     await renderPage();

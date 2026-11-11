@@ -2,7 +2,7 @@ import type { RecetaPropia, Recipe } from '@schemas';
 import type { RecipeDetail } from '@/lib/api/recipes';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { RecipeDetailView, RecipeNotFoundState } from '@/components/recipes/recipe-detail';
+import { RecipeDetailView, RecipeNotFoundState, RecipeProfileConflictState } from '@/components/recipes/recipe-detail';
 import * as favorites from '@/lib/client-api/favorites';
 import * as substitutions from '@/lib/client-api/substitutions';
 import { renderWithProviders, screen, setupUser, waitFor, within } from '@/tests/component-render';
@@ -230,6 +230,28 @@ describe('RecipeNotFoundState', () => {
   test('links back to the menu when the user came from it', () => {
     renderWithProviders(<RecipeNotFoundState from="menu" />);
 
+    expect(screen.getByTestId('recipe_detail_back_link')).toHaveAttribute('href', '/menu');
+  });
+});
+
+// FRESCO-1158: a recipe the profile rules out says so, instead of "no encontrada".
+describe('RecipeProfileConflictState', () => {
+  test('names the recipe and says it does not fit the profile, not that it is missing', () => {
+    renderWithProviders(<RecipeProfileConflictState nombre="Tortilla de patatas" />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Tortilla de patatas');
+    const aviso = screen.getByTestId('recipe_detail_profile_conflict');
+    expect(aviso).toHaveTextContent('no encaja con tu perfil');
+    expect(aviso).toHaveTextContent('alérgeno');
+    expect(screen.queryByTestId('recipe_detail_not_found')).toBeNull();
+  });
+
+  test('links back to the library, or to the menu when the person came from it', () => {
+    const { unmount } = renderWithProviders(<RecipeProfileConflictState nombre="Tortilla" />);
+    expect(screen.getByTestId('recipe_detail_back_link')).toHaveAttribute('href', '/recipes');
+    unmount();
+
+    renderWithProviders(<RecipeProfileConflictState nombre="Tortilla" from="menu" />);
     expect(screen.getByTestId('recipe_detail_back_link')).toHaveAttribute('href', '/menu');
   });
 });
