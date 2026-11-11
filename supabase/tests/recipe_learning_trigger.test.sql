@@ -5,28 +5,37 @@
 -- no longer part of the learning (ADR-0063).
 
 begin;
-select plan(10);
+select plan(14);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────
 -- Two recipes, two users, three plans. estado starts 'pendiente'; every assertion drives a real
 -- 'pendiente' -> X transition so the AFTER UPDATE trigger fires exactly as it does in production.
 
+-- FRESCO-1186: only the marks of paying users feed the global counters, so the two users of the counting cases are
+-- Pro; a Free user and a Family user are added for that rule (cases 8 and 9).
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'fresco-381@test.local'),
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'fresco-1012@test.local');
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'fresco-1012@test.local'),
+  ('99999999-9999-9999-9999-999999999999', 'fresco-1186-free@test.local'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'fresco-1186-family@test.local');
 
-insert into public.user_profiles (id) values
-  ('11111111-1111-1111-1111-111111111111'),
-  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+insert into public.user_profiles (id, plan) values
+  ('11111111-1111-1111-1111-111111111111', 'pro'),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'pro'),
+  ('99999999-9999-9999-9999-999999999999', 'free'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'family');
 
 insert into public.recipes (id, nombre, slug, temporada) values
   ('22222222-2222-2222-2222-222222222222', 'Test recipe 381', 'test-recipe-381', '["todo_el_ano"]'),
-  ('77777777-7777-7777-7777-777777777777', 'Test recipe 1012', 'test-recipe-1012', '["todo_el_ano"]');
+  ('77777777-7777-7777-7777-777777777777', 'Test recipe 1012', 'test-recipe-1012', '["todo_el_ano"]'),
+  ('88888888-8888-8888-8888-888888888888', 'Test recipe 1186', 'test-recipe-1186', '["todo_el_ano"]');
 
 insert into public.meal_plans (id, user_id, semana_iso, fecha_inicio) values
   ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', '2026-W01', '2026-01-05'),
   ('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', '2026-W02', '2026-01-12'),
-  ('55555555-5555-5555-5555-555555555555', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2026-W01', '2026-01-05');
+  ('55555555-5555-5555-5555-555555555555', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2026-W01', '2026-01-05'),
+  ('66666666-6666-6666-6666-666666666666', '99999999-9999-9999-9999-999999999999', '2026-W01', '2026-01-05'),
+  ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2026-W01', '2026-01-05');
 
 insert into public.meal_plan_recipes (meal_plan_id, recipe_id, dia, tipo_plato) values
   ('33333333-3333-3333-3333-333333333333', '22222222-2222-2222-2222-222222222222', 'lunes', 'desayuno'),
@@ -38,7 +47,10 @@ insert into public.meal_plan_recipes (meal_plan_id, recipe_id, dia, tipo_plato) 
   ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222', 'lunes', 'comida'),
   ('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222222', 'lunes', 'desayuno'),
   ('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222222', 'lunes', 'comida'),
-  ('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222222', 'martes', 'desayuno');
+  ('55555555-5555-5555-5555-555555555555', '22222222-2222-2222-2222-222222222222', 'martes', 'desayuno'),
+  ('66666666-6666-6666-6666-666666666666', '88888888-8888-8888-8888-888888888888', 'lunes', 'desayuno'),
+  ('66666666-6666-6666-6666-666666666666', '88888888-8888-8888-8888-888888888888', 'lunes', 'comida'),
+  ('cccccccc-cccc-cccc-cccc-cccccccccccc', '88888888-8888-8888-8888-888888888888', 'lunes', 'desayuno');
 
 create temp table base as
 select veces_cocinada, veces_descartada, veces_calificada, rating_promedio
@@ -121,6 +133,34 @@ select is(
 select is(
   (select count(*)::int from public.recipe_user_feedback where recipe_id = '77777777-7777-7777-7777-777777777777'),
   0, 'a learning-neutral swap writes no feedback row'
+);
+
+-- ── Case 8 (FRESCO-1186): a Free user's marks feed no global counter and leave no feedback row ──
+update public.meal_plan_recipes set estado = 'cocinada'
+where meal_plan_id = '66666666-6666-6666-6666-666666666666' and tipo_plato = 'desayuno';
+update public.meal_plan_recipes set estado = 'descartada'
+where meal_plan_id = '66666666-6666-6666-6666-666666666666' and tipo_plato = 'comida';
+
+select is(
+  (select veces_cocinada from public.recipes where id = '88888888-8888-8888-8888-888888888888'),
+  0, 'a Free user cooking a recipe does not move veces_cocinada'
+);
+select is(
+  (select veces_descartada from public.recipes where id = '88888888-8888-8888-8888-888888888888'),
+  0, 'a Free user discarding a recipe does not move veces_descartada'
+);
+select is(
+  (select count(*)::int from public.recipe_user_feedback where user_id = '99999999-9999-9999-9999-999999999999'),
+  0, 'the marks of a Free user write no feedback row'
+);
+
+-- ── Case 9 (FRESCO-1186): a Family user counts like a Pro one ───────────
+update public.meal_plan_recipes set estado = 'cocinada'
+where meal_plan_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc' and tipo_plato = 'desayuno';
+
+select is(
+  (select veces_cocinada from public.recipes where id = '88888888-8888-8888-8888-888888888888'),
+  1, 'a Family user cooking a recipe moves veces_cocinada once'
 );
 
 select * from finish();

@@ -23,13 +23,18 @@ describe.skipIf(!(RUN && reachable))('learning counts once per user and recipe (
   const ctx = createDbTestContext();
   let a: DbTestUser;
   let b: DbTestUser;
+  let free: DbTestUser;
+  let family: DbTestUser;
   let recipes: string[];
   let week = 10;
 
   beforeAll(async () => {
-    a = await ctx.createUser();
-    b = await ctx.createUser();
-    recipes = await catalogRecipeIds(a, 6);
+    // FRESCO-1186: only the marks of paying users feed the global counters, so the users of the counting tests are Pro.
+    a = await ctx.createUser({ plan: 'pro' });
+    b = await ctx.createUser({ plan: 'pro' });
+    free = await ctx.createUser();
+    family = await ctx.createUser({ plan: 'family' });
+    recipes = await catalogRecipeIds(a, 7);
   });
 
   afterAll(async () => {
@@ -108,6 +113,52 @@ describe.skipIf(!(RUN && reachable))('learning counts once per user and recipe (
     await mark(slot, { estado: 'descartada' });
 
     expect((await stats(recipe)).veces_descartada).toBe(once.veces_descartada);
+  });
+
+  /**
+   * FRESCO-1186 (integral review C5): the learning card tells Free users their marks "se guardan igual, pero no se
+   * aplican a tus menús". Their marks used to move the global counters that every menu reads; now only the marks of
+   * paying users (pro, family) do, so three throwaway accounts cannot sink a dish for everybody.
+   */
+  describe('only paying users feed the global counters (FRESCO-1186)', () => {
+    test('a Free user cooking and discarding moves no counter and writes no feedback row, and the slot keeps its mark', async () => {
+      const recipe = recipes[5];
+      const before = await stats(recipe);
+
+      const cooked = await planWith(free, recipe);
+      await mark(cooked, { estado: 'cocinada' });
+      await mark(await planWith(free, recipe), { estado: 'descartada' });
+
+      const after = await stats(recipe);
+      expect(after.veces_cocinada).toBe(before.veces_cocinada);
+      expect(after.veces_descartada).toBe(before.veces_descartada);
+      const feedback = await rest('recipe_user_feedback', { serviceRole: true, query: `user_id=eq.${free.id}&select=recipe_id` });
+      expect(feedback.body).toEqual([]);
+      const slot = await rest('meal_plan_recipes', { serviceRole: true, query: `id=eq.${cooked}&select=estado` });
+      expect((slot.body as { estado: string }[])[0].estado).toBe('cocinada');
+    });
+
+    test('three Free accounts discarding the same dish cannot sink it: the penalty needs more than 2 counted discards', async () => {
+      const recipe = recipes[6];
+      const before = await stats(recipe);
+      const extra = await Promise.all([ctx.createUser(), ctx.createUser()]);
+
+      for (const user of [free, ...extra]) {
+        await mark(await planWith(user, recipe), { estado: 'descartada' });
+      }
+
+      expect((await stats(recipe)).veces_descartada).toBe(before.veces_descartada);
+    });
+
+    test('a Family user counts like a Pro one, once per recipe', async () => {
+      const recipe = recipes[4];
+      const before = await stats(recipe);
+
+      await mark(await planWith(family, recipe), { estado: 'cocinada' });
+      await mark(await planWith(family, recipe), { estado: 'cocinada' });
+
+      expect((await stats(recipe)).veces_cocinada).toBe(before.veces_cocinada + 1);
+    });
   });
 
   test('the feedback table is closed to every browser role', async () => {

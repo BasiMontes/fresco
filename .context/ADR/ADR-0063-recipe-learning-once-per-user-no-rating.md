@@ -45,3 +45,8 @@ The invariant: **no single account moves a global ranking by repeating an action
 - **Recompute the counters from `recipe_user_feedback`.** It would zero the seeded values the catalogue ranking currently relies on. Rejected.
 - **Drop `rating_promedio` and `veces_calificada`.** Destructive, no benefit; the columns are inert. Rejected.
 - **A hard cap on how many times a user can mark per day instead of a per-user table.** Bounds the damage but still lets one account move a counter by many. Rejected.
+
+## Update 2026-11-11 (FRESCO-1186): only paying users feed the global counters
+
+The counters of decision 1 were still fed by every account, Free users and anonymous guests included, and `scoreRecipe` reads them for every menu, Free ones too (more than 2 discards cost a recipe 4 points). Three throwaway accounts could sink a dish for everybody, and the learning card told Free users their marks "no se aplican a tus menús". Owner decision: `update_recipe_learning()` (migration `20261111170000_only_paid_marks_feed_global_counters.sql`) counts a mark only when the profile's plan is `pro` or `family`. A Free or guest mark is still stored on its slot, but it moves no counter and writes no `recipe_user_feedback` row, so manipulating a dish now takes paid accounts and the card's sentence is true. The counters already in the database include earlier Free marks that cannot be told apart, so they are left as they are; a mark made as Free does not count retroactively after an upgrade. The alternative of removing the global terms from the score altogether was set aside: it would give up the collective learning of ADR-0001, even if with today's base there are almost no cooked dishes to learn from.
+
