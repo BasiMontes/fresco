@@ -39,6 +39,7 @@ interface ShoppingListRow {
 }
 
 interface FavoriteRecipeRow {
+  recipe_id: string
   recipes: { ingredientes_principales: string[] | null } | null
 }
 
@@ -70,17 +71,32 @@ Deno.serve(async (req: Request) => {
 
     const { data: favoritos, error: favoritosError } = await supabase
       .from('favorites')
-      .select('recipes ( ingredientes_principales )')
+      .select('recipe_id, recipes ( ingredientes_principales )')
       .eq('user_id', user.id)
       .returns<FavoriteRecipeRow[]>()
 
     if (favoritosError) throw new HttpError('No se pudieron leer tus favoritos', 500)
+
+    // FRESCO-1153: a favourite is a recipe the person marked at some point, perhaps before declaring an
+    // allergen, perhaps since retired. Only the ones that pass TODAY's profile may suggest anything, asked to
+    // the same filter the catalogue uses (filter_allowed_recipe_ids -> get_filtered_recipes). Fails closed: if
+    // the filter cannot answer, nothing is suggested instead of everything.
+    const recetasFavoritas = (favoritos ?? []).map(fav => fav.recipe_id)
+    let permitidas = new Set<string>()
+    if (recetasFavoritas.length > 0) {
+      const { data: permitidasData, error: filterError } = await supabase.rpc('filter_allowed_recipe_ids', {
+        p_recipe_ids: recetasFavoritas,
+      })
+      if (filterError) throw new HttpError('No se pudieron comprobar tus favoritos', 500)
+      permitidas = new Set((permitidasData ?? []) as string[])
+    }
 
     // Frequency across favorited recipes — how many different favorites call
     // for this ingredient — so the most recipe-relevant suggestions surface
     // first, not just an arbitrary order.
     const frecuencia = new Map<string, { nombre: string, count: number }>()
     for (const fav of favoritos ?? []) {
+      if (!permitidas.has(fav.recipe_id)) continue
       const ingredientes = fav.recipes?.ingredientes_principales ?? []
       for (const nombre of ingredientes) {
         const normalizado = normalizeNombre(nombre)

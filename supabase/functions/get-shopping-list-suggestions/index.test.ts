@@ -16,8 +16,15 @@ const handler: EdgeHandler = getEdgeHandler()
 
 const USER = { id: 'user_1' }
 
+/** A favourite of recipe `recipeId`, as the function reads it (`recipe_id` plus the joined recipe). */
+function favOf(recipeId: string, ...ingredientes: string[]) {
+  return { recipe_id: recipeId, recipes: { ingredientes_principales: ingredientes } }
+}
+
+let nextRecipe = 0
 function fav(...ingredientes: string[]) {
-  return { recipes: { ingredientes_principales: ingredientes } }
+  nextRecipe += 1
+  return favOf(`recipe_${nextRecipe}`, ...ingredientes)
 }
 
 function listWith(...nombres: string[]) {
@@ -26,8 +33,14 @@ function listWith(...nombres: string[]) {
 
 const ALLOW = { check_and_increment_rate_limit: { data: true } }
 
-function call(rows: Record<string, unknown>, selectError: Record<string, unknown> = {}) {
-  supa = fakeEdgeClient({ user: USER, rows, selectError, rpc: ALLOW })
+/**
+ * FRESCO-1153: the recipes of the favourites that pass the profile come from `filter_allowed_recipe_ids`.
+ * Unless a test says otherwise, every favourite passes, so the older tests keep their meaning.
+ */
+function call(rows: Record<string, unknown>, selectError: Record<string, unknown> = {}, allowed?: string[]) {
+  const favoritos = (rows.favorites as Array<{ recipe_id?: string }> | null | undefined) ?? []
+  const ids = allowed ?? favoritos.flatMap(f => (f.recipe_id ? [f.recipe_id] : []))
+  supa = fakeEdgeClient({ user: USER, rows, selectError, rpc: { ...ALLOW, filter_allowed_recipe_ids: { data: ids } } })
   return handler(edgeRequest({ shopping_list_id: 'sl_1' }))
 }
 
@@ -103,8 +116,48 @@ describe('get-shopping-list-suggestions/index.ts', () => {
   })
 
   test('a favourite without a joined recipe is ignored', async () => {
-    const res = await call({ shopping_lists: listWith(), favorites: [{ recipes: null }, fav('ajo')] })
+    const res = await call({ shopping_lists: listWith(), favorites: [{ recipe_id: 'recipe_gone', recipes: null }, fav('ajo')] })
     const body = await res.json() as { suggestions: Array<{ nombre: string }> }
     expect(body.suggestions.map(s => s.nombre)).toEqual(['ajo'])
+  })
+})
+
+// FRESCO-1153: the carousel proposes ingredients only from favourites that pass today's profile.
+describe('get-shopping-list-suggestions/index.ts — food safety (FRESCO-1153)', () => {
+  test('a favourite the profile rules out is not used: its ingredients are not suggested', async () => {
+    const res = await call(
+      { shopping_lists: listWith(), favorites: [favOf('con_huevo', 'huevo', 'mayonesa'), favOf('segura', 'ajo')] },
+      {},
+      ['segura'],
+    )
+    const body = await res.json() as { suggestions: Array<{ nombre: string }> }
+    expect(body.suggestions.map(s => s.nombre)).toEqual(['ajo'])
+  })
+
+  test('asks the filter for exactly the favourite recipes, and only that', async () => {
+    await call({ shopping_lists: listWith(), favorites: [favOf('r1', 'ajo'), favOf('r2', 'cebolla')] })
+    const filterCalls = supa.rpcCalls.filter(([name]) => name === 'filter_allowed_recipe_ids')
+    expect(filterCalls).toEqual([['filter_allowed_recipe_ids', { p_recipe_ids: ['r1', 'r2'] }]])
+  })
+
+  test('with every favourite ruled out there is nothing to suggest, and it is still a 200', async () => {
+    const res = await call({ shopping_lists: listWith(), favorites: [favOf('r1', 'huevo')] }, {}, [])
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ suggestions: [] })
+  })
+
+  test('fails closed: a filter that errors is a 500, never the unfiltered suggestions', async () => {
+    supa = fakeEdgeClient({
+      user: USER,
+      rows: { shopping_lists: listWith(), favorites: [favOf('r1', 'huevo')] },
+      rpc: { ...ALLOW, filter_allowed_recipe_ids: { error: { message: 'down' } } },
+    })
+    const res = await handler(edgeRequest({ shopping_list_id: 'sl_1' }))
+    expect(res.status).toBe(500)
+  })
+
+  test('with no favourites the filter is not asked at all', async () => {
+    await call({ shopping_lists: listWith(), favorites: [] })
+    expect(supa.rpcCalls.some(([name]) => name === 'filter_allowed_recipe_ids')).toBe(false)
   })
 })

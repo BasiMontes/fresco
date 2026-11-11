@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createMockClient } from '@/lib/fixtures/mock-supabase-client';
+import { makeFixtureRecipe } from '@/lib/fixtures/recipe';
 import { addFavorite, getFavoriteRecipeIds, getFavoriteRecipes, removeFavorite } from './favorites';
 
 /**
@@ -51,33 +52,111 @@ describe('getFavoriteRecipeIds', () => {
   });
 });
 
+/**
+ * `getFavoriteRecipes` makes two calls with different answers (the favorites, then the filter), which the
+ * single-result `createMockClient` cannot express, so this fake resolves each one on its own.
+ */
+function favoritesClient(options: { favorites?: unknown, favoritesError?: string, allowed?: unknown, filterError?: string }) {
+  const calls: { method: string, args: unknown[] }[] = [];
+  const builder: object = new Proxy({}, {
+    get(_target, property) {
+      if (property === 'then') {
+        return async (onFulfilled: (value: unknown) => unknown) =>
+          Promise.resolve(options.favoritesError
+            ? { data: null, error: { message: options.favoritesError } }
+            : { data: options.favorites ?? null, error: null }).then(onFulfilled);
+      }
+      if (typeof property === 'symbol') { return undefined; }
+      return (...args: unknown[]) => {
+        calls.push({ method: property, args });
+        return builder;
+      };
+    },
+  });
+  const client = {
+    auth: { getUser: async () => ({ data: { user: null }, error: null }) },
+    from: (table: string) => {
+      calls.push({ method: 'from', args: [table] });
+      return builder;
+    },
+    rpc: async (name: string, args: unknown) => {
+      calls.push({ method: 'rpc', args: [name, args] });
+      return options.filterError
+        ? { data: null, error: { message: options.filterError } }
+        : { data: options.allowed ?? [], error: null };
+    },
+  };
+  return {
+    client: client as unknown as Parameters<typeof getFavoriteRecipes>[0],
+    callsOf: (method: string) => calls.filter(call => call.method === method).map(call => call.args),
+  };
+}
+
+const recipeRow = (id: string) => makeFixtureRecipe({ id });
+
 describe('getFavoriteRecipes', () => {
   test('reads the user\'s favorites newest first, embedding the recipe', async () => {
-    const { client, callsOf } = createMockClient({ data: [] });
+    const { client, callsOf } = favoritesClient({ favorites: [] });
 
     await getFavoriteRecipes(client, 'user-1');
 
-    expect(callsOf('select')).toEqual([['recipes(*)']]);
+    expect(callsOf('select')).toEqual([['recipe_id, recipes(*)']]);
     expect(callsOf('eq')).toEqual([['user_id', 'user-1']]);
     expect(callsOf('order')).toEqual([['created_at', { ascending: false }]]);
   });
 
+  test('is empty when the user has no favorites, and does not ask the filter', async () => {
+    const none = favoritesClient({ favorites: [] });
+    expect(await getFavoriteRecipes(none.client, 'user-1')).toEqual([]);
+    expect(none.callsOf('rpc')).toEqual([]);
+
+    expect(await getFavoriteRecipes(favoritesClient({ favorites: null }).client, 'user-1')).toEqual([]);
+  });
+
   test('skips a favorite whose recipe no longer exists', async () => {
-    const { client } = createMockClient({ data: [{ recipes: null }, { recipes: null }] });
+    const { client } = favoritesClient({ favorites: [{ recipe_id: 'r1', recipes: null }], allowed: ['r1'] });
 
     expect(await getFavoriteRecipes(client, 'user-1')).toEqual([]);
   });
 
-  test('is empty when the user has no favorites', async () => {
-    expect(await getFavoriteRecipes(createMockClient({ data: null }).client, 'user-1')).toEqual([]);
+  // FRESCO-1153: the finding. A favorite the profile now rules out, or a retired recipe, is hidden.
+  test('hides the favorites the profile rules out and keeps the rest, in order', async () => {
+    const { client, callsOf } = favoritesClient({
+      favorites: [
+        { recipe_id: 'r1', recipes: recipeRow('r1') },
+        { recipe_id: 'r2', recipes: recipeRow('r2') },
+        { recipe_id: 'r3', recipes: recipeRow('r3') },
+      ],
+      allowed: ['r3', 'r1'],
+    });
+
+    const recipes = await getFavoriteRecipes(client, 'user-1');
+
+    expect(recipes.map(recipe => recipe.id)).toEqual(['r1', 'r3']);
+    expect(callsOf('rpc')).toEqual([['filter_allowed_recipe_ids', { p_recipe_ids: ['r1', 'r2', 'r3'] }]]);
+  });
+
+  test('lists nothing when every favorite is ruled out', async () => {
+    const { client } = favoritesClient({ favorites: [{ recipe_id: 'r1', recipes: recipeRow('r1') }], allowed: [] });
+
+    expect(await getFavoriteRecipes(client, 'user-1')).toEqual([]);
+  });
+
+  test('fails closed: a filter that errors is an error, never the unfiltered list', async () => {
+    const { client } = favoritesClient({ favorites: [{ recipe_id: 'r1', recipes: recipeRow('r1') }], filterError: 'down' });
+
+    const error = await rejectionOf(getFavoriteRecipes(client, 'user-1'));
+
+    expect(error.name).toBe('FavoritesError');
+    expect(error.message).toContain('down');
   });
 
   test('a database error and a missing session are errors', async () => {
-    const dbError = await rejectionOf(getFavoriteRecipes(createMockClient({ errorMessage: 'boom' }).client, 'user-1'));
+    const dbError = await rejectionOf(getFavoriteRecipes(favoritesClient({ favoritesError: 'boom' }).client, 'user-1'));
     expect(dbError.name).toBe('FavoritesError');
     expect(dbError.message).toContain('boom');
 
-    expect((await rejectionOf(getFavoriteRecipes(createMockClient({}).client))).name).toBe('FavoritesError');
+    expect((await rejectionOf(getFavoriteRecipes(favoritesClient({}).client))).name).toBe('FavoritesError');
   });
 });
 
