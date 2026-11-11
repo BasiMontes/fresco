@@ -134,11 +134,19 @@ describe.skipIf(!(RUN && reachable))('reassign_guest_data applies the full food-
     expect(kept.map(s => s.recipe_id)).toEqual([safe.id]);
     expect(kept[0].estado).toBe('pendiente');
 
+    // FRESCO-1157: a dish taken out for the profile leaves an OPEN empty slot ("Sin receta", it can be filled),
+    // not an `excluida` one, which the calendar paints "Excluida por ti" and which no recipe can be put into.
     const neutralized = slots.filter(s => s.recipe_id === null);
     expect(neutralized).toHaveLength(4);
     for (const slot of neutralized) {
-      expect(slot.estado).toBe('excluida');
+      expect(slot.estado).toBe('pendiente');
     }
+
+    // ... and the person is told, once per plan, with the number of dishes taken out.
+    const plan = await rest('meal_plans', { serviceRole: true, query: `id=eq.${planId}&select=advertencias` });
+    const avisos = (plan.body as { advertencias: string[] }[])[0].advertencias.filter(a => a.includes('con tu perfil'));
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toContain('4 platos');
 
     // None of the ruled-out recipes may survive anywhere on the moved plan.
     const surviving = slots.map(s => s.recipe_id);

@@ -261,8 +261,9 @@ interface ReassignCtx {
   glutenSlotId: string
   cleanSlotId: string
   cleanRecipeId: string
+  planId: string
 }
-const reassignCtx: ReassignCtx = { from: null, to: null, glutenSlotId: '', cleanSlotId: '', cleanRecipeId: '' };
+const reassignCtx: ReassignCtx = { from: null, to: null, glutenSlotId: '', cleanSlotId: '', cleanRecipeId: '', planId: '' };
 
 Given(/^que la cuenta destino declara alergia a "gluten"$/, async ({ testUserFactory, request }) => {
   reassignCtx.to = await testUserFactory();
@@ -284,6 +285,7 @@ Given(/^una invitada tiene un menú con una receta que contiene "gluten" y otra 
   });
   if (!planRes.ok()) { throw new Error(`[seguridad-alimentaria] seed plan failed: ${planRes.status()} ${await planRes.text()}`); }
   const [plan] = await planRes.json() as { id: string }[];
+  reassignCtx.planId = plan.id;
 
   const slotsRes = await request.post(`${SUPABASE_URL}/rest/v1/meal_plan_recipes`, {
     headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
@@ -306,7 +308,7 @@ When(/^se reasignan los datos de la invitada a la cuenta destino$/, async ({ req
   if (!res.ok()) { throw new Error(`[seguridad-alimentaria] reassign_guest_data failed: ${res.status()} ${await res.text()}`); }
 });
 
-Then(/^el plato con "gluten" queda excluido y el plato sin alérgeno se conserva$/, async ({ request }) => {
+Then(/^el plato con "gluten" queda quitado dejando un hueco abierto con aviso y el plato sin alérgeno se conserva$/, async ({ request }) => {
   const headers = restHeaders(reassignCtx.to!.accessToken);
 
   const gRes = await request.get(
@@ -314,8 +316,14 @@ Then(/^el plato con "gluten" queda excluido y el plato sin alérgeno se conserva
     { headers },
   );
   const [gRow] = await gRes.json() as { estado: string, recipe_id: string | null }[];
-  expect(gRow.estado).toBe('excluida');
+  // FRESCO-1157: a dish taken out for the profile leaves an OPEN empty slot ("Sin receta", it can be filled),
+  // not an `excluida` one ("Excluida por ti", which nothing can be put into), and the plan says so.
+  expect(gRow.estado).toBe('pendiente');
   expect(gRow.recipe_id).toBeNull();
+
+  const planRes = await request.get(`${SUPABASE_URL}/rest/v1/meal_plans?select=advertencias&id=eq.${reassignCtx.planId}`, { headers });
+  const [plan] = await planRes.json() as { advertencias: string[] }[];
+  expect(plan.advertencias.filter(a => a.includes('con tu perfil'))).toHaveLength(1);
 
   const cRes = await request.get(
     `${SUPABASE_URL}/rest/v1/meal_plan_recipes?select=estado,recipe_id&id=eq.${reassignCtx.cleanSlotId}`,
