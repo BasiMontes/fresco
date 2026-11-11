@@ -35,6 +35,30 @@ describe('esProductoPlausible — the 6 observed wrong matches are rejected', ()
   });
 });
 
+// FRESCO-1193: wrong matches a fresh Consum regeneration produced (the names are Consum's own).
+describe('esProductoPlausible — the Consum regeneration matches of FRESCO-1193 are rejected', () => {
+  const observados: [string, string, string][] = [
+    ['tocino', 'Tocino de cielo pack de 2 unidades', 'a dessert'],
+    ['nueces', 'Turrón nata nueces', 'a sweet'],
+    ['pasta', 'Pasta de lenteja roja', 'a legume pasta, not plain pasta'],
+    ['uvas', 'Uvas de la suerte 12 unidades', 'twelve grapes for New Year, not a bunch of grapes'],
+    ['ternera', 'Vaso de fideos instantáneos sabor ternera', 'instant noodles'],
+  ];
+
+  test.each(observados)('%s does not resolve to "%s" (%s)', (ingrediente, producto) => {
+    expect(esProductoPlausible(ingrediente, producto)).toBe(false);
+  });
+
+  test.each([
+    ['tocino', 'Tocino fresco entreverado'],
+    ['nueces', 'Nueces peladas'],
+    ['pasta', 'Pasta espagueti'],
+    ['uvas', 'Uvas blancas sin pepitas'],
+  ])('the plain %s product "%s" stays eligible', (ingrediente, producto) => {
+    expect(esProductoPlausible(ingrediente, producto)).toBe(true);
+  });
+});
+
 describe('esProductoPlausible — real products stay eligible', () => {
   const validos: [string, string][] = [
     ['aceite de oliva', 'Aceite oliva 1º Hacendado botella'],

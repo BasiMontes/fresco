@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildConsumCatalogMatch,
   CACHE_DIR,
+  describirDiffCatalogo,
   fechaDeCache,
   parsePackSize,
   renderFile,
@@ -167,6 +168,58 @@ describe('buildConsumCatalogMatch — matching heuristic (inline fixture, no net
     // 58 g pack vs. a 2 g recipe portion is a 29x multiple — past the 20x guard.
     const match = buildConsumCatalogMatch(candidatesByTerm, { comino: { cantidad: 2, unidad: 'g' } });
     expect(match.comino).toBeUndefined();
+  });
+});
+
+// FRESCO-1193: a regeneration must not bring back the wrong matches it produced, and a human reviews what changed.
+describe('buildConsumCatalogMatch — the wrong matches of FRESCO-1193', () => {
+  function product(name: string, description: string): ConsumProduct {
+    return {
+      ean: '0000000000000',
+      code: name,
+      productData: { name, description, url: `https://tienda.consum.es/es/p/${name}/1` },
+      priceData: { prices: [{ value: { centAmount: 2 } }] },
+    };
+  }
+
+  test.each([
+    ['tocino', 'Tocino de cielo pack de 2 unidades', 'Tocino de cielo pack de 2 unidades 200 Gr', { cantidad: 200, unidad: 'g' }],
+    ['nueces', 'Turrón nata nueces', 'Turrón nata nueces 250 Gr', { cantidad: 100, unidad: 'g' }],
+    ['pasta', 'Pasta de lenteja roja', 'Pasta de lenteja roja 250 Gr', { cantidad: 200, unidad: 'g' }],
+    ['uvas', 'Uvas de la suerte 12 unidades', 'Uvas de la suerte 12 unidades 30 Gr', { cantidad: 150, unidad: 'g' }],
+  ] as const)('%s gets no entry when the only candidate is "%s"', (clave, name, description, porcion) => {
+    const match = buildConsumCatalogMatch(new Map([[clave, [product(name, description)]]]), { [clave]: porcion });
+    expect(match[clave]).toBeUndefined();
+  });
+
+  test('with the plain product next to the wrong one, the plain one is picked', () => {
+    const candidatos = [
+      product('Tocino de cielo pack de 2 unidades', 'Tocino de cielo pack de 2 unidades 200 Gr'),
+      product('Tocino fresco entreverado', 'Tocino fresco entreverado 250 Gr'),
+    ];
+    const match = buildConsumCatalogMatch(new Map([['tocino', candidatos]]), { tocino: { cantidad: 200, unidad: 'g' } });
+    expect(match.tocino?.url).toBe('https://tienda.consum.es/es/p/Tocino fresco entreverado/1');
+  });
+});
+
+describe('describirDiffCatalogo — what a regeneration changed', () => {
+  const entrada = (url: string) => ({ envaseVenta: { cantidad: 100, unidad: 'g' as const }, precioConsum: { precio: 1 }, url });
+
+  test('lists new, changed and removed entries, and nothing for the identical ones', () => {
+    const anterior = { arroz: entrada('u/arroz'), jamon: entrada('u/jamon-a'), sal: entrada('u/sal') };
+    const nuevo = { arroz: entrada('u/arroz'), jamon: entrada('u/jamon-b'), tocino: entrada('u/tocino') };
+
+    // New and changed entries come together sorted by key; the gone ones follow.
+    expect(describirDiffCatalogo(anterior, nuevo)).toEqual([
+      '~ jamon: u/jamon-a -> u/jamon-b',
+      '+ tocino: u/tocino',
+      '- sal: u/sal',
+    ]);
+  });
+
+  test('is empty when nothing changed', () => {
+    const catalogo = { arroz: entrada('u/arroz') };
+    expect(describirDiffCatalogo(catalogo, { ...catalogo })).toEqual([]);
   });
 });
 
