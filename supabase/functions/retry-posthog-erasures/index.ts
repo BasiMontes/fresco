@@ -16,9 +16,10 @@
 // credentials (`deletePostHogPerson`) are Function secrets that Vercel does not have.
 
 import { requireServiceRoleCaller } from '../_shared/auth.ts'
-import { jsonResponse, toErrorResponse } from '../_shared/http.ts'
+import { HttpError, jsonResponse, toErrorResponse } from '../_shared/http.ts'
 import { recordJobHeartbeat } from '../_shared/job-heartbeat.ts'
 import { logger } from '../_shared/logger.ts'
+import { reportJobFailure } from '../_shared/job-failure.ts'
 import { deletePostHogPerson } from '../_shared/posthog-erasure.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 
@@ -73,6 +74,7 @@ Deno.serve(async (req: Request) => {
     const summary: RetryPosthogErasuresResponse = { attempted: 0, deleted: 0, still_failing: 0, gave_up: exhausted }
     const startedAt = Date.now()
     let credentialsMissing = false
+    let firstFailure: string | null = null
 
     for (const row of retryable) {
       if (Date.now() - startedAt > BATCH_BUDGET_MS) {
@@ -87,6 +89,7 @@ Deno.serve(async (req: Request) => {
       }
       catch (err) {
         summary.still_failing++
+        firstFailure ??= err instanceof Error ? err.message : String(err)
         logger.warn('PostHog erasure retry failed', {
           fn: FN_NAME,
           row: row.id,
@@ -115,6 +118,16 @@ Deno.serve(async (req: Request) => {
         pending_posthog_distinct_id: null,
         posthog_last_attempt_at: new Date().toISOString(),
       })
+    }
+
+    // FRESCO-1183: every row failing (a revoked key answers 401 for all of them) is not a pass that did
+    // its work: no heartbeat, a 500 that `toErrorResponse` reports to Sentry, and the rows keep their
+    // attempt count. A few failing rows among others that worked are reported, and the pass still counts.
+    if (!credentialsMissing && summary.attempted > 0 && summary.deleted === 0) {
+      throw new HttpError(`Todos los reintentos de borrado en PostHog fallaron (${summary.still_failing} de ${summary.attempted}): ${firstFailure ?? 'sin detalle'}`, 500)
+    }
+    if (summary.still_failing > 0 && !credentialsMissing) {
+      await reportJobFailure(FN_NAME, 'Some PostHog erasure retries failed', { ...summary, firstFailure })
     }
 
     // FRESCO-1017: no heartbeat when the credentials are missing, that run did nothing useful.

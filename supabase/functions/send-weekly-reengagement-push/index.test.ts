@@ -203,6 +203,80 @@ describe('send-weekly-reengagement-push/index.ts', () => {
     })
   })
 
+  /**
+   * FRESCO-1183: the heartbeat means "the pass did its work". A pass in which every send failed (a 403 from VAPID
+   * keys that do not match the stored subscriptions) used to write it anyway, and the monitor said ok.
+   */
+  describe('an honest heartbeat (FRESCO-1183)', () => {
+    let errorLines: Array<{ message: string, [key: string]: unknown }> = []
+    const realConsoleError = console.error
+    beforeEach(() => {
+      errorLines = []
+      console.error = (line: unknown) => { errorLines.push(JSON.parse(String(line))) }
+    })
+    afterEach(() => {
+      console.error = realConsoleError
+    })
+    const messages = () => errorLines.map(line => line.message)
+
+    test('every send rejected with 403 writes no heartbeat, answers 500, keeps the subscriptions and says it is the VAPID configuration', async () => {
+      withTargets([row(1), row(2), row(3)])
+      sendImpl = async () => { throw Object.assign(new Error('forbidden'), { statusCode: 403 }) }
+
+      const res = await call()
+
+      expect(res.status).toBe(500)
+      expect(svc.upserts).toEqual([])
+      expect(svc.deletes).toEqual([])
+      expect((await res.json() as { error: string }).error).toContain('VAPID')
+      expect(messages()).toContain('Server error returned to the caller')
+    })
+
+    test('every send failing with a 5xx is also a failed pass, without the configuration hint', async () => {
+      withTargets([row(1), row(2)])
+      sendImpl = async () => { throw Object.assign(new Error('unavailable'), { statusCode: 503 }) }
+
+      const res = await call()
+
+      expect(res.status).toBe(500)
+      expect(svc.upserts).toEqual([])
+      expect((await res.json() as { error: string }).error).not.toContain('VAPID')
+    })
+
+    test('a pass that only cleaned dead endpoints (404/410) is healthy: heartbeat written, nothing reported', async () => {
+      withTargets([row(1), row(2)])
+      sendImpl = async (endpoint) => { throw Object.assign(new Error('gone'), { statusCode: endpoint.endsWith('/1') ? 404 : 410 }) }
+
+      const res = await call()
+
+      expect(res.status).toBe(200)
+      expect(svc.upserts).toHaveLength(1)
+      expect(svc.deletes).toHaveLength(2)
+      expect(messages()).not.toContain('Some push sends failed')
+    })
+
+    test('some sends rejected with 403 among others that went out: the pass counts, the failure is reported as configuration', async () => {
+      withTargets([row(1), row(2), row(3)])
+      sendImpl = async (endpoint) => { if (endpoint.endsWith('/2')) throw Object.assign(new Error('forbidden'), { statusCode: 403 }) }
+
+      const res = await call()
+
+      expect(res.status).toBe(200)
+      expect(svc.upserts).toHaveLength(1)
+      expect(messages()).toContain('Some push sends were rejected with 401/403: VAPID configuration failure')
+      expect(svc.deletes).toEqual([])
+    })
+
+    test('a pass with nobody to notify is not a failure', async () => {
+      withTargets([])
+
+      const res = await call()
+
+      expect(res.status).toBe(200)
+      expect(svc.upserts).toHaveLength(1)
+    })
+  })
+
   describe('failure paths', () => {
     test('500 and nothing is sent when a VAPID secret is missing', async () => {
       const saved = process.env.VAPID_PRIVATE_KEY
