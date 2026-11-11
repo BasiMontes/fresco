@@ -43,6 +43,8 @@ describe('esProductoPlausible — the Consum regeneration matches of FRESCO-1193
     ['pasta', 'Pasta de lenteja roja', 'a legume pasta, not plain pasta'],
     ['uvas', 'Uvas de la suerte 12 unidades', 'twelve grapes for New Year, not a bunch of grapes'],
     ['ternera', 'Vaso de fideos instantáneos sabor ternera', 'instant noodles'],
+    // The name Consum really gave it, caught by the first scheduled refresh (FRESCO-1192).
+    ['ternera', 'Yatekomo Ternera Cup', 'instant noodle cup, Consum\'s own name'],
   ];
 
   test.each(observados)('%s does not resolve to "%s" (%s)', (ingrediente, producto) => {

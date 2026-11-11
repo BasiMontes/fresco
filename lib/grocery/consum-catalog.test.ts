@@ -188,6 +188,7 @@ describe('buildConsumCatalogMatch — the wrong matches of FRESCO-1193', () => {
     ['nueces', 'Turrón nata nueces', 'Turrón nata nueces 250 Gr', { cantidad: 100, unidad: 'g' }],
     ['pasta', 'Pasta de lenteja roja', 'Pasta de lenteja roja 250 Gr', { cantidad: 200, unidad: 'g' }],
     ['uvas', 'Uvas de la suerte 12 unidades', 'Uvas de la suerte 12 unidades 30 Gr', { cantidad: 150, unidad: 'g' }],
+    ['ternera', 'Yatekomo Ternera Cup', 'Yatekomo Ternera Cup 65 Gr', { cantidad: 500, unidad: 'g' }],
   ] as const)('%s gets no entry when the only candidate is "%s"', (clave, name, description, porcion) => {
     const match = buildConsumCatalogMatch(new Map([[clave, [product(name, description)]]]), { [clave]: porcion });
     expect(match[clave]).toBeUndefined();
