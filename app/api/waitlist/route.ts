@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { isCaptchaConfigured } from '@/lib/auth/captcha';
+import { captchaMissingInProduction, isCaptchaConfigured } from '@/lib/auth/captcha';
 import { verifyTurnstileToken } from '@/lib/auth/turnstile-verify';
 import { sendWaitlistConfirmationEmail } from '@/lib/email/resend';
 import { parseWaitlistBody, removeWaitlistSignup, requestWaitlistSignup, withinIpLimit } from '@/lib/legal/waitlist';
@@ -12,9 +12,16 @@ const SIGNUPS_PER_IP_PER_HOUR = 5;
 
 /**
  * FRESCO-1103: the Turnstile gate, the same contract as `/api/auth/guest-email`. With no site key in
- * the build there is no widget and nothing to check. Returns the refusal to send, or `null`.
+ * the build there is no widget and nothing to check, except in production (FRESCO-1170), where it is
+ * refused. Returns the refusal to send, or `null`.
  */
 async function refuseWithoutCaptcha(request: NextRequest, captchaToken: unknown): Promise<NextResponse | null> {
+  // FRESCO-1170: in production a missing site key is a broken deploy, not "no captcha": refuse before any email.
+  if (captchaMissingInProduction()) {
+    console.error('[/api/waitlist] this production build has no Turnstile site key; refusing');
+    Sentry.captureMessage('waitlist: production build has no NEXT_PUBLIC_TURNSTILE_SITE_KEY', { level: 'error' });
+    return NextResponse.json({ error: 'No se pudo verificar que eres una persona. Inténtalo más tarde.' }, { status: 503 });
+  }
   if (!isCaptchaConfigured(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '')) { return null; }
 
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim();

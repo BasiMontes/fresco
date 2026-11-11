@@ -1,3 +1,4 @@
+import * as realSentry from '@sentry/nextjs';
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { NextRequest } from 'next/server';
 import { fakeSupabase } from '@/tests/mocks/supabase-query-builder';
@@ -16,6 +17,9 @@ const realFetch = globalThis.fetch;
 let cloudflare: (() => Response | Promise<Response>) | null = null;
 const cloudflareCalls: URLSearchParams[] = [];
 
+const captureMessage = mock((_message: string, _hint?: unknown) => 'id');
+// `mock.module` leaks into the files that run after this one: keep every export of the module (FRESCO-1024).
+void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureMessage }));
 void mock.module('@/lib/supabase/server', () => ({ createClient: async () => supa.client }));
 void mock.module('@/lib/supabase/service', () => ({
   createServiceClient: () => {
@@ -292,5 +296,72 @@ describe('POST /api/auth/guest-email — the grant the database demands (FRESCO-
     expect((await POST(req({ email: 'ana@example.com' }))).status).toBe(400);
 
     expect(service.rpcCalls).toHaveLength(0);
+  });
+});
+
+/**
+ * FRESCO-1170 (integral review F3): a production build that lost the Turnstile site key used to skip the captcha in
+ * silence, leaving only the per-address limits in front of an email sent to any address. In production it refuses
+ * now; everywhere else a build with no key keeps working.
+ */
+describe('POST /api/auth/guest-email — a production build with no site key (FRESCO-1170)', () => {
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    process.env.VERCEL_ENV = 'production';
+    captureMessage.mockClear();
+  });
+  afterEach(() => {
+    delete process.env.VERCEL_ENV;
+  });
+
+  test('503 captcha_unavailable, Sentry hears of it, and no code is mailed nor any limit spent', async () => {
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const res = await POST(req({ email: 'ana@example.com' }));
+
+      expect(res.status).toBe(503);
+      expect(await code(res)).toBe('captcha_unavailable');
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+      expect(String(captureMessage.mock.calls[0][0])).toContain('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
+      expect(updateUser).not.toHaveBeenCalled();
+      expect(supa.rpcCalls).toHaveLength(0);
+      expect(cloudflareCalls).toHaveLength(0);
+    }
+    finally {
+      console.error = original;
+    }
+  });
+
+  test('a token does not help: without the site key the check cannot be trusted either', async () => {
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const res = await POST(req(valid));
+
+      expect(res.status).toBe(503);
+      expect(updateUser).not.toHaveBeenCalled();
+    }
+    finally {
+      console.error = original;
+    }
+  });
+
+  test.each(['preview', 'development'])('the same build on %s still works without a key (the captcha stays opt-in there)', async (vercelEnv) => {
+    process.env.VERCEL_ENV = vercelEnv;
+
+    const res = await POST(req({ email: 'ana@example.com' }));
+
+    expect(res.status).toBe(200);
+    expect(updateUser).toHaveBeenCalledTimes(1);
+  });
+
+  test('production WITH the key goes through the normal captcha path', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key';
+
+    const res = await POST(req(valid));
+
+    expect(res.status).toBe(200);
+    expect(cloudflareCalls).toHaveLength(1);
   });
 });
