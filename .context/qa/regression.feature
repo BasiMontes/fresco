@@ -479,12 +479,12 @@ Característica: Flujo completo de usuario en Fresco
     Entonces la petición se rechaza con 400
 
   @seguridad @seguridad-alimentaria @automatizado
-  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts (FRESCO-362)
+  # Automatizado: tests/steps/seguridad-alimentaria.steps.ts (FRESCO-362, FRESCO-1157)
   Escenario: Reasignar los datos de una invitada re-filtra el menú contra el perfil destino
     Dado que la cuenta destino declara alergia a "gluten"
     Y una invitada tiene un menú con una receta que contiene "gluten" y otra que no
     Cuando se reasignan los datos de la invitada a la cuenta destino
-    Entonces el plato con "gluten" queda excluido y el plato sin alérgeno se conserva
+    Entonces el plato con "gluten" queda quitado dejando un hueco abierto con aviso y el plato sin alérgeno se conserva
 
   @seguridad @seguridad-alimentaria @onboarding @automatizado
   # Automatizado: tests/steps/aviso-alergenos.steps.ts (FRESCO-1000)
