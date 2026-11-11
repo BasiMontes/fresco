@@ -44,6 +44,8 @@ Do 1 and 2 together. Everything under "Immediate" is reversible.
    - normal: PR to `staging`, wait for its `PR Check`, then `bun run git:promote` (`docs/workflows/promotion.md`);
    - true emergency: the fast path of `docs/workflows/hotfix.md` section 2, step 4b.
 
+   For Consum, also stop its weekly refresh, which would otherwise keep calling Consum and opening PRs (ADR-0037, FRESCO-1192): `gh workflow disable refresh-consum-catalog.yml`, and close any open `chore/consum-catalog-refresh-*` PR.
+
 3. **Verify**:
    - `bun test lib/grocery/map-item.test.ts` passes on the change;
    - after the deploy, `https://fresco-pro.vercel.app/api/health` answers `ok` and a signed-in person opens `/shopping-list`: no link and no price of that chain, and the sentence under the summary no longer names it (it is built from the data).

@@ -65,6 +65,15 @@ The founder decided on 2026-10-09 to keep accepting the risk instead of commissi
 - **Revocation.** Unchanged: delete the connector from the array in `lib/grocery/supermarket/registry.ts`. Tested in `lib/grocery/map-item.test.ts` ("Consum kill-switch (ADR-0037)").
 - **Still blocked.** FRESCO-772 (live Consum connector) does not start until Consum answers.
 
+## Update 2026-11-11 (FRESCO-1192): weekly refresh of the catalog, risk read again
+
+Consum prices stop showing 30 days after the date the generated file carries (FRESCO-1028, FRESCO-1177), and the generator was only ever run by hand. Point 2 of the Decision says new code that calls Consum's endpoints needs this ADR's risk read again, so the question was put to the founder with a recommendation, and on 2026-11-11 the founder chose to schedule the refresh under the same `riesgo-aceptado`, over withdrawing Consum.
+
+- **What runs.** `.github/workflows/refresh-consum-catalog.yml`, weekly, runs `scripts/gen-consum-catalog.ts` and opens a PR with the regenerated catalog and ingredient dictionary. About 160 searches per run, two at a time with a pause after each. Nothing on the request path calls Consum; point 2's first half still holds. This is a batch job, not the live connector of FRESCO-772, which stays blocked.
+- **Kept small and visible.** The generator stops before it writes when more than one search in twenty fails, so a blocked or changed Consum cannot turn into a catalog with no prices; the run then fails and opens an issue. Every PR lists the entries that are new, whose product changed or that are gone.
+- **Revocation.** One more step than before: besides the registry line, disable the workflow (`docs/workflows/supermarket-data-withdrawal.md`). If Consum answers no, asks us to stop or blocks the generator, both go.
+- **Review.** The review date of the 2026-10-09 update, 2026-11-06, passed without a recorded review. A new date is the founder's to set; it is not set here.
+
 ## Alternatives considered
 
 - **Keep Consum out of the registry and drop its prices at step 3.** Safest legally and fully reversible, but removes a price the app shows today and weakens the "real prices" promise for users near a Consum store.

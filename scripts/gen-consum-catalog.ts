@@ -204,6 +204,25 @@ export async function fechaDeCache(): Promise<string> {
   return ahora;
 }
 
+/**
+ * FRESCO-1192 (ADR-0037): the weekly job calls Consum's storefront ourselves, so it keeps the load low: two
+ * requests at a time and a pause after each one that reaches the network (a cached term costs nothing).
+ */
+const CONCURRENCY = 2;
+const PAUSA_ENTRE_PETICIONES_MS = 300;
+
+/** Share of search terms that may fail before a run is not trusted to replace the committed catalog. */
+const MAX_FRACCION_FALLOS = 0.05;
+
+/**
+ * FRESCO-1192: a term that fails degrades to "no match", which is right for one bad answer and wrong for a
+ * blocked or broken Consum, where every ingredient would lose its price in the next PR. Above this
+ * share of failures (or with nothing searched) the run stops before it writes anything.
+ */
+export function demasiadosFallos(fallidos: number, total: number): boolean {
+  return total === 0 || fallidos / total > MAX_FRACCION_FALLOS;
+}
+
 async function cachedFetchTerm(term: string): Promise<ConsumProduct[]> {
   await mkdir(CACHE_DIR, { recursive: true });
   const cachePath = new URL(`${encodeURIComponent(term)}.json`, CACHE_DIR);
@@ -216,13 +235,14 @@ async function cachedFetchTerm(term: string): Promise<ConsumProduct[]> {
   const json = await res.json() as { products?: ConsumProduct[] };
   const products = json.products ?? [];
   await writeFile(cachePath, JSON.stringify(products));
+  await Bun.sleep(PAUSA_ENTRE_PETICIONES_MS);
   return products;
 }
 
 /** Fetches every distinct search term across all g/ml-unit ingredients (canonical + synonyms), modest concurrency. */
 async function fetchAllCandidates(
   porciones: Record<string, { cantidad: number, unidad: string }>,
-): Promise<Map<string, ConsumProduct[]>> {
+): Promise<{ candidatos: Map<string, ConsumProduct[]>, fallidos: number }> {
   const terms = new Set<string>();
   for (const clave of Object.keys(porciones)) {
     if (porciones[clave].unidad !== 'g' && porciones[clave].unidad !== 'ml') { continue; }
@@ -232,21 +252,22 @@ async function fetchAllCandidates(
   }
   const result = new Map<string, ConsumProduct[]>();
   const queue = [...terms];
-  const concurrency = 6;
+  let fallidos = 0;
   await Promise.all(
-    Array.from({ length: concurrency }, async () => {
+    Array.from({ length: CONCURRENCY }, async () => {
       while (queue.length) {
         const term = queue.shift()!;
         try {
           result.set(term, await cachedFetchTerm(term));
         }
         catch {
-          result.set(term, []); // a single failed term degrades to "no match", never aborts the whole run
+          fallidos++;
+          result.set(term, []); // a single failed term degrades to "no match"; too many stop the run in main (FRESCO-1192)
         }
       }
     }),
   );
-  return result;
+  return { candidatos: result, fallidos };
 }
 
 /**
@@ -298,7 +319,11 @@ ${entries}
 if (import.meta.main) {
   console.log('Searching Consum catalog (cached locally on first run)...');
   const fecha = await fechaDeCache(); // before the first request: the instant the prices are read
-  const candidatesByTerm = await fetchAllCandidates(BASE_QUANTITIES);
+  const { candidatos: candidatesByTerm, fallidos } = await fetchAllCandidates(BASE_QUANTITIES);
+  if (demasiadosFallos(fallidos, candidatesByTerm.size)) {
+    console.error(`${fallidos} of ${candidatesByTerm.size} Consum searches failed: not writing the catalog, the committed one stays.`);
+    process.exit(1);
+  }
   const match = buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES);
   const target = new URL('../lib/grocery/consum-catalog.generated.ts', import.meta.url);
   const cambios = describirDiffCatalogo(CONSUM_CATALOG_MATCH, match);
