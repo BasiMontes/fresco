@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
+import { isTransientDatabaseError } from '@/lib/billing/db-errors';
 import { handleDisputeCreated } from '@/lib/billing/dispute-handler';
 import { grantProFromCheckoutSession } from '@/lib/billing/grant-pro';
 import { HANDLED_EVENT_TYPES } from '@/lib/billing/handled-events';
@@ -91,14 +92,20 @@ export const maxDuration = 60;
  * payload, so a late `active` that arrives after `deleted` writes nothing. A refund cancels only
  * the subscription its charge paid for.
  *
- * Once the signature verifies, a downstream failure (e.g. the Supabase
- * write) is logged with the Stripe event id and this still returns 200 —
- * deliberate, not an oversight: a non-2xx response makes Stripe retry
- * delivery, and retrying a bug just repeats the same failure. Manual replay
- * from the Stripe Dashboard is the recovery path for a logged failure.
- * The exception (ADR-0062) is a TRANSIENT Stripe failure (5xx, 429, a failed connection): it
- * gives the claim back and answers 500, because Stripe's outage passes and the retry succeeds.
+ * Once the signature verifies, a downstream failure is logged with the Stripe event id and
+ * this still returns 200 — deliberate, not an oversight: a non-2xx response makes Stripe retry
+ * delivery, and retrying a bug just repeats the same failure. Manual replay from the Stripe
+ * Dashboard is the recovery path for a logged failure.
+ * The exception (ADR-0062) is a TRANSIENT failure: Stripe's (5xx, 429, a failed connection) or,
+ * since FRESCO-1160, the database's (a PostgREST 5xx, a pool timeout, a dropped connection;
+ * `isTransientDatabaseError`). It gives the claim back and answers 500, because the outage
+ * passes and the retry succeeds. A deterministic database error (a constraint, a policy) stays 200.
  */
+/** A failure that passes by itself, Stripe's or the database's: worth a 5xx so Stripe retries. */
+function isTransientFailure(error: unknown): boolean {
+  return isTransientStripeError(error) || isTransientDatabaseError(error);
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature');
   const webhookSecret = resolveWebhookSecret();
@@ -222,7 +229,7 @@ export async function POST(request: Request) {
   }
   catch (error) {
     // Signature already verified above — log + still 200 to avoid a Stripe
-    // retry storm on a bug. See doc comment.
+    // retry storm on a bug, unless the failure is transient (below). See doc comment.
     console.error(`[/api/stripe/webhook] failed to process event ${event.id}`, error);
     Sentry.captureException(error, { tags: eventTags });
     if (held) {
@@ -234,9 +241,9 @@ export async function POST(request: Request) {
         Sentry.captureException(releaseError, { tags: eventTags });
       }
     }
-    if (isTransientStripeError(error)) {
-      // ADR-0062: not 2xx, so Stripe retries once its side recovers.
-      return NextResponse.json({ error: 'Stripe no está disponible, se reintentará.' }, { status: 500 });
+    if (isTransientFailure(error)) {
+      // ADR-0062: not 2xx, so Stripe retries once the outage (Stripe's or the database's) passes.
+      return NextResponse.json({ error: 'Servicio no disponible, se reintentará.' }, { status: 500 });
     }
   }
 

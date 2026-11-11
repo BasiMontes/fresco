@@ -19,7 +19,7 @@ Audit 7b (A7-PAY-02, A7-PAY-05, A7-PAY-09) found three ways the webhook loses or
 
 ## Decision
 
-1. **Transient Stripe failures answer 500.** After the signature, a thrown error that `isTransientStripeError` recognises (`StripeAPIError`, `StripeConnectionError`, `StripeRateLimitError`, or a 5xx/429 status; `lib/billing/stripe-errors.ts`) releases the event claim and answers **500**, so Stripe retries with its backoff. Every other failure (a bug, a bad request, a database error) keeps the old behaviour: logged, claim released, **200**, manual replay as recovery.
+1. **Transient Stripe failures answer 500.** After the signature, a thrown error that `isTransientStripeError` recognises (`StripeAPIError`, `StripeConnectionError`, `StripeRateLimitError`, or a 5xx/429 status; `lib/billing/stripe-errors.ts`) releases the event claim and answers **500**, so Stripe retries with its backoff. Every other failure (a bug, a bad request, a deterministic database error) keeps the old behaviour: logged, claim released, **200**, manual replay as recovery. *Update 2026-11-11 (FRESCO-1160):* a transient **database** failure is retried too: `isTransientDatabaseError` (`lib/billing/db-errors.ts`) recognises PostgREST `PGRST000-003`, Postgres connection, resource, serialization, deadlock and timeout SQLSTATEs, a failed `fetch` and a gateway 5xx page, and answers 500 the same way. Constraint, policy and value errors (`23xxx`, `42xxx`, `22xxx`) stay 200.
 2. **Subscription events decide from the live subscription.** `updated` and `deleted` re-read the subscription with `subscriptions.retrieve` after the profile and mode checks. `updated` recomputes the payment status and the renewal date from it; one Stripe reports as ended or no longer has writes nothing. `deleted` is ignored when Stripe still reports the subscription live.
 3. **A refund cancels only the subscription its charge paid for.** The charge is resolved to its subscription (charge, PaymentIntent, invoice payment, invoice, subscription: `resolveChargeSubscriptionId`). If it cannot be resolved, or differs from the stored one, nothing is cancelled: no proof, no cancellation.
 
@@ -33,7 +33,7 @@ The invariant: **a webhook delivery that failed for a reason outside our code is
   - A sustained Stripe outage makes Stripe retry for up to three days and the deploy answers 500 meanwhile; the claim TTL (`WEBHOOK_CLAIM_TTL_MS`) and the event claim keep the retries idempotent.
   - The classifier is by error type and status. A new transient error class is a 200 until it is added; it is a one-line change and the reconcile cron remains the backstop.
 - **Neutral / follow-ups:**
-  - Transient Supabase failures are not covered (they keep answering 200 and the cron backstop). Worth a separate ticket if Sentry shows them.
+  - Transient Supabase failures were left to the cron backstop here; FRESCO-1160 closed that gap (see Decision 1). A transient error code missing from the list is a 200 until added, the same one-line change as for Stripe.
   - `checkout.session.completed` already reads the subscription live (FRESCO-816); unchanged.
 
 ## Alternatives considered

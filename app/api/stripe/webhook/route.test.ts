@@ -686,17 +686,42 @@ describe('POST /api/stripe/webhook — FRESCO-1002 decide from the live subscrip
 });
 
 describe('POST /api/stripe/webhook — failure handling', () => {
-  test('logs and still returns 200 when the Supabase write errors', async () => {
+  /** FRESCO-1160: a database outage is not a bug; Stripe has to retry or the renewal is lost until the cron. */
+  test.each([
+    ['PostgREST cannot reach the database', { code: 'PGRST000' }],
+    ['a pool timeout', { code: 'PGRST003' }],
+    ['a failed fetch', { code: '' }],
+  ])('%s while writing answers 500 and gives the claim back', async (_name, dbError) => {
     constructEvent.mockReturnValue({
       id: 'evt_4',
       type: 'customer.subscription.deleted',
-      data: { object: subscription() },
+      // Ended at Stripe: a still-live subscription makes the handler ignore the delete before any write.
+      data: { object: subscription({ status: 'canceled' }) },
     });
-    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', stripe_subscription_id: 'sub_1' }, updateError: new Error('db down') } });
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', stripe_subscription_id: 'sub_1' }, updateError: Object.assign(new Error(dbError.code === '' ? 'TypeError: fetch failed' : 'db down'), dbError) } });
 
     const res = await POST(req({}));
 
+    // The downgrade write really ran and failed (a vacuous 200 would not report it).
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(res.status).toBe(500);
+    expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
+    expect(completeWebhookEvent).not.toHaveBeenCalled();
+  });
+
+  test('a deterministic Supabase write error (a constraint) stays a logged 200: retrying would repeat it', async () => {
+    constructEvent.mockReturnValue({
+      id: 'evt_4b',
+      type: 'customer.subscription.deleted',
+      data: { object: subscription({ status: 'canceled' }) },
+    });
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', stripe_subscription_id: 'sub_1' }, updateError: Object.assign(new Error('duplicate key'), { code: '23505' }) } });
+
+    const res = await POST(req({}));
+
+    expect(captureException).toHaveBeenCalledTimes(1);
     expect(res.status).toBe(200);
+    expect(releaseWebhookEvent).toHaveBeenCalledTimes(1);
   });
 
   test('an unrecognised event type is a 200 no-op', async () => {
