@@ -9,7 +9,7 @@ import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, type F
  * batch stops starting new sends once its time budget is spent.
  */
 
-interface SendCall { endpoint: string, options: unknown }
+interface SendCall { endpoint: string, options: unknown, payload: string }
 
 let svc: FakeEdgeClient
 let sends: SendCall[] = []
@@ -23,8 +23,8 @@ void mock.module('../_shared/posthog.ts', () => ({ captureServerEvent: async () 
 void mock.module('web-push', () => ({
   default: {
     setVapidDetails: () => {},
-    sendNotification: async (subscription: { endpoint: string }, _payload: string, options: unknown) => {
-      sends.push({ endpoint: subscription.endpoint, options })
+    sendNotification: async (subscription: { endpoint: string }, payload: string, options: unknown) => {
+      sends.push({ endpoint: subscription.endpoint, options, payload })
       inFlight++
       maxInFlight = Math.max(maxInFlight, inFlight)
       try {
@@ -161,6 +161,46 @@ describe('send-weekly-reengagement-push/index.ts', () => {
     const res = await call()
     expect(res.status).toBe(200)
     expect(sends).toHaveLength(10)
+  })
+
+  /**
+   * FRESCO-1180: the cron fires on Sunday evening, when the current ISO week ends in a few hours. The
+   * reminder is about the NEXT week: a user with a plan this week and none next must get it, and one who
+   * already planned the next week must not (the RPC excludes whoever has a plan for the week it is given).
+   */
+  describe('the week the reminder is about (FRESCO-1180)', () => {
+    const SUNDAY_18_UTC = new Date('2026-11-08T18:00:00Z') // ISO week 2026-W45, the cron's slot
+
+    test('asks for the users WITHOUT a plan for the NEXT week, not the one that is ending', async () => {
+      setSystemTime(SUNDAY_18_UTC)
+      withTargets([row(1)])
+
+      const res = await call()
+
+      expect(svc.rpcCalls).toEqual([['get_push_subscriptions_without_current_plan', { p_semana_iso: '2026-W46' }]])
+      expect(await res.json()).toMatchObject({ semana_iso: '2026-W46' })
+    })
+
+    test('the reminder text talks about the next week', async () => {
+      setSystemTime(SUNDAY_18_UTC)
+      withTargets([row(1)])
+
+      await call()
+
+      const payload = JSON.parse(sends[0].payload) as { title: string, body: string, url: string }
+      expect(payload.title).toBe('¿Ya has planificado la próxima semana?')
+      expect(payload.body).toContain('la semana que viene')
+      expect(payload.url).toBe('/menu')
+    })
+
+    test('the heartbeat of the pass is still written', async () => {
+      setSystemTime(SUNDAY_18_UTC)
+      withTargets([])
+
+      await call()
+
+      expect(svc.upserts).toHaveLength(1)
+    })
   })
 
   describe('failure paths', () => {

@@ -11,8 +11,8 @@
 // Sends one Web Push notification per subscription (ADR-0012: `web-push`
 // npm package via Deno's `npm:` specifier — VAPID JWT signing + `aes128gcm`
 // payload encryption) to every `push_subscriptions` row belonging to a user
-// with no `meal_plans` row for the current ISO week (AC2/AC4, TECHDEBT-
-// FRESCO-241). AC5: a 404/410 from the push service means the endpoint is
+// with no `meal_plans` row for the NEXT ISO week (AC2/AC4, TECHDEBT-
+// FRESCO-241; FRESCO-1180 moved it from the current week, which ends hours after the Sunday send). AC5: a 404/410 from the push service means the endpoint is
 // dead — deleted in this same run. Any other failure (5xx, timeout, ...) is
 // logged and skipped — not evidence the subscription itself is bad, and one
 // bad send must never abort the rest of the batch.
@@ -25,7 +25,7 @@ import { recordJobHeartbeat } from '../_shared/job-heartbeat.ts'
 import { logger } from '../_shared/logger.ts'
 import { isAllowedPushEndpoint } from '../_shared/push-endpoint.ts'
 import { captureServerEvent } from '../_shared/posthog.ts'
-import { getCurrentIsoWeek } from './iso-week.ts'
+import { getNextIsoWeek } from './iso-week.ts'
 import type { PushSubscriptionRow, SendWeeklyPushRemindersResponse } from './types.ts'
 
 const FN_NAME = 'send-weekly-reengagement-push'
@@ -37,8 +37,11 @@ const FN_NAME = 'send-weekly-reengagement-push'
 // FRESCO-372 (A4-H15): body was rioplatense ("armaste" + the vos imperative
 // "hacelo") — rewritten to español de España, matching the title's own
 // "planificaste".
-const RE_ENGAGEMENT_TITLE = '¿Ya planificaste esta semana?'
-const RE_ENGAGEMENT_BODY = 'Todavía no has planificado tu menú semanal — hazlo en un par de minutos.'
+// FRESCO-1180: the cron runs on Sunday evening, when the current week is about to end, so the
+// reminder is about the NEXT week ("próxima semana"), the one the push banner promises
+// ("Te avisamos cuando sea buen momento para planificar tu próximo menú").
+const RE_ENGAGEMENT_TITLE = '¿Ya has planificado la próxima semana?'
+const RE_ENGAGEMENT_BODY = 'Todavía no has planificado tu menú de la semana que viene — hazlo en un par de minutos.'
 const RE_ENGAGEMENT_URL = '/menu'
 
 // FRESCO-779 (audit-6 A6-S2): the sender used to POST to every stored endpoint
@@ -72,12 +75,14 @@ Deno.serve(async (req: Request) => {
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
 
     // 3. Business query (AC2/AC4): every push_subscriptions row for a user
-    // with no meal_plans row for the current ISO week. Cross-user by
+    // with no meal_plans row for the NEXT ISO week (FRESCO-1180: the Sunday
+    // send fires hours before the current week ends, so the reminder is
+    // about the week that is about to start). Cross-user by
     // design — lives in a service_role-only RPC
     // (get_push_subscriptions_without_current_plan), same least-privilege
     // pattern as reassign_guest_data (ADR-0004): EXECUTE revoked from
     // every ordinary role, granted only to service_role.
-    const semanaIso = getCurrentIsoWeek()
+    const semanaIso = getNextIsoWeek()
     const serviceClient = createServiceRoleClient()
     // FRESCO-375: untyped Deno client — assert the row shape at the boundary.
     const { data: subscriptionsData, error: queryError } = await serviceClient.rpc(
@@ -86,7 +91,7 @@ Deno.serve(async (req: Request) => {
     )
 
     if (queryError) {
-      logger.error('Failed to query push_subscriptions without a current-week plan', {
+      logger.error('Failed to query push_subscriptions without a next-week plan', {
         fn: FN_NAME,
         error: queryError.message,
       })
