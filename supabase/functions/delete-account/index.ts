@@ -25,6 +25,7 @@ import { logger } from '../_shared/logger.ts'
 import { captureEdgeException } from '../_shared/sentry.ts'
 import { isTokenRecent } from '../_shared/token-recency.ts'
 import { cancelStripeBillingForCustomer, findStripeCustomerForUser, StripeNotConfiguredError } from '../_shared/stripe-billing.ts'
+import { assertStripeKeyMatchesBillingMode } from '../_shared/stripe-mode.ts'
 import { deletePostHogPerson } from '../_shared/posthog-erasure.ts'
 import { recordAccountErasure, type AccountErasureOutcome } from '../_shared/account-erasure.ts'
 import type { DeleteAccountRequest, DeleteAccountResponse } from './types.ts'
@@ -111,6 +112,28 @@ Deno.serve(async (req: Request) => {
     if (profileError) {
       logger.error('user_profiles read failed', { fn: FN_NAME, userId: user.id, error: profileError.message })
       throw new HttpError('No se pudo eliminar la cuenta.', 500)
+    }
+    // FRESCO-1164: before anything is asked of Stripe. A key of the other mode than `billing_mode`
+    // answers `resource_missing` for every real customer, which the cancellation below reads as
+    // "nothing to cancel": the account would go and the real subscription would keep charging.
+    // Anonymous guests with no customer never touch Stripe, so they are not held back by it.
+    if (profile?.stripe_customer_id || !user.is_anonymous) {
+      try {
+        await assertStripeKeyMatchesBillingMode(serviceClient)
+      } catch (err) {
+        // No key at all is the case the lookup and the cancellation below already handle.
+        if (!(err instanceof StripeNotConfiguredError)) {
+          const errorId = crypto.randomUUID()
+          logger.error('Stripe mode check failed; account not deleted', {
+            fn: FN_NAME,
+            userId: user.id,
+            error: err instanceof Error ? err.message : String(err),
+            error_id: errorId,
+          })
+          await captureEdgeException(err, { fn: FN_NAME, errorId, userId: user.id, url: req.url, method: req.method })
+          throw new HttpError(STRIPE_BLOCKED_MESSAGE, 502)
+        }
+      }
     }
     // FRESCO-945: only the webhook writes `stripe_customer_id`, so a registered user who paid
     // moments ago may not have one yet. Without it the cascade below would erase the only link to
