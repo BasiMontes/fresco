@@ -32,6 +32,17 @@ export const MAX_RATIO_ENVASE_PORCION = 20;
 const MARISCO_Y_PESCADO_FRESCO = /^(?:mejillones|almejas|berberechos|bacalao|salmon|merluza|gambas|calamares|sepia|pulpo|lubina|dorada)\b/;
 export const RATIO_ENVASE_PESCADO_FRESCO = { min: 0.5, max: 3 } as const;
 
+/**
+ * FRESCO-1194: wine is bought in a standard bottle. The recipe portion is small (200 ml of white wine), so a
+ * single-serve 187 ml bottle sits just under it and passed every ratio rule, and the tie-break (smaller pack)
+ * then preferred it over the 750 ml bottle people actually buy; the shopping list priced a line at a figure
+ * unrelated to the ingredient. A pack under this size is not a match for a wine. It is a floor in ml, not a
+ * ratio: against a 200 ml portion a ratio cannot tell a 187 ml mini from a 250 ml bottle, and no ratio rule
+ * could be applied to every liquid without moving the matches of the others.
+ */
+const VINO = /^vino\b/;
+export const ENVASE_MINIMO_VINO_ML = 330;
+
 export interface IngredienteParaMatching {
   /** Search terms in priority order: the canonical name first, then synonyms. */
   terminos: string[]
@@ -84,7 +95,8 @@ export function emparejarIngrediente(input: EmparejarInput): Coincidencia | null
   const { ingrediente, candidatos, maxRatio = MAX_RATIO_ENVASE_PORCION } = input;
   const esPescadoFresco = MARISCO_Y_PESCADO_FRESCO.test(ingrediente.terminos[0] ?? '');
   const limite = ingrediente.porcion.cantidad * (esPescadoFresco ? Math.min(maxRatio, RATIO_ENVASE_PESCADO_FRESCO.max) : maxRatio);
-  const minimo = esPescadoFresco ? ingrediente.porcion.cantidad * RATIO_ENVASE_PESCADO_FRESCO.min : 0;
+  const esVino = ingrediente.porcion.unidad === 'ml' && VINO.test(ingrediente.terminos[0] ?? '');
+  const minimo = esPescadoFresco ? ingrediente.porcion.cantidad * RATIO_ENVASE_PESCADO_FRESCO.min : esVino ? ENVASE_MINIMO_VINO_ML : 0;
 
   const viables = candidatos.filter(p =>
     p.disponible

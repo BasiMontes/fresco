@@ -1,7 +1,7 @@
 import type { IngredienteParaMatching } from './matcher';
 import { describe, expect, test } from 'bun:test';
 import { PRODUCTOS_SINTETICOS } from './fake-connector';
-import { emparejarIngrediente, ingredienteParaMatching, MAX_RATIO_ENVASE_PORCION } from './matcher';
+import { emparejarIngrediente, ENVASE_MINIMO_VINO_ML, ingredienteParaMatching, MAX_RATIO_ENVASE_PORCION } from './matcher';
 
 function ingrediente(terminos: string[], porcion: IngredienteParaMatching['porcion']): IngredienteParaMatching {
   return { terminos, porcion };
@@ -209,5 +209,72 @@ describe('emparejarIngrediente — fresh seafood packs', () => {
       candidatos: [pack('bote', 'Canela molida Hacendado bote', 30, 1.5)],
     });
     expect(match?.producto.idExterno).toBe('bote');
+  });
+});
+
+/**
+ * FRESCO-1194: the first scheduled Consum refresh (PR #950) matched "vino blanco" to "Vino blanco DO Rioja" in a
+ * 187 ml single-serve bottle. The recipe portion is 200 ml, so the pack is 0.94 of it and passed every ratio rule,
+ * and the tie-break (smaller pack) put it ahead of a standard bottle. Names and sizes below are Consum's real ones.
+ */
+describe('emparejarIngrediente — wine is bought in a standard bottle (FRESCO-1194)', () => {
+  function botella(id: string, nombre: string, ml: number, precioEnvase: number) {
+    return { ...PRODUCTOS_SINTETICOS[0], idExterno: id, nombre, envase: { cantidad: ml, unidad: 'ml' as const }, precioEnvase, disponible: true };
+  }
+  const blanco = ingrediente(['vino blanco'], { cantidad: 200, unidad: 'ml' });
+  const mini = botella('7193006', 'Vino blanco DO Rioja', 187, 1.1);
+  const estandar = botella('verdejo', 'Vino blanco Verdejo DO Rueda', 750, 4.2);
+
+  test('a 187 ml single-serve bottle is not a match for white wine', () => {
+    expect(emparejarIngrediente({ ingrediente: blanco, candidatos: [mini] })).toBeNull();
+  });
+
+  test('with a standard bottle available, that one is chosen, not the mini', () => {
+    const match = emparejarIngrediente({ ingrediente: blanco, candidatos: [mini, estandar] });
+
+    expect(match?.producto.idExterno).toBe('verdejo');
+  });
+
+  test('candidate order changes nothing', () => {
+    expect(emparejarIngrediente({ ingrediente: blanco, candidatos: [estandar, mini] })?.producto.idExterno).toBe('verdejo');
+  });
+
+  test('red wine in its 750 ml bottle still matches (the real Consum one)', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['vino tinto'], { cantidad: 200, unidad: 'ml' }),
+      candidatos: [botella('308064', 'Vino tinto DO Cataluña', 750, 3.3)],
+    });
+
+    expect(match?.producto.idExterno).toBe('308064');
+  });
+
+  test('the floor is a size, so a half bottle (375 ml) is still acceptable', () => {
+    const match = emparejarIngrediente({ ingrediente: blanco, candidatos: [botella('media', 'Vino blanco media botella', 375, 2.5)] });
+
+    expect(match?.producto.idExterno).toBe('media');
+    expect(ENVASE_MINIMO_VINO_ML).toBeLessThan(375);
+  });
+
+  test('other liquids keep their pack range: a 250 ml soy sauce bottle, and a small cream carton, are untouched', () => {
+    const soja = emparejarIngrediente({
+      ingrediente: ingrediente(['salsa de soja'], { cantidad: 30, unidad: 'ml' }),
+      candidatos: [botella('soja', 'Salsa de soja Hacendado', 250, 1.5)],
+    });
+    const nata = emparejarIngrediente({
+      ingrediente: ingrediente(['nata'], { cantidad: 200, unidad: 'ml' }),
+      candidatos: [botella('nata', 'Nata para cocinar', 200, 1)],
+    });
+
+    expect(soja?.producto.idExterno).toBe('soja');
+    expect(nata?.producto.idExterno).toBe('nata');
+  });
+
+  test('an ingredient that merely contains "vino" later in its name is not subject to the floor', () => {
+    const match = emparejarIngrediente({
+      ingrediente: ingrediente(['aceite de vino'], { cantidad: 50, unidad: 'ml' }),
+      candidatos: [botella('mini', 'Aceite de vino pequeño', 100, 2)],
+    });
+
+    expect(match?.producto.idExterno).toBe('mini');
   });
 });
