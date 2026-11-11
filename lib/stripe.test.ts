@@ -193,6 +193,11 @@ describe('resolvePaymentStatusUpdate', () => {
       .toEqual({ stripeCustomerId: 'cus_abc', kind: 'recovered' });
   });
 
+  test('returns kind: trialing for a trialing subscription, so a lengthened trial reaches the handler (FRESCO-1167)', () => {
+    expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'trialing' })))
+      .toEqual({ stripeCustomerId: 'cus_abc', kind: 'trialing' });
+  });
+
   test('returns null for a status out of scope for this signal (e.g. canceled)', () => {
     expect(resolvePaymentStatusUpdate(fakeSubscription({ status: 'canceled' }))).toBeNull();
   });

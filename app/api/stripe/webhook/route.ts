@@ -13,7 +13,7 @@ import { claimWebhookEvent, completeWebhookEvent, releaseWebhookEvent } from '@/
 import { POSTHOG_EVENTS } from '@/lib/posthog/event-names';
 import { captureServerEvent } from '@/lib/posthog/server';
 import { previousSubscriptionStatus, resolveActiveUpdateFunnelEvent } from '@/lib/posthog/stripe-funnel-events';
-import { getProPriceIds, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
+import { getProPriceIds, resolveCancellationCustomerId, resolvePaymentStatusUpdate, resolveReconciledState, resolveRenewalUpdate, resolveWebhookSecret, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
 
 /**
@@ -257,7 +257,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 async function handleSubscriptionUpdated({ subscription, previousAttributes, eventId, livemode }: { subscription: Stripe.Subscription, previousAttributes: unknown, eventId: string, livemode: boolean }): Promise<void> {
   const eventStatus = resolvePaymentStatusUpdate(subscription);
   if (!eventStatus) {
-    // Status outside {past_due, unpaid, active} (e.g. `canceled`,
+    // Status outside {past_due, unpaid, active, trialing} (e.g. `canceled`,
     // `incomplete`) — out of scope for both the renewal and the
     // payment-failed signal.
     return;
@@ -347,6 +347,21 @@ async function handleSubscriptionUpdated({ subscription, previousAttributes, eve
   if (priceIds.length === 0) {
     throw new Error('No Pro price id is configured (STRIPE_PRICE_ID_PRO_MONTH).');
   }
+
+  if (paymentStatus.kind === 'trialing') {
+    // FRESCO-1167: a trial lengthened (or shortened) from the Stripe dashboard arrives as a
+    // `trialing` update with a new `trial_end`. Without this write Pro expired at the old date
+    // until the nightly sweep corrected it. Only the expiry moves: no funnel event, the trial
+    // did not start or convert. A non-Pro price or a missing `trial_end` is a skip, logged.
+    const reconciled = resolveReconciledState(live, priceIds);
+    if (reconciled.action !== 'pro') {
+      console.info(`[/api/stripe/webhook] event ${eventId}: trialing update left alone (${reconciled.action === 'skip' ? reconciled.reason : reconciled.action})`);
+      return;
+    }
+    await applyRenewal(supabase, { profileId: profile.id, planExpiresAt: reconciled.planExpiresAt });
+    return;
+  }
+
   const update = resolveRenewalUpdate(live, priceIds);
 
   // FRESCO-232: a renewal-shaped `active` update also means any prior
