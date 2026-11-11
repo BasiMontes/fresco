@@ -48,10 +48,12 @@ function readCookiePreference(): ThemePreference {
 export interface ThemeToggleProps {
   tone?: 'default' | 'inverse'
   variant?: 'segmented' | 'binary'
+  /** `icon` = Lucide sun / monitor / moon (default). `css` = ring and dot, for the landing (FRESCO-1138). */
+  glyphs?: 'icon' | 'css'
   className?: string
 }
 
-export function ThemeToggle({ tone = 'default', variant = 'segmented', className }: ThemeToggleProps) {
+export function ThemeToggle({ tone = 'default', variant = 'segmented', glyphs = 'icon', className }: ThemeToggleProps) {
   // Server render and first client paint must agree, so start at `light`
   // (the SSR assumption when no cookie is set — see app/layout.tsx) and
   // reconcile from the real cookie after mount.
@@ -132,9 +134,10 @@ export function ThemeToggle({ tone = 'default', variant = 'segmented', className
               !isSelected && !isInverse && 'text-tertiary hover:bg-neutral-200',
             )}
           >
-            {/* FRESCO-1138: the `binary` variant is the landing nav, which carries no Lucide icon: a ring
-                for light and a filled dot for dark. The in-app `segmented` variant keeps its icons. */}
-            {variant === 'binary'
+            {/* FRESCO-1138: the landing nav carries no Lucide icon, so it asks for `glyphs="css"`: a ring
+                for light and a filled dot for dark. FRESCO-1191: that is a surface choice, not a
+                consequence of `binary`, so /profile keeps its sun and moon. */}
+            {glyphs === 'css'
               ? <ThemeMark kind={option.value === 'dark' ? 'dark' : 'light'} />
               : <Icon className="size-[18px]" strokeWidth={2} aria-hidden="true" />}
           </button>

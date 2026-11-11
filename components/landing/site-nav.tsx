@@ -163,7 +163,7 @@ export function SiteNav() {
               )}
           {/* FRESCO-480: inline theme toggle rides with the horizontal nav — at
               `lg` and up. Between `sm` and `lg` it lives in the hamburger sheet. */}
-          <ThemeToggle variant="binary" className="hidden lg:inline-flex" />
+          <ThemeToggle variant="binary" glyphs="css" className="hidden lg:inline-flex" />
           <Button
             variant="secondary"
             size="sm"
@@ -238,7 +238,7 @@ export function SiteNav() {
           )}
           <div className="flex items-center justify-between border-b border-border px-4 py-4">
             <span className="text-body-md text-text">Tema</span>
-            <ThemeToggle variant="binary" />
+            <ThemeToggle variant="binary" glyphs="css" />
           </div>
         </nav>
       )}
