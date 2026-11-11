@@ -32,7 +32,7 @@ describe('PushNotificationsToggle', () => {
 
 describe('PushNotificationsToggle for a registered user', () => {
   let supportedSpy: ReturnType<typeof spyOn<typeof webPush, 'isPushSupported'>>;
-  let currentSpy: ReturnType<typeof spyOn<typeof webPush, 'getCurrentPushSubscription'>>;
+  let storedSpy: ReturnType<typeof spyOn<typeof pushApi, 'isCurrentSubscriptionStored'>>;
   let subscribeSpy: ReturnType<typeof spyOn<typeof pushApi, 'subscribeToPush'>>;
   let unsubscribeSpy: ReturnType<typeof spyOn<typeof pushApi, 'unsubscribeFromPush'>>;
   let errorSpy: ReturnType<typeof spyOn<typeof console, 'error'>>;
@@ -45,14 +45,14 @@ describe('PushNotificationsToggle for a registered user', () => {
   beforeEach(() => {
     setPermission('default');
     supportedSpy = spyOn(webPush, 'isPushSupported').mockReturnValue(true);
-    currentSpy = spyOn(webPush, 'getCurrentPushSubscription').mockResolvedValue(null);
+    storedSpy = spyOn(pushApi, 'isCurrentSubscriptionStored').mockResolvedValue(false);
     subscribeSpy = spyOn(pushApi, 'subscribeToPush').mockResolvedValue(undefined as never);
     unsubscribeSpy = spyOn(pushApi, 'unsubscribeFromPush').mockResolvedValue(undefined);
     errorSpy = spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    for (const spy of [supportedSpy, currentSpy, subscribeSpy, unsubscribeSpy, errorSpy]) { spy.mockRestore(); }
+    for (const spy of [supportedSpy, storedSpy, subscribeSpy, unsubscribeSpy, errorSpy]) { spy.mockRestore(); }
     if (realNotification) { Object.defineProperty(globalThis, 'Notification', realNotification); }
     else { Reflect.deleteProperty(globalThis, 'Notification'); }
   });
@@ -76,7 +76,7 @@ describe('PushNotificationsToggle for a registered user', () => {
     renderWithProviders(<PushNotificationsToggle />);
     await waitFor(() => expect(description()).toHaveTextContent('Has bloqueado las notificaciones'));
     expect(toggle()).toBeDisabled();
-    expect(currentSpy).not.toHaveBeenCalled();
+    expect(storedSpy).not.toHaveBeenCalled();
   });
 
   test('without a subscription the switch is off and can be turned on', async () => {
@@ -85,8 +85,18 @@ describe('PushNotificationsToggle for a registered user', () => {
     await waitFor(() => expect(checked()).toBe('false'));
   });
 
-  test('with a subscription the switch is on', async () => {
-    currentSpy.mockResolvedValue({} as PushSubscription);
+  // FRESCO-1182: the switch reflects the database. On a shared browser the previous user's subscription is
+  // still in the browser, but nothing is stored for this user, so it reads off and can be turned on.
+  test('a browser that still holds the previous user\'s subscription reads off, because nothing is stored for this user', async () => {
+    storedSpy.mockResolvedValue(false);
+    renderWithProviders(<PushNotificationsToggle />);
+    await waitFor(() => expect(isDisabled()).toBe(false));
+    await waitFor(() => expect(checked()).toBe('false'));
+    expect(storedSpy).toHaveBeenCalledTimes(1);
+  });
+
+  test('with a subscription stored for this user the switch is on', async () => {
+    storedSpy.mockResolvedValue(true);
     renderWithProviders(<PushNotificationsToggle />);
     await waitFor(() => expect(checked()).toBe('true'));
   });
@@ -100,7 +110,7 @@ describe('PushNotificationsToggle for a registered user', () => {
   });
 
   test('turning it off unsubscribes and the switch reads off', async () => {
-    currentSpy.mockResolvedValue({} as PushSubscription);
+    storedSpy.mockResolvedValue(true);
     renderWithProviders(<PushNotificationsToggle />);
     await waitFor(() => expect(checked()).toBe('true'));
     await setupUser().click(toggle());
