@@ -49,13 +49,19 @@ export function assertRecipeIdValido(value: unknown): asserts value is string {
  * - `recipe_id` moves ONLY on `sustituida` — the one path that runs the
  *   allergen/diet re-filter + duplicate check in index.ts step 6. Letting it
  *   through on `cocinada`/`descartada` would persist an unvetted recipe.
+ * - FRESCO-1156: replacing the recipe also clears `sustitucion_ingrediente`, as
+ *   `assign_recipe_to_slot` does. The substitution was confirmed for the OLD recipe;
+ *   a new one that shares the original ingredient must not inherit it unasked.
  */
 export function buildUpdatePayload(
   estado: ClientSettableEstado,
   nuevaRecipeId: string | undefined,
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { estado }
-  if (nuevaRecipeId !== undefined && estado === 'sustituida') payload.recipe_id = nuevaRecipeId
+  if (nuevaRecipeId !== undefined && estado === 'sustituida') {
+    payload.recipe_id = nuevaRecipeId
+    payload.sustitucion_ingrediente = null
+  }
   return payload
 }
 

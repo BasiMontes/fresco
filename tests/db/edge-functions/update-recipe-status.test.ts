@@ -233,4 +233,42 @@ describe.skipIf(!(RUN && reachable))('update-recipe-status — happy path actual
       rating: null,
     });
   });
+
+  // FRESCO-1156: the ingredient substitution was confirmed for the OLD recipe. Replacing the dish used to keep it,
+  // so a new recipe that shares the original ingredient got the substitution without being asked.
+  test('200 replacing a dish clears the ingredient substitution of the old one (FRESCO-1156)', async () => {
+    const user = await ctx.createUser({ healthDataConsent: true });
+    const pick = async (ingrediente: string) => {
+      const res = await rest('recipes', {
+        token: user.token,
+        query: `select=id&activo=eq.true&ingredientes_principales=cs.["${ingrediente}"]&alergenos=not.cs.["soja"]&order=id.asc&limit=1`,
+      });
+      return (res.body as { id: string }[])[0].id;
+    };
+    const gambas = await pick('gambas');
+    const leche = await pick('leche');
+    const plan = await seedMealPlan(user, { semanaIso: '2099-W12', fechaInicio: '2099-03-23' });
+    const [slotId] = await seedSlots(user, plan.id, [{ recipeId: gambas, tipoPlato: 'comida' }]);
+    const confirmed = await rpc('confirm_ingredient_substitution', {
+      p_slot_id: slotId,
+      p_ingrediente_original: 'gambas',
+      p_ingrediente_sustituto: 'tofu firme',
+    }, { token: user.token });
+    expect(confirmed.status).toBeLessThan(300);
+    const before = await rest('meal_plan_recipes', { token: user.token, query: `id=eq.${slotId}&select=sustitucion_ingrediente` });
+    expect((before.body as { sustitucion_ingrediente: unknown }[])[0].sustitucion_ingrediente).toEqual({ original: 'gambas', sustituto: 'tofu firme' });
+
+    const res = await callFunction(ENDPOINT, {
+      token: user.token,
+      body: { meal_plan_recipe_id: slotId, estado: 'sustituida', nueva_recipe_id: leche },
+    });
+    expect(res.status).toBe(200);
+
+    const after = await rest('meal_plan_recipes', { token: user.token, query: `id=eq.${slotId}&select=recipe_id,estado,sustitucion_ingrediente` });
+    expect((after.body as { recipe_id: string, estado: string, sustitucion_ingrediente: unknown }[])[0]).toEqual({
+      recipe_id: leche,
+      estado: 'sustituida',
+      sustitucion_ingrediente: null,
+    });
+  });
 });

@@ -51,11 +51,19 @@ describe('assertRecipeIdValido (A8-API-02)', () => {
 })
 
 describe('buildUpdatePayload (A4-L7 — fields gated by estado)', () => {
-  test('sustituida: applies recipe_id', () => {
+  // FRESCO-1156: a substitution was confirmed for the OLD recipe; the new one must not inherit it.
+  test('sustituida: applies recipe_id and clears the ingredient substitution of the old recipe', () => {
     expect(buildUpdatePayload('sustituida', 'recipe-x')).toEqual({
       estado: 'sustituida',
       recipe_id: 'recipe-x',
+      sustitucion_ingrediente: null,
     })
+  })
+
+  test('the other estados never touch sustitucion_ingrediente', () => {
+    for (const estado of ['cocinada', 'descartada', 'pendiente'] as const) {
+      expect(buildUpdatePayload(estado, 'recipe-x')).not.toHaveProperty('sustitucion_ingrediente')
+    }
   })
 
   test('cocinada: ignores nueva_recipe_id', () => {
