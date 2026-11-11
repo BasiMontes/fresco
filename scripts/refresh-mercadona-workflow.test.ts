@@ -24,7 +24,7 @@ interface Step {
   if?: string
 }
 
-const workflow = parse(readFileSync(WORKFLOW, 'utf8')) as { jobs: { refresh: { steps: Step[] } } };
+const workflow = parse(readFileSync(WORKFLOW, 'utf8')) as { jobs: { refresh: { steps: Step[], permissions?: Record<string, string> } } };
 const steps = workflow.jobs.refresh.steps;
 const usesToken = (step: Step) => JSON.stringify(step).includes(TOKEN);
 
@@ -83,5 +83,49 @@ describe('refresh-mercadona-catalog.yml', () => {
 
     expect(prStep.env?.DATASET_REVISION).toBe(ghExpr('steps.freshness.outputs.revision'));
     expect(prStep.run).toContain(`huggingface.co/datasets/datania/mercadona-catalog/tree/${shellVar('DATASET_REVISION')}`);
+  });
+
+  /** FRESCO-1181: a run that failed, or was blocked by an open refresh PR, must raise an issue. */
+  describe('failures are seen (FRESCO-1181)', () => {
+    const alert = steps.find(step => step.if === 'failure()');
+    const [prStep] = steps.filter(usesToken);
+
+    test('a failed run opens an issue, or comments on the one that is open, with the repo token and write access to issues', () => {
+      expect(alert).toBeDefined();
+      expect(alert?.run).toContain('gh issue list');
+      expect(alert?.run).toContain('gh issue comment');
+      expect(alert?.run).toContain('gh issue create');
+      expect(workflow.jobs.refresh.permissions?.issues).toBe('write');
+      // The alert uses the repo's own token, never the personal one.
+      expect(usesToken(alert as Step)).toBe(false);
+      expect(alert?.env?.GH_TOKEN).toBe(ghExpr('github.token'));
+    });
+
+    test('the alert is the last step, so it sees a failure of any step before it', () => {
+      expect(steps.at(-1)).toBe(alert);
+    });
+
+    test('a refresh PR that is already open fails the run instead of ending it green', () => {
+      const branch = (prStep.run ?? '').split('\n').findIndex(line => line.includes('A refresh PR is already open.'));
+      const lines = (prStep.run ?? '').split('\n');
+
+      expect(branch).toBeGreaterThan(0);
+      expect(lines.slice(branch - 3, branch + 3).join('\n')).toContain('exit 1');
+      expect(lines.slice(branch - 3, branch + 3).join('\n')).not.toContain('exit 0');
+      expect(lines.slice(branch - 3, branch + 3).join('\n')).toContain('::error::');
+    });
+
+    test('"no price changes" is still a green run: nothing to merge is not a failure', () => {
+      const lines = (prStep.run ?? '').split('\n');
+      const noChanges = lines.findIndex(line => line.includes('No price changes.'));
+
+      expect(noChanges).toBeGreaterThan(0);
+      expect(lines[noChanges + 1]).toContain('exit 0');
+    });
+
+    test('the commit and the push run with husky off, and nothing builds the alias that only the hook needed', () => {
+      expect(prStep.env?.HUSKY).toBe('0');
+      expect(steps.some(step => step.run?.includes('agents:compat'))).toBe(false);
+    });
   });
 });
