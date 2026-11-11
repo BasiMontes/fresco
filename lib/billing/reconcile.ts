@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { downgradeToFree } from '@/lib/billing/subscription';
+import { readAllPages } from '@/lib/supabase/read-all-pages';
 
 type Client = SupabaseClient<Database>;
 type UserProfileRow = Database['public']['Tables']['user_profiles']['Row'];
@@ -20,18 +21,21 @@ export interface DesiredBillingState {
  * by FRESCO-810 (ADR-0041). The route keeps the Stripe comparison.
  */
 
-/** Every profile that carries a Stripe subscription. Throws on a read error. */
+/**
+ * Every profile that carries a Stripe subscription. Throws on a read error.
+ * FRESCO-1165: read a page at a time (ordered by `id`), because PostgREST caps one response at `max_rows` (1000)
+ * and the rows past it were never reconciled.
+ */
 export async function listSubscribedProfiles(client: Client): Promise<ReconcilableProfile[]> {
-  const { data, error } = await client
-    .from('user_profiles')
-    .select('id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id, stripe_customer_id, stripe_livemode')
-    .not('stripe_subscription_id', 'is', null);
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
+  return readAllPages<ReconcilableProfile>(
+    (from, to) => client
+      .from('user_profiles')
+      .select('id, plan, plan_expires_at, payment_failed_at, stripe_subscription_id, stripe_customer_id, stripe_livemode')
+      .not('stripe_subscription_id', 'is', null)
+      .order('id')
+      .range(from, to),
+    'could not list the profiles with a Stripe subscription',
+  );
 }
 
 /** Writes the desired state onto one drifted row. Throws on a write error. */
@@ -60,19 +64,27 @@ export async function applyReconciledState(client: Client, { profileId, desired 
  * failed row is skipped, so one bad row never blocks the rest.
  */
 export async function sweepOrphanPaidPlans(client: Client): Promise<number> {
-  const { data: orphans, error } = await client
-    .from('user_profiles')
-    .select('id, plan')
-    .in('plan', ['pro', 'family'])
-    .is('stripe_subscription_id', null);
-
-  if (error) {
+  // FRESCO-1165: every orphan, not the first `max_rows`; the whole list is read before any row is downgraded.
+  let orphans: { id: string, plan: string }[];
+  try {
+    orphans = await readAllPages<{ id: string, plan: string }>(
+      (from, to) => client
+        .from('user_profiles')
+        .select('id, plan')
+        .in('plan', ['pro', 'family'])
+        .is('stripe_subscription_id', null)
+        .order('id')
+        .range(from, to),
+      'could not load the orphan pro/family rows',
+    );
+  }
+  catch (error) {
     console.error('[/api/cron/stripe-reconcile] failed to load orphan pro/family rows', error);
     return 0;
   }
 
   let swept = 0;
-  for (const orphan of orphans ?? []) {
+  for (const orphan of orphans) {
     try {
       await downgradeToFree(client, orphan.id);
     }

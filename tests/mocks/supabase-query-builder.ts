@@ -66,8 +66,18 @@ export function fakeSupabase(tables: Record<string, TableFixture> = {}, auth?: u
   }
 
   function selectChain(table: string) {
-    const resolve = async () => selectResult(table);
+    // FRESCO-1165: `.range(from, to)` slices an ARRAY of rows, so a paged read (`readAllPages`) ends on an empty
+    // page instead of getting the same rows forever. A single object (a `maybeSingle` fixture) is left alone.
+    let window: [number, number] | null = null;
+    const resolve = async () => {
+      const result = selectResult(table);
+      return window && Array.isArray(result.data) ? { ...result, data: result.data.slice(window[0], window[1] + 1) } : result;
+    };
     const chain: Record<string, unknown> = {
+      range: (from: number, to: number) => {
+        window = [from, to];
+        return chain;
+      },
       eq: () => chain,
       gte: (column: string, value: unknown) => {
         gteFilters.push({ table, column, value });
