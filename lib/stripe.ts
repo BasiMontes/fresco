@@ -332,8 +332,9 @@ export interface PaymentStatusUpdate {
    * ("pago sigue fallando revierte a Free") holds regardless of which
    * dunning action (Cancel vs. mark Unpaid) the Stripe account is configured
    * with — see review discussion on STORY-FRESCO-232's PR.
+   * `'trialing'` (FRESCO-1167) — still in trial; the caller re-reads `trial_end`.
    */
-  kind: 'retrying' | 'recovered' | 'exhausted'
+  kind: 'retrying' | 'recovered' | 'exhausted' | 'trialing'
 }
 
 /**
@@ -349,7 +350,7 @@ export interface PaymentStatusUpdate {
  * only add a silent no-op branch with no corresponding AC.
  *
  * Any other status (`canceled`, `incomplete`, `incomplete_expired`,
- * `trialing`, `paused`) is out of scope for this signal — returns `null`, and
+ * `paused`) is out of scope for this signal — returns `null`, and
  * the caller leaves both `plan` and `payment_failed_at` untouched.
  */
 export function resolvePaymentStatusUpdate(subscription: Stripe.Subscription): PaymentStatusUpdate | null {
@@ -370,7 +371,7 @@ export function resolvePaymentStatusUpdate(subscription: Stripe.Subscription): P
     return { stripeCustomerId, kind: 'recovered' };
   }
 
-  return null;
+  return subscription.status === 'trialing' ? { stripeCustomerId, kind: 'trialing' } : null;
 }
 
 /**

@@ -257,6 +257,38 @@ describe('POST /api/stripe/webhook — customer.subscription.updated', () => {
     expect(captureServerEvent).not.toHaveBeenCalled();
   });
 
+  test('a trialing update with a new trial_end moves plan_expires_at and nothing else (FRESCO-1167)', async () => {
+    const newTrialEnd = NOW_S + 21 * 86_400;
+    constructEvent.mockReturnValue(updatedEvent(subscription({ status: 'trialing', trial_end: newTrialEnd }), { trial_end: NOW_S + 7 * 86_400 }));
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
+
+    const res = await POST(req({}));
+
+    expect(res.status).toBe(200);
+    const write = updateFor('user_profiles');
+    expect(write!.payload.plan_expires_at).toBe(new Date(newTrialEnd * 1000).toISOString());
+    expect(write!.payload.plan).toBe('pro');
+    expect(captureServerEvent).not.toHaveBeenCalled();
+  });
+
+  test('a trialing update on a non-Pro price writes nothing (FRESCO-1167)', async () => {
+    const other = subscription({ status: 'trialing', items: { data: [{ price: { id: 'price_other' }, current_period_end: NOW_S + 30 * 86_400 }] } });
+    constructEvent.mockReturnValue(updatedEvent(other));
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
+
+    expect((await POST(req({}))).status).toBe(200);
+    expect(supa.updates).toHaveLength(0);
+  });
+
+  test('a trialing update for a subscription that is not the one on file writes nothing (FRESCO-1167)', async () => {
+    constructEvent.mockReturnValue(updatedEvent(subscription({ id: 'sub_OLD', status: 'trialing' })));
+    supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', plan: 'pro', stripe_subscription_id: 'sub_1' } } });
+
+    await POST(req({}));
+
+    expect(supa.updates).toHaveLength(0);
+  });
+
   test('recovered active clears payment_failed_at and keeps Pro', async () => {
     constructEvent.mockReturnValue(updatedEvent(subscription({ status: 'active' }), { status: 'past_due' }));
     supa = fakeSupabase({ user_profiles: { rows: { id: 'user_1', stripe_subscription_id: 'sub_1' } } });
