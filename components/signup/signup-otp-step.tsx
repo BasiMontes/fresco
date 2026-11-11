@@ -21,7 +21,7 @@ export function SignupOtpStep({ email, otp, captcha }: SignupOtpStepProps) {
         Te enviamos un código a
         {' '}
         <strong>{email}</strong>
-        . Ingrésalo para confirmar tu cuenta.
+        . Introdúcelo para confirmar tu cuenta.
       </p>
 
       <form onSubmit={event => void handleVerifyOtp(event)} className="mt-6 flex flex-col gap-3">

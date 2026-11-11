@@ -17,7 +17,7 @@ export function SignupEmailConflict({ reassign, captcha }: SignupEmailConflictPr
     <>
       <h1 className="text-h3">Ya existe una cuenta con ese email</h1>
       <p data-testid="signup_email_conflict_message" role="alert" aria-live="assertive" className="mt-1 text-body-sm text-tertiary">
-        Ingresa su contraseña para continuar con ella y conservar el menú que acabas de generar.
+        Introduce la contraseña de esa cuenta para continuar con ella y conservar el menú que acabas de generar.
       </p>
       <form
         onSubmit={(event) => {
