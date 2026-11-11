@@ -14,6 +14,7 @@ import { createRequestClient } from '../_shared/supabase-client.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { requireAuthenticatedUser } from '../_shared/auth.ts'
 import { logger } from '../_shared/logger.ts'
+import { captureEdgeException } from '../_shared/sentry.ts'
 import { buildLearningExplanation } from './prompt.ts'
 import { hoyEnMadrid, selectMenu } from './menu-selector.ts'
 import { assertRateLimitAllowed } from './rate-limit.ts'
@@ -125,8 +126,30 @@ Deno.serve(async (req: Request) => {
     const isPro = isProEntitlementActive(profile)
     const recentRecipeIds: string[] = []
     const repeatableRecipeIds: string[] = [] // FRESCO-1128: the cooked subset, the only ones a menu may repeat
+    const discardedRecipeIds: string[] = [] // FRESCO-1185: the discarded subset, never placed again
     let cocinadasEvitadas = 0
     let descartadasEvitadas = 0
+    // FRESCO-1185: a failed read of the Pro history used to be ignored (only `data` was read): the menu came out
+    // without it and the card said "no teníamos historial reciente tuyo", with no log and no Sentry event.
+    // The generation still goes on (a blip must not block the week), but it is reported and the plan says so.
+    let historyUnavailable = false
+    const reportHistoryFailure = async (source: string, error: unknown) => {
+      historyUnavailable = true
+      const errorId = crypto.randomUUID()
+      logger.error('Pro history read failed; the menu is generated without it', {
+        fn: FN_NAME,
+        source,
+        error: error instanceof Error ? error.message : (error as { message?: string } | null)?.message ?? String(error),
+        error_id: errorId,
+      })
+      await captureEdgeException(error instanceof Error ? error : new Error(`${source} failed: ${(error as { message?: string } | null)?.message ?? String(error)}`), {
+        fn: FN_NAME,
+        errorId,
+        userId: user.id,
+        url: req.url,
+        method: req.method,
+      })
+    }
     // ADR-0008: personal cocinada/descartada counts feeding scoreRecipe()'s
     // nudge — Pro/Family only, reusing this same isPro gate. Stays
     // `undefined` for Free, so scoreRecipe() applies zero personal nudge.
@@ -135,10 +158,12 @@ Deno.serve(async (req: Request) => {
     if (isPro) {
       // Independent reads (both only need user.id) — run concurrently rather
       // than paying two sequential round-trips on every Pro generation.
-      const [{ data: marksData }, { data: engagementData }] = await Promise.all([
+      const [{ data: marksData, error: marksError }, { data: engagementData, error: engagementError }] = await Promise.all([
         supabase.rpc('get_recent_recipe_marks', { p_user_id: user.id, p_weeks: 2 }),
         supabase.rpc('get_user_recipe_engagement', { p_user_id: user.id }),
       ])
+      if (marksError) await reportHistoryFailure('get_recent_recipe_marks', marksError)
+      if (engagementError) await reportHistoryFailure('get_user_recipe_engagement', engagementError)
       // FRESCO-375: untyped Deno client — assert the row shapes at the boundary.
       const marks = (marksData ?? []) as RecentRecipeMark[]
       const engagement = (engagementData ?? []) as UserRecipeEngagementRow[]
@@ -149,7 +174,10 @@ Deno.serve(async (req: Request) => {
             cocinadasEvitadas++
             repeatableRecipeIds.push(mark.recipe_id)
           }
-          else descartadasEvitadas++
+          else {
+            descartadasEvitadas++
+            discardedRecipeIds.push(mark.recipe_id)
+          }
         }
       }
 
@@ -170,6 +198,7 @@ Deno.serve(async (req: Request) => {
       candidates: recipes,
       recentRecipeIds,
       repeatableRecipeIds,
+      discardedRecipeIds,
       profile,
       // FRESCO-380 (A4-M1): same user + same week => same menu.
       seed: `${user.id}:${semana_iso}`,
@@ -191,7 +220,8 @@ Deno.serve(async (req: Request) => {
     // bien" is actually about them.
     let explicacionAprendizaje: string | null = null
     if (isPro) {
-      const { data: cookedIds } = await supabase.rpc('get_user_cooked_recipe_ids', { p_user_id: user.id })
+      const { data: cookedIds, error: cookedError } = await supabase.rpc('get_user_cooked_recipe_ids', { p_user_id: user.id })
+      if (cookedError) await reportHistoryFailure('get_user_cooked_recipe_ids', cookedError)
       const personalCookedIds = new Set(cookedIds ?? [])
       const chosenIds = new Set(
         DIAS.flatMap(dia => TIPOS.map(tipo => menu[dia][tipo]))
@@ -206,7 +236,12 @@ Deno.serve(async (req: Request) => {
       // FRESCO-333: no guard on "has history" — a Pro user with none still
       // gets the generic variety/balance sentence from
       // `buildLearningExplanation` (AC: fallback message, never a missing card).
-      explicacionAprendizaje = buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas })
+      explicacionAprendizaje = buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas, historyUnavailable })
+    }
+
+    // FRESCO-1185: the plan itself says the history was not used, not only the card.
+    if (historyUnavailable) {
+      advertencias.push('No hemos podido leer tu historial de recetas, así que este menú no tiene en cuenta lo que cocinaste ni descartaste.')
     }
 
     // 9. Persist meal_plans. FRESCO-777 (audit-6 A6-S4): `authenticated` no
