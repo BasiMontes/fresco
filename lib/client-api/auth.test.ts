@@ -263,9 +263,18 @@ describe('adoptSession', () => {
 });
 
 describe('resendSignupConfirmation', () => {
-  test('asks Supabase to resend the signup email, with the captcha token', async () => {
+  test('asks Supabase to resend the signup email, with the captcha token and the confirmation redirect', async () => {
     await resendSignupConfirmation({ email: 'a@b.es', captchaToken: 'cap-3' });
 
-    expect(resendMock).toHaveBeenCalledWith({ type: 'signup', email: 'a@b.es', options: { captchaToken: 'cap-3' } });
+    // FRESCO-1179: the confirmation template builds `{{ .RedirectTo }}&token_hash=...`,
+    // so a resend without `emailRedirectTo` produced a malformed link.
+    expect(resendMock).toHaveBeenCalledWith({
+      type: 'signup',
+      email: 'a@b.es',
+      options: {
+        captchaToken: 'cap-3',
+        emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding`,
+      },
+    });
   });
 });
