@@ -70,7 +70,7 @@ The withdrawal text and the "IVA incluido" rendering are code, not settings:
 Order matters. Production must have the live keys and the database must say live in the same window; between the two steps the checkout answers 503 and the webhook refuses events, which is safe and recoverable (Stripe retries a refused event).
 
 1. In the Stripe dashboard, in **live mode**, register the production endpoint and copy its signing secret.
-2. In Vercel, set the production scope's live `STRIPE_SECRET_KEY`, live webhook secret and live price ids. Do not touch the Preview scope: `fresco-pre` and `fresco-dev` keep test keys. In the same window set the Supabase Edge secret `STRIPE_SECRET_KEY` to the live key (`supabase secrets set`, typed in your terminal): the Edge Functions read it, and a test key there against live customers fails quietly.
+2. In Vercel, set the production scope's live `STRIPE_SECRET_KEY`, live webhook secret and live price ids. Do not touch the Preview scope: `fresco-pre` and `fresco-dev` keep test keys. In the same window set the Supabase Edge secret `STRIPE_SECRET_KEY` to the live key (`supabase secrets set`, typed in your terminal): the Edge Functions read it. Since FRESCO-1164 `delete-account` compares the mode of that key with `billing_mode` and refuses to delete the account (502, and a Sentry event) when they differ, so a test key left there no longer erases an account while its real subscription keeps charging; the cost is that nobody with a customer id, nor any registered user, can delete their account until the secret is right, so set it in the same window as the flip.
 3. Flip the database (the Management API runs it as `postgres`; no client role and not even the service role can write this table):
 
    ```bash

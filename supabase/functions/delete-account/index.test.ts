@@ -13,6 +13,11 @@ const MAIN_AUTH = 'Bearer main.jwt'
 let clientsByAuth: Record<string, ReturnType<typeof fakeEdgeClient>> = {}
 let serviceClient = fakeEdgeClient()
 
+/** FRESCO-1164: the Stripe mode guard reads `billing_mode`; unless a test says otherwise the database serves test mode, like the fake key. */
+function service(opts: Parameters<typeof fakeEdgeClient>[0] = {}) {
+  return fakeEdgeClient({ ...opts, rows: { billing_mode: { stripe_livemode: false }, ...opts.rows } })
+}
+
 captureDenoServe()
 mock.module('../_shared/supabase-client.ts', () => ({
   createRequestClient: (authHeader: string) => (clientsByAuth[authHeader] ?? fakeEdgeClient({ user: null })).client,
@@ -113,7 +118,7 @@ const OK_RATE = { check_and_increment_rate_limit: { data: true } }
 
 beforeEach(() => {
   clientsByAuth = {}
-  serviceClient = fakeEdgeClient()
+  serviceClient = service()
   stripeCalls = []
   stripeSearch = []
   stripeSubs = []
@@ -129,7 +134,7 @@ const STRIPE_BLOCKED_MESSAGE = 'No hemos podido cancelar tu suscripción ni gest
 
 /** A service client whose `user_profiles` row carries a Stripe customer id (or an explicit null/absent row). */
 function withProfile(row: { stripe_customer_id: string | null } | null, extra: Parameters<typeof fakeEdgeClient>[0] = {}) {
-  serviceClient = fakeEdgeClient({ rows: { user_profiles: row }, ...extra })
+  serviceClient = service({ rows: { user_profiles: row }, ...extra })
 }
 
 function registered(reauthUserId: string | null, iat = NOW_S) {
@@ -193,9 +198,104 @@ describe('delete-account/index.ts', () => {
 
   test('500 when admin.deleteUser fails', async () => {
     const token = registered('user_1')
-    serviceClient = fakeEdgeClient({ adminDeleteError: new Error('supabase admin down') })
+    serviceClient = service({ adminDeleteError: new Error('supabase admin down') })
     const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
     expect(res.status).toBe(500)
+  })
+
+  /**
+   * FRESCO-1164: a Stripe key of the other mode than `billing_mode` answers `resource_missing` for every
+   * real customer, which the cancellation reads as "nothing to cancel". The account must NOT be deleted then.
+   */
+  describe('Stripe mode guard (FRESCO-1164)', () => {
+    const paying = (billingLive: boolean, key: string) => {
+      process.env.STRIPE_SECRET_KEY = key
+      serviceClient = service({ rows: { billing_mode: { stripe_livemode: billingLive }, user_profiles: { stripe_customer_id: 'cus_real' } } })
+      stripeSubs = [{ id: 'sub_real', status: 'active' }]
+      // What the mismatched key really answers for a customer of the other mode.
+      stripeFailure = { on: 'list', error: Object.assign(new Error('No such customer'), { code: 'resource_missing' }) }
+    }
+
+    test.each([
+      ['a test key on a live database', true, 'sk_test_fake'],
+      ['a live key on a test database', false, 'sk_live_fake'],
+    ])('%s: 502, nothing asked of Stripe, the account is NOT deleted', async (_name, billingLive, key) => {
+      const token = registered('user_1')
+      paying(billingLive, key)
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(502)
+      expect(await res.json()).toEqual({ error: STRIPE_BLOCKED_MESSAGE })
+      expect(stripeCalls).toEqual([])
+      expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    test('an unrecognised key fails closed too', async () => {
+      const token = registered('user_1')
+      paying(false, 'not-a-stripe-key')
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(502)
+      expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    test('a missing billing_mode row fails closed', async () => {
+      const token = registered('user_1')
+      serviceClient = service({ rows: { billing_mode: null, user_profiles: { stripe_customer_id: 'cus_real' } } })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(502)
+      expect(stripeCalls).toEqual([])
+      expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    test('an unreadable billing_mode fails closed', async () => {
+      const token = registered('user_1')
+      serviceClient = service({ rows: { user_profiles: { stripe_customer_id: 'cus_real' } }, selectError: { billing_mode: { message: 'db down' } } })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(502)
+      expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    test('a registered user with no stored customer id is held back as well: the checkout-session lookup would be blind too', async () => {
+      const token = registered('user_1')
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake'
+      serviceClient = service({ rows: { billing_mode: { stripe_livemode: true }, user_profiles: { stripe_customer_id: null } } })
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(502)
+      expect(stripeCalls).toEqual([])
+      expect(serviceClient.deletedUserIds).toHaveLength(0)
+    })
+
+    test('a guest with no customer never touches Stripe, so a mismatch does not stop the deletion', async () => {
+      clientsByAuth[MAIN_AUTH] = fakeEdgeClient({ user: { id: 'guest_1', is_anonymous: true }, rpc: OK_RATE })
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake'
+      serviceClient = service({ rows: { billing_mode: { stripe_livemode: true }, user_profiles: null } })
+
+      const res = await handler(edgeRequest({}, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(200)
+      expect(serviceClient.deletedUserIds).toEqual(['guest_1'])
+    })
+
+    test('with matching modes (live key, live database) the subscription is cancelled as usual', async () => {
+      const token = registered('user_1')
+      process.env.STRIPE_SECRET_KEY = 'sk_live_fake'
+      serviceClient = service({ rows: { billing_mode: { stripe_livemode: true }, user_profiles: { stripe_customer_id: 'cus_real' } } })
+      stripeSubs = [{ id: 'sub_real', status: 'active' }]
+
+      const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
+
+      expect(res.status).toBe(200)
+      expect(stripeCalls.filter(c => !c.startsWith('invoices:'))).toEqual(['list:cus_real', 'cancel:sub_real', 'del:cus_real'])
+    })
   })
 
   describe('Stripe cleanup (FRESCO-942)', () => {
@@ -544,7 +644,7 @@ describe('delete-account/index.ts', () => {
 
     test('when the account deletion fails nothing is erased in PostHog and no record is written', async () => {
       const token = registered('user_1')
-      serviceClient = fakeEdgeClient({ adminDeleteError: new Error('supabase admin down') })
+      serviceClient = service({ adminDeleteError: new Error('supabase admin down') })
 
       const res = await handler(edgeRequest({ reauthToken: token }, { auth: MAIN_AUTH }))
 
