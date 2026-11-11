@@ -198,6 +198,26 @@ export function RecipeDetailView({ detail, initialIsFavorite, from, slotId, sust
     : <PersonalRecipeDetail receta={detail.receta} from={from} />;
 }
 
+/**
+ * FRESCO-1158: the recipe exists but the person's profile rules it out (an allergen, a diet or an ingredient they
+ * declared). Says so, names the recipe they tapped and sends them back to the menu or the library, instead of
+ * "no encontrada". It shows nothing of the recipe itself: it is not safe for them.
+ */
+export function RecipeProfileConflictState({ nombre, from }: { nombre: string, from?: string }) {
+  return (
+    <div>
+      <BackToLibraryLink from={from} />
+      <h1 className="mt-6 text-h3 text-text">{nombre}</h1>
+      {/* A safety notice, so it reads at full strength: the muted `text-tertiary` of the not-found line is for what is merely missing. */}
+      <p className="mt-3 text-body-md text-text" data-testid="recipe_detail_profile_conflict">
+        Esta receta no encaja con tu perfil: contiene algo que has indicado evitar (un alérgeno, un ingrediente o algo que tu dieta no permite). Por tu seguridad no te la mostramos.
+        {' '}
+        Puedes cambiarla por otra desde el menú.
+      </p>
+    </div>
+  );
+}
+
 export function RecipeNotFoundState({ from }: { from?: string }) {
   return (
     <div>

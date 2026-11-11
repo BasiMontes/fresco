@@ -339,6 +339,14 @@ export type RecipeDetail
     | { kind: 'propia', receta: RecetaPropia };
 
 /**
+ * FRESCO-1158: what `getRecipeDetail` answers. `no_encaja` is a catalog recipe that exists and is active but
+ * that the person's profile rules out (an allergen, a diet or an ingredient they declared): the page says so
+ * instead of "no encontrada", which read as if it did not exist. Only the name is returned: nothing of a recipe
+ * the profile rules out is shown.
+ */
+export type RecipeDetailResult = RecipeDetail | { kind: 'no_encaja', nombre: string };
+
+/**
  * A single recipe's detail by id (FRESCO-69), for whichever recipe type
  * `id` belongs to. Tries `recetas_propias` first (cheap PK lookup, RLS
  * already scopes it to the caller) before the catalog, since a personal
@@ -360,7 +368,7 @@ export type RecipeDetail
 export async function getRecipeDetail(
   client: SupabaseClient<Database>,
   { id, userId }: { id: string, userId?: string },
-): Promise<RecipeDetail | null> {
+): Promise<RecipeDetailResult | null> {
   let resolvedUserId = userId;
 
   if (!resolvedUserId) {
@@ -396,6 +404,23 @@ export async function getRecipeDetail(
   const receta = catalogo ? toRecipe(catalogo) : null;
   if (receta) {
     return { kind: 'catalogo', receta };
+  }
+
+  // FRESCO-1158: get_filtered_recipes answers nothing both for a recipe that does not exist and for one the
+  // profile rules out, and the filter's rules are not copied here (they would drift). The recipe itself is public
+  // catalogue data: if it exists and is active, the profile is what ruled it out. Fails closed: a failed lookup
+  // is an error, never a guess in either direction.
+  const { data: existente, error: existenteError } = await client
+    .from('recipes')
+    .select('id, nombre, activo')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (existenteError) {
+    throw new RecipesError(`No se pudo leer la receta: ${existenteError.message}`);
+  }
+  if (existente?.activo) {
+    return { kind: 'no_encaja', nombre: existente.nombre };
   }
 
   return null;

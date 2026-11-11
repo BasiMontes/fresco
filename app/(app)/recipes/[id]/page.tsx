@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { RecipeDetailView, RecipeNotFoundState } from '@/components/recipes/recipe-detail';
+import { RecipeDetailView, RecipeNotFoundState, RecipeProfileConflictState } from '@/components/recipes/recipe-detail';
 import { getFavoriteRecipeIds } from '@/lib/api/favorites';
 import { getRecipeDetail } from '@/lib/api/recipes';
 import { getAuthUser } from '@/lib/auth/current-user';
@@ -50,6 +50,15 @@ export default async function RecipeDetailPage({ params, searchParams }: {
   }
   catch (error) {
     console.error('[/recipes/[id]] getFavoriteRecipeIds failed, defaulting to not-favorited', error);
+  }
+
+  // FRESCO-1158: a recipe the profile rules out is its own state, not "no encontrada".
+  if (detail?.kind === 'no_encaja') {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <RecipeProfileConflictState nombre={detail.nombre} from={from} />
+      </div>
+    );
   }
 
   const substitutionContext = detail ? await getSlotSubstitutionContext(supabase, { slotId: slot, recipeId: id }) : null;
