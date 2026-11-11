@@ -116,6 +116,8 @@ describe('refresh-consum-catalog.yml', () => {
     expect(alert).toBeDefined();
     expect(alert?.run).toContain('gh issue create');
     expect(alert?.run).toContain('gh issue list');
+    // FRESCO-1196: a second failure while the issue is open is a comment on it, not silence.
+    expect(alert?.run).toContain('gh issue comment');
     expect(workflow.jobs.refresh.permissions?.issues).toBe('write');
     // The alert uses the repo's own token, never the personal one.
     expect(usesToken(alert as Step)).toBe(false);
@@ -124,5 +126,37 @@ describe('refresh-consum-catalog.yml', () => {
 
   test('the job cannot run forever', () => {
     expect(workflow.jobs.refresh['timeout-minutes']).toBeLessThanOrEqual(20);
+  });
+
+  /** FRESCO-1196: the same two findings FRESCO-1181 fixed for Mercadona. */
+  describe('a blocked run is seen and the runner runs no husky hooks (FRESCO-1196)', () => {
+    const [prStep] = steps.filter(usesToken);
+    const lines = (prStep.run ?? '').split('\n');
+
+    test('a refresh PR that is already open fails the run instead of ending it green', () => {
+      const at = lines.findIndex(line => line.includes('A refresh PR is already open.'));
+      const around = lines.slice(at - 3, at + 3).join('\n');
+
+      expect(at).toBeGreaterThan(0);
+      expect(around).toContain('exit 1');
+      expect(around).not.toContain('exit 0');
+      expect(around).toContain('::error::');
+    });
+
+    test('"no changes" is still a green run', () => {
+      const at = lines.findIndex(line => line.includes('No changes.'));
+
+      expect(at).toBeGreaterThan(0);
+      expect(lines[at + 1]).toContain('exit 0');
+    });
+
+    test('the commit and the push run with husky off, and nothing builds the alias that only the hook needed', () => {
+      expect(prStep.env?.HUSKY).toBe('0');
+      expect(steps.some(step => step.run?.includes('agents:compat'))).toBe(false);
+    });
+
+    test('the alert is the last step, so it sees a failure of any step before it', () => {
+      expect(steps.at(-1)?.if).toBe('failure()');
+    });
   });
 });
