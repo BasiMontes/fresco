@@ -199,7 +199,7 @@ export async function retryPendingConfirmations(client: Client, stripe: Pick<Str
         continue;
       }
 
-      await deletePending(client, row.subscription_id);
+      await finishSentRow(client, row);
       result.sent++;
     }
     catch (rowError) {
@@ -213,6 +213,31 @@ export async function retryPendingConfirmations(client: Client, stripe: Pick<Str
   }
 
   return result;
+}
+
+/**
+ * FRESCO-1187: the email already went out, so the row has to stop being retried even when it cannot be
+ * deleted. A failed delete used to fall into the per-row catch as a plain failure, without spending an
+ * attempt, and the nightly pass sent the same confirmation again. The row is closed instead (attempts at the
+ * cap, with the reason), which the query for pending rows already skips; the failed delete is reported. Only
+ * if closing it fails too does the error reach the caller, as before.
+ */
+async function finishSentRow(client: Client, row: { subscription_id: string, user_id: string }): Promise<void> {
+  try {
+    await deletePending(client, row.subscription_id);
+  }
+  catch (deleteError) {
+    await recordFailedRetry(client, {
+      subscriptionId: row.subscription_id,
+      attempts: CONFIRMATION_EMAIL_MAX_ATTEMPTS,
+      error: new Error(`sent; the pending row could not be deleted: ${describeError(deleteError)}`),
+    });
+    reportFailure({
+      message: `the confirmation email of subscription ${row.subscription_id} was sent but its pending row could not be deleted; the row was closed so it is not sent again`,
+      error: deleteError,
+      extra: { user_id: row.user_id, stripe_subscription_id: row.subscription_id },
+    });
+  }
 }
 
 async function deletePending(client: Client, subscriptionId: string): Promise<void> {
