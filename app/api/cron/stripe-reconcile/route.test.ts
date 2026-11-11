@@ -1,6 +1,6 @@
 import type { createServiceClient } from '@/lib/supabase/service';
 import * as realSentry from '@sentry/nextjs';
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import Stripe from 'stripe';
 import * as realConfirmationEmail from '@/lib/billing/confirmation-email';
 import * as realStripe from '@/lib/stripe';
@@ -32,7 +32,8 @@ const listSessionsMock = mock((_params: unknown): AsyncIterable<Stripe.Checkout.
 
 // FRESCO-915: what the route reports to Sentry.
 const captureException = mock((_error: unknown, _context?: unknown) => 'event-id');
-void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException }));
+const captureMessage = mock((_message: string, _context?: unknown) => 'event-id');
+void mock.module('@sentry/nextjs', () => ({ ...realSentry, captureException, captureMessage }));
 
 // FRESCO-1088: every pass reads `billing_mode` first; unless a test says otherwise the database serves test mode.
 function fakeSupabase(tables: Parameters<typeof baseFakeSupabase>[0] = {}) {
@@ -50,7 +51,7 @@ void mock.module('@/lib/stripe', () => ({
   stripe: { subscriptions: { retrieve: retrieveMock }, customers: { retrieve: customerRetrieveMock }, checkout: { sessions: { list: listSessionsMock } } },
 }));
 
-const { GET } = await import('./route');
+const { GET, maxDuration } = await import('./route');
 const { sweepOrphanPaidPlans } = await import('@/lib/billing/reconcile');
 
 const PRO_PRICE_ID = 'price_pro_month';
@@ -716,5 +717,94 @@ describe('GET /api/cron/stripe-reconcile — profiles of the other Stripe mode (
     const body = await res.json() as Body;
     expect(body.foreignMode.downgraded).toBe(1);
     expect(retrieveMock).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * FRESCO-1162: the pass must finish inside the function's time limit and must not lose the
+ * paid-checkout sweep (the only recovery of a lost purchase) when it is slow.
+ */
+describe('GET /api/cron/stripe-reconcile — time limit (FRESCO-1162)', () => {
+  const OLD_ENV = { ...process.env };
+
+  beforeEach(() => {
+    process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
+    retrieveMock.mockReset();
+    listSessionsMock.mockClear();
+    captureException.mockClear();
+    captureMessage.mockClear();
+  });
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  const run = async () => GET(new Request('https://test.fresco.local/api/cron/stripe-reconcile', { headers: { authorization: 'Bearer cron_test' } }));
+  const manyProfiles = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `u${i}`, plan: 'pro', plan_expires_at: new Date(1_700_003_600 * 1000).toISOString(), payment_failed_at: null, stripe_subscription_id: `sub_${i}`, stripe_customer_id: `cus_${i}`, stripe_livemode: false }));
+
+  test('the function declares its own time limit instead of the platform default', () => {
+    expect(maxDuration).toBe(60);
+  });
+
+  test('the paid-checkout sweep runs before the first profile is looked up', async () => {
+    retrieveMock.mockImplementation(async () => activeSubscription());
+    supa = fakeSupabase({ user_profiles: { rows: manyProfiles(3) } });
+
+    await run();
+
+    expect(listSessionsMock).toHaveBeenCalled();
+    expect(listSessionsMock.mock.invocationCallOrder[0]).toBeLessThan(retrieveMock.mock.invocationCallOrder[0]);
+  });
+
+  test('60 profiles are all checked, several at a time but never more than the cap', async () => {
+    let inFlight = 0;
+    let peak = 0;
+    retrieveMock.mockImplementation(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise(resolve => setTimeout(resolve, 2));
+      inFlight--;
+      return activeSubscription();
+    });
+    supa = fakeSupabase({ user_profiles: { rows: manyProfiles(60) } });
+
+    const res = await run();
+
+    const body = await res.json() as { checked: number, skippedForTime: number, failures: number };
+    expect(body.checked).toBe(60);
+    expect(body.skippedForTime).toBe(0);
+    expect(body.failures).toBe(0);
+    expect(retrieveMock).toHaveBeenCalledTimes(60);
+    expect(peak).toBeGreaterThan(1);
+    expect(peak).toBeLessThanOrEqual(5);
+    expect(captureMessage).not.toHaveBeenCalled();
+  });
+
+  test('past its budget the loop stops taking profiles, says so, and still runs the sweeps and writes the heartbeat', async () => {
+    // A clock the Stripe calls push forward: each lookup "takes" 10 s.
+    let clock = 1_000_000;
+    const now = spyOn(Date, 'now').mockImplementation(() => clock);
+    retrieveMock.mockImplementation(async () => {
+      clock += 10_000;
+      return activeSubscription();
+    });
+    supa = fakeSupabase({ user_profiles: { rows: manyProfiles(40) } });
+
+    let res: Response;
+    try {
+      res = await run();
+    }
+    finally {
+      now.mockRestore();
+    }
+
+    const body = await res.json() as { checked: number, skippedForTime: number };
+    expect(body.skippedForTime).toBeGreaterThan(0);
+    expect(body.checked + body.skippedForTime).toBe(40);
+    expect(captureMessage).toHaveBeenCalledTimes(1);
+    expect((captureMessage.mock.calls[0]?.[1] as { level: string }).level).toBe('warning');
+    expect(listSessionsMock).toHaveBeenCalled();
+    expect(supa.upserts).toHaveLength(1);
   });
 });
