@@ -35,11 +35,18 @@ describe('css glyphs', () => {
     expect(open.innerHTML).toContain('opacity-0');
   });
 
-  test('the theme mark is a ring for light and a filled dot for dark', () => {
+  // FRESCO-1191: the ring and the dot were not read as a sun and a moon, so the marks are now
+  // drawn as such: a disc with eight rays, and a crescent.
+  test('the theme mark is a sun (disc and eight rays) for light and a crescent for dark', () => {
     const light = renderWithProviders(<ThemeMark kind="light" />).container;
     const dark = renderWithProviders(<ThemeMark kind="dark" />).container;
 
-    expect(light.innerHTML).not.toContain('bg-current');
-    expect(dark.innerHTML).toContain('bg-current');
+    expect(light.querySelectorAll('[data-ray]')).toHaveLength(4);
+    expect(light.querySelector('[data-sun-disc]')).not.toBeNull();
+    expect(light.querySelector('[data-moon]')).toBeNull();
+    expect(dark.querySelector('[data-moon]')).not.toBeNull();
+    expect(dark.querySelectorAll('[data-ray]')).toHaveLength(0);
+    expect(light.querySelectorAll('svg')).toHaveLength(0);
+    expect(dark.querySelectorAll('svg')).toHaveLength(0);
   });
 });

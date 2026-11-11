@@ -27,7 +27,7 @@ describe('ThemeToggle', () => {
     for (const name of ['Tema claro', 'Tema oscuro']) {
       const radio = screen.getByRole('radio', { name });
       expect(radio.querySelector('svg')).toBeNull();
-      expect(radio.querySelector('span.rounded-full')).not.toBeNull();
+      expect(radio.querySelector('span[aria-hidden="true"]')).not.toBeNull();
     }
   });
 });

@@ -32,12 +32,32 @@ export function MenuMark({ open, className }: { open: boolean, className?: strin
   );
 }
 
-/** Ring for the light theme, filled dot for the dark one. The button's `aria-label` names the choice. */
+const SUN_RAY = 'absolute inset-x-0 top-1/2 -mt-px h-[2px] rounded-full bg-current';
+
+/**
+ * A sun (disc and eight rays) for the light theme, a crescent for the dark one. FRESCO-1138 first drew
+ * a ring and a dot; the owner did not read them as a theme control (FRESCO-1191), so they are now an
+ * actual sun and moon, still without Lucide. The button's `aria-label` names the choice.
+ * The rays are four bars crossed at 0, 45, 90 and 135 degrees; the crescent is the inside shadow of a
+ * circle, so it needs no background colour to cut it out.
+ */
 export function ThemeMark({ kind }: { kind: 'light' | 'dark' }) {
+  if (kind === 'dark') {
+    return (
+      <span
+        aria-hidden="true"
+        data-moon=""
+        className="block size-[18px] -rotate-[25deg] rounded-full shadow-[inset_-7px_0_0_0_currentColor]"
+      />
+    );
+  }
   return (
-    <span
-      aria-hidden="true"
-      className={cn('block size-[18px] rounded-full border-2 border-current', kind === 'dark' && 'bg-current')}
-    />
+    <span aria-hidden="true" className="relative block size-[18px]">
+      <span data-ray="" className={SUN_RAY} />
+      <span data-ray="" className={cn(SUN_RAY, 'rotate-45')} />
+      <span data-ray="" className={cn(SUN_RAY, 'rotate-90')} />
+      <span data-ray="" className={cn(SUN_RAY, '-rotate-45')} />
+      <span data-sun-disc="" className="absolute top-1/2 left-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+    </span>
   );
 }
