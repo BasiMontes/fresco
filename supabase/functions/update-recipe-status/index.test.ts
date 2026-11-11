@@ -171,7 +171,7 @@ describe('update-recipe-status/index.ts', () => {
       const res = await substitute()
       expect(res.status).toBe(200)
       expect(await res.json()).toEqual({ ok: true, estado: 'sustituida' })
-      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'sustituida', recipe_id: R2 }]])
+      expect(svc.updates).toEqual([['meal_plan_recipes', { estado: 'sustituida', recipe_id: R2, sustitucion_ingrediente: null }]])
       expect(supa.rpcCalls.find(([name]) => name === 'get_filtered_recipes')?.[1]).toEqual({ p_user_id: 'user_1', p_recipe_id: R2 })
     })
   })
