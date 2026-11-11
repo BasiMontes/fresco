@@ -56,4 +56,40 @@ describe('GET /auth/confirm', () => {
     expect(new URL(res.headers.get('location')!).pathname).toBe('/forgot-password');
     expect(verifyOtp).not.toHaveBeenCalled();
   });
+
+  /**
+   * FRESCO-1187: an expired or already used SIGNUP link used to land on the password-recovery screen. It goes to the
+   * login now (which explains it and, with an unconfirmed email, offers to resend); every other type is unchanged.
+   */
+  describe('an expired or invalid signup link (FRESCO-1187)', () => {
+    test('goes to the login with its own flag, not to the password-recovery screen', async () => {
+      verifyOtp.mockResolvedValue({ error: new Error('Email link is invalid or has expired') });
+
+      const res = await GET(req({ token_hash: 'th', type: 'signup', next: '/onboarding' }));
+
+      const location = new URL(res.headers.get('location')!);
+      expect(location.pathname).toBe('/login');
+      expect(location.search).toBe('?error=expired_signup_link');
+    });
+
+    test('a valid signup link still goes to next', async () => {
+      const res = await GET(req({ token_hash: 'th', type: 'signup', next: '/onboarding' }));
+
+      expect(new URL(res.headers.get('location')!).pathname).toBe('/onboarding');
+    });
+
+    test('a recovery link that fails keeps the recovery screen', async () => {
+      verifyOtp.mockResolvedValue({ error: new Error('expired') });
+
+      const res = await GET(req({ token_hash: 'th', type: 'recovery' }));
+
+      expect(new URL(res.headers.get('location')!).pathname).toBe('/forgot-password');
+    });
+
+    test('a link with no type keeps the recovery screen', async () => {
+      const res = await GET(req({ token_hash: 'th' }));
+
+      expect(new URL(res.headers.get('location')!).pathname).toBe('/forgot-password');
+    });
+  });
 });

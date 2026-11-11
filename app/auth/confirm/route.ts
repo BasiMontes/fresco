@@ -30,5 +30,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // FRESCO-1187: an expired or already used SIGNUP link used to land on the password-recovery screen, which
+  // is not what the person needs. It goes to the login, which explains it and, once she signs in with an
+  // unconfirmed email, offers to resend the confirmation. Every other type keeps the recovery screen.
+  if (type === 'signup') {
+    return NextResponse.redirect(new URL('/login?error=expired_signup_link', request.url));
+  }
+
   return NextResponse.redirect(new URL('/forgot-password?error=invalid_link', request.url));
 }

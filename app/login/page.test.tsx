@@ -55,6 +55,7 @@ describe('/login banners from query flags', () => {
     expect(screen.queryByTestId('session_expired_message')).toBeNull();
     expect(screen.queryByTestId('password_reset_success_message')).toBeNull();
     expect(screen.queryByTestId('account_deleted_message')).toBeNull();
+    expect(screen.queryByTestId('expired_signup_link_message')).toBeNull();
   });
 
   test('explains an expired session', () => {
@@ -62,6 +63,24 @@ describe('/login banners from query flags', () => {
     renderWithProviders(<LoginPage />);
 
     expect(screen.getByTestId('session_expired_message')).toBeInTheDocument();
+  });
+
+  // FRESCO-1187: `/auth/confirm` sends an expired or already used signup link here.
+  test('explains an expired signup link and points at signing in to get a new one', () => {
+    navState.searchParams = new URLSearchParams('error=expired_signup_link');
+    renderWithProviders(<LoginPage />);
+
+    const message = screen.getByTestId('expired_signup_link_message');
+    expect(message).toBeInTheDocument();
+    expect(message.textContent).toContain('ya no es válido');
+    expect(message.textContent).toContain('pedir uno nuevo');
+  });
+
+  test('another error value shows no signup-link message', () => {
+    navState.searchParams = new URLSearchParams('error=something_else');
+    renderWithProviders(<LoginPage />);
+
+    expect(screen.queryByTestId('expired_signup_link_message')).toBeNull();
   });
 
   test('confirms a password reset', () => {

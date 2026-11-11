@@ -48,6 +48,8 @@ function LoginPageInner() {
   // once her new password is saved, so she lands with a real login step and
   // a confirmation her password actually changed — not silently signed in.
   const passwordReset = useSearchParams().get('password_reset') === '1';
+  // FRESCO-1187: `/auth/confirm` sends an expired or already used signup link here.
+  const expiredSignupLink = useSearchParams().get('error') === 'expired_signup_link';
   // FRESCO-70: `/profile`'s delete-account dialog redirects here (after
   // signing out) once the account is gone — a plain farewell confirmation,
   // same query-flag pattern as `passwordReset` above.
@@ -181,6 +183,12 @@ function LoginPageInner() {
         {sessionExpired && (
           <p data-testid="session_expired_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
             Tu sesión expiró. Inicia sesión de nuevo.
+          </p>
+        )}
+
+        {expiredSignupLink && (
+          <p data-testid="expired_signup_link_message" role="alert" aria-live="assertive" className="mt-4 text-body-sm text-error">
+            Ese enlace de confirmación ya no es válido, o ya lo usaste. Inicia sesión: si tu correo aún no está confirmado, podrás pedir uno nuevo.
           </p>
         )}
 

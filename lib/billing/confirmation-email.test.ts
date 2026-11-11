@@ -32,7 +32,7 @@ function subscription(overrides: Record<string, unknown> = {}) {
 
 interface Row { subscription_id: string, user_id: string, attempts: number }
 
-function fakeClient({ rows, email = 'ana@example.com', selectError = null }: { rows: Row[], email?: string | null, selectError?: Error | null }) {
+function fakeClient({ rows, email = 'ana@example.com', selectError = null, deleteError = null, updateError = null }: { rows: Row[], email?: string | null, selectError?: Error | null, deleteError?: Error | null, updateError?: Error | null }) {
   const deleted: string[] = [];
   const updated: { id: string, payload: Record<string, unknown> }[] = [];
   const capSeen: unknown[] = [];
@@ -44,8 +44,8 @@ function fakeClient({ rows, email = 'ana@example.com', selectError = null }: { r
           return { order: () => ({ limit: async () => (selectError ? { data: null, error: selectError } : { data: rows, error: null }) }) };
         },
       }),
-      delete: () => ({ eq: async (_c: string, id: string) => { deleted.push(id); return { error: null }; } }),
-      update: (payload: Record<string, unknown>) => ({ eq: async (_c: string, id: string) => { updated.push({ id, payload }); return { error: null }; } }),
+      delete: () => ({ eq: async (_c: string, id: string) => { if (deleteError) { return { error: deleteError }; } deleted.push(id); return { error: null }; } }),
+      update: (payload: Record<string, unknown>) => ({ eq: async (_c: string, id: string) => { if (updateError) { return { error: updateError }; } updated.push({ id, payload }); return { error: null }; } }),
     }),
     auth: { admin: { getUserById: async () => (email ? { data: { user: { email } }, error: null } : { data: { user: null }, error: new Error('not found') }) } },
   };
@@ -82,6 +82,54 @@ describe('retryPendingConfirmations', () => {
     expect(result).toMatchObject({ tried: 1, sent: 1, failed: 0 });
     expect(deleted).toEqual(['sub_1']);
     expect((send.mock.calls[0][0] as { to: string, manageSubscriptionUrl: string })).toMatchObject({ to: 'ana@example.com', manageSubscriptionUrl: 'https://fresco-pro.vercel.app/profile' });
+  });
+
+  /**
+   * FRESCO-1187: the email already went out. A failed delete of the pending row used to count as a plain failure
+   * without spending an attempt, so the nightly pass sent the same confirmation again.
+   */
+  describe('a sent email whose pending row cannot be deleted (FRESCO-1187)', () => {
+    test('the row is closed at the attempt cap with the reason, so it is not sent again, and the failed delete is reported', async () => {
+      const { client, updated } = fakeClient({ rows: [row(1)], deleteError: new Error('permission denied for table pending_confirmation_emails') });
+
+      const result = await retryPendingConfirmations(client, stripeReturning(subscription()));
+
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject({ tried: 1, sent: 1, failed: 0 });
+      expect(updated).toHaveLength(1);
+      expect(updated[0].payload).toMatchObject({ attempts: CONFIRMATION_EMAIL_MAX_ATTEMPTS });
+      expect(updated[0].payload.last_error).toContain('sent; the pending row could not be deleted');
+      expect(emailTags()).toEqual([{ email: 'subscription-confirmation' }]);
+    });
+
+    test('a closed row is exactly what the next pass skips: the query only asks for rows under the cap', async () => {
+      const { client, capSeen } = fakeClient({ rows: [] });
+
+      await retryPendingConfirmations(client, stripeReturning(subscription()));
+
+      expect(capSeen).toEqual([CONFIRMATION_EMAIL_MAX_ATTEMPTS]);
+    });
+
+    test('if closing the row fails too, the row counts as failed and is reported, as before', async () => {
+      const { client } = fakeClient({ rows: [row(1)], deleteError: new Error('db down'), updateError: new Error('db down') });
+
+      const result = await retryPendingConfirmations(client, stripeReturning(subscription()));
+
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject({ sent: 0, failed: 1 });
+      expect(captureException).toHaveBeenCalled();
+    });
+
+    test('a delete that works changes nothing: the row is deleted, no row is closed, nothing is reported', async () => {
+      const { client, deleted, updated } = fakeClient({ rows: [row(1)] });
+
+      const result = await retryPendingConfirmations(client, stripeReturning(subscription()));
+
+      expect(result).toMatchObject({ sent: 1, failed: 0 });
+      expect(deleted).toEqual(['sub_1']);
+      expect(updated).toEqual([]);
+      expect(captureException).not.toHaveBeenCalled();
+    });
   });
 
   test('a send that fails again counts one more attempt, keeps the row, and stays quiet until the cap', async () => {
