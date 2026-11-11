@@ -7,6 +7,10 @@ name: Hosted Auth settings check
 # the finding PLAUSIBLE for that reason. This job reads the real settings (Management API,
 # read only) and fails when one the app relies on is off, or cannot be read.
 #
+# FRESCO-1188 added what the confirmation and recovery emails depend on: mailer_autoconfirm, site_url, the
+# redirect allow-list, and the three live email templates against supabase/templates/*.html (the checkout
+# below is what gives the job those files).
+#
 # It is not in pr-check.yml because it needs a token for the production project (ADR-0017).
 # What it checks and how to repeat it by hand: docs/workflows/hosted-auth-settings.md.
 #

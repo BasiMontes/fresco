@@ -8,6 +8,20 @@ Audits 7 and 8 could only grade the finding PLAUSIBLE for that reason. The check
 
 `scripts/check-hosted-auth-settings.ts` reads the Auth settings of the production project through the Supabase Management API (read only) and compares them with what the app relies on. The list of settings, and why each one matters, lives in `EXPECTED_TRUE` and `MIN_PASSWORD_LENGTH` in that script. Change the expectation there, with its reason, never in this page.
 
+FRESCO-1188 (integral review A3) widened it to what the confirmation and recovery emails depend on, which also lives in the hosted project:
+
+| Setting | Expected | Why |
+|---|---|---|
+| `mailer_autoconfirm` | `false` | with it on, the confirmation email never proves anyone owns the address they signed up with |
+| `site_url` | the production `web_url` of `.agents/project.yaml` | the recovery email builds its link from it |
+| `uri_allow_list` | covers `<origin>/auth/confirm?next=/onboarding` for every hosted origin of `.agents/project.yaml` (production, staging, dev) and has no bare `*` / `**` | the sign-up confirmation redirects there from each environment, and a bare wildcard is an open redirect |
+| `rate_limit_email_sent` | readable as a positive number | it caps sign-up and recovery emails; the check only proves it can be read |
+| `mailer_templates_{confirmation,recovery,email_change}_content` | equal to `supabase/templates/<type>.html` (line endings and trailing spaces ignored) | the templates are pushed by hand through the Management API (`supabase/templates/README.md`), so the repo copy can silently stop being the live one. A difference prints the template name and the first differing line, never the content |
+
+The SMTP sender is not checked: production sends Auth email through Supabase's default sender until the owned domain exists (see the Resend note in `docs/workflows/stripe-go-live.md`), so there is nothing to compare yet. Add it here when a custom SMTP is configured.
+
+The first run after this change can report real drift (for example a hosted allow-list that does not list every origin, or a template edited in the dashboard); that is the check working, not a false alarm. Fix the hosted project or commit the live template.
+
 It fails closed. A setting the API does not return, or returns as something other than a boolean, is a finding: "could not read it" is the failure this check exists to end.
 
 | Exit | Meaning |
