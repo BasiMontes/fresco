@@ -145,7 +145,15 @@ export async function sendPasswordReset({ email, captchaToken }: { email: string
   return createClient().auth.resetPasswordForEmail(email, captchaOptions(captchaToken));
 }
 
-/** Re-sends the signup confirmation email to an account that never confirmed it (FRESCO-190). */
+/**
+ * Re-sends the signup confirmation email to an account that never confirmed it (FRESCO-190).
+ * FRESCO-1179: the template builds `{{ .RedirectTo }}&token_hash=...`, so the resend must
+ * carry the same `emailRedirectTo` as the signup or the link comes out malformed.
+ */
 export async function resendSignupConfirmation({ email, captchaToken }: { email: string, captchaToken: string | null }) {
-  return createClient().auth.resend({ type: 'signup', email, options: captchaOptions(captchaToken) });
+  return createClient().auth.resend({
+    type: 'signup',
+    email,
+    options: { ...captchaOptions(captchaToken), emailRedirectTo: `${window.location.origin}/auth/confirm?next=/onboarding` },
+  });
 }
