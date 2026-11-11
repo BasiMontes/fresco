@@ -22,9 +22,10 @@ const P256DH = `B${'A'.repeat(86)}`;
 const AUTH = 'A'.repeat(22);
 
 async function subscribe(user: DbTestUser): Promise<void> {
+  // A subscription is the user's own row: `service_role` has no INSERT on this table, only the owner does.
   const res = await rest('push_subscriptions', {
     method: 'POST',
-    serviceRole: true,
+    token: user.token,
     prefer: 'return=minimal',
     body: { user_id: user.id, endpoint: `https://fcm.googleapis.com/fcm/send/${crypto.randomUUID()}`, p256dh: P256DH, auth: AUTH },
   });
