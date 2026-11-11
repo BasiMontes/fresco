@@ -1052,6 +1052,10 @@ export type Database = {
         }
         Returns: string
       }
+      filter_allowed_recipe_ids: {
+        Args: { p_recipe_ids: string[] }
+        Returns: string[]
+      }
       get_catalog: {
         Args: {
           p_alergenos?: string[]

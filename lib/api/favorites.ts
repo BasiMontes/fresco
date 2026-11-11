@@ -67,7 +67,7 @@ export async function getFavoriteRecipes(
 
   const { data, error } = await client
     .from('favorites')
-    .select('recipes(*)')
+    .select('recipe_id, recipes(*)')
     .eq('user_id', resolvedUserId)
     .order('created_at', { ascending: false });
 
@@ -75,7 +75,27 @@ export async function getFavoriteRecipes(
     throw new FavoritesError(`No se pudieron leer tus favoritos: ${error.message}`);
   }
 
-  return toRecipes((data ?? [])
+  const favoritos = data ?? [];
+  if (favoritos.length === 0) {
+    return [];
+  }
+
+  // FRESCO-1153: a favorite is a recipe the person marked at some point, perhaps before declaring an
+  // allergen, perhaps since retired. Only the ones that pass TODAY's profile are listed, asked to the same
+  // filter the catalog uses (filter_allowed_recipe_ids -> get_filtered_recipes); the rest are hidden, not
+  // deleted, so they come back if the profile changes. Fails closed: if the filter cannot answer, the page
+  // errors instead of listing everything.
+  const { data: permitidas, error: filterError } = await client.rpc('filter_allowed_recipe_ids', {
+    p_recipe_ids: favoritos.map(row => row.recipe_id),
+  });
+
+  if (filterError) {
+    throw new FavoritesError(`No se pudieron comprobar tus favoritos: ${filterError.message}`);
+  }
+
+  const permitidasSet = new Set(permitidas ?? []);
+  return toRecipes(favoritos
+    .filter(row => permitidasSet.has(row.recipe_id))
     .map(row => row.recipes)
     .filter(row => row !== null));
 }

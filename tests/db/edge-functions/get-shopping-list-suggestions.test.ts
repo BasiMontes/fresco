@@ -10,8 +10,9 @@
  * `bun run test:db`. See tests/db/README.md.
  */
 
+import type { DbTestUser } from '../harness';
 import { afterAll, describe, expect, test } from 'bun:test';
-import { callFunction, createDbTestContext, rpc, seedMealPlan, seedShoppingList, stackReachable } from '../harness';
+import { callFunction, createDbTestContext, farWeek, rest, rpc, seedMealPlan, seedShoppingList, stackReachable } from '../harness';
 
 const RUN = process.env.RUN_DB_INTEGRATION === '1';
 const reachable = RUN ? await stackReachable() : false;
@@ -84,5 +85,81 @@ describe.skipIf(!(RUN && reachable))('get-shopping-list-suggestions — HTTP neg
     const res = await callFunction(ENDPOINT, { token: user.token, body: { shopping_list_id: listId } });
 
     expect(res.status).toBe(200);
+  });
+});
+
+// FRESCO-1153 — the carousel proposes ingredients only from favourites that pass today's profile.
+describe.skipIf(!(RUN && reachable))('get-shopping-list-suggestions — food safety (real functions runtime)', () => {
+  const ctx = createDbTestContext();
+
+  afterAll(async () => ctx.cleanupAll());
+
+  async function pick(user: DbTestUser, filter: string): Promise<{ id: string, ingredientes: string[] }> {
+    const res = await rest('recipes', { token: user.token, query: `select=id,ingredientes_principales&${filter}&order=id.asc&limit=1` });
+    const row = (res.body as { id: string, ingredientes_principales: string[] }[])[0];
+    if (!row) { throw new Error(`[test] no catalogue recipe for ${filter}`); }
+    return { id: row.id, ingredientes: row.ingredientes_principales.map(i => i.toLowerCase()) };
+  }
+
+  async function favorite(user: DbTestUser, recipeId: string): Promise<void> {
+    const res = await rest('favorites', { method: 'POST', token: user.token, prefer: 'return=minimal', body: { user_id: user.id, recipe_id: recipeId } });
+    expect(res.status).toBe(201);
+  }
+
+  const listOf = new Map<string, string>();
+
+  async function suggestionsFor(user: DbTestUser): Promise<string[]> {
+    if (!listOf.has(user.id)) {
+      const plan = await seedMealPlan(user, farWeek(20));
+      listOf.set(user.id, await seedShoppingList(user, plan.id, []));
+    }
+    const listId = listOf.get(user.id)!;
+    const res = await callFunction(ENDPOINT, { token: user.token, body: { shopping_list_id: listId } });
+    expect(res.status).toBe(200);
+    return ((res.body as { suggestions: { nombre: string }[] }).suggestions).map(s => s.nombre.toLowerCase());
+  }
+
+  async function declareEgg(user: DbTestUser): Promise<void> {
+    const declared = await rest('user_profiles', { method: 'PATCH', token: user.token, query: `id=eq.${user.id}`, prefer: 'return=minimal', body: { alergenos: ['huevo'] } });
+    expect(declared.status).toBe(204);
+  }
+
+  test('a favourite marked before declaring its allergen suggests nothing (the finding)', async () => {
+    const user = await ctx.createUser({ healthDataConsent: true });
+    const withEgg = await pick(user, 'activo=eq.true&alergenos=cs.["huevo"]');
+    await favorite(user, withEgg.id);
+    // Before the allergen is declared the favourite is fair game: this is what the carousel used to do for ever.
+    expect((await suggestionsFor(user)).length).toBeGreaterThan(0);
+    await declareEgg(user);
+
+    expect(await suggestionsFor(user)).toEqual([]);
+  });
+
+  test('a favourite whose recipe has since been retired suggests nothing', async () => {
+    const user = await ctx.createUser({ healthDataConsent: true });
+    const recipe = await pick(user, 'activo=eq.true&alergenos=not.cs.["huevo"]');
+    await favorite(user, recipe.id);
+    expect((await suggestionsFor(user)).length).toBeGreaterThan(0);
+
+    const retire = async (activo: boolean) => rest('recipes', { method: 'PATCH', serviceRole: true, query: `id=eq.${recipe.id}`, prefer: 'return=minimal', body: { activo } });
+    try {
+      expect((await retire(false)).status).toBe(204);
+      expect(await suggestionsFor(user)).toEqual([]);
+    }
+    finally {
+      await retire(true);
+    }
+  });
+
+  test('control: a safe favourite still suggests its own ingredients, and only those', async () => {
+    const user = await ctx.createUser({ healthDataConsent: true });
+    const safe = await pick(user, 'activo=eq.true&alergenos=not.cs.["huevo"]');
+    await favorite(user, safe.id);
+    await declareEgg(user);
+
+    const suggested = await suggestionsFor(user);
+
+    expect(suggested.length).toBeGreaterThan(0);
+    expect(suggested.every(name => safe.ingredientes.includes(name))).toBe(true);
   });
 });
