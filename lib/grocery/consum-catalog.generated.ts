@@ -13,7 +13,7 @@ export interface ConsumMatch {
 }
 
 /** When these prices were observed (FRESCO-1177): the age rules read it. */
-export const CONSUM_CATALOG_FECHA = '2026-11-10T15:54:06.619Z';
+export const CONSUM_CATALOG_FECHA = '2026-11-11T09:31:19.796Z';
 
 /** Real Consum pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */
 export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
@@ -38,13 +38,14 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "calabaza": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioConsum":{"precio":1.82},"url":"https://tienda.consum.es/es/p/calabaza-troceada-bandeja/7234552"},
   "caldo": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioConsum":{"precio":0.95},"url":"https://tienda.consum.es/es/p/caldo-verduras-brick/7178341"},
   "caldo de pollo": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioConsum":{"precio":2.3},"url":"https://tienda.consum.es/es/p/caldo-de-pollo-jamon/7466907"},
+  "caldo de verduras": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioConsum":{"precio":2.99},"url":"https://tienda.consum.es/es/p/caldo-de-verduras-gourmet/7487353"},
   "canela": {"envaseVenta":{"cantidad":45,"unidad":"g"},"precioConsum":{"precio":0.89},"url":"https://tienda.consum.es/es/p/canela-molida/7435845"},
   "champinones": {"envaseVenta":{"cantidad":185,"unidad":"g"},"precioConsum":{"precio":1.45},"url":"https://tienda.consum.es/es/p/champinones-enteros-lata/7035579"},
   "chorizo": {"envaseVenta":{"cantidad":140,"unidad":"g"},"precioConsum":{"precio":1.99},"url":"https://tienda.consum.es/es/p/chorizo-vela/7217578"},
   "cilantro": {"envaseVenta":{"cantidad":20,"unidad":"g"},"precioConsum":{"precio":1.25},"url":"https://tienda.consum.es/es/p/cilantro-bandeja/7004138"},
   "coco rallado": {"envaseVenta":{"cantidad":115,"unidad":"g"},"precioConsum":{"precio":4.19},"url":"https://tienda.consum.es/es/p/coco-rallado/314781"},
   "coles de bruselas": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioConsum":{"precio":2.99},"url":"https://tienda.consum.es/es/p/coles-de-bruselas/7119238"},
-  "coliflor": {"envaseVenta":{"cantidad":360,"unidad":"g"},"precioConsum":{"precio":2.15},"url":"https://tienda.consum.es/es/p/coliflor-cocida-frasco/7413164"},
+  "coliflor": {"envaseVenta":{"cantidad":360,"unidad":"g"},"precioConsum":{"precio":2.29},"url":"https://tienda.consum.es/es/p/coliflor-cocida-frasco/7413164"},
   "comino": {"envaseVenta":{"cantidad":35,"unidad":"g"},"precioConsum":{"precio":2.55},"url":"https://tienda.consum.es/es/p/comino-entero-tarro/552315"},
   "edamame": {"envaseVenta":{"cantidad":250,"unidad":"g"},"precioConsum":{"precio":1.72},"url":"https://tienda.consum.es/es/p/edamame-en-grano/7317956"},
   "eneldo": {"envaseVenta":{"cantidad":20,"unidad":"g"},"precioConsum":{"precio":2.05},"url":"https://tienda.consum.es/es/p/eneldo/7435899"},
@@ -63,6 +64,7 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "harina de trigo": {"envaseVenta":{"cantidad":1000,"unidad":"g"},"precioConsum":{"precio":0.95},"url":"https://tienda.consum.es/es/p/harina-de-trigo-fuerza/7426088"},
   "higado": {"envaseVenta":{"cantidad":135,"unidad":"g"},"precioConsum":{"precio":11.75},"url":"https://tienda.consum.es/es/p/higado-de-pato/7233604"},
   "hummus": {"envaseVenta":{"cantidad":210,"unidad":"g"},"precioConsum":{"precio":2.55},"url":"https://tienda.consum.es/es/p/hummus-trio/7450950"},
+  "jamon": {"envaseVenta":{"cantidad":60,"unidad":"g"},"precioConsum":{"precio":4.45},"url":"https://tienda.consum.es/es/p/jamon-cebo-50-raza-iberica/7257249"},
   "jamon cocido": {"envaseVenta":{"cantidad":75,"unidad":"g"},"precioConsum":{"precio":1},"url":"https://tienda.consum.es/es/p/jamon-cocido/7114929"},
   "jamon serrano": {"envaseVenta":{"cantidad":100,"unidad":"g"},"precioConsum":{"precio":3.55},"url":"https://tienda.consum.es/es/p/jamon-serrano-duroc-lonchas/7226384"},
   "jengibre": {"envaseVenta":{"cantidad":50,"unidad":"g"},"precioConsum":{"precio":1.65},"url":"https://tienda.consum.es/es/p/jengibre/7435928"},
@@ -80,6 +82,8 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "pan rallado": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioConsum":{"precio":0.99},"url":"https://tienda.consum.es/es/p/pan-rallado-casero/7416972"},
   "panceta": {"envaseVenta":{"cantidad":120,"unidad":"g"},"precioConsum":{"precio":2.35},"url":"https://tienda.consum.es/es/p/panceta-natural-curada-duroc/7407419"},
   "patata": {"envaseVenta":{"cantidad":2000,"unidad":"g"},"precioConsum":{"precio":3.9},"url":"https://tienda.consum.es/es/p/patata-freir/7105232"},
+  "pavo": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioConsum":{"precio":4.3},"url":"https://tienda.consum.es/es/p/pechuga-de-pavo-family/7404767"},
+  "pechuga de pavo": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioConsum":{"precio":4.3},"url":"https://tienda.consum.es/es/p/pechuga-de-pavo-family/7404767"},
   "pechuga de pollo": {"envaseVenta":{"cantidad":340,"unidad":"g"},"precioConsum":{"precio":3.69},"url":"https://tienda.consum.es/es/p/pechuga-de-pollo-sin-grasa/7070936"},
   "picatostes": {"envaseVenta":{"cantidad":70,"unidad":"g"},"precioConsum":{"precio":1.49},"url":"https://tienda.consum.es/es/p/picatostes-cesar-paquete/7278562"},
   "pimenton": {"envaseVenta":{"cantidad":58,"unidad":"g"},"precioConsum":{"precio":1.05},"url":"https://tienda.consum.es/es/p/pimenton-dulce/7435829"},
@@ -87,6 +91,7 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "pimenton picante": {"envaseVenta":{"cantidad":58,"unidad":"g"},"precioConsum":{"precio":1.3},"url":"https://tienda.consum.es/es/p/pimenton-picante/7435860"},
   "pimienta negra": {"envaseVenta":{"cantidad":40,"unidad":"g"},"precioConsum":{"precio":3.85},"url":"https://tienda.consum.es/es/p/pimienta-negra-molida-tarro/309021"},
   "queso crema": {"envaseVenta":{"cantidad":200,"unidad":"g"},"precioConsum":{"precio":2.39},"url":"https://tienda.consum.es/es/p/queso-crema-con-fermento-de-kefir/7474281"},
+  "queso feta": {"envaseVenta":{"cantidad":150,"unidad":"g"},"precioConsum":{"precio":3.15},"url":"https://tienda.consum.es/es/p/queso-feta-dop/7486850"},
   "queso fresco": {"envaseVenta":{"cantidad":1000,"unidad":"g"},"precioConsum":{"precio":4.99},"url":"https://tienda.consum.es/es/p/queso-fresco-burgos-linea/7440365"},
   "queso mozzarella": {"envaseVenta":{"cantidad":125,"unidad":"g"},"precioConsum":{"precio":0.9},"url":"https://tienda.consum.es/es/p/queso-mozzarella-fresca/7173094"},
   "queso rallado": {"envaseVenta":{"cantidad":110,"unidad":"g"},"precioConsum":{"precio":0.64},"url":"https://tienda.consum.es/es/p/queso-rallado-hilo/7237118"},
@@ -107,4 +112,6 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "tomate cherry": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioConsum":{"precio":2.2},"url":"https://tienda.consum.es/es/p/tomate-cherry-cubeta/7218167"},
   "tomate triturado": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioConsum":{"precio":0.55},"url":"https://tienda.consum.es/es/p/tomate-triturado-lata/7029205"},
   "tomillo": {"envaseVenta":{"cantidad":25,"unidad":"g"},"precioConsum":{"precio":1.09},"url":"https://tienda.consum.es/es/p/tomillo/7435824"},
+  "vino blanco": {"envaseVenta":{"cantidad":187,"unidad":"ml"},"precioConsum":{"precio":1.79},"url":"https://tienda.consum.es/es/p/vino-blanco-do-rioja/7193006"},
+  "vino tinto": {"envaseVenta":{"cantidad":750,"unidad":"ml"},"precioConsum":{"precio":5.05},"url":"https://tienda.consum.es/es/p/vino-tinto-do-cataluna/308064"},
 };
