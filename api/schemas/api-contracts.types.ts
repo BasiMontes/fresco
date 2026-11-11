@@ -153,7 +153,7 @@ export interface DeleteAccountResponse {
 // per-user JWT -- this contract exists for observability (the cron job's
 // response is inspectable via Edge Function logs), not for a frontend caller.
 export interface SendWeeklyPushRemindersResponse {
-  /** ISO week the send ran for, e.g. '2026-W35'. */
+  /** ISO week the reminder is about (FRESCO-1180: the NEXT week, since the cron runs on Sunday evening), e.g. '2026-W35'. */
   semana_iso: string
   /** Distinct users with >=1 push_subscriptions row and no meal_plans row for semana_iso. */
   users_targeted: number

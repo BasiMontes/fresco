@@ -48,3 +48,12 @@ export function getCurrentIsoWeek(date: Date = new Date()): string {
 
   return `${isoYear}-W${String(isoWeek).padStart(2, '0')}`
 }
+
+/**
+ * The ISO week after the one `date` falls in (FRESCO-1180): the cron fires on Sunday evening, when
+ * the current week ends in a few hours, so the reminder is about the week that is about to start.
+ * Seven days later is always in the next ISO week, whatever the weekday and across year ends.
+ */
+export function getNextIsoWeek(date: Date = new Date()): string {
+  return getCurrentIsoWeek(new Date(date.getTime() + 7 * MS_PER_DAY))
+}
