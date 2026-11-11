@@ -35,10 +35,11 @@ describe('Pricing — Pro column', () => {
     expect(screen.queryByTestId('landing_pro_annual_price')).toBeNull();
   });
 
-  test('falls back to the monthly copy it had before when the prices could not be read', () => {
+  test('states no amount when the prices could not be read (FRESCO-1166)', () => {
     renderWithProviders(<Pricing prices={null} />);
 
-    expect(screen.getByText('4,99€')).toBeTruthy();
+    expect(screen.queryByText('4,99€')).toBeNull();
+    expect(screen.getByTestId('landing_pro_price_unavailable').textContent).toBe('El precio lo ves antes de pagar');
     expect(screen.queryByTestId('landing_pro_annual_price')).toBeNull();
   });
 

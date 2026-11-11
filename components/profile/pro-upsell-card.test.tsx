@@ -13,7 +13,7 @@ const cta = () => screen.getByTestId('upgrade_to_pro_button');
 
 describe('ProUpsellCard — trial available', () => {
   test('promises the 7-day trial, with the price after it', () => {
-    renderWithProviders(<ProUpsellCard trialAvailable prices={null} />);
+    renderWithProviders(<ProUpsellCard trialAvailable prices={{ month: 4.99, year: null, taxIncluded: false }} />);
 
     expect(card().textContent).toContain('7 días de prueba gratis, sin tarjeta');
     expect(card().textContent).toContain('4,99€/mes');
@@ -32,7 +32,7 @@ describe('ProUpsellCard — trial already used', () => {
   });
 
   test('says what is true instead: the price and the charge from the first day', () => {
-    renderWithProviders(<ProUpsellCard trialAvailable={false} prices={null} />);
+    renderWithProviders(<ProUpsellCard trialAvailable={false} prices={{ month: 4.99, year: null, taxIncluded: false }} />);
 
     expect(card().textContent).toContain('Vuelve a Fresco Pro');
     expect(card().textContent).toContain('4,99€/mes');
@@ -92,5 +92,18 @@ describe('ProUpsellCard — IVA incluido', () => {
   test('does not claim it when there are no prices at all', () => {
     renderWithProviders(<ProUpsellCard trialAvailable prices={null} />);
     expect(card().textContent).not.toContain('IVA');
+  });
+});
+
+/**
+ * FRESCO-1166 — when Stripe cannot be read the card states NO amount (it used to fall back to a typed 4,99):
+ * the person sees the real price in the checkout, before paying.
+ */
+describe('ProUpsellCard — prices unreadable', () => {
+  test.each([true, false])('trialAvailable=%p: no euro figure at all, and says the price comes before paying', (trialAvailable) => {
+    renderWithProviders(<ProUpsellCard trialAvailable={trialAvailable} prices={null} />);
+
+    expect(card().textContent).not.toMatch(/\d+,\d{2}\s?€/);
+    expect(card().textContent).toMatch(/el precio lo ves antes de pagar/i);
   });
 });

@@ -60,7 +60,7 @@ export default async function GuestLandingPage() {
         <LearnsPro />
         <Pricing prices={prices} />
         <Faq />
-        <FinalCta />
+        <FinalCta prices={prices} />
       </main>
       <SiteFooter />
     </div>
