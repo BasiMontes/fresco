@@ -92,6 +92,16 @@ From this moment the test-mode events of `fresco-pre` are refused by the current
   Check that `failures` is `0` and `foreignMode.failed` is `0`. The same applies in reverse on the rollback below: a profile with live ids goes to Free when the database goes back to test mode.
 - The `@requiere-stripe-real` e2e scenarios against `fresco-pre` can no longer grant Pro while the database is live. To run them, set the database back to test mode for the window and restore it afterwards, or keep them out of the live period.
 
+## Changing the price of Pro
+
+Stripe prices are immutable: a new amount is a new Price object, and every existing subscriber stays on the old one and keeps renewing. The webhook and the reconcile pass accept only the Pro prices of the environment, so an old price that is not listed makes its renewals fail with "price does not match" (a logged 200 at the webhook, `skip` at the pass) and Pro lapses at the end of the period while Stripe keeps charging them (FRESCO-1163). In the same change that points `STRIPE_PRICE_ID_PRO_MONTH` (or `STRIPE_PRICE_ID_PRO_ANUAL`) at the new price:
+
+1. Add the old price id to `STRIPE_PRICE_IDS_PRO_LEGACY` on the production scope, comma-separated (`price_old1,price_old2`). Checkout sells only the current prices; the legacy list is only what still counts as Pro.
+2. Redeploy production.
+3. Keep an id in the list until `select count(*) from user_profiles where stripe_subscription_id is not null and plan = 'pro'` no longer has anyone on it. Stripe's dashboard (Subscriptions, filtered by price) says who is still on a price. Removing it early re-opens the problem for whoever is left.
+
+The same applies to dropping the annual plan: its id goes to the legacy list, not away.
+
 ## Rolling back
 
 ```bash
