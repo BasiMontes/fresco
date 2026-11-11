@@ -40,6 +40,7 @@
 import type { ProductoSupermercado } from '../lib/grocery/supermarket/types.ts';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { CONSUM_CATALOG_MATCH } from '../lib/grocery/consum-catalog.generated.ts';
 import { SYNONYM_OVERRIDE } from '../lib/grocery/retail-packs.ts';
 import { emparejarIngrediente } from '../lib/grocery/supermarket/matcher.ts';
 import { normalizeNombre } from '../lib/text/normalize-nombre.ts';
@@ -248,6 +249,24 @@ async function fetchAllCandidates(
   return result;
 }
 
+/**
+ * FRESCO-1193 — what a regeneration changed against the committed file, one line per entry, so a human
+ * reviews the new and the changed products before accepting them. `+` new, `~` product changed (by
+ * url), `-` gone. An identical entry is not listed.
+ */
+export function describirDiffCatalogo(anterior: Record<string, ConsumMatch>, nuevo: Record<string, ConsumMatch>): string[] {
+  const lineas: string[] = [];
+  for (const clave of Object.keys(nuevo).sort((a, b) => a.localeCompare(b, 'es'))) {
+    const antes = anterior[clave];
+    if (!antes) { lineas.push(`+ ${clave}: ${nuevo[clave].url}`); }
+    else if (antes.url !== nuevo[clave].url) { lineas.push(`~ ${clave}: ${antes.url} -> ${nuevo[clave].url}`); }
+  }
+  for (const clave of Object.keys(anterior).sort((a, b) => a.localeCompare(b, 'es'))) {
+    if (!nuevo[clave]) { lineas.push(`- ${clave}: ${anterior[clave].url}`); }
+  }
+  return lineas;
+}
+
 export function renderFile(match: Record<string, ConsumMatch>, fecha: string): string {
   const entries = Object.entries(match)
     .map(([clave, m]) => `  ${JSON.stringify(clave)}: ${JSON.stringify(m)},`)
@@ -282,8 +301,11 @@ if (import.meta.main) {
   const candidatesByTerm = await fetchAllCandidates(BASE_QUANTITIES);
   const match = buildConsumCatalogMatch(candidatesByTerm, BASE_QUANTITIES);
   const target = new URL('../lib/grocery/consum-catalog.generated.ts', import.meta.url);
+  const cambios = describirDiffCatalogo(CONSUM_CATALOG_MATCH, match);
   await Bun.write(target, renderFile(match, fecha));
   console.log(
     `Matched ${Object.keys(match).length} ingredients against ${candidatesByTerm.size} search terms.`,
   );
+  // FRESCO-1193: review these before accepting the regenerated file (+ new, ~ product changed, - gone).
+  console.log(cambios.length === 0 ? 'No entries new, changed or gone against the committed file.' : `Review these ${cambios.length} changes against the committed file:\n${cambios.join('\n')}`);
 }
