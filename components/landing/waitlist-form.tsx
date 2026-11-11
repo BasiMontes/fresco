@@ -7,6 +7,7 @@ import { useCaptcha } from '@/components/auth/use-captcha';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmailInput } from '@/components/ui/email-input';
+import { isCaptchaConfigured } from '@/lib/auth/captcha';
 import { joinWaitlist } from '@/lib/client-api/waitlist';
 import { WAITLIST_CONSENT_TEXT } from '@/lib/legal/waitlist-text';
 
@@ -18,12 +19,20 @@ type Status = 'idle' | 'sending' | 'joined' | 'error';
  * version of the text (`POST /api/waitlist`). FRESCO-1008: that only registers a PENDING signup; the address is added once its owner confirms from the email we send. The submit stays disabled until the
  * box is ticked, so a visitor cannot join without having consented.
  * FRESCO-1103: when the build carries a Turnstile site key the submit also waits for the check, and the token travels with the request.
+ * FRESCO-1190: the check starts only when the visitor first touches the form. This form sits on the landing page,
+ * so loading Cloudflare's script on mount sent the IP and browser data of EVERY visitor to Cloudflare, before they
+ * had decided on cookies and without doing anything, while the privacy policy says Turnstile acts when signing in or
+ * signing up. Now it loads when somebody starts to fill in the form (focus or input, which also covers autofill).
  */
-export function WaitlistForm() {
+export function WaitlistForm({ captchaConfigured = isCaptchaConfigured() }: { captchaConfigured?: boolean } = {}) {
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
-  const captcha = useCaptcha();
+  const [touched, setTouched] = useState(false);
+  const captcha = useCaptcha(captchaConfigured && touched);
+  // Not `!captcha.ready`: before the first touch the captcha is off, which reads as "ready". With a site key
+  // configured, nobody submits without a token, and a token needs the touch that started the check.
+  const waitingForCaptcha = captchaConfigured && captcha.token === null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -42,7 +51,12 @@ export function WaitlistForm() {
   }
 
   return (
-    <form onSubmit={event => void handleSubmit(event)} className="mx-auto mt-10 flex max-w-sm flex-col gap-3 text-left">
+    <form
+      onSubmit={event => void handleSubmit(event)}
+      onFocusCapture={() => setTouched(true)}
+      onChangeCapture={() => setTouched(true)}
+      className="mx-auto mt-10 flex max-w-sm flex-col gap-3 text-left"
+    >
       <p className="text-center text-body-md text-tertiary">¿Prefieres que te avisemos del lanzamiento?</p>
       <EmailInput data-testid="waitlist_email_input" value={email} onChange={setEmail} disabled={status === 'sending'} />
       <label className="flex cursor-pointer items-start gap-2 text-body-sm text-tertiary">
@@ -66,7 +80,7 @@ export function WaitlistForm() {
           No hemos podido apuntar tu correo. Inténtalo de nuevo.
         </p>
       )}
-      <Button type="submit" variant="secondary" size="lg" disabled={!consent || email.trim().length === 0 || status === 'sending' || !captcha.ready} data-testid="waitlist_submit">
+      <Button type="submit" variant="secondary" size="lg" disabled={!consent || email.trim().length === 0 || status === 'sending' || waitingForCaptcha} data-testid="waitlist_submit">
         Avisadme del lanzamiento
       </Button>
     </form>
