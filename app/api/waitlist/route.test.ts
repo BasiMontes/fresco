@@ -300,3 +300,69 @@ describe('POST /api/waitlist — the captcha (FRESCO-1103)', () => {
     expect(cloudflareCalls).toHaveLength(0);
   });
 });
+
+/**
+ * FRESCO-1170 (integral review F3): a production build that lost the Turnstile site key used to skip the captcha
+ * in silence and answer 200, leaving only the per-address limit in front of an email sent to any address. In
+ * production it refuses now; everywhere else a build with no key keeps working as before.
+ */
+describe('POST /api/waitlist — a production build with no site key (FRESCO-1170)', () => {
+  beforeEach(() => {
+    delete process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    process.env.VERCEL_ENV = 'production';
+  });
+  afterEach(() => {
+    delete process.env.VERCEL_ENV;
+  });
+
+  test('503, Sentry hears of it, and nothing is registered, mailed or checked', async () => {
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const res = await POST(req(GOOD));
+
+      expect(res.status).toBe(503);
+      expect(captureMessage).toHaveBeenCalledTimes(1);
+      expect(String(captureMessage.mock.calls[0][0])).toContain('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
+      expect(rpcCalls).toHaveLength(0);
+      expect(sent).toHaveLength(0);
+      expect(cloudflareCalls).toHaveLength(0);
+    }
+    finally {
+      console.error = original;
+    }
+  });
+
+  test('a token does not help: without the site key the check cannot be trusted either', async () => {
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const res = await POST(req({ ...GOOD, captchaToken: 'tok' }));
+
+      expect(res.status).toBe(503);
+      expect(sent).toHaveLength(0);
+    }
+    finally {
+      console.error = original;
+    }
+  });
+
+  test.each(['preview', 'development'])('the same build on %s still works without a key (the captcha stays opt-in there)', async (vercelEnv) => {
+    process.env.VERCEL_ENV = vercelEnv;
+
+    const res = await POST(req(GOOD));
+
+    expect(res.status).toBe(200);
+    expect(sent).toHaveLength(1);
+  });
+
+  test('production WITH the key goes through the normal captcha path', async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = 'site-key';
+    process.env.TURNSTILE_SECRET_KEY = 'secret-key';
+
+    const res = await POST(req({ ...GOOD, captchaToken: 'tok' }));
+
+    expect(res.status).toBe(200);
+    expect(cloudflareCalls).toHaveLength(1);
+  });
+});

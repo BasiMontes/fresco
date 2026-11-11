@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse } from 'next/server';
-import { isCaptchaConfigured } from '@/lib/auth/captcha';
+import { captchaMissingInProduction, isCaptchaConfigured } from '@/lib/auth/captcha';
 import { verifyTurnstileToken } from '@/lib/auth/turnstile-verify';
 import { withinIpLimit } from '@/lib/legal/waitlist';
 import { createClient } from '@/lib/supabase/server';
@@ -83,6 +83,13 @@ export async function POST(request: NextRequest) {
   const address = typeof email === 'string' ? email.trim() : '';
   if (address.length === 0 || address.length > MAX_EMAIL_LENGTH || !EMAIL_SHAPE.test(address)) {
     return NextResponse.json({ error: { code: 'validation_failed', message: 'El email no es válido.' } }, { status: 400 });
+  }
+
+  // FRESCO-1170: in production a missing site key is a broken deploy, not "no captcha": refuse before any email.
+  if (captchaMissingInProduction()) {
+    console.error('[/api/auth/guest-email] this production build has no Turnstile site key; refusing');
+    Sentry.captureMessage('guest-email: production build has no NEXT_PUBLIC_TURNSTILE_SITE_KEY', { level: 'error' });
+    return NextResponse.json({ error: { code: 'captcha_unavailable', message: 'No se pudo verificar que eres una persona. Inténtalo más tarde.' } }, { status: 503 });
   }
 
   if (isCaptchaConfigured(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '')) {
