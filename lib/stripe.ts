@@ -190,7 +190,8 @@ const LIVE_SUBSCRIPTION_STATUSES: ReadonlyArray<Stripe.Subscription.Status | und
  * or subscription is missing a field this flow depends on. The webhook route
  * handler is the only caller, and it deliberately catches downstream errors
  * after signature verification (logs + still returns 200, to avoid Stripe
- * retry storms) — so a thrown error here surfaces as a logged, non-fatal
+ * retry storms; a transient Stripe or database failure answers 500 instead,
+ * ADR-0062) — so a thrown error here surfaces as a logged, non-fatal
  * failure, not a crash.
  */
 export function resolveProUpdateFromSession({ session, subscription, expectedPriceId }: {
