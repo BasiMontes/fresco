@@ -65,9 +65,29 @@ import { createServiceClient } from '@/lib/supabase/service';
  * can never find it, so it used to fail every pass and stay Pro for good. The pass downgrades it to
  * Free and keeps its ids (the person pays through a clean live customer and, the ids marking the
  * trial as used, without a second free trial). It is counted under `foreignMode`, not as a failure.
+ *
+ * FRESCO-1162 (audit: PAY-N5): the route used to have no `maxDuration`, so on the default limit a
+ * pass over a few dozen profiles was cut off and what it lost first was the paid-checkout sweep (the
+ * only recovery of a lost purchase) and the heartbeat. Now (1) `maxDuration` is explicit, (2) the
+ * paid-checkout sweep runs BEFORE the per-profile loop, (3) the loop runs `PROFILE_CONCURRENCY` profiles
+ * at a time, and (4) it stops taking new profiles once `PROFILE_LOOP_BUDGET_MS` has passed, reporting
+ * `skippedForTime` (and a Sentry warning) instead of being killed silently; the skipped profiles are
+ * the next pass's work, and the sweeps and the heartbeat still run.
  */
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Explicit on purpose, like the webhook's: without Fluid compute the Hobby default is 10 s. 60 s is
+ * the limit that works without it; Fluid compute's higher limits are not relied upon.
+ */
+export const maxDuration = 60;
+
+/** Stripe calls in flight at once: well inside Stripe's rate limit, and 5x faster than one by one. */
+const PROFILE_CONCURRENCY = 5;
+
+/** No new profile is started after this (of the 60 s): the sweeps, the retries and the heartbeat need the rest. */
+const PROFILE_LOOP_BUDGET_MS = 40_000;
 
 interface DriftEntry {
   userId: string
@@ -183,6 +203,109 @@ async function resolveTarget(profile: ReconcilableProfile, proPriceIds: string[]
   }
 }
 
+interface Tally {
+  checked: number
+  failures: number
+  reconciled: number
+  foreignMode: { downgraded: number, failed: number }
+  drifted: DriftEntry[]
+}
+
+/** Settles one profile against Stripe (or, for a profile of the other mode, without it) and records the outcome in `tally`. */
+async function reconcileProfile({ supabase, profile, proPriceIds, livemode, tally }: {
+  supabase: ReturnType<typeof createServiceClient>
+  profile: ReconcilableProfile
+  proPriceIds: string[]
+  livemode: boolean
+  tally: Tally
+}): Promise<void> {
+  const subscriptionId = profile.stripe_subscription_id;
+  if (!subscriptionId) {
+    return;
+  }
+
+  // FRESCO-1161: before any Stripe call, and outside `checked`/`failures`: Stripe is not asked about
+  // these rows, so they say nothing about whether Stripe answered.
+  if (profileHoldsOtherMode(profile, livemode)) {
+    await settleForeignModeProfile({ supabase, profile, counts: tally.foreignMode });
+    return;
+  }
+  tally.checked++;
+
+  const target = await resolveTarget(profile, proPriceIds);
+  if (target === 'failed') {
+    tally.failures++;
+    return;
+  }
+
+  if (target.action === 'skip') {
+    console.warn(`[/api/cron/stripe-reconcile] skipped user ${profile.id}: ${target.reason}`);
+    return;
+  }
+
+  // `plan_expires_at` is only asserted on the `pro` path. On downgrade the
+  // reconciler mirrors the webhook's `customer.subscription.deleted`
+  // handler exactly — it flips `plan` + clears the aviso and leaves
+  // `plan_expires_at` as-is, so the two writers never disagree.
+  const desired: { plan: 'free' | 'pro', payment_failed_at: string | null, plan_expires_at?: string }
+    = target.action === 'downgrade'
+      ? { plan: 'free', payment_failed_at: null }
+      : {
+          plan: 'pro',
+          plan_expires_at: target.planExpiresAt,
+          // Keep the original aviso timestamp if one is already set — only
+          // stamp a fresh one when the row has none (mirrors the webhook's
+          // `retrying` branch, which never overwrites an existing value).
+          payment_failed_at: target.paymentFailed
+            ? profile.payment_failed_at ?? new Date().toISOString()
+            : null,
+        };
+
+  const changes: DriftEntry['changes'] = {};
+  if (profile.plan !== desired.plan) {
+    changes.plan = { from: profile.plan, to: desired.plan };
+  }
+  if (desired.plan_expires_at !== undefined && !sameInstant(profile.plan_expires_at, desired.plan_expires_at)) {
+    changes.plan_expires_at = { from: profile.plan_expires_at, to: desired.plan_expires_at };
+  }
+  if (!sameInstant(profile.payment_failed_at, desired.payment_failed_at)) {
+    changes.payment_failed_at = { from: profile.payment_failed_at, to: desired.payment_failed_at };
+  }
+
+  if (Object.keys(changes).length === 0) {
+    return;
+  }
+
+  try {
+    await applyReconciledState(supabase, { profileId: profile.id, desired });
+  }
+  catch (updateError) {
+    tally.failures++;
+    reportFailure(`failed to reconcile user ${profile.id}`, updateError);
+    return;
+  }
+
+  tally.reconciled++;
+  tally.drifted.push({ userId: profile.id, changes });
+  console.warn(`[/api/cron/stripe-reconcile] reconciled user ${profile.id}`, JSON.stringify(changes));
+}
+
+/**
+ * Runs `worker` over `items`, `limit` at a time, and starts no new item once `Date.now()` passes
+ * `deadline`. Returns how many items were never started.
+ */
+async function runWithinBudget<T>({ items, limit, deadline, worker }: { items: T[], limit: number, deadline: number, worker: (item: T) => Promise<void> }): Promise<number> {
+  let next = 0;
+  const lane = async () => {
+    while (next < items.length && Date.now() <= deadline) {
+      const item = items[next++];
+      await worker(item);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, lane));
+  return items.length - next;
+}
+
 export async function GET(request: Request): Promise<NextResponse> {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -201,11 +324,23 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
   }
 
+  const startedAt = Date.now();
   const supabase = createServiceClient();
 
   const mode = await establishStripeMode(supabase);
   if ('refusal' in mode) {
     return mode.refusal;
+  }
+
+  // FRESCO-909 (audit C-03): the inverse direction, and the only recovery of a lost purchase. FRESCO-1162:
+  // it runs BEFORE the per-profile loop so that a slow or cut-off pass never loses it. Fail-soft: a Stripe
+  // listing error must not turn the reconcile run below into a 500.
+  let checkoutSweep: CheckoutSweepResult | null = null;
+  try {
+    checkoutSweep = await sweepPaidCheckoutsWithoutPro(supabase);
+  }
+  catch (sweepError) {
+    reportFailure('paid-checkout sweep failed', sweepError);
   }
 
   let profiles: ReconcilableProfile[];
@@ -217,95 +352,21 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Error consultando perfiles.' }, { status: 500 });
   }
 
-  let checked = 0;
-  let failures = 0;
-  let reconciled = 0;
-  const foreignMode = { downgraded: 0, failed: 0 };
-  const drifted: DriftEntry[] = [];
-
-  for (const profile of profiles) {
-    const subscriptionId = profile.stripe_subscription_id;
-    if (!subscriptionId) {
-      continue;
-    }
-
-    // FRESCO-1161: before any Stripe call, and outside `checked`/`failures`: Stripe is not asked about
-    // these rows, so they say nothing about whether Stripe answered.
-    if (profileHoldsOtherMode(profile, mode.livemode)) {
-      await settleForeignModeProfile({ supabase, profile, counts: foreignMode });
-      continue;
-    }
-    checked++;
-
-    const target = await resolveTarget(profile, proPriceIds);
-    if (target === 'failed') {
-      failures++;
-      continue;
-    }
-
-    if (target.action === 'skip') {
-      console.warn(`[/api/cron/stripe-reconcile] skipped user ${profile.id}: ${target.reason}`);
-      continue;
-    }
-
-    // `plan_expires_at` is only asserted on the `pro` path. On downgrade the
-    // reconciler mirrors the webhook's `customer.subscription.deleted`
-    // handler exactly — it flips `plan` + clears the aviso and leaves
-    // `plan_expires_at` as-is, so the two writers never disagree.
-    const desired: { plan: 'free' | 'pro', payment_failed_at: string | null, plan_expires_at?: string }
-      = target.action === 'downgrade'
-        ? { plan: 'free', payment_failed_at: null }
-        : {
-            plan: 'pro',
-            plan_expires_at: target.planExpiresAt,
-            // Keep the original aviso timestamp if one is already set — only
-            // stamp a fresh one when the row has none (mirrors the webhook's
-            // `retrying` branch, which never overwrites an existing value).
-            payment_failed_at: target.paymentFailed
-              ? profile.payment_failed_at ?? new Date().toISOString()
-              : null,
-          };
-
-    const changes: DriftEntry['changes'] = {};
-    if (profile.plan !== desired.plan) {
-      changes.plan = { from: profile.plan, to: desired.plan };
-    }
-    if (desired.plan_expires_at !== undefined && !sameInstant(profile.plan_expires_at, desired.plan_expires_at)) {
-      changes.plan_expires_at = { from: profile.plan_expires_at, to: desired.plan_expires_at };
-    }
-    if (!sameInstant(profile.payment_failed_at, desired.payment_failed_at)) {
-      changes.payment_failed_at = { from: profile.payment_failed_at, to: desired.payment_failed_at };
-    }
-
-    if (Object.keys(changes).length === 0) {
-      continue;
-    }
-
-    try {
-      await applyReconciledState(supabase, { profileId: profile.id, desired });
-    }
-    catch (updateError) {
-      failures++;
-      reportFailure(`failed to reconcile user ${profile.id}`, updateError);
-      continue;
-    }
-
-    reconciled++;
-    drifted.push({ userId: profile.id, changes });
-    console.warn(`[/api/cron/stripe-reconcile] reconciled user ${profile.id}`, JSON.stringify(changes));
+  const tally: Tally = { checked: 0, failures: 0, reconciled: 0, foreignMode: { downgraded: 0, failed: 0 }, drifted: [] };
+  const toReconcile = profiles.filter(profile => profile.stripe_subscription_id);
+  const skippedForTime = await runWithinBudget({
+    items: toReconcile,
+    limit: PROFILE_CONCURRENCY,
+    deadline: startedAt + PROFILE_LOOP_BUDGET_MS,
+    worker: async profile => reconcileProfile({ supabase, profile, proPriceIds, livemode: mode.livemode, tally }),
+  });
+  if (skippedForTime > 0) {
+    console.error(`[/api/cron/stripe-reconcile] ran out of its time budget: ${skippedForTime} of ${toReconcile.length} profiles were not checked, the next pass does them`);
+    Sentry.captureMessage('stripe-reconcile ran out of its time budget', { level: 'warning', tags: SENTRY_TAGS, extra: { skipped_for_time: skippedForTime, profiles: toReconcile.length } });
   }
+  const { checked, failures, reconciled, foreignMode, drifted } = tally;
 
   const sweptOrphans = await sweepOrphanPaidPlans(supabase);
-
-  // FRESCO-909 (audit C-03): the inverse direction. Fail-soft like the orphan sweep: a
-  // Stripe listing error must not turn the reconcile run above into a 500.
-  let checkoutSweep: CheckoutSweepResult | null = null;
-  try {
-    checkoutSweep = await sweepPaidCheckoutsWithoutPro(supabase);
-  }
-  catch (sweepError) {
-    reportFailure('paid-checkout sweep failed', sweepError);
-  }
 
   const confirmationRetries = await retryConfirmationEmails(supabase);
 
@@ -322,5 +383,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({ checked, reconciled, drifted, foreignMode, sweptOrphans, checkoutSweep, confirmationRetries, failures });
+  return NextResponse.json({ checked, reconciled, drifted, foreignMode, skippedForTime, sweptOrphans, checkoutSweep, confirmationRetries, failures });
 }
