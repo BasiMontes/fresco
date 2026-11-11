@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildConsumCatalogMatch,
   CACHE_DIR,
+  demasiadosFallos,
   describirDiffCatalogo,
   fechaDeCache,
   parsePackSize,
@@ -199,6 +200,23 @@ describe('buildConsumCatalogMatch — the wrong matches of FRESCO-1193', () => {
     ];
     const match = buildConsumCatalogMatch(new Map([['tocino', candidatos]]), { tocino: { cantidad: 200, unidad: 'g' } });
     expect(match.tocino?.url).toBe('https://tienda.consum.es/es/p/Tocino fresco entreverado/1');
+  });
+});
+
+// FRESCO-1192: a scheduled run must not turn a blocked or failing Consum into a catalog with no prices.
+describe('demasiadosFallos — when a run must not write the catalog', () => {
+  test('a few failed search terms are tolerated', () => {
+    expect(demasiadosFallos(0, 162)).toBe(false);
+    expect(demasiadosFallos(8, 162)).toBe(false);
+  });
+
+  test('more than one in twenty failed terms stops the run', () => {
+    expect(demasiadosFallos(9, 162)).toBe(true);
+    expect(demasiadosFallos(162, 162)).toBe(true);
+  });
+
+  test('a run that searched nothing stops too', () => {
+    expect(demasiadosFallos(0, 0)).toBe(true);
   });
 });
 
