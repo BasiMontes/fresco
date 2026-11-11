@@ -83,7 +83,13 @@ From this moment the test-mode events of `fresco-pre` are refused by the current
 
 ## After the flip
 
-- Profiles that hold **test** Stripe ids keep `stripe_livemode = false`. The checkout does not reuse a customer of the other mode, so a person who tried Pro in test mode starts a clean live customer (with no free trial, since the ids mark it as used). The production reconcile cron downgrades their old test subscription when the live key cannot find it.
+- Profiles that hold **test** Stripe ids keep `stripe_livemode = false`. The checkout does not reuse a customer of the other mode, so a person who tried Pro in test mode starts a clean live customer (with no free trial, since the ids mark it as used). The reconcile pass does not ask Stripe about them (the live key can never find a test-mode subscription): it takes any such profile that is still Pro down to Free, clears its payment-failed aviso and keeps its Stripe ids, and reports the count as `foreignMode.downgraded` in the JSON of the pass (FRESCO-1161). It is not a failure and sends nothing to Sentry. Until the pass runs, such a profile is still Pro and the checkout answers 409 ("Ya tienes Fresco Pro"), so run the pass once right after step 4 instead of waiting for the 04:17 UTC cron:
+
+  ```bash
+  curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://fresco-pro.vercel.app/api/cron/stripe-reconcile
+  ```
+
+  Check that `failures` is `0` and `foreignMode.failed` is `0`. The same applies in reverse on the rollback below: a profile with live ids goes to Free when the database goes back to test mode.
 - The `@requiere-stripe-real` e2e scenarios against `fresco-pre` can no longer grant Pro while the database is live. To run them, set the database back to test mode for the window and restore it afterwards, or keep them out of the live period.
 
 ## Rolling back

@@ -571,7 +571,7 @@ describe('GET /api/cron/stripe-reconcile — Stripe mode guard (FRESCO-1088)', (
   test('a matching live key and live database reconciles normally', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
     retrieveMock.mockImplementation(async () => activeSubscription());
-    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [{ ...proRow, plan: 'free', plan_expires_at: null }] } });
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [{ ...proRow, plan: 'free', plan_expires_at: null, stripe_livemode: true }] } });
 
     const res = await run();
 
@@ -597,6 +597,124 @@ describe('GET /api/cron/stripe-reconcile — Stripe mode guard (FRESCO-1088)', (
     const res = await run();
 
     expect(res.status).toBe(500);
+    expect(retrieveMock).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * FRESCO-1161: when `billing_mode` goes live, a profile that holds TEST Stripe ids can never be settled
+ * with the live key (it answers `resource_missing`, and the customer is not found either). It used to
+ * fail every pass and, if it was Pro, stay Pro for good (checkout 409, portal 500).
+ */
+describe('GET /api/cron/stripe-reconcile — profiles of the other Stripe mode (FRESCO-1161)', () => {
+  const OLD_ENV = { ...process.env };
+
+  beforeEach(() => {
+    process.env.CRON_SECRET = 'cron_test';
+    process.env.STRIPE_PRICE_ID_PRO_MONTH = PRO_PRICE_ID;
+    retrieveMock.mockReset();
+    customerRetrieveMock.mockClear();
+    captureException.mockClear();
+  });
+  afterEach(() => {
+    process.env = { ...OLD_ENV };
+  });
+
+  const run = async () => GET(new Request('https://test.fresco.local/api/cron/stripe-reconcile', { headers: { authorization: 'Bearer cron_test' } }));
+  const goLive = () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_unit';
+    // What the live key really answers for a test-mode subscription.
+    retrieveMock.mockImplementation(async () => {
+      throw new Stripe.errors.StripeError({ code: 'resource_missing', message: 'No such subscription' });
+    });
+    customerRetrieveMock.mockImplementation(async () => {
+      throw new Error('No such customer');
+    });
+  };
+  const testTrial = { id: 'u_trial', plan: 'pro', plan_expires_at: '2026-12-01T00:00:00Z', payment_failed_at: '2026-11-20T00:00:00Z', stripe_subscription_id: 'sub_test', stripe_customer_id: 'cus_test', stripe_livemode: false };
+  const testFree = { id: 'u_free', plan: 'free', plan_expires_at: null, payment_failed_at: null, stripe_subscription_id: 'sub_test2', stripe_customer_id: 'cus_test2', stripe_livemode: false };
+  const liveRow = { id: 'u_live', plan: 'free', plan_expires_at: null, payment_failed_at: null, stripe_subscription_id: 'sub_live', stripe_customer_id: 'cus_live', stripe_livemode: true };
+
+  interface Body { checked: number, failures: number, reconciled: number, foreignMode: { downgraded: number, failed: number } }
+
+  test('a Pro trial with test ids on a live database goes to free, keeps its ids, and is not a failure', async () => {
+    goLive();
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [testTrial] } });
+
+    const res = await run();
+
+    const body = await res.json() as Body;
+    expect(res.status).toBe(200);
+    expect(body.foreignMode).toEqual({ downgraded: 1, failed: 0 });
+    expect(body.failures).toBe(0);
+    expect(body.checked).toBe(0);
+    // Only the plan and the aviso are written: the ids stay, so the trial still counts as used.
+    // (The fake ignores filters, so its orphan sweep writes the same row after this one: look at the first write.)
+    expect(supa.updates[0]?.payload).toEqual({ plan: 'free', payment_failed_at: null });
+    expect(supa.updates.every(u => !('stripe_subscription_id' in u.payload) && !('stripe_customer_id' in u.payload))).toBe(true);
+    expect(retrieveMock).not.toHaveBeenCalled();
+    expect(customerRetrieveMock).not.toHaveBeenCalled();
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  test('a free profile with test ids is left alone: not counted, no Stripe call, no Sentry event', async () => {
+    goLive();
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [testFree] } });
+
+    const res = await run();
+
+    const body = await res.json() as Body;
+    expect(body.foreignMode).toEqual({ downgraded: 0, failed: 0 });
+    expect(body.failures).toBe(0);
+    expect(retrieveMock).not.toHaveBeenCalled();
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  test('the heartbeat still lands when every subscribed profile holds test ids (no false alarm until the first real subscriber)', async () => {
+    goLive();
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [testTrial, testFree] } });
+
+    await run();
+
+    expect(supa.upserts).toHaveLength(1);
+    expect(supa.upserts[0]?.payload.job).toBe('stripe-reconcile');
+  });
+
+  test('a live profile next to them is still reconciled against Stripe', async () => {
+    goLive();
+    retrieveMock.mockImplementation(async () => activeSubscription());
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [testTrial, liveRow] } });
+
+    const res = await run();
+
+    const body = await res.json() as Body;
+    expect(body.checked).toBe(1);
+    expect(body.reconciled).toBe(1);
+    expect(body.foreignMode.downgraded).toBe(1);
+    expect(retrieveMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('a failed write is counted apart, reported to Sentry, and does not stop the pass', async () => {
+    goLive();
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: true } }, user_profiles: { rows: [testTrial], updateError: new Error('write conflict') } });
+
+    const res = await run();
+
+    const body = await res.json() as Body;
+    expect(res.status).toBe(200);
+    expect(body.foreignMode).toEqual({ downgraded: 0, failed: 1 });
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(supa.upserts).toHaveLength(1);
+  });
+
+  test('the same holds the other way: live ids on a test database (the rollback) are taken off Pro, not asked about', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_unit';
+    supa = fakeSupabase({ billing_mode: { rows: { stripe_livemode: false } }, user_profiles: { rows: [{ ...testTrial, stripe_livemode: true }] } });
+
+    const res = await run();
+
+    const body = await res.json() as Body;
+    expect(body.foreignMode.downgraded).toBe(1);
     expect(retrieveMock).not.toHaveBeenCalled();
   });
 });

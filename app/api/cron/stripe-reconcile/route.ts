@@ -9,6 +9,7 @@ import { sweepPaidCheckoutsWithoutPro } from '@/lib/billing/checkout-sweep';
 import { retryPendingConfirmations } from '@/lib/billing/confirmation-email';
 import { applyReconciledState, listSubscribedProfiles, sweepOrphanPaidPlans } from '@/lib/billing/reconcile';
 import { environmentLivemode, readDatabaseLivemode } from '@/lib/billing/stripe-mode';
+import { profileHoldsOtherMode } from '@/lib/billing/subscription';
 import { recordJobHeartbeat, STRIPE_RECONCILE_JOB } from '@/lib/jobs/heartbeat';
 import { getProPriceIds, resolveReconciledState, stripe } from '@/lib/stripe';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -58,6 +59,12 @@ import { createServiceClient } from '@/lib/supabase/service';
  * (1) refuses to act at all unless the mode of `STRIPE_SECRET_KEY` equals `billing_mode`
  * (ADR-0061), and (2) downgrades on `resource_missing` only after the customer is seen to still
  * exist in Stripe; otherwise it counts a failure and leaves the plan alone.
+ *
+ * FRESCO-1161 (audit: PAY-N1): a profile whose Stripe ids are of the OTHER mode than `billing_mode`
+ * (a test-mode trial when the database goes live) is not looked up in Stripe at all: the live key
+ * can never find it, so it used to fail every pass and stay Pro for good. The pass downgrades it to
+ * Free and keeps its ids (the person pays through a clean live customer and, the ids marking the
+ * trial as used, without a second free trial). It is counted under `foreignMode`, not as a failure.
  */
 
 export const dynamic = 'force-dynamic';
@@ -95,16 +102,16 @@ async function retryConfirmationEmails(supabase: ReturnType<typeof createService
 }
 
 /**
- * FRESCO-1088: a 500 response when the key's Stripe mode is not the mode the database serves (or
- * either cannot be established), null when the pass may go on. Fails closed: an unknown mode is a refusal.
+ * FRESCO-1088: the mode the pass serves, or a 500 response when the key's Stripe mode is not the mode
+ * the database serves (or either cannot be established). Fails closed: an unknown mode is a refusal.
  */
-async function refuseOnStripeModeMismatch(supabase: ReturnType<typeof createServiceClient>): Promise<NextResponse | null> {
-  const refusal = NextResponse.json({ error: 'Job no configurado.' }, { status: 500 });
+async function establishStripeMode(supabase: ReturnType<typeof createServiceClient>): Promise<{ livemode: boolean } | { refusal: NextResponse }> {
+  const refusal = { refusal: NextResponse.json({ error: 'Job no configurado.' }, { status: 500 }) };
   try {
     const environment = environmentLivemode();
     const database = await readDatabaseLivemode(supabase);
     if (environment === database) {
-      return null;
+      return { livemode: database };
     }
     const mode = (livemode: boolean) => (livemode ? 'live' : 'test');
     reportFailure('Stripe mode mismatch, the pass did nothing', new Error(`STRIPE_SECRET_KEY is a ${mode(environment)}-mode key but billing_mode serves ${mode(database)} mode`));
@@ -113,6 +120,26 @@ async function refuseOnStripeModeMismatch(supabase: ReturnType<typeof createServ
     reportFailure('could not establish the Stripe mode, the pass did nothing', modeError);
   }
   return refusal;
+}
+
+/**
+ * FRESCO-1161: a profile that holds Stripe ids of the other mode cannot be settled with this key, so it
+ * is not asked about: it is taken off Pro (and its payment-failed aviso cleared), keeping every id.
+ * A write error is reported and counted apart from the Stripe failures.
+ */
+async function settleForeignModeProfile({ supabase, profile, counts }: { supabase: ReturnType<typeof createServiceClient>, profile: ReconcilableProfile, counts: { downgraded: number, failed: number } }): Promise<void> {
+  if (profile.plan === 'free' && profile.payment_failed_at === null) {
+    return;
+  }
+  try {
+    await applyReconciledState(supabase, { profileId: profile.id, desired: { plan: 'free', payment_failed_at: null } });
+    counts.downgraded++;
+    console.warn(`[/api/cron/stripe-reconcile] user ${profile.id} holds Stripe ids of the other mode than billing_mode: set to free, ids kept`);
+  }
+  catch (error) {
+    counts.failed++;
+    reportFailure(`failed to take user ${profile.id} (Stripe ids of the other mode) off Pro`, error);
+  }
 }
 
 /** FRESCO-1088: a missing subscription only means "ended" if Stripe still knows the customer. */
@@ -176,9 +203,9 @@ export async function GET(request: Request): Promise<NextResponse> {
 
   const supabase = createServiceClient();
 
-  const modeRefusal = await refuseOnStripeModeMismatch(supabase);
-  if (modeRefusal) {
-    return modeRefusal;
+  const mode = await establishStripeMode(supabase);
+  if ('refusal' in mode) {
+    return mode.refusal;
   }
 
   let profiles: ReconcilableProfile[];
@@ -193,11 +220,19 @@ export async function GET(request: Request): Promise<NextResponse> {
   let checked = 0;
   let failures = 0;
   let reconciled = 0;
+  const foreignMode = { downgraded: 0, failed: 0 };
   const drifted: DriftEntry[] = [];
 
   for (const profile of profiles) {
     const subscriptionId = profile.stripe_subscription_id;
     if (!subscriptionId) {
+      continue;
+    }
+
+    // FRESCO-1161: before any Stripe call, and outside `checked`/`failures`: Stripe is not asked about
+    // these rows, so they say nothing about whether Stripe answered.
+    if (profileHoldsOtherMode(profile, mode.livemode)) {
+      await settleForeignModeProfile({ supabase, profile, counts: foreignMode });
       continue;
     }
     checked++;
@@ -287,5 +322,5 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.json({ checked, reconciled, drifted, sweptOrphans, checkoutSweep, confirmationRetries, failures });
+  return NextResponse.json({ checked, reconciled, drifted, foreignMode, sweptOrphans, checkoutSweep, confirmationRetries, failures });
 }
