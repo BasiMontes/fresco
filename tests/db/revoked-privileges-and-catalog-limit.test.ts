@@ -8,6 +8,10 @@
  *   2. The migration itself revokes TRUNCATE / TRIGGER / REFERENCES / MAINTAIN and puts
  *      `pg_temp` last on `get_catalog`'s search_path (static, runs without a database).
  *
+ * FRESCO-1168: this file used to also read the text of the 2026-10-07 migration to "check" that every SECURITY
+ * DEFINER function resolves `pg_temp` last. That could never see a LATER `create or replace` undo it, and four
+ * did. The invariant now lives in `supabase/tests/catalog_invariants.test.sql`, which reads the real catalogue.
+ *
  * The table grants and the trigger-function EXECUTE grants cannot be observed through
  * PostgREST (it never exposes functions returning `trigger`), so a REST test would pass with
  * or without the revoke. They are verified against the database with `has_table_privilege`
@@ -54,16 +58,6 @@ describe('revoked privileges migration (static)', () => {
   test('get_catalog resolves pg_temp last and clamps p_limit to the ceiling', () => {
     expect(sql).toContain('SET search_path TO \'public\', \'pg_temp\'');
     expect(sql).toContain(`least(coalesce(nullif(greatest(p_limit, 0), 0), 30), ${CATALOG_CEILING})`);
-  });
-});
-
-describe('definer search_path migration (static)', () => {
-  const sql = readFileSync('supabase/migrations/20261007160000_definer_functions_search_path_pg_temp.sql', 'utf8');
-
-  test('puts pg_temp last on every SECURITY DEFINER function whose search_path is exactly public', () => {
-    expect(sql).toContain('p.prosecdef');
-    expect(sql).toContain('\'search_path=public\' = any (coalesce(p.proconfig, \'{}\'))');
-    expect(sql).toContain('set search_path = public, pg_temp');
   });
 });
 
