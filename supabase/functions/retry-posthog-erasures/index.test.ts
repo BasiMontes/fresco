@@ -151,9 +151,60 @@ describe('retry-posthog-erasures/index.ts', () => {
 
     const res = await call()
 
-    expect(res.status).toBe(200)
+    // FRESCO-1183: a pass in which every attempt failed is a 500 now, but each row still counts its attempt.
+    expect(res.status).toBe(500)
     expect(svc.updates).toEqual([['account_erasures', { posthog_attempts: 4, posthog_last_attempt_at: NOW.toISOString() }]])
-    expect(await res.json() as Summary).toEqual({ attempted: 1, deleted: 0, still_failing: 1, gave_up: 0 })
+  })
+
+  /**
+   * FRESCO-1183: the heartbeat means "the pass did its work". A revoked PostHog key answers 401 for every
+   * row, the loop still ends, and the monitor used to say ok while nothing was erased.
+   */
+  describe('an honest heartbeat (FRESCO-1183)', () => {
+    test('every attempt failing writes no heartbeat, answers 500 and reports it', async () => {
+      withFailedRows([failed('1'), failed('2'), failed('3')])
+      behaviour = { user_1: 'fail', user_2: 'fail', user_3: 'fail' }
+
+      const res = await call()
+
+      expect(res.status).toBe(500)
+      expect(svc.upserts).toEqual([])
+      expect(messages()).toContain('Server error returned to the caller')
+      expect(JSON.stringify(errorLines)).toContain('Todos los reintentos de borrado en PostHog fallaron (3 de 3)')
+      // The rows keep their attempt count so the cap still works.
+      expect(svc.updates).toHaveLength(3)
+    })
+
+    test('some rows failing among others that worked still counts as a pass, and the failures are reported', async () => {
+      withFailedRows([failed('1'), failed('2')])
+      behaviour = { user_1: 'fail' }
+
+      const res = await call()
+
+      expect(res.status).toBe(200)
+      expect(svc.upserts).toHaveLength(1)
+      expect(messages()).toContain('Some PostHog erasure retries failed')
+      expect(await res.json() as Summary).toEqual({ attempted: 2, deleted: 1, still_failing: 1, gave_up: 0 })
+    })
+
+    test('a pass where every row worked reports nothing and writes the heartbeat', async () => {
+      withFailedRows([failed('1'), failed('2')])
+
+      const res = await call()
+
+      expect(res.status).toBe(200)
+      expect(svc.upserts).toHaveLength(1)
+      expect(messages()).not.toContain('Some PostHog erasure retries failed')
+    })
+
+    test('a pass with only rows past the cap attempted nothing, so it is not read as all failed', async () => {
+      withFailedRows([failed('1', 10)])
+
+      const res = await call()
+
+      expect(res.status).toBe(200)
+      expect(svc.upserts).toHaveLength(1)
+    })
   })
 
   test('a row past the attempt cap is not retried, not changed, and is logged without the user id', async () => {

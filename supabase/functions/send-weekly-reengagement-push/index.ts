@@ -23,6 +23,7 @@ import { requireServiceRoleCaller } from '../_shared/auth.ts'
 import { createServiceRoleClient } from '../_shared/service-role-client.ts'
 import { recordJobHeartbeat } from '../_shared/job-heartbeat.ts'
 import { logger } from '../_shared/logger.ts'
+import { reportJobFailure } from '../_shared/job-failure.ts'
 import { isAllowedPushEndpoint } from '../_shared/push-endpoint.ts'
 import { captureServerEvent } from '../_shared/posthog.ts'
 import { getNextIsoWeek } from './iso-week.ts'
@@ -121,6 +122,10 @@ Deno.serve(async (req: Request) => {
     // correctness bug).
     let notificationsSent = 0
     let staleSubscriptionsRemoved = 0
+    // FRESCO-1183: sends that failed for a reason other than a dead endpoint (404/410), by HTTP status.
+    // A pass in which nothing was sent and something failed is not a healthy pass.
+    let failedSends = 0
+    const failuresByStatus: Record<string, number> = {}
 
     const deliver = async (sub: PushSubscriptionRow): Promise<void> => {
       try {
@@ -182,6 +187,9 @@ Deno.serve(async (req: Request) => {
         else {
           // Transient push-service failure (5xx, network timeout, ...) —
           // not evidence the subscription itself is dead, so it stays.
+          failedSends++
+          const statusKey = String(statusCode ?? 'none')
+          failuresByStatus[statusKey] = (failuresByStatus[statusKey] ?? 0) + 1
           logger.error('Push send failed for one subscription', {
             fn: FN_NAME,
             subscriptionId: sub.id,
@@ -203,6 +211,22 @@ Deno.serve(async (req: Request) => {
       }
       // `deliver` catches its own errors, so `Promise.all` never rejects.
       await Promise.all(targets.slice(i, i + SEND_CONCURRENCY).map(deliver))
+    }
+
+    // FRESCO-1183: a 401/403 from the push service means the VAPID keys do not match the ones the
+    // subscriptions were made with (or are wrong): a configuration failure that repeats every week,
+    // not a dead endpoint, so the subscription stays and the failure is reported.
+    if (failedSends > 0) {
+      const misconfigured = (failuresByStatus['401'] ?? 0) + (failuresByStatus['403'] ?? 0) > 0
+      const details = { sent: notificationsSent, failed: failedSends, staleRemoved: staleSubscriptionsRemoved, byStatus: failuresByStatus }
+      if (notificationsSent === 0) {
+        // Nothing went out: no heartbeat (the monitor must not say ok) and a 500, which `toErrorResponse` reports to Sentry.
+        throw new HttpError(
+          `Todos los envíos push fallaron${misconfigured ? ' (401/403: las claves VAPID no coinciden, fallo de configuración)' : ''}: ${JSON.stringify(details)}`,
+          500
+        )
+      }
+      await reportJobFailure(FN_NAME, misconfigured ? 'Some push sends were rejected with 401/403: VAPID configuration failure' : 'Some push sends failed', details)
     }
 
     const response: SendWeeklyPushRemindersResponse = {
