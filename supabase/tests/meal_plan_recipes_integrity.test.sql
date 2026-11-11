@@ -16,7 +16,7 @@
 -- Run by `supabase test db` (CI: the e2e job in .github/workflows/pr-check.yml).
 
 begin;
-select plan(6);
+select plan(9);
 
 select hasnt_function(
   'public', 'apply_recipe_status_update',
@@ -58,10 +58,27 @@ select is(
         'swap_meal_plan_slots',
         'confirm_ingredient_substitution',
         'assign_recipe_to_slot',
-        'protect_meal_plan_recipes_integrity'
+        'protect_meal_plan_recipes_integrity',
+        'retire_conflicting_slots'
       )),
   0,
-  'only the four vetted functions mention app.mpr_trusted_write'
+  'only the five vetted functions mention app.mpr_trusted_write'
+);
+
+-- FRESCO-1151: retire_conflicting_slots is the fifth, and the only one with no client at all. It takes a
+-- user id and writes slots around the protection trigger, so the property that makes it safe is that no
+-- client role can execute it: only the two triggers that call it, with the id of the row that changed.
+select ok(
+  not has_function_privilege('authenticated', 'public.retire_conflicting_slots(uuid)', 'execute'),
+  'FRESCO-1151: authenticated cannot execute retire_conflicting_slots'
+);
+select ok(
+  not has_function_privilege('anon', 'public.retire_conflicting_slots(uuid)', 'execute'),
+  'FRESCO-1151: anon cannot execute retire_conflicting_slots'
+);
+select ok(
+  not has_function_privilege('service_role', 'public.retire_conflicting_slots(uuid)', 'execute'),
+  'FRESCO-1151: service_role cannot execute retire_conflicting_slots'
 );
 
 select * from finish();
