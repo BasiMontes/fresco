@@ -92,3 +92,26 @@ describe('buildLearningExplanation (ADR-0005 — deterministic, no Gemini call; 
     expect(texto).toContain('armamos el menú priorizando variedad y equilibrio nutricional')
   })
 })
+
+describe('buildLearningExplanation — a failed history read (FRESCO-1185 C3)', () => {
+  test('says the history could not be read instead of claiming there was none', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 0, descartadasEvitadas: 0, historyUnavailable: true })
+
+    expect(texto).toContain('No hemos podido consultar tu historial')
+    expect(texto).not.toContain('no teníamos historial')
+  })
+
+  test('without a failure and without history the old sentence stays', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 0, descartadasEvitadas: 0 })
+
+    expect(texto).toContain('no teníamos historial reciente')
+    expect(texto).not.toContain('No hemos podido')
+  })
+
+  test('a failure after part of the history was read keeps the true sentences and adds the notice', () => {
+    const texto = buildLearningExplanation({ destacadas: [], cocinadasEvitadas: 2, descartadasEvitadas: 0, historyUnavailable: true })
+
+    expect(texto).toContain('evitamos 2 recetas que ya cocinaste')
+    expect(texto).toContain('No hemos podido consultar tu historial')
+  })
+})

@@ -16,6 +16,8 @@ export interface BuildLearningExplanationParams {
   cocinadasEvitadas: number
   /** Count of recipes excluded from this week's candidates for being marked `descartada` in the last 2 weeks. */
   descartadasEvitadas: number
+  /** FRESCO-1185: reading the history failed, so the menu was built without it and the text must not claim otherwise. */
+  historyUnavailable?: boolean
 }
 
 function joinNombres(nombres: string[]): string {
@@ -29,7 +31,7 @@ function joinNombres(nombres: string[]): string {
  * plural sentences the old Gemini prompt asked for, grounded only in the
  * real facts passed in.
  */
-export function buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas }: BuildLearningExplanationParams): string {
+export function buildLearningExplanation({ destacadas, cocinadasEvitadas, descartadasEvitadas, historyUnavailable = false }: BuildLearningExplanationParams): string {
   const frases: string[] = []
 
   if (destacadas.length > 0) {
@@ -50,7 +52,11 @@ export function buildLearningExplanation({ destacadas, cocinadasEvitadas, descar
     frases.push(`Y dejamos fuera ${descartadasEvitadas} ${receta} que descartaste, para no repetírtela${descartadasEvitadas === 1 ? '' : 's'}.`)
   }
 
-  if (frases.length === 0) {
+  // FRESCO-1185: a failed read is not "no history": say what happened instead of claiming there was nothing to learn from.
+  if (historyUnavailable) {
+    frases.push('No hemos podido consultar tu historial esta vez, así que este menú no tiene en cuenta lo que cocinaste ni descartaste.')
+  }
+  else if (frases.length === 0) {
     frases.push('Esta semana no teníamos historial reciente tuyo, así que armamos el menú priorizando variedad y equilibrio nutricional.')
   }
 

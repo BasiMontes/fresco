@@ -1,5 +1,5 @@
 import type { Recipe, TipoPlatoSlot } from './types.ts'
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { captureDenoServe, edgeRequest, type EdgeHandler, fakeEdgeClient, type FakeEdgeClient, getEdgeHandler } from '@/tests/mocks/edge-function'
 
 /**
@@ -209,6 +209,91 @@ describe('generate-meal-plan/index.ts — Pro', () => {
     })
     const res = await handler(edgeRequest(BODY))
     expect(res.status).toBe(200)
+  })
+})
+
+/**
+ * FRESCO-1185 (integral review C2 + C3). A failed read of the Pro history used to be ignored: the menu came out
+ * without it, the card said "no teníamos historial reciente tuyo" and nothing was logged or reported. And a
+ * discarded recipe could come back when the history emptied a tipo.
+ */
+describe('generate-meal-plan/index.ts — the Pro history (FRESCO-1185)', () => {
+  let errorLines: Array<{ message: string, [key: string]: unknown }> = []
+  let errorSpy: ReturnType<typeof spyOn<typeof console, 'error'>>
+  beforeEach(() => {
+    errorLines = []
+    errorSpy = spyOn(console, 'error').mockImplementation((line: unknown) => {
+      try { errorLines.push(JSON.parse(String(line))) }
+      catch { /* not a structured log line */ }
+    })
+  })
+  afterEach(() => errorSpy.mockRestore())
+
+  const AVISO = 'No hemos podido leer tu historial de recetas'
+  const failure = { error: { code: 'XX000', message: 'rpc down' } }
+
+  test.each([
+    ['get_recent_recipe_marks', { get_recent_recipe_marks: failure }],
+    ['get_user_recipe_engagement', { get_user_recipe_engagement: failure }],
+    ['get_user_cooked_recipe_ids', { get_user_cooked_recipe_ids: failure }],
+  ])('a failed %s is logged, reported, warned in the plan and told honestly in the explanation, and the menu is still generated', async (name, rpc) => {
+    setup({ rows: { user_profiles: profile({ plan: 'pro' }) }, rpc })
+
+    const res = await handler(edgeRequest(BODY))
+
+    expect(res.status).toBe(200)
+    const body = await res.json() as { advertencias: string[], explicacion_aprendizaje: string }
+    expect(body.advertencias.filter(a => a.includes(AVISO))).toHaveLength(1)
+    expect(body.explicacion_aprendizaje).toContain('No hemos podido consultar tu historial')
+    expect(body.explicacion_aprendizaje).not.toContain('no teníamos historial')
+    const logged = errorLines.find(line => line.message === 'Pro history read failed; the menu is generated without it')
+    expect(logged?.source).toBe(name)
+    // The same warning is what gets stored with the plan.
+    expect((svc.rpcCalls[0][1] as { p_advertencias: string[] }).p_advertencias.some(a => a.includes(AVISO))).toBe(true)
+  })
+
+  test('two failed reads still warn once', async () => {
+    setup({ rows: { user_profiles: profile({ plan: 'pro' }) }, rpc: { get_recent_recipe_marks: failure, get_user_recipe_engagement: failure } })
+
+    const body = await (await handler(edgeRequest(BODY))).json() as { advertencias: string[] }
+
+    expect(body.advertencias.filter(a => a.includes(AVISO))).toHaveLength(1)
+    expect(errorLines.filter(line => line.message === 'Pro history read failed; the menu is generated without it')).toHaveLength(2)
+  })
+
+  test('with every read working nothing is reported and no warning is added', async () => {
+    setup({ rows: { user_profiles: profile({ plan: 'pro' }) } })
+
+    const body = await (await handler(edgeRequest(BODY))).json() as { advertencias: string[] }
+
+    expect(body.advertencias.some(a => a.includes(AVISO))).toBe(false)
+    expect(errorLines.some(line => line.message === 'Pro history read failed; the menu is generated without it')).toBe(false)
+  })
+
+  test('a Free user never reads the history, so there is nothing to fail or warn about', async () => {
+    setup({ rpc: { get_recent_recipe_marks: failure } })
+
+    const body = await (await handler(edgeRequest(BODY))).json() as { advertencias: string[] }
+
+    expect(body.advertencias.some(a => a.includes(AVISO))).toBe(false)
+  })
+
+  test('when every lunch is in the history, the discarded ones are not brought back as the last resort', async () => {
+    const comidas = Array.from({ length: 10 }, (_, i) => `comida-${i}`)
+    const cooked = comidas.slice(0, 5)
+    const discarded = comidas.slice(5)
+    setup({
+      rows: { user_profiles: profile({ plan: 'pro' }) },
+      rpc: { get_recent_recipe_marks: { data: comidas.map(recipe_id => ({ recipe_id, estado: cooked.includes(recipe_id) ? 'cocinada' : 'descartada' })) } },
+    })
+
+    await handler(edgeRequest(BODY))
+
+    const slots = (svc.rpcCalls[0][1] as { p_slots: Array<{ tipo_plato: string, recipe_id: string | null }> }).p_slots
+    const lunches = slots.filter(slot => slot.tipo_plato === 'comida').map(slot => slot.recipe_id)
+    for (const id of discarded) expect(lunches).not.toContain(id)
+    expect(lunches.filter(id => id !== null && cooked.includes(id)).length).toBe(5)
+    expect(lunches.filter(id => id === null)).toHaveLength(2)
   })
 })
 

@@ -90,6 +90,12 @@ export interface SelectMenuParams {
    * empty. Omitted or `[]` keeps the old behaviour.
    */
   repeatableRecipeIds?: string[]
+  /**
+   * FRESCO-1185: the subset of `recentRecipeIds` the user DISCARDED. They are never placed again, not even as the
+   * last resort when the history empties a tipo: a slot with nothing else left stays empty, with an advertencia
+   * that says why. Omitted or `[]` keeps the old behaviour.
+   */
+  discardedRecipeIds?: string[]
   profile: UserProfile
   /**
    * Tie-break seed — the caller passes `${user.id}:${semana_iso}` so the same
@@ -186,7 +192,7 @@ function pastDiasOf(fechaInicio: string, hoy: string | undefined): Set<DiaSemana
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -204,6 +210,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
 
   // FRESCO-1128: cooked-recently recipes, per tipo, the last resort before a slot stays empty.
   const repeatable = new Set(repeatableRecipeIds)
+  const discarded = new Set(discardedRecipeIds) // FRESCO-1185: never placed again, not even as the last resort
   const repeatByTipo = new Map<TipoPlatoSlot, Recipe[]>(
     TIPOS.map(tipo => [tipo, candidates.filter(r => repeatable.has(r.id) && r.clasificacion?.tipo_plato === tipo)]),
   )
@@ -246,9 +253,10 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
       // The history exclusion is hard while it leaves something to choose from (ADR-0001). When it leaves
       // NOTHING for this slot, FRESCO-1128 allows repeating a recipe the user cooked in the last two weeks
       // (never a discarded one) rather than leaving the slot empty. If that is not enough either and the
-      // tipo has no history-free candidate at all, it falls back to every safe candidate. The allergy / diet
-      // dead end is judged on those too: a variety preference must never be reported as "your allergies
-      // leave nothing".
+      // tipo has no history-free candidate at all, it falls back to every safe candidate EXCEPT the ones the
+      // user discarded (FRESCO-1185: that last resort used to bring them back, silently, while the explanation
+      // still said they were left out). The allergy / diet dead end is judged on all of them: a variety
+      // preference must never be reported as "your allergies leave nothing".
       const historyPool = byTipo.get(tipo) ?? []
       const allPool = allByTipo.get(tipo) ?? []
       let available = historyPool.filter(notRepeated)
@@ -257,7 +265,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
         available = (repeatByTipo.get(tipo) ?? []).filter(notRepeated)
         repeatedRecent = available.length > 0
       }
-      if (available.length === 0 && historyPool.length === 0) available = allPool.filter(notRepeated)
+      if (available.length === 0 && historyPool.length === 0) available = allPool.filter(r => !discarded.has(r.id)).filter(notRepeated)
 
       if (available.length === 0) {
         menu[dia][tipo] = NO_SAFE_RECIPE_SENTINEL
@@ -269,10 +277,15 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
         // safety language for it erodes the safety message.
         if (!warnedNoCandidates.has(tipo)) {
           warnedNoCandidates.add(tipo)
+          // FRESCO-1185: a gap that exists only because what is left is a recipe the user discarded says so,
+          // instead of passing for plain variety.
+          const onlyDiscardedLeft = allPool.some(r => discarded.has(r.id) && notRepeated(r))
           advertencias.push(
             allPool.length === 0
               ? `No hay ninguna receta de ${tipo} compatible con tus alergias y tu dieta. Revisa tus restricciones o añade recetas propias.`
-              : `Se agotaron las recetas de ${tipo} distintas para llenar la semana sin repetir plato; algún día se ha quedado sin ${tipo} asignado.`,
+              : onlyDiscardedLeft
+                ? `Solo quedaban recetas de ${tipo} que descartaste y no las hemos repetido; algún día se ha quedado sin ${tipo} asignado.`
+                : `Se agotaron las recetas de ${tipo} distintas para llenar la semana sin repetir plato; algún día se ha quedado sin ${tipo} asignado.`,
           )
         }
         continue

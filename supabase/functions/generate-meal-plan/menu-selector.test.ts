@@ -880,3 +880,56 @@ describe('selectMenu — FRESCO-1129 (A8-LOGIC-08): days already over take no pi
     expect(hoyEnMadrid(new Date('2026-07-08T21:30:00Z'))).toBe('2026-07-08')
   })
 })
+
+/**
+ * FRESCO-1185 (integral review C2): when EVERY candidate of a tipo is in the 2-week history, the cooked ones are
+ * repeated first (FRESCO-1128); once those run out the selection used to fall back to every candidate, discarded
+ * ones included, while the explanation still said "dejamos fuera N recetas que descartaste". A discarded recipe is
+ * never placed again: the slot stays empty and the advertencia says why.
+ */
+describe('selectMenu — FRESCO-1185 (C2): a discarded recipe never comes back as the last resort', () => {
+  const comidas = Array.from({ length: 8 }, (_, i) => makeRecipe(`comida-r${i}`, 'comida'))
+  const others = buildAmpleCatalog().filter(r => r.clasificacion?.tipo_plato !== 'comida')
+  const candidates = [...comidas, ...others]
+  const profile = makeProfile({ plan: 'pro' })
+
+  test('all lunches in the history, 4 cooked and 4 discarded: the cooked ones are repeated, the rest stays empty, no discarded one appears', () => {
+    const cooked = comidas.slice(0, 4).map(r => r.id)
+    const discarded = comidas.slice(4).map(r => r.id)
+
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: [...cooked, ...discarded], repeatableRecipeIds: cooked, discardedRecipeIds: discarded, seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    const lunches = DIAS.map(dia => menu[dia].comida)
+    for (const id of discarded) expect(lunches).not.toContain(id)
+    expect(lunches.filter(id => cooked.includes(id))).toHaveLength(4)
+    expect(lunches.filter(id => id === NO_SAFE_RECIPE_SENTINEL)).toHaveLength(3)
+    expect(advertencias.filter(a => a.includes('comida') && a.includes('descartaste'))).toHaveLength(1)
+    expect(advertencias.some(a => a.includes('compatible con tus alergias'))).toBe(false)
+  })
+
+  test('every lunch discarded: no lunch is placed, one warning says they were discarded, never an allergy one', () => {
+    const discarded = comidas.map(r => r.id)
+
+    const { menu, advertencias } = selectMenu({ candidates, recentRecipeIds: discarded, discardedRecipeIds: discarded, seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    expect(DIAS.map(dia => menu[dia].comida).every(id => id === NO_SAFE_RECIPE_SENTINEL)).toBe(true)
+    expect(advertencias.filter(a => a.includes('comida') && a.includes('descartaste'))).toHaveLength(1)
+    expect(advertencias.some(a => a.includes('compatible con tus alergias'))).toBe(false)
+  })
+
+  test('the history still falls back to the unmarked candidates when nothing was discarded (FRESCO-1012 is unchanged)', () => {
+    const recent = comidas.map(r => r.id)
+
+    const { menu } = selectMenu({ candidates, recentRecipeIds: recent, discardedRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    expect(DIAS.map(dia => menu[dia].comida).filter(id => id !== NO_SAFE_RECIPE_SENTINEL).length).toBeGreaterThan(0)
+  })
+
+  test('a plain variety dead end (nothing discarded) keeps its own wording, not the discarded one', () => {
+    const fewComidas = comidas.slice(0, 3)
+    const { advertencias } = selectMenu({ candidates: [...fewComidas, ...others], recentRecipeIds: [], discardedRecipeIds: [], seed: SEED, fechaInicio: FECHA_INICIO, profile })
+
+    expect(advertencias.some(a => a.includes('comida') && a.includes('descartaste'))).toBe(false)
+    expect(advertencias.some(a => a.includes('Se agotaron las recetas de comida'))).toBe(true)
+  })
+})
