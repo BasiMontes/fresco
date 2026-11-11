@@ -8,7 +8,7 @@
  *
  * Proven against the real database with real sessions:
  *   1. declaring an allergen empties the conflicting slots of this week and the next ones
- *      (`estado` excluida, `recipe_id` null), leaves a safe slot, a cooked slot and every past week
+ *      (`recipe_id` null, left open as `pendiente`, FRESCO-1157), leaves a safe slot, a cooked slot and every past week
  *      alone, writes one `advertencias` entry per affected plan and marks the shopping list stale;
  *   2. the same for a diet flag and for a disliked ingredient;
  *   3. re-tagging or retiring a catalogue recipe does the same for the users who have it planned;
@@ -117,7 +117,7 @@ describe.skipIf(!(RUN && reachable))('a generated menu is re-checked when the pr
     for (const plan of [plans.week, plans.next]) {
       const slots = await slotsOf(owner, plan.id);
       const byTipo = (tipo: string) => slots.find(s => s.tipo_plato === tipo)!;
-      expect(byTipo('comida')).toMatchObject({ recipe_id: null, estado: 'excluida' });
+      expect(byTipo('comida')).toMatchObject({ recipe_id: null, estado: 'pendiente' });
       expect(byTipo('cena')).toMatchObject({ recipe_id: safeId, estado: 'pendiente' });
       // A slot already cooked was eaten: it stays as it was.
       expect(byTipo('desayuno')).toMatchObject({ recipe_id: glutenId, estado: 'cocinada' });
@@ -139,6 +139,23 @@ describe.skipIf(!(RUN && reachable))('a generated menu is re-checked when the pr
     expect(await advertenciasOf(other, plans.other.id)).toEqual([]);
   });
 
+  // FRESCO-1157: the notice promises "rellena el hueco con otra receta", so that has to be possible.
+  test('a retired slot stays open: another recipe that fits can be put into it', async () => {
+    const user = await ctx.createUser({ healthDataConsent: true });
+    const plan = await seedMealPlan(user, plannedWeek(1));
+    const [slotId] = await seedSlots(user, plan.id, [{ recipeId: glutenId, tipoPlato: 'comida' }]);
+    await patchProfile(user, { alergenos: ['gluten'] });
+    expect((await slotsOf(user, plan.id))[0]).toMatchObject({ recipe_id: null, estado: 'pendiente' });
+
+    const allowed = await rpc('get_filtered_recipes', { p_user_id: user.id }, { token: user.token });
+    const fits = (allowed.body as { id: string, clasificacion: { tipo_plato?: string } | null }[]).find(r => r.clasificacion?.tipo_plato === 'comida');
+    if (!fits) { throw new Error('[test] no allowed comida recipe'); }
+    const filled = await rpc('assign_recipe_to_slot', { p_slot_id: slotId, p_recipe_id: fits.id }, { token: user.token });
+
+    expect(filled.status).toBeLessThan(300);
+    expect((await slotsOf(user, plan.id))[0]).toMatchObject({ recipe_id: fits.id, estado: 'pendiente' });
+  });
+
   test('a diet flag retires the recipes that break it', async () => {
     const user = await ctx.createUser({ healthDataConsent: true });
     const notGlutenFree = await recipeId(user, 'dieta->>sin_gluten=eq.false');
@@ -148,7 +165,7 @@ describe.skipIf(!(RUN && reachable))('a generated menu is re-checked when the pr
     await patchProfile(user, { dieta_sin_gluten: true });
 
     const slots = await slotsOf(user, plan.id);
-    expect(slots.find(s => s.tipo_plato === 'comida')).toMatchObject({ recipe_id: null, estado: 'excluida' });
+    expect(slots.find(s => s.tipo_plato === 'comida')).toMatchObject({ recipe_id: null, estado: 'pendiente' });
     expect(slots.find(s => s.tipo_plato === 'cena')).toMatchObject({ recipe_id: safeId, estado: 'pendiente' });
   });
 
@@ -161,7 +178,7 @@ describe.skipIf(!(RUN && reachable))('a generated menu is re-checked when the pr
 
     await patchProfile(user, { ingredientes_odiados: [ingrediente.toLowerCase()] });
 
-    expect((await slotsOf(user, plan.id))[0]).toMatchObject({ recipe_id: null, estado: 'excluida' });
+    expect((await slotsOf(user, plan.id))[0]).toMatchObject({ recipe_id: null, estado: 'pendiente' });
   });
 
   test('re-tagging or retiring a catalogue recipe retires it from the menus that hold it', async () => {
@@ -184,7 +201,7 @@ describe.skipIf(!(RUN && reachable))('a generated menu is re-checked when the pr
       });
       expect(retag.status).toBe(204);
       const slots = await slotsOf(user, plan.id);
-      expect(slots.every(s => s.recipe_id === null && s.estado === 'excluida')).toBe(true);
+      expect(slots.every(s => s.recipe_id === null && s.estado === 'pendiente')).toBe(true);
       expect((await advertenciasOf(user, plan.id)).filter(a => a.includes(AVISO))).toHaveLength(1);
     }
     finally {

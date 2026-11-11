@@ -128,7 +128,12 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const response: ReassignGuestDataResponse = { reassigned: true }
+    // FRESCO-1157: the count was only logged, so the person never learned that dishes were taken out for
+    // food safety. It is returned now; the moved plans also carry the notice (reassign_guest_data writes it).
+    const response: ReassignGuestDataResponse = {
+      reassigned: true,
+      slots_quitados: typeof neutralizedSlots === 'number' ? neutralizedSlots : 0,
+    }
     return jsonResponse(response, { req })
   }
   catch (err) {

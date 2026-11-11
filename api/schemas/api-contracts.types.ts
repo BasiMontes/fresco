@@ -43,6 +43,12 @@ export interface ReassignGuestDataRequest {
 
 export interface ReassignGuestDataResponse {
   reassigned: boolean
+  /**
+   * FRESCO-1157: how many planned dishes were taken out because they do not fit the account's profile
+   * (allergens, diet, disliked ingredients, retired recipes). Each leaves an open empty slot, and the moved
+   * plans carry one `advertencias` entry saying so.
+   */
+  slots_quitados: number
 }
 
 // POST /generate-shopping-list — api-contracts.md §2

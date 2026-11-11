@@ -115,25 +115,26 @@ describe('reassign-guest-data/index.ts', () => {
     expect(serviceClient.rpcCalls).toEqual([])
   })
 
-  test('200 { reassigned: true } and cleans up the orphaned guest identity', async () => {
+  test('200 { reassigned: true, slots_quitados: 0 } and cleans up the orphaned guest identity', async () => {
     wireGuest()
     wireTarget({ id: 'real_user' })
     const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ reassigned: true })
+    expect(await res.json()).toEqual({ reassigned: true, slots_quitados: 0 })
     expect(serviceClient.rpcCalls[0]).toEqual(['reassign_guest_data', { p_from_user_id: 'guest_1', p_to_user_id: 'real_user' }])
     expect(serviceClient.deletedUserIds).toEqual(['guest_1'])
   })
 
-  test('200 and the guest is still cleaned up when the move had to neutralize slots (A4-H2)', async () => {
+  // FRESCO-1157: the number of dishes taken out for the target profile is returned, not only logged.
+  test('200, the guest is still cleaned up and the neutralized slots are counted in the response (A4-H2, FRESCO-1157)', async () => {
     wireGuest()
     wireTarget({ id: 'real_user' })
     serviceClient = fakeEdgeClient({ rpc: { reassign_guest_data: { data: 3 } } })
     const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ reassigned: true })
+    expect(await res.json()).toEqual({ reassigned: true, slots_quitados: 3 })
     expect(serviceClient.deletedUserIds).toEqual(['guest_1'])
   })
 
@@ -144,7 +145,7 @@ describe('reassign-guest-data/index.ts', () => {
     const res = await handler(edgeRequest(body(), { auth: GUEST_AUTH }))
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ reassigned: true })
+    expect(await res.json()).toEqual({ reassigned: true, slots_quitados: 0 })
     expect(serviceClient.rpcCalls).toHaveLength(1)
   })
 })

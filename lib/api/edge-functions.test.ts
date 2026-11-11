@@ -188,7 +188,7 @@ const SAMPLE_REASSIGN_REQUEST: ReassignGuestDataRequest = {
 
 describe('reassignGuestData', () => {
   test('POSTs the target token in the body, on the guest access token (ADR-0022)', async () => {
-    const body: ReassignGuestDataResponse = { reassigned: true };
+    const body: ReassignGuestDataResponse = { reassigned: true, slots_quitados: 0 };
     stubFetch({ ok: true, status: 200, body });
 
     const result = await reassignGuestData(SAMPLE_REASSIGN_REQUEST, 'guest-token');
