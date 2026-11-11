@@ -11,6 +11,9 @@ name: Hosted Auth settings check
 # redirect allow-list, and the three live email templates against supabase/templates/*.html (the checkout
 # below is what gives the job those files).
 #
+# FRESCO-1169 added the Edge Functions: the live `verify_jwt` of each function against the `[functions.*]` blocks of
+# supabase/config.toml (this checkout provides that file).
+#
 # It is not in pr-check.yml because it needs a token for the production project (ADR-0017).
 # What it checks and how to repeat it by hand: docs/workflows/hosted-auth-settings.md.
 #

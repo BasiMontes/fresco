@@ -28,11 +28,14 @@ supabase functions deploy <slug> \
   on CI and usually locally) the plain `deploy` path fails.
 - **`--import-map supabase/functions/deno.json` is required** — without it the
   remote bundler does not resolve `@supabase/supabase-js` / `web-push`.
-- **`send-weekly-reengagement-push` and `retry-posthog-erasures` need
-  `--no-verify-jwt`** appended (both are called by pg_cron, not by a browser).
-  There is no `[functions.*]` block in `config.toml`, so the flag is re-applied
-  on every deploy or JWT verification switches back on.
-  `scripts/deploy-changed-functions.ts` handles this automatically.
+- **`verify_jwt` is declared in `supabase/config.toml`**, one `[functions.<slug>]`
+  block per function (FRESCO-1169). `send-weekly-reengagement-push` and
+  `retry-posthog-erasures` are `false` (both are called by pg_cron with the service
+  key in `apikey`, not by a browser, and authenticate inside the function); the other
+  seven are `true`. `scripts/deploy-changed-functions.ts` reads the block and appends
+  `--no-verify-jwt` exactly when it is `false`, and refuses to deploy a function that
+  has no block. If you deploy by hand, pass `--no-verify-jwt` for those two. The weekly
+  hosted check fails when a live function differs from its declaration.
 - A change in **`_shared/**`** or **`deno.json`** means redeploying *every*
   function that imports it — in practice all nine.
 

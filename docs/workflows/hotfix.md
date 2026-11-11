@@ -51,8 +51,8 @@ cd - && git worktree remove ../fresco-rollback
 ```
 
 - It redeploys every function whose files differ between `$bad` and `$good`, or all of
-  them when `_shared/**` or `deno.json` differ. It keeps `--no-verify-jwt` on the two
-  cron-called functions.
+  them when `_shared/**` or `deno.json` differ. It keeps `--no-verify-jwt` on the functions
+  that `supabase/config.toml` declares `verify_jwt = false` (the two cron-called ones).
 - The repo now disagrees with what is deployed. Land a revert of the bad change on
   `staging` right after, or the next `staging` push redeploys the bad code. Until then
   `check-functions-drift.ts` may report drift on the rolled-back functions; that is

@@ -20,11 +20,11 @@
  *   --import-map   passed explicitly — without it the remote bundler does not
  *                  resolve `@supabase/supabase-js` (matches the manual sweep on
  *                  the FRESCO-414 ticket).
- *   --no-verify-jwt is appended ONLY for the two pg_cron-invoked functions
- *                  (`send-weekly-reengagement-push`, `retry-posthog-erasures`) —
- *                  they have no per-function entry in config.toml, so the flag
- *                  must be re-passed on every deploy or JWT verification
- *                  silently switches back on.
+ *   --no-verify-jwt is appended exactly when `supabase/config.toml` declares
+ *                  `[functions.<slug>] verify_jwt = false` (FRESCO-1169: today the
+ *                  two pg_cron-invoked functions). The block is the source of
+ *                  truth; a function with no block is NOT deployed, so a new one
+ *                  cannot slip in with a default nobody chose.
  *
  * Env:
  *   SUPABASE_ACCESS_TOKEN   personal access token (required; `supabase link` +
@@ -41,11 +41,12 @@
 
 import { readdir } from 'node:fs/promises';
 import { $ } from 'bun';
+import { deployArgs, readDeclaredVerifyJwt } from './lib/edge-function-config';
 
 const PROJECT_REF = 'jdqemhewjrjuopssdurn';
 const FUNCTIONS_DIR = 'supabase/functions';
 const IMPORT_MAP = `${FUNCTIONS_DIR}/deno.json`;
-const NO_VERIFY_JWT = new Set(['send-weekly-reengagement-push', 'retry-posthog-erasures']);
+const CONFIG_TOML = 'supabase/config.toml';
 const ZERO_SHA = '0000000000000000000000000000000000000000';
 /**
  * Not in the deployed bundle (`deno.json` excludes test files; `.md` is docs)
@@ -107,18 +108,12 @@ async function resolveTargets(
   return { slugs: [...touched].sort(), reason: `${touched.size} function dir(s) changed` };
 }
 
-async function deployOne(slug: string, dryRun: boolean): Promise<void> {
-  const args = [
-    'functions',
-    'deploy',
-    slug,
-    '--project-ref',
-    PROJECT_REF,
-    '--use-api',
-    '--import-map',
-    IMPORT_MAP,
-  ];
-  if (NO_VERIFY_JWT.has(slug)) { args.push('--no-verify-jwt'); }
+async function deployOne(slug: string, dryRun: boolean, declared: Record<string, boolean>): Promise<void> {
+  const verifyJwt = declared[slug];
+  if (verifyJwt === undefined) {
+    throw new Error(`${slug} has no [functions.${slug}] block with verify_jwt in ${CONFIG_TOML}: declare whether it requires a session before deploying it`);
+  }
+  const args = deployArgs({ slug, projectRef: PROJECT_REF, importMap: IMPORT_MAP, verifyJwt });
 
   console.log(`\n→ supabase ${args.join(' ')}`);
   if (dryRun) {
@@ -143,6 +138,7 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
+  const declared = readDeclaredVerifyJwt(await Bun.file(CONFIG_TOML).text());
   const { slugs, reason } = await resolveTargets(before, after, allSlugs);
   console.log(`Target: ${reason}`);
 
@@ -155,7 +151,7 @@ async function main(): Promise<void> {
   const failed: string[] = [];
   for (const slug of slugs) {
     try {
-      await deployOne(slug, dryRun);
+      await deployOne(slug, dryRun, declared);
     }
     catch (err) {
       console.error(`  ✗ ${(err as Error).message}`);
