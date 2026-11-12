@@ -895,6 +895,7 @@ export type Database = {
           plan_expires_at: string | null
           planning_selection: Json
           presupuesto_semana_euros: number | null
+          recorrido_visto: boolean
           stripe_customer_id: string | null
           stripe_livemode: boolean | null
           stripe_subscription_id: string | null
@@ -940,6 +941,7 @@ export type Database = {
           plan_expires_at?: string | null
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
+          recorrido_visto?: boolean
           stripe_customer_id?: string | null
           stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
@@ -985,6 +987,7 @@ export type Database = {
           plan_expires_at?: string | null
           planning_selection?: Json
           presupuesto_semana_euros?: number | null
+          recorrido_visto?: boolean
           stripe_customer_id?: string | null
           stripe_livemode?: boolean | null
           stripe_subscription_id?: string | null
