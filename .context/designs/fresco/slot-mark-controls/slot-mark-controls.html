@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresco · Controles de marca del hueco (mockup FRESCO-1199)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:#0F4E0E; --tertiary:#6F5F43; --background:#FAF3E3; --surface:#F1E3C6; --raised:#FBF6EC;
+  --text:#201E1D; --border:color-mix(in srgb,#201E1D 16%,transparent); --neutral-600:#847456;
+  --accent-100:#E1E8E0; --accent-200:#BFCFBD; --accent-700:#052D05; --error:#B03D2B;
+  --error-tint:color-mix(in srgb,#B03D2B 10%,transparent);
+  --r-card:20px; --r-full:999px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --quick:150ms;
+  --display:'Young Serif',Georgia,serif; --sans:'Figtree',system-ui,sans-serif;
+}
+* { box-sizing:border-box; margin:0; }
+body { font:400 15px/1.55 var(--sans); color:var(--text); background:var(--background); -webkit-font-smoothing:antialiased; padding:32px 24px 64px; }
+::selection { background:var(--accent-200); }
+svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+h1 { font:400 36px/1.08 var(--display); letter-spacing:-.02em; }
+.lede { color:var(--tertiary); margin-top:8px; max-width:62ch; }
+section { margin-top:40px; }
+section > h2 { font:600 18px/1.3 var(--sans); letter-spacing:-.005em; }
+.note { font-size:13px; color:var(--tertiary); margin-top:2px; max-width:80ch; }
+.metric { font-size:13px; margin-top:6px; }
+.metric b { font-weight:600; }
+.row { display:flex; flex-wrap:wrap; gap:16px; margin-top:16px; align-items:flex-start; }
+.cap { font-size:12px; color:var(--tertiary); margin-bottom:6px; }
+
+/* ── The calendar slot card, as it is built today ── */
+.card { display:flex; flex-direction:column; background:var(--raised); border:1px solid var(--border); border-radius:var(--r-card);
+  box-shadow:0 1px 2px color-mix(in srgb,#201E1D 10%,transparent); overflow:hidden; }
+.card.d { opacity:.6; }
+/* The photo is 4:3 across the whole card, as built (`aspect-4/3` in components/recipe/recipe-card-media.tsx). */
+.photo { position:relative; background:var(--surface); aspect-ratio:4/3; }
+.photo.r169 { aspect-ratio:16/9; }
+.grip { position:absolute; top:8px; left:8px; width:32px; height:32px; border-radius:var(--r-full); background:color-mix(in srgb,var(--raised) 88%,transparent); display:grid; place-items:center; color:var(--tertiary); }
+.body { display:flex; flex-direction:column; flex:1; padding:12px; }
+.kicker { font:600 12px/1.2 var(--sans); letter-spacing:.08em; text-transform:uppercase; color:var(--tertiary); }
+.title { font:600 15px/1.3 var(--sans); margin-top:2px; }
+.d .title { text-decoration:line-through; }
+.tag { display:inline-block; margin-top:6px; padding:2px 10px; border-radius:var(--r-full); background:var(--accent-100); color:var(--accent-700); font-size:12px; font-weight:600; }
+.badge { margin-top:auto; padding-top:8px; text-align:right; font:400 12px/1.3 var(--sans); text-transform:uppercase; color:var(--tertiary); }
+.badge.ok { color:var(--primary); }
+.ctl { margin-top:auto; padding-top:12px; }
+
+button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; padding:0; }
+button:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.lbl { font:600 12px/1 var(--sans); white-space:nowrap; }
+
+/* Hoy: two stacked full-width bordered pills (FRESCO-373, FRESCO-974) */
+.hoy { display:flex; flex-wrap:wrap; gap:8px; }
+.hoy button { flex:1 1 auto; min-height:44px; display:flex; align-items:center; justify-content:center; gap:8px; border:1px solid var(--neutral-600); border-radius:var(--r-full); color:var(--tertiary); }
+.hoy .lbl { font-size:13px; }
+
+/* A: one segmented pill */
+.seg { display:flex; min-height:44px; border:1px solid var(--neutral-600); border-radius:var(--r-full); overflow:hidden; }
+.seg button { flex:1 1 auto; min-height:44px; min-width:44px; display:flex; align-items:center; justify-content:center; gap:4px; padding:0 6px; color:var(--tertiary); transition:background-color var(--quick) ease,color var(--quick) ease; }
+.seg button + button { border-left:1px solid var(--border); }
+.seg button:hover { background:var(--accent-100); color:var(--primary); }
+.seg button.bad:hover { background:var(--error-tint); color:var(--error); }
+.seg button:focus-visible { outline-offset:-4px; border-radius:var(--r-full); }
+
+/* B: borderless actions under a hairline */
+.light { display:flex; gap:4px; border-top:1px solid var(--border); padding-top:4px; }
+.light button { flex:1 1 auto; min-height:44px; min-width:44px; display:flex; align-items:center; justify-content:center; gap:4px; padding:0 6px; border-radius:var(--r-full); color:var(--tertiary); transition:background-color var(--quick) ease,color var(--quick) ease; }
+.light button:hover { background:var(--surface); color:var(--primary); }
+.light button.bad:hover { background:var(--error-tint); color:var(--error); }
+.ctl.b { padding-top:8px; }
+
+/* C: icon buttons over the photo, no height in the body */
+/* The button box stays 44 x 44 (the e2e measures the element itself); what the person sees is a 34 px circle with a 13 px glyph inside it. */
+.ov { position:absolute; right:4px; bottom:4px; display:flex; gap:2px; }
+.ov button { min-width:44px; height:44px; padding:0 5px; display:flex; align-items:center; justify-content:center; border-radius:var(--r-full); color:var(--tertiary); }
+.ov button > i { min-width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--r-full); background:var(--raised); border:1px solid var(--neutral-600);
+  transition:background-color var(--quick) ease,padding var(--fast) var(--ease-out); }
+.ov button svg { width:13px; height:13px; }
+/* The word the icon stands for: closed by default, opens beside the icon on hover and on keyboard focus. */
+.ov .w { font:600 12px/1 var(--sans); white-space:nowrap; max-width:0; opacity:0; margin-left:0; overflow:hidden;
+  transition:max-width var(--fast) var(--ease-out),opacity var(--quick) ease,margin-left var(--fast) var(--ease-out); }
+.ov button:focus-visible, .ov button[data-force] { color:var(--primary); }
+.ov button.bad:focus-visible, .ov button.bad[data-force] { color:var(--error); }
+.ov button:focus-visible > i, .ov button[data-force] > i { padding:0 10px; background:var(--accent-100); }
+.ov button.bad:focus-visible > i, .ov button.bad[data-force] > i { background:var(--error-tint); }
+.ov button:focus-visible .w, .ov button[data-force] .w { max-width:64px; opacity:1; margin-left:6px; }
+.ov button:focus-visible { outline-offset:-2px; }
+/* Hover only where a pointer can hover: a phone has no hover, there the icons stay as they are. */
+@media (hover:hover) and (pointer:fine) {
+  .ov button:hover { color:var(--primary); }
+  .ov button.bad:hover { color:var(--error); }
+  .ov button:hover > i { padding:0 10px; background:var(--accent-100); }
+  .ov button.bad:hover > i { background:var(--error-tint); }
+  .ov button:hover .w { max-width:64px; opacity:1; margin-left:6px; }
+}
+.chip { position:absolute; right:8px; top:8px; display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:var(--r-full); background:var(--raised); border:1px solid var(--border); font:600 12px/1.2 var(--sans); color:var(--tertiary); }
+.chip.ok { color:var(--primary); }
+
+@media (prefers-reduced-motion:reduce) { .seg button,.light button,.ov button > i { transition:none; } .ov .w { transition:opacity var(--quick) ease; } }
+</style>
+</head>
+<body>
+
+<h1>Marcar un plato: varias formas</h1>
+<p class="lede">La tarjeta de un hueco del calendario, tal como se construye hoy (foto 4:3 a todo el ancho), con propuestas para sus controles de marca. Cada propuesta muestra los cuatro estados y una tarjeta del ancho de un móvil. Los nombres de plato y las fotos son de relleno.</p>
+
+<div id="app"></div>
+
+<script>
+const I = {
+  check:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  undo:'<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  swap:'<svg viewBox="0 0 24 24"><path d="M7 4 3 8l4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/></svg>',
+  grip:'<svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg>'
+};
+const btn = (cls, icon, text, label) => `<button type="button" class="${cls}" aria-label="${label}">${icon}<span class="lbl">${text}</span></button>`;
+const iconBtn = (cls, icon, label, text, force) => `<button type="button" class="${cls}" aria-label="${label}"${force ? ' data-force' : ''}><i>${icon}<span class="w" aria-hidden="true">${text}</span></i></button>`;
+const WHERE = 'Lentejas estofadas con verduras, lunes, comida';
+
+/* Controls per proposal and state. The accessible names keep starting with the visible word. */
+function controls(opt, state) {
+  const pending = state === 'pending', cooked = state === 'cooked';
+  if (opt === 'hoy') {
+    return pending ? `<div class="ctl"><div class="hoy">${btn('', I.check,'Cocinado',`Cocinado: ${WHERE}`)}${btn('bad', I.x,'Descartar',`Descartar: ${WHERE}`)}</div></div>` : '';
+  }
+  const pair = pending
+    ? [['', I.check,'Cocinado',`Cocinado: ${WHERE}`], ['bad', I.x,'Descartar',`Descartar: ${WHERE}`]]
+    : [['', I.undo,'Quitar',`Quitar marca: ${WHERE}`], [cooked ? 'bad' : '', I.swap,'Cambiar',`Cambiar a ${cooked ? 'descartado' : 'cocinado'}: ${WHERE}`]];
+  if (state === 'past') { return ''; }
+  if (opt === 'a') { return `<div class="ctl"><div class="seg">${pair.map(p => btn(...p)).join('')}</div></div>`; }
+  if (opt === 'b') { return `<div class="ctl b"><div class="light">${pair.map(p => btn(...p)).join('')}</div></div>`; }
+  return '';
+}
+function overlay(opt, state, demo) {
+  if (opt[0] !== 'c') { return ''; }
+  const pending = state === 'pending', cooked = state === 'cooked';
+  const chip = pending ? '' : `<span class="chip ${state === 'discarded' ? '' : 'ok'}">${state === 'discarded' ? I.x : I.check}${state === 'discarded' ? 'Descartado' : 'Cocinado'}</span>`;
+  if (state === 'past') { return chip; }
+  const pair = pending
+    ? [['', I.check, `Cocinado: ${WHERE}`, 'Cocinado'], ['bad', I.x, `Descartar: ${WHERE}`, 'Descartar']]
+    : [['', I.undo, `Quitar marca: ${WHERE}`, 'Quitar'], [cooked ? 'bad' : '', I.swap, `Cambiar a ${cooked ? 'descartado' : 'cocinado'}: ${WHERE}`, 'Cambiar']];
+  return `${chip}<div class="ov">${pair.map((p, i) => iconBtn(...p, demo === i)).join('')}</div>`;
+}
+function badge(opt, state) {
+  if (opt[0] === 'c' || state === 'pending') { return ''; }
+  return `<p class="badge ${state === 'discarded' ? '' : 'ok'}">${state === 'discarded' ? 'Descartado' : 'Cocinado'}</p>`;
+}
+function card(opt, state, width, demo) {
+  return `<article class="card ${state === 'discarded' ? 'd' : ''}" style="width:${width}px">
+    <div class="photo ${opt === 'c2' ? 'r169' : ''}"><span class="grip" aria-hidden="true">${I.grip}</span>${overlay(opt, state, demo)}</div>
+    <div class="body">
+      <p class="kicker">Legumbres</p>
+      <h3 class="title">Lentejas estofadas con verduras</h3>
+      <div><span class="tag">Vegano</span></div>
+      ${badge(opt, state)}${controls(opt, state)}
+    </div>
+  </article>`;
+}
+const STATES = [['pending','Pendiente'],['cooked','Cocinado, semana actual'],['discarded','Descartado, semana actual'],['past','Cocinado, semana pasada']];
+
+const SECTIONS = [
+  { opt:'hoy', title:'Hoy', note:'Dos botones de ancho completo con borde, apilados cuando la columna es estrecha.' },
+  { opt:'a', title:'Propuesta A: barra segmentada', note:'Una sola píldora partida en dos, en una fila. Cada mitad mide 44 px de alto y más de 44 px de ancho.' },
+  { opt:'b', title:'Propuesta B: acciones ligeras', note:'Sin bordes, bajo un trazo fino. El peso visual baja más, el botón sigue midiendo 44 px.' },
+  { opt:'c2', title:'Propuesta C2: sobre la foto y con la foto más baja (16:9)', note:'Igual que C, pero con la foto en 16:9 en vez de 4:3. Es lo que más reduce la tarjeta, y cambia el recorte de foto que se unificó en FRESCO-447: decisión tuya, fuera del alcance de este ticket.' },
+  { opt:'c', title:'Propuesta C: sobre la foto (iconos más pequeños)', note:'Dos botones de solo icono sobre la foto y el estado como etiqueta en la foto. Se ve un círculo de 34 px con un icono de 13 px; la caja del botón mide 44 px, que es lo que comprueba el test de accesibilidad. El cuerpo de la tarjeta no gana altura de controles, pero se pierde la palabra visible.' }
+];
+
+const app = document.getElementById('app');
+app.innerHTML = SECTIONS.map(s => {
+  const states = s.opt === 'hoy' ? STATES.slice(0,1) : STATES;
+  return `<section data-opt="${s.opt}">
+    <h2>${s.title}</h2><p class="note">${s.note}</p><p class="metric" data-metric></p>
+    <div class="row">
+      ${states.map(([k, name]) => `<div><p class="cap">${name} · columna de escritorio</p>${card(s.opt, k, 190, false)}</div>`).join('')}
+      ${s.opt[0] === 'c' ? `<div data-demo><p class="cap">Con el ratón sobre Cocinado</p>${card(s.opt, 'pending', 190, 0)}</div><div data-demo><p class="cap">Con el ratón sobre Descartar</p>${card(s.opt, 'pending', 190, 1)}</div>` : ''}
+      <div><p class="cap">Pendiente · móvil (sin hover: solo iconos)</p>${card(s.opt, 'pending', 358)}</div>
+    </div>
+  </section>`;
+}).join('');
+
+/* Measure, do not claim: the height the controls take inside the narrow card. */
+function height(section) {
+  const ctl = section.querySelector('.row > div:first-child .ctl');
+  return ctl ? Math.round(ctl.getBoundingClientRect().height) : 0;
+}
+const cardHeights = sec => {
+  const cards = sec.querySelectorAll('.card');
+  return { desktop: Math.round(cards[0].getBoundingClientRect().height), phone: Math.round(cards[cards.length - 1].getBoundingClientRect().height) };
+};
+document.fonts.ready.then(() => {
+  const baseCtl = height(document.querySelector('[data-opt="hoy"]'));
+  const base = cardHeights(document.querySelector('[data-opt="hoy"]'));
+  document.querySelectorAll('section').forEach(sec => {
+    const h = height(sec), c = cardHeights(sec), el = sec.querySelector('[data-metric]');
+    const vs = (now, then) => sec.dataset.opt === 'hoy' ? '' : ` (hoy ${then} px)`;
+    el.innerHTML = `Controles en la columna de 190 px: <b>${h} px</b>${vs(h, baseCtl)}. Tarjeta pendiente completa: <b>${c.desktop} px</b> en escritorio${vs(c.desktop, base.desktop)} y <b>${c.phone} px</b> en móvil${vs(c.phone, base.phone)}.`;
+  });
+});
+</script>
+</body>
+</html>

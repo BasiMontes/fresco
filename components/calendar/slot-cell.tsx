@@ -126,30 +126,35 @@ export function SlotCell({ dia, tipo, recipe, dbSlotId, estado, pending, dropDis
           categoria={recipe.clasificacion?.categoria}
           priority={priority}
           sizes="240px"
+          data-testid={`calendar_slot_${dia}_${tipo}_photo`}
           // FRESCO-159 — no drag handle for desayuno: user-reported finding,
           // breakfast slots don't need drag & drop. Not rendering the handle
           // is sufficient to disable dragging entirely — no need to also flip
           // `useDraggable`'s `disabled`.
-          overlay={tipo !== 'desayuno' && (
-            <SlotDragHandle listeners={listeners} attributes={attributes} disabled={disabled} />
+          //
+          // FRESCO-1199 — the mark controls and the state chip ride on the photo too: the handle is
+          // top-left, the chip top-right, the buttons bottom-right. The body keeps only the recipe.
+          overlay={(
+            <>
+              {tipo !== 'desayuno' && (
+                <SlotDragHandle listeners={listeners} attributes={attributes} disabled={disabled} />
+              )}
+              {estado !== 'pendiente' && (
+                <SlotEstadoBadge dia={dia} tipo={tipo} estado={estado} />
+              )}
+              {estado === 'pendiente' && (
+                <SlotMarkControls dia={dia} tipo={tipo} nombre={recipe.nombre} pending={pending} onMark={onMark} />
+              )}
+              {canChangeMark && (estado === 'cocinada' || estado === 'descartada') && (
+                <SlotChangeMarkControls dia={dia} tipo={tipo} nombre={recipe.nombre} estado={estado} pending={pending} onMark={onMark} />
+              )}
+            </>
           )}
         />
       )}
 
-      <div className="flex flex-1 flex-col p-3">
+      <div data-testid={`calendar_slot_${dia}_${tipo}_body`} className="flex flex-1 flex-col p-3">
         <SlotContent dia={dia} tipo={tipo} recipe={recipe} estado={estado} />
-
-        {recipe && estado === 'pendiente' && (
-          <SlotMarkControls dia={dia} tipo={tipo} nombre={recipe.nombre} pending={pending} onMark={onMark} />
-        )}
-
-        {recipe && estado !== 'pendiente' && (
-          <SlotEstadoBadge dia={dia} tipo={tipo} estado={estado} />
-        )}
-
-        {recipe && canChangeMark && (estado === 'cocinada' || estado === 'descartada') && (
-          <SlotChangeMarkControls dia={dia} tipo={tipo} estado={estado} pending={pending} onMark={onMark} />
-        )}
       </div>
     </div>
   );

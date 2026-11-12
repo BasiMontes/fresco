@@ -279,6 +279,20 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   from the 2px `icon` set; scroll affordance arrows at full `primary`.
 - **Components.** `components/calendar/calendar-grid.tsx`, `week-navigation.tsx`,
   `delete-week-button.tsx`, `generate-week-button.tsx`; `@dnd-kit/core` for drag.
+- **Slot mark controls (FRESCO-1199, mockup ratified by the owner 2026-11-12, option C).** The
+  "Cocinado" / "Descartar" buttons stop living in the card body. They become two icon buttons over the
+  bottom-right of the slot photo (check and X), and once a slot is marked inside the current week the
+  same place holds "Quitar marca" and the switch to the other mark. The marked state is a chip over the
+  top-right of the photo, mirrored from the drag handle that sits at the top-left (`slot-drag-handle.tsx`); the mockup first drew them the other way round and was corrected after reading the code (the body badge goes away). A slot in a past week shows the chip and nothing to
+  press. What the person sees is a 34 px circle with a 13 px glyph; the button box stays 44 x 44 because
+  the e2e step `todos los elementos interactivos miden al menos 44 px` measures the element itself. On
+  hover (pointer devices only) and on keyboard focus the circle opens into a pill with the word
+  ("Cocinado", "Descartar", "Quitar", "Cambiar"), 250 ms `ease-smooth-out`, reduced motion keeps only the
+  fade; a phone has no hover, so there the icons stay as they are. The accessible names do not change
+  (FRESCO-1013: they start with the visible word and name the dish, the day and the slot). When a slot can
+  be marked is NOT part of this change. Measured on the mockup with the real 4:3 photo: the card goes from
+  359 to 251 px in a 190 px column and from 413 to 357 px at phone width. Open: on a phone the words are
+  never visible; the owner will judge it on a real device before the story closes.
 - **Checklist.** [ ] week label unambiguous across month boundaries (DEFECT-FRESCO-109) · [ ] delete
   needs confirmation · [ ] cannot plan past weeks (DEFECT-FRESCO-209) · [ ] no false "Pro feature"
   banner (DEFECT-FRESCO-103) · [ ] meal-row header does not detach on horizontal scroll
@@ -703,6 +717,7 @@ stories) are listed at the end.
 | FRESCO-1070 | UX: sacar Preferencias de /profile a una subpágina y repartir las filas en dos tarjetas (Preferencias y ayuda / Legal) | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.13 Profile (`/profile`, tarjetas "Preferencias y ayuda" y "Legal") y `/profile/preferences` (no §4 spec of its own; §5-AA) · built LIVE-UI-FIRST, sin mockup, `Card`, botón de volver de FRESCO-451 y tokens existentes | 4.17 App shell (enlaces `/profile#ayuda` del sidebar) |
 | FRESCO-1134 | Producto: Landing, revisar grillas y orden de secciones para bajar la nota de Anti Web Slop (48 %) | EPIC-FRESCO-884 Preparación del lanzamiento público | 4.1 Landing (reestructura: vídeo tras el hero, pasos verticales con foto, dolor en filas, línea de tiempo Pro, planes asimétricos, sin `impact-stats`) · mockup ratificado 2026-11-06 en `.context/designs/fresco/landing-restructure/`, construido en #912 (`70399963`, staging) | — |
 | FRESCO-1197 | Onboarding: guía de primera visita (recorrido de 5 paradas) y opción de volver a verla en Configuración | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.21 First-visit tour (overlay + fila "Ver el recorrido" en Configuración) · mockup ratificado 2026-11-12 en `.context/designs/fresco/first-visit-tour/`, construido en #986 a #989 y llevado a `staging` en #990 | 4.6 Onboarding (disparo al terminar), 4.7 Home, 4.8 Calendar, 4.10 Recipe library, 4.9 Shopping list, 4.13 Profile, 4.17 App shell |
+| FRESCO-1199 | Menu: rediseñar los botones Cocinado y Descartar, que ocupan más que la propia receta | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.8 Calendar (slot mark controls: iconos sobre la foto, chip de estado, palabra al pasar el ratón) · mockup ratificado 2026-11-12 en `.context/designs/fresco/slot-mark-controls/` (opción C), sin construir | 4.17 App shell |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -712,7 +727,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 48 stories enumerated · **48 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
+**Count:** 49 stories enumerated · **49 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.
