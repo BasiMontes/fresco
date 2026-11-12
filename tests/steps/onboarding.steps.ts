@@ -211,6 +211,19 @@ Then(/^al pulsar "Ver resumen" vuelve al resumen con el alérgeno reflejado$/, a
 // the second "Empezar" gets the real conflict from `generate-meal-plan`.
 
 When(/^vuelve al onboarding y llega al resumen$/, async ({ page }) => {
+  // FRESCO-1148: the wizard persists its step in sessionStorage and only resets it when the onboarding
+  // page UNMOUNTS after a successful generation (use-onboarding-funnel-tracking.ts, FRESCO-201). In CI
+  // the first attempt sometimes went back to /onboarding while the old step was still stored, rehydrated
+  // on the summary, and `next_button` never appeared (90 s timeout; the retry passed in 6 s). Wait for the
+  // documented reset instead of assuming it already ran. If it never happens, this fails with its own
+  // message, which is an app defect (FRESCO-94), not a flake.
+  await expect.poll(
+    async () => page.evaluate(() => {
+      const stored = window.sessionStorage.getItem('fresco-onboarding');
+      return stored ? (JSON.parse(stored) as { state?: { step?: number } }).state?.step ?? null : null;
+    }),
+    { message: 'the onboarding store still holds the summary step after generating the menu', timeout: 10_000 },
+  ).not.toBe(4);
   await page.goto('/onboarding');
   await expect(page.getByTestId('step_indicator_label')).toBeVisible();
   await page.getByTestId('next_button').click();
