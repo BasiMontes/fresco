@@ -1,6 +1,20 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { recordConsents, sendSeedRequest } from './test-helpers';
-import { deleteTrackedUsers } from './test-user-factory';
+import { buildProfileRow, deleteTrackedUsers } from './test-user-factory';
+
+/**
+ * FRESCO-1197: a profile created now starts as "not seen" and the first-visit tour would open over every
+ * scenario, so the factory seeds the account as having seen it, unless a scenario asks for the tour.
+ */
+describe('buildProfileRow', () => {
+  test('marks the tour as seen by default, so its overlay does not cover the screen under test', () => {
+    expect(buildProfileRow('user-1', false)).toEqual({ id: 'user-1', recorrido_visto: true });
+  });
+
+  test('leaves the profile as the app creates it when the scenario wants the tour', () => {
+    expect(buildProfileRow('user-1', true)).toEqual({ id: 'user-1' });
+  });
+});
 
 /**
  * FRESCO-1136: a 502 from the gateway of the local Supabase stack ("An invalid response was received from
