@@ -24,6 +24,7 @@ let nombreSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getUserNombre'>>;
 let planSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getUserPlan'>>;
 let profileSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'hasUserProfile'>>;
 let consentsSpy: ReturnType<typeof spyOn<typeof consentStatus, 'getMissingConsents'>>;
+let tourSeenSpy: ReturnType<typeof spyOn<typeof userProfileApi, 'getHasSeenTour'>>;
 let errorSpy: ReturnType<typeof spyOn<typeof console, 'error'>>;
 
 beforeEach(() => {
@@ -37,13 +38,15 @@ beforeEach(() => {
   planSpy = spyOn(userProfileApi, 'getUserPlan').mockResolvedValue('free');
   profileSpy = spyOn(userProfileApi, 'hasUserProfile').mockResolvedValue(true);
   consentsSpy = spyOn(consentStatus, 'getMissingConsents').mockResolvedValue([]);
+  // FRESCO-1197: by default the account has already seen the first-visit tour, so its overlay stays out of the way.
+  tourSeenSpy = spyOn(userProfileApi, 'getHasSeenTour').mockResolvedValue(true);
   errorSpy = spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
   redirectMock.mockImplementation(() => {});
   window.matchMedia = realMatchMedia;
-  for (const spy of [nombreSpy, planSpy, profileSpy, consentsSpy, errorSpy]) { spy.mockRestore(); }
+  for (const spy of [nombreSpy, planSpy, profileSpy, consentsSpy, tourSeenSpy, errorSpy]) { spy.mockRestore(); }
 });
 
 const layout = async () => AppGroupLayout({ children: <p data-testid="page_child">contenido</p> });
@@ -122,5 +125,45 @@ describe('AppGroupLayout consents', () => {
     await renderLayout();
     expect(screen.getByTestId('page_child')).toBeInTheDocument();
     expect(screen.queryByTestId('reconsent_dialog')).toBeNull();
+  });
+});
+
+// FRESCO-1197: the first-visit tour opens by itself for a registered account that finished onboarding,
+// has not seen it and has no terms pending. Anything else leaves it closed; a failed read fails CLOSED.
+describe('AppGroupLayout first-visit tour', () => {
+  test('opens for a registered account that has not seen it', async () => {
+    tourSeenSpy.mockResolvedValue(false);
+    await renderLayout();
+    expect(await screen.findByTestId('tour_dialog')).toBeInTheDocument();
+    expect(tourSeenSpy).toHaveBeenCalledWith(expect.anything(), 'user-1');
+  });
+
+  test('stays closed for an account that already saw it', async () => {
+    await renderLayout();
+    expect(screen.queryByTestId('tour_dialog')).toBeNull();
+  });
+
+  test('never opens for a guest, and reads nothing for one', async () => {
+    user = { id: 'guest-1', is_anonymous: true };
+    tourSeenSpy.mockResolvedValue(false);
+    await renderLayout();
+    expect(tourSeenSpy).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('tour_dialog')).toBeNull();
+  });
+
+  test('a failing read fails closed: a database blip never shows the tour to everybody', async () => {
+    tourSeenSpy.mockRejectedValue(new Error('db down'));
+    await renderLayout();
+    expect(screen.getByTestId('page_child')).toBeInTheDocument();
+    expect(screen.queryByTestId('tour_dialog')).toBeNull();
+    expect(errorSpy).toHaveBeenCalled();
+  });
+
+  test('waits while the terms are pending: the dialog that asks for them goes first', async () => {
+    tourSeenSpy.mockResolvedValue(false);
+    consentsSpy.mockResolvedValue(['terms'] as never);
+    await renderLayout();
+    expect(await screen.findByTestId('reconsent_dialog')).toBeInTheDocument();
+    expect(screen.queryByTestId('tour_dialog')).toBeNull();
   });
 });

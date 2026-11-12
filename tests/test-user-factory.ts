@@ -59,6 +59,18 @@ export interface CreateTestUserOptions {
    * @default false
    */
   withoutConsents?: boolean
+  /**
+   * FRESCO-1197: by default the user has already seen the first-visit tour, so its overlay does not cover
+   * the screen under test: a profile created now starts as "not seen" and the tour would open over every
+   * scenario. `true` leaves it as the app creates it, which is what a brand-new account looks like.
+   * @default false
+   */
+  withTour?: boolean
+}
+
+/** The `user_profiles` row the factory seeds. See `CreateTestUserOptions.withTour`. */
+export function buildProfileRow(userId: string, withTour: boolean): { id: string, recorrido_visto?: true } {
+  return withTour ? { id: userId } : { id: userId, recorrido_visto: true };
 }
 
 export type TestUserFactory = (options?: CreateTestUserOptions) => Promise<TestUser>;
@@ -97,7 +109,7 @@ async function deleteAuthUser(request: APIRequestContext, userId: string): Promi
   }
 }
 
-async function createUserProfileRow(request: APIRequestContext, userId: string, accessToken: string, plan: NonNullable<CreateTestUserOptions['plan']>): Promise<void> {
+async function createUserProfileRow(request: APIRequestContext, userId: string, accessToken: string, plan: NonNullable<CreateTestUserOptions['plan']>, withTour: boolean): Promise<void> {
   // Two-step seed (FRESCO-360): the row is INSERTed exactly how the real app
   // does it — the signed-in user's own token, no `plan` override, so it
   // DB-defaults to `'free'`. `protect_subscription_columns` (ADR-0007) is now
@@ -109,7 +121,7 @@ async function createUserProfileRow(request: APIRequestContext, userId: string, 
   // reach the database before the gateway answered, so the row is already there.
   const { res, retried } = await sendSeedRequest(async () => request.post(`${supabaseUrl()}/rest/v1/user_profiles`, {
     headers: { ...restHeaders(accessToken), Prefer: 'return=minimal' },
-    data: { id: userId },
+    data: buildProfileRow(userId, withTour),
   }));
   const alreadySeeded = retried && res.status() === 409;
   if (!res.ok() && !alreadySeeded) { throw new Error(`[test-user-factory] Failed to seed user_profiles for ${userId}: ${res.status()} ${await res.text()}`); }
@@ -164,7 +176,7 @@ export function createTestUserFactory(request: APIRequestContext): { factory: Te
     // from it, instead of leaking it into the shared backend.
     createdIds.push(id);
     const accessToken = await getAccessToken(request, email, password);
-    await createUserProfileRow(request, id, accessToken, options.plan ?? 'free');
+    await createUserProfileRow(request, id, accessToken, options.plan ?? 'free', options.withTour ?? false);
     if (!options.withoutConsents) { await recordConsents(id, ['age_14', 'terms', 'privacy']); }
     return { id, email, password, accessToken };
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import { HelpCircle, Settings, SlidersHorizontal } from 'lucide-react';
+import { HelpCircle, RotateCcw, Settings, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CaptchaField } from '@/components/auth/captcha-field';
 import { useCaptcha } from '@/components/auth/use-captcha';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { sendPasswordReset } from '@/lib/client-api/auth';
 import { useAccountModalStore } from '@/lib/store/account-modal-store';
+import { useTourStore } from '@/lib/store/tour-store';
 
 interface FaqItem {
   question: string
@@ -112,6 +113,12 @@ export function AyudaSection({ email, planLabel, memberSince, preferencesSummary
     useAccountModalStore.getState().clear();
   }, [requestedModal]);
 
+  // FRESCO-1197: close the modal and ask the layout's tour to start again from the first stop.
+  function startTour() {
+    setOpenModal(null);
+    useTourStore.getState().requestReplay();
+  }
+
   async function handleSendPasswordReset() {
     setIsSendingReset(true);
     setResetError(false);
@@ -214,6 +221,17 @@ export function AyudaSection({ email, planLabel, memberSince, preferencesSummary
                   </>
                 )}
           </div>
+          {/* FRESCO-1197: replay the first-visit tour. Registered accounts only: a guest (empty email) never gets it. */}
+          {email !== '' && (
+            <div>
+              <h3 className="text-label mb-1">Recorrido</h3>
+              <p className="text-tertiary">Repasa en cinco paradas cómo funciona Fresco. No cambia ningún dato de tu cuenta.</p>
+              <Button type="button" variant="secondary" size="sm" className="mt-2" data-testid="ver_recorrido_button" onClick={startTour}>
+                <RotateCcw className="size-4" aria-hidden="true" />
+                Ver el recorrido
+              </Button>
+            </div>
+          )}
           <p className="text-body-sm text-tertiary">
             ¿Quieres cambiar tu dieta o alérgenos? Edítalos en "Preferencias", en esta misma tarjeta.
           </p>
