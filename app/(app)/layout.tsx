@@ -3,12 +3,14 @@ import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { ServiceWorkerRegistrar } from '@/components/layout/service-worker-registrar';
 import { ReconsentDialog } from '@/components/legal/reconsent-dialog';
-import { getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
+import { FirstVisitTour } from '@/components/onboarding/first-visit-tour/first-visit-tour';
+import { getHasSeenTour, getUserNombre, getUserPlan, hasUserProfile } from '@/lib/api/user-profile';
 import { getAuthUser } from '@/lib/auth/current-user';
 import { loginUrlFor } from '@/lib/auth/login-redirect';
 import { parseSidebarCollapsed, SIDEBAR_COLLAPSED_COOKIE } from '@/lib/layout/sidebar-preference';
 import { getMissingConsents } from '@/lib/legal/consent-status';
 import { createClient } from '@/lib/supabase/server';
+import { shouldAutoStartTour } from '@/lib/tour/should-auto-start';
 
 /**
  * Fetches the signed-in user's account info once here (FRESCO-82) — every
@@ -38,7 +40,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
 
   if (!user) { redirect(loginUrlFor((await headers()).get('x-pathname'))); }
 
-  const [nombre, plan, profileExists, missingConsents] = await Promise.all([
+  const [nombre, plan, profileExists, missingConsents, tourSeen] = await Promise.all([
     getUserNombre(supabase, user.id).catch((error) => {
       console.error('[AppGroupLayout] getUserNombre failed, defaulting to null', error);
       return null;
@@ -69,6 +71,15 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
           console.error('[AppGroupLayout] getMissingConsents failed, not asking', error);
           return [];
         }),
+    // FRESCO-1197: has this account seen the first-visit tour. A guest never gets it, so nothing is read for
+    // one. Fails CLOSED (answers "seen"): a tour that does not appear is harmless, one that appears to
+    // everybody because of a database blip is not.
+    user.is_anonymous
+      ? Promise.resolve(true)
+      : getHasSeenTour(supabase, user.id).catch((error) => {
+          console.error('[AppGroupLayout] getHasSeenTour failed, not showing the tour', error);
+          return true;
+        }),
   ]);
 
   // FRESCO-250: an authenticated user with no `user_profiles` row never
@@ -86,6 +97,14 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
       {/* FRESCO-979: offline screen for every signed-in user. */}
       <ServiceWorkerRegistrar />
       {missingConsents.length > 0 && <ReconsentDialog missing={missingConsents} />}
+      {/* FRESCO-1197: first-visit tour. Mounted for every registered account so Configuración can replay it; it
+          opens by itself only when `shouldAutoStartTour` says so. A guest never gets it. */}
+      {!user.is_anonymous && (
+        <FirstVisitTour
+          plan={plan}
+          autoStart={shouldAutoStartTour({ isAnonymous: false, profileExists, seen: tourSeen, missingConsents: missingConsents.length })}
+        />
+      )}
       <AppShell
         user={{ nombre, email: user.email ?? '', plan, isAnonymous: user.is_anonymous ?? false }}
         sidebarCollapsed={sidebarCollapsed}

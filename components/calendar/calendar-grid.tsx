@@ -129,7 +129,7 @@ export function CalendarGrid({
   const { visibleDays, startIndex, setStartIndex, canGoPrevDay, canGoNextDay, hasDayOverflow } = useVisibleDayWindow(planningDays, { containerRef, focusDia: diaHoy });
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} data-tour="calendar-grid" className="relative">
       {/* FRESCO-516: shares the grid's day-header row instead of its own row
           above it — that row used to be nearly empty (buttons right-aligned,
           nothing to their left), reading as a band of dead white space above

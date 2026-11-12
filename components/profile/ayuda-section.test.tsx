@@ -2,7 +2,9 @@ import { AuthApiError } from '@supabase/supabase-js';
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { CookieConsentProvider } from '@/components/legal/cookie-consent-context';
 import * as authApi from '@/lib/client-api/auth';
+import * as userProfileClient from '@/lib/client-api/user-profile';
 import { useAccountModalStore } from '@/lib/store/account-modal-store';
+import { useTourStore } from '@/lib/store/tour-store';
 import { act, fireEvent, renderWithProviders, screen, waitFor } from '@/tests/component-render';
 import { AyudaSection } from './ayuda-section';
 
@@ -122,6 +124,48 @@ describe('AyudaSection settings modal', () => {
     expect(await screen.findByTestId('password_reset_error_message')).toBeInTheDocument();
     expect(screen.queryByTestId('password_reset_sent_message')).toBeNull();
     await waitFor(() => expect(screen.getByTestId('cambiar_contrasena_button')).not.toBeDisabled());
+  });
+});
+
+// FRESCO-1197: the first-visit tour can be replayed from the settings modal. Registered accounts only,
+// and replaying changes nothing on the account.
+describe('AyudaSection first-visit tour replay', () => {
+  afterEach(() => {
+    useTourStore.getState().clear();
+  });
+
+  test('offers the tour in the settings modal to a registered account', () => {
+    renderSection();
+
+    fireEvent.click(screen.getByTestId('ayuda_row_configuracion'));
+
+    const modal = screen.getByTestId('settings_modal');
+    expect(modal).toHaveTextContent('Recorrido');
+    expect(modal).toHaveTextContent('No cambia ningún dato de tu cuenta.');
+    expect(screen.getByTestId('ver_recorrido_button')).toHaveTextContent('Ver el recorrido');
+  });
+
+  test('does not offer it to a guest, who never gets the tour', () => {
+    renderSection({ email: '' });
+
+    fireEvent.click(screen.getByTestId('ayuda_row_configuracion'));
+
+    expect(screen.queryByTestId('ver_recorrido_button')).toBeNull();
+  });
+
+  test('closes the modal and asks for the tour, without touching the account', async () => {
+    const markSpy = spyOn(userProfileClient, 'markTourSeen').mockResolvedValue(undefined);
+    renderSection();
+    fireEvent.click(screen.getByTestId('ayuda_row_configuracion'));
+
+    fireEvent.click(screen.getByTestId('ver_recorrido_button'));
+
+    expect(useTourStore.getState().replayRequested).toBe(true);
+    // The dialog stays mounted through its close transition; waiting for it to unmount spins on
+    // happy-dom's timers (FRESCO-419), so the test asserts it is closing.
+    expect(screen.getByTestId('settings_modal').className).toContain('is-closing');
+    expect(markSpy).not.toHaveBeenCalled();
+    markSpy.mockRestore();
   });
 });
 

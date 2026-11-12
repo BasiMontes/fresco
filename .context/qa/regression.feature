@@ -2303,6 +2303,30 @@ Característica: Flujo completo de usuario en Fresco
     Entonces las zonas táctiles de la rejilla de comidas no se solapan
 
   # ==========================================================================
+  # Recorrido de primera visita (FRESCO-1197)
+  # ==========================================================================
+
+  @recorrido @automatizado
+  # Automatizado: tests/steps/recorrido.steps.ts (FRESCO-1197)
+  # La cuenta se crea con el recorrido sin ver (withTour): la fábrica de usuarios lo deja visto por defecto
+  # para que su overlay no tape el resto de escenarios.
+  Escenario: Una cuenta nueva ve el recorrido en su primera visita y no vuelve a verlo tras saltarlo
+    Dado que Marta es una cuenta nueva que acaba de entrar
+    Entonces ve el recorrido en la parada "Tu menú de hoy"
+    Cuando pulsa "Saltar" en el recorrido
+    Entonces el recorrido se cierra
+    Y al recargar la página no vuelve a salir
+
+  @recorrido @automatizado
+  # Automatizado: tests/steps/recorrido.steps.ts (FRESCO-1197)
+  Escenario: Se puede volver a ver el recorrido desde Configuración
+    Dado que Laura está en /profile
+    Cuando abre Configuración y pulsa "Ver el recorrido"
+    Entonces ve el recorrido en la parada "Tu menú de hoy"
+    Cuando pulsa "Siguiente" en el recorrido
+    Entonces ve el recorrido en la parada "Calendario: la semana entera"
+
+  # ==========================================================================
   # Notas de infraestructura (no son Gherkin ejecutable, pero son causística
   # real encontrada en pruebas en vivo — checklist para no repetir)
   # ==========================================================================

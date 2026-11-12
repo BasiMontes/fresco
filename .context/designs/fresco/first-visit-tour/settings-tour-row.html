@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresco · Configuración con opción de recorrido (mockup FRESCO-1197)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:#0F4E0E; --primary-hover:#0A3E09; --tertiary:#6F5F43; --background:#FAF3E3; --surface:#F1E3C6; --raised:#FBF6EC;
+  --text:#201E1D; --border:color-mix(in srgb,#201E1D 16%,transparent); --accent-100:#E1E8E0; --accent-200:#BFCFBD;
+  --on-dark:#FAF3E3; --on-dark-muted:color-mix(in srgb,#FAF3E3 72%,transparent); --on-dark-border:color-mix(in srgb,#FAF3E3 22%,transparent);
+  --r-sm:6px; --r-md:12px; --r-card:20px; --r-full:999px;
+  --s-1:4.4px; --s-2:8.8px; --s-3:13.2px; --s-4:17.6px; --s-6:26.4px; --s-8:35.2px; --s-12:52.8px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --quick:150ms;
+  --display:'Young Serif',Georgia,serif; --sans:'Figtree',system-ui,sans-serif;
+  --dim:color-mix(in srgb,#201E1D 45%,transparent);
+}
+* { box-sizing:border-box; margin:0; }
+body { font:400 15px/1.55 var(--sans); color:var(--text); background:var(--background); height:100vh; overflow:hidden; -webkit-font-smoothing:antialiased; }
+::selection { background:var(--accent-200); }
+:focus-visible { outline:2px solid var(--primary); outline-offset:3px; border-radius:var(--r-sm); }
+svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+
+.app { display:grid; grid-template-columns:200px 1fr; height:100%; }
+.side { background:var(--primary); color:var(--on-dark); display:flex; flex-direction:column; padding:var(--s-4) var(--s-3); gap:var(--s-1); }
+.brand { font:700 22px/1 var(--sans); padding:var(--s-3) var(--s-3) var(--s-6); letter-spacing:-.02em; }
+.side a { display:flex; align-items:center; gap:var(--s-3); padding:0 var(--s-3); min-height:44px; border-radius:var(--r-full); color:var(--on-dark); text-decoration:none; }
+.main { padding:var(--s-8) var(--s-12); overflow:hidden; }
+.col { max-width:760px; margin-inline:auto; }
+h1 { font:400 44px/1.04 var(--display); letter-spacing:-.025em; }
+.list { margin-top:var(--s-6); background:var(--raised); border:1px solid var(--border); border-radius:var(--r-card); display:flex; flex-direction:column; }
+.row { display:flex; align-items:center; gap:var(--s-3); padding:0 var(--s-4); min-height:56px; border-top:1px solid var(--border); font-weight:600; }
+.row:first-child { border-top:0; }
+.row span.l { flex:1; }
+
+/* Scrim + dialog, same anatomy as the live Configuración modal */
+.scrim { position:fixed; inset:0; background:var(--dim); display:grid; place-items:center; padding:16px; }
+.dialog { position:relative; width:min(440px,100%); background:var(--raised); border:1px solid var(--border); border-radius:var(--r-card); padding:var(--s-6); max-height:calc(100vh - 32px); overflow:auto; }
+.dialog h2 { font:600 18px/1.3 var(--sans); letter-spacing:-.005em; padding-right:var(--s-8); }
+.x { position:absolute; top:var(--s-3); right:var(--s-3); width:44px; height:44px; display:grid; place-items:center; border:0; border-radius:var(--r-full); background:transparent; color:var(--tertiary); cursor:pointer; }
+.x:hover { background:var(--surface); }
+.fields { margin-top:var(--s-4); display:flex; flex-direction:column; gap:var(--s-4); font-size:13px; }
+.fields h3 { font:600 14px/1.2 var(--sans); margin-bottom:4px; }
+.fields p { color:var(--tertiary); }
+.btn { min-height:44px; padding:0 var(--s-4); border-radius:var(--r-full); font:600 14px/1 var(--sans); cursor:pointer; background:transparent; color:var(--text); border:1px solid var(--border); margin-top:var(--s-2); transition:transform var(--quick) var(--ease-out), background var(--quick) ease; display:inline-flex; align-items:center; gap:var(--s-2); }
+.btn:hover { background:var(--surface); }
+.btn:active { transform:scale(.97); }
+.sep { border:0; border-top:1px solid var(--border); }
+
+@media (max-width:767px) {
+  .app { grid-template-columns:1fr; } .side { display:none; }
+  .main { padding:var(--s-6) 16px; } h1 { font-size:32px; }
+  .scrim { place-items:end center; padding:0; }
+  .dialog { border-radius:var(--r-card) var(--r-card) 0 0; width:100%; max-height:88vh; }
+}
+@media (prefers-reduced-motion:reduce) { .btn { transition:none; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" aria-hidden="true">
+    <div class="brand">Fresco.</div>
+    <a href="#">Menú</a><a href="#">Calendario</a><a href="#">Recetas</a><a href="#">Lista</a>
+  </aside>
+  <main class="main" aria-hidden="true">
+    <div class="col">
+      <h1>Perfil</h1>
+      <div class="list">
+        <div class="row"><span class="l">Preferencias</span></div>
+        <div class="row"><span class="l">Configuración</span></div>
+        <div class="row"><span class="l">Preguntas frecuentes</span></div>
+        <div class="row"><span class="l">Privacidad</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="scrim">
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="cfg-title">
+    <button class="x" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h2 id="cfg-title">Configuración</h2>
+    <div class="fields">
+      <div><h3>Email</h3><p>marta@ejemplo.es</p></div>
+      <div><h3>Plan actual</h3><p>Plan Free</p></div>
+      <div><h3>Miembro desde</h3><p>10 de noviembre de 2026</p></div>
+      <div><h3>Contraseña</h3><button class="btn" type="button">Cambiar contraseña</button></div>
+      <hr class="sep">
+      <div>
+        <h3>Recorrido</h3>
+        <p>Repasa en cinco paradas cómo funciona Fresco. No cambia ningún dato de tu cuenta.</p>
+        <button class="btn" type="button" id="replay" data-testid="ver_recorrido_button">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Ver el recorrido
+        </button>
+      </div>
+    </div>
+  </section>
+</div>
+
+</body>
+</html>

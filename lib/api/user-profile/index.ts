@@ -7,3 +7,4 @@ export { getHasUnseenNotifications, getShouldShowRoutesNotice, getShouldShowWelc
 export { getPaymentFailedAt, getPlanTierForAnalytics, getUserPlan, getUserTrialAvailable, isPaymentFailedAlertActive } from './plan';
 export type { OnboardingProfilePayload, SavedOnboardingProfile } from './profile';
 export { getUserDietaryPreferences, getUserOnboardingProfile, hasUserProfile, upsertUserProfile } from './profile';
+export { getHasSeenTour, markTourSeen } from './tour';
