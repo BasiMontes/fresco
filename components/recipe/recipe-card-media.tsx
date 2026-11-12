@@ -41,13 +41,14 @@ import { cn } from '@/lib/utils';
  * leftover space and the aspect ratio holds everywhere this renders.
  */
 export interface RecipeCardMediaProps {
-  fotoUrl: string | null | undefined
-  nombre: string
-  categoria: string | null | undefined
-  priority?: boolean
-  sizes?: string
-  overlay?: React.ReactNode
-  className?: string
+  'fotoUrl': string | null | undefined
+  'nombre': string
+  'categoria': string | null | undefined
+  'priority'?: boolean
+  'sizes'?: string
+  'overlay'?: React.ReactNode
+  'className'?: string
+  'data-testid'?: string
 }
 
 const DEFAULT_SIZES = '(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw';
@@ -60,9 +61,10 @@ export function RecipeCardMedia({
   sizes,
   overlay,
   className,
+  'data-testid': dataTestId,
 }: RecipeCardMediaProps) {
   return (
-    <div className={cn('relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-t-card', className)}>
+    <div data-testid={dataTestId} className={cn('relative aspect-4/3 w-full shrink-0 overflow-hidden rounded-t-card', className)}>
       {fotoUrl
         ? (
             <Image

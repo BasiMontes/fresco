@@ -127,8 +127,37 @@ describe('CalendarGrid — changing a mark (FRESCO-1014, A7-UI-15)', () => {
     containerOf(3000);
     renderMarked({ mondayIso: '2026-10-12', hoyIso: '2026-10-16' });
 
-    expect(screen.getByTestId('calendar_slot_viernes_comida_unmark')).toHaveTextContent('Quitar marca');
-    expect(screen.getByTestId('calendar_slot_viernes_comida_switch')).toHaveTextContent('Cambiar a descartado');
+    // FRESCO-1199: the buttons are icons over the photo, so their name is the aria-label (it names the dish too).
+    expect(screen.getByTestId('calendar_slot_viernes_comida_unmark').getAttribute('aria-label')).toStartWith('Quitar marca: ');
+    expect(screen.getByTestId('calendar_slot_viernes_comida_switch').getAttribute('aria-label')).toStartWith('Cambiar a descartado: ');
+  });
+
+  // FRESCO-1199: the controls and the state chip live over the photo; the card body keeps only the recipe.
+  test('the mark controls and the chip sit over the photo, never in the body', () => {
+    containerOf(3000);
+    renderMarked({ mondayIso: '2026-10-12', hoyIso: '2026-10-16' });
+
+    const photo = screen.getByTestId('calendar_slot_viernes_comida_photo');
+    const body = screen.getByTestId('calendar_slot_viernes_comida_body');
+    for (const id of ['unmark', 'switch', 'estado_badge']) {
+      const element = screen.getByTestId(`calendar_slot_viernes_comida_${id}`);
+      expect(photo.contains(element), `${id} over the photo`).toBe(true);
+      expect(body.contains(element), `${id} not in the body`).toBe(false);
+    }
+  });
+
+  test('a pending dish has its two mark buttons over the photo and none in the body', () => {
+    containerOf(3000);
+    const pendingMenu = { ...menu, viernes: { ...menu.viernes, comida: recipe } } as MenuGrid;
+    renderWithProviders(<CalendarGrid initialMenu={pendingMenu} slotIds={slotIds} initialEstados={estados} mondayIso="2026-10-12" hoyIso="2026-10-16" />);
+
+    const photo = screen.getByTestId('calendar_slot_viernes_comida_photo');
+    const body = screen.getByTestId('calendar_slot_viernes_comida_body');
+    for (const id of ['mark_cocinada', 'mark_descartada']) {
+      const button = screen.getByTestId(`calendar_slot_viernes_comida_${id}`);
+      expect(photo.contains(button), `${id} over the photo`).toBe(true);
+      expect(body.contains(button), `${id} not in the body`).toBe(false);
+    }
   });
 
   test('in any other week the mark stays closed: a badge and no controls', () => {
