@@ -283,7 +283,7 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   "Cocinado" / "Descartar" buttons stop living in the card body. They become two icon buttons over the
   bottom-right of the slot photo (check and X), and once a slot is marked inside the current week the
   same place holds "Quitar marca" and the switch to the other mark. The marked state is a chip over the
-  top-left of the photo (the body badge goes away). A slot in a past week shows the chip and nothing to
+  top-right of the photo, mirrored from the drag handle that sits at the top-left (`slot-drag-handle.tsx`); the mockup first drew them the other way round and was corrected after reading the code (the body badge goes away). A slot in a past week shows the chip and nothing to
   press. What the person sees is a 34 px circle with a 13 px glyph; the button box stays 44 x 44 because
   the e2e step `todos los elementos interactivos miden al menos 44 px` measures the element itself. On
   hover (pointer devices only) and on keyboard focus the circle opens into a pill with the word

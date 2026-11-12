@@ -38,7 +38,7 @@ section > h2 { font:600 18px/1.3 var(--sans); letter-spacing:-.005em; }
 /* The photo is 4:3 across the whole card, as built (`aspect-4/3` in components/recipe/recipe-card-media.tsx). */
 .photo { position:relative; background:var(--surface); aspect-ratio:4/3; }
 .photo.r169 { aspect-ratio:16/9; }
-.grip { position:absolute; top:8px; right:8px; width:32px; height:32px; border-radius:var(--r-full); background:color-mix(in srgb,var(--raised) 88%,transparent); display:grid; place-items:center; color:var(--tertiary); }
+.grip { position:absolute; top:8px; left:8px; width:32px; height:32px; border-radius:var(--r-full); background:color-mix(in srgb,var(--raised) 88%,transparent); display:grid; place-items:center; color:var(--tertiary); }
 .body { display:flex; flex-direction:column; flex:1; padding:12px; }
 .kicker { font:600 12px/1.2 var(--sans); letter-spacing:.08em; text-transform:uppercase; color:var(--tertiary); }
 .title { font:600 15px/1.3 var(--sans); margin-top:2px; }
@@ -96,7 +96,7 @@ button:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
   .ov button.bad:hover > i { background:var(--error-tint); }
   .ov button:hover .w { max-width:64px; opacity:1; margin-left:6px; }
 }
-.chip { position:absolute; left:8px; top:8px; display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:var(--r-full); background:var(--raised); border:1px solid var(--border); font:600 12px/1.2 var(--sans); color:var(--tertiary); }
+.chip { position:absolute; right:8px; top:8px; display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:var(--r-full); background:var(--raised); border:1px solid var(--border); font:600 12px/1.2 var(--sans); color:var(--tertiary); }
 .chip.ok { color:var(--primary); }
 
 @media (prefers-reduced-motion:reduce) { .seg button,.light button,.ov button > i { transition:none; } .ov .w { transition:opacity var(--quick) ease; } }
