@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresco · Tipografía de los correos (mockup FRESCO-1198)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Baloo+2:wght@400;600&family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#201E1D; --muted:#524A3D; --faint:#8A8172; --cream:#FAF3E3; --raised:#FBF6EC; --green:#0F4E0E; --orange:#DF8C26;
+  --line:rgba(32,30,29,.16);
+  /* The proposal: Young Serif for titles only, Figtree for everything else, with fallbacks that look like the brand. */
+  --display-brand:'Young Serif', Georgia, 'Times New Roman', serif;
+  --sans-brand:Figtree, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* What a client that ignores web fonts (Gmail) draws: the web font is missing, so the fallback carries the brand. */
+  --display-fallback:Georgia, 'Times New Roman', serif;
+  --sans-fallback:system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  /* What the emails use today. */
+  --display-hoy:Caprasimo, 'Baloo 2', Verdana, Geneva, sans-serif;
+  --sans-hoy:Figtree, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+* { box-sizing:border-box; margin:0; }
+body { font:400 15px/1.55 system-ui, sans-serif; color:var(--ink); background:#EFE6D2; padding:28px 24px 64px; }
+h1.page { font:600 22px/1.2 'Figtree', sans-serif; }
+.lede { max-width:80ch; margin-top:6px; color:#524A3D; font-size:14px; }
+section.block { margin-top:36px; }
+section.block > h2 { font:600 16px/1.3 'Figtree', sans-serif; }
+.note { font-size:13px; color:#524A3D; margin-top:2px; max-width:90ch; }
+.row { display:flex; flex-wrap:wrap; gap:20px; margin-top:14px; align-items:flex-start; }
+.cap { font:600 12px/1.3 'Figtree', sans-serif; color:#524A3D; margin-bottom:6px; }
+.cap small { font-weight:400; display:block; color:#6F5F43; }
+
+/* ── One email, drawn as the template draws it ── */
+.mail { background:var(--cream); padding:20px 12px; font-family:var(--sans); color:var(--ink); }
+.mail.w375 { width:375px; }
+.mail.w600 { width:600px; padding:32px 16px; }
+.band { background:var(--green); padding:30px 24px; text-align:center; border-radius:20px 20px 0 0; }
+.logo-img { display:block; margin:0 auto; width:176px; height:54px; border:0; }
+.card { background:var(--raised); border:1px solid var(--line); border-top:0; border-radius:0 0 20px 20px; padding:28px 20px 24px; }
+.w600 .card { padding:40px 44px 36px; }
+.h { font-family:var(--display); font-weight:400; font-size:26px; line-height:1.15; letter-spacing:-.015em; text-align:center; padding-bottom:14px; }
+.w600 .h { font-size:30px; }
+.p { font-family:var(--sans); font-size:15px; line-height:1.55; }
+.p.c { text-align:center; }
+.sec { font-family:var(--sans); font-size:14px; line-height:1.7; padding-top:14px; }
+.sec strong { font-weight:600; }
+.cta-wrap { text-align:center; padding:22px 0 20px; }
+.cta { display:block; background:var(--orange); color:#fff; font-family:var(--sans); font-weight:600; font-size:16px; line-height:1; padding:17px 24px; border-radius:999px; text-align:center; }
+.w600 .cta { display:inline-block; padding:18px 44px; }
+.cta.serif { font-family:var(--display); font-weight:400; font-size:15px; }
+.small { font-family:var(--sans); font-size:13px; line-height:1.5; color:var(--faint); text-align:center; }
+.legal { font-family:var(--sans); font-size:13px; line-height:1.7; color:var(--muted); border-top:1px solid var(--line); margin-top:14px; padding-top:10px; }
+.code { display:inline-block; background:#F1E3C6; border:1px solid var(--line); border-radius:12px; padding:14px 22px; font:600 30px/1 var(--sans); letter-spacing:.18em; }
+.foot { font-family:var(--sans); font-size:13px; color:var(--faint); text-align:center; padding:18px 8px 0; }
+.sub { font-family:var(--sans); font-size:12px; line-height:1.6; color:var(--faint); text-align:center; padding:14px 8px 0; }
+
+/* Waitlist: plain on purpose (FRESCO-1008: no logo, no tracking). Only the type changes; its colours are out of scope. */
+.plain { background:#faf8f5; padding:20px 12px; font-family:var(--sans); color:#1f2933; }
+.plain .box { background:#fff; border-radius:12px; padding:24px 20px; }
+.plain h3 { font-family:var(--display); font-weight:400; font-size:24px; line-height:1.2; margin-bottom:14px; }
+.plain p { font-size:15px; line-height:1.5; margin-bottom:12px; }
+.plain .btn { display:inline-block; background:#2f7d4f; color:#fff; font-family:var(--sans); font-weight:600; font-size:16px; padding:12px 20px; border-radius:8px; margin:8px 0 14px; }
+.plain .fine { font-size:12px; line-height:1.5; color:#6b7280; margin-top:16px; }
+
+/* Which font stack each variant draws */
+[data-v="hoy"]      { --display:var(--display-hoy); --sans:var(--sans-hoy); }
+[data-v="brand"]    { --display:var(--display-brand); --sans:var(--sans-brand); }
+[data-v="fallback"] { --display:var(--display-fallback); --sans:var(--sans-fallback); }
+</style>
+</head>
+<body>
+
+<h1 class="page">Correos de Fresco: una sola tipografía de marca</h1>
+<p class="lede">Los cinco correos con Young Serif solo en el título y Figtree en todo lo demás, incluido el botón. El logotipo de la cabecera es el real en negativo (`Logo negativo.png`, 176 x 54 como en las plantillas actuales). Cada uno se ve "con fuentes de marca" (Apple Mail, iOS) y "sin fuentes web" (Gmail y otros clientes, que las ignoran), para comprobar que el respaldo se parece a la marca. Ancho de móvil, que es donde se leen. Los textos legales largos y los datos de cada pedido son de relleno donde se indica.</p>
+
+<div id="app"></div>
+
+<script>
+const COPY = {
+  sub: {
+    title: 'Tu Fresco Pro ya está activo',
+    intro: 'Este correo confirma tu contratación de <strong>Fresco Pro</strong>, en cumplimiento del artículo 98.7 del TRLGDCU y la Directiva … (texto legal íntegro en la plantilla).',
+    sections: [
+      ['Identidad del prestador', '{entidad legal}. Contacto: {correo de contacto}.'],
+      ['Objeto y precio', 'Suscripción al Plan Fresco Pro. {precio y periodicidad}'],
+      ['Duración y renovación', 'Suscripción {periodicidad} con <strong>renovación automática</strong>. Próximo cobro previsto: <strong>{fecha}</strong>.'],
+      ['Cómo cancelar', 'Puedes cancelar en cualquier momento desde tu perfil, sin coste adicional ni permanencia.']
+    ],
+    cta: 'Gestionar mi suscripción',
+    legal: '<strong>Ejecución inmediata y derecho de desistimiento</strong><br>Al contratar un servicio digital de ejecución inmediata … (texto legal íntegro en la plantilla).'
+  },
+  confirm: {
+    title: 'Confirma tu cuenta',
+    intro: 'Confirma tu cuenta para guardar el menú que acabas de generar y empezar a planificar la semana.',
+    cta: 'Confirmar mi cuenta', small: '¿No has creado esta cuenta? Ignora este correo.',
+    foot: 'Fresco — menús semanales con IA que aprende de lo que realmente cocinas', sub: 'Recibiste este correo porque se creó una cuenta en Fresco con esta dirección.'
+  },
+  recovery: {
+    title: 'Restablece tu contraseña',
+    intro: 'Pediste restablecer tu contraseña de Fresco. Sigue el enlace para elegir una nueva.',
+    cta: 'Restablecer contraseña', small: '¿No has pedido esto? Ignora este correo — tu contraseña sigue igual y tu cuenta está a salvo.',
+    foot: 'Fresco — menús semanales con IA que aprende de lo que realmente cocinas', sub: 'Recibiste este correo porque se pidió restablecer la contraseña de la cuenta de Fresco asociada a esta dirección.'
+  },
+  code: {
+    title: 'Tu código de verificación',
+    intro: 'Estás convirtiendo tu cuenta de invitado en una cuenta permanente. Introduce este código en Fresco para confirmar tu email.',
+    code: '482 913', small: 'El código caduca en una hora. ¿No reconoces esto? Ignora este correo.',
+    foot: 'Fresco — menús semanales con IA que aprende de lo que realmente cocinas', sub: 'Recibiste este correo porque se usó esta dirección para crear una cuenta permanente en Fresco.'
+  }
+};
+
+function mail(kind, v, w = 375) {
+  const c = COPY[kind];
+  const band = `<div class="band"><img class="logo-img" src="logo-negativo.png" width="176" height="54" alt="Fresco"></div>`;
+  let body = `<div class="h">${c.title}</div>`;
+  if (kind === 'sub') {
+    body += `<p class="p">${c.intro}</p>` + c.sections.map(([a, b]) => `<p class="sec"><strong>${a}</strong><br>${b}</p>`).join('')
+      + `<div class="cta-wrap"><a class="cta ${v === 'hoy' ? 'serif' : ''}">${c.cta}</a></div><p class="legal">${c.legal}</p>`;
+    return `<div class="mail w${w}" data-v="${v}">${band}<div class="card">${body}</div><p class="sub">Recibiste este correo porque contrataste Fresco Pro con esta dirección.</p></div>`;
+  }
+  body += `<p class="p c">${c.intro}</p>`;
+  body += c.code ? `<div class="cta-wrap" style="padding-top:20px"><span class="code">${c.code}</span></div>` : `<div class="cta-wrap"><a class="cta">${c.cta}</a></div>`;
+  body += `<p class="small">${c.small}</p>`;
+  return `<div class="mail w${w}" data-v="${v}">${band}<div class="card">${body}</div><p class="foot">${c.foot}</p><p class="sub">${c.sub}</p></div>`;
+}
+function plain(v) {
+  return `<div class="plain" style="width:375px" data-v="${v}"><div class="box">
+    <h3>Confirma tu correo</h3>
+    <p>Alguien, esperamos que tú, ha pedido en Fresco que le avisemos del lanzamiento con este correo. Para empezar a avisarte necesitamos que lo confirmes.</p>
+    <a class="btn">Confirmar mi correo</a>
+    <p style="font-size:14px">Si no lo confirmas, borraremos tu correo en unos días y no te escribiremos más. Si no fuiste tú, no hace falta que hagas nada.</p>
+    <p style="font-size:14px">Si ya lo confirmaste y quieres que te borremos, <u>pulsa aquí</u>.</p>
+    <p class="fine">Fresco. Dudas o derechos sobre tus datos: {correo de contacto}. Más información en nuestra política de privacidad.</p></div></div>`;
+}
+const cell = (cap, sub, html) => `<div><p class="cap">${cap}<small>${sub}</small></p>${html}</div>`;
+const SANS = ['brand', 'fallback'];
+const LABEL = { hoy:['Hoy', 'Caprasimo en el título y en el botón'], brand:['Propuesta, con fuentes de marca', 'Apple Mail, iOS'], fallback:['Propuesta, sin fuentes web', 'Gmail y otros: el respaldo hace de marca'] };
+
+const blocks = [
+  { id:'sub', title:'Confirmación de suscripción a Fresco Pro', note:'El de tus capturas. Hoy el título y el botón van en Caprasimo (la serif pesada anterior al rediseño), y el respaldo es una sans redondeada. Con la propuesta el título pasa a Young Serif, el botón a Figtree 600, y el respaldo a Georgia.', cells:['hoy', 'brand', 'fallback'], draw:v => mail('sub', v) },
+  { id:'confirm', title:'Confirma tu cuenta (Supabase Auth)', note:'Hoy Fraunces con respaldo Georgia: Fraunces no es la tipografía de la marca desde que DESIGN.md pasó a Young Serif.', cells:SANS, draw:v => mail('confirm', v) },
+  { id:'recovery', title:'Restablece tu contraseña (Supabase Auth)', note:'Igual que el anterior.', cells:SANS, draw:v => mail('recovery', v) },
+  { id:'code', title:'Código de verificación al convertir una cuenta de invitado (Supabase Auth)', note:'El código sigue en Figtree 600, 30 px y espaciado ancho: no cambia.', cells:SANS, draw:v => mail('code', v) },
+  { id:'waitlist', title:'Confirma tu correo (lista de espera)', note:'Hoy todo en Arial. Sigue siendo sencillo a propósito (FRESCO-1008: sin logotipo y sin seguimiento), así que solo cambia la tipografía. Sus colores y radios quedan fuera de este ticket.', cells:SANS, draw:v => plain(v) }
+];
+document.getElementById('app').innerHTML = blocks.map(b => `<section class="block" data-block="${b.id}"><h2>${b.title}</h2><p class="note">${b.note}</p><div class="row">${b.cells.map(v => cell(LABEL[v][0], LABEL[v][1], b.draw(v))).join('')}</div></section>`).join('');
+</script>
+</body>
+</html>
