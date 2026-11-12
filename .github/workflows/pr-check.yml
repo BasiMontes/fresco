@@ -520,6 +520,31 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Collect Supabase container logs
+        # FRESCO-1202: a seeding write that answers 5xx (a 502 from the gateway, a 500 from `generate-meal-plan`
+        # whose body is the generic "Error guardando el plan en la BD") leaves no cause in the run: the real error
+        # only goes to the log of the container, and `supabase stop` below removes it. `if: always()` because a
+        # scenario that passes on retry does not fail the job. Edge runtime, gateway (Kong), PostgREST and Auth
+        # only: no database log. JWTs are masked before upload. How to read it: docs/workflows/e2e-flaky-triage.md.
+        if: always()
+        run: |
+          mkdir -p supabase-logs
+          for name in $(docker ps -a --format '{{.Names}}' | grep -E '^supabase_(edge_runtime|kong|rest|auth)_' || true); do
+            docker logs --timestamps --tail 20000 "$name" 2>&1 \
+              | sed -E 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*/[jwt]/g' \
+              > "supabase-logs/${name}.log" || true
+          done
+          ls -la supabase-logs
+
+      - name: Upload Supabase container logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: supabase-logs
+          path: supabase-logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: Stop Supabase
         if: always()
         run: supabase stop
