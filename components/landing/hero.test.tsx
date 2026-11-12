@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import * as posthogEvents from '@/lib/posthog/events';
-import { renderWithProviders, screen, setupUser, within } from '@/tests/component-render';
+import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
 import { Hero } from './hero';
 
 describe('Hero', () => {
@@ -43,13 +43,42 @@ describe('Hero', () => {
     expect(screen.getByText('Menos comida tirada')).toBeInTheDocument();
   });
 
-  test('shows the dish photos with alt text, looped in two columns', () => {
+  // FRESCO-1141: the hero shows the catalogue's own clay icons, served from `public/landing/hero/`.
+  const heroImageSources = (container: HTMLElement) =>
+    [...container.querySelectorAll('img')].map(image => decodeURIComponent(image.getAttribute('src') ?? ''));
+
+  test('shows eight clay illustrations, each rendered twice so the two columns loop', () => {
     const { container } = renderWithProviders(<Hero />);
 
-    // Each of the 8 photos is rendered twice so the marquee loops seamlessly.
-    expect(screen.getAllByRole('img', { name: 'Huevos rancheros' })).toHaveLength(2);
-    expect(screen.getAllByRole('img', { name: 'Solomillo de cerdo' })).toHaveLength(2);
-    expect(container.querySelectorAll('img')).toHaveLength(16);
-    expect(within(container).getAllByRole('img', { name: 'Gambas al ajillo' })[0]).toHaveAttribute('src');
+    const sources = heroImageSources(container);
+
+    expect(sources).toHaveLength(16);
+    expect(new Set(sources).size).toBe(8);
+    for (const source of sources) {
+      expect(source).toContain('/landing/hero/');
+    }
+  });
+
+  test('uses no stock photo', () => {
+    const { container } = renderWithProviders(<Hero />);
+
+    for (const source of heroImageSources(container)) {
+      expect(source).not.toContain('unsplash');
+    }
+  });
+
+  test('keeps the illustrations decorative and says in a visible caption that they are AI-generated', () => {
+    const { container } = renderWithProviders(<Hero />);
+
+    for (const image of container.querySelectorAll('img')) {
+      expect(image).toHaveAttribute('alt', '');
+    }
+    expect(screen.queryAllByRole('img')).toHaveLength(0);
+
+    // Not `aria-hidden`: the caption is what tells the reader the images are illustrations.
+    const caption = screen.getByText('Ilustraciones de platos del catálogo, generadas con IA.');
+
+    expect(caption).toBeInTheDocument();
+    expect(caption.closest('[aria-hidden="true"]')).toBeNull();
   });
 });
