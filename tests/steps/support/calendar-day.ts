@@ -31,12 +31,19 @@ export async function revealCalendarDay(page: Page, dia: string): Promise<void> 
     return slot !== null && Object.keys(slot).some(key => key.startsWith('__reactFiber$'));
   }, null, { timeout: 30_000 });
   // Two frames: the measurement effect and the "open on today" focus it triggers both run after hydration.
-  await page.evaluate(async () => {
+  const afterTwoFrames = async () => page.evaluate(async () => {
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   });
+  await afterTwoFrames();
 
+  // FRESCO-1201: seeing the day once is not enough. CI run 43048810440 returned from here and the very next
+  // assertion found the window starting on today (Wednesday, no `calendar_slot_lunes_*` in the DOM). The day
+  // has to still be there after two more frames; if the window moved in the meantime, keep paging back.
   await expect.poll(async () => {
-    if (await slots.first().isVisible()) { return true; }
+    if (await slots.first().isVisible()) {
+      await afterTwoFrames();
+      if (await slots.first().isVisible()) { return true; }
+    }
     if (await previousDay.isVisible() && await previousDay.isEnabled()) { await previousDay.click(); }
     return false;
   }, { message: `the ${dia} column never became visible in the calendar window`, timeout: 15_000, intervals: [250] }).toBe(true);
