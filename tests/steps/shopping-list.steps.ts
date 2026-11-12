@@ -233,14 +233,21 @@ Given(
     // Belt-and-braces: this is a brand-new factory user with no prior
     // favorites, but deleting first keeps this step correct even if that
     // ever stops being true (e.g. a future factory option pre-seeds one).
-    await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites?user_id=eq.${userId}`, { headers });
-    await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites`, {
+    // FRESCO-1148: check both writes. In CI run 43228945828 this scenario failed on the suggestions section never
+    // showing, and nothing here said whether the favorite had been saved. A failed write now fails right here with
+    // its status, instead of surfacing later as a missing carousel.
+    const deleted = await request.delete(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites?user_id=eq.${userId}`, { headers });
+    expect(deleted.ok(), `clearing the favorites: ${deleted.status()}`).toBe(true);
+    const favorited = await request.post(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/favorites`, {
       headers,
       data: { user_id: userId, recipe_id: disjointRecipe.id },
     });
+    expect(favorited.ok(), `seeding the favorite: ${favorited.status()}`).toBe(true);
 
     await page.reload();
-    await expect(page.getByTestId('shopping_list_suggestions_section')).toBeVisible();
+    // 30 s like the list above: `get-shopping-list-suggestions` is an Edge Function, and the first call on a CI
+    // worker can boot the Deno runtime (same cold start FRESCO-421 documents for generate-meal-plan).
+    await expect(page.getByTestId('shopping_list_suggestions_section')).toBeVisible({ timeout: 30_000 });
   },
 );
 
