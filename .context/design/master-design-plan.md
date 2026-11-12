@@ -71,6 +71,7 @@ or placeholder remains; `missing` = specified and ratified but not built yet; `n
 | Motion & transitions layer | cross-cutting | built | EPIC-FRESCO-244 — page transitions, list/card enter-exit, modal open/close, micro-interactions, `prefers-reduced-motion`. |
 | Error & not-found screens | `error.tsx` / `global-error.tsx` / `not-found.tsx` | built | Safety net (TECHDEBT-FRESCO-46); `not-found.tsx` styled (DEFECT-FRESCO-182). |
 | First-visit tour + replay row | overlay on `/(app)/*`, `/profile` Configuración | built | FRESCO-1197. Mockup ratified 2026-11-12 (§4.21); built in #986 to #989 and merged to `staging` through #990. Components in `components/onboarding/first-visit-tour/`, the replay row in `components/profile/ayuda-section.tsx`. Reviewed by the owner on the preview of #990 (2026-11-12). Screen reader pass still manual. |
+| Landing hero, clay illustrations | `/` (hero, right column) | mockup ratified | FRESCO-1141. Mockup ratified 2026-11-12 (§4.23, option A), not built yet. Replaces the 8 Unsplash photos with 8 clay icons and a visible AI-illustration caption (divergence §5-AD). |
 | Auth confirm | `/auth/confirm` | n/a | Route handler, no UI. |
 | Dev skeleton-capture | `/dev/skeleton-capture` | n/a | Dev-only visual-regression tooling (`boneyard-js`). Not a fidelity surface. |
 
@@ -612,6 +613,31 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   (`email-typography.html`, `BRIEF.md`, `logo-negativo.png`, `preview-*.jpg`). Mode C. The mockup is inspiration;
   the fidelity reference is `DESIGN.md` (Critical Rule 14).
 
+### 4.23 Landing hero — clay illustrations (FRESCO-1141)
+
+- **Purpose.** The hero stops using stock photos. Its right column shows 8 of the catalogue's own clay 3D icons,
+  with a visible caption saying they are AI-generated illustrations.
+- **Scope.** `components/landing/hero.tsx` only (right column). Copy column, buttons and the rest of the landing do
+  not change.
+- **Composition (owner ratified option A, 2026-11-12).** Two marquee columns, 54 % and 46 %, the second dropped
+  `md:pt-12`, same edge fade and drift as FRESCO-459. Tiles are square (the icon's own shape), `rounded.sm`, no box,
+  no border, no shadow: the icons sit straight on the page background. Gap 13.2 px, 17.6 px from `md`.
+- **The 8 icons.** Espaguetis con tomate y albahaca, batido de cacao y plátano, ensalada de brócoli con almendras,
+  huevos poché con espárragos, marmitako de bonito, torrijas caseras, tacos de pescado con repollo, sándwich de pollo
+  y aguacate. Recipes already applied in production (clay set of 2026-11-12).
+- **Caption.** Under the composition, outside the edge fade: "Ilustraciones de platos del catálogo, generadas con
+  IA." 13 px, `tertiary` on `background`. Visible, not only in the FAQ.
+- **Accessibility.** Images stay decorative (`alt=""`, `aria-hidden`); the caption carries the meaning. The marquee
+  respects `prefers-reduced-motion` as it does today.
+- **Open.** The clay style may still move toward an Airbnb-like 3D look (FRESCO-1200). If it does, the 8 icons are
+  regenerated before this ships.
+- **Checklist.** [ ] no Unsplash URL left in the hero · [ ] caption visible at 1440 and 390 px · [ ] LCP tile still
+  preloaded · [ ] `next.config.mjs` `remotePatterns` serves the new images · [ ] visual pass at 1440 and 390 px · [ ]
+  Anti Web Slop re-measured after, not promised.
+- **Provenance.** Mockup ratified by the owner 2026-11-12: `.context/designs/fresco/hero-clay/` (`hero-clay.html`,
+  `BRIEF.md`, `img/`, `preview-*.jpg`). Mode C. The mockup is inspiration; the fidelity reference is `DESIGN.md` and
+  the live UI (Critical Rule 14).
+
 ---
 
 ## §5 — Divergence register
@@ -652,6 +678,7 @@ compliance notes.
 | §5-AA | Profile (`/profile`) — Preferencias moved to a subpage, help and legal rows in two cards (FRESCO-1070) | `/profile` no longer embeds the diet and allergen form. A "Preferencias y ayuda" card (a `Preferencias` row with a one-line summary that links to `/profile/preferences`, then Configuración and FAQ) and a "Legal" card (Privacidad, Términos de Servicio, Cookies) sit side by side from `md`. The form `preferences-form` lives on the new `/profile/preferences` page: icon-only back button, title and one card. | §4.13 layout: `preferences-form` inline, followed by one Ayuda section | The two-column grid left the right column almost empty next to a very tall form and squeezed the form to about 430 px. Owner decision 2026-10-30: a subpage rather than a modal, because the form is long and saves only on an explicit button (a modal loses unsaved changes on Escape or an outside click). Built LIVE-UI-FIRST, no mockup (project override of Rule 14); reuses `Card`, the FRESCO-451 back button and frozen tokens. | FRESCO-1070 |
 | §5-AB | Landing (`/`) — no Lucide icon on the page (FRESCO-1138) | The 18 Lucide SVGs of the landing (`clock` and `leaf` in the hero, `menu` in the nav, `sun` and `moon` in the nav theme toggle, `check` in the waitlist checkbox, 11 `plus` in the FAQ and 1 in the video transcript) are drawn with CSS instead: the hero benefits are plain text under a hairline, the "+" is two bars, the menu is three bars that cross, the `binary` theme toggle is a ring (light) and a filled dot (dark) with its `aria-label`, and the checkbox tick is a rotated box with two borders (`components/ui/css-glyphs.tsx`, `components/ui/checkbox.tsx`). The in-app `segmented` theme toggle and every other Lucide icon keep their icons. | `DESIGN.md` `icon` token (24px, stroke 2) and the Lucide family as the icon set | Anti Web Slop flags "Íconos de Lucide por defecto" (they ship with shadcn and sit on every generated site) and the owner asked to remove them from the landing on 2026-11-06. Marks are decorative (`aria-hidden`), accessible names stay on the buttons and inputs. The shared `Checkbox` changes everywhere, but only its tick. No new tokens. Built LIVE-UI-FIRST, no mockup (project override of Rule 14). | FRESCO-1138 |
 | §5-AC | Landing (`/`) — corner radius by role (FRESCO-1138) | Media (hero photos, walkthrough photo, video) use `rounded.sm` (6px) instead of `image` (16px) and `md` (12px); the `insight` callouts (step 4, Semana 8+ node) use `md` (12px) instead of `card` (20px); the plan cards keep `card` (20px); buttons and tags stay pills. `cn` now treats `rounded-card` and `rounded-image` as radii, so a later radius class replaces them (`lib/utils.ts`, `THEME_RADII`). | `DESIGN.md` Shapes: `image` 16px for photo areas, `card` 20px for every card-family component | Anti Web Slop flags "Las mismas esquinas redondeadas": the same radius on every box flattens the hierarchy. Owner asked for it on 2026-11-06. The three radii come from the existing scale, so there is no new token. The change is a separate commit so it can be reverted without losing the icons. Whether the signal clears is measured after promotion, not assumed. | FRESCO-1138 |
+| §5-AD | Landing (`/`) — hero visual (FRESCO-1141) | The hero's right column is 8 catalogue clay icons (square, `rounded.sm`, no box, no shadow) with a visible caption "Ilustraciones de platos del catálogo, generadas con IA", instead of 8 Unsplash dish photos in `aspect-4/5` tiles with `shadow-md` (§5-Q). Same two-column asymmetry, edge fade and marquee drift. | §5-Q (the photo composition ratified in FRESCO-459) | Owner decision FRESCO-1137 (option A of D3, 2026-11-06): the stock photos count against the landing in Anti Web Slop; own illustrations replace them, in the clay style of FRESCO-1146. The caption is mandatory: the FLUX terms forbid presenting the output as real photographs. | Owner ratified mockup option A on 2026-11-12 (§4.23); `.context/designs/fresco/hero-clay/` |
 
 > **Not divergences (reconciled into `DESIGN.md`):** FRESCO-283 amber-CTA contrast, FRESCO-285/299
 > `text-tertiary` darkening, FRESCO-303 pricing check colour, FRESCO-70 sidebar-on-green, FRESCO-298
@@ -742,6 +769,7 @@ stories) are listed at the end.
 | FRESCO-1197 | Onboarding: guía de primera visita (recorrido de 5 paradas) y opción de volver a verla en Configuración | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.21 First-visit tour (overlay + fila "Ver el recorrido" en Configuración) · mockup ratificado 2026-11-12 en `.context/designs/fresco/first-visit-tour/`, construido en #986 a #989 y llevado a `staging` en #990 | 4.6 Onboarding (disparo al terminar), 4.7 Home, 4.8 Calendar, 4.10 Recipe library, 4.9 Shopping list, 4.13 Profile, 4.17 App shell |
 | FRESCO-1199 | Menu: rediseñar los botones Cocinado y Descartar, que ocupan más que la propia receta | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.8 Calendar (slot mark controls: iconos sobre la foto, chip de estado, palabra al pasar el ratón) · mockup ratificado 2026-11-12 en `.context/designs/fresco/slot-mark-controls/` (opción C), sin construir | 4.17 App shell |
 | FRESCO-1198 | Correos: actualizar la tipografía de los correos para que mantengan la identidad de la marca | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.22 Transactional emails (cinco plantillas: título en Young Serif, resto en Figtree, respaldo Georgia y sans del sistema) · mockup ratificado 2026-11-12 en `.context/designs/fresco/email-typography/`, sin construir | — |
+| FRESCO-1141 | Landing: ilustraciones propias del catálogo en el hero, en lugar de las fotos de stock | EPIC-FRESCO-884 | 4.23 Landing hero, clay illustrations (8 iconos de arcilla sin caja, pie visible de ilustración generada con IA) · mockup ratificado 2026-11-12 en `.context/designs/fresco/hero-clay/` (opción A), sin construir | 4.1 Landing |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -751,7 +779,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 50 stories enumerated · **50 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
+**Count:** 51 stories enumerated · **51 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.

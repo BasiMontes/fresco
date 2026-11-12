@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresco | Hero con ilustraciones de arcilla (mockup FRESCO-1141)</title>
+<style>
+/* Fonts: the ones the brand already hosts in public/fonts (SIL OFL). */
+@font-face{font-family:'Young Serif';src:url('../../../../public/fonts/young-serif-v2-latin-400.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Figtree';src:url('../../../../public/fonts/figtree-v9-latin-wght.woff2') format('woff2');font-weight:300 900;font-display:swap}
+/* Frozen tokens, copied from DESIGN.md. Nothing outside this block defines a colour, font or radius. */
+:root {
+  --primary:#0F4E0E; --primary-hover:#0A3E09; --secondary:#DF8C26;
+  --tertiary:#6F5F43; --background:#FAF3E3; --surface:#F1E3C6; --raised:#FBF6EC;
+  --text:#201E1D; --border:color-mix(in srgb,#201E1D 16%,transparent);
+  --accent-2-700:#8A5513;
+  --r-sm:6px; --r-md:12px; --r-full:999px;
+  --s-1:4.4px; --s-2:8.8px; --s-3:13.2px; --s-4:17.6px; --s-6:26.4px; --s-8:35.2px; --s-12:52.8px; --s-16:70.4px; --s-24:105.6px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --quick:150ms;
+  --display:'Young Serif',Georgia,'Times New Roman',serif; --sans:'Figtree',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--background);color:var(--text);font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--r-sm)}
+.wrap{max-width:1024px;margin:0 auto;padding:0 16px}
+@media(min-width:768px){.wrap{padding:0 32px}}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(36px,6vw,44px);line-height:1.04;letter-spacing:-.025em;text-wrap:balance}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 var(--s-6);border-radius:var(--r-full);border:1px solid transparent;font:600 14px/1.2 var(--sans);text-decoration:none;cursor:pointer;transition:background-color var(--quick) var(--ease-out),transform var(--quick) var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--primary);color:var(--background)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-secondary{border-color:var(--border);color:var(--text);background:transparent}
+
+/* Review banner, not part of the page */
+.note{padding:var(--s-3) var(--s-4);background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--tertiary)}
+.variant-label{margin:var(--s-8) auto 0;max-width:1024px;padding:0 16px;font:600 12px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--tertiary)}
+@media(min-width:768px){.variant-label{padding:0 32px}}
+
+/* Hero: copy column unchanged from the live page */
+.hero{display:grid;gap:var(--s-8);padding-block:var(--s-12) var(--s-16)}
+.eyebrow{display:flex;align-items:center;gap:var(--s-2);margin-bottom:var(--s-6);font:600 12px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2-700)}
+.eyebrow::before{content:"";width:24px;height:2px;border-radius:2px;background:var(--accent-2-700)}
+.hero h1 em{font-style:normal;color:var(--accent-2-700)}
+.hero .what{margin-top:var(--s-3);max-width:28rem;font-weight:600}
+.hero .pain{margin-top:var(--s-4);max-width:28rem;color:var(--tertiary)}
+.hero .pain strong{color:var(--text);font-weight:600}
+.hero-cta{margin-top:var(--s-8);display:flex;flex-direction:column;gap:var(--s-3);max-width:24rem}
+@media(min-width:768px){.hero{grid-template-columns:1fr 1fr;align-items:center;gap:var(--s-16);padding-block:var(--s-24)}}
+
+/* Visual: two columns, same asymmetry and edge fade as the live composition; the marquee drift stays (FRESCO-459) */
+.visual{margin-top:var(--s-8)}
+@media(min-width:768px){.visual{margin-top:0}}
+.cols{display:flex;gap:var(--s-3);height:440px;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 10%,#000 90%,transparent)}
+@media(min-width:768px){.cols{height:520px;gap:var(--s-4)}}
+.cols .col{display:flex;flex-direction:column;gap:var(--s-3)}
+@media(min-width:768px){.cols .col{gap:var(--s-4)}}
+.cols .col:first-child{width:54%}
+.cols .col:last-child{width:46%;padding-top:var(--s-12)}
+.cols img{width:100%;aspect-ratio:1/1;object-fit:cover}
+/* A: the icons sit straight on the page, no box. The clay carries its own cream and the soft shadow under the object. */
+.a .cols img{border-radius:var(--r-sm)}
+/* B: each icon in a surface tile with a hairline, so the grid reads as a catalogue. */
+.b .cols img{border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--border);box-shadow:0 1px 2px color-mix(in srgb,#201E1D 10%,transparent)}
+/* Visible disclosure, under the composition and outside the edge fade */
+.disclosure{margin-top:var(--s-3);font-size:13px;line-height:1.4;color:var(--tertiary)}
+</style>
+</head>
+<body>
+<div class="note">Mockup FRESCO-1141, no es la web real. Cambia solo la columna derecha del hero: 8 iconos de arcilla del catálogo en lugar de 8 fotos de Unsplash, y un pie visible de ilustración. Titular, textos y botones no cambian. Dos opciones de tratamiento, A y B.</div>
+
+<p class="variant-label">Opción A: iconos sueltos sobre la página</p>
+<section class="a">
+  <div class="wrap hero" aria-labelledby="h1a">
+    <div>
+      <div class="eyebrow">Tu menú semanal, listo en 30 segundos</div>
+      <h1 id="h1a">Deja de improvisar en el <em>súper.</em></h1>
+      <p class="what">Fresco es el planificador de menús semanales que genera tu menú de lunes a domingo y la lista de la compra en 30 segundos.</p>
+      <p class="pain">Cada semana la misma historia: <strong>no sabes qué cocinar, compras de más y acabas tirando comida.</strong></p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#">Generar mi primer menú</a>
+        <a class="btn btn-secondary" href="#">¿Cómo funciona?</a>
+      </div>
+    </div>
+    <div class="visual">
+      <div class="cols" aria-hidden="true">
+        <div class="col">
+          <img src="img/18-espaguetis-con-tomate-y-albahaca.jpg" alt="">
+          <img src="img/36-batido-de-cacao-y-platano.jpg" alt="">
+          <img src="img/4-ensalada-de-brocoli-con-almendras-b131.jpg" alt="">
+          <img src="img/37-huevos-poche-esparragos.jpg" alt="">
+        </div>
+        <div class="col">
+          <img src="img/22-marmitako-bonito.jpg" alt="">
+          <img src="img/33-torrijas-caseras.jpg" alt="">
+          <img src="img/21-tacos-de-pescado-con-repollo-b17.jpg" alt="">
+          <img src="img/7-sandwich-de-pollo-y-aguacate.jpg" alt="">
+        </div>
+      </div>
+      <p class="disclosure">Ilustraciones de platos del catálogo, generadas con IA.</p>
+    </div>
+  </div>
+</section>
+
+<p class="variant-label">Opción B: cada icono en un mosaico con borde</p>
+<section class="b">
+  <div class="wrap hero" aria-labelledby="h1b">
+    <div>
+      <div class="eyebrow">Tu menú semanal, listo en 30 segundos</div>
+      <h1 id="h1b">Deja de improvisar en el <em>súper.</em></h1>
+      <p class="what">Fresco es el planificador de menús semanales que genera tu menú de lunes a domingo y la lista de la compra en 30 segundos.</p>
+      <p class="pain">Cada semana la misma historia: <strong>no sabes qué cocinar, compras de más y acabas tirando comida.</strong></p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#">Generar mi primer menú</a>
+        <a class="btn btn-secondary" href="#">¿Cómo funciona?</a>
+      </div>
+    </div>
+    <div class="visual">
+      <div class="cols" aria-hidden="true">
+        <div class="col">
+          <img src="img/18-espaguetis-con-tomate-y-albahaca.jpg" alt="">
+          <img src="img/36-batido-de-cacao-y-platano.jpg" alt="">
+          <img src="img/4-ensalada-de-brocoli-con-almendras-b131.jpg" alt="">
+          <img src="img/37-huevos-poche-esparragos.jpg" alt="">
+        </div>
+        <div class="col">
+          <img src="img/22-marmitako-bonito.jpg" alt="">
+          <img src="img/33-torrijas-caseras.jpg" alt="">
+          <img src="img/21-tacos-de-pescado-con-repollo-b17.jpg" alt="">
+          <img src="img/7-sandwich-de-pollo-y-aguacate.jpg" alt="">
+        </div>
+      </div>
+      <p class="disclosure">Ilustraciones de platos del catálogo, generadas con IA.</p>
+    </div>
+  </div>
+</section>
+</body>
+</html>
