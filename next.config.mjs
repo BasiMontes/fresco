@@ -126,6 +126,16 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/(.*)', headers: securityHeaders },
+      // FRESCO-1198: the transactional emails load Young Serif and Figtree from here (Apple Mail does; Gmail
+      // ignores them). A mail client fetches a font from another origin, so it needs CORS, and the file names
+      // carry their version, so they can be cached for good.
+      {
+        source: '/fonts/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ];
   },
   async rewrites() {

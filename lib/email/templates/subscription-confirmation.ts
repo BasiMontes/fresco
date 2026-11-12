@@ -76,30 +76,20 @@ export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConf
 </xml>
 </noscript>
 <![endif]-->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   @font-face {
-    font-family: 'Caprasimo';
+    font-family: 'Young Serif';
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: url(https://fonts.gstatic.com/s/caprasimo/v6/esDT31JQOPuXIUGBp72kkJUEGpA.woff2) format('woff2');
+    src: url(https://fresco-pro.vercel.app/fonts/young-serif-v2-latin-400.woff2) format('woff2');
   }
   @font-face {
     font-family: 'Figtree';
     font-style: normal;
-    font-weight: 400;
+    font-weight: 400 700;
     font-display: swap;
-    src: url(https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMq4a3CoZt.woff2) format('woff2');
-  }
-  @font-face {
-    font-family: 'Figtree';
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url(https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMq4a3CoZt.woff2) format('woff2');
+    src: url(https://fresco-pro.vercel.app/fonts/figtree-v9-latin-wght.woff2) format('woff2');
   }
 
   body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -108,8 +98,11 @@ export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConf
   body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: #FAF3E3; }
   a { text-decoration: none; }
 
-  .heading { font-family: Caprasimo, "Baloo 2", Verdana, Geneva, sans-serif; font-weight: 400; color: #201E1D; }
-  .body-text { font-family: Figtree, -apple-system, BlinkMacSystemFont, sans-serif; color: #201E1D; }
+  /* FRESCO-1198 (DESIGN.md v2): Young Serif for titles only, Figtree for everything else, buttons included. The
+     fonts are hosted by us (public/fonts, SIL OFL), never loaded from Google. Gmail and other clients ignore web
+     fonts: Georgia and the system sans carry the brand there. */
+  .heading { font-family: 'Young Serif', Georgia, 'Times New Roman', serif; font-weight: 400; color: #201E1D; }
+  .body-text { font-family: Figtree, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #201E1D; }
 
   @media only screen and (max-width: 600px) {
     .email-container { width: 100% !important; }
@@ -141,7 +134,7 @@ export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConf
             <td class="card-padding fluid-padding" style="padding: 40px 44px 36px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" class="headline heading" style="font-size:28px; line-height:1.15; letter-spacing:-0.015em; padding-bottom:18px;">
+                  <td align="center" class="headline heading" style="font-size:30px; line-height:1.15; letter-spacing:-0.015em; padding-bottom:18px;">
                     Tu Fresco Pro ya está activo
                   </td>
                 </tr>
@@ -181,7 +174,7 @@ export function renderSubscriptionConfirmationEmailHtml(params: SubscriptionConf
 
                 <tr>
                   <td align="center" style="padding: 20px 0 24px;">
-                    <a href="${escapeHtml(manageSubscriptionUrl)}" class="cta-button heading" target="_blank" style="background-color:#DF8C26; color:#FFFFFF; font-size:15px; line-height:1; padding:16px 36px; border-radius:999px; display:inline-block; box-shadow: 0 1px 2px rgba(47,40,28,0.14);">
+                    <a href="${escapeHtml(manageSubscriptionUrl)}" class="cta-button body-text" target="_blank" style="background-color:#DF8C26; color:#FFFFFF; font-size:16px; font-weight:600; line-height:1; padding:16px 36px; border-radius:999px; display:inline-block; box-shadow: 0 1px 2px rgba(47,40,28,0.14);">
                       Gestionar mi suscripción
                     </a>
                   </td>
