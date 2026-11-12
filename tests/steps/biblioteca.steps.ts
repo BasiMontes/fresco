@@ -141,6 +141,24 @@ async function loginAndGoToLibrary(page: Page, testUser: TestUser): Promise<void
   await startSearchTrace(page);
 }
 
+/**
+ * FRESCO-1148: types into the search box and makes sure the text is still there two animation frames later,
+ * typing it again if it is not. CI run 43246099082 passed the fiber-key wait above and typed "pollo" at 140 ms;
+ * the box was back to "" at 210 ms on the SAME node, so the filter navigation carried an empty query. The fiber
+ * key is on the node when React claims it, which can be before the commit that applies the controlled value.
+ * Typing again is harmless once React has taken over, so this holds whichever reset it was.
+ */
+async function typeInSearch(page: Page, text: string): Promise<void> {
+  const input = page.getByTestId('recipe_search_input');
+  await expect(async () => {
+    await input.fill(text);
+    await page.evaluate(async () => {
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+    await expect(input).toHaveValue(text, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+}
+
 /** The "N recetas encontradas" figure the library shows under the controls. */
 async function shownCount(page: Page): Promise<number> {
   const text = await page.getByTestId('recipe_library_count').textContent();
@@ -199,11 +217,11 @@ Given(/^que Laura quiere evitar un ingrediente puntual que no tiene declarado en
 // ── When ─────────────────────────────────────────────────────────────────
 
 When(/^escribe el nombre de una receta en el buscador$/, async ({ page }) => {
-  await page.getByTestId('recipe_search_input').fill('Paella');
+  await typeInSearch(page, 'Paella');
 });
 
 When(/^escribe un ingrediente en el buscador$/, async ({ page }) => {
-  await page.getByTestId('recipe_search_input').fill('pollo');
+  await typeInSearch(page, 'pollo');
 });
 
 When(/^toca la pestaña "Cena"$/, async ({ page }) => {
@@ -218,7 +236,7 @@ When(/^toca "Todo"$/, async ({ page }) => {
 });
 
 When(/^escribe algo en el buscador$/, async ({ page }) => {
-  await page.getByTestId('recipe_search_input').fill('a');
+  await typeInSearch(page, 'a');
 });
 
 When(/^selecciona un filtro de cocina, por ejemplo "Italiana"$/, async ({ page }) => {
@@ -418,7 +436,7 @@ Given(/^que Laura busca y aplica filtros en la Biblioteca$/, async ({ page, test
   const testUser = await testUserFactory();
   ctx.testUser = testUser;
   await loginAndGoToLibrary(page, testUser);
-  await page.getByTestId('recipe_search_input').fill('pollo');
+  await typeInSearch(page, 'pollo');
   // `applyDraftFilters` carries the typed query into the same navigation, so
   // no need to wait for the 300ms search debounce first. "Cena" is a broad
   // meal-type filter that keeps the result set non-empty (same combo the
