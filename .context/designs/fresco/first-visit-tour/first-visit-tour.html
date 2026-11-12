@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresco · Recorrido de primera visita (mockup FRESCO-1197)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary:#0F4E0E; --primary-hover:#0A3E09; --secondary:#DF8C26;
+  --tertiary:#6F5F43; --background:#FAF3E3; --surface:#F1E3C6; --raised:#FBF6EC;
+  --text:#201E1D; --border:color-mix(in srgb,#201E1D 16%,transparent);
+  --accent-100:#E1E8E0; --accent-200:#BFCFBD; --accent-300:#8FAB8D; --accent-600:#0A3E09;
+  --on-dark:#FAF3E3; --on-dark-muted:color-mix(in srgb,#FAF3E3 72%,transparent);
+  --on-dark-border:color-mix(in srgb,#FAF3E3 22%,transparent);
+  --r-sm:6px; --r-md:12px; --r-card:20px; --r-full:999px;
+  --s-1:4.4px; --s-2:8.8px; --s-3:13.2px; --s-4:17.6px; --s-6:26.4px; --s-8:35.2px; --s-12:52.8px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1); --quick:150ms; --fast:250ms;
+  --display:'Young Serif',Georgia,serif; --sans:'Figtree',system-ui,sans-serif;
+  --dim:color-mix(in srgb,#201E1D 58%,transparent);
+}
+* { box-sizing:border-box; margin:0; }
+html,body { height:100%; }
+body { font:400 15px/1.55 var(--sans); color:var(--text); background:var(--background); -webkit-font-smoothing:antialiased; overflow:hidden; }
+::selection { background:var(--accent-200); color:var(--text); }
+:focus-visible { outline:2px solid var(--primary); outline-offset:3px; border-radius:var(--r-sm); }
+svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+
+/* ── App shell: the real page behind the tour ── */
+.app { display:grid; grid-template-columns:200px 1fr; height:100%; }
+.side { background:var(--primary); color:var(--on-dark); display:flex; flex-direction:column; padding:var(--s-4) var(--s-3); gap:var(--s-1); }
+.brand { font:700 22px/1 var(--sans); padding:var(--s-3) var(--s-3) var(--s-6); letter-spacing:-.02em; }
+.nav { display:flex; flex-direction:column; gap:var(--s-1); }
+.nav a { display:flex; align-items:center; gap:var(--s-3); padding:0 var(--s-3); min-height:44px; border-radius:var(--r-full); color:var(--on-dark); text-decoration:none; }
+.nav a[aria-current="page"] { background:var(--background); color:var(--primary); }
+.acct { margin-top:auto; border:1px solid var(--on-dark-border); border-radius:var(--r-md); padding:var(--s-3); font-size:13px; line-height:1.35; }
+.acct b { display:block; font-size:15px; font-weight:600; }
+.acct span { color:var(--on-dark-muted); display:block; }
+.acct .plan { color:var(--on-dark); font-weight:600; margin-top:2px; }
+
+.main { overflow:hidden; padding:var(--s-8) var(--s-12); }
+.col { max-width:860px; margin-inline:auto; }
+h1 { font:400 44px/1.04 var(--display); letter-spacing:-.025em; }
+.sub { color:var(--tertiary); margin-top:var(--s-2); }
+.panel { margin-top:var(--s-6); background:var(--raised); border:1px solid var(--border); border-radius:var(--r-card); padding:var(--s-6); }
+.panel h2 { font:400 28px/1.15 var(--display); letter-spacing:-.015em; }
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s-3); margin-top:var(--s-4); }
+.cell { background:var(--background); border:1px solid var(--border); border-radius:var(--r-md); padding:var(--s-3) var(--s-4); }
+.cell small { display:block; font-size:12px; color:var(--tertiary); }
+.cell p { font-weight:600; font-size:14px; line-height:1.3; margin-top:2px; }
+.rowlbl { font-size:12px; color:var(--tertiary); margin-top:var(--s-4); }
+.pillbtn { display:inline-flex; align-items:center; gap:var(--s-2); min-height:44px; padding:0 var(--s-4); border:1px solid var(--border); border-radius:var(--r-full); font-weight:600; font-size:14px; background:transparent; }
+.btnrow { display:flex; gap:var(--s-2); margin-top:var(--s-4); flex-wrap:wrap; }
+.search { margin-top:var(--s-4); min-height:44px; display:flex; align-items:center; padding:0 var(--s-4); border:1px solid var(--border); border-radius:var(--r-full); background:var(--raised); color:var(--tertiary); }
+.recipes { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s-3); margin-top:var(--s-4); }
+.rcard { background:var(--raised); border:1px solid var(--border); border-radius:var(--r-card); overflow:hidden; }
+.rcard .ph { height:92px; background:var(--surface); }
+.rcard p { padding:var(--s-3) var(--s-4); font-weight:600; font-size:14px; line-height:1.3; }
+.row { display:flex; align-items:center; min-height:56px; padding:0 var(--s-4); border-top:1px solid var(--border); font-weight:600; }
+.row:first-child { border-top:0; }
+.total { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s-4); }
+.total b { font:400 22px/1 var(--display); color:var(--primary); }
+.note { font-size:13px; color:var(--tertiary); margin-top:var(--s-2); }
+.item { display:flex; justify-content:space-between; min-height:44px; align-items:center; border-top:1px solid var(--border); font-size:14px; }
+.item:first-of-type { border-top:0; }
+
+.tabbar { display:none; }
+
+/* ── Tour layer ── */
+.tour { position:fixed; inset:0; z-index:10; }
+.spot { position:absolute; border-radius:var(--r-card); box-shadow:0 0 0 9999px var(--dim); outline:2px solid var(--raised);
+  transition:top var(--fast) var(--ease-out), left var(--fast) var(--ease-out), width var(--fast) var(--ease-out), height var(--fast) var(--ease-out); }
+.spot.none { box-shadow:none; background:var(--dim); outline:0; border-radius:0; top:0!important; left:0!important; width:100%!important; height:100%!important; }
+.card { position:absolute; width:min(400px,calc(100vw - 32px)); background:var(--raised); border:1px solid var(--border); border-radius:var(--r-card);
+  padding:var(--s-6) var(--s-6) var(--s-4); box-shadow:0 12px 32px -12px color-mix(in srgb,#201E1D 35%,transparent);
+  transition:top var(--fast) var(--ease-out), left var(--fast) var(--ease-out), opacity var(--quick) ease; }
+.card.swap { opacity:0; }
+.card h3 { font:600 22px/1.25 var(--sans); letter-spacing:-.01em; padding-right:var(--s-8); }
+.card h3:focus { outline:none; }
+.card p { margin-top:var(--s-2); text-wrap:pretty; }
+.close { position:absolute; top:var(--s-3); right:var(--s-3); width:44px; height:44px; display:grid; place-items:center; border:0; border-radius:var(--r-full); background:transparent; color:var(--tertiary); cursor:pointer; }
+.close:hover { background:var(--surface); }
+.foot { margin-top:var(--s-6); padding-top:var(--s-3); border-top:1px solid var(--border); display:flex; flex-direction:column; gap:var(--s-3); }
+.prog { display:flex; align-items:center; gap:var(--s-3); }
+.dots { display:flex; align-items:center; gap:6px; }
+.dots i { width:8px; height:8px; border-radius:var(--r-full); background:var(--accent-200); transition:width var(--fast) var(--ease-out), background var(--fast) ease; }
+.dots i.on { width:22px; background:var(--primary); }
+.count { font-size:12px; color:var(--tertiary); }
+.actions { display:flex; align-items:center; gap:var(--s-2); }
+.spacer { flex:1; }
+.btn { min-height:44px; padding:0 var(--s-4); border-radius:var(--r-full); font:600 14px/1 var(--sans); cursor:pointer; border:1px solid transparent; transition:transform var(--quick) var(--ease-out), background var(--quick) ease; }
+.btn:active { transform:scale(.97); }
+.btn.primary { background:var(--primary); color:var(--background); }
+.btn.primary:hover { background:var(--primary-hover); }
+.btn.outline { background:transparent; color:var(--text); border-color:var(--border); }
+.btn.outline:hover { background:var(--surface); }
+.btn.ghost { background:transparent; color:var(--primary); padding:0 var(--s-3); }
+.btn.ghost:hover { background:var(--accent-100); }
+[hidden] { display:none!important; }
+
+/* ── Mobile ── */
+@media (max-width:767px) {
+  .app { grid-template-columns:1fr; }
+  .side { display:none; }
+  .main { padding:var(--s-6) 16px 96px; }
+  h1 { font-size:32px; }
+  .grid3,.recipes { grid-template-columns:1fr; }
+  .rcard .ph { height:64px; }
+  .rcard:nth-child(n+3) { display:none; }
+  .tabbar { display:grid; grid-template-columns:repeat(4,1fr); position:fixed; left:0; right:0; bottom:0; height:64px; background:var(--raised); border-top:1px solid var(--border); }
+  .tabbar a { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:12px; color:var(--tertiary); text-decoration:none; min-height:44px; }
+  .tabbar a[aria-current="page"] { color:var(--primary); font-weight:600; }
+  .card { padding:var(--s-4) var(--s-4) var(--s-3); }
+  .card h3 { font-size:20px; }
+  .foot { margin-top:var(--s-4); }
+}
+@media (prefers-reduced-motion:reduce) { .spot,.card,.dots i,.btn { transition:opacity var(--quick) ease; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side" aria-label="Navegación">
+    <div class="brand">Fresco.</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="acct" id="acct"><b>Marta</b><span>marta@ejemplo.es</span><span class="plan">Plan Free</span></div>
+  </aside>
+  <main class="main"><div class="col" id="page"></div></main>
+</div>
+<nav class="tabbar" id="tabbar" aria-label="Navegación"></nav>
+
+<!-- The tour is a modal dialog: focus stays inside, Escape closes, focus returns to the origin. -->
+<div class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-body">
+  <div class="spot" id="spot" aria-hidden="true"></div>
+  <div class="card" id="card">
+    <button class="close" id="close" type="button" aria-label="Cerrar el recorrido"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <h3 id="tour-title" tabindex="-1"></h3>
+    <p id="tour-body"></p>
+    <div class="foot">
+      <div class="prog"><div class="dots" id="dots" aria-hidden="true"></div><span class="count" id="count" aria-live="polite"></span></div>
+      <div class="actions">
+        <button class="btn ghost" id="skip" type="button">Saltar</button>
+        <span class="spacer"></span>
+        <button class="btn outline" id="back" type="button">Atrás</button>
+        <button class="btn primary" id="next" type="button">Siguiente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICON = {
+  menu:'<svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+  recipes:'<svg viewBox="0 0 24 24"><path d="M12 6.5C10.5 5 8 4.5 3 4.5V19c5 0 7.5.5 9 2 1.5-1.5 4-2 9-2V4.5c-5 0-7.5.5-9 2zM12 6.5V21"/></svg>',
+  list:'<svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.7 12.4a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6"/></svg>'
+};
+const NAV = [['menu','Menú'],['calendar','Calendario'],['recipes','Recetas'],['list','Lista']];
+
+/* Each stop opens the page it talks about; the sidebar / tab bar mark it as current. */
+const PAGES = {
+  menu:() => `<h1>Menú</h1><p class="sub">Semana del 10 al 16 de noviembre</p>
+    <section class="panel" id="t-menu"><h2>Tu menú de hoy</h2><div class="grid3">
+      <div class="cell"><small>Desayuno</small><p>Tostada de aguacate con huevo</p></div>
+      <div class="cell"><small>Comida</small><p>Lentejas estofadas con verduras</p></div>
+      <div class="cell"><small>Cena</small><p>Merluza al horno con patata panadera</p></div></div></section>`,
+  calendar:() => `<h1>Calendario</h1><p class="sub">Semana del 10 al 16 de noviembre</p>
+    <section class="panel" id="t-calendar"><div class="grid3">
+      <div><div class="rowlbl" style="margin:0 0 4px">Lunes</div>
+        <div class="cell"><small>Desayuno</small><p>Tostada de aguacate</p></div>
+        <div class="cell" style="margin-top:8px"><small>Comida</small><p>Lentejas estofadas</p></div>
+        <div class="cell" style="margin-top:8px"><small>Cena</small><p>Merluza al horno</p></div></div>
+      <div><div class="rowlbl" style="margin:0 0 4px">Martes</div>
+        <div class="cell"><small>Desayuno</small><p>Yogur con avena</p></div>
+        <div class="cell" style="margin-top:8px"><small>Comida</small><p>Arroz con verduras</p></div>
+        <div class="cell" style="margin-top:8px"><small>Cena</small><p>Tortilla de calabacín</p></div></div>
+      <div><div class="rowlbl" style="margin:0 0 4px">Miércoles</div>
+        <div class="cell"><small>Desayuno</small><p>Pan con tomate</p></div>
+        <div class="cell" style="margin-top:8px"><small>Comida</small><p>Pollo al limón</p></div>
+        <div class="cell" style="margin-top:8px"><small>Cena</small><p>Crema de calabaza</p></div></div></div></section>`,
+  recipes:() => `<h1>Recetas</h1>
+    <div id="t-recipes" style="margin-top:var(--s-4)"><div class="search" style="margin-top:0">Busca una receta</div>
+    <div class="recipes">
+      <div class="rcard"><div class="ph"></div><p>Lentejas estofadas con verduras</p></div>
+      <div class="rcard"><div class="ph"></div><p>Merluza al horno con patata panadera</p></div>
+      <div class="rcard"><div class="ph"></div><p>Tortilla de calabacín</p></div></div></div>`,
+  list:() => `<h1>Lista de la compra</h1>
+    <div class="btnrow"><span class="pillbtn">Copiar</span><span class="pillbtn">Descargar CSV</span></div>
+    <section class="panel" id="t-list" style="margin-top:var(--s-4)"><div class="total"><h2 style="font:600 18px/1.3 var(--sans)">Resumen</h2></div>
+      <p class="note" style="margin-bottom:var(--s-3)">Precios orientativos, con la fecha en que se observaron junto a cada artículo.</p>
+      <div class="item"><span>Lentejas pardinas</span><span>1 paquete</span></div>
+      <div class="item"><span>Merluza</span><span>400 g</span></div>
+      <div class="item"><span>Calabacín</span><span>3 unidades</span></div></section>`,
+  profile:() => `<h1>Perfil</h1>
+    <div class="panel" style="padding:0"><div class="row">Preferencias</div><div class="row">Configuración</div><div class="row">Preguntas frecuentes</div><div class="row">Privacidad</div></div>`
+};
+
+const isMobile = () => matchMedia('(max-width:767px)').matches;
+const STEPS = [
+  { page:'menu',     target:'#t-menu',     title:'Tu menú de hoy', body:'Aquí ves qué toca desayunar, comer y cenar hoy. Cada plato ya respeta tus alergias y tus preferencias.' },
+  { page:'calendar', target:'#t-calendar', title:'Calendario: la semana entera', body:'Cada día tiene tres franjas: desayuno, comida y cena. Marca un plato como cocinado o descartado, y cámbialo por otro cuando no te apetezca.' },
+  { page:'recipes',  target:'#t-recipes',  title:'Recetas', body:'Explora las recetas que encajan contigo. Abre una para ver cómo se hace.' },
+  { page:'list',     target:'#t-list',     title:'Lista de la compra', body:'Con el menú de la semana, la lista se arma sola. Puedes copiarla o descargarla.' },
+  { page:'profile',  target:'#acct',       mobileTarget:null, title:'Qué aporta Pro', body:'En Free tus marcas se guardan igual, pero no se aplican a tus menús. Con Pro, lo que marcas da forma a los menús que vienen.' }
+];
+const $ = s => document.querySelector(s);
+const spot = $('#spot'), card = $('#card');
+let i = Math.max(0, Math.min(STEPS.length-1, parseInt((location.hash.match(/step=(\d)/)||[])[1]||'1',10)-1));
+
+$('#dots').innerHTML = STEPS.map(() => '<i></i>').join('');
+const navHtml = (cur, cls) => NAV.map(([k,l]) => `<a href="#"${cur===k?' aria-current="page"':''}>${ICON[k]}${cls?l:l}</a>`).join('');
+
+function place() {
+  const s = STEPS[i], W = innerWidth, H = innerHeight, pad = 8, gap = 16;
+  const sel = (isMobile() && 'mobileTarget' in s) ? s.mobileTarget : s.target, el = sel && $(sel);
+  const cw = card.offsetWidth, ch = card.offsetHeight;
+  if (!el) { spot.classList.add('none'); card.style.left = Math.max(16,(W-cw)/2)+'px'; card.style.top = Math.max(16,(H-ch)/2-24)+'px'; return; }
+  spot.classList.remove('none');
+  const r = el.getBoundingClientRect();
+  spot.style.cssText = `top:${r.top-pad}px;left:${r.left-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px`;
+  let left, top;
+  if (sel === '#acct') { left = r.right + gap + pad; top = Math.min(r.top - 8, H - ch - 16); }
+  else {
+    left = Math.max(16, Math.min(r.left + r.width/2 - cw/2, W - cw - 16));
+    top = r.bottom + pad + gap;
+    if (top + ch > H - (isMobile() ? 80 : 16)) top = H - ch - (isMobile() ? 80 : 24);
+  }
+  card.style.left = Math.max(16,left)+'px'; card.style.top = Math.max(16,top)+'px';
+}
+function paint() {
+  const s = STEPS[i], last = i === STEPS.length-1;
+  $('#nav').innerHTML = navHtml(s.page);
+  $('#tabbar').innerHTML = navHtml(s.page);
+  $('#page').innerHTML = PAGES[s.page]();
+  $('#tour-title').textContent = s.title; $('#tour-body').textContent = s.body;
+  $('#next').textContent = last ? 'Empezar' : 'Siguiente';
+  $('#skip').hidden = last; $('#back').hidden = i === 0;
+  $('#count').textContent = `${i+1} de ${STEPS.length}`;
+  document.querySelectorAll('#dots i').forEach((d,k) => d.classList.toggle('on', k===i));
+  place();
+}
+function go(n, swap=true) {
+  i = n; card.classList.add('swap');
+  setTimeout(() => { paint(); card.classList.remove('swap'); }, swap ? 100 : 0);
+}
+function end() { $('#tour').style.display = 'none'; }
+$('#next').onclick = () => { if (i === STEPS.length-1) end(); else go(i+1); };
+$('#back').onclick = () => { if (i > 0) go(i-1); };
+$('#skip').onclick = end; $('#close').onclick = end;
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') end();
+  if (e.key === 'ArrowRight') $('#next').click();
+  if (e.key === 'ArrowLeft') $('#back').click();
+});
+addEventListener('resize', place);
+document.fonts.ready.then(() => { paint(); $('#tour-title').focus(); });
+</script>
+</body>
+</html>

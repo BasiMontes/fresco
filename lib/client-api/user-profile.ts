@@ -1,4 +1,4 @@
-import { getPlanTierForAnalytics as getPlanTierForAnalyticsFor, markRoutesNoticeDismissed as markRoutesNoticeDismissedFor, updateNombre as updateNombreFor, upsertUserProfile as upsertUserProfileFor } from '@/lib/api/user-profile';
+import { getPlanTierForAnalytics as getPlanTierForAnalyticsFor, markRoutesNoticeDismissed as markRoutesNoticeDismissedFor, markTourSeen as markTourSeenFor, updateNombre as updateNombreFor, upsertUserProfile as upsertUserProfileFor } from '@/lib/api/user-profile';
 import { readCookieConsentRecordClient } from '@/lib/consent/cookie-consent';
 import { createClient } from '@/lib/supabase/client';
 
@@ -11,6 +11,11 @@ export async function getPlanTierForAnalytics(userId: Parameters<typeof getPlanT
 
 export async function markRoutesNoticeDismissed(userId?: Parameters<typeof markRoutesNoticeDismissedFor>[1]) {
   return markRoutesNoticeDismissedFor(createClient(), userId);
+}
+
+/** FRESCO-1197: records that the signed-in person has seen, skipped or closed the first-visit tour. */
+export async function markTourSeen(userId?: Parameters<typeof markTourSeenFor>[1]) {
+  return markTourSeenFor(createClient(), userId);
 }
 
 export async function updateNombre(nombre: Parameters<typeof updateNombreFor>[1]) {
