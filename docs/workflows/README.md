@@ -10,6 +10,7 @@
 | Documento                                        | Descripción                                                 |
 | ------------------------------------------------ | ----------------------------------------------------------- |
 | [boilerplate-sync.md](./boilerplate-sync.md)     | `bun sync` y el `adr:reconcile` que debe seguirle           |
+| [e2e-flaky-triage.md](./e2e-flaky-triage.md)     | Cómo encontrar la causa de un escenario e2e flaky           |
 | [environments.md](./environments.md)             | Ambientes de desarrollo (local, staging, producción)        |
 | [git-flow.md](./git-flow.md)                     | Flujo de trabajo Git para desarrollo AI-driven              |
 | [hosted-auth-settings.md](./hosted-auth-settings.md) | El check semanal de los ajustes de Auth del proyecto alojado |
