@@ -3,7 +3,7 @@ import type { TestUser } from '../test-user-factory';
 import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { test } from '../fixtures';
-import { currentWeekMonday, loginToApp, restHeaders, serviceRoleHeaders } from '../test-helpers';
+import { currentWeekMonday, loginToApp, restHeaders, sendSeedRequest, serviceRoleHeaders } from '../test-helpers';
 import { seedFullWeekMenu } from '../test-user-factory';
 import { revealCalendarDay } from './support/calendar-day';
 
@@ -55,14 +55,15 @@ async function seedTwoDistinctLunches(request: import('@playwright/test').APIReq
   // service-role fixture path already established elsewhere in this suite
   // (test-user-factory.ts) instead of the test user's own token.
   const svcHeaders = serviceRoleHeaders();
-  await request.patch(
-    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?meal_plan_id=eq.${plan.id}&dia=eq.lunes&tipo_plato=eq.comida`,
-    { headers: svcHeaders, data: { recipe_id: a.id } },
-  );
-  await request.patch(
-    `${SUPABASE_URL}/rest/v1/meal_plan_recipes?meal_plan_id=eq.${plan.id}&dia=eq.martes&tipo_plato=eq.comida`,
-    { headers: svcHeaders, data: { recipe_id: b.id } },
-  );
+  // FRESCO-1149: both writes are checked and a 5xx from the gateway is retried (FRESCO-1136). Setting a recipe is
+  // idempotent, so repeating a write that did reach the database is harmless.
+  for (const [dia, recipeId] of [['lunes', a.id], ['martes', b.id]] as const) {
+    const { res } = await sendSeedRequest(async () => request.patch(
+      `${SUPABASE_URL}/rest/v1/meal_plan_recipes?meal_plan_id=eq.${plan.id}&dia=eq.${dia}&tipo_plato=eq.comida`,
+      { headers: svcHeaders, data: { recipe_id: recipeId } },
+    ));
+    if (!res.ok()) { throw new Error(`Failed to set the ${dia} comida recipe: ${res.status()} ${await res.text()}`); }
+  }
 }
 
 async function loginAndGoToCalendar(page: Page, testUser: TestUser): Promise<void> {
