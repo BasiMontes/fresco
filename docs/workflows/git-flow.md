@@ -127,6 +127,15 @@ Cuando la feature está completa:
 
 Si un cambio supera unas 400 líneas, `git-flow-master` propone partirlo en PRs encadenados (stacked) antes de empezar.
 
+#### Si el PR no arranca sus checks
+
+A veces el workflow `pr-check.yml` no arranca al abrir un PR y este queda sin los checks requeridos, de modo que no se puede mergear. No es un fallo del código del PR. Se nota porque `gh pr checks <n>` no lista nada pasados un par de minutos.
+
+1. Antes de tocar nada, guarda `gh run list --event pull_request --branch <rama>` y `gh pr checks <n>`, y anota la hora de apertura. Mira si GitHub tenía una incidencia a esa hora en `githubstatus.com`.
+2. Cierra y reabre el PR: `gh pr close <n>` y `gh pr reopen <n>`. Con eso el workflow arranca.
+
+La causa no está probada. El único caso registrado (2026-11-10, dos PRs) coincidió con una incidencia de GitHub en Git Operations y Pull Requests, y los PRs posteriores arrancaron sin intervención. Si ocurre otra vez fuera de una incidencia, reabre `FRESCO-1195` con los datos del paso 1 en vez de seguir cerrando y reabriendo.
+
 ---
 
 ## Ventajas de Este Sistema
