@@ -220,12 +220,29 @@ export async function seedFullWeekMenu(request: APIRequestContext, testUser: Tes
 
   // FRESCO-777: authenticated cannot INSERT meal_plans / meal_plan_recipes any
   // more (only generate-meal-plan writes them); fixtures seed as service role.
-  const planRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plans`, {
+  // FRESCO-1149: a 5xx from the gateway is retried like the other seeding writes (FRESCO-1136). A 409 after such a
+  // retry means the first attempt did reach the database (`unique_user_semana`, `unique_slot`), so the rows are
+  // already there: the plan id is read back and the slots are taken as written.
+  const { res: planRes, retried: planRetried } = await sendSeedRequest(async () => request.post(`${supabaseUrl()}/rest/v1/meal_plans`, {
     headers: { ...serviceRoleHeaders(), Prefer: 'return=representation' },
     data: { user_id: testUser.id, semana_iso: semanaIso, fecha_inicio: fechaInicio, advertencias: [] },
-  });
-  if (!planRes.ok()) { throw new Error(`Failed to seed meal_plans: ${planRes.status()} ${await planRes.text()}`); }
-  const [plan] = await planRes.json() as { id: string }[];
+  }));
+  let planRows: { id: string }[];
+  if (planRes.ok()) {
+    planRows = await planRes.json() as { id: string }[];
+  }
+  else if (planRetried && planRes.status() === 409) {
+    const existing = await request.get(
+      `${supabaseUrl()}/rest/v1/meal_plans?select=id&user_id=eq.${testUser.id}&semana_iso=eq.${semanaIso}`,
+      { headers: serviceRoleHeaders() },
+    );
+    planRows = await existing.json() as { id: string }[];
+  }
+  else {
+    throw new Error(`Failed to seed meal_plans: ${planRes.status()} ${await planRes.text()}`);
+  }
+  const [plan] = planRows;
+  if (!plan) { throw new Error('Failed to seed meal_plans: the plan row is not there after a retried write.'); }
 
   const slots = DIAS.flatMap(dia => TIPOS.map(tipo => ({
     meal_plan_id: plan.id,
@@ -233,8 +250,8 @@ export async function seedFullWeekMenu(request: APIRequestContext, testUser: Tes
     dia,
     tipo_plato: tipo,
   })));
-  const slotsRes = await request.post(`${supabaseUrl()}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots });
-  if (!slotsRes.ok()) { throw new Error(`Failed to seed meal_plan_recipes: ${slotsRes.status()} ${await slotsRes.text()}`); }
+  const { res: slotsRes, retried: slotsRetried } = await sendSeedRequest(async () => request.post(`${supabaseUrl()}/rest/v1/meal_plan_recipes`, { headers: serviceRoleHeaders(), data: slots }));
+  if (!slotsRes.ok() && !(slotsRetried && slotsRes.status() === 409)) { throw new Error(`Failed to seed meal_plan_recipes: ${slotsRes.status()} ${await slotsRes.text()}`); }
 
   return { comidaNombre: recipesByTipo.comida.nombre, cenaNombre: recipesByTipo.cena.nombre };
 }

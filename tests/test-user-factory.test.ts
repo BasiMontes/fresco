@@ -1,6 +1,6 @@
 import { describe, expect, spyOn, test } from 'bun:test';
 import { recordConsents, sendSeedRequest } from './test-helpers';
-import { buildProfileRow, deleteTrackedUsers } from './test-user-factory';
+import { buildProfileRow, deleteTrackedUsers, seedFullWeekMenu } from './test-user-factory';
 
 /**
  * FRESCO-1197: a profile created now starts as "not seen" and the first-visit tour would open over every
@@ -77,6 +77,86 @@ describe('sendSeedRequest', () => {
 
     expect(res.status()).toBe(409);
     expect(retried).toBe(true);
+  });
+});
+
+/**
+ * FRESCO-1149: the menu seeding writes (`meal_plans`, then `meal_plan_recipes`) failed a scenario on one 502 from
+ * the gateway ("Failed to seed meal_plans: 502", run 43048810440). They now go through `sendSeedRequest`, and a 409
+ * after a retried 5xx means the first attempt was committed.
+ */
+describe('seedFullWeekMenu', () => {
+  const PLAN_ID = 'plan-1';
+  const reply = (status: number, body: unknown = []) => ({
+    ok: () => status >= 200 && status < 300,
+    status: () => status,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  });
+
+  /** A request double: `plans` and `slots` are the scripted answers to the two POSTs, in order. */
+  function fakeRequest(plans: number[], slots: number[]) {
+    const calls = { plans: 0, slots: 0, planReads: 0 };
+    const request = {
+      get: async (url: string) => {
+        if (url.includes('/recipes?')) { return reply(200, [{ id: 'r1', nombre: 'Receta' }]); }
+        calls.planReads++;
+        return reply(200, [{ id: PLAN_ID }]);
+      },
+      post: async (url: string) => {
+        if (url.endsWith('/meal_plans')) { return reply(plans[calls.plans++], [{ id: PLAN_ID }]); }
+        return reply(slots[calls.slots++]);
+      },
+    };
+    return { request: request as unknown as Parameters<typeof seedFullWeekMenu>[0], calls };
+  }
+
+  const user = { id: 'user-1', accessToken: 'token' } as Parameters<typeof seedFullWeekMenu>[1];
+
+  test('retries a 502 on the plan write and carries on with the plan it created', async () => {
+    const { request, calls } = fakeRequest([502, 201], [201]);
+
+    await seedFullWeekMenu(request, user);
+
+    expect(calls.plans).toBe(2);
+    expect(calls.slots).toBe(1);
+    expect(calls.planReads).toBe(0);
+  });
+
+  test('a 409 after a retried 502 reads the existing plan back instead of failing', async () => {
+    const { request, calls } = fakeRequest([502, 409], [201]);
+
+    await seedFullWeekMenu(request, user);
+
+    expect(calls.planReads).toBe(1);
+    expect(calls.slots).toBe(1);
+  });
+
+  test('a 409 with no earlier 5xx is a real conflict and is reported', async () => {
+    const { request } = fakeRequest([409], [201]);
+
+    await expect(seedFullWeekMenu(request, user)).rejects.toThrow('Failed to seed meal_plans: 409');
+  });
+
+  test('gives up after three 502 and reports the last status', async () => {
+    const { request, calls } = fakeRequest([502, 502, 502], [201]);
+
+    await expect(seedFullWeekMenu(request, user)).rejects.toThrow('Failed to seed meal_plans: 502');
+    expect(calls.plans).toBe(3);
+  });
+
+  test('a 409 on the slots after a retried 502 means they were written', async () => {
+    const { request, calls } = fakeRequest([201], [502, 409]);
+
+    await seedFullWeekMenu(request, user);
+
+    expect(calls.slots).toBe(2);
+  });
+
+  test('a 409 on the slots with no earlier 5xx is reported', async () => {
+    const { request } = fakeRequest([201], [409]);
+
+    await expect(seedFullWeekMenu(request, user)).rejects.toThrow('Failed to seed meal_plan_recipes: 409');
   });
 });
 
