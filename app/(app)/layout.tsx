@@ -71,12 +71,15 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
           console.error('[AppGroupLayout] getMissingConsents failed, not asking', error);
           return [];
         }),
-    // FRESCO-1197: has this account seen the first-visit tour. Fails CLOSED (answers "seen"): a tour that
-    // does not appear is harmless, one that appears to everybody because of a database blip is not.
-    getHasSeenTour(supabase, user.id).catch((error) => {
-      console.error('[AppGroupLayout] getHasSeenTour failed, not showing the tour', error);
-      return true;
-    }),
+    // FRESCO-1197: has this account seen the first-visit tour. A guest never gets it, so nothing is read for
+    // one. Fails CLOSED (answers "seen"): a tour that does not appear is harmless, one that appears to
+    // everybody because of a database blip is not.
+    user.is_anonymous
+      ? Promise.resolve(true)
+      : getHasSeenTour(supabase, user.id).catch((error) => {
+          console.error('[AppGroupLayout] getHasSeenTour failed, not showing the tour', error);
+          return true;
+        }),
   ]);
 
   // FRESCO-250: an authenticated user with no `user_profiles` row never
