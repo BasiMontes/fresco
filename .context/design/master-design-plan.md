@@ -46,7 +46,7 @@ file for every UI story, and falls back to `DESIGN.md`-only fidelity only when a
 ## §1 — Scorecard
 
 Fidelity status per screen. `built` = shipped and in production; `partial` = shipped but a known gap
-or placeholder remains; `n/a` = not a user-facing fidelity surface.
+or placeholder remains; `missing` = specified and ratified but not built yet; `n/a` = not a user-facing fidelity surface.
 
 | Screen | Route | Status | Notes |
 |---|---|---|---|
@@ -70,6 +70,7 @@ or placeholder remains; `n/a` = not a user-facing fidelity surface.
 | Legal modal | cross-cutting overlay | built | `components/legal/legal-modal.tsx`, `legal-links.tsx`. Triggered from signup, profile, landing footer. |
 | Motion & transitions layer | cross-cutting | built | EPIC-FRESCO-244 — page transitions, list/card enter-exit, modal open/close, micro-interactions, `prefers-reduced-motion`. |
 | Error & not-found screens | `error.tsx` / `global-error.tsx` / `not-found.tsx` | built | Safety net (TECHDEBT-FRESCO-46); `not-found.tsx` styled (DEFECT-FRESCO-182). |
+| First-visit tour + replay row | overlay on `/(app)/*`, `/profile` Configuración | missing | FRESCO-1197. Mockup ratified 2026-11-12 (§4.21), not built yet. |
 | Auth confirm | `/auth/confirm` | n/a | Route handler, no UI. |
 | Dev skeleton-capture | `/dev/skeleton-capture` | n/a | Dev-only visual-regression tooling (`boneyard-js`). Not a fidelity surface. |
 
@@ -537,6 +538,43 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   providers · [ ] copy in Spanish, no raw stack trace.
 - **Provenance.** Live UI as built. No mockup.
 
+### 4.21 First-visit tour — overlay on `/(app)/*`, replay row in `/profile` Configuración (FRESCO-1197)
+
+- **Purpose.** Right after the profile onboarding, a registered person gets a short guided walk that explains
+  where things are and what to do. It can be replayed from Configuración.
+- **Decisions (owner, 2026-11-12, recorded in the FRESCO-1197 comment).** Starts after the profile onboarding
+  ends, registered accounts only (guests excluded). "Already seen" is stored on the account, so it follows the
+  person across devices. No voice, no mascot. The tour can be replayed from the Configuración modal.
+- **Layout.** A modal overlay over the real page: the zone the stop talks about is lifted (hairline ring), the
+  rest is dimmed, and a step card sits next to the zone. Each stop **opens the page it explains** and the sidebar
+  (desktop) or tab bar (mobile) marks that page as current. Five stops: `/menu` "Tu menú de hoy"; `/calendar`
+  slots plus mark cooked or discarded plus change a dish; `/recipes` search and catalogue; `/shopping-list`
+  summary and list; `/profile` plan (Pro explanation; on mobile there is no zone to lift, the card is centred over
+  the dimmed page). Step card: title (h3), two or three sentences, progress dots with "n de 5", then one actions
+  row: `Saltar` (ghost, left) · `Atrás` (outline, from the second stop) · `Siguiente` (primary). The last stop
+  drops `Saltar` and `Siguiente` becomes `Empezar`. Close (44 px icon button) top right, always available.
+  Replay row: a "Recorrido" block in the Configuración modal, after Contraseña, with one sentence ("no cambia
+  ningún dato de tu cuenta") and a secondary `Ver el recorrido` button.
+- **Tokens.** `surface-raised` card with hairline border and `rounded.card`; dim scrim from `text` at ~58 %; h3
+  Figtree 22/600 (20 on mobile), body 15, caption 12 for the count; `button` primary pill, `button-secondary`
+  outline, `button-ghost`; active dot is a 22 px pill in `primary`, inactive dots `accent-200`. No orange
+  (`button-action` is not used). Motion: spotlight and card move with `ease-smooth-out` 150 to 250 ms, no
+  overshoot; reduced motion keeps only a short opacity fade.
+- **Components (to build).** A first-visit tour overlay in `components/onboarding/` plus the replay row in
+  `components/profile/ayuda-section.tsx` (Configuración modal). Names are the implementer's call.
+- **Checklist.** [ ] shows once per account after the profile onboarding, never for guests · [ ] stored on the
+  account, not only in the browser · [ ] `Saltar` and close end it and it does not come back on its own ·
+  [ ] `Atrás` returns one stop · [ ] each stop opens its page and highlights its zone · [ ] replay from
+  Configuración works and does not change account data · [ ] dialog semantics: labelled title, focus moves in,
+  held inside, returns to the origin on close · [ ] Escape closes, arrow keys move between stops · [ ] 44 px
+  targets, visible focus, nothing below 12 px · [ ] reduced motion honoured · [ ] mobile: spotlight on the page
+  zone, no horizontal scroll, card never covers the tab bar.
+- **Provenance.** Mockup ratified by the owner 2026-11-12: `.context/designs/fresco/first-visit-tour/`
+  (`first-visit-tour.html`, `settings-tour-row.html`, `BRIEF.md`, `preview-*.jpg`). Mode C (HTML generated through
+  `frontend-design`, `ui-ux-pro-max`, `impeccable`, `emil-design-eng`). The mockup is inspiration: at build time
+  the live UI plus `DESIGN.md` tokens are the fidelity reference (Critical Rule 14). Dish names, recipe photos and
+  prices in the mockup are placeholders.
+
 ---
 
 ## §5 — Divergence register
@@ -664,6 +702,7 @@ stories) are listed at the end.
 | FRESCO-878 | Biblioteca: añadir una receta al menú semanal desde su tarjeta (icono de calendario y modal de día y comida) | EPIC-FRESCO-484 Platform polish | 4.10 Recipe library (`recipe-card` con icono de calendario + `add-to-menu-dialog`) · built LIVE-UI-FIRST, sin mockup, `dialog` y tokens existentes | 4.8 Calendar (destino del botón "Ver calendario") |
 | FRESCO-1070 | UX: sacar Preferencias de /profile a una subpágina y repartir las filas en dos tarjetas (Preferencias y ayuda / Legal) | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.13 Profile (`/profile`, tarjetas "Preferencias y ayuda" y "Legal") y `/profile/preferences` (no §4 spec of its own; §5-AA) · built LIVE-UI-FIRST, sin mockup, `Card`, botón de volver de FRESCO-451 y tokens existentes | 4.17 App shell (enlaces `/profile#ayuda` del sidebar) |
 | FRESCO-1134 | Producto: Landing, revisar grillas y orden de secciones para bajar la nota de Anti Web Slop (48 %) | EPIC-FRESCO-884 Preparación del lanzamiento público | 4.1 Landing (reestructura: vídeo tras el hero, pasos verticales con foto, dolor en filas, línea de tiempo Pro, planes asimétricos, sin `impact-stats`) · mockup ratificado 2026-11-06 en `.context/designs/fresco/landing-restructure/`, construido en #912 (`70399963`, staging) | — |
+| FRESCO-1197 | Onboarding: guía de primera visita (recorrido de 5 paradas) y opción de volver a verla en Configuración | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.21 First-visit tour (overlay + fila "Ver el recorrido" en Configuración) · mockup ratificado 2026-11-12 en `.context/designs/fresco/first-visit-tour/`, sin construir | 4.6 Onboarding (disparo al terminar), 4.7 Home, 4.8 Calendar, 4.10 Recipe library, 4.9 Shopping list, 4.13 Profile, 4.17 App shell |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -673,7 +712,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 47 stories enumerated · **47 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
+**Count:** 48 stories enumerated · **48 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.
