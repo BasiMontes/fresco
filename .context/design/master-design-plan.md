@@ -589,6 +589,29 @@ Jira / `.context/qa/regression.feature`, not re-listed here.
   the live UI plus `DESIGN.md` tokens are the fidelity reference (Critical Rule 14). Dish names, recipe photos and
   prices in the mockup are placeholders.
 
+### 4.22 Transactional emails — typography (FRESCO-1198)
+
+- **Purpose.** The five transactional emails keep the brand typography of the web. Not an app screen: table
+  layout with inline styles, so every value is a literal.
+- **Scope.** `supabase/templates/confirmation.html`, `recovery.html`, `email_change.html` (Supabase Auth, applied
+  to the three environments at once through the Management API, see that folder's README),
+  `lib/email/templates/subscription-confirmation.ts`, `lib/email/templates/waitlist-confirmation.ts`.
+- **Typography contract (owner ratified 2026-11-12).** Titles: Young Serif 400, 26 px on a phone and 30 px on
+  desktop, line height 1.15, tracking -0.015em, stack `'Young Serif', Georgia, 'Times New Roman', serif`. Everything
+  else, buttons and the verification code included: Figtree, body 15 px / 1.55, button 600 at 16 px, code 600 at
+  30 px with wide spacing, stack `Figtree, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+  sans-serif`. No display face on a button. A client that ignores web fonts draws Georgia and the system sans.
+- **Layout.** Unchanged. The header band keeps the real negative logo (`Logo negativo.png`, 176 x 54, already
+  embedded). The waitlist email stays plain (FRESCO-1008: no logo, no tracking); only its type changes.
+- **Out of scope.** The orange button with white text has low contrast, and the waitlist email uses a green and
+  radii that are not the brand's: separate tickets.
+- **Checklist.** [ ] no `font-family` outside the contract in any of the five (a test renders each template and
+  fails on one) · [ ] Fraunces and Caprasimo gone · [ ] Young Serif and Figtree loaded the way the current
+  templates load Figtree · [ ] Apple Mail and Gmail, light and dark, checked by the owner with real emails.
+- **Provenance.** Mockup ratified by the owner 2026-11-12: `.context/designs/fresco/email-typography/`
+  (`email-typography.html`, `BRIEF.md`, `logo-negativo.png`, `preview-*.jpg`). Mode C. The mockup is inspiration;
+  the fidelity reference is `DESIGN.md` (Critical Rule 14).
+
 ---
 
 ## §5 — Divergence register
@@ -718,6 +741,7 @@ stories) are listed at the end.
 | FRESCO-1134 | Producto: Landing, revisar grillas y orden de secciones para bajar la nota de Anti Web Slop (48 %) | EPIC-FRESCO-884 Preparación del lanzamiento público | 4.1 Landing (reestructura: vídeo tras el hero, pasos verticales con foto, dolor en filas, línea de tiempo Pro, planes asimétricos, sin `impact-stats`) · mockup ratificado 2026-11-06 en `.context/designs/fresco/landing-restructure/`, construido en #912 (`70399963`, staging) | — |
 | FRESCO-1197 | Onboarding: guía de primera visita (recorrido de 5 paradas) y opción de volver a verla en Configuración | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.21 First-visit tour (overlay + fila "Ver el recorrido" en Configuración) · mockup ratificado 2026-11-12 en `.context/designs/fresco/first-visit-tour/`, construido en #986 a #989 y llevado a `staging` en #990 | 4.6 Onboarding (disparo al terminar), 4.7 Home, 4.8 Calendar, 4.10 Recipe library, 4.9 Shopping list, 4.13 Profile, 4.17 App shell |
 | FRESCO-1199 | Menu: rediseñar los botones Cocinado y Descartar, que ocupan más que la propia receta | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.8 Calendar (slot mark controls: iconos sobre la foto, chip de estado, palabra al pasar el ratón) · mockup ratificado 2026-11-12 en `.context/designs/fresco/slot-mark-controls/` (opción C), sin construir | 4.17 App shell |
+| FRESCO-1198 | Correos: actualizar la tipografía de los correos para que mantengan la identidad de la marca | EPIC-FRESCO-869 Pulido de flujos de usuario | 4.22 Transactional emails (cinco plantillas: título en Young Serif, resto en Figtree, respaldo Georgia y sans del sistema) · mockup ratificado 2026-11-12 en `.context/designs/fresco/email-typography/`, sin construir | — |
 
 **Epics with no user stories (task-driven — no §8 rows):**
 
@@ -727,7 +751,7 @@ stories) are listed at the end.
 | EPIC-FRESCO-25 QA testability credentials | Doc artifact + `/qa` page (`/testability-guide`) | 4.15 QA guide |
 | EPIC-FRESCO-278 August-2026 technical re-audit remediation | Techdebt tasks (CI, foundation docs, Jira hygiene, this file — FRESCO-294) | Cross-cutting; no single screen |
 
-**Count:** 49 stories enumerated · **49 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
+**Count:** 50 stories enumerated · **50 mapped to at least one screen** · **0 omitted as non-UI** · **1 `🔒 mockup-gated`** (FRESCO-842; FRESCO-841 built spec-only, §5-V: the §4 spec and the mockup are produced by the screen phase of `/design-system` before any code)
 (FRESCO-7 and FRESCO-9 are engine-heavy but still surface UI, so they are mapped, not omitted).
 Defects (`DEFECT-FRESCO-*`) and techdebt items (`TECHDEBT-FRESCO-*`) are not stories and are not
 rowed here — they are referenced inline in the relevant §4 checklists.

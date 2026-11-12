@@ -16,30 +16,20 @@
 </xml>
 </noscript>
 <![endif]-->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   @font-face {
-    font-family: 'Figtree';
+    font-family: 'Young Serif';
     font-style: normal;
     font-weight: 400;
     font-display: swap;
-    src: url(https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMq4a3CoZt.woff2) format('woff2');
+    src: url(https://fresco-pro.vercel.app/fonts/young-serif-v2-latin-400.woff2) format('woff2');
   }
   @font-face {
     font-family: 'Figtree';
     font-style: normal;
-    font-weight: 600;
+    font-weight: 400 700;
     font-display: swap;
-    src: url(https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMq4a3CoZt.woff2) format('woff2');
-  }
-  @font-face {
-    font-family: 'Figtree';
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url(https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMq4a3CoZt.woff2) format('woff2');
+    src: url(https://fresco-pro.vercel.app/fonts/figtree-v9-latin-wght.woff2) format('woff2');
   }
 
   body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -48,11 +38,11 @@
   body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: #FAF3E3; }
   a { text-decoration: none; }
 
-  /* DESIGN.md v2 (FRESCO-437): Fraunces is the display face; Caprasimo retired.
-     Most email clients strip webfonts, so Georgia carries the editorial serif
-     read for the majority; Apple / iOS Mail render Fraunces. */
-  .heading { font-family: Fraunces, Georgia, "Times New Roman", serif; font-weight: 400; color: #201E1D; }
-  .body-text { font-family: Figtree, -apple-system, BlinkMacSystemFont, sans-serif; color: #201E1D; }
+  /* FRESCO-1198 (DESIGN.md v2): Young Serif for titles only, Figtree for everything else, buttons included. The
+     fonts are hosted by us (public/fonts, SIL OFL), never loaded from Google. Gmail and other clients ignore web
+     fonts: Georgia and the system sans carry the brand there. */
+  .heading { font-family: 'Young Serif', Georgia, 'Times New Roman', serif; font-weight: 400; color: #201E1D; }
+  .body-text { font-family: Figtree, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #201E1D; }
 
   @media only screen and (max-width: 600px) {
     .email-container { width: 100% !important; }
