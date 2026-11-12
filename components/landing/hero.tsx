@@ -136,7 +136,7 @@ function HeroIllustrationComposition() {
         />
       </div>
       {/* FRESCO-1141: the FLUX terms forbid presenting the output as real photographs, so the caption is visible. */}
-      <p className="mt-3 text-body-sm text-tertiary">Ilustraciones de platos del catálogo, generadas con IA.</p>
+      <p className="mt-3 text-body-sm text-tertiary">Ilustraciones de platos del catálogo, generadas con inteligencia artificial.</p>
     </div>
   );
 }

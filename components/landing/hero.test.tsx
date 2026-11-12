@@ -76,9 +76,11 @@ describe('Hero', () => {
     expect(screen.queryAllByRole('img')).toHaveLength(0);
 
     // Not `aria-hidden`: the caption is what tells the reader the images are illustrations.
-    const caption = screen.getByText('Ilustraciones de platos del catálogo, generadas con IA.');
+    const caption = screen.getByText('Ilustraciones de platos del catálogo, generadas con inteligencia artificial.');
 
     expect(caption).toBeInTheDocument();
+    // FRESCO-370: the landing must not say "con IA" (regression scenario); the FAQ writes "con inteligencia artificial".
+    expect(caption.textContent).not.toMatch(/con IA\b/i);
     expect(caption.closest('[aria-hidden="true"]')).toBeNull();
   });
 });

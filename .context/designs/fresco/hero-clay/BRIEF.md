@@ -25,7 +25,7 @@ My reading, not a measurement: the 8 icons come from different generations, so t
 
 - 8 recipes picked from the 48 clay icons already applied: espaguetis con tomate y albahaca, batido de cacao y plátano, ensalada de brócoli con almendras, huevos poché con espárragos, marmitako de bonito, torrijas caseras, tacos de pescado con repollo, sándwich de pollo y aguacate. Varied on purpose: pasta, drink, salad, egg, stew, sweet, fish, sandwich. The owner confirms or swaps them.
 - Tiles are square (`aspect-square`, the icon's own shape) instead of the photos' 4/5.
-- Caption under the composition, outside the edge fade: "Ilustraciones de platos del catálogo, generadas con IA." 13 px, `tertiary` on `background`.
+- Caption under the composition, outside the edge fade: "Ilustraciones de platos del catálogo, generadas con inteligencia artificial." 13 px, `tertiary` on `background`.
 - The marquee drift stays. The mockup is static, so only 4 of the 8 icons show in each frame.
 - Decorative images keep `alt=""` and `aria-hidden`; the caption carries the meaning.
 
