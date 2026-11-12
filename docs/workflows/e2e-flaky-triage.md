@@ -23,4 +23,4 @@ El paso `e2e flakiness budget` del log solo imprime **cuántos** escenarios fuer
 3. Si el error es un 5xx de una siembra o de una función (`502`, o `500` con el cuerpo genérico `Error guardando el plan en la BD`), descarga `supabase-logs` y busca en `supabase_edge_runtime_*.log` la línea de esa hora. `create_meal_plan failed` lleva el mensaje real de la base de datos. En `supabase_kong_*.log` se ve si la pasarela respondió el 502.
 4. Con la causa, decide: un reintento solo si es un fallo de transporte (`sendSeedRequest`), un arreglo si es de la función o del test.
 
-Los logs enmascaran los JWT, pero no se debe pegar su contenido en tarjetas ni PRs sin revisarlo. El artefacto cubre la ejecución en curso: un fallo antiguo ya no tiene su log.
+Los logs enmascaran los JWT y las direcciones de correo (`[jwt]`, `[email]`), así que una petición se sigue por el UUID del usuario, no por su correo. Aun así, no se debe pegar su contenido en tarjetas ni PRs sin revisarlo. El artefacto cubre la ejecución en curso: un fallo antiguo ya no tiene su log.
