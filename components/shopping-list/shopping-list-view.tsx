@@ -102,7 +102,7 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, compra }
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div data-tour="shopping-list" className="mx-auto max-w-2xl">
       <h1 className="text-h2">Lista de la compra</h1>
 
       {list.desactualizada && <ShoppingListStaleBanner mealPlanId={list.mealPlanId} />}

@@ -108,7 +108,7 @@ export function MenuTodaysMeals({ plan, dietaryPreferences, favoriteIds, mondayI
           {DIA_LABELS[dia]}
         </p>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div data-tour="menu-today" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {slots.map(slot => (
           <div key={slot} className="flex flex-col">
             <p className="mb-2 text-h6 uppercase text-tertiary">{slot}</p>

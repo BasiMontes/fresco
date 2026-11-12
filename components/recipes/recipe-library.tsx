@@ -184,7 +184,7 @@ export function RecipeLibrary({
   const hasMore = recipes.length < total;
 
   return (
-    <div>
+    <div data-tour="recipes-library">
       {/* FRESCO-448 (P1-d): search — Biblioteca's primary action — was
           crushed to a ~40px unlabelled box between two non-shrinking
           buttons on mobile. It now takes its own full-width row below

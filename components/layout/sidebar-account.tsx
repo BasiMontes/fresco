@@ -191,6 +191,7 @@ export function SidebarAccount({ nombre, email, plan, isAnonymous, collapsed = f
   return (
     <div
       data-testid="sidebarAccount"
+      data-tour="account-plan"
       className={cn('flex flex-col gap-5 border-t pt-5', collapsed && 'items-center')}
     >
       <div className="relative">
