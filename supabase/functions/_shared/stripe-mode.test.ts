@@ -1,11 +1,13 @@
-import { afterEach, describe, expect, test } from 'bun:test'
-import { fakeEdgeClient } from '@/tests/mocks/edge-function'
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { fakeEdgeClient, installDeno } from '@/tests/mocks/edge-function'
 import { StripeNotConfiguredError } from './stripe-billing.ts'
 import { assertStripeKeyMatchesBillingMode, StripeModeMismatchError, stripeKeyLivemode } from './stripe-mode.ts'
 
 /** FRESCO-1164 — the Edge Functions' Stripe mode guard (the counterpart of lib/billing/stripe-mode.ts). */
 
 const savedKey = process.env.STRIPE_SECRET_KEY
+// FRESCO-1205: stripe-mode.ts reads `Deno.env`; without this the test only passed when another file had left a `Deno` on globalThis.
+beforeEach(installDeno)
 afterEach(() => {
   if (savedKey === undefined) delete process.env.STRIPE_SECRET_KEY
   else process.env.STRIPE_SECRET_KEY = savedKey
