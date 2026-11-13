@@ -340,7 +340,7 @@ describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter re
     expect(eggplant.ok && eggplant.prompt.endsWith(suffix ?? '')).toBe(true);
   });
 
-  test('leaves the photo style untouched', () => {
+  test('does not apply the filter-safe cleaning to the photo style', () => {
     const gachas = buildEnglishPrompt({ nombre: 'Gachas dulces andaluzas', ingredientes_principales: ['harina', 'leche', 'canela'], pasos_resumen: [] });
 
     expect(gachas.ok && gachas.prompt).toContain('thick creamy pale sweet porridge');
