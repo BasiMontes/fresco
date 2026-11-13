@@ -6,18 +6,18 @@ import { PlusMark } from '@/components/ui/css-glyphs';
  * ones on screen, word for word: if the video is re-cut, this list has to follow it.
  */
 const TRANSCRIPT_SCENES = [
-  'Se ve el logotipo de Fresco y el titular «Deja de improvisar en el súper.».',
-  'Una tarjeta del alta, paso 1 de 3 (dieta), con «Vegetariano» elegido.',
-  'Paso 3 de 3, «Planifica tu semana»: las preferencias elegidas (vegetariano, frutos de cáscara, cilantro y cocina española) y una rejilla de lunes a domingo con desayuno, almuerzo y cena marcados.',
-  'El titular «Tu semana, lista.» y debajo el menú de la semana: una tarjeta por comida, con foto, día, tipo de comida y nombre de la receta.',
-  'El titular «Tu lista, ya hecha.» y la lista de la compra ordenada por secciones (frutas y verduras, carnicería y pescadería, huevos y lácteos, panadería y despensa), con el total estimado del menú de la semana.',
-  'El titular «Aprende de lo que realmente cocinas.» con el logotipo de Fresco.',
+  'Se ve el logotipo de Fresco y, escrito letra a letra, el titular «¿Qué cenamos esta semana?».',
+  'Una tarjeta del alta, paso 1 de 3, con dieta, alergias y lo que no os gusta: se eligen «Vegetariano», «Frutos de cáscara» y «Cilantro», y aparece «Una sola vez.».',
+  'El titular «Tu menú listo en 30 segundos» y, debajo, la semana de lunes a domingo: una tarjeta por día con la ilustración del plato, su nombre y el tiempo, y el lunes se marca como cocinado. Pie: «Ilustraciones de platos del catálogo, generadas con inteligencia artificial.».',
+  'El titular «Lista de la compra ya hecha» y la lista agrupada por pasillos (frutas y verduras, carnicería y pescadería, huevos y lácteos, panadería y despensa), con dos productos marcados.',
+  'El titular «Marca lo que cocinas.» con el lunes cocinado y, después, «La semana siguiente» con otro plato en el lunes y la nota «En Pro, Fresco lo usa para tus menús.».',
+  'El logotipo de Fresco, el titular «Empieza gratis.» y la dirección web de Fresco.',
 ] as const;
 
 /**
  * FRESCO-761 — brand video between the pain points and "Cómo funciona".
  *
- * `preload="none"` + `poster`: the 7 MB file is not requested until the user
+ * `preload="none"` + `poster`: the video file is not requested until the user
  * presses play, so the landing's initial weight is unchanged. No `autoPlay`,
  * so it never starts with sound. The video has music only (no speech).
  *
@@ -28,6 +28,9 @@ const TRANSCRIPT_SCENES = [
  * FRESCO-1043: the track is available but NOT `default`. The video has no speech, so showing the cue over the
  * picture from the first second only got in the way, and the native player hides the off switch inside its
  * overflow menu. A viewer who wants captions turns them on there.
+ *
+ * The music is CC BY 4.0 (Incompetech): the credit and the license link live in the transcription, which is where a
+ * viewer who wants to know where the music came from can find it. If the track changes, the credit has to change with it.
  *
  * FRESCO-1044: a native `<details>` under the video holds the transcription. It is closed on load, so it adds
  * no layout shift, works without JavaScript and is operable from the keyboard.
@@ -58,6 +61,20 @@ export function BrandVideo() {
               <li key={scene}>{scene}</li>
             ))}
           </ol>
+          <p className="mt-3">
+            Música: &quot;I Got a Stick Arr Bryan Teoh&quot; Kevin MacLeod (incompetech.com)
+            {' '}
+            Licensed under Creative Commons: By Attribution 4.0 License (
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              className="text-primary underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              creativecommons.org/licenses/by/4.0
+            </a>
+            ).
+          </p>
         </div>
       </details>
     </section>

@@ -71,17 +71,20 @@ describe('BrandVideo — transcription (FRESCO-1044)', () => {
     expect(container.querySelector('details > summary')?.textContent).toContain('Transcripción del vídeo');
   });
 
-  test('says the video has no voice and carries the four headlines exactly as they appear in it', () => {
+  test('says the video has no voice and carries the headlines exactly as they appear in it', () => {
     renderWithProviders(<BrandVideo />);
 
     expect(screen.getByText(/no tiene voz/i)).toBeInTheDocument();
     for (const headline of [
-      'Deja de improvisar en el súper.',
-      'Tu semana, lista.',
-      'Tu lista, ya hecha.',
-      'Aprende de lo que realmente cocinas.',
+      '¿Qué cenamos esta semana?',
+      'Una sola vez.',
+      'Tu menú listo en 30 segundos',
+      'Lista de la compra ya hecha',
+      'Marca lo que cocinas.',
+      'La semana siguiente',
+      'Empieza gratis.',
     ]) {
-      expect(screen.getByText(new RegExp(headline.replace(/\./g, '\\.')))).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(headline.replace(/[.?¿]/g, '\\$&')))).toBeInTheDocument();
     }
   });
 
@@ -90,8 +93,25 @@ describe('BrandVideo — transcription (FRESCO-1044)', () => {
 
     const scenes = container.querySelectorAll('details ol > li');
     expect(scenes).toHaveLength(6);
-    expect(scenes[0]?.textContent).toContain('Deja de improvisar en el súper.');
-    expect(scenes[5]?.textContent).toContain('Aprende de lo que realmente cocinas.');
+    expect(scenes[0]?.textContent).toContain('¿Qué cenamos esta semana?');
+    expect(scenes[5]?.textContent).toContain('Empieza gratis.');
+  });
+
+  test('claims no price, saving or supermarket, and names the AI-generated illustrations', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const text = container.querySelector('details')?.textContent ?? '';
+    expect(text).not.toMatch(/€|%|mercadona|carrefour|dia\b|alcampo|consum/i);
+    expect(text).toMatch(/generadas con inteligencia artificial/i);
+  });
+
+  test('credits the music exactly as its CC BY 4.0 license asks, with a link to the license', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const text = container.querySelector('details')?.textContent ?? '';
+    expect(text).toContain('"I Got a Stick Arr Bryan Teoh" Kevin MacLeod (incompetech.com)');
+    expect(text).toContain('Licensed under Creative Commons: By Attribution 4.0 License');
+    expect(container.querySelector('details a[href="https://creativecommons.org/licenses/by/4.0/"]')).not.toBeNull();
   });
 
   test('sits after the video inside the same section', () => {
