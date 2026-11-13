@@ -425,8 +425,50 @@ function firstCue(table: Cue[], text: string, steps = ''): string | null {
   return table.find(({ pattern, unlessSteps }) => pattern.test(text) && !unlessSteps?.test(steps))?.cue ?? null;
 }
 
+/**
+ * FRESCO-1206: Cloudflare's input filter rejected wording of the clay prompts as NSFW (FRESCO-1146; "glaze", "drizzle",
+ * "whipped cream" and "silky" were named by the owner, "glossy inflated puffy" and "glossy jelly-like plump highlights"
+ * were seen). The glossary and some dish leads carry those words, so the clay prompt is cleaned at the end. The rest
+ * (glossy, creamy, melted, juicy, moist, dripping, oozing) are a precaution that has not been tested against the
+ * filter: they are cheaper to avoid than to find out one rejected batch at a time. Order matters: the specific
+ * phrases go first.
+ */
+const FILTER_SAFE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bwhipped cream\b/gi, 'a swirl of white cream'],
+  [/\ba drizzle of\b/gi, 'a little'],
+  [/\bdrizzled\b/gi, 'topped'],
+  [/\bdrizzle\b/gi, 'a little'],
+  [/\bglazed\b/gi, 'golden'],
+  [/\bglaze\b/gi, 'golden coating'],
+  [/\bsilky\b/gi, 'smooth'],
+  [/\bcreamy\b/gi, 'smooth'],
+  [/\bglossy\b/gi, 'smooth'],
+  // Dropped, not swapped: "soft" would change what a melted chocolate or butter is. Where the dish needs it, the
+  // glossary names the ingredient (mozzarella, cheese) and the shape carries the rest.
+  [/\bmelted\s+/gi, ''],
+  [/\bjuicy\s+/gi, ''],
+  [/\bmoist\s+/gi, ''],
+  [/\bdripping\s+/gi, ''],
+  [/\boozing\s+/gi, ''],
+];
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function filterSafe(prompt: string): string {
+  return FILTER_SAFE_REPLACEMENTS.reduce((text, [pattern, replacement]) => {
+    const replaced = text.replace(pattern, replacement);
+    if (!replacement || replaced === text) { return replaced; }
+    // The replacement can land next to itself ("smooth creamy" becomes "smooth smooth"). Only that doubling is collapsed,
+    // and only when this step changed something, so a repetition that was already in the prompt is left alone.
+    const doubled = new RegExp(`\\b${escapeRegExp(replacement)}(?: ${escapeRegExp(replacement)}\\b)+`, 'g');
+    return replaced.replace(doubled, replacement);
+  }, prompt);
+}
+
 function frame(subject: string, vessel: DishType['vessel'], nombre: string, style: PromptStyle): string {
-  if (style === 'clay') { return `Soft matte clay 3D icon of ${subject}. ${CLAY_SUFFIX}`; }
+  if (style === 'clay') { return filterSafe(`Soft matte clay 3D icon of ${subject}. ${CLAY_SUFFIX}`); }
   const hash = hashOf(normalize(nombre));
   const vessels = VESSELS[vessel];
   const tableware = vessels[hash % vessels.length];
@@ -460,7 +502,10 @@ export function buildEnglishPrompt(recipe: PhotoRecipe, style: PromptStyle = 'ph
   // An egg-less "revuelto" is a tofu scramble even when its steps never say
   // "desmenuzar": without this the model kept drawing tofu cubes.
   const hasEgg = ingredients.some(i => i.toLowerCase().trim() === 'huevo');
-  const crumbled = /\bdesmenuza/.test(steps) || (/\brevuelto/.test(normalize(recipe.nombre)) && !hasEgg);
+  // FRESCO-1206: "desmenuzar" in the steps only makes the WHOLE dish crumbled when the dish is crumbled tofu, tempeh
+  // or seitan. Crumbling the feta of a pasta or the fish of a taco must not describe the plate as scrambled egg.
+  const crumbleBase = ingredients.some(i => /\b(?:tofu|tempeh|seitan)\b/.test(normalize(i)));
+  const crumbled = (/\bdesmenuza/.test(steps) && crumbleBase) || (/\brevuelto/.test(normalize(recipe.nombre)) && !hasEgg);
   const technique = dish.plain ? null : crumbled ? CRUMBLE_CUE : firstCue(TECHNIQUE_CUES, steps);
   const shape = dish.skipShape ? null : firstCue(SHAPE_CUES, normalize(ingredients.join(' ')), crumbled ? 'desmenuza' : steps);
   const cues = [technique, shape]
