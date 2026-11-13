@@ -26,6 +26,11 @@ const retrieveMock = mock(async (_id: string): Promise<Stripe.Subscription> => (
 
 // FRESCO-1088: `resource_missing` is only believed when Stripe still knows the customer.
 const customerRetrieveMock = mock(async (_id: string): Promise<unknown> => ({ id: 'cus_1' }));
+// FRESCO-1205: `mockClear()` keeps an implementation a test set ("No such customer"), and `--randomize` runs tests in any order,
+// so every test starts from the default: Stripe knows the customer.
+beforeEach(() => {
+  customerRetrieveMock.mockImplementation(async () => ({ id: 'cus_1' }));
+});
 
 // FRESCO-909: the paid-checkout sweep runs last; by default Stripe lists no sessions.
 const listSessionsMock = mock((_params: unknown): AsyncIterable<Stripe.Checkout.Session> => (async function* () {})());

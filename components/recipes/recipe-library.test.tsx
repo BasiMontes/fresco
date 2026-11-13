@@ -68,6 +68,11 @@ function renderLibrary(overrides: Overrides = {}) {
   );
 }
 
+/** Every URL the component pushed, in order. */
+function pushedUrls(): URL[] {
+  return pushMock.mock.calls.map(([href]) => new URL(href, 'https://test.fresco.local'));
+}
+
 function lastPushed(): URL {
   const calls = pushMock.mock.calls;
   return new URL(calls[calls.length - 1][0], 'https://test.fresco.local');
@@ -265,7 +270,12 @@ describe('RecipeLibrary filters', () => {
     await user.click(screen.getByRole('checkbox', { name: /Gluten/ }));
     await user.click(screen.getByTestId('recipe_filter_drawer_apply_button'));
 
-    const url = lastPushed();
+    // FRESCO-1120: not `lastPushed()`. Typing "sopa" schedules the 300 ms search debounce, and under load it can fire after
+    // the click on Apply; with the router mocked the URL never changes, so that later push carries `q` but no filters.
+    // The push this test is about is the one Apply made, the one that carries the chosen filters.
+    const url = pushedUrls().find(candidate => candidate.searchParams.has('meal'));
+    expect(url).toBeDefined();
+    if (!url) { return; }
     expect(url.searchParams.get('meal')).toBe('cena');
     expect(url.searchParams.get('alergeno')).toBe('gluten');
     expect(url.searchParams.get('q')).toBe('sopa');

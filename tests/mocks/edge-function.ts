@@ -21,7 +21,8 @@ export type EdgeHandler = (req: Request) => Promise<Response> | Response;
 
 let captured: EdgeHandler | null = null;
 
-function installDeno(): void {
+/** Puts a minimal `Deno` (env + serve) on globalThis if it is not there. A test of a module that reads `Deno.env` calls it in a beforeEach: another file may have restored the global to undefined. */
+export function installDeno(): void {
   const g = globalThis as unknown as { Deno?: DenoShim };
   g.Deno ??= {
     env: { get: (key: string) => process.env[key] },
