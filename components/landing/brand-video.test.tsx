@@ -105,6 +105,15 @@ describe('BrandVideo — transcription (FRESCO-1044)', () => {
     expect(text).toMatch(/generadas con inteligencia artificial/i);
   });
 
+  test('credits the music exactly as its CC BY 4.0 license asks, with a link to the license', () => {
+    const { container } = renderWithProviders(<BrandVideo />);
+
+    const text = container.querySelector('details')?.textContent ?? '';
+    expect(text).toContain('"I Got a Stick Arr Bryan Teoh" Kevin MacLeod (incompetech.com)');
+    expect(text).toContain('Licensed under Creative Commons: By Attribution 4.0 License');
+    expect(container.querySelector('details a[href="https://creativecommons.org/licenses/by/4.0/"]')).not.toBeNull();
+  });
+
   test('sits after the video inside the same section', () => {
     const { container } = renderWithProviders(<BrandVideo />);
 

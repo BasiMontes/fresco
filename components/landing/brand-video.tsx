@@ -29,6 +29,9 @@ const TRANSCRIPT_SCENES = [
  * picture from the first second only got in the way, and the native player hides the off switch inside its
  * overflow menu. A viewer who wants captions turns them on there.
  *
+ * The music is CC BY 4.0 (Incompetech): the credit and the license link live in the transcription, which is where a
+ * viewer who wants to know where the music came from can find it. If the track changes, the credit has to change with it.
+ *
  * FRESCO-1044: a native `<details>` under the video holds the transcription. It is closed on load, so it adds
  * no layout shift, works without JavaScript and is operable from the keyboard.
  */
@@ -58,6 +61,20 @@ export function BrandVideo() {
               <li key={scene}>{scene}</li>
             ))}
           </ol>
+          <p className="mt-3">
+            Música: &quot;I Got a Stick Arr Bryan Teoh&quot; Kevin MacLeod (incompetech.com)
+            {' '}
+            Licensed under Creative Commons: By Attribution 4.0 License (
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              className="text-primary underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              creativecommons.org/licenses/by/4.0
+            </a>
+            ).
+          </p>
         </div>
       </details>
     </section>

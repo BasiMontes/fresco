@@ -165,3 +165,6 @@ scripts/.cache/
 packages/decks/
 .scratch/
 .session/
+
+# brag skill output: generated composition files, not formatted by hand (FRESCO-1203)
+brag-output*/
