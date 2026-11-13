@@ -261,6 +261,68 @@ describe('buildEnglishPrompt in the clay style', () => {
   });
 });
 
+/** FRESCO-1206: the words Cloudflare's input filter rejected (FRESCO-1146, owner) plus the ones kept out as a precaution. */
+const FILTER_WORDS = /glaz|drizzl|whipped|silky|glossy|creamy|melted|juicy|moist|dripping|oozing/i;
+
+describe('buildEnglishPrompt: the scrambled-egg cue (FRESCO-1206)', () => {
+  test('is not added to a dish where only one ingredient is crumbled', () => {
+    const feta = buildEnglishPrompt({ nombre: 'Pasta integral con calabacín y feta', ingredientes_principales: ['pasta integral', 'calabacín', 'queso feta'], pasos_resumen: ['Cocer la pasta', 'Desmenuzar el feta por encima'] }, 'clay');
+    const fish = buildEnglishPrompt({ nombre: 'Tacos de pescado con repollo', ingredientes_principales: ['pescado blanco', 'repollo', 'lima', 'tortilla de maíz'], pasos_resumen: ['Desmenuzar el pescado cocinado'] }, 'clay');
+
+    expect(feta.ok).toBe(true);
+    expect(fish.ok).toBe(true);
+    expect(feta.ok && feta.prompt).not.toContain('scrambled egg');
+    expect(fish.ok && fish.prompt).not.toContain('scrambled egg');
+  });
+
+  test('is still added when the dish is crumbled tofu, tempeh or an egg-less revuelto', () => {
+    const tofu = buildEnglishPrompt({ nombre: 'Tofu salteado', ingredientes_principales: ['tofu', 'pimiento'], pasos_resumen: ['Desmenuzar el tofu'] }, 'clay');
+    const tempeh = buildEnglishPrompt({ nombre: 'Tempeh al horno', ingredientes_principales: ['tempeh', 'cebolla'], pasos_resumen: ['Desmenuzar el tempeh'] }, 'clay');
+    const revuelto = buildEnglishPrompt({ nombre: 'Revuelto de cúrcuma y ajo', ingredientes_principales: ['tofu', 'ajo'], pasos_resumen: [] }, 'clay');
+
+    expect(tofu.ok && tofu.prompt).toContain('scrambled egg');
+    expect(tempeh.ok && tempeh.prompt).toContain('scrambled egg');
+    expect(revuelto.ok && revuelto.prompt).toContain('scrambled egg');
+  });
+});
+
+describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter rejects (FRESCO-1206)', () => {
+  test('no glossary entry reaches a clay prompt with a filtered word', () => {
+    const offenders = Object.keys(INGREDIENTS_EN).flatMap((ingredient) => {
+      const result = buildEnglishPrompt({ nombre: 'Plato de prueba', ingredientes_principales: [ingredient], pasos_resumen: [] }, 'clay');
+      return result.ok && FILTER_WORDS.test(result.prompt) ? [`${ingredient}: ${result.prompt}`] : [];
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  test('dishes whose own lead wording is filtered are cleaned too', () => {
+    const dishes = ['Salmorejo cordobés', 'Gazpacho andaluz con pepino', 'Bacalao a la vizcaína', 'Gachas dulces andaluzas', 'Pizza margarita casera'];
+    const offenders = dishes.flatMap((nombre) => {
+      const result = buildEnglishPrompt({ nombre, ingredientes_principales: ['tomate', 'pimiento', 'leche', 'harina', 'mozzarella'], pasos_resumen: [] }, 'clay');
+      // A prompt that was not built would pass the check below for the wrong reason.
+      if (!result.ok) { return [`${nombre}: no prompt (missing ${result.missing.join(', ')})`]; }
+      return FILTER_WORDS.test(result.prompt) ? [`${nombre}: ${result.prompt}`] : [];
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  test('says the replacement words instead, so the dish keeps its meaning', () => {
+    const eggplant = buildEnglishPrompt({ nombre: 'Berenjena asada', ingredientes_principales: ['berenjena'], pasos_resumen: [] }, 'clay');
+    const honey = buildEnglishPrompt({ nombre: 'Torrijas', ingredientes_principales: ['miel'], pasos_resumen: [] }, 'clay');
+
+    expect(eggplant.ok && eggplant.prompt).toContain('smooth roasted eggplant');
+    expect(honey.ok && honey.prompt).toContain('a little honey');
+  });
+
+  test('leaves the photo style untouched', () => {
+    const gachas = buildEnglishPrompt({ nombre: 'Gachas dulces andaluzas', ingredientes_principales: ['harina', 'leche', 'canela'], pasos_resumen: [] });
+
+    expect(gachas.ok && gachas.prompt).toContain('thick creamy pale sweet porridge');
+  });
+});
+
 describe('INGREDIENTS_EN', () => {
   test('has lowercase keys only, so lookups by lowercased name work', () => {
     const offenders = Object.keys(INGREDIENTS_EN).filter(k => k !== k.toLowerCase().trim());
