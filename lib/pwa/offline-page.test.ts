@@ -56,6 +56,14 @@ describe('public/offline.html', () => {
     expect([...content.matchAll(/\bhref\s*=\s*"([^"]*)"/g)].map(m => m[1])).toEqual(['']);
   });
 
+  test('names the brand typefaces and no retired one (FRESCO-1204)', () => {
+    // The page loads no font on purpose (see the test above), so these names only matter for a device that has the
+    // face installed; they still have to be the brand's: Young Serif for the headline, Figtree for the body.
+    expect(content).toMatch(/h1\s*\{[^}]*font-family:\s*'Young Serif',\s*Georgia/);
+    expect(content).toMatch(/body\s*\{[^}]*font-family:\s*Figtree,/);
+    expect(content).not.toMatch(/fraunces/i);
+  });
+
   test('carries both brand logos inline, one per colour scheme', () => {
     expect(content.match(/<svg\s+class="logo logo--(?:light|dark)"/g)).toHaveLength(2);
     expect(content).toContain('aria-label="Fresco"');
