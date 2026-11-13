@@ -441,7 +441,7 @@ const FILTER_SAFE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bglazed\b/gi, 'golden'],
   [/\bglaze\b/gi, 'golden coating'],
   [/\bsilky\b/gi, 'smooth'],
-  [/\bcreamy\b/gi, 'smooth and thick'],
+  [/\bcreamy\b/gi, 'smooth'],
   [/\bglossy\b/gi, 'smooth'],
   [/\bmelted\b/gi, 'soft'],
   [/\bjuicy\b/gi, 'fresh'],
@@ -451,7 +451,9 @@ const FILTER_SAFE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
 ];
 
 function filterSafe(prompt: string): string {
-  return FILTER_SAFE_REPLACEMENTS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), prompt);
+  const replaced = FILTER_SAFE_REPLACEMENTS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), prompt);
+  // A replacement can land next to the same word ("smooth creamy" becomes "smooth smooth"): keep one.
+  return replaced.replace(/\b(\w+)(?: \1\b)+/g, '$1');
 }
 
 function frame(subject: string, vessel: DishType['vessel'], nombre: string, style: PromptStyle): string {

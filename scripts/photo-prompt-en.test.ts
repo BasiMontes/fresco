@@ -316,6 +316,13 @@ describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter re
     expect(honey.ok && honey.prompt).toContain('a little honey');
   });
 
+  test('does not repeat a word the replacement doubled ("smooth creamy" must not become "smooth smooth")', () => {
+    const crema = buildEnglishPrompt({ nombre: 'Crema fría de lima con semillas de lino', ingredientes_principales: ['pepino', 'aguacate', 'lima', 'semillas de lino'], pasos_resumen: [] }, 'clay');
+
+    expect(crema.ok).toBe(true);
+    expect(crema.ok && crema.prompt).not.toMatch(/\b(\w+) \1\b/);
+  });
+
   test('leaves the photo style untouched', () => {
     const gachas = buildEnglishPrompt({ nombre: 'Gachas dulces andaluzas', ingredientes_principales: ['harina', 'leche', 'canela'], pasos_resumen: [] });
 
