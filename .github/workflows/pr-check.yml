@@ -525,13 +525,14 @@ jobs:
         # whose body is the generic "Error guardando el plan en la BD") leaves no cause in the run: the real error
         # only goes to the log of the container, and `supabase stop` below removes it. `if: always()` because a
         # scenario that passes on retry does not fail the job. Edge runtime, gateway (Kong), PostgREST and Auth
-        # only: no database log. JWTs are masked before upload. How to read it: docs/workflows/e2e-flaky-triage.md.
+        # only: no database log. JWTs and email addresses are masked before upload (the repository is public, so
+        # an artifact is downloadable by any GitHub user for its 7 days). How to read it: docs/workflows/e2e-flaky-triage.md.
         if: always()
         run: |
           mkdir -p supabase-logs
           for name in $(docker ps -a --format '{{.Names}}' | grep -E '^supabase_(edge_runtime|kong|rest|auth)_' || true); do
             docker logs --timestamps --tail 20000 "$name" 2>&1 \
-              | sed -E 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*/[jwt]/g' \
+              | sed -E 's/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*/[jwt]/g; s/[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[email]/g' \
               > "supabase-logs/${name}.log" || true
           done
           ls -la supabase-logs
