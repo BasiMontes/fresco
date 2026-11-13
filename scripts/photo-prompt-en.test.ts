@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
 import { buildEnglishPrompt, INGREDIENTS_EN } from './photo-prompt-en.ts';
 
@@ -321,6 +322,22 @@ describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter re
 
     expect(crema.ok).toBe(true);
     expect(crema.ok && crema.prompt).not.toMatch(/\b(\w+) \1\b/);
+  });
+
+  test('drops "melted" instead of swapping it, so cheese is not called soft', () => {
+    const mozzarella = buildEnglishPrompt({ nombre: 'Pizza margarita', ingredientes_principales: ['mozzarella', 'tomate'], pasos_resumen: [] }, 'clay');
+
+    expect(mozzarella.ok && mozzarella.prompt).toContain('mozzarella');
+    expect(mozzarella.ok && mozzarella.prompt).not.toMatch(/melted|soft mozzarella/);
+  });
+
+  test('leaves the style suffix exactly as written, whatever it replaces in the subject', () => {
+    const source = readFileSync(new URL('./photo-prompt-en.ts', import.meta.url), 'utf8');
+    const suffix = source.match(/const CLAY_SUFFIX = '([^']+)';/)?.[1];
+    const eggplant = buildEnglishPrompt({ nombre: 'Berenjena asada', ingredientes_principales: ['berenjena', 'miel'], pasos_resumen: [] }, 'clay');
+
+    expect(suffix).toBeDefined();
+    expect(eggplant.ok && eggplant.prompt.endsWith(suffix ?? '')).toBe(true);
   });
 
   test('leaves the photo style untouched', () => {

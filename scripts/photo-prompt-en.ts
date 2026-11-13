@@ -443,17 +443,28 @@ const FILTER_SAFE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bsilky\b/gi, 'smooth'],
   [/\bcreamy\b/gi, 'smooth'],
   [/\bglossy\b/gi, 'smooth'],
-  [/\bmelted\b/gi, 'soft'],
-  [/\bjuicy\b/gi, 'fresh'],
-  [/\bmoist\b/gi, 'soft'],
-  [/\bdripping\b/gi, 'soft'],
-  [/\boozing\b/gi, 'soft'],
+  // Dropped, not swapped: "soft" would change what a melted chocolate or butter is. Where the dish needs it, the
+  // glossary names the ingredient (mozzarella, cheese) and the shape carries the rest.
+  [/\bmelted\s+/gi, ''],
+  [/\bjuicy\s+/gi, ''],
+  [/\bmoist\s+/gi, ''],
+  [/\bdripping\s+/gi, ''],
+  [/\boozing\s+/gi, ''],
 ];
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function filterSafe(prompt: string): string {
-  const replaced = FILTER_SAFE_REPLACEMENTS.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), prompt);
-  // A replacement can land next to the same word ("smooth creamy" becomes "smooth smooth"): keep one.
-  return replaced.replace(/\b(\w+)(?: \1\b)+/g, '$1');
+  return FILTER_SAFE_REPLACEMENTS.reduce((text, [pattern, replacement]) => {
+    const replaced = text.replace(pattern, replacement);
+    if (!replacement || replaced === text) { return replaced; }
+    // The replacement can land next to itself ("smooth creamy" becomes "smooth smooth"). Only that doubling is collapsed,
+    // and only when this step changed something, so a repetition that was already in the prompt is left alone.
+    const doubled = new RegExp(`\\b${escapeRegExp(replacement)}(?: ${escapeRegExp(replacement)}\\b)+`, 'g');
+    return replaced.replace(doubled, replacement);
+  }, prompt);
 }
 
 function frame(subject: string, vessel: DishType['vessel'], nombre: string, style: PromptStyle): string {
