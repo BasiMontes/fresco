@@ -55,6 +55,12 @@ describe('robots.txt', () => {
     expect(result.rules).toMatchObject({ userAgent: '*', allow: '/' });
   });
 
+  test('production keeps the public docs route /design-system out of crawlers (FRESCO-1207)', () => {
+    const result = withEnv({ VERCEL_ENV: 'production' }, () => robots());
+
+    expect(result.rules).toMatchObject({ disallow: expect.arrayContaining(['/qa', '/design-system']) });
+  });
+
   test.each([['pre', { VERCEL_ENV: 'preview' }], ['dev', { VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_REF: 'dev' }], ['local', {}]])('%s disallows everything and lists no sitemap', (_name, env) => {
     const result = withEnv(env, () => robots());
 
