@@ -16,6 +16,9 @@ import { resolveBaseUrl } from '@/lib/seo/resolve-base-url';
  * (`lib/seo/resolve-base-url.ts`, FRESCO-733), shared with `app/sitemap.ts`,
  * so crawlers get a `Sitemap:` pointer.
  *
+ * FRESCO-1207: `/design-system` is a public docs route, noindexed in its own layout and disallowed here
+ * next to `/qa`.
+ *
  * FRESCO-473: `/auth/confirm` is a Route Handler (a one-shot Supabase
  * email-link redirect, never renders HTML) — it can't carry a `<meta
  * name="robots">` tag like the other noindexed routes, so the disallow lives
@@ -57,6 +60,7 @@ export default function robots(): MetadataRoute.Robots {
         '/recipes',
         '/shopping-list',
         '/qa',
+        '/design-system',
         '/auth/confirm',
       ],
     },
