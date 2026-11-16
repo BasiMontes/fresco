@@ -3,10 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'bun:test';
 import * as lucide from 'lucide-react';
 import { parse } from 'yaml';
+import { buttonVariants } from '@/components/ui/button';
 import {
   buildSnapshot,
   extractTheme,
   parseColors,
+  parseComponentApi,
   parseGlyphs,
   parseIconImports,
   parseTypography,
@@ -116,6 +118,50 @@ describe('parseGlyphs', () => {
   });
 });
 
+describe('parseComponentApi', () => {
+  test('reads own props with their optionality, what the props extend, and the cva variants with their defaults', () => {
+    const source = `import { cva } from 'class-variance-authority';
+      const kinds = cva('base', {
+        variants: {
+          tone: { quiet: 'a', 'loud-one': 'b', ...spread },
+          dense: { true: 'c', false: 'd' },
+        },
+        defaultVariants: { tone: 'quiet', dense: false },
+      });
+      export interface WidgetProps extends React.HTMLAttributes<HTMLDivElement>, Other<typeof kinds> {
+        /** The label. */
+        label: string
+        onPick?: (id: string, event: Event) => void
+      }
+      interface NotExportedProps { hidden: string }`;
+
+    expect(parseComponentApi(source)).toEqual({
+      extends: ['React.HTMLAttributes<HTMLDivElement>', 'Other<typeof kinds>'],
+      props: [
+        { name: 'label', type: 'string', optional: false },
+        { name: 'onPick', type: '(id: string, event: Event) => void', optional: true },
+      ],
+      variants: [
+        { name: 'tone', values: ['quiet', 'loud-one'], default: 'quiet' },
+        { name: 'dense', values: ['true', 'false'], default: 'false' },
+      ],
+    });
+  });
+
+  test('reads an exported object-literal props type and reports a component with no cva as having no variants', () => {
+    expect(parseComponentApi('export type BoxProps = { size?: number };')).toEqual({
+      extends: [],
+      props: [{ name: 'size', type: 'number', optional: true }],
+      variants: [],
+    });
+  });
+
+  test('a cva call without defaults or a variants object yields no default or no axis', () => {
+    expect(parseComponentApi('const a = cva("x", { variants: { size: { sm: "a" } } }); const b = cva("y"); const c = cva("z", { variants: foo });').variants)
+      .toEqual([{ name: 'size', values: ['sm'], default: null }]);
+  });
+});
+
 describe('committed snapshot', () => {
   const snapshot = buildSnapshot(ROOT);
 
@@ -135,6 +181,19 @@ describe('committed snapshot', () => {
     expect(snapshot.icons.length).toBeGreaterThan(20);
     expect(snapshot.glyphs).toEqual(['PlusMark', 'MenuMark', 'ThemeMark']);
     expect(snapshot.typography.steps.map(step => step.step)).toContain('h1');
+  });
+
+  test('Button documents its real cva keys (checked against the runtime, not against the parser)', () => {
+    const { variants } = snapshot.components.button;
+    const classes = (axis: string, value: string) => buttonVariants({ [axis]: value });
+
+    expect(variants.map(axis => axis.name)).toEqual(['variant', 'size']);
+    for (const { name, values, default: fallback } of variants) {
+      for (const value of values) {
+        expect(classes(name, value)).not.toEqual(classes(name, 'not-a-real-key'));
+      }
+      expect(classes(name, fallback ?? '')).toEqual(buttonVariants({}));
+    }
   });
 
   test('every icon name is a real lucide-react export', () => {

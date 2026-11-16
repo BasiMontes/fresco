@@ -17,9 +17,14 @@ import ts from 'typescript';
 export interface ColorToken { name: string, light: string, dark: string }
 export interface TypeStep { step: string, size: string, lineHeight: string | null, letterSpacing: string | null, fontWeight: string | null }
 export interface Typography { fonts: { heading: string, sans: string }, steps: TypeStep[] }
-export interface Snapshot { colors: ColorToken[], typography: Typography, icons: string[], glyphs: string[] }
+export interface PropDoc { name: string, type: string, optional: boolean }
+export interface VariantDoc { name: string, values: string[], default: string | null }
+export interface ComponentApi { extends: string[], props: PropDoc[], variants: VariantDoc[] }
+export interface Snapshot { colors: ColorToken[], typography: Typography, icons: string[], glyphs: string[], components: Record<string, ComponentApi> }
 
 const SCAN_DIRS = ['app', 'components', 'lib'];
+/** Components of `components/ui` whose API is documented so far. The next PRs extend the list. */
+const DOCUMENTED_COMPONENTS = ['button'];
 const OUT_DIR = 'components/design-system';
 const GENERATED_FILES = [`${OUT_DIR}/generated.ts`, `${OUT_DIR}/icon-gallery.generated.tsx`];
 
@@ -125,6 +130,71 @@ export function parseGlyphs(source: string): string[] {
   return [...source.matchAll(/^export function (\w+)/gm)].map(match => match[1]);
 }
 
+const squash = (text: string) => text.replace(/\s+/g, ' ').trim();
+
+function keyName(name: ts.PropertyName): string {
+  return ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name) ? name.text : squash(name.getText());
+}
+
+function objectProperty(object: ts.ObjectLiteralExpression, name: string): ts.Expression | undefined {
+  const found = object.properties.find((member): member is ts.PropertyAssignment => ts.isPropertyAssignment(member) && keyName(member.name) === name);
+  return found?.initializer;
+}
+
+/** The `variants` of one `cva(base, { variants, defaultVariants })` call: each axis, its keys and its default. */
+function readCvaVariants(call: ts.CallExpression): VariantDoc[] {
+  const config = call.arguments[1];
+  if (!config || !ts.isObjectLiteralExpression(config)) { return []; }
+  const variants = objectProperty(config, 'variants');
+  const defaults = objectProperty(config, 'defaultVariants');
+  if (!variants || !ts.isObjectLiteralExpression(variants)) { return []; }
+  const defaultOf = (axis: string): string | null => {
+    const value = defaults && ts.isObjectLiteralExpression(defaults) ? objectProperty(defaults, axis) : undefined;
+    if (!value) { return null; }
+    return ts.isStringLiteralLike(value) ? value.text : squash(value.getText());
+  };
+  return variants.properties.flatMap((axis) => {
+    if (!ts.isPropertyAssignment(axis) || !ts.isObjectLiteralExpression(axis.initializer)) { return []; }
+    const name = keyName(axis.name);
+    const values = axis.initializer.properties.flatMap(value => ('name' in value && value.name ? [keyName(value.name)] : []));
+    return [{ name, values, default: defaultOf(name) }];
+  });
+}
+
+/**
+ * What a component documents about itself: the props its exported `*Props` interface declares (own members only,
+ * what it extends is listed apart, not expanded) and the variant keys of its `cva` calls. Syntax only: no type
+ * checker, so a props type that is not an interface or an object literal type is not read.
+ */
+export function parseComponentApi(source: string): ComponentApi {
+  const file = ts.createSourceFile('component.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const api: ComponentApi = { extends: [], props: [], variants: [] };
+  const readMembers = (members: ts.NodeArray<ts.TypeElement>) => {
+    for (const member of members) {
+      if (ts.isPropertySignature(member)) {
+        api.props.push({ name: keyName(member.name), type: member.type ? squash(member.type.getText(file)) : 'unknown', optional: Boolean(member.questionToken) });
+      }
+    }
+  };
+  for (const node of file.statements) {
+    const exported = ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+    if (!exported) { continue; }
+    if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith('Props')) {
+      readMembers(node.members);
+      api.extends.push(...(node.heritageClauses ?? []).flatMap(clause => clause.types.map(type => squash(type.getText(file)))));
+    }
+    else if (ts.isTypeAliasDeclaration(node) && node.name.text.endsWith('Props') && ts.isTypeLiteralNode(node.type)) {
+      readMembers(node.type.members);
+    }
+  }
+  const visit = (node: ts.Node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'cva') { api.variants.push(...readCvaVariants(node)); }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return api;
+}
+
 function listSources(root: string, dir: string): string[] {
   return readdirSync(join(root, dir), { recursive: true, encoding: 'utf8' })
     .map(path => `${dir}/${path}`)
@@ -142,6 +212,7 @@ export function buildSnapshot(root: string): Snapshot {
     typography: parseTypography(extractTheme(css)),
     icons: [...icons].sort(),
     glyphs: parseGlyphs(readFileSync(join(root, 'components/ui/css-glyphs.tsx'), 'utf8')),
+    components: Object.fromEntries(DOCUMENTED_COMPONENTS.map(slug => [slug, parseComponentApi(readFileSync(join(root, `components/ui/${slug}.tsx`), 'utf8'))])),
   };
 }
 
@@ -151,7 +222,7 @@ const quote = (value: string) => `'${value.replaceAll('\'', '\\\'')}'`;
 const nullable = (value: string | null) => (value === null ? 'null' : quote(value));
 
 export function renderSnapshotModule(snapshot: Snapshot): string {
-  const { colors, typography, icons, glyphs } = snapshot;
+  const { colors, typography, icons, glyphs, components } = snapshot;
   const lines = [HEADER, 'export const COLOR_TOKENS = ['];
   for (const c of colors) { lines.push(`  { name: ${quote(c.name)}, light: ${quote(c.light)}, dark: ${quote(c.dark)} },`); }
   lines.push('] as const;', '', 'export const FONT_STACKS = {', `  heading: ${quote(typography.fonts.heading)},`, `  sans: ${quote(typography.fonts.sans)},`, '} as const;', '', 'export const TYPE_STEPS = [');
@@ -159,7 +230,29 @@ export function renderSnapshotModule(snapshot: Snapshot): string {
     lines.push(`  { step: ${quote(s.step)}, size: ${quote(s.size)}, lineHeight: ${nullable(s.lineHeight)}, letterSpacing: ${nullable(s.letterSpacing)}, fontWeight: ${nullable(s.fontWeight)} },`);
   }
   lines.push('] as const;', '', 'export const ICON_NAMES = [', ...icons.map(name => `  ${quote(name)},`), '] as const;', '', 'export const GLYPH_NAMES = [', ...glyphs.map(name => `  ${quote(name)},`), '] as const;', '');
+  lines.push(...renderComponentApis(components), '');
   return lines.join('\n');
+}
+
+/** Keys are quoted all or none, as the lint rule demands: a slug such as `alert-banner` needs them. */
+function renderComponentApis(components: Record<string, ComponentApi>): string[] {
+  const slugs = Object.keys(components);
+  const key = (slug: string) => (slugs.some(name => !/^[a-z]\w*$/.test(name)) ? quote(slug) : slug);
+  const list = (items: string[]) => `[${items.map(quote).join(', ')}]`;
+  const rows = (name: string, items: string[]) => (items.length === 0 ? [`    ${name}: [],`] : [`    ${name}: [`, ...items.map(item => `      ${item},`), '    ],']);
+  const lines = ['export const COMPONENT_APIS = {'];
+  for (const slug of slugs) {
+    const { extends: parents, props, variants } = components[slug];
+    lines.push(
+      `  ${key(slug)}: {`,
+      `    extends: ${list(parents)},`,
+      ...rows('props', props.map(p => `{ name: ${quote(p.name)}, type: ${quote(p.type)}, optional: ${p.optional} }`)),
+      ...rows('variants', variants.map(v => `{ name: ${quote(v.name)}, values: ${list(v.values)}, default: ${nullable(v.default)} }`)),
+      '  },',
+    );
+  }
+  lines.push('} as const;');
+  return lines;
 }
 
 /** Explicit named imports: a `import * as` would pull every lucide icon into the bundle. */
