@@ -1,7 +1,8 @@
 import { FONT_STACKS, TYPE_STEPS } from '@/components/design-system/generated';
+import { testIdPart } from '@/components/design-system/test-id';
 
 // Literal class names: Tailwind only emits the utilities it finds written out in the source.
-const STEP_CLASS: Record<string, string> = {
+const STEP_CLASS: Record<(typeof TYPE_STEPS)[number]['step'], string> = {
   'h1': 'text-h1 font-heading',
   'h2': 'text-h2 font-heading',
   'display-light': 'text-display-light font-heading',
@@ -22,7 +23,7 @@ export default function TypographyPage() {
       <p className="mt-2 text-body-md text-tertiary">{`Títulos: ${FONT_STACKS.heading}. Texto: ${FONT_STACKS.sans}.`}</p>
       <ul className="mt-6 flex flex-col gap-4">
         {TYPE_STEPS.map(({ step, size, lineHeight, letterSpacing, fontWeight }) => (
-          <li key={step} data-testid={`design_system_type_${step}`} className="rounded-card border border-border bg-surface-raised p-4">
+          <li key={step} data-testid={`design_system_type_${testIdPart(step)}`} className="rounded-card border border-border bg-surface-raised p-4">
             <p className={STEP_CLASS[step]}>Menús que aprenden de lo que cocinas</p>
             <p className="mt-2 text-caption text-tertiary">
               {`${step}: ${size}, interlínea ${lineHeight ?? '-'}, espaciado ${letterSpacing ?? '-'}, peso ${fontWeight ?? '-'}`}

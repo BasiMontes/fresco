@@ -63,10 +63,6 @@ export const TYPE_STEPS = [
   { step: 'body-sm', size: '13px', lineHeight: '1.55', letterSpacing: null, fontWeight: '400' },
   { step: 'label', size: '14px', lineHeight: '1.2', letterSpacing: null, fontWeight: '600' },
   { step: 'caption', size: '12px', lineHeight: '1.3', letterSpacing: null, fontWeight: '400' },
-  { step: 'swap-dur', size: '150ms', lineHeight: null, letterSpacing: null, fontWeight: null },
-  { step: 'swap-translate-y', size: '4px', lineHeight: null, letterSpacing: null, fontWeight: null },
-  { step: 'swap-blur', size: '2px', lineHeight: null, letterSpacing: null, fontWeight: null },
-  { step: 'swap-ease', size: 'ease-in-out', lineHeight: null, letterSpacing: null, fontWeight: null },
 ] as const;
 
 export const ICON_NAMES = [

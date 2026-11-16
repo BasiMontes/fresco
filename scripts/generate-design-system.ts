@@ -11,6 +11,8 @@
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 export interface ColorToken { name: string, light: string, dark: string }
 export interface TypeStep { step: string, size: string, lineHeight: string | null, letterSpacing: string | null, fontWeight: string | null }
@@ -19,6 +21,7 @@ export interface Snapshot { colors: ColorToken[], typography: Typography, icons:
 
 const SCAN_DIRS = ['app', 'components', 'lib'];
 const OUT_DIR = 'components/design-system';
+const GENERATED_FILES = [`${OUT_DIR}/generated.ts`, `${OUT_DIR}/icon-gallery.generated.tsx`];
 
 /** Text of a declaration value starting at `start`, up to the `;` outside any parenthesis. */
 function readValue(css: string, start: number): string {
@@ -64,13 +67,30 @@ export function parseColors(css: string): ColorToken[] {
   return [...seen.values()];
 }
 
-/** The `--text-<step>` scale and the two font stacks. A step lacking a metric reports `null`. */
-export function parseTypography(css: string): Typography {
-  const metric = (key: string) => new RegExp(`--${key}:([^;]+);`).exec(css)?.[1].trim() ?? null;
+/** The body of the `@theme static { ... }` block: the only place the type scale and font stacks live. */
+export function extractTheme(css: string): string {
+  const open = css.indexOf('@theme');
+  const start = open === -1 ? -1 : css.indexOf('{', open);
+  if (start === -1) { throw new Error('No @theme block found in app/globals.css'); }
+  let depth = 0;
+  for (let i = start; i < css.length; i++) {
+    if (css[i] === '{') { depth++; }
+    else if (css[i] === '}' && --depth === 0) { return css.slice(start + 1, i); }
+  }
+  throw new Error('Unclosed @theme block in app/globals.css');
+}
+
+/** The `--text-<step>` scale and the two font stacks of a theme body. A step lacking a metric reports `null`. */
+export function parseTypography(theme: string): Typography {
+  const metric = (key: string) => new RegExp(`--${key}:([^;]+);`).exec(theme)?.[1].trim() ?? null;
+  const font = (key: string) => {
+    const value = metric(key);
+    if (value === null) { throw new Error(`Font stack --${key} not found in the @theme block`); }
+    return value;
+  };
   const steps: TypeStep[] = [];
-  for (const match of css.matchAll(/--text-([a-z0-9]+(?:-[a-z0-9]+)*):([^;]+);/g)) {
+  for (const match of theme.matchAll(/--text-([a-z0-9]+(?:-[a-z0-9]+)*):([^;]+);/g)) {
     const step = match[1];
-    if (step.includes('--')) { continue; }
     steps.push({
       step,
       size: match[2].trim(),
@@ -79,17 +99,23 @@ export function parseTypography(css: string): Typography {
       fontWeight: metric(`text-${step}--font-weight`),
     });
   }
-  return { fonts: { heading: metric('font-heading') ?? '', sans: metric('font-sans') ?? '' }, steps };
+  return { fonts: { heading: font('font-heading'), sans: font('font-sans') }, steps };
 }
 
-/** Original names imported from `lucide-react` (aliases resolved, `type` imports skipped). */
+/** Original names imported or re-exported from `lucide-react` (aliases resolved, type-only skipped). */
 export function parseIconImports(source: string): string[] {
   const names: string[] = [];
-  for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*'lucide-react'/g)) {
-    for (const entry of match[1].split(',')) {
-      const specifier = entry.trim();
-      if (!specifier || specifier.startsWith('type ')) { continue; }
-      names.push(specifier.split(/\s+as\s+/)[0]);
+  const file = ts.createSourceFile('source.tsx', source, ts.ScriptTarget.Latest, false, ts.ScriptKind.TSX);
+  for (const node of file.statements) {
+    const isImport = ts.isImportDeclaration(node);
+    if (!isImport && !ts.isExportDeclaration(node)) { continue; }
+    if (!node.moduleSpecifier || !ts.isStringLiteral(node.moduleSpecifier) || node.moduleSpecifier.text !== 'lucide-react') { continue; }
+    const bindings = isImport ? node.importClause?.namedBindings : node.exportClause;
+    if (isImport && node.importClause?.isTypeOnly) { continue; }
+    if (!isImport && node.isTypeOnly) { continue; }
+    if (!bindings || !(ts.isNamedImports(bindings) || ts.isNamedExports(bindings))) { continue; }
+    for (const specifier of bindings.elements) {
+      if (!specifier.isTypeOnly) { names.push((specifier.propertyName ?? specifier.name).text); }
     }
   }
   return names;
@@ -102,7 +128,7 @@ export function parseGlyphs(source: string): string[] {
 function listSources(root: string, dir: string): string[] {
   return readdirSync(join(root, dir), { recursive: true, encoding: 'utf8' })
     .map(path => `${dir}/${path}`)
-    .filter(path => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path) && !path.startsWith(`${OUT_DIR}/`));
+    .filter(path => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path) && !GENERATED_FILES.includes(path));
 }
 
 export function buildSnapshot(root: string): Snapshot {
@@ -113,7 +139,7 @@ export function buildSnapshot(root: string): Snapshot {
   }
   return {
     colors: parseColors(css),
-    typography: parseTypography(css),
+    typography: parseTypography(extractTheme(css)),
     icons: [...icons].sort(),
     glyphs: parseGlyphs(readFileSync(join(root, 'components/ui/css-glyphs.tsx'), 'utf8')),
   };
@@ -163,6 +189,6 @@ export function generate(root: string): string[] {
 }
 
 if (import.meta.main) {
-  const written = generate(new URL('..', import.meta.url).pathname);
+  const written = generate(fileURLToPath(new URL('..', import.meta.url)));
   console.log(`Wrote ${written.join(', ')}`);
 }

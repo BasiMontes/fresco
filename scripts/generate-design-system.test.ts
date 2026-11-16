@@ -1,9 +1,11 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'bun:test';
 import * as lucide from 'lucide-react';
 import { parse } from 'yaml';
 import {
   buildSnapshot,
+  extractTheme,
   parseColors,
   parseGlyphs,
   parseIconImports,
@@ -14,7 +16,7 @@ import {
 
 // FRESCO-1207: the design-system docs read a committed snapshot of the real tokens and icons. These tests pin
 // the parsers on small inputs and fail when the committed snapshot drifts from the sources.
-const ROOT = new URL('..', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(`${ROOT}${path}`, 'utf8');
 
 describe('parseColors', () => {
@@ -42,7 +44,24 @@ describe('parseColors', () => {
   });
 });
 
+describe('extractTheme', () => {
+  test('returns only the body of the @theme block, nested braces included', () => {
+    const css = '@import "x";\n@theme static {\n  --text-h1: 44px;\n  --a: { b };\n}\n:root { --text-swap-dur: 1s; }';
+
+    expect(extractTheme(css)).toContain('--text-h1: 44px;');
+    expect(extractTheme(css)).not.toContain('swap');
+  });
+
+  test('throws without a @theme block', () => {
+    expect(() => extractTheme(':root { --a: 1; }')).toThrow('@theme');
+  });
+});
+
 describe('parseTypography', () => {
+  test('names the missing font stack', () => {
+    expect(() => parseTypography('--font-sans: x;')).toThrow('--font-heading');
+  });
+
   test('reads each step with its metrics and the font stacks', () => {
     const css = `--font-heading: var(--x), serif;
       --font-sans: var(--y), sans-serif;
@@ -65,6 +84,17 @@ describe('parseTypography', () => {
 });
 
 describe('parseIconImports', () => {
+  test('handles double quotes, default plus named, re-exports and type-only declarations', () => {
+    const source = `import Default, { Plus } from "lucide-react";
+      import type { Hidden } from 'lucide-react';
+      import * as All from 'lucide-react';
+      export { Check as Tick, type Skip } from 'lucide-react';
+      export type { AlsoHidden } from 'lucide-react';
+      export { Elsewhere } from 'other';`;
+
+    expect(parseIconImports(source)).toEqual(['Plus', 'Check']);
+  });
+
   test('collects the original names of lucide imports, ignoring types and aliases', () => {
     const source = `import { Plus, X as Close, type LucideIcon } from 'lucide-react';
       import {
@@ -119,5 +149,24 @@ describe('committed snapshot', () => {
     const parsed = new Set(snapshot.colors.map(color => color.name));
 
     expect(documented.filter(name => !parsed.has(name))).toEqual([]);
+  });
+
+  test('every color has a --color alias and every type step a --text token inside @theme', () => {
+    const theme = extractTheme(read('app/globals.css'));
+
+    expect(snapshot.colors.filter(color => !theme.includes(`--color-${color.name}:`)).map(color => color.name)).toEqual([]);
+    expect(snapshot.typography.steps.filter(({ step }) => !theme.includes(`--text-${step}:`)).map(({ step }) => step)).toEqual([]);
+    expect(snapshot.typography.steps.filter(({ step }) => step.startsWith('swap-')).length).toBe(0);
+  });
+
+  test('every icon is named in a non-test source that imports lucide-react (independent of the parser)', () => {
+    const sources = ['app', 'components', 'lib']
+      .flatMap(dir => readdirSync(`${ROOT}${dir}`, { recursive: true, encoding: 'utf8' }).map(path => `${dir}/${path}`))
+      .filter(path => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path) && !path.endsWith('generated.ts') && !path.endsWith('icon-gallery.generated.tsx'))
+      .map(read)
+      .filter(source => source.includes('lucide-react'));
+    const missing = snapshot.icons.filter(name => !sources.some(source => new RegExp(`\\b${name}\\b`).test(source)));
+
+    expect(missing).toEqual([]);
   });
 });
