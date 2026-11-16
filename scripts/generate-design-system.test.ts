@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'bun:test';
 import * as lucide from 'lucide-react';
 import { parse } from 'yaml';
+import { COMPONENT_APIS } from '@/components/design-system/generated';
 import { buttonVariants } from '@/components/ui/button';
 import {
   buildSnapshot,
@@ -181,6 +182,10 @@ describe('committed snapshot', () => {
     expect(snapshot.icons.length).toBeGreaterThan(20);
     expect(snapshot.glyphs).toEqual(['PlusMark', 'MenuMark', 'ThemeMark']);
     expect(snapshot.typography.steps.map(step => step.step)).toContain('h1');
+  });
+
+  test('the committed module exports the parsed component APIs, as the pages will read them', () => {
+    expect(COMPONENT_APIS).toEqual(snapshot.components);
   });
 
   test('Button documents its real cva keys (checked against the runtime, not against the parser)', () => {
