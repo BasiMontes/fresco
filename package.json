@@ -10,6 +10,7 @@
     "build": "next build",
     "db:types": "bunx supabase gen types typescript --project-id jdqemhewjrjuopssdurn > lib/supabase/types.ts",
     "dev": "next dev",
+    "design-system:generate": "bun scripts/generate-design-system.ts",
     "deno:check": "cd supabase/functions && deno lint && deno check '**/*.ts'",
     "env": "set -a; source .env; set +a",
     "format:check": "prettier --check '**/*.{json,yml,yaml,css,scss,html}' --ignore-path .prettierignore",
