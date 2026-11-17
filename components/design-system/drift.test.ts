@@ -14,7 +14,8 @@ const EXEMPT: Record<string, string> = {
   'use-list-enter-animation.ts': 'hook, not a component',
 };
 
-const uiFiles = readdirSync(`${ROOT}components/ui`).filter(file => /\.tsx?$/.test(file) && !/\.test\./.test(file));
+// Recursive and any script extension, like the generator's own scan: a component in a folder or a `.jsx` file must not slip through.
+const uiFiles = readdirSync(`${ROOT}components/ui`, { recursive: true, encoding: 'utf8' }).filter(file => /\.(?:tsx?|jsx?|mdx)$/.test(file) && !/\.test\./.test(file));
 const entries = Object.entries(REGISTRY);
 const sources = entries.map(([, entry]) => `${entry.source}.tsx`);
 
@@ -29,6 +30,13 @@ describe('design-system drift', () => {
     expect(missing).toEqual([]);
   });
 
+  test('an exemption has a reason and is not also documented', () => {
+    for (const [file, reason] of Object.entries(EXEMPT)) {
+      expect(reason.trim()).not.toBe('');
+      expect(sources).not.toContain(file);
+    }
+  });
+
   test('every registered source and every exemption exists on disk', () => {
     const gone = [...sources, ...Object.keys(EXEMPT)].filter(file => !existsSync(`${ROOT}components/ui/${file}`));
 
@@ -39,7 +47,7 @@ describe('design-system drift', () => {
     const examplePath = `${ROOT}components/design-system/examples/${slug}.example.tsx`;
 
     expect(existsSync(examplePath)).toBe(true);
-    expect(readFileSync(examplePath, 'utf8')).toContain(`@/components/ui/${entry.source}'`);
+    expect(readFileSync(examplePath, 'utf8')).toMatch(new RegExp(`import[^;]*from '@/components/ui/${entry.source}'`));
     const api = COMPONENT_APIS[slug as keyof typeof COMPONENT_APIS];
 
     expect(api.extends.length + api.props.length + api.variants.length).toBeGreaterThan(0);

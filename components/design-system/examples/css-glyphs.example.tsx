@@ -9,7 +9,7 @@ export default function CssGlyphsExample() {
   return (
     <div className="flex items-center gap-6 text-text">
       <PlusMark />
-      <button type="button" aria-label="Alternar menú" onClick={() => setOpen(!open)}>
+      <button type="button" aria-label="Alternar menú" aria-expanded={open} onClick={() => setOpen(!open)}>
         <MenuMark open={open} />
       </button>
       <ThemeMark kind="light" />

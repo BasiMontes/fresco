@@ -169,14 +169,23 @@ function readCvaVariants(call: ts.CallExpression): VariantDoc[] {
 export function parseComponentApi(source: string): ComponentApi {
   const file = ts.createSourceFile('component.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const api: ComponentApi = { extends: [], props: [], variants: [] };
-  const readMembers = (members: ts.NodeArray<ts.TypeElement>) => {
+  const readMembers = (members: ts.NodeArray<ts.TypeElement>, prefix = '') => {
     for (const member of members) {
       if (ts.isPropertySignature(member)) {
-        api.props.push({ name: keyName(member.name), type: member.type ? squash(member.type.getText(file)) : 'unknown', optional: Boolean(member.questionToken) });
+        api.props.push({ name: `${prefix}${keyName(member.name)}`, type: member.type ? squash(member.type.getText(file)) : 'unknown', optional: Boolean(member.questionToken) });
       }
     }
   };
   const isExported = (node: ts.Node) => ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+  /** An exported `function X(...)` or `const X = (...) =>`, with its first parameter. */
+  const inlineComponent = (node: ts.Statement): { name: string, param: ts.ParameterDeclaration | undefined } | undefined => {
+    if (!isExported(node)) { return undefined; }
+    if (ts.isFunctionDeclaration(node) && node.name) { return { name: node.name.text, param: node.parameters[0] }; }
+    const declaration = ts.isVariableStatement(node) ? node.declarationList.declarations[0] : undefined;
+    const init = declaration?.initializer;
+    if (declaration && ts.isIdentifier(declaration.name) && init && (ts.isArrowFunction(init) || ts.isFunctionExpression(init))) { return { name: declaration.name.text, param: init.parameters[0] }; }
+    return undefined;
+  };
   const readDeclaration = (node: ts.Statement) => {
     if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith('Props')) {
       readMembers(node.members);
@@ -194,12 +203,13 @@ export function parseComponentApi(source: string): ComponentApi {
     for (const node of file.statements) { if (!isExported(node)) { readDeclaration(node); } }
   }
   // A component whose props are an inline object type (`function Mark({ open }: { open: boolean })`) documents its parameter members.
+  // Several such components in one file (css-glyphs) keep their props apart, as `Owner.prop`, since each takes its own.
   if (api.extends.length === 0 && api.props.length === 0) {
-    for (const node of file.statements) {
-      const param = isExported(node) && ts.isFunctionDeclaration(node) ? node.parameters[0] : undefined;
-      if (param?.type && ts.isTypeLiteralNode(param.type)) { readMembers(param.type.members); }
-    }
-    api.props = api.props.filter((prop, index) => api.props.findIndex(other => other.name === prop.name) === index);
+    const groups = file.statements.flatMap((node) => {
+      const component = inlineComponent(node);
+      return component?.param?.type && ts.isTypeLiteralNode(component.param.type) ? [{ name: component.name, members: component.param.type.members }] : [];
+    });
+    for (const group of groups) { readMembers(group.members, groups.length > 1 ? `${group.name}.` : ''); }
   }
   // A component with no exported `*Props` type (e.g. `forwardRef<El, React.InputHTMLAttributes<El>>`) documents what it forwards.
   const declaresProps = api.extends.length > 0 || api.props.length > 0;
