@@ -16,10 +16,9 @@ export interface CodeBlockProps {
  * that actually needs it — see `.session/testability-guide/plan.md` Q6.
  *
  * Dual theme (`github-light`/`github-dark`) per Shiki's CSS-variable dual-
- * theme guide — the app itself has no dark mode toggle today, so this only
- * activates via `prefers-color-scheme` (see the `.shiki` rules in
- * `app/globals.css`), kept scoped to code blocks rather than inventing a
- * site-wide dark theme this project doesn't otherwise have.
+ * theme guide: every token carries both colours as variables and the `.shiki`
+ * rule in `app/globals.css` picks one with `light-dark()`, following the
+ * app's own resolved `color-scheme` (theme cookie, or the OS for `system`).
  */
 export async function CodeBlock({ code, lang = 'bash', className }: CodeBlockProps) {
   const html = await codeToHtml(code, {
@@ -28,7 +27,10 @@ export async function CodeBlock({ code, lang = 'bash', className }: CodeBlockPro
       light: 'github-light',
       dark: 'github-dark',
     },
-    defaultColor: 'light',
+    // FRESCO-1215: `false` makes Shiki emit BOTH `--shiki-light` and `--shiki-dark` on every token. With
+    // `'light'` the light colour is an inline `color` and `--shiki-light` is never defined, so the
+    // `light-dark()` rule in `app/globals.css` was invalid on the light side and the code lost its highlighting.
+    defaultColor: false,
   });
 
   return (
