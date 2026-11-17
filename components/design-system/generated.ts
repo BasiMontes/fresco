@@ -143,3 +143,14 @@ export const GLYPH_NAMES = [
   'MenuMark',
   'ThemeMark',
 ] as const;
+
+export const COMPONENT_APIS = {
+  button: {
+    extends: ['React.ButtonHTMLAttributes<HTMLButtonElement>', 'VariantProps<typeof buttonVariants>'],
+    props: [],
+    variants: [
+      { name: 'variant', values: ['default', 'action', 'secondary', 'ghost', 'icon'], default: 'default' },
+      { name: 'size', values: ['sm', 'md', 'lg'], default: 'md' },
+    ],
+  },
+} as const;
