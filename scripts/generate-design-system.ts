@@ -187,7 +187,11 @@ export function parseComponentApi(source: string): ComponentApi {
       readMembers(node.type.members);
     }
   }
+  // A component with no exported `*Props` type (e.g. `forwardRef<El, React.InputHTMLAttributes<El>>`) documents what it forwards.
+  const declaresProps = api.extends.length > 0 || api.props.length > 0;
   const visit = (node: ts.Node) => {
+    const forwarded = ts.isCallExpression(node) && !declaresProps && /(?:^|\.)forwardRef$/.test(node.expression.getText(file)) ? node.typeArguments?.[1] : undefined;
+    if (forwarded) { api.extends.push(squash(forwarded.getText(file))); }
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'cva') { api.variants.push(...readCvaVariants(node)); }
     ts.forEachChild(node, visit);
   };
@@ -256,7 +260,7 @@ function renderComponentApis(components: Record<string, ComponentApi>): string[]
   return lines;
 }
 
-const quoteSource = (text: string) => `'${text.replaceAll('\\', '\\\\').replaceAll('\'', '\\\'').replaceAll('\n', '\\n')}'`;
+const quoteSource = (text: string) => `'${text.replaceAll('\\', '\\\\').replaceAll('\'', '\\\'').replaceAll('\r', '\\r').replaceAll('\n', '\\n').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029')}'`;
 
 /** The example files verbatim, as template-free JSON strings: the page shows the source without reading the disk at runtime. */
 function renderExampleSources(examples: Record<string, string>): string[] {

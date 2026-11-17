@@ -168,7 +168,7 @@ export const COMPONENT_APIS = {
     ],
   },
   'input': {
-    extends: [],
+    extends: ['React.InputHTMLAttributes<HTMLInputElement>'],
     props: [],
     variants: [],
   },

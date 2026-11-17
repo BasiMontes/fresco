@@ -19,10 +19,21 @@ const { default: DesignSystemComponentPage, generateStaticParams } = await impor
 describe('design-system component pages', () => {
   test('every registry entry has a generated API and an example source that imports its real component', () => {
     for (const slug of registrySlugs()) {
-      expect(COMPONENT_APIS).toHaveProperty([slug]);
+      const api = COMPONENT_APIS[slug];
+      // An empty entry would render a props table with nothing under it.
+      expect(api.extends.length + api.props.length + api.variants.length).toBeGreaterThan(0);
       expect(EXAMPLE_SOURCES[slug]).toContain(`@/components/ui/${REGISTRY[slug].source}`);
     }
-    expect(generateStaticParams()).toEqual(registrySlugs().map(slug => ({ slug })));
+  });
+
+  test('every registry slug renders its own page with the example source', async () => {
+    for (const slug of registrySlugs()) {
+      const { unmount } = renderWithProviders(await DesignSystemComponentPage({ params: Promise.resolve({ slug }) }) as React.ReactElement);
+      expect(screen.getByTestId(`design_system_component_${slug.replaceAll('-', '_')}`)).toBeInTheDocument();
+      expect(screen.getByTestId('code_block')).toHaveTextContent(`@/components/ui/${REGISTRY[slug].source}`);
+      unmount();
+    }
+    expect(generateStaticParams()).toHaveLength(registrySlugs().length);
   });
 
   test('every example renders without error', () => {

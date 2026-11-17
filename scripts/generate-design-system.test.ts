@@ -150,6 +150,10 @@ describe('parseComponentApi', () => {
   });
 
   test('reads an exported object-literal props type and reports a component with no cva as having no variants', () => {
+    expect(parseComponentApi('export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(() => null);').extends)
+      .toEqual(['React.InputHTMLAttributes<HTMLInputElement>']);
+    // A declared `*Props` type wins: forwardRef must not add the local alias on top of it.
+    expect(parseComponentApi('export interface BoxProps { size?: number }\nexport const Box = forwardRef<HTMLDivElement, BoxProps>(() => null);').extends).toEqual([]);
     expect(parseComponentApi('export type BoxProps = { size?: number };')).toEqual({
       extends: [],
       props: [{ name: 'size', type: 'number', optional: true }],
