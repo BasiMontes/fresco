@@ -24,7 +24,7 @@ export interface Snapshot { colors: ColorToken[], typography: Typography, icons:
 
 const SCAN_DIRS = ['app', 'components', 'lib'];
 /** Components of `components/ui` whose API is documented so far. The next PRs extend the list. */
-const DOCUMENTED_COMPONENTS = ['button', 'card', 'tag', 'input', 'alert-banner', 'empty-state'];
+const DOCUMENTED_COMPONENTS = ['button', 'card', 'tag', 'input', 'alert-banner', 'empty-state', 'checkbox', 'switch', 'segmented-control', 'email-input', 'password-input', 'reveal'];
 const OUT_DIR = 'components/design-system';
 const GENERATED_FILES = [`${OUT_DIR}/generated.ts`, `${OUT_DIR}/icon-gallery.generated.tsx`];
 
@@ -176,16 +176,22 @@ export function parseComponentApi(source: string): ComponentApi {
       }
     }
   };
-  for (const node of file.statements) {
-    const exported = ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
-    if (!exported) { continue; }
+  const isExported = (node: ts.Node) => ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword);
+  const readDeclaration = (node: ts.Statement) => {
     if (ts.isInterfaceDeclaration(node) && node.name.text.endsWith('Props')) {
       readMembers(node.members);
       api.extends.push(...(node.heritageClauses ?? []).flatMap(clause => clause.types.map(type => squash(type.getText(file)))));
     }
-    else if (ts.isTypeAliasDeclaration(node) && node.name.text.endsWith('Props') && ts.isTypeLiteralNode(node.type)) {
-      readMembers(node.type.members);
+    else if (ts.isTypeAliasDeclaration(node) && node.name.text.endsWith('Props')) {
+      // An alias of another type (`type CheckboxProps = React.InputHTMLAttributes<...>`) documents what it aliases.
+      if (ts.isTypeLiteralNode(node.type)) { readMembers(node.type.members); }
+      else { api.extends.push(squash(node.type.getText(file))); }
     }
+  };
+  for (const node of file.statements) { if (isExported(node)) { readDeclaration(node); } }
+  // A component whose props type is not exported (`interface RevealProps` used only by the function) is still documented.
+  if (api.extends.length === 0 && api.props.length === 0) {
+    for (const node of file.statements) { if (!isExported(node)) { readDeclaration(node); } }
   }
   // A component with no exported `*Props` type (e.g. `forwardRef<El, React.InputHTMLAttributes<El>>`) documents what it forwards.
   const declaresProps = api.extends.length > 0 || api.props.length > 0;
