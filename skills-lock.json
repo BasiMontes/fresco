@@ -145,6 +145,12 @@
       "skillPath": "skills/media-use/SKILL.md",
       "computedHash": "c5b802f1768a18b19afe24ae3e487f4f45577443c5c8c275129223d8e7d2dc43"
     },
+    "modern-web-guidance": {
+      "source": "googlechrome/modern-web-guidance",
+      "sourceType": "github",
+      "skillPath": "skills/modern-web-guidance/SKILL.md",
+      "computedHash": "40c0b08c2e3103aa83002cff019fe94926cc5e64ad94adbab808736b8947d8f8"
+    },
     "motion-doctrine": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
