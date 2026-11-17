@@ -143,4 +143,10 @@ require('@testing-library/jest-dom');
  */
 afterEach(() => {
   cleanup();
+  // FRESCO-1219: the document is shared by every test, and `components/auth/captcha-field.tsx` appends Cloudflare's
+  // script to `document.head` and never removes it (once per page in the app). A test that renders the captcha without
+  // stubbing `window.turnstile` (the signup OTP step does) left it behind, and a later test asserting "nothing loads
+  // from Cloudflare" (WaitlistForm) failed on whichever CI runner happened to order the files that way. Removed here so
+  // every test starts from a head without it, whatever ran before.
+  document.querySelectorAll('script[src*="challenges.cloudflare.com"]').forEach(script => script.remove());
 });
