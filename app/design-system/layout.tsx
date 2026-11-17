@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { DesignSystemNav } from '@/components/design-system/nav';
 
 /**
  * FRESCO-1207: public design-system docs, outside `(app)` so it needs no session, like `/qa`.
@@ -14,5 +15,10 @@ export const metadata: Metadata = {
 };
 
 export default function DesignSystemLayout({ children }: { children: React.ReactNode }) {
-  return <main id="main" className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-12">{children}</main>;
+  return (
+    <main id="main" className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-12 md:flex-row">
+      <DesignSystemNav />
+      <div className="min-w-0 flex-1">{children}</div>
+    </main>
+  );
 }

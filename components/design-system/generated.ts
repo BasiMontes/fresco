@@ -145,7 +145,7 @@ export const GLYPH_NAMES = [
 ] as const;
 
 export const COMPONENT_APIS = {
-  button: {
+  'button': {
     extends: ['React.ButtonHTMLAttributes<HTMLButtonElement>', 'VariantProps<typeof buttonVariants>'],
     props: [],
     variants: [
@@ -153,4 +153,50 @@ export const COMPONENT_APIS = {
       { name: 'size', values: ['sm', 'md', 'lg'], default: 'md' },
     ],
   },
+  'card': {
+    extends: ['React.HTMLAttributes<HTMLDivElement>', 'VariantProps<typeof cardVariants>'],
+    props: [],
+    variants: [
+      { name: 'variant', values: ['default', 'insight', 'pro', 'danger'], default: 'default' },
+    ],
+  },
+  'tag': {
+    extends: ['React.HTMLAttributes<HTMLSpanElement>', 'VariantProps<typeof tagVariants>'],
+    props: [],
+    variants: [
+      { name: 'variant', values: ['selected', 'outline', 'neutral', 'accent', 'allergen', 'accent-2'], default: 'neutral' },
+    ],
+  },
+  'input': {
+    extends: [],
+    props: [],
+    variants: [],
+  },
+  'alert-banner': {
+    extends: ['React.HTMLAttributes<HTMLDivElement>'],
+    props: [
+      { name: 'advertencias', type: 'string[]', optional: true },
+    ],
+    variants: [],
+  },
+  'empty-state': {
+    extends: ['React.HTMLAttributes<HTMLDivElement>'],
+    props: [
+      { name: 'icon', type: 'React.ReactNode', optional: true },
+      { name: 'title', type: 'string', optional: false },
+      { name: 'titleAs', type: '\'h1\' | \'h2\'', optional: true },
+      { name: 'description', type: 'string', optional: true },
+      { name: 'action', type: 'React.ReactNode', optional: true },
+    ],
+    variants: [],
+  },
+} as const;
+
+export const EXAMPLE_SOURCES = {
+  'button': 'import { Button } from \'@/components/ui/button\';\n\nexport default function ButtonExample() {\n  return (\n    <div className="flex flex-wrap items-center gap-3">\n      <Button>Guardar menú</Button>\n      <Button variant="action">Generar menú</Button>\n      <Button variant="secondary">Cancelar</Button>\n      <Button variant="ghost" size="sm">Saltar</Button>\n      <Button disabled>No disponible</Button>\n    </div>\n  );\n}\n',
+  'card': 'import { Card, CardContent, CardDescription, CardHeader, CardTitle } from \'@/components/ui/card\';\n\nexport default function CardExample() {\n  return (\n    <div className="grid gap-3 sm:grid-cols-2">\n      <Card>\n        <CardHeader>\n          <CardTitle>Lentejas con verduras</CardTitle>\n          <CardDescription>30 minutos, para 4 personas</CardDescription>\n        </CardHeader>\n        <CardContent>Un plato de cuchara fácil para toda la semana.</CardContent>\n      </Card>\n      <Card variant="insight">\n        <CardHeader>\n          <CardTitle>Fresco ha aprendido algo</CardTitle>\n        </CardHeader>\n        <CardContent>Sueles cenar ligero entre semana.</CardContent>\n      </Card>\n    </div>\n  );\n}\n',
+  'tag': 'import { Tag } from \'@/components/ui/tag\';\n\nexport default function TagExample() {\n  return (\n    <div className="flex flex-wrap gap-2">\n      <Tag>Vegetariano</Tag>\n      <Tag variant="selected">Sin gluten</Tag>\n      <Tag variant="outline">Rápido</Tag>\n      <Tag variant="allergen">Contiene frutos secos</Tag>\n    </div>\n  );\n}\n',
+  'input': 'import { Input } from \'@/components/ui/input\';\n\nexport default function InputExample() {\n  return (\n    <div className="flex max-w-sm flex-col gap-3">\n      <Input type="email" placeholder="tu@correo.es" aria-label="Correo electrónico" />\n      <Input type="number" defaultValue={4} aria-label="Comensales" />\n      <Input disabled placeholder="Campo desactivado" aria-label="Campo desactivado" />\n    </div>\n  );\n}\n',
+  'alert-banner': 'import { AlertBanner } from \'@/components/ui/alert-banner\';\n\nexport default function AlertBannerExample() {\n  return (\n    <AlertBanner advertencias={[\'No hemos encontrado una cena sin gluten para el jueves.\', \'Revisa los ingredientes antes de cocinar.\']} />\n  );\n}\n',
+  'empty-state': 'import { Button } from \'@/components/ui/button\';\nimport { EmptyState } from \'@/components/ui/empty-state\';\n\nexport default function EmptyStateExample() {\n  return (\n    <EmptyState\n      title="Todavía no hay menú"\n      description="Genera tu primer menú semanal para empezar."\n      action={<Button variant="action">Generar menú</Button>}\n    />\n  );\n}\n',
 } as const;
