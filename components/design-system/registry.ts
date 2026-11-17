@@ -1,12 +1,18 @@
 import type { ComponentType } from 'react';
 import AlertBannerExample from './examples/alert-banner.example';
+import AllergenReminderExample from './examples/allergen-reminder.example';
 import ButtonExample from './examples/button.example';
 import CardExample from './examples/card.example';
 import CheckboxExample from './examples/checkbox.example';
+import CssGlyphsExample from './examples/css-glyphs.example';
+import DialogExample from './examples/dialog.example';
+import DropdownExample from './examples/dropdown.example';
 import EmailInputExample from './examples/email-input.example';
 import EmptyStateExample from './examples/empty-state.example';
+import FilterDrawerExample from './examples/filter-drawer.example';
 import InputExample from './examples/input.example';
 import PasswordInputExample from './examples/password-input.example';
+import PopoverExample from './examples/popover.example';
 import RevealExample from './examples/reveal.example';
 import SegmentedControlExample from './examples/segmented-control.example';
 import SwitchExample from './examples/switch.example';
@@ -34,6 +40,12 @@ export const REGISTRY = {
   'email-input': { source: 'email-input', title: 'Campo de correo', description: 'Campo de correo que avisa de un formato no válido al salir de él.', Example: EmailInputExample },
   'password-input': { source: 'password-input', title: 'Campo de contraseña', description: 'Campo de contraseña con botón para mostrarla y medidor de fortaleza.', Example: PasswordInputExample },
   'reveal': { source: 'reveal', title: 'Aparición', description: 'Envoltorio que marca su contenido como visible al entrar en pantalla.', Example: RevealExample },
+  'dialog': { source: 'dialog', title: 'Diálogo', description: 'Ventana modal accesible que se cierra con Escape o al pulsar fuera.', Example: DialogExample },
+  'dropdown': { source: 'dropdown', title: 'Desplegable', description: 'Selector de una opción con lista, manejable con el teclado.', Example: DropdownExample },
+  'popover': { source: 'popover', title: 'Globo flotante', description: 'Panel anclado a un botón que se cierra con Escape o al pulsar fuera.', Example: PopoverExample },
+  'filter-drawer': { source: 'filter-drawer', title: 'Panel de filtros', description: 'Panel lateral con título, botón para borrar todo y pie de acciones.', Example: FilterDrawerExample },
+  'allergen-reminder': { source: 'allergen-reminder', title: 'Recordatorio de alérgenos', description: 'Texto fijo de aviso sobre alérgenos, el mismo en todas las pantallas.', Example: AllergenReminderExample },
+  'css-glyphs': { source: 'css-glyphs', title: 'Glifos CSS', description: 'Marcas dibujadas con CSS: más, menú animado y tema claro u oscuro.', Example: CssGlyphsExample },
 } as const satisfies Record<string, RegistryEntry>;
 
 export type RegistrySlug = keyof typeof REGISTRY;

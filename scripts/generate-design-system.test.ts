@@ -161,6 +161,18 @@ describe('parseComponentApi', () => {
     });
   });
 
+  test('inline object-literal parameter types are read, kept apart per component when there are several', () => {
+    const several = 'export function A({ className }: { className?: string }) { return null; }\nexport const B = ({ open }: { open: boolean, className?: string }) => null;';
+
+    expect(parseComponentApi(several).props).toEqual([
+      { name: 'A.className', type: 'string', optional: true },
+      { name: 'B.open', type: 'boolean', optional: false },
+      { name: 'B.className', type: 'string', optional: true },
+    ]);
+    expect(parseComponentApi('export function A({ className }: { className?: string }) { return null; }').props)
+      .toEqual([{ name: 'className', type: 'string', optional: true }]);
+  });
+
   test('an alias of another type is listed as extended, and a non-exported props type is read only when none is exported', () => {
     expect(parseComponentApi('export type BoxProps = React.InputHTMLAttributes<HTMLInputElement>;')).toEqual({
       extends: ['React.InputHTMLAttributes<HTMLInputElement>'],
