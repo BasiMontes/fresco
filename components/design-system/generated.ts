@@ -255,6 +255,77 @@ export const COMPONENT_APIS = {
     ],
     variants: [],
   },
+  'dialog': {
+    extends: [],
+    props: [
+      { name: 'open', type: 'boolean', optional: false },
+      { name: 'onOpenChange', type: '(open: boolean) => void', optional: false },
+      { name: 'children', type: 'React.ReactNode', optional: false },
+      { name: 'aria-label', type: 'string', optional: false },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'data-testid', type: 'string', optional: true },
+      { name: 'dismissible', type: 'boolean', optional: true },
+    ],
+    variants: [],
+  },
+  'dropdown': {
+    extends: [],
+    props: [
+      { name: 'options', type: 'DropdownOption[]', optional: false },
+      { name: 'value', type: 'string | null', optional: false },
+      { name: 'onChange', type: '(value: string) => void', optional: false },
+      { name: 'placeholder', type: 'string', optional: true },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'data-testid', type: 'string', optional: true },
+      { name: 'aria-label', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'popover': {
+    extends: [],
+    props: [
+      { name: 'open', type: 'boolean', optional: false },
+      { name: 'onOpenChange', type: '(open: boolean) => void', optional: false },
+      { name: 'children', type: 'React.ReactNode', optional: false },
+      { name: 'aria-label', type: 'string', optional: false },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'data-testid', type: 'string', optional: true },
+      { name: 'triggerRef', type: 'React.RefObject<HTMLElement | null>', optional: true },
+      { name: 'matchTriggerWidth', type: 'boolean', optional: true },
+    ],
+    variants: [],
+  },
+  'filter-drawer': {
+    extends: [],
+    props: [
+      { name: 'open', type: 'boolean', optional: false },
+      { name: 'onOpenChange', type: '(open: boolean) => void', optional: false },
+      { name: 'title', type: 'string', optional: false },
+      { name: 'onClearAll', type: '() => void', optional: false },
+      { name: 'hasActiveFilters', type: 'boolean', optional: false },
+      { name: 'footer', type: 'React.ReactNode', optional: false },
+      { name: 'children', type: 'React.ReactNode', optional: false },
+      { name: 'aria-label', type: 'string', optional: false },
+      { name: 'data-testid', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'allergen-reminder': {
+    extends: [],
+    props: [
+      { name: 'className', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'css-glyphs': {
+    extends: [],
+    props: [
+      { name: 'className', type: 'string', optional: true },
+      { name: 'open', type: 'boolean', optional: false },
+      { name: 'kind', type: '\'light\' | \'dark\'', optional: false },
+    ],
+    variants: [],
+  },
 } as const;
 
 export const EXAMPLE_SOURCES = {
@@ -270,4 +341,10 @@ export const EXAMPLE_SOURCES = {
   'email-input': '\'use client\';\n\nimport { useState } from \'react\';\nimport { EmailInput } from \'@/components/ui/email-input\';\n\nexport default function EmailInputExample() {\n  const [email, setEmail] = useState(\'\');\n\n  return (\n    <div className="flex max-w-sm flex-col gap-3">\n      <EmailInput value={email} onChange={setEmail} />\n      <p className="text-body-sm text-tertiary">Escribe un correo y sal del campo para ver la validación.</p>\n    </div>\n  );\n}\n',
   'password-input': '\'use client\';\n\nimport { useState } from \'react\';\nimport { PasswordInput } from \'@/components/ui/password-input\';\n\nexport default function PasswordInputExample() {\n  const [password, setPassword] = useState(\'\');\n\n  return (\n    <div className="flex max-w-sm flex-col gap-3">\n      <PasswordInput value={password} onChange={setPassword} label="Contraseña" showPolicyHint />\n    </div>\n  );\n}\n',
   'reveal': 'import { Card } from \'@/components/ui/card\';\nimport { Reveal } from \'@/components/ui/reveal\';\n\nexport default function RevealExample() {\n  return (\n    <Reveal className="max-w-sm">\n      <Card className="p-4">\n        <p className="text-body-sm text-text">Esta tarjeta aparece al entrar en pantalla.</p>\n      </Card>\n    </Reveal>\n  );\n}\n',
+  'dialog': '\'use client\';\n\nimport { useState } from \'react\';\nimport { Button } from \'@/components/ui/button\';\nimport { Dialog } from \'@/components/ui/dialog\';\n\nexport default function DialogExample() {\n  const [open, setOpen] = useState(false);\n\n  return (\n    <div>\n      <Button onClick={() => setOpen(true)}>Abrir diálogo</Button>\n      <Dialog open={open} onOpenChange={setOpen} aria-label="Eliminar receta">\n        <div className="flex flex-col gap-4 p-6">\n          <p className="text-body text-text">¿Seguro que quieres eliminar esta receta?</p>\n          <Button variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>\n        </div>\n      </Dialog>\n    </div>\n  );\n}\n',
+  'dropdown': '\'use client\';\n\nimport { useState } from \'react\';\nimport { Dropdown } from \'@/components/ui/dropdown\';\n\nconst OPTIONS = [\n  { value: \'lunch\', label: \'Comida\' },\n  { value: \'dinner\', label: \'Cena\' },\n  { value: \'snack\', label: \'Merienda\' },\n];\n\nexport default function DropdownExample() {\n  const [meal, setMeal] = useState<string | null>(null);\n\n  return <Dropdown options={OPTIONS} value={meal} onChange={setMeal} aria-label="Tipo de comida" />;\n}\n',
+  'popover': '\'use client\';\n\nimport { useRef, useState } from \'react\';\nimport { Button } from \'@/components/ui/button\';\nimport { Popover } from \'@/components/ui/popover\';\n\nexport default function PopoverExample() {\n  const [open, setOpen] = useState(false);\n  const triggerRef = useRef<HTMLButtonElement>(null);\n\n  return (\n    <div>\n      <Button ref={triggerRef} variant="secondary" onClick={() => setOpen(true)}>Ver detalles</Button>\n      <Popover open={open} onOpenChange={setOpen} aria-label="Detalles de la receta" triggerRef={triggerRef} matchTriggerWidth={false}>\n        <p className="p-4 text-body-sm text-text">Se prepara en 20 minutos y sirve para dos personas.</p>\n      </Popover>\n    </div>\n  );\n}\n',
+  'filter-drawer': '\'use client\';\n\nimport { useState } from \'react\';\nimport { Button } from \'@/components/ui/button\';\nimport { FilterDrawer } from \'@/components/ui/filter-drawer\';\nimport { Switch } from \'@/components/ui/switch\';\n\nexport default function FilterDrawerExample() {\n  const [open, setOpen] = useState(false);\n  const [quick, setQuick] = useState(false);\n\n  return (\n    <div>\n      <Button variant="secondary" onClick={() => setOpen(true)}>Filtros</Button>\n      <FilterDrawer\n        open={open}\n        onOpenChange={setOpen}\n        title="Filtros"\n        aria-label="Filtros de recetas"\n        hasActiveFilters={quick}\n        onClearAll={() => setQuick(false)}\n        footer={<Button onClick={() => setOpen(false)}>Aplicar</Button>}\n      >\n        <div className="flex items-center gap-3 text-body-sm text-text">\n          <Switch checked={quick} onCheckedChange={setQuick} aria-label="Solo recetas rápidas" />\n          Solo recetas rápidas\n        </div>\n      </FilterDrawer>\n    </div>\n  );\n}\n',
+  'allergen-reminder': 'import { AllergenReminder } from \'@/components/ui/allergen-reminder\';\n\nexport default function AllergenReminderExample() {\n  return <AllergenReminder />;\n}\n',
+  'css-glyphs': '\'use client\';\n\nimport { useState } from \'react\';\nimport { MenuMark, PlusMark, ThemeMark } from \'@/components/ui/css-glyphs\';\n\nexport default function CssGlyphsExample() {\n  const [open, setOpen] = useState(false);\n\n  return (\n    <div className="flex items-center gap-6 text-text">\n      <PlusMark />\n      <button type="button" aria-label="Alternar menú" onClick={() => setOpen(!open)}>\n        <MenuMark open={open} />\n      </button>\n      <ThemeMark kind="light" />\n      <ThemeMark kind="dark" />\n    </div>\n  );\n}\n',
 } as const;

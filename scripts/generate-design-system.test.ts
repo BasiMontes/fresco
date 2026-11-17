@@ -161,6 +161,15 @@ describe('parseComponentApi', () => {
     });
   });
 
+  test('inline object-literal parameter types of exported functions are read, merged by name', () => {
+    const source = 'export function A({ className }: { className?: string }) { return null; }\nexport function B({ open }: { open: boolean, className?: string }) { return null; }';
+
+    expect(parseComponentApi(source).props).toEqual([
+      { name: 'className', type: 'string', optional: true },
+      { name: 'open', type: 'boolean', optional: false },
+    ]);
+  });
+
   test('an alias of another type is listed as extended, and a non-exported props type is read only when none is exported', () => {
     expect(parseComponentApi('export type BoxProps = React.InputHTMLAttributes<HTMLInputElement>;')).toEqual({
       extends: ['React.InputHTMLAttributes<HTMLInputElement>'],
