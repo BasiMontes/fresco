@@ -161,6 +161,16 @@ describe('parseComponentApi', () => {
     });
   });
 
+  test('an alias of another type is listed as extended, and a non-exported props type is read only when none is exported', () => {
+    expect(parseComponentApi('export type BoxProps = React.InputHTMLAttributes<HTMLInputElement>;')).toEqual({
+      extends: ['React.InputHTMLAttributes<HTMLInputElement>'],
+      props: [],
+      variants: [],
+    });
+    expect(parseComponentApi('interface BoxProps { size?: number }\nexport function Box(props: BoxProps) { return null; }').props)
+      .toEqual([{ name: 'size', type: 'number', optional: true }]);
+  });
+
   test('a cva call without defaults or a variants object yields no default or no axis', () => {
     expect(parseComponentApi('const a = cva("x", { variants: { size: { sm: "a" } } }); const b = cva("y"); const c = cva("z", { variants: foo });').variants)
       .toEqual([{ name: 'size', values: ['sm'], default: null }]);

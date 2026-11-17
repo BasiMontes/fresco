@@ -190,6 +190,71 @@ export const COMPONENT_APIS = {
     ],
     variants: [],
   },
+  'checkbox': {
+    extends: ['React.InputHTMLAttributes<HTMLInputElement>'],
+    props: [],
+    variants: [],
+  },
+  'switch': {
+    extends: [],
+    props: [
+      { name: 'checked', type: 'boolean', optional: false },
+      { name: 'onCheckedChange', type: '(checked: boolean) => void', optional: false },
+      { name: 'disabled', type: 'boolean', optional: true },
+      { name: 'aria-label', type: 'string', optional: true },
+      { name: 'data-testid', type: 'string', optional: true },
+      { name: 'className', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'segmented-control': {
+    extends: [],
+    props: [
+      { name: 'options', type: 'SegmentedControlOption[]', optional: false },
+      { name: 'value', type: 'string', optional: false },
+      { name: 'onChange', type: '(value: string) => void', optional: false },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'aria-label', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'email-input': {
+    extends: [],
+    props: [
+      { name: 'value', type: 'string', optional: false },
+      { name: 'onChange', type: '(value: string) => void', optional: false },
+      { name: 'data-testid', type: 'string', optional: true },
+      { name: 'disabled', type: 'boolean', optional: true },
+    ],
+    variants: [],
+  },
+  'password-input': {
+    extends: [],
+    props: [
+      { name: 'value', type: 'string', optional: false },
+      { name: 'onChange', type: '(value: string) => void', optional: false },
+      { name: 'data-testid', type: 'string', optional: true },
+      { name: 'placeholder', type: 'string', optional: true },
+      { name: 'autoComplete', type: '\'new-password\' | \'current-password\'', optional: true },
+      { name: 'showStrength', type: 'boolean', optional: true },
+      { name: 'showPolicyHint', type: 'boolean', optional: true },
+      { name: 'disabled', type: 'boolean', optional: true },
+      { name: 'label', type: 'string', optional: true },
+      { name: 'id', type: 'string', optional: true },
+      { name: 'aria-invalid', type: 'boolean', optional: true },
+      { name: 'aria-describedby', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'reveal': {
+    extends: [],
+    props: [
+      { name: 'children', type: 'ReactNode', optional: false },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'threshold', type: 'number', optional: true },
+    ],
+    variants: [],
+  },
 } as const;
 
 export const EXAMPLE_SOURCES = {
@@ -199,4 +264,10 @@ export const EXAMPLE_SOURCES = {
   'input': 'import { Input } from \'@/components/ui/input\';\n\nexport default function InputExample() {\n  return (\n    <div className="flex max-w-sm flex-col gap-3">\n      <Input type="email" placeholder="tu@correo.es" aria-label="Correo electrónico" />\n      <Input type="number" defaultValue={4} aria-label="Comensales" />\n      <Input disabled placeholder="Campo desactivado" aria-label="Campo desactivado" />\n    </div>\n  );\n}\n',
   'alert-banner': 'import { AlertBanner } from \'@/components/ui/alert-banner\';\n\nexport default function AlertBannerExample() {\n  return (\n    <AlertBanner advertencias={[\'No hemos encontrado una cena sin gluten para el jueves.\', \'Revisa los ingredientes antes de cocinar.\']} />\n  );\n}\n',
   'empty-state': 'import { Button } from \'@/components/ui/button\';\nimport { EmptyState } from \'@/components/ui/empty-state\';\n\nexport default function EmptyStateExample() {\n  return (\n    <EmptyState\n      title="Todavía no hay menú"\n      description="Genera tu primer menú semanal para empezar."\n      action={<Button variant="action">Generar menú</Button>}\n    />\n  );\n}\n',
+  'checkbox': '\'use client\';\n\nimport { useState } from \'react\';\nimport { Checkbox } from \'@/components/ui/checkbox\';\n\nexport default function CheckboxExample() {\n  const [accepted, setAccepted] = useState(false);\n\n  return (\n    <div className="flex flex-col gap-3">\n      <label className="flex items-center gap-3 text-body-sm text-text">\n        <Checkbox checked={accepted} onChange={event => setAccepted(event.target.checked)} />\n        Acepto los términos del servicio\n      </label>\n      <p className="text-body-sm text-tertiary">{accepted ? \'Marcada\' : \'Sin marcar\'}</p>\n      <label className="flex items-center gap-3 text-body-sm text-text">\n        <Checkbox disabled />\n        Opción desactivada\n      </label>\n    </div>\n  );\n}\n',
+  'switch': '\'use client\';\n\nimport { useState } from \'react\';\nimport { Switch } from \'@/components/ui/switch\';\n\nexport default function SwitchExample() {\n  const [enabled, setEnabled] = useState(true);\n\n  return (\n    <div className="flex flex-col gap-2">\n      <div className="flex items-center gap-3 text-body-sm text-text">\n        <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Recibir avisos por correo" />\n        Recibir avisos por correo\n      </div>\n      <p className="text-body-sm text-tertiary">{enabled ? \'Activado\' : \'Desactivado\'}</p>\n      <div className="flex items-center gap-3 text-body-sm text-text">\n        <Switch checked={false} onCheckedChange={() => {}} disabled aria-label="Modo experimental" />\n        Modo experimental\n      </div>\n    </div>\n  );\n}\n',
+  'segmented-control': '\'use client\';\n\nimport { useState } from \'react\';\nimport { SegmentedControl } from \'@/components/ui/segmented-control\';\n\nconst OPTIONS = [\n  { value: \'week\', label: \'Semana\' },\n  { value: \'month\', label: \'Mes\' },\n  { value: \'year\', label: \'Año\' },\n];\n\nexport default function SegmentedControlExample() {\n  const [period, setPeriod] = useState(\'week\');\n\n  return (\n    <div className="flex flex-col items-start gap-3">\n      <SegmentedControl options={OPTIONS} value={period} onChange={setPeriod} aria-label="Periodo del menú" />\n      <p className="text-body-sm text-tertiary">\n        Seleccionado:\n        {\' \'}\n        {period}\n      </p>\n    </div>\n  );\n}\n',
+  'email-input': '\'use client\';\n\nimport { useState } from \'react\';\nimport { EmailInput } from \'@/components/ui/email-input\';\n\nexport default function EmailInputExample() {\n  const [email, setEmail] = useState(\'\');\n\n  return (\n    <div className="flex max-w-sm flex-col gap-3">\n      <EmailInput value={email} onChange={setEmail} />\n      <p className="text-body-sm text-tertiary">Escribe un correo y sal del campo para ver la validación.</p>\n    </div>\n  );\n}\n',
+  'password-input': '\'use client\';\n\nimport { useState } from \'react\';\nimport { PasswordInput } from \'@/components/ui/password-input\';\n\nexport default function PasswordInputExample() {\n  const [password, setPassword] = useState(\'\');\n\n  return (\n    <div className="flex max-w-sm flex-col gap-3">\n      <PasswordInput value={password} onChange={setPassword} label="Contraseña" showPolicyHint />\n    </div>\n  );\n}\n',
+  'reveal': 'import { Card } from \'@/components/ui/card\';\nimport { Reveal } from \'@/components/ui/reveal\';\n\nexport default function RevealExample() {\n  return (\n    <Reveal className="max-w-sm">\n      <Card className="p-4">\n        <p className="text-body-sm text-text">Esta tarjeta aparece al entrar en pantalla.</p>\n      </Card>\n    </Reveal>\n  );\n}\n',
 } as const;
