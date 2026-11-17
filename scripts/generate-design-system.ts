@@ -20,11 +20,11 @@ export interface Typography { fonts: { heading: string, sans: string }, steps: T
 export interface PropDoc { name: string, type: string, optional: boolean }
 export interface VariantDoc { name: string, values: string[], default: string | null }
 export interface ComponentApi { extends: string[], props: PropDoc[], variants: VariantDoc[] }
-export interface Snapshot { colors: ColorToken[], typography: Typography, icons: string[], glyphs: string[], components: Record<string, ComponentApi> }
+export interface Snapshot { colors: ColorToken[], typography: Typography, icons: string[], glyphs: string[], components: Record<string, ComponentApi>, examples: Record<string, string> }
 
 const SCAN_DIRS = ['app', 'components', 'lib'];
 /** Components of `components/ui` whose API is documented so far. The next PRs extend the list. */
-const DOCUMENTED_COMPONENTS = ['button'];
+const DOCUMENTED_COMPONENTS = ['button', 'card', 'tag', 'input', 'alert-banner', 'empty-state'];
 const OUT_DIR = 'components/design-system';
 const GENERATED_FILES = [`${OUT_DIR}/generated.ts`, `${OUT_DIR}/icon-gallery.generated.tsx`];
 
@@ -187,7 +187,11 @@ export function parseComponentApi(source: string): ComponentApi {
       readMembers(node.type.members);
     }
   }
+  // A component with no exported `*Props` type (e.g. `forwardRef<El, React.InputHTMLAttributes<El>>`) documents what it forwards.
+  const declaresProps = api.extends.length > 0 || api.props.length > 0;
   const visit = (node: ts.Node) => {
+    const forwarded = ts.isCallExpression(node) && !declaresProps && /(?:^|\.)forwardRef$/.test(node.expression.getText(file)) ? node.typeArguments?.[1] : undefined;
+    if (forwarded) { api.extends.push(squash(forwarded.getText(file))); }
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'cva') { api.variants.push(...readCvaVariants(node)); }
     ts.forEachChild(node, visit);
   };
@@ -213,6 +217,7 @@ export function buildSnapshot(root: string): Snapshot {
     icons: [...icons].sort(),
     glyphs: parseGlyphs(readFileSync(join(root, 'components/ui/css-glyphs.tsx'), 'utf8')),
     components: Object.fromEntries(DOCUMENTED_COMPONENTS.map(slug => [slug, parseComponentApi(readFileSync(join(root, `components/ui/${slug}.tsx`), 'utf8'))])),
+    examples: Object.fromEntries(DOCUMENTED_COMPONENTS.map(slug => [slug, readFileSync(join(root, `${OUT_DIR}/examples/${slug}.example.tsx`), 'utf8')])),
   };
 }
 
@@ -222,7 +227,7 @@ const quote = (value: string) => `'${value.replaceAll('\'', '\\\'')}'`;
 const nullable = (value: string | null) => (value === null ? 'null' : quote(value));
 
 export function renderSnapshotModule(snapshot: Snapshot): string {
-  const { colors, typography, icons, glyphs, components } = snapshot;
+  const { colors, typography, icons, glyphs, components, examples } = snapshot;
   const lines = [HEADER, 'export const COLOR_TOKENS = ['];
   for (const c of colors) { lines.push(`  { name: ${quote(c.name)}, light: ${quote(c.light)}, dark: ${quote(c.dark)} },`); }
   lines.push('] as const;', '', 'export const FONT_STACKS = {', `  heading: ${quote(typography.fonts.heading)},`, `  sans: ${quote(typography.fonts.sans)},`, '} as const;', '', 'export const TYPE_STEPS = [');
@@ -230,7 +235,7 @@ export function renderSnapshotModule(snapshot: Snapshot): string {
     lines.push(`  { step: ${quote(s.step)}, size: ${quote(s.size)}, lineHeight: ${nullable(s.lineHeight)}, letterSpacing: ${nullable(s.letterSpacing)}, fontWeight: ${nullable(s.fontWeight)} },`);
   }
   lines.push('] as const;', '', 'export const ICON_NAMES = [', ...icons.map(name => `  ${quote(name)},`), '] as const;', '', 'export const GLYPH_NAMES = [', ...glyphs.map(name => `  ${quote(name)},`), '] as const;', '');
-  lines.push(...renderComponentApis(components), '');
+  lines.push(...renderComponentApis(components), '', ...renderExampleSources(examples), '');
   return lines.join('\n');
 }
 
@@ -253,6 +258,15 @@ function renderComponentApis(components: Record<string, ComponentApi>): string[]
   }
   lines.push('} as const;');
   return lines;
+}
+
+const quoteSource = (text: string) => `'${text.replaceAll('\\', '\\\\').replaceAll('\'', '\\\'').replaceAll('\r', '\\r').replaceAll('\n', '\\n').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029')}'`;
+
+/** The example files verbatim, as template-free JSON strings: the page shows the source without reading the disk at runtime. */
+function renderExampleSources(examples: Record<string, string>): string[] {
+  const slugs = Object.keys(examples);
+  const key = (slug: string) => (slugs.some(name => !/^[a-z]\w*$/.test(name)) ? quote(slug) : slug);
+  return ['export const EXAMPLE_SOURCES = {', ...slugs.map(slug => `  ${key(slug)}: ${quoteSource(examples[slug])},`), '} as const;'];
 }
 
 /** Explicit named imports: a `import * as` would pull every lucide icon into the bundle. */
