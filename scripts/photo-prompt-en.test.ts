@@ -313,7 +313,7 @@ describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter re
     const eggplant = buildEnglishPrompt({ nombre: 'Berenjena asada', ingredientes_principales: ['berenjena'], pasos_resumen: [] }, 'clay');
     const honey = buildEnglishPrompt({ nombre: 'Torrijas', ingredientes_principales: ['miel'], pasos_resumen: [] }, 'clay');
 
-    expect(eggplant.ok && eggplant.prompt).toContain('smooth roasted eggplant');
+    expect(eggplant.ok && eggplant.prompt).toContain('smooth roasted aubergine');
     expect(honey.ok && honey.prompt).toContain('a little honey');
   });
 
@@ -344,6 +344,77 @@ describe('buildEnglishPrompt in the clay style: wording the Cloudflare filter re
     const gachas = buildEnglishPrompt({ nombre: 'Gachas dulces andaluzas', ingredientes_principales: ['harina', 'leche', 'canela'], pasos_resumen: [] });
 
     expect(gachas.ok && gachas.prompt).toContain('thick creamy pale sweet porridge');
+  });
+
+  // FRESCO-1220: what the two 2026-11-17 batches taught (owner rejections and Cloudflare refusals).
+  describe('lessons of the 2026-11-17 batches (FRESCO-1220)', () => {
+    const clay = (nombre: string, ingredientes_principales: string[], pasos_resumen: string[] = []) => {
+      const result = buildEnglishPrompt({ nombre, ingredientes_principales, pasos_resumen }, 'clay');
+      if (!result.ok) { throw new Error(`no prompt for ${nombre}: ${result.missing.join(', ')}`); }
+      return result.prompt;
+    };
+
+    test('a sandwich is seen from the side with visible layers, not cut in half, and has no grill-marks cue', () => {
+      const prompt = clay('Sándwich de jamón cocido y queso', ['pan integral', 'jamón cocido', 'queso'], ['Tostar a la plancha el pan']);
+
+      expect(prompt).toContain('a sandwich seen from the side, with visible layers of');
+      expect(prompt).not.toMatch(/cut in half|grill marks|seared/);
+    });
+
+    test('a bocadillo gets the same sandwich lead', () => {
+      expect(clay('Bocadillo de atún', ['pan', 'atún en lata'])).toContain('seen from the side, with visible layers of');
+    });
+
+    test('a dish served on a plate says so, so it is not drawn without one', () => {
+      const salad = clay('Ensalada de lentejas con feta', ['lentejas', 'queso feta', 'pimiento']);
+      const tart = clay('Tarta salada de puerro', ['puerro', 'nata']);
+
+      expect(salad).toContain('served on a round plate');
+      expect(tart).toContain('served on a round plate');
+    });
+
+    test('does not say the plate twice when the lead already has one', () => {
+      const pasta = clay('Pasta con calabaza y nueces', ['pasta', 'calabaza', 'nueces']);
+
+      expect(pasta).toContain('a plate of pasta with');
+      expect(pasta).not.toContain('served on a round plate');
+    });
+
+    test('a bowl or a glass is not given a plate', () => {
+      expect(clay('Sopa de calabacín con menta', ['calabacín', 'menta'])).not.toContain('round plate');
+      expect(clay('Batido de frutos rojos', ['frutos rojos'])).not.toContain('round plate');
+    });
+
+    test('"a plated dish of" becomes "a round plate holding" and the plate is not added again', () => {
+      const prompt = clay('Merluza al horno con patatas', ['merluza', 'patata']);
+
+      expect(prompt).toContain('a round plate holding');
+      expect(prompt).not.toMatch(/plated dish|served on a round plate/);
+    });
+
+    test('crepes are folded into triangles and the batter egg is not listed', () => {
+      const prompt = clay('Crepes dulces con fresas', ['huevo', 'fresas', 'harina', 'leche']);
+
+      expect(prompt).toContain('two thin golden crepes folded into triangles, topped with');
+      expect(prompt).toContain('strawberries');
+      expect(prompt).not.toMatch(/\begg\b/);
+    });
+
+    test('churros stand upright in a cup, with the chocolate on the side', () => {
+      const prompt = clay('Churros con chocolate a la naranja', ['cacao', 'naranja']);
+
+      expect(prompt).toContain('four long ridged golden churros standing upright in a small cup');
+      expect(prompt).toContain('orange slices');
+      expect(prompt).not.toContain('cocoa powder');
+    });
+
+    test('"eggplant" is written "aubergine" in a clay prompt, and a photo prompt keeps the word', () => {
+      const escalivada = clay('Escalivada', ['berenjena', 'pimiento rojo', 'cebolla'], ['Asar al horno']);
+      const photo = buildEnglishPrompt({ nombre: 'Berenjena asada', ingredientes_principales: ['berenjena'], pasos_resumen: [] });
+
+      expect(escalivada).not.toMatch(/eggplant/i);
+      expect(photo.ok && photo.prompt).toContain('eggplant');
+    });
   });
 });
 
