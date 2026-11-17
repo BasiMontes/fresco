@@ -730,22 +730,17 @@
 @layer utilities {
   /*
  * Shiki dual-theme code blocks (`components/qa/code-block.tsx`, `/qa` page).
- * This app has no site-wide dark mode today — scoped to `.shiki` only, per
- * Shiki's own dual-theme CSS-variable guide, rather than inventing a
- * site-wide dark theme this project doesn't otherwise have.
+ * FRESCO-1212: the palette follows the app's own resolved `color-scheme` (the
+ * `theme` cookie, stamped as `data-theme`, or the OS preference for `system`),
+ * through `light-dark()`, like every other token. A `prefers-color-scheme`
+ * media query here would follow the OS alone: a light-theme app on a dark OS
+ * painted near-white code on a cream page, and the reverse for an explicit
+ * dark theme on a light OS.
  */
   .shiki,
   .shiki span {
-    background-color: var(--shiki-light-bg) !important;
-    color: var(--shiki-light) !important;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .shiki,
-    .shiki span {
-      background-color: var(--shiki-dark-bg) !important;
-      color: var(--shiki-dark) !important;
-    }
+    background-color: light-dark(var(--shiki-light-bg), var(--shiki-dark-bg)) !important;
+    color: light-dark(var(--shiki-light), var(--shiki-dark)) !important;
   }
 
   /*
