@@ -43,6 +43,15 @@ describe('Popover', () => {
     expect(screen.getByTestId('account_popover')).toBeInTheDocument();
   });
 
+  test('the open panel is exposed as a group with its accessible name (FRESCO-1217)', async () => {
+    const user = setupUser();
+    renderWithProviders(<Harness />);
+
+    await user.click(screen.getByTestId('trigger'));
+
+    expect(screen.getByRole('group', { name: 'Menú de cuenta' })).toBe(screen.getByTestId('account_popover'));
+  });
+
   test('closes on outside click', async () => {
     const user = setupUser();
     renderWithProviders(<Harness />);
