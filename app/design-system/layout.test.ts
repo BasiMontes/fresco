@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { renderWithProviders, screen } from '@/tests/component-render';
 import DesignSystemLayout, { metadata } from './layout';
 
 describe('design-system layout', () => {
@@ -11,5 +12,16 @@ describe('design-system layout', () => {
 
     expect(element.type).toBe('main');
     expect(element.props.id).toBe('main');
+  });
+
+  test('shows the Fresco logo, linked to the docs home, with a mark for each theme (FRESCO-1216)', () => {
+    renderWithProviders(DesignSystemLayout({ children: null }));
+
+    const brand = screen.getByTestId('design_system_brand');
+
+    expect(brand).toHaveAttribute('href', '/design-system');
+    expect(brand.querySelectorAll('img')).toHaveLength(2);
+    expect(brand.querySelector('.brand-mark--light')).not.toBeNull();
+    expect(brand.querySelector('.brand-mark--dark')).not.toBeNull();
   });
 });
