@@ -13,23 +13,22 @@ export interface MercadonaMatch {
 }
 
 /** When the dataset snapshot these prices come from was published (FRESCO-1177): the age rules read it. */
-export const MERCADONA_CATALOG_FECHA = '2026-11-09T06:35:46.000Z';
+export const MERCADONA_CATALOG_FECHA = '2026-11-16T06:44:21.000Z';
 
 /** Real Mercadona pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */
 export const MERCADONA_CATALOG_MATCH: Record<string, MercadonaMatch> = {
   "aceite de oliva": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioMercadona":{"precioReferencia":3.8,"formatoReferencia":"L"},"shareUrl":"https://tienda.mercadona.es/product/4640/aceite-oliva-1o-hacendado-botella"},
   "aceitunas": {"envaseVenta":{"cantidad":350,"unidad":"g"},"precioMercadona":{"precioReferencia":7,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/52734/aceitunas-negras-hacendado-sin-hueso-bote"},
   "albahaca": {"envaseVenta":{"cantidad":20,"unidad":"g"},"precioMercadona":{"precioReferencia":7.75,"formatoReferencia":"100 g"},"shareUrl":"https://tienda.mercadona.es/product/69287/albahaca-bandeja"},
-  "almendras": {"envaseVenta":{"cantidad":150,"unidad":"g"},"precioMercadona":{"precioReferencia":18.334,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/36421/almendras-rellenas-turron-hacendado-paquete"},
   "arroz": {"envaseVenta":{"cantidad":1000,"unidad":"g"},"precioMercadona":{"precioReferencia":1.2,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/5063/arroz-largo-hacendado-paquete"},
   "arroz redondo": {"envaseVenta":{"cantidad":1000,"unidad":"g"},"precioMercadona":{"precioReferencia":1.15,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/5044/arroz-redondo-hacendado-paquete"},
   "atun": {"envaseVenta":{"cantidad":480,"unidad":"g"},"precioMercadona":{"precioReferencia":11.667,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/18018/atun-claro-natural-hacendado"},
   "avena": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioMercadona":{"precioReferencia":2.3,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/16807/avena-molida-hacendado-paquete"},
   "bacalao": {"envaseVenta":{"cantidad":450,"unidad":"g"},"precioMercadona":{"precioReferencia":21.1,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/87211/bacalao-punto-sal-descongelado-con-agua-anadida-bandeja"},
   "bacon": {"envaseVenta":{"cantidad":260,"unidad":"g"},"precioMercadona":{"precioReferencia":7.5,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/16252/bacon-hacendado-cintas"},
-  "boniato": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioMercadona":{"precioReferencia":2.55,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69239/batata-pieza"},
+  "boniato": {"envaseVenta":{"cantidad":390,"unidad":"g"},"precioMercadona":{"precioReferencia":2.55,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69239/batata-pieza"},
   "bonito": {"envaseVenta":{"cantidad":222,"unidad":"g"},"precioMercadona":{"precioReferencia":21.918,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/18116/bonito-norte-aceite-oliva-hacendado-pack-2"},
-  "brocoli": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioMercadona":{"precioReferencia":2.7,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69580/brocoli-pieza"},
+  "brocoli": {"envaseVenta":{"cantidad":490,"unidad":"g"},"precioMercadona":{"precioReferencia":2.7,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69580/brocoli-pieza"},
   "calabaza": {"envaseVenta":{"cantidad":560,"unidad":"g"},"precioMercadona":{"precioReferencia":4,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/3527/calabaza-cacahuete-cortada-trozos-bandeja"},
   "caldo": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioMercadona":{"precioReferencia":0.75,"formatoReferencia":"L"},"shareUrl":"https://tienda.mercadona.es/product/7313/caldo-pollo-hacendado-brick"},
   "caldo de pollo": {"envaseVenta":{"cantidad":1000,"unidad":"ml"},"precioMercadona":{"precioReferencia":0.75,"formatoReferencia":"L"},"shareUrl":"https://tienda.mercadona.es/product/7313/caldo-pollo-hacendado-brick"},
@@ -38,11 +37,10 @@ export const MERCADONA_CATALOG_MATCH: Record<string, MercadonaMatch> = {
   "champinones": {"envaseVenta":{"cantidad":300,"unidad":"g"},"precioMercadona":{"precioReferencia":5.2,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/26951/champinon-blanco-bandeja"},
   "chorizo": {"envaseVenta":{"cantidad":360,"unidad":"g"},"precioMercadona":{"precioReferencia":6.9,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/6048/chorizo-oreado-bandeja"},
   "cilantro": {"envaseVenta":{"cantidad":20,"unidad":"g"},"precioMercadona":{"precioReferencia":6.25,"formatoReferencia":"100 g"},"shareUrl":"https://tienda.mercadona.es/product/69690/cilantro-bandeja"},
-  "coco rallado": {"envaseVenta":{"cantidad":125,"unidad":"g"},"precioMercadona":{"precioReferencia":10.4,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/34035/coco-rallado-hacendado-paquete"},
   "coles de bruselas": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioMercadona":{"precioReferencia":5,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69379/coles-bruselas-paquete"},
-  "coliflor": {"envaseVenta":{"cantidad":1110,"unidad":"g"},"precioMercadona":{"precioReferencia":1.7,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69220/coliflor-pieza"},
+  "coliflor": {"envaseVenta":{"cantidad":1300,"unidad":"g"},"precioMercadona":{"precioReferencia":1.7,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69220/coliflor-pieza"},
   "conejo": {"envaseVenta":{"cantidad":1210,"unidad":"g"},"precioMercadona":{"precioReferencia":8.9,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/2797/conejo-entero-pieza"},
-  "cordero": {"envaseVenta":{"cantidad":290,"unidad":"g"},"precioMercadona":{"precioReferencia":28.5,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/21810/chuletas-cordero-paletilla-bandeja"},
+  "cordero": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioMercadona":{"precioReferencia":19,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/4361/garretas-brazuelo-cordero-bandeja"},
   "costillas de cerdo": {"envaseVenta":{"cantidad":620,"unidad":"g"},"precioMercadona":{"precioReferencia":8,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/2811/costillas-cerdo-carnosas-tacos-bandeja"},
   "edamame": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioMercadona":{"precioReferencia":3.5,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/70740/edamame-soja-verde-hacendado-ultracongelada-paquete"},
   "eneldo": {"envaseVenta":{"cantidad":18,"unidad":"g"},"precioMercadona":{"precioReferencia":10.278,"formatoReferencia":"100 g"},"shareUrl":"https://tienda.mercadona.es/product/52739/eneldo-hacendado-bote"},
@@ -74,7 +72,7 @@ export const MERCADONA_CATALOG_MATCH: Record<string, MercadonaMatch> = {
   "pan rallado": {"envaseVenta":{"cantidad":750,"unidad":"g"},"precioMercadona":{"precioReferencia":1.134,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/82219/pan-rallado-hacendado-paquete"},
   "panceta": {"envaseVenta":{"cantidad":590,"unidad":"g"},"precioMercadona":{"precioReferencia":5.5,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/2815/panceta-bandeja"},
   "pasta": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioMercadona":{"precioReferencia":2.8,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/6357/pasta-fusilli-armando-paquete"},
-  "patata": {"envaseVenta":{"cantidad":240,"unidad":"g"},"precioMercadona":{"precioReferencia":1.9,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69066/patata-pieza"},
+  "patata": {"envaseVenta":{"cantidad":250,"unidad":"g"},"precioMercadona":{"precioReferencia":1.9,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/69066/patata-pieza"},
   "pavo": {"envaseVenta":{"cantidad":570,"unidad":"g"},"precioMercadona":{"precioReferencia":7.3,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/12874/tacos-pavo-bandeja"},
   "pechuga de pavo": {"envaseVenta":{"cantidad":590,"unidad":"g"},"precioMercadona":{"precioReferencia":8.75,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/2794/filetes-pechuga-pavo-bandeja"},
   "pechuga de pollo": {"envaseVenta":{"cantidad":560,"unidad":"g"},"precioMercadona":{"precioReferencia":7.7,"formatoReferencia":"kg"},"shareUrl":"https://tienda.mercadona.es/product/2787/filetes-pechuga-pollo-bandeja"},
