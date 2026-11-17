@@ -34,8 +34,9 @@ import { cn } from '@/lib/utils';
  * that WAI-ARIA pattern requires arrow-key roving navigation this
  * implementation doesn't provide, and most callers use this for plain page
  * navigation, not a command menu — APG discourages `menu`/`menuitem` for
- * that. This stays a plain, accessible group of links/buttons (`aria-label`
- * only), matching `Dropdown`'s `aria-haspopup`/`aria-expanded`-on-trigger
+ * that. This stays a plain, accessible group of links/buttons (`role="group"`
+ * plus `aria-label`, FRESCO-1217: a label on a role-less `div` is never
+ * announced), matching `Dropdown`'s `aria-haspopup`/`aria-expanded`-on-trigger
  * convention rather than promising menu keyboard semantics. The Tab-trap +
  * focus-return-on-close behavior below is still fine to keep as general
  * "popover panel" behavior — it isn't tied to the menu role.
@@ -165,6 +166,9 @@ export function Popover({ open, onOpenChange, children, 'aria-label': ariaLabel,
   const panel = (
     <div
       ref={panelRef}
+      // FRESCO-1217: `aria-label` is not allowed on a role-less `div` (a generic element), so assistive tech never
+      // announced it. `group` is the lightest role that exposes the name without promising menu keyboard semantics.
+      role="group"
       aria-label={ariaLabel}
       tabIndex={-1}
       data-testid={dataTestId}
