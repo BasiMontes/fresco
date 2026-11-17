@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
 import { DesignSystemNav } from '@/components/design-system/nav';
 
 /**
@@ -16,9 +18,19 @@ export const metadata: Metadata = {
 
 export default function DesignSystemLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main id="main" className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-12 md:flex-row">
-      <DesignSystemNav />
-      <div className="min-w-0 flex-1">{children}</div>
+    <main id="main" className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-12">
+      {/* FRESCO-1216: the brand mark the landing and the login already use; both `<Image>`s render and the theme CSS shows one. */}
+      <header>
+        <Link href="/design-system" data-testid="design_system_brand" className="inline-flex items-center gap-3">
+          <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} className="brand-mark--light" priority />
+          <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} className="brand-mark--dark" priority />
+          <span className="text-label text-tertiary">Sistema de diseño</span>
+        </Link>
+      </header>
+      <div className="flex flex-col gap-8 md:flex-row">
+        <DesignSystemNav />
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </main>
   );
 }
