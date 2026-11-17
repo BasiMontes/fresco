@@ -298,8 +298,15 @@ const DISH_TYPES: DishType[] = [
   { prefixes: ['tofu al curry verde'], lead: 'a shallow bowl of golden tofu cubes in a creamy pale green coconut curry sauce with', alone: 'a shallow bowl of golden tofu cubes in a creamy pale green coconut curry sauce', vessel: 'bowl', plain: true, skipShape: true, omit: ['tofu', 'curry en polvo', 'leche de coco'] },
   { prefixes: ['ensalada de pasta con mozzarella'], lead: 'a cold pasta salad of fusilli with fresh white mozzarella balls and', alone: 'a cold pasta salad of fusilli, halved cherry tomatoes and fresh white mozzarella balls', vessel: 'plate', plain: true, omit: ['pasta', 'pasta integral', 'mozzarella', 'tomate cherry', 'tomates cherry'] },
   { prefixes: ['batido de cacao'], lead: 'a tall glass of thick dark chocolate-brown smoothie made from', vessel: 'glass', plain: true },
+  // 2026-11-17 batch review (FRESCO-1220): the egg of the batter was listed as an ingredient and a crepe came out
+  // as a fried egg; churros were hidden behind the chocolate and the orange. Both name their shape up front.
+  { prefixes: ['crepes', 'crepe'], lead: 'two thin golden crepes folded into triangles, topped with', alone: 'two thin golden crepes folded into triangles', vessel: 'plate', plain: true, omit: [...BATTER, 'harina', 'leche'] },
+  { prefixes: ['churros'], lead: 'four long ridged golden churros standing upright in a small cup, with a small bowl of thick dark chocolate dip and', alone: 'four long ridged golden churros standing upright in a small cup, with a small bowl of thick dark chocolate dip', vessel: 'plate', plain: true, omit: ['cacao', 'harina'] },
   { prefixes: ['tostada', 'tostadas'], lead: 'open-faced toasted bread slices topped with', vessel: 'plate' },
-  { prefixes: ['sandwich', 'bocadillo'], lead: 'a sandwich cut in half showing the filling, filled with', vessel: 'plate' },
+  // 2026-11-17 (FRESCO-1220): "cut in half showing the filling" drew a muddle the owner rejected (3 of 3) and sat in 5
+  // of the 6 prompts the clay filter refused; "seen from the side, with visible layers" was approved. Plain: the
+  // grill-marks cue is left out of a sandwich.
+  { prefixes: ['sandwich', 'bocadillo'], lead: 'a sandwich seen from the side, with visible layers of', vessel: 'plate', plain: true },
   { prefixes: ['wrap'], lead: 'a tortilla wrap rolled tightly and cut in half showing the cross section, filled with', vessel: 'plate' },
   { prefixes: ['tacos'], lead: 'three small soft tacos filled with', vessel: 'plate' },
   { prefixes: ['fajitas'], lead: 'fajitas served with warm tortillas and', vessel: 'plate' },
@@ -440,6 +447,10 @@ const FILTER_SAFE_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/\bdrizzle\b/gi, 'a little'],
   [/\bglazed\b/gi, 'golden'],
   [/\bglaze\b/gi, 'golden coating'],
+  // 2026-11-17 (FRESCO-1220): "eggplant" was in 3 of the 6 refused prompts and in 1 of the 44 accepted; the three
+  // rewrites that said "aubergine" all passed. Still circumstantial (6 refusals), so it is a precaution, not a proof.
+  [/\beggplant\b/gi, 'aubergine'],
+  [/\ba plated dish of\b/gi, 'a round plate holding'],
   [/\bsilky\b/gi, 'smooth'],
   [/\bcreamy\b/gi, 'smooth'],
   [/\bglossy\b/gi, 'smooth'],
@@ -468,7 +479,11 @@ function filterSafe(prompt: string): string {
 }
 
 function frame(subject: string, vessel: DishType['vessel'], nombre: string, style: PromptStyle): string {
-  if (style === 'clay') { return filterSafe(`Soft matte clay 3D icon of ${subject}. ${CLAY_SUFFIX}`); }
+  if (style === 'clay') {
+    // 2026-11-17 (FRESCO-1220): a plate dish whose lead never says "plate" was drawn without one (the owner rejected two).
+    const served = vessel === 'plate' && !/\bplated?\b/i.test(subject) ? `${subject}, served on a round plate` : subject;
+    return filterSafe(`Soft matte clay 3D icon of ${served}. ${CLAY_SUFFIX}`);
+  }
   const hash = hashOf(normalize(nombre));
   const vessels = VESSELS[vessel];
   const tableware = vessels[hash % vessels.length];
