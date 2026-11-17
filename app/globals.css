@@ -736,10 +736,14 @@
  * media query here would follow the OS alone: a light-theme app on a dark OS
  * painted near-white code on a cream page, and the reverse for an explicit
  * dark theme on a light OS.
+ *
+ * FRESCO-1213: only the text colour comes from Shiki. The block has ONE
+ * background, the container's `bg-surface`; painting Shiki's per-token
+ * background on every `span` drew grey rectangles behind each token of the
+ * dark theme.
  */
   .shiki,
   .shiki span {
-    background-color: light-dark(var(--shiki-light-bg), var(--shiki-dark-bg)) !important;
     color: light-dark(var(--shiki-light), var(--shiki-dark)) !important;
   }
 

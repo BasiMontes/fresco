@@ -42,10 +42,13 @@ describe('shiki code block theme', () => {
     expect(mediaBlocks('prefers-color-scheme').filter(block => block.includes('.shiki'))).toEqual([]);
   });
 
-  test('the palette is picked with light-dark(), driven by the app color-scheme', () => {
+  test('the text colour is picked with light-dark(), driven by the app color-scheme', () => {
     const rule = shikiRules().join('\n');
 
-    expect(rule).toMatch(/background-color:\s*light-dark\(var\(--shiki-light-bg\),\s*var\(--shiki-dark-bg\)\)/);
     expect(rule).toMatch(/color:\s*light-dark\(var\(--shiki-light\),\s*var\(--shiki-dark\)\)/);
+  });
+
+  test('no `.shiki` rule paints a background: the block keeps the one of its container (FRESCO-1213)', () => {
+    expect(shikiRules().filter(rule => /background(?:-color)?:/.test(rule))).toEqual([]);
   });
 });
