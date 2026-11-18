@@ -191,7 +191,10 @@ describe('ShoppingListView — one price source for lines and total (FRESCO-827)
 
     for (const item of ITEMS) {
       const esperado = formatPrecio(precioLinea(item) as number);
-      expect(screen.getByText(new RegExp(`${esperado}$`.replace('.', '\\.')), { exact: false })).toBeTruthy();
+      // FRESCO-1222: the comparison card repeats some figures, so only the rows outside it are checked here.
+      const enFilas = screen.queryAllByText(new RegExp(`${esperado}$`.replace('.', '\\.')), { exact: false })
+        .filter(el => el.closest('[data-testid="shopping_list_comparison"]') === null);
+      expect(enFilas).toHaveLength(1);
     }
     expect(screen.queryByText(/0,00€/)).toBeNull();
   });
