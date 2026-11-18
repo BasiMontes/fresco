@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { GLYPH_NAMES, ICON_NAMES, TYPE_STEPS } from '@/components/design-system/generated';
-import { REGISTRY, registrySlugs } from '@/components/design-system/registry';
 import { testIdPart } from '@/components/design-system/test-id';
 import { renderWithProviders, screen } from '@/tests/component-render';
+import { redirectMock } from '@/tests/mocks/next-navigation';
 import DesignSystemPage from '../page';
 import ColorsPage from './colors/page';
 import IconsPage from './icons/page';
@@ -45,20 +45,12 @@ describe('design-system Foundation pages', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  test('home: links to the three Foundation pages and no longer says the components are still to come', () => {
-    renderWithProviders(<DesignSystemPage />);
+  test('home: /design-system redirects to Colores instead of rendering its own list (FRESCO-1229)', () => {
+    redirectMock.mockClear();
 
-    for (const [label, href] of [['Colores', 'colors'], ['Tipografía', 'typography'], ['Iconos', 'icons']]) {
-      expect(screen.getByRole('link', { name: label })).toHaveAttribute('href', `/design-system/foundation/${href}`);
-    }
-    expect(screen.queryByText(/llegarán/)).toBeNull();
-  });
+    DesignSystemPage();
 
-  test('home: links every documented component', () => {
-    renderWithProviders(<DesignSystemPage />);
-
-    for (const slug of registrySlugs()) {
-      expect(screen.getByRole('link', { name: REGISTRY[slug].title })).toHaveAttribute('href', `/design-system/components/${slug}`);
-    }
+    expect(redirectMock).toHaveBeenCalledTimes(1);
+    expect(redirectMock).toHaveBeenCalledWith('/design-system/foundation/colors');
   });
 });

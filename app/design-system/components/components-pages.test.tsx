@@ -11,6 +11,7 @@ void mock.module('@/components/qa/code-block', () => ({
 // Other test files stub next/navigation globally; the real notFound throws, so pin that here.
 void mock.module('next/navigation', () => ({
   notFound: () => { throw new Error('NEXT_NOT_FOUND'); },
+  usePathname: () => '/',
 }));
 
 const { default: DesignSystemComponentPage, generateStaticParams } = await import('./[slug]/page');
