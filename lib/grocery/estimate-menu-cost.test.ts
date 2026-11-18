@@ -406,20 +406,20 @@ describe('estimateMenuCost', () => {
       meta: metaConRaciones(4),
     });
 
-    // garbanzos: porcionReceta 400 g, envase 420 g, precioReferencia €/kg del catálogo.
+    // garbanzos: porcionReceta 400 g, envase 570 g, precioReferencia €/kg del catálogo.
     // FRESCO-1139: el precio se lee del catálogo (se regenera cada semana) en vez de escribir 3.215 aquí;
     // se comprueban el formato y el envase de los que depende la aritmética.
     // factor 4/4=1 -> 400 g -> 1 paquete. factor 8/4=2 -> 800 g -> 2 paquetes (cruza el límite).
     const garbanzos = MERCADONA_CATALOG_MATCH.garbanzos.precioMercadona;
     expect(garbanzos.formatoReferencia).toBe('kg');
-    expect(INGREDIENT_DICTIONARY.garbanzos.envaseVenta).toEqual({ cantidad: 420, unidad: 'g' });
+    expect(INGREDIENT_DICTIONARY.garbanzos.envaseVenta).toEqual({ cantidad: 570, unidad: 'g' });
     const total4 = estimateMenuCost(menu, { numPersonas: 4 });
     const total8 = estimateMenuCost(menu, { numPersonas: 8 });
 
     // FRESCO-1139: la app redondea el PRECIO DEL PAQUETE a céntimos (como una tienda) y luego multiplica por
     // paquetes. Redondear aquí el total ya doblado coincidía solo con el precio de ese día (con otro salían
     // 2,88 y 2,89), así que el oráculo hace lo mismo que la app: redondea el paquete y multiplica.
-    const precioPorPaquete = Math.round(garbanzos.precioReferencia * (420 / 1000) * 100) / 100; // 420 g convertidos a kg
+    const precioPorPaquete = Math.round(garbanzos.precioReferencia * (570 / 1000) * 100) / 100; // 570 g convertidos a kg
     expect(total4).toBeCloseTo(precioPorPaquete, 2);
     expect(total8).toBeCloseTo(precioPorPaquete * 2, 2);
     // El salto de 1 a 2 paquetes es más que el simple doblado de cantidad (400g -> 800g sin cruzar límite escalaría igual).
