@@ -36,11 +36,13 @@ export function OnboardingStepIdentity({ headingRef }: OnboardingStepIdentityPro
         />
       </label>
 
-      {/* FRESCO-1225: 6 and 5 options are few enough to show all at once. No
-          "Esto cambia tu menú" line here on purpose — neither field reaches
-          menu generation yet (FRESCO-1227 decides what each one does). */}
+      {/* FRESCO-1227: with Pro, the goal and the level lean the menu (never exclude a recipe); Free keeps the same
+          menu, and two goals have no data behind them yet, so each option says what it does. */}
       <div className="mt-4 flex flex-col gap-1">
         <span className="text-body-sm text-tertiary">Objetivo</span>
+        <p data-testid="objetivo_effect_hint" className="text-caption text-tertiary">
+          Con Pro, tu objetivo inclina el menú hacia lo que buscas. Nunca deja recetas fuera.
+        </p>
         <OptionCardGroup
           data-testid="objetivo_group"
           aria-label="Objetivo"
@@ -52,6 +54,9 @@ export function OnboardingStepIdentity({ headingRef }: OnboardingStepIdentityPro
 
       <div className="mt-4 flex flex-col gap-1">
         <span className="text-body-sm text-tertiary">Nivel de experiencia culinaria</span>
+        <p data-testid="nivel_effect_hint" className="text-caption text-tertiary">
+          Con Pro, si eres aprendiz o novato, el menú prefiere las recetas menos difíciles.
+        </p>
         <OptionCardGroup
           data-testid="nivel_experiencia_group"
           aria-label="Nivel de experiencia culinaria"

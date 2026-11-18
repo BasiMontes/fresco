@@ -11,13 +11,15 @@ import { fromPlanningSelection } from '@/lib/planning-selection';
  * pure data/functions, no behavior change from the original inline values.
  */
 
-export const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
-  { value: 'perder_peso', label: 'Perder peso' },
-  { value: 'comer_sano', label: 'Comer sano' },
-  { value: 'ahorrar_dinero', label: 'Ahorrar dinero' },
-  { value: 'ganar_masa_muscular', label: 'Ganar masa muscular' },
-  { value: 'comer_variado', label: 'Comer más variado' },
-  { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida' },
+// FRESCO-1227: each goal says what it does to the menu, or that it does not do anything yet. `perder_peso` and
+// `ganar_masa_muscular` need calories/protein the catalog does not have, so they are labelled instead of hidden.
+export const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string, description: string }[] = [
+  { value: 'perder_peso', label: 'Perder peso', description: 'Próximamente: aún no cambia tu menú.' },
+  { value: 'comer_sano', label: 'Comer sano', description: 'Prioriza recetas ligeras. Es orientativo, no un cálculo nutricional.' },
+  { value: 'ahorrar_dinero', label: 'Ahorrar dinero', description: 'Prioriza recetas de coste más bajo.' },
+  { value: 'ganar_masa_muscular', label: 'Ganar masa muscular', description: 'Próximamente: aún no cambia tu menú.' },
+  { value: 'comer_variado', label: 'Comer más variado', description: 'Repite menos el mismo tipo de cocina en la semana.' },
+  { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida', description: 'Prioriza recetas que comparten ingredientes en la semana.' },
 ];
 
 // FRESCO-1225: one help line per level — Aprendiz and Novato were easy to mix up.

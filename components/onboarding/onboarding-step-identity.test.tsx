@@ -59,8 +59,13 @@ describe('OnboardingStepIdentity', () => {
     expect(useOnboardingStore.getState().objetivo).toBe('comer_sano');
   });
 
-  test('promises no menu effect for goal or level (neither reaches generation yet)', () => {
+  test('says what each goal does to the menu, and labels the two goals with no data behind them', () => {
     renderStep();
-    expect(screen.queryByText(/Esto cambia tu menú/)).toBeNull();
+    expect(screen.getByTestId('objetivo_effect_hint')).toHaveTextContent('Con Pro');
+    for (const goal of ['perder_peso', 'ganar_masa_muscular']) {
+      expect(screen.getByTestId(`objetivo_group_option_${goal}`)).toHaveTextContent('Próximamente: aún no cambia tu menú.');
+    }
+    expect(screen.getByText(/orientativo, no un cálculo nutricional/)).toBeInTheDocument();
+    expect(screen.getByTestId('nivel_effect_hint')).toHaveTextContent('aprendiz o novato');
   });
 });
