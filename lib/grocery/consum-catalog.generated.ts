@@ -13,7 +13,7 @@ export interface ConsumMatch {
 }
 
 /** When these prices were observed (FRESCO-1177): the age rules read it. */
-export const CONSUM_CATALOG_FECHA = '2026-11-11T09:31:19.796Z';
+export const CONSUM_CATALOG_FECHA = '2026-11-18T15:29:53.640Z';
 
 /** Real Consum pack size + price, keyed by the same normalized canonical key as RETAIL_PACK_OVERRIDE. */
 export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
@@ -51,8 +51,8 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "eneldo": {"envaseVenta":{"cantidad":20,"unidad":"g"},"precioConsum":{"precio":2.05},"url":"https://tienda.consum.es/es/p/eneldo/7435899"},
   "esparragos": {"envaseVenta":{"cantidad":205,"unidad":"g"},"precioConsum":{"precio":4.39},"url":"https://tienda.consum.es/es/p/esparragos-extra-frasco/7324218"},
   "esparragos trigueros": {"envaseVenta":{"cantidad":100,"unidad":"g"},"precioConsum":{"precio":1.25},"url":"https://tienda.consum.es/es/p/esparragos-trigueros-frasco/7319713"},
-  "espinacas": {"envaseVenta":{"cantidad":1000,"unidad":"g"},"precioConsum":{"precio":4.95},"url":"https://tienda.consum.es/es/p/espinacas-hoja/7257970"},
-  "fideos": {"envaseVenta":{"cantidad":250,"unidad":"g"},"precioConsum":{"precio":1.85},"url":"https://tienda.consum.es/es/p/fideos-chinos-con-huevo/7316446"},
+  "espinacas": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioConsum":{"precio":3.99},"url":"https://tienda.consum.es/es/p/espinacas-skyr/7489177"},
+  "fideos": {"envaseVenta":{"cantidad":71,"unidad":"g"},"precioConsum":{"precio":2.39},"url":"https://tienda.consum.es/es/p/fideos-arco-iris-frasco/7351489"},
   "frijoles": {"envaseVenta":{"cantidad":425,"unidad":"g"},"precioConsum":{"precio":2.35},"url":"https://tienda.consum.es/es/p/frijoles-negros-guisados-bote/7336159"},
   "frutos rojos": {"envaseVenta":{"cantidad":55,"unidad":"g"},"precioConsum":{"precio":1.99},"url":"https://tienda.consum.es/es/p/frutos-rojos-y-mango-paquete/7278542"},
   "frutos secos": {"envaseVenta":{"cantidad":175,"unidad":"g"},"precioConsum":{"precio":2.49},"url":"https://tienda.consum.es/es/p/coctel-frutos-secos-clasico-bolsa/7157910"},
@@ -90,6 +90,7 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "pimenton dulce": {"envaseVenta":{"cantidad":58,"unidad":"g"},"precioConsum":{"precio":1.05},"url":"https://tienda.consum.es/es/p/pimenton-dulce/7435829"},
   "pimenton picante": {"envaseVenta":{"cantidad":58,"unidad":"g"},"precioConsum":{"precio":1.3},"url":"https://tienda.consum.es/es/p/pimenton-picante/7435860"},
   "pimienta negra": {"envaseVenta":{"cantidad":40,"unidad":"g"},"precioConsum":{"precio":3.85},"url":"https://tienda.consum.es/es/p/pimienta-negra-molida-tarro/309021"},
+  "pollo": {"envaseVenta":{"cantidad":300,"unidad":"g"},"precioConsum":{"precio":4.99},"url":"https://tienda.consum.es/es/p/pollo-roquefort/7428274"},
   "queso crema": {"envaseVenta":{"cantidad":200,"unidad":"g"},"precioConsum":{"precio":2.39},"url":"https://tienda.consum.es/es/p/queso-crema-con-fermento-de-kefir/7474281"},
   "queso feta": {"envaseVenta":{"cantidad":150,"unidad":"g"},"precioConsum":{"precio":3.15},"url":"https://tienda.consum.es/es/p/queso-feta-dop/7486850"},
   "queso fresco": {"envaseVenta":{"cantidad":1000,"unidad":"g"},"precioConsum":{"precio":4.99},"url":"https://tienda.consum.es/es/p/queso-fresco-burgos-linea/7440365"},
@@ -112,6 +113,6 @@ export const CONSUM_CATALOG_MATCH: Record<string, ConsumMatch> = {
   "tomate cherry": {"envaseVenta":{"cantidad":500,"unidad":"g"},"precioConsum":{"precio":2.2},"url":"https://tienda.consum.es/es/p/tomate-cherry-cubeta/7218167"},
   "tomate triturado": {"envaseVenta":{"cantidad":400,"unidad":"g"},"precioConsum":{"precio":0.55},"url":"https://tienda.consum.es/es/p/tomate-triturado-lata/7029205"},
   "tomillo": {"envaseVenta":{"cantidad":25,"unidad":"g"},"precioConsum":{"precio":1.09},"url":"https://tienda.consum.es/es/p/tomillo/7435824"},
-  "vino blanco": {"envaseVenta":{"cantidad":187,"unidad":"ml"},"precioConsum":{"precio":1.79},"url":"https://tienda.consum.es/es/p/vino-blanco-do-rioja/7193006"},
+  "vino blanco": {"envaseVenta":{"cantidad":750,"unidad":"ml"},"precioConsum":{"precio":3.99},"url":"https://tienda.consum.es/es/p/vino-blanco-semi-dulce/7432925"},
   "vino tinto": {"envaseVenta":{"cantidad":750,"unidad":"ml"},"precioConsum":{"precio":5.05},"url":"https://tienda.consum.es/es/p/vino-tinto-do-cataluna/308064"},
 };
