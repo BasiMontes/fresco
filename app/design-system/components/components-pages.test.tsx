@@ -3,6 +3,7 @@ import { COMPONENT_APIS, EXAMPLE_SOURCES } from '@/components/design-system/gene
 import { DesignSystemNav } from '@/components/design-system/nav';
 import { REGISTRY, registrySlugs } from '@/components/design-system/registry';
 import { renderWithProviders, screen } from '@/tests/component-render';
+import { navState, redirectMock, routerMock } from '@/tests/mocks/next-navigation';
 
 // Shiki makes CodeBlock an async Server Component, which the client test renderer cannot mount.
 void mock.module('@/components/qa/code-block', () => ({
@@ -10,6 +11,11 @@ void mock.module('@/components/qa/code-block', () => ({
 }));
 // Other test files stub next/navigation globally; the real notFound throws, so pin that here.
 void mock.module('next/navigation', () => ({
+  useRouter: () => routerMock,
+  usePathname: () => navState.pathname,
+  useSearchParams: () => navState.searchParams,
+  useParams: () => ({}),
+  redirect: redirectMock,
   notFound: () => { throw new Error('NEXT_NOT_FOUND'); },
 }));
 
