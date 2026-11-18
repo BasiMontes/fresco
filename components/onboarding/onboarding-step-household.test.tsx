@@ -72,6 +72,19 @@ describe('OnboardingStepHousehold', () => {
     expect(screen.getByTestId('presupuesto_help')).toHaveTextContent('40 EUR por persona');
   });
 
+  test('the per-person figure uses the Spanish decimal comma', () => {
+    useOnboardingStore.getState().setAdultos(2);
+    useOnboardingStore.getState().setNinos(1);
+    useOnboardingStore.getState().setPresupuestoSemanaEuros(80);
+    renderStep();
+    expect(screen.getByTestId('presupuesto_help')).toHaveTextContent('26,7 EUR por persona');
+  });
+
+  test('the EUR unit is exposed to screen readers, not hidden', () => {
+    renderStep();
+    expect(screen.getByText('EUR')).not.toHaveAttribute('aria-hidden');
+  });
+
   test('the budget help line is generic while the budget is empty', () => {
     renderStep();
     expect(screen.getByTestId('presupuesto_help')).toHaveTextContent('Opcional');

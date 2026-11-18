@@ -32,7 +32,7 @@ export function NumberStepper({ label, value, min, max, onChange, invalid = fals
         data-testid={`${dataTestId}_decrement`}
         aria-label={`Quitar uno: ${label}`}
         disabled={!(value > min)}
-        onClick={() => onChange(Math.max(min, value - 1))}
+        onClick={() => onChange(Math.min(max, Math.max(min, value - 1)))}
         className={BUTTON_CLASS}
       >
         <Minus aria-hidden="true" className="size-4" />
@@ -54,7 +54,7 @@ export function NumberStepper({ label, value, min, max, onChange, invalid = fals
         data-testid={`${dataTestId}_increment`}
         aria-label={`Añadir uno: ${label}`}
         disabled={!(value < max)}
-        onClick={() => onChange(Math.min(max, value + 1))}
+        onClick={() => onChange(Math.max(min, Math.min(max, value + 1)))}
         className={BUTTON_CLASS}
       >
         <Plus aria-hidden="true" className="size-4" />

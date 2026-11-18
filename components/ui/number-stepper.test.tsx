@@ -42,6 +42,18 @@ describe('NumberStepper', () => {
     expect(screen.getByTestId('adultos_decrement')).toBeEnabled();
   });
 
+  test('- from an out-of-range typed value lands back inside the range, not one below it', async () => {
+    const onChange = renderStepper({ value: 999 });
+    await setupUser().click(screen.getByTestId('adultos_decrement'));
+    expect(onChange).toHaveBeenLastCalledWith(10);
+  });
+
+  test('+ from a value below the minimum lands on the minimum', async () => {
+    const onChange = renderStepper({ value: -3 });
+    await setupUser().click(screen.getByTestId('adultos_increment'));
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
   test('buttons carry accessible names and a 44 px target', () => {
     renderStepper();
     const dec = screen.getByRole('button', { name: 'Quitar uno: Adultos' });

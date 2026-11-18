@@ -91,12 +91,12 @@ export function OnboardingStepHousehold({ headingRef, household, presupuestoVali
             aria-describedby="presupuesto_help"
             className={`max-w-32 ${!presupuestoValid && presupuestoTouched ? 'border-error' : ''}`}
           />
-          <span aria-hidden="true" className="text-body-sm text-tertiary">EUR</span>
+          <span className="text-body-sm text-tertiary">EUR</span>
         </span>
       </label>
       <p id="presupuesto_help" data-testid="presupuesto_help" className="mt-1 text-body-sm text-tertiary">
         {perPersonaEuros !== null
-          ? `Son unos ${perPersonaEuros} EUR por persona y semana (${personasLabel}). Esto cambia tu menú: te avisamos si se pasa de ese importe.`
+          ? `Son unos ${perPersonaEuros.toLocaleString('es-ES', { maximumFractionDigits: 1 })} EUR por persona y semana (${personasLabel}). Esto cambia tu menú: te avisamos si se pasa de ese importe.`
           : `Opcional. Esto cambia tu menú: si lo indicas, te avisamos cuando el menú de ${personasLabel} se pase.`}
       </p>
       {!presupuestoValid && presupuestoTouched && (
