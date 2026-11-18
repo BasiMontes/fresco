@@ -1,0 +1,962 @@
+{
+  "plain user-0:2026-W01": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-66",
+        "comida": "comida-71",
+        "cena": "cena-96"
+      },
+      "martes": {
+        "desayuno": "desayuno-31",
+        "comida": "comida-96",
+        "cena": "cena-91"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-96",
+        "comida": "comida-11",
+        "cena": "cena-36"
+      },
+      "jueves": {
+        "desayuno": "desayuno-41",
+        "comida": "comida-36",
+        "cena": "cena-61"
+      },
+      "viernes": {
+        "desayuno": "desayuno-66",
+        "comida": "comida-101",
+        "cena": "cena-6"
+      },
+      "sabado": {
+        "desayuno": "desayuno-71",
+        "comida": "comida-66",
+        "cena": "cena-71"
+      },
+      "domingo": {
+        "desayuno": "desayuno-66",
+        "comida": "comida-41",
+        "cena": "cena-66"
+      }
+    },
+    "advertencias": []
+  },
+  "favourites plain user-0:2026-W01": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-51",
+        "cena": "cena-86"
+      },
+      "martes": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-76",
+        "cena": "cena-111"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-81",
+        "cena": "cena-116"
+      },
+      "jueves": {
+        "desayuno": "desayuno-51",
+        "comida": "comida-106",
+        "cena": "cena-81"
+      },
+      "viernes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-21",
+        "cena": "cena-46"
+      },
+      "sabado": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-16",
+        "cena": "cena-21"
+      },
+      "domingo": {
+        "desayuno": "desayuno-46",
+        "comida": "comida-111",
+        "cena": "cena-26"
+      }
+    },
+    "advertencias": []
+  },
+  "constrained user-0:2026-W01": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-48",
+        "comida": "comida-73",
+        "cena": "cena-78"
+      },
+      "domingo": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-108",
+        "cena": "cena-53"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "favourites constrained user-0:2026-W01": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-112",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-48",
+        "comida": "comida-67",
+        "cena": "cena-78"
+      },
+      "domingo": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-108",
+        "cena": "cena-53"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "plain user-1:2026-W02": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-36",
+        "comida": "comida-11",
+        "cena": "cena-96"
+      },
+      "martes": {
+        "desayuno": "desayuno-41",
+        "comida": "comida-96",
+        "cena": "cena-41"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-96",
+        "comida": "comida-31",
+        "cena": "cena-36"
+      },
+      "jueves": {
+        "desayuno": "desayuno-71",
+        "comida": "comida-6",
+        "cena": "cena-31"
+      },
+      "viernes": {
+        "desayuno": "desayuno-36",
+        "comida": "comida-91",
+        "cena": "cena-6"
+      },
+      "sabado": {
+        "desayuno": "desayuno-41",
+        "comida": "comida-66",
+        "cena": "cena-91"
+      },
+      "domingo": {
+        "desayuno": "desayuno-96",
+        "comida": "comida-71",
+        "cena": "cena-66"
+      }
+    },
+    "advertencias": []
+  },
+  "favourites plain user-1:2026-W02": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-21",
+        "cena": "cena-46"
+      },
+      "martes": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-86",
+        "cena": "cena-111"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-81",
+        "cena": "cena-116"
+      },
+      "jueves": {
+        "desayuno": "desayuno-51",
+        "comida": "comida-106",
+        "cena": "cena-21"
+      },
+      "viernes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-111",
+        "cena": "cena-56"
+      },
+      "sabado": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-46",
+        "cena": "cena-81"
+      },
+      "domingo": {
+        "desayuno": "desayuno-26",
+        "comida": "comida-51",
+        "cena": "cena-106"
+      }
+    },
+    "advertencias": []
+  },
+  "constrained user-1:2026-W02": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-73",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-59"
+      },
+      "viernes": {
+        "desayuno": "desayuno-33",
+        "comida": "comida-49",
+        "cena": "cena-72"
+      },
+      "sabado": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-43"
+      },
+      "domingo": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-28",
+        "cena": "cena-63"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "favourites constrained user-1:2026-W02": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-112",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-59"
+      },
+      "viernes": {
+        "desayuno": "desayuno-33",
+        "comida": "comida-49",
+        "cena": "cena-72"
+      },
+      "sabado": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-43"
+      },
+      "domingo": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-103",
+        "cena": "cena-108"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "plain user-2:2026-W03": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-36",
+        "comida": "comida-11",
+        "cena": "cena-6"
+      },
+      "martes": {
+        "desayuno": "desayuno-71",
+        "comida": "comida-6",
+        "cena": "cena-101"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-66",
+        "comida": "comida-101",
+        "cena": "cena-96"
+      },
+      "jueves": {
+        "desayuno": "desayuno-61",
+        "comida": "comida-66",
+        "cena": "cena-1"
+      },
+      "viernes": {
+        "desayuno": "desayuno-96",
+        "comida": "comida-61",
+        "cena": "cena-36"
+      },
+      "sabado": {
+        "desayuno": "desayuno-11",
+        "comida": "comida-36",
+        "cena": "cena-91"
+      },
+      "domingo": {
+        "desayuno": "desayuno-66",
+        "comida": "comida-91",
+        "cena": "cena-66"
+      }
+    },
+    "advertencias": []
+  },
+  "favourites plain user-2:2026-W03": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-51",
+        "cena": "cena-16"
+      },
+      "martes": {
+        "desayuno": "desayuno-51",
+        "comida": "comida-106",
+        "cena": "cena-51"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-21",
+        "cena": "cena-46"
+      },
+      "jueves": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-86",
+        "cena": "cena-111"
+      },
+      "viernes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-81",
+        "cena": "cena-106"
+      },
+      "sabado": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-76",
+        "cena": "cena-21"
+      },
+      "domingo": {
+        "desayuno": "desayuno-46",
+        "comida": "comida-111",
+        "cena": "cena-56"
+      }
+    },
+    "advertencias": []
+  },
+  "constrained user-2:2026-W03": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-108",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-33",
+        "comida": "comida-98",
+        "cena": "cena-117"
+      },
+      "domingo": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-48",
+        "cena": "cena-13"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "favourites constrained user-2:2026-W03": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-108",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-33",
+        "comida": "comida-112",
+        "cena": "cena-18"
+      },
+      "domingo": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-48",
+        "cena": "cena-13"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "plain user-3:2026-W04": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-46",
+        "cena": "cena-21"
+      },
+      "martes": {
+        "desayuno": "desayuno-106",
+        "comida": "comida-81",
+        "cena": "cena-86"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-26",
+        "cena": "cena-51"
+      },
+      "jueves": {
+        "desayuno": "desayuno-86",
+        "comida": "comida-111",
+        "cena": "cena-16"
+      },
+      "viernes": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-16",
+        "cena": "cena-111"
+      },
+      "sabado": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-51",
+        "cena": "cena-46"
+      },
+      "domingo": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-76",
+        "cena": "cena-81"
+      }
+    },
+    "advertencias": []
+  },
+  "favourites plain user-3:2026-W04": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-111",
+        "cena": "cena-56"
+      },
+      "martes": {
+        "desayuno": "desayuno-51",
+        "comida": "comida-106",
+        "cena": "cena-21"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-21",
+        "cena": "cena-46"
+      },
+      "jueves": {
+        "desayuno": "desayuno-51",
+        "comida": "comida-16",
+        "cena": "cena-51"
+      },
+      "viernes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-51",
+        "cena": "cena-86"
+      },
+      "sabado": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-46",
+        "cena": "cena-111"
+      },
+      "domingo": {
+        "desayuno": "desayuno-26",
+        "comida": "comida-81",
+        "cena": "cena-106"
+      }
+    },
+    "advertencias": []
+  },
+  "constrained user-3:2026-W04": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-3",
+        "comida": "comida-98",
+        "cena": "cena-63"
+      },
+      "domingo": {
+        "desayuno": "desayuno-52",
+        "comida": "comida-3",
+        "cena": "cena-88"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "favourites constrained user-3:2026-W04": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-67",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-3",
+        "comida": "comida-49",
+        "cena": "cena-78"
+      },
+      "domingo": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-108",
+        "cena": "cena-73"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "plain user-4:2026-W05": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-116",
+        "comida": "comida-111",
+        "cena": "cena-16"
+      },
+      "martes": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-56",
+        "cena": "cena-51"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-26",
+        "comida": "comida-81",
+        "cena": "cena-76"
+      },
+      "jueves": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-26",
+        "cena": "cena-111"
+      },
+      "viernes": {
+        "desayuno": "desayuno-46",
+        "comida": "comida-51",
+        "cena": "cena-56"
+      },
+      "sabado": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-76",
+        "cena": "cena-21"
+      },
+      "domingo": {
+        "desayuno": "desayuno-76",
+        "comida": "comida-21",
+        "cena": "cena-86"
+      }
+    },
+    "advertencias": []
+  },
+  "favourites plain user-4:2026-W05": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-111",
+        "cena": "cena-16"
+      },
+      "martes": {
+        "desayuno": "desayuno-81",
+        "comida": "comida-56",
+        "cena": "cena-51"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-81",
+        "cena": "cena-76"
+      },
+      "jueves": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-26",
+        "cena": "cena-111"
+      },
+      "viernes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-51",
+        "cena": "cena-56"
+      },
+      "sabado": {
+        "desayuno": "desayuno-111",
+        "comida": "comida-86",
+        "cena": "cena-21"
+      },
+      "domingo": {
+        "desayuno": "desayuno-46",
+        "comida": "comida-21",
+        "cena": "cena-46"
+      }
+    },
+    "advertencias": []
+  },
+  "constrained user-4:2026-W05": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-48",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-33",
+        "comida": "comida-38",
+        "cena": "cena-63"
+      },
+      "domingo": {
+        "desayuno": "desayuno-52",
+        "comida": "comida-108",
+        "cena": "cena-43"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "favourites constrained user-4:2026-W05": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-48",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-33",
+        "comida": "comida-112",
+        "cena": "cena-63"
+      },
+      "domingo": {
+        "desayuno": "desayuno-52",
+        "comida": "comida-63",
+        "cena": "cena-118"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "plain user-5:2026-W06": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-46",
+        "comida": "comida-81",
+        "cena": "cena-56"
+      },
+      "martes": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-56",
+        "cena": "cena-81"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-26",
+        "comida": "comida-111",
+        "cena": "cena-16"
+      },
+      "jueves": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-16",
+        "cena": "cena-51"
+      },
+      "viernes": {
+        "desayuno": "desayuno-76",
+        "comida": "comida-21",
+        "cena": "cena-26"
+      },
+      "sabado": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-86",
+        "cena": "cena-21"
+      },
+      "domingo": {
+        "desayuno": "desayuno-26",
+        "comida": "comida-51",
+        "cena": "cena-86"
+      }
+    },
+    "advertencias": []
+  },
+  "favourites plain user-5:2026-W06": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-81",
+        "cena": "cena-56"
+      },
+      "martes": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-56",
+        "cena": "cena-81"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-111",
+        "cena": "cena-16"
+      },
+      "jueves": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-16",
+        "cena": "cena-51"
+      },
+      "viernes": {
+        "desayuno": "desayuno-16",
+        "comida": "comida-21",
+        "cena": "cena-26"
+      },
+      "sabado": {
+        "desayuno": "desayuno-21",
+        "comida": "comida-76",
+        "cena": "cena-21"
+      },
+      "domingo": {
+        "desayuno": "desayuno-26",
+        "comida": "comida-51",
+        "cena": "cena-46"
+      }
+    },
+    "advertencias": []
+  },
+  "constrained user-5:2026-W06": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-93",
+        "comida": "comida-58",
+        "cena": "cena-63"
+      },
+      "domingo": {
+        "desayuno": "desayuno-52",
+        "comida": "comida-3",
+        "cena": "cena-28"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  },
+  "favourites constrained user-5:2026-W06": {
+    "menu": {
+      "lunes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-23",
+        "cena": "cena-7"
+      },
+      "martes": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-62",
+        "cena": "cena-33"
+      },
+      "miercoles": {
+        "desayuno": "desayuno-78",
+        "comida": "comida-49",
+        "cena": "cena-98"
+      },
+      "jueves": {
+        "desayuno": "desayuno-39",
+        "comida": "comida-88",
+        "cena": "cena-72"
+      },
+      "viernes": {
+        "desayuno": "desayuno-13",
+        "comida": "comida-18",
+        "cena": "cena-59"
+      },
+      "sabado": {
+        "desayuno": "desayuno-93",
+        "comida": "comida-58",
+        "cena": "cena-63"
+      },
+      "domingo": {
+        "desayuno": "desayuno-52",
+        "comida": "comida-3",
+        "cena": "cena-28"
+      }
+    },
+    "advertencias": ["El menú supera tu presupuesto semanal en aproximadamente 66.00€"]
+  }
+}

@@ -115,7 +115,7 @@ describe('selectMenu with favourite cuisines passed (Pro/Family)', () => {
       totalWithout += nWithout
       totalWith += nWith
     }
-    // Measured numbers (deterministic: fixed pool, fixed seeds), kept for the DOJO write-up.
+    // Measured numbers (deterministic: fixed pool, fixed seeds), pinned.
     expect(totalWithout).toBe(15)
     expect(totalWith).toBe(60)
     expect(seedsHigher).toBe(20)
