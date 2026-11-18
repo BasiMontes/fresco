@@ -341,3 +341,42 @@ Then(/^su perfil guardado sigue igual$/, async ({ request }) => {
   );
   expect(await res.json()).toEqual([{ nombre: SAVED_NOMBRE, dieta_halal: true, alergenos: ['huevo'] }]);
 });
+
+// FRESCO-1225 — goal and level are visible cards (radiogroup), household is
+// -/+ buttons that stop at the min/max. The summary reflects the choices.
+
+When(/^elige un objetivo y un nivel de experiencia en las tarjetas del paso 1$/, async ({ page }) => {
+  await page.goto('/onboarding');
+  await expect(page.getByTestId('step_indicator_label')).toBeVisible();
+  await expect(page.getByRole('radiogroup', { name: 'Objetivo' })).toBeVisible();
+  await page.getByTestId('objetivo_group_option_comer_sano').click();
+  await page.getByTestId('nivel_experiencia_group_option_novato').click();
+  await expect(page.getByTestId('objetivo_group_option_comer_sano')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('nivel_experiencia_group_option_novato')).toHaveAttribute('aria-checked', 'true');
+});
+
+When(/^sube y baja los adultos y los niños con los botones del paso 3$/, async ({ page }) => {
+  await page.getByTestId('next_button').click();
+  await page.getByTestId('next_button').click();
+  // Defaults: 2 adults, 0 children. Children stop at 0, adults at 1 and at 10.
+  await expect(page.getByTestId('ninos_input_decrement')).toBeDisabled();
+  await page.getByTestId('ninos_input_increment').click();
+  await expect(page.getByTestId('ninos_input')).toHaveValue('1');
+  await page.getByTestId('adultos_input_decrement').click();
+  await expect(page.getByTestId('adultos_input')).toHaveValue('1');
+  await expect(page.getByTestId('adultos_input_decrement')).toBeDisabled();
+  for (let i = 0; i < 9; i++) {
+    await page.getByTestId('adultos_input_increment').click();
+  }
+  await expect(page.getByTestId('adultos_input')).toHaveValue('10');
+  await expect(page.getByTestId('adultos_input_increment')).toBeDisabled();
+  await page.getByTestId('adultos_input_decrement').click();
+  await expect(page.getByTestId('adultos_input')).toHaveValue('9');
+});
+
+Then(/^las tarjetas elegidas figuran en el resumen y los botones respetan el mínimo y el máximo del hogar$/, async ({ page }) => {
+  await page.getByTestId('view_summary_button').click();
+  await expect(page.getByTestId('summary_section_profile')).toContainText('Comer sano');
+  await expect(page.getByTestId('summary_section_profile')).toContainText('Novato');
+  await expect(page.getByTestId('summary_section_household')).toContainText('9');
+});

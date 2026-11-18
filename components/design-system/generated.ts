@@ -107,6 +107,7 @@ export const ICON_NAMES = [
   'Lightbulb',
   'Loader2',
   'LogOut',
+  'Minus',
   'Monitor',
   'Moon',
   'Package',
@@ -327,6 +328,33 @@ export const COMPONENT_APIS = {
     ],
     variants: [],
   },
+  'option-card-group': {
+    extends: [],
+    props: [
+      { name: 'options', type: 'OptionCardOption<T>[]', optional: false },
+      { name: 'value', type: 'T | null', optional: false },
+      { name: 'onChange', type: '(value: T) => void', optional: false },
+      { name: 'columns', type: '1 | 2', optional: true },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'aria-label', type: 'string', optional: false },
+      { name: 'data-testid', type: 'string', optional: true },
+    ],
+    variants: [],
+  },
+  'number-stepper': {
+    extends: [],
+    props: [
+      { name: 'label', type: 'string', optional: false },
+      { name: 'value', type: 'number', optional: false },
+      { name: 'min', type: 'number', optional: false },
+      { name: 'max', type: 'number', optional: false },
+      { name: 'onChange', type: '(value: number) => void', optional: false },
+      { name: 'invalid', type: 'boolean', optional: true },
+      { name: 'className', type: 'string', optional: true },
+      { name: 'data-testid', type: 'string', optional: false },
+    ],
+    variants: [],
+  },
 } as const;
 
 export const EXAMPLE_SOURCES = {
@@ -348,4 +376,6 @@ export const EXAMPLE_SOURCES = {
   'filter-drawer': '\'use client\';\n\nimport { useState } from \'react\';\nimport { Button } from \'@/components/ui/button\';\nimport { FilterDrawer } from \'@/components/ui/filter-drawer\';\nimport { Switch } from \'@/components/ui/switch\';\n\nexport default function FilterDrawerExample() {\n  const [open, setOpen] = useState(false);\n  const [quick, setQuick] = useState(false);\n\n  return (\n    <div>\n      <Button variant="secondary" onClick={() => setOpen(true)}>Filtros</Button>\n      <FilterDrawer\n        open={open}\n        onOpenChange={setOpen}\n        title="Filtros"\n        aria-label="Filtros de recetas"\n        hasActiveFilters={quick}\n        onClearAll={() => setQuick(false)}\n        footer={<Button onClick={() => setOpen(false)}>Aplicar</Button>}\n      >\n        <div className="flex items-center gap-3 text-body-sm text-text">\n          <Switch checked={quick} onCheckedChange={setQuick} aria-label="Solo recetas rápidas" />\n          Solo recetas rápidas\n        </div>\n      </FilterDrawer>\n    </div>\n  );\n}\n',
   'allergen-reminder': 'import { AllergenReminder } from \'@/components/ui/allergen-reminder\';\n\nexport default function AllergenReminderExample() {\n  return <AllergenReminder />;\n}\n',
   'css-glyphs': '\'use client\';\n\nimport { useState } from \'react\';\nimport { MenuMark, PlusMark, ThemeMark } from \'@/components/ui/css-glyphs\';\n\nexport default function CssGlyphsExample() {\n  const [open, setOpen] = useState(false);\n\n  return (\n    <div className="flex items-center gap-6 text-text">\n      <PlusMark />\n      <button type="button" aria-label="Alternar menú" aria-expanded={open} onClick={() => setOpen(!open)}>\n        <MenuMark open={open} />\n      </button>\n      <ThemeMark kind="light" />\n      <ThemeMark kind="dark" />\n    </div>\n  );\n}\n',
+  'option-card-group': '\'use client\';\n\nimport { useState } from \'react\';\nimport { OptionCardGroup } from \'@/components/ui/option-card-group\';\n\nconst OPTIONS = [\n  { value: \'sencillo\', label: \'Sencillo\', description: \'Platos rápidos de pocos pasos.\' },\n  { value: \'variado\', label: \'Variado\', description: \'Un poco de todo durante la semana.\' },\n  { value: \'elaborado\', label: \'Elaborado\', description: \'Recetas con más técnica.\' },\n  { value: \'libre\', label: \'Sin preferencia\' },\n];\n\nexport default function OptionCardGroupExample() {\n  const [value, setValue] = useState<string | null>(null);\n\n  return (\n    <div className="flex flex-col items-start gap-3">\n      <OptionCardGroup options={OPTIONS} value={value} onChange={setValue} aria-label="Estilo de cocina" className="w-full max-w-md" />\n      <p className="text-body-sm text-tertiary">\n        Seleccionado:\n        {\' \'}\n        {value ?? \'ninguno\'}\n      </p>\n    </div>\n  );\n}\n',
+  'number-stepper': '\'use client\';\n\nimport { useState } from \'react\';\nimport { NumberStepper } from \'@/components/ui/number-stepper\';\n\nexport default function NumberStepperExample() {\n  const [adultos, setAdultos] = useState(2);\n\n  return (\n    <div className="flex flex-col items-start gap-3">\n      <NumberStepper label="Adultos" data-testid="ds_adultos" min={1} max={10} value={adultos} onChange={setAdultos} />\n      <p className="text-body-sm text-tertiary">Entre 1 y 10; los botones se desactivan en los límites.</p>\n    </div>\n  );\n}\n',
 } as const;
