@@ -14,6 +14,16 @@ describe('design-system layout', () => {
     expect(element.props.id).toBe('main');
   });
 
+  test('centres the logo and the label on one axis, trimming the label to its cap height (FRESCO-1230)', () => {
+    renderWithProviders(DesignSystemLayout({ children: null }));
+
+    const brand = screen.getByTestId('design_system_brand');
+    const label = screen.getByText('Sistema de diseño');
+
+    expect(brand).toHaveClass('inline-flex', 'items-center');
+    expect(label.className).toContain('[text-box:trim-both_cap_alphabetic]');
+  });
+
   test('shows the Fresco logo, linked to the docs home, with a mark for each theme (FRESCO-1216)', () => {
     renderWithProviders(DesignSystemLayout({ children: null }));
 
