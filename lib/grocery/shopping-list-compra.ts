@@ -3,6 +3,7 @@ import type { PerfilCompra } from './product-compatibility';
 import type { MappedGroceryItem } from './types';
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { antiguedadEnDias, claveItemCompra } from './compra';
+import { precioBaseEstimacion } from './estimacion-cadenas';
 import { precioLinea } from './line-price';
 import { mapShoppingListItem } from './map-item';
 
@@ -18,12 +19,15 @@ import { mapShoppingListItem } from './map-item';
  */
 
 function aLinea({ item, mapped, ahora }: { item: ShoppingListPasillo['items'][number], mapped: MappedGroceryItem, ahora: Date }): LineaCompra {
-  return {
+  const linea: LineaCompra = {
     precio: precioLinea(item, mapped),
     enlaces: mapped.precios.flatMap(p => (p.url
       ? [{ cadena: p.cadena, nombreCadena: p.nombreCadena, url: p.url, antiguedadDias: antiguedadEnDias({ observadoEn: p.observadoEn, ahora }) }]
       : [])),
   };
+  // FRESCO-1222: only a staple with a showable Mercadona price carries the base of the labelled chain estimate.
+  const base = precioBaseEstimacion({ nombre: item.nombre, linea });
+  return base === undefined ? linea : { ...linea, precioBaseEstimacion: base };
 }
 
 interface ResolverCompraInput {

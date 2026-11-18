@@ -1201,6 +1201,20 @@ Característica: Flujo completo de usuario en Fresco
     Cuando abre /shopping-list con su primera lista generada
     Entonces no ve el badge "Nuevo" en ningún ingrediente
 
+  @lista-compra @solo-manual
+  # @solo-manual (FRESCO-1222, ADR-0018): la lógica (solo básicos, factor 1,0, precio oculto
+  # por antigüedad, etiqueta siempre visible) está cubierta por tests unitarios y de componente
+  # (lib/grocery/estimacion-cadenas.test.ts, components/shopping-list/shopping-list-comparison.test.tsx).
+  # Un escenario e2e exigiría sembrar una lista con leche/arroz con precio de Mercadona vigente
+  # (el catálogo caduca a los 30 días) y sumaría tiempo al job test:e2e sin cubrir riesgo nuevo.
+  Escenario: La tarjeta "Comparar tu compra" etiqueta como estimado todo lo que no son datos de la cadena
+    Dado que el usuario tiene en su lista de la compra leche y arroz con precio de Mercadona vigente
+    Cuando abre /shopping-list
+    Entonces ve la tarjeta "Comparar tu compra" con Mercadona como dato real
+    Y ve Dia, Carrefour, Eroski, Alcampo y Ahorramás con la etiqueta "Estimado, basado en Mercadona" junto a cada cifra
+    Y cada cadena indica cuántos productos de la lista incluye, por ejemplo "2 de 5 productos"
+    Y no ve ninguna cifra de esas cadenas presentada como su precio
+
   # ==========================================================================
   # Guía de testeabilidad para QA (/qa)
   # ==========================================================================
