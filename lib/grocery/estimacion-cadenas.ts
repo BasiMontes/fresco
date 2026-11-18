@@ -1,7 +1,7 @@
 import type { CompraPorItem, LineaCompra } from './compra';
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { normalizeNombre } from '@/lib/text/normalize-nombre';
-import { claveItemCompra, frescuraPrecio } from './compra';
+import { claveItemCompra, precioCuentaComoVigente } from './compra';
 
 /**
  * FRESCO-1222 — "Comparar tu compra": a labelled estimate for the chains that have no price data.
@@ -47,8 +47,7 @@ function precioValido(precio: number | undefined): precio is number {
 function precioEnlazadoVigente(linea: Pick<LineaCompra, 'precioEnlazado' | 'enlaces'>): { cadena: string, nombreCadena: string, precio: number } | undefined {
   const enlace = linea.enlaces[0];
   if (!enlace || !precioValido(linea.precioEnlazado)) { return undefined; }
-  const frescura = frescuraPrecio(enlace.antiguedadDias);
-  if (frescura !== 'reciente' && frescura !== 'antiguo') { return undefined; }
+  if (!precioCuentaComoVigente(enlace.antiguedadDias)) { return undefined; }
   return { cadena: enlace.cadena, nombreCadena: enlace.nombreCadena, precio: linea.precioEnlazado };
 }
 
