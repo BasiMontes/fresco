@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
-import { renderWithProviders, screen, setupUser } from '@/tests/component-render';
+import { renderWithProviders, screen, setupUser, waitFor } from '@/tests/component-render';
 import { OnboardingStepDiet } from './onboarding-step-diet';
 
 /**
@@ -72,17 +72,146 @@ describe('OnboardingStepDiet — suggestions from the free-text boxes (FRESCO-12
     expect(selected.map(b => b.textContent)).toEqual(['Sésamo']);
   });
 
-  test('marisco offers two suggestions, each confirmed on its own', async () => {
+  test('marisco is ONE suggestion naming both values; one click writes both, never half', async () => {
     const user = setupUser();
     render();
 
     await user.type(screen.getByTestId(dietaBox), 'marisco');
+    const items = screen.getAllByTestId('texto_libre_sugerencia');
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent('Has escrito «marisco»: ¿lo añadimos como alérgeno (Crustáceos y Moluscos)?');
+    expect(screen.getByTestId('texto_libre_sugerencia_aceptar')).toHaveTextContent('Añadir Crustáceos y Moluscos');
+    expect(useOnboardingStore.getState().alergenos).toEqual([]);
+
+    await user.click(screen.getByTestId('texto_libre_sugerencia_aceptar'));
+
+    expect([...useOnboardingStore.getState().alergenos].sort()).toEqual(['crustaceos', 'moluscos']);
+    expect(screen.queryByTestId('texto_libre_sugerencia')).toBeNull();
+  });
+
+  test('dismissing the marisco group removes it and writes nothing', async () => {
+    const user = setupUser();
+    render();
+
+    await user.type(screen.getByTestId(dietaBox), 'marisco');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_descartar'));
+
+    expect(screen.queryByTestId('texto_libre_sugerencia')).toBeNull();
+    expect(useOnboardingStore.getState().alergenos).toEqual([]);
+  });
+
+  test('Descartar leaves the store exactly as it was', async () => {
+    const user = setupUser();
+    render();
+    useOnboardingStore.setState({ alergenos: ['soja'] });
+    const before = JSON.stringify(useOnboardingStore.getState());
+
+    await user.type(screen.getByTestId(dietaBox), 'mostaza');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_descartar'));
+
+    // only the free-text field itself changed
+    useOnboardingStore.setState({ dietaTextoLibre: '' });
+    expect(JSON.stringify(useOnboardingStore.getState())).toBe(before);
+  });
+
+  test('after Añadir, focus moves to the next suggestion; after the last one, to the region (never body)', async () => {
+    const user = setupUser();
+    render();
+
+    await user.type(screen.getByTestId(dietaBox), 'mostaza y apio');
     expect(screen.getAllByTestId('texto_libre_sugerencia')).toHaveLength(2);
 
     await user.click(screen.getAllByTestId('texto_libre_sugerencia_aceptar')[0]);
+    const remaining = screen.getAllByTestId('texto_libre_sugerencia');
+    expect(remaining).toHaveLength(1);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('texto_libre_sugerencia_aceptar')));
 
-    expect(useOnboardingStore.getState().alergenos).toHaveLength(1);
+    await user.click(screen.getByTestId('texto_libre_sugerencia_aceptar'));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('dieta_texto_libre_sugerencias')));
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  test('after Descartar the focus also stays inside the suggestions', async () => {
+    const user = setupUser();
+    render();
+
+    await user.type(screen.getByTestId(dietaBox), 'mostaza');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_descartar'));
+
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('dieta_texto_libre_sugerencias')));
+  });
+
+  test('the polite region announces what was added or dismissed, and drops the message when the text changes', async () => {
+    const user = setupUser();
+    render();
+    const region = screen.getByTestId('dieta_texto_libre_sugerencias');
+
+    await user.type(screen.getByTestId(dietaBox), 'marisco');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_aceptar'));
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region).toHaveTextContent('Añadido a tus alérgenos: Crustáceos y Moluscos.');
+
+    await user.type(screen.getByTestId(dietaBox), ' mostaza');
+    expect(region).not.toHaveTextContent('Añadido a tus alérgenos');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_descartar'));
+    expect(region).toHaveTextContent('Sugerencia descartada: no se ha añadido nada.');
+  });
+
+  test('dismissing «almendras» does not surface «avellanas» for the same allergen', async () => {
+    const user = setupUser();
+    render();
+
+    await user.type(screen.getByTestId(dietaBox), 'almendras y avellanas');
     expect(screen.getAllByTestId('texto_libre_sugerencia')).toHaveLength(1);
+    expect(screen.getByTestId('texto_libre_sugerencia')).toHaveTextContent('«almendras»');
+
+    await user.click(screen.getByTestId('texto_libre_sugerencia_descartar'));
+
+    expect(screen.queryByTestId('texto_libre_sugerencia')).toBeNull();
+    expect(useOnboardingStore.getState().alergenos).toEqual([]);
+  });
+
+  test('a genuinely new mention after a dismissal still gets suggested', async () => {
+    const user = setupUser();
+    render();
+
+    await user.type(screen.getByTestId(dietaBox), 'mostaza');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_descartar'));
+    await user.type(screen.getByTestId(dietaBox), ' y apio');
+
+    expect(screen.getByTestId('texto_libre_sugerencia')).toHaveAttribute('data-values', 'apio');
+  });
+
+  test('a value already selected through a diet flag is not offered again', async () => {
+    const user = setupUser();
+    render();
+    await user.click(screen.getAllByTestId('dieta_option')[2]); // Sin gluten: implies and stores gluten
+    expect(useOnboardingStore.getState().alergenos).toContain('gluten');
+
+    await user.type(screen.getByTestId(dietaBox), 'trigo');
+
+    expect(screen.queryByTestId('texto_libre_sugerencia')).toBeNull();
+  });
+
+  test('if an implied value is somehow missing from the store, Añadir still writes it (no inert button)', async () => {
+    const user = setupUser();
+    render();
+    useOnboardingStore.setState({ dietaSinGluten: true, alergenos: [] });
+
+    await user.type(screen.getByTestId(dietaBox), 'trigo');
+    await user.click(screen.getByTestId('texto_libre_sugerencia_aceptar'));
+
+    expect(useOnboardingStore.getState().alergenos).toEqual(['gluten']);
+  });
+
+  test('"sin gluten" typed as text reads as a suggestion for the allergen, never as a diet claim', async () => {
+    const user = setupUser();
+    render();
+
+    await user.type(screen.getByTestId(dietaBox), 'sin gluten');
+
+    expect(screen.getByTestId('texto_libre_sugerencia')).toHaveTextContent('Has escrito «sin gluten»: ¿lo añadimos como alérgeno (Gluten)?');
+    expect(useOnboardingStore.getState().dietaSinGluten).toBe(false);
   });
 
   test('a dismissed suggestion stays dismissed while that text stays, and applies nothing', async () => {
@@ -155,7 +284,9 @@ describe('OnboardingStepDiet — suggestions from the free-text boxes (FRESCO-12
     expect(screen.queryAllByTestId('texto_libre_sugerencia')).toHaveLength(0);
   });
 
-  test('the suggestion buttons keep a 44px minimum height and carry text, not colour alone', async () => {
+  // happy-dom does not compute Tailwind, so this pins the class the component sets for the
+  // 44px (min-h-11) contract, not a measured size; the size itself was checked in the browser.
+  test('the suggestion buttons set the min-h-11 class and carry text, not colour alone', async () => {
     const user = setupUser();
     render();
 

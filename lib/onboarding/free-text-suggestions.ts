@@ -6,7 +6,7 @@ import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/diet
  *
  * THIS MODULE ONLY PROPOSES. It never writes to the store. A suggestion becomes
  * a hard filter only when the person clicks its confirm button, and the click
- * writes the exact `value` into `alergenos` / `ingredientesOdiados` (the same
+ * writes the exact `values` into `alergenos` / `ingredientesOdiados` (the same
  * fields the chips use). Text that matches nothing stays unfiltered and keeps
  * the FRESCO-1000 warning (`TEXTO_LIBRE_SIN_FILTRO`).
  *
@@ -21,6 +21,10 @@ import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/diet
  * 4. Typos are tolerated ONLY where an explicit alias exists below (cachuete,
  *    lactoza). There is no fuzzy matching: a wrong guess on an allergen is
  *    worse than no guess.
+ * 5. ONE typed phrase that implies several allergens (marisco = crustaceos AND
+ *    moluscos; frutos secos = frutos_de_cascara AND cacahuetes) is ONE
+ *    suggestion carrying all its values, so a single click never leaves a
+ *    half-protected state.
  *
  * NEGATION / FALSE-POSITIVE RULE
  * "sin", "no", "ni", "nada" never suppress a match. When in doubt we SUGGEST,
@@ -28,22 +32,24 @@ import { ALERGENO_VALUES, INGREDIENTE_ODIADO_VALUES } from '@/lib/constants/diet
  * allergen costs health. "No soy alérgico a nada" matches nothing on its own
  * (no vocabulary word). "No tengo alergia al marisco" still suggests marisco;
  * the person dismisses it. The wording of the suggestion is therefore neutral
- * ("Has escrito «X»: ¿lo añadimos...?") and never asserts that X is an allergy.
- * `soy` (the verb) is deliberately NOT a synonym of soja; only `soja`/`soya`.
+ * ("Has escrito «X»: ¿lo añadimos...?") and never asserts that X is an allergy
+ * or a diet. `soy` (the verb) is deliberately NOT a synonym of soja.
  *
- * FALSE-POSITIVE REVIEW of risky synonyms (each is only a suggestion):
- * - mantequilla / leche / queso / nata: lacteos. Compounds that are not dairy
- *   (leche de coco/arroz/almendra/avena/soja, mantequilla de cacahuete/cacao)
- *   are consumed first as their own entries, so they do not suggest lacteos.
- * - nuez: frutos_de_cascara. "nuez moscada" (nutmeg, not a nut) is consumed
- *   as an empty entry.
- * - frutos secos: suggests frutos_de_cascara AND cacahuetes. In Spain the term
- *   often includes peanuts; two separate chips, each needing its own click.
- * - marisco: suggests crustaceos AND moluscos (both are "marisco").
- * - dorada, sepia, langosta: also an adjective / colour / insect in Spanish.
- *   Kept (recall over precision) since nothing applies without a click.
- * - castañas, piñones, coco: NOT in the EU frutos de cascara list, so excluded.
- * - pan, harina, pasta, cerveza: gluten-bearing but too generic; excluded.
+ * DECISIONS ON AMBIGUOUS WORDS (each is only a suggestion; recall over precision
+ * where the word is what a person with that allergy would type):
+ * - ACCEPTED despite other meanings: pan, pasta, harina, cerveza, malta (gluten:
+ *   the words a celiac types), clara, yema (huevo), bonito, rape (pescado),
+ *   helado, suero, flan (lacteos), dorada, sepia, langosta, choco, pota.
+ * - NOT ADDED: `tortilla` (corn tortilla vs egg omelette: ambiguous either way),
+ *   `crema` alone (crema de calabacin has no dairy; only `crema pastelera` and
+ *   `crema catalana` are listed), `pez` alone (any fish and non-food uses; only
+ *   `pez espada` is listed), `navaja` singular (a knife; only the plural
+ *   `navajas`, the shellfish), castañas, piñones, coco (not on the EU frutos de
+ *   cascara list).
+ * - Compounds that are NOT the allergen are consumed first as their own entries:
+ *   leche de coco/arroz, nata de coco, nuez moscada, trigo sarraceno (buckwheat
+ *   has no gluten), queso vegano, harina de maiz/arroz/garbanzo, mantequilla de
+ *   cacao. `queso de soja` and `leche de soja` suggest soja, not lacteos.
  *
  * Ingredient suggestions only exist for the closed list the SQL understands:
  * `get_filtered_recipes` compares `lower(ingredientes_odiados)` for EQUALITY
@@ -57,8 +63,8 @@ export type SuggestionKind = 'alergeno' | 'ingrediente';
 
 export interface FreeTextSuggestion {
   kind: SuggestionKind
-  /** Exact value written to the store on confirm (an `ALERGENO_VALUES` / `INGREDIENTE_ODIADO_VALUES` member). */
-  value: string
+  /** Exact values written to the store on confirm (members of `ALERGENO_VALUES` / `INGREDIENTE_ODIADO_VALUES`). */
+  values: string[]
   /** What the person typed, as typed (original case and accents). */
   typed: string
   /** Stable identity used to remember a dismissal for this text. */
@@ -75,15 +81,141 @@ type Vocab = Record<string, string[]>;
 
 /** allergen value -> normalized (lowercase, no accents, singular) synonyms. */
 export const ALERGENO_SYNONYMS: Vocab = {
-  gluten: ['gluten', 'trigo', 'centeno', 'cebada', 'avena', 'espelta', 'kamut', 'seitan', 'celiaco', 'celiaca', 'celiaquia', 'sin gluten', 'tacc'],
-  lactosa: ['lactosa', 'lactoza', 'leche', 'lacteo', 'queso', 'nata', 'mantequilla', 'yogur', 'yogurt', 'caseina'],
-  huevo: ['huevo'],
-  frutos_de_cascara: ['fruto seco', 'fruto de cascara', 'nuez', 'nueces', 'almendra', 'avellana', 'pistacho', 'anacardo', 'maranon', 'pecana', 'nuez de brasil', 'macadamia'],
+  gluten: [
+    'gluten',
+    'sin gluten',
+    'tacc',
+    'trigo',
+    'centeno',
+    'cebada',
+    'avena',
+    'espelta',
+    'kamut',
+    'seitan',
+    'celiaco',
+    'celiaca',
+    'celiaquia',
+    'pan',
+    'pasta',
+    'harina',
+    'cerveza',
+    'malta',
+    'semola',
+    'cuscus',
+    'fideo',
+    'galleta',
+    'empanado',
+    'rebozado',
+  ],
+  lactosa: [
+    'lactosa',
+    'lactoza',
+    'leche',
+    'lacteo',
+    'queso',
+    'nata',
+    'mantequilla',
+    'yogur',
+    'yogurt',
+    'caseina',
+    'helado',
+    'suero',
+    'lactosuero',
+    'requeson',
+    'mascarpone',
+    'flan',
+    'bechamel',
+    'besamel',
+    'cuajada',
+    'kefir',
+    'crema pastelera',
+    'crema catalana',
+  ],
+  huevo: ['huevo', 'clara', 'yema', 'mayonesa', 'merengue', 'albumina', 'ovoalbumina'],
+  frutos_de_cascara: [
+    'fruto seco',
+    'fruto de cascara',
+    'nuez',
+    'nueces',
+    'almendra',
+    'avellana',
+    'pistacho',
+    'anacardo',
+    'maranon',
+    'pecana',
+    'pacana',
+    'nuez de brasil',
+    'macadamia',
+    'turron',
+    'mazapan',
+    'praline',
+    'almendrado',
+  ],
   cacahuetes: ['cacahuete', 'cacahuate', 'cachuete', 'cacahuette', 'mani', 'fruto seco'],
   soja: ['soja', 'soya', 'tofu', 'edamame', 'tempeh'],
-  pescado: ['pescado', 'atun', 'salmon', 'merluza', 'bacalao', 'anchoa', 'sardina', 'trucha', 'lubina', 'dorada', 'caballa', 'boqueron'],
-  crustaceos: ['marisco', 'crustaceo', 'gamba', 'langostino', 'camaron', 'cangrejo', 'bogavante', 'langosta', 'cigala', 'centollo', 'percebe', 'buey de mar', 'krill'],
-  moluscos: ['marisco', 'molusco', 'mejillon', 'almeja', 'calamar', 'pulpo', 'sepia', 'chipiron', 'ostra', 'vieira', 'berberecho', 'caracol', 'cefalopodo'],
+  pescado: [
+    'pescado',
+    'atun',
+    'salmon',
+    'merluza',
+    'bacalao',
+    'anchoa',
+    'sardina',
+    'trucha',
+    'lubina',
+    'dorada',
+    'caballa',
+    'boqueron',
+    'lenguado',
+    'bonito',
+    'surimi',
+    'tilapia',
+    'rape',
+    'rodaballo',
+    'pescadilla',
+    'pez espada',
+  ],
+  crustaceos: [
+    'marisco',
+    'crustaceo',
+    'gamba',
+    'langostino',
+    'camaron',
+    'cangrejo',
+    'bogavante',
+    'langosta',
+    'cigala',
+    'centollo',
+    'percebe',
+    'buey de mar',
+    'krill',
+    'carabinero',
+    'necora',
+    'centolla',
+    'jaiba',
+    'gambon',
+  ],
+  moluscos: [
+    'marisco',
+    'molusco',
+    'mejillon',
+    'almeja',
+    'calamar',
+    'pulpo',
+    'sepia',
+    'chipiron',
+    'ostra',
+    'vieira',
+    'berberecho',
+    'caracol',
+    'cefalopodo',
+    'navajas', // plural only: "navaja" alone is a knife
+    'zamburina',
+    'coquina',
+    'choco',
+    'jibia',
+    'pota',
+  ],
   sesamo: ['sesamo', 'ajonjoli', 'tahini', 'tahin'],
   apio: ['apio', 'apionabo'],
   sulfitos: ['sulfito', 'dioxido de azufre'],
@@ -99,14 +231,22 @@ const COMPOUNDS: Record<string, string[]> = {
   'crema de cacahuete': ['cacahuetes'],
   'crema de avellana': ['frutos_de_cascara'],
   'mantequilla de almendra': ['frutos_de_cascara'],
+  'harina de almendra': ['frutos_de_cascara'],
   'leche de almendra': ['frutos_de_cascara'],
   'leche de anacardo': ['frutos_de_cascara'],
   'leche de avena': ['gluten'],
   'leche de soja': ['soja'],
   'leche de soya': ['soja'],
+  'queso de soja': ['soja'],
   'leche de coco': [],
   'leche de arroz': [],
+  'nata de coco': [],
+  'queso vegano': [],
   'nuez moscada': [],
+  'trigo sarraceno': [],
+  'harina de maiz': [],
+  'harina de arroz': [],
+  'harina de garbanzo': [],
   'mantequilla de cacao': [],
   'manteca de cacao': [],
 };
@@ -171,7 +311,8 @@ export interface FindSuggestionsOptions {
 }
 
 /**
- * Scans `text` and returns de-duplicated suggestions in typed order.
+ * Scans `text` and returns one suggestion per typed phrase and kind, in typed
+ * order; a phrase implying several values carries all of them.
  * Pure: same input, same output; no store access.
  */
 export function findSuggestions(text: string, { kinds }: FindSuggestionsOptions): FreeTextSuggestion[] {
@@ -196,17 +337,17 @@ export function findSuggestions(text: string, { kinds }: FindSuggestionsOptions)
     const last = tokens[i + entry.words.length - 1];
     const typed = text.slice(tokens[i].start, last.end);
     const typedKey = tokens.slice(i, i + entry.words.length).map(t => t.norm).join(' ');
-    const push = (kind: SuggestionKind, value: string) => {
+    const push = (kind: SuggestionKind, candidates: string[]) => {
       if (!kinds.includes(kind)) { return; }
-      const valid = kind === 'alergeno' ? ALERGENO_VALUES.has(value) : INGREDIENTE_ODIADO_VALUES.has(value);
-      if (!valid) { return; }
-      const key = `${kind}:${value}:${typedKey}`;
+      const values = candidates.filter(v => (kind === 'alergeno' ? ALERGENO_VALUES.has(v) : INGREDIENTE_ODIADO_VALUES.has(v)));
+      if (values.length === 0) { return; }
+      const key = `${kind}:${values.join('+')}:${typedKey}`;
       if (seen.has(key)) { return; }
       seen.add(key);
-      out.push({ kind, value, typed, key });
+      out.push({ kind, values, typed, key });
     };
-    entry.alergenos.forEach(value => push('alergeno', value));
-    entry.ingredientes.forEach(value => push('ingrediente', value));
+    push('alergeno', entry.alergenos);
+    push('ingrediente', entry.ingredientes);
     i += entry.words.length;
   }
   return out;
