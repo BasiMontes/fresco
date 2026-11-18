@@ -33,9 +33,22 @@ const HAPPY_DOM_URL = 'https://test.fresco.local/';
 // need the DOM shim, are unaffected.
 (globalThis as { __FRESCO_NATIVE_FETCH__?: typeof fetch }).__FRESCO_NATIVE_FETCH__ = globalThis.fetch.bind(globalThis);
 
+// FRESCO-1239 — shiki 4.6 inlines its oniguruma wasm and decodes it with `new Response(stream).bytes()`. happy-dom's
+// `Response` (installed over Bun's native one by the registrator) has no `bytes()`, so every test that loads shiki
+// (`components/qa/code-block.test.tsx`) died at import. Added only when missing, after every register call.
+function ensureResponseBytes() {
+  const proto = globalThis.Response?.prototype as { bytes?: () => Promise<Uint8Array>, arrayBuffer: () => Promise<ArrayBuffer> } | undefined;
+  if (proto && typeof proto.bytes !== 'function') {
+    proto.bytes = async function bytes(this: { arrayBuffer: () => Promise<ArrayBuffer> }) {
+      return new Uint8Array(await this.arrayBuffer());
+    };
+  }
+}
+
 // First registration — window is definitely absent and the registrator's
 // flag is unset here, so a plain sync call is enough.
 GlobalRegistrator.register({ url: HAPPY_DOM_URL });
+ensureResponseBytes();
 if (typeof globalThis.window === 'undefined') {
   throw new TypeError('bun-test-setup: happy-dom did not install a window global');
 }
@@ -54,6 +67,7 @@ beforeEach(async () => {
     await GlobalRegistrator.unregister();
   }
   GlobalRegistrator.register({ url: HAPPY_DOM_URL });
+  ensureResponseBytes();
 });
 
 /**

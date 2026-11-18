@@ -19,6 +19,7 @@
   "ignoreDependencies": [
     "@clack/prompts",
     "@inquirer/prompts",
+    "bun-types",
     "boxen",
     "cli-table3",
     "dotenv-cli",
@@ -29,7 +30,6 @@
     "yaml"
   ],
   "ignoreBinaries": ["vercel", "supabase", "psql", "playwright-cli"],
-  "ignoreUnresolved": ["bun-types"],
   "rules": {
     "types": "off",
     "enumMembers": "off",
