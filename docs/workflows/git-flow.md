@@ -171,6 +171,7 @@ feature/y ──────────────●───●
 Un worktree es una segunda carpeta de trabajo del mismo repo, sobre su propia branch. Sirve para correr dos sesiones de AI en paralelo sin que una pise los cambios sin commitear de la otra.
 
 - Un worktree nuevo trae solo los archivos versionados. `bun run worktree:provision` (corrido desde el worktree) copia lo que falta: `.env`, `.vercel/`, settings locales, `node_modules` y el alias `.claude/skills` (los MCP leen ese `.env` con el loader; no se deriva ningún archivo de credenciales)
+- Un worktree nuevo, después de `bun run worktree:provision`, pasa el pre-commit y el pre-push sin tocar archivos de esquema a mano: el script también corre `bun run vars:schema`, que genera `.env.core.schema` y `.env.schema` (ignorados por git, solo nombres y marcas, nunca valores). Si creaste el worktree sin el script, el procedimiento es `bun install --frozen-lockfile`, `bun run agents:compat` y `bun run vars:schema`. Una variable nueva de `.env.example` tiene que estar declarada en `cli/lib/variables-manifest.ts` (opcional: `required: false`; contraseñas y tokens con `secret: true`), no en un esquema local: `vars:env:check` falla en el pre-push con `UNDECLARED_IN_ENV_SCHEMA` si no. Nunca copies el esquema del checkout principal ni uses `--no-verify`
 - Antes de borrarlo, `bun run worktree:audit` lista lo que el worktree tiene y git no; `--rescue` copia el estado de sesión (`.session/`) a la carpeta principal sin sobrescribir nada
 - En Orca, `orca.yaml` en la raíz corre ambos scripts solo, al crear y al archivar un worktree
 

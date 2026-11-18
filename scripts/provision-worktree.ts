@@ -30,7 +30,7 @@
  * agents:compat` fails).
  */
 
-import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { platform } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -72,7 +72,9 @@ function showHelp(): void {
   3. Runs \`bun install --frozen-lockfile\` inside the target (also creates
      the .husky/_ hook shims).
   4. Runs \`bun run agents:compat\` inside the target (creates the
-     .claude/skills alias).
+     .claude/skills alias), then \`bun run vars:schema\` when the target has
+     that script (generates the gitignored .env.core.schema + .env.schema:
+     names and markers only, no value).
   5. Copies gitignored community skill directories under .agents/skills/.
   6. Prints a summary + a hint to run \`bun run context:hydrate\` for the
      .context/PBI/ cache (not copied: it is a Jira cache, rebuilt on demand).
@@ -236,6 +238,17 @@ runInTarget(['bun', 'install', '--frozen-lockfile'], 'bun install');
 // Creates the .claude/skills alias (junction on Windows) among other checks;
 // see cli/lib/agent-compatibility.ts. Safe to re-run.
 runInTarget(['bun', 'run', 'agents:compat'], 'bun run agents:compat');
+
+// FRESCO-1238: the varlock schema files (`.env.core.schema`, `.env.schema`) are
+// gitignored, so a fresh worktree has none. Generate them here (names and
+// markers only, never a value) so no session has to do it by hand when the
+// pre-commit gate asks, and so the schema state is the same in every worktree.
+// Skipped where the target has no `vars:schema` script (older sync).
+{
+  const pkgPath = join(TARGET, 'package.json');
+  const hasVarsSchema = existsSync(pkgPath) && /"vars:schema"\s*:/.test(readFileSync(pkgPath, 'utf8'));
+  if (hasVarsSchema) { runInTarget(['bun', 'run', 'vars:schema'], 'bun run vars:schema'); }
+}
 
 // ============================================
 // Community skills: any dir under .agents/skills/ that git ignores
