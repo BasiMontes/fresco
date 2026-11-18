@@ -26,6 +26,8 @@
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
 import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
+import { buildGoalLevelContext, goalLevelAdjustment, recordGoalLevelPick } from './goal-level.ts'
+import type { GoalLevelContext } from './goal-level.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
@@ -130,6 +132,14 @@ export interface SelectMenuParams {
    * The selector never reads them from `profile`: omitted keeps a Free user's menu exactly as before.
    */
   favouriteCuisines?: readonly string[] | null
+  /**
+   * FRESCO-1227: the user's `objetivo`, passed ONLY for Pro/Family (same gate as `userEngagement`). A soft
+   * preference for `ahorrar_dinero`, `reducir_desperdicio`, `comer_variado` and `comer_sano`; every other value
+   * (including `perder_peso` and `ganar_masa_muscular`, which have no data behind them) changes nothing.
+   */
+  objetivo?: string | null
+  /** FRESCO-1227: the user's `nivel_experiencia`, Pro/Family only. `aprendiz` and `novato` lean away from hard recipes. */
+  nivelExperiencia?: string | null
 }
 
 export interface SelectedMenu {
@@ -148,6 +158,8 @@ interface ScoreRecipeParams {
   engagement?: { cocinada: number; descartada: number }
   /** FRESCO-1226: the favourite cuisines as `cuisineKey`s (Pro/Family only). Omitted or empty leaves the score untouched. */
   favouriteCuisines?: ReadonlySet<string>
+  /** FRESCO-1227: the goal/level context (Pro/Family only). Omitted leaves the score untouched. */
+  goalLevel?: GoalLevelContext
 }
 
 /**
@@ -156,7 +168,7 @@ interface ScoreRecipeParams {
  * to honor as best-effort preferences (FR-2.8) — now a fixed, auditable
  * heuristic instead of a natural-language instruction.
  */
-export function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement, favouriteCuisines }: ScoreRecipeParams): number {
+export function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement, favouriteCuisines, goalLevel }: ScoreRecipeParams): number {
   let score = 0
   const clasificacion = recipe.clasificacion
 
@@ -184,6 +196,10 @@ export function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rn
 
   // FRESCO-1226: softest signal (FR-5.4 #7, "prefer, never force"): a small bonus, never an exclusion.
   if (favouriteCuisines?.size && favouriteCuisines.has(cuisineKey(clasificacion?.cocina))) score += FAVOURITE_CUISINE_BONUS
+
+  // FRESCO-1227: goal and cooking level, soft and Pro/Family only. Skipped when there is no context so a Free
+  // user's score is not even touched by a `+ 0`.
+  if (goalLevel) score += goalLevelAdjustment(recipe, goalLevel)
 
   // Tie-break jitter (FRESCO-380 / A4-M1): seeded so the same (user, week)
   // is reproducible, and small enough (< 0.25 effective) that it can only
@@ -216,7 +232,7 @@ function pastDiasOf(fechaInicio: string, hoy: string | undefined): Set<DiaSemana
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement, favouriteCuisines: favouriteCuisineNames }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement, favouriteCuisines: favouriteCuisineNames, objetivo, nivelExperiencia }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -242,6 +258,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
   const pastDias = pastDiasOf(fechaInicio, hoy)
   const season = seasonOf(fechaInicio)
   const favouriteCuisines = favouriteCuisineKeys(favouriteCuisineNames)
+  const goalLevel = buildGoalLevelContext(objetivo, nivelExperiencia)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)
@@ -323,7 +340,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
       let chosen = timeFiltered[0]
       let bestScore = -Infinity
       for (const recipe of timeFiltered) {
-        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id), favouriteCuisines })
+        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id), favouriteCuisines, goalLevel })
         if (score > bestScore) {
           bestScore = score
           chosen = recipe
@@ -331,6 +348,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
       }
 
       menu[dia][tipo] = chosen.id
+      if (goalLevel) recordGoalLevelPick(chosen, goalLevel)
       lastCategoria = chosen.clasificacion?.categoria ?? null
       lastContundente = chosen.clasificacion?.es_contundente ?? null
 
