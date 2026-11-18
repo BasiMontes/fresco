@@ -16,7 +16,7 @@ import ts from 'typescript';
 
 export interface ColorToken { name: string, light: string, dark: string }
 export interface TypeStep { step: string, size: string, lineHeight: string | null, letterSpacing: string | null, fontWeight: string | null }
-export interface Typography { fonts: { heading: string, sans: string }, steps: TypeStep[] }
+export interface Typography { steps: TypeStep[] }
 export interface PropDoc { name: string, type: string, optional: boolean }
 export interface VariantDoc { name: string, values: string[], default: string | null }
 export interface ComponentApi { extends: string[], props: PropDoc[], variants: VariantDoc[] }
@@ -72,7 +72,7 @@ export function parseColors(css: string): ColorToken[] {
   return [...seen.values()];
 }
 
-/** The body of the `@theme static { ... }` block: the only place the type scale and font stacks live. */
+/** The body of the `@theme static { ... }` block: the only place the type scale lives. */
 export function extractTheme(css: string): string {
   const open = css.indexOf('@theme');
   const start = open === -1 ? -1 : css.indexOf('{', open);
@@ -85,14 +85,9 @@ export function extractTheme(css: string): string {
   throw new Error('Unclosed @theme block in app/globals.css');
 }
 
-/** The `--text-<step>` scale and the two font stacks of a theme body. A step lacking a metric reports `null`. */
+/** The `--text-<step>` scale of a theme body. A step lacking a metric reports `null`. Font names live in `components/design-system/fonts.ts` (FRESCO-1234), not as CSS stacks. */
 export function parseTypography(theme: string): Typography {
   const metric = (key: string) => new RegExp(`--${key}:([^;]+);`).exec(theme)?.[1].trim() ?? null;
-  const font = (key: string) => {
-    const value = metric(key);
-    if (value === null) { throw new Error(`Font stack --${key} not found in the @theme block`); }
-    return value;
-  };
   const steps: TypeStep[] = [];
   for (const match of theme.matchAll(/--text-([a-z0-9]+(?:-[a-z0-9]+)*):([^;]+);/g)) {
     const step = match[1];
@@ -104,7 +99,7 @@ export function parseTypography(theme: string): Typography {
       fontWeight: metric(`text-${step}--font-weight`),
     });
   }
-  return { fonts: { heading: font('font-heading'), sans: font('font-sans') }, steps };
+  return { steps };
 }
 
 /** Original names imported or re-exported from `lucide-react` (aliases resolved, type-only skipped). */
@@ -254,7 +249,7 @@ export function renderSnapshotModule(snapshot: Snapshot): string {
   const { colors, typography, icons, glyphs, components, examples } = snapshot;
   const lines = [HEADER, 'export const COLOR_TOKENS = ['];
   for (const c of colors) { lines.push(`  { name: ${quote(c.name)}, light: ${quote(c.light)}, dark: ${quote(c.dark)} },`); }
-  lines.push('] as const;', '', 'export const FONT_STACKS = {', `  heading: ${quote(typography.fonts.heading)},`, `  sans: ${quote(typography.fonts.sans)},`, '} as const;', '', 'export const TYPE_STEPS = [');
+  lines.push('] as const;', '', 'export const TYPE_STEPS = [');
   for (const s of typography.steps) {
     lines.push(`  { step: ${quote(s.step)}, size: ${quote(s.size)}, lineHeight: ${nullable(s.lineHeight)}, letterSpacing: ${nullable(s.letterSpacing)}, fontWeight: ${nullable(s.fontWeight)} },`);
   }
