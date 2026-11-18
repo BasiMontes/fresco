@@ -1,22 +1,15 @@
-import { describe, expect, mock, test } from 'bun:test';
+import { afterEach, describe, expect, test } from 'bun:test';
 import { renderWithProviders, screen } from '@/tests/component-render';
 
-// `bun test` shares one process and `mock.module` is global, so this file pins its own `next/navigation`.
-const nav = { pathname: '/design-system/foundation/colors' };
-void mock.module('next/navigation', () => ({
-  usePathname: () => nav.pathname,
-  useRouter: () => ({ push: () => {}, replace: () => {}, refresh: () => {}, back: () => {}, forward: () => {}, prefetch: () => {} }),
-  useSearchParams: () => new URLSearchParams(),
-  useParams: () => ({}),
-  redirect: () => {},
-  notFound: () => {},
-}));
-
-const { DesignSystemNav } = await import('./nav');
+import { navState } from '@/tests/mocks/next-navigation';
+import { DesignSystemNav } from './nav';
 
 describe('design-system nav', () => {
+  // `navState` is shared by every component test in the run.
+  afterEach(() => { navState.pathname = '/'; });
+
   test('marks only the link of the page being shown as current (FRESCO-1229)', () => {
-    nav.pathname = '/design-system/foundation/colors';
+    navState.pathname = '/design-system/foundation/colors';
     renderWithProviders(<DesignSystemNav />);
 
     expect(screen.getByRole('link', { name: 'Colores' })).toHaveAttribute('aria-current', 'page');
@@ -25,7 +18,7 @@ describe('design-system nav', () => {
   });
 
   test('no link is underlined at rest; the current one is semibold primary, the rest muted, hover underlines (FRESCO-1231)', () => {
-    nav.pathname = '/design-system/foundation/colors';
+    navState.pathname = '/design-system/foundation/colors';
     renderWithProviders(<DesignSystemNav />);
 
     const links = screen.getAllByRole('link');
