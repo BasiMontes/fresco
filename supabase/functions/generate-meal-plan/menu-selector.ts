@@ -25,6 +25,7 @@
 
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
+import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
 const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
@@ -44,6 +45,15 @@ const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
   medio: 5,
   alto: 8,
 }
+
+/**
+ * FRESCO-1226: score bonus for a recipe whose cuisine the user marked as a favourite. Sized against the other
+ * terms so it only leans the pick: it stays under the contundente-repeat penalty (2) and far under the
+ * category-repeat (5), discarded (4 / 6) and in-season (+3 / +1) terms, so variety and the personal signals still win
+ * every contest they win today; and it is above the jitter (0.5) and the per-cook nudge (0.3 each), so it does
+ * lean the pick among otherwise comparable recipes.
+ */
+export const FAVOURITE_CUISINE_BONUS = 1.0
 
 /**
  * Deterministic PRNG seeded from a string (xmur3 hash → mulberry32). Same
@@ -127,6 +137,8 @@ interface ScoreRecipeParams {
   rng: () => number
   /** This user's personal cocinada/descartada counts for this recipe (ADR-0008) — `undefined` for Free or no history. */
   engagement?: { cocinada: number; descartada: number }
+  /** FRESCO-1226: the profile's favourite cuisines as `cuisineKey`s. Omitted or empty leaves the score untouched. */
+  favouriteCuisines?: ReadonlySet<string>
 }
 
 /**
@@ -135,7 +147,7 @@ interface ScoreRecipeParams {
  * to honor as best-effort preferences (FR-2.8) — now a fixed, auditable
  * heuristic instead of a natural-language instruction.
  */
-function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement }: ScoreRecipeParams): number {
+function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement, favouriteCuisines }: ScoreRecipeParams): number {
   let score = 0
   const clasificacion = recipe.clasificacion
 
@@ -160,6 +172,9 @@ function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, enga
     score += Math.min(engagement.cocinada, 5) * 1.0
     if (engagement.descartada > 0) score -= 6
   }
+
+  // FRESCO-1226: softest signal (FR-5.4 #7, "prefer, never force"): a small bonus, never an exclusion.
+  if (favouriteCuisines?.size && favouriteCuisines.has(cuisineKey(clasificacion?.cocina))) score += FAVOURITE_CUISINE_BONUS
 
   // Tie-break jitter (FRESCO-380 / A4-M1): seeded so the same (user, week)
   // is reproducible, and small enough (< 0.25 effective) that it can only
@@ -217,6 +232,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
 
   const pastDias = pastDiasOf(fechaInicio, hoy)
   const season = seasonOf(fechaInicio)
+  const favouriteCuisines = favouriteCuisineKeys(profile.cocinas_favoritas)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)
@@ -298,7 +314,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
       let chosen = timeFiltered[0]
       let bestScore = -Infinity
       for (const recipe of timeFiltered) {
-        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id) })
+        const score = scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement: userEngagement?.get(recipe.id), favouriteCuisines })
         if (score > bestScore) {
           bestScore = score
           chosen = recipe
