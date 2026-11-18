@@ -141,3 +141,34 @@ describe('OnboardingStepDiet — free-text boxes (FRESCO-1000, audit 7b A7-LOGIC
     expect(screen.getByTestId('alergenos_aviso')).toHaveTextContent('revisa siempre las etiquetas');
   });
 });
+
+describe('OnboardingStepDiet — favourite cuisines notice (FRESCO-1232)', () => {
+  test('the notice sits right after the cuisines question, before the chips', () => {
+    render();
+
+    const heading = screen.getByRole('heading', { name: '¿Cuáles son tus cocinas favoritas?' });
+    const notice = screen.getByTestId('cocinas_pro_aviso');
+
+    expect(heading.nextElementSibling).toBe(notice);
+    expect(notice.nextElementSibling).toContainElement(screen.getAllByTestId('cocina_option')[0]);
+  });
+
+  test('it carries the Pro qualifier and never claims the cuisines change the menu for everyone', () => {
+    render();
+
+    const notice = screen.getByTestId('cocinas_pro_aviso');
+
+    expect(notice).toHaveTextContent('Solo en Pro');
+    expect(notice).toHaveTextContent('sin descartar el resto');
+    expect(notice.textContent).not.toMatch(/Esto cambia tu menú/);
+  });
+
+  test('the free-text cuisines box gets no claim of influence', () => {
+    render();
+
+    const input = screen.getByTestId('cocinas_texto_libre_input');
+
+    expect(input).not.toHaveAttribute('aria-describedby');
+    expect(input.nextElementSibling?.textContent ?? '').not.toMatch(/menú|Pro/);
+  });
+});
