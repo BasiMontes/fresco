@@ -399,6 +399,70 @@ export const VAR_MANIFEST: VarSpec[] = [
     obtainHint: 'Password of the dedicated automation account above. Read at runtime from .env by the automation script; never inlined in code, plans, or PR bodies.',
     note: 'Password of the automation identity. Local only, secret.',
   },
+  // --- Always-Pro test accounts, one per environment (FRESCO-897 / FRESCO-1238) ---
+  // Documented in `.env.example`, used by e2e/screenshot tooling that needs a Pro
+  // plan user. Declared here so the generated `.env.core.schema` carries them:
+  // `vars:env:check` rule 4b fails an `.env.example` key the schema does not
+  // declare, and a fresh worktree hits that the moment `vars:schema` generates
+  // its schema. `required: false`: only the owner's machine has the accounts.
+  // Local only, never pushed to Vercel (test identities, not app-runtime config).
+  {
+    name: 'DEV_PRO_PLAN_USER_EMAIL',
+    destinations: ['local'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'Email of the always-Pro test account for the dev environment, created by the owner through the Supabase admin API. Only needed by tooling that exercises Pro-plan screens.',
+    note: 'Email of the always-Pro test account (dev environment). Local only.',
+    schema: { type: 'email', example: 'pro.dev@example.test' },
+  },
+  {
+    name: 'DEV_PRO_PLAN_USER_PASSWORD',
+    destinations: ['local'],
+    secret: true,
+    required: false,
+    critical: false,
+    obtainHint: 'Password of the always-Pro test account for the dev environment. Typed by the owner into .env; never through chat, code, plans or PR bodies.',
+    note: 'Password of the always-Pro test account (dev environment). Local only, secret.',
+  },
+  {
+    name: 'PRE_PRO_PLAN_USER_EMAIL',
+    destinations: ['local'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'Email of the always-Pro test account for the pre environment, created by the owner through the Supabase admin API. Only needed by tooling that exercises Pro-plan screens.',
+    note: 'Email of the always-Pro test account (pre environment). Local only.',
+    schema: { type: 'email', example: 'pro.pre@example.test' },
+  },
+  {
+    name: 'PRE_PRO_PLAN_USER_PASSWORD',
+    destinations: ['local'],
+    secret: true,
+    required: false,
+    critical: false,
+    obtainHint: 'Password of the always-Pro test account for the pre environment. Typed by the owner into .env; never through chat, code, plans or PR bodies.',
+    note: 'Password of the always-Pro test account (pre environment). Local only, secret.',
+  },
+  {
+    name: 'PRO_PRO_PLAN_USER_EMAIL',
+    destinations: ['local'],
+    secret: false,
+    required: false,
+    critical: false,
+    obtainHint: 'Email of the always-Pro test account for the pro environment, created by the owner through the Supabase admin API. Only needed by tooling that exercises Pro-plan screens.',
+    note: 'Email of the always-Pro test account (pro environment). Local only.',
+    schema: { type: 'email', example: 'pro.pro@example.test' },
+  },
+  {
+    name: 'PRO_PRO_PLAN_USER_PASSWORD',
+    destinations: ['local'],
+    secret: true,
+    required: false,
+    critical: false,
+    obtainHint: 'Password of the always-Pro test account for the pro environment. Typed by the owner into .env; never through chat, code, plans or PR bodies.',
+    note: 'Password of the always-Pro test account (pro environment). Local only, secret.',
+  },
   // --- n8n automation (non-critical, local only, set when you adopt n8n) ---
   {
     name: 'N8N_API_URL',
