@@ -310,6 +310,23 @@ describe('ShoppingListView — chain-agnostic links and data age (FRESCO-808)', 
     expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('precio sin fecha');
   });
 
+  // FRESCO-1237 — the row keeps printing its price and says it is not in the total; the total and coverage leave it out.
+  test('a price with no date is printed on the row but not summed in the total', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(null)} />);
+
+    expect(screen.getByTestId('shopping_list_item_0_0_precio_antiguedad')).toHaveTextContent('precio sin fecha, no suma en el total');
+    expect(textoDeFila(/1,20€/)).toBeTruthy();
+    expect(screen.queryByTestId('shopping_list_price_coverage')).toBeNull();
+    expect(screen.getByTestId('shopping_list_summary_total')).not.toHaveTextContent('1,20');
+  });
+
+  test('a dated price is summed and counted in the coverage', () => {
+    renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(3)} />);
+
+    expect(screen.getByTestId('shopping_list_summary_total')).toHaveTextContent('1,20');
+    expect(screen.getByTestId('shopping_list_price_coverage')).toHaveTextContent('1 de 1 artículo con precio');
+  });
+
   // FRESCO-1028 — thresholds 14 and 30 days, set by the owner.
   test.each([[13, 'reciente'], [14, 'antiguo'], [30, 'antiguo']])('%i days old: price stays and is marked %s', (dias, frescura) => {
     renderWithProviders(<ShoppingListView list={LIST_FALSA} compra={compraFalsa(dias)} />);
