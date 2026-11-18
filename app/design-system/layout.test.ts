@@ -29,7 +29,7 @@ describe('design-system layout', () => {
 
     const brand = screen.getByTestId('design_system_brand');
 
-    expect(brand).toHaveAttribute('href', '/design-system');
+    expect(brand).toHaveAttribute('href', '/design-system/foundation/colors');
     expect(brand.querySelectorAll('img')).toHaveLength(2);
     expect(brand.querySelector('.brand-mark--light')).not.toBeNull();
     expect(brand.querySelector('.brand-mark--dark')).not.toBeNull();

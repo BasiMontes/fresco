@@ -21,7 +21,7 @@ export default function DesignSystemLayout({ children }: { children: React.React
     <main id="main" className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-12">
       {/* FRESCO-1216: the brand mark the landing and the login already use; both `<Image>`s render and the theme CSS shows one. */}
       <header>
-        <Link href="/design-system" data-testid="design_system_brand" className="inline-flex items-center gap-3">
+        <Link href="/design-system/foundation/colors" data-testid="design_system_brand" className="inline-flex items-center gap-3">
           <Image src="/brand/logo-base.svg" alt="Fresco" width={100} height={30} className="brand-mark--light" priority />
           <Image src="/brand/logo-negativo.svg" alt="Fresco" width={100} height={30} className="brand-mark--dark" priority />
           {/* FRESCO-1230: `items-center` centres line boxes, whose glyphs sit a few px off-centre in a font-metric-dependent way; trimming the box to the cap height makes the text's visual centre the box centre, so it sits on the logo's axis in any browser that supports `text-box` (the rest keep plain `items-center`). */}

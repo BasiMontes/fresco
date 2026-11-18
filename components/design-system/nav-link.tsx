@@ -12,7 +12,9 @@ import { cn } from '@/lib/utils';
  * is about 5.6:1 in light and 7:1 in dark, over the 4.5:1 AA floor.
  */
 export function NavLink({ href, label }: { href: string, label: string }) {
-  const isCurrent = usePathname() === href;
+  const pathname = usePathname();
+  // Prefix match on a segment boundary, so a nested page keeps its parent highlighted and `/colors-extra` does not match `/colors`.
+  const isCurrent = pathname === href || pathname.startsWith(`${href}/`);
   return (
     <Link
       href={href}
