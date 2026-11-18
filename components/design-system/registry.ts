@@ -11,6 +11,8 @@ import EmailInputExample from './examples/email-input.example';
 import EmptyStateExample from './examples/empty-state.example';
 import FilterDrawerExample from './examples/filter-drawer.example';
 import InputExample from './examples/input.example';
+import NumberStepperExample from './examples/number-stepper.example';
+import OptionCardGroupExample from './examples/option-card-group.example';
 import PasswordInputExample from './examples/password-input.example';
 import PopoverExample from './examples/popover.example';
 import RevealExample from './examples/reveal.example';
@@ -37,6 +39,8 @@ export const REGISTRY = {
   'checkbox': { source: 'checkbox', title: 'Casilla', description: 'Casilla circular con zona táctil de 44 píxeles, controlada por el estado del formulario.', Example: CheckboxExample },
   'switch': { source: 'switch', title: 'Interruptor', description: 'Activa o desactiva un ajuste al instante, con zona táctil de 44 píxeles.', Example: SwitchExample },
   'segmented-control': { source: 'segmented-control', title: 'Control segmentado', description: 'Grupo de opciones excluyentes que se maneja también con las flechas del teclado.', Example: SegmentedControlExample },
+  'option-card-group': { source: 'option-card-group', title: 'Tarjetas de opción', description: 'Todas las opciones a la vista como tarjetas excluyentes, con flechas de teclado y una ayuda opcional por opción.', Example: OptionCardGroupExample },
+  'number-stepper': { source: 'number-stepper', title: 'Contador con botones', description: 'Número con botones menos y más que se detienen en el mínimo y el máximo, con zonas táctiles de 44 píxeles.', Example: NumberStepperExample },
   'email-input': { source: 'email-input', title: 'Campo de correo', description: 'Campo de correo que avisa de un formato no válido al salir de él.', Example: EmailInputExample },
   'password-input': { source: 'password-input', title: 'Campo de contraseña', description: 'Campo de contraseña con botón para mostrarla y medidor de fortaleza.', Example: PasswordInputExample },
   'reveal': { source: 'reveal', title: 'Aparición', description: 'Envoltorio que marca su contenido como visible al entrar en pantalla.', Example: RevealExample },
