@@ -14,20 +14,25 @@ function cobertura({ incluidos, productos }: Pick<TotalComparado, 'incluidos' | 
   return `${incluidos} de ${productos} ${productos === 1 ? 'producto' : 'productos'}`;
 }
 
+/** "leche", "leche y arroz", "leche, arroz y pasta". */
+function enumerar(nombres: readonly string[]): string {
+  if (nombres.length <= 1) { return nombres.join(''); }
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`;
+}
+
 /**
- * FRESCO-1222 — "Comparar tu compra". Real chains and estimated chains are two separate lists, and every
- * estimated figure carries its own "Estimado, basado en Mercadona" label next to it: a figure is never worded
- * as the chain's price, and it always says how many of the list's products it covers, so it never reads as the
- * whole basket. A chain with nothing to show is not rendered.
+ * FRESCO-1222 — "Comparar tu compra". Two separate blocks that must not be read as one comparison: the real totals
+ * (whole priced basket per chain, with coverage) and the estimate (only the staples it names, over Mercadona's
+ * price). Every estimated figure carries its own "Estimado, basado en Mercadona" label, a figure is never worded as
+ * the chain's price, and the estimate block says it is not comparable with the totals. A chain with nothing to show
+ * is not rendered.
  */
 export function ShoppingListComparison({ reales, estimadas }: ShoppingListComparisonProps) {
   if (reales.length === 0 && estimadas.length === 0) { return null; }
+  const resumen = estimadas[0];
   return (
     <Card className="mt-4" data-testid="shopping_list_comparison">
       <h2 className="text-h5">Comparar tu compra</h2>
-      <p className="mt-1 text-body-sm text-tertiary">
-        Cada cifra suma solo los productos que se indican; no es el total de tu lista.
-      </p>
 
       {reales.length > 0 && (
         <section className="mt-3" aria-labelledby="shopping_list_comparison_reales_title">
@@ -48,18 +53,23 @@ export function ShoppingListComparison({ reales, estimadas }: ShoppingListCompar
         </section>
       )}
 
-      {estimadas.length > 0 && (
-        <section className="mt-3" aria-labelledby="shopping_list_comparison_estimadas_title">
+      {resumen && (
+        <section className="mt-4 border-t border-border pt-3" aria-labelledby="shopping_list_comparison_estimadas_title" data-testid="shopping_list_comparison_estimadas">
           <h3 id="shopping_list_comparison_estimadas_title" className="text-body-sm uppercase tracking-wide text-tertiary">
-            Otras cadenas, solo básicos de marca propia
+            Estimación de básicos
           </h3>
-          <ul className="mt-1 flex flex-col gap-2">
+          <p data-testid="shopping_list_comparison_estimadas_alcance" className="mt-1 text-body">
+            {`${enumerar(resumen.basicos ?? [])}, ${cobertura(resumen)}`}
+          </p>
+          <p data-testid="shopping_list_comparison_estimadas_aviso" className="mt-1 text-body-sm text-tertiary">
+            {reales.length > 0
+              ? 'Es una estimación solo de esos básicos de marca propia, y no es comparable con los totales de arriba.'
+              : 'Es una estimación solo de esos básicos de marca propia, no el total de tu compra.'}
+          </p>
+          <ul className="mt-2 flex flex-col gap-2">
             {estimadas.map(total => (
-              <li key={total.cadena} data-testid={`shopping_list_comparison_estimada_${total.cadena}`} className="flex items-baseline justify-between gap-3">
-                <span className="text-body">
-                  {total.nombre}
-                  <span className="block text-body-sm text-tertiary">{cobertura(total)}</span>
-                </span>
+              <li key={total.cadena} data-testid={`shopping_list_comparison_estimada_${total.cadena}`} className="flex items-center justify-between gap-3">
+                <span className="text-body">{total.nombre}</span>
                 <span className="flex flex-col items-end gap-1">
                   <span className="font-heading text-h5 font-normal text-primary">{formatPrecio(total.importe)}</span>
                   <Tag data-testid={`shopping_list_comparison_estimada_etiqueta_${total.cadena}`}>Estimado, basado en Mercadona</Tag>

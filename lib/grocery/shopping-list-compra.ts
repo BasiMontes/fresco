@@ -4,7 +4,7 @@ import type { MappedGroceryItem } from './types';
 import type { ShoppingListPasillo } from '@/lib/api/types';
 import { antiguedadEnDias, claveItemCompra } from './compra';
 import { precioBaseEstimacion } from './estimacion-cadenas';
-import { precioLinea } from './line-price';
+import { precioLinea, precioLineaEnlazada } from './line-price';
 import { mapShoppingListItem } from './map-item';
 
 /**
@@ -19,14 +19,17 @@ import { mapShoppingListItem } from './map-item';
  */
 
 function aLinea({ item, mapped, ahora }: { item: ShoppingListPasillo['items'][number], mapped: MappedGroceryItem, ahora: Date }): LineaCompra {
+  const precioEnlazado = precioLineaEnlazada(mapped);
   const linea: LineaCompra = {
     precio: precioLinea(item, mapped),
     enlaces: mapped.precios.flatMap(p => (p.url
       ? [{ cadena: p.cadena, nombreCadena: p.nombreCadena, url: p.url, antiguedadDias: antiguedadEnDias({ observadoEn: p.observadoEn, ahora }) }]
       : [])),
+    ...(precioEnlazado === undefined ? {} : { precioEnlazado }),
   };
   // FRESCO-1222: only a staple with a showable Mercadona price carries the base of the labelled chain estimate.
-  const base = precioBaseEstimacion({ nombre: item.nombre, linea });
+  // The gate reads the MAPPED key, so a recipe-context remap ("arroz" to "arroz redondo") is judged as what was priced.
+  const base = precioBaseEstimacion({ clave: mapped.productoCanonico, linea });
   return base === undefined ? linea : { ...linea, precioBaseEstimacion: base };
 }
 

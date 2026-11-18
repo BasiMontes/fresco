@@ -1,5 +1,8 @@
 import type { ShoppingListPersistido } from '@/lib/api/shopping-list';
+import type { CompraPorItem } from '@/lib/grocery/compra';
+import { readFileSync } from 'node:fs';
 import { describe, expect, test } from 'bun:test';
+import { claveItemCompra } from '@/lib/grocery/compra';
 import { CADENAS_ESTIMADAS } from '@/lib/grocery/estimacion-cadenas';
 import { MERCADONA_CATALOG_FECHA } from '@/lib/grocery/mercadona-catalog.generated';
 import { resolverCompra } from '@/lib/grocery/shopping-list-compra';
@@ -10,35 +13,45 @@ import '@/tests/mocks/next-navigation';
 
 /** FRESCO-1222 — the labelled chain estimate: every figure labelled, never worded as the chain's own price. */
 
-const ESTIMADA = { cadena: 'dia', nombre: 'Dia', importe: 2.16, incluidos: 2, productos: 5 };
+const ESTIMADA = { cadena: 'dia', nombre: 'Dia', importe: 2.16, incluidos: 2, productos: 5, basicos: ['leche', 'arroz'] };
 const REAL = { cadena: 'mercadona', nombre: 'Mercadona', importe: 7.5, incluidos: 4, productos: 5 };
+const ETIQUETA = 'Estimado, basado en Mercadona';
 
 describe('ShoppingListComparison', () => {
-  test('every estimated figure carries the visible label and its product count', () => {
+  test('every estimated figure sits in a row that carries the visible label', () => {
     renderWithProviders(<ShoppingListComparison reales={[REAL]} estimadas={CADENAS_ESTIMADAS.map(c => ({ ...ESTIMADA, cadena: c.id, nombre: c.nombre }))} />);
 
-    for (const c of CADENAS_ESTIMADAS) {
-      const fila = screen.getByTestId(`shopping_list_comparison_estimada_${c.id}`);
-      expect(within(fila).getByText('Estimado, basado en Mercadona')).toBeVisible();
-      expect(fila).toHaveTextContent('2 de 5 productos');
+    const filas = CADENAS_ESTIMADAS.map(c => screen.getByTestId(`shopping_list_comparison_estimada_${c.id}`));
+    expect(filas).toHaveLength(5);
+    for (const fila of filas) {
+      expect(within(fila).getByText(ETIQUETA)).toBeVisible();
       expect(fila).toHaveTextContent('2,16€');
+    }
+    // No price figure in the estimate block lives outside a labelled row.
+    const bloque = screen.getByTestId('shopping_list_comparison_estimadas');
+    const cifras = within(bloque).getAllByText(/\d,\d{2}€/);
+    expect(cifras).toHaveLength(filas.length);
+    for (const cifra of cifras) {
+      expect(cifra.closest('[data-testid^="shopping_list_comparison_estimada_"]')).not.toBeNull();
     }
   });
 
-  test('there is exactly one label per estimated figure and none on the real rows', () => {
+  test('the estimate is its own block: names the staples and the coverage, and says it is not comparable with the totals', () => {
     renderWithProviders(<ShoppingListComparison reales={[REAL]} estimadas={[ESTIMADA]} />);
 
-    expect(screen.getAllByText('Estimado, basado en Mercadona')).toHaveLength(1);
-    expect(within(screen.getByTestId('shopping_list_comparison_real_mercadona')).queryByText(/estimado/i)).toBeNull();
-    expect(screen.getByTestId('shopping_list_comparison_real_mercadona')).toHaveTextContent('4 de 5 productos');
+    expect(screen.getByTestId('shopping_list_comparison_estimadas_alcance')).toHaveTextContent('leche y arroz, 2 de 5 productos');
+    expect(screen.getByTestId('shopping_list_comparison_estimadas_aviso')).toHaveTextContent('no es comparable con los totales de arriba');
+    // The real totals are a different block, with their own coverage and no estimate label.
+    const real = screen.getByTestId('shopping_list_comparison_real_mercadona');
+    expect(real).toHaveTextContent('4 de 5 productos');
+    expect(within(real).queryByText(ETIQUETA)).toBeNull();
+    expect(screen.getByTestId('shopping_list_comparison_estimadas').contains(real)).toBe(false);
   });
 
-  test('an estimated chain is never worded as a price source', () => {
+  test('there is exactly one label per estimated figure', () => {
     renderWithProviders(<ShoppingListComparison reales={[REAL]} estimadas={[ESTIMADA]} />);
 
-    expect(screen.queryByText(/precio de dia/i)).toBeNull();
-    expect(screen.queryByText(/precios de dia/i)).toBeNull();
-    expect(screen.queryByText(/precio real/i)).toBeNull();
+    expect(screen.getAllByText(ETIQUETA)).toHaveLength(1);
   });
 
   test('renders nothing when there is nothing to compare', () => {
@@ -47,12 +60,30 @@ describe('ShoppingListComparison', () => {
     expect(screen.queryByTestId('shopping_list_comparison')).toBeNull();
   });
 
-  test('without estimates only the real chains show, with no estimated heading', () => {
+  test('without estimates only the real chains show, with no estimate block', () => {
     renderWithProviders(<ShoppingListComparison reales={[REAL]} estimadas={[]} />);
 
     expect(screen.getByTestId('shopping_list_comparison_real_mercadona')).toBeTruthy();
-    expect(screen.queryByText('Estimado, basado en Mercadona')).toBeNull();
-    expect(screen.queryByText(/otras cadenas/i)).toBeNull();
+    expect(screen.queryByTestId('shopping_list_comparison_estimadas')).toBeNull();
+    expect(screen.queryByText(ETIQUETA)).toBeNull();
+  });
+});
+
+describe('bundle boundary', () => {
+  const RAIZ = new URL('../../', import.meta.url).pathname;
+
+  test.each([
+    'components/shopping-list/shopping-list-comparison.tsx',
+    'components/shopping-list/shopping-list-view.tsx',
+    'lib/grocery/estimacion-cadenas.ts',
+  ])('%s imports no chain catalog and no server-only resolver', (archivo) => {
+    const importaciones = [...readFileSync(`${RAIZ}${archivo}`, 'utf8').matchAll(/(?:from|import)\s+['"]([^'"]+)['"]/g)].map(m => m[1]);
+
+    expect(importaciones.length).toBeGreaterThan(0);
+    for (const origen of importaciones) {
+      expect(origen).not.toMatch(/\.generated/);
+      expect(origen).not.toMatch(/shopping-list-compra/);
+    }
   });
 });
 
@@ -81,20 +112,20 @@ describe('ShoppingListView — comparison card (FRESCO-1222)', () => {
     expect(within(tarjeta).getByText('Comparar tu compra')).toBeTruthy();
     for (const c of CADENAS_ESTIMADAS) {
       const fila = within(tarjeta).getByTestId(`shopping_list_comparison_estimada_${c.id}`);
-      expect(fila).toHaveTextContent('2 de 3 productos');
-      expect(within(fila).getByText('Estimado, basado en Mercadona')).toBeTruthy();
+      expect(within(fila).getByText(ETIQUETA)).toBeTruthy();
     }
+    expect(within(tarjeta).getByTestId('shopping_list_comparison_estimadas_alcance')).toHaveTextContent('leche y arroz, 2 de 3 productos');
   });
 
   test('non-staples yield no estimate: only real data shows', () => {
     const list = listaCon([
       { nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml', comprado: false },
-      { nombre: 'garbanzos', cantidad: 400, unidad: 'g', comprado: false },
-      { nombre: 'pasta', cantidad: 300, unidad: 'g', comprado: false },
+      { nombre: 'atun', cantidad: 300, unidad: 'g', comprado: false },
+      { nombre: 'tomate', cantidad: 400, unidad: 'g', comprado: false },
     ]);
     renderWithProviders(<ShoppingListView list={list} compra={resolverCompra({ pasillos: list.pasillos, ahora: AHORA })} />);
 
-    expect(screen.queryByText('Estimado, basado en Mercadona')).toBeNull();
+    expect(screen.queryByText(ETIQUETA)).toBeNull();
     for (const c of CADENAS_ESTIMADAS) {
       expect(screen.queryByTestId(`shopping_list_comparison_estimada_${c.id}`)).toBeNull();
     }
@@ -106,6 +137,21 @@ describe('ShoppingListView — comparison card (FRESCO-1222)', () => {
     const tarde = new Date(AHORA.getTime() + 40 * 86_400_000);
     renderWithProviders(<ShoppingListView list={list} compra={resolverCompra({ pasillos: list.pasillos, ahora: tarde })} />);
 
-    expect(screen.queryByText('Estimado, basado en Mercadona')).toBeNull();
+    expect(screen.queryByText(ETIQUETA)).toBeNull();
+  });
+
+  test('a no-date Mercadona price counts in neither the real totals nor the estimate', () => {
+    const list = listaCon([{ nombre: 'leche', cantidad: 500, unidad: 'ml', comprado: false }]);
+    const compra: CompraPorItem = {
+      [claveItemCompra({ pasillo: 'Despensa', item: 'leche' })]: {
+        precio: 0.96,
+        precioEnlazado: 0.96,
+        precioBaseEstimacion: undefined,
+        enlaces: [{ cadena: 'mercadona', nombreCadena: 'Mercadona', url: 'https://example.test', antiguedadDias: null }],
+      },
+    };
+    renderWithProviders(<ShoppingListView list={list} compra={compra} />);
+
+    expect(screen.queryByTestId('shopping_list_comparison')).toBeNull();
   });
 });

@@ -23,6 +23,12 @@ export interface LineaCompra {
    * labelled chain estimate is built from (`estimacion-cadenas.ts`). Plain data, so no catalog reaches the browser.
    */
   precioBaseEstimacion?: number
+  /**
+   * FRESCO-1222 — the price of the linked product alone (whole pack times packs), set only when the link has a valid
+   * price. Unlike `precio` it never falls back to the stored per-gram estimate, so the comparison card can tell a
+   * chain's price from a guess.
+   */
+  precioEnlazado?: number
 }
 
 export type CompraPorItem = Readonly<Record<string, LineaCompra>>;

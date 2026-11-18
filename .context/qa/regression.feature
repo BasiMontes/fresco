@@ -1219,9 +1219,10 @@ Característica: Flujo completo de usuario en Fresco
   Escenario: La tarjeta "Comparar tu compra" etiqueta como estimado todo lo que no son datos de la cadena
     Dado que el usuario tiene en su lista de la compra leche y arroz con precio de Mercadona vigente
     Cuando abre /shopping-list
-    Entonces ve la tarjeta "Comparar tu compra" con Mercadona como dato real
+    Entonces ve la tarjeta "Comparar tu compra" con Mercadona en el bloque "Con precios de la cadena" y su cobertura, por ejemplo "4 de 5 productos"
+    Y ve un bloque aparte "Estimación de básicos" que nombra los básicos incluidos y su cobertura, por ejemplo "leche y arroz, 2 de 5 productos"
+    Y ese bloque dice "Es una estimación solo de esos básicos de marca propia, y no es comparable con los totales de arriba."
     Y ve Dia, Carrefour, Eroski, Alcampo y Ahorramás con la etiqueta "Estimado, basado en Mercadona" junto a cada cifra
-    Y cada cadena indica cuántos productos de la lista incluye, por ejemplo "2 de 5 productos"
     Y no ve ninguna cifra de esas cadenas presentada como su precio
 
   # ==========================================================================
