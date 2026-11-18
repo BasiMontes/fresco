@@ -1,85 +1,17 @@
-// FRESCO-1226: favourite cuisines as a soft preference in menu selection.
-import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
+// FRESCO-1226: favourite cuisines as a soft preference in menu selection (Pro/Family only, FR-5.4).
+import type { DiaSemana, Recipe, TipoPlatoSlot } from './types.ts'
 import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'bun:test'
 import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
-import { FAVOURITE_CUISINE_BONUS, selectMenu } from './menu-selector.ts'
+import { ALL_SLOTS, DIAS, FECHA_INICIO, SEEDS, TIPOS, buildRealisticPool, goldenCases, makeProfile, makeRecipe } from './favourite-cuisines.fixtures.ts'
+import { FAVOURITE_CUISINE_BONUS, scoreRecipe, selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
-const DIAS: DiaSemana[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
-const TIPOS: TipoPlatoSlot[] = ['desayuno', 'comida', 'cena']
-const FECHA_INICIO = '2026-01-05'
-const ALL_SLOTS = Object.fromEntries(DIAS.map(dia => [dia, TIPOS])) as Record<DiaSemana, TipoPlatoSlot[]>
+type Menu = Record<DiaSemana, Record<TipoPlatoSlot, string>>
 
-function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
-  return {
-    id: 'user-1',
-    planning_selection: ALL_SLOTS,
-    plan: 'free',
-    num_personas: 2,
-    alergenos: [],
-    ingredientes_odiados: [],
-    cocinas_favoritas: [],
-    tiempo_max_semana_min: 120,
-    tiempo_max_finde_min: 120,
-    presupuesto_semana_euros: null,
-    ...overrides,
-  } as UserProfile
-}
+const GOLDEN = JSON.parse(readFileSync(new URL('./favourite-cuisines.golden.json', import.meta.url), 'utf8')) as Record<string, unknown>
 
-function makeRecipe(id: string, tipo: TipoPlatoSlot, cocina: string, overrides: Partial<Recipe> = {}): Recipe {
-  return {
-    id,
-    nombre: `Receta ${id}`,
-    slug: id,
-    meta: { tiempo_prep_min: 10, tiempo_coccion_min: 10, tiempo_total_min: 20, raciones: 2, coste_estimado: 'bajo', dificultad: 'facil' },
-    clasificacion: { tipo_plato: tipo, categoria: 'guiso', cocina, es_contundente: false, es_ligero: true, es_comfort_food: false, apto_tupper: true, apto_congelar: false },
-    alergenos: [],
-    temporada: ['todo_el_ano'],
-    veces_cocinada: 0,
-    veces_descartada: 0,
-    ...overrides,
-  } as Recipe
-}
-
-// The live catalog's `clasificacion.cocina` mix (counted from supabase/seed.sql, 1287 recipes): shares of the
-// total, accent variants and the catalog-only names (`casera`, `latinoamericana`) included.
-const CATALOG_CUISINE_MIX: [string, number][] = [
-  ['española', 328], ['internacional', 315], ['casera', 206], ['mediterranea', 170], ['mediterránea', 94],
-  ['asiática', 89], ['italiana', 31], ['mexicana', 28], ['latinoamericana', 26],
-]
-const CATEGORIAS = ['guiso', 'ensalada', 'sopa', 'pasta', 'arroz', 'legumbres', 'verdura', 'pescado', 'tostadas', 'bowls']
-const SEASONS: Temporada[][] = [['todo_el_ano'], ['invierno', 'otono'], ['verano'], ['primavera', 'verano'], ['todo_el_ano']]
-
-/** A deterministic pool with the live catalog's cuisine mix, spread over categories, seasons and cook counts. */
-function buildRealisticPool(perTipo = 120): Recipe[] {
-  const total = CATALOG_CUISINE_MIX.reduce((sum, [, n]) => sum + n, 0)
-  const wheel = CATALOG_CUISINE_MIX.flatMap(([cocina, n]) => Array.from({ length: Math.round((n / total) * 100) || 1 }, () => cocina))
-  const recipes: Recipe[] = []
-  for (const tipo of TIPOS) {
-    for (let i = 0; i < perTipo; i++) {
-      recipes.push(makeRecipe(`${tipo}-${i}`, tipo, wheel[(i * 37 + tipo.length * 11) % wheel.length], {
-        clasificacion: {
-          tipo_plato: tipo,
-          categoria: CATEGORIAS[(i * 7) % CATEGORIAS.length],
-          cocina: wheel[(i * 37 + tipo.length * 11) % wheel.length],
-          es_contundente: i % 3 === 0,
-          es_ligero: i % 3 !== 0,
-          es_comfort_food: false,
-          apto_tupper: true,
-          apto_congelar: false,
-        },
-        temporada: SEASONS[i % SEASONS.length],
-        veces_cocinada: i % 5,
-      }))
-    }
-  }
-  return recipes
-}
-
-const SEEDS = Array.from({ length: 20 }, (_, i) => `user-${i}:2026-W0${(i % 9) + 1}`)
-
-function placedIds(menu: Record<DiaSemana, Record<TipoPlatoSlot, string>>): string[] {
+function placedIds(menu: Menu): string[] {
   return DIAS.flatMap(dia => TIPOS.map(tipo => menu[dia][tipo])).filter(id => id !== NO_SAFE_RECIPE_SENTINEL && id !== SLOT_EXCLUDED_SENTINEL)
 }
 
@@ -87,6 +19,15 @@ function countFavourite(pool: Recipe[], ids: string[], favourites: string[]): nu
   const keys = favouriteCuisineKeys(favourites)
   const byId = new Map(pool.map(r => [r.id, r]))
   return ids.filter(id => keys.has(cuisineKey(byId.get(id)?.clasificacion?.cocina))).length
+}
+
+/** Tiny seeded PRNG so the "many draws" tests are reproducible. */
+function lcg(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (Math.imul(a, 1664525) + 1013904223) >>> 0
+    return a / 4294967296
+  }
 }
 
 describe('cuisine keys', () => {
@@ -102,93 +43,182 @@ describe('cuisine keys', () => {
     expect(favouriteCuisineKeys(undefined).size).toBe(0)
     expect(favouriteCuisineKeys([]).size).toBe(0)
   })
+
+  test('a non-array value gives an empty set instead of throwing (a throw would 500 menu generation)', () => {
+    expect(favouriteCuisineKeys('italiana').size).toBe(0)
+    expect(favouriteCuisineKeys({ 0: 'italiana', length: 1 }).size).toBe(0)
+    expect(favouriteCuisineKeys(42).size).toBe(0)
+  })
+
+  test('non-string entries are skipped, string entries kept', () => {
+    expect([...favouriteCuisineKeys(['italiana', null, 3, undefined, {}, ['x'], 'mexicana'])].sort()).toEqual(['italiana', 'mexicana'])
+    expect(cuisineKey(undefined)).toBe('')
+    expect(cuisineKey(7)).toBe('')
+  })
 })
 
-describe('selectMenu with favourite cuisines', () => {
-  const pool = buildRealisticPool()
+describe('selectMenu is byte-identical to the pre-FRESCO-1226 selector (golden output generated from staging)', () => {
+  const cases = goldenCases()
 
-  test('empty or null cocinas_favoritas leaves the menu byte-identical to the one without the field', () => {
-    for (const seed of SEEDS) {
-      const base = selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile() })
-      const empty = selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile({ cocinas_favoritas: [] }) })
-      const nulled = selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile({ cocinas_favoritas: null as unknown as [] }) })
-      expect(JSON.stringify(empty)).toBe(JSON.stringify(base))
-      expect(JSON.stringify(nulled)).toBe(JSON.stringify(base))
+  test('the golden file covers every case', () => {
+    expect(Object.keys(GOLDEN).sort()).toEqual(cases.map(c => c.name).sort())
+  })
+
+  test('no favourites passed: output equals the golden menu', () => {
+    for (const { name, params } of cases) expect(JSON.stringify(selectMenu(params))).toBe(JSON.stringify(GOLDEN[name]))
+  })
+
+  test('empty and null favourites passed: output equals the golden menu', () => {
+    for (const { name, params } of cases) {
+      expect(JSON.stringify(selectMenu({ ...params, favouriteCuisines: [] }))).toBe(JSON.stringify(GOLDEN[name]))
+      expect(JSON.stringify(selectMenu({ ...params, favouriteCuisines: null }))).toBe(JSON.stringify(GOLDEN[name]))
     }
   })
 
+  test('a Free user with favourites on the profile: output equals the golden menu (the selector reads none from the profile)', () => {
+    for (const { name, params } of cases) {
+      const profile = { ...params.profile, plan: 'free' as const, cocinas_favoritas: ['italiana', 'mexicana'] as typeof params.profile.cocinas_favoritas }
+      expect(JSON.stringify(selectMenu({ ...params, profile }))).toBe(JSON.stringify(GOLDEN[name]))
+    }
+  })
+})
+
+describe('selectMenu with favourite cuisines passed (Pro/Family)', () => {
+  const pool = buildRealisticPool()
+  const favourites = ['italiana', 'mexicana']
+  const run = (seed: string, fav?: string[]) => selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile(), favouriteCuisines: fav })
+
   test('a favourite that matches nothing in the pool changes nothing', () => {
-    const noFavouriteMatch = pool.filter(r => r.clasificacion?.cocina !== 'italiana')
-    const base = selectMenu({ candidates: noFavouriteMatch, recentRecipeIds: [], seed: SEEDS[0], fechaInicio: FECHA_INICIO, profile: makeProfile() })
-    const withFav = selectMenu({ candidates: noFavouriteMatch, recentRecipeIds: [], seed: SEEDS[0], fechaInicio: FECHA_INICIO, profile: makeProfile({ cocinas_favoritas: ['italiana'] }) })
+    const noItalian = pool.filter(r => r.clasificacion?.cocina !== 'italiana')
+    const base = selectMenu({ candidates: noItalian, recentRecipeIds: [], seed: SEEDS[0], fechaInicio: FECHA_INICIO, profile: makeProfile() })
+    const withFav = selectMenu({ candidates: noItalian, recentRecipeIds: [], seed: SEEDS[0], fechaInicio: FECHA_INICIO, profile: makeProfile(), favouriteCuisines: ['italiana'] })
     expect(JSON.stringify(withFav)).toBe(JSON.stringify(base))
   })
 
   test('same seed and same inputs give the same menu with favourites', () => {
-    const profile = makeProfile({ cocinas_favoritas: ['italiana', 'mexicana'] })
-    const a = selectMenu({ candidates: pool, recentRecipeIds: [], seed: SEEDS[3], fechaInicio: FECHA_INICIO, profile })
-    const b = selectMenu({ candidates: pool, recentRecipeIds: [], seed: SEEDS[3], fechaInicio: FECHA_INICIO, profile })
-    expect(JSON.stringify(a)).toBe(JSON.stringify(b))
+    expect(JSON.stringify(run(SEEDS[3], favourites))).toBe(JSON.stringify(run(SEEDS[3], favourites)))
   })
 
-  test('the menu holds strictly more favourite-cuisine recipes than without, and still mixes other cuisines', () => {
-    const favourites: UserProfile['cocinas_favoritas'] = ['italiana', 'mexicana']
-    const rows: string[] = []
+  test('with a 0.5 bonus the menu holds more favourite-cuisine recipes than without, and still mixes other cuisines (20 seeds)', () => {
+    expect(FAVOURITE_CUISINE_BONUS).toBe(0.5)
     let totalWithout = 0
     let totalWith = 0
+    let seedsHigher = 0
     for (const seed of SEEDS) {
-      const without = placedIds(selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile() }).menu)
-      const withFav = placedIds(selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile: makeProfile({ cocinas_favoritas: favourites }) }).menu)
+      const without = placedIds(run(seed).menu)
+      const withFav = placedIds(run(seed, favourites).menu)
       const nWithout = countFavourite(pool, without, favourites)
       const nWith = countFavourite(pool, withFav, favourites)
-      rows.push(`${seed}: ${nWithout} -> ${nWith} of ${withFav.length}`)
-      expect(nWith).toBeGreaterThan(nWithout)
+      expect(nWith).toBeGreaterThanOrEqual(nWithout)
       expect(nWith).toBeLessThan(withFav.length) // never forced: other cuisines stay in the menu
+      if (nWith > nWithout) seedsHigher++
       totalWithout += nWithout
       totalWith += nWith
     }
-    console.info(`[FRESCO-1226] bonus=${FAVOURITE_CUISINE_BONUS} favourites=${favourites.join('+')} seeds=${SEEDS.length}\n${rows.join('\n')}\nTOTAL without=${totalWithout} with=${totalWith}`)
+    // Measured numbers (deterministic: fixed pool, fixed seeds), kept for the DOJO write-up.
+    expect(totalWithout).toBe(15)
+    expect(totalWith).toBe(60)
+    expect(seedsHigher).toBe(20)
   })
 
   test('variety is kept: no lunch or dinner repeats and breakfast stays capped at 3', () => {
-    const profile = makeProfile({ cocinas_favoritas: ['italiana'] })
     for (const seed of SEEDS) {
-      const { menu } = selectMenu({ candidates: pool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile })
+      const { menu } = run(seed, ['italiana'])
       const lunchDinner = DIAS.flatMap(dia => [menu[dia].comida, menu[dia].cena])
       expect(new Set(lunchDinner).size).toBe(lunchDinner.length)
       const breakfasts = DIAS.map(dia => menu[dia].desayuno)
       for (const id of new Set(breakfasts)) expect(breakfasts.filter(b => b === id).length).toBeLessThanOrEqual(3)
     }
   })
+})
 
-  test('the category-repeat penalty still beats the bonus', () => {
-    // Two lunches, same scores except cuisine and category: the favourite one repeats the previous category
-    // (-5) so the non-favourite one must still win on the second slot.
-    const favouriteSame = makeRecipe('fav', 'comida', 'italiana', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'italiana' } as Recipe['clasificacion'] })
-    const opener = makeRecipe('opener', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'española' } as Recipe['clasificacion'], veces_cocinada: 10 })
-    const other = makeRecipe('other', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'sopa', cocina: 'española' } as Recipe['clasificacion'] })
-    const profile = makeProfile({ cocinas_favoritas: ['italiana'], planning_selection: { ...ALL_SLOTS, lunes: ['comida'], martes: ['comida'], miercoles: [], jueves: [], viernes: [], sabado: [], domingo: [] } })
-    const { menu } = selectMenu({ candidates: [opener, favouriteSame, other], recentRecipeIds: [], seed: SEEDS[0], fechaInicio: FECHA_INICIO, profile })
-    expect(menu.lunes.comida).toBe('opener')
-    expect(menu.martes.comida).toBe('other')
+describe('the bonus is a tie-breaker, sized by arithmetic', () => {
+  const score = (recipe: Recipe, opts: { rng?: () => number, lastCategoria?: string | null, fav?: boolean } = {}) =>
+    scoreRecipe({
+      recipe,
+      season: 'invierno',
+      lastCategoria: opts.lastCategoria ?? null,
+      lastContundente: null,
+      rng: opts.rng ?? (() => 0),
+      favouriteCuisines: opts.fav ? new Set(['italiana']) : undefined,
+    })
+
+  test('the bonus does not exceed the jitter ceiling (0.5), so it cannot invert a gap of 1.0', () => {
+    expect(FAVOURITE_CUISINE_BONUS).toBeLessThanOrEqual(0.5)
   })
 
-  test('a recipe outside the candidate set (an allergen the SQL pre-filter removed) never enters the menu because of a favourite cuisine', () => {
-    const allergenic = makeRecipe('gluten-pizza', 'comida', 'italiana', { alergenos: ['gluten'], veces_cocinada: 10 })
-    const safePool = pool // the SQL pre-filter already dropped `allergenic`; it is not a candidate
-    const profile = makeProfile({ alergenos: ['gluten'], cocinas_favoritas: ['italiana'] })
-    for (const seed of SEEDS) {
-      const { menu } = selectMenu({ candidates: safePool, recentRecipeIds: [], seed, fechaInicio: FECHA_INICIO, profile })
-      expect(placedIds(menu)).not.toContain(allergenic.id)
-      const known = new Set(safePool.map(r => r.id))
-      expect(placedIds(menu).every(id => known.has(id))).toBe(true)
+  test('a favourite out of season never beats a non-favourite `todo_el_ano` recipe (gap 1.0), over many random draws', () => {
+    const favOut = makeRecipe('fav', 'comida', 'italiana', { temporada: ['verano'] })
+    const plain = makeRecipe('plain', 'comida', 'española', { temporada: ['todo_el_ano'] })
+    const rngFav = lcg(1)
+    const rngPlain = lcg(2)
+    for (let i = 0; i < 5000; i++) {
+      const fav = score(favOut, { rng: rngFav, fav: true })
+      const non = score(plain, { rng: rngPlain })
+      expect(non).toBeGreaterThan(fav)
     }
   })
 
-  test('the SQL pre-filter does not look at cuisine, so a favourite can never relax an allergen or diet rule', () => {
-    const sql = readFileSync(new URL('../../migrations/20260908180000_recipes_activo_soft_delete.sql', import.meta.url), 'utf8')
-    const fn = sql.slice(sql.indexOf('function public.get_filtered_recipes'))
-    expect(fn.length).toBeGreaterThan(0)
-    expect(fn).not.toMatch(/cocina/i)
+  test('a favourite never overturns one personal cook (+1.0, ADR-0008), over many random draws', () => {
+    const favouriteRecipe = makeRecipe('fav', 'comida', 'italiana')
+    const plain = makeRecipe('plain', 'comida', 'española')
+    const rngFav = lcg(3)
+    const rngPlain = lcg(4)
+    for (let i = 0; i < 5000; i++) {
+      const fav = scoreRecipe({ recipe: favouriteRecipe, season: 'invierno', lastCategoria: null, lastContundente: null, rng: rngFav, favouriteCuisines: new Set(['italiana']) })
+      const non = scoreRecipe({ recipe: plain, season: 'invierno', lastCategoria: null, lastContundente: null, rng: rngPlain, engagement: { cocinada: 1, descartada: 0 } })
+      expect(non).toBeGreaterThan(fav)
+    }
+  })
+
+  test('the category-repeat penalty (5) beats the bonus even at the worst jitter for it, and would not if the bonus reached 5', () => {
+    const favRepeat = makeRecipe('fav', 'comida', 'italiana', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'italiana' } as Recipe['clasificacion'] })
+    const plainFresh = makeRecipe('plain', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'sopa', cocina: 'española' } as Recipe['clasificacion'] })
+    // Worst case for the penalty: the favourite draws the maximum jitter, the other the minimum.
+    const fav = score(favRepeat, { lastCategoria: 'pasta', fav: true, rng: () => 0.999999 })
+    const non = score(plainFresh, { lastCategoria: 'pasta', rng: () => 0 })
+    expect(non).toBeGreaterThan(fav)
+    // Sensitivity: swap the real bonus for the penalty's size and the order flips, so the real constant is what holds.
+    expect(fav - FAVOURITE_CUISINE_BONUS + 5).toBeGreaterThan(non)
+  })
+
+  test('selectMenu keeps the category-repeat penalty ahead of a favourite on the next slot', () => {
+    const opener = makeRecipe('opener', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'española' } as Recipe['clasificacion'], veces_cocinada: 10 })
+    const favRepeat = makeRecipe('fav', 'comida', 'italiana', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'italiana' } as Recipe['clasificacion'] })
+    const other = makeRecipe('other', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'sopa', cocina: 'española' } as Recipe['clasificacion'] })
+    const profile = makeProfile({ planning_selection: { ...ALL_SLOTS, lunes: ['comida'], martes: ['comida'], miercoles: [], jueves: [], viernes: [], sabado: [], domingo: [] } })
+    const { menu } = selectMenu({ candidates: [opener, favRepeat, other], recentRecipeIds: [], seed: SEEDS[0], fechaInicio: FECHA_INICIO, profile, favouriteCuisines: ['italiana'] })
+    expect(menu.lunes.comida).toBe('opener')
+    expect(menu.martes.comida).toBe('other')
+  })
+})
+
+describe('allergens and diets stay upstream of cuisine (structure of the code, not a behavioural run against the database)', () => {
+  const sql = readFileSync(new URL('../../migrations/20260908180000_recipes_activo_soft_delete.sql', import.meta.url), 'utf8')
+  const start = sql.indexOf('create or replace function public.get_filtered_recipes')
+  const end = sql.indexOf('$function$;', start)
+  const body = sql.slice(start, end)
+
+  test('get_filtered_recipes is found, scoped to its own body, and carries the allergen, diet and disliked-ingredient predicates', () => {
+    expect(start).toBeGreaterThanOrEqual(0)
+    expect(end).toBeGreaterThan(start)
+    expect(body).toMatch(/v_profile\.alergenos/)
+    expect(body).toMatch(/v_profile\.dieta_vegetariano/)
+    expect(body).toMatch(/v_profile\.dieta_halal/)
+    expect(body).toMatch(/v_profile\.ingredientes_odiados/)
+  })
+
+  test('the function body never mentions cuisine, so a favourite cannot relax a filter', () => {
+    expect(body).not.toMatch(/cocina/i)
+  })
+
+  test('the selector and the cuisine helper never read allergen, diet or disliked-ingredient fields', () => {
+    for (const file of ['menu-selector.ts', 'cuisine.ts']) {
+      const code = readFileSync(new URL(`./${file}`, import.meta.url), 'utf8')
+        .split('\n')
+        .filter(line => !/^\s*(\/\/|\/\*|\*)/.test(line))
+        .join('\n')
+      expect(code).not.toMatch(/alergenos|dieta_|\.dieta\b|ingredientes_odiados/)
+    }
   })
 })

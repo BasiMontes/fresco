@@ -11,12 +11,21 @@ const CATALOG_ALIASES: Record<string, string> = {
 }
 
 /** Lowercase, accent-free, aliased key for a cuisine name from either vocabulary. */
-export function cuisineKey(name: string | null | undefined): string {
-  const folded = (name ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+export function cuisineKey(name: unknown): string {
+  const folded = (typeof name === 'string' ? name : '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
   return CATALOG_ALIASES[folded] ?? folded
 }
 
-/** The set of cuisine keys a profile prefers. Empty for a null, undefined or empty list. */
-export function favouriteCuisineKeys(cocinasFavoritas: readonly string[] | null | undefined): Set<string> {
-  return new Set((cocinasFavoritas ?? []).map(cuisineKey).filter(key => key !== ''))
+/**
+ * The set of cuisine keys a profile prefers. Empty for anything that is not a list (null, undefined, a stray
+ * string); non-string entries are skipped. Never throws: a throw here would 500 menu generation.
+ */
+export function favouriteCuisineKeys(cocinasFavoritas: unknown): Set<string> {
+  if (!Array.isArray(cocinasFavoritas)) return new Set()
+  return new Set(
+    cocinasFavoritas
+      .filter((name): name is string => typeof name === 'string')
+      .map(cuisineKey)
+      .filter(key => key !== ''),
+  )
 }

@@ -47,13 +47,17 @@ const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
 }
 
 /**
- * FRESCO-1226: score bonus for a recipe whose cuisine the user marked as a favourite. Sized against the other
- * terms so it only leans the pick: it stays under the contundente-repeat penalty (2) and far under the
- * category-repeat (5), discarded (4 / 6) and in-season (+3 / +1) terms, so variety and the personal signals still win
- * every contest they win today; and it is above the jitter (0.5) and the per-cook nudge (0.3 each), so it does
- * lean the pick among otherwise comparable recipes.
+ * FRESCO-1226: score bonus for a recipe whose cuisine the user marked as a favourite (Pro/Family only, FR-5.4).
+ * It is a tie-breaker, sized by arithmetic: the jitter in `scoreRecipe` is `rng() * 0.5`, so two recipes
+ * separated by a gap of at least 1.0 can already be reordered by at most 0.5 of noise, and a bonus of 0.5 or
+ * less cannot invert any gap of 1.0 or more. Every other signal moves the score by at least that much: the
+ * in-season term (+3 vs +1 for `todo_el_ano`, a 1.0 step at the narrowest), each personal cook (+1.0,
+ * ADR-0008), the contundente repeat (-2), the category repeat (-5), the global discard (-4) and the personal
+ * discard (-6). Only the global cook count (+0.3 per cook) has steps smaller than the bonus, and that is the
+ * "otherwise comparable recipes" this bonus is meant to lean. Do NOT raise it to 1.0 or more: a favourite
+ * could then overturn a 1.0 gap.
  */
-export const FAVOURITE_CUISINE_BONUS = 1.0
+export const FAVOURITE_CUISINE_BONUS = 0.5
 
 /**
  * Deterministic PRNG seeded from a string (xmur3 hash → mulberry32). Same
@@ -121,6 +125,11 @@ export interface SelectMenuParams {
   hoy?: string
   /** Pro/Family personal cocinada/descartada counts per recipe, all-time (ADR-0008) — `undefined` for Free. */
   userEngagement?: Map<string, { cocinada: number; descartada: number }>
+  /**
+   * FRESCO-1226: the user's `cocinas_favoritas`, passed ONLY for Pro/Family (same gate as `userEngagement`).
+   * The selector never reads them from `profile`: omitted keeps a Free user's menu exactly as before.
+   */
+  favouriteCuisines?: readonly string[] | null
 }
 
 export interface SelectedMenu {
@@ -137,7 +146,7 @@ interface ScoreRecipeParams {
   rng: () => number
   /** This user's personal cocinada/descartada counts for this recipe (ADR-0008) — `undefined` for Free or no history. */
   engagement?: { cocinada: number; descartada: number }
-  /** FRESCO-1226: the profile's favourite cuisines as `cuisineKey`s. Omitted or empty leaves the score untouched. */
+  /** FRESCO-1226: the favourite cuisines as `cuisineKey`s (Pro/Family only). Omitted or empty leaves the score untouched. */
   favouriteCuisines?: ReadonlySet<string>
 }
 
@@ -147,7 +156,7 @@ interface ScoreRecipeParams {
  * to honor as best-effort preferences (FR-2.8) — now a fixed, auditable
  * heuristic instead of a natural-language instruction.
  */
-function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement, favouriteCuisines }: ScoreRecipeParams): number {
+export function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rng, engagement, favouriteCuisines }: ScoreRecipeParams): number {
   let score = 0
   const clasificacion = recipe.clasificacion
 
@@ -207,7 +216,7 @@ function pastDiasOf(fechaInicio: string, hoy: string | undefined): Set<DiaSemana
 }
 
 // CLAUDE.md §10: 3+ params → object param, hence the single-object signature.
-export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement }: SelectMenuParams): SelectedMenu {
+export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = [], discardedRecipeIds = [], profile, seed, fechaInicio, hoy, userEngagement, favouriteCuisines: favouriteCuisineNames }: SelectMenuParams): SelectedMenu {
   const rng = makeSeededRng(seed)
   const excluded = new Set(recentRecipeIds)
   const pool = candidates.filter(r => !excluded.has(r.id))
@@ -232,7 +241,7 @@ export function selectMenu({ candidates, recentRecipeIds, repeatableRecipeIds = 
 
   const pastDias = pastDiasOf(fechaInicio, hoy)
   const season = seasonOf(fechaInicio)
-  const favouriteCuisines = favouriteCuisineKeys(profile.cocinas_favoritas)
+  const favouriteCuisines = favouriteCuisineKeys(favouriteCuisineNames)
   const usedLunchDinner = new Set<string>()
   const breakfastCount = new Map<string, number>()
   const warnedTimeRelax = new Set<string>() // dedupes the "no recipes under N min" advertencia per (tipo, weekday/weekend)

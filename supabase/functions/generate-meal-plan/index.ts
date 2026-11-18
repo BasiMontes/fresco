@@ -207,6 +207,9 @@ Deno.serve(async (req: Request) => {
       // FRESCO-1129: days of the current week already over come out excluded, not as unusable recipes.
       hoy: hoyEnMadrid(),
       userEngagement,
+      // FRESCO-1226: favourite cuisines lean the menu for Pro/Family only (FR-5.4), the same isPro gate as
+      // `userEngagement`; Free gets exactly the menu it had before.
+      favouriteCuisines: isPro ? profile.cocinas_favoritas : undefined,
     })
 
     // 8. Pro learning explanation (FR-5.5) — deterministic, built from the
