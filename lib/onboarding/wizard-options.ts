@@ -53,7 +53,7 @@ export const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
 // (FRESCO-1226). The onboarding does not know the user's plan, so the notice is
 // worded to be true for both: it names the Pro condition and never claims the
 // cuisines change the menu for everyone.
-export const COCINAS_PRO_AVISO = 'Solo en Pro, tus cocinas favoritas personalizan el menú: prefiriremos estas cocinas sin descartar el resto.';
+export const COCINAS_PRO_AVISO = 'Las cocinas favoritas personalizan el menú solo en Pro: prefiriremos estas cocinas sin descartar el resto.';
 
 // FRESCO-451 (slice 4/5, densidad y restraint): step 2 packs ~25 chips
 // across 4 groups (dieta, alérgenos, ingredientes, cocinas) — the shared
