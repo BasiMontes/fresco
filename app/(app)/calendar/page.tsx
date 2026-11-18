@@ -173,6 +173,7 @@ export default async function CalendarPage({
 
       <AlertBanner
         advertencias={plan.advertencias}
+        title="Sobre este menú"
         data-testid="calendar_advertencias_banner"
       />
 

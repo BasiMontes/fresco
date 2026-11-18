@@ -1,33 +1,36 @@
-import { TriangleAlert } from 'lucide-react';
+import { CircleAlert } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
 /**
- * Warning-surface primitive for `advertencias` (FR-2.10/FR-8.2, STORY-FRESCO-9).
- * Renders nothing when `advertencias` is empty/undefined, so callers never
- * need to guard before rendering it. Deliberately non-dismissible and
- * always-visible (no toast/auto-hide) — FR-8.2 requires a "prominent,
- * blocking-style warning", never a silently-logged event, since the P0 case
- * is a mandatory food-safety filter (allergen/disliked-ingredient) that could
- * not be honored for a slot.
+ * Warning surface for `advertencias` (FR-2.10/FR-8.2, STORY-FRESCO-9). Specified in DESIGN.md
+ * (§Components → "Alert / Aviso", FRESCO-1233): a card-family surface in the allergen amber tint
+ * (`accent-2-100` fill, `accent-2-800` text and icon, `accent-2-600` hairline), no side stripe.
  *
- * Uses the `warning` design token (`#DF8C26`), which DESIGN.md itself already
- * reserves for "warning-adjacent tags (allergen flags)" — not the `error`
- * token, which DESIGN.md scopes to form/input validation errors.
+ * Behaviour that must not change: renders nothing when `advertencias` is empty/undefined, so callers
+ * never guard before rendering it; `role="alert"` + `aria-live="assertive"`; deliberately
+ * non-dismissible and always visible (no close button, no toast, no auto-hide), because the P0 case is a
+ * mandatory food-safety filter (allergen/disliked-ingredient) that could not be honoured for a slot.
  *
- * Scope note: this component only renders whatever `advertencias` it is
- * given — it does not fetch or own real menu-generation data. Wiring it to
- * the live `/generate-meal-plan` response is FRESCO-7's job (Menu
- * Generation); this is the ready-made contract for that story to drop in,
- * e.g. `<AlertBanner advertencias={mealPlan.advertencias} data-testid="menu_advertencias_banner" />`.
+ * Colours are ramp role tokens from `app/globals.css`, which already invert for the dark theme, so there is
+ * no `dark:` class here. The size classes (`text-h6`, `text-body-md`) sit on elements that carry no colour
+ * class of their own: `cn()` does not know the custom `text-*` size tokens and would drop one next to a
+ * colour class (see the FRESCO-978 note in `tag.tsx`).
+ *
+ * Scope note: this component only renders whatever `advertencias` it is given — it does not fetch or own
+ * real menu-generation data.
  */
-export interface AlertBannerProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface AlertBannerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
   advertencias?: string[]
+  /** Kicker above the list. Callers pass one that names what the warnings are about. */
+  title?: string
 }
 
+export const ALERT_BANNER_DEFAULT_TITLE = 'A tener en cuenta';
+
 export const AlertBanner = React.forwardRef<HTMLDivElement, AlertBannerProps>(
-  ({ advertencias, className, ...props }, ref) => {
+  ({ advertencias, title = ALERT_BANNER_DEFAULT_TITLE, className, ...props }, ref) => {
     if (!advertencias || advertencias.length === 0) { return null; }
 
     return (
@@ -36,18 +39,23 @@ export const AlertBanner = React.forwardRef<HTMLDivElement, AlertBannerProps>(
         role="alert"
         aria-live="assertive"
         className={cn(
-          'flex flex-col gap-2 rounded-md border-l-4 border-warning bg-surface p-3 text-text shadow-sm',
+          'rounded-card border border-accent-2-600 bg-accent-2-100 p-4 text-accent-2-800',
           className,
         )}
         {...props}
       >
         <div className="flex items-center gap-2">
-          <TriangleAlert className="size-5 shrink-0 text-warning" aria-hidden="true" />
-          <span className="text-label font-sans">Antes de continuar</span>
+          <CircleAlert className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
+          <p className="text-h6 uppercase">{title}</p>
         </div>
-        <ul className="flex flex-col gap-1 pl-7 text-body-sm">
+        <ul className="mt-3 text-body-md">
           {advertencias.map(advertencia => (
-            <li key={advertencia}>{advertencia}</li>
+            <li
+              key={advertencia}
+              className="border-t border-accent-2-600/30 py-2 first:border-t-0 first:pt-0 last:pb-0"
+            >
+              {advertencia}
+            </li>
           ))}
         </ul>
       </div>

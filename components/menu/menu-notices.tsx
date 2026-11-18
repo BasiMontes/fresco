@@ -35,6 +35,7 @@ export function MenuNotices({ plan, isAnonymous, proPreview }: MenuNoticesProps)
 
       <AlertBanner
         advertencias={plan.advertencias}
+        title="Sobre tu menú de esta semana"
         data-testid="menu_advertencias_banner"
       />
 
