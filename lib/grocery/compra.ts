@@ -64,6 +64,16 @@ export function frescuraPrecio(dias: number | null): FrescuraPrecio {
   return 'reciente';
 }
 
+/**
+ * FRESCO-1237 — THE rule for "does this price count as current": recent, or old but still shown. A price with no
+ * date or hidden for age does not. The list total, its coverage line and the "Comparar tu compra" card all ask it;
+ * there is no second copy of the rule.
+ */
+export function precioCuentaComoVigente(dias: number | null): boolean {
+  const frescura = frescuraPrecio(dias);
+  return frescura === 'reciente' || frescura === 'antiguo';
+}
+
 /** Key of one row: aisle plus name, because the same name can sit in two aisles. */
 export function claveItemCompra({ pasillo, item }: { pasillo: string, item: string }): string {
   return `${pasillo}::${item}`;
