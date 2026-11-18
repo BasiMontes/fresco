@@ -26,7 +26,7 @@
 import type { CosteEstimado } from '../../../api/schemas/recipe.types.ts'
 import type { DiaSemana, Recipe, Temporada, TipoPlatoSlot, UserProfile } from './types.ts'
 import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
-import { buildGoalLevelContext, goalLevelAdjustment, recordGoalLevelPick } from './goal-level.ts'
+import { buildGoalLevelContext, clampSoft, goalLevelAdjustment, recordGoalLevelPick } from './goal-level.ts'
 import type { GoalLevelContext } from './goal-level.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
 
@@ -50,14 +50,13 @@ const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
 
 /**
  * FRESCO-1226: score bonus for a recipe whose cuisine the user marked as a favourite (Pro/Family only, FR-5.4).
- * It is a tie-breaker, sized by arithmetic: the jitter in `scoreRecipe` is `rng() * 0.5`, so two recipes
- * separated by a gap of at least 1.0 can already be reordered by at most 0.5 of noise, and a bonus of 0.5 or
- * less cannot invert any gap of 1.0 or more. Every other signal moves the score by at least that much: the
- * in-season term (+3 in season, +1 for `todo_el_ano`, 0 out of season: steps of 2.0 and 1.0, the narrowest being 1.0), each personal cook (+1.0,
- * ADR-0008), the contundente repeat (-2), the category repeat (-5), the global discard (-4) and the personal
- * discard (-6). Only the global cook count (+0.3 per cook) has steps smaller than the bonus, and that is the
- * "otherwise comparable recipes" this bonus is meant to lean. Do NOT raise it to 1.0 or more: a favourite
- * could then overturn a 1.0 gap.
+ * It is one of the Pro-only soft terms whose COMBINED sum `clampSoft` caps at +-0.5 (FRESCO-1227, see
+ * `goal-level.ts`): the jitter in `scoreRecipe` is `rng() * 0.5`, the soft span is at most 1.0, so no soft term
+ * stack can overturn a base gap of 1.5 or more: the in-season step (2.0), the category repeat (-5), the
+ * contundente repeat (-2), the global discard (-4) and the personal discard (-6). A base gap of exactly 1.0 (a
+ * personal cook, `todo_el_ano` against out of season) can be overturned only by a +0.5 recipe against a -0.5
+ * rival with favourable jitter. The favourite alone at 0.5 is exactly at the cap, so the cap never changes the
+ * menu of a favourites-only user. Raising it above 0.5 would only be cut back by the cap, so do not.
  */
 export const FAVOURITE_CUISINE_BONUS = 0.5
 
@@ -195,11 +194,20 @@ export function scoreRecipe({ recipe, season, lastCategoria, lastContundente, rn
   }
 
   // FRESCO-1226: softest signal (FR-5.4 #7, "prefer, never force"): a small bonus, never an exclusion.
-  if (favouriteCuisines?.size && favouriteCuisines.has(cuisineKey(clasificacion?.cocina))) score += FAVOURITE_CUISINE_BONUS
+  // FRESCO-1227: every Pro-only soft term (favourite cuisine, goal, level) is summed and clamped together. With
+  // none active (Free) nothing is added at all, so the Free score is not touched even by a `+ 0`.
+  let soft = 0
+  let softActive = false
+  if (favouriteCuisines?.size && favouriteCuisines.has(cuisineKey(clasificacion?.cocina))) {
+    soft += FAVOURITE_CUISINE_BONUS
+    softActive = true
+  }
 
-  // FRESCO-1227: goal and cooking level, soft and Pro/Family only. Skipped when there is no context so a Free
-  // user's score is not even touched by a `+ 0`.
-  if (goalLevel) score += goalLevelAdjustment(recipe, goalLevel)
+  if (goalLevel) {
+    soft += goalLevelAdjustment(recipe, goalLevel)
+    softActive = true
+  }
+  if (softActive) score += clampSoft(soft)
 
   // Tie-break jitter (FRESCO-380 / A4-M1): seeded so the same (user, week)
   // is reproducible, and small enough (< 0.25 effective) that it can only

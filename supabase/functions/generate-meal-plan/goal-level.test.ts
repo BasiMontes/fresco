@@ -6,7 +6,9 @@ import { DIAS, FECHA_INICIO, SEEDS, TIPOS, goldenCases, makeProfile, makeRecipe 
 import { buildGoalLevelPool } from './goal-level.fixtures.ts'
 import {
   buildGoalLevelContext,
+  clampSoft,
   COST_ADJUSTMENT,
+  goalLevelAdjustment,
   CUISINE_REPEAT_CAP,
   CUISINE_REPEAT_STEP,
   LEVEL_PENALTY,
@@ -14,6 +16,7 @@ import {
   perishableIngredients,
   SHARED_INGREDIENT_CAP,
   SHARED_INGREDIENT_STEP,
+  SOFT_CAP,
 } from './goal-level.ts'
 import { scoreRecipe, selectMenu } from './menu-selector.ts'
 import { NO_SAFE_RECIPE_SENTINEL, SLOT_EXCLUDED_SENTINEL } from './types.ts'
@@ -140,7 +143,7 @@ describe('context building', () => {
   })
 })
 
-describe('each kept option changes the menu (realistic pool, 20 seeds, deterministic numbers kept for the DOJO write-up)', () => {
+describe('each kept option changes the menu (realistic pool, 20 seeds, deterministic numbers pinned)', () => {
   test('ahorrar_dinero: fewer expensive recipes and more cheap ones', () => {
     const expensive = measure({ objetivo: 'ahorrar_dinero' }, countBy(r => r.meta?.coste_estimado === 'alto'))
     expect(expensive.withOption).toBeLessThan(expensive.without)
@@ -220,80 +223,145 @@ describe('each kept option changes the menu (realistic pool, 20 seeds, determini
     const both = run(SEEDS[0], { objetivo: 'ahorrar_dinero', nivelExperiencia: 'aprendiz', favouriteCuisines: ['italiana'] })
     expect(placed(both.menu).length).toBeGreaterThan(0)
   })
+
+  test('stacked worst case (favourite cuisines + ahorrar_dinero + aprendiz): the capped sum still leans every way', () => {
+    const extra = { objetivo: 'ahorrar_dinero', nivelExperiencia: 'aprendiz', favouriteCuisines: ['italiana', 'mexicana'] }
+    const favouriteCount = countBy(r => ['italiana', 'mexicana'].includes(r.clasificacion!.cocina))
+    const expensive = measure(extra, countBy(r => r.meta?.coste_estimado === 'alto'))
+    const advanced = measure(extra, countBy(r => r.meta?.dificultad === 'avanzada'))
+    const cheap = measure(extra, countBy(r => r.meta?.coste_estimado === 'muy_bajo' || r.meta?.coste_estimado === 'bajo'))
+    const favourite = measure(extra, favouriteCount)
+    expect([expensive.without, expensive.withOption]).toEqual([54, 25])
+    expect([advanced.without, advanced.withOption]).toEqual([69, 21])
+    expect([cheap.without, cheap.withOption]).toEqual([288, 331])
+    expect([favourite.without, favourite.withOption]).toEqual([15, 21])
+  })
+
+  test('stacked: favourite cuisines + reducir_desperdicio + aprendiz', () => {
+    const extra = { objetivo: 'reducir_desperdicio', nivelExperiencia: 'aprendiz', favouriteCuisines: ['italiana', 'mexicana'] }
+    const reuse = measure(extra, sharedIngredientReuse)
+    const distinct = measure(extra, distinctPerishables)
+    const favourite = measure(extra, countBy(r => ['italiana', 'mexicana'].includes(r.clasificacion!.cocina)))
+    expect([reuse.without, reuse.withOption]).toEqual([342, 534])
+    expect([distinct.without, distinct.withOption]).toEqual([1040, 846])
+    expect([favourite.without, favourite.withOption]).toEqual([15, 50])
+  })
 })
 
-describe('the terms are small, sized by arithmetic', () => {
-  const CEILING = 0.5 // the jitter in scoreRecipe is rng() * 0.5
+const BEST_WINS_AT_GAP_1 = 2480 // of 5000 draws, deterministic
 
-  test('every term has a span (best minus worst) of at most 0.5, so none can invert a gap of 1.0 on its own', () => {
-    const costs = Object.values(COST_ADJUSTMENT)
-    expect(Math.max(...costs) - Math.min(...costs)).toBeLessThanOrEqual(CEILING)
-    expect(LIGHT_BONUS).toBeLessThanOrEqual(CEILING)
-    expect(CUISINE_REPEAT_STEP * CUISINE_REPEAT_CAP).toBeLessThanOrEqual(CEILING)
-    expect(SHARED_INGREDIENT_STEP * SHARED_INGREDIENT_CAP).toBeLessThanOrEqual(CEILING)
-    for (const penalties of Object.values(LEVEL_PENALTY)) expect(Math.max(...Object.values(penalties))).toBeLessThanOrEqual(CEILING)
+describe('the soft terms are small: the COMBINED sum is capped, sized by arithmetic', () => {
+  const JITTER = 0.5 // the jitter in scoreRecipe is rng() * 0.5
+
+  test('the cap gives a soft span of 1.0, safe for every base gap of at least 1.5 (jitter below 0.5)', () => {
+    expect(SOFT_CAP).toBe(0.5)
+    expect(2 * SOFT_CAP).toBe(1.0)
+    expect(2 * SOFT_CAP + JITTER).toBeLessThanOrEqual(1.5)
+    // the smallest penalty or step that must never be overturned: the contundente repeat and the in-season step, 2.0
+    expect(2 * SOFT_CAP + JITTER).toBeLessThan(2.0)
   })
 
-  const score = (recipe: Recipe, season: 'invierno' | 'verano', rng: () => number, context?: ReturnType<typeof buildGoalLevelContext>) =>
-    scoreRecipe({ recipe, season, lastCategoria: null, lastContundente: null, rng, goalLevel: context })
+  test('clampSoft clamps both ways and leaves values inside the cap untouched', () => {
+    expect(clampSoft(0.5)).toBe(0.5) // the favourite alone is exactly at the cap: favourites-only menus do not change
+    expect(clampSoft(0.25)).toBe(0.25)
+    expect(clampSoft(0)).toBe(0)
+    expect(clampSoft(1.5)).toBe(0.5)
+    expect(clampSoft(-0.75)).toBe(-0.5)
+  })
 
-  // The favoured recipe is out of season (0) and the rival is `todo_el_ano` (+1): a base gap of exactly 1.0.
-  const outOfSeason = (id: string, overrides: Partial<Recipe>) => makeRecipe(id, 'comida', 'española', { temporada: ['verano'], ...overrides })
-  const yearRound = (id: string) => makeRecipe(id, 'comida', 'española', { temporada: ['todo_el_ano'] })
+  test('every single term stays within the cap on its own, so the cap only binds when terms stack', () => {
+    const costs = [...COST_ADJUSTMENT.values()]
+    expect(Math.max(...costs)).toBeLessThanOrEqual(SOFT_CAP)
+    expect(Math.min(...costs)).toBeGreaterThanOrEqual(-SOFT_CAP)
+    expect(LIGHT_BONUS).toBeLessThanOrEqual(SOFT_CAP)
+    expect(CUISINE_REPEAT_STEP * CUISINE_REPEAT_CAP).toBeLessThanOrEqual(SOFT_CAP)
+    expect(SHARED_INGREDIENT_STEP * SHARED_INGREDIENT_CAP).toBeLessThanOrEqual(SOFT_CAP)
+    for (const penalties of LEVEL_PENALTY.values()) expect(Math.max(...penalties.values())).toBeLessThanOrEqual(SOFT_CAP)
+  })
 
-  test('a favoured recipe never overturns a base gap of 1.0 (5000 random draws, each goal at its largest bonus)', () => {
-    const cases: [string, Partial<Recipe>, ReturnType<typeof buildGoalLevelContext>][] = []
-    const cheap = buildGoalLevelContext('ahorrar_dinero', null)!
-    cases.push(['cheap', { meta: { ...makeRecipe('x', 'comida', 'x').meta!, coste_estimado: 'muy_bajo' } }, cheap])
-    cases.push(['light', {}, buildGoalLevelContext('comer_sano', null)!])
-    const shared = buildGoalLevelContext('reducir_desperdicio', null)!
-    for (const name of ['kale', 'quinoa', 'tahini']) shared.usedIngredients.add(name)
-    cases.push(['shared', { ingredientes_principales: ['kale', 'quinoa', 'tahini'] }, shared])
-    for (const [label, overrides, context] of cases) {
-      const rngFav = lcg(11)
-      const rngPlain = lcg(12)
+  const context = buildGoalLevelContext('ahorrar_dinero', 'aprendiz')!
+  const favourites = new Set(['italiana'])
+  const score = (recipe: Recipe, rng: () => number, extra: Partial<Parameters<typeof scoreRecipe>[0]> = {}) =>
+    scoreRecipe({ recipe, season: 'invierno', lastCategoria: null, lastContundente: null, rng, goalLevel: context, favouriteCuisines: favourites, ...extra })
+  const meta = (coste: string, dificultad: string) => ({ ...makeRecipe('x', 'comida', 'x').meta!, coste_estimado: coste, dificultad }) as Recipe['meta']
+  // Best case for the soft terms: favourite cuisine + cheapest + easiest (soft +0.75 uncapped, +0.5 capped).
+  const best = (overrides: Partial<Recipe> = {}) => makeRecipe('best', 'comida', 'italiana', { meta: meta('muy_bajo', 'muy_facil'), ...overrides })
+  // Worst case: not a favourite, most expensive, hardest (soft -0.75 uncapped, -0.5 capped).
+  const worst = (overrides: Partial<Recipe> = {}) => makeRecipe('worst', 'comida', 'española', { meta: meta('alto', 'avanzada'), ...overrides })
+
+  test('all soft terms stacked (favourite + ahorrar_dinero + aprendiz) never overturn a base gap of 1.5 (5000 draws)', () => {
+    // Base gap 1.5: the worst recipe has five global cooks (+1.5), the best has none.
+    const rngBest = lcg(31)
+    const rngWorst = lcg(32)
+    for (let i = 0; i < 5000; i++) {
+      const high = score(best({ temporada: ['verano'] }), rngBest)
+      const low = score(worst({ temporada: ['verano'], veces_cocinada: 5 }), rngWorst)
+      expect(low).toBeGreaterThan(high)
+    }
+  })
+
+  test('at a base gap of exactly 1.0 the stacked best recipe CAN win: the accepted exception, with the exact observed rate', () => {
+    const rngBest = lcg(41)
+    const rngWorst = lcg(42)
+    let bestWins = 0
+    for (let i = 0; i < 5000; i++) {
+      // best is out of season (0), worst is `todo_el_ano` (+1): base gap 1.0 in favour of the worst.
+      const high = score(best({ temporada: ['verano'] }), rngBest)
+      const low = score(worst({ temporada: ['todo_el_ano'] }), rngWorst)
+      if (high > low) bestWins++
+    }
+    // Soft difference is exactly 1.0, so the best wins when its jitter beats the rival's: about half of the draws.
+    expect(bestWins).toBe(BEST_WINS_AT_GAP_1)
+  })
+
+  test('without the cap the same stack WOULD overturn a gap of 1.5 (why the cap exists)', () => {
+    expect(0.5 + 0.25 + 0.5 - (-0.25 - 0.5)).toBeGreaterThan(1.5 - JITTER) // uncapped span 2.0 against gap 1.5
+    expect(2 * SOFT_CAP).toBeLessThan(1.5 - JITTER + 0.5) // capped span 1.0
+  })
+
+  test('the soft-best recipe carrying a penalty of 2.0 or more always loses to the soft-worst one without it (5000 draws each)', () => {
+    const clasif = (categoria: string, cocina: string, es_contundente: boolean) => ({ tipo_plato: 'comida', categoria, cocina, es_contundente }) as Recipe['clasificacion']
+    const penalties: [string, Partial<Recipe>, Partial<Parameters<typeof scoreRecipe>[0]>][] = [
+      ['category repeat -5', { clasificacion: clasif('pasta', 'italiana', false) }, { lastCategoria: 'pasta' }],
+      ['contundente repeat -2', { clasificacion: clasif('sopa', 'italiana', true) }, { lastContundente: true }],
+      ['global discard -4', { veces_descartada: 3 }, {}],
+    ]
+    for (const [label, penalised, extra] of penalties) {
+      const rngPenalised = lcg(51)
+      const rngClean = lcg(52)
       for (let i = 0; i < 5000; i++) {
-        const favoured = score(outOfSeason(label, overrides), 'invierno', rngFav, context)
-        const rival = score(yearRound('rival'), 'invierno', rngPlain)
-        expect(rival, label).toBeGreaterThan(favoured)
+        const high = score(best({ temporada: ['todo_el_ano'], ...penalised }), rngPenalised, extra)
+        const low = score(worst({ temporada: ['todo_el_ano'] }), rngClean, extra)
+        expect(low, label).toBeGreaterThan(high)
       }
     }
   })
 
-  test('a penalised recipe still wins a base gap of 1.0 in its favour (5000 random draws, each penalty at its largest)', () => {
-    const cases: [string, Partial<Recipe>, ReturnType<typeof buildGoalLevelContext>][] = []
-    cases.push(['costly', { meta: { ...makeRecipe('x', 'comida', 'x').meta!, coste_estimado: 'alto' } }, buildGoalLevelContext('ahorrar_dinero', null)!])
-    cases.push(['advanced-aprendiz', { meta: { ...makeRecipe('x', 'comida', 'x').meta!, dificultad: 'avanzada' } }, buildGoalLevelContext(null, 'aprendiz')!])
-    cases.push(['advanced-novato', { meta: { ...makeRecipe('x', 'comida', 'x').meta!, dificultad: 'avanzada' } }, buildGoalLevelContext(null, 'novato')!])
-    const repeated = buildGoalLevelContext('comer_variado', null)!
-    repeated.cuisineCounts.set('espanola', 9)
-    cases.push(['same-cuisine', {}, repeated])
-    for (const [label, overrides, context] of cases) {
-      const rngPen = lcg(21)
-      const rngPlain = lcg(22)
-      for (let i = 0; i < 5000; i++) {
-        // The penalised recipe is `todo_el_ano` (+1) and the rival is out of season (0): a base gap of 1.0 for it.
-        const penalised = score({ ...yearRound(label), ...overrides }, 'invierno', rngPen, context)
-        const rival = score(outOfSeason('rival', {}), 'invierno', rngPlain)
-        expect(penalised, label).toBeGreaterThan(rival)
-      }
+  test('in-season step (2.0): the soft-worst recipe in season always beats the soft-best one that is only `todo_el_ano` (5000 draws)', () => {
+    const rngBest = lcg(71)
+    const rngWorst = lcg(72)
+    for (let i = 0; i < 5000; i++) {
+      const high = score(best({ temporada: ['todo_el_ano'] }), rngBest)
+      const low = score(worst({ temporada: ['invierno'] }), rngWorst)
+      expect(low).toBeGreaterThan(high)
     }
   })
 
-  test('the category-repeat penalty (-5) still beats the largest bonus at the worst jitter', () => {
-    const context = buildGoalLevelContext('comer_sano', null)!
-    const repeated = makeRecipe('r', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'española', es_ligero: true } as Recipe['clasificacion'] })
-    const fresh = makeRecipe('f', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'sopa', cocina: 'española', es_ligero: false } as Recipe['clasificacion'] })
-    const fav = scoreRecipe({ recipe: repeated, season: 'invierno', lastCategoria: 'pasta', lastContundente: null, rng: () => 0.999999, goalLevel: context })
-    const non = scoreRecipe({ recipe: fresh, season: 'invierno', lastCategoria: 'pasta', lastContundente: null, rng: () => 0 })
-    expect(non).toBeGreaterThan(fav)
+  test('odd data (prototype keys) never produces NaN', () => {
+    const odd = makeRecipe('odd', 'comida', 'española', { meta: meta('constructor', '__proto__') })
+    for (const key of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+      expect(buildGoalLevelContext(key, key)).toBeUndefined()
+      const odder = makeRecipe('odder', 'comida', 'española', { meta: meta(key, key) })
+      expect(Number.isFinite(score(odder, () => 0.1))).toBe(true)
+    }
+    expect(Number.isFinite(score(odd, () => 0.1))).toBe(true)
+    expect(goalLevelAdjustment(odd, buildGoalLevelContext('ahorrar_dinero', 'aprendiz')!)).toBe(0)
   })
 
   test('the new terms never draw from the rng, so the order of draws is unchanged', () => {
     let draws = 0
     const counting = () => { draws++; return 0 }
-    const context = buildGoalLevelContext('reducir_desperdicio', 'aprendiz')!
-    scoreRecipe({ recipe: yearRound('a'), season: 'invierno', lastCategoria: null, lastContundente: null, rng: counting, goalLevel: context })
+    scoreRecipe({ recipe: best(), season: 'invierno', lastCategoria: null, lastContundente: null, rng: counting, goalLevel: buildGoalLevelContext('reducir_desperdicio', 'aprendiz'), favouriteCuisines: favourites })
     expect(draws).toBe(1)
     const source = readFileSync(new URL('./goal-level.ts', import.meta.url), 'utf8').split('\n').filter(line => !/^\s*(\/\/|\/\*|\*)/.test(line)).join('\n')
     expect(source).not.toMatch(/rng|Math\.random/)
