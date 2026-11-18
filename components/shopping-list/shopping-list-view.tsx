@@ -10,6 +10,7 @@ import { ExportActions } from '@/components/shopping-list/export-actions';
 import { ReceiptTicket } from '@/components/shopping-list/receipt-ticket';
 import { ShoppingListAisle } from '@/components/shopping-list/shopping-list-aisle';
 import { ShoppingListAllBought } from '@/components/shopping-list/shopping-list-all-bought';
+import { ShoppingListComparison } from '@/components/shopping-list/shopping-list-comparison';
 import { cobertura, totalDeLista } from '@/components/shopping-list/shopping-list-format';
 import { ShoppingListItemRow } from '@/components/shopping-list/shopping-list-item-row';
 import { ShoppingListStaleBanner } from '@/components/shopping-list/shopping-list-stale-banner';
@@ -19,6 +20,7 @@ import { useShakeItem } from '@/components/shopping-list/use-shake-item';
 import { useShoppingList } from '@/components/shopping-list/use-shopping-list';
 import { useListEnterAnimation } from '@/components/ui/use-list-enter-animation';
 import { claveItemCompra, nombresDeCadenas } from '@/lib/grocery/compra';
+import { estimarCadenas, totalesReales } from '@/lib/grocery/estimacion-cadenas';
 
 export interface ShoppingListViewProps {
   list: ShoppingListPersistido
@@ -115,6 +117,12 @@ export function ShoppingListView({ list, nuevosNombres = EMPTY_NOMBRES, compra }
         total={totalDeLista({ pasillos, compra })}
         cobertura={cobertura({ pasillos, compra })}
         fuentesPrecios={fuentesPrecios}
+      />
+
+      {/* FRESCO-1222: real totals for the chains we hold data for, a labelled estimate for the rest. */}
+      <ShoppingListComparison
+        reales={totalesReales({ pasillos, compra })}
+        estimadas={estimarCadenas({ pasillos, compra })}
       />
 
       {/* FRESCO-1014 (A7-UI-10): a toast pinned above the tab bar, not a paragraph under the summary that a
