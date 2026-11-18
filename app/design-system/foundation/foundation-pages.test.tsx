@@ -27,6 +27,22 @@ describe('design-system Foundation pages', () => {
     expect(screen.getByTestId('design_system_type_display_light')).toBeInTheDocument();
   });
 
+  test('typography: names the real fonts with their role and a sample, never the CSS stack (FRESCO-1234)', () => {
+    const { container } = renderWithProviders(<TypographyPage />);
+
+    const heading = screen.getByTestId('design_system_font_heading');
+    const sans = screen.getByTestId('design_system_font_sans');
+
+    expect(heading).toHaveTextContent('Young Serif');
+    expect(heading).toHaveTextContent('h1 y h2');
+    expect(sans).toHaveTextContent('Figtree');
+    expect(screen.getByTestId('design_system_font_heading_sample')).toHaveClass('font-heading');
+    expect(screen.getByTestId('design_system_font_sans_sample')).toHaveClass('font-sans');
+    for (const forbidden of ['var(--', 'Georgia', 'Times New Roman', '-apple-system']) {
+      expect(container.textContent).not.toContain(forbidden);
+    }
+  });
+
   test('icons: renders a tile per lucide icon and the CSS glyphs', () => {
     renderWithProviders(<IconsPage />);
 

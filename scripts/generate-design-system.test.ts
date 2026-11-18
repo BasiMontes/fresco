@@ -61,14 +61,8 @@ describe('extractTheme', () => {
 });
 
 describe('parseTypography', () => {
-  test('names the missing font stack', () => {
-    expect(() => parseTypography('--font-sans: x;')).toThrow('--font-heading');
-  });
-
-  test('reads each step with its metrics and the font stacks', () => {
-    const css = `--font-heading: var(--x), serif;
-      --font-sans: var(--y), sans-serif;
-      --text-h1: 44px;
+  test('reads each step with its metrics', () => {
+    const css = `--text-h1: 44px;
       --text-h1--line-height: 1.04;
       --text-h1--letter-spacing: -0.025em;
       --text-h1--font-weight: 400;
@@ -77,7 +71,6 @@ describe('parseTypography', () => {
       --text-caption--font-weight: 400;`;
 
     expect(parseTypography(css)).toEqual({
-      fonts: { heading: 'var(--x), serif', sans: 'var(--y), sans-serif' },
       steps: [
         { step: 'h1', size: '44px', lineHeight: '1.04', letterSpacing: '-0.025em', fontWeight: '400' },
         { step: 'caption', size: '12px', lineHeight: '1.3', letterSpacing: null, fontWeight: '400' },

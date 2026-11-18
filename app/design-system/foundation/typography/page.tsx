@@ -1,4 +1,5 @@
-import { FONT_STACKS, TYPE_STEPS } from '@/components/design-system/generated';
+import { FONT_FAMILIES } from '@/components/design-system/fonts';
+import { TYPE_STEPS } from '@/components/design-system/generated';
 import { testIdPart } from '@/components/design-system/test-id';
 
 // Literal class names: Tailwind only emits the utilities it finds written out in the source.
@@ -20,7 +21,15 @@ export default function TypographyPage() {
   return (
     <div data-testid="design_system_typography">
       <h1 className="text-h2">Tipografía</h1>
-      <p className="mt-2 text-body-md text-tertiary">{`Títulos: ${FONT_STACKS.heading}. Texto: ${FONT_STACKS.sans}.`}</p>
+      <ul className="mt-4 flex flex-col gap-4 sm:flex-row">
+        {FONT_FAMILIES.map(font => (
+          <li key={font.key} data-testid={`design_system_font_${font.key}`} className="flex-1 rounded-card border border-border bg-surface-raised p-4">
+            <p className="text-label">{font.name}</p>
+            <p className="mt-1 text-body-sm text-tertiary">{font.role}</p>
+            <p data-testid={`design_system_font_${font.key}_sample`} className={`mt-3 ${font.sampleClass}`}>Menús que aprenden de lo que cocinas</p>
+          </li>
+        ))}
+      </ul>
       <ul className="mt-6 flex flex-col gap-4">
         {TYPE_STEPS.map(({ step, size, lineHeight, letterSpacing, fontWeight }) => (
           <li key={step} data-testid={`design_system_type_${testIdPart(step)}`} className="rounded-card border border-border bg-surface-raised p-4">

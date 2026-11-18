@@ -46,11 +46,6 @@ export const COLOR_TOKENS = [
   { name: 'neutral-900', light: '#2f281c', dark: '#e6dcc4' },
 ] as const;
 
-export const FONT_STACKS = {
-  heading: 'var(--font-heading-face), Georgia, \'Times New Roman\', serif',
-  sans: 'var(--font-body-face), Figtree, -apple-system, BlinkMacSystemFont, sans-serif',
-} as const;
-
 export const TYPE_STEPS = [
   { step: 'h1', size: '44px', lineHeight: '1.04', letterSpacing: '-0.025em', fontWeight: '400' },
   { step: 'h2', size: '32px', lineHeight: '1.08', letterSpacing: '-0.02em', fontWeight: '400' },
