@@ -2,6 +2,7 @@
 
 import type * as React from 'react';
 import type { DietaFlag } from '@/lib/store/onboarding-store';
+import { FreeTextSuggestions } from '@/components/onboarding/free-text-suggestions';
 import { HealthConsentBlock } from '@/components/onboarding/health-consent-block';
 import { LockInfoTooltip } from '@/components/onboarding/lock-info-tooltip';
 import { Input } from '@/components/ui/input';
@@ -121,6 +122,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
         className="mt-2"
       />
       <p id="dieta_texto_libre_aviso" data-testid="dieta_texto_libre_aviso" className="mt-1 text-body-sm text-tertiary">{TEXTO_LIBRE_SIN_FILTRO}</p>
+      <FreeTextSuggestions text={dietaTextoLibre} kinds={['alergeno']} testIdPrefix="dieta_texto_libre" />
 
       <h2 className="mt-6 text-h5">¿Algún alérgeno que debamos evitar?</h2>
       <p data-testid="alergenos_aviso" className="mt-1 text-body-sm text-tertiary">{ALERGENOS_AVISO}</p>
@@ -185,6 +187,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
         className="mt-2"
       />
       <p id="ingredientes_odiados_texto_libre_aviso" data-testid="ingredientes_odiados_texto_libre_aviso" className="mt-1 text-body-sm text-tertiary">{TEXTO_LIBRE_SIN_FILTRO}</p>
+      <FreeTextSuggestions text={ingredientesOdiadosTextoLibre} kinds={['alergeno', 'ingrediente']} testIdPrefix="ingredientes_odiados_texto_libre" />
 
       {/* FRESCO-371: cuisines folded in from the old standalone step 3
           so the wizard fits the PRD's 3-step limit — it's the same
