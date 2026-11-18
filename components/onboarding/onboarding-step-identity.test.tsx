@@ -30,20 +30,37 @@ describe('OnboardingStepIdentity', () => {
     expect(useOnboardingStore.getState().nombre).toBe('Marta');
   });
 
+  test('shows every goal and level as a visible radio card', () => {
+    renderStep();
+    expect(screen.getByRole('radiogroup', { name: 'Objetivo' })).toBeInTheDocument();
+    expect(screen.getAllByRole('radio', { name: /Perder peso|Comer sano|Ahorrar dinero|Ganar masa muscular|Comer más variado|Reducir desperdicio/ })).toHaveLength(6);
+    expect(screen.getByRole('radiogroup', { name: 'Nivel de experiencia culinaria' })).toBeInTheDocument();
+    expect(screen.getByText(/Estoy empezando/)).toBeInTheDocument();
+  });
+
   test('choosing a goal writes it to the store', async () => {
     renderStep();
-    const user = setupUser();
-    await user.click(screen.getByTestId('objetivo_dropdown'));
-    await user.click(await screen.findByText('Comer sano'));
+    await setupUser().click(screen.getByTestId('objetivo_group_option_comer_sano'));
     expect(useOnboardingStore.getState().objetivo).toBe('comer_sano');
+    expect(screen.getByTestId('objetivo_group_option_comer_sano')).toBeChecked();
   });
 
   test('choosing a cooking level writes it to the store', async () => {
     renderStep();
+    await setupUser().click(screen.getByTestId('nivel_experiencia_group_option_novato'));
+    expect(useOnboardingStore.getState().nivelExperiencia).toBe('novato');
+  });
+
+  test('arrow keys move the goal selection', async () => {
     const user = setupUser();
-    await user.click(screen.getByTestId('nivel_experiencia_dropdown'));
-    const options = await screen.findAllByRole('option');
-    await user.click(options[0]);
-    expect(useOnboardingStore.getState().nivelExperiencia).not.toBeNull();
+    renderStep();
+    await user.click(screen.getByTestId('objetivo_group_option_perder_peso'));
+    await user.keyboard('{ArrowRight}');
+    expect(useOnboardingStore.getState().objetivo).toBe('comer_sano');
+  });
+
+  test('promises no menu effect for goal or level (neither reaches generation yet)', () => {
+    renderStep();
+    expect(screen.queryByText(/Esto cambia tu menú/)).toBeNull();
   });
 });
