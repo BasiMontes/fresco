@@ -51,7 +51,7 @@ const BUCKET_MIDPOINT_EUROS: Record<CosteEstimado, number> = {
  * It is a tie-breaker, sized by arithmetic: the jitter in `scoreRecipe` is `rng() * 0.5`, so two recipes
  * separated by a gap of at least 1.0 can already be reordered by at most 0.5 of noise, and a bonus of 0.5 or
  * less cannot invert any gap of 1.0 or more. Every other signal moves the score by at least that much: the
- * in-season term (+3 vs +1 for `todo_el_ano`, a 1.0 step at the narrowest), each personal cook (+1.0,
+ * in-season term (+3 in season, +1 for `todo_el_ano`, 0 out of season: steps of 2.0 and 1.0, the narrowest being 1.0), each personal cook (+1.0,
  * ADR-0008), the contundente repeat (-2), the category repeat (-5), the global discard (-4) and the personal
  * discard (-6). Only the global cook count (+0.3 per cook) has steps smaller than the bonus, and that is the
  * "otherwise comparable recipes" this bonus is meant to lean. Do NOT raise it to 1.0 or more: a favourite

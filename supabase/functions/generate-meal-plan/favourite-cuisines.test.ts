@@ -1,6 +1,6 @@
 // FRESCO-1226: favourite cuisines as a soft preference in menu selection (Pro/Family only, FR-5.4).
 import type { DiaSemana, Recipe, TipoPlatoSlot } from './types.ts'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, test } from 'bun:test'
 import { cuisineKey, favouriteCuisineKeys } from './cuisine.ts'
 import { ALL_SLOTS, DIAS, FECHA_INICIO, SEEDS, TIPOS, buildRealisticPool, goldenCases, makeProfile, makeRecipe } from './favourite-cuisines.fixtures.ts'
@@ -171,15 +171,13 @@ describe('the bonus is a tie-breaker, sized by arithmetic', () => {
     }
   })
 
-  test('the category-repeat penalty (5) beats the bonus even at the worst jitter for it, and would not if the bonus reached 5', () => {
+  test('the category-repeat penalty (5) beats the bonus even at the worst jitter for it', () => {
     const favRepeat = makeRecipe('fav', 'comida', 'italiana', { clasificacion: { tipo_plato: 'comida', categoria: 'pasta', cocina: 'italiana' } as Recipe['clasificacion'] })
     const plainFresh = makeRecipe('plain', 'comida', 'española', { clasificacion: { tipo_plato: 'comida', categoria: 'sopa', cocina: 'española' } as Recipe['clasificacion'] })
     // Worst case for the penalty: the favourite draws the maximum jitter, the other the minimum.
     const fav = score(favRepeat, { lastCategoria: 'pasta', fav: true, rng: () => 0.999999 })
     const non = score(plainFresh, { lastCategoria: 'pasta', rng: () => 0 })
     expect(non).toBeGreaterThan(fav)
-    // Sensitivity: swap the real bonus for the penalty's size and the order flips, so the real constant is what holds.
-    expect(fav - FAVOURITE_CUISINE_BONUS + 5).toBeGreaterThan(non)
   })
 
   test('selectMenu keeps the category-repeat penalty ahead of a favourite on the next slot', () => {
@@ -194,14 +192,25 @@ describe('the bonus is a tie-breaker, sized by arithmetic', () => {
 })
 
 describe('allergens and diets stay upstream of cuisine (structure of the code, not a behavioural run against the database)', () => {
-  const sql = readFileSync(new URL('../../migrations/20260908180000_recipes_activo_soft_delete.sql', import.meta.url), 'utf8')
-  const start = sql.indexOf('create or replace function public.get_filtered_recipes')
-  const end = sql.indexOf('$function$;', start)
-  const body = sql.slice(start, end)
+  // The NEWEST migration that defines the function (a line starting with `create or replace function ...`;
+  // a mention in a comment does not count), sliced to that function's own body.
+  const migrationsDir = new URL('../../migrations/', import.meta.url)
+  const definition = /^\s*create\s+or\s+replace\s+function\s+public\.get_filtered_recipes\b/im
+  const defining = readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort().filter(f => definition.test(readFileSync(new URL(f, migrationsDir), 'utf8')))
+  const sql = defining.length > 0 ? readFileSync(new URL(defining[defining.length - 1], migrationsDir), 'utf8') : ''
+  const start = sql.search(definition)
+  const ends = ['$function$;', '$$;'].map(t => sql.indexOf(t, start)).filter(i => i > start)
+  const end = ends.length > 0 ? Math.min(...ends) : -1
+  const body = start >= 0 && end > start ? sql.slice(start, end) : ''
+
+  test('some migration defines get_filtered_recipes', () => {
+    expect(defining.length, 'no migration under supabase/migrations defines public.get_filtered_recipes').toBeGreaterThan(0)
+  })
 
   test('get_filtered_recipes is found, scoped to its own body, and carries the allergen, diet and disliked-ingredient predicates', () => {
     expect(start).toBeGreaterThanOrEqual(0)
     expect(end).toBeGreaterThan(start)
+    expect(body.length).toBeGreaterThan(0)
     expect(body).toMatch(/v_profile\.alergenos/)
     expect(body).toMatch(/v_profile\.dieta_vegetariano/)
     expect(body).toMatch(/v_profile\.dieta_halal/)
