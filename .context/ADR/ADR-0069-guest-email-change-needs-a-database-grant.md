@@ -1,8 +1,8 @@
 # ADR-0069 — A guest's pending email can only be written with a one-shot database grant
 
-- **Status:** Proposed
+- **Status:** Accepted <!-- Proposed | Accepted | Superseded by ADR-MMMM | Deprecated -->
 - **Date:** 2026-11-03
-- **Deciders:** Founder (approval pending); drafted by AI workflow (FRESCO-1085, audit 8 A8-ABUSE-01, eje Seguridad)
+- **Deciders:** Basi Montes (accepted 2026-11-18 after a review of the shipped migration, route and tests); drafted by AI workflow (FRESCO-1085, audit 8 A8-ABUSE-01, eje Seguridad)
 - **Tags:** authentication, guest-mode, abuse-control, security, cross-cutting-invariant
 - **Supersedes:** —
 - **Superseded by:** —
