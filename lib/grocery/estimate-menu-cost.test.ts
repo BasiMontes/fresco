@@ -77,6 +77,23 @@ describe('packPrice', () => {
     expect(packPrice(real, new Date(fecha + 40 * dia))).not.toBe(real.precios[0].precioEnvase);
   });
 
+  // FRESCO-1237: same rule as the list total and the comparison card (`precioCuentaComoVigente`).
+  test('a price with no date falls back to the average price, as a hidden one does; recent and old prices still count', () => {
+    const real = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
+    const fecha = new Date(real.precios[0].observadoEn).getTime();
+    const dia = 86_400_000;
+    const precio = real.precios[0].precioEnvase;
+    const sinFecha = { ...real, precios: [{ ...real.precios[0], observadoEn: 'sin fecha' }] };
+    const epoch = { ...real, precios: [{ ...real.precios[0], observadoEn: new Date(0).toISOString() }] };
+    const oculto = packPrice(real, new Date(fecha + 40 * dia));
+
+    expect(packPrice(real, new Date(fecha + 3 * dia))).toBe(precio);
+    expect(packPrice(real, new Date(fecha + 20 * dia))).toBe(precio);
+    expect(packPrice(sinFecha, new Date(fecha))).not.toBe(precio);
+    expect(packPrice(sinFecha, new Date(fecha))).toBe(oculto);
+    expect(packPrice(epoch, new Date(fecha))).toBe(oculto);
+  });
+
   test('ingrediente con match real de Mercadona (aceite de oliva) usa el precio de envase de precios', () => {
     const real = mapShoppingListItem({ nombre: 'aceite de oliva', cantidad: 50, unidad: 'ml' });
     expect(real.origenEnvase).toBe('mercadona');
