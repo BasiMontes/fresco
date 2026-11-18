@@ -9,7 +9,7 @@ import { Tag } from '@/components/ui/tag';
 import { ALERGENO_OPTIONS, ALERGENOS_AVISO, impliedAlergenos, INGREDIENTE_ODIADO_OPTIONS, TEXTO_LIBRE_SIN_FILTRO } from '@/lib/constants/dietary-options';
 import { TEXTO_LIBRE_MAX_LENGTH } from '@/lib/constants/profile-limits';
 import { collectsHealthData } from '@/lib/onboarding/health-data-consent';
-import { alergenoLockMessage, COCINA_OPTIONS, DIETA_OPTIONS, UNSELECTED_CHIP_CLASS } from '@/lib/onboarding/wizard-options';
+import { alergenoLockMessage, COCINA_OPTIONS, COCINAS_PRO_AVISO, DIETA_OPTIONS, UNSELECTED_CHIP_CLASS } from '@/lib/onboarding/wizard-options';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
 
 export interface OnboardingStepDietProps {
@@ -190,6 +190,7 @@ export function OnboardingStepDiet({ headingRef }: OnboardingStepDietProps) {
           so the wizard fits the PRD's 3-step limit — it's the same
           kind of low-friction chip input as the rows above. */}
       <h2 className="mt-6 text-h5">¿Cuáles son tus cocinas favoritas?</h2>
+      <p data-testid="cocinas_pro_aviso" className="mt-1 text-body-sm text-tertiary">{COCINAS_PRO_AVISO}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {COCINA_OPTIONS.map(option => (
           <button

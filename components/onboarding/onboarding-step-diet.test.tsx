@@ -141,3 +141,39 @@ describe('OnboardingStepDiet — free-text boxes (FRESCO-1000, audit 7b A7-LOGIC
     expect(screen.getByTestId('alergenos_aviso')).toHaveTextContent('revisa siempre las etiquetas');
   });
 });
+
+describe('OnboardingStepDiet — favourite cuisines notice (FRESCO-1232)', () => {
+  test('the notice is exactly one element and precedes the first cuisine chip', () => {
+    render();
+
+    expect(screen.getAllByTestId('cocinas_pro_aviso')).toHaveLength(1);
+    const heading = screen.getByRole('heading', { name: '¿Cuáles son tus cocinas favoritas?' });
+    const notice = screen.getByTestId('cocinas_pro_aviso');
+    const firstChip = screen.getAllByTestId('cocina_option')[0];
+
+    expect(heading.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notice.compareDocumentPosition(firstChip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test('it says the personalization is Pro-only and never claims the cuisines change the menu for everyone', () => {
+    render();
+
+    const notice = screen.getByTestId('cocinas_pro_aviso');
+
+    expect(notice).toHaveTextContent('Las cocinas favoritas personalizan el menú solo en Pro');
+    expect(notice).toHaveTextContent('sin descartar el resto');
+    expect(notice.textContent).not.toMatch(/Esto cambia tu menú/);
+  });
+
+  test('the free-text cuisines box is not linked to the notice and sits outside it', () => {
+    render();
+
+    const input = screen.getByTestId('cocinas_texto_libre_input');
+    const notice = screen.getByTestId('cocinas_pro_aviso');
+
+    expect(input).not.toHaveAttribute('aria-describedby');
+    expect(notice.contains(input)).toBe(false);
+    expect(input.contains(notice)).toBe(false);
+    expect(notice.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

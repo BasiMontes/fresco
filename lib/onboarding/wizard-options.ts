@@ -49,6 +49,12 @@ export const COCINA_OPTIONS: { value: TipoCocina, label: string }[] = [
   { value: 'internacional', label: 'Internacional' },
 ];
 
+// FRESCO-1232: favourite cuisines only shape the generated menu for Pro users
+// (FRESCO-1226). The onboarding does not know the user's plan, so the notice is
+// worded to be true for both: it names the Pro condition and never claims the
+// cuisines change the menu for everyone.
+export const COCINAS_PRO_AVISO = 'Las cocinas favoritas personalizan el menú solo en Pro: prefiriremos estas cocinas sin descartar el resto.';
+
 // FRESCO-451 (slice 4/5, densidad y restraint): step 2 packs ~25 chips
 // across 4 groups (dieta, alérgenos, ingredientes, cocinas) — the shared
 // `outline` Tag variant borders every one of them in full brand-primary
