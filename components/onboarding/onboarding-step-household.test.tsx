@@ -41,6 +41,56 @@ describe('OnboardingStepHousehold', () => {
     expect(useOnboardingStore.getState().ninos).toBe(1);
   });
 
+  test('the - and + buttons change the household and stop at the limits', async () => {
+    renderStep();
+    const user = setupUser();
+    await user.click(screen.getByTestId('adultos_input_increment'));
+    expect(useOnboardingStore.getState().adultos).toBe(3);
+    await user.click(screen.getByTestId('ninos_input_increment'));
+    expect(useOnboardingStore.getState().ninos).toBe(1);
+    await user.click(screen.getByTestId('ninos_input_decrement'));
+    expect(useOnboardingStore.getState().ninos).toBe(0);
+    expect(screen.getByTestId('ninos_input_decrement')).toBeDisabled();
+  });
+
+  test('adults cannot go below one with the buttons', () => {
+    useOnboardingStore.getState().setAdultos(1);
+    renderStep();
+    expect(screen.getByTestId('adultos_input_decrement')).toBeDisabled();
+  });
+
+  test('says household size changes the menu, with the right head count', () => {
+    renderStep();
+    expect(screen.getByTestId('household_effect_hint')).toHaveTextContent('Esto cambia tu menú');
+    expect(screen.getByTestId('household_effect_hint')).toHaveTextContent('2 personas');
+  });
+
+  test('the budget shows an EUR suffix and a per-person help line once filled', () => {
+    useOnboardingStore.getState().setPresupuestoSemanaEuros(80);
+    renderStep();
+    expect(screen.getByText('EUR')).toBeInTheDocument();
+    expect(screen.getByTestId('presupuesto_help')).toHaveTextContent('40 EUR por persona');
+  });
+
+  test('the per-person figure uses the Spanish decimal comma', () => {
+    useOnboardingStore.getState().setAdultos(2);
+    useOnboardingStore.getState().setNinos(1);
+    useOnboardingStore.getState().setPresupuestoSemanaEuros(80);
+    renderStep();
+    expect(screen.getByTestId('presupuesto_help')).toHaveTextContent('26,7 EUR por persona');
+  });
+
+  test('the EUR unit is exposed to screen readers, not hidden', () => {
+    renderStep();
+    expect(screen.getByText('EUR')).not.toHaveAttribute('aria-hidden');
+  });
+
+  test('the budget help line is generic while the budget is empty', () => {
+    renderStep();
+    expect(screen.getByTestId('presupuesto_help')).toHaveTextContent('Opcional');
+    expect(screen.getByTestId('presupuesto_help')).not.toHaveTextContent('por persona y semana');
+  });
+
   test('the budget is stored as a number, and clearing it stores null', () => {
     renderStep();
     fireEvent.change(screen.getByTestId('presupuesto_input'), { target: { value: '80' } });

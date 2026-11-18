@@ -18,6 +18,17 @@ export interface LineaCompra {
   /** What the row costs: the linked product's whole-pack price times the packs, else the stored estimate. */
   precio: number | undefined
   enlaces: EnlaceSupermercado[]
+  /**
+   * FRESCO-1222 — set by the server only for a house-brand staple row with a showable Mercadona price: the figure the
+   * labelled chain estimate is built from (`estimacion-cadenas.ts`). Plain data, so no catalog reaches the browser.
+   */
+  precioBaseEstimacion?: number
+  /**
+   * FRESCO-1222 — the price of the linked product alone (whole pack times packs), set only when the link has a valid
+   * price. Unlike `precio` it never falls back to the stored per-gram estimate, so the comparison card can tell a
+   * chain's price from a guess.
+   */
+  precioEnlazado?: number
 }
 
 export type CompraPorItem = Readonly<Record<string, LineaCompra>>;

@@ -27,7 +27,7 @@ Four staples have an identical unit price in three chains (milk 0.96, rice 1.20,
 - About 20 observations in total, mostly house brands and staples. Fresh produce, manufacturer brands and premium lines were not measured, and the gap is likely larger there.
 - Prices come from search-engine copies, so date and delivery zone are uncertain.
 - Promotions distort single points (Ahorramas rice, Alcampo milk and cheese).
-- Garbanzos and pasta were dropped as not comparable. Garbanzos cooked cost 2.00 EUR/kg at Alcampo and Eroski against 3.22 EUR/kg in our Mercadona catalog, so that catalog match may point at a pricier product. Not verified: open its `shareUrl`.
+- Garbanzos and pasta were first dropped as not comparable. FRESCO-1223 (2026-11-18) found the cause: the Mercadona catalog linked a prepared stew ("Garbanzos a la riojana", 3.22 EUR/kg) for garbanzos and a manufacturer-brand pasta (2.80 EUR/kg), both now pinned to the plain house-brand products. Garbanzos are comparable after all: cooked chickpeas cost 2.00 EUR/kg at Mercadona, Alcampo and Eroski (ratio 1.00). Pasta in the catalog is now 1.70 EUR/kg, in line with the 1.70 EUR/kg macaroni seen at Dia. The 3.22 EUR/kg gap was a matching error, not a price difference between chains.
 - OCU publishes a chain price index, but its legal notice forbids reproducing, quoting or transforming its content. It was not used as a source and is not usable in the product.
 
 ## Recommendation
