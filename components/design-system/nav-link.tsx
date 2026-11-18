@@ -2,12 +2,26 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
-/** FRESCO-1229: a sidebar link that knows whether it points at the page being shown (`aria-current="page"`). */
-export function NavLink({ href, label, className }: { href: string, label: string, className?: string }) {
-  const pathname = usePathname();
+/**
+ * FRESCO-1229 / FRESCO-1231: a sidebar link. No permanent underline (a column of underlined links is
+ * noise). At rest it is the muted `tertiary` text; hover underlines it; the page being shown is
+ * `primary` and semibold, and says so to assistive tech with `aria-current="page"`. Keyboard focus
+ * gets the app-wide `:focus-visible` outline from `globals.css`. `tertiary` on the page background
+ * is about 5.6:1 in light and 7:1 in dark, over the 4.5:1 AA floor.
+ */
+export function NavLink({ href, label }: { href: string, label: string }) {
+  const isCurrent = usePathname() === href;
   return (
-    <Link href={href} aria-current={pathname === href ? 'page' : undefined} className={className}>
+    <Link
+      href={href}
+      aria-current={isCurrent ? 'page' : undefined}
+      className={cn(
+        'text-body-sm underline-offset-4 hover:text-primary hover:underline',
+        isCurrent ? 'font-semibold text-primary' : 'text-tertiary',
+      )}
+    >
       {label}
     </Link>
   );

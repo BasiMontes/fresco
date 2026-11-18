@@ -13,7 +13,7 @@ function NavSection({ title, links }: { title: string, links: { label: string, h
       <h2 className="text-label">{title}</h2>
       <ul className="mt-2 flex flex-col gap-1">
         {links.map(({ label, href }) => (
-          <li key={href}><NavLink href={href} label={label} className="text-body-sm text-primary underline" /></li>
+          <li key={href}><NavLink href={href} label={label} /></li>
         ))}
       </ul>
     </div>
