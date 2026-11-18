@@ -240,10 +240,13 @@ runInTarget(['bun', 'install', '--frozen-lockfile'], 'bun install');
 runInTarget(['bun', 'run', 'agents:compat'], 'bun run agents:compat');
 
 // FRESCO-1238: the varlock schema files (`.env.core.schema`, `.env.schema`) are
-// gitignored, so a fresh worktree has none. Generate them here (names and
-// markers only, never a value) so no session has to do it by hand when the
-// pre-commit gate asks, and so the schema state is the same in every worktree.
-// Skipped where the target has no `vars:schema` script (older sync).
+// gitignored, so a fresh worktree has none. Generate them here so no session
+// has to do it by hand when the pre-commit gate asks. Names and markers only,
+// never a value: `.env.core.schema` is rebuilt from the manifest and
+// `.env.schema` is seeded from the template. `.env.schema` is project-owned and
+// NOT in PROVISION_COPIES, so it is not copied: the primary may carry project
+// decorators the fresh worktree does not have. Skipped where the target has no
+// `vars:schema` script (older sync).
 {
   const pkgPath = join(TARGET, 'package.json');
   const hasVarsSchema = existsSync(pkgPath) && /"vars:schema"\s*:/.test(readFileSync(pkgPath, 'utf8'));

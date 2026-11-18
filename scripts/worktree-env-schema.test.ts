@@ -69,17 +69,39 @@ describe('a schema pair generated from the template (fresh worktree)', () => {
     });
   });
 
-  test('loads through varlock with a fixture .env that omits them, and with one that defines them (fake values, never echoed)', () => {
-    const FAKE = 'fixture-fake-value-1238';
-    for (const fixture of ['', PRO_PLAN_USERS.map(n => `${n}=${n.endsWith('_EMAIL') ? 'fixture@example.test' : FAKE}`).join('\n')]) {
-      withScratch((dir) => {
-        writeCoreSchema(dir);
-        seedProjectSchema(dir);
-        fs.writeFileSync(path.join(dir, '.env'), `${fixture}\n`);
-        const run = spawnSync('bunx', ['varlock', 'load', '--agent', '--path', `${dir}${path.sep}`], { cwd: REPO_ROOT, encoding: 'utf8', env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: undefined } });
-        expect(run.status).toBe(0);
-        expect(`${run.stdout}${run.stderr}`).not.toContain(FAKE);
+  // The child gets ONLY PATH, HOME and NODE_ENV (the type requires it): nothing a developer exported (or CI injects) can
+  // override the fixture `.env` it is meant to read. `--path <dir>` makes varlock read
+  // `<dir>/.env` and the schema pair beside it, whatever the cwd.
+  function loadFixture(fixture: string): { status: number | null, output: string } {
+    return withScratch((dir) => {
+      writeCoreSchema(dir);
+      seedProjectSchema(dir);
+      fs.writeFileSync(path.join(dir, '.env'), `${fixture}\n`);
+      const run = spawnSync('bunx', ['varlock', 'load', '--agent', '--path', `${dir}${path.sep}`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+        env: { PATH: process.env.PATH, HOME: process.env.HOME, NODE_ENV: 'test' },
       });
+      return { status: run.status, output: `${run.stdout}${run.stderr}` };
+    });
+  }
+
+  const FAKE = 'fixture-fake-value-1238';
+  const definesAll = PRO_PLAN_USERS.map(n => `${n}=${n.endsWith('_EMAIL') ? 'fixture@example.test' : FAKE}`).join('\n');
+
+  test('loads through varlock with a fixture .env that omits them and with one that defines them', () => {
+    expect(loadFixture('').status).toBe(0);
+    expect(loadFixture(definesAll).status).toBe(0);
+  });
+
+  test('the fixture .env is really read and the keys are really declared: a malformed email fails the load, and a fake password is never echoed', () => {
+    // email-typed in the schema: only a DECLARED key can fail on a malformed value, so this
+    // fails (the load stops failing) if the six keys leave the manifest again.
+    const bad = loadFixture('DEV_PRO_PLAN_USER_EMAIL=not-an-email');
+    expect(bad.status).not.toBe(0);
+    for (const fixture of [definesAll, `DEV_PRO_PLAN_USER_PASSWORD=${FAKE}`]) {
+      const leaked = loadFixture(fixture).output.includes(FAKE);
+      expect(leaked).toBe(false);
     }
   });
 });
