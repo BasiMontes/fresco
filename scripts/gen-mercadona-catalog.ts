@@ -150,6 +150,20 @@ export async function loadCatalog(): Promise<MercadonaProduct[]> {
   return [...products.values()];
 }
 
+/**
+ * FRESCO-1223: staples whose heuristic pick was measured wrong against the dataset (2026-11-17), pinned to the product
+ * a shopper actually means. The matcher cannot tell them apart by name: "Garbanzos a la riojana" is a stew while the
+ * plain cooked chickpea is named in the singular, and "Pasta fusilli Armando" beat the house-brand pasta only because
+ * its name is shorter. Changing the shared tie-break instead was tried and moved 24 of 86 entries towards frozen,
+ * prepared and shaped variants. A pin applies only while its product is still in the dataset and still priced; if it
+ * leaves, the key falls back to the heuristic, so a renamed product never empties the catalog.
+ * Keys are the normalized canonical keys of `BASE_QUANTITIES`; values are Mercadona product ids.
+ */
+export const PRODUCTOS_FIJADOS: Readonly<Record<string, string>> = {
+  garbanzos: '26029', // Garbanzo cocido Hacendado, 570 g, 2,00 EUR/kg (the can the 400 g portion stands for)
+  pasta: '8138', // Pasta penne rigate Hacendado, 500 g, 1,70 EUR/kg
+};
+
 /** The matcher ignores the observation instant; a fixed one keeps the build deterministic. */
 const OBSERVADO_EN = new Date(0).toISOString();
 
@@ -161,6 +175,7 @@ const OBSERVADO_EN = new Date(0).toISOString();
 export function buildMercadonaCatalogMatch(
   catalog: MercadonaProduct[],
   porciones: Record<string, { cantidad: number, unidad: string }>,
+  fijados: Readonly<Record<string, string>> = PRODUCTOS_FIJADOS,
 ): Record<string, MercadonaMatch> {
   // Products the common shape cannot price faithfully (pieces, no pack size) are dropped here, as they are at runtime.
   const porId = new Map(catalog.map(p => [p.id, p]));
@@ -174,10 +189,13 @@ export function buildMercadonaCatalogMatch(
     if (unidad !== 'g' && unidad !== 'ml') { continue; } // count-based unit — out of scope (Decision 2)
 
     const normalizada = normalizeNombre(clave);
-    const coincidencia = emparejarIngrediente({
-      ingrediente: { terminos: [normalizada, ...(SYNONYM_OVERRIDE[normalizada] ?? [])], porcion: { cantidad, unidad } },
-      candidatos,
-    });
+    const fijado = fijados[clave] === undefined ? undefined : candidatos.find(p => p.idExterno === fijados[clave]);
+    const coincidencia = fijado
+      ? { producto: fijado }
+      : emparejarIngrediente({
+          ingrediente: { terminos: [normalizada, ...(SYNONYM_OVERRIDE[normalizada] ?? [])], porcion: { cantidad, unidad } },
+          candidatos,
+        });
     if (!coincidencia) { continue; } // no catalog equivalent (or none within a plausible pack size) — absent from the table, never a placeholder
 
     const match = porId.get(coincidencia.producto.idExterno) as MercadonaProduct;

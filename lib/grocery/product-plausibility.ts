@@ -45,6 +45,8 @@ const CATEGORY_EXCLUSIONS: readonly CategoryExclusion[] = [
   // FRESCO-1193 (Consum regeneration): a legume pasta is another product, a "tocino de cielo" is a dessert, and "uvas de la suerte" are twelve grapes for New Year.
   { tokens: ['lenteja', 'lentejas', 'garbanzo', 'garbanzos', 'guisante', 'guisantes'], onlyFor: /^pasta$/ },
   { tokens: ['cielo'], onlyFor: /^tocino\b/ },
+  // FRESCO-1223: "garbanzos a la riojana" is a prepared stew, not the plain cooked chickpea.
+  { tokens: ['riojana', 'riojanas'], onlyFor: /^garbanzos\b/ },
   { tokens: ['suerte'], onlyFor: /^uvas\b/ },
   // FRESCO-1098: a fresh fish or shellfish ingredient is not a tin, a jar or a prepared dish (a 111 g tin of mussels priced as 1 kg of fresh ones).
   { tokens: ['lata', 'latas', 'conserva', 'conservas', 'escabeche', 'vizcaina', 'natural', 'ahogado', 'poke', 'ensalada'], onlyFor: /^(mejillones|almejas|berberechos|bacalao|salmon|merluza|gambas|calamares|sepia|pulpo|lubina|dorada)\b/ },

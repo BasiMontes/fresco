@@ -24,7 +24,7 @@ export interface Snapshot { colors: ColorToken[], typography: Typography, icons:
 
 const SCAN_DIRS = ['app', 'components', 'lib'];
 /** Components of `components/ui` whose API is documented so far. The next PRs extend the list. */
-const DOCUMENTED_COMPONENTS = ['button', 'card', 'tag', 'input', 'alert-banner', 'empty-state', 'checkbox', 'switch', 'segmented-control', 'email-input', 'password-input', 'reveal', 'dialog', 'dropdown', 'popover', 'filter-drawer', 'allergen-reminder', 'css-glyphs'];
+const DOCUMENTED_COMPONENTS = ['button', 'card', 'tag', 'input', 'alert-banner', 'empty-state', 'checkbox', 'switch', 'segmented-control', 'email-input', 'password-input', 'reveal', 'dialog', 'dropdown', 'popover', 'filter-drawer', 'allergen-reminder', 'css-glyphs', 'option-card-group', 'number-stepper'];
 const OUT_DIR = 'components/design-system';
 const GENERATED_FILES = [`${OUT_DIR}/generated.ts`, `${OUT_DIR}/icon-gallery.generated.tsx`];
 

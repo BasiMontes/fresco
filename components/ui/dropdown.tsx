@@ -2,8 +2,20 @@
 
 import { ChevronDown } from 'lucide-react';
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+
+// FRESCO-1224: the panel used to stop at a fixed 240px, which cut the sixth option of a six-option
+// list with no sign that there was more (macOS hides the scrollbar). It now takes the room the
+// window really has, opens upward when there is more room above, and shows a fade while content
+// is still hidden below.
+const PANEL_MAX_HEIGHT_PX = 320;
+const PANEL_MIN_HEIGHT_PX = 120;
+const PANEL_BORDER_PX = 2;
+const VIEWPORT_GUTTER_PX = 8;
+const SCROLL_END_TOLERANCE_PX = 1;
+
+type PanelPlacement = 'below' | 'above';
 
 export interface DropdownOption {
   value: string
@@ -42,6 +54,10 @@ export function Dropdown({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [placement, setPlacement] = useState<PanelPlacement>('below');
+  const [listMaxHeight, setListMaxHeight] = useState<number | null>(null);
+  const [canScrollDown, setCanScrollDown] = useState(false);
   const selected = options.find(option => option.value === value) ?? null;
   // FRESCO-151: WebKit (confirmed via playwright --browser=webkit +
   // real iPhone report) fires a phantom second `click` on the trigger
@@ -78,6 +94,37 @@ export function Dropdown({
       optionRefs.current[activeIndex]?.focus();
     }
   }, [open, activeIndex]);
+
+  function updateScrollCue() {
+    const list = listRef.current;
+    if (!list) {
+      return;
+    }
+    setCanScrollDown(list.scrollTop + list.clientHeight < list.scrollHeight - SCROLL_END_TOLERANCE_PX);
+  }
+
+  // Runs before paint: measures the room above and below the trigger and sizes the panel to it.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const root = rootRef.current;
+    if (!open || !list || !root) {
+      return;
+    }
+    const rect = root.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_GUTTER_PX;
+    const spaceAbove = rect.top - VIEWPORT_GUTTER_PX;
+    const naturalHeight = Math.min(list.scrollHeight + PANEL_BORDER_PX, PANEL_MAX_HEIGHT_PX);
+    const opensUpward = naturalHeight > spaceBelow && spaceAbove > spaceBelow;
+    const room = opensUpward ? spaceAbove : spaceBelow;
+    setPlacement(opensUpward ? 'above' : 'below');
+    setListMaxHeight(Math.max(PANEL_MIN_HEIGHT_PX, Math.min(room, PANEL_MAX_HEIGHT_PX)) - PANEL_BORDER_PX);
+  }, [open, options.length]);
+
+  useLayoutEffect(() => {
+    if (open) {
+      updateScrollCue();
+    }
+  }, [open, listMaxHeight, options.length]);
 
   function selectOption(optionValue: string) {
     justSelectedRef.current = true;
@@ -159,33 +206,50 @@ export function Dropdown({
       </button>
 
       {open && (
-        <ul
-          role="listbox"
-          aria-label={ariaLabel}
-          onKeyDown={handleListKeyDown}
-          className="absolute top-full left-0 z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-card border border-border bg-surface p-1 shadow-lg"
+        <div
+          className={cn(
+            'absolute left-0 z-10 w-full overflow-hidden rounded-card border border-border bg-surface shadow-lg',
+            placement === 'above' ? 'bottom-full mb-1' : 'top-full mt-1',
+          )}
         >
-          {options.map((option, index) => (
-            <li key={option.value}>
-              <button
-                ref={(element) => { optionRefs.current[index] = element; }}
-                type="button"
-                role="option"
-                tabIndex={index === activeIndex ? 0 : -1}
-                aria-selected={option.value === value}
-                className={cn(
-                  'w-full rounded-full px-3 py-2 text-left text-body-md',
-                  option.value === value
-                    ? 'bg-primary text-on-brand'
-                    : 'text-text hover:bg-neutral-100',
-                )}
-                onClick={() => selectOption(option.value)}
-              >
-                {option.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+          <ul
+            ref={listRef}
+            role="listbox"
+            aria-label={ariaLabel}
+            onKeyDown={handleListKeyDown}
+            onScroll={updateScrollCue}
+            style={listMaxHeight === null ? undefined : { maxHeight: listMaxHeight }}
+            className="max-h-80 overflow-y-auto p-1"
+          >
+            {options.map((option, index) => (
+              <li key={option.value}>
+                <button
+                  ref={(element) => { optionRefs.current[index] = element; }}
+                  type="button"
+                  role="option"
+                  tabIndex={index === activeIndex ? 0 : -1}
+                  aria-selected={option.value === value}
+                  className={cn(
+                    'w-full rounded-full px-3 py-2 text-left text-body-md',
+                    option.value === value
+                      ? 'bg-primary text-on-brand'
+                      : 'text-text hover:bg-neutral-100',
+                  )}
+                  onClick={() => selectOption(option.value)}
+                >
+                  {option.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {canScrollDown && (
+            <div
+              aria-hidden="true"
+              data-scroll-cue=""
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-surface to-transparent"
+            />
+          )}
+        </div>
       )}
     </div>
   );

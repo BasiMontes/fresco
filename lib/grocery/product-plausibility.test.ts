@@ -42,6 +42,8 @@ describe('esProductoPlausible — the Consum regeneration matches of FRESCO-1193
     ['nueces', 'Turrón nata nueces', 'a sweet'],
     ['pasta', 'Pasta de lenteja roja', 'a legume pasta, not plain pasta'],
     ['uvas', 'Uvas de la suerte 12 unidades', 'twelve grapes for New Year, not a bunch of grapes'],
+    // FRESCO-1223: the dataset names this stew in the plural, so it passed as the chickpea itself.
+    ['garbanzos', 'Garbanzos a la riojana Hacendado', 'a prepared stew, not the plain chickpea'],
     ['ternera', 'Vaso de fideos instantáneos sabor ternera', 'instant noodles'],
     // The name Consum really gave it, caught by the first scheduled refresh (FRESCO-1192).
     ['ternera', 'Yatekomo Ternera Cup', 'instant noodle cup, Consum\'s own name'],
@@ -255,7 +257,7 @@ describe('FRESCO-825 — ambiguous or variant products by ingredient', () => {
     expect(CONSUM_CATALOG_MATCH.sal).toBeUndefined();
     expect(CONSUM_CATALOG_MATCH.pasta).toBeUndefined();
     expect(CONSUM_CATALOG_MATCH.cacahuetes.url).toContain('cacahuetes-tostados-con-cascara');
-    expect(MERCADONA_CATALOG_MATCH.pasta.shareUrl).toContain('fusilli');
+    expect(MERCADONA_CATALOG_MATCH.pasta.shareUrl).toContain('pasta-penne-rigate-hacendado');
   });
 });
 

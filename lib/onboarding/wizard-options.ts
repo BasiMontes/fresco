@@ -20,12 +20,13 @@ export const OBJETIVO_OPTIONS: { value: ObjetivoUsuario, label: string }[] = [
   { value: 'reducir_desperdicio', label: 'Reducir desperdicio de comida' },
 ];
 
-export const NIVEL_EXPERIENCIA_OPTIONS: { value: NivelExperienciaCulinaria, label: string }[] = [
-  { value: 'aprendiz', label: 'Aprendiz' },
-  { value: 'novato', label: 'Novato' },
-  { value: 'intermedio', label: 'Intermedio' },
-  { value: 'chef', label: 'Chef' },
-  { value: 'experto', label: 'Experto' },
+// FRESCO-1225: one help line per level — Aprendiz and Novato were easy to mix up.
+export const NIVEL_EXPERIENCIA_OPTIONS: { value: NivelExperienciaCulinaria, label: string, description: string }[] = [
+  { value: 'aprendiz', label: 'Aprendiz', description: 'Estoy empezando: casi nunca cocino.' },
+  { value: 'novato', label: 'Novato', description: 'Cocino platos sencillos y sigo la receta paso a paso.' },
+  { value: 'intermedio', label: 'Intermedio', description: 'Cocino a menudo y me manejo con técnicas básicas.' },
+  { value: 'chef', label: 'Chef', description: 'Improviso y adapto recetas con soltura.' },
+  { value: 'experto', label: 'Experto', description: 'Domino técnicas avanzadas y cocino casi de todo.' },
 ];
 
 export const DIETA_OPTIONS: { value: DietaFlag, label: string }[] = [

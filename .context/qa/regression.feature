@@ -400,6 +400,15 @@ Característica: Flujo completo de usuario en Fresco
     # contra HOUSEHOLD_FIELD_MAX=10 (adultos y niños), igual al max=10
     # visual de ambos inputs.
 
+  @onboarding @automatizado
+  # Automatizado: tests/steps/onboarding.steps.ts (FRESCO-1225)
+  Escenario: El onboarding muestra el objetivo y el nivel como tarjetas y el hogar con botones más y menos
+    Dado que el usuario tiene sesión iniciada
+    Y no tiene todavía un menú generado para la semana actual
+    Cuando elige un objetivo y un nivel de experiencia en las tarjetas del paso 1
+    Y sube y baja los adultos y los niños con los botones del paso 3
+    Entonces las tarjetas elegidas figuran en el resumen y los botones respetan el mínimo y el máximo del hogar
+
   @generacion-menu @edge-case @verificado-manual-2026-07-31
   Escenario: El perfil de usuario no existe todavía
     Dado que un usuario autenticado nunca completó el onboarding
