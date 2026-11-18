@@ -1,6 +1,6 @@
 import type { MercadonaProduct } from '../../scripts/gen-mercadona-catalog';
 import { describe, expect, test } from 'bun:test';
-import { buildMercadonaCatalogMatch, renderFile } from '../../scripts/gen-mercadona-catalog';
+import { buildMercadonaCatalogMatch, PRODUCTOS_FIJADOS, renderFile } from '../../scripts/gen-mercadona-catalog';
 import { BASE_QUANTITIES } from '../../supabase/functions/generate-shopping-list/consolidator';
 import { MERCADONA_CATALOG_FECHA, MERCADONA_CATALOG_MATCH } from './mercadona-catalog.generated';
 
@@ -132,6 +132,52 @@ describe('buildMercadonaCatalogMatch — matching heuristic (inline fixture, no 
     // 58 g pack vs. a 2 g recipe portion is a 29x multiple — past the 20x guard.
     const match = buildMercadonaCatalogMatch(catalog, { comino: { cantidad: 2, unidad: 'g' } });
     expect(match.comino).toBeUndefined();
+  });
+});
+
+// FRESCO-1223: three staples of the catalog were checked against the dataset; two were wrong and are pinned.
+describe('buildMercadonaCatalogMatch — pinned staples (FRESCO-1223)', () => {
+  function pack(display_name: string, id: string, reference_price: string, unit_size: number): MercadonaProduct {
+    return {
+      id,
+      display_name,
+      share_url: `https://tienda.mercadona.es/product/${id}`,
+      price_instructions: { reference_price, reference_format: 'kg', unit_size, size_format: 'kg' },
+    };
+  }
+  const garbanzos = [
+    pack('Garbanzos a la riojana Hacendado', 'riojana', '3.215', 0.42),
+    pack('Garbanzo cocido Hacendado', 'cocido', '2.000', 0.57),
+  ];
+  const porcion = { garbanzos: { cantidad: 400, unidad: 'g' } };
+
+  test('a pinned product wins over the heuristic pick, and is the one the generator emits', () => {
+    const match = buildMercadonaCatalogMatch(garbanzos, porcion, { garbanzos: 'cocido' });
+    expect(match.garbanzos?.shareUrl).toBe('https://tienda.mercadona.es/product/cocido');
+    expect(match.garbanzos?.envaseVenta).toEqual({ cantidad: 570, unidad: 'g' });
+  });
+
+  test('a pin whose product left the dataset falls back to the heuristic instead of emptying the key', () => {
+    const match = buildMercadonaCatalogMatch(garbanzos, porcion, { garbanzos: 'ya-no-existe' });
+    // The stew is excluded by the plausibility guard, so the only candidate left is the singular product,
+    // which the plural term does not name: no match, never the stew.
+    expect(match.garbanzos?.shareUrl ?? '').not.toContain('riojana');
+  });
+
+  test('every pin names a real ingredient key of the catalog', () => {
+    for (const clave of Object.keys(PRODUCTOS_FIJADOS)) {
+      expect(BASE_QUANTITIES[clave]).toBeDefined();
+    }
+  });
+
+  test('the committed catalog holds the verified products for garbanzos, pasta and aceite de oliva', () => {
+    // garbanzos: the cooked chickpea, not the "a la riojana" stew; Alcampo and Eroski sell it at the same 2,00 EUR/kg.
+    expect(MERCADONA_CATALOG_MATCH.garbanzos.shareUrl).toContain('/26029/garbanzo-cocido-hacendado');
+    expect(MERCADONA_CATALOG_MATCH.garbanzos.precioMercadona.precioReferencia).toBe(2);
+    // pasta: the house brand at 1,70 EUR/kg, not a manufacturer's brand at 2,80.
+    expect(MERCADONA_CATALOG_MATCH.pasta.shareUrl).toContain('/8138/pasta-penne-rigate-hacendado');
+    // aceite de oliva: verified, no error. The 1º blend is a fair generic "aceite de oliva".
+    expect(MERCADONA_CATALOG_MATCH['aceite de oliva'].shareUrl).toContain('aceite-oliva-1o-hacendado');
   });
 });
 
