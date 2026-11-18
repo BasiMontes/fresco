@@ -5,7 +5,9 @@ import type { HouseholdValidationResult } from '@/lib/validation/onboarding';
 import { useState } from 'react';
 import { PlanningSelectionGrid } from '@/components/onboarding/planning-selection-grid';
 import { Input } from '@/components/ui/input';
+import { NumberStepper } from '@/components/ui/number-stepper';
 import { useOnboardingStore } from '@/lib/store/onboarding-store';
+import { HOUSEHOLD_FIELD_MAX } from '@/lib/validation/onboarding';
 
 export interface OnboardingStepHouseholdProps {
   headingRef: React.RefObject<HTMLHeadingElement | null>
@@ -32,42 +34,39 @@ export function OnboardingStepHousehold({ headingRef, household, presupuestoVali
   // still invalid — this flag gates the "> 0" error styling/message so it
   // only shows after the field has been touched, never on a pristine visit.
   const [presupuestoTouched, setPresupuestoTouched] = useState(false);
+  // The persisted household total is adultos + ninos (see validation/onboarding.ts).
+  const personas = Math.max(1, adultos + ninos);
+  const personasLabel = `${personas} ${personas === 1 ? 'persona' : 'personas'}`;
+  const perPersonaEuros = presupuestoSemanaEuros !== null && presupuestoValid && Number.isFinite(presupuestoSemanaEuros)
+    ? Math.round((presupuestoSemanaEuros / personas) * 10) / 10
+    : null;
 
   return (
     <>
       <h1 ref={headingRef} tabIndex={-1} className="text-h3 outline-hidden">¿Quiénes cocináis en casa?</h1>
       <p className="mt-1 text-body-sm text-tertiary">Ajustaremos las cantidades del menú.</p>
-      <div className="mt-4 flex gap-4">
-        <label className="flex flex-col gap-1">
+      {/* FRESCO-1225: - / + steppers bounded by HOUSEHOLD_FIELD_MAX (FRESCO-382).
+          Adults need at least one (validateHousehold). */}
+      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3">
+        <div className="flex flex-col gap-1">
           <span className="text-body-sm text-tertiary">Adultos</span>
-          <Input
-            data-testid="adultos_input"
-            type="number"
-            min={0}
-            max={10}
-            value={adultos}
-            onChange={e => setAdultos(Number(e.target.value))}
-            className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
-          />
-        </label>
-        <label className="flex flex-col gap-1">
+          <NumberStepper label="Adultos" data-testid="adultos_input" min={1} max={HOUSEHOLD_FIELD_MAX} value={adultos} onChange={setAdultos} invalid={!household.valid} />
+        </div>
+        <div className="flex flex-col gap-1">
           <span className="text-body-sm text-tertiary">Niños</span>
-          <Input
-            data-testid="ninos_input"
-            type="number"
-            min={0}
-            max={10}
-            value={ninos}
-            onChange={e => setNinos(Number(e.target.value))}
-            className={`max-w-24 ${!household.valid ? 'border-error' : ''}`}
-          />
-        </label>
+          <NumberStepper label="Niños" data-testid="ninos_input" min={0} max={HOUSEHOLD_FIELD_MAX} value={ninos} onChange={setNinos} invalid={!household.valid} />
+        </div>
       </div>
       {!household.valid && (
         <p data-testid="household_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
           {household.message}
         </p>
       )}
+      {/* Verified in generate-meal-plan/menu-selector.ts and generate-shopping-list:
+          num_personas scales quantities and the budget comparison. */}
+      <p data-testid="household_effect_hint" className="mt-2 text-body-sm text-tertiary">
+        {`Esto cambia tu menú: las cantidades y el coste se calculan para ${personasLabel}.`}
+      </p>
 
       {/* FRESCO-371 (A4-H14): budget is optional again. The engine
           never gates on it — `generate-meal-plan/menu-selector.ts`
@@ -77,20 +76,29 @@ export function OnboardingStepHousehold({ headingRef, household, presupuestoVali
           the PRD does not allow. */}
       <label className="mt-4 flex flex-col gap-1">
         <span className="text-body-sm text-tertiary">Presupuesto semanal (opcional)</span>
-        <Input
-          data-testid="presupuesto_input"
-          type="number"
-          min={1}
-          value={presupuestoSemanaEuros ?? ''}
-          onChange={(e) => {
-            const raw = e.target.value;
-            setPresupuestoSemanaEuros(raw === '' ? null : Number(raw));
-          }}
-          onBlur={() => setPresupuestoTouched(true)}
-          placeholder="Ej. 80"
-          className={`max-w-32 ${!presupuestoValid && presupuestoTouched ? 'border-error' : ''}`}
-        />
+        <span className="flex items-center gap-2">
+          <Input
+            data-testid="presupuesto_input"
+            type="number"
+            min={1}
+            value={presupuestoSemanaEuros ?? ''}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setPresupuestoSemanaEuros(raw === '' ? null : Number(raw));
+            }}
+            onBlur={() => setPresupuestoTouched(true)}
+            placeholder="Ej. 80"
+            aria-describedby="presupuesto_help"
+            className={`max-w-32 ${!presupuestoValid && presupuestoTouched ? 'border-error' : ''}`}
+          />
+          <span aria-hidden="true" className="text-body-sm text-tertiary">EUR</span>
+        </span>
       </label>
+      <p id="presupuesto_help" data-testid="presupuesto_help" className="mt-1 text-body-sm text-tertiary">
+        {perPersonaEuros !== null
+          ? `Son unos ${perPersonaEuros} EUR por persona y semana (${personasLabel}). Esto cambia tu menú: te avisamos si se pasa de ese importe.`
+          : `Opcional. Esto cambia tu menú: si lo indicas, te avisamos cuando el menú de ${personasLabel} se pase.`}
+      </p>
       {!presupuestoValid && presupuestoTouched && (
         <p data-testid="presupuesto_validation_message" role="alert" aria-live="polite" className="mt-2 text-body-sm text-error">
           El presupuesto debe ser mayor que 0.
